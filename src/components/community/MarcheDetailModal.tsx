@@ -246,14 +246,16 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
               <TooltipTrigger asChild>
                 <button
                   onClick={() => {
-                    const allPhotos: { id: string; nom: string; url: string }[] = [];
+                    const allPhotos: { id: string; nom: string; url: string; storedGps?: { latitude: number; longitude: number } | null }[] = [];
                     (adminPhotos || []).forEach(p => allPhotos.push({ id: p.id, nom: p.titre || 'Photo exploration', url: p.url_supabase }));
-                    myMedias.filter(m => m.type_media === 'photo' && (m.url_fichier || m.external_url)).forEach(m => 
-                      allPhotos.push({ id: m.id, nom: m.titre || 'Ma photo', url: (m.url_fichier || m.external_url)! })
-                    );
-                    othersMedias.filter(m => m.type_media === 'photo' && (m.url_fichier || m.external_url)).forEach(m =>
-                      allPhotos.push({ id: m.id, nom: m.titre || 'Photo marcheur', url: (m.url_fichier || m.external_url)! })
-                    );
+                    myMedias.filter(m => m.type_media === 'photo' && (m.url_fichier || m.external_url)).forEach(m => {
+                      const meta = (m as any).metadata;
+                      allPhotos.push({ id: m.id, nom: m.titre || 'Ma photo', url: (m.url_fichier || m.external_url)!, storedGps: meta?.gps || null });
+                    });
+                    othersMedias.filter(m => m.type_media === 'photo' && (m.url_fichier || m.external_url)).forEach(m => {
+                      const meta = (m as any).metadata;
+                      allPhotos.push({ id: m.id, nom: m.titre || 'Photo marcheur', url: (m.url_fichier || m.external_url)!, storedGps: meta?.gps || null });
+                    });
                     checkPhotos(allPhotos);
                     setShowGpsDialog(true);
                   }}
