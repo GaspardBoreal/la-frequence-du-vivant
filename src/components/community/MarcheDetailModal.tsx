@@ -70,6 +70,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
   const [showUpload, setShowUpload] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showGpsDialog, setShowGpsDialog] = useState(false);
+  const [gpsDialogTab, setGpsDialogTab] = useState<'list' | 'map'>('list');
   const { results: gpsResults, marcheCoords, isChecking, checkPhotos, reset: resetGps } = usePhotoGpsCheck(marcheId);
   const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
     const stored = localStorage.getItem('voir-tab-view');
