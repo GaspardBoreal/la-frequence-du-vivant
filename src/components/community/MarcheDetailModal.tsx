@@ -379,6 +379,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
                 isOwner={false}
                 createdAt={m.created_at}
                 viewMode={viewMode}
+                gpsDistance={viewMode === 'fiche' ? getGpsDistance(m.id) : null}
                 onClick={() => setLightboxIndex(adminCount + myCount + i)}
               />
             ))}
