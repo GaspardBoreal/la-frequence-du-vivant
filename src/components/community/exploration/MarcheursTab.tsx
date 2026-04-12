@@ -128,13 +128,17 @@ const ObservationsSubTab: React.FC<{ userId: string; marcheEventId?: string; sta
   );
 };
 
+// Normalize string: remove accents/diacritics, lowercase, trim
+const normalizeStr = (str: string) =>
+  str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+
 // --- Contributions sub-tab: species from biodiversity snapshots ---
 const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId?: string; explorationMarcheIds: string[] }> = ({ marcheur, explorationId, explorationMarcheIds }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
-  const fullName = `${marcheur.prenom} ${marcheur.nom}`.toLowerCase();
+  const fullNameNorm = normalizeStr(`${marcheur.prenom} ${marcheur.nom}`);
 
   const { data: speciesFromSnapshots, isLoading } = useQuery({
-    queryKey: ['marcheur-contributions-species', explorationId, fullName],
+    queryKey: ['marcheur-contributions-species', explorationId, fullNameNorm],
     queryFn: async () => {
       if (!explorationMarcheIds.length) return [];
       const { data } = await supabase
@@ -160,8 +164,8 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
           const attributions = sp.attributions as any[];
           if (!Array.isArray(attributions)) continue;
           for (const attr of attributions) {
-            const observerName = (attr.observerName || '').toLowerCase();
-            if (observerName.includes(fullName) || fullName.includes(observerName)) {
+            const observerNorm = normalizeStr(attr.observerName || '');
+            if (observerNorm.includes(fullNameNorm) || fullNameNorm.includes(observerNorm)) {
               const photoUrl = sp.photoData?.url || (Array.isArray(sp.photos) && sp.photos.length > 0 ? sp.photos[0] : null);
               results.push({
                 scientificName: sp.scientificName || '',
@@ -177,15 +181,14 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
         }
       }
 
-      // Deduplicate by scientificName, keep earliest date
-      const map = new Map<string, typeof results[0]>();
-      for (const r of results) {
-        const existing = map.get(r.scientificName);
-        if (!existing || r.date < existing.date) {
-          map.set(r.scientificName, r);
-        }
-      }
-      return Array.from(map.values());
+      // Deduplicate by scientificName+date+source to avoid exact duplicates across snapshots
+      const seen = new Set<string>();
+      return results.filter(r => {
+        const key = `${r.scientificName}|${r.date}|${r.source}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     },
     enabled: !!explorationId && explorationMarcheIds.length > 0,
     staleTime: 60_000,
