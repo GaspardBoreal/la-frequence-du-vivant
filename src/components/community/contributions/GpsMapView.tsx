@@ -58,6 +58,50 @@ function FitBounds({ points }: { points: [number, number][] }) {
   return null;
 }
 
+/** Elegant zoom controls */
+function ZoomControls() {
+  const map = useMap();
+  return (
+    <div className="leaflet-top leaflet-left" style={{ pointerEvents: 'auto', zIndex: 1000 }}>
+      <div style={{
+        margin: '10px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+      }}>
+        {[{ label: '+', fn: () => map.zoomIn() }, { label: '−', fn: () => map.zoomOut() }].map(b => (
+          <button
+            key={b.label}
+            onClick={b.fn}
+            style={{
+              width: '32px',
+              height: '32px',
+              background: 'rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(8px)',
+              border: 'none',
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: '18px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}
+          >
+            {b.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Dynamic tile layer without remounting the map */
 function DynamicTileLayer({ style }: { style: MapStyle }) {
   const map = useMap();
