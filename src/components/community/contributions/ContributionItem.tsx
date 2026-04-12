@@ -1,8 +1,17 @@
-import React, { useState, useCallback } from 'react';
-import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, Download, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, MapPin, Link2, Users, Earth } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+export type VisibilityLevel = 'private' | 'community' | 'world';
 
 export interface ContributionItemProps {
   id: string;
@@ -14,6 +23,7 @@ export interface ContributionItemProps {
   contenu?: string;
   typeTexte?: string;
   isPublic: boolean;
+  sharedToWeb?: boolean;
   isOwner: boolean;
   createdAt: string;
   viewMode?: 'immersion' | 'fiche';
@@ -47,9 +57,46 @@ const TEXTE_TYPES = [
   { value: 'manifeste', label: 'Manifeste' },
 ];
 
+function getVisibilityLevel(isPublic: boolean, sharedToWeb?: boolean): VisibilityLevel {
+  if (sharedToWeb) return 'world';
+  if (isPublic) return 'community';
+  return 'private';
+}
+
+function getVisibilityUpdates(level: VisibilityLevel) {
+  switch (level) {
+    case 'world': return { is_public: true, shared_to_web: true };
+    case 'community': return { is_public: true, shared_to_web: false };
+    case 'private': return { is_public: false, shared_to_web: false };
+  }
+}
+
+const visibilityConfig = {
+  private: { icon: Lock, label: 'Privé', color: 'text-white/40', bgColor: 'bg-white/10' },
+  community: { icon: Users, label: 'Communauté', color: 'text-blue-400', bgColor: 'bg-blue-500/15' },
+  world: { icon: Earth, label: 'Partagé au monde', color: 'text-violet-400', bgColor: 'bg-violet-500/15' },
+};
+
+function VisibilityBadge({ level }: { level: VisibilityLevel }) {
+  const config = visibilityConfig[level];
+  const Icon = config.icon;
+  return (
+    <span className={cn("flex items-center gap-0.5 text-[10px]", config.color)}>
+      <Icon className="w-2.5 h-2.5" />
+    </span>
+  );
+}
+
+function copyShareLink(id: string, type: string) {
+  const url = `${window.location.origin}/partage/${id}?type=${type}`;
+  navigator.clipboard.writeText(url).then(() => {
+    toast.success('Lien copié !', { description: url });
+  });
+}
+
 const ContributionItem: React.FC<ContributionItemProps> = ({
   id, type, titre, description, url, externalUrl, contenu, typeTexte,
-  isPublic, isOwner, createdAt, viewMode = 'fiche', gpsDistance, onUpdate, onDelete, onClick,
+  isPublic, sharedToWeb, isOwner, createdAt, viewMode = 'fiche', gpsDistance, onUpdate, onDelete, onClick,
 }) => {
   const [editing, setEditing] = useState(false);
   const [editTitre, setEditTitre] = useState(titre || '');
@@ -58,6 +105,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
 
   const Icon = typeIcons[type];
   const displayUrl = url || externalUrl;
+  const visibility = getVisibilityLevel(isPublic, sharedToWeb);
 
   const handleSave = () => {
     if (!onUpdate) return;
@@ -67,6 +115,11 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
       onUpdate(id, { titre: editTitre, description: editDesc });
     }
     setEditing(false);
+  };
+
+  const handleVisibilityChange = (level: VisibilityLevel) => {
+    if (!onUpdate) return;
+    onUpdate(id, getVisibilityUpdates(level));
   };
 
   // ─── Immersion mode: photo/video only, minimal chrome ───
@@ -85,14 +138,12 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
               <Video className="w-8 h-8 text-white/40" />
             </div>
           )}
-          {/* Hover overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
             <span className="text-white text-[10px] font-medium truncate block">{titre || 'Sans titre'}</span>
           </div>
-          {/* Visibility indicator */}
           <div className="absolute top-1.5 right-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-            {isPublic ? <Globe className="w-2.5 h-2.5 text-blue-300/80" /> : <Lock className="w-2.5 h-2.5 text-white/40" />}
+            <VisibilityBadge level={visibility} />
           </div>
         </div>
       </div>
@@ -180,7 +231,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
               <p className="text-emerald-100/50 text-[11px] line-clamp-3 whitespace-pre-line">{contenu}</p>
             )}
 
-            {/* GPS distance (fiche mode only) */}
+            {/* GPS distance */}
             {gpsDistance?.hasGps && gpsDistance.distanceM !== null && (
               <div className="flex items-center gap-1">
                 <a
@@ -209,20 +260,54 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
                 <span className="text-emerald-200/30 text-[10px]">
                   {format(new Date(createdAt), 'dd MMM yyyy', { locale: fr })}
                 </span>
-                <span className={cn("flex items-center gap-0.5 text-[10px]", isPublic ? "text-blue-400/60" : "text-white/30")}>
-                  {isPublic ? <Globe className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
-                </span>
+                <VisibilityBadge level={visibility} />
               </div>
 
               {isOwner && (
                 <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => onUpdate?.(id, { is_public: !isPublic })}
-                    className="p-1 rounded hover:bg-white/10 transition-colors"
-                    title={isPublic ? 'Rendre privé' : 'Rendre public'}
-                  >
-                    {isPublic ? <Lock className="w-3 h-3 text-white/40" /> : <Globe className="w-3 h-3 text-blue-400" />}
-                  </button>
+                  {/* Visibility selector */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-white/10 transition-colors" title="Visibilité">
+                        {React.createElement(visibilityConfig[visibility].icon, { className: cn("w-3 h-3", visibilityConfig[visibility].color) })}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 min-w-[180px]">
+                      <DropdownMenuItem
+                        onClick={() => handleVisibilityChange('private')}
+                        className={cn("text-xs gap-2", visibility === 'private' && 'bg-white/10')}
+                      >
+                        <Lock className="w-3.5 h-3.5 text-white/40" />
+                        <span className="text-white/70">Privé</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleVisibilityChange('community')}
+                        className={cn("text-xs gap-2", visibility === 'community' && 'bg-white/10')}
+                      >
+                        <Users className="w-3.5 h-3.5 text-blue-400" />
+                        <span className="text-blue-300">Communauté</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleVisibilityChange('world')}
+                        className={cn("text-xs gap-2", visibility === 'world' && 'bg-white/10')}
+                      >
+                        <Earth className="w-3.5 h-3.5 text-violet-400" />
+                        <span className="text-violet-300">Partagé au monde</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Copy share link when shared to web */}
+                  {visibility === 'world' && (
+                    <button
+                      onClick={() => copyShareLink(id, type)}
+                      className="p-1 rounded hover:bg-violet-500/20 transition-colors"
+                      title="Copier le lien de partage"
+                    >
+                      <Link2 className="w-3 h-3 text-violet-400" />
+                    </button>
+                  )}
+
                   <button onClick={() => setEditing(true)} className="p-1 rounded hover:bg-white/10 transition-colors">
                     <Pencil className="w-3 h-3 text-white/40" />
                   </button>
