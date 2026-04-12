@@ -349,6 +349,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
                 isOwner={true}
                 createdAt={m.created_at}
                 viewMode={viewMode}
+                gpsDistance={viewMode === 'fiche' ? getGpsDistance(m.id) : null}
                 onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_medias', id, updates })}
                 onDelete={(id) => deleteContrib.mutate({ table: 'marcheur_medias', id, storageUrl: m.url_fichier || undefined })}
                 onClick={() => setLightboxIndex(adminCount + i)}
