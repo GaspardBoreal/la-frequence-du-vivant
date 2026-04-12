@@ -1,48 +1,62 @@
 
 
-## Corriger le suivi GPS temps réel (notamment en conditions TGV)
+## Fil chronologique des contributions — Onglet "Marcheurs"
 
-### Probleme identifie
+### Objectif
 
-Dans `startTracking()`, le `watchPosition` est configure avec `{ enableHighAccuracy: true, maximumAge: 2000 }` sans `timeout`. En TGV :
-- Le GPS a du mal a obtenir un fix precis (carrosserie metallique, vitesse)
-- Sans `timeout`, le navigateur peut attendre indefiniment un fix haute precision
-- L'erreur callback appelle silencieusement `stopTracking()` — l'utilisateur ne sait pas que le suivi a echoue
-- `maximumAge: 2000` rejette des positions de plus de 2s, ce qui est trop strict en mouvement rapide
+Ajouter dans l'onglet **Marcheurs** de la page exploration un **fil chronologique des contributions publiques** (photos, sons, textes) avec avatar du contributeur, date/heure et tri ascendant/descendant. Design mobile-first, sobre et cohérent avec l'existant.
 
-### Modifications — `ExplorationCarteTab.tsx`
+### Emplacement
 
-**1. Ajouter un fallback basse precision**
+Dans `MarcheursTab.tsx`, **entre le résumé (ligne "X marcheurs · Y contributions") et la liste des cartes marcheurs**. Un nouveau bloc "Fil des contributions" avec :
+- Un en-tête compact : icône + titre "Contributions récentes" + le `SortToggle` existant (desc/asc)
+- Une liste scrollable de vignettes contribution
 
-```typescript
-const id = navigator.geolocation.watchPosition(
-  (pos) => {
-    setUserLocation([pos.coords.latitude, pos.coords.longitude]);
-    setUserAccuracy(pos.coords.accuracy);
-  },
-  (err) => {
-    // Ne pas couper le suivi sur timeout — retenter
-    if (err.code === err.TIMEOUT) {
-      console.warn('GPS timeout, en attente du prochain fix...');
-      return;
-    }
-    // Erreur fatale (permission refusee, indisponible)
-    console.error('Geolocation error:', err.message);
-    stopTracking();
-  },
-  { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
-);
+### Design mobile-first
+
+Chaque contribution = une ligne horizontale compacte :
+
+```text
+┌─────────────────────────────────────────────┐
+│ [Avatar] Gaspard B. · 📷  10 avr. · 14:12  │
+│          ┌──────┐                            │
+│          │ mini │  IMG_1393                   │
+│          └──────┘                            │
+└─────────────────────────────────────────────┘
 ```
 
-**2. Augmenter `maximumAge` a 5000ms** — accepter des positions legerement plus anciennes plutot que de n'avoir rien
+- **Avatar** (24px) avec fallback initiales
+- **Prénom + initiale nom** pour la privacy
+- **Icône type** (📷 photo, 🎙 son, 📖 texte)
+- **Date relative** ou formatée ("10 avr. · 14:12")
+- **Miniature** (48px arrondie) pour les photos, icône pour sons/textes
+- Fond `bg-card` / `dark:bg-white/5`, border subtile, `rounded-xl`
+- Animations Framer Motion en cascade (stagger)
 
-**3. Ajouter `timeout: 15000`** — forcer un retour (succes ou erreur) apres 15s au lieu d'attendre indefiniment
+### Fichiers modifiés
 
-**4. Ne pas couper le suivi sur erreur TIMEOUT** — seules les erreurs `PERMISSION_DENIED` et `POSITION_UNAVAILABLE` arretent le suivi
+| Fichier | Action |
+|---------|--------|
+| `src/components/community/exploration/ContributionsFeed.tsx` | **Nouveau** — composant du fil chronologique |
+| `src/hooks/useExplorationContributions.ts` | **Nouveau** — hook React Query qui agrège medias + audios + textes avec profils |
+| `src/components/community/exploration/MarcheursTab.tsx` | Import et affichage du `ContributionsFeed` entre le résumé et les cartes |
 
-**5. Ajouter un toast d'information quand le suivi est coupe par erreur** — pour que l'utilisateur sache ce qui s'est passe
+### Hook `useExplorationContributions`
 
-### Resultat
+- Requête les `marcheur_medias`, `marcheur_audio`, `marcheur_textes` (is_public = true) pour tous les `marche_event_ids` de l'exploration
+- Joint `community_profiles` pour avatar/prénom/nom
+- Retourne un tableau unifié `{ id, type, url, titre, prenom, nom, avatarUrl, createdAt }` trié par `createdAt` desc par défaut
+- `staleTime: 30s`
 
-Le suivi restera actif meme quand le GPS met du temps a fournir un fix (tunnel, TGV). L'utilisateur verra son point bleu avancer des que le navigateur obtient une position, meme de moindre precision.
+### Composant `ContributionsFeed`
+
+- Props : `explorationId`, `maxItems?: number` (défaut 20)
+- State local `sort: 'desc' | 'asc'` avec le `SortToggle` existant
+- Skeleton loading (3 lignes animées)
+- État vide élégant si aucune contribution
+- Les photos affichent une miniature cliquable (lightbox ou lien vers la photo)
+
+### Aucune migration SQL nécessaire
+
+Toutes les données existent déjà. On fait des `SELECT` sur les tables existantes avec les profils communautaires.
 
