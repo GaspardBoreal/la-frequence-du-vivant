@@ -1,65 +1,53 @@
 
 
-## Outil GPS Photo — Localiser une photo sur la carte de l'exploration
+## Diagnostic — Extraction GPS qui échoue sur mobile
 
-### Concept
+### Problème identifié
 
-Un bouton discret (icone appareil photo + GPS) dans la barre d'outils de la carte permet de deposer une photo. Le systeme extrait les coordonnees EXIF, affiche un marqueur rouge sur la carte avec un popup riche, et propose de basculer la photo en contribution rattachee a une marche avec le selecteur de visibilite 3 etats.
+Le code actuel dans `PhotoGpsDropTool.tsx` (ligne 240-243) utilise `Promise.all` pour appeler simultanément `exifr.gps(file)` et `exifr.parse(file, ['DateTimeOriginal'])`. Les deux méthodes lisent le même `File` blob en parallèle, ce qui peut provoquer des erreurs de lecture sur mobile (le fichier stream est consommé par la première lecture).
 
-### Flux utilisateur
+De plus, la vérification GPS (ligne 245) utilise `!gps?.latitude || !gps?.longitude` — un check "falsy" qui échouerait si une coordonnée vaut exactement `0`.
 
-```text
-1. Tap bouton 📷📍 (coin bas-droit, pres du bouton geolocalisation)
-2. Selecteur fichier natif (camera/galerie sur mobile, dossier sur PC)
-3. Extraction EXIF via exifr (deja installe dans le projet)
-4. Si GPS trouve :
-   → Marqueur rouge semi-transparent sur la carte
-   → Carte centree sur le point
-   → Popup au clic : miniature, coordonnees, date de prise de vue
-   → Bouton "Ajouter a une marche" dans le popup
-5. Si pas de GPS :
-   → Toast d'avertissement "Aucune donnee GPS dans cette photo"
-   → Possibilite de positionner manuellement ? (non, on reste simple)
-6. Bouton "Ajouter a une marche" :
-   → Menu deroulant des marches de l'exploration
-   → Selecteur 3 etats (Prive / Communaute / Monde)
-   → Upload vers marcheur-uploads + insert marcheur_medias
-   → Toast de confirmation
-7. Le marqueur rouge disparait quand on ferme ou quand on uploade
+Enfin, sur **iOS Safari**, `exifr.gps()` peut échouer silencieusement sur les fichiers HEIC (format natif iPhone) car le parser léger n'inclut pas toujours le support HEIC complet. Il faut utiliser `exifr.parse()` avec les tags GPS explicites comme fallback.
+
+### Corrections prévues
+
+**Fichier** : `src/components/community/exploration/PhotoGpsDropTool.tsx`
+
+1. **Séquentialiser les appels EXIF** — Ne plus utiliser `Promise.all`. D'abord `exifr.parse()` complet, puis extraire GPS et date du même résultat.
+
+2. **Utiliser `exifr.parse()` au lieu de `exifr.gps()`** — `parse()` est plus robuste, supporte HEIC, et retourne toutes les métadonnées d'un coup (GPS inclus via `latitude`/`longitude` sur l'objet retourné).
+
+3. **Fix du check falsy** — Remplacer `!gps?.latitude || !gps?.longitude` par `gps?.latitude == null || gps?.longitude == null`.
+
+4. **Ajouter des logs de debug** — `console.log` sur le résultat d'extraction pour faciliter le diagnostic futur.
+
+5. **Ajouter `capture="environment"` sur l'input file mobile** — Pour proposer directement la caméra sur smartphone en plus de la galerie.
+
+### Détail technique du fix
+
+```typescript
+// AVANT (problématique)
+const [gps, exifData] = await Promise.all([
+  exifr.gps(file),
+  exifr.parse(file, ['DateTimeOriginal']),
+]);
+if (!gps?.latitude || !gps?.longitude) { ... }
+
+// APRÈS (robuste)
+const exifData = await exifr.parse(file, {
+  gps: true,
+  pick: ['DateTimeOriginal', 'GPSLatitude', 'GPSLongitude', 'latitude', 'longitude']
+});
+console.log('[PhotoGPS] EXIF extrait:', exifData);
+const lat = exifData?.latitude ?? exifData?.GPSLatitude;
+const lng = exifData?.longitude ?? exifData?.GPSLongitude;
+if (lat == null || lng == null) { toast.warning(...); return; }
 ```
 
-### Design du marqueur photo
-
-- Cercle rouge brique (#dc2626) semi-transparent, halo pulse doux
-- Plus petit que le marqueur GPS bleu de geolocalisation
-- Popup glassmorphism noir comme les popups existants
-- Miniature de la photo (80px) + coordonnees + date EXIF
-- Bouton CTA vert "Ajouter a une marche →"
-
-### Design du bouton
-
-- Position : bas-droite, au-dessus du bouton geolocalisation existant
-- Style : cercle glassmorphism noir/blur comme les controles de zoom
-- Icone : Camera + petit indicateur GPS (MapPin superpose en petit)
-- Taille : 40x40px, meme langage visuel que GeolocateButton
-
-### Fichiers impactes
+### Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `ExplorationCarteTab.tsx` | Ajouter le bouton, le state photo, le marqueur rouge, le popup avec formulaire de rattachement |
-| `usePhotoGpsCheck.ts` | Reutiliser `exifr.gps()` pour l'extraction (deja en place) |
-
-### Details techniques
-
-- Extraction GPS : `exifr.gps(file)` sur le blob File directement (pas besoin d'URL)
-- Extraction date : `exifr.parse(file, ['DateTimeOriginal'])` pour afficher la date de prise de vue
-- Upload : reutiliser le pattern existant de `marcheur-uploads` bucket + insert dans `marcheur_medias` avec `metadata` JSONB contenant lat/lng
-- Le marqueur est un state local (`photoPoint`), pas de persistence en base
-- Le selecteur de marche affiche la liste `marches` deja passee en props
-- Le selecteur de visibilite reutilise la logique 3 etats deja implementee
-
-### Pas de migration DB necessaire
-
-Toute l'infrastructure existe deja : bucket `marcheur-uploads`, table `marcheur_medias` avec `metadata` JSONB, colonne `shared_to_web`.
+| `PhotoGpsDropTool.tsx` | Refactorer `handleFileChange` — un seul appel `exifr.parse()`, fix check null, logs debug |
 
