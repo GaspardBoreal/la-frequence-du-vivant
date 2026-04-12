@@ -104,6 +104,7 @@ export function useMarcheurMedias(marcheEventId: string, userId: string, sort: S
       let query = supabase
         .from('marcheur_medias')
         .select('*')
+        .order('ordre', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: sort === 'asc' });
       
       if (marcheId) {
@@ -402,6 +403,31 @@ export function useDeleteContribution() {
       toast.success('Supprimé');
     },
     onError: (err: Error) => toast.error(`Erreur: ${err.message}`),
+  });
+}
+
+// ─── Reorder (batch update ordre) ───
+export function useReorderContributions() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (items: { id: string; ordre: number }[]) => {
+      // Batch update each item's ordre
+      const promises = items.map(({ id, ordre }) =>
+        supabase
+          .from('marcheur_medias')
+          .update({ ordre, updated_at: new Date().toISOString() })
+          .eq('id', id)
+      );
+      const results = await Promise.all(promises);
+      const firstError = results.find(r => r.error);
+      if (firstError?.error) throw firstError.error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['marcheur-medias'] });
+      toast.success('Ordre mis à jour');
+    },
+    onError: (err: Error) => toast.error(`Erreur réordonnancement: ${err.message}`),
   });
 }
 
