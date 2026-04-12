@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
 import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Palette, Globe, Mountain, Crosshair, X, Star } from 'lucide-react';
+import { PhotoGpsButton, PhotoGpsMarker, usePhotoGpsDrop } from './PhotoGpsDropTool';
 import 'leaflet/dist/leaflet.css';
 
 type MapStyle = 'geopoetic' | 'satellite' | 'terrain';
@@ -119,6 +120,7 @@ interface MarcheContribStats {
 interface ExplorationCarteTabProps {
   explorationId?: string;
   marches: MarcheStep[];
+  marcheEventId?: string;
   onSelectStep?: (index: number) => void;
 }
 
@@ -476,6 +478,7 @@ const TRACKING_TIMEOUT_MS = 10 * 60 * 1000; // 10 min auto-stop
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   explorationId,
   marches,
+  marcheEventId,
   onSelectStep,
 }) => {
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
@@ -489,6 +492,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const watchIdRef = useRef<number | null>(null);
   const trackingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastVibratedRef = useRef<number>(0);
+
+  // Photo GPS drop tool
+  const { photoPoint, triggerFileInput, clear: clearPhotoPoint, FileInput } = usePhotoGpsDrop();
 
   // Progressive marker appearance
   useEffect(() => {
@@ -861,10 +867,28 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             nearestPosition={nearestStep ? [nearestStep.lat, nearestStep.lng] : undefined}
           />
         )}
+        {/* Photo GPS marker */}
+        {photoPoint && (
+          <PhotoGpsMarker
+            point={photoPoint}
+            marches={marches.map(m => ({ id: m.id, nom_marche: m.nom_marche, ville: m.ville }))}
+            marcheEventId={marcheEventId || ''}
+            onClose={clearPhotoPoint}
+            onUploaded={clearPhotoPoint}
+          />
+        )}
       </MapContainer>
 
       {/* Map style toggle */}
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
+
+      {/* Photo GPS button */}
+      {marcheEventId && (
+        <div className="absolute bottom-20 right-[7.5rem] z-[1000]">
+          <PhotoGpsButton onClick={triggerFileInput} />
+        </div>
+      )}
+      {FileInput}
 
       {/* Geolocate button */}
       <GeolocateButton
@@ -928,6 +952,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           0% { transform: scale(1); opacity: 0.4; }
           100% { transform: scale(3); opacity: 0; }
         }
+        @keyframes photo-pulse {
+          0% { transform: scale(1); opacity: 0.3; }
+          100% { transform: scale(2.5); opacity: 0; }
+        }
         .carte-tiles-dark {
           filter: brightness(0.6) saturate(0.3);
         }
@@ -948,6 +976,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           border: none !important;
         }
         .arrow-decorator {
+          background: none !important;
+          border: none !important;
+        }
+        .photo-gps-marker {
           background: none !important;
           border: none !important;
         }

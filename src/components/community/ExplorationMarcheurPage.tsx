@@ -386,6 +386,7 @@ const ExplorationMarcheurPage: React.FC = () => {
             <motion.div key="carte" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ExplorationCarteTab
                 explorationId={effectiveExplorationId || undefined}
+                marcheEventId={marcheEventId || undefined}
                 marches={(explorationMarches || []).map((m, i) => ({
                   id: m.id,
                   nom_marche: m.nom_marche,
