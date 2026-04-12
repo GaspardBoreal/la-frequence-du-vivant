@@ -7,8 +7,6 @@ import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 import RadiusSelector from '@/components/biodiversity/RadiusSelector';
-import InsightCardBanner from '@/components/community/insights/InsightCardBanner';
-import { useInsightCards } from '@/hooks/useInsightCards';
 import type { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import BiodiversityRevealAnimation from '@/components/community/BiodiversityRevealAnimation';
 import { useTriggerBiodiversityCollection } from '@/hooks/useTriggerBiodiversityCollection';
@@ -104,14 +102,6 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const canReveal = userProfile?.role === 'ambassadeur' || userProfile?.role === 'sentinelle';
   const userLevel = (userProfile?.role as CommunityRoleKey) || 'marcheur';
 
-  // Insight cards for contextual banners
-  const { cards: insightCards } = useInsightCards({
-    userLevel,
-    eventType: null,
-    angle: 'biodiversite',
-    view: 'empreinte',
-    displayMode: 'card',
-  });
 
   const handleReveal = useCallback(async () => {
     if (!explorationId || revealActive) return;
@@ -366,8 +356,6 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {/* SYNTHÈSE */}
         {activeSubTab === 'synthese' && (
           <motion.div key="synthese" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            {/* Contextual insight banners */}
-            <InsightCardBanner cards={insightCards} maxCards={2} />
             <p className="text-xs text-muted-foreground mb-3">
               {stats.marchesCount} étape{stats.marchesCount > 1 ? 's' : ''} analysée{stats.marchesCount > 1 ? 's' : ''}
             </p>
