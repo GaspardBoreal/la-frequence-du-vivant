@@ -12,14 +12,16 @@ import BiodiversityRevealAnimation from '@/components/community/BiodiversityReve
 import { useTriggerBiodiversityCollection } from '@/hooks/useTriggerBiodiversityCollection';
 import { useExplorationParticipants } from '@/hooks/useExplorationParticipants';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
-type SubTab = 'synthese' | 'taxons' | 'analyse';
+type SubTab = 'synthese' | 'taxons' | 'textes' | 'analyse';
 
 
 interface EventBiodiversityTabProps {
   explorationId?: string;
   marcheEventId?: string;
+  eventType?: string | null;
 }
 
 type SynthCategory = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
@@ -52,7 +54,7 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
   );
 };
 
-const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId }) => {
+const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId, eventType }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('synthese');
   const [revealActive, setRevealActive] = useState(false);
 
@@ -330,6 +332,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const subTabs: { key: SubTab; label: string }[] = [
     { key: 'synthese', label: 'Synthèse' },
     { key: 'taxons', label: 'Taxons observés' },
+    ...(eventType === 'eco_poetique' ? [{ key: 'textes' as SubTab, label: 'Textes écrits' }] : []),
     { key: 'analyse', label: 'Analyse IA' },
   ];
 
