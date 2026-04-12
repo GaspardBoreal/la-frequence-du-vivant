@@ -237,12 +237,16 @@ export function usePhotoGpsDrop() {
     e.target.value = '';
 
     try {
-      const [gps, exifData] = await Promise.all([
-        exifr.gps(file),
-        exifr.parse(file, ['DateTimeOriginal']),
-      ]);
+      const exifData = await exifr.parse(file, {
+        gps: true,
+        pick: ['DateTimeOriginal', 'GPSLatitude', 'GPSLongitude', 'latitude', 'longitude'],
+      });
+      console.log('[PhotoGPS] EXIF extrait:', exifData);
 
-      if (!gps?.latitude || !gps?.longitude) {
+      const lat = exifData?.latitude ?? exifData?.GPSLatitude;
+      const lng = exifData?.longitude ?? exifData?.GPSLongitude;
+
+      if (lat == null || lng == null) {
         toast.warning('Aucune donnée GPS dans cette photo', {
           description: 'La photo ne contient pas de coordonnées de localisation.',
         });
@@ -258,9 +262,9 @@ export function usePhotoGpsDrop() {
         dateOriginal = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
       }
 
-      setPhotoPoint({ lat: gps.latitude, lng: gps.longitude, file, previewUrl, dateOriginal });
+      setPhotoPoint({ lat, lng, file, previewUrl, dateOriginal });
     } catch (err) {
-      console.warn('EXIF extraction failed:', err);
+      console.warn('[PhotoGPS] EXIF extraction failed:', err);
       toast.error("Impossible de lire les données GPS de cette photo");
     }
   }, []);
