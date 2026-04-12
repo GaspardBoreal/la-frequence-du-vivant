@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, Download } from 'lucide-react';
+import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, Download, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,7 @@ export interface ContributionItemProps {
   isOwner: boolean;
   createdAt: string;
   viewMode?: 'immersion' | 'fiche';
+  gpsDistance?: { distanceM: number | null; hasGps: boolean; gpsLat?: number; gpsLng?: number } | null;
   onUpdate?: (id: string, updates: Record<string, any>) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
@@ -38,7 +39,7 @@ const typeColors = {
 
 const ContributionItem: React.FC<ContributionItemProps> = ({
   id, type, titre, description, url, externalUrl, contenu, typeTexte,
-  isPublic, isOwner, createdAt, viewMode = 'fiche', onUpdate, onDelete, onClick,
+  isPublic, isOwner, createdAt, viewMode = 'fiche', gpsDistance, onUpdate, onDelete, onClick,
 }) => {
   const [editing, setEditing] = useState(false);
   const [editTitre, setEditTitre] = useState(titre || '');
@@ -155,6 +156,24 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
 
             {type === 'texte' && contenu && (
               <p className="text-emerald-100/50 text-[11px] line-clamp-3 whitespace-pre-line">{contenu}</p>
+            )}
+
+            {/* GPS distance (fiche mode only) */}
+            {gpsDistance?.hasGps && gpsDistance.distanceM !== null && (
+              <div className="flex items-center gap-1">
+                <a
+                  href={`https://maps.google.com/?q=${gpsDistance.gpsLat},${gpsDistance.gpsLng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn("flex items-center gap-0.5 text-[9px] hover:underline", 
+                    gpsDistance.distanceM < 200 ? 'text-emerald-400/60' : gpsDistance.distanceM < 1000 ? 'text-amber-400/60' : 'text-red-400/60'
+                  )}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <MapPin className="w-2.5 h-2.5" />
+                  {gpsDistance.distanceM < 1000 ? `${Math.round(gpsDistance.distanceM)}m` : `${(gpsDistance.distanceM / 1000).toFixed(1)}km`} du point
+                </a>
+              </div>
             )}
 
             <div className="flex items-center justify-between">
