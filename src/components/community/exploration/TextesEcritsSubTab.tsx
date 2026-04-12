@@ -26,6 +26,9 @@ interface TexteRow {
   is_public: boolean;
   ordre: number | null;
   created_at: string;
+  author_prenom?: string;
+  author_nom?: string;
+  author_avatar?: string | null;
 }
 
 interface AuthorInfo {
@@ -35,6 +38,8 @@ interface AuthorInfo {
   avatar_url: string | null;
 }
 
+type ViewMode = 'marcheurs' | 'points';
+
 interface MarcheInfo {
   id: string;
   nom_marche: string | null;
@@ -42,51 +47,41 @@ interface MarcheInfo {
   ordre: number;
 }
 
-type ViewMode = 'marcheurs' | 'points';
-
 const TextesEcritsSubTab: React.FC<TextesEcritsSubTabProps> = ({ explorationId, marcheEventId }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('marcheurs');
   const [selectedTexte, setSelectedTexte] = useState<TexteRow | null>(null);
   const [copied, setCopied] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Fetch texts for this event
+  // Fetch texts + author info via RPC (bypasses RLS on community_profiles)
   const { data: textes = [] } = useQuery({
     queryKey: ['event-textes-ecrits', marcheEventId],
     queryFn: async () => {
       if (!marcheEventId) return [];
-      const { data, error } = await supabase
-        .from('marcheur_textes')
-        .select('id, user_id, marche_id, marche_event_id, type_texte, titre, contenu, is_public, ordre, created_at')
-        .eq('marche_event_id', marcheEventId)
-        .eq('is_public', true)
-        .order('created_at');
+      const { data, error } = await supabase.rpc('get_event_public_textes', {
+        p_event_id: marcheEventId,
+      });
       if (error) throw error;
-      return (data || []) as TexteRow[];
+      return (data || []) as unknown as TexteRow[];
     },
     enabled: !!marcheEventId,
   });
 
-  // Fetch author profiles
-  const userIds = useMemo(() => [...new Set(textes.map(t => t.user_id))], [textes]);
-  const { data: authors = [] } = useQuery({
-    queryKey: ['textes-authors', userIds],
-    queryFn: async () => {
-      if (!userIds.length) return [];
-      const { data } = await supabase
-        .from('community_profiles')
-        .select('user_id, prenom, nom, avatar_url')
-        .in('user_id', userIds);
-      return (data || []) as AuthorInfo[];
-    },
-    enabled: userIds.length > 0,
-  });
-
+  // Build authorMap from embedded author fields
   const authorMap = useMemo(() => {
     const m = new Map<string, AuthorInfo>();
-    authors.forEach(a => m.set(a.user_id, a));
+    textes.forEach(t => {
+      if (!m.has(t.user_id)) {
+        m.set(t.user_id, {
+          user_id: t.user_id,
+          prenom: t.author_prenom || '',
+          nom: t.author_nom || '',
+          avatar_url: t.author_avatar ?? null,
+        });
+      }
+    });
     return m;
-  }, [authors]);
+  }, [textes]);
 
   // Fetch marche points with ordre
   const marcheIds = useMemo(() => [...new Set(textes.filter(t => t.marche_id).map(t => t.marche_id!))], [textes]);
