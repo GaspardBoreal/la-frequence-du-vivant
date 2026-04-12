@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 interface TextesEcritsSubTabProps {
   explorationId?: string;
   marcheEventId?: string;
+  onNavigateToMarche?: (marcheId: string) => void;
 }
 
 interface TexteRow {
@@ -47,7 +48,7 @@ interface MarcheInfo {
   ordre: number;
 }
 
-const TextesEcritsSubTab: React.FC<TextesEcritsSubTabProps> = ({ explorationId, marcheEventId }) => {
+const TextesEcritsSubTab: React.FC<TextesEcritsSubTabProps> = ({ explorationId, marcheEventId, onNavigateToMarche }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('marcheurs');
   const [selectedTexte, setSelectedTexte] = useState<TexteRow | null>(null);
   const [copied, setCopied] = useState(false);
@@ -271,10 +272,19 @@ const TextesEcritsSubTab: React.FC<TextesEcritsSubTabProps> = ({ explorationId, 
                       {selectedTexte.type_texte}
                     </span>
                     {selectedMarche && (
-                      <span className="flex items-center gap-1 text-muted-foreground text-[10px]">
+                      <button
+                        onClick={() => {
+                          if (onNavigateToMarche && selectedTexte?.marche_id) {
+                            setSelectedTexte(null);
+                            onNavigateToMarche(selectedTexte.marche_id);
+                          }
+                        }}
+                        disabled={!onNavigateToMarche}
+                        className={`flex items-center gap-1 text-[10px] ${onNavigateToMarche ? 'text-violet-600 dark:text-violet-400 hover:underline cursor-pointer' : 'text-muted-foreground cursor-default'}`}
+                      >
                         <MapPin className="w-3 h-3" />
                         {selectedMarche.nom_marche || selectedMarche.ville}
-                      </span>
+                      </button>
                     )}
                   </div>
                   <DialogTitle className="font-serif text-xl leading-tight">

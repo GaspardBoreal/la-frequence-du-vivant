@@ -22,6 +22,7 @@ interface EventBiodiversityTabProps {
   explorationId?: string;
   marcheEventId?: string;
   eventType?: string | null;
+  onNavigateToMarche?: (marcheId: string) => void;
 }
 
 type SynthCategory = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
@@ -54,7 +55,7 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
   );
 };
 
-const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId, eventType }) => {
+const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId, eventType, onNavigateToMarche }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('synthese');
   const [revealActive, setRevealActive] = useState(false);
 
@@ -395,7 +396,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {/* TEXTES ÉCRITS (eco_poetique only) */}
         {activeSubTab === 'textes' && (
           <motion.div key="textes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <TextesEcritsSubTab explorationId={explorationId} marcheEventId={marcheEventId} />
+            <TextesEcritsSubTab explorationId={explorationId} marcheEventId={marcheEventId} onNavigateToMarche={onNavigateToMarche} />
           </motion.div>
         )}
 
