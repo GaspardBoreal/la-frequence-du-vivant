@@ -409,6 +409,13 @@ const ExplorationMarcheurPage: React.FC = () => {
                 explorationId={effectiveExplorationId || undefined}
                 marcheEventId={marcheEventId || undefined}
                 eventType={marcheEvent?.event_type || null}
+                onNavigateToMarche={(marcheId) => {
+                  const stepIndex = explorationMarches?.findIndex(m => m.id === marcheId) ?? -1;
+                  if (stepIndex !== -1) {
+                    setActiveStepIndex(stepIndex);
+                    setActiveGlobalTab('marches');
+                  }
+                }}
               />
             </motion.div>
           )}
