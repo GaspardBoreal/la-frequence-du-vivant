@@ -2616,6 +2616,7 @@ export type Database = {
           is_public: boolean
           marche_event_id: string
           marche_id: string | null
+          metadata: Json | null
           ordre: number | null
           taille_octets: number | null
           titre: string | null
@@ -2633,6 +2634,7 @@ export type Database = {
           is_public?: boolean
           marche_event_id: string
           marche_id?: string | null
+          metadata?: Json | null
           ordre?: number | null
           taille_octets?: number | null
           titre?: string | null
@@ -2650,6 +2652,7 @@ export type Database = {
           is_public?: boolean
           marche_event_id?: string
           marche_id?: string | null
+          metadata?: Json | null
           ordre?: number | null
           taille_octets?: number | null
           titre?: string | null

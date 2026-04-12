@@ -48,6 +48,8 @@ interface PhotoInput {
   id: string;
   nom: string;
   url: string;
+  /** Pre-stored GPS from metadata column (if available) */
+  storedGps?: { latitude: number; longitude: number } | null;
 }
 
 export function usePhotoGpsCheck(marcheId: string) {
@@ -78,9 +80,24 @@ export function usePhotoGpsCheck(marcheId: string) {
       const photoResults = await Promise.all(
         photos.map(async (photo): Promise<PhotoGpsResult> => {
           try {
-            const gps = await exifr.gps(photo.url);
-            if (gps?.latitude && gps?.longitude) {
-              const gpsPhoto = { lat: gps.latitude, lng: gps.longitude };
+            // Priority 1: use stored GPS metadata from DB
+            let lat: number | null = null;
+            let lng: number | null = null;
+
+            if (photo.storedGps?.latitude != null && photo.storedGps?.longitude != null) {
+              lat = photo.storedGps.latitude;
+              lng = photo.storedGps.longitude;
+            } else {
+              // Priority 2: fallback to runtime EXIF extraction
+              const gps = await exifr.gps(photo.url);
+              if (gps?.latitude != null && gps?.longitude != null) {
+                lat = gps.latitude;
+                lng = gps.longitude;
+              }
+            }
+
+            if (lat != null && lng != null) {
+              const gpsPhoto = { lat, lng };
               const distanceM = gpsMarche
                 ? haversineDistance(gpsPhoto.lat, gpsPhoto.lng, gpsMarche.lat, gpsMarche.lng)
                 : null;

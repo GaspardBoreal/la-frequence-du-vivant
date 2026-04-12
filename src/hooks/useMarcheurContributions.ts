@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import exifr from 'exifr';
 
 
 // ─── Types ───
@@ -133,6 +134,30 @@ export function useUploadMedias(userId: string) {
       const results: MarcheurMedia[] = [];
       for (const file of files) {
         const folder = typeMedia === 'photo' ? 'photos' : 'videos';
+
+        // Extract EXIF GPS + date from local File blob (fast, no network)
+        let metadata: Record<string, unknown> | null = null;
+        if (typeMedia === 'photo') {
+          try {
+            const [gps, exifData] = await Promise.all([
+              exifr.gps(file).catch(() => null),
+              exifr.parse(file, ['DateTimeOriginal']).catch(() => null),
+            ]);
+            const parts: Record<string, unknown> = {};
+            if (gps?.latitude != null && gps?.longitude != null) {
+              parts.gps = { latitude: gps.latitude, longitude: gps.longitude };
+            }
+            if (exifData?.DateTimeOriginal) {
+              parts.date_taken = exifData.DateTimeOriginal instanceof Date
+                ? exifData.DateTimeOriginal.toISOString()
+                : String(exifData.DateTimeOriginal);
+            }
+            if (Object.keys(parts).length > 0) metadata = parts;
+          } catch {
+            // EXIF extraction failed — continue without metadata
+          }
+        }
+
         const url = await uploadFile(userId, file, folder);
         
         const { data, error } = await supabase
@@ -146,7 +171,8 @@ export function useUploadMedias(userId: string) {
             is_public: isPublic,
             taille_octets: file.size,
             ...(marcheId ? { marche_id: marcheId } : {}),
-          })
+            ...(metadata ? { metadata } : {}),
+          } as any)
           .select()
           .single();
         
@@ -157,6 +183,7 @@ export function useUploadMedias(userId: string) {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['marcheur-medias', vars.marcheEventId] });
+      qc.invalidateQueries({ queryKey: ['photo-gps-check'] });
       toast.success(`${vars.files.length} fichier(s) ajouté(s)`);
     },
     onError: (err: Error) => toast.error(`Erreur: ${err.message}`),
