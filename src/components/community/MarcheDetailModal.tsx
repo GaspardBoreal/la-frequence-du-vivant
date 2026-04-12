@@ -170,6 +170,34 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
             Fiche
           </button>
         </div>
+        {/* GPS check button - fiche mode only */}
+        {viewMode === 'fiche' && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => {
+                    const allPhotos: { id: string; nom: string; url: string }[] = [];
+                    (adminPhotos || []).forEach(p => allPhotos.push({ id: p.id, nom: p.titre || 'Photo exploration', url: p.url_supabase }));
+                    myMedias.filter(m => m.type_media === 'photo' && (m.url_fichier || m.external_url)).forEach(m => 
+                      allPhotos.push({ id: m.id, nom: m.titre || 'Ma photo', url: (m.url_fichier || m.external_url)! })
+                    );
+                    othersMedias.filter(m => m.type_media === 'photo' && (m.url_fichier || m.external_url)).forEach(m =>
+                      allPhotos.push({ id: m.id, nom: m.titre || 'Photo marcheur', url: (m.url_fichier || m.external_url)! })
+                    );
+                    checkPhotos(allPhotos);
+                    setShowGpsDialog(true);
+                  }}
+                  disabled={isChecking}
+                  className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60 transition-colors"
+                >
+                  <Crosshair className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin' : ''}`} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom"><p className="text-xs">Vérifier GPS</p></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
       </div>
 
