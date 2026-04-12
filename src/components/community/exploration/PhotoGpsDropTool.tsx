@@ -12,7 +12,7 @@ interface MarcheOption {
   ville: string;
 }
 
-interface PhotoGpsPoint {
+export interface PhotoGpsPoint {
   lat: number;
   lng: number;
   file: File;
@@ -28,7 +28,6 @@ const VISIBILITY_OPTIONS: { key: Visibility; label: string; icon: React.ReactNod
   { key: 'world', label: 'Monde', icon: <Globe className="w-3 h-3" />, desc: 'Accessible publiquement' },
 ];
 
-// Red photo marker icon
 const photoMarkerIcon = L.divIcon({
   className: 'photo-gps-marker',
   html: `
@@ -42,12 +41,6 @@ const photoMarkerIcon = L.divIcon({
   popupAnchor: [0, -12],
 });
 
-interface PhotoGpsDropToolProps {
-  marches: MarcheOption[];
-  explorationId?: string;
-}
-
-// The button component (placed on map controls area)
 export function PhotoGpsButton({ onClick }: { onClick: () => void }) {
   return (
     <button
@@ -62,17 +55,16 @@ export function PhotoGpsButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-// The marker + popup rendered inside the MapContainer
 export function PhotoGpsMarker({
   point,
   marches,
-  explorationId,
+  marcheEventId,
   onClose,
   onUploaded,
 }: {
   point: PhotoGpsPoint;
   marches: MarcheOption[];
-  explorationId?: string;
+  marcheEventId: string;
   onClose: () => void;
   onUploaded: () => void;
 }) {
@@ -82,14 +74,13 @@ export function PhotoGpsMarker({
   const [showMarcheSelect, setShowMarcheSelect] = useState(false);
 
   const handleUpload = async () => {
-    if (!selectedMarcheId || !explorationId) return;
+    if (!selectedMarcheId || !marcheEventId) return;
     setUploading(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error('Non connecté'); return; }
+      if (!user) { toast.error('Non connecté'); setUploading(false); return; }
 
-      // Upload file
       const ext = point.file.name.split('.').pop() || 'jpg';
       const path = `${user.id}/${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage
@@ -99,29 +90,31 @@ export function PhotoGpsMarker({
 
       const { data: urlData } = supabase.storage.from('marcheur-uploads').getPublicUrl(path);
 
-      // Insert media
       const isPublic = visibility !== 'private';
       const sharedToWeb = visibility === 'world';
 
       const { error: insertErr } = await supabase.from('marcheur_medias').insert({
         user_id: user.id,
+        marche_event_id: marcheEventId,
         marche_id: selectedMarcheId,
         type_media: 'photo',
         url_fichier: urlData.publicUrl,
-        titre: point.file.name,
+        titre: point.file.name.replace(/\.[^.]+$/, ''),
         is_public: isPublic,
         shared_to_web: sharedToWeb,
+        taille_octets: point.file.size,
         metadata: {
-          latitude: point.lat,
-          longitude: point.lng,
-          date_original: point.dateOriginal || null,
+          gps: { latitude: point.lat, longitude: point.lng },
+          date_taken: point.dateOriginal || null,
           source: 'photo_gps_tool',
         },
-      });
+      } as any);
       if (insertErr) throw insertErr;
 
       const marcheName = marches.find(m => m.id === selectedMarcheId)?.nom_marche || 'la marche';
-      toast.success(`Photo ajoutée à ${marcheName}`, { description: VISIBILITY_OPTIONS.find(v => v.key === visibility)?.label });
+      toast.success(`Photo ajoutée à ${marcheName}`, {
+        description: VISIBILITY_OPTIONS.find(v => v.key === visibility)?.label,
+      });
       onUploaded();
     } catch (err: any) {
       console.error('Upload error:', err);
@@ -143,12 +136,10 @@ export function PhotoGpsMarker({
       <Marker position={[point.lat, point.lng]} icon={photoMarkerIcon}>
         <Popup className="exploration-carte-popup" maxWidth={280} minWidth={240}>
           <div className="bg-black/80 backdrop-blur-xl rounded-xl p-3 -m-3 text-white">
-            {/* Close */}
             <button onClick={onClose} className="absolute top-2 right-2 text-white/40 hover:text-white/80 transition-colors z-10">
               <X className="w-3.5 h-3.5" />
             </button>
 
-            {/* Thumbnail + coords */}
             <div className="flex gap-2.5 mb-3">
               <img
                 src={point.previewUrl}
@@ -165,7 +156,6 @@ export function PhotoGpsMarker({
               </div>
             </div>
 
-            {/* Marche selector */}
             <div className="mb-2">
               <div className="text-[10px] text-white/50 mb-1">Rattacher à la marche :</div>
               <button
@@ -190,7 +180,6 @@ export function PhotoGpsMarker({
               )}
             </div>
 
-            {/* Visibility selector */}
             <div className="flex gap-1 mb-3">
               {VISIBILITY_OPTIONS.map(opt => (
                 <button
@@ -214,7 +203,6 @@ export function PhotoGpsMarker({
               ))}
             </div>
 
-            {/* Upload button */}
             <button
               onClick={handleUpload}
               disabled={uploading || !selectedMarcheId}
@@ -246,7 +234,6 @@ export function usePhotoGpsDrop() {
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Reset input for re-selecting same file
     e.target.value = '';
 
     try {
