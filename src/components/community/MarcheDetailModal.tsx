@@ -148,8 +148,8 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
       {/* GPS Results Dialog */}
       {showGpsDialog && (
         <Dialog open={showGpsDialog} onOpenChange={setShowGpsDialog}>
-          <DialogContent className="bg-[#0a1a0f] border-emerald-500/20 max-w-sm max-h-[70vh] overflow-hidden flex flex-col p-0">
-            <div className="p-4 pb-2">
+          <DialogContent className="bg-[#0a1a0f] border-emerald-500/20 max-w-sm max-h-[80vh] overflow-hidden flex flex-col p-0">
+            <div className="p-4 pb-2 space-y-2">
               <DialogHeader>
                 <DialogTitle className="text-white text-sm font-semibold flex items-center gap-2">
                   <Crosshair className="w-4 h-4 text-emerald-400" />
@@ -158,45 +158,80 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
               </DialogHeader>
               {marcheCoords && (
                 <a href={`https://maps.google.com/?q=${marcheCoords.lat},${marcheCoords.lng}`} target="_blank" rel="noopener noreferrer"
-                  className="text-emerald-300/50 text-[10px] hover:underline flex items-center gap-1 mt-1">
+                  className="text-emerald-300/50 text-[10px] hover:underline flex items-center gap-1">
                   <MapPin className="w-2.5 h-2.5" />
                   Point marche: {marcheCoords.lat.toFixed(4)}, {marcheCoords.lng.toFixed(4)}
                 </a>
               )}
+              {/* Tab toggle Liste / Carte */}
+              <div className="flex rounded-lg overflow-hidden border border-white/10 w-fit">
+                <button
+                  onClick={() => setGpsDialogTab('list')}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium transition-all ${
+                    gpsDialogTab === 'list'
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : 'text-white/40 hover:bg-white/5'
+                  }`}
+                >
+                  <List className="w-3 h-3" />
+                  Liste
+                </button>
+                <button
+                  onClick={() => setGpsDialogTab('map')}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium transition-all ${
+                    gpsDialogTab === 'map'
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : 'text-white/40 hover:bg-white/5'
+                  }`}
+                >
+                  <MapIcon className="w-3 h-3" />
+                  Carte
+                </button>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+
+            <div className="flex-1 overflow-y-auto px-4 pb-4">
               {isChecking && (
                 <div className="flex items-center justify-center py-6">
                   <div className="w-5 h-5 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
                   <span className="text-emerald-200/40 text-xs ml-2">Extraction EXIF…</span>
                 </div>
               )}
-              {gpsResults && gpsResults.length === 0 && (
-                <p className="text-emerald-200/40 text-xs text-center py-4">Aucune photo à vérifier</p>
-              )}
-              {gpsResults?.map(r => (
-                <div key={r.photoId} className="flex items-start gap-2 p-2 rounded-lg bg-white/5 border border-white/5">
-                  <Camera className="w-3.5 h-3.5 text-emerald-400/50 mt-0.5 shrink-0" />
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="text-white text-[11px] font-medium truncate">{r.nom}</p>
-                    {r.hasGps && r.distanceM !== null ? (
-                      <div className="flex items-center gap-2 text-[10px]">
-                        <span className={distanceColor(r.distanceM)}>
-                          {distanceEmoji(r.distanceM)} {formatDistance(r.distanceM)}
-                        </span>
-                        <a href={`https://maps.google.com/?q=${r.gpsPhoto!.lat},${r.gpsPhoto!.lng}`} target="_blank" rel="noopener noreferrer"
-                          className="text-blue-400/60 hover:underline">📍photo</a>
-                        {marcheCoords && (
-                          <a href={`https://maps.google.com/?q=${marcheCoords.lat},${marcheCoords.lng}`} target="_blank" rel="noopener noreferrer"
-                            className="text-emerald-400/60 hover:underline">📍marche</a>
+
+              {!isChecking && gpsDialogTab === 'list' && (
+                <div className="space-y-2">
+                  {gpsResults && gpsResults.length === 0 && (
+                    <p className="text-emerald-200/40 text-xs text-center py-4">Aucune photo à vérifier</p>
+                  )}
+                  {gpsResults?.map(r => (
+                    <div key={r.photoId} className="flex items-start gap-2 p-2 rounded-lg bg-white/5 border border-white/5">
+                      <Camera className="w-3.5 h-3.5 text-emerald-400/50 mt-0.5 shrink-0" />
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <p className="text-white text-[11px] font-medium truncate">{r.nom}</p>
+                        {r.hasGps && r.distanceM !== null ? (
+                          <div className="flex items-center gap-2 text-[10px]">
+                            <span className={distanceColor(r.distanceM)}>
+                              {distanceEmoji(r.distanceM)} {formatDistance(r.distanceM)}
+                            </span>
+                            <a href={`https://maps.google.com/?q=${r.gpsPhoto!.lat},${r.gpsPhoto!.lng}`} target="_blank" rel="noopener noreferrer"
+                              className="text-blue-400/60 hover:underline">📍photo</a>
+                            {marcheCoords && (
+                              <a href={`https://maps.google.com/?q=${marcheCoords.lat},${marcheCoords.lng}`} target="_blank" rel="noopener noreferrer"
+                                className="text-emerald-400/60 hover:underline">📍marche</a>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-white/30 text-[10px]">❌ Pas de GPS</span>
                         )}
                       </div>
-                    ) : (
-                      <span className="text-white/30 text-[10px]">❌ Pas de GPS</span>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {!isChecking && gpsDialogTab === 'map' && gpsResults && (
+                <GpsMapView results={gpsResults} marcheCoords={marcheCoords} />
+              )}
             </div>
           </DialogContent>
         </Dialog>
