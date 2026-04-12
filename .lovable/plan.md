@@ -1,62 +1,69 @@
 
 
-## Fil chronologique des contributions — Onglet "Marcheurs"
+## Corriger le sous-onglet "Contributions" — Afficher les taxons issus des snapshots biodiversité
 
-### Objectif
+### Problème
 
-Ajouter dans l'onglet **Marcheurs** de la page exploration un **fil chronologique des contributions publiques** (photos, sons, textes) avec avatar du contributeur, date/heure et tri ascendant/descendant. Design mobile-first, sobre et cohérent avec l'existant.
+Le `ContributionsSubTab` actuel affiche `marcheur.speciesObserved` qui est **toujours vide** pour les marcheurs communautaires (ligne 159 de `useExplorationParticipants.ts` : `speciesObserved: []`). Les données existent dans `biodiversity_snapshots.species_data` avec des attributions riches (observerName, date, source, kingdom, photos).
 
-### Emplacement
+### Solution
 
-Dans `MarcheursTab.tsx`, **entre le résumé (ligne "X marcheurs · Y contributions") et la liste des cartes marcheurs**. Un nouveau bloc "Fil des contributions" avec :
-- Un en-tête compact : icône + titre "Contributions récentes" + le `SortToggle` existant (desc/asc)
-- Une liste scrollable de vignettes contribution
+Remplacer la logique du `ContributionsSubTab` pour charger les espèces directement depuis les `biodiversity_snapshots` de l'exploration, filtrer par `observerName` correspondant au marcheur, et afficher chaque taxon avec le même style que l'onglet Empreinte.
 
-### Design mobile-first
+### Modifications
 
-Chaque contribution = une ligne horizontale compacte :
+**1. `ContributionsSubTab` dans `MarcheursTab.tsx`** — Refonte complète :
+
+- Ajouter une requête React Query qui charge les `species_data` depuis `biodiversity_snapshots` pour tous les `marche_id` de l'exploration
+- Parser les attributions pour extraire les espèces observées par ce marcheur spécifique (`observerName` contenant prénom + nom)
+- Afficher chaque taxon avec :
+  - Photo (depuis `photos[0]` ou `photoData.url`)
+  - Icône royaume (Bird/Flower2/TreePine/Leaf) avec couleur
+  - Label royaume ("Faune", "Flore", "Champignon")
+  - Nom scientifique en italique
+  - Nom français via `useSpeciesTranslationBatch` (déjà utilisé)
+  - Date d'observation formatée
+  - Source (iNaturalist, eBird, GBIF)
+- Ajouter un `SortToggle` (asc/desc par date)
+- Compteur discret en en-tête
+
+**2. Structure de données extraite des snapshots** :
 
 ```text
-┌─────────────────────────────────────────────┐
-│ [Avatar] Gaspard B. · 📷  10 avr. · 14:12  │
-│          ┌──────┐                            │
-│          │ mini │  IMG_1393                   │
-│          └──────┘                            │
-└─────────────────────────────────────────────┘
+species_data[].attributions[] contient :
+  - observerName: "Gaspard Boréal"
+  - date: "2026-03-30"
+  - source: "inaturalist"
+  - originalUrl: lien vers l'observation
+
+species_data[] contient :
+  - scientificName, commonName, kingdom
+  - photos[], photoData
+  - observations (count)
 ```
 
-- **Avatar** (24px) avec fallback initiales
-- **Prénom + initiale nom** pour la privacy
-- **Icône type** (📷 photo, 🎙 son, 📖 texte)
-- **Date relative** ou formatée ("10 avr. · 14:12")
-- **Miniature** (48px arrondie) pour les photos, icône pour sons/textes
-- Fond `bg-card` / `dark:bg-white/5`, border subtile, `rounded-xl`
-- Animations Framer Motion en cascade (stagger)
+**3. Matching marcheur ↔ observations** :
+
+- Pour les marcheurs communautaires : match `observerName` avec `"${prenom} ${nom}"`
+- Pour l'équipe (crew) : idem
+- Si aucun match par nom → afficher toutes les espèces de l'exploration (données collectives)
+
+### Design (identique à Empreinte)
+
+Chaque ligne de taxon :
+```text
+┌──────────────────────────────────────────────────┐
+│ [Photo 44px]  🐦 FAUNE                          │
+│               Turdus merula                      │
+│               Merle noir           30 mars · iNat│
+└──────────────────────────────────────────────────┘
+```
 
 ### Fichiers modifiés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/community/exploration/ContributionsFeed.tsx` | **Nouveau** — composant du fil chronologique |
-| `src/hooks/useExplorationContributions.ts` | **Nouveau** — hook React Query qui agrège medias + audios + textes avec profils |
-| `src/components/community/exploration/MarcheursTab.tsx` | Import et affichage du `ContributionsFeed` entre le résumé et les cartes |
+| `src/components/community/exploration/MarcheursTab.tsx` | Refonte du `ContributionsSubTab` pour charger depuis snapshots |
 
-### Hook `useExplorationContributions`
-
-- Requête les `marcheur_medias`, `marcheur_audio`, `marcheur_textes` (is_public = true) pour tous les `marche_event_ids` de l'exploration
-- Joint `community_profiles` pour avatar/prénom/nom
-- Retourne un tableau unifié `{ id, type, url, titre, prenom, nom, avatarUrl, createdAt }` trié par `createdAt` desc par défaut
-- `staleTime: 30s`
-
-### Composant `ContributionsFeed`
-
-- Props : `explorationId`, `maxItems?: number` (défaut 20)
-- State local `sort: 'desc' | 'asc'` avec le `SortToggle` existant
-- Skeleton loading (3 lignes animées)
-- État vide élégant si aucune contribution
-- Les photos affichent une miniature cliquable (lightbox ou lien vers la photo)
-
-### Aucune migration SQL nécessaire
-
-Toutes les données existent déjà. On fait des `SELECT` sur les tables existantes avec les profils communautaires.
+Aucun nouveau fichier, aucune migration SQL.
 
