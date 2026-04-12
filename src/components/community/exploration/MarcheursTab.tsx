@@ -564,6 +564,46 @@ const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementTyp
   { key: 'impact', label: 'Votre impact', icon: TrendingUp },
 ];
 
+// Hook to get real contributions count from biodiversity snapshots
+const useWalkerContributionsCount = (prenom: string, nom: string, explorationMarcheIds: string[], explorationId?: string) => {
+  const fullNameNorm = normalizeStr(`${prenom} ${nom}`);
+  return useQuery({
+    queryKey: ['walker-contributions-count', explorationId, fullNameNorm],
+    queryFn: async () => {
+      if (!explorationMarcheIds.length) return 0;
+      const { data } = await supabase
+        .from('biodiversity_snapshots')
+        .select('species_data')
+        .in('marche_id', explorationMarcheIds);
+      if (!data) return 0;
+
+      const seen = new Set<string>();
+      let count = 0;
+      for (const snapshot of data) {
+        const speciesArr = snapshot.species_data as any[];
+        if (!Array.isArray(speciesArr)) continue;
+        for (const sp of speciesArr) {
+          const attributions = sp.attributions as any[];
+          if (!Array.isArray(attributions)) continue;
+          for (const attr of attributions) {
+            const observerNorm = normalizeStr(attr.observerName || '');
+            if (observerNorm.includes(fullNameNorm) || fullNameNorm.includes(observerNorm)) {
+              const key = `${sp.scientificName}|${attr.date}|${attr.source}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                count++;
+              }
+            }
+          }
+        }
+      }
+      return count;
+    },
+    enabled: !!explorationId && explorationMarcheIds.length > 0,
+    staleTime: 60_000,
+  });
+};
+
 const MarcheurCard: React.FC<{
   marcheur: MarcheurWithStats;
   index: number;
@@ -576,56 +616,28 @@ const MarcheurCard: React.FC<{
 }> = ({ marcheur, index, isExpanded, onToggle, marcheEventId, explorationId, explorationMarcheIds, totalMarchesCount }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
-  const hasSpecies = (marcheur.speciesObserved || []).length > 0;
   const totalContribs = marcheur.totalContributions || 0;
-  const hasContent = totalContribs > 0 || hasSpecies;
   const isCommunity = marcheur.source === 'community';
   const userId = isCommunity ? marcheur.id.replace('community-', '') : null;
   const photoCount = marcheur.stats.photos + marcheur.stats.videos;
-  const speciesCount = marcheur.stats.speciesCount;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.35 }}
-      className="rounded-xl bg-card border border-border hover:border-emerald-500/30 transition-colors overflow-hidden"
-    >
-      {/* Header row */}
-      <button
-        onClick={hasContent ? onToggle : undefined}
-        className={`flex items-center gap-3 p-3 w-full text-left group ${hasContent ? 'cursor-pointer' : 'cursor-default'}`}
-      >
-        <Avatar className="w-10 h-10 ring-2 ring-offset-1 ring-offset-background" style={{ '--tw-ring-color': marcheur.couleur } as React.CSSProperties}>
-          {marcheur.avatarUrl ? (
-            <AvatarImage src={marcheur.avatarUrl} alt={`${marcheur.prenom} ${marcheur.nom}`} />
-          ) : null}
-          <AvatarFallback className="text-xs font-bold text-white" style={{ backgroundColor: marcheur.couleur }}>
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate">
-            {marcheur.prenom} {marcheur.nom}
-          </p>
-          <p className="text-[10px] text-muted-foreground capitalize">
-            {marcheur.source === 'crew' ? marcheur.role.replace('_', ' ') : marcheur.role.replace(/_/g, ' ')}
-          </p>
-        </div>
+  
+  // Real contributions count from biodiversity snapshots
+  const { data: contributionsCount } = useWalkerContributionsCount(marcheur.prenom, marcheur.nom, explorationMarcheIds, explorationId);
+  const realContribCount = contributionsCount || 0;
+  const hasContent = totalContribs > 0 || realContribCount > 0;
 
         {/* Elegant stats badges on the right */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {photoCount > 0 && (
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/60 dark:bg-white/5" title={`${photoCount} photo${photoCount > 1 ? 's' : ''}`}>
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${photoCount} observation${photoCount > 1 ? 's' : ''} publique${photoCount > 1 ? 's' : ''}`}>
               <Camera className="w-3 h-3 text-emerald-500" />
               <span className="text-[11px] font-semibold text-foreground">{photoCount}</span>
             </div>
           )}
-          {speciesCount > 0 && (
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/60 dark:bg-white/5" title={`${speciesCount} espèce${speciesCount > 1 ? 's' : ''}`}>
+          {realContribCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${realContribCount} espèce${realContribCount > 1 ? 's' : ''} identifiée${realContribCount > 1 ? 's' : ''}`}>
               <Leaf className="w-3 h-3 text-amber-500" />
-              <span className="text-[11px] font-semibold text-foreground">{speciesCount}</span>
+              <span className="text-[11px] font-semibold text-foreground">{realContribCount}</span>
             </div>
           )}
         </div>
