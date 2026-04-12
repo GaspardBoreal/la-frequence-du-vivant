@@ -392,6 +392,13 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
           </motion.div>
         )}
 
+        {/* TEXTES ÉCRITS (eco_poetique only) */}
+        {activeSubTab === 'textes' && (
+          <motion.div key="textes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <TextesEcritsSubTab explorationId={explorationId} marcheEventId={marcheEventId} />
+          </motion.div>
+        )}
+
         {/* ANALYSE IA */}
         {activeSubTab === 'analyse' && (
           <motion.div
