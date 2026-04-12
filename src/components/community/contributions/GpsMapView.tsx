@@ -129,12 +129,12 @@ const GpsMapView: React.FC<GpsMapViewProps> = ({ results, marcheCoords }) => {
         {marcheCoords && (
           <CircleMarker
             center={[marcheCoords.lat, marcheCoords.lng]}
-            radius={10}
+            radius={12}
             pathOptions={{
-              fillColor: '#fbbf24',
-              fillOpacity: 1,
-              color: '#b45309',
-              weight: 3,
+              fillColor: '#ffffff',
+              fillOpacity: 0.95,
+              color: '#065f46',
+              weight: 4,
             }}
           >
             <Popup>
@@ -259,11 +259,23 @@ const GpsMapView: React.FC<GpsMapViewProps> = ({ results, marcheCoords }) => {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[9px] text-white/40">
-        <span>⭐ Point marche</span>
-        <span className="text-emerald-400">● &lt;200m</span>
-        <span className="text-amber-400">● 200m-1km</span>
-        <span className="text-red-400">● &gt;1km</span>
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] text-white/60 bg-white/5 backdrop-blur-sm rounded-lg py-1.5 px-3">
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded-full border-2 border-emerald-800 bg-white" />
+          Point marche
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          &lt;200m
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500" />
+          200m-1km
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500" />
+          &gt;1km
+        </span>
       </div>
     </div>
   );
