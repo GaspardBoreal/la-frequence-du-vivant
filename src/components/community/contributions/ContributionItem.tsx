@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, Download } from 'lucide-react';
+import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, Download, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
