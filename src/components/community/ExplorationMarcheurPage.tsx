@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Leaf, TreePine, GraduationCap } from 'lucide-react';
+import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Leaf, TreePine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
 import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
@@ -13,19 +13,19 @@ import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import MarcheursTab from './exploration/MarcheursTab';
 import ExplorationCarteTab from './exploration/ExplorationCarteTab';
 import EventBiodiversityTab from './EventBiodiversityTab';
-import ApprendreTab from './insights/ApprendreTab';
+
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
 
-type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite' | 'apprendre';
+type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'vivant';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
   { key: 'carte', label: 'Carte', icon: Map },
   { key: 'marches', label: 'Marches', icon: Footprints },
   { key: 'biodiversite', label: 'Empreinte', icon: TreePine },
-  { key: 'apprendre', label: 'Apprendre', icon: GraduationCap },
+  
   { key: 'marcheurs', label: 'Marcheurs', icon: Users },
   { key: 'messages', label: 'Messages', icon: MessageCircle },
 ];
@@ -411,16 +411,6 @@ const ExplorationMarcheurPage: React.FC = () => {
             </motion.div>
           )}
 
-          {activeGlobalTab === 'apprendre' && (
-            <motion.div key="apprendre" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <ApprendreTab
-                userLevel={userLevel}
-                eventType={null}
-                explorationId={effectiveExplorationId || undefined}
-                userId={userId}
-              />
-            </motion.div>
-          )}
 
           {activeGlobalTab === 'messages' && (
             <ComingSoonPlaceholder
