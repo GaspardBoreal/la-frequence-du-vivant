@@ -283,6 +283,8 @@ function App() {
             <Route path="/meteo-historique" element={<WeatherCalendar />} />
             <Route path="/atlas-climatique" element={<AtlasClimatique />} />
             <Route path="/presentation" element={<ProjectPresentation />} />
+            <Route path="/partage/:id" element={<PartagePublic />} />
+            <Route path="/marcheur/:slug/carnet" element={<CarnetMarcheur />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
