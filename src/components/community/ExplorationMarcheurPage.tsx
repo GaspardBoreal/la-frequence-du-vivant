@@ -136,14 +136,14 @@ const ExplorationMarcheurPage: React.FC = () => {
       if (directMarcheEventId) {
         const { data } = await supabase
           .from('marche_events')
-          .select('id, title, date_marche, lieu')
+          .select('id, title, date_marche, lieu, event_type')
           .eq('id', directMarcheEventId)
           .single();
         return data;
       }
       const { data } = await supabase
         .from('marche_events')
-        .select('id, title, date_marche, lieu')
+        .select('id, title, date_marche, lieu, event_type')
         .eq('exploration_id', effectiveExplorationId!)
         .order('date_marche', { ascending: false })
         .limit(1)
@@ -407,6 +407,7 @@ const ExplorationMarcheurPage: React.FC = () => {
               <EventBiodiversityTab
                 explorationId={effectiveExplorationId || undefined}
                 marcheEventId={marcheEventId || undefined}
+                eventType={marcheEvent?.event_type || null}
               />
             </motion.div>
           )}

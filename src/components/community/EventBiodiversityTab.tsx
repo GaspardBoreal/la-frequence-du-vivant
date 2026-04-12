@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bird, TreePine, Leaf, Bug, Layers, Sparkles } from 'lucide-react';
+import { Bird, TreePine, Leaf, Bug, Layers, Sparkles, BookOpenText } from 'lucide-react';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
@@ -12,14 +12,16 @@ import BiodiversityRevealAnimation from '@/components/community/BiodiversityReve
 import { useTriggerBiodiversityCollection } from '@/hooks/useTriggerBiodiversityCollection';
 import { useExplorationParticipants } from '@/hooks/useExplorationParticipants';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
-type SubTab = 'synthese' | 'taxons' | 'analyse';
+type SubTab = 'synthese' | 'taxons' | 'textes' | 'analyse';
 
 
 interface EventBiodiversityTabProps {
   explorationId?: string;
   marcheEventId?: string;
+  eventType?: string | null;
 }
 
 type SynthCategory = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
@@ -52,7 +54,7 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
   );
 };
 
-const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId }) => {
+const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId, eventType }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('synthese');
   const [revealActive, setRevealActive] = useState(false);
 
@@ -330,6 +332,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const subTabs: { key: SubTab; label: string }[] = [
     { key: 'synthese', label: 'Synthèse' },
     { key: 'taxons', label: 'Taxons observés' },
+    ...(eventType === 'eco_poetique' ? [{ key: 'textes' as SubTab, label: 'Textes écrits' }] : []),
     { key: 'analyse', label: 'Analyse IA' },
   ];
 
@@ -386,6 +389,13 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               allEventMarches={allEventMarchesData}
               eventParticipants={eventParticipants}
             />
+          </motion.div>
+        )}
+
+        {/* TEXTES ÉCRITS (eco_poetique only) */}
+        {activeSubTab === 'textes' && (
+          <motion.div key="textes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <TextesEcritsSubTab explorationId={explorationId} marcheEventId={marcheEventId} />
           </motion.div>
         )}
 
