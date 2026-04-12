@@ -1,48 +1,45 @@
 
 
-## Amélioration visuelle des marqueurs GPS — Différenciation marche vs photos
+## Drag-and-drop pour réordonner les photos — Mes contributions
 
-### Problème actuel
+### Contexte
+- La table `marcheur_medias` a déjà une colonne `ordre`
+- `@dnd-kit/core` et `@dnd-kit/sortable` sont déjà installés
+- `useUpdateContribution` permet de mettre à jour n'importe quel champ
+- Le tri actuel est par `created_at` — il faut prioriser `ordre` quand il est défini
 
-Le marqueur du point de la marche (doré `#fbbf24`) et les marqueurs photos utilisent tous des `CircleMarker` avec des couleurs internes qui peuvent se confondre visuellement, surtout le jaune-doré de la marche avec l'orange des photos à distance moyenne.
+### Plan
 
-### Proposition de design
+**1. Nouveau hook `useReorderContributions`** dans `useMarcheurContributions.ts`
+- Mutation batch qui met à jour le champ `ordre` de chaque `marcheur_medias` après un drag-and-drop
+- Invalidation optimiste du cache React Query
 
-**Point de la marche** — Marqueur distinctif "cible" :
-- Cercle plus grand (`radius: 12`) avec remplissage **blanc pur `#ffffff`** et bordure épaisse **émeraude foncé `#065f46`** (weight: 4)
-- Ce blanc contraste fortement avec tous les fonds de carte et ne se confond avec aucune couleur de distance
-- L'étoile ⭐ dans la légende reste cohérente
+**2. Modifier `useMarcheurMedias`** pour trier par `ordre` en priorité, puis `created_at` en fallback
+- `.order('ordre', { ascending: true, nullsFirst: false }).order('created_at', { ascending: sort === 'asc' })`
 
-**Points photos** — Inchangés dans leur logique mais clarifiés :
-- Remplissage = couleur distance (vert `#10b981` / ambre `#f59e0b` / rouge `#ef4444`)
-- Bordure = couleur unique par photo (palette existante)
-- Radius reste à 7
+**3. Nouveau composant `DraggableContributionGrid.tsx`**
+- Wraps la grille "Mes contributions" avec `DndContext` + `SortableContext` (grid strategy)
+- Chaque `ContributionItem` est wrappé dans un composant sortable utilisant `useSortable`
+- Indicateur visuel de drag : opacité réduite + bordure emerald sur l'item déplacé
+- Sur `onDragEnd` : recalcule l'ordre et appelle `useReorderContributions`
+- Support tactile natif via `TouchSensor` + `PointerSensor` de dnd-kit
+- Un petit indicateur "grip" (⠿) apparaît en overlay sur chaque photo en mode édition ou en permanence, subtil
 
-**Légende repositionnée** — Intégrée entre la carte et le toggle de style, dans un bandeau glassmorphism compact :
+**4. Modifier `MarcheDetailModal.tsx`**
+- Remplacer la grille statique `myMedias.map(...)` par `<DraggableContributionGrid>` uniquement pour les photos propres de l'utilisateur (isOwner)
+- Passer les callbacks existants (onUpdate, onDelete, onClick)
 
-```text
-┌──────────────────────────────────────┐
-│  [        CARTE LEAFLET           ]  │
-├──────────────────────────────────────┤
-│  ◎ Point marche  ● <200m  ● 200m-1km  ● >1km  │
-├──────────────────────────────────────┤
-│  [Géo]  [Sat]  [Relief]             │
-└──────────────────────────────────────┘
-```
+### Fichiers
 
-- La légende utilise un fond `bg-white/5 backdrop-blur` avec `rounded-lg` et `py-1.5 px-3`
-- Le point marche utilise un cercle blanc cerné d'émeraude (via un petit SVG inline ou un span stylé)
-- Les points de distance utilisent des cercles colorés correspondants
+| Fichier | Action |
+|---------|--------|
+| `src/components/community/contributions/DraggableContributionGrid.tsx` | **Nouveau** — grille drag-and-drop avec dnd-kit |
+| `src/hooks/useMarcheurContributions.ts` | Ajouter `useReorderContributions` + modifier le tri de `useMarcheurMedias` |
+| `src/components/community/MarcheDetailModal.tsx` | Intégrer `DraggableContributionGrid` pour "Mes contributions" |
 
-### Fichier modifié
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/community/contributions/GpsMapView.tsx` | Changer le marqueur marche (blanc/émeraude), refondre la légende en bandeau glassmorphism positionné entre carte et toggle |
-
-### Détail des changements
-
-1. **Marqueur marche** (ligne ~130-138) : `fillColor: '#ffffff'`, `color: '#065f46'`, `weight: 4`, `radius: 12`
-2. **Légende** (ligne ~260-266) : remplacer par un bandeau glassmorphism avec des indicateurs visuels SVG/span alignés, incluant le cercle blanc-émeraude pour "Point marche"
-3. **Toggle styles** reste en dessous, inchangé
+### UX
+- Le drag fonctionne au doigt (mobile) et à la souris (desktop)
+- Animation fluide pendant le déplacement
+- Toast de confirmation après réordonnancement
+- L'ordre est persisté immédiatement en base
 
