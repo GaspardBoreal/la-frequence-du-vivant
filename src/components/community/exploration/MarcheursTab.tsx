@@ -128,29 +128,115 @@ const ObservationsSubTab: React.FC<{ userId: string; marcheEventId?: string; sta
   );
 };
 
-// --- Contributions sub-tab: species with taxon info ---
-const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats }> = ({ marcheur }) => {
-  const species = marcheur.speciesObserved || [];
-  const speciesForTranslation = species.map(s => ({ scientificName: s.scientificName }));
+// --- Contributions sub-tab: species from biodiversity snapshots ---
+const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId?: string; explorationMarcheIds: string[] }> = ({ marcheur, explorationId, explorationMarcheIds }) => {
+  const [sort, setSort] = useState<'desc' | 'asc'>('asc');
+  const fullName = `${marcheur.prenom} ${marcheur.nom}`.toLowerCase();
+
+  const { data: speciesFromSnapshots, isLoading } = useQuery({
+    queryKey: ['marcheur-contributions-species', explorationId, fullName],
+    queryFn: async () => {
+      if (!explorationMarcheIds.length) return [];
+      const { data } = await supabase
+        .from('biodiversity_snapshots')
+        .select('species_data')
+        .in('marche_id', explorationMarcheIds);
+      if (!data) return [];
+
+      const results: Array<{
+        scientificName: string;
+        commonName: string;
+        kingdom: string;
+        photoUrl: string | null;
+        date: string;
+        source: string;
+        originalUrl: string | null;
+      }> = [];
+
+      for (const snapshot of data) {
+        const speciesArr = snapshot.species_data as any[];
+        if (!Array.isArray(speciesArr)) continue;
+        for (const sp of speciesArr) {
+          const attributions = sp.attributions as any[];
+          if (!Array.isArray(attributions)) continue;
+          for (const attr of attributions) {
+            const observerName = (attr.observerName || '').toLowerCase();
+            if (observerName.includes(fullName) || fullName.includes(observerName)) {
+              const photoUrl = sp.photoData?.url || (Array.isArray(sp.photos) && sp.photos.length > 0 ? sp.photos[0] : null);
+              results.push({
+                scientificName: sp.scientificName || '',
+                commonName: sp.commonName || '',
+                kingdom: sp.kingdom || '',
+                photoUrl,
+                date: attr.date || '',
+                source: attr.source || '',
+                originalUrl: attr.originalUrl || null,
+              });
+            }
+          }
+        }
+      }
+
+      // Deduplicate by scientificName, keep earliest date
+      const map = new Map<string, typeof results[0]>();
+      for (const r of results) {
+        const existing = map.get(r.scientificName);
+        if (!existing || r.date < existing.date) {
+          map.set(r.scientificName, r);
+        }
+      }
+      return Array.from(map.values());
+    },
+    enabled: !!explorationId && explorationMarcheIds.length > 0,
+    staleTime: 60_000,
+  });
+
+  const species = speciesFromSnapshots || [];
+  const speciesForTranslation = species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }));
   const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
   const translationMap = new Map(translations?.map(t => [t.scientificName, t]) || []);
 
-  // Kingdom icon mapping
-  const getKingdomInfo = (scientificName: string, translation: any) => {
-    const kingdom = translation?.kingdom || '';
-    if (kingdom === 'Animalia' || scientificName.toLowerCase().includes('aves') || scientificName.toLowerCase().includes('bird')) {
-      return { icon: Bird, color: 'text-sky-500', bgColor: 'bg-sky-500/10', label: 'Faune' };
-    }
-    if (kingdom === 'Plantae' || scientificName.toLowerCase().includes('plant')) {
-      return { icon: Flower2, color: 'text-green-500', bgColor: 'bg-green-500/10', label: 'Flore' };
-    }
-    if (kingdom === 'Fungi' || scientificName.toLowerCase().includes('fung')) {
-      return { icon: TreePine, color: 'text-amber-600', bgColor: 'bg-amber-500/10', label: 'Champignon' };
-    }
+  const getKingdomInfo = (kingdom: string) => {
+    if (kingdom === 'Animalia') return { icon: Bird, color: 'text-sky-500', bgColor: 'bg-sky-500/10', label: 'Faune' };
+    if (kingdom === 'Plantae') return { icon: Flower2, color: 'text-green-500', bgColor: 'bg-green-500/10', label: 'Flore' };
+    if (kingdom === 'Fungi') return { icon: TreePine, color: 'text-amber-600', bgColor: 'bg-amber-500/10', label: 'Champignon' };
     return { icon: Leaf, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', label: 'Vivant' };
   };
 
-  if (species.length === 0) {
+  const sourceLabel = (src: string) => {
+    if (src === 'inaturalist') return 'iNat';
+    if (src === 'ebird') return 'eBird';
+    if (src === 'gbif') return 'GBIF';
+    return src;
+  };
+
+  const sorted = useMemo(() => {
+    const items = [...species];
+    items.sort((a, b) => {
+      const diff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      return sort === 'desc' ? diff : -diff;
+    });
+    return items;
+  }, [species, sort]);
+
+  if (isLoading) {
+    return (
+      <div className="px-3 pt-3 pb-3 space-y-2">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40 animate-pulse">
+            <div className="w-11 h-11 rounded-xl bg-muted" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-2.5 bg-muted rounded w-16" />
+              <div className="h-3 bg-muted rounded w-32" />
+              <div className="h-2.5 bg-muted rounded w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (sorted.length === 0) {
     return (
       <div className="px-3 py-6 text-center">
         <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
@@ -166,32 +252,42 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats }> = ({ marche
 
   return (
     <div className="px-3 pt-3 pb-3 space-y-3">
-      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-        <Leaf className="w-3.5 h-3.5 text-emerald-500" />
-        <span className="text-foreground">{species.length}</span> espèce{species.length > 1 ? 's' : ''} identifiée{species.length > 1 ? 's' : ''}
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+          <Leaf className="w-3.5 h-3.5 text-emerald-500" />
+          <span className="text-foreground">{sorted.length}</span> espèce{sorted.length > 1 ? 's' : ''} identifiée{sorted.length > 1 ? 's' : ''}
+        </p>
+        <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
+      </div>
 
       <div className="space-y-2">
-        {species.map((obs, i) => {
+        {sorted.map((obs, i) => {
           const translation = translationMap.get(obs.scientificName);
-          const frenchName = translation?.commonName;
-          const kingdomInfo = getKingdomInfo(obs.scientificName, translation);
+          const frenchName = translation?.commonName || obs.commonName;
+          const kingdomInfo = getKingdomInfo(obs.kingdom);
           const KingdomIcon = kingdomInfo.icon;
+          const dateStr = obs.date
+            ? format(new Date(obs.date), 'd MMM', { locale: fr })
+            : '';
 
           return (
-            <motion.div
-              key={obs.scientificName}
+            <motion.a
+              key={`${obs.scientificName}-${i}`}
+              href={obs.originalUrl || undefined}
+              target="_blank"
+              rel="noopener noreferrer"
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.25 }}
-              className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40 dark:bg-white/[0.03] border border-border/50 hover:border-emerald-500/20 transition-colors"
+              transition={{ delay: i * 0.04, duration: 0.25 }}
+              className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40 dark:bg-white/[0.03] border border-border/50 hover:border-emerald-500/20 transition-colors block"
             >
-              {/* Photo or kingdom icon */}
               {obs.photoUrl ? (
                 <img
                   src={obs.photoUrl}
                   alt={obs.scientificName}
                   className="w-11 h-11 rounded-xl object-cover ring-1 ring-emerald-500/20 flex-shrink-0"
+                  loading="lazy"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               ) : (
                 <div className={`w-11 h-11 rounded-xl ${kingdomInfo.bgColor} flex items-center justify-center flex-shrink-0`}>
@@ -199,7 +295,6 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats }> = ({ marche
                 </div>
               )}
 
-              {/* Taxon info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <KingdomIcon className={`w-3 h-3 flex-shrink-0 ${kingdomInfo.color}`} />
@@ -210,22 +305,22 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats }> = ({ marche
                 <p className="text-xs font-semibold text-foreground truncate italic mt-0.5">
                   {obs.scientificName}
                 </p>
-                {frenchName && (
+                {frenchName && frenchName !== obs.scientificName && (
                   <p className="text-[10px] text-muted-foreground truncate capitalize">
                     {frenchName}
                   </p>
                 )}
               </div>
 
-              {/* Date */}
-              {obs.observationDate && (
-                <div className="text-right flex-shrink-0">
-                  <p className="text-[10px] text-muted-foreground/60">
-                    {new Date(obs.observationDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                  </p>
-                </div>
-              )}
-            </motion.div>
+              <div className="text-right flex-shrink-0">
+                {dateStr && (
+                  <p className="text-[10px] text-muted-foreground/70">{dateStr}</p>
+                )}
+                {obs.source && (
+                  <p className="text-[9px] text-muted-foreground/50">{sourceLabel(obs.source)}</p>
+                )}
+              </div>
+            </motion.a>
           );
         })}
       </div>
@@ -590,7 +685,7 @@ const MarcheurCard: React.FC<{
 
               {activeSubTab === 'contributions' && (
                 <motion.div key="contribs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <ContributionsSubTab marcheur={marcheur} />
+                  <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} />
                 </motion.div>
               )}
 
