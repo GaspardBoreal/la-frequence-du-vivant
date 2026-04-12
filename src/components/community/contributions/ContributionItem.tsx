@@ -175,6 +175,12 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
                 </a>
               </div>
             )}
+            {gpsDistance && !gpsDistance.hasGps && (
+              <div className="flex items-center gap-0.5 text-[9px] text-white/20">
+                <MapPin className="w-2.5 h-2.5" />
+                GPS photo non disponible
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
