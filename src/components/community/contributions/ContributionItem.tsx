@@ -17,6 +17,7 @@ export interface ContributionItemProps {
   isOwner: boolean;
   createdAt: string;
   viewMode?: 'immersion' | 'fiche';
+  gpsDistance?: { distanceM: number | null; hasGps: boolean; gpsLat?: number; gpsLng?: number } | null;
   onUpdate?: (id: string, updates: Record<string, any>) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
