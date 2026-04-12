@@ -279,6 +279,7 @@ export type Database = {
           nom: string
           prenom: string
           role: Database["public"]["Enums"]["community_role"]
+          slug: string | null
           superpouvoir_sensoriel: string | null
           telephone: string | null
           updated_at: string
@@ -299,6 +300,7 @@ export type Database = {
           nom: string
           prenom: string
           role?: Database["public"]["Enums"]["community_role"]
+          slug?: string | null
           superpouvoir_sensoriel?: string | null
           telephone?: string | null
           updated_at?: string
@@ -319,6 +321,7 @@ export type Database = {
           nom?: string
           prenom?: string
           role?: Database["public"]["Enums"]["community_role"]
+          slug?: string | null
           superpouvoir_sensoriel?: string | null
           telephone?: string | null
           updated_at?: string
@@ -2618,6 +2621,7 @@ export type Database = {
           marche_id: string | null
           metadata: Json | null
           ordre: number | null
+          shared_to_web: boolean
           taille_octets: number | null
           titre: string | null
           type_media: string
@@ -2636,6 +2640,7 @@ export type Database = {
           marche_id?: string | null
           metadata?: Json | null
           ordre?: number | null
+          shared_to_web?: boolean
           taille_octets?: number | null
           titre?: string | null
           type_media: string
@@ -2654,6 +2659,7 @@ export type Database = {
           marche_id?: string | null
           metadata?: Json | null
           ordre?: number | null
+          shared_to_web?: boolean
           taille_octets?: number | null
           titre?: string | null
           type_media?: string
@@ -2735,6 +2741,7 @@ export type Database = {
           marche_event_id: string
           marche_id: string | null
           ordre: number | null
+          shared_to_web: boolean
           titre: string | null
           type_texte: string
           updated_at: string
@@ -2748,6 +2755,7 @@ export type Database = {
           marche_event_id: string
           marche_id?: string | null
           ordre?: number | null
+          shared_to_web?: boolean
           titre?: string | null
           type_texte?: string
           updated_at?: string
@@ -2761,6 +2769,7 @@ export type Database = {
           marche_event_id?: string
           marche_id?: string | null
           ordre?: number | null
+          shared_to_web?: boolean
           titre?: string | null
           type_texte?: string
           updated_at?: string
@@ -3743,6 +3752,10 @@ export type Database = {
           link_id: string
           share_token: string
         }[]
+      }
+      generate_community_slug: {
+        Args: { p_nom: string; p_prenom: string }
+        Returns: string
       }
       get_activity_connections_chart: {
         Args: { p_period?: string }
