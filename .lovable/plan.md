@@ -1,49 +1,96 @@
 
-
-## Fix: Graphique connexions plat pour mois/trimestre/semestre/annee
+## Corriger définitivement la vue "mois dernier" du graphique d'activités
 
 ### Diagnostic
 
-Le JOIN entre la serie temporelle (`generate_series`) et les buckets de donnees echoue a cause du changement d'heure ete/hiver (DST). 
+La vue "mois dernier" reste KO car le problème n'est pas seulement le `JOIN`, mais aussi la façon dont la série temporelle est générée.
 
-- `generate_series` demarre en mars (UTC+1) donc les slots tombent a `23:00 UTC`
-- Les donnees d'avril sont en heure d'ete (UTC+2) donc `date_trunc('day', ...)` donne `22:00 UTC`
-- Le `=` entre ces deux timestamptz echoue : `23:00 UTC != 22:00 UTC`
-
-C'est pourquoi les vues "7 derniers jours" et "aujourd'hui/hier" fonctionnent (pas de franchissement DST), mais mois/trimestre/semestre/annee sont KO.
-
-### Solution
-
-Modifier la fonction SQL `get_activity_connections_chart` pour comparer les timestamps en heure locale (timestamp without timezone) au lieu de timestamptz. Concretement :
-
-1. Convertir `generate_series` en timestamps locaux : `(gs AT TIME ZONE v_tz)` 
-2. Convertir les buckets de donnees aussi en local : `date_trunc(v_trunc, created_at AT TIME ZONE v_tz)`
-3. Joindre sur ces deux valeurs locales (type `timestamp`, sans TZ)
+Aujourd'hui la fonction SQL utilise :
 
 ```sql
-RETURN QUERY
-SELECT
-  to_char(gs AT TIME ZONE v_tz, v_fmt) AS period_label,
-  COALESCE(c.cnt, 0::bigint) AS connection_count
-FROM generate_series(v_start, v_end, v_interval) AS gs
-LEFT JOIN (
+generate_series(v_start, v_end, interval '1 day')
+```
+
+avec `v_start` et `v_end` en `timestamptz`.
+
+Quand cette série traverse le changement d'heure Europe/Paris, les points générés dérivent en heure locale (ex. minuit puis 01:00). Ensuite la jointure compare ces repères à des buckets quotidiens tronqués en heure locale (`date_trunc('day', created_at AT TIME ZONE v_tz)`), donc certaines journées ne matchent plus. C'est exactement cohérent avec le symptôme observé : "7 derniers jours" fonctionne, mais "mois" casse dès qu'on traverse la bascule DST.
+
+Le diff précédent a corrigé une partie du problème, mais pas la racine complète.
+
+### Correctif à appliquer
+
+Créer une nouvelle migration SQL pour réécrire `public.get_activity_connections_chart` avec cette stratégie :
+
+1. Calculer les bornes en heure locale Paris.
+2. Générer la série en `timestamp without time zone` pour les vues jour/semaine/mois.
+3. Agréger les logs dans le même référentiel local.
+4. Faire le `LEFT JOIN` entre série locale et buckets locaux.
+5. Ne convertir/formatter qu'au moment d'afficher `period_label`.
+
+### Forme attendue du correctif
+
+Pour `month`, `7d`, `quarter`, `semester`, `year`, la logique doit ressembler à ceci :
+
+```sql
+local_series AS (
+  SELECT generate_series(v_local_start, v_local_end, v_interval) AS bucket
+),
+counts AS (
   SELECT
     date_trunc(v_trunc, created_at AT TIME ZONE v_tz) AS bucket,
     count(*) AS cnt
   FROM marcheur_activity_logs
   WHERE event_type = 'session_start'
-    AND created_at >= v_start
-    AND created_at <= v_end
-  GROUP BY bucket
-) c ON c.bucket = (gs AT TIME ZONE v_tz)
-ORDER BY gs;
+    AND created_at >= v_start_utc
+    AND created_at < v_end_utc
+  GROUP BY 1
+)
+SELECT
+  to_char(local_series.bucket, v_fmt) AS period_label,
+  COALESCE(counts.cnt, 0)
+FROM local_series
+LEFT JOIN counts ON counts.bucket = local_series.bucket
+ORDER BY local_series.bucket;
 ```
 
-Le changement cle : le bucket n'est plus reconverti en timestamptz (`AT TIME ZONE v_tz` une seule fois = timestamp local), et le `gs` est aussi converti en local pour la comparaison.
+L'idée clé : ne plus utiliser `generate_series(... timestamptz ..., '1 day')` pour les périodes longues.
 
-### Fichier concerne
+### Portée
+
+- `today` et `yesterday` peuvent rester en logique horaire, mais idéalement être harmonisés avec la même approche locale.
+- `month` est prioritaire car c'est le bug signalé.
+- `quarter`, `semester`, `year` doivent être alignés avec la même méthode pour éviter d'autres régressions.
+
+### Vérifications après correction
+
+Après migration, vérifier que :
+- `month` affiche bien des points non nuls sur les dates où il y a des `session_start`
+- `7d` reste correct
+- `quarter`, `semester`, `year` continuent d'afficher des valeurs cohérentes
+- il n'y a pas de doublons ou de décalage de labels autour de fin mars / début avril
+
+### Fichier concerné
 
 | Fichier | Action |
-|---------|--------|
-| Nouvelle migration SQL | `CREATE OR REPLACE FUNCTION get_activity_connections_chart` avec JOIN corrige |
+|---|---|
+| nouvelle migration SQL dans `supabase/migrations/` | `CREATE OR REPLACE FUNCTION public.get_activity_connections_chart` avec série générée en heure locale |
 
+### Détail technique
+
+Le vrai bug restant vient de la combinaison suivante :
+
+```text
+timestamptz + generate_series + interval '1 day' + DST
+```
+
+Ce montage ne garantit pas un "minuit local" stable sur chaque point de série.  
+La bonne solution est :
+
+```text
+1. définir les buckets en heure locale Paris
+2. générer la série en timestamp local
+3. agréger les logs dans ce même espace local
+4. joindre local à local
+```
+
+Ainsi, la vue mois ne dépend plus des offsets UTC changeants entre CET et CEST.
