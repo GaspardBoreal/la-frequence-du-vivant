@@ -1,96 +1,78 @@
 
-## Corriger définitivement la vue "mois dernier" du graphique d'activités
 
-### Diagnostic
+## Étendre "Ma Fréquence du jour" avec Biodiversité et Bioacoustique
 
-La vue "mois dernier" reste KO car le problème n'est pas seulement le `JOIN`, mais aussi la façon dont la série temporelle est générée.
+### Concept
 
-Aujourd'hui la fonction SQL utilise :
+Aujourd'hui, la Fréquence du jour affiche une citation littéraire (géopoétique). L'idée est d'enrichir cette expérience quotidienne avec deux nouveaux types de contenus :
 
-```sql
-generate_series(v_start, v_end, interval '1 day')
-```
+- **Biodiversité** : un fait/anecdote sur une espèce, un écosystème, un phénomène écologique (ex: "Le lierre est l'une des dernières plantes à fleurir en automne, nourrissant abeilles et papillons quand tout s'éteint. — Source: INPN")
+- **Bioacoustique** : un fait sonore sur un animal, un paysage sonore, une technique d'écoute (ex: "Le troglodyte mignon produit un chant de 90 dB, l'un des plus puissants rapportés à sa taille. — Source: Krause, 2012")
 
-avec `v_start` et `v_end` en `timestamptz`.
+Chaque jour, le marcheur verra 3 fréquences dans un carousel ou des onglets discrets : Géopoétique, Biodiversité, Bioacoustique.
 
-Quand cette série traverse le changement d'heure Europe/Paris, les points générés dérivent en heure locale (ex. minuit puis 01:00). Ensuite la jointure compare ces repères à des buckets quotidiens tronqués en heure locale (`date_trunc('day', created_at AT TIME ZONE v_tz)`), donc certaines journées ne matchent plus. C'est exactement cohérent avec le symptôme observé : "7 derniers jours" fonctionne, mais "mois" casse dès qu'on traverse la bascule DST.
+### Architecture
 
-Le diff précédent a corrigé une partie du problème, mais pas la racine complète.
+**Option retenue : ajouter une colonne `categorie` à la table existante `frequence_citations`** plutôt que créer de nouvelles tables. Cela permet de réutiliser toute l'infrastructure existante (compteurs, admin, IA).
 
-### Correctif à appliquer
+### Modifications base de données (1 migration)
 
-Créer une nouvelle migration SQL pour réécrire `public.get_activity_connections_chart` avec cette stratégie :
-
-1. Calculer les bornes en heure locale Paris.
-2. Générer la série en `timestamp without time zone` pour les vues jour/semaine/mois.
-3. Agréger les logs dans le même référentiel local.
-4. Faire le `LEFT JOIN` entre série locale et buckets locaux.
-5. Ne convertir/formatter qu'au moment d'afficher `period_label`.
-
-### Forme attendue du correctif
-
-Pour `month`, `7d`, `quarter`, `semester`, `year`, la logique doit ressembler à ceci :
+1. Ajouter une colonne `categorie` à `frequence_citations` :
+   - Type : `text` avec valeur par défaut `'geopoetique'`
+   - Valeurs possibles : `geopoetique`, `biodiversite`, `bioacoustique`
+2. Toutes les citations existantes reçoivent automatiquement `'geopoetique'`
 
 ```sql
-local_series AS (
-  SELECT generate_series(v_local_start, v_local_end, v_interval) AS bucket
-),
-counts AS (
-  SELECT
-    date_trunc(v_trunc, created_at AT TIME ZONE v_tz) AS bucket,
-    count(*) AS cnt
-  FROM marcheur_activity_logs
-  WHERE event_type = 'session_start'
-    AND created_at >= v_start_utc
-    AND created_at < v_end_utc
-  GROUP BY 1
-)
-SELECT
-  to_char(local_series.bucket, v_fmt) AS period_label,
-  COALESCE(counts.cnt, 0)
-FROM local_series
-LEFT JOIN counts ON counts.bucket = local_series.bucket
-ORDER BY local_series.bucket;
+ALTER TABLE frequence_citations 
+  ADD COLUMN categorie text NOT NULL DEFAULT 'geopoetique';
 ```
 
-L'idée clé : ne plus utiliser `generate_series(... timestamptz ..., '1 day')` pour les périodes longues.
+### Modifications admin (`AdminFrequences.tsx`)
 
-### Portée
+1. Ajouter un **filtre par catégorie** (ToggleGroup) : Toutes | Géopoétique | Biodiversité | Bioacoustique
+2. Ajouter un **sélecteur de catégorie** dans le formulaire d'ajout et d'édition
+3. Afficher un **badge catégorie** sur chaque ligne du tableau
+4. Adapter la suggestion IA pour passer la catégorie sélectionnée au prompt
 
-- `today` et `yesterday` peuvent rester en logique horaire, mais idéalement être harmonisés avec la même approche locale.
-- `month` est prioritaire car c'est le bug signalé.
-- `quarter`, `semester`, `year` doivent être alignés avec la même méthode pour éviter d'autres régressions.
+### Modifications composant marcheur (`FrequenceWave.tsx`)
 
-### Vérifications après correction
+1. Charger les 3 catégories de citations
+2. Sélectionner une citation par catégorie par jour (même algorithme seed mais décalé)
+3. Afficher un **mini onglet** ou **carousel** avec 3 icônes :
+   - BookOpen (Géopoétique)
+   - TreePine (Biodiversité)  
+   - Headphones (Bioacoustique)
+4. Le marcheur peut switcher entre les 3, avec une animation douce
 
-Après migration, vérifier que :
-- `month` affiche bien des points non nuls sur les dates où il y a des `session_start`
-- `7d` reste correct
-- `quarter`, `semester`, `year` continuent d'afficher des valeurs cohérentes
-- il n'y a pas de doublons ou de décalage de labels autour de fin mars / début avril
+### Modifications Edge Function (`suggest-citations`)
 
-### Fichier concerné
+Adapter le prompt pour accepter un paramètre `categorie` et générer des contenus appropriés :
+- Géopoétique : citations littéraires (comportement actuel)
+- Biodiversité : faits sourcés sur la faune/flore
+- Bioacoustique : faits sur les sons du vivant, paysages sonores
+
+### Fichiers concernés
 
 | Fichier | Action |
 |---|---|
-| nouvelle migration SQL dans `supabase/migrations/` | `CREATE OR REPLACE FUNCTION public.get_activity_connections_chart` avec série générée en heure locale |
+| Nouvelle migration SQL | `ALTER TABLE frequence_citations ADD COLUMN categorie` |
+| `src/pages/AdminFrequences.tsx` | Filtre catégorie, badge, formulaire étendu |
+| `src/components/community/FrequenceWave.tsx` | Onglets 3 catégories, sélection par catégorie |
+| `supabase/functions/suggest-citations/index.ts` | Prompt adapté selon catégorie |
+| `src/integrations/supabase/types.ts` | Régénéré automatiquement |
 
-### Détail technique
-
-Le vrai bug restant vient de la combinaison suivante :
-
-```text
-timestamptz + generate_series + interval '1 day' + DST
-```
-
-Ce montage ne garantit pas un "minuit local" stable sur chaque point de série.  
-La bonne solution est :
+### Design du composant marcheur
 
 ```text
-1. définir les buckets en heure locale Paris
-2. générer la série en timestamp local
-3. agréger les logs dans ce même espace local
-4. joindre local à local
+┌──────────────────────────────────────────┐
+│ MA FRÉQUENCE DU JOUR                     │
+│ [📖] [🌿] [🎧]                          │
+│                                          │
+│ « Le lierre est l'une des dernières      │
+│   plantes à fleurir en automne... »      │
+│                        — INPN 🔗         │
+└──────────────────────────────────────────┘
 ```
 
-Ainsi, la vue mois ne dépend plus des offsets UTC changeants entre CET et CEST.
+Les trois icônes sont des onglets discrets. L'onglet actif est souligné avec la couleur du rôle. Le contenu change avec une animation fade.
+
