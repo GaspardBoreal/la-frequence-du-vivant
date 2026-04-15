@@ -8,9 +8,12 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { ArrowLeft, Search, Plus, Pencil, Trash2, ExternalLink, Save, X, Sparkles, Check, XCircle, CheckCheck, Loader2, ArrowUpDown, Eye, Radio } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Search, Plus, Pencil, Trash2, ExternalLink, Save, X, Sparkles, Check, XCircle, CheckCheck, Loader2, ArrowUpDown, Eye, Radio, BookOpen, TreePine, Headphones } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/useDebounce';
+
+type Categorie = 'geopoetique' | 'biodiversite' | 'bioacoustique';
 
 type Citation = {
   id: string;
@@ -21,6 +24,7 @@ type Citation = {
   active: boolean;
   shown_count: number;
   viewed_count: number;
+  categorie: Categorie;
 };
 
 type SuggestedCitation = {
@@ -31,9 +35,16 @@ type SuggestedCitation = {
 };
 
 type ShownFilter = 'all' | 'shown' | 'not_shown';
+type CategorieFilter = 'all' | Categorie;
 type SortBy = 'viewed_desc' | 'viewed_asc';
 
 const EMPTY_CITATION = { texte: '', auteur: '', oeuvre: '', url: '' };
+
+const CATEGORIE_CONFIG: Record<Categorie, { label: string; icon: React.ElementType; color: string }> = {
+  geopoetique: { label: 'Géopoétique', icon: BookOpen, color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
+  biodiversite: { label: 'Biodiversité', icon: TreePine, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  bioacoustique: { label: 'Bioacoustique', icon: Headphones, color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' },
+};
 
 const AdminFrequences: React.FC = () => {
   const queryClient = useQueryClient();
@@ -41,16 +52,20 @@ const AdminFrequences: React.FC = () => {
   const debouncedSearch = useDebounce(search, 300);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(EMPTY_CITATION);
+  const [editCategorie, setEditCategorie] = useState<Categorie>('geopoetique');
   const [isAdding, setIsAdding] = useState(false);
   const [newForm, setNewForm] = useState(EMPTY_CITATION);
+  const [newCategorie, setNewCategorie] = useState<Categorie>('geopoetique');
 
   // Filters & sort
   const [shownFilter, setShownFilter] = useState<ShownFilter>('all');
+  const [categorieFilter, setCategorieFilter] = useState<CategorieFilter>('all');
   const [sortBy, setSortBy] = useState<SortBy>('viewed_desc');
 
   // AI suggestions state
   const [suggestions, setSuggestions] = useState<SuggestedCitation[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [suggestCategorie, setSuggestCategorie] = useState<Categorie>('geopoetique');
 
   const { data: citations = [], isLoading } = useQuery({
     queryKey: ['frequence-citations'],
@@ -77,6 +92,7 @@ const AdminFrequences: React.FC = () => {
       }
       if (shownFilter === 'shown' && c.shown_count === 0) return false;
       if (shownFilter === 'not_shown' && c.shown_count > 0) return false;
+      if (categorieFilter !== 'all' && c.categorie !== categorieFilter) return false;
       return true;
     });
 
@@ -87,7 +103,7 @@ const AdminFrequences: React.FC = () => {
     );
 
     return result;
-  }, [citations, debouncedSearch, shownFilter, sortBy]);
+  }, [citations, debouncedSearch, shownFilter, categorieFilter, sortBy]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -101,8 +117,8 @@ const AdminFrequences: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; texte: string; auteur: string; oeuvre: string; url: string }) => {
-      const { error } = await supabase.from('frequence_citations').update(data).eq('id', id);
+    mutationFn: async ({ id, categorie, ...data }: { id: string; texte: string; auteur: string; oeuvre: string; url: string; categorie: Categorie }) => {
+      const { error } = await supabase.from('frequence_citations').update({ ...data, categorie }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -113,7 +129,7 @@ const AdminFrequences: React.FC = () => {
   });
 
   const insertMutation = useMutation({
-    mutationFn: async (data: typeof EMPTY_CITATION) => {
+    mutationFn: async (data: typeof EMPTY_CITATION & { categorie: Categorie }) => {
       const { error } = await supabase.from('frequence_citations').insert(data);
       if (error) throw error;
     },
@@ -121,6 +137,7 @@ const AdminFrequences: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['frequence-citations'] });
       setIsAdding(false);
       setNewForm(EMPTY_CITATION);
+      setNewCategorie('geopoetique');
       toast.success('Citation ajoutée');
     },
   });
@@ -128,6 +145,7 @@ const AdminFrequences: React.FC = () => {
   const startEdit = (c: Citation) => {
     setEditingId(c.id);
     setEditForm({ texte: c.texte, auteur: c.auteur, oeuvre: c.oeuvre, url: c.url || '' });
+    setEditCategorie(c.categorie || 'geopoetique');
   };
 
   // AI suggestion handlers
@@ -142,10 +160,12 @@ const AdminFrequences: React.FC = () => {
         return;
       }
 
-      const existingCitations = citations.map(c => ({ auteur: c.auteur, texte: c.texte }));
+      const existingCitations = citations
+        .filter(c => c.categorie === suggestCategorie)
+        .map(c => ({ auteur: c.auteur, texte: c.texte }));
 
       const { data, error } = await supabase.functions.invoke('suggest-citations', {
-        body: { existingCitations },
+        body: { existingCitations, categorie: suggestCategorie },
       });
 
       if (error) {
@@ -175,7 +195,7 @@ const AdminFrequences: React.FC = () => {
     const s = suggestions[index];
     try {
       const { error } = await supabase.from('frequence_citations').insert({
-        texte: s.texte, auteur: s.auteur, oeuvre: s.oeuvre, url: s.url,
+        texte: s.texte, auteur: s.auteur, oeuvre: s.oeuvre, url: s.url, categorie: suggestCategorie,
       });
       if (error) throw error;
       setSuggestions(prev => prev.filter((_, i) => i !== index));
@@ -193,7 +213,7 @@ const AdminFrequences: React.FC = () => {
   const acceptAll = async () => {
     try {
       const rows = suggestions.map(s => ({
-        texte: s.texte, auteur: s.auteur, oeuvre: s.oeuvre, url: s.url,
+        texte: s.texte, auteur: s.auteur, oeuvre: s.oeuvre, url: s.url, categorie: suggestCategorie,
       }));
       const { error } = await supabase.from('frequence_citations').insert(rows);
       if (error) throw error;
@@ -205,6 +225,24 @@ const AdminFrequences: React.FC = () => {
       toast.error('Erreur lors de l\'insertion groupée');
     }
   };
+
+  const CategorieBadge = ({ categorie }: { categorie: Categorie }) => {
+    const config = CATEGORIE_CONFIG[categorie] || CATEGORIE_CONFIG.geopoetique;
+    const Icon = config.icon;
+    return (
+      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${config.color}`}>
+        <Icon className="h-2.5 w-2.5" />
+        {config.label}
+      </span>
+    );
+  };
+
+  // Category counts
+  const counts = useMemo(() => {
+    const c = { all: citations.length, geopoetique: 0, biodiversite: 0, bioacoustique: 0 };
+    citations.forEach(ci => { if (ci.categorie in c) c[ci.categorie as Categorie]++; });
+    return c;
+  }, [citations]);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -220,7 +258,7 @@ const AdminFrequences: React.FC = () => {
 
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-1">Ma Fréquence du jour</h1>
-          <p className="text-muted-foreground text-sm">Gestion des citations journalières</p>
+          <p className="text-muted-foreground text-sm">Gestion des citations journalières — Géopoétique, Biodiversité, Bioacoustique</p>
         </div>
 
         {/* Header: count + search + add + AI */}
@@ -230,7 +268,7 @@ const AdminFrequences: React.FC = () => {
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-muted-foreground">
                   {filtered.length} citation{filtered.length !== 1 ? 's' : ''}
-                  {(debouncedSearch || shownFilter !== 'all') && ` / ${citations.length} total`}
+                  {(debouncedSearch || shownFilter !== 'all' || categorieFilter !== 'all') && ` / ${citations.length} total`}
                 </span>
               </div>
               <div className="flex gap-2 w-full sm:w-auto">
@@ -247,27 +285,37 @@ const AdminFrequences: React.FC = () => {
                   <Plus className="h-4 w-4 mr-1" />
                   Ajouter
                 </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={handleSuggest}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4 mr-1" />
-                  )}
-                  Suggérer par IA
-                </Button>
               </div>
             </div>
 
             {/* Filter bar */}
             <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-border/50">
+              {/* Categorie filter */}
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">Catégorie :</span>
+                <ToggleGroup
+                  type="single"
+                  value={categorieFilter}
+                  onValueChange={(v) => v && setCategorieFilter(v as CategorieFilter)}
+                  size="sm"
+                >
+                  <ToggleGroupItem value="all" className="text-xs h-7 px-2.5">Toutes ({counts.all})</ToggleGroupItem>
+                  <ToggleGroupItem value="geopoetique" className="text-xs h-7 px-2.5 gap-1">
+                    <BookOpen className="h-3 w-3" /> Géo ({counts.geopoetique})
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="biodiversite" className="text-xs h-7 px-2.5 gap-1">
+                    <TreePine className="h-3 w-3" /> Bio ({counts.biodiversite})
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="bioacoustique" className="text-xs h-7 px-2.5 gap-1">
+                    <Headphones className="h-3 w-3" /> Acoust ({counts.bioacoustique})
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
               <div className="flex items-center gap-2">
                 <Radio className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">Déjà montré :</span>
+                <span className="text-xs font-medium text-muted-foreground">Montré :</span>
                 <ToggleGroup
                   type="single"
                   value={shownFilter}
@@ -294,6 +342,36 @@ const AdminFrequences: React.FC = () => {
                 </Button>
               </div>
             </div>
+
+            {/* AI suggest bar */}
+            <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-xs font-medium text-muted-foreground">Suggérer IA pour :</span>
+              <Select value={suggestCategorie} onValueChange={(v) => setSuggestCategorie(v as Categorie)}>
+                <SelectTrigger className="h-7 w-40 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="geopoetique">Géopoétique</SelectItem>
+                  <SelectItem value="biodiversite">Biodiversité</SelectItem>
+                  <SelectItem value="bioacoustique">Bioacoustique</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-7"
+                onClick={handleSuggest}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-1" />
+                )}
+                Générer
+              </Button>
+            </div>
           </div>
         </Card>
 
@@ -306,6 +384,7 @@ const AdminFrequences: React.FC = () => {
                 <span className="text-sm font-semibold text-foreground">
                   {suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''} IA
                 </span>
+                <CategorieBadge categorie={suggestCategorie} />
               </div>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={acceptAll}>
@@ -350,12 +429,22 @@ const AdminFrequences: React.FC = () => {
         {/* Add form */}
         {isAdding && (
           <Card className="p-4 mb-4 border-primary/30">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <Select value={newCategorie} onValueChange={(v) => setNewCategorie(v as Categorie)}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="geopoetique">Géopoétique</SelectItem>
+                  <SelectItem value="biodiversite">Biodiversité</SelectItem>
+                  <SelectItem value="bioacoustique">Bioacoustique</SelectItem>
+                </SelectContent>
+              </Select>
               <Input placeholder="Auteur" value={newForm.auteur} onChange={(e) => setNewForm({ ...newForm, auteur: e.target.value })} />
               <Input placeholder="Œuvre" value={newForm.oeuvre} onChange={(e) => setNewForm({ ...newForm, oeuvre: e.target.value })} />
               <Input placeholder="URL" value={newForm.url} onChange={(e) => setNewForm({ ...newForm, url: e.target.value })} />
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => insertMutation.mutate(newForm)} disabled={!newForm.texte || !newForm.auteur}>
+                <Button size="sm" onClick={() => insertMutation.mutate({ ...newForm, categorie: newCategorie })} disabled={!newForm.texte || !newForm.auteur}>
                   <Save className="h-4 w-4 mr-1" />
                   Sauver
                 </Button>
@@ -376,8 +465,9 @@ const AdminFrequences: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[90px]">Catégorie</TableHead>
                   <TableHead className="w-[140px]">Auteur</TableHead>
-                  <TableHead className="w-[180px]">Œuvre</TableHead>
+                  <TableHead className="w-[160px]">Œuvre</TableHead>
                   <TableHead className="w-[50px]">Lien</TableHead>
                   <TableHead>Texte</TableHead>
                   <TableHead className="w-[65px] text-center">
@@ -401,6 +491,18 @@ const AdminFrequences: React.FC = () => {
                     {editingId === c.id ? (
                       <>
                         <TableCell>
+                          <Select value={editCategorie} onValueChange={(v) => setEditCategorie(v as Categorie)}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="geopoetique">Géo</SelectItem>
+                              <SelectItem value="biodiversite">Bio</SelectItem>
+                              <SelectItem value="bioacoustique">Acoust</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
                           <Input value={editForm.auteur} onChange={(e) => setEditForm({ ...editForm, auteur: e.target.value })} className="h-8 text-xs" />
                         </TableCell>
                         <TableCell>
@@ -416,7 +518,7 @@ const AdminFrequences: React.FC = () => {
                         <TableCell />
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateMutation.mutate({ id: c.id, ...editForm })}>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateMutation.mutate({ id: c.id, ...editForm, categorie: editCategorie })}>
                               <Save className="h-3.5 w-3.5" />
                             </Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
@@ -427,6 +529,9 @@ const AdminFrequences: React.FC = () => {
                       </>
                     ) : (
                       <>
+                        <TableCell>
+                          <CategorieBadge categorie={c.categorie} />
+                        </TableCell>
                         <TableCell className="text-xs font-medium">{c.auteur}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{c.oeuvre}</TableCell>
                         <TableCell>
@@ -469,7 +574,7 @@ const AdminFrequences: React.FC = () => {
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       Aucune citation trouvée
                     </TableCell>
                   </TableRow>
