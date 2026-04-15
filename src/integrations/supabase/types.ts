@@ -1508,6 +1508,7 @@ export type Database = {
         Row: {
           active: boolean | null
           auteur: string
+          categorie: string
           created_at: string | null
           id: string
           oeuvre: string
@@ -1520,6 +1521,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           auteur: string
+          categorie?: string
           created_at?: string | null
           id?: string
           oeuvre: string
@@ -1532,6 +1534,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           auteur?: string
+          categorie?: string
           created_at?: string | null
           id?: string
           oeuvre?: string
