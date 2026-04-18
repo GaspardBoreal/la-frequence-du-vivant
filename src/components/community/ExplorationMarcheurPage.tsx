@@ -190,7 +190,8 @@ const ExplorationMarcheurPage: React.FC = () => {
   const tabCounts: Record<SensoryTab, number> = {
     voir: stats?.totalMedias || 0,
     ecouter: stats?.totalAudio || 0,
-    lire: stats?.totalTextes || 0,
+    lire: 0,
+    ecrire: stats?.totalTextes || 0,
     vivant: 0,
   };
 
@@ -362,6 +363,9 @@ const ExplorationMarcheurPage: React.FC = () => {
                         <EcouterTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />
                       )}
                       {activeSensoryTab === 'lire' && (
+                        <LireDescriptionsTab activeMarcheId={activeMarcheId} />
+                      )}
+                      {activeSensoryTab === 'ecrire' && (
                         <LireTab userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />
                       )}
                       {activeSensoryTab === 'vivant' && (
