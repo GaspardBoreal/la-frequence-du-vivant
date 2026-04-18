@@ -4,7 +4,9 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
-import { Filter, X, Search } from 'lucide-react';
+import { Filter, X, Search, ArrowUpDown } from 'lucide-react';
+
+type SortOption = 'date_desc' | 'date_asc' | 'nom_asc' | 'nom_desc';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { useAdminExplorations } from '../../hooks/useExplorations';
 import { supabase } from '../../integrations/supabase/client';
