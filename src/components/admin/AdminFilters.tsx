@@ -316,6 +316,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     setOrganisateurFilter('');
     setExplorationMarchesIds([]);
     setExplorationMarchesLoaded(false);
+    setSortOption('date_desc');
     onFilterChange(marches);
   };
 
