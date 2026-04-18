@@ -409,6 +409,30 @@ export function exportEventsToCSV(
     lines.push('');
   }
 
+  // Marches CSV
+  if (options.includeMarches) {
+    lines.push('=== MARCHES ===');
+    lines.push('Événement,Type,Ordre,Nom marche,Ville,Latitude,Longitude,Présentation,En détail');
+    events.forEach(e => {
+      e.marches.forEach((m, i) => {
+        lines.push(
+          [
+            escapeCSV(e.title),
+            escapeCSV(getTypeLabel(e.event_type)),
+            (i + 1).toString(),
+            escapeCSV(m.nom_marche),
+            escapeCSV(m.ville),
+            m.latitude?.toString() || '',
+            m.longitude?.toString() || '',
+            escapeCSV(stripHtml(m.descriptif_court)),
+            escapeCSV(stripHtml(m.descriptif_long)),
+          ].join(','),
+        );
+      });
+    });
+    lines.push('');
+  }
+
   // Biodiversity CSV
   if (options.includeBiodiversity) {
     lines.push('=== BIODIVERSITÉ ===');
