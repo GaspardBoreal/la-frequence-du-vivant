@@ -1,64 +1,77 @@
 
 
-## Renommer "Lire" en "Écrire" et créer un nouvel onglet "Lire" (descriptions)
+## Enrichir l'export Événements avec les descriptions des marches
 
-### Compris
+### Constat
 
-- Onglet **"Lire"** (📖 BookOpen) actuel → renommé en **"Écrire"** (icône `PenLine`). Contenu inchangé : `LireTab` (textes des marcheurs).
-- Nouveau **"Lire"** (📖 BookOpen) → affiche les **2 descriptions** de la marche en cours (`marches.descriptif_court` + `marches.descriptif_long`), avec navigation interne 1 ↔ 2 (chevrons + dots de pagination), **mobile first**, rendu enrichi (HTML).
-- Source : champs déjà présents dans la table `marches`. Filtré par `activeMarcheId` (sélecteur d'étape déjà en place tout en haut du bloc sensoriel).
+Actuellement, la section "Marches associées" (Word & CSV) n'inclut que : nom, ville, latitude, longitude. Les champs `descriptif_court` et `descriptif_long` de la table `marches` sont chargés mais **ignorés** par l'export.
 
-### Architecture (1 nouveau composant + 2 retouches)
+### Modifications (3 fichiers, surgicales)
 
-| Fichier | Action |
-|---|---|
-| `src/components/community/exploration/LireDescriptionsTab.tsx` | **Nouveau**. Charge la marche par `activeMarcheId`, expose un carousel interne 1/2 ↔ 2/2 |
-| `src/components/community/ExplorationMarcheurPage.tsx` | Réordonne `sensoryTabs` : ajoute `lire` (BookOpen) et renomme l'ancien en `ecrire` (PenLine). Branche `LireDescriptionsTab` sur `lire` et `LireTab` sur `ecrire`. Met à jour le compteur de badge. |
-| `src/components/community/MarcheDetailModal.tsx` | Même mise à jour du `tabs[]` pour cohérence dans la modale (réutilise `LireDescriptionsTab`) |
+#### 1. `src/components/admin/EventExportPanel.tsx` (1 ligne `.select`)
 
-### UI mobile first du nouvel onglet "Lire"
+Ajouter les 2 colonnes dans les 2 requêtes Supabase (ligne 157 et ligne 175) :
 
-```text
-┌──────────────────────────────────────────┐
-│  Description courte                      │  ← titre de la page courante
-│  ──────────────────────────────────      │
-│                                          │
-│  <contenu HTML enrichi, prose>           │
-│  Le sentier serpente entre…              │
-│                                          │
-│         ◀  ●○  ▶                         │  ← pagination centrée
-└──────────────────────────────────────────┘
+```ts
+.select('marche_id, marche:marches(id, nom_marche, ville, latitude, longitude, descriptif_court, descriptif_long)')
 ```
 
-- Conteneur : `prose prose-invert max-w-none text-base leading-relaxed`
-- Navigation : 2 chevrons (boutons ronds 44px = cible tactile), 2 dots cliquables au centre
-- Swipe gauche/droite via `framer-motion` `drag="x"` (geste mobile naturel)
-- Animation : `AnimatePresence` fade + slide horizontal entre 1 et 2
-- Si une seule description renseignée → masque la navigation et affiche directement l'unique description
-- Si les deux vides → état vide doux : « Aucune description disponible pour cette étape. »
+Et propager dans le `marches.map(...)` (ligne 161-167) :
 
-### Rendu du contenu enrichi
+```ts
+descriptif_court: em.marche?.descriptif_court || null,
+descriptif_long: em.marche?.descriptif_long || null,
+```
 
-- On rend en **HTML** via `dangerouslySetInnerHTML` enveloppé dans une div `prose` (le projet utilise déjà Tailwind Typography ailleurs).
-- Si le texte ne contient pas de balises HTML, on bascule automatiquement sur un rendu `whitespace-pre-wrap` pour préserver les sauts de ligne.
+#### 2. `src/utils/eventExportUtils.ts` — Type + Word + CSV
 
-### Détail technique
+**a) Étendre `EventExportData['marches']`** :
+```ts
+descriptif_court: string | null;
+descriptif_long: string | null;
+```
 
-- Nouveau hook léger inline (ou `useQuery` dans le composant) :
-  ```ts
-  supabase.from('marches').select('descriptif_court, descriptif_long').eq('id', activeMarcheId).maybeSingle()
-  ```
-  avec `staleTime: 5 * 60 * 1000`, `enabled: !!activeMarcheId`.
-- Reset de `currentPage` à 0 à chaque changement de `activeMarcheId` (`useEffect`).
-- Compteur badge "Lire" = nombre de descriptions non vides (0, 1 ou 2).
-- Compteur badge "Écrire" = ancien compteur `lire` (textes des marcheurs).
+**b) Word (section "Parcours")** — sous chaque ligne d'étape, si une description existe, ajouter un sous-bloc en italique gris, avec les balises HTML strippées (les descriptifs peuvent contenir du HTML enrichi) :
 
-### Points laissés au jugement par défaut (modifiables après)
+```text
+1. Étape Nom — Ville (lat, lng)
+   Présentation : Le sentier serpente entre…
+   En détail   : (texte long)
+```
 
-- **Ordre** : `Voir · Écouter · Lire · Écrire · Vivant` (lecture avant création).
-- **Libellés des 2 pages** : « Description courte » / « Description longue ».
-- **Cas vide partiel** : on affiche seulement la description renseignée, sans pagination.
-- **Format de stockage** : détection automatique HTML vs texte brut.
+Helper léger `stripHtml(s)` = `s.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim()`. Word ne rend pas le HTML brut, donc on l'aplatit en texte. Si une seule des 2 descriptions est présente, on n'affiche que celle-là. Si les deux sont vides, comportement actuel inchangé.
 
-Dis-moi si tu veux changer l'un de ces 4 points avant que je passe à l'implémentation.
+**c) CSV** — créer une **nouvelle section dédiée** `=== MARCHES ===` (déclenchée par `includeMarches`) plutôt que de polluer la section ÉVÉNEMENTS, car les descriptions peuvent être longues :
+
+```
+=== MARCHES ===
+Événement,Type,Ordre,Nom marche,Ville,Latitude,Longitude,Présentation,En détail
+```
+
+Avec `escapeCSV(stripHtml(...))` pour préserver la lisibilité tabulaire (les retours à la ligne et virgules sont déjà gérés par `escapeCSV`).
+
+#### 3. Aucune modification UI / aucun changement de checkbox
+
+Les nouvelles données sont incluses automatiquement dès que **"Marches associées"** est cochée (case déjà présente). Aucun nouveau toggle, aucune migration SQL.
+
+### Récapitulatif visuel Word
+
+```text
+Parcours — 3 étapes
+─────────────────────
+1. Marcher sur un sol qui respire — DEVIAT (45.6789, 0.1234)
+   Présentation : Une matinée d'observation des sols vivants…
+   En détail    : Le parcours débute au lavoir, traverse les prairies…
+
+2. (étape suivante)
+```
+
+### Fichiers touchés
+
+| Fichier | Nature |
+|---|---|
+| `src/components/admin/EventExportPanel.tsx` | +2 colonnes au `select`, +2 champs au mapping |
+| `src/utils/eventExportUtils.ts` | Type étendu, helper `stripHtml`, sous-bloc Word, nouvelle section CSV `=== MARCHES ===` |
+
+Aucune migration, aucune RLS, aucun impact sur les autres exports (Textes).
 
