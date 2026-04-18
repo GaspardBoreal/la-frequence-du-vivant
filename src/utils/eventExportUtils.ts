@@ -258,6 +258,33 @@ export async function exportEventsToWord(
             ],
           }),
         );
+
+        const court = stripHtml(m.descriptif_court);
+        const long = stripHtml(m.descriptif_long);
+        if (court) {
+          sections.push(
+            new Paragraph({
+              spacing: { after: 60 },
+              indent: { left: 360 },
+              children: [
+                new TextRun({ text: 'Présentation : ', bold: true, size: 18, color: '6b7280' }),
+                new TextRun({ text: court, size: 18, italics: true, color: '4b5563' }),
+              ],
+            }),
+          );
+        }
+        if (long) {
+          sections.push(
+            new Paragraph({
+              spacing: { after: 160 },
+              indent: { left: 360 },
+              children: [
+                new TextRun({ text: 'En détail : ', bold: true, size: 18, color: '6b7280' }),
+                new TextRun({ text: long, size: 18, italics: true, color: '4b5563' }),
+              ],
+            }),
+          );
+        }
       });
     }
 
