@@ -4,7 +4,9 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
-import { Filter, X, Search } from 'lucide-react';
+import { Filter, X, Search, ArrowUpDown } from 'lucide-react';
+
+type SortOption = 'date_desc' | 'date_asc' | 'nom_asc' | 'nom_desc';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { useAdminExplorations } from '../../hooks/useExplorations';
 import { supabase } from '../../integrations/supabase/client';
@@ -29,6 +31,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const [organisateurs, setOrganisateurs] = useState<Array<{id: string, nom: string, marches_count: number}>>([]);
   const [explorationMarchesIds, setExplorationMarchesIds] = useState<string[]>([]);
   const [explorationMarchesLoaded, setExplorationMarchesLoaded] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('date_desc');
 
   // Hook pour récupérer les explorations
   const { data: explorations = [] } = useAdminExplorations();
@@ -113,7 +116,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   }, [explorationMarchesIds]);
 
   // Fonction sécurisée pour filtrer les marches
-  const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string, noPhotos: boolean, noAudio: boolean, noTexts: boolean, exploration: string, organisateur: string = '') => {
+  const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string, noPhotos: boolean, noAudio: boolean, noTexts: boolean, exploration: string, organisateur: string = '', sort: SortOption = sortOption) => {
     if (!marches || marches.length === 0) {
       onFilterChange([]);
       return;
@@ -221,7 +224,32 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
       filtered = filtered.filter(marche => marche?.organisateur_id === organisateur);
     }
 
-    onFilterChange(filtered);
+    // Tri final
+    const getDateTime = (m: MarcheTechnoSensible) => {
+      const d = m?.date ? new Date(m.date).getTime() : NaN;
+      return isNaN(d) ? null : d;
+    };
+    const sorted = [...filtered].sort((a, b) => {
+      if (sort === 'date_desc' || sort === 'date_asc') {
+        const da = getDateTime(a);
+        const db = getDateTime(b);
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return sort === 'date_desc' ? db - da : da - db;
+      }
+      const na = a?.nomMarche || '';
+      const nb = b?.nomMarche || '';
+      const cmp = na.localeCompare(nb, 'fr', { sensitivity: 'base' });
+      return sort === 'nom_asc' ? cmp : -cmp;
+    });
+
+    onFilterChange(sorted);
+  };
+
+  const handleSortChange = (value: SortOption) => {
+    setSortOption(value);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter, organisateurFilter, value);
   };
 
   // Gestionnaires d'événements
@@ -288,6 +316,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     setOrganisateurFilter('');
     setExplorationMarchesIds([]);
     setExplorationMarchesLoaded(false);
+    setSortOption('date_desc');
     onFilterChange(marches);
   };
 
@@ -526,6 +555,25 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 </Select>
               </div>
             )}
+          </div>
+
+          {/* Tri */}
+          <div className="space-y-2">
+            <label className="text-white text-sm font-medium flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4" />
+              Trier par
+            </label>
+            <Select value={sortOption} onValueChange={(v) => handleSortChange(v as SortOption)}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white md:w-80">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                <SelectItem value="date_desc" className="text-gray-900 hover:bg-gray-100">Date (plus récentes)</SelectItem>
+                <SelectItem value="date_asc" className="text-gray-900 hover:bg-gray-100">Date (plus anciennes)</SelectItem>
+                <SelectItem value="nom_asc" className="text-gray-900 hover:bg-gray-100">Nom de la marche (A → Z)</SelectItem>
+                <SelectItem value="nom_desc" className="text-gray-900 hover:bg-gray-100">Nom de la marche (Z → A)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Filtres de contenu manquant */}
