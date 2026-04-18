@@ -1,78 +1,50 @@
 
 
-## Étendre "Ma Fréquence du jour" avec Biodiversité et Bioacoustique
+## Ajout d'un tri dans les filtres de /admin/marches
 
 ### Concept
 
-Aujourd'hui, la Fréquence du jour affiche une citation littéraire (géopoétique). L'idée est d'enrichir cette expérience quotidienne avec deux nouveaux types de contenus :
+Ajouter un sélecteur de tri dans le bloc "Filtres" (composant `AdminFilters`) permettant de classer la liste des marches selon 4 critères :
 
-- **Biodiversité** : un fait/anecdote sur une espèce, un écosystème, un phénomène écologique (ex: "Le lierre est l'une des dernières plantes à fleurir en automne, nourrissant abeilles et papillons quand tout s'éteint. — Source: INPN")
-- **Bioacoustique** : un fait sonore sur un animal, un paysage sonore, une technique d'écoute (ex: "Le troglodyte mignon produit un chant de 90 dB, l'un des plus puissants rapportés à sa taille. — Source: Krause, 2012")
+- **Date (décroissant)** — par défaut, comportement actuel
+- **Date (croissant)**
+- **Nom de la marche (A → Z)**
+- **Nom de la marche (Z → A)**
 
-Chaque jour, le marcheur verra 3 fréquences dans un carousel ou des onglets discrets : Géopoétique, Biodiversité, Bioacoustique.
+### Emplacement visuel
 
-### Architecture
+Le sélecteur prendra place dans le bloc `AdminFilters`, sur une nouvelle ligne discrète intitulée **"Trier par"**, juste sous la grille principale Exploration / Organisateur / Ville / Région / Département, avant la section "Filtres de contenu". Un simple `<Select>` (shadcn) avec icône `ArrowUpDown` suffit.
 
-**Option retenue : ajouter une colonne `categorie` à la table existante `frequence_citations`** plutôt que créer de nouvelles tables. Cela permet de réutiliser toute l'infrastructure existante (compteurs, admin, IA).
-
-### Modifications base de données (1 migration)
-
-1. Ajouter une colonne `categorie` à `frequence_citations` :
-   - Type : `text` avec valeur par défaut `'geopoetique'`
-   - Valeurs possibles : `geopoetique`, `biodiversite`, `bioacoustique`
-2. Toutes les citations existantes reçoivent automatiquement `'geopoetique'`
-
-```sql
-ALTER TABLE frequence_citations 
-  ADD COLUMN categorie text NOT NULL DEFAULT 'geopoetique';
+```text
+┌─────────────────────────────────────────────────┐
+│ Exploration | Organisateur | Ville | Région ... │
+│ Département                                     │
+│                                                 │
+│ Trier par : [↕ Date (plus récentes) ▾]          │
+│                                                 │
+│ Filtres de contenu                              │
+│ ☐ Sans photo  ☐ Sans audio  ☐ Sans texte        │
+└─────────────────────────────────────────────────┘
 ```
 
-### Modifications admin (`AdminFrequences.tsx`)
+### Logique technique
 
-1. Ajouter un **filtre par catégorie** (ToggleGroup) : Toutes | Géopoétique | Biodiversité | Bioacoustique
-2. Ajouter un **sélecteur de catégorie** dans le formulaire d'ajout et d'édition
-3. Afficher un **badge catégorie** sur chaque ligne du tableau
-4. Adapter la suggestion IA pour passer la catégorie sélectionnée au prompt
+1. Ajouter un `useState<SortOption>('date_desc')` dans `AdminFilters`.
+2. Étendre la fonction de filtrage existante avec un `.sort()` final appliqué juste avant `onFilterChange(filtered)`.
+3. Comparateurs :
+   - `date_desc` / `date_asc` : `new Date(a.date).getTime()` (gestion des dates manquantes → poussées en fin)
+   - `nom_asc` / `nom_desc` : `a.nomMarche.localeCompare(b.nomMarche, 'fr', { sensitivity: 'base' })`
+4. Le tri se déclenche dans le même `useEffect` qui recalcule les marches filtrées.
 
-### Modifications composant marcheur (`FrequenceWave.tsx`)
+### Impact
 
-1. Charger les 3 catégories de citations
-2. Sélectionner une citation par catégorie par jour (même algorithme seed mais décalé)
-3. Afficher un **mini onglet** ou **carousel** avec 3 icônes :
-   - BookOpen (Géopoétique)
-   - TreePine (Biodiversité)  
-   - Headphones (Bioacoustique)
-4. Le marcheur peut switcher entre les 3, avec une animation douce
+- **1 seul fichier modifié** : `src/components/admin/AdminFilters.tsx`
+- Aucun changement dans `MarcheAdmin.tsx`, ni dans `MarcheList.tsx`, ni dans le hook `useSupabaseMarches` (le tri par date décroissante du hook reste, le composant ne fait que ré-ordonner ensuite).
+- Aucune migration SQL, aucune modification d'autres composants.
 
-### Modifications Edge Function (`suggest-citations`)
-
-Adapter le prompt pour accepter un paramètre `categorie` et générer des contenus appropriés :
-- Géopoétique : citations littéraires (comportement actuel)
-- Biodiversité : faits sourcés sur la faune/flore
-- Bioacoustique : faits sur les sons du vivant, paysages sonores
-
-### Fichiers concernés
+### Fichier concerné
 
 | Fichier | Action |
 |---|---|
-| Nouvelle migration SQL | `ALTER TABLE frequence_citations ADD COLUMN categorie` |
-| `src/pages/AdminFrequences.tsx` | Filtre catégorie, badge, formulaire étendu |
-| `src/components/community/FrequenceWave.tsx` | Onglets 3 catégories, sélection par catégorie |
-| `supabase/functions/suggest-citations/index.ts` | Prompt adapté selon catégorie |
-| `src/integrations/supabase/types.ts` | Régénéré automatiquement |
-
-### Design du composant marcheur
-
-```text
-┌──────────────────────────────────────────┐
-│ MA FRÉQUENCE DU JOUR                     │
-│ [📖] [🌿] [🎧]                          │
-│                                          │
-│ « Le lierre est l'une des dernières      │
-│   plantes à fleurir en automne... »      │
-│                        — INPN 🔗         │
-└──────────────────────────────────────────┘
-```
-
-Les trois icônes sont des onglets discrets. L'onglet actif est souligné avec la couleur du rôle. Le contenu change avec une animation fade.
+| `src/components/admin/AdminFilters.tsx` | Ajout d'un `Select` "Trier par" + logique de tri appliquée avant `onFilterChange` |
 
