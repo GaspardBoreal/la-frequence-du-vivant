@@ -224,7 +224,32 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
       filtered = filtered.filter(marche => marche?.organisateur_id === organisateur);
     }
 
-    onFilterChange(filtered);
+    // Tri final
+    const getDateTime = (m: MarcheTechnoSensible) => {
+      const d = m?.date ? new Date(m.date).getTime() : NaN;
+      return isNaN(d) ? null : d;
+    };
+    const sorted = [...filtered].sort((a, b) => {
+      if (sort === 'date_desc' || sort === 'date_asc') {
+        const da = getDateTime(a);
+        const db = getDateTime(b);
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return sort === 'date_desc' ? db - da : da - db;
+      }
+      const na = a?.nomMarche || '';
+      const nb = b?.nomMarche || '';
+      const cmp = na.localeCompare(nb, 'fr', { sensitivity: 'base' });
+      return sort === 'nom_asc' ? cmp : -cmp;
+    });
+
+    onFilterChange(sorted);
+  };
+
+  const handleSortChange = (value: SortOption) => {
+    setSortOption(value);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter, organisateurFilter, value);
   };
 
   // Gestionnaires d'événements
