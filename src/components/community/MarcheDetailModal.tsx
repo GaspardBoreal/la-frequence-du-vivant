@@ -5,7 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, FileText, Globe, Users, User, ExternalLink, Video, Plus, Grid3X3, LayoutList, Crosshair, Map as MapIcon, List } from 'lucide-react';
+import { Eye, Headphones, BookOpen, PenLine, Leaf, MapPin, Music, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, FileText, Globe, Users, User, ExternalLink, Video, Plus, Grid3X3, LayoutList, Crosshair, Map as MapIcon, List } from 'lucide-react';
+import LireDescriptionsTab from './exploration/LireDescriptionsTab';
 import { usePhotoGpsCheck, formatDistance, distanceColor, distanceEmoji, type PhotoGpsResult } from '@/hooks/usePhotoGpsCheck';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import MediaLightbox, { type LightboxItem } from './contributions/MediaLightbox';
@@ -38,12 +39,13 @@ interface MarcheDetailModalProps {
   eventLieu: string | null;
 }
 
-type TabKey = 'voir' | 'ecouter' | 'lire' | 'vivant';
+type TabKey = 'voir' | 'ecouter' | 'lire' | 'ecrire' | 'vivant';
 
 const tabs: { key: TabKey; label: string; icon: typeof Eye }[] = [
   { key: 'voir', label: 'Voir', icon: Eye },
   { key: 'ecouter', label: 'Écouter', icon: Headphones },
   { key: 'lire', label: 'Lire', icon: BookOpen },
+  { key: 'ecrire', label: 'Écrire', icon: PenLine },
   { key: 'vivant', label: 'Vivant', icon: Leaf },
 ];
 
@@ -990,7 +992,8 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   const tabCounts: Record<TabKey, number> = {
     voir: stats?.totalMedias || 0,
     ecouter: stats?.totalAudio || 0,
-    lire: stats?.totalTextes || 0,
+    lire: 0,
+    ecrire: stats?.totalTextes || 0,
     vivant: 0,
   };
 
@@ -1054,7 +1057,8 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
             >
               {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
               {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
-              {activeTab === 'lire' && <LireTab userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
+              {activeTab === 'lire' && <LireDescriptionsTab activeMarcheId={activeMarcheId} />}
+              {activeTab === 'ecrire' && <LireTab userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
               {activeTab === 'vivant' && <VivantTab marcheId={activeMarcheId || ''} userId={userId} marcheSlug={activeMarcheSlug} />}
             </motion.div>
           </AnimatePresence>
