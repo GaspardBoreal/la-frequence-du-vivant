@@ -31,6 +31,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const [organisateurs, setOrganisateurs] = useState<Array<{id: string, nom: string, marches_count: number}>>([]);
   const [explorationMarchesIds, setExplorationMarchesIds] = useState<string[]>([]);
   const [explorationMarchesLoaded, setExplorationMarchesLoaded] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('date_desc');
 
   // Hook pour récupérer les explorations
   const { data: explorations = [] } = useAdminExplorations();
