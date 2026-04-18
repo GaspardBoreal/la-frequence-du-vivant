@@ -154,7 +154,7 @@ const EventExportPanel: React.FC = () => {
           if (includeMarches && event.exploration_id) {
             const { data: exploMarches } = await supabase
               .from('exploration_marches')
-              .select('marche_id, marche:marches(id, nom_marche, ville, latitude, longitude)')
+              .select('marche_id, marche:marches(id, nom_marche, ville, latitude, longitude, descriptif_court, descriptif_long)')
               .eq('exploration_id', event.exploration_id)
               .order('ordre', { ascending: true });
 
@@ -164,6 +164,8 @@ const EventExportPanel: React.FC = () => {
               ville: em.marche?.ville || '',
               latitude: em.marche?.latitude || null,
               longitude: em.marche?.longitude || null,
+              descriptif_court: em.marche?.descriptif_court || null,
+              descriptif_long: em.marche?.descriptif_long || null,
             }));
           }
 

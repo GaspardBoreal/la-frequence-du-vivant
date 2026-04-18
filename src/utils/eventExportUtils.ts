@@ -50,6 +50,8 @@ export interface EventExportData {
     ville: string;
     latitude: number | null;
     longitude: number | null;
+    descriptif_court: string | null;
+    descriptif_long: string | null;
   }>;
   biodiversity: {
     totalSpecies: number;
@@ -82,6 +84,22 @@ function getTypeColor(eventType: string): string {
 
 function getTypeLabel(eventType: string): string {
   return EVENT_TYPE_LABELS[eventType] || eventType;
+}
+
+function stripHtml(s: string | null | undefined): string {
+  if (!s) return '';
+  return s
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 // ============================================================================
@@ -240,6 +258,33 @@ export async function exportEventsToWord(
             ],
           }),
         );
+
+        const court = stripHtml(m.descriptif_court);
+        const long = stripHtml(m.descriptif_long);
+        if (court) {
+          sections.push(
+            new Paragraph({
+              spacing: { after: 60 },
+              indent: { left: 360 },
+              children: [
+                new TextRun({ text: 'Présentation : ', bold: true, size: 18, color: '6b7280' }),
+                new TextRun({ text: court, size: 18, italics: true, color: '4b5563' }),
+              ],
+            }),
+          );
+        }
+        if (long) {
+          sections.push(
+            new Paragraph({
+              spacing: { after: 160 },
+              indent: { left: 360 },
+              children: [
+                new TextRun({ text: 'En détail : ', bold: true, size: 18, color: '6b7280' }),
+                new TextRun({ text: long, size: 18, italics: true, color: '4b5563' }),
+              ],
+            }),
+          );
+        }
       });
     }
 
@@ -357,6 +402,30 @@ export function exportEventsToCSV(
             escapeCSV(p.nom),
             escapeCSV(formatEventDate(p.created_at)),
             p.validated_at ? 'Présent' : 'Inscrit',
+          ].join(','),
+        );
+      });
+    });
+    lines.push('');
+  }
+
+  // Marches CSV
+  if (options.includeMarches) {
+    lines.push('=== MARCHES ===');
+    lines.push('Événement,Type,Ordre,Nom marche,Ville,Latitude,Longitude,Présentation,En détail');
+    events.forEach(e => {
+      e.marches.forEach((m, i) => {
+        lines.push(
+          [
+            escapeCSV(e.title),
+            escapeCSV(getTypeLabel(e.event_type)),
+            (i + 1).toString(),
+            escapeCSV(m.nom_marche),
+            escapeCSV(m.ville),
+            m.latitude?.toString() || '',
+            m.longitude?.toString() || '',
+            escapeCSV(stripHtml(m.descriptif_court)),
+            escapeCSV(stripHtml(m.descriptif_long)),
           ].join(','),
         );
       });
