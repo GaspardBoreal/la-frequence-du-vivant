@@ -50,6 +50,8 @@ export interface EventExportData {
     ville: string;
     latitude: number | null;
     longitude: number | null;
+    descriptif_court: string | null;
+    descriptif_long: string | null;
   }>;
   biodiversity: {
     totalSpecies: number;
