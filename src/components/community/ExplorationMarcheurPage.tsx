@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Leaf, TreePine, GraduationCap } from 'lucide-react';
+import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, PenLine, Leaf, TreePine, GraduationCap } from 'lucide-react';
+import LireDescriptionsTab from './exploration/LireDescriptionsTab';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
 import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
@@ -19,7 +20,7 @@ import ApprendreTab from './insights/ApprendreTab';
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
 
 type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite' | 'apprendre';
-type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'vivant';
+type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'ecrire' | 'vivant';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
   { key: 'carte', label: 'Carte', icon: Map },
@@ -34,6 +35,7 @@ const sensoryTabs: { key: SensoryTab; label: string; icon: typeof Eye }[] = [
   { key: 'voir', label: 'Voir', icon: Eye },
   { key: 'ecouter', label: 'Écouter', icon: Headphones },
   { key: 'lire', label: 'Lire', icon: BookOpen },
+  { key: 'ecrire', label: 'Écrire', icon: PenLine },
   { key: 'vivant', label: 'Vivant', icon: Leaf },
 ];
 
