@@ -47,6 +47,14 @@ const LireDescriptionsTab: React.FC<LireDescriptionsTabProps> = ({ activeMarcheI
   const current = pages[page];
   const hasAny = pages.some(p => p.content);
 
+  // Auto-jump to non-empty page if current is empty (must be before any early return)
+  useEffect(() => {
+    if (!current.content && hasAny) {
+      const other = pages.findIndex(p => p.content);
+      if (other !== -1) setPage(other);
+    }
+  }, [current.content, hasAny, pages]);
+
   if (isLoading) {
     return (
       <div className="space-y-3 animate-pulse py-6">
@@ -75,14 +83,6 @@ const LireDescriptionsTab: React.FC<LireDescriptionsTabProps> = ({ activeMarcheI
 
   const goPrev = () => setPage(p => (p === 0 ? pages.length - 1 : p - 1));
   const goNext = () => setPage(p => (p === pages.length - 1 ? 0 : p + 1));
-
-  // If current page empty but other has content, jump
-  useEffect(() => {
-    if (!current.content && hasAny) {
-      const other = pages.findIndex(p => p.content);
-      if (other !== -1) setPage(other);
-    }
-  }, [current.content, hasAny, pages]);
 
   const isHtml = current.content && looksLikeHtml(current.content);
 
