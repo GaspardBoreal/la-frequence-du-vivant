@@ -557,6 +557,25 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
             )}
           </div>
 
+          {/* Tri */}
+          <div className="space-y-2">
+            <label className="text-white text-sm font-medium flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4" />
+              Trier par
+            </label>
+            <Select value={sortOption} onValueChange={(v) => handleSortChange(v as SortOption)}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white md:w-80">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                <SelectItem value="date_desc" className="text-gray-900 hover:bg-gray-100">Date (plus récentes)</SelectItem>
+                <SelectItem value="date_asc" className="text-gray-900 hover:bg-gray-100">Date (plus anciennes)</SelectItem>
+                <SelectItem value="nom_asc" className="text-gray-900 hover:bg-gray-100">Nom de la marche (A → Z)</SelectItem>
+                <SelectItem value="nom_desc" className="text-gray-900 hover:bg-gray-100">Nom de la marche (Z → A)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Filtres de contenu manquant */}
           <div className="space-y-3">
             <label className="text-white text-sm font-medium">Filtres de contenu</label>
