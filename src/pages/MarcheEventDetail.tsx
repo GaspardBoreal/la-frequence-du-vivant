@@ -20,6 +20,7 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta, type MarcheEventType } from '@/lib/marcheEventTypes';
 import EventBiodiversityTab from '@/components/community/EventBiodiversityTab';
+import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -68,6 +69,17 @@ const MarcheEventDetail: React.FC = () => {
       });
     }
   }, [event]);
+
+  // 🌿 Signale au Compagnon Admin la fiche en cours de consultation
+  useChatPageContextProvider(
+    !isNew && id && event ? { type: 'marche_event', id } : null,
+    {
+      label: event?.title
+        ? `${event.title}${event.date_marche ? ` — ${format(new Date(event.date_marche), 'd MMM yyyy', { locale: fr })}` : ''}`
+        : undefined,
+      activeTab: 'Informations',
+    }
+  );
 
   const selectedTypeMeta = getMarcheEventTypeMeta(form.event_type);
 
