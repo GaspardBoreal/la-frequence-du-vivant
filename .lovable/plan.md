@@ -1,131 +1,107 @@
 
 
-## Activer le ChatBot universel "PiloTerra" dans /admin de La Fréquence du Vivant
+## Diagnostic
 
-### Vue d'ensemble du chatbot IAgri'Scope
+Sur `/admin/marche-events/df85910e-...`, le chatbot a répondu **"je ne dispose pas de données sur cet événement"** parce que :
 
-Architecture découverte (10 fichiers + 1 edge function) :
+1. Le **scope envoyé** est `events` (générique) → la RPC `get_admin_chatbot_context('events')` retourne juste les **5 prochains événements + stats globales**, pas la fiche détaillée de l'UUID consulté.
+2. Le chatbot ignore complètement le **`:id`** présent dans l'URL.
+3. Il ignore aussi **ce que l'admin voit à l'écran** : organisateur, date, lieu, capacité, inscrits, exploration liée, biodiversité, médias, marcheurs présents…
+
+C'est le chaînon manquant pour passer de "assistant générique" à **"copilote contextuel wahou"**.
+
+## Vision : 3 niveaux de contexte cumulés
 
 ```text
-src/components/chatbot/
-  ChatBot.tsx            ← UI orchestration (mode réduit/plein écran, voix, upload, export)
-  ChatMessage.tsx        ← Markdown + entités cliquables
-  ChatSuggestions.tsx    ← Suggestions contextuelles par "page"
-  ChatExportDrawer.tsx   ← Export mobile
-  ChatPrintView.tsx      ← Vue print PDF
-  useChatExport.ts       ← Logique export/print
-  DefiInspectorPanel.tsx ← Split-view inspecteur (spécifique IAgri)
-  QuizCard.tsx           ← Quiz embarqués (spécifique IAgri)
-  quizParser.ts
-  chatConfig.ts          ← ⭐ TOUS les paramètres business isolés ici
-
-src/hooks/
-  useChatStream.ts       ← SSE streaming + upload doc context
-  useDocumentExtractor.ts← PDF/DOCX/TXT → texte
-  useSpeechRecognition.ts← STT navigateur + interruption "stop"
-  useSpeechSynthesis.ts  ← TTS navigateur + ElevenLabs
-
-supabase/functions/
-  chat-defis/            ← system prompt + Lovable AI Gateway streaming
-  elevenlabs-tts/        ← TTS premium
+┌──────────────────────────────────────────────────┐
+│  N1 — SCOPE (rubrique) : events / community / …  │  ← déjà fait
+│  N2 — ENTITÉ FOCALE (l'UUID dans l'URL)          │  ← à ajouter
+│  N3 — ÉTAT D'ÉCRAN (onglet actif, filtres…)      │  ← à ajouter
+└──────────────────────────────────────────────────┘
 ```
 
-**Points forts du design** : `chatConfig.ts` centralise déjà tout ce qui change d'un projet à l'autre (nom, emojis, suggestions, regex entités, branding print, edge function path). Le composant lui-même est agnostique.
+Quand l'admin pose une question, le chatbot reçoit les 3 niveaux et répond comme s'il regardait l'écran avec lui.
 
-### Stratégie de réutilisation cross-projet
+## Plan d'implémentation
 
-Trois options possibles. Recommandation : **Option B (copie maîtrisée + manifest)**, car Lovable n'offre pas de package npm partagé entre projets.
+### 1. Frontend — Détection enrichie d'URL et d'état
 
-| Option | Principe | Verdict |
-|---|---|---|
-| A — Package npm privé | Publier `@piloterra/chatbot` | Surdimensionné, friction CI |
-| **B — Copie + manifest + script de sync** | Un projet "source de vérité" (PiloTerra Chatbot Core) + outil cross-project pour propager | ✅ Pragmatique, exploite `cross_project--copy_project_asset` |
-| C — Sous-arbre Git | Branche partagée | Lovable ne gère pas |
+**`AdminChatBotMount.tsx`** : extraire `entityType` + `entityId` depuis `pathname` (regex sur `/admin/marche-events/:id`, `/admin/community/marcheur/:slug`, `/admin/exportations/:id`…) et les passer à `<ChatBot>`.
 
-**Modèle B** :
-1. **Source de vérité** = un projet dédié (à créer) ou IAgri'Scope (déjà mature). Recommandation : promouvoir le code IAgri'Scope comme **v1**.
-2. Chaque projet héberge sa **copie locale** dans `src/components/chatbot/` + `src/hooks/useChat*` + une edge function dédiée.
-3. **Seul `chatConfig.ts` diffère** par projet (couleurs via tokens CSS du thème projet, nom, suggestions, system prompt côté edge function).
-4. **Synchronisation** : quand on améliore le chatbot dans n'importe quel projet, on demande "propage cette amélioration aux autres projets PiloTerra" → utilise les outils cross-project pour copier les fichiers core (tout sauf `chatConfig.ts` et l'edge function).
+**Nouveau hook `useChatPageContext`** : un store Zustand léger (ou simple Context) que **chaque page admin** alimente avec son état visible :
+- onglet actif (`Vue d'ensemble`, `Marcheurs`, `Médias`, `Empreinte`…)
+- filtres en cours (période, type d'événement…)
+- libellé humain ("Marche du Vivant à DEVIAT, 14 mars 2026")
 
-### Étape 1 — Activer dans /admin de La Fréquence du Vivant (ce ticket)
+Les pages admin existantes posent un `useChatPageContextProvider({...})` au montage — **changement minimal, ~3 lignes par page**.
 
-#### Fichiers à créer (copie depuis IAgri'Scope)
+### 2. Frontend → Backend — Payload enrichi
 
-**Composants (copie 1:1, agnostiques)** :
-- `src/components/chatbot/ChatBot.tsx`
-- `src/components/chatbot/ChatMessage.tsx`
-- `src/components/chatbot/ChatSuggestions.tsx`
-- `src/components/chatbot/ChatExportDrawer.tsx`
-- `src/components/chatbot/ChatPrintView.tsx`
-- `src/components/chatbot/useChatExport.ts`
+`useChatStream.ts` envoie désormais :
+```json
+{
+  "messages": [...],
+  "scope": "events",
+  "entity": { "type": "marche_event", "id": "df85910e-..." },
+  "pageState": { "activeTab": "Vue d'ensemble", "label": "..." }
+}
+```
 
-**Composants à NE PAS copier** (spécifiques défis IAgri) :
-- ❌ `DefiInspectorPanel.tsx`, `QuizCard.tsx`, `quizParser.ts` → retirés du `ChatBot.tsx` lors de la copie (split-view désactivé pour v1).
+### 3. Backend — RPC contextuelle de fiche complète
 
-**Hooks (copie 1:1)** :
-- `src/hooks/useChatStream.ts`
-- `src/hooks/useDocumentExtractor.ts`
-- `src/hooks/useSpeechRecognition.ts`
-- `src/hooks/useSpeechSynthesis.ts`
+Nouvelle fonction SQL `get_admin_entity_context(_type text, _id uuid)` qui retourne un **JSON dense** selon le type :
 
-**Configuration spécifique La Fréquence du Vivant** :
-- `src/components/chatbot/chatConfig.ts` — adapté :
-  - `assistantName: "Compagnon Admin du Vivant"`
-  - `assistantEmoji: '🌿'`
-  - Couleurs déjà héritées via `bg-primary` (Forêt Émeraude / Papier Crème selon thème actif → s'adapte tout seul)
-  - `contextLabels` mappés sur les pages admin (`marche-events`, `community`, `marches`, `exportations`, etc.)
-  - `suggestions` orientées admin : "combien d'événements ce mois ?", "quels marcheurs sont Sentinelles ?", "quelle marche a le plus de zones blanches ?"
-  - `entityPattern` : ex. `/\bE(\d+)\b/g` pour référencer un événement, ou désactivé en v1
-  - `edgeFunctionPath: 'admin-chat'`
+- **`marche_event`** : event + organisateur + lieu (GPS, commune) + exploration liée + nombre d'inscrits validés/en attente + 10 derniers marcheurs inscrits (nom, rôle, email) + agrégat biodiversité (nb espèces, top 5) + nb photos/sons/textes + lien public.
+- **`marcheur`** (community/:slug) : profil complet + historique participations + rôle/progression + contributions médias + filleuls.
+- **`exploration`** : exploration + marches liées + biodiversité agrégée + statut publication.
 
-**Edge function backend** :
-- `supabase/functions/admin-chat/index.ts` — clone de `chat-defis` avec :
-  - System prompt orienté admin Marches du Vivant
-  - **Connexion DB** : utilise `SUPABASE_SERVICE_ROLE_KEY` pour interroger `marche_events`, `marches`, `community_profiles`, `exploration_marches`, etc.
-  - Pattern : avant l'appel LLM, exécuter quelques RPC d'agrégation (KPIs, comptages) et injecter le résultat dans le system prompt comme contexte frais
-  - Streaming SSE via Lovable AI Gateway (`google/gemini-3-flash-preview`)
-  - **Sécurité** : valider JWT admin (réutiliser le pattern `edge-function-admin-security-logic` déjà documenté)
+Sécurité : `SECURITY DEFINER`, vérif `check_is_admin_user(auth.uid())` en première ligne, `REVOKE FROM PUBLIC`, `GRANT TO authenticated`.
 
-**Optionnel v1.1** : `supabase/functions/elevenlabs-tts/index.ts` (si on veut la voix premium ; sinon TTS navigateur suffit, gratuit).
+### 4. Backend — `admin-chat` v2
 
-#### Fichiers à modifier
+L'edge function appelle :
+- `get_admin_chatbot_context(scope)` (existe) → vue large
+- **`get_admin_entity_context(entity.type, entity.id)`** (nouveau) si `entity` présent → fiche détaillée
 
-| Fichier | Action |
-|---|---|
-| `src/pages/AdminLayout.tsx` (ou équivalent enveloppant `/admin/*`) | Monter `<ChatBot currentContext={...} />` une seule fois, lire le contexte depuis l'URL (`useLocation`) |
-| `src/components/admin/marche-events/EventsChatbotFab.tsx` | **Supprimer** (le FAB devient global, plus besoin du placeholder) |
+Le system prompt devient :
+```text
+## CONTEXTE FRAIS
+### Vue rubrique ({{scope}})  →  {{contextScope}}
+### Fiche en cours de consultation
+- Type : marche_event
+- Libellé visible : "Marche du Vivant à DEVIAT"
+- Onglet ouvert : "Vue d'ensemble"
+- Données : {{contextEntity}}
+```
 
-#### Contextualisation par page admin
+Et une règle ajoutée : *"Quand l'admin dit 'cet événement', 'ce marcheur', 'cette exploration' → réfère-toi TOUJOURS à la Fiche en cours de consultation."*
 
-Le `ChatBot` reçoit un prop `currentContext` (string) déduit de l'URL. Ex :
-- `/admin/marche-events` → contexte `events` → suggestions "combien d'événements à venir ?", "type le plus représenté ?"
-- `/admin/community` → contexte `community` → "qui sont mes Ambassadeurs actifs ?"
-- `/admin/marches` → contexte `marches` → "marches sans coordonnées ?"
-- défaut → contexte `dashboard`
+### 5. Suggestions contextuelles dynamiques
 
-L'edge function reçoit ce contexte et adapte sa requête DB (n'agrège que les tables pertinentes pour économiser des tokens).
+`ChatSuggestions.tsx` : si `entity.type === 'marche_event'`, remplacer les 4 suggestions génériques par des suggestions **focalisées sur la fiche** :
+- "Synthèse de cet événement"
+- "Qui sont les marcheurs inscrits ?"
+- "Quelle est l'empreinte biodiversité ?"
+- "Génère un compte-rendu prêt à envoyer"
 
-#### Sécurité (critique)
+### 6. Bonus qualité "wahou"
 
-- L'edge function `admin-chat` **valide le JWT** et vérifie le rôle `admin` via `has_role()` avant tout. Aucune donnée sensible ne fuit.
-- Pas de SQL libre venant du LLM. L'edge function expose **un set fixe de RPC SQL agrégées** (ex. `get_admin_chatbot_context(_scope text)`) renvoyant des stats déjà anonymisées/agrégées. Le LLM ne reçoit que ces résultats.
-- Documents uploadés : extraction côté **client** (déjà le cas dans `useDocumentExtractor`), donc rien ne quitte le navigateur sauf le texte que l'utilisateur envoie.
+- **Badge contextuel** dans le header du chatbot : au lieu de juste "Événements", afficher *"Événements › Marche du Vivant à DEVIAT"* pour que l'admin voie que le bot regarde la bonne fiche.
+- **Mémoire de session** : conserver le `entity.id` même si l'utilisateur navigue brièvement, et reset au changement explicite.
+- **Pré-chargement silencieux** : à l'ouverture du chatbot sur une fiche, lancer en tâche de fond la récupération du contexte entité pour que la 1ʳᵉ réponse soit instantanée.
 
-### Étape 2 — Process de propagation cross-projet (à valider après v1)
+## Détails techniques
 
-Une fois la v1 stable dans La Fréquence du Vivant, créer un document de référence `mem://chatbot/piloterra-core-version` listant les fichiers "core" et la version. Toute amélioration d'un fichier core dans n'importe quel projet → l'utilisateur peut demander "synchronise le chatbot vers Scope/Academy/etc." et l'agent utilisera `cross_project--read_project_file` + `code--write` pour propager.
+- **Migration SQL** : 1 nouvelle fonction `get_admin_entity_context` + GRANT/REVOKE.
+- **Fichiers touchés** : `AdminChatBotMount.tsx`, `ChatBot.tsx` (header + suggestions), `useChatStream.ts`, `chatConfig.ts` (suggestions par type d'entité), nouveau `useChatPageContext.ts`, `admin-chat/index.ts`.
+- **Pages admin instrumentées en v1** : `MarcheEventDetail` (priorité — celle de la capture), `CommunityDashboard`, `ExplorationDetail` admin. Les autres pages continuent à fonctionner avec scope seul.
+- **Compatibilité** : si `entity` est absent, le bot fonctionne comme aujourd'hui — zéro régression.
 
-### Customisation par projet (déjà résolue)
+## Résultat attendu
 
-Les couleurs viennent **automatiquement** des tokens CSS du projet (`bg-primary`, `text-primary-foreground`, etc.). Aucune duplication CSS. Sur La Fréquence du Vivant, le chatbot adoptera Forêt Émeraude en thème sombre et Papier Crème en thème clair sans une ligne de code spécifique.
+Sur la même page, à la même question *"Fais-moi une synthèse de cet événement"*, le bot répondra :
 
-### Points à confirmer avant implémentation
+> **Marche du Vivant à DEVIAT — 14 mars 2026** organisée par *Les Sentiers Vivants*. 12 marcheurs validés (3 ambassadeurs, 9 marcheurs), 4 en attente. Lieu : forêt de Deviat (45.42°N, 0.18°E). Exploration liée : *Fréquence de la rivière Dordogne — Mouvement II*. Empreinte biodiversité collectée : 87 espèces dont 4 patrimoniales (loutre, martin-pêcheur…). 24 photos, 6 sons, 2 textes éco-poétiques publiés. **Recommandation** : 4 inscriptions en attente à valider, et le compte-rendu n'est pas encore exporté.
 
-1. **Périmètre v1** : on copie tout (voix navigateur + upload PDF/DOCX + export print) ou on commence minimaliste (texte + export uniquement, voix/upload en v1.1) ?
-2. **TTS premium ElevenLabs** : on déploie aussi `elevenlabs-tts` (nécessite secret `ELEVENLABS_API_KEY`) ou on se contente du TTS navigateur gratuit pour la v1 ?
-3. **Données accessibles au chatbot** : limiter v1 à des **agrégats publics** (compteurs, top marches, types d'événements) — pas de PII marcheurs ? Ou autoriser dès le départ la consultation détaillée (noms, emails) puisque c'est l'admin ?
-4. **Périmètre de montage** : le FAB n'apparaît **que sur `/admin/*`** (recommandé v1) ou sur tout le site avec contexte différent côté public ?
-
-Réponds à ces 4 points et je présente le plan d'implémentation détaillé pour exécution.
+Voilà le niveau "wahou".
 
