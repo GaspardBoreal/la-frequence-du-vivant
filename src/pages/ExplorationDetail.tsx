@@ -7,6 +7,7 @@ import SEOHead from '@/components/SEOHead';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Sparkles } from 'lucide-react';
 import { buildWelcomeComposition } from '@/utils/welcomeComposer';
+import { createSafeHtml } from '@/utils/htmlSanitizer';
 
 const ExplorationDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -290,7 +291,7 @@ const ExplorationDetail = () => {
           </h1>
           
           {exploration.description && (
-            <div className="text-gaspard-cream/80 text-lg mb-8 leading-relaxed prose prose-lg prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: exploration.description }}>
+            <div className="text-gaspard-cream/80 text-lg mb-8 leading-relaxed prose prose-lg prose-invert max-w-none" dangerouslySetInnerHTML={createSafeHtml(exploration.description)}>
             </div>
           )}
           

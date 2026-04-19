@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Quote, Sparkles, Pause, Play } from 'lucide-react';
 import { Button } from './ui/button';
 import { RegionalTheme } from '../utils/regionalThemes';
+import { createSafeHtml } from '@/utils/htmlSanitizer';
 
 interface PoeticTextDisplayProps {
   text: string;
@@ -84,7 +85,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                 whiteSpace: 'pre-wrap',
                 wordSpacing: '0.1em'
               }}
-              dangerouslySetInnerHTML={{ __html: processRichText(text) }}
+              dangerouslySetInnerHTML={createSafeHtml(processRichText(text))}
             />
           </motion.div>
         </div>
