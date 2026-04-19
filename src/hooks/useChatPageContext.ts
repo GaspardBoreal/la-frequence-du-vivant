@@ -1,5 +1,4 @@
-import { create } from 'zustand';
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 export interface ChatEntity {
   type: 'marche_event' | 'marcheur' | 'exploration';
@@ -15,21 +14,62 @@ export interface ChatPageState {
   filters?: Record<string, unknown>;
 }
 
-interface ChatPageContextStore {
+interface State {
   entity: ChatEntity | null;
   pageState: ChatPageState;
-  setContext: (entity: ChatEntity | null, pageState?: ChatPageState) => void;
-  setPageState: (pageState: ChatPageState) => void;
-  clear: () => void;
 }
 
-export const useChatPageContextStore = create<ChatPageContextStore>((set) => ({
-  entity: null,
-  pageState: {},
-  setContext: (entity, pageState = {}) => set({ entity, pageState }),
-  setPageState: (pageState) => set((s) => ({ pageState: { ...s.pageState, ...pageState } })),
-  clear: () => set({ entity: null, pageState: {} }),
-}));
+let state: State = { entity: null, pageState: {} };
+const listeners = new Set<() => void>();
+
+function setState(next: State) {
+  state = next;
+  listeners.forEach((l) => l());
+}
+
+const store = {
+  getState: () => state,
+  subscribe: (l: () => void) => {
+    listeners.add(l);
+    return () => listeners.delete(l);
+  },
+  setContext: (entity: ChatEntity | null, pageState: ChatPageState = {}) => {
+    setState({ entity, pageState });
+  },
+  setPageState: (pageState: ChatPageState) => {
+    setState({ entity: state.entity, pageState: { ...state.pageState, ...pageState } });
+  },
+  clear: () => setState({ entity: null, pageState: {} }),
+};
+
+/**
+ * Hook React qui s'abonne au store et retourne une slice du state.
+ * Imite l'API de zustand pour minimiser les changements appelants.
+ */
+export function useChatPageContextStore<T>(selector: (s: State & {
+  setContext: typeof store.setContext;
+  setPageState: typeof store.setPageState;
+  clear: typeof store.clear;
+}) => T): T {
+  return useSyncExternalStore(
+    store.subscribe,
+    () => selector({
+      ...state,
+      setContext: store.setContext,
+      setPageState: store.setPageState,
+      clear: store.clear,
+    }),
+    () => selector({
+      ...state,
+      setContext: store.setContext,
+      setPageState: store.setPageState,
+      clear: store.clear,
+    }),
+  );
+}
+
+/** Accès direct (non-réactif) — utile pour set depuis n'importe où. */
+export const chatPageContext = store;
 
 /**
  * Helper hook : qu'une page admin pose au montage pour signaler au chatbot
@@ -38,23 +78,19 @@ export const useChatPageContextStore = create<ChatPageContextStore>((set) => ({
  * @example
  *   useChatPageContextProvider(
  *     event ? { type: 'marche_event', id: event.id } : null,
- *     { label: event?.titre, activeTab: 'Vue d'ensemble' }
+ *     { label: event?.titre, activeTab: 'Vue d\'ensemble' }
  *   );
  */
 export function useChatPageContextProvider(
   entity: ChatEntity | null,
   pageState: ChatPageState = {}
 ) {
-  const setContext = useChatPageContextStore((s) => s.setContext);
-  const clear = useChatPageContextStore((s) => s.clear);
-
-  // Stable signature for deps
   const entityKey = entity ? `${entity.type}:${entity.id}` : '';
   const stateKey = JSON.stringify(pageState);
 
   useEffect(() => {
-    setContext(entity, pageState);
-    return () => clear();
+    store.setContext(entity, pageState);
+    return () => store.clear();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityKey, stateKey]);
 }
