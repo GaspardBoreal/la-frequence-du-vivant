@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +16,21 @@ serve(async (req) => {
   const upgrade = req.headers.get("upgrade") || "";
   if (upgrade.toLowerCase() !== "websocket") {
     return new Response("Expected WebSocket connection", { status: 400 });
+  }
+
+  // Authenticate via token query param (WebSocket cannot send Authorization header from browser)
+  const url = new URL(req.url);
+  const token = url.searchParams.get("token") || req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) {
+    return new Response("Unauthorized - missing token", { status: 401 });
+  }
+  const supabaseAuth = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!
+  );
+  const { data: userData, error: authErr } = await supabaseAuth.auth.getUser(token);
+  if (authErr || !userData?.user) {
+    return new Response("Unauthorized - invalid token", { status: 401 });
   }
 
   const { socket, response } = Deno.upgradeWebSocket(req);
