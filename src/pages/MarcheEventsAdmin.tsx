@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,10 @@ const MarcheEventsAdmin: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [selectedType, setSelectedType] = useState<'all' | 'none' | MarcheEventType>('all');
   const debouncedSearch = useDebounce(searchTerm, 300);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
   const { data: events, isLoading } = useQuery({
     queryKey: ['marche-events'],
