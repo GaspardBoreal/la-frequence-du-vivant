@@ -17,6 +17,7 @@ import ExplorationMarcheList from '@/components/admin/ExplorationMarcheList';
 import ExplorationMarcheSelector from '@/components/admin/ExplorationMarcheSelector';
 import ExplorationGalleryButtons from '@/components/admin/ExplorationGalleryButtons';
 import ExplorationPartiesManager from '@/components/admin/ExplorationPartiesManager';
+import { createSafeHtml } from '@/utils/htmlSanitizer';
 
 const ExplorationMarchesAdmin = () => {
   const { id } = useParams<{ id: string }>();
@@ -199,7 +200,7 @@ const ExplorationMarchesAdmin = () => {
               </h2>
               
               {exploration.description && (
-                <div className="gaspard-category text-lg text-gaspard-muted leading-relaxed font-light prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: exploration.description }}>
+                <div className="gaspard-category text-lg text-gaspard-muted leading-relaxed font-light prose prose-lg max-w-none" dangerouslySetInnerHTML={createSafeHtml(exploration.description)}>
                 </div>
               )}
             </div>

@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
+import { createSafeHtml } from '@/utils/htmlSanitizer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -811,7 +812,7 @@ export default function SymphonieTextuelle() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.9, duration: 0.8 }}
-                  dangerouslySetInnerHTML={{ __html: currentText.contenu }}
+                  dangerouslySetInnerHTML={createSafeHtml(currentText.contenu)}
                 />
 
                 {/* Métadonnées et tags */}

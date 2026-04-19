@@ -2,6 +2,7 @@ import React from 'react';
 import DecorativeParticles from '@/components/DecorativeParticles';
 import { Button } from '@/components/ui/button';
 import type { Exploration } from '@/hooks/useExplorations';
+import { createSafeHtml } from '@/utils/htmlSanitizer';
 
 interface Props {
   exploration: Exploration;
@@ -37,7 +38,7 @@ const ExperienceWelcomeBioacoustic: React.FC<Props> = ({ exploration, settings, 
           </p>
         )}
         {exploration.description && (
-          <div className="mt-4 max-w-3xl text-foreground/80 prose prose-lg prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: exploration.description }}>
+          <div className="mt-4 max-w-3xl text-foreground/80 prose prose-lg prose-invert max-w-none" dangerouslySetInnerHTML={createSafeHtml(exploration.description)}>
           </div>
         )}
         <div className="mt-6">

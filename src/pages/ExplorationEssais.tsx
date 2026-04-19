@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import SEOHead from '@/components/SEOHead';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 
 interface EssaiContent {
   id: string;
@@ -258,10 +259,12 @@ L'exploration de ${marche.ville} révèle la richesse d'une approche territorial
                 <div 
                   className="text-white leading-relaxed whitespace-pre-wrap"
                   dangerouslySetInnerHTML={{ 
-                    __html: selectedEssai.pages[currentPage]
-                      ?.replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mb-6">$1</h1>')
-                      ?.replace(/^## (.*$)/gm, '<h2 class="text-2xl font-semibold mb-4 mt-8">$1</h2>')
-                      ?.replace(/^### (.*$)/gm, '<h3 class="text-xl font-medium mb-3 mt-6">$1</h3>')
+                    __html: sanitizeHtml(
+                      (selectedEssai.pages[currentPage] || '')
+                        .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mb-6">$1</h1>')
+                        .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-semibold mb-4 mt-8">$1</h2>')
+                        .replace(/^### (.*$)/gm, '<h3 class="text-xl font-medium mb-3 mt-6">$1</h3>')
+                    )
                   }}
                 />
               </div>
