@@ -10,7 +10,6 @@ import EventsListTab from '@/components/admin/marche-events/EventsListTab';
 import EventsMapTab from '@/components/admin/marche-events/EventsMapTab';
 import EventsAnalyticsTab from '@/components/admin/marche-events/EventsAnalyticsTab';
 import EventsRecommendationsTab from '@/components/admin/marche-events/EventsRecommendationsTab';
-import EventsChatbotFab from '@/components/admin/marche-events/EventsChatbotFab';
 import {
   useMarcheEventsStats,
   type EventsFilters,
