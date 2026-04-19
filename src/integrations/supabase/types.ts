@@ -3912,6 +3912,30 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_marche_events_dashboard_stats: {
+        Args: { _search?: string; _status?: string; _type?: string }
+        Returns: Json
+      }
+      get_marche_events_filtered_all: {
+        Args: {
+          _max?: number
+          _search?: string
+          _status?: string
+          _type?: string
+        }
+        Returns: Json
+      }
+      get_marche_events_paginated: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _sort?: string
+          _status?: string
+          _type?: string
+        }
+        Returns: Json
+      }
       get_marcheur_activity_dashboard: {
         Args: never
         Returns: {
