@@ -2451,6 +2451,7 @@ export type Database = {
           departement: string | null
           descriptif_court: string | null
           descriptif_long: string | null
+          distance_km: number | null
           id: string
           latitude: number | null
           lien_google_drive: string | null
@@ -2472,6 +2473,7 @@ export type Database = {
           departement?: string | null
           descriptif_court?: string | null
           descriptif_long?: string | null
+          distance_km?: number | null
           id?: string
           latitude?: number | null
           lien_google_drive?: string | null
@@ -2493,6 +2495,7 @@ export type Database = {
           departement?: string | null
           descriptif_court?: string | null
           descriptif_long?: string | null
+          distance_km?: number | null
           id?: string
           latitude?: number | null
           lien_google_drive?: string | null
@@ -3986,6 +3989,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      haversine_km: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
       }
       increment_download_count: {
         Args: { export_slug: string }
