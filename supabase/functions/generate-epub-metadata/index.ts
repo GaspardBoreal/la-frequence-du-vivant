@@ -50,6 +50,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Require authentication to prevent paid AI abuse
+  const { errorResponse } = await validateAuth(req);
+  if (errorResponse) return errorResponse;
+
   try {
     const payload: GenerationPayload = await req.json();
     const { textes, explorationName, stats } = payload;
