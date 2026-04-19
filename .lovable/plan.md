@@ -1,107 +1,88 @@
 
 
-## Diagnostic
+## Diagnostic réel (ce qui s'est passé)
 
-Sur `/admin/marche-events/df85910e-...`, le chatbot a répondu **"je ne dispose pas de données sur cet événement"** parce que :
+J'ai testé l'infrastructure côté serveur et trouvé **3 bugs critiques** qui expliquent la réponse pauvre du chatbot :
 
-1. Le **scope envoyé** est `events` (générique) → la RPC `get_admin_chatbot_context('events')` retourne juste les **5 prochains événements + stats globales**, pas la fiche détaillée de l'UUID consulté.
-2. Le chatbot ignore complètement le **`:id`** présent dans l'URL.
-3. Il ignore aussi **ce que l'admin voit à l'écran** : organisateur, date, lieu, capacité, inscrits, exploration liée, biodiversité, médias, marcheurs présents…
+### Bug n°1 — `auth.uid()` est `NULL` quand on appelle via service role
+Logs edge function admin-chat (`11:11:20Z`) :
+```
+ERROR [admin-chat] RPC get_admin_chatbot_context error: Forbidden: admin role required
+```
+La fonction edge utilise `adminClient` (clé service_role) pour appeler les RPC. Mais service_role **n'a pas de session utilisateur** → `auth.uid()` retourne NULL → `check_is_admin_user(NULL)` = false → la RPC lève `Forbidden`.
 
-C'est le chaînon manquant pour passer de "assistant générique" à **"copilote contextuel wahou"**.
+**Conséquence** : `contextData` ET `entityContext` sont vides (ou `{error:"forbidden"}`) → le LLM n'a aucune donnée → il invente "erreur 403".
 
-## Vision : 3 niveaux de contexte cumulés
+### Bug n°2 — `get_admin_entity_context` référence des colonnes inexistantes
+La RPC créée hier utilise :
+- `me.titre` → la vraie colonne est `title`
+- `me.date_debut` → c'est `date_marche`
+- `me.statut`, `me.organisateur_id` → n'existent pas
+- `e.name` pour explorations OK, mais `marche_event_inscriptions` n'existe pas dans le schéma actuel
+- `marche_organisateurs`, `community_affiliate_links` → à vérifier
 
-```text
-┌──────────────────────────────────────────────────┐
-│  N1 — SCOPE (rubrique) : events / community / …  │  ← déjà fait
-│  N2 — ENTITÉ FOCALE (l'UUID dans l'URL)          │  ← à ajouter
-│  N3 — ÉTAT D'ÉCRAN (onglet actif, filtres…)      │  ← à ajouter
-└──────────────────────────────────────────────────┘
+→ Même si l'auth était OK, la RPC planterait sur la moitié des sous-requêtes.
+
+### Bug n°3 — Récupération de l'entité depuis l'URL
+À vérifier : que `entity = {type:'marche_event', id:'df85910e-...'}` est bien envoyé. Code OK dans `AdminChatBotMount.tsx`, mais comme la RPC plante, on ne le voit pas.
+
+## Plan de correction
+
+### Étape 1 — Corriger l'authentification dans l'edge function (cause n°1)
+
+Faire passer la **session utilisateur** aux RPC, pas le service_role :
+
+```ts
+// AVANT (cassé)
+const { data } = await adminClient.rpc("get_admin_chatbot_context", {...});
+
+// APRÈS
+const { data } = await userClient.rpc("get_admin_chatbot_context", {...});
 ```
 
-Quand l'admin pose une question, le chatbot reçoit les 3 niveaux et répond comme s'il regardait l'écran avec lui.
+`userClient` porte le JWT de l'admin → `auth.uid()` est correct → la RPC `SECURITY DEFINER` passe le check admin et exécute en privilèges élevés. C'est exactement le pattern conçu à l'origine.
 
-## Plan d'implémentation
+Le service_role n'est plus nécessaire ici. Garder `adminClient` uniquement si on veut bypasser RLS pour des lectures non-RPC (pas le cas ici).
 
-### 1. Frontend — Détection enrichie d'URL et d'état
+### Étape 2 — Réécrire `get_admin_entity_context` avec le vrai schéma
 
-**`AdminChatBotMount.tsx`** : extraire `entityType` + `entityId` depuis `pathname` (regex sur `/admin/marche-events/:id`, `/admin/community/marcheur/:slug`, `/admin/exportations/:id`…) et les passer à `<ChatBot>`.
+Inspecter les vraies colonnes (déjà fait) et reconstruire la fonction `marche_event` autour de :
+- `marche_events` : `id, title, description, date_marche, lieu, latitude, longitude, max_participants, exploration_id, event_type`
+- `explorations` (via `exploration_id`) : `name, slug, exploration_type, published`
+- `exploration_marches` : compte de marches/parties liées
+- `marches` (jointes via exploration_marches) : photos/audios via `marche_photos`/`marche_audio`
+- `biodiversity_snapshots` : agrégat espèces
+- **Inscriptions** : vérifier le vrai nom de table (probablement `marche_inscriptions` ou via `community_profiles` + relation). À découvrir avant écriture.
 
-**Nouveau hook `useChatPageContext`** : un store Zustand léger (ou simple Context) que **chaque page admin** alimente avec son état visible :
-- onglet actif (`Vue d'ensemble`, `Marcheurs`, `Médias`, `Empreinte`…)
-- filtres en cours (période, type d'événement…)
-- libellé humain ("Marche du Vivant à DEVIAT, 14 mars 2026")
+Pour `marcheur` et `exploration` : même travail, recoller au schéma réel.
 
-Les pages admin existantes posent un `useChatPageContextProvider({...})` au montage — **changement minimal, ~3 lignes par page**.
+### Étape 3 — Enrichir la réponse "wahou"
 
-### 2. Frontend → Backend — Payload enrichi
+Une fois les données qui arrivent réellement, le contexte injecté contiendra :
+- Titre, date, lieu, GPS
+- Exploration liée + nb de marches/parties
+- Compteurs photos/sons/textes par marche du parcours
+- Empreinte biodiversité agrégée (espèces, observations)
+- Liste des marcheurs (depuis `community_profiles` rattachés)
 
-`useChatStream.ts` envoie désormais :
-```json
-{
-  "messages": [...],
-  "scope": "events",
-  "entity": { "type": "marche_event", "id": "df85910e-..." },
-  "pageState": { "activeTab": "Vue d'ensemble", "label": "..." }
-}
-```
+Le system prompt actuel est déjà bon — il dira ce qu'il voit, sans inventer.
 
-### 3. Backend — RPC contextuelle de fiche complète
+### Étape 4 — Vérification finale
 
-Nouvelle fonction SQL `get_admin_entity_context(_type text, _id uuid)` qui retourne un **JSON dense** selon le type :
-
-- **`marche_event`** : event + organisateur + lieu (GPS, commune) + exploration liée + nombre d'inscrits validés/en attente + 10 derniers marcheurs inscrits (nom, rôle, email) + agrégat biodiversité (nb espèces, top 5) + nb photos/sons/textes + lien public.
-- **`marcheur`** (community/:slug) : profil complet + historique participations + rôle/progression + contributions médias + filleuls.
-- **`exploration`** : exploration + marches liées + biodiversité agrégée + statut publication.
-
-Sécurité : `SECURITY DEFINER`, vérif `check_is_admin_user(auth.uid())` en première ligne, `REVOKE FROM PUBLIC`, `GRANT TO authenticated`.
-
-### 4. Backend — `admin-chat` v2
-
-L'edge function appelle :
-- `get_admin_chatbot_context(scope)` (existe) → vue large
-- **`get_admin_entity_context(entity.type, entity.id)`** (nouveau) si `entity` présent → fiche détaillée
-
-Le system prompt devient :
-```text
-## CONTEXTE FRAIS
-### Vue rubrique ({{scope}})  →  {{contextScope}}
-### Fiche en cours de consultation
-- Type : marche_event
-- Libellé visible : "Marche du Vivant à DEVIAT"
-- Onglet ouvert : "Vue d'ensemble"
-- Données : {{contextEntity}}
-```
-
-Et une règle ajoutée : *"Quand l'admin dit 'cet événement', 'ce marcheur', 'cette exploration' → réfère-toi TOUJOURS à la Fiche en cours de consultation."*
-
-### 5. Suggestions contextuelles dynamiques
-
-`ChatSuggestions.tsx` : si `entity.type === 'marche_event'`, remplacer les 4 suggestions génériques par des suggestions **focalisées sur la fiche** :
-- "Synthèse de cet événement"
-- "Qui sont les marcheurs inscrits ?"
-- "Quelle est l'empreinte biodiversité ?"
-- "Génère un compte-rendu prêt à envoyer"
-
-### 6. Bonus qualité "wahou"
-
-- **Badge contextuel** dans le header du chatbot : au lieu de juste "Événements", afficher *"Événements › Marche du Vivant à DEVIAT"* pour que l'admin voie que le bot regarde la bonne fiche.
-- **Mémoire de session** : conserver le `entity.id` même si l'utilisateur navigue brièvement, et reset au changement explicite.
-- **Pré-chargement silencieux** : à l'ouverture du chatbot sur une fiche, lancer en tâche de fond la récupération du contexte entité pour que la 1ʳᵉ réponse soit instantanée.
+- Tester la RPC en SQL direct avec un `SET LOCAL ROLE` simulant l'admin
+- Vérifier les logs edge function après corrections — plus d'erreur "Forbidden"
+- Tester en live sur la page `/admin/marche-events/df85910e-...` avec la question "Synthèse de cet événement"
 
 ## Détails techniques
 
-- **Migration SQL** : 1 nouvelle fonction `get_admin_entity_context` + GRANT/REVOKE.
-- **Fichiers touchés** : `AdminChatBotMount.tsx`, `ChatBot.tsx` (header + suggestions), `useChatStream.ts`, `chatConfig.ts` (suggestions par type d'entité), nouveau `useChatPageContext.ts`, `admin-chat/index.ts`.
-- **Pages admin instrumentées en v1** : `MarcheEventDetail` (priorité — celle de la capture), `CommunityDashboard`, `ExplorationDetail` admin. Les autres pages continuent à fonctionner avec scope seul.
-- **Compatibilité** : si `entity` est absent, le bot fonctionne comme aujourd'hui — zéro régression.
+- **Fichiers touchés** :
+  - `supabase/functions/admin-chat/index.ts` : remplacer `adminClient.rpc` par `userClient.rpc` aux 2 endroits (scope + entity).
+  - **Nouvelle migration SQL** : `DROP` + `CREATE OR REPLACE` `get_admin_entity_context` avec le bon schéma.
+- **Découverte préalable nécessaire** (durant l'exécution) : lister les tables réelles d'inscriptions/organisateurs via `information_schema` avant d'écrire le SQL définitif.
+- **Compatibilité** : zéro impact côté frontend, les changements sont 100% backend.
+- **Sécurité** : inchangée — le check `auth.uid()` admin est préservé, simplement il fonctionnera enfin.
 
 ## Résultat attendu
 
-Sur la même page, à la même question *"Fais-moi une synthèse de cet événement"*, le bot répondra :
-
-> **Marche du Vivant à DEVIAT — 14 mars 2026** organisée par *Les Sentiers Vivants*. 12 marcheurs validés (3 ambassadeurs, 9 marcheurs), 4 en attente. Lieu : forêt de Deviat (45.42°N, 0.18°E). Exploration liée : *Fréquence de la rivière Dordogne — Mouvement II*. Empreinte biodiversité collectée : 87 espèces dont 4 patrimoniales (loutre, martin-pêcheur…). 24 photos, 6 sons, 2 textes éco-poétiques publiés. **Recommandation** : 4 inscriptions en attente à valider, et le compte-rendu n'est pas encore exporté.
-
-Voilà le niveau "wahou".
+Sur la même page, à *"Fais-moi une synthèse de cet événement"*, le bot répondra avec **les vraies données** : titre exact, date, lieu GPS, exploration liée, nombre de marches/parties, médias collectés, biodiversité agrégée — au lieu d'inventer une "erreur 403".
 
