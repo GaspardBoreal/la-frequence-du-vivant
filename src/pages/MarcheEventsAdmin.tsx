@@ -148,7 +148,6 @@ const MarcheEventsAdmin: React.FC = () => {
         </Tabs>
       </div>
 
-      <EventsChatbotFab />
     </div>
   );
 };
