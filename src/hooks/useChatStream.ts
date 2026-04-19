@@ -2,12 +2,15 @@ import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { chatConfig } from '@/components/chatbot/chatConfig';
 import type { ChatContext } from '@/components/chatbot/chatConfig';
+import { useChatPageContextStore } from '@/hooks/useChatPageContext';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${chatConfig.edgeFunctionPath}`;
 
 export function useChatStream(currentContext: ChatContext = 'dashboard') {
+  const pageEntity = useChatPageContextStore((s) => s.entity);
+  const pageState = useChatPageContextStore((s) => s.pageState);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [wasStopped, setWasStopped] = useState(false);
@@ -57,7 +60,13 @@ export function useChatStream(currentContext: ChatContext = 'dashboard') {
             Authorization: `Bearer ${accessToken}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ messages: allMessages, voiceMode, scope: currentContext }),
+          body: JSON.stringify({
+            messages: allMessages,
+            voiceMode,
+            scope: currentContext,
+            entity: pageEntity ?? undefined,
+            pageState: pageEntity ? pageState : undefined,
+          }),
           signal: controller.signal,
         });
 
@@ -129,7 +138,7 @@ export function useChatStream(currentContext: ChatContext = 'dashboard') {
         abortRef.current = null;
       }
     },
-    [messages, currentContext]
+    [messages, currentContext, pageEntity, pageState]
   );
 
   const stop = useCallback(() => {
