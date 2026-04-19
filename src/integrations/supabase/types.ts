@@ -3799,6 +3799,10 @@ export type Database = {
       get_admin_chatbot_context: { Args: { _scope?: string }; Returns: Json }
       get_admin_count: { Args: never; Returns: number }
       get_admin_count_secure: { Args: never; Returns: number }
+      get_admin_entity_context: {
+        Args: { _id: string; _type: string }
+        Returns: Json
+      }
       get_admin_list_safe: {
         Args: never
         Returns: {

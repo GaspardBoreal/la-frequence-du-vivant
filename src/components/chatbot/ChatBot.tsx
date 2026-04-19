@@ -28,12 +28,25 @@ import { ChatSuggestions } from './ChatSuggestions';
 import { useChatExport } from './useChatExport';
 import { ChatExportDrawer } from './ChatExportDrawer';
 import { chatConfig, type ChatContext } from './chatConfig';
+import { chatPageContext, useChatPageContextStore, type ChatEntity } from '@/hooks/useChatPageContext';
 
 interface ChatBotProps {
   currentContext?: ChatContext;
+  /** Entité détectée via l'URL — fallback si aucune page n'a posé de contexte explicite */
+  urlEntity?: ChatEntity | null;
 }
 
-export function ChatBot({ currentContext = 'dashboard' }: ChatBotProps) {
+export function ChatBot({ currentContext = 'dashboard', urlEntity = null }: ChatBotProps) {
+  // Si l'URL contient une entité et qu'aucune page n'en a posé d'explicite, on l'enregistre.
+  useEffect(() => {
+    if (urlEntity && !chatPageContext.getState().entity) {
+      chatPageContext.setContext(urlEntity, {});
+    }
+  }, [urlEntity]);
+
+  const focalEntity = useChatPageContextStore((s) => s.entity);
+  const focalState = useChatPageContextStore((s) => s.pageState);
+
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [input, setInput] = useState('');
@@ -263,10 +276,14 @@ export function ChatBot({ currentContext = 'dashboard' }: ChatBotProps) {
                     <h3 className="text-sm font-semibold text-primary-foreground">
                       {chatConfig.assistantName}
                     </h3>
-                    <p className="text-[10px] text-primary-foreground/70">
+                    <p className="text-[10px] text-primary-foreground/70 truncate max-w-[220px]">
                       {voiceMode
                         ? '🎙️ Mode vocal actif'
-                        : `Contexte : ${chatConfig.contextLabels[currentContext]}`}
+                        : focalEntity && focalState?.label
+                          ? `${chatConfig.contextLabels[currentContext]} › ${focalState.label}`
+                          : focalEntity
+                            ? `${chatConfig.contextLabels[currentContext]} › fiche en cours`
+                            : `Contexte : ${chatConfig.contextLabels[currentContext]}`}
                     </p>
                   </div>
                 </div>

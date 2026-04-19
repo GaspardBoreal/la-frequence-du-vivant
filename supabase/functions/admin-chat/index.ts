@@ -76,7 +76,7 @@ serve(async (req) => {
     }
 
     // 2. Body
-    const { messages, voiceMode, scope } = await req.json();
+    const { messages, voiceMode, scope, entity, pageState } = await req.json();
     if (!Array.isArray(messages) || messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "Invalid messages payload" }),
@@ -97,9 +97,48 @@ serve(async (req) => {
       console.error("[admin-chat] RPC get_admin_chatbot_context error:", ctxErr.message);
     }
 
-    const contextBlock = contextData
-      ? `\n\n## CONTEXTE FRAIS (extrait de la base au ${new Date().toISOString()})\n\nScope demandé : **${validScope}**\n\n\`\`\`json\n${JSON.stringify(contextData, null, 2)}\n\`\`\``
-      : "\n\n## CONTEXTE FRAIS\n_Indisponible pour cette requête._";
+    // 3.bis — Si une entité focale est fournie (fiche en cours de consultation),
+    // on récupère son contexte détaillé via la nouvelle RPC.
+    let entityContext: unknown = null;
+    const VALID_ENTITY_TYPES = ["marche_event", "marcheur", "exploration"];
+    if (
+      entity &&
+      typeof entity === "object" &&
+      typeof entity.type === "string" &&
+      typeof entity.id === "string" &&
+      VALID_ENTITY_TYPES.includes(entity.type) &&
+      entity.id.length > 0 &&
+      entity.id.length < 200
+    ) {
+      const { data: entData, error: entErr } = await adminClient.rpc("get_admin_entity_context", {
+        _type: entity.type,
+        _id: entity.id,
+      });
+      if (entErr) {
+        console.error("[admin-chat] RPC get_admin_entity_context error:", entErr.message);
+      } else {
+        entityContext = entData;
+      }
+    }
+
+    const scopeBlock = contextData
+      ? `\n\n### Vue rubrique (\`${validScope}\`)\n\`\`\`json\n${JSON.stringify(contextData, null, 2)}\n\`\`\``
+      : `\n\n### Vue rubrique (\`${validScope}\`)\n_Indisponible._`;
+
+    const entityBlock = entityContext
+      ? `\n\n### Fiche en cours de consultation par l'admin
+- Type : \`${entity.type}\`
+- Libellé visible à l'écran : ${pageState?.label ? `"${pageState.label}"` : "(non fourni)"}
+- Onglet ouvert : ${pageState?.activeTab ?? "(non fourni)"}
+- Données détaillées :
+\`\`\`json
+${JSON.stringify(entityContext, null, 2)}
+\`\`\`
+
+> ⚠️ Quand l'admin dit « cet événement », « ce marcheur », « cette exploration », « cette fiche » → réfère-toi TOUJOURS à cette Fiche en cours de consultation, jamais à la vue rubrique.`
+      : "";
+
+    const contextBlock = `\n\n## CONTEXTE FRAIS (extrait de la base au ${new Date().toISOString()})${scopeBlock}${entityBlock}`;
 
     let systemContent = BASE_SYSTEM_PROMPT + contextBlock;
     if (voiceMode) systemContent += VOICE_MODE_ADDENDUM;
