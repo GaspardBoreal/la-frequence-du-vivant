@@ -1,10 +1,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { validateAuth, forbiddenResponse, corsHeaders } from "../_shared/auth-helper.ts";
 
 interface MediaFile {
   url: string;
@@ -17,6 +13,11 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Require admin authentication (bulk Storage + DB writes via service role)
+  const { isAdmin, errorResponse } = await validateAuth(req);
+  if (errorResponse) return errorResponse;
+  if (!isAdmin) return forbiddenResponse();
 
   try {
     console.log('🚀 Starting Google Drive media migration...');
