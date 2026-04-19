@@ -80,6 +80,7 @@ import AdminFrequences from './pages/AdminFrequences';
 import CommunityAffiliateLanding from './pages/CommunityAffiliateLanding';
 import PartagePublic from './pages/PartagePublic';
 import CarnetMarcheur from './pages/CarnetMarcheur';
+import { AdminChatBotMount } from './components/chatbot/AdminChatBotMount';
 
 function App() {
   return (
@@ -288,6 +289,7 @@ function App() {
             
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <AdminChatBotMount />
           <Toaster position="top-right" />
           </BrowserRouter>
         </AudioProvider>
