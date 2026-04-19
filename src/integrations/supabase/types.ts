@@ -3796,6 +3796,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_admin_chatbot_context: { Args: { _scope?: string }; Returns: Json }
       get_admin_count: { Args: never; Returns: number }
       get_admin_count_secure: { Args: never; Returns: number }
       get_admin_list_safe: {
