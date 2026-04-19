@@ -88,9 +88,9 @@ serve(async (req) => {
       ? scope
       : "dashboard";
 
-    // 3. Récupère le contexte agrégé via RPC sécurisée
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: contextData, error: ctxErr } = await adminClient.rpc("get_admin_chatbot_context", {
+    // 3. Récupère le contexte agrégé via RPC sécurisée — APPEL via userClient
+    // pour que auth.uid() soit disponible dans la RPC SECURITY DEFINER.
+    const { data: contextData, error: ctxErr } = await userClient.rpc("get_admin_chatbot_context", {
       _scope: validScope,
     });
     if (ctxErr) {
@@ -110,7 +110,7 @@ serve(async (req) => {
       entity.id.length > 0 &&
       entity.id.length < 200
     ) {
-      const { data: entData, error: entErr } = await adminClient.rpc("get_admin_entity_context", {
+      const { data: entData, error: entErr } = await userClient.rpc("get_admin_entity_context", {
         _type: entity.type,
         _id: entity.id,
       });
