@@ -8,7 +8,7 @@ import type { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import { ROLE_CONFIG } from '@/hooks/useCommunityProfile';
 import RoleBadge from '@/components/community/RoleBadge';
 import type { InsightAngle, InsightEventType, InsightCategory, InsightCard } from '@/lib/insightLevels';
-import { CATEGORY_CONFIG, ANGLE_CONFIG, getLevelRank } from '@/lib/insightLevels';
+import { CATEGORY_CONFIG, getLevelRank } from '@/lib/insightLevels';
 import { LIVING_PILLARS, ROLE_MISSIONS, type LivingPillarKey } from '@/lib/marchesVivantFramework';
 import ValorizationBlock from './ValorizationBlock';
 
@@ -17,12 +17,6 @@ function getIcon(name: string): React.FC<any> {
 }
 
 const CATEGORY_ORDER: InsightCategory[] = ['formation', 'inspiration', 'experimentation', 'partage', 'valorisation'];
-
-const angleIcons: Record<InsightAngle, React.FC<any>> = {
-  biodiversite: TreePine,
-  bioacoustique: Headphones,
-  geopoetique: BookOpen,
-};
 
 const pillarAngleMap: Record<LivingPillarKey, InsightAngle> = {
   oeil: 'biodiversite',
