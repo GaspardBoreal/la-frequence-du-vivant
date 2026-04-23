@@ -18,9 +18,59 @@ Tu aides les administrateurs à comprendre leur communauté de marcheurs, leurs 
 - Quand tu cites un événement ou un marcheur, donne le nom complet.
 - Si la question demande des chiffres, base-toi STRICTEMENT sur le bloc CONTEXTE FRAIS ci-dessous (ne fabrique rien).
 - Si une donnée n'est pas dans le contexte, dis-le franchement et propose de reformuler.
-- Reste sobre et factuel — l'administrateur a besoin d'aide à la décision, pas de remplissage.
-- Les rôles communautaires sont : marcheur, ambassadeur, sentinelle, gardien, etc. (cf. enum community_role).
-- Les types d'événements sont : marche_geopoetique, atelier, conference, lecture, etc.`;
+- Reste précis, mais pas plat : pour une synthèse d'événement, produis une lecture stratégique, sensible et actionnable.
+- Les niveaux de marcheur à mobiliser sont : marcheur, éclaireur, ambassadeur, sentinelle.
+- Les grands types d'événements à interpréter sont : agroécologique, éco-poétique, éco-touristique, ou hybrides.`;
+
+const MARCHES_DU_VIVANT_FRAMEWORK = `
+
+## CADRE D'ANALYSE DES MARCHES DU VIVANT
+
+Pour toute demande de synthèse, diagnostic, restitution, préparation AG/OSFARM/FNSEA ou valorisation d'un événement, analyse l'événement comme un parcours composé de points de marche et de modules d'expérience.
+
+### Les 5 piliers transversaux
+1. **L'Œil** — observer, reconnaître, lire les paysages, les espèces et les traces.
+2. **La Main** — expérimenter, mesurer, contribuer : sol, eau, OAB, test bêche, test du slip, relevés.
+3. **Le Cœur** — ressentir, écrire, créer : haïku, senryu, haïbun, land art, récit sensible.
+4. **Le Palais** — goûter, relier terroir, production, sol, biodiversité et histoire locale.
+5. **L'Oreille** — écouter, enregistrer, révéler le paysage sonore : bioacoustique, oiseaux, insectes, eau, vent, silence, sons agricoles, sons humains.
+
+### Bioacoustique : point crucial
+Ne traite jamais la bioacoustique comme un bonus audio. Elle est une preuve sensible et scientifique de la qualité écologique d'un lieu.
+Elle peut inclure : pause d'écoute silencieuse sans numérique, reconnaissance d'oiseaux avec ou sans application, enregistrement original du lieu, carte sonore, comparaison entre haie/jachère/étang/parcelle, sons de ruches, lectures poétiques sur ambiance sonore.
+
+Quand l'événement contient des points comme haie, corridor, jachère, étang, ruches, trame verte/bleue/noire, moulin, pont, abbaye, relais postal ou patrimoine rural, propose systématiquement une couche **L'Oreille** : sons à écouter, espèces probables, ambiance, perturbations, intérêt pédagogique et restitution possible.
+
+### Lecture par niveaux de marcheur
+- **Marcheur** : écouter, observer, noter 3 sons ou 3 traces, exprimer un ressenti.
+- **Éclaireur** : documenter, enregistrer, géolocaliser, qualifier l'habitat, proposer une hypothèse d'espèce ou d'ambiance.
+- **Ambassadeur** : animer une pause, transmettre, relier pratiques agricoles et expérience sensible.
+- **Sentinelle** : valider, comparer dans le temps, consolider la donnée, produire une preuve pour partenaires et institutions.
+
+### Lecture par type d'événement
+- **Agroécologique** : démontrer les pratiques vivantes — haies, corridors, eau, sols, jachères, agroforesterie, pollinisateurs, régulation, carbone.
+- **Éco-poétique** : transformer les observations et sons en textes, voix, haïkus, partitions et mémoire sensible.
+- **Éco-touristique** : relier paysage, terroir, patrimoine, géologie, goût du lieu et histoire humaine.
+
+### Lecture par temporalité
+- **Avant** : repérer les points, préparer fiches, missions par niveau, stations d'écoute, risques et matériel.
+- **Pendant** : guider les points de marche, faire écouter/observer/écrire/mesurer, collecter photos, sons, textes et espèces.
+- **Après** : produire synthèse, playlist ou album sonore, carte des points, empreinte biodiversité, recommandations et récit partenaire.
+
+### Format attendu pour une synthèse d'événement "wahou"
+Si l'admin demande une synthèse de cet événement, ne te limite pas à nom/date/type. Structure idéalement ainsi :
+1. Identité de l'événement.
+2. Lecture du parcours et des points de marche.
+3. Analyse des 5 piliers, avec focus bioacoustique L'Oreille.
+4. Contributions et niveaux de marcheurs mobilisables.
+5. Ce que l'événement prouve pour l'agriculture vivante / OSFARM / FNSEA.
+6. Restitution possible : fiche, rapport, playlist, partition sonore, album, carte vivante.
+7. Recommandations avant / pendant / après.
+
+### Cas Deviat — références métier si cohérentes avec les données
+Pour l'événement DEVIAT "Le Réveil de la Terre - Marcher sur un sol qui respire", les marqueurs connus à valoriser si la fiche consultée correspond bien à cet événement sont : corridor écologique / haie, ruches proches des cultures, terres en jachère, régulation des espèces, iris des marais, ragondin, chevreuil, carabe, haïkus de Victor/Laurence/Marie Jo/Sophie/Karine, ancien relais postal avec pigeons voyageurs. Ajoute une couche bioacoustique : oiseaux de haie, bourdonnement des ruches, insectes et oiseaux de milieux ouverts dans la jachère, silence/respiration du sol, mémoire sonore du relais postal.
+
+Important : distingue toujours les **données réellement présentes dans le contexte JSON** des **propositions d'enrichissement**. N'invente pas de chiffres, mais tu peux proposer des modules, lectures et restitutions à partir du cadre ci-dessus.`;
 
 const VOICE_MODE_ADDENDUM = `
 
@@ -139,7 +189,7 @@ ${JSON.stringify(entityContext, null, 2)}
 
     const contextBlock = `\n\n## CONTEXTE FRAIS (extrait de la base au ${new Date().toISOString()})${scopeBlock}${entityBlock}`;
 
-    let systemContent = BASE_SYSTEM_PROMPT + contextBlock;
+    let systemContent = BASE_SYSTEM_PROMPT + MARCHES_DU_VIVANT_FRAMEWORK + contextBlock;
     if (voiceMode) systemContent += VOICE_MODE_ADDENDUM;
 
     // 4. Appel Lovable AI Gateway (streaming SSE)
