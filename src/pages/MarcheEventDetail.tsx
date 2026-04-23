@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta, type MarcheEventType } from '@/lib/marcheEventTypes';
 import EventBiodiversityTab from '@/components/community/EventBiodiversityTab';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
+import LivingPathOverview from '@/components/admin/LivingPathOverview';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -283,6 +284,10 @@ const MarcheEventDetail: React.FC = () => {
           <Tabs defaultValue="informations" className="w-full">
             <TabsList className="w-full justify-start">
               <TabsTrigger value="informations">Informations</TabsTrigger>
+              <TabsTrigger value="parcours" className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" />
+                Parcours vivant
+              </TabsTrigger>
               <TabsTrigger value="empreinte" className="flex items-center gap-1.5">
                 <TreePine className="h-3.5 w-3.5" />
                 Empreinte Vivante
@@ -603,6 +608,14 @@ const MarcheEventDetail: React.FC = () => {
               <EventBiodiversityTab
                 explorationId={event?.exploration_id || undefined}
                 marcheEventId={id || undefined}
+              />
+            </TabsContent>
+            <TabsContent value="parcours" className="mt-4">
+              <LivingPathOverview
+                eventTitle={event?.title}
+                eventDescription={event?.description}
+                eventType={event?.event_type}
+                marches={explorationMarches as any[] | undefined}
               />
             </TabsContent>
           </Tabs>
