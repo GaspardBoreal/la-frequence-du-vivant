@@ -1,6 +1,5 @@
 import React from 'react';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import type { Style } from '@react-pdf/types';
 import { 
   PdfExportOptions, 
   TexteExport, 
@@ -14,6 +13,8 @@ import {
   mmToPoints,
 } from './pdfExportUtils';
 import { generatePdfStyles, PdfStylesRaw, registerFonts } from './pdfStyleGenerator';
+
+type Style = any;
 
 // ============================================================================
 // TYPES

@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { ExplorationPartie, ExplorationPartieWithMarches } from '@/types/exploration';
+import type { Database } from '@/integrations/supabase/types';
+
+type ExplorationPartieUpdate = Database['public']['Tables']['exploration_parties']['Update'];
 
 // Types pour les réponses de la base de données
 interface PartieRow {
@@ -224,7 +227,7 @@ export function useUpdateExplorationPartie() {
       couleur?: string;
       description?: string;
     }) => {
-      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const updates: ExplorationPartieUpdate = { updated_at: new Date().toISOString() };
       
       if (params.titre !== undefined) updates.titre = params.titre;
       if (params.sousTitre !== undefined) updates.sous_titre = params.sousTitre;
