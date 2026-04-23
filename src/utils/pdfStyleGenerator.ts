@@ -1,6 +1,7 @@
 import { StyleSheet, Font } from '@react-pdf/renderer';
-import type { Style } from '@react-pdf/types';
 import { PdfExportOptions, mmToPoints, getPageDimensions, getPageMargins } from './pdfExportUtils';
+
+type Style = Record<string, any>;
 
 // ============================================================================
 // FONT REGISTRATION
