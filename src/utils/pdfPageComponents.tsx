@@ -14,7 +14,7 @@ import {
 } from './pdfExportUtils';
 import { generatePdfStyles, PdfStylesRaw, registerFonts } from './pdfStyleGenerator';
 
-type Style = Record<string, unknown>;
+type Style = any;
 
 // ============================================================================
 // TYPES
