@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
+
+type MarcheContextUpdate = Database['public']['Tables']['marche_contextes_hybrids']['Update'];
 
 export type DimensionType = 
   | 'especes_caracteristiques' 
@@ -170,12 +173,14 @@ export const useDeleteContextItem = (onSuccess?: () => void) => {
 
       // 5. Mettre à jour l'enregistrement
       console.log('🗑️ [DELETE] Étape 5: Mise à jour en base...');
+      const updatePayload = {
+        [dimension]: updatedDimensionData,
+        updated_at: new Date().toISOString()
+      } as MarcheContextUpdate;
+
       const { error: updateError } = await supabase
         .from('marche_contextes_hybrids')
-        .update({ 
-          [dimension]: updatedDimensionData,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('marche_id', marcheId)
         .eq('opus_id', opusId);
 
