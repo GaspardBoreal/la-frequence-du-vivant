@@ -9,6 +9,7 @@ import { ROLE_CONFIG } from '@/hooks/useCommunityProfile';
 import RoleBadge from '@/components/community/RoleBadge';
 import type { InsightAngle, InsightEventType, InsightCategory, InsightCard } from '@/lib/insightLevels';
 import { CATEGORY_CONFIG, ANGLE_CONFIG, getLevelRank } from '@/lib/insightLevels';
+import { LIVING_PILLARS, ROLE_MISSIONS, type LivingPillarKey } from '@/lib/marchesVivantFramework';
 import ValorizationBlock from './ValorizationBlock';
 
 function getIcon(name: string): React.FC<any> {
@@ -23,6 +24,14 @@ const angleIcons: Record<InsightAngle, React.FC<any>> = {
   geopoetique: BookOpen,
 };
 
+const pillarAngleMap: Record<LivingPillarKey, InsightAngle> = {
+  oeil: 'biodiversite',
+  main: 'biodiversite',
+  coeur: 'geopoetique',
+  palais: 'biodiversite',
+  oreille: 'bioacoustique',
+};
+
 interface ApprendreTabProps {
   userLevel: CommunityRoleKey;
   eventType: InsightEventType | null;
@@ -32,13 +41,14 @@ interface ApprendreTabProps {
 }
 
 const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, totalSpecies, userId }) => {
-  const [activeAngle, setActiveAngle] = useState<InsightAngle>('biodiversite');
+  const [activePillar, setActivePillar] = useState<LivingPillarKey>('oeil');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const { trackActivity } = useActivityTracker();
+  const activeAngle = pillarAngleMap[activePillar];
 
-  const handleAngleChange = useCallback((angle: InsightAngle) => {
-    setActiveAngle(angle);
-    if (userId) trackActivity(userId, 'tab_switch', `tab:apprendre:${angle}`, { explorationId });
+  const handlePillarChange = useCallback((pillar: LivingPillarKey) => {
+    setActivePillar(pillar);
+    if (userId) trackActivity(userId, 'tab_switch', `tab:apprendre:${pillar}`, { explorationId });
   }, [trackActivity, explorationId, userId]);
 
   const { cards, byCategory, isLoading } = useInsightCards({
@@ -76,27 +86,40 @@ const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explo
         <RoleBadge role={userLevel} size="sm" />
       </div>
 
-      {/* Angle selector pills */}
-      <div className="flex gap-2">
-        {(Object.keys(ANGLE_CONFIG) as InsightAngle[]).map(angle => {
-          const config = ANGLE_CONFIG[angle];
-          const AngleIcon = angleIcons[angle];
-          const isActive = activeAngle === angle;
+      {/* 5 pillars selector */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {LIVING_PILLARS.map(pillar => {
+          const PillarIcon = getIcon(pillar.icon);
+          const isActive = activePillar === pillar.key;
           return (
             <button
-              key={angle}
-              onClick={() => handleAngleChange(angle)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              key={pillar.key}
+              onClick={() => handlePillarChange(pillar.key)}
+              className={`min-h-16 rounded-xl border px-3 py-2 text-left transition-all ${
                 isActive
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                  : 'bg-muted/50 text-muted-foreground border border-transparent hover:bg-muted'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-card text-muted-foreground hover:bg-muted'
               }`}
             >
-              <AngleIcon className="w-3.5 h-3.5" />
-              {config.label}
+              <span className="flex items-center gap-1.5 text-xs font-semibold"><PillarIcon className="h-3.5 w-3.5" />{pillar.label}</span>
+              <span className="mt-1 block text-[10px] leading-tight opacity-80">{pillar.verb}</span>
             </button>
           );
         })}
+      </div>
+
+      <div className="rounded-xl border border-border bg-muted/20 p-4">
+        <div className="flex items-start gap-3">
+          {React.createElement(getIcon(LIVING_PILLARS.find(p => p.key === activePillar)?.icon || 'Lightbulb'), { className: 'mt-0.5 h-4 w-4 text-primary' })}
+          <div className="min-w-0 space-y-2">
+            <p className="text-sm font-medium text-foreground">{LIVING_PILLARS.find(p => p.key === activePillar)?.description}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {(ROLE_MISSIONS[userLevel] || []).map((mission) => (
+                <span key={mission} className="rounded-full border border-border bg-background px-2 py-1 text-[10px] text-muted-foreground">{mission}</span>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Loading */}
