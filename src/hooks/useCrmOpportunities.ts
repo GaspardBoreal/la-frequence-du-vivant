@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { CrmOpportunity, OpportunityStatus } from '@/types/crm';
 import { toast } from 'sonner';
 
+type CrmOpportunityWrite = Omit<CrmOpportunity, 'assigned_member'>;
+
 export function useCrmOpportunities() {
   const queryClient = useQueryClient();
 
@@ -29,13 +31,14 @@ export function useCrmOpportunities() {
   const createOpportunity = useMutation({
     mutationFn: async (opportunity: Omit<CrmOpportunity, 'id' | 'created_at' | 'updated_at'>) => {
       const { data: userData } = await supabase.auth.getUser();
+      const { assigned_member: _assignedMember, ...opportunityPayload } = opportunity;
       
       const { data, error } = await supabase
         .from('crm_opportunities')
         .insert({
-          ...opportunity,
+          ...opportunityPayload,
           created_by: userData.user?.id,
-        })
+        } as Omit<CrmOpportunityWrite, 'id' | 'created_at' | 'updated_at'>)
         .select()
         .single();
 
@@ -54,9 +57,10 @@ export function useCrmOpportunities() {
 
   const updateOpportunity = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<CrmOpportunity> & { id: string }) => {
+      const { assigned_member: _assignedMember, ...updatePayload } = updates;
       const { data, error } = await supabase
         .from('crm_opportunities')
-        .update(updates)
+        .update(updatePayload as Partial<CrmOpportunityWrite>)
         .eq('id', id)
         .select()
         .single();
