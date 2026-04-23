@@ -1,730 +1,566 @@
 
-## Proposition enrichie : intégrer la bioacoustique comme pilier majeur des Marches du Vivant
+## Objectif
 
-La bioacoustique ne doit pas être un simple “bonus audio”. Elle peut devenir un marqueur fort des Marches du Vivant, parce qu’elle relie immédiatement :
-
-- le vivant invisible ou discret ;
-- la qualité écologique d’un lieu ;
-- l’émotion des marcheurs ;
-- la preuve sensible et scientifique ;
-- la mémoire sonore d’un territoire.
-
-Je propose donc d’ajouter un cinquième pilier transversal aux quatre piliers déjà proposés.
+Intégrer progressivement l’architecture complète des Marches du Vivant dans toute la plateforme :
 
 ```text
-Les 5 piliers des Marches du Vivant
-
-1. L’Œil      → observer, reconnaître, lire les paysages
-2. La Main    → expérimenter, mesurer, contribuer
-3. Le Cœur    → ressentir, écrire, créer
-4. Le Palais  → goûter, relier terroir et vivant
-5. L’Oreille  → écouter, enregistrer, révéler le paysage sonore
-```
-
-Ce cinquième pilier, **L’Oreille**, couvre toutes les activités bioacoustiques :
-
-- reconnaissance d’oiseaux ;
-- écoute silencieuse sans numérique ;
-- identification de sons naturels ;
-- enregistrements originaux liés au lieu ;
-- création de cartes sonores ;
-- comparaison des ambiances selon les points de marche ;
-- valorisation des espèces par leurs chants ;
-- restitution sensible après l’événement.
-
----
-
-## 1. Efficace et pragmatique : mise en place simple et rapide
-
-### Objectif
-
-Ajouter la bioacoustique dans les événements sans complexifier l’organisation terrain.
-
-Chaque point de marche peut recevoir un ou plusieurs modules simples :
-
-```text
-Point de marche
-├── Observation biodiversité
-├── Pratique agroécologique
-├── Texte / haïku
-├── Lieu remarquable
-└── Écoute / bioacoustique
-```
-
-### Modules bioacoustiques simples
-
-#### A. Pause d’écoute silencieuse
-
-Sans numérique.
-
-- 2 à 5 minutes de silence collectif.
-- Les marcheurs notent ce qu’ils entendent :
-  - oiseaux ;
-  - insectes ;
-  - vent ;
-  - eau ;
-  - machines agricoles ;
-  - route ;
-  - silence ;
-  - sons humains.
-- On qualifie ensuite l’ambiance sonore :
-  - vivant ;
-  - apaisé ;
-  - fragmenté ;
-  - agricole ;
-  - humide ;
-  - forestier ;
-  - perturbé.
-
-Exemple pour Deviat :
-
-```text
-Point : Corridor écologique - haie
-Activité : Pause d’écoute de 3 minutes
-Sons attendus : oiseaux de haie, insectes, vent dans les feuillages
-Question : que nous dit cette haie par le son ?
-```
-
-#### B. Reconnaissance d’oiseaux
-
-Avec ou sans application numérique.
-
-- Niveau simple : reconnaître “un oiseau chante”.
-- Niveau intermédiaire : distinguer plusieurs chants.
-- Niveau avancé : identifier l’espèce.
-- Niveau expert : relier le chant à l’habitat.
-
-Exemples :
-
-```text
-Haie → passereaux, merle, mésange, rouge-gorge
-Étang → grenouilles, foulque, héron, oiseaux d’eau
-Jachère → alouette, insectes, bruissements
-Boisement → pics, geai, rapaces éventuels
-```
-
-#### C. Enregistrement sonore original du lieu
-
-Avec smartphone ou enregistreur simple.
-
-Chaque groupe peut produire une “empreinte sonore” :
-
-- 30 secondes à 2 minutes ;
-- un lieu précis ;
-- une heure ;
-- une ambiance ;
-- un court commentaire du marcheur.
-
-Exemple :
-
-```text
-Titre : Souffle de la haie de Deviat
-Lieu : Corridor écologique
-Durée : 1 min 12
-Sons : vent, oiseaux, bruissement de feuilles
-Sens : la haie comme refuge sonore du vivant
-```
-
-#### D. Mini-fiche sonore par point de marche
-
-Pour chaque point, créer une fiche :
-
-```text
-Nom du point : Ruches proches des cultures
-Pilier principal : La Main
-Pilier associé : L’Oreille
-Sons à écouter :
-- abeilles
-- vent dans la parcelle
-- activité humaine proche
-Question :
-Le lieu sonne-t-il comme un espace vivant, productif, fragile ou équilibré ?
-```
-
-### Application aux points de Deviat
-
-#### Corridor écologique - haie
-
-- Écoute silencieuse.
-- Reconnaissance d’oiseaux de haie.
-- Enregistrement “ambiance de corridor”.
-- Discussion : une haie ne se voit pas seulement, elle s’entend.
-
-#### Ruches proches des cultures
-
-- Écoute des abeilles si conditions favorables.
-- Discussion sur la pollinisation.
-- Lien entre agriculture, apiculture et paysage sonore.
-- Attention pédagogique : respecter la distance de sécurité.
-
-#### Terres en jachère
-
-- Écoute des insectes, du vent, des oiseaux de milieux ouverts.
-- Comparaison avec une parcelle cultivée.
-- Question : la jachère est-elle plus “sonore” qu’un sol nu ?
-
-#### Régulation des espèces
-
-- Écoute comme indice de présence ou d’absence.
-- Ragondin : plutôt traces et indices que sons.
-- Chevreuil : bruit de fuite, froissement, présence discrète.
-- Carabe : invisible acoustiquement, mais relié au sol vivant.
-- Oiseaux : indicateurs acoustiques indirects d’équilibre.
-
-### Selon le niveau du marcheur
-
-#### Marcheur
-
-Mission simple :
-
-- fermer les yeux ;
-- écouter ;
-- noter 3 sons ;
-- dire ce que le lieu lui fait ressentir.
-
-#### Éclaireur
-
-Mission documentaire :
-
-- enregistrer un son ;
-- ajouter lieu, heure, météo ;
-- proposer une hypothèse : oiseau, insecte, eau, humain, vent.
-
-#### Ambassadeur
-
-Mission de médiation :
-
-- animer une pause d’écoute ;
-- expliquer le lien entre habitat et ambiance sonore ;
-- accompagner les débutants.
-
-#### Sentinelle
-
-Mission de validation :
-
-- qualifier les sons ;
-- repérer les espèces remarquables ;
-- constituer une archive sonore fiable ;
-- comparer les sons entre plusieurs événements.
-
-### Selon le type d’événement
-
-#### Agroécologique
-
-La bioacoustique sert à prouver la vitalité des milieux.
-
-Questions :
-
-- Une haie augmente-t-elle la diversité sonore ?
-- Une jachère attire-t-elle plus d’oiseaux ou d’insectes ?
-- Un étang enrichit-il le paysage sonore ?
-- Une trame verte ou bleue s’entend-elle ?
-
-#### Éco-poétique
-
-La bioacoustique nourrit l’écriture.
-
-Activités :
-
-- haïku après écoute ;
-- poème à partir de 5 sons ;
-- texte “ce que le lieu m’a murmuré” ;
-- lecture d’un texte accompagné d’un son enregistré.
-
-#### Éco-touristique
-
-La bioacoustique révèle l’identité d’un lieu.
-
-Activités :
-
-- carte postale sonore ;
-- mémoire sonore d’un moulin, d’un pont, d’une abbaye ;
-- écoute comparée entre patrimoine bâti et milieu naturel ;
-- balade sonore guidée.
-
-### Selon la temporalité
-
-#### Avant l’événement
-
-- Identifier 3 à 5 points d’écoute.
-- Préparer des consignes simples.
-- Créer une fiche “sons possibles”.
-- Prévoir qui enregistre quoi.
-- Vérifier si le lieu est propice : route, vent, accès, sécurité.
-
-#### Pendant les points de marche
-
-- Pause silencieuse.
-- Reconnaissance d’oiseaux.
-- Enregistrement court.
-- Ressenti collectif.
-- Éventuelle écriture immédiate.
-
-#### Après l’événement
-
-- Trier les sons.
-- Associer chaque son à un point de marche.
-- Créer une “playlist du parcours”.
-- Produire une synthèse sonore :
-  - sons dominants ;
-  - espèces entendues ;
-  - lieux les plus vivants ;
-  - sons perturbateurs ;
-  - recommandations écologiques.
-
----
-
-## 2. Innovant : la partition vivante du parcours
-
-### Objectif
-
-Transformer chaque événement en **partition écologique et sensible**.
-
-Chaque point de marche devient une “station d’écoute” où les marcheurs contribuent à une carte sonore collective.
-
-```text
-Événement
-├── Point 1 : Haie
-│   ├── Observation visuelle
-│   ├── Pratique agroécologique
-│   ├── Espèces
-│   ├── Texte
-│   └── Empreinte sonore
-├── Point 2 : Ruches
-│   └── Empreinte sonore
-└── Point 3 : Jachère
-    └── Empreinte sonore
-```
-
-### Nouveau concept : la partition bioacoustique
-
-Chaque marche produit une partition composée de :
-
-- sons du vivant ;
-- sons humains ;
-- sons agricoles ;
-- sons de l’eau ;
-- sons du vent ;
-- silences ;
-- ruptures sonores ;
-- chants d’oiseaux ;
-- voix poétiques.
-
-Exemple :
-
-```text
-Partition sonore de Deviat
-
-1. La haie respire
-   - oiseaux de haie
-   - vent
-   - bruissement
-
-2. Les ruches vibrent
-   - abeilles
-   - pas dans l’herbe
-   - voix basses
-
-3. La jachère murmure
-   - insectes
-   - oiseaux lointains
-   - silence ouvert
-
-4. La terre régule
-   - traces plus que sons
-   - sol discret
-   - écoute de l’invisible
-```
-
-### Bioacoustique et gamification
-
-Chaque niveau de marcheur reçoit une mission différente sur le même point.
-
-#### Marcheur
-
-```text
-Mission : écouter
-Objectif : identifier 3 sons
-Récompense : Fréquence d’écoute
-```
-
-#### Éclaireur
-
-```text
-Mission : documenter
-Objectif : enregistrer un son géolocalisé
-Récompense : Fréquence bioacoustique
-```
-
-#### Ambassadeur
-
-```text
-Mission : transmettre
-Objectif : guider une pause sonore
-Récompense : Fréquence de médiation
-```
-
-#### Sentinelle
-
-```text
-Mission : qualifier
-Objectif : valider une ambiance sonore et ses espèces probables
-Récompense : Fréquence sentinelle
-```
-
-### Score d’équilibre de l’événement
-
-Pour chaque événement, calculer un équilibre entre les 5 piliers :
-
-```text
-Œil      : observations espèces / paysages
-Main     : pratiques agroécologiques / protocoles
-Cœur     : textes / ressentis / créations
-Palais   : dégustation / terroir
-Oreille  : sons / écoutes / bioacoustique
-```
-
-Exemple Deviat :
-
-```text
-Œil      : fort
-Main     : très fort
-Cœur     : fort
-Palais   : moyen
-Oreille  : à renforcer
-```
-
-Recommandation automatique :
-
-> “L’événement de Deviat est très fort sur l’agroécologie et l’écriture. Pour atteindre une signature plus complète, ajouter 3 stations d’écoute : haie, ruches, jachère.”
-
-### Restitution innovante après événement
-
-Créer une “fiche d’empreinte sonore” :
-
-```text
-Empreinte sonore de l’événement
-
-Ambiance dominante : bocage vivant
-Sons marqueurs : oiseaux de haie, abeilles, vent dans les cultures
-Espèces probables : passereaux, insectes pollinisateurs
-Lieux les plus sonores : haie, jachère
-Lieux les plus silencieux : parcelle ouverte
-Perturbations : route lointaine, vent fort
-Valeur pédagogique : forte
-Valeur poétique : très forte
-```
-
-### Usage pour OSFARM / FNSEA / partenaires
-
-La bioacoustique devient un argument anti-agribashing :
-
-- on ne dit pas seulement “l’agriculteur protège la biodiversité” ;
-- on le fait entendre ;
-- on archive une preuve sensible ;
-- on montre les effets des haies, jachères, étangs, ruches, couverts ;
-- on valorise le rôle des agriculteurs comme gardiens d’ambiances vivantes.
-
-Formulation possible :
-
-> “Une ferme engagée ne se voit pas seulement dans ses pratiques : elle s’entend dans la richesse de son paysage sonore.”
-
----
-
-## 3. Totalement disruptif : le jumeau sonore vivant du territoire
-
-### Objectif
-
-Créer un système unique : chaque Marche du Vivant enrichit un **jumeau sonore du territoire**.
-
-Ce jumeau ne serait pas seulement une carte avec des photos ou des espèces, mais une carte vivante composée de :
-
-- sons ;
-- silences ;
-- chants ;
-- voix ;
-- textes ;
-- espèces ;
-- pratiques agricoles ;
-- ressentis ;
-- indices de santé écologique.
-
-```text
-Jumeau Vivant du territoire
-├── Carte des marches
-├── Carte des espèces
-├── Carte des pratiques agroécologiques
-├── Carte des textes
-└── Carte des paysages sonores
-```
-
-### Concept : l’indice de résonance du vivant
-
-Créer un indicateur poétique et pédagogique :
-
-```text
-Indice de Résonance du Vivant
-= diversité sonore
-+ présence de sons biologiques
-+ qualité des habitats
-+ faible pollution sonore
-+ richesse des contributions humaines
-+ cohérence avec les pratiques agroécologiques
-```
-
-Exemple :
-
-```text
-Haie de Deviat
-Résonance : 86 / 100
-Pourquoi :
-- oiseaux présents
-- vent filtré par la haie
-- refuge sonore
-- corridor écologique lisible et audible
-- forte valeur poétique
-```
-
-### Expérience marcheur augmentée
-
-L’IA accompagne les marcheurs selon leur niveau.
-
-#### Pour le Marcheur
-
-> “Ferme les yeux. Écoute pendant 30 secondes. Quel son semble le plus proche ? Quel son semble le plus ancien ?”
-
-#### Pour l’Éclaireur
-
-> “Enregistre 45 secondes. Ajoute météo, heure et type de milieu. Compare ensuite avec la station précédente.”
-
-#### Pour l’Ambassadeur
-
-> “Anime une écoute collective. Demande au groupe : ce paysage sonore donne-t-il envie de protéger ce lieu ?”
-
-#### Pour la Sentinelle
-
-> “Analyse la cohérence entre les sons, les espèces observées et les pratiques agroécologiques du point.”
-
-### Carte sonore évolutive
-
-Chaque contribution alimente une carte :
-
-- sons de haies ;
-- sons d’étangs ;
-- sons de jachères ;
-- sons de ruches ;
-- sons de moulins ;
-- sons de trames noires nocturnes ;
-- sons de corridors écologiques ;
-- sons perturbés par routes ou machines.
-
-La carte pourrait permettre de comparer :
-
-```text
-Avant / après plantation d’une haie
-Printemps / été / automne
-Matin / après-midi / nuit
-Parcelle nue / parcelle couverte
-Haie jeune / haie mature
-Étang restauré / étang dégradé
-```
-
-### La Marche devient un instrument
-
-Chaque événement devient une composition.
-
-```text
-Marche agroécologique
-→ Symphonie des pratiques vivantes
-
-Marche éco-poétique
-→ Poème sonore du territoire
-
-Marche éco-touristique
-→ Carte postale acoustique du patrimoine
-```
-
-### Restitution “wahou” pour un événement
-
-Après Deviat, on pourrait générer :
-
-```text
-Le Réveil de la Terre — Album sonore de Deviat
-
-Piste 1 : La haie comme corridor audible
-Piste 2 : Les ruches et la pollinisation
-Piste 3 : La jachère ouverte au vent
-Piste 4 : Le silence du sol vivant
-Piste 5 : Haïku de Victor sur fond d’oiseaux
-Piste 6 : Haïku de Laurence sur ambiance de haie
-Piste 7 : Ancien relais poste — mémoire des pigeons voyageurs
-```
-
-Ce serait à la fois :
-
-- un souvenir pour les marcheurs ;
-- un support de communication ;
-- un outil pédagogique ;
-- une preuve sensible pour les partenaires ;
-- une matière artistique ;
-- une donnée territoriale.
-
----
-
-## Intégration dans la structure globale des Marches du Vivant
-
-### Nouveau modèle enrichi
-
-```text
-Événement
-├── Type
-│   ├── Agroécologique
-│   ├── Éco-poétique
-│   └── Éco-touristique
-├── Points de marche
-│   ├── Pratiques agroécologiques
-│   ├── Espèces reconnues
-│   ├── Textes écrits
-│   ├── Lieux remarquables
-│   └── Activités bioacoustiques
-├── Participants
+Architecture cible
+├── 3 niveaux de maturité
+│   ├── Efficace / pragmatique
+│   ├── Innovant
+│   └── Disruptif
+├── 5 piliers
+│   ├── L’Œil      : observer
+│   ├── La Main    : expérimenter / mesurer
+│   ├── Le Cœur    : ressentir / écrire / créer
+│   ├── Le Palais  : goûter / relier terroir et paysage
+│   └── L’Oreille  : écouter / bioacoustique / paysage sonore
+├── 4 niveaux de marcheurs
 │   ├── Marcheur
 │   ├── Éclaireur
 │   ├── Ambassadeur
 │   └── Sentinelle
-└── Temporalité
+├── 3 types d’événements
+│   ├── Agroécologique
+│   ├── Éco-poétique
+│   └── Éco-touristique
+└── 3 temporalités
     ├── Avant
     ├── Pendant
     └── Après
 ```
 
-### Typologie des activités bioacoustiques
+L’idée n’est pas d’ajouter une “couche de contenus” isolée, mais de transformer les Marches du Vivant en système éditorial, pédagogique, communautaire et opérationnel complet.
+
+---
+
+## Phase 1 — Socle simple et rapide : rendre le cadre visible partout
+
+### 1.1. Formaliser le référentiel commun
+
+Créer un référentiel centralisé des Marches du Vivant dans le code :
+
+- les 5 piliers ;
+- les 4 niveaux de marcheurs ;
+- les 3 types d’événements ;
+- les 3 temporalités ;
+- les familles d’activités : pratiques agroécologiques, espèces, textes, lieux remarquables, bioacoustique ;
+- les missions adaptées à chaque niveau.
+
+Ce référentiel servira autant à l’admin qu’à la web app marcheur.
+
+### 1.2. Côté admin : ajouter une lecture “5 piliers” sur les événements
+
+Sur `/admin/marche-events/:id`, ajouter un nouvel onglet :
 
 ```text
-Bioacoustique sans numérique
-├── écoute silencieuse
-├── marche sonore
-├── reconnaissance orale
-├── cartographie sensible
-└── écriture après écoute
-
-Bioacoustique avec numérique
-├── enregistrement smartphone
-├── reconnaissance assistée d’oiseaux
-├── géolocalisation du son
-├── bibliothèque sonore
-└── comparaison des ambiances
+Parcours vivant
 ```
 
-### Catégories à suivre pour chaque son
+Il affichera pour chaque événement :
+
+- le type de l’événement ;
+- les points de marche associés ;
+- les piliers déjà couverts ;
+- les piliers manquants ;
+- les missions disponibles par niveau de marcheur ;
+- les suggestions avant / pendant / après ;
+- un focus bioacoustique systématique.
+
+Exemple pour Deviat :
 
 ```text
-Son
-├── point de marche
-├── date / heure
-├── météo
-├── habitat
-├── type de son
-│   ├── oiseau
-│   ├── insecte
-│   ├── eau
-│   ├── vent
-│   ├── mammifère
-│   ├── humain
-│   ├── agricole
-│   └── silence
-├── espèce probable
-├── qualité pédagogique
-├── qualité poétique
-└── visibilité
+Haie / corridor
+├── Œil      : lecture du paysage, haie, corridor
+├── Main     : rôle agronomique, régulation
+├── Oreille  : oiseaux de haie, bruissements, ambiance refuge
+└── Cœur     : haïku après écoute
+```
+
+### 1.3. Côté web app marcheur : enrichir l’onglet “Apprendre”
+
+L’onglet actuel `Apprendre & Créer` existe déjà et gère :
+
+- le niveau du marcheur ;
+- les angles biodiversité / bioacoustique / géopoétique ;
+- les cartes pédagogiques.
+
+Prochaine étape : l’étendre vers les 5 piliers.
+
+Au lieu de seulement :
+
+```text
+Biodiversité / Bioacoustique / Géopoétique
+```
+
+on aura :
+
+```text
+Œil / Main / Cœur / Palais / Oreille
+```
+
+Chaque marcheur verra des contenus adaptés à son niveau.
+
+### 1.4. Côté chatbot admin : stabiliser le “wahou”
+
+Le chatbot admin contient déjà le cadre des 5 piliers et de la bioacoustique.
+
+Prochaine étape : lui injecter davantage de données structurées depuis la base :
+
+- piliers associés à l’événement ;
+- points de marche ;
+- activités prévues ;
+- activités réalisées ;
+- sons collectés ;
+- textes écrits ;
+- espèces reconnues ;
+- recommandations par temporalité.
+
+Résultat attendu : le chatbot ne répond plus seulement avec une synthèse narrative, mais avec une lecture stratégique complète.
+
+---
+
+## Phase 2 — Niveau innovant : créer les modules d’expérience
+
+### 2.1. Créer une bibliothèque de modules d’expérience
+
+Ajouter un modèle de données pour représenter les activités réutilisables.
+
+Exemples de modules :
+
+```text
+Module : Pause d’écoute de 3 minutes
+Pilier : L’Oreille
+Types : agroécologique, éco-poétique, éco-touristique
+Niveaux : marcheur, éclaireur
+Temporalité : pendant
+Objectif : écouter et qualifier le paysage sonore
+```
+
+```text
+Module : Test bêche
+Pilier : La Main
+Types : agroécologique
+Niveaux : éclaireur, ambassadeur, sentinelle
+Temporalité : pendant
+Objectif : rendre visible la vie du sol
+```
+
+```text
+Module : Haïku après écoute
+Pilier : Le Cœur + L’Oreille
+Types : éco-poétique
+Niveaux : tous
+Temporalité : pendant / après
+Objectif : transformer l’écoute en trace poétique
+```
+
+### 2.2. Associer les modules aux points de marche
+
+Chaque point de marche devient une station d’expérience.
+
+```text
+Événement
+└── Point de marche
+    ├── Modules agroécologiques
+    ├── Modules espèces
+    ├── Modules écriture
+    ├── Modules lieux remarquables
+    └── Modules bioacoustiques
+```
+
+Côté admin, il faudra pouvoir :
+
+- choisir les modules d’un point ;
+- les ordonner ;
+- définir leur niveau minimum ;
+- préciser s’ils sont obligatoires ou optionnels ;
+- ajouter des consignes terrain ;
+- ajouter du matériel nécessaire ;
+- prévoir une restitution après événement.
+
+### 2.3. Côté marcheur : afficher des missions contextualisées
+
+Dans la page exploration marcheur, pendant la consultation d’un point de marche, afficher :
+
+```text
+Vos missions sur ce point
+```
+
+Elles seront filtrées selon :
+
+- le niveau du marcheur ;
+- le type d’événement ;
+- le point de marche ;
+- le pilier actif ;
+- la temporalité.
+
+Exemple :
+
+Pour un Marcheur :
+
+```text
+Fermez les yeux 2 minutes.
+Notez 3 sons.
+Choisissez celui qui raconte le mieux ce lieu.
+```
+
+Pour un Éclaireur :
+
+```text
+Enregistrez 45 secondes.
+Indiquez l’habitat : haie, jachère, étang, parcelle.
+Proposez une espèce probable ou une ambiance.
+```
+
+Pour une Sentinelle :
+
+```text
+Comparez cette ambiance sonore avec les observations espèces.
+Le lieu confirme-t-il son rôle de corridor écologique ?
+```
+
+### 2.4. Ajouter un score d’équilibre des 5 piliers
+
+Côté admin, calculer un indicateur simple :
+
+```text
+Équilibre du parcours
+Œil      : 80 %
+Main     : 70 %
+Cœur     : 60 %
+Palais   : 20 %
+Oreille  : 40 %
+```
+
+L’objectif n’est pas de noter brutalement, mais d’aider à concevoir des événements plus complets.
+
+Le système pourra proposer :
+
+```text
+Cet événement est très fort sur L’Œil et La Main.
+Pour le rendre plus complet, ajoutez :
+- une station d’écoute sur la haie ;
+- une dégustation consciente ;
+- une restitution sonore après événement.
 ```
 
 ---
 
-## Mise à jour de la proposition en trois niveaux
+## Phase 3 — Niveau disruptif : le jumeau vivant des marches
 
-### Niveau 1 — Pragmatique
+### 3.1. Créer une “Partition vivante” de chaque événement
 
-Mettre en place rapidement :
+Chaque événement devient une partition composée de :
 
-- un pilier “L’Oreille” ;
-- 3 stations d’écoute par événement ;
-- une fiche bioacoustique simple par point de marche ;
-- des missions par niveau de marcheur ;
-- une playlist après événement ;
-- une synthèse sonore dans le rapport.
+- points de marche ;
+- piliers ;
+- sons ;
+- photos ;
+- textes ;
+- espèces ;
+- pratiques agricoles ;
+- lieux patrimoniaux ;
+- ressentis.
 
-### Niveau 2 — Innovant
+Restitution possible :
 
-Créer :
+```text
+Partition vivante de Deviat
+1. La haie respire
+2. Les ruches vibrent
+3. La jachère murmure
+4. Le sol se révèle
+5. Le relais postal transmet la mémoire du lieu
+```
 
-- une partition sonore du parcours ;
-- un score d’équilibre des 5 piliers ;
-- des missions bioacoustiques gamifiées ;
-- une carte des sons par point ;
-- des restitutions sonores événementielles ;
-- des comparaisons entre événements.
+### 3.2. Créer un indice de Résonance du Vivant
 
-### Niveau 3 — Disruptif
+Pour chaque point ou événement, calculer un indicateur composite :
 
-Construire :
+```text
+Résonance du Vivant
+= diversité des observations
++ richesse sonore
++ qualité des pratiques agroécologiques
++ intensité poétique
++ implication des marcheurs
++ valeur patrimoniale / terroir
+```
 
-- un jumeau sonore vivant des territoires ;
-- un indice de Résonance du Vivant ;
-- une IA compagnon d’écoute ;
-- une archive bioacoustique territoriale ;
-- des albums sonores générés après chaque marche ;
-- une nouvelle forme de preuve sensible pour l’agriculture vivante.
+Cet indice devra rester pédagogique, non technocratique.
+
+Exemple :
+
+```text
+Haie de Deviat — Résonance forte
+Pourquoi :
+- corridor écologique lisible
+- oiseaux de haie probables
+- ruches proches
+- support d’écriture poétique
+- valeur agricole et sensible
+```
+
+### 3.3. Construire une carte vivante territoriale
+
+À terme, chaque contribution nourrit une carte globale :
+
+```text
+Carte vivante
+├── Observations espèces
+├── Sons originaux
+├── Haïkus et textes
+├── Pratiques agroécologiques
+├── Lieux remarquables
+└── Indices de résonance
+```
+
+La carte permettra de comparer :
+
+- événement par événement ;
+- territoire par territoire ;
+- saison par saison ;
+- type de milieu par type de milieu ;
+- niveau de marcheur par niveau de marcheur.
+
+### 3.4. IA compagnon différenciée selon les rôles
+
+Déployer une IA compagnon côté marcheur, différente du chatbot admin.
+
+Elle pourra guider :
+
+#### Marcheur
+
+- écouter ;
+- observer ;
+- ressentir ;
+- déposer une première contribution.
+
+#### Éclaireur
+
+- documenter ;
+- géolocaliser ;
+- qualifier ;
+- comparer.
+
+#### Ambassadeur
+
+- animer ;
+- transmettre ;
+- raconter ;
+- valoriser.
+
+#### Sentinelle
+
+- valider ;
+- consolider ;
+- produire une preuve ;
+- préparer des restitutions partenaires.
 
 ---
 
-## Priorité recommandée
+## Ordre de réalisation recommandé
 
-Je recommande d’intégrer la bioacoustique en priorité dans le socle simple, sans attendre une architecture complexe.
+### Étape A — Court terme : 1 à 2 semaines
 
-### À court terme
+Priorité : rendre l’architecture visible sans tout reconstruire.
 
-Pour chaque événement :
+À faire :
+
+1. Créer le référentiel central des 5 piliers / niveaux / temporalités.
+2. Étendre l’onglet `Apprendre` côté marcheur aux 5 piliers.
+3. Ajouter une première carte “Parcours vivant” côté admin événement.
+4. Enrichir les contenus `insight_cards` existants avec les 5 piliers.
+5. Ajouter des suggestions automatiques simples pour les piliers manquants.
+6. Mettre à jour le chatbot admin pour exploiter ces éléments dans ses réponses.
+
+Résultat : la logique 5 piliers devient visible immédiatement.
+
+---
+
+### Étape B — Moyen terme : 3 à 6 semaines
+
+Priorité : passer d’un cadre éditorial à un vrai système opérationnel.
+
+À faire :
+
+1. Créer les tables des modules d’expérience.
+2. Créer les associations module ↔ point de marche ↔ événement.
+3. Ajouter l’interface admin de composition de parcours.
+4. Ajouter les missions marcheur par niveau dans la web app.
+5. Relier les contributions existantes :
+   - photos ;
+   - sons ;
+   - textes ;
+   - kigo ;
+   - observations ;
+   - quiz ;
+   - Fréquences.
+6. Créer le score d’équilibre des 5 piliers.
+7. Ajouter des exports enrichis pour OSFARM / FNSEA / partenaires.
+
+Résultat : chaque événement devient programmable, animable et restituable.
+
+---
+
+### Étape C — Long terme : 2 à 4 mois
+
+Priorité : créer la signature différenciante des Marches du Vivant.
+
+À faire :
+
+1. Générer une partition vivante après chaque événement.
+2. Créer l’indice de Résonance du Vivant.
+3. Construire la carte sonore et sensible des territoires.
+4. Ajouter l’IA compagnon côté marcheur.
+5. Créer des albums sonores ou récits multimédias post-événement.
+6. Comparer les événements dans le temps.
+7. Produire des tableaux de bord d’impact territorial.
+
+Résultat : la plateforme devient un outil unique de preuve sensible, scientifique, poétique et territoriale.
+
+---
+
+## Priorité fonctionnelle côté admin
+
+Côté admin, les prochaines fonctionnalités doivent être :
+
+1. **Onglet Parcours vivant** sur chaque événement.
+2. **Gestion des modules d’expérience**.
+3. **Association des modules aux points de marche**.
+4. **Vue équilibre des 5 piliers**.
+5. **Préparation avant / animation pendant / restitution après**.
+6. **Synthèse IA enrichie** pour chaque événement.
+7. **Export partenaire** intégrant les 5 piliers et la bioacoustique.
+
+---
+
+## Priorité fonctionnelle côté web app marcheur
+
+Côté marcheur, les prochaines fonctionnalités doivent être :
+
+1. **Missions personnalisées selon le niveau**.
+2. **Navigation par point de marche** enrichie par les 5 piliers.
+3. **Onglet Apprendre restructuré autour des piliers**.
+4. **Contribution guidée** :
+   - photo ;
+   - son ;
+   - texte ;
+   - kigo ;
+   - observation ;
+   - ressenti.
+5. **Récompenses en Fréquences** liées aux missions.
+6. **Progression vers Éclaireur / Ambassadeur / Sentinelle** plus explicite.
+7. **Carnet vivant enrichi** avec traces sonores, poétiques et agroécologiques.
+
+---
+
+## Modèle de données cible
+
+À terme, prévoir une extension Supabase autour de ces objets :
 
 ```text
-Minimum viable bioacoustique
-├── 3 points d’écoute
-├── 1 pause silencieuse
-├── 1 reconnaissance d’oiseaux
-├── 1 enregistrement original
-├── 1 texte inspiré par le son
-└── 1 synthèse sonore post-événement
+experience_modules
+├── titre
+├── description
+├── pilier
+├── type_evenement
+├── niveau_minimum
+├── temporalite
+├── consigne
+├── materiel
+├── duree_estimee
+├── mode_numerique
+└── actif
+
+event_point_modules
+├── marche_event_id
+├── marche_id
+├── module_id
+├── ordre
+├── obligatoire
+└── consigne_contextuelle
+
+walker_missions
+├── user_id
+├── marche_event_id
+├── marche_id
+├── module_id
+├── statut
+├── contribution_type
+├── contribution_id
+└── frequences_attribuees
+
+event_living_summaries
+├── marche_event_id
+├── score_oeil
+├── score_main
+├── score_coeur
+├── score_palais
+├── score_oreille
+├── indice_resonance
+├── synthese_json
+└── synthese_markdown
 ```
 
-### Pour Deviat
+---
 
-Ajouter rétroactivement :
+## Stratégie de mise en œuvre recommandée
+
+Je recommande une approche progressive en trois livrables.
+
+### Livrable 1 — “Cadre visible”
+
+Sans gros changement de base de données.
+
+- référentiel 5 piliers ;
+- UI admin simple ;
+- UI marcheur enrichie ;
+- contenu pédagogique ;
+- chatbot plus cohérent.
+
+### Livrable 2 — “Parcours composable”
+
+Avec nouvelles tables.
+
+- modules d’expérience ;
+- association aux points de marche ;
+- missions par niveau ;
+- score d’équilibre ;
+- premières restitutions structurées.
+
+### Livrable 3 — “Jumeau vivant”
+
+Avec intelligence de synthèse.
+
+- partition vivante ;
+- indice de résonance ;
+- carte sensible ;
+- albums sonores ;
+- IA compagnon marcheur ;
+- exports institutionnels.
+
+---
+
+## Recommandation finale
+
+La prochaine étape la plus pertinente est de commencer par le **Livrable 1 — Cadre visible**.
+
+Il donne rapidement une cohérence forte à toute l’expérience sans attendre une refonte lourde :
 
 ```text
-Deviat — Couche bioacoustique
+Admin
+→ comprendre, préparer, équilibrer, restituer
 
-1. Haie
-   - oiseaux de haie
-   - corridor audible
-   - ambiance refuge
+Marcheur
+→ apprendre, contribuer, progresser
 
-2. Ruches
-   - bourdonnement
-   - pollinisation
-   - lien agriculture/apiculture
+Chatbot
+→ synthétiser, recommander, valoriser
 
-3. Jachère
-   - insectes
-   - oiseaux de milieux ouverts
-   - respiration du sol
-
-4. Ancien relais poste
-   - mémoire des pigeons voyageurs
-   - patrimoine sonore imaginaire
-   - lien entre communication animale et humaine
+Événement
+→ devenir un parcours vivant structuré par les 5 piliers
 ```
 
-### Formule stratégique
-
-> Les Marches du Vivant ne doivent pas seulement faire voir la biodiversité. Elles doivent apprendre à l’entendre.  
-> La bioacoustique devient alors le langage sensible du territoire : elle révèle la santé des milieux, nourrit l’écriture, documente les pratiques agricoles et transforme chaque marche en archive vivante.
+Ensuite seulement, on passe au système complet de modules et missions.
