@@ -546,6 +546,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   marcheEventDate,
   marcheEventLieu,
   userLevel,
+  isAdmin,
   onSelectStep,
 }) => {
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
