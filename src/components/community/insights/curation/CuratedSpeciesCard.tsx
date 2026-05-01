@@ -197,15 +197,20 @@ const CuratedSpeciesCard: React.FC<Props> = ({
           </p>
         )}
 
-        {/* Category badge — visible read-only as soon as a category exists,
-            even on non-pinned AI suggestions. The editable footer (curators)
-            replaces it on pinned cards. */}
-        {!footer && category && (
-          <span
-            className={`inline-block px-1.5 py-0.5 rounded-md text-[10px] font-medium border ${getCatStyle(category)}`}
-          >
-            {getCatLabel(category)}
-          </span>
+        {/* Cluster catégories — badges cliquables qui ouvrent la sheet d'évidences.
+            Le footer (édition curateur sur cartes épinglées) le remplace si fourni. */}
+        {!footer && (category || secondaries.length > 0 || needsReview) && (
+          <CategoryBadgeCluster
+            primary={category}
+            secondary={secondaries}
+            hasEvidence={hasEvidence}
+            needsReview={needsReview}
+            onOpen={
+              curation && onOpenEvidence
+                ? () => onOpenEvidence(curation, displayName)
+                : undefined
+            }
+          />
         )}
 
         {footer}
