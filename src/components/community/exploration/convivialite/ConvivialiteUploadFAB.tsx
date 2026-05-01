@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload, X, Loader2 } from 'lucide-react';
 import { useUploadConvivialitePhotos } from '@/hooks/useConvivialitePhotos';
