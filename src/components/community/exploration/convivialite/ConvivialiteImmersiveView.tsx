@@ -6,6 +6,7 @@ import {
   useDeleteConvivialitePhoto,
   useReportConvivialitePhoto,
   useCanUploadConvivialite,
+  useReorderConvivialitePhotos,
   type ConvivialitePhoto,
 } from '@/hooks/useConvivialitePhotos';
 import ConvivialiteMosaic from './ConvivialiteMosaic';
