@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, PenLine, Leaf, TreePine, GraduationCap } from 'lucide-react';
+import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, PenLine, Leaf, TreePine, GraduationCap, Sparkles } from 'lucide-react';
+import ConvivialiteImmersiveView from './exploration/convivialite/ConvivialiteImmersiveView';
 import LireDescriptionsTab from './exploration/LireDescriptionsTab';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
@@ -20,7 +21,7 @@ import ApprendreTab from './insights/ApprendreTab';
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
 
-type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite' | 'apprendre';
+type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite' | 'apprendre' | 'convivialite';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'ecrire' | 'vivant';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
@@ -29,6 +30,7 @@ const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] =
   { key: 'biodiversite', label: 'Empreinte', icon: TreePine },
   { key: 'apprendre', label: 'Apprendre', icon: GraduationCap },
   { key: 'marcheurs', label: 'Marcheurs', icon: Users },
+  { key: 'convivialite', label: 'Convivialité', icon: Sparkles },
   { key: 'messages', label: 'Messages', icon: MessageCircle },
 ];
 
@@ -63,6 +65,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   const [activeGlobalTab, setActiveGlobalTab] = useState<GlobalTab>('carte');
   const [activeSensoryTab, setActiveSensoryTab] = useState<SensoryTab>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const [convivialiteOpen, setConvivialiteOpen] = useState(false);
   const { trackActivity } = useActivityTracker();
 
   // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
@@ -251,6 +254,11 @@ const ExplorationMarcheurPage: React.FC = () => {
                 <button
                   key={tab.key}
                   onClick={() => {
+                    if (tab.key === 'convivialite') {
+                      setConvivialiteOpen(true);
+                      if (userId) trackActivity(userId, 'tab_switch', `tab:convivialite`, { explorationId: explorationId || undefined });
+                      return;
+                    }
                     setActiveGlobalTab(tab.key);
                     if (userId) trackActivity(userId, 'tab_switch', `tab:${tab.key}`, { explorationId: explorationId || undefined });
                   }}
@@ -453,6 +461,16 @@ const ExplorationMarcheurPage: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+
+      <ConvivialiteImmersiveView
+        open={convivialiteOpen}
+        onClose={() => setConvivialiteOpen(false)}
+        explorationId={effectiveExplorationId || undefined}
+        explorationName={exploration?.name}
+        userId={userId}
+        userRole={userLevel}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 };
