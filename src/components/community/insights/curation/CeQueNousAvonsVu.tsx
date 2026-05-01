@@ -62,12 +62,14 @@ const CeQueNousAvonsVu: React.FC<Props> = ({ explorationId, marcheEventId, onNav
         })}
       </div>
 
-      {/* Verb */}
-      <div className="rounded-xl border border-border bg-muted/20 p-3">
-        <p className="text-xs text-muted-foreground italic">
-          {SENSES.find(s => s.key === activeSense)?.verb}
-        </p>
-      </div>
+      {/* Verb (masqué pour L'œil — l'onglet a déjà ses propres en-têtes) */}
+      {activeSense !== 'oeil' && (
+        <div className="rounded-xl border border-border bg-muted/20 p-3">
+          <p className="text-xs text-muted-foreground italic">
+            {SENSES.find(s => s.key === activeSense)?.verb}
+          </p>
+        </div>
+      )}
 
       {/* Contenu */}
       <AnimatePresence mode="wait">
