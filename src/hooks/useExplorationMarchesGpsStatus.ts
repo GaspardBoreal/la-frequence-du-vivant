@@ -21,24 +21,31 @@ export const useExplorationMarchesGpsStatus = (explorationId: string | null | un
         return { total: 0, withGps: 0, withoutGps: 0, withSnapshots: 0, marchesMissingGps: [] };
       }
 
-      const { data: events, error } = await supabase
-        .from('marche_events')
-        .select('id, title, latitude, longitude')
+      // Source de vérité : exploration_marches → marches
+      const { data: em, error } = await supabase
+        .from('exploration_marches')
+        .select('marche_id, marches(id, nom_marche, ville, latitude, longitude)')
         .eq('exploration_id', explorationId);
       if (error) throw error;
 
-      const total = events?.length || 0;
-      const withGps = (events || []).filter(e => e.latitude != null && e.longitude != null).length;
-      const marchesMissingGps = (events || [])
-        .filter(e => e.latitude == null || e.longitude == null)
-        .map(e => ({ id: e.id, title: e.title ?? null }));
+      const marches = (em || [])
+        .map((x: any) => x.marches)
+        .filter((m: any) => m && m.id);
+
+      const total = marches.length;
+      const withGps = marches.filter(
+        (m: any) => m.latitude != null && m.longitude != null
+      ).length;
+      const marchesMissingGps = marches
+        .filter((m: any) => m.latitude == null || m.longitude == null)
+        .map((m: any) => ({ id: m.id, title: m.nom_marche || m.ville || null }));
 
       let withSnapshots = 0;
       if (total > 0) {
         const { data: snaps } = await supabase
           .from('biodiversity_snapshots')
           .select('marche_id')
-          .in('marche_id', (events || []).map(e => e.id));
+          .in('marche_id', marches.map((m: any) => m.id));
         withSnapshots = new Set((snaps || []).map((s: any) => s.marche_id)).size;
       }
 
