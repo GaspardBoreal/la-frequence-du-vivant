@@ -61,7 +61,8 @@ export const convertHeicToJpeg = (file: File): Promise<File> => convertHeicToJpe
 // Extraire les métadonnées EXIF
 export const extractPhotoMetadata = async (file: File): Promise<PhotoMetadata> => {
   const originalFormat = file.type || 'unknown';
-  const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+  const isHeicFile = hasHeicExtension(file) || (file.type || '').toLowerCase().includes('heic') || (file.type || '').toLowerCase().includes('heif');
+
   
   try {
     const exifData = await exifr.parse(file);
