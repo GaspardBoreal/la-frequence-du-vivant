@@ -207,6 +207,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       source = aiSuggestions;
     } else if (view === 'pool') {
       source = filteredPool.map(s => ({ curation: curationByKey.get(s.key.toLowerCase()) }));
+    } else if (view === 'review') {
+      source = reviewItems;
     }
     source.forEach(x => {
       const cat = x.curation?.category;
