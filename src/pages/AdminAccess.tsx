@@ -28,6 +28,7 @@ const AdminAccess: React.FC = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* 1. Gestion des Marches */}
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
               <Map className="h-8 w-8 text-accent mr-3" />
@@ -45,6 +46,7 @@ const AdminAccess: React.FC = () => {
             </Link>
           </Card>
 
+          {/* 2. Gestion des Explorations */}
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
               <Sparkles className="h-8 w-8 text-accent mr-3" />
@@ -62,40 +64,27 @@ const AdminAccess: React.FC = () => {
             </Link>
           </Card>
 
-          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+          {/* 3. Événements Grand Public */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-emerald-500/20 bg-emerald-500/5">
             <div className="flex items-center mb-4">
-              <FileDown className="h-8 w-8 text-accent mr-3" />
-              <h2 className="text-xl font-semibold text-foreground">Exportations & Rapports</h2>
+              <Users className="h-8 w-8 text-emerald-500 mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Événements Grand Public</h2>
             </div>
             <p className="text-muted-foreground mb-4 min-h-[4rem]">
-              Exporter les textes littéraires au format Word, JSON ou CSV.
-              Générer des rapports de contenus.
+              Créer des événements de marche ouverts au grand public, gérer les QR codes
+              de présence et suivre la progression des marcheurs.
             </p>
-            <Link to="/admin/exportations">
-              <Button variant="outline" className="w-full">
-                <FileDown className="h-4 w-4 mr-2" />
-                Accéder aux Exportations
-              </Button>
-            </Link>
-          </Card>
-
-          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-center mb-4">
-              <Zap className="h-8 w-8 text-accent mr-3" />
-              <h2 className="text-xl font-semibold text-foreground">Automations & Intégrations</h2>
+            <div className="flex flex-col gap-2">
+              <Link to="/admin/marche-events">
+                <Button variant="outline" className="w-full">
+                  <Map className="h-4 w-4 mr-2" />
+                  Événements
+                </Button>
+              </Link>
             </div>
-            <p className="text-muted-foreground mb-4 min-h-[4rem]">
-              Gérer les connexions externes : Google Calendar, n8n workflows.
-              Tester et monitorer les synchronisations.
-            </p>
-            <Link to="/admin/automations">
-              <Button variant="outline" className="w-full">
-                <Zap className="h-4 w-4 mr-2" />
-                Accéder aux Automations
-              </Button>
-            </Link>
           </Card>
 
+          {/* 4. Gestion des Marcheurs */}
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
               <Users className="h-8 w-8 text-accent mr-3" />
@@ -113,27 +102,59 @@ const AdminAccess: React.FC = () => {
             </Link>
           </Card>
 
-          {/* Événements & Communauté */}
-          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-emerald-500/20 bg-emerald-500/5">
+          {/* 5. Organisateurs */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
-              <Users className="h-8 w-8 text-emerald-500 mr-3" />
-              <h2 className="text-xl font-semibold text-foreground">Événements & Communauté</h2>
+              <Building2 className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Organisateurs</h2>
             </div>
             <p className="text-muted-foreground mb-4 min-h-[4rem]">
-              Créer des événements de marche, gérer les QR codes de présence
-              et suivre la progression des marcheurs.
+              Gérer les organisateurs des marches : associations, collectifs, individus.
             </p>
-            <div className="flex flex-col gap-2">
-              <Link to="/admin/marche-events">
-                <Button variant="outline" className="w-full">
-                  <Map className="h-4 w-4 mr-2" />
-                  Événements
-                </Button>
-              </Link>
-            </div>
+            <Link to="/admin/organisateurs">
+              <Button variant="outline" className="w-full">
+                <Building2 className="h-4 w-4 mr-2" />
+                Accéder aux Organisateurs
+              </Button>
+            </Link>
           </Card>
 
-          {/* CRM Card */}
+          {/* 6. Outils */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-amber-500/20 bg-amber-500/5">
+            <div className="flex items-center mb-4">
+              <Wrench className="h-8 w-8 text-amber-500 mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Outils</h2>
+            </div>
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
+              Citations du jour, zones de marches, quizz et instruments pédagogiques.
+            </p>
+            <Link to="/admin/outils">
+              <Button variant="outline" className="w-full">
+                <Wrench className="h-4 w-4 mr-2" />
+                Accéder aux Outils
+              </Button>
+            </Link>
+          </Card>
+
+          {/* 7. Automations & Intégrations */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center mb-4">
+              <Zap className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Automations & Intégrations</h2>
+            </div>
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
+              Gérer les connexions externes : Google Calendar, n8n workflows.
+              Tester et monitorer les synchronisations.
+            </p>
+            <Link to="/admin/automations">
+              <Button variant="outline" className="w-full">
+                <Zap className="h-4 w-4 mr-2" />
+                Accéder aux Automations
+              </Button>
+            </Link>
+          </Card>
+
+          {/* 8. CRM & Commercial */}
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-primary/20 bg-primary/5">
             <div className="flex items-center mb-4">
               <Briefcase className="h-8 w-8 text-primary mr-3" />
@@ -167,36 +188,20 @@ const AdminAccess: React.FC = () => {
             </div>
           </Card>
 
-          {/* Outils */}
-          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-amber-500/20 bg-amber-500/5">
-            <div className="flex items-center mb-4">
-              <Wrench className="h-8 w-8 text-amber-500 mr-3" />
-              <h2 className="text-xl font-semibold text-foreground">Outils</h2>
-            </div>
-            <p className="text-muted-foreground mb-4 min-h-[4rem]">
-              Citations du jour, zones de marches, quizz et instruments pédagogiques.
-            </p>
-            <Link to="/admin/outils">
-              <Button variant="outline" className="w-full">
-                <Wrench className="h-4 w-4 mr-2" />
-                Accéder aux Outils
-              </Button>
-            </Link>
-          </Card>
-
-          {/* Organisateurs */}
+          {/* Conservée en fin de grille */}
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
-              <Building2 className="h-8 w-8 text-accent mr-3" />
-              <h2 className="text-xl font-semibold text-foreground">Organisateurs</h2>
+              <FileDown className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Exportations & Rapports</h2>
             </div>
             <p className="text-muted-foreground mb-4 min-h-[4rem]">
-              Gérer les organisateurs des marches : associations, collectifs, individus.
+              Exporter les textes littéraires au format Word, JSON ou CSV.
+              Générer des rapports de contenus.
             </p>
-            <Link to="/admin/organisateurs">
+            <Link to="/admin/exportations">
               <Button variant="outline" className="w-full">
-                <Building2 className="h-4 w-4 mr-2" />
-                Accéder aux Organisateurs
+                <FileDown className="h-4 w-4 mr-2" />
+                Accéder aux Exportations
               </Button>
             </Link>
           </Card>
