@@ -176,7 +176,16 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     [pool, curationByKey],
   );
 
-  const filteredPool = useMemo(() => {
+  // Garde la sheet d'évidences synchronisée avec les données fraîches
+  // après une validation curateur (needs_review → false).
+  React.useEffect(() => {
+    if (!evidenceFor) return;
+    const fresh = curations.find(c => c.id === evidenceFor.curation.id);
+    if (fresh && fresh !== evidenceFor.curation) {
+      setEvidenceFor({ ...evidenceFor, curation: fresh });
+    }
+  }, [curations, evidenceFor]);
+
     const q = search.trim().toLowerCase();
     if (!q) return pool;
     return pool.filter(
