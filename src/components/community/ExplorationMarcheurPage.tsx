@@ -21,7 +21,7 @@ import ApprendreTab from './insights/ApprendreTab';
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
 
-type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite' | 'apprendre';
+type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite' | 'apprendre' | 'convivialite';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'ecrire' | 'vivant';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
@@ -30,6 +30,7 @@ const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] =
   { key: 'biodiversite', label: 'Empreinte', icon: TreePine },
   { key: 'apprendre', label: 'Apprendre', icon: GraduationCap },
   { key: 'marcheurs', label: 'Marcheurs', icon: Users },
+  { key: 'convivialite', label: 'Convivialité', icon: Sparkles },
   { key: 'messages', label: 'Messages', icon: MessageCircle },
 ];
 
