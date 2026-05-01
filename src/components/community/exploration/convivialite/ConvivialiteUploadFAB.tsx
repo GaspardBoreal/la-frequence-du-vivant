@@ -35,7 +35,7 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
 
   if (!canUpload) {
     return (
-      <div className="fixed bottom-6 right-6 z-[1110] max-w-[260px] text-right pointer-events-none">
+      <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 max-w-[260px] text-right pointer-events-none">
         <div className="inline-block px-3 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[10px] text-white/70 italic">
           Réservé aux Ambassadeurs, Sentinelles et organisateurs
         </div>
