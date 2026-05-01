@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     const { data: snaps } = await admin
       .from('biodiversity_snapshots')
       .select('marche_id, species_data')
-      .in('marche_id', eventIds);
+      .in('marche_id', marcheIds);
     const snapsArr = snaps || [];
     const marchesWithSnapshots = new Set(snapsArr.map((s: any) => s.marche_id)).size;
 
