@@ -287,8 +287,9 @@ const ExplorationMarcheurPage: React.FC = () => {
           évite que les contrôles fixed/absolute des autres onglets (Carte : FAB photo, "+ point de marche",
           barre stats, sélecteur Géo/Sat/Relief...) ne transparaissent par-dessus la mosaïque. */}
       <div className="max-w-4xl mx-auto px-4 py-4" aria-hidden={convivialiteOpen}>
+        {!convivialiteOpen && (
         <AnimatePresence mode="wait">
-          {!convivialiteOpen && activeGlobalTab === 'marches' && (
+          {activeGlobalTab === 'marches' && (
             <motion.div
               key="marches"
               initial={{ opacity: 0 }}
