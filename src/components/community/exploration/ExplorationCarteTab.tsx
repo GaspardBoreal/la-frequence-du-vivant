@@ -992,8 +992,60 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       {/* Map style toggle */}
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
 
+      {/* Create-marche top banner (Ambassadeur / Sentinelle only, in create mode) */}
+      <AnimatePresence>
+        {isCreatingMarche && createPosition && (
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+            className="absolute top-4 left-4 right-[7.5rem] z-[1000]"
+          >
+            <div className="bg-amber-500/15 backdrop-blur-xl rounded-xl border border-amber-400/40 px-3 py-2.5 shadow-lg shadow-amber-500/10">
+              <div className="flex items-center gap-2 text-amber-100 text-[11px] font-medium">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                <span className="truncate">Glissez le repère, puis validez</span>
+              </div>
+              <div className="mt-1 font-mono text-[10px] text-amber-200/80 tabular-nums">
+                {createPosition.lat.toFixed(5)}, {createPosition.lng.toFixed(5)}
+              </div>
+              <div className="mt-2 flex gap-1.5">
+                <button
+                  onClick={handleCancelCreate}
+                  className="flex-1 px-2 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-white/80 text-[11px] font-medium transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleConfirmCreate}
+                  className="flex-1 px-2 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-semibold transition-colors shadow-sm"
+                >
+                  Valider
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create-marche button (Ambassadeur / Sentinelle only) */}
+      {userCanCreate && explorationId && !isCreatingMarche && (
+        <div className="absolute bottom-20 right-[10.5rem] z-[1000]">
+          <button
+            onClick={handleStartCreate}
+            className="relative w-10 h-10 rounded-xl bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-200 flex items-center justify-center hover:bg-amber-500/30 hover:border-amber-400/60 transition-all duration-200 active:scale-95 shadow-md shadow-amber-500/20"
+            aria-label="Créer une nouvelle marche ici"
+            title="Créer une marche"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          </button>
+        </div>
+      )}
+
       {/* Photo GPS button */}
-      {marcheEventId && (
+      {marcheEventId && !isCreatingMarche && (
         <div className="absolute bottom-20 right-[7.5rem] z-[1000]">
           <PhotoGpsButton onClick={triggerFileInput} />
         </div>
@@ -1001,13 +1053,15 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       {FileInput}
 
       {/* Geolocate button */}
-      <GeolocateButton
-        active={!!userLocation}
-        loading={geoLoading}
-        isTracking={isTracking}
-        onClick={handleGeolocate}
-        onLongPress={handleLongPress}
-      />
+      {!isCreatingMarche && (
+        <GeolocateButton
+          active={!!userLocation}
+          loading={geoLoading}
+          isTracking={isTracking}
+          onClick={handleGeolocate}
+          onLongPress={handleLongPress}
+        />
+      )}
 
       {/* Bottom panel: tracking banner, distance panel, or stats bar */}
       <AnimatePresence mode="wait">
