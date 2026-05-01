@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload, X, Loader2 } from 'lucide-react';
@@ -10,11 +10,26 @@ interface Props {
   canUpload: boolean;
 }
 
+const stageLabel = (stage: string) => {
+  switch (stage) {
+    case 'detecting': return 'Analyse…';
+    case 'converting-heic': return 'Conversion photo iPhone (HEIC)…';
+    case 'compressing': return 'Optimisation…';
+    case 'uploading': return 'Envoi…';
+    default: return 'Traitement…';
+  }
+};
+
 const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUpload }) => {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const [progress, setProgress] = useState<{ index: number; total: number; name: string; stage: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { mutate: upload, isPending } = useUploadConvivialitePhotos(explorationId, userId);
+  const { mutate: upload, isPending } = useUploadConvivialitePhotos(
+    explorationId,
+    userId,
+    (p) => setProgress({ index: p.fileIndex + 1, total: p.total, name: p.fileName, stage: p.stage }),
+  );
 
   if (!canUpload) {
     return (
@@ -28,8 +43,13 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
 
   const onPick = (list: FileList | null) => {
     if (!list) return;
-    const arr = Array.from(list).filter(f => f.type.startsWith('image/'));
-    setFiles(prev => [...prev, ...arr].slice(0, 20));
+    // Accepte: tout image/* + extensions .heic/.heif (iOS partage parfois en application/octet-stream)
+    const arr = Array.from(list).filter((f) => {
+      if (f.type.startsWith('image/')) return true;
+      const n = f.name.toLowerCase();
+      return n.endsWith('.heic') || n.endsWith('.heif');
+    });
+    setFiles((prev) => [...prev, ...arr].slice(0, 20));
   };
 
   const handleSubmit = () => {
@@ -37,10 +57,13 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
     upload(files, {
       onSuccess: () => {
         setFiles([]);
+        setProgress(null);
         setOpen(false);
       },
+      onSettled: () => setProgress(null),
     });
   };
+
 
   return (
     <>
@@ -79,11 +102,13 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
               >
                 <Upload className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
                 <p className="text-sm text-foreground">Déposez vos photos ici ou cliquez pour parcourir</p>
-                <p className="text-[11px] text-muted-foreground mt-1">JPG, PNG, WebP — jusqu'à 20 photos</p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  JPG, PNG, WebP, HEIC (iPhone) — jusqu'à 20 photos
+                </p>
                 <input
                   ref={inputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif,.HEIC,.HEIF"
                   multiple
                   hidden
                   onChange={(e) => onPick(e.target.files)}
@@ -92,23 +117,46 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
 
               {files.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
-                  {files.map((f, i) => (
-                    <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-                      <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))}
-                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
+                  {files.map((f, i) => {
+                    const isHeicPreview = /\.(heic|heif)$/i.test(f.name);
+                    return (
+                      <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+                        {isHeicPreview ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-[10px] text-muted-foreground p-1 text-center bg-emerald-500/5">
+                            <span className="font-semibold text-emerald-600">HEIC</span>
+                            <span className="opacity-70">iPhone</span>
+                          </div>
+                        ) : (
+                          <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
+                        )}
+                        <button
+                          onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          disabled={isPending}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
               <p className="text-[11px] text-muted-foreground italic">
                 En partageant ces photos, vous attestez avoir l'accord des personnes visibles.
+                Les photos iPhone (HEIC) sont converties automatiquement.
               </p>
+
+              {isPending && progress && (
+                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-[12px] text-emerald-700 dark:text-emerald-300">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                    <span className="font-medium">{stageLabel(progress.stage)}</span>
+                    <span className="ml-auto opacity-70">{progress.index}/{progress.total}</span>
+                  </div>
+                  <div className="text-[10px] opacity-70 truncate mt-0.5">{progress.name}</div>
+                </div>
+              )}
 
               <Button
                 onClick={handleSubmit}
@@ -116,7 +164,7 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
                 className="w-full"
               >
                 {isPending ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Envoi en cours…</>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Traitement en cours…</>
                 ) : (
                   <>Publier {files.length > 0 ? `(${files.length})` : ''}</>
                 )}

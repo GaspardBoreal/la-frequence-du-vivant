@@ -521,7 +521,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   };
 
   const mediaTypeLabel = mediaType === 'photos' ? 'Photos' : 'Vidéos';
-  const acceptedTypes = mediaType === 'photos' ? 'image/*,.heic,.heif' : 'video/*';
+  const acceptedTypes = mediaType === 'photos' ? 'image/*,.heic,.heif,.HEIC,.HEIF' : 'video/*';
   const hasUnsavedFiles = mediaItems.some(item => !item.uploaded);
   const cacheStats = getCacheStats();
 

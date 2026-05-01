@@ -177,7 +177,7 @@ const CoverEditor: React.FC<CoverEditorProps> = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif,.HEIC,.HEIF"
               onChange={handleFileUpload}
               className="hidden"
             />

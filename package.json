@@ -63,6 +63,7 @@
     "exifr": "^7.1.3",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.9",
+    "heic-to": "^1.4.2",
     "heic2any": "^0.0.4",
     "input-otp": "^1.2.4",
     "leaflet": "^1.9.4",

@@ -324,7 +324,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
       {showUpload && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
           <FileUploadZone
-            accept="image/*,video/*"
+            accept="image/*,video/*,.heic,.heif,.HEIC,.HEIF"
             label="Photos & vidéos"
             icon={<Camera className="w-6 h-6 text-emerald-400/60" />}
             isUploading={uploadMedias.isPending}

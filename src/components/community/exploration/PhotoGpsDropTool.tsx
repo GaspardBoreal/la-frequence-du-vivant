@@ -308,7 +308,7 @@ export function usePhotoGpsDrop() {
     <input
       ref={fileInputRef}
       type="file"
-      accept="image/*"
+      accept="image/*,.heic,.heif,.HEIC,.HEIF"
       className="hidden"
       onChange={handleFileChange}
     />
