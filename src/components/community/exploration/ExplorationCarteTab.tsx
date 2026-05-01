@@ -108,6 +108,7 @@ interface MarcheStep {
   latitude: number | null;
   longitude: number | null;
   ordre: number;
+  date?: string | null;
 }
 
 interface MarcheContribStats {
@@ -119,8 +120,13 @@ interface MarcheContribStats {
 
 interface ExplorationCarteTabProps {
   explorationId?: string;
+  explorationName?: string;
   marches: MarcheStep[];
   marcheEventId?: string;
+  marcheEventTitle?: string;
+  marcheEventDate?: string | null;
+  marcheEventLieu?: string | null;
+  userLevel?: string;
   onSelectStep?: (index: number) => void;
 }
 
