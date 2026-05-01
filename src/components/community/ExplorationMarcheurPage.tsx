@@ -288,8 +288,7 @@ const ExplorationMarcheurPage: React.FC = () => {
           barre stats, sélecteur Géo/Sat/Relief...) ne transparaissent par-dessus la mosaïque. */}
       <div className="max-w-4xl mx-auto px-4 py-4" aria-hidden={convivialiteOpen}>
         <AnimatePresence mode="wait">
-          {!convivialiteOpen && (
-          {activeGlobalTab === 'marches' && (
+          {!convivialiteOpen && activeGlobalTab === 'marches' && (
             <motion.div
               key="marches"
               initial={{ opacity: 0 }}
