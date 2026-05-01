@@ -5,6 +5,7 @@ import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import type { SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import PinToggle from './PinToggle';
 import type { ExplorationCuration } from '@/hooks/useExplorationCurations';
+import { getCatStyle, getCatLabel } from './curationCategories';
 
 export interface CuratedSpeciesItem {
   key: string;
@@ -22,8 +23,13 @@ interface Props {
   explorationId: string;
   translation?: SpeciesTranslation;
   showAiBadges?: boolean;
-  onClick?: (species: CuratedSpeciesItem, displayName: string) => void;
-  /** Slot rendered under the title (e.g. category control) */
+  /**
+   * Click on the vignette. Receives the species, its display name (FR if known)
+   * and the resolved photo list so the detail modal can open instantly with the
+   * exact same image as the thumbnail.
+   */
+  onClick?: (species: CuratedSpeciesItem, displayName: string, photos: string[]) => void;
+  /** Slot rendered under the title (e.g. editable category control) */
   footer?: React.ReactNode;
 }
 
@@ -48,9 +54,21 @@ const CuratedSpeciesCard: React.FC<Props> = ({
     shouldFetchPhoto ? species.scientificName! : undefined
   );
 
-  const photoUrl = species.imageUrl || photoData?.photos?.[0] || null;
+  // Build the full photo list passed to the detail modal:
+  // local thumbnail first (already loaded), then iNaturalist extras
+  const photos: string[] = React.useMemo(() => {
+    const list: string[] = [];
+    if (species.imageUrl) list.push(species.imageUrl);
+    (photoData?.photos || []).forEach(p => {
+      if (p && !list.includes(p)) list.push(p);
+    });
+    return list;
+  }, [species.imageUrl, photoData]);
+
+  const photoUrl = photos[0] || null;
   const isPinned = !!curation && curation.display_order < 9999;
   const stars = scoreToStars(curation?.ai_score);
+  const category = curation?.category || null;
 
   const displayName =
     translation?.commonName ||
@@ -59,7 +77,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
     '';
 
   const handleImgClick = () => {
-    if (onClick) onClick(species, displayName);
+    if (onClick) onClick(species, displayName, photos);
   };
 
   return (
@@ -146,6 +164,18 @@ const CuratedSpeciesCard: React.FC<Props> = ({
             {species.scientificName}
           </p>
         )}
+
+        {/* Category badge — visible read-only as soon as a category exists,
+            even on non-pinned AI suggestions. The editable footer (curators)
+            replaces it on pinned cards. */}
+        {!footer && category && (
+          <span
+            className={`inline-block px-1.5 py-0.5 rounded-md text-[10px] font-medium border ${getCatStyle(category)}`}
+          >
+            {getCatLabel(category)}
+          </span>
+        )}
+
         {footer}
       </div>
     </div>
