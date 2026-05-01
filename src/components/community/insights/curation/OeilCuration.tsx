@@ -59,14 +59,12 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     return items.filter(x => x.curation?.category === categoryFilter);
   };
 
-  // Counts of categories across all curated items (selection + suggestions)
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    curations.forEach(c => {
-      if (c.category) counts[c.category] = (counts[c.category] || 0) + 1;
-    });
-    return counts;
-  }, [curations]);
+  // Wrap setView so that switching tab clears the category filter — avoids
+  // hiding the entire grid when the active category has no items in the new tab.
+  const handleViewChange = (next: View) => {
+    setView(next);
+    setCategoryFilter(null);
+  };
 
   // Batch FR translations for the whole observed pool (single network round)
   const speciesForTranslation = useMemo(
