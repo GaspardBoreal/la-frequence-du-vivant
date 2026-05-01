@@ -1066,7 +1066,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             title="Créer une nouvelle marche"
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
-            <span className="text-[11px] font-semibold tracking-wide">Créer une marche</span>
+            <span className="text-[11px] font-semibold tracking-wide">point de marche</span>
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
           </button>
         </div>
