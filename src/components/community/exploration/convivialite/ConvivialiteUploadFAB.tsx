@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload, X, Loader2 } from 'lucide-react';
 import { useUploadConvivialitePhotos } from '@/hooks/useConvivialitePhotos';
+import { useHeicPreviews } from '@/hooks/useHeicPreviews';
 
 interface Props {
   explorationId: string | undefined;
