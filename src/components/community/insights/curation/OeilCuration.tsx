@@ -53,6 +53,29 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+  // Phase 3 — sheet partagée pour exposer les évidences sourcées
+  const [evidenceFor, setEvidenceFor] = useState<{
+    curation: ExplorationCuration;
+    displayName: string;
+    scientificName: string | null;
+    entityId: string | null;
+  } | null>(null);
+
+  const handleOpenEvidence = React.useCallback(
+    (curation: ExplorationCuration, displayName: string) => {
+      // Tenter de retrouver l'espèce pour le nom scientifique
+      const species = curation.entity_id
+        ? undefined
+        : undefined;
+      setEvidenceFor({
+        curation,
+        displayName,
+        scientificName: null,
+        entityId: curation.entity_id,
+      });
+    },
+    [],
+  );
 
   // Apply category filter on a list of {species, curation}
   const applyCategoryFilter = <T extends { curation?: ExplorationCuration }>(items: T[]): T[] => {
