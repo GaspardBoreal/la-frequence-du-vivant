@@ -53,6 +53,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
   showAiBadges,
   onClick,
   footer,
+  onOpenEvidence,
 }) => {
   // Only fetch a remote photo when we don't already have a usable one
   const shouldFetchPhoto = !species.imageUrl && !!species.scientificName;
