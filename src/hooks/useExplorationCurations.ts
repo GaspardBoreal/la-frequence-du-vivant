@@ -6,6 +6,21 @@ import { toast } from 'sonner';
 export type CurationSense = 'oeil' | 'main' | 'coeur' | 'oreille' | 'palais';
 export type CurationEntityType = 'species' | 'media' | 'text' | 'audio' | 'palais_entry';
 
+export type ClassificationSource =
+  | 'knowledge_base'
+  | 'gbif'
+  | 'inaturalist'
+  | 'ai'
+  | 'curator'
+  | null;
+
+export interface ClassificationEvidenceItem {
+  source: string;
+  quote?: string;
+  url?: string;
+  reference?: string;
+}
+
 export interface ExplorationCuration {
   id: string;
   exploration_id: string;
@@ -24,6 +39,12 @@ export interface ExplorationCuration {
   ai_score?: number | null;
   ai_reason?: string | null;
   ai_criteria?: Record<string, any> | null;
+  // Phase 1+ — sources auditables
+  secondary_categories?: string[];
+  classification_evidence?: ClassificationEvidenceItem[];
+  classification_source?: ClassificationSource;
+  classification_confidence?: number | null;
+  needs_review?: boolean;
 }
 
 /** Récupère toutes les curations d'une exploration (ou filtré par sens) */
