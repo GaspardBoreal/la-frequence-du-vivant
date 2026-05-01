@@ -26,6 +26,7 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState<{ index: number; total: number; name: string; stage: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { getPreview } = useHeicPreviews(files);
   const { mutate: upload, isPending } = useUploadConvivialitePhotos(
     explorationId,
     userId,
