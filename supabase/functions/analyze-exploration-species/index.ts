@@ -66,14 +66,19 @@ Deno.serve(async (req) => {
     }
 
     // 1. Build species pool from biodiversity_snapshots (with diagnostic)
-    const { data: events } = await admin
-      .from('marche_events')
-      .select('id, latitude, longitude')
+    // Source de vérité : exploration_marches → marches (la même que collect-event-biodiversity)
+    const { data: em } = await admin
+      .from('exploration_marches')
+      .select('marche_id, marches(id, latitude, longitude)')
       .eq('exploration_id', explorationId);
 
-    const eventsArr = events || [];
-    const marchesTotal = eventsArr.length;
-    const marchesWithGps = eventsArr.filter((e: any) => e.latitude != null && e.longitude != null).length;
+    const marchesArr = (em || [])
+      .map((x: any) => x.marches)
+      .filter((m: any) => m && m.id);
+    const marchesTotal = marchesArr.length;
+    const marchesWithGps = marchesArr.filter(
+      (m: any) => m.latitude != null && m.longitude != null
+    ).length;
 
     if (marchesTotal === 0) {
       return new Response(
@@ -89,11 +94,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    const eventIds = eventsArr.map((e: any) => e.id);
+    const marcheIds = marchesArr.map((m: any) => m.id);
     const { data: snaps } = await admin
       .from('biodiversity_snapshots')
       .select('marche_id, species_data')
-      .in('marche_id', eventIds);
+      .in('marche_id', marcheIds);
     const snapsArr = snaps || [];
     const marchesWithSnapshots = new Set(snapsArr.map((s: any) => s.marche_id)).size;
 
