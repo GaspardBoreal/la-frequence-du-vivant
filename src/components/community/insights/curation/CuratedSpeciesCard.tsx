@@ -75,6 +75,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
   const category = curation?.category || null;
 
   const displayName =
+    species.displayName ||
     translation?.commonName ||
     species.commonName ||
     species.scientificName ||
