@@ -568,6 +568,21 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
 
+  // One-time hint for the "Créer une marche" button
+  const [showCreateHint, setShowCreateHint] = useState(false);
+  useEffect(() => {
+    if (!userCanCreate) return;
+    try {
+      if (localStorage.getItem('create-marche-hint-seen') === '1') return;
+    } catch {}
+    setShowCreateHint(true);
+    const t = setTimeout(() => {
+      setShowCreateHint(false);
+      try { localStorage.setItem('create-marche-hint-seen', '1'); } catch {}
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [userCanCreate]);
+
   // Photo GPS drop tool
   const { photoPoint, triggerFileInput, clear: clearPhotoPoint, FileInput } = usePhotoGpsDrop();
 
