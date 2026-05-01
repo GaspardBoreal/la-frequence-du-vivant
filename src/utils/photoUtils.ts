@@ -1,6 +1,14 @@
 
 import imageCompression from 'browser-image-compression';
 import exifr from 'exifr';
+import {
+  convertHeicToJpeg as convertHeicToJpegRobust,
+  isHeic,
+  hasHeicExtension,
+  HeicConversionError,
+} from './heicConverter';
+
+export { HeicConversionError, HEIC_USER_MESSAGE } from './heicConverter';
 
 export interface PhotoMetadata {
   width?: number;
@@ -22,7 +30,7 @@ export interface ProcessedPhoto {
 // Formats supportés
 export const SUPPORTED_PHOTO_FORMATS = [
   'image/jpeg',
-  'image/jpg', 
+  'image/jpg',
   'image/png',
   'image/gif',
   'image/webp',
@@ -31,7 +39,7 @@ export const SUPPORTED_PHOTO_FORMATS = [
   'image/heic-sequence',
   'image/heif-sequence',
   'image/tiff',
-  'image/bmp'
+  'image/bmp',
 ];
 
 // Vérifier si le format est supporté (détection large)
@@ -39,47 +47,16 @@ export const isSupportedPhotoFormat = (file: File): boolean => {
   if (SUPPORTED_PHOTO_FORMATS.includes(file.type)) return true;
   if (file.type?.startsWith('image/')) return true;
   const ext = file.name.toLowerCase();
-  return ext.endsWith('.heic') || ext.endsWith('.heif') || 
+  return ext.endsWith('.heic') || ext.endsWith('.heif') ||
          ext.endsWith('.jpg') || ext.endsWith('.jpeg') ||
          ext.endsWith('.png') || ext.endsWith('.webp') ||
          ext.endsWith('.gif') || ext.endsWith('.tiff') || ext.endsWith('.bmp');
 };
 
-// Convertir HEIC/HEIF en JPEG
-export const convertHeicToJpeg = async (file: File): Promise<File> => {
-  const ext = file.name.toLowerCase();
-  const mime = (file.type || '').toLowerCase();
-  if (!mime.includes('heic') && !mime.includes('heif') && 
-      !ext.endsWith('.heic') && !ext.endsWith('.heif')) {
-    return file;
-  }
+// Convertir HEIC/HEIF en JPEG — délégué au module robuste
+// (cascade de stratégies + fail-fast si conversion impossible)
+export const convertHeicToJpeg = (file: File): Promise<File> => convertHeicToJpegRobust(file);
 
-  try {
-    console.log('🔄 Conversion HEIC vers JPEG...', file.name);
-    
-    const { default: heic2any } = await import('heic2any');
-    const convertPromise = heic2any({
-      blob: file,
-      toType: 'image/jpeg',
-      quality: 0.9
-    });
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Conversion HEIC timeout (30s)')), 30000)
-    );
-    const convertedBlob = await Promise.race([convertPromise, timeoutPromise]);
-
-    const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-    const convertedFile = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
-      type: 'image/jpeg'
-    });
-
-    console.log('✅ Conversion HEIC terminée:', convertedFile.name);
-    return convertedFile;
-  } catch (error) {
-    console.warn('⚠️ Conversion HEIC échouée, fichier original conservé:', error);
-    return file; // Fallback: retourner le fichier original au lieu de bloquer
-  }
-};
 
 // Extraire les métadonnées EXIF
 export const extractPhotoMetadata = async (file: File): Promise<PhotoMetadata> => {
