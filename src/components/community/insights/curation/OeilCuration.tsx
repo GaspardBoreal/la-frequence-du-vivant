@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Eye, Search, Sparkles, X, Plus, Wand2, Loader2, Hand } from 'lucide-react';
+import { Eye, Search, Sparkles, X, Plus, Wand2, Loader2, Hand, AlertCircle } from 'lucide-react';
+import ClassificationEvidenceSheet from './ClassificationEvidenceSheet';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import {
   useExplorationCurations,
