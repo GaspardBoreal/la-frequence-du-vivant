@@ -85,3 +85,9 @@ verify_jwt = false
 
 [functions.sync-biodiversity-snapshot]
 verify_jwt = false
+
+[functions.gbif-taxon-search]
+verify_jwt = false
+
+[functions.analyze-exploration-species]
+verify_jwt = true
