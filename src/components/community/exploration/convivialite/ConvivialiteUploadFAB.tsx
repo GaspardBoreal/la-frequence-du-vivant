@@ -53,7 +53,11 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md overflow-y-auto z-[100]"
+          overlayClassName="z-[95]"
+        >
           <SheetHeader>
             <SheetTitle>Partager des instants conviviaux</SheetTitle>
           </SheetHeader>
