@@ -70,15 +70,9 @@ const ExplorationMarcheurPage: React.FC = () => {
   const directMarcheEventId = isEventFallback ? rawParam.replace('event-', '') : null;
   const explorationId = isEventFallback ? null : rawParam;
 
-  // Get current user
-  const { data: session } = useQuery({
-    queryKey: ['session-exploration'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getSession();
-      return data.session;
-    },
-  });
-  const userId = session?.user?.id;
+  // Live auth state (subscribed to onAuthStateChange) — avoids stale userId after token refresh
+  const { user, isLoading: authLoading, isAdmin } = useAuth();
+  const userId = user?.id;
 
   // Get community profile for level
   const { data: communityProfile } = useQuery({
@@ -94,7 +88,6 @@ const ExplorationMarcheurPage: React.FC = () => {
     enabled: !!userId,
   });
   const userLevel = (communityProfile?.role as any) || 'marcheur';
-  const { isAdmin } = useAuth();
 
   // Resolve exploration_id from marche_event if needed
   const { data: resolvedExplorationId } = useQuery({
@@ -114,10 +107,10 @@ const ExplorationMarcheurPage: React.FC = () => {
 
   // Track page view on mount
   useEffect(() => {
-    if (effectiveExplorationId) {
-      trackActivity(userId!, 'page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
+    if (effectiveExplorationId && userId) {
+      trackActivity(userId, 'page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
     }
-  }, [effectiveExplorationId, trackActivity]);
+  }, [effectiveExplorationId, userId, trackActivity]);
 
   // Fetch exploration details
   const { data: exploration, isLoading: isLoadingExploration } = useQuery({
@@ -352,7 +345,11 @@ const ExplorationMarcheurPage: React.FC = () => {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {!userId ? (
+                  {authLoading ? (
+                    <div className="text-center py-8 text-white/30 text-xs">
+                      Chargement…
+                    </div>
+                  ) : !userId ? (
                     <div className="text-center py-8 text-white/40 text-sm">
                       Connectez-vous pour voir et gérer vos contributions.
                     </div>
