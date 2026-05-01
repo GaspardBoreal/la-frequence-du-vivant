@@ -63,7 +63,7 @@ const ConvivialiteImmersiveView: React.FC<Props> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[80] bg-gradient-to-br from-neutral-950 via-emerald-950/40 to-neutral-950 overflow-y-auto"
+          className="fixed inset-0 z-[1100] bg-gradient-to-br from-neutral-950 via-emerald-950/40 to-neutral-950 overflow-y-auto"
         >
           {/* Header */}
           <div className="sticky top-0 z-10 bg-black/40 backdrop-blur-xl border-b border-white/10">
