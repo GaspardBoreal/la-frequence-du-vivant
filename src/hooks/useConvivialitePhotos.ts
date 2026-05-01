@@ -33,7 +33,8 @@ export function useConvivialitePhotos(explorationId: string | undefined) {
         .from('exploration_convivialite_photos')
         .select('*')
         .eq('exploration_id', explorationId)
-        .order('created_at', { ascending: false });
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true });
       if (error) throw error;
       const photos = (data || []) as ConvivialitePhoto[];
       // Enrich with author profiles
