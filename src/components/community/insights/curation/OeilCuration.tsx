@@ -580,6 +580,7 @@ const SpeciesGrid: React.FC<{
             translation={translation}
             showAiBadges={showAiBadges}
             onClick={onSpeciesClick}
+            onOpenEvidence={onOpenEvidence}
             footer={
               isPinned && curation ? (
                 <CategoryControl
