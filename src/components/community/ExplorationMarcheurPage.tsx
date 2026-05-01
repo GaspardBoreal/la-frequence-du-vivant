@@ -345,7 +345,11 @@ const ExplorationMarcheurPage: React.FC = () => {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {!userId ? (
+                  {authLoading ? (
+                    <div className="text-center py-8 text-white/30 text-xs">
+                      Chargement…
+                    </div>
+                  ) : !userId ? (
                     <div className="text-center py-8 text-white/40 text-sm">
                       Connectez-vous pour voir et gérer vos contributions.
                     </div>
