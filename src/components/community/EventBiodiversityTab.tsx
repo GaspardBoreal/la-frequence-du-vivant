@@ -14,6 +14,7 @@ import { useExplorationParticipants } from '@/hooks/useExplorationParticipants';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
+import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
 type SubTab = 'synthese' | 'taxons' | 'textes' | 'analyse';
 
