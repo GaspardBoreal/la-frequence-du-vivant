@@ -268,7 +268,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             .map(t => (
               <button
                 key={t.id}
-                onClick={() => setView(t.id)}
+                onClick={() => handleViewChange(t.id)}
                 className={`px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
                   view === t.id
                     ? 'border-primary text-primary'
