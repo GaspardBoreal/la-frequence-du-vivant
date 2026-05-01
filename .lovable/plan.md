@@ -1,90 +1,68 @@
+# Harmoniser la fiche espèce entre "Empreinte → Taxons observés" et "Apprendre → L'œil"
 
-## Constat
+## Diagnostic
 
-**Vue qui marche** (`Empreinte → Taxons observés`) :
-- Composant : `SpeciesExplorer` → `SpeciesCardWithPhoto` → `SpeciesDetailModal`
-- Photos hautes/lisibles via `useSpeciesPhoto(scientificName)` (API iNaturalist)
-- Noms FR via `useSpeciesTranslationBatch` (table `species_translations` + fallback API)
-- Photo en grand au clic via `SpeciesDetailModal`
+Deux régressions visuelles dans **Apprendre → L'œil** par rapport à **Empreinte → Taxons observés** :
 
-**Vue cassée** (`Apprendre → L'œil`, composant `OeilCuration` + `SpeciesGrid` interne) :
-- Affiche directement `species.imageUrl` (souvent vide ou miniature de mauvaise qualité, d'où l'icône "image cassée")
-- Affiche `species.commonName || species.scientificName` brut → le `commonName` du snapshot est souvent en anglais ("Cherry laurel", "wild cherry"…)
-- Aucun clic n'ouvre de modal photo
+### 1. Modal de détail vide (pas de photo)
+`SpeciesDetailModal` lit l'image via `species.photos[selectedImageIndex]`. Or, dans `OeilCuration.handleSpeciesClick`, on construit le `BiodiversitySpecies` envoyé au modal **sans renseigner `photos[]` ni `photoData`**. La carte `CuratedSpeciesCard` a pourtant déjà résolu une URL via `useSpeciesPhoto(scientificName)` — mais cette URL reste prisonnière de la carte.
 
-L'objectif : **réutiliser à l'identique** les briques de la vue qui marche, sans dupliquer la logique de traduction/photo/modal.
+À l'inverse, `SpeciesExplorer` (vue Empreinte) passe au modal un `BiodiversitySpecies` complet (`photos`, `family`, `kingdom`) alimenté par `EnhancedSpeciesCard` qui enrichit `photoData` via le même hook iNaturalist.
 
-## Plan d'implémentation
+### 2. Badge catégorie IA absent
+Dans **L'œil**, le badge coloré (Emblématique, Parapluie, EEE, Auxiliaire, Protégée) n'apparaît que sur les cartes **épinglées** : le `footer` n'est rendu que si `isPinned` dans `OeilCuration > SpeciesGrid`. Conséquence : sur la vue *Suggestions IA* (copie 2), aucune catégorie n'est visible alors que la curation IA propose justement une `category`.
 
-### 1. Extraire une carte espèce réutilisable et "curatable"
+## Solution — factorisation et enrichissement
 
-Créer `src/components/community/insights/curation/CuratedSpeciesCard.tsx` :
-- Reçoit la même `species` (objet du pool) **plus** les props de curation (`isCurator`, `curation`, `explorationId`, `onClick`, `showAiBadges`, `category`).
-- À l'intérieur :
-  - Appelle `useSpeciesPhoto(species.scientificName)` quand `species.imageUrl` est absente ou non chargeable, pour récupérer une photo iNaturalist nette (avec état `isLoading` + fallback `ImageOff`).
-  - Reçoit la traduction FR depuis le parent (batch — voir étape 2) et affiche `commonNameFr || commonName || scientificName` en titre, et `scientificName` en sous-titre italique.
-  - Conserve les badges existants : `count obs.`, étoiles IA + tooltip raison/critères, `PinToggle`, `CategoryControl`.
-  - Image cliquable → déclenche `onClick(species)` (le parent gère l'ouverture de la modal).
+### A. `CuratedSpeciesCard.tsx`
+- Remonter la photo résolue via une **prop `onClick(species, displayName, photos[])`** : la carte connaît déjà `species.imageUrl` + `photoData.photos` du hook `useSpeciesPhoto`.
+- Toujours afficher un **badge catégorie en bas de la vignette** quand `curation?.category` est défini (suggestion IA OU sélection finale), en réutilisant le style `CATEGORIES` de `OeilCuration` (extrait dans un module partagé `curationCategories.ts`).
+- Le `footer` (CategoryControl éditable) reste réservé aux curateurs sur les cartes épinglées.
 
-### 2. Brancher la traduction FR par lots dans `OeilCuration`
+### B. Nouveau module `src/components/community/insights/curation/curationCategories.ts`
+Centralise `CATEGORIES`, `getCatStyle`, `getCatLabel` (actuellement dupliqués dans `OeilCuration` et `CategoryControl`) et un petit composant `<CategoryBadge value={cat} />` réutilisable carte + footer.
 
-Dans `OeilCuration.tsx` :
-- Importer `useSpeciesTranslationBatch` depuis `@/hooks/useSpeciesTranslation`.
-- Construire une fois `speciesForTranslation` à partir de `pool` (`{ scientificName, commonName }[]`).
-- Construire un `translationMap: Map<string, SpeciesTranslation>` indexé par `scientificName`.
-- Passer la traduction correspondante à chaque `CuratedSpeciesCard` (via `commonNameFr` injecté dans la species, ou prop dédiée).
+### C. `OeilCuration.tsx > handleSpeciesClick`
+Recevoir `photos[]` depuis la carte et bâtir le `BiodiversitySpecies` complet attendu par le modal :
 
-### 3. Modal photo en grand
-
-Ajouter dans `OeilCuration` :
-- Un état `selectedSpecies: BiodiversitySpecies | null`.
-- Convertir l'item `pool` cliqué en `BiodiversitySpecies` minimal compatible avec `SpeciesDetailModal` (id, scientificName, commonName, kingdom, family, observations=count, source, attributions=[]).
-- Importer et monter `<SpeciesDetailModal species={selectedSpecies} isOpen={!!selectedSpecies} onClose={() => setSelectedSpecies(null)} />`.
-- Toutes les vues (`Sélection`, `Suggestions IA`, `Pool observé`) utilisent le même handler de clic → même expérience que la vue Empreinte.
-
-### 4. Remplacer l'ancien `SpeciesGrid` interne
-
-Dans `OeilCuration.tsx` :
-- Supprimer le rendu image actuel basé sur `species.imageUrl` brut + `<ImageOff>` direct.
-- Remplacer par une grille qui mappe sur `CuratedSpeciesCard`, en passant la traduction et le handler de clic.
-- Conserver la structure (grille `grid-cols-2 md:grid-cols-3 gap-2.5`, badges pin, étoiles, catégories) — seule la cellule devient le composant factorisé.
-
-### 5. (Bonus cohérence) Vue Terrain
-
-Le `ManualSpeciesGrid` affiche déjà la photo terrain uploadée + `common_name` saisi par le marcheur — ne rien changer (les données sont par construction propres et françaises). On garde sa modal/lightbox actuelle si présente, sinon on peut réutiliser plus tard la même `SpeciesDetailModal` avec un objet adapté (hors scope de ce ticket pour rester minimal).
-
-## Fichiers touchés
-
-- **Créé** : `src/components/community/insights/curation/CuratedSpeciesCard.tsx` (carte unique, branche `useSpeciesPhoto` + reçoit la traduction).
-- **Édité** : `src/components/community/insights/curation/OeilCuration.tsx`
-  - import `useSpeciesTranslationBatch`, `SpeciesDetailModal`, `CuratedSpeciesCard`
-  - ajout du `translationMap` et de l'état `selectedSpecies`
-  - réécriture de `SpeciesGrid` pour utiliser `CuratedSpeciesCard`
-  - montage de `<SpeciesDetailModal />`
-
-## Détails techniques
-
-- `useSpeciesPhoto` n'est appelé **que si** `species.imageUrl` est manquant → pas d'appel inutile pour les espèces déjà accompagnées d'une photo dans le snapshot.
-- `useSpeciesTranslationBatch` est appelé **une seule fois** au niveau d'`OeilCuration` (pas dans chaque carte) → pas de N+1.
-- Le mapping pool → `BiodiversitySpecies` pour la modal :
-  ```ts
-  const toModalSpecies = (s: ExplorationSpecies, t?: SpeciesTranslation): BiodiversitySpecies => ({
-    id: s.key,
-    scientificName: s.scientificName || '',
-    commonName: t?.commonName || s.commonName || s.scientificName || '',
-    kingdom: (s.group as any) || 'Other',
+```ts
+const handleSpeciesClick = (
+  species: CuratedSpeciesItem,
+  displayName: string,
+  photos: string[],
+) => {
+  setSelectedSpecies({
+    id: species.key,
+    scientificName: species.scientificName || '',
+    commonName: displayName,
+    kingdom: mapKingdom(species.group),
     family: '',
-    observations: s.count,
+    observations: species.count,
     lastSeen: '',
     source: 'inaturalist',
     attributions: [],
+    photos,                                    // ← clé manquante
+    photoData: photos[0]
+      ? { url: photos[0], source: 'inaturalist', attribution: '' }
+      : undefined,
   });
-  ```
-- Aucune migration DB, aucune edge function modifiée.
+};
+```
+
+### D. Pré-charger la photo iNaturalist côté carte
+Dans `CuratedSpeciesCard`, exposer `photos = species.imageUrl ? [species.imageUrl, ...(photoData?.photos ?? [])] : (photoData?.photos ?? [])` et le transmettre au `onClick` afin que le modal s'ouvre instantanément avec la même image que la vignette (pas de "Aucune photo disponible" pendant le fetch).
+
+## Fichiers touchés
+
+| Fichier | Action |
+|---|---|
+| `src/components/community/insights/curation/curationCategories.ts` | **créer** (CATEGORIES, getCatStyle, getCatLabel, CategoryBadge) |
+| `src/components/community/insights/curation/CuratedSpeciesCard.tsx` | étendre `onClick` (ajout `photos`), afficher `<CategoryBadge>` en overlay si `curation?.category` |
+| `src/components/community/insights/curation/OeilCuration.tsx` | importer depuis `curationCategories.ts`, passer `photos` dans `setSelectedSpecies` |
+| `src/components/community/insights/curation/CategoryControl.tsx` | consommer `curationCategories.ts` (suppression duplication) |
 
 ## Résultat attendu
 
-- Les vignettes de "Apprendre → L'œil" affichent désormais les **mêmes photos lisibles** que "Empreinte → Taxons observés".
-- Les titres sont **en français** (Laurier-cerise, Cerisier sauvage, Fleur de coucou…) au lieu de l'anglais brut.
-- Un clic sur une carte ouvre la **modal photo en grand**, identique à celle de l'onglet Empreinte.
-- Aucune duplication : un seul composant carte + un seul hook traduction + une seule modal partagée.
+- Vue **L'œil → Suggestions IA** : chaque vignette affiche désormais le **badge catégorie IA** (Parapluie, EEE…) comme dans la copie 1.
+- Clic sur la vignette : **photo haute résolution** affichée dans le modal (identique à Empreinte → Taxons observés copie 2 d'origine).
+- Code de catégories **factorisé** dans un seul module → cohérence garantie entre L'œil et tout autre futur consommateur.
