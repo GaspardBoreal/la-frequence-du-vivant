@@ -950,6 +950,13 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             onUploaded={clearPhotoPoint}
           />
         )}
+        {/* Create-marche draggable marker */}
+        {isCreatingMarche && createPosition && (
+          <DraggableCreateMarker
+            position={createPosition}
+            onChange={setCreatePosition}
+          />
+        )}
       </MapContainer>
 
       {/* Map style toggle */}
