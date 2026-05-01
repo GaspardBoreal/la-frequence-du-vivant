@@ -1141,6 +1141,62 @@ export type Database = {
           },
         ]
       }
+      exploration_curations: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number
+          entity_id: string | null
+          entity_type: string
+          exploration_id: string
+          id: string
+          media_ids: string[] | null
+          sense: Database["public"]["Enums"]["curation_sense"]
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          entity_id?: string | null
+          entity_type: string
+          exploration_id: string
+          id?: string
+          media_ids?: string[] | null
+          sense: Database["public"]["Enums"]["curation_sense"]
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          entity_id?: string | null
+          entity_type?: string
+          exploration_id?: string
+          id?: string
+          media_ids?: string[] | null
+          sense?: Database["public"]["Enums"]["curation_sense"]
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_curations_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exploration_engagement_settings: {
         Row: {
           created_at: string
@@ -4138,6 +4194,10 @@ export type Database = {
             Returns: string
           }
       is_admin_user: { Args: never; Returns: boolean }
+      is_event_curator: {
+        Args: { _exploration_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_system_initialized: { Args: never; Returns: boolean }
       match_documents: {
         Args: { filter?: Json; match_count?: number; query_embedding: string }
@@ -4168,6 +4228,15 @@ export type Database = {
       remove_admin_user: { Args: { target_user_id: string }; Returns: boolean }
       reorder_convivialite_photos: {
         Args: { _exploration_id: string; _ordered_ids: string[] }
+        Returns: undefined
+      }
+      reorder_exploration_curations: {
+        Args: {
+          _curation_ids: string[]
+          _exploration_id: string
+          _new_orders: number[]
+          _sense: Database["public"]["Enums"]["curation_sense"]
+        }
         Returns: undefined
       }
       shares_marche_event: {
@@ -4208,6 +4277,7 @@ export type Database = {
         | "ambassadeur"
         | "sentinelle"
       crm_role: "admin" | "member" | "walker"
+      curation_sense: "oeil" | "main" | "coeur" | "oreille" | "palais"
       etude_type: "principale" | "complementaire" | "annexe"
       exploration_type: "agroecologique" | "eco_poetique" | "eco_tourisme"
       insight_angle: "biodiversite" | "bioacoustique" | "geopoetique"
@@ -4354,6 +4424,7 @@ export const Constants = {
         "sentinelle",
       ],
       crm_role: ["admin", "member", "walker"],
+      curation_sense: ["oeil", "main", "coeur", "oreille", "palais"],
       etude_type: ["principale", "complementaire", "annexe"],
       exploration_type: ["agroecologique", "eco_poetique", "eco_tourisme"],
       insight_angle: ["biodiversite", "bioacoustique", "geopoetique"],
