@@ -69,7 +69,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   const [activeGlobalTab, setActiveGlobalTab] = useState<GlobalTab>('carte');
   const [activeSensoryTab, setActiveSensoryTab] = useState<SensoryTab>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const [convivialiteOpen, setConvivialiteOpen] = useState(false);
+  const [activeMarcheursSubTab, setActiveMarcheursSubTab] = useState<MarcheursSubTab>('convivialite');
   const { trackActivity } = useActivityTracker();
 
   // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
