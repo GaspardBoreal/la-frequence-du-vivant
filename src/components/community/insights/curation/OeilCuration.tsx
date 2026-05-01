@@ -51,6 +51,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const { data: curations = [] } = useExplorationCurations(explorationId, 'oeil');
   const { data: manual = [] } = useExplorationManualSpecies(explorationId);
   const { data: lastAnalysis } = useLatestAiAnalysis(explorationId);
+  const { data: gpsStatus } = useExplorationMarchesGpsStatus(explorationId);
   const triggerAi = useTriggerAiAnalysis();
   const upsert = useUpsertCuration();
 
