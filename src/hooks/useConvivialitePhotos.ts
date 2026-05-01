@@ -14,6 +14,7 @@ export interface ConvivialitePhoto {
   height: number | null;
   taille_octets: number | null;
   is_hidden: boolean;
+  position: number;
   created_at: string;
   // Enriched
   author_prenom?: string | null;
