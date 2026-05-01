@@ -1050,6 +1050,94 @@ export type Database = {
           },
         ]
       }
+      exploration_convivialite_photos: {
+        Row: {
+          created_at: string
+          exploration_id: string
+          height: number | null
+          id: string
+          is_hidden: boolean
+          storage_path: string
+          taille_octets: number | null
+          updated_at: string
+          url: string
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          exploration_id: string
+          height?: number | null
+          id?: string
+          is_hidden?: boolean
+          storage_path: string
+          taille_octets?: number | null
+          updated_at?: string
+          url: string
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          exploration_id?: string
+          height?: number | null
+          id?: string
+          is_hidden?: boolean
+          storage_path?: string
+          taille_octets?: number | null
+          updated_at?: string
+          url?: string
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_convivialite_photos_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exploration_convivialite_signalements: {
+        Row: {
+          created_at: string
+          id: string
+          photo_id: string
+          raison: string | null
+          reporter_user_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          photo_id: string
+          raison?: string | null
+          reporter_user_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          photo_id?: string
+          raison?: string | null
+          reporter_user_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_convivialite_signalements_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_convivialite_photos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exploration_engagement_settings: {
         Row: {
           created_at: string
@@ -3724,6 +3812,14 @@ export type Database = {
       }
       can_create_marche: { Args: { _user_id: string }; Returns: boolean }
       can_initialize_admin_system: { Args: never; Returns: boolean }
+      can_upload_convivialite: {
+        Args: { _exploration_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_view_exploration_convivialite: {
+        Args: { _exploration_id: string; _user_id: string }
+        Returns: boolean
+      }
       check_email_exists: { Args: { _email: string }; Returns: boolean }
       check_is_admin_user: { Args: { check_user_id: string }; Returns: boolean }
       check_system_initialization_safe: { Args: never; Returns: boolean }
