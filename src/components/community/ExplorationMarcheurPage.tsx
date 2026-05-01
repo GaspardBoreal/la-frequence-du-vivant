@@ -463,6 +463,7 @@ const ExplorationMarcheurPage: React.FC = () => {
             />
           )}
         </AnimatePresence>
+        )}
       </div>
 
       <ConvivialiteImmersiveView
