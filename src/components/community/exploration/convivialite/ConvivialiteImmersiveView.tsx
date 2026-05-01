@@ -6,6 +6,7 @@ import {
   useDeleteConvivialitePhoto,
   useReportConvivialitePhoto,
   useCanUploadConvivialite,
+  useReorderConvivialitePhotos,
   type ConvivialitePhoto,
 } from '@/hooks/useConvivialitePhotos';
 import ConvivialiteMosaic from './ConvivialiteMosaic';
@@ -35,6 +36,10 @@ const ConvivialiteImmersiveView: React.FC<Props> = ({
   const { canUpload } = useCanUploadConvivialite(userId, explorationId, userRole, isAdmin);
   const { mutate: deletePhoto } = useDeleteConvivialitePhoto(explorationId);
   const { mutate: reportPhotoMut } = useReportConvivialitePhoto();
+  const { mutate: reorderPhotos } = useReorderConvivialitePhotos(explorationId);
+
+  // Droit de réordonner = mêmes profils que ceux qui peuvent uploader (ambassadeur, sentinelle, organisateur, admin)
+  const canReorder = !!isAdmin || canUpload;
 
   const visiblePhotos = photos.filter(p => isAdmin || !p.is_hidden);
   const uniqueAuthors = new Set(visiblePhotos.map(p => p.user_id)).size;
@@ -116,8 +121,10 @@ const ConvivialiteImmersiveView: React.FC<Props> = ({
                 photos={visiblePhotos}
                 currentUserId={userId}
                 isAdmin={isAdmin}
+                canReorder={canReorder}
                 onReport={(p) => setReportPhoto(p)}
                 onDelete={handleDelete}
+                onReorder={(orderedIds) => reorderPhotos(orderedIds)}
               />
             ) : mode === 'slideshow' ? (
               <ConvivialiteSlideshow photos={visiblePhotos} />

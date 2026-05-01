@@ -14,6 +14,7 @@ export interface ConvivialitePhoto {
   height: number | null;
   taille_octets: number | null;
   is_hidden: boolean;
+  position: number;
   created_at: string;
   // Enriched
   author_prenom?: string | null;
@@ -32,7 +33,8 @@ export function useConvivialitePhotos(explorationId: string | undefined) {
         .from('exploration_convivialite_photos')
         .select('*')
         .eq('exploration_id', explorationId)
-        .order('created_at', { ascending: false });
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true });
       if (error) throw error;
       const photos = (data || []) as ConvivialitePhoto[];
       // Enrich with author profiles
@@ -234,5 +236,52 @@ export function useReportConvivialitePhoto() {
     },
     onSuccess: () => toast.success('Signalement transmis aux modérateurs'),
     onError: (err: any) => toast.error(err?.message || 'Signalement impossible'),
+  });
+}
+
+export function useReorderConvivialitePhotos(explorationId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      if (!explorationId) throw new Error('Exploration manquante');
+      if (!orderedIds.length) return;
+      const { error } = await (supabase as any).rpc('reorder_convivialite_photos', {
+        _exploration_id: explorationId,
+        _ordered_ids: orderedIds,
+      });
+      if (error) throw error;
+    },
+    onMutate: async (orderedIds: string[]) => {
+      const queryKey = ['convivialite-photos', explorationId];
+      await qc.cancelQueries({ queryKey });
+      const previous = qc.getQueryData<ConvivialitePhoto[]>(queryKey);
+      if (previous) {
+        const byId = new Map(previous.map((p) => [p.id, p]));
+        const reordered: ConvivialitePhoto[] = [];
+        orderedIds.forEach((id, idx) => {
+          const p = byId.get(id);
+          if (p) {
+            reordered.push({ ...p, position: idx });
+            byId.delete(id);
+          }
+        });
+        // Conserve les photos absentes du payload (sécurité) à la fin
+        byId.forEach((p) => reordered.push(p));
+        qc.setQueryData(queryKey, reordered);
+      }
+      return { previous };
+    },
+    onError: (err: any, _vars, ctx: any) => {
+      if (ctx?.previous) {
+        qc.setQueryData(['convivialite-photos', explorationId], ctx.previous);
+      }
+      toast.error(err?.message || "Impossible de réorganiser les photos");
+    },
+    onSuccess: () => {
+      toast.success('Ordre du mur mis à jour');
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['convivialite-photos', explorationId] });
+    },
   });
 }
