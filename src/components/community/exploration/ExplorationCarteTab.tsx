@@ -1031,16 +1031,27 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Create-marche button (Ambassadeur / Sentinelle only) */}
+      {/* Create-marche button (Ambassadeur / Sentinelle / Admin) */}
       {userCanCreate && explorationId && !isCreatingMarche && (
-        <div className="absolute bottom-20 right-[10.5rem] z-[1000]">
+        <div className="absolute bottom-20 left-4 z-[1000] flex flex-col items-start gap-2">
+          {showCreateHint && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              className="bg-black/75 backdrop-blur-xl rounded-lg border border-amber-400/30 px-2.5 py-1.5 text-[10px] text-amber-100 shadow-md max-w-[180px]"
+            >
+              Vous pouvez ajouter une marche ici
+            </motion.div>
+          )}
           <button
             onClick={handleStartCreate}
-            className="relative w-10 h-10 rounded-xl bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-200 flex items-center justify-center hover:bg-amber-500/30 hover:border-amber-400/60 transition-all duration-200 active:scale-95 shadow-md shadow-amber-500/20"
+            className="relative h-10 px-3 rounded-xl bg-amber-500/25 backdrop-blur-md border border-amber-400/50 text-amber-100 flex items-center gap-1.5 hover:bg-amber-500/35 hover:border-amber-400/70 transition-all duration-200 active:scale-95 shadow-md shadow-amber-500/20"
             aria-label="Créer une nouvelle marche ici"
-            title="Créer une marche"
+            title="Créer une nouvelle marche"
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
+            <span className="text-[11px] font-semibold tracking-wide">Créer une marche</span>
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
           </button>
         </div>
