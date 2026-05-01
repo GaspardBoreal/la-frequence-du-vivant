@@ -1,27 +1,37 @@
 import React, { useMemo, useState } from 'react';
-import { Eye, Search, Sparkles, ImageOff, X } from 'lucide-react';
+import { Eye, Search, Sparkles, ImageOff, X, Plus, Wand2, Loader2, Star, Hand } from 'lucide-react';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import {
   useExplorationCurations,
   useUpsertCuration,
   type ExplorationCuration,
 } from '@/hooks/useExplorationCurations';
+import {
+  useLatestAiAnalysis,
+  useTriggerAiAnalysis,
+  isAnalysisStale,
+} from '@/hooks/useExplorationAiAnalysis';
+import { useExplorationManualSpecies } from '@/hooks/useExplorationManualSpecies';
 import PinToggle from './PinToggle';
+import ManualSpeciesModal from './ManualSpeciesModal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Props {
   explorationId: string;
   isCurator: boolean;
 }
 
+type View = 'selection' | 'suggestions' | 'pool' | 'terrain';
+
 const CATEGORIES = [
-  { value: 'emblematique', label: 'Emblématique', color: 'text-amber-600 bg-amber-500/10 border-amber-500/30' },
-  { value: 'parapluie', label: 'Parapluie', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/30' },
-  { value: 'eee', label: 'EEE', color: 'text-rose-600 bg-rose-500/10 border-rose-500/30' },
-  { value: 'auxiliaire', label: 'Auxiliaire', color: 'text-sky-600 bg-sky-500/10 border-sky-500/30' },
-  { value: 'protegee', label: 'Protégée', color: 'text-violet-600 bg-violet-500/10 border-violet-500/30' },
+  { value: 'emblematique', label: 'Emblématique', color: 'text-amber-700 bg-amber-500/10 border-amber-500/30' },
+  { value: 'parapluie', label: 'Parapluie', color: 'text-emerald-700 bg-emerald-500/10 border-emerald-500/30' },
+  { value: 'eee', label: 'EEE', color: 'text-rose-700 bg-rose-500/10 border-rose-500/30' },
+  { value: 'auxiliaire', label: 'Auxiliaire', color: 'text-sky-700 bg-sky-500/10 border-sky-500/30' },
+  { value: 'protegee', label: 'Protégée', color: 'text-violet-700 bg-violet-500/10 border-violet-500/30' },
 ];
 
 const getCatStyle = (value?: string | null) =>
@@ -30,15 +40,23 @@ const getCatStyle = (value?: string | null) =>
 const getCatLabel = (value?: string | null) =>
   CATEGORIES.find(c => c.value === value)?.label ?? value ?? '';
 
+const scoreToStars = (score?: number | null) => {
+  if (score == null) return 0;
+  return Math.max(1, Math.min(5, Math.round(score / 20)));
+};
+
 const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const { data: pool = [], isLoading } = useExplorationSpeciesPool(explorationId);
   const { data: curations = [] } = useExplorationCurations(explorationId, 'oeil');
+  const { data: manual = [] } = useExplorationManualSpecies(explorationId);
+  const { data: lastAnalysis } = useLatestAiAnalysis(explorationId);
+  const triggerAi = useTriggerAiAnalysis();
   const upsert = useUpsertCuration();
 
+  const [view, setView] = useState<View>('selection');
   const [search, setSearch] = useState('');
-  const [showAll, setShowAll] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
 
-  // Index curations by entity_id (scientific name preferred)
   const curationByKey = useMemo(() => {
     const m = new Map<string, ExplorationCuration>();
     curations.forEach(c => {
@@ -48,11 +66,24 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   }, [curations]);
 
   const pinnedSpecies = useMemo(
-    () => pool.filter(s => curationByKey.has(s.key.toLowerCase())),
+    () =>
+      pool.filter(s => {
+        const c = curationByKey.get(s.key.toLowerCase());
+        return c && c.display_order < 9999;
+      }),
     [pool, curationByKey]
   );
 
-  const filtered = useMemo(() => {
+  const aiSuggestions = useMemo(
+    () =>
+      pool
+        .map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))
+        .filter(x => x.curation?.source === 'ai')
+        .sort((a, b) => (b.curation?.ai_score || 0) - (a.curation?.ai_score || 0)),
+    [pool, curationByKey]
+  );
+
+  const filteredPool = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return pool;
     return pool.filter(
@@ -62,6 +93,10 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     );
   }, [pool, search]);
 
+  const stale = isAnalysisStale(lastAnalysis);
+
+  const handleAi = () => triggerAi.mutate(explorationId);
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
@@ -70,167 +105,343 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     );
   }
 
-  if (pool.length === 0) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <div className="space-y-4">
+        {/* Header actions */}
+        {isCurator && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-gradient-to-br from-amber-500/5 to-transparent p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              {lastAnalysis ? (
+                <>
+                  Dernière analyse :{' '}
+                  <span className="font-medium text-foreground">
+                    {new Date(lastAnalysis.analyzed_at).toLocaleDateString('fr-FR')}
+                  </span>
+                  {' · '}
+                  {lastAnalysis.species_analyzed_count} espèces
+                  {stale && <span className="ml-1 text-amber-600">(à actualiser)</span>}
+                </>
+              ) : (
+                <>Aucune analyse IA effectuée pour le moment.</>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAi}
+                disabled={triggerAi.isPending || pool.length === 0}
+              >
+                {triggerAi.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                {lastAnalysis ? 'Relancer l’analyse IA' : 'Lancer l’analyse IA'}
+              </Button>
+              <Button size="sm" onClick={() => setShowManualModal(true)}>
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                Espèce terrain
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex flex-wrap items-center gap-1 border-b border-border">
+          {[
+            { id: 'selection' as View, label: 'Sélection finale', count: pinnedSpecies.length },
+            { id: 'suggestions' as View, label: 'Suggestions IA', count: aiSuggestions.length, hidden: !isCurator },
+            { id: 'terrain' as View, label: 'Terrain', count: manual.length, icon: <Hand className="w-3 h-3" /> },
+            { id: 'pool' as View, label: 'Pool observé', count: pool.length, hidden: !isCurator },
+          ]
+            .filter(t => !t.hidden)
+            .map(t => (
+              <button
+                key={t.id}
+                onClick={() => setView(t.id)}
+                className={`px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
+                  view === t.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t.icon}
+                {t.label}
+                <span className="text-[10px] text-muted-foreground">({t.count})</span>
+              </button>
+            ))}
+        </div>
+
+        {/* Recherche pour pool/suggestions */}
+        {(view === 'pool' || view === 'suggestions') && isCurator && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher une espèce…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Empty pool */}
+        {pool.length === 0 && manual.length === 0 && (
+          <div className="rounded-xl border border-border bg-card p-6 text-center">
+            <Eye className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Aucune espèce observée pour cette exploration pour l'instant.
+            </p>
+            {isCurator && (
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Lance l'analyse IA dès que des coordonnées GPS sont renseignées sur les marches,
+                ou ajoute manuellement une espèce vue sur le terrain.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Vue Sélection */}
+        {view === 'selection' && (
+          <SpeciesGrid
+            items={pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))}
+            isCurator={isCurator}
+            explorationId={explorationId}
+            emptyMessage={
+              isCurator
+                ? 'Aucune espèce épinglée. Lance l’analyse IA ou ajoute une espèce terrain.'
+                : "L'ambassadeur n'a pas encore sélectionné d'espèces remarquables."
+            }
+            upsert={upsert}
+          />
+        )}
+
+        {/* Vue Suggestions IA */}
+        {view === 'suggestions' && (
+          <SpeciesGrid
+            items={aiSuggestions.filter(x => {
+              const q = search.trim().toLowerCase();
+              if (!q) return true;
+              return (
+                x.species.scientificName?.toLowerCase().includes(q) ||
+                x.species.commonName?.toLowerCase().includes(q)
+              );
+            })}
+            isCurator={isCurator}
+            explorationId={explorationId}
+            emptyMessage="Aucune suggestion IA. Lance l’analyse pour en obtenir."
+            upsert={upsert}
+            showAiBadges
+          />
+        )}
+
+        {/* Vue Pool */}
+        {view === 'pool' && (
+          <SpeciesGrid
+            items={filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))}
+            isCurator={isCurator}
+            explorationId={explorationId}
+            emptyMessage="Aucune espèce dans le pool."
+            upsert={upsert}
+          />
+        )}
+
+        {/* Vue Terrain */}
+        {view === 'terrain' && (
+          <ManualSpeciesGrid
+            items={manual}
+            isCurator={isCurator}
+            onAdd={() => setShowManualModal(true)}
+          />
+        )}
+
+        <ManualSpeciesModal
+          open={showManualModal}
+          onClose={() => setShowManualModal(false)}
+          explorationId={explorationId}
+        />
+      </div>
+    </TooltipProvider>
+  );
+};
+
+// ---------- Species grid (pool / IA / selection) ----------
+const SpeciesGrid: React.FC<{
+  items: { species: any; curation?: ExplorationCuration }[];
+  isCurator: boolean;
+  explorationId: string;
+  emptyMessage: string;
+  showAiBadges?: boolean;
+  upsert: ReturnType<typeof useUpsertCuration>;
+}> = ({ items, isCurator, explorationId, emptyMessage, showAiBadges, upsert }) => {
+  if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6 text-center">
-        <Eye className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
-        <p className="text-sm text-muted-foreground">
-          Aucune espèce observée pour cette exploration pour l'instant.
-        </p>
+      <div className="rounded-xl border border-border/60 border-dashed bg-card/50 p-6 text-center">
+        <p className="text-xs text-muted-foreground">{emptyMessage}</p>
       </div>
     );
   }
 
-  // Display: pinned first, then optionally the rest
-  const visibleList = showAll || !isCurator ? filtered : pinnedSpecies;
-
   return (
-    <div className="space-y-4">
-      {/* Header sélection ambassadeur */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-semibold text-foreground">
-            Sélection de l'ambassadeur
-          </h3>
-          <span className="text-xs text-muted-foreground">
-            ({pinnedSpecies.length}/{pool.length})
-          </span>
-        </div>
-        {isCurator && (
-          <button
-            onClick={() => setShowAll(v => !v)}
-            className="text-xs font-medium text-primary hover:underline"
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+      {items.map(({ species, curation }) => {
+        const isPinned = !!curation && curation.display_order < 9999;
+        const stars = scoreToStars(curation?.ai_score);
+
+        return (
+          <div
+            key={species.key}
+            className={`relative rounded-xl border overflow-hidden bg-card group transition ${
+              isPinned ? 'border-amber-500/50 shadow-sm' : 'border-border'
+            }`}
           >
-            {showAll ? 'Voir la sélection' : 'Voir toutes les espèces'}
-          </button>
-        )}
-      </div>
-
-      {/* Bandeau pédagogique non-curator */}
-      {!isCurator && pinnedSpecies.length === 0 && (
-        <div className="rounded-xl border border-border bg-muted/20 p-4 text-center">
-          <p className="text-xs text-muted-foreground italic">
-            L'ambassadeur de la marche n'a pas encore sélectionné d'espèces remarquables.
-          </p>
-        </div>
-      )}
-
-      {/* Recherche en mode "voir toutes" */}
-      {isCurator && showAll && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher une espèce…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-9 text-sm"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Grille espèces */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-        {visibleList.map(species => {
-          const curation = curationByKey.get(species.key.toLowerCase());
-          const isPinned = !!curation;
-
-          return (
-            <div
-              key={species.key}
-              className={`relative rounded-xl border overflow-hidden bg-card group transition ${
-                isPinned ? 'border-amber-500/50 shadow-sm' : 'border-border'
-              }`}
-            >
-              {/* Image */}
-              <div className="aspect-square bg-muted relative">
-                {species.imageUrl ? (
-                  <img
-                    src={species.imageUrl}
-                    alt={species.commonName || species.scientificName || ''}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
-                    <ImageOff className="w-8 h-8" />
-                  </div>
-                )}
-                {/* Pin toggle (curator only) */}
-                {isCurator && (
-                  <div className="absolute top-1.5 right-1.5">
-                    <PinToggle
-                      explorationId={explorationId}
-                      sense="oeil"
-                      entityType="species"
-                      entityId={species.key}
-                      existing={curation}
-                      category={curation?.category}
-                    />
-                  </div>
-                )}
-                {/* Compteur observations */}
-                <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-medium backdrop-blur-sm">
-                  {species.count} obs.
+            {/* Image */}
+            <div className="aspect-square bg-muted relative">
+              {species.imageUrl ? (
+                <img
+                  src={species.imageUrl}
+                  alt={species.commonName || species.scientificName || ''}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
+                  <ImageOff className="w-8 h-8" />
                 </div>
-              </div>
-
-              {/* Infos */}
-              <div className="p-2 space-y-1">
-                <p className="text-xs font-semibold text-foreground line-clamp-1">
-                  {species.commonName || species.scientificName}
-                </p>
-                {species.commonName && species.scientificName && (
-                  <p className="text-[10px] text-muted-foreground italic line-clamp-1">
-                    {species.scientificName}
-                  </p>
-                )}
-
-                {/* Catégorie */}
-                {isPinned && (
-                  <CategoryControl
-                    isCurator={isCurator}
-                    curation={curation!}
+              )}
+              {isCurator && (
+                <div className="absolute top-1.5 right-1.5">
+                  <PinToggle
                     explorationId={explorationId}
-                    onSetCategory={async (cat) => {
-                      await upsert.mutateAsync({
-                        id: curation!.id,
-                        exploration_id: explorationId,
-                        sense: 'oeil',
-                        entity_type: 'species',
-                        entity_id: species.key,
-                        category: cat,
-                      });
-                    }}
+                    sense="oeil"
+                    entityType="species"
+                    entityId={species.key}
+                    existing={curation}
+                    category={curation?.category}
                   />
-                )}
+                </div>
+              )}
+              <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-medium backdrop-blur-sm">
+                {species.count} obs.
               </div>
+              {showAiBadges && stars > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-amber-500/95 text-white text-[10px] font-semibold backdrop-blur-sm flex items-center gap-0.5 cursor-help">
+                      {Array.from({ length: stars }).map((_, i) => (
+                        <Star key={i} className="w-2.5 h-2.5 fill-current" />
+                      ))}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <p className="text-xs italic">{curation?.ai_reason || 'Suggestion IA'}</p>
+                    {curation?.ai_criteria && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {Object.entries(curation.ai_criteria as any).map(([k, v]) => (
+                          <span key={k} className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                            {k}: {String(v)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
-          );
-        })}
-      </div>
 
-      {visibleList.length === 0 && search && (
-        <p className="text-center text-xs text-muted-foreground py-6">
-          Aucune espèce ne correspond à « {search} »
-        </p>
-      )}
+            <div className="p-2 space-y-1">
+              <p className="text-xs font-semibold text-foreground line-clamp-1">
+                {species.commonName || species.scientificName}
+              </p>
+              {species.commonName && species.scientificName && (
+                <p className="text-[10px] text-muted-foreground italic line-clamp-1">
+                  {species.scientificName}
+                </p>
+              )}
+
+              {isPinned && curation && (
+                <CategoryControl
+                  isCurator={isCurator}
+                  curation={curation}
+                  onSetCategory={async cat => {
+                    await upsert.mutateAsync({
+                      id: curation.id,
+                      exploration_id: explorationId,
+                      sense: 'oeil',
+                      entity_type: 'species',
+                      entity_id: species.key,
+                      category: cat,
+                    });
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
 
+// ---------- Manual species (terrain) grid ----------
+const ManualSpeciesGrid: React.FC<{
+  items: any[];
+  isCurator: boolean;
+  onAdd: () => void;
+}> = ({ items, isCurator, onAdd }) => {
+  if (items.length === 0) {
+    return (
+      <div className="rounded-xl border border-border/60 border-dashed bg-card/50 p-6 text-center space-y-2">
+        <Hand className="w-6 h-6 mx-auto text-muted-foreground/50" />
+        <p className="text-xs text-muted-foreground">
+          Aucune espèce vue sur le terrain pour l'instant.
+        </p>
+        {isCurator && (
+          <Button size="sm" variant="outline" onClick={onAdd}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            Ajouter une observation
+          </Button>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+      {items.map(m => (
+        <div key={m.id} className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="aspect-square bg-muted">
+            <img src={m.photo_url} alt={m.common_name} className="w-full h-full object-cover" loading="lazy" />
+          </div>
+          <div className="p-2 space-y-1">
+            <p className="text-xs font-semibold line-clamp-1">{m.common_name}</p>
+            {m.scientific_name && (
+              <p className="text-[10px] italic text-muted-foreground line-clamp-1">{m.scientific_name}</p>
+            )}
+            <p className="text-[10px] text-muted-foreground">
+              {new Date(m.observed_at).toLocaleDateString('fr-FR')}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ---------- Category control (unchanged behavior, slightly compacted) ----------
 const CategoryControl: React.FC<{
   isCurator: boolean;
   curation: ExplorationCuration;
-  explorationId: string;
   onSetCategory: (cat: string | null) => Promise<void>;
 }> = ({ isCurator, curation, onSetCategory }) => {
   const [open, setOpen] = useState(false);
@@ -251,9 +462,7 @@ const CategoryControl: React.FC<{
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          className={`w-full px-1.5 py-0.5 rounded-md text-[10px] font-medium border text-left ${style}`}
-        >
+        <button className={`w-full px-1.5 py-0.5 rounded-md text-[10px] font-medium border text-left ${style}`}>
           {label}
         </button>
       </PopoverTrigger>
