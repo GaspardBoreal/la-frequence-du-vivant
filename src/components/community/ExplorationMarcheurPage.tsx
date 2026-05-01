@@ -392,13 +392,19 @@ const ExplorationMarcheurPage: React.FC = () => {
             <motion.div key="carte" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ExplorationCarteTab
                 explorationId={effectiveExplorationId || undefined}
+                explorationName={exploration?.name}
                 marcheEventId={marcheEventId || undefined}
+                marcheEventTitle={marcheEvent?.title}
+                marcheEventDate={marcheEvent?.date_marche || null}
+                marcheEventLieu={marcheEvent?.lieu || null}
+                userLevel={userLevel}
                 marches={(explorationMarches || []).map((m, i) => ({
                   id: m.id,
                   nom_marche: m.nom_marche,
                   ville: m.ville,
                   latitude: m.latitude,
                   longitude: m.longitude,
+                  date: (m as any).date ?? null,
                   ordre: i,
                 }))}
                 onSelectStep={(index) => {
