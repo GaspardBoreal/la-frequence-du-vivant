@@ -485,8 +485,13 @@ const TRACKING_TIMEOUT_MS = 10 * 60 * 1000; // 10 min auto-stop
 
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   explorationId,
+  explorationName,
   marches,
   marcheEventId,
+  marcheEventTitle,
+  marcheEventDate,
+  marcheEventLieu,
+  userLevel,
   onSelectStep,
 }) => {
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
@@ -500,6 +505,13 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const watchIdRef = useRef<number | null>(null);
   const trackingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastVibratedRef = useRef<number>(0);
+
+  // Create-marche mode state
+  const [isCreatingMarche, setIsCreatingMarche] = useState(false);
+  const [createPosition, setCreatePosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const userCanCreate = canCreateMarche(userLevel);
 
   // Photo GPS drop tool
   const { photoPoint, triggerFileInput, clear: clearPhotoPoint, FileInput } = usePhotoGpsDrop();
