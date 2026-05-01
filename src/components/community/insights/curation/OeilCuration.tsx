@@ -476,7 +476,35 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             upsert={upsert}
             translationMap={translationMap}
             onSpeciesClick={handleSpeciesClick}
+            onOpenEvidence={handleOpenEvidence}
           />
+        )}
+
+        {/* Vue À réviser — classifications automatiques en attente de validation */}
+        {view === 'review' && (
+          <div className="space-y-3">
+            {reviewItems.length > 0 && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <p>
+                  Ces espèces ont une classification automatique à confirmer.
+                  Cliquez sur un badge pour voir les sources, puis validez ou
+                  corrigez. Triées de la confiance la plus faible à la plus
+                  élevée.
+                </p>
+              </div>
+            )}
+            <SpeciesGrid
+              items={applyCategoryFilter(reviewItems)}
+              isCurator={isCurator}
+              explorationId={explorationId}
+              emptyMessage="Aucune classification en attente — bravo, tout est à jour !"
+              upsert={upsert}
+              translationMap={translationMap}
+              onSpeciesClick={handleSpeciesClick}
+              onOpenEvidence={handleOpenEvidence}
+            />
+          </div>
         )}
 
         {/* Vue Terrain */}
