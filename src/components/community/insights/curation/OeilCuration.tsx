@@ -344,7 +344,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Sélection */}
         {view === 'selection' && (
           <SpeciesGrid
-            items={pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))}
+            items={applyCategoryFilter(pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage={
