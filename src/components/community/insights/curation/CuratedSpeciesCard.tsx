@@ -139,7 +139,27 @@ const CuratedSpeciesCard: React.FC<Props> = ({
           {species.count} obs.
         </div>
 
-        {showAiBadges && stars > 0 && (
+        {needsReview && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-amber-500/95 text-white text-[10px] font-semibold backdrop-blur-sm flex items-center gap-1 cursor-help"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (curation && onOpenEvidence) onOpenEvidence(curation, displayName);
+                }}
+              >
+                <AlertCircle className="w-2.5 h-2.5" />
+                <span>à réviser</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p className="text-xs">Classification automatique à confirmer.</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {showAiBadges && stars > 0 && !needsReview && (
           <Tooltip>
             <TooltipTrigger asChild>
               <div
