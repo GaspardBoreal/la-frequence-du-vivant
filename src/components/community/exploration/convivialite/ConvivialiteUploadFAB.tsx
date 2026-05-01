@@ -10,11 +10,26 @@ interface Props {
   canUpload: boolean;
 }
 
+const stageLabel = (stage: string) => {
+  switch (stage) {
+    case 'detecting': return 'Analyse…';
+    case 'converting-heic': return 'Conversion photo iPhone (HEIC)…';
+    case 'compressing': return 'Optimisation…';
+    case 'uploading': return 'Envoi…';
+    default: return 'Traitement…';
+  }
+};
+
 const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUpload }) => {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const [progress, setProgress] = useState<{ index: number; total: number; name: string; stage: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { mutate: upload, isPending } = useUploadConvivialitePhotos(explorationId, userId);
+  const { mutate: upload, isPending } = useUploadConvivialitePhotos(
+    explorationId,
+    userId,
+    (p) => setProgress({ index: p.fileIndex + 1, total: p.total, name: p.fileName, stage: p.stage }),
+  );
 
   if (!canUpload) {
     return (
@@ -28,8 +43,13 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
 
   const onPick = (list: FileList | null) => {
     if (!list) return;
-    const arr = Array.from(list).filter(f => f.type.startsWith('image/'));
-    setFiles(prev => [...prev, ...arr].slice(0, 20));
+    // Accepte: tout image/* + extensions .heic/.heif (iOS partage parfois en application/octet-stream)
+    const arr = Array.from(list).filter((f) => {
+      if (f.type.startsWith('image/')) return true;
+      const n = f.name.toLowerCase();
+      return n.endsWith('.heic') || n.endsWith('.heif');
+    });
+    setFiles((prev) => [...prev, ...arr].slice(0, 20));
   };
 
   const handleSubmit = () => {
@@ -37,10 +57,13 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
     upload(files, {
       onSuccess: () => {
         setFiles([]);
+        setProgress(null);
         setOpen(false);
       },
+      onSettled: () => setProgress(null),
     });
   };
+
 
   return (
     <>
