@@ -175,6 +175,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         ),
     [pool, curationByKey],
   );
+
+  const filteredPool = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return pool;
     return pool.filter(
