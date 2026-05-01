@@ -11,6 +11,7 @@ import type { InsightAngle, InsightEventType, InsightCategory, InsightCard } fro
 import { CATEGORY_CONFIG, getLevelRank } from '@/lib/insightLevels';
 import { LIVING_PILLARS, ROLE_MISSIONS, type LivingPillarKey } from '@/lib/marchesVivantFramework';
 import ValorizationBlock from './ValorizationBlock';
+import CeQueNousAvonsVu from './curation/CeQueNousAvonsVu';
 
 function getIcon(name: string): React.FC<any> {
   return (LucideIcons as any)[name] || Lightbulb;
@@ -30,11 +31,22 @@ interface ApprendreTabProps {
   userLevel: CommunityRoleKey;
   eventType: InsightEventType | null;
   explorationId?: string;
+  marcheEventId?: string;
   totalSpecies?: number;
   userId?: string;
+  onNavigateToMarche?: (marcheId: string) => void;
 }
 
-const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, totalSpecies, userId }) => {
+type ApprendreSubTab = 'decouvertes' | 'apprendre-creer';
+
+const apprendreSubTabs: { key: ApprendreSubTab; label: string }[] = [
+  { key: 'decouvertes', label: 'Ce que nous avons vu' },
+  { key: 'apprendre-creer', label: 'Apprendre et créer' },
+];
+
+const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, marcheEventId, totalSpecies, userId, onNavigateToMarche }) => {
+  void eventType;
+  const [activeSubTab, setActiveSubTab] = useState<ApprendreSubTab>('decouvertes');
   const [activePillar, setActivePillar] = useState<LivingPillarKey>('oeil');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const { trackActivity } = useActivityTracker();
@@ -45,13 +57,10 @@ const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explo
     if (userId) trackActivity(userId, 'tab_switch', `tab:apprendre:${pillar}`, { explorationId });
   }, [trackActivity, explorationId, userId]);
 
-  const { cards, byCategory, isLoading } = useInsightCards({
-    userLevel,
-    eventType,
-    angle: activeAngle,
-    view: 'empreinte',
-    displayMode: 'full',
-  });
+  const handleSubTabChange = useCallback((sub: ApprendreSubTab) => {
+    setActiveSubTab(sub);
+    if (userId) trackActivity(userId, 'tab_switch', `tab:apprendre:${sub}`, { explorationId });
+  }, [trackActivity, explorationId, userId]);
 
   const toggleCard = (id: string) => {
     setExpandedCards(prev => {
@@ -73,12 +82,84 @@ const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explo
             <GraduationCap className="w-5 h-5 text-emerald-500" />
           </div>
           <div>
-            <h2 className="text-foreground text-base font-semibold">Apprendre & Créer</h2>
-            <p className="text-muted-foreground text-xs">Contenus adaptés à votre niveau</p>
+            <h2 className="text-foreground text-base font-semibold">Apprendre</h2>
+            <p className="text-muted-foreground text-xs">Découvertes & contenus adaptés</p>
           </div>
         </div>
         <RoleBadge role={userLevel} size="sm" />
       </div>
+
+      {/* Sous-onglets */}
+      <div className="flex border-b border-border">
+        {apprendreSubTabs.map(sub => {
+          const isActive = activeSubTab === sub.key;
+          return (
+            <button
+              key={sub.key}
+              onClick={() => handleSubTabChange(sub.key)}
+              className={`flex-1 px-3 py-2.5 text-xs font-semibold transition-colors border-b-2 -mb-px ${
+                isActive
+                  ? 'text-primary border-primary'
+                  : 'text-muted-foreground border-transparent hover:text-foreground'
+              }`}
+            >
+              {sub.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeSubTab === 'decouvertes' && explorationId && (
+        <CeQueNousAvonsVu
+          explorationId={explorationId}
+          marcheEventId={marcheEventId}
+          onNavigateToMarche={onNavigateToMarche}
+        />
+      )}
+
+      {activeSubTab === 'apprendre-creer' && (
+        <ApprendreCreerContent
+          userLevel={userLevel}
+          activePillar={activePillar}
+          handlePillarChange={handlePillarChange}
+          activeAngle={activeAngle}
+          expandedCards={expandedCards}
+          toggleCard={toggleCard}
+          explorationId={explorationId}
+          totalSpecies={totalSpecies}
+          nextLevelKey={nextLevelKey}
+        />
+      )}
+    </div>
+  );
+};
+
+interface ApprendreCreerContentProps {
+  userLevel: CommunityRoleKey;
+  activePillar: LivingPillarKey;
+  handlePillarChange: (p: LivingPillarKey) => void;
+  activeAngle: InsightAngle;
+  expandedCards: Set<string>;
+  toggleCard: (id: string) => void;
+  explorationId?: string;
+  totalSpecies?: number;
+  nextLevelKey: CommunityRoleKey | null | undefined;
+}
+
+const ApprendreCreerContent: React.FC<ApprendreCreerContentProps> = ({
+  userLevel, activePillar, handlePillarChange, activeAngle, expandedCards, toggleCard,
+  explorationId, totalSpecies, nextLevelKey,
+}) => {
+  const { cards, byCategory, isLoading } = useInsightCards({
+    userLevel,
+    eventType: null,
+    angle: activeAngle,
+    view: 'empreinte',
+    displayMode: 'full',
+  });
+
+  return (
+    <div className="space-y-6">
 
       {/* 5 pillars selector */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">

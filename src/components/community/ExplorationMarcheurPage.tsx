@@ -497,6 +497,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                 userLevel={userLevel}
                 eventType={null}
                 explorationId={effectiveExplorationId || undefined}
+                marcheEventId={directMarcheEventId || undefined}
                 userId={userId}
               />
             </motion.div>
