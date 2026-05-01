@@ -6,8 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
-import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Palette, Globe, Mountain, Crosshair, X, Star } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Palette, Globe, Mountain, Crosshair, X, Star, Sparkles } from 'lucide-react';
 import { PhotoGpsButton, PhotoGpsMarker, usePhotoGpsDrop } from './PhotoGpsDropTool';
+import CreateMarcheDrawer from './CreateMarcheDrawer';
+import { canCreateMarche, computeMarcheDefaults } from './createMarcheUtils';
 import 'leaflet/dist/leaflet.css';
 
 type MapStyle = 'geopoetic' | 'satellite' | 'terrain';
@@ -108,6 +110,7 @@ interface MarcheStep {
   latitude: number | null;
   longitude: number | null;
   ordre: number;
+  date?: string | null;
 }
 
 interface MarcheContribStats {
@@ -119,8 +122,13 @@ interface MarcheContribStats {
 
 interface ExplorationCarteTabProps {
   explorationId?: string;
+  explorationName?: string;
   marches: MarcheStep[];
   marcheEventId?: string;
+  marcheEventTitle?: string;
+  marcheEventDate?: string | null;
+  marcheEventLieu?: string | null;
+  userLevel?: string;
   onSelectStep?: (index: number) => void;
 }
 
@@ -475,10 +483,68 @@ function DistancePanel({
 
 const TRACKING_TIMEOUT_MS = 10 * 60 * 1000; // 10 min auto-stop
 
+// Draggable amber marker for the "create marche" mode
+function DraggableCreateMarker({
+  position,
+  onChange,
+}: {
+  position: { lat: number; lng: number };
+  onChange: (p: { lat: number; lng: number }) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const icon = L.divIcon({
+      className: 'create-marche-marker',
+      html: `
+        <div style="position:relative;width:36px;height:36px;">
+          <div style="position:absolute;inset:-8px;border-radius:50%;background:rgba(251,191,36,0.18);animation:gps-pulse 2s ease-out infinite;"></div>
+          <div style="
+            width:36px;height:36px;border-radius:50%;
+            background:linear-gradient(135deg,#fbbf24,#f59e0b);
+            border:3px solid white;
+            box-shadow:0 4px 14px rgba(251,191,36,0.5);
+            display:flex;align-items:center;justify-content:center;
+            color:white;font-weight:700;font-size:20px;line-height:1;
+            cursor:grab;
+          ">+</div>
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
+    });
+
+    const marker = L.marker([position.lat, position.lng], {
+      icon,
+      draggable: true,
+      autoPan: true,
+    });
+    marker.on('dragend', () => {
+      const ll = marker.getLatLng();
+      onChange({ lat: ll.lat, lng: ll.lng });
+    });
+    marker.addTo(map);
+
+    map.flyTo([position.lat, position.lng], Math.max(map.getZoom(), 13), { duration: 0.6 });
+
+    return () => {
+      map.removeLayer(marker);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
+
+  return null;
+}
+
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   explorationId,
+  explorationName,
   marches,
   marcheEventId,
+  marcheEventTitle,
+  marcheEventDate,
+  marcheEventLieu,
+  userLevel,
   onSelectStep,
 }) => {
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
@@ -492,6 +558,13 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const watchIdRef = useRef<number | null>(null);
   const trackingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastVibratedRef = useRef<number>(0);
+
+  // Create-marche mode state
+  const [isCreatingMarche, setIsCreatingMarche] = useState(false);
+  const [createPosition, setCreatePosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const userCanCreate = canCreateMarche(userLevel);
 
   // Photo GPS drop tool
   const { photoPoint, triggerFileInput, clear: clearPhotoPoint, FileInput } = usePhotoGpsDrop();
@@ -719,6 +792,36 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     }
   }, [isTracking, nearestStep]);
 
+  // Defaults for the create-marche drawer
+  const marcheDefaults = useMemo(
+    () => computeMarcheDefaults(marches, marcheEventDate, marcheEventLieu),
+    [marches, marcheEventDate, marcheEventLieu],
+  );
+
+  const handleStartCreate = useCallback(() => {
+    if (!userCanCreate || !explorationId) return;
+    const lat = marcheDefaults.centerLat ?? userLocation?.[0] ?? null;
+    const lng = marcheDefaults.centerLng ?? userLocation?.[1] ?? null;
+    if (lat == null || lng == null) {
+      toast.error('Impossible de déterminer une position de départ');
+      return;
+    }
+    setCreatePosition({ lat, lng });
+    setIsCreatingMarche(true);
+    setShowDistances(false);
+  }, [userCanCreate, explorationId, marcheDefaults, userLocation]);
+
+  const handleCancelCreate = useCallback(() => {
+    setIsCreatingMarche(false);
+    setCreatePosition(null);
+    setDrawerOpen(false);
+  }, []);
+
+  const handleConfirmCreate = useCallback(() => {
+    if (!createPosition) return;
+    setDrawerOpen(true);
+  }, [createPosition]);
+
   if (geoMarches.length === 0) {
     return (
       <motion.div
@@ -877,13 +980,72 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             onUploaded={clearPhotoPoint}
           />
         )}
+        {/* Create-marche draggable marker */}
+        {isCreatingMarche && createPosition && (
+          <DraggableCreateMarker
+            position={createPosition}
+            onChange={setCreatePosition}
+          />
+        )}
       </MapContainer>
 
       {/* Map style toggle */}
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
 
+      {/* Create-marche top banner (Ambassadeur / Sentinelle only, in create mode) */}
+      <AnimatePresence>
+        {isCreatingMarche && createPosition && (
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+            className="absolute top-4 left-4 right-[7.5rem] z-[1000]"
+          >
+            <div className="bg-amber-500/15 backdrop-blur-xl rounded-xl border border-amber-400/40 px-3 py-2.5 shadow-lg shadow-amber-500/10">
+              <div className="flex items-center gap-2 text-amber-100 text-[11px] font-medium">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                <span className="truncate">Glissez le repère, puis validez</span>
+              </div>
+              <div className="mt-1 font-mono text-[10px] text-amber-200/80 tabular-nums">
+                {createPosition.lat.toFixed(5)}, {createPosition.lng.toFixed(5)}
+              </div>
+              <div className="mt-2 flex gap-1.5">
+                <button
+                  onClick={handleCancelCreate}
+                  className="flex-1 px-2 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-white/80 text-[11px] font-medium transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleConfirmCreate}
+                  className="flex-1 px-2 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-semibold transition-colors shadow-sm"
+                >
+                  Valider
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create-marche button (Ambassadeur / Sentinelle only) */}
+      {userCanCreate && explorationId && !isCreatingMarche && (
+        <div className="absolute bottom-20 right-[10.5rem] z-[1000]">
+          <button
+            onClick={handleStartCreate}
+            className="relative w-10 h-10 rounded-xl bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-200 flex items-center justify-center hover:bg-amber-500/30 hover:border-amber-400/60 transition-all duration-200 active:scale-95 shadow-md shadow-amber-500/20"
+            aria-label="Créer une nouvelle marche ici"
+            title="Créer une marche"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          </button>
+        </div>
+      )}
+
       {/* Photo GPS button */}
-      {marcheEventId && (
+      {marcheEventId && !isCreatingMarche && (
         <div className="absolute bottom-20 right-[7.5rem] z-[1000]">
           <PhotoGpsButton onClick={triggerFileInput} />
         </div>
@@ -891,17 +1053,19 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       {FileInput}
 
       {/* Geolocate button */}
-      <GeolocateButton
-        active={!!userLocation}
-        loading={geoLoading}
-        isTracking={isTracking}
-        onClick={handleGeolocate}
-        onLongPress={handleLongPress}
-      />
+      {!isCreatingMarche && (
+        <GeolocateButton
+          active={!!userLocation}
+          loading={geoLoading}
+          isTracking={isTracking}
+          onClick={handleGeolocate}
+          onLongPress={handleLongPress}
+        />
+      )}
 
       {/* Bottom panel: tracking banner, distance panel, or stats bar */}
       <AnimatePresence mode="wait">
-        {isTracking && nearestStep ? (
+        {isCreatingMarche ? null : isTracking && nearestStep ? (
           <ProximityBanner
             key="proximity"
             nearestName={nearestStep.name}
@@ -945,6 +1109,26 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Create-marche drawer */}
+      {explorationId && (
+        <CreateMarcheDrawer
+          open={drawerOpen}
+          onOpenChange={(o) => {
+            setDrawerOpen(o);
+            if (!o && isCreatingMarche) {
+              // Closing drawer without creating: stay in mode so user can re-adjust
+            }
+          }}
+          position={createPosition}
+          defaultVille={marcheDefaults.defaultVille}
+          defaultDate={marcheDefaults.defaultDate}
+          explorationId={explorationId}
+          explorationName={explorationName}
+          marcheEventTitle={marcheEventTitle}
+          onCreated={handleCancelCreate}
+        />
+      )}
 
       {/* Custom popup style overrides */}
       <style>{`

@@ -167,9 +167,9 @@ const ExplorationMarcheurPage: React.FC = () => {
       if (!links?.length) return [];
       const { data: marches } = await supabase
         .from('marches')
-        .select('id, nom_marche, ville, latitude, longitude')
+        .select('id, nom_marche, ville, latitude, longitude, date')
         .in('id', links.map(l => l.marche_id))
-        .returns<{ id: string; nom_marche: string | null; ville: string; latitude: number | null; longitude: number | null }[]>();
+        .returns<{ id: string; nom_marche: string | null; ville: string; latitude: number | null; longitude: number | null; date: string | null }[]>();
       if (!marches?.length) return [];
       const ordreMap: Record<string, number> = {};
       links.forEach(l => { ordreMap[l.marche_id] = l.ordre ?? 0; });
@@ -392,13 +392,19 @@ const ExplorationMarcheurPage: React.FC = () => {
             <motion.div key="carte" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ExplorationCarteTab
                 explorationId={effectiveExplorationId || undefined}
+                explorationName={exploration?.name}
                 marcheEventId={marcheEventId || undefined}
+                marcheEventTitle={marcheEvent?.title}
+                marcheEventDate={marcheEvent?.date_marche || null}
+                marcheEventLieu={marcheEvent?.lieu || null}
+                userLevel={userLevel}
                 marches={(explorationMarches || []).map((m, i) => ({
                   id: m.id,
                   nom_marche: m.nom_marche,
                   ville: m.ville,
                   latitude: m.latitude,
                   longitude: m.longitude,
+                  date: (m as any).date ?? null,
                   ordre: i,
                 }))}
                 onSelectStep={(index) => {
