@@ -371,7 +371,7 @@ const SpeciesGrid: React.FC<{
   showAiBadges?: boolean;
   upsert: ReturnType<typeof useUpsertCuration>;
   translationMap: Map<string, SpeciesTranslation>;
-  onSpeciesClick: (species: CuratedSpeciesItem, displayName: string) => void;
+  onSpeciesClick: (species: CuratedSpeciesItem, displayName: string, photos: string[]) => void;
 }> = ({
   items,
   isCurator,
