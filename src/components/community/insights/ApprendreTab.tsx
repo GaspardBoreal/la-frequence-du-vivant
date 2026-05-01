@@ -61,14 +61,6 @@ const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explo
     if (userId) trackActivity(userId, 'tab_switch', `tab:apprendre:${sub}`, { explorationId });
   }, [trackActivity, explorationId, userId]);
 
-  const { cards, byCategory, isLoading } = useInsightCards({
-    userLevel,
-    eventType,
-    angle: activeAngle,
-    view: 'empreinte',
-    displayMode: 'full',
-  });
-
   const toggleCard = (id: string) => {
     setExpandedCards(prev => {
       const next = new Set(prev);
