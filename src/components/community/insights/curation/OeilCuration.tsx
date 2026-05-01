@@ -63,18 +63,18 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   const handleOpenEvidence = React.useCallback(
     (curation: ExplorationCuration, displayName: string) => {
-      // Tenter de retrouver l'espèce pour le nom scientifique
-      const species = curation.entity_id
-        ? undefined
-        : undefined;
+      const species =
+        curation.entity_id && pool
+          ? pool.find((s) => s.key.toLowerCase() === curation.entity_id!.toLowerCase())
+          : undefined;
       setEvidenceFor({
         curation,
         displayName,
-        scientificName: null,
+        scientificName: species?.scientificName ?? null,
         entityId: curation.entity_id,
       });
     },
-    [],
+    [pool],
   );
 
   // Apply category filter on a list of {species, curation}
