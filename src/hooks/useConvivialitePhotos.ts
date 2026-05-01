@@ -60,12 +60,27 @@ export function useCanUploadConvivialite(
   userId: string | undefined,
   explorationId: string | undefined,
   userRole?: string | null,
+  isAdmin?: boolean,
 ) {
-  // Fast client-side guard. Server still enforces via RLS.
-  const allowedRoles = ['ambassadeur', 'sentinelle'];
-  return {
-    canUpload: !!userId && !!explorationId && allowedRoles.includes(userRole || ''),
-  };
+  const query = useQuery({
+    queryKey: ['can-upload-convivialite', userId, explorationId, userRole, isAdmin],
+    queryFn: async (): Promise<boolean> => {
+      if (!userId || !explorationId) return false;
+      // Fast positive paths (also enforced server-side by RLS)
+      if (isAdmin) return true;
+      if (['ambassadeur', 'sentinelle'].includes(userRole || '')) return true;
+      // Server check for organizer status
+      const { data, error } = await (supabase as any).rpc('can_upload_convivialite', {
+        _user_id: userId,
+        _exploration_id: explorationId,
+      });
+      if (error) return false;
+      return !!data;
+    },
+    enabled: !!userId && !!explorationId,
+    staleTime: 5 * 60 * 1000,
+  });
+  return { canUpload: !!query.data };
 }
 
 async function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
