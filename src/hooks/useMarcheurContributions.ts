@@ -60,40 +60,35 @@ type SortOrder = 'desc' | 'asc';
 async function uploadFile(userId: string, file: File, folder: string): Promise<string> {
   let processedFile = file;
 
-  // Convert HEIF/HEIC to JPEG for browser compatibility (dynamic import to avoid blocking on Android)
-  if (file.name.match(/\.(heif|heic)$/i) || (file.type || '').toLowerCase().includes('heic') || (file.type || '').toLowerCase().includes('heif')) {
+  // Conversion HEIC/HEIF robuste (cascade de stratégies, fail-fast).
+  // On ne tente la conversion que pour les fichiers de type image.
+  const looksImage = (file.type || '').startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp|tiff|heic|heif)$/i.test(file.name);
+  if (looksImage && (await isHeic(file))) {
     try {
-      const { default: heic2any } = await import('heic2any');
-      const convertPromise = heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Conversion HEIC timeout (30s)')), 30000)
-      );
-      const blob = await Promise.race([convertPromise, timeoutPromise]);
-      const jpegBlob = Array.isArray(blob) ? blob[0] : blob;
-      processedFile = new File(
-        [jpegBlob],
-        file.name.replace(/\.(heif|heic)$/i, '.jpeg'),
-        { type: 'image/jpeg' }
-      );
+      processedFile = await convertHeicToJpeg(file);
     } catch (err) {
-      console.warn('⚠️ Conversion HEIC échouée, upload du fichier original:', err);
-      // Fallback: on uploade le fichier original sans conversion
+      if (err instanceof HeicConversionError) {
+        // Politique stricte : on n'uploade JAMAIS un .heic non converti
+        // (illisible sur Android/desktop). Erreur explicite à l'utilisateur.
+        throw new Error(HEIC_USER_MESSAGE);
+      }
+      throw err;
     }
   }
 
   const ext = processedFile.name.split('.').pop() || 'bin';
   const path = `${userId}/${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  
+
   const { error } = await supabase.storage
     .from('marcheur-uploads')
     .upload(path, processedFile, { cacheControl: '3600', upsert: false });
-  
+
   if (error) throw error;
-  
+
   const { data: { publicUrl } } = supabase.storage
     .from('marcheur-uploads')
     .getPublicUrl(path);
-  
+
   return publicUrl;
 }
 
