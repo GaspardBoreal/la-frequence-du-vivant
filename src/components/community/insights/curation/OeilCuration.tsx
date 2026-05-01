@@ -12,6 +12,7 @@ import {
   isAnalysisStale,
 } from '@/hooks/useExplorationAiAnalysis';
 import { useExplorationManualSpecies } from '@/hooks/useExplorationManualSpecies';
+import { useExplorationMarchesGpsStatus } from '@/hooks/useExplorationMarchesGpsStatus';
 import PinToggle from './PinToggle';
 import ManualSpeciesModal from './ManualSpeciesModal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
