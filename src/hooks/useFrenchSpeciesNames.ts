@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface FrenchNameResolution {
   /** Best French display name (FR translation if available, else original common name, else scientific name) */
@@ -22,8 +21,6 @@ export interface FrenchNameResolution {
 export const useFrenchSpeciesNames = (
   species: Array<{ scientificName: string | null | undefined; commonName?: string | null }>
 ) => {
-  const { language } = useLanguage();
-
   // Stable, deduplicated, sorted list of scientific names → stable queryKey
   const sciNames = Array.from(
     new Set(
@@ -44,7 +41,7 @@ export const useFrenchSpeciesNames = (
   });
 
   return useQuery({
-    queryKey: ['fr-species-names', language, sciNames],
+    queryKey: ['fr-species-names', sciNames],
     queryFn: async (): Promise<Map<string, FrenchNameResolution>> => {
       const map = new Map<string, FrenchNameResolution>();
 
@@ -57,12 +54,6 @@ export const useFrenchSpeciesNames = (
       };
 
       if (sciNames.length === 0) return map;
-
-      // English: skip DB lookup, return originals
-      if (language === 'en') {
-        sciNames.forEach(sci => map.set(sci, buildFallback(sci)));
-        return map;
-      }
 
       // Single batch query — RLS policy "Anyone can view species translations" is public
       const { data, error } = await supabase
