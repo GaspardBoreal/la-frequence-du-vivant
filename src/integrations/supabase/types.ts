@@ -1057,6 +1057,7 @@ export type Database = {
           height: number | null
           id: string
           is_hidden: boolean
+          position: number
           storage_path: string
           taille_octets: number | null
           updated_at: string
@@ -1070,6 +1071,7 @@ export type Database = {
           height?: number | null
           id?: string
           is_hidden?: boolean
+          position?: number
           storage_path: string
           taille_octets?: number | null
           updated_at?: string
@@ -1083,6 +1085,7 @@ export type Database = {
           height?: number | null
           id?: string
           is_hidden?: boolean
+          position?: number
           storage_path?: string
           taille_octets?: number | null
           updated_at?: string
@@ -4163,6 +4166,10 @@ export type Database = {
         Returns: string
       }
       remove_admin_user: { Args: { target_user_id: string }; Returns: boolean }
+      reorder_convivialite_photos: {
+        Args: { _exploration_id: string; _ordered_ids: string[] }
+        Returns: undefined
+      }
       shares_marche_event: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
