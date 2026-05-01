@@ -989,6 +989,44 @@ export type Database = {
           },
         ]
       }
+      exploration_ai_analyses: {
+        Row: {
+          analyzed_at: string
+          created_by: string | null
+          exploration_id: string
+          id: string
+          model: string
+          species_analyzed_count: number
+          summary: Json | null
+        }
+        Insert: {
+          analyzed_at?: string
+          created_by?: string | null
+          exploration_id: string
+          id?: string
+          model: string
+          species_analyzed_count?: number
+          summary?: Json | null
+        }
+        Update: {
+          analyzed_at?: string
+          created_by?: string | null
+          exploration_id?: string
+          id?: string
+          model?: string
+          species_analyzed_count?: number
+          summary?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_ai_analyses_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exploration_clicks: {
         Row: {
           action: string
@@ -1143,6 +1181,9 @@ export type Database = {
       }
       exploration_curations: {
         Row: {
+          ai_criteria: Json | null
+          ai_reason: string | null
+          ai_score: number | null
           category: string | null
           created_at: string
           created_by: string | null
@@ -1154,10 +1195,14 @@ export type Database = {
           id: string
           media_ids: string[] | null
           sense: Database["public"]["Enums"]["curation_sense"]
+          source: string
           title: string | null
           updated_at: string
         }
         Insert: {
+          ai_criteria?: Json | null
+          ai_reason?: string | null
+          ai_score?: number | null
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -1169,10 +1214,14 @@ export type Database = {
           id?: string
           media_ids?: string[] | null
           sense: Database["public"]["Enums"]["curation_sense"]
+          source?: string
           title?: string | null
           updated_at?: string
         }
         Update: {
+          ai_criteria?: Json | null
+          ai_reason?: string | null
+          ai_score?: number | null
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -1184,6 +1233,7 @@ export type Database = {
           id?: string
           media_ids?: string[] | null
           sense?: Database["public"]["Enums"]["curation_sense"]
+          source?: string
           title?: string | null
           updated_at?: string
         }
@@ -1289,6 +1339,81 @@ export type Database = {
             columns: ["narrative_id"]
             isOneToOne: false
             referencedRelation: "narrative_landscapes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exploration_manual_species: {
+        Row: {
+          comment: string | null
+          common_name: string
+          created_at: string
+          created_by: string | null
+          exploration_id: string
+          gbif_taxon_key: number | null
+          group_taxon: string | null
+          id: string
+          marche_event_id: string | null
+          observed_at: string
+          observer_name: string | null
+          photo_lat: number | null
+          photo_lng: number | null
+          photo_url: string
+          scientific_name: string | null
+          source_mode: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          common_name: string
+          created_at?: string
+          created_by?: string | null
+          exploration_id: string
+          gbif_taxon_key?: number | null
+          group_taxon?: string | null
+          id?: string
+          marche_event_id?: string | null
+          observed_at?: string
+          observer_name?: string | null
+          photo_lat?: number | null
+          photo_lng?: number | null
+          photo_url: string
+          scientific_name?: string | null
+          source_mode?: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          common_name?: string
+          created_at?: string
+          created_by?: string | null
+          exploration_id?: string
+          gbif_taxon_key?: number | null
+          group_taxon?: string | null
+          id?: string
+          marche_event_id?: string | null
+          observed_at?: string
+          observer_name?: string | null
+          photo_lat?: number | null
+          photo_lng?: number | null
+          photo_url?: string
+          scientific_name?: string | null
+          source_mode?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_manual_species_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exploration_manual_species_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
             referencedColumns: ["id"]
           },
         ]
@@ -4198,6 +4323,7 @@ export type Database = {
         Args: { _exploration_id: string; _user_id: string }
         Returns: boolean
       }
+      is_exploration_curator: { Args: { _user_id: string }; Returns: boolean }
       is_system_initialized: { Args: never; Returns: boolean }
       match_documents: {
         Args: { filter?: Json; match_count?: number; query_embedding: string }
