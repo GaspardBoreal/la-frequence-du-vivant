@@ -542,6 +542,7 @@ const SpeciesGrid: React.FC<{
   upsert: ReturnType<typeof useUpsertCuration>;
   translationMap: Map<string, SpeciesTranslation>;
   onSpeciesClick: (species: CuratedSpeciesItem, displayName: string, photos: string[]) => void;
+  onOpenEvidence?: (curation: ExplorationCuration, displayName: string) => void;
 }> = ({
   items,
   isCurator,
@@ -551,6 +552,7 @@ const SpeciesGrid: React.FC<{
   upsert,
   translationMap,
   onSpeciesClick,
+  onOpenEvidence,
 }) => {
   if (items.length === 0) {
     return (
