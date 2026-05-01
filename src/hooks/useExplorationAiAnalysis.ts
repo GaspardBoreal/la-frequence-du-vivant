@@ -53,12 +53,26 @@ export const useTriggerAiAnalysis = () => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      return data as { analyzed: number; model: string };
+      return data as {
+        analyzed: number;
+        model?: string;
+        marches_total?: number;
+        marches_with_gps?: number;
+        marches_with_snapshots?: number;
+        message?: string;
+        status?: 'ok' | 'no_marches' | 'no_gps' | 'no_snapshots' | 'empty_pool';
+      };
     },
     onSuccess: (data, explorationId) => {
       qc.invalidateQueries({ queryKey: ['exploration-ai-analysis', explorationId] });
       qc.invalidateQueries({ queryKey: ['exploration-curations', explorationId] });
-      toast.success(`Analyse IA terminée — ${data.analyzed} espèces caractérisées`);
+
+      if (data.analyzed > 0) {
+        toast.success(`Analyse IA terminée — ${data.analyzed} espèces caractérisées`);
+      } else {
+        // Cas "rien à analyser" : message informatif renvoyé par l'edge function
+        toast.info(data.message || "Rien à analyser pour le moment.");
+      }
     },
     onError: (e: any) => {
       const msg = e?.message || 'Échec de l’analyse IA';
