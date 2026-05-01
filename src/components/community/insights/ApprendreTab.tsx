@@ -11,6 +11,7 @@ import type { InsightAngle, InsightEventType, InsightCategory, InsightCard } fro
 import { CATEGORY_CONFIG, getLevelRank } from '@/lib/insightLevels';
 import { LIVING_PILLARS, ROLE_MISSIONS, type LivingPillarKey } from '@/lib/marchesVivantFramework';
 import ValorizationBlock from './ValorizationBlock';
+import CeQueNousAvonsVu from './curation/CeQueNousAvonsVu';
 
 function getIcon(name: string): React.FC<any> {
   return (LucideIcons as any)[name] || Lightbulb;
