@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import exifr from 'exifr';
+import { convertHeicToJpeg, isHeic, HeicConversionError, HEIC_USER_MESSAGE } from '@/utils/heicConverter';
 
 
 // ─── Types ───
