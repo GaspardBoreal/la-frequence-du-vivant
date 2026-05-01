@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Eye, Search, Sparkles, ImageOff, X, Plus, Wand2, Loader2, Star, Hand } from 'lucide-react';
+import { Eye, Search, Sparkles, X, Plus, Wand2, Loader2, Hand } from 'lucide-react';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import {
   useExplorationCurations,
@@ -13,12 +13,15 @@ import {
 } from '@/hooks/useExplorationAiAnalysis';
 import { useExplorationManualSpecies } from '@/hooks/useExplorationManualSpecies';
 import { useExplorationMarchesGpsStatus } from '@/hooks/useExplorationMarchesGpsStatus';
-import PinToggle from './PinToggle';
+import { useSpeciesTranslationBatch, type SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import ManualSpeciesModal from './ManualSpeciesModal';
+import CuratedSpeciesCard, { type CuratedSpeciesItem } from './CuratedSpeciesCard';
+import SpeciesDetailModal from '@/components/biodiversity/SpeciesDetailModal';
+import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 interface Props {
   explorationId: string;
