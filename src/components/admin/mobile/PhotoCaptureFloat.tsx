@@ -190,7 +190,7 @@ if (!embedded) setIsOpen(false);
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileSelect}
-                accept="image/*"
+                accept="image/*,.heic,.heif,.HEIC,.HEIF"
                 className="hidden"
               />
             </div>
@@ -316,7 +316,7 @@ if (!embedded) setIsOpen(false);
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileSelect}
-                    accept="image/*"
+                    accept="image/*,.heic,.heif,.HEIC,.HEIF"
                     className="hidden"
                   />
                 </div>
