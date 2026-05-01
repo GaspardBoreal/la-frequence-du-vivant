@@ -280,8 +280,8 @@ const MarcheEventDetail: React.FC = () => {
           </h1>
         </div>
 
-        {!isNew ? (
-          <Tabs defaultValue="informations" className="w-full">
+        <Tabs defaultValue="informations" className="w-full">
+          {!isNew && (
             <TabsList className="w-full justify-start">
               <TabsTrigger value="informations">Informations</TabsTrigger>
               <TabsTrigger value="parcours" className="flex items-center gap-1.5">
@@ -293,7 +293,8 @@ const MarcheEventDetail: React.FC = () => {
                 Empreinte Vivante
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="informations" className="space-y-6 mt-4">
+          )}
+          <TabsContent value="informations" className="space-y-6 mt-4">
 
         {/* Form */}
         <Card className="p-6">
