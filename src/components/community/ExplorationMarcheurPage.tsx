@@ -4,8 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, PenLine, Leaf, TreePine, GraduationCap, Sparkles } from 'lucide-react';
-import ConvivialiteImmersiveView from './exploration/convivialite/ConvivialiteImmersiveView';
+import { ArrowLeft, MapPin, Footprints, Users, Map, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, PenLine, Leaf, TreePine, GraduationCap, Sparkles } from 'lucide-react';
+import ConvivialiteContent from './exploration/convivialite/ConvivialiteContent';
 import LireDescriptionsTab from './exploration/LireDescriptionsTab';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
@@ -21,17 +21,21 @@ import ApprendreTab from './insights/ApprendreTab';
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
 
-type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite' | 'apprendre' | 'convivialite';
+type GlobalTab = 'carte' | 'marcheurs' | 'marches' | 'biodiversite' | 'apprendre';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'ecrire' | 'vivant';
+type MarcheursSubTab = 'convivialite' | 'profils';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
   { key: 'carte', label: 'Carte', icon: Map },
+  { key: 'marcheurs', label: 'Marcheurs', icon: Users },
   { key: 'marches', label: 'Marches', icon: Footprints },
   { key: 'biodiversite', label: 'Empreinte', icon: TreePine },
   { key: 'apprendre', label: 'Apprendre', icon: GraduationCap },
-  { key: 'marcheurs', label: 'Marcheurs', icon: Users },
+];
+
+const marcheursSubTabs: { key: MarcheursSubTab; label: string; icon: typeof Users }[] = [
   { key: 'convivialite', label: 'Convivialité', icon: Sparkles },
-  { key: 'messages', label: 'Messages', icon: MessageCircle },
+  { key: 'profils', label: 'Profils', icon: Users },
 ];
 
 const sensoryTabs: { key: SensoryTab; label: string; icon: typeof Eye }[] = [
@@ -65,7 +69,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   const [activeGlobalTab, setActiveGlobalTab] = useState<GlobalTab>('carte');
   const [activeSensoryTab, setActiveSensoryTab] = useState<SensoryTab>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const [convivialiteOpen, setConvivialiteOpen] = useState(false);
+  const [activeMarcheursSubTab, setActiveMarcheursSubTab] = useState<MarcheursSubTab>('convivialite');
   const { trackActivity } = useActivityTracker();
 
   // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
@@ -254,11 +258,6 @@ const ExplorationMarcheurPage: React.FC = () => {
                 <button
                   key={tab.key}
                   onClick={() => {
-                    if (tab.key === 'convivialite') {
-                      setConvivialiteOpen(true);
-                      if (userId) trackActivity(userId, 'tab_switch', `tab:convivialite`, { explorationId: explorationId || undefined });
-                      return;
-                    }
                     setActiveGlobalTab(tab.key);
                     if (userId) trackActivity(userId, 'tab_switch', `tab:${tab.key}`, { explorationId: explorationId || undefined });
                   }}
@@ -283,11 +282,8 @@ const ExplorationMarcheurPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Content — l'onglet de fond n'est PAS rendu quand l'overlay Convivialité est ouvert :
-          évite que les contrôles fixed/absolute des autres onglets (Carte : FAB photo, "+ point de marche",
-          barre stats, sélecteur Géo/Sat/Relief...) ne transparaissent par-dessus la mosaïque. */}
-      <div className="max-w-4xl mx-auto px-4 py-4" aria-hidden={convivialiteOpen}>
-        {!convivialiteOpen && (
+      {/* Content */}
+      <div className="max-w-4xl mx-auto px-4 py-4">
         <AnimatePresence mode="wait">
           {activeGlobalTab === 'marches' && (
             <motion.div
@@ -390,11 +386,63 @@ const ExplorationMarcheurPage: React.FC = () => {
 
           {activeGlobalTab === 'marcheurs' && (
             <motion.div key="marcheurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <MarcheursTab
-                explorationId={effectiveExplorationId || undefined}
-                marcheEventId={marcheEventId || undefined}
-                explorationName={exploration?.name}
-              />
+              {/* Sub-tabs : Convivialité / Profils */}
+              <div className="flex border-b border-border dark:border-white/10 mb-4">
+                {marcheursSubTabs.map(sub => {
+                  const Icon = sub.icon;
+                  const isActive = activeMarcheursSubTab === sub.key;
+                  return (
+                    <button
+                      key={sub.key}
+                      onClick={() => {
+                        setActiveMarcheursSubTab(sub.key);
+                        if (userId) trackActivity(userId, 'tab_switch', `tab:marcheurs:${sub.key}`, { explorationId: effectiveExplorationId || undefined });
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
+                        isActive
+                          ? 'text-emerald-600 dark:text-emerald-300'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {sub.label}
+                      {isActive && (
+                        <motion.div
+                          layoutId="marcheurs-subtab-indicator"
+                          className="absolute bottom-0 left-2 right-2 h-0.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeMarcheursSubTab}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {activeMarcheursSubTab === 'convivialite' ? (
+                    <ConvivialiteContent
+                      explorationId={effectiveExplorationId || undefined}
+                      explorationName={exploration?.name}
+                      userId={userId}
+                      userRole={userLevel}
+                      isAdmin={isAdmin}
+                      variant="inline"
+                    />
+                  ) : (
+                    <MarcheursTab
+                      explorationId={effectiveExplorationId || undefined}
+                      marcheEventId={marcheEventId || undefined}
+                      explorationName={exploration?.name}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -453,28 +501,8 @@ const ExplorationMarcheurPage: React.FC = () => {
               />
             </motion.div>
           )}
-
-          {activeGlobalTab === 'messages' && (
-            <ComingSoonPlaceholder
-              key="messages"
-              icon={MessageCircle}
-              title="Messages partagés"
-              description="Échangez notes, commentaires et impressions avec les autres marcheurs de cette exploration."
-            />
-          )}
         </AnimatePresence>
-        )}
       </div>
-
-      <ConvivialiteImmersiveView
-        open={convivialiteOpen}
-        onClose={() => setConvivialiteOpen(false)}
-        explorationId={effectiveExplorationId || undefined}
-        explorationName={exploration?.name}
-        userId={userId}
-        userRole={userLevel}
-        isAdmin={isAdmin}
-      />
     </div>
   );
 };
