@@ -4,8 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, PenLine, Leaf, TreePine, GraduationCap, Sparkles } from 'lucide-react';
-import ConvivialiteImmersiveView from './exploration/convivialite/ConvivialiteImmersiveView';
+import { ArrowLeft, MapPin, Footprints, Users, Map, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, PenLine, Leaf, TreePine, GraduationCap, Sparkles } from 'lucide-react';
+import ConvivialiteContent from './exploration/convivialite/ConvivialiteContent';
 import LireDescriptionsTab from './exploration/LireDescriptionsTab';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
@@ -21,17 +21,21 @@ import ApprendreTab from './insights/ApprendreTab';
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
 
-type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite' | 'apprendre' | 'convivialite';
+type GlobalTab = 'carte' | 'marcheurs' | 'marches' | 'biodiversite' | 'apprendre';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'ecrire' | 'vivant';
+type MarcheursSubTab = 'convivialite' | 'profils';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
   { key: 'carte', label: 'Carte', icon: Map },
+  { key: 'marcheurs', label: 'Marcheurs', icon: Users },
   { key: 'marches', label: 'Marches', icon: Footprints },
   { key: 'biodiversite', label: 'Empreinte', icon: TreePine },
   { key: 'apprendre', label: 'Apprendre', icon: GraduationCap },
-  { key: 'marcheurs', label: 'Marcheurs', icon: Users },
+];
+
+const marcheursSubTabs: { key: MarcheursSubTab; label: string; icon: typeof Users }[] = [
   { key: 'convivialite', label: 'Convivialité', icon: Sparkles },
-  { key: 'messages', label: 'Messages', icon: MessageCircle },
+  { key: 'profils', label: 'Profils', icon: Users },
 ];
 
 const sensoryTabs: { key: SensoryTab; label: string; icon: typeof Eye }[] = [
