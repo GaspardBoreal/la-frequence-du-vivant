@@ -441,6 +441,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             upsert={upsert}
             translationMap={translationMap}
             onSpeciesClick={handleSpeciesClick}
+            onOpenEvidence={handleOpenEvidence}
           />
         )}
 
