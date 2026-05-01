@@ -162,7 +162,19 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     [pool, curationByKey]
   );
 
-  const filteredPool = useMemo(() => {
+  // Phase 3 — espèces dont la classification automatique attend une validation humaine
+  const reviewItems = useMemo(
+    () =>
+      pool
+        .map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))
+        .filter(x => !!x.curation?.needs_review)
+        .sort(
+          (a, b) =>
+            (a.curation?.classification_confidence ?? 0) -
+            (b.curation?.classification_confidence ?? 0),
+        ),
+    [pool, curationByKey],
+  );
     const q = search.trim().toLowerCase();
     if (!q) return pool;
     return pool.filter(
