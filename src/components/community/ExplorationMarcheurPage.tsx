@@ -107,10 +107,10 @@ const ExplorationMarcheurPage: React.FC = () => {
 
   // Track page view on mount
   useEffect(() => {
-    if (effectiveExplorationId) {
-      trackActivity(userId!, 'page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
+    if (effectiveExplorationId && userId) {
+      trackActivity(userId, 'page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
     }
-  }, [effectiveExplorationId, trackActivity]);
+  }, [effectiveExplorationId, userId, trackActivity]);
 
   // Fetch exploration details
   const { data: exploration, isLoading: isLoadingExploration } = useQuery({
