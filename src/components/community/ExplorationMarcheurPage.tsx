@@ -461,8 +461,6 @@ const ExplorationMarcheurPage: React.FC = () => {
               description="Échangez notes, commentaires et impressions avec les autres marcheurs de cette exploration."
             />
           )}
-            </>
-          )}
         </AnimatePresence>
       </div>
 
