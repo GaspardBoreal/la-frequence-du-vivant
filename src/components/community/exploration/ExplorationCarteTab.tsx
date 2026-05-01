@@ -792,6 +792,36 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     }
   }, [isTracking, nearestStep]);
 
+  // Defaults for the create-marche drawer
+  const marcheDefaults = useMemo(
+    () => computeMarcheDefaults(marches, marcheEventDate, marcheEventLieu),
+    [marches, marcheEventDate, marcheEventLieu],
+  );
+
+  const handleStartCreate = useCallback(() => {
+    if (!userCanCreate || !explorationId) return;
+    const lat = marcheDefaults.centerLat ?? userLocation?.[0] ?? null;
+    const lng = marcheDefaults.centerLng ?? userLocation?.[1] ?? null;
+    if (lat == null || lng == null) {
+      toast.error('Impossible de déterminer une position de départ');
+      return;
+    }
+    setCreatePosition({ lat, lng });
+    setIsCreatingMarche(true);
+    setShowDistances(false);
+  }, [userCanCreate, explorationId, marcheDefaults, userLocation]);
+
+  const handleCancelCreate = useCallback(() => {
+    setIsCreatingMarche(false);
+    setCreatePosition(null);
+    setDrawerOpen(false);
+  }, []);
+
+  const handleConfirmCreate = useCallback(() => {
+    if (!createPosition) return;
+    setDrawerOpen(true);
+  }, [createPosition]);
+
   if (geoMarches.length === 0) {
     return (
       <motion.div
