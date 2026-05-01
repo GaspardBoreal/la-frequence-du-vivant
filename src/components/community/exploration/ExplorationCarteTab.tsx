@@ -483,6 +483,59 @@ function DistancePanel({
 
 const TRACKING_TIMEOUT_MS = 10 * 60 * 1000; // 10 min auto-stop
 
+// Draggable amber marker for the "create marche" mode
+function DraggableCreateMarker({
+  position,
+  onChange,
+}: {
+  position: { lat: number; lng: number };
+  onChange: (p: { lat: number; lng: number }) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const icon = L.divIcon({
+      className: 'create-marche-marker',
+      html: `
+        <div style="position:relative;width:36px;height:36px;">
+          <div style="position:absolute;inset:-8px;border-radius:50%;background:rgba(251,191,36,0.18);animation:gps-pulse 2s ease-out infinite;"></div>
+          <div style="
+            width:36px;height:36px;border-radius:50%;
+            background:linear-gradient(135deg,#fbbf24,#f59e0b);
+            border:3px solid white;
+            box-shadow:0 4px 14px rgba(251,191,36,0.5);
+            display:flex;align-items:center;justify-content:center;
+            color:white;font-weight:700;font-size:20px;line-height:1;
+            cursor:grab;
+          ">+</div>
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
+    });
+
+    const marker = L.marker([position.lat, position.lng], {
+      icon,
+      draggable: true,
+      autoPan: true,
+    });
+    marker.on('dragend', () => {
+      const ll = marker.getLatLng();
+      onChange({ lat: ll.lat, lng: ll.lng });
+    });
+    marker.addTo(map);
+
+    map.flyTo([position.lat, position.lng], Math.max(map.getZoom(), 13), { duration: 0.6 });
+
+    return () => {
+      map.removeLayer(marker);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
+
+  return null;
+}
+
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   explorationId,
   explorationName,
