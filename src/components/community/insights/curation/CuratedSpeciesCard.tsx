@@ -76,6 +76,10 @@ const CuratedSpeciesCard: React.FC<Props> = ({
   const isPinned = !!curation && curation.display_order < 9999;
   const stars = scoreToStars(curation?.ai_score);
   const category = curation?.category || null;
+  const secondaries = (curation?.secondary_categories ?? []) as string[];
+  const evidence = (curation?.classification_evidence ?? []) as any[];
+  const needsReview = !!curation?.needs_review;
+  const hasEvidence = evidence.length > 0 || !!curation?.classification_source;
 
   const displayName =
     species.displayName ||
