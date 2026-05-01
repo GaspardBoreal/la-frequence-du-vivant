@@ -12,6 +12,7 @@ import {
   isAnalysisStale,
 } from '@/hooks/useExplorationAiAnalysis';
 import { useExplorationManualSpecies } from '@/hooks/useExplorationManualSpecies';
+import { useExplorationMarchesGpsStatus } from '@/hooks/useExplorationMarchesGpsStatus';
 import PinToggle from './PinToggle';
 import ManualSpeciesModal from './ManualSpeciesModal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -50,6 +51,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const { data: curations = [] } = useExplorationCurations(explorationId, 'oeil');
   const { data: manual = [] } = useExplorationManualSpecies(explorationId);
   const { data: lastAnalysis } = useLatestAiAnalysis(explorationId);
+  const { data: gpsStatus } = useExplorationMarchesGpsStatus(explorationId);
   const triggerAi = useTriggerAiAnalysis();
   const upsert = useUpsertCuration();
 
@@ -110,42 +112,75 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       <div className="space-y-4">
         {/* Header actions */}
         {isCurator && (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-gradient-to-br from-amber-500/5 to-transparent p-3">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              {lastAnalysis ? (
-                <>
-                  Dernière analyse :{' '}
-                  <span className="font-medium text-foreground">
-                    {new Date(lastAnalysis.analyzed_at).toLocaleDateString('fr-FR')}
+          <div className="rounded-xl border border-border bg-gradient-to-br from-amber-500/5 to-transparent p-3 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                {lastAnalysis ? (
+                  <span className="truncate">
+                    Dernière analyse :{' '}
+                    <span className="font-medium text-foreground">
+                      {new Date(lastAnalysis.analyzed_at).toLocaleDateString('fr-FR')}
+                    </span>
+                    {' · '}
+                    {lastAnalysis.species_analyzed_count} espèces
+                    {stale && <span className="ml-1 text-amber-600">(à actualiser)</span>}
                   </span>
-                  {' · '}
-                  {lastAnalysis.species_analyzed_count} espèces
-                  {stale && <span className="ml-1 text-amber-600">(à actualiser)</span>}
-                </>
-              ) : (
-                <>Aucune analyse IA effectuée pour le moment.</>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleAi}
-                disabled={triggerAi.isPending || pool.length === 0}
-              >
-                {triggerAi.isPending ? (
-                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                 ) : (
-                  <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                  <span>Aucune analyse IA effectuée pour le moment.</span>
                 )}
-                {lastAnalysis ? 'Relancer l’analyse IA' : 'Lancer l’analyse IA'}
-              </Button>
-              <Button size="sm" onClick={() => setShowManualModal(true)}>
-                <Plus className="w-3.5 h-3.5 mr-1.5" />
-                Espèce terrain
-              </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAi}
+                  disabled={triggerAi.isPending}
+                >
+                  {triggerAi.isPending ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                  )}
+                  {lastAnalysis ? 'Relancer l’analyse IA' : 'Lancer l’analyse IA'}
+                </Button>
+                <Button size="sm" onClick={() => setShowManualModal(true)}>
+                  <Plus className="w-3.5 h-3.5 mr-1.5" />
+                  Espèce terrain
+                </Button>
+              </div>
             </div>
+
+            {/* Diagnostic GPS / snapshots */}
+            {gpsStatus && pool.length === 0 && (
+              <div className="text-[11px] leading-relaxed text-muted-foreground border-t border-border/50 pt-2">
+                {gpsStatus.total === 0 && (
+                  <span>
+                    Aucune marche dans cette exploration. Crée d'abord une marche dans l'onglet{' '}
+                    <span className="font-medium text-foreground">Marches</span>.
+                  </span>
+                )}
+                {gpsStatus.total > 0 && gpsStatus.withGps === 0 && (
+                  <span>
+                    <span className="font-medium text-amber-600">{gpsStatus.total} marche(s)</span> sans coordonnées GPS.
+                    Renseigne la latitude/longitude dans l'onglet Marches pour activer l'analyse iNaturalist.
+                  </span>
+                )}
+                {gpsStatus.total > 0 && gpsStatus.withGps > 0 && gpsStatus.withSnapshots === 0 && (
+                  <span>
+                    {gpsStatus.withGps} marche(s) géolocalisée(s), mais la collecte biodiversité n'a pas encore tourné.
+                    Ouvre l'onglet <span className="font-medium text-foreground">Empreinte</span> ou{' '}
+                    <span className="font-medium text-foreground">Carte</span> sur chaque marche pour la déclencher,
+                    puis clique sur « Lancer l'analyse IA ».
+                  </span>
+                )}
+                {gpsStatus.total > 0 && gpsStatus.withSnapshots > 0 && (
+                  <span>
+                    Données disponibles sur {gpsStatus.withSnapshots}/{gpsStatus.total} marches. Clique sur l'analyse IA pour la lancer.
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
 
