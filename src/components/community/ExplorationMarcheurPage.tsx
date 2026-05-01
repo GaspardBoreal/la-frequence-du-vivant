@@ -283,9 +283,10 @@ const ExplorationMarcheurPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-4">
+      {/* Content — masqué quand l'overlay Convivialité est ouvert pour éviter que ses contrôles fixed (FAB, sheets) ne transparaissent */}
+      <div className={`max-w-4xl mx-auto px-4 py-4 ${convivialiteOpen ? 'invisible pointer-events-none' : ''}`} aria-hidden={convivialiteOpen}>
         <AnimatePresence mode="wait">
+          {!convivialiteOpen && (<></>)}
           {activeGlobalTab === 'marches' && (
             <motion.div
               key="marches"
