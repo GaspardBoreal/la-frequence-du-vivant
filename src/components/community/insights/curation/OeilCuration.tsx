@@ -49,8 +49,24 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   const [view, setView] = useState<View>('selection');
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+
+  // Apply category filter on a list of {species, curation}
+  const applyCategoryFilter = <T extends { curation?: ExplorationCuration }>(items: T[]): T[] => {
+    if (!categoryFilter) return items;
+    return items.filter(x => x.curation?.category === categoryFilter);
+  };
+
+  // Counts of categories across all curated items (selection + suggestions)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    curations.forEach(c => {
+      if (c.category) counts[c.category] = (counts[c.category] || 0) + 1;
+    });
+    return counts;
+  }, [curations]);
 
   // Batch FR translations for the whole observed pool (single network round)
   const speciesForTranslation = useMemo(
