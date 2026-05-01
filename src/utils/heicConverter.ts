@@ -187,7 +187,35 @@ export async function convertHeicToJpeg(
   throw new HeicConversionError(attempts);
 }
 
+/**
+ * Fast preview-only conversion: low quality, single strategy, short timeout.
+ * Used to display a thumbnail in upload UIs without blocking the user for 30s.
+ * Returns null on failure (caller falls back to a placeholder).
+ */
+export async function convertHeicForPreview(file: File): Promise<File | null> {
+  if (!(await isHeic(file))) return file;
+  const PREVIEW_TIMEOUT = 12000;
+
+  // Safari iOS: native canvas decode is by far the fastest path
+  if (isSafariIOS()) {
+    try {
+      return await withTimeout(convertViaCanvas(file, 0.7), PREVIEW_TIMEOUT, 'preview-canvas');
+    } catch (e) {
+      console.warn('[HEIC preview] canvas natif KO', e);
+    }
+  }
+
+  // Otherwise heic-to (WASM) at low quality
+  try {
+    return await withTimeout(convertWithHeicTo(file, 0.6), PREVIEW_TIMEOUT, 'preview-heic-to');
+  } catch (e) {
+    console.warn('[HEIC preview] heic-to KO', e);
+    return null;
+  }
+}
+
 /** Friendly message shown to walkers when conversion fails. */
 export const HEIC_USER_MESSAGE =
   "Cette photo iPhone (HEIC) n'a pas pu être convertie. " +
   'Astuce : sur votre iPhone, allez dans Réglages → Appareil photo → Formats, et choisissez "Le plus compatible" pour prendre des photos en JPEG.';
+
