@@ -70,15 +70,9 @@ const ExplorationMarcheurPage: React.FC = () => {
   const directMarcheEventId = isEventFallback ? rawParam.replace('event-', '') : null;
   const explorationId = isEventFallback ? null : rawParam;
 
-  // Get current user
-  const { data: session } = useQuery({
-    queryKey: ['session-exploration'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getSession();
-      return data.session;
-    },
-  });
-  const userId = session?.user?.id;
+  // Live auth state (subscribed to onAuthStateChange) — avoids stale userId after token refresh
+  const { user, isLoading: authLoading, isAdmin } = useAuth();
+  const userId = user?.id;
 
   // Get community profile for level
   const { data: communityProfile } = useQuery({
@@ -94,7 +88,6 @@ const ExplorationMarcheurPage: React.FC = () => {
     enabled: !!userId,
   });
   const userLevel = (communityProfile?.role as any) || 'marcheur';
-  const { isAdmin } = useAuth();
 
   // Resolve exploration_id from marche_event if needed
   const { data: resolvedExplorationId } = useQuery({
