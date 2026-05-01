@@ -1065,7 +1065,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
       {/* Bottom panel: tracking banner, distance panel, or stats bar */}
       <AnimatePresence mode="wait">
-        {isCreatingMarche ? null : (
+        {isCreatingMarche ? null : isTracking && nearestStep ? (
           <ProximityBanner
             key="proximity"
             nearestName={nearestStep.name}
@@ -1109,6 +1109,26 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Create-marche drawer */}
+      {explorationId && (
+        <CreateMarcheDrawer
+          open={drawerOpen}
+          onOpenChange={(o) => {
+            setDrawerOpen(o);
+            if (!o && isCreatingMarche) {
+              // Closing drawer without creating: stay in mode so user can re-adjust
+            }
+          }}
+          position={createPosition}
+          defaultVille={marcheDefaults.defaultVille}
+          defaultDate={marcheDefaults.defaultDate}
+          explorationId={explorationId}
+          explorationName={explorationName}
+          marcheEventTitle={marcheEventTitle}
+          onCreated={handleCancelCreate}
+        />
+      )}
 
       {/* Custom popup style overrides */}
       <style>{`
