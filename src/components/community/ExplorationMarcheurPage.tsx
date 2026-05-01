@@ -13,6 +13,7 @@ import { useActivityTracker } from '@/hooks/useActivityTracker';
 import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import MarcheursTab from './exploration/MarcheursTab';
 import ExplorationCarteTab from './exploration/ExplorationCarteTab';
+import { useAuth } from '@/hooks/useAuth';
 import EventBiodiversityTab from './EventBiodiversityTab';
 import ApprendreTab from './insights/ApprendreTab';
 
@@ -93,6 +94,7 @@ const ExplorationMarcheurPage: React.FC = () => {
     enabled: !!userId,
   });
   const userLevel = (communityProfile?.role as any) || 'marcheur';
+  const { isAdmin } = useAuth();
 
   // Resolve exploration_id from marche_event if needed
   const { data: resolvedExplorationId } = useQuery({
@@ -398,6 +400,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                 marcheEventDate={marcheEvent?.date_marche || null}
                 marcheEventLieu={marcheEvent?.lieu || null}
                 userLevel={userLevel}
+                isAdmin={isAdmin}
                 marches={(explorationMarches || []).map((m, i) => ({
                   id: m.id,
                   nom_marche: m.nom_marche,

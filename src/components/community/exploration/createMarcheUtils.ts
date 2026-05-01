@@ -11,7 +11,11 @@ export interface MarcheLite {
 
 const ROLES_AUTHORIZED: CommunityRoleKey[] = ['ambassadeur', 'sentinelle'];
 
-export function canCreateMarche(role: string | null | undefined): boolean {
+export function canCreateMarche(
+  role: string | null | undefined,
+  isAdmin?: boolean,
+): boolean {
+  if (isAdmin) return true;
   if (!role) return false;
   return ROLES_AUTHORIZED.includes(role as CommunityRoleKey);
 }

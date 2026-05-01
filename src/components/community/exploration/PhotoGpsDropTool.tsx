@@ -1,4 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Marker, Popup, Circle } from 'react-leaflet';
 import L from 'leaflet';
@@ -42,16 +43,45 @@ const photoMarkerIcon = L.divIcon({
 });
 
 export function PhotoGpsButton({ onClick }: { onClick: () => void }) {
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('photo-gps-hint-seen') === '1') return;
+    } catch {}
+    setShowHint(true);
+    const t = setTimeout(() => {
+      setShowHint(false);
+      try { localStorage.setItem('photo-gps-hint-seen', '1'); } catch {}
+    }, 4500);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <button
-      onClick={onClick}
-      className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-rose-500/15 hover:border-rose-400/30 transition-all duration-200 active:scale-95 relative"
-      aria-label="Localiser une photo GPS"
-      title="Déposer une photo pour voir sa position GPS"
-    >
-      <Camera className="w-4 h-4" />
-      <MapPin className="w-2 h-2 absolute bottom-1.5 right-1.5 text-rose-400" />
-    </button>
+    <div className="relative flex items-center">
+      <AnimatePresence>
+        {showHint && (
+          <motion.div
+            initial={{ opacity: 0, x: 6 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 6 }}
+            className="absolute right-12 top-1/2 -translate-y-1/2 whitespace-nowrap bg-black/75 backdrop-blur-xl border border-rose-400/30 text-rose-100 text-[10px] font-medium px-2.5 py-1.5 rounded-lg shadow-md pointer-events-none"
+          >
+            Photo GPS
+            <span className="absolute right-[-4px] top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-black/75 border-r border-t border-rose-400/30" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <button
+        onClick={() => { setShowHint(false); onClick(); }}
+        className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-rose-500/15 hover:border-rose-400/30 transition-all duration-200 active:scale-95 relative"
+        aria-label="Localiser une photo via ses données GPS"
+        title="Déposer une photo pour voir sa position GPS"
+      >
+        <Camera className="w-4 h-4" />
+        <MapPin className="w-2 h-2 absolute bottom-1.5 right-1.5 text-rose-400" />
+      </button>
+    </div>
   );
 }
 
