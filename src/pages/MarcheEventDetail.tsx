@@ -280,8 +280,8 @@ const MarcheEventDetail: React.FC = () => {
           </h1>
         </div>
 
-        {!isNew ? (
-          <Tabs defaultValue="informations" className="w-full">
+        <Tabs defaultValue="informations" className="w-full">
+          {!isNew && (
             <TabsList className="w-full justify-start">
               <TabsTrigger value="informations">Informations</TabsTrigger>
               <TabsTrigger value="parcours" className="flex items-center gap-1.5">
@@ -293,7 +293,8 @@ const MarcheEventDetail: React.FC = () => {
                 Empreinte Vivante
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="informations" className="space-y-6 mt-4">
+          )}
+          <TabsContent value="informations" className="space-y-6 mt-4">
 
         {/* Form */}
         <Card className="p-6">
@@ -603,31 +604,26 @@ const MarcheEventDetail: React.FC = () => {
           </Card>
         )}
 
-            </TabsContent>
-            <TabsContent value="empreinte" className="mt-4">
-              <EventBiodiversityTab
-                explorationId={event?.exploration_id || undefined}
-                marcheEventId={id || undefined}
-              />
-            </TabsContent>
-            <TabsContent value="parcours" className="mt-4">
-              <LivingPathOverview
-                eventTitle={event?.title}
-                eventDescription={event?.description}
-                eventType={event?.event_type}
-                marches={explorationMarches as any[] | undefined}
-              />
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <>
-            {/* Form for new event - rendered without tabs */}
-            <Card className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Informations</h2>
-              <p className="text-sm text-muted-foreground">Créez d'abord l'événement pour accéder à toutes les fonctionnalités.</p>
-            </Card>
-          </>
-        )}
+          </TabsContent>
+          {!isNew && (
+            <>
+              <TabsContent value="empreinte" className="mt-4">
+                <EventBiodiversityTab
+                  explorationId={event?.exploration_id || undefined}
+                  marcheEventId={id || undefined}
+                />
+              </TabsContent>
+              <TabsContent value="parcours" className="mt-4">
+                <LivingPathOverview
+                  eventTitle={event?.title}
+                  eventDescription={event?.description}
+                  eventType={event?.event_type}
+                  marches={explorationMarches as any[] | undefined}
+                />
+              </TabsContent>
+            </>
+          )}
+        </Tabs>
 
         <ConfirmDeleteDialog
           open={!!deletingParticipation}
