@@ -129,6 +129,7 @@ interface ExplorationCarteTabProps {
   marcheEventDate?: string | null;
   marcheEventLieu?: string | null;
   userLevel?: string;
+  isAdmin?: boolean;
   onSelectStep?: (index: number) => void;
 }
 
