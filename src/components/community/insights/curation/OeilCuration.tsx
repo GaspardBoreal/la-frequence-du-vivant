@@ -17,6 +17,7 @@ import { useSpeciesTranslationBatch, type SpeciesTranslation } from '@/hooks/use
 import ManualSpeciesModal from './ManualSpeciesModal';
 import CuratedSpeciesCard, { type CuratedSpeciesItem } from './CuratedSpeciesCard';
 import SpeciesDetailModal from '@/components/biodiversity/SpeciesDetailModal';
+import { CATEGORIES, getCatStyle, getCatLabel } from './curationCategories';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
