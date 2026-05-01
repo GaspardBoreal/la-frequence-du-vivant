@@ -1,87 +1,113 @@
-# Correctif : "Connectez-vous pour voir et gérer vos contributions" après création d'une marche
+# Galerie Convivialité — Mur immersif de l'exploration
 
-## Diagnostic
+Une galerie collective qui célèbre la dynamique humaine des marcheurs : visages, rires, partages, pauses. Visible par tous les marcheurs de l'exploration, alimentée uniquement par les Ambassadeurs et Sentinelles (gardiens de la mémoire vivante).
 
-Dans `src/components/community/ExplorationMarcheurPage.tsx` :
+## Expérience utilisateur
 
-```ts
-// Lignes 73-81 — source actuelle du userId
-const { data: session } = useQuery({
-  queryKey: ['session-exploration'],
-  queryFn: async () => {
-    const { data } = await supabase.auth.getSession();
-    return data.session;
-  },
-});
-const userId = session?.user?.id;
+### Entrée immersive
+Un nouvel onglet **"Convivialité"** (icône `Users` ou `Sparkles`) dans `ExplorationMarcheurPage`, à côté de Voir / Écouter / Lire / Vivant. Au clic, ouverture en **plein écran immersif** (sortie du layout standard) avec un fond sombre dégradé pour faire ressortir les photos.
+
+### Trois modes d'affichage (toggle haut-droite)
+
+```text
+┌─────────────────────────────────────────────────┐
+│  Convivialité — DEVIAT          [≡] [▶] [🖨]  ✕ │
+│                                                 │
+│   ┌────┐  ┌──────┐  ┌───┐  ┌────┐              │
+│   │ ph │  │ ph   │  │ph │  │ ph │              │
+│   └────┘  │      │  └───┘  └────┘              │
+│   ┌──────┐│      │  ┌──────────┐               │
+│   │ ph   │└──────┘  │ ph       │               │
+│   └──────┘          └──────────┘               │
+│                                                 │
+│   12 instants partagés par 5 marcheurs          │
+└─────────────────────────────────────────────────┘
 ```
 
-Puis ligne 355 :
-```tsx
-{!userId ? (
-  <div>Connectez-vous pour voir et gérer vos contributions.</div>
-) : ( ...VoirTab / EcouterTab / LireTab / VivantTab... )}
+1. **Mosaïque masonry** (par défaut) — colonnes responsives (2/3/4 selon viewport), hauteurs variables, animation `fade-in` cascadée à l'entrée, `hover-scale` léger, clic = lightbox plein écran avec navigation clavier (← → Esc).
+2. **Diaporama cinématique** — plein écran noir, transition crossfade 1.5s, effet Ken Burns (zoom lent + pan), lecture auto 5s/photo, contrôles flottants (pause, ⟵ ⟶, vitesse, sortie).
+3. **Mode impression** — layout A4 portrait, 6 photos par page, légende discrète "auteur · date", marges respectées, bouton "Imprimer" déclenche `window.print()` avec CSS `@media print` dédié.
+
+### Bouton d'upload (visible uniquement Ambassadeur/Sentinelle)
+Bouton flottant (FAB) glassmorphism en bas-droite : **"+ Ajouter un instant"**. Drawer multi-upload (drag & drop + sélecteur), aperçus, optimisation côté client, barre de progression. Pour les autres rôles, on affiche à la place un message poétique discret : *"Les Ambassadeurs et Sentinelles enrichissent ce mur de souvenirs."*
+
+### Signalement
+Au survol d'une photo, petite icône `Flag` discrète (en bas-droite de la vignette). Clic = modale "Signaler ce contenu" → raison libre 200 car. → notification admin. Photo masquée pour le signaleur immédiatement, retrait définitif par admin.
+
+## Architecture technique
+
+### Base de données
+
+Nouvelle table `exploration_convivialite_photos` :
+
+| Colonne | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `exploration_id` | uuid NOT NULL | FK explorations |
+| `user_id` | uuid NOT NULL | uploader (Ambassadeur/Sentinelle) |
+| `storage_path` | text NOT NULL | chemin dans le bucket |
+| `url` | text NOT NULL | URL publique |
+| `width`, `height` | int | pour le masonry sans CLS |
+| `taille_octets` | bigint | |
+| `is_hidden` | bool default false | masquage admin après signalement |
+| `created_at` | timestamptz | |
+
+Table `exploration_convivialite_signalements` :
+`id, photo_id, reporter_user_id, raison, created_at, resolved_at, resolved_by`.
+
+### Storage
+
+Nouveau bucket **public** `exploration-convivialite` (lecture publique, écriture via RLS). Chemins : `{exploration_id}/{user_id}/{uuid}.webp`. Optimisation client (max 1920px, WebP, ~85% qualité) pour rester sous ~500 Ko par photo.
+
+### RLS — règles clés
+
+- **SELECT** sur `exploration_convivialite_photos` : tout marcheur ayant une participation à un événement de l'exploration (réutilise la logique `shares_marche_event` adaptée à l'exploration via `marche_events.exploration_id`) + admins. Filtre `is_hidden = false` pour les non-admins.
+- **INSERT** : seulement si `community_profiles.role IN ('ambassadeur','sentinelle')` ET `user_id = auth.uid()`. Vérification via fonction `SECURITY DEFINER` `can_upload_convivialite(user_id, exploration_id)`.
+- **DELETE** : auteur de la photo OU admin.
+- **Signalements INSERT** : tout marcheur avec accès à l'exploration. SELECT/UPDATE : admin uniquement.
+- **Storage policies** miroir : INSERT bucket si `can_upload_convivialite`, DELETE si propriétaire ou admin, SELECT public (bucket public).
+
+### Composants front
+
+```text
+src/components/community/exploration/convivialite/
+  ConvivialiteTab.tsx           — entrée onglet, gère l'ouverture immersive
+  ConvivialiteImmersiveView.tsx — overlay plein écran, switch de mode
+  ConvivialiteMosaic.tsx        — masonry + lightbox
+  ConvivialiteSlideshow.tsx     — Ken Burns + crossfade
+  ConvivialitePrintLayout.tsx   — layout A4 + @media print
+  ConvivialiteUploadFAB.tsx     — bouton + drawer upload (gated par rôle)
+  ConvivialiteReportDialog.tsx  — signalement
+  useConvivialitePhotos.ts      — hook react-query
+  useCanUploadConvivialite.ts   — hook rôle (lit community_profiles)
 ```
 
-### Pourquoi ça casse après "+ point de marche"
+Réutilisation : `imageOptimizer.ts`, `parallelUploadManager.ts`, animations Tailwind existantes (`animate-fade-in`, `hover-scale`, `enter`).
 
-1. `useQuery(['session-exploration'])` met en cache la session au montage **sans** s'abonner à `onAuthStateChange`.
-2. Quand `CreateMarcheDrawer` réussit, il appelle `queryClient.invalidateQueries(...)` pour `exploration-marcheur-steps` et `exploration-marches`. Ces invalidations + le remount de la liste des étapes (le nouveau `activeMarcheId` change la `key` du `motion.div`) déclenchent une cascade de refetch et de nouveaux montages d'enfants.
-3. Pendant cette fenêtre, `supabase.auth.getSession()` peut transitoirement retourner `null` (auto-refresh de token, lecture localStorage non garantie réactive). La requête `session-exploration` étant en `staleTime: 0` est facilement re-fetched et écrase `userId` à `undefined`.
-4. Une fois `userId` perdu, **aucun mécanisme ne le restaure** dans cette page : il n'y a pas d'écouteur `onAuthStateChange`. L'utilisateur doit recharger / se reconnecter.
+### Intégration
 
-Le hook `useAuth()` est déjà importé dans le fichier (ligne 16) et utilisé pour `isAdmin` (ligne 97). Il maintient un `user` validé côté serveur et **abonné à `onAuthStateChange`** : c'est la bonne source de vérité.
+- Ajout d'un onglet dans `ExplorationMarcheurPage.tsx` (icône + label "Convivialité").
+- Badge collectif (compteur de photos) cohérent avec les autres onglets sensoriels.
+- Activity tracking via `useActivityTracker` (`tab_switch` + `media_upload` event_target=`convivialite_photo`).
+- Admin : exposition simple dans `OutilsHub` admin pour modérer les signalements (liste + masquage/suppression).
 
-## Correction
+## Sécurité & RGPD
 
-### 1. `src/components/community/ExplorationMarcheurPage.tsx`
+- Photos = visages → bucket public mais **URL non devinables** (UUID) et accès lecture conditionné côté UI par appartenance à l'exploration (le bucket public reste nécessaire pour les performances ; la sécurité repose sur la non-énumération + masquage rapide en cas de signalement).
+- Bouton "Supprimer" toujours disponible pour l'auteur.
+- Modération admin sous 24h sur signalement, avec audit (`resolved_by`, `resolved_at`).
+- Limite douce côté UI : 30 photos / exploration, 5 Mo / fichier, formats jpg/png/webp/heic.
 
-- **Supprimer** le `useQuery(['session-exploration'])` (lignes 74-81).
-- **Récupérer** `user`, `isLoading: authLoading`, `isAdmin` depuis `useAuth()` en une seule destructuration (ligne 97).
-- Remplacer `const userId = session?.user?.id;` par `const userId = user?.id;`.
-- Adapter la garde d'affichage (ligne 355) pour distinguer trois états :
-  - `authLoading` → petit skeleton/spinner discret (évite le flash "Connectez-vous" pendant le refresh de token).
-  - `!userId` → message "Connectez-vous…" (cas réel non-authentifié).
-  - sinon → onglets sensoriels.
+## Ce qui sera livré
 
-```tsx
-const { user, isLoading: authLoading, isAdmin } = useAuth();
-const userId = user?.id;
-...
-{authLoading ? (
-  <div className="text-center py-8 text-white/30 text-xs">Chargement…</div>
-) : !userId ? (
-  <div className="text-center py-8 text-white/40 text-sm">
-    Connectez-vous pour voir et gérer vos contributions.
-  </div>
-) : (
-  <> /* onglets inchangés */ </>
-)}
-```
+1. Migration SQL (2 tables + bucket + RLS + fonction `can_upload_convivialite`).
+2. 8 composants React + 2 hooks listés ci-dessus.
+3. Onglet "Convivialité" branché dans `ExplorationMarcheurPage`.
+4. Module admin minimal de modération des signalements.
+5. CSS d'impression dédié.
 
-### 2. Vérification du `useEffect` track page-view (ligne 116-120)
+## Hors-scope (à itérer plus tard si besoin)
 
-Ce `useEffect` appelle `trackActivity(userId!, ...)` même si `userId` est undefined. Ajouter `userId` à la garde et aux deps :
-
-```ts
-useEffect(() => {
-  if (effectiveExplorationId && userId) {
-    trackActivity(userId, 'page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
-  }
-}, [effectiveExplorationId, userId, trackActivity]);
-```
-
-### 3. Aucune autre modification nécessaire
-
-- `CreateMarcheDrawer` reste tel quel (ses invalidations sont saines).
-- Les onglets enfants (`VoirTab`, `EcouterTab`, etc.) reçoivent toujours `userId` en prop ; ils continueront de fonctionner — mais désormais `userId` ne disparaîtra plus pendant les refresh de token.
-
-## Bénéfices
-
-- Plus besoin de se déconnecter/reconnecter après création d'une marche.
-- Robustesse globale : toute la page suit la session live (déconnexion dans un autre onglet, refresh de token, expiration) au lieu d'une photo prise au montage.
-- Pas de migration DB, pas de changement de RLS, pas d'impact sur les autres pages.
-
-## Fichiers modifiés
-
-- `src/components/community/ExplorationMarcheurPage.tsx` (≈ 10 lignes touchées)
+- Légendes, tags d'ambiance, lien à une marche précise (peut être ajouté sans casser le schéma).
+- Réactions emoji / commentaires.
+- Export PDF stylé (le mode impression couvre déjà l'usage immédiat).
