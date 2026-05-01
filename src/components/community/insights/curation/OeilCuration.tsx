@@ -31,19 +31,7 @@ interface Props {
 
 type View = 'selection' | 'suggestions' | 'pool' | 'terrain';
 
-const CATEGORIES = [
-  { value: 'emblematique', label: 'Emblématique', color: 'text-amber-700 bg-amber-500/10 border-amber-500/30' },
-  { value: 'parapluie', label: 'Parapluie', color: 'text-emerald-700 bg-emerald-500/10 border-emerald-500/30' },
-  { value: 'eee', label: 'EEE', color: 'text-rose-700 bg-rose-500/10 border-rose-500/30' },
-  { value: 'auxiliaire', label: 'Auxiliaire', color: 'text-sky-700 bg-sky-500/10 border-sky-500/30' },
-  { value: 'protegee', label: 'Protégée', color: 'text-violet-700 bg-violet-500/10 border-violet-500/30' },
-];
-
-const getCatStyle = (value?: string | null) =>
-  CATEGORIES.find(c => c.value === value)?.color ?? 'text-muted-foreground bg-muted/40 border-border';
-
-const getCatLabel = (value?: string | null) =>
-  CATEGORIES.find(c => c.value === value)?.label ?? value ?? '';
+// CATEGORIES, getCatStyle, getCatLabel are imported from ./curationCategories
 
 const scoreToStars = (score?: number | null) => {
   if (score == null) return 0;
