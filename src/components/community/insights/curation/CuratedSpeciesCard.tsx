@@ -35,6 +35,8 @@ interface Props {
   onClick?: (species: CuratedSpeciesItem, displayName: string, photos: string[]) => void;
   /** Slot rendered under the title (e.g. editable category control) */
   footer?: React.ReactNode;
+  /** Open the classification evidence sheet for this curation */
+  onOpenEvidence?: (curation: ExplorationCuration, displayName: string) => void;
 }
 
 const scoreToStars = (score?: number | null) => {
