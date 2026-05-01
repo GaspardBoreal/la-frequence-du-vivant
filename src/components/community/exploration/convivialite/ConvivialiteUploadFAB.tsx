@@ -71,7 +71,7 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-[1110] px-5 py-3 rounded-full bg-gradient-to-r from-emerald-500 to-amber-500 text-white shadow-2xl shadow-emerald-500/30 hover:scale-105 active:scale-95 transition flex items-center gap-2 font-medium"
+        className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 px-5 py-3 rounded-full bg-gradient-to-r from-emerald-500 to-amber-500 text-white shadow-2xl shadow-emerald-500/30 hover:scale-105 active:scale-95 transition flex items-center gap-2 font-medium"
       >
         <Plus className="w-5 h-5" />
         Ajouter un instant
