@@ -11,6 +11,10 @@ export interface CuratedSpeciesItem {
   key: string;
   scientificName: string | null;
   commonName: string | null;
+  /** French translation if available (resolved at the source by useExplorationSpeciesPool) */
+  commonNameFr?: string | null;
+  /** Best display name: FR > original commonName > scientificName */
+  displayName?: string;
   group: string | null;
   count: number;
   imageUrl: string | null;
