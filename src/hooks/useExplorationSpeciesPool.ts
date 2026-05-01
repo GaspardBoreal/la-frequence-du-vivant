@@ -1,8 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useFrenchSpeciesNames } from './useFrenchSpeciesNames';
 
 export interface ExplorationSpecies {
   /** Stable key used as curation entity_id (scientific name preferred, fallback common name) */
+  key: string;
+  scientificName: string | null;
+  commonName: string | null;
+  /** French translation if available in species_translations, else null */
+  commonNameFr: string | null;
+  /** Best display name: FR translation > original commonName > scientificName */
+  displayName: string;
+  group: string | null;
+  count: number;
+  imageUrl: string | null;
+}
+
+interface RawExplorationSpecies {
   key: string;
   scientificName: string | null;
   commonName: string | null;
@@ -14,15 +28,17 @@ export interface ExplorationSpecies {
 /**
  * Aggregates all species observed across the marche_events of an exploration,
  * deduplicated by scientific name (case-insensitive).
+ *
+ * Each species is enriched with `displayName` / `commonNameFr` so all
+ * downstream consumers (cards, modals, exports) get the French name resolved
+ * once at the source — same strategy as the Bioacoustique view.
  */
 export const useExplorationSpeciesPool = (explorationId: string | null | undefined) => {
-  return useQuery({
-    queryKey: ['exploration-species-pool', explorationId],
-    queryFn: async (): Promise<ExplorationSpecies[]> => {
+  const rawQuery = useQuery({
+    queryKey: ['exploration-species-pool-raw', explorationId],
+    queryFn: async (): Promise<RawExplorationSpecies[]> => {
       if (!explorationId) return [];
 
-      // 1. Get all marche ids for this exploration via exploration_marches → marches
-      //    (source de vérité utilisée par collect-event-biodiversity)
       const { data: em, error: emErr } = await supabase
         .from('exploration_marches')
         .select('marche_id')
@@ -31,15 +47,13 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
       const marcheIds = (em || []).map((x: any) => x.marche_id).filter(Boolean);
       if (marcheIds.length === 0) return [];
 
-      // 2. Get biodiversity snapshots for these marches
       const { data: snaps, error: snapsErr } = await supabase
         .from('biodiversity_snapshots')
         .select('species_data')
         .in('marche_id', marcheIds);
       if (snapsErr) throw snapsErr;
 
-      // 3. Aggregate species by normalized scientific name
-      const map = new Map<string, ExplorationSpecies>();
+      const map = new Map<string, RawExplorationSpecies>();
       (snaps || []).forEach((s: any) => {
         const arr: any[] = Array.isArray(s.species_data) ? s.species_data : [];
         arr.forEach(sp => {
@@ -71,4 +85,26 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
     enabled: !!explorationId,
     staleTime: 5 * 60 * 1000,
   });
+
+  const raw = rawQuery.data || [];
+
+  // Enrich with French names — single batched DB lookup, cached 24h
+  const { data: frMap } = useFrenchSpeciesNames(
+    raw.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }))
+  );
+
+  const enriched: ExplorationSpecies[] = raw.map(s => {
+    const fr = s.scientificName ? frMap?.get(s.scientificName) : undefined;
+    const displayName = fr?.displayName || s.commonName || s.scientificName || '';
+    return {
+      ...s,
+      commonNameFr: fr?.commonNameFr ?? null,
+      displayName,
+    };
+  });
+
+  return {
+    ...rawQuery,
+    data: enriched,
+  };
 };

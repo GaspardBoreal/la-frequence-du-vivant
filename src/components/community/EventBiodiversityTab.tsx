@@ -14,6 +14,7 @@ import { useExplorationParticipants } from '@/hooks/useExplorationParticipants';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
+import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
 type SubTab = 'synthese' | 'taxons' | 'textes' | 'analyse';
 
@@ -258,6 +259,23 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     return Array.from(speciesMap.values()).sort((a, b) => b.observations - a.observations);
   }, [snapshots]);
 
+  // Resolve French names once at the source, before passing to SpeciesExplorer.
+  // Mirrors the strategy used by useExplorationSpeciesPool / Bioacoustique view.
+  const { data: frNamesMap } = useFrenchSpeciesNames(
+    allSpeciesAsBiodiversity.map(s => ({
+      scientificName: s.scientificName,
+      commonName: s.commonName,
+    }))
+  );
+
+  const allSpeciesWithFrNames = useMemo((): BiodiversitySpecies[] => {
+    if (!frNamesMap || frNamesMap.size === 0) return allSpeciesAsBiodiversity;
+    return allSpeciesAsBiodiversity.map(sp => {
+      const fr = sp.scientificName ? frNamesMap.get(sp.scientificName) : undefined;
+      return fr?.displayName ? { ...sp, commonName: fr.displayName } : sp;
+    });
+  }, [allSpeciesAsBiodiversity, frNamesMap]);
+
   // Empty state
   if (!isLoading && (!snapshots?.length)) {
     return (
@@ -384,7 +402,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {activeSubTab === 'taxons' && (
           <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <SpeciesExplorer
-              species={allSpeciesAsBiodiversity}
+              species={allSpeciesWithFrNames}
               compact
               explorationId={explorationId}
               allEventMarches={allEventMarchesData}
