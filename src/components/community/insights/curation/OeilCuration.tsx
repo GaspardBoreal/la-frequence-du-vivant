@@ -69,7 +69,11 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     [translations]
   );
 
-  const handleSpeciesClick = (species: CuratedSpeciesItem, displayName: string) => {
+  const handleSpeciesClick = (
+    species: CuratedSpeciesItem,
+    displayName: string,
+    photos: string[],
+  ) => {
     const kingdom: BiodiversitySpecies['kingdom'] = (() => {
       const g = (species.group || '').toLowerCase();
       if (g === 'animalia') return 'Animalia';
@@ -87,6 +91,10 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       lastSeen: '',
       source: 'inaturalist',
       attributions: [],
+      photos,
+      photoData: photos[0]
+        ? { url: photos[0], source: 'inaturalist', attribution: '' }
+        : undefined,
     });
   };
 
