@@ -72,8 +72,8 @@ export const extractPhotoMetadata = async (file: File): Promise<PhotoMetadata> =
       height: exifData?.ImageHeight || exifData?.ExifImageHeight,
       format: file.type,
       size: file.size,
-      isConverted: isHeic,
-      originalFormat: isHeic ? 'image/heic' : originalFormat,
+      isConverted: isHeicFile,
+      originalFormat: isHeicFile ? 'image/heic' : originalFormat,
       exif: exifData || {}
     };
   } catch (error) {
@@ -81,8 +81,8 @@ export const extractPhotoMetadata = async (file: File): Promise<PhotoMetadata> =
     return {
       format: file.type,
       size: file.size,
-      isConverted: isHeic,
-      originalFormat: isHeic ? 'image/heic' : originalFormat,
+      isConverted: isHeicFile,
+      originalFormat: isHeicFile ? 'image/heic' : originalFormat,
       exif: {}
     };
   }
