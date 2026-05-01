@@ -382,7 +382,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Pool */}
         {view === 'pool' && (
           <SpeciesGrid
-            items={filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))}
+            items={applyCategoryFilter(filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage="Aucune espèce dans le pool."
