@@ -400,6 +400,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                 marcheEventDate={marcheEvent?.date_marche || null}
                 marcheEventLieu={marcheEvent?.lieu || null}
                 userLevel={userLevel}
+                isAdmin={isAdmin}
                 marches={(explorationMarches || []).map((m, i) => ({
                   id: m.id,
                   nom_marche: m.nom_marche,
