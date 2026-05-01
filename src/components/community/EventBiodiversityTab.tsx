@@ -259,6 +259,23 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     return Array.from(speciesMap.values()).sort((a, b) => b.observations - a.observations);
   }, [snapshots]);
 
+  // Resolve French names once at the source, before passing to SpeciesExplorer.
+  // Mirrors the strategy used by useExplorationSpeciesPool / Bioacoustique view.
+  const { data: frNamesMap } = useFrenchSpeciesNames(
+    allSpeciesAsBiodiversity.map(s => ({
+      scientificName: s.scientificName,
+      commonName: s.commonName,
+    }))
+  );
+
+  const allSpeciesWithFrNames = useMemo((): BiodiversitySpecies[] => {
+    if (!frNamesMap || frNamesMap.size === 0) return allSpeciesAsBiodiversity;
+    return allSpeciesAsBiodiversity.map(sp => {
+      const fr = sp.scientificName ? frNamesMap.get(sp.scientificName) : undefined;
+      return fr?.displayName ? { ...sp, commonName: fr.displayName } : sp;
+    });
+  }, [allSpeciesAsBiodiversity, frNamesMap]);
+
   // Empty state
   if (!isLoading && (!snapshots?.length)) {
     return (
