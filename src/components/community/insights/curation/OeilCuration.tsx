@@ -49,8 +49,24 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   const [view, setView] = useState<View>('selection');
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+
+  // Apply category filter on a list of {species, curation}
+  const applyCategoryFilter = <T extends { curation?: ExplorationCuration }>(items: T[]): T[] => {
+    if (!categoryFilter) return items;
+    return items.filter(x => x.curation?.category === categoryFilter);
+  };
+
+  // Counts of categories across all curated items (selection + suggestions)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    curations.forEach(c => {
+      if (c.category) counts[c.category] = (counts[c.category] || 0) + 1;
+    });
+    return counts;
+  }, [curations]);
 
   // Batch FR translations for the whole observed pool (single network round)
   const speciesForTranslation = useMemo(
@@ -270,6 +286,45 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           </div>
         )}
 
+        {/* Filtres par catégorie d'espèces */}
+        {(pool.length > 0 || curations.length > 0) && (view !== 'terrain') && (
+          <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-none">
+            <button
+              onClick={() => setCategoryFilter(null)}
+              className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border transition ${
+                categoryFilter === null
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
+              }`}
+            >
+              Toutes
+            </button>
+            {CATEGORIES.map(cat => {
+              const isActive = categoryFilter === cat.value;
+              const count = categoryCounts[cat.value] || 0;
+              return (
+                <button
+                  key={cat.value}
+                  onClick={() => setCategoryFilter(isActive ? null : cat.value)}
+                  className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border transition flex items-center gap-1 ${
+                    isActive
+                      ? `${cat.color} ring-1 ring-current/40`
+                      : count === 0
+                      ? 'bg-card text-muted-foreground/50 border-border/50 hover:text-muted-foreground'
+                      : `${cat.color} opacity-70 hover:opacity-100`
+                  }`}
+                  title={cat.label}
+                >
+                  <span>{cat.label}</span>
+                  {count > 0 && (
+                    <span className="text-[9px] opacity-80">({count})</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Empty pool */}
         {pool.length === 0 && manual.length === 0 && (
           <div className="rounded-xl border border-border bg-card p-6 text-center">
@@ -289,7 +344,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Sélection */}
         {view === 'selection' && (
           <SpeciesGrid
-            items={pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))}
+            items={applyCategoryFilter(pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage={
@@ -306,7 +361,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Suggestions IA */}
         {view === 'suggestions' && (
           <SpeciesGrid
-            items={aiSuggestions.filter(x => {
+            items={applyCategoryFilter(aiSuggestions).filter(x => {
               const q = search.trim().toLowerCase();
               if (!q) return true;
               return (
@@ -327,7 +382,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Pool */}
         {view === 'pool' && (
           <SpeciesGrid
-            items={filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))}
+            items={applyCategoryFilter(filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage="Aucune espèce dans le pool."
