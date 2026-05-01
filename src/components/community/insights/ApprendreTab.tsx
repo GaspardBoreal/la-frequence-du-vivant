@@ -45,6 +45,7 @@ const apprendreSubTabs: { key: ApprendreSubTab; label: string }[] = [
 ];
 
 const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, marcheEventId, totalSpecies, userId, onNavigateToMarche }) => {
+  void eventType;
   const [activeSubTab, setActiveSubTab] = useState<ApprendreSubTab>('decouvertes');
   const [activePillar, setActivePillar] = useState<LivingPillarKey>('oeil');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
