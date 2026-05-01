@@ -3,12 +3,10 @@ import imageCompression from 'browser-image-compression';
 import exifr from 'exifr';
 import {
   convertHeicToJpeg as convertHeicToJpegRobust,
-  isHeic,
   hasHeicExtension,
-  HeicConversionError,
 } from './heicConverter';
 
-export { HeicConversionError, HEIC_USER_MESSAGE } from './heicConverter';
+export { HeicConversionError, HEIC_USER_MESSAGE, isHeic } from './heicConverter';
 
 export interface PhotoMetadata {
   width?: number;
