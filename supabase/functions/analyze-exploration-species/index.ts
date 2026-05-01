@@ -283,7 +283,14 @@ Privilégie le terrain dordonien (vallée de la Dordogne) : truite fario, écrev
       created_by: userId,
     });
 
-    return new Response(JSON.stringify({ analyzed: rows.length, model: MODEL }), {
+    return new Response(JSON.stringify({
+      analyzed: rows.length,
+      status: 'ok',
+      model: MODEL,
+      marches_total: marchesTotal,
+      marches_with_gps: marchesWithGps,
+      marches_with_snapshots: marchesWithSnapshots,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
