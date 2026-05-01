@@ -301,6 +301,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                 : "L'ambassadeur n'a pas encore sélectionné d'espèces remarquables."
             }
             upsert={upsert}
+            translationMap={translationMap}
+            onSpeciesClick={handleSpeciesClick}
           />
         )}
 
@@ -320,6 +322,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             emptyMessage="Aucune suggestion IA. Lance l’analyse pour en obtenir."
             upsert={upsert}
             showAiBadges
+            translationMap={translationMap}
+            onSpeciesClick={handleSpeciesClick}
           />
         )}
 
@@ -331,6 +335,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             explorationId={explorationId}
             emptyMessage="Aucune espèce dans le pool."
             upsert={upsert}
+            translationMap={translationMap}
+            onSpeciesClick={handleSpeciesClick}
           />
         )}
 
@@ -347,6 +353,12 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           open={showManualModal}
           onClose={() => setShowManualModal(false)}
           explorationId={explorationId}
+        />
+
+        <SpeciesDetailModal
+          species={selectedSpecies}
+          isOpen={!!selectedSpecies}
+          onClose={() => setSelectedSpecies(null)}
         />
       </div>
     </TooltipProvider>
