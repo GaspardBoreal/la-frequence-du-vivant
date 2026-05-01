@@ -64,7 +64,7 @@ export const useExplorationCurations = (
       if (sense) q = q.eq('sense', sense);
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as ExplorationCuration[];
+      return (data || []) as unknown as ExplorationCuration[];
     },
     enabled: !!explorationId,
     staleTime: 60 * 1000,
