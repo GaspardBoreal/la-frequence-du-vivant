@@ -120,21 +120,46 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
               {files.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
                   {files.map((f, i) => {
-                    const isHeicPreview = /\.(heic|heif)$/i.test(f.name);
+                    const preview = getPreview(f);
+                    const isConverting = preview.status === 'pending' || preview.status === 'converting';
+                    const showImage = preview.status === 'ready' && preview.url;
+                    const showError = preview.status === 'error';
                     return (
-                      <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-                        {isHeicPreview ? (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-[10px] text-muted-foreground p-1 text-center bg-emerald-500/5">
+                      <div
+                        key={i}
+                        className="relative aspect-square rounded-lg overflow-hidden bg-muted group"
+                      >
+                        {showImage && (
+                          <img
+                            src={preview.url!}
+                            alt={f.name}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        {isConverting && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-emerald-500/10 animate-pulse">
+                            <Loader2 className="w-5 h-5 text-emerald-500 animate-spin mb-1" />
+                            <span className="text-[9px] text-emerald-700 dark:text-emerald-300 font-medium">
+                              {preview.status === 'converting' ? 'Conversion HEIC…' : 'Préparation…'}
+                            </span>
+                          </div>
+                        )}
+                        {showError && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-[10px] text-muted-foreground p-1 text-center bg-emerald-500/5">
                             <span className="font-semibold text-emerald-600">HEIC</span>
                             <span className="opacity-70">iPhone</span>
                           </div>
-                        ) : (
-                          <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
+                        )}
+                        {preview.isHeic && showImage && (
+                          <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[8px] font-medium tracking-wide">
+                            HEIC
+                          </span>
                         )}
                         <button
                           onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
                           disabled={isPending}
+                          aria-label="Retirer"
                         >
                           <X className="w-3 h-3" />
                         </button>
