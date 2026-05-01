@@ -283,10 +283,12 @@ const ExplorationMarcheurPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Content — masqué quand l'overlay Convivialité est ouvert pour éviter que ses contrôles fixed (FAB, sheets) ne transparaissent */}
-      <div className={`max-w-4xl mx-auto px-4 py-4 ${convivialiteOpen ? 'invisible pointer-events-none' : ''}`} aria-hidden={convivialiteOpen}>
+      {/* Content — l'onglet de fond n'est PAS rendu quand l'overlay Convivialité est ouvert :
+          évite que les contrôles fixed/absolute des autres onglets (Carte : FAB photo, "+ point de marche",
+          barre stats, sélecteur Géo/Sat/Relief...) ne transparaissent par-dessus la mosaïque. */}
+      <div className="max-w-4xl mx-auto px-4 py-4" aria-hidden={convivialiteOpen}>
         <AnimatePresence mode="wait">
-          {!convivialiteOpen && (<></>)}
+          {!convivialiteOpen && (
           {activeGlobalTab === 'marches' && (
             <motion.div
               key="marches"
