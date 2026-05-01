@@ -20,7 +20,7 @@ const ConvivialiteUploadFAB: React.FC<Props> = ({ explorationId, userId, canUplo
     return (
       <div className="fixed bottom-6 right-6 z-50 max-w-[260px] text-right pointer-events-none">
         <div className="inline-block px-3 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[10px] text-white/70 italic">
-          Les Ambassadeurs et Sentinelles enrichissent ce mur
+          Réservé aux Ambassadeurs, Sentinelles et organisateurs
         </div>
       </div>
     );
