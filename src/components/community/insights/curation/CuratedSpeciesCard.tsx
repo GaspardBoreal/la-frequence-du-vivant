@@ -1,11 +1,11 @@
 import React from 'react';
-import { ImageOff, Star, Loader2 } from 'lucide-react';
+import { ImageOff, Star, Loader2, AlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import type { SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import PinToggle from './PinToggle';
 import type { ExplorationCuration } from '@/hooks/useExplorationCurations';
-import { getCatStyle, getCatLabel } from './curationCategories';
+import { CategoryBadgeCluster } from './CategoryBadge';
 
 export interface CuratedSpeciesItem {
   key: string;
