@@ -361,7 +361,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Suggestions IA */}
         {view === 'suggestions' && (
           <SpeciesGrid
-            items={aiSuggestions.filter(x => {
+            items={applyCategoryFilter(aiSuggestions).filter(x => {
               const q = search.trim().toLowerCase();
               if (!q) return true;
               return (
