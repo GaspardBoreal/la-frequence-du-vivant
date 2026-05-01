@@ -30,11 +30,21 @@ interface ApprendreTabProps {
   userLevel: CommunityRoleKey;
   eventType: InsightEventType | null;
   explorationId?: string;
+  marcheEventId?: string;
   totalSpecies?: number;
   userId?: string;
+  onNavigateToMarche?: (marcheId: string) => void;
 }
 
-const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, totalSpecies, userId }) => {
+type ApprendreSubTab = 'decouvertes' | 'apprendre-creer';
+
+const apprendreSubTabs: { key: ApprendreSubTab; label: string }[] = [
+  { key: 'decouvertes', label: 'Ce que nous avons vu' },
+  { key: 'apprendre-creer', label: 'Apprendre et créer' },
+];
+
+const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, marcheEventId, totalSpecies, userId, onNavigateToMarche }) => {
+  const [activeSubTab, setActiveSubTab] = useState<ApprendreSubTab>('decouvertes');
   const [activePillar, setActivePillar] = useState<LivingPillarKey>('oeil');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const { trackActivity } = useActivityTracker();
@@ -43,6 +53,11 @@ const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explo
   const handlePillarChange = useCallback((pillar: LivingPillarKey) => {
     setActivePillar(pillar);
     if (userId) trackActivity(userId, 'tab_switch', `tab:apprendre:${pillar}`, { explorationId });
+  }, [trackActivity, explorationId, userId]);
+
+  const handleSubTabChange = useCallback((sub: ApprendreSubTab) => {
+    setActiveSubTab(sub);
+    if (userId) trackActivity(userId, 'tab_switch', `tab:apprendre:${sub}`, { explorationId });
   }, [trackActivity, explorationId, userId]);
 
   const { cards, byCategory, isLoading } = useInsightCards({
