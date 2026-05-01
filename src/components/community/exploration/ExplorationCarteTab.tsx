@@ -1065,7 +1065,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
       {/* Bottom panel: tracking banner, distance panel, or stats bar */}
       <AnimatePresence mode="wait">
-        {isTracking && nearestStep ? (
+        {isCreatingMarche ? null : (
           <ProximityBanner
             key="proximity"
             nearestName={nearestStep.name}
