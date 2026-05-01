@@ -254,6 +254,11 @@ const ExplorationMarcheurPage: React.FC = () => {
                 <button
                   key={tab.key}
                   onClick={() => {
+                    if (tab.key === 'convivialite') {
+                      setConvivialiteOpen(true);
+                      if (userId) trackActivity(userId, 'tab_switch', `tab:convivialite`, { explorationId: explorationId || undefined });
+                      return;
+                    }
                     setActiveGlobalTab(tab.key);
                     if (userId) trackActivity(userId, 'tab_switch', `tab:${tab.key}`, { explorationId: explorationId || undefined });
                   }}
