@@ -283,8 +283,11 @@ const ExplorationMarcheurPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-4">
+      {/* Content — l'onglet de fond n'est PAS rendu quand l'overlay Convivialité est ouvert :
+          évite que les contrôles fixed/absolute des autres onglets (Carte : FAB photo, "+ point de marche",
+          barre stats, sélecteur Géo/Sat/Relief...) ne transparaissent par-dessus la mosaïque. */}
+      <div className="max-w-4xl mx-auto px-4 py-4" aria-hidden={convivialiteOpen}>
+        {!convivialiteOpen && (
         <AnimatePresence mode="wait">
           {activeGlobalTab === 'marches' && (
             <motion.div
@@ -460,6 +463,7 @@ const ExplorationMarcheurPage: React.FC = () => {
             />
           )}
         </AnimatePresence>
+        )}
       </div>
 
       <ConvivialiteImmersiveView
