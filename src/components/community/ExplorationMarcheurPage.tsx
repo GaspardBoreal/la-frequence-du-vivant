@@ -386,11 +386,63 @@ const ExplorationMarcheurPage: React.FC = () => {
 
           {activeGlobalTab === 'marcheurs' && (
             <motion.div key="marcheurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <MarcheursTab
-                explorationId={effectiveExplorationId || undefined}
-                marcheEventId={marcheEventId || undefined}
-                explorationName={exploration?.name}
-              />
+              {/* Sub-tabs : Convivialité / Profils */}
+              <div className="flex border-b border-border dark:border-white/10 mb-4">
+                {marcheursSubTabs.map(sub => {
+                  const Icon = sub.icon;
+                  const isActive = activeMarcheursSubTab === sub.key;
+                  return (
+                    <button
+                      key={sub.key}
+                      onClick={() => {
+                        setActiveMarcheursSubTab(sub.key);
+                        if (userId) trackActivity(userId, 'tab_switch', `tab:marcheurs:${sub.key}`, { explorationId: effectiveExplorationId || undefined });
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
+                        isActive
+                          ? 'text-emerald-600 dark:text-emerald-300'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {sub.label}
+                      {isActive && (
+                        <motion.div
+                          layoutId="marcheurs-subtab-indicator"
+                          className="absolute bottom-0 left-2 right-2 h-0.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeMarcheursSubTab}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {activeMarcheursSubTab === 'convivialite' ? (
+                    <ConvivialiteContent
+                      explorationId={effectiveExplorationId || undefined}
+                      explorationName={exploration?.name}
+                      userId={userId}
+                      userRole={userLevel}
+                      isAdmin={isAdmin}
+                      variant="inline"
+                    />
+                  ) : (
+                    <MarcheursTab
+                      explorationId={effectiveExplorationId || undefined}
+                      marcheEventId={marcheEventId || undefined}
+                      explorationName={exploration?.name}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -449,28 +501,8 @@ const ExplorationMarcheurPage: React.FC = () => {
               />
             </motion.div>
           )}
-
-          {activeGlobalTab === 'messages' && (
-            <ComingSoonPlaceholder
-              key="messages"
-              icon={MessageCircle}
-              title="Messages partagés"
-              description="Échangez notes, commentaires et impressions avec les autres marcheurs de cette exploration."
-            />
-          )}
         </AnimatePresence>
-        )}
       </div>
-
-      <ConvivialiteImmersiveView
-        open={convivialiteOpen}
-        onClose={() => setConvivialiteOpen(false)}
-        explorationId={effectiveExplorationId || undefined}
-        explorationName={exploration?.name}
-        userId={userId}
-        userRole={userLevel}
-        isAdmin={isAdmin}
-      />
     </div>
   );
 };
