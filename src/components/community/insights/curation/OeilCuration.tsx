@@ -61,6 +61,45 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [view, setView] = useState<View>('selection');
   const [search, setSearch] = useState('');
   const [showManualModal, setShowManualModal] = useState(false);
+  const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+
+  // Batch FR translations for the whole observed pool (single network round)
+  const speciesForTranslation = useMemo(
+    () =>
+      pool
+        .filter(s => !!s.scientificName)
+        .map(s => ({
+          scientificName: s.scientificName as string,
+          commonName: s.commonName ?? undefined,
+        })),
+    [pool]
+  );
+  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
+  const translationMap = useMemo(
+    () => new Map((translations || []).map(t => [t.scientificName, t])),
+    [translations]
+  );
+
+  const handleSpeciesClick = (species: CuratedSpeciesItem, displayName: string) => {
+    const kingdom: BiodiversitySpecies['kingdom'] = (() => {
+      const g = (species.group || '').toLowerCase();
+      if (g === 'animalia') return 'Animalia';
+      if (g === 'plantae') return 'Plantae';
+      if (g === 'fungi') return 'Fungi';
+      return 'Other';
+    })();
+    setSelectedSpecies({
+      id: species.key,
+      scientificName: species.scientificName || '',
+      commonName: displayName || species.commonName || species.scientificName || '',
+      kingdom,
+      family: '',
+      observations: species.count,
+      lastSeen: '',
+      source: 'inaturalist',
+      attributions: [],
+    });
+  };
 
   const curationByKey = useMemo(() => {
     const m = new Map<string, ExplorationCuration>();
