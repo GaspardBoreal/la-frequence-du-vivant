@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useCommunityProfile } from '@/hooks/useCommunityProfile';
 import { toast } from 'sonner';
 
 export type CurationSense = 'oeil' | 'main' | 'coeur' | 'oreille' | 'palais';
@@ -50,26 +49,28 @@ export const useExplorationCurations = (
 /** Détecte si l'utilisateur courant peut curater (ambassadeur, sentinelle, ou admin) */
 export const useIsCurator = (explorationId: string | null | undefined) => {
   const { user } = useAuth();
-  const { profile } = useCommunityProfile();
 
   return useQuery({
     queryKey: ['is-curator', user?.id, explorationId],
     queryFn: async () => {
       if (!user?.id || !explorationId) return false;
-      // Vérification côté client basée sur le rôle communauté
-      const role = profile?.role;
-      if (role === 'ambassadeur' || role === 'sentinelle') {
-        // Vérifier que l'utilisateur participe bien à un évènement de cette exploration
-        const { data, error } = await supabase
-          .from('marche_events')
-          .select('id, marche_participations!inner(user_id)')
-          .eq('exploration_id', explorationId)
-          .eq('marche_participations.user_id', user.id)
-          .limit(1);
-        if (error) return false;
-        return (data?.length ?? 0) > 0;
-      }
-      return false;
+      // Récupère le rôle communauté
+      const { data: profile } = await supabase
+        .from('community_profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      const role = profile?.role as string | undefined;
+      if (role !== 'ambassadeur' && role !== 'sentinelle') return false;
+      // Vérifie la participation à un évènement de cette exploration
+      const { data, error } = await supabase
+        .from('marche_events')
+        .select('id, marche_participations!inner(user_id)')
+        .eq('exploration_id', explorationId)
+        .eq('marche_participations.user_id', user.id)
+        .limit(1);
+      if (error) return false;
+      return (data?.length ?? 0) > 0;
     },
     enabled: !!user?.id && !!explorationId,
     staleTime: 5 * 60 * 1000,
