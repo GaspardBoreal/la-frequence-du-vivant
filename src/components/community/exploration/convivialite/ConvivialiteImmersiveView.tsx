@@ -121,8 +121,10 @@ const ConvivialiteImmersiveView: React.FC<Props> = ({
                 photos={visiblePhotos}
                 currentUserId={userId}
                 isAdmin={isAdmin}
+                canReorder={canReorder}
                 onReport={(p) => setReportPhoto(p)}
                 onDelete={handleDelete}
+                onReorder={(orderedIds) => reorderPhotos(orderedIds)}
               />
             ) : mode === 'slideshow' ? (
               <ConvivialiteSlideshow photos={visiblePhotos} />
