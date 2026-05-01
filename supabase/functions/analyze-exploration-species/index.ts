@@ -65,24 +65,40 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 1. Build species pool from biodiversity_snapshots
+    // 1. Build species pool from biodiversity_snapshots (with diagnostic)
     const { data: events } = await admin
       .from('marche_events')
-      .select('id')
+      .select('id, latitude, longitude')
       .eq('exploration_id', explorationId);
-    const eventIds = (events || []).map((e: any) => e.id);
-    if (eventIds.length === 0) {
-      return new Response(JSON.stringify({ analyzed: 0, message: 'No events' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+
+    const eventsArr = events || [];
+    const marchesTotal = eventsArr.length;
+    const marchesWithGps = eventsArr.filter((e: any) => e.latitude != null && e.longitude != null).length;
+
+    if (marchesTotal === 0) {
+      return new Response(
+        JSON.stringify({
+          analyzed: 0,
+          status: 'no_marches',
+          marches_total: 0,
+          marches_with_gps: 0,
+          marches_with_snapshots: 0,
+          message: "Aucune marche dans cette exploration. Crée d'abord une marche dans l'onglet Marches.",
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const eventIds = eventsArr.map((e: any) => e.id);
     const { data: snaps } = await admin
       .from('biodiversity_snapshots')
-      .select('species_data')
+      .select('marche_id, species_data')
       .in('marche_id', eventIds);
+    const snapsArr = snaps || [];
+    const marchesWithSnapshots = new Set(snapsArr.map((s: any) => s.marche_id)).size;
 
     const map = new Map<string, SpeciesInput>();
-    (snaps || []).forEach((s: any) => {
+    snapsArr.forEach((s: any) => {
       const arr = Array.isArray(s.species_data) ? s.species_data : [];
       arr.forEach((sp: any) => {
         const sci = (sp.scientificName || sp.scientific_name || '').toString().trim();
@@ -96,10 +112,28 @@ Deno.serve(async (req) => {
     });
 
     const pool = Array.from(map.values()).sort((a, b) => b.count - a.count).slice(0, MAX_SPECIES);
+
     if (pool.length === 0) {
-      return new Response(JSON.stringify({ analyzed: 0, message: 'Empty pool' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      let status: 'no_gps' | 'no_snapshots' | 'empty_pool' = 'empty_pool';
+      let message = "Pool d'espèces vide pour cette exploration.";
+      if (marchesWithGps === 0) {
+        status = 'no_gps';
+        message = `Aucune des ${marchesTotal} marche(s) n'a de coordonnées GPS. Renseigne la latitude/longitude dans l'onglet Marches pour pouvoir lancer l'analyse.`;
+      } else if (marchesWithSnapshots === 0) {
+        status = 'no_snapshots';
+        message = `${marchesWithGps} marche(s) géolocalisée(s), mais aucune collecte biodiversité n'a encore été faite. Ouvre l'onglet Empreinte / Carte sur chaque marche pour déclencher la collecte iNaturalist, puis relance.`;
+      }
+      return new Response(
+        JSON.stringify({
+          analyzed: 0,
+          status,
+          marches_total: marchesTotal,
+          marches_with_gps: marchesWithGps,
+          marches_with_snapshots: marchesWithSnapshots,
+          message,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // 2. Single batched call to Lovable AI to categorize all species at once
