@@ -20,6 +20,10 @@ export interface ExplorationCuration {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  source?: 'manual' | 'ai' | 'gbif_pool' | null;
+  ai_score?: number | null;
+  ai_reason?: string | null;
+  ai_criteria?: Record<string, any> | null;
 }
 
 /** Récupère toutes les curations d'une exploration (ou filtré par sens) */
