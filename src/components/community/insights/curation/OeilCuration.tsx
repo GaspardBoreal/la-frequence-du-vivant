@@ -148,6 +148,25 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     );
   }, [pool, search]);
 
+  // Category counts contextual to the active tab — guarantees the chip
+  // counter equals the number of cards the user will actually see.
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    let source: Array<{ curation?: ExplorationCuration }> = [];
+    if (view === 'selection') {
+      source = pinnedSpecies.map(s => ({ curation: curationByKey.get(s.key.toLowerCase()) }));
+    } else if (view === 'suggestions') {
+      source = aiSuggestions;
+    } else if (view === 'pool') {
+      source = filteredPool.map(s => ({ curation: curationByKey.get(s.key.toLowerCase()) }));
+    }
+    source.forEach(x => {
+      const cat = x.curation?.category;
+      if (cat) counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [view, pinnedSpecies, aiSuggestions, filteredPool, curationByKey]);
+
   const stale = isAnalysisStale(lastAnalysis);
 
   const handleAi = () => triggerAi.mutate(explorationId);
