@@ -51,7 +51,7 @@ export async function isHeic(file: File): Promise<boolean> {
 
 // ─── Environment helpers ───
 
-function isSafariIOS(): boolean {
+export function isSafariIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
   const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
