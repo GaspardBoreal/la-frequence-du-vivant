@@ -311,25 +311,44 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           {[
             { id: 'selection' as View, label: 'Sélection finale', count: pinnedSpecies.length },
             { id: 'suggestions' as View, label: 'Suggestions IA', count: aiSuggestions.length, hidden: !isCurator },
+            {
+              id: 'review' as View,
+              label: 'À réviser',
+              count: reviewItems.length,
+              hidden: !isCurator,
+              icon: <AlertCircle className="w-3 h-3" />,
+              tone: reviewItems.length > 0 ? 'amber' : undefined,
+            },
             { id: 'terrain' as View, label: 'Terrain', count: manual.length, icon: <Hand className="w-3 h-3" /> },
             { id: 'pool' as View, label: 'Pool observé', count: pool.length, hidden: !isCurator },
           ]
             .filter(t => !t.hidden)
-            .map(t => (
-              <button
-                key={t.id}
-                onClick={() => handleViewChange(t.id)}
-                className={`px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
-                  view === t.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t.icon}
-                {t.label}
-                <span className="text-[10px] text-muted-foreground">({t.count})</span>
-              </button>
-            ))}
+            .map(t => {
+              const isAmber = (t as any).tone === 'amber' && view !== t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => handleViewChange(t.id)}
+                  className={`px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
+                    view === t.id
+                      ? 'border-primary text-primary'
+                      : isAmber
+                      ? 'border-transparent text-amber-700 dark:text-amber-400 hover:text-amber-800'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t.icon}
+                  {t.label}
+                  <span
+                    className={`text-[10px] ${
+                      isAmber ? 'text-amber-600 font-semibold' : 'text-muted-foreground'
+                    }`}
+                  >
+                    ({t.count})
+                  </span>
+                </button>
+              );
+            })}
         </div>
 
         {/* Recherche pour pool/suggestions */}
