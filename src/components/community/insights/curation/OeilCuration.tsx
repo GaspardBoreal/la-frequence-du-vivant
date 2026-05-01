@@ -527,6 +527,17 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           isOpen={!!selectedSpecies}
           onClose={() => setSelectedSpecies(null)}
         />
+
+        {/* Sheet partagée — sources auditables d'une classification */}
+        <ClassificationEvidenceSheet
+          open={!!evidenceFor}
+          onClose={() => setEvidenceFor(null)}
+          curation={evidenceFor?.curation ?? null}
+          displayName={evidenceFor?.displayName}
+          scientificName={evidenceFor?.scientificName ?? null}
+          entityId={evidenceFor?.entityId ?? null}
+          isCurator={isCurator}
+        />
       </div>
     </TooltipProvider>
   );
