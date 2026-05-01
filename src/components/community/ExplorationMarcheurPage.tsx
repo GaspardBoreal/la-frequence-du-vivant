@@ -94,6 +94,7 @@ const ExplorationMarcheurPage: React.FC = () => {
     enabled: !!userId,
   });
   const userLevel = (communityProfile?.role as any) || 'marcheur';
+  const { isAdmin } = useAuth();
 
   // Resolve exploration_id from marche_event if needed
   const { data: resolvedExplorationId } = useQuery({
