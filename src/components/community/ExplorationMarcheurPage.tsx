@@ -461,6 +461,16 @@ const ExplorationMarcheurPage: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+
+      <ConvivialiteImmersiveView
+        open={convivialiteOpen}
+        onClose={() => setConvivialiteOpen(false)}
+        explorationId={effectiveExplorationId || undefined}
+        explorationName={exploration?.name}
+        userId={userId}
+        userRole={userLevel}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 };
