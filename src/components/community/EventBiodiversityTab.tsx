@@ -402,7 +402,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {activeSubTab === 'taxons' && (
           <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <SpeciesExplorer
-              species={allSpeciesAsBiodiversity}
+              species={allSpeciesWithFrNames}
               compact
               explorationId={explorationId}
               allEventMarches={allEventMarchesData}
