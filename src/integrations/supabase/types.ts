@@ -3722,6 +3722,7 @@ export type Database = {
         Args: { operation_type: string }
         Returns: boolean
       }
+      can_create_marche: { Args: { _user_id: string }; Returns: boolean }
       can_initialize_admin_system: { Args: never; Returns: boolean }
       check_email_exists: { Args: { _email: string }; Returns: boolean }
       check_is_admin_user: { Args: { check_user_id: string }; Returns: boolean }
