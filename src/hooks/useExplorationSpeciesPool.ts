@@ -21,20 +21,21 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
     queryFn: async (): Promise<ExplorationSpecies[]> => {
       if (!explorationId) return [];
 
-      // 1. Get all marche_event ids for this exploration
-      const { data: events, error: eventsErr } = await supabase
-        .from('marche_events')
-        .select('id')
+      // 1. Get all marche ids for this exploration via exploration_marches → marches
+      //    (source de vérité utilisée par collect-event-biodiversity)
+      const { data: em, error: emErr } = await supabase
+        .from('exploration_marches')
+        .select('marche_id')
         .eq('exploration_id', explorationId);
-      if (eventsErr) throw eventsErr;
-      const eventIds = (events || []).map(e => e.id);
-      if (eventIds.length === 0) return [];
+      if (emErr) throw emErr;
+      const marcheIds = (em || []).map((x: any) => x.marche_id).filter(Boolean);
+      if (marcheIds.length === 0) return [];
 
-      // 2. Get biodiversity snapshots for these events
+      // 2. Get biodiversity snapshots for these marches
       const { data: snaps, error: snapsErr } = await supabase
         .from('biodiversity_snapshots')
         .select('species_data')
-        .in('marche_id', eventIds);
+        .in('marche_id', marcheIds);
       if (snapsErr) throw snapsErr;
 
       // 3. Aggregate species by normalized scientific name
