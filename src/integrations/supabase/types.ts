@@ -1185,6 +1185,9 @@ export type Database = {
           ai_reason: string | null
           ai_score: number | null
           category: string | null
+          classification_confidence: number | null
+          classification_evidence: Json
+          classification_source: string
           created_at: string
           created_by: string | null
           description: string | null
@@ -1194,6 +1197,8 @@ export type Database = {
           exploration_id: string
           id: string
           media_ids: string[] | null
+          needs_review: boolean
+          secondary_categories: string[]
           sense: Database["public"]["Enums"]["curation_sense"]
           source: string
           title: string | null
@@ -1204,6 +1209,9 @@ export type Database = {
           ai_reason?: string | null
           ai_score?: number | null
           category?: string | null
+          classification_confidence?: number | null
+          classification_evidence?: Json
+          classification_source?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1213,6 +1221,8 @@ export type Database = {
           exploration_id: string
           id?: string
           media_ids?: string[] | null
+          needs_review?: boolean
+          secondary_categories?: string[]
           sense: Database["public"]["Enums"]["curation_sense"]
           source?: string
           title?: string | null
@@ -1223,6 +1233,9 @@ export type Database = {
           ai_reason?: string | null
           ai_score?: number | null
           category?: string | null
+          classification_confidence?: number | null
+          classification_evidence?: Json
+          classification_source?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1232,6 +1245,8 @@ export type Database = {
           exploration_id?: string
           id?: string
           media_ids?: string[] | null
+          needs_review?: boolean
+          secondary_categories?: string[]
           sense?: Database["public"]["Enums"]["curation_sense"]
           source?: string
           title?: string | null

@@ -1,0 +1,508 @@
+{
+  "version": "2026.05.01",
+  "description": "Référentiel curé d'espèces dordoniennes pour la classification La Fréquence du Vivant. Sources : INPN (TAXREF), UICN France, règlement UE 1143/2014, INRAE auxiliaires/ravageurs, Tela Botanica, Conservatoire Botanique National Sud-Atlantique. Chaque entrée est éditable par PR.",
+  "categories_definition": {
+    "indigene": "Espèce naturellement présente en France métropolitaine (statut INPN 'indigène' ou 'cryptogène')",
+    "bioindicatrice": "Espèce dont la présence/absence renseigne sur un facteur écologique mesurable (Ellenberg flore, IBGN macroinvertébrés, IBD diatomées, indices lichéniques)",
+    "auxiliaire": "Espèce rendant un service écosystémique direct mesurable : pollinisation, prédation de ravageurs, décomposition de matière organique",
+    "ravageur": "Espèce causant des dégâts économiques significatifs aux cultures (référencée EPPO Global Database, Ephytia INRAE, ITSAP)",
+    "eee": "Espèce exotique envahissante avérée — Liste UE 1143/2014 OU INPN 'EEE France métropolitaine'",
+    "patrimoniale": "Espèce protégée par arrêté national/régional OU classée Liste Rouge UICN France ≥ NT (Quasi menacée)"
+  },
+  "species": {
+    "Quercus robur": {
+      "primary": "indigene",
+      "secondary": ["patrimoniale"],
+      "evidence": [
+        {
+          "source": "INPN",
+          "ref_code": "TAXREF-cdnom-610645",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/610645",
+          "quote": "Statut biogéographique : Indigène en France métropolitaine. Espèce structurante des forêts de plaine."
+        }
+      ],
+      "habitat_dordogne": "Forêts caducifoliées, bocage, alluvions de la Dordogne",
+      "notes": "Espèce parapluie historique du bocage périgourdin"
+    },
+    "Quercus pubescens": {
+      "primary": "indigene",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "INPN",
+          "ref_code": "TAXREF-cdnom-610645",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/610641",
+          "quote": "Statut : Indigène. Caractéristique des coteaux calcaires du Périgord noir."
+        }
+      ]
+    },
+    "Castanea sativa": {
+      "primary": "indigene",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "INPN",
+          "ref_code": "TAXREF-cdnom-89304",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/89304",
+          "quote": "Statut : Indigène (cryptogène ancien). Pilier des forêts acides du Périgord."
+        }
+      ]
+    },
+    "Robinia pseudoacacia": {
+      "primary": "eee",
+      "secondary": ["auxiliaire"],
+      "evidence": [
+        {
+          "source": "INPN-EEE",
+          "ref_code": "TAXREF-cdnom-103029",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/103029",
+          "quote": "Espèce exotique envahissante avérée en France métropolitaine. Originaire d'Amérique du Nord, fortement invasive en bord de cours d'eau."
+        },
+        {
+          "source": "ITSAP",
+          "url": "https://www.itsap.asso.fr/",
+          "quote": "Plante mellifère majeure pour l'apiculture française (miel d'acacia)."
+        }
+      ],
+      "notes": "Cas paradoxal : EEE pour la biodiversité, mais ressource auxiliaire pour les pollinisateurs domestiques"
+    },
+    "Reynoutria japonica": {
+      "primary": "eee",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "UE-1143/2014",
+          "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:02016R1141-20220802",
+          "quote": "Liste de l'Union des espèces exotiques envahissantes préoccupantes pour l'Union (Renouée du Japon)."
+        },
+        {
+          "source": "INPN-EEE",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/103142",
+          "quote": "EEE avérée. Forte menace sur les ripisylves de la Dordogne."
+        }
+      ]
+    },
+    "Ludwigia grandiflora": {
+      "primary": "eee",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "UE-1143/2014",
+          "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:02016R1141-20220802",
+          "quote": "Jussie à grandes fleurs — Liste de l'Union (règlement EEE)."
+        }
+      ],
+      "notes": "Présente sur la basse Dordogne, herbiers monospécifiques étouffant la faune aquatique"
+    },
+    "Ailanthus altissima": {
+      "primary": "eee",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "UE-1143/2014",
+          "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:02016R1141-20220802",
+          "quote": "Ailante glanduleux — Liste de l'Union des EEE."
+        }
+      ]
+    },
+    "Ambrosia artemisiifolia": {
+      "primary": "eee",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "INPN-EEE",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/82046",
+          "quote": "Ambroisie à feuilles d'armoise — EEE avérée. Enjeu sanitaire (allergies au pollen)."
+        }
+      ]
+    },
+    "Myocastor coypus": {
+      "primary": "eee",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "INPN-EEE",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/61667",
+          "quote": "Ragondin — EEE avérée, classé nuisible. Dégâts sur berges et cultures riveraines."
+        }
+      ]
+    },
+    "Procambarus clarkii": {
+      "primary": "eee",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "UE-1143/2014",
+          "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:02016R1141-20220802",
+          "quote": "Écrevisse de Louisiane — Liste de l'Union des EEE. Vecteur de la peste de l'écrevisse."
+        }
+      ]
+    },
+    "Lutra lutra": {
+      "primary": "patrimoniale",
+      "secondary": ["indigene"],
+      "evidence": [
+        {
+          "source": "UICN-France",
+          "url": "https://uicn.fr/liste-rouge-mammiferes/",
+          "quote": "Loutre d'Europe — Liste Rouge France : LC mais espèce protégée nationalement."
+        },
+        {
+          "source": "Arrêté-23-avril-2007",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000465500/",
+          "quote": "Espèce de mammifère terrestre protégée sur l'ensemble du territoire et leurs habitats (article 2)."
+        }
+      ],
+      "notes": "Indicateur de qualité des cours d'eau, retour observé sur la Dordogne depuis 2000"
+    },
+    "Austropotamobius pallipes": {
+      "primary": "patrimoniale",
+      "secondary": ["bioindicatrice"],
+      "evidence": [
+        {
+          "source": "UICN-France",
+          "url": "https://uicn.fr/liste-rouge-france/",
+          "quote": "Écrevisse à pattes blanches — Liste Rouge France : VU (Vulnérable)."
+        },
+        {
+          "source": "Directive-Habitats-92/43/CEE",
+          "quote": "Annexes II et V — espèce d'intérêt communautaire."
+        }
+      ]
+    },
+    "Milvus migrans": {
+      "primary": "patrimoniale",
+      "secondary": ["indigene", "auxiliaire"],
+      "evidence": [
+        {
+          "source": "UICN-France",
+          "url": "https://uicn.fr/liste-rouge-oiseaux/",
+          "quote": "Milan noir — Liste Rouge France : LC, espèce protégée nationalement."
+        },
+        {
+          "source": "Arrêté-29-octobre-2009",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021384277/",
+          "quote": "Liste des oiseaux protégés sur l'ensemble du territoire."
+        }
+      ],
+      "notes": "Auxiliaire : nettoyeur (charognes), prédateur de petits rongeurs"
+    },
+    "Lullula arborea": {
+      "primary": "patrimoniale",
+      "secondary": ["bioindicatrice"],
+      "evidence": [
+        {
+          "source": "Directive-Oiseaux-2009/147/CE",
+          "quote": "Annexe I — Alouette lulu, espèce d'intérêt communautaire nécessitant la désignation de ZPS."
+        }
+      ],
+      "notes": "Bio-indicatrice des landes et pelouses sèches périgourdines"
+    },
+    "Salmo trutta fario": {
+      "primary": "patrimoniale",
+      "secondary": ["bioindicatrice", "indigene"],
+      "evidence": [
+        {
+          "source": "UICN-France",
+          "url": "https://uicn.fr/liste-rouge-poissons/",
+          "quote": "Truite fario — Liste Rouge France : LC. Indicatrice d'eaux fraîches et oxygénées."
+        }
+      ]
+    },
+    "Emys orbicularis": {
+      "primary": "patrimoniale",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "UICN-France",
+          "url": "https://uicn.fr/liste-rouge-reptiles-amphibiens/",
+          "quote": "Cistude d'Europe — Liste Rouge France : NT (Quasi menacée)."
+        },
+        {
+          "source": "Directive-Habitats-92/43/CEE",
+          "quote": "Annexes II et IV — protection stricte."
+        }
+      ]
+    },
+    "Apis mellifera": {
+      "primary": "auxiliaire",
+      "secondary": ["indigene"],
+      "evidence": [
+        {
+          "source": "INRAE",
+          "url": "https://www.inrae.fr/actualites/abeille-pollinisateur-essentiel",
+          "quote": "Abeille domestique — pollinisateur majeur, contribution estimée à 153 milliards € annuels au niveau mondial pour l'agriculture."
+        }
+      ]
+    },
+    "Lumbricus terrestris": {
+      "primary": "auxiliaire",
+      "secondary": ["bioindicatrice"],
+      "evidence": [
+        {
+          "source": "INRAE",
+          "url": "https://www.inrae.fr/actualites/vers-terre-ingenieurs-sols",
+          "quote": "Ver de terre commun — ingénieur du sol, structure et aère, indicateur clé de la qualité biologique des sols."
+        }
+      ]
+    },
+    "Erinaceus europaeus": {
+      "primary": "auxiliaire",
+      "secondary": ["patrimoniale", "indigene"],
+      "evidence": [
+        {
+          "source": "Arrêté-23-avril-2007",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000465500/",
+          "quote": "Hérisson d'Europe — espèce protégée. Article 2 de l'arrêté ministériel."
+        },
+        {
+          "source": "LPO",
+          "url": "https://www.lpo.fr/decouvrir-la-nature/fiches-especes/herisson",
+          "quote": "Auxiliaire du jardin : consomme limaces, vers, insectes ravageurs."
+        }
+      ]
+    },
+    "Coccinella septempunctata": {
+      "primary": "auxiliaire",
+      "secondary": ["indigene"],
+      "evidence": [
+        {
+          "source": "INRAE-Ephytia",
+          "url": "http://ephytia.inra.fr/fr/C/5081/Hypp-Coccinella-septempunctata",
+          "quote": "Coccinelle à 7 points — auxiliaire majeur, prédateur de pucerons."
+        }
+      ]
+    },
+    "Bombus terrestris": {
+      "primary": "auxiliaire",
+      "secondary": ["indigene"],
+      "evidence": [
+        {
+          "source": "OPIE",
+          "url": "https://www.insectes.org/",
+          "quote": "Bourdon terrestre — pollinisateur clé, complémentaire des abeilles pour la pollinisation par vibration."
+        }
+      ]
+    },
+    "Aphis fabae": {
+      "primary": "ravageur",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "INRAE-Ephytia",
+          "url": "http://ephytia.inra.fr/fr/C/5081/",
+          "quote": "Puceron noir de la fève — ravageur polyphage des cultures maraîchères et de la betterave."
+        },
+        {
+          "source": "EPPO",
+          "url": "https://gd.eppo.int/taxon/APHIFA",
+          "quote": "EPPO Global Database : pest status confirmed in France."
+        }
+      ]
+    },
+    "Drosophila suzukii": {
+      "primary": "ravageur",
+      "secondary": ["eee"],
+      "evidence": [
+        {
+          "source": "EPPO",
+          "url": "https://gd.eppo.int/taxon/DROSSU",
+          "quote": "Drosophile suzukii — ravageur émergent des fruits rouges. Originaire d'Asie, EEE avérée en France."
+        }
+      ]
+    },
+    "Cydia pomonella": {
+      "primary": "ravageur",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "EPPO",
+          "url": "https://gd.eppo.int/taxon/CYDIPO",
+          "quote": "Carpocapse des pommes — principal ravageur des pommiers et noyers (enjeu majeur en Périgord)."
+        }
+      ]
+    },
+    "Halyomorpha halys": {
+      "primary": "ravageur",
+      "secondary": ["eee"],
+      "evidence": [
+        {
+          "source": "EPPO",
+          "url": "https://gd.eppo.int/taxon/HALYHA",
+          "quote": "Punaise diabolique — EEE et ravageur polyphage en expansion en France."
+        }
+      ]
+    },
+    "Taraxacum officinale": {
+      "primary": "bioindicatrice",
+      "secondary": ["indigene", "auxiliaire"],
+      "evidence": [
+        {
+          "source": "Tela-Botanica",
+          "url": "https://www.tela-botanica.org/bdtfx-nn-65327",
+          "quote": "Pissenlit — indicateur Ellenberg N=8 (sols riches en azote), nitrophile."
+        },
+        {
+          "source": "INRAE",
+          "quote": "Plante mellifère précoce essentielle pour les pollinisateurs au sortir de l'hiver."
+        }
+      ]
+    },
+    "Urtica dioica": {
+      "primary": "bioindicatrice",
+      "secondary": ["indigene", "auxiliaire"],
+      "evidence": [
+        {
+          "source": "Tela-Botanica",
+          "url": "https://www.tela-botanica.org/bdtfx-nn-69866",
+          "quote": "Ortie dioïque — Ellenberg N=8 (nitrophile), indicateur de sols riches en azote, souvent perturbés."
+        }
+      ],
+      "notes": "Plante hôte de nombreux papillons (paon-du-jour, vulcain, petite tortue)"
+    },
+    "Plantago lanceolata": {
+      "primary": "bioindicatrice",
+      "secondary": ["indigene"],
+      "evidence": [
+        {
+          "source": "Tela-Botanica",
+          "url": "https://www.tela-botanica.org/bdtfx-nn-50313",
+          "quote": "Plantain lancéolé — Ellenberg, indicateur de prairies pâturées modérément, sols compactés."
+        }
+      ]
+    },
+    "Cladonia": {
+      "primary": "bioindicatrice",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "AFLs",
+          "url": "https://www.afl-lichenologie.fr/",
+          "quote": "Lichens du genre Cladonia — bio-indicateurs de la qualité de l'air (sensibilité au SO2 et aux NOx)."
+        }
+      ]
+    },
+    "Iris pseudacorus": {
+      "primary": "indigene",
+      "secondary": ["bioindicatrice"],
+      "evidence": [
+        {
+          "source": "Tela-Botanica",
+          "url": "https://www.tela-botanica.org/bdtfx-nn-34707",
+          "quote": "Iris faux-acore — indigène, indicateur de zones humides, bordures de cours d'eau."
+        }
+      ]
+    },
+    "Cardamine pratensis": {
+      "primary": "indigene",
+      "secondary": ["bioindicatrice"],
+      "evidence": [
+        {
+          "source": "Tela-Botanica",
+          "url": "https://www.tela-botanica.org/bdtfx-nn-13750",
+          "quote": "Cardamine des prés (Fleur de coucou) — indigène, indicateur de prairies humides peu intensifiées."
+        }
+      ]
+    },
+    "Prunus laurocerasus": {
+      "primary": "eee",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "INPN-EEE",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/116507",
+          "quote": "Laurier-cerise — EEE émergente, naturalisé en sous-bois, étouffe la flore indigène."
+        }
+      ]
+    },
+    "Buddleja davidii": {
+      "primary": "eee",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "INPN-EEE",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/86305",
+          "quote": "Arbre aux papillons — EEE avérée, colonise friches et bords de routes."
+        }
+      ]
+    },
+    "Turdus merula": {
+      "primary": "indigene",
+      "secondary": [],
+      "evidence": [
+        {
+          "source": "INPN",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/4117",
+          "quote": "Merle noir — indigène, espèce commune protégée nationalement (Arrêté 29 oct. 2009)."
+        }
+      ]
+    },
+    "Parus major": {
+      "primary": "indigene",
+      "secondary": ["auxiliaire"],
+      "evidence": [
+        {
+          "source": "INPN",
+          "url": "https://inpn.mnhn.fr/espece/cd_nom/3764",
+          "quote": "Mésange charbonnière — indigène, espèce protégée. Auxiliaire : prédation des chenilles processionnaires."
+        }
+      ]
+    },
+    "Pieris brassicae": {
+      "primary": "ravageur",
+      "secondary": ["indigene"],
+      "evidence": [
+        {
+          "source": "INRAE-Ephytia",
+          "url": "http://ephytia.inra.fr/",
+          "quote": "Piéride du chou — ravageur des Brassicacées (chou, colza). Indigène mais nuisible aux cultures."
+        }
+      ]
+    },
+    "Vipera aspis": {
+      "primary": "patrimoniale",
+      "secondary": ["indigene"],
+      "evidence": [
+        {
+          "source": "Arrêté-19-novembre-2007",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000017876221/",
+          "quote": "Vipère aspic — espèce de reptile protégée (article 4)."
+        }
+      ]
+    },
+    "Salamandra salamandra": {
+      "primary": "patrimoniale",
+      "secondary": ["bioindicatrice"],
+      "evidence": [
+        {
+          "source": "Arrêté-19-novembre-2007",
+          "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000017876221/",
+          "quote": "Salamandre tachetée — espèce protégée (article 3). Bio-indicatrice des forêts humides matures."
+        }
+      ]
+    },
+    "Ophrys apifera": {
+      "primary": "patrimoniale",
+      "secondary": ["indigene"],
+      "evidence": [
+        {
+          "source": "Liste-Rouge-Orchidees-France",
+          "url": "https://uicn.fr/liste-rouge-orchidees/",
+          "quote": "Ophrys abeille — Liste Rouge France : LC mais nombreuses populations en régression locale."
+        }
+      ],
+      "notes": "Orchidée sauvage emblématique des pelouses calcicoles du Périgord"
+    },
+    "Helianthemum nummularium": {
+      "primary": "indigene",
+      "secondary": ["bioindicatrice"],
+      "evidence": [
+        {
+          "source": "Tela-Botanica",
+          "url": "https://www.tela-botanica.org/bdtfx-nn-31459",
+          "quote": "Hélianthème nummulaire — indicateur de pelouses calcaires sèches, sols pauvres."
+        }
+      ]
+    }
+  }
+}
