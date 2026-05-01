@@ -32,7 +32,7 @@ const ConvivialiteImmersiveView: React.FC<Props> = ({
   const [mode, setMode] = useState<Mode>('mosaic');
   const [reportPhoto, setReportPhoto] = useState<ConvivialitePhoto | null>(null);
   const { data: photos = [], isLoading } = useConvivialitePhotos(explorationId);
-  const { canUpload } = useCanUploadConvivialite(userId, explorationId, userRole);
+  const { canUpload } = useCanUploadConvivialite(userId, explorationId, userRole, isAdmin);
   const { mutate: deletePhoto } = useDeleteConvivialitePhoto(explorationId);
   const { mutate: reportPhotoMut } = useReportConvivialitePhoto();
 
