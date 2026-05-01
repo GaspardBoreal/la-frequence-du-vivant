@@ -566,7 +566,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [createPosition, setCreatePosition] = useState<{ lat: number; lng: number } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const userCanCreate = canCreateMarche(userLevel);
+  const userCanCreate = canCreateMarche(userLevel, isAdmin);
 
   // Photo GPS drop tool
   const { photoPoint, triggerFileInput, clear: clearPhotoPoint, FileInput } = usePhotoGpsDrop();
