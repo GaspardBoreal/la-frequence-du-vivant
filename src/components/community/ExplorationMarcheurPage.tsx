@@ -13,6 +13,7 @@ import { useActivityTracker } from '@/hooks/useActivityTracker';
 import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import MarcheursTab from './exploration/MarcheursTab';
 import ExplorationCarteTab from './exploration/ExplorationCarteTab';
+import { useAuth } from '@/hooks/useAuth';
 import EventBiodiversityTab from './EventBiodiversityTab';
 import ApprendreTab from './insights/ApprendreTab';
 
