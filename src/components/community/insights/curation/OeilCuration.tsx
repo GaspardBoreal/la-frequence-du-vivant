@@ -30,7 +30,7 @@ interface Props {
   isCurator: boolean;
 }
 
-type View = 'selection' | 'suggestions' | 'pool' | 'terrain';
+type View = 'selection' | 'suggestions' | 'review' | 'pool' | 'terrain';
 
 // CATEGORIES, getCatStyle, getCatLabel are imported from ./curationCategories
 
