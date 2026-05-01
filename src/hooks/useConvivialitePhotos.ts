@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ImageOptimizer } from '@/utils/imageOptimizer';
+import { ImageOptimizer, type OptimizationStage } from '@/utils/imageOptimizer';
+import { HeicConversionError, HEIC_USER_MESSAGE } from '@/utils/heicConverter';
 import { toast } from 'sonner';
 
 export interface ConvivialitePhoto {
