@@ -1,11 +1,11 @@
 import React from 'react';
-import { ImageOff, Star, Loader2 } from 'lucide-react';
+import { ImageOff, Star, Loader2, AlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import type { SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import PinToggle from './PinToggle';
 import type { ExplorationCuration } from '@/hooks/useExplorationCurations';
-import { getCatStyle, getCatLabel } from './curationCategories';
+import { CategoryBadgeCluster } from './CategoryBadge';
 
 export interface CuratedSpeciesItem {
   key: string;
@@ -35,6 +35,8 @@ interface Props {
   onClick?: (species: CuratedSpeciesItem, displayName: string, photos: string[]) => void;
   /** Slot rendered under the title (e.g. editable category control) */
   footer?: React.ReactNode;
+  /** Open the classification evidence sheet for this curation */
+  onOpenEvidence?: (curation: ExplorationCuration, displayName: string) => void;
 }
 
 const scoreToStars = (score?: number | null) => {
@@ -51,6 +53,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
   showAiBadges,
   onClick,
   footer,
+  onOpenEvidence,
 }) => {
   // Only fetch a remote photo when we don't already have a usable one
   const shouldFetchPhoto = !species.imageUrl && !!species.scientificName;
@@ -73,6 +76,10 @@ const CuratedSpeciesCard: React.FC<Props> = ({
   const isPinned = !!curation && curation.display_order < 9999;
   const stars = scoreToStars(curation?.ai_score);
   const category = curation?.category || null;
+  const secondaries = (curation?.secondary_categories ?? []) as string[];
+  const evidence = (curation?.classification_evidence ?? []) as any[];
+  const needsReview = !!curation?.needs_review;
+  const hasEvidence = evidence.length > 0 || !!curation?.classification_source;
 
   const displayName =
     species.displayName ||
@@ -132,7 +139,27 @@ const CuratedSpeciesCard: React.FC<Props> = ({
           {species.count} obs.
         </div>
 
-        {showAiBadges && stars > 0 && (
+        {needsReview && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-amber-500/95 text-white text-[10px] font-semibold backdrop-blur-sm flex items-center gap-1 cursor-help"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (curation && onOpenEvidence) onOpenEvidence(curation, displayName);
+                }}
+              >
+                <AlertCircle className="w-2.5 h-2.5" />
+                <span>à réviser</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p className="text-xs">Classification automatique à confirmer.</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {showAiBadges && stars > 0 && !needsReview && (
           <Tooltip>
             <TooltipTrigger asChild>
               <div
@@ -170,15 +197,20 @@ const CuratedSpeciesCard: React.FC<Props> = ({
           </p>
         )}
 
-        {/* Category badge — visible read-only as soon as a category exists,
-            even on non-pinned AI suggestions. The editable footer (curators)
-            replaces it on pinned cards. */}
-        {!footer && category && (
-          <span
-            className={`inline-block px-1.5 py-0.5 rounded-md text-[10px] font-medium border ${getCatStyle(category)}`}
-          >
-            {getCatLabel(category)}
-          </span>
+        {/* Cluster catégories — badges cliquables qui ouvrent la sheet d'évidences.
+            Le footer (édition curateur sur cartes épinglées) le remplace si fourni. */}
+        {!footer && (category || secondaries.length > 0 || needsReview) && (
+          <CategoryBadgeCluster
+            primary={category}
+            secondary={secondaries}
+            hasEvidence={hasEvidence}
+            needsReview={needsReview}
+            onOpen={
+              curation && onOpenEvidence
+                ? () => onOpenEvidence(curation, displayName)
+                : undefined
+            }
+          />
         )}
 
         {footer}

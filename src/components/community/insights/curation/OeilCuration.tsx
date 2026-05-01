@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Eye, Search, Sparkles, X, Plus, Wand2, Loader2, Hand } from 'lucide-react';
+import { Eye, Search, Sparkles, X, Plus, Wand2, Loader2, Hand, AlertCircle } from 'lucide-react';
+import ClassificationEvidenceSheet from './ClassificationEvidenceSheet';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import {
   useExplorationCurations,
@@ -29,7 +30,7 @@ interface Props {
   isCurator: boolean;
 }
 
-type View = 'selection' | 'suggestions' | 'pool' | 'terrain';
+type View = 'selection' | 'suggestions' | 'review' | 'pool' | 'terrain';
 
 // CATEGORIES, getCatStyle, getCatLabel are imported from ./curationCategories
 
@@ -52,6 +53,29 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+  // Phase 3 — sheet partagée pour exposer les évidences sourcées
+  const [evidenceFor, setEvidenceFor] = useState<{
+    curation: ExplorationCuration;
+    displayName: string;
+    scientificName: string | null;
+    entityId: string | null;
+  } | null>(null);
+
+  const handleOpenEvidence = React.useCallback(
+    (curation: ExplorationCuration, displayName: string) => {
+      const species =
+        curation.entity_id && pool
+          ? pool.find((s) => s.key.toLowerCase() === curation.entity_id!.toLowerCase())
+          : undefined;
+      setEvidenceFor({
+        curation,
+        displayName,
+        scientificName: species?.scientificName ?? null,
+        entityId: curation.entity_id,
+      });
+    },
+    [pool],
+  );
 
   // Apply category filter on a list of {species, curation}
   const applyCategoryFilter = <T extends { curation?: ExplorationCuration }>(items: T[]): T[] => {
@@ -138,6 +162,30 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     [pool, curationByKey]
   );
 
+  // Phase 3 — espèces dont la classification automatique attend une validation humaine
+  const reviewItems = useMemo(
+    () =>
+      pool
+        .map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))
+        .filter(x => !!x.curation?.needs_review)
+        .sort(
+          (a, b) =>
+            (a.curation?.classification_confidence ?? 0) -
+            (b.curation?.classification_confidence ?? 0),
+        ),
+    [pool, curationByKey],
+  );
+
+  // Garde la sheet d'évidences synchronisée avec les données fraîches
+  // après une validation curateur (needs_review → false).
+  React.useEffect(() => {
+    if (!evidenceFor) return;
+    const fresh = curations.find(c => c.id === evidenceFor.curation.id);
+    if (fresh && fresh !== evidenceFor.curation) {
+      setEvidenceFor({ ...evidenceFor, curation: fresh });
+    }
+  }, [curations, evidenceFor]);
+
   const filteredPool = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return pool;
@@ -159,6 +207,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       source = aiSuggestions;
     } else if (view === 'pool') {
       source = filteredPool.map(s => ({ curation: curationByKey.get(s.key.toLowerCase()) }));
+    } else if (view === 'review') {
+      source = reviewItems;
     }
     source.forEach(x => {
       const cat = x.curation?.category;
@@ -261,25 +311,44 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           {[
             { id: 'selection' as View, label: 'Sélection finale', count: pinnedSpecies.length },
             { id: 'suggestions' as View, label: 'Suggestions IA', count: aiSuggestions.length, hidden: !isCurator },
+            {
+              id: 'review' as View,
+              label: 'À réviser',
+              count: reviewItems.length,
+              hidden: !isCurator,
+              icon: <AlertCircle className="w-3 h-3" />,
+              tone: reviewItems.length > 0 ? 'amber' : undefined,
+            },
             { id: 'terrain' as View, label: 'Terrain', count: manual.length, icon: <Hand className="w-3 h-3" /> },
             { id: 'pool' as View, label: 'Pool observé', count: pool.length, hidden: !isCurator },
           ]
             .filter(t => !t.hidden)
-            .map(t => (
-              <button
-                key={t.id}
-                onClick={() => handleViewChange(t.id)}
-                className={`px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
-                  view === t.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t.icon}
-                {t.label}
-                <span className="text-[10px] text-muted-foreground">({t.count})</span>
-              </button>
-            ))}
+            .map(t => {
+              const isAmber = (t as any).tone === 'amber' && view !== t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => handleViewChange(t.id)}
+                  className={`px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
+                    view === t.id
+                      ? 'border-primary text-primary'
+                      : isAmber
+                      ? 'border-transparent text-amber-700 dark:text-amber-400 hover:text-amber-800'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t.icon}
+                  {t.label}
+                  <span
+                    className={`text-[10px] ${
+                      isAmber ? 'text-amber-600 font-semibold' : 'text-muted-foreground'
+                    }`}
+                  >
+                    ({t.count})
+                  </span>
+                </button>
+              );
+            })}
         </div>
 
         {/* Recherche pour pool/suggestions */}
@@ -372,6 +441,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             upsert={upsert}
             translationMap={translationMap}
             onSpeciesClick={handleSpeciesClick}
+            onOpenEvidence={handleOpenEvidence}
           />
         )}
 
@@ -406,7 +476,35 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             upsert={upsert}
             translationMap={translationMap}
             onSpeciesClick={handleSpeciesClick}
+            onOpenEvidence={handleOpenEvidence}
           />
+        )}
+
+        {/* Vue À réviser — classifications automatiques en attente de validation */}
+        {view === 'review' && (
+          <div className="space-y-3">
+            {reviewItems.length > 0 && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <p>
+                  Ces espèces ont une classification automatique à confirmer.
+                  Cliquez sur un badge pour voir les sources, puis validez ou
+                  corrigez. Triées de la confiance la plus faible à la plus
+                  élevée.
+                </p>
+              </div>
+            )}
+            <SpeciesGrid
+              items={applyCategoryFilter(reviewItems)}
+              isCurator={isCurator}
+              explorationId={explorationId}
+              emptyMessage="Aucune classification en attente — bravo, tout est à jour !"
+              upsert={upsert}
+              translationMap={translationMap}
+              onSpeciesClick={handleSpeciesClick}
+              onOpenEvidence={handleOpenEvidence}
+            />
+          </div>
         )}
 
         {/* Vue Terrain */}
@@ -429,6 +527,17 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           isOpen={!!selectedSpecies}
           onClose={() => setSelectedSpecies(null)}
         />
+
+        {/* Sheet partagée — sources auditables d'une classification */}
+        <ClassificationEvidenceSheet
+          open={!!evidenceFor}
+          onClose={() => setEvidenceFor(null)}
+          curation={evidenceFor?.curation ?? null}
+          displayName={evidenceFor?.displayName}
+          scientificName={evidenceFor?.scientificName ?? null}
+          entityId={evidenceFor?.entityId ?? null}
+          isCurator={isCurator}
+        />
       </div>
     </TooltipProvider>
   );
@@ -444,6 +553,7 @@ const SpeciesGrid: React.FC<{
   upsert: ReturnType<typeof useUpsertCuration>;
   translationMap: Map<string, SpeciesTranslation>;
   onSpeciesClick: (species: CuratedSpeciesItem, displayName: string, photos: string[]) => void;
+  onOpenEvidence?: (curation: ExplorationCuration, displayName: string) => void;
 }> = ({
   items,
   isCurator,
@@ -453,6 +563,7 @@ const SpeciesGrid: React.FC<{
   upsert,
   translationMap,
   onSpeciesClick,
+  onOpenEvidence,
 }) => {
   if (items.length === 0) {
     return (
@@ -480,6 +591,7 @@ const SpeciesGrid: React.FC<{
             translation={translation}
             showAiBadges={showAiBadges}
             onClick={onSpeciesClick}
+            onOpenEvidence={onOpenEvidence}
             footer={
               isPinned && curation ? (
                 <CategoryControl

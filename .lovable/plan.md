@@ -1,229 +1,115 @@
-## Vision
+## Phase 3 — Sources visibles et curation augmentée
 
-Refonte de la classification des espèces avec un référentiel **sourçable, explicable, auditable** — chaque badge devient une porte d'entrée pédagogique vers la connaissance qui l'a produit. La classification IA passe d'un acte opaque à un **dialogue transparent** entre savoirs locaux, bases publiques et intelligence artificielle.
+Objectif : exposer dans l'UI les évidences sourcées produites par le moteur cascade (Phase 2), permettre la multi-catégorisation et donner aux curateurs un point d'entrée dédié pour valider les classifications incertaines.
 
-## Nouveau référentiel — 6 catégories
+### 1. Étendre le type `ExplorationCuration`
 
-| Code | Label | Couleur | Définition opérationnelle |
-|---|---|---|---|
-| `indigene` | Indigène | vert sauge | Naturellement présente en Dordogne ; statut INPN « indigène » ou « cryptogène » |
-| `bioindicatrice` | Bio-indicatrice | terracotta | Sa présence/absence renseigne sur un facteur écologique (Ellenberg, IBGN, IBD) |
-| `auxiliaire` | Auxiliaire | bleu ciel | Service écosystémique direct : pollinisation, prédation de ravageurs, décomposition |
-| `ravageur` | Ravageur | ocre | Atteinte économique aux cultures (référencé EPPO / Ephytia / INRAE) |
-| `eee` | EEE | rose-rouge | Liste UE 1143/2014 OU INPN « EEE avérée » France métropolitaine |
-| `patrimoniale` | Patrimoniale | violet | Protection légale (arrêté national/régional) OU Liste Rouge UICN France ≥ NT |
+Fichier : `src/hooks/useExplorationCurations.ts`
 
-**Catégorisation hybride :** une catégorie principale (badge proéminent) + 0 à 2 catégories secondaires (badges discrets). Ex: Pissenlit = `bioindicatrice` (principal) + `indigene` + `auxiliaire`.
+Ajouter les champs déjà présents en base (Phase 1) au type TS et les remonter dans les requêtes :
+- `secondary_categories: string[]`
+- `classification_evidence: Array<{ source: string; quote?: string; url?: string; reference?: string }>`
+- `classification_source: 'knowledge_base' | 'gbif' | 'inaturalist' | 'ai' | 'curator' | null`
+- `classification_confidence: number | null`
+- `needs_review: boolean`
 
-## Architecture du référentiel — cascade en 3 niveaux
+Étendre `UpsertPayload` pour permettre à un curateur d'éditer `secondary_categories` et de basculer `needs_review = false` (acte de validation humaine, qui force aussi `classification_source = 'curator'`).
 
-```text
-┌─ NIVEAU 1 — JSON local cure (~250 espèces dordoniennes) ─────────┐
-│  Fichier : src/data/species-knowledge-base.json                  │
-│  Versionnable, éditable en PR, source la plus rapide & fiable    │
-│  Format : { sciName, primary, secondary[], evidence[] }          │
-│  Évidences pré-rédigées avec URL INPN/UICN/UE                    │
-└─────────────┬────────────────────────────────────────────────────┘
-              │ miss
-              ▼
-┌─ NIVEAU 2 — Enrichissement API (edge function) ──────────────────┐
-│  • GBIF Species API → statut taxonomique, distribution           │
-│  • iNaturalist /taxa/{id} → conservation_status, establishment   │
-│  • Détection EEE par croisement avec liste UE (statique)         │
-└─────────────┬────────────────────────────────────────────────────┘
-              │ ambiguous / unknown
-              ▼
-┌─ NIVEAU 3 — IA avec citation obligatoire ───────────────────────┐
-│  Lovable AI (gemini-3-flash-preview) avec tool calling strict   │
-│  Doit fournir au moins 1 evidence{source,url,quote} ou          │
-│  marquer needs_review=true. Pas de classification "à l'aveugle".│
-└─────────────────────────────────────────────────────────────────┘
+### 2. Composant `<CategoryBadge />`
+
+Nouveau fichier : `src/components/community/insights/curation/CategoryBadge.tsx`
+
+Badge pastille réutilisable (remplace les `<span>` actuels dans `CuratedSpeciesCard` et la page publique) :
+- Props : `category`, `size?: 'xs' | 'sm'`, `variant?: 'primary' | 'secondary'`, `evidence?`, `source?`, `confidence?`, `onClick?`.
+- Style : reprend `getCatStyle(category)`. Variant `secondary` = même teinte mais opacité réduite + bordure dashed pour distinguer la principale.
+- Icône `Info` (Lucide) discrète à droite si `evidence?.length > 0` ou `source` connu.
+- Au clic → ouvre `ClassificationEvidenceSheet` (state local ou via prop `onClick`).
+- Si `needs_review`, point ambré clignotant en haut-droite.
+
+### 3. Composant `<ClassificationEvidenceSheet />`
+
+Nouveau fichier : `src/components/community/insights/curation/ClassificationEvidenceSheet.tsx`
+
+Drawer (shadcn `Sheet`, side `right` desktop, `bottom` mobile) pour exposer le « pourquoi » d'une classification :
+
+```
++----------------------------------+
+| Pissenlit  ·  Taraxacum officinale|
+| [Bio-indicatrice] (principale)    |
+| [Indigène] (secondaire)           |
++----------------------------------+
+| Niveau de confiance : 95%         |
+| Source : Base de connaissance     |
+| Validé par : système (auto)       |
++----------------------------------+
+| Évidences                         |
+| ─ INPN TAXREF v17                 |
+|   « Taraxacum officinale, statut  |
+|    indigène France métropolitaine »|
+|   ↗ Lien INPN                     |
+| ─ Indices Ellenberg (N=7)         |
+|   « Indicateur de sols riches en  |
+|    azote »                        |
+|   ↗ Référence Julve 1998          |
++----------------------------------+
+| [Catégorie correcte ?]            |
+| [Modifier la classification]      | ← curateurs uniquement
++----------------------------------+
 ```
 
-## Schéma de données
+Sections :
+- **En-tête** : nom FR + scientifique, badges principal + secondaires.
+- **Métadonnées** : `classification_source` (libellé humain : « Base de connaissance vérifiée », « Analyse IA », « Validé par un curateur »), `classification_confidence` (barre de progression), date d'analyse.
+- **Évidences** : liste des items de `classification_evidence` (source, citation entre guillemets, lien externe). État vide si IA sans citation : message « Cette classification a été déduite par l'IA sans citation vérifiée — à réviser ».
+- **Bandeau « À réviser »** si `needs_review = true` : texte explicatif + CTA curateur « Valider cette classification » (mute `useUpsertCuration` → `needs_review: false`, `classification_source: 'curator'`).
+- **Actions curateur** : bouton « Modifier » qui ouvre un mini-éditeur (catégorie principale via select + multi-select pour secondaires, parmi les 5 autres).
 
-**Migration SQL** sur `exploration_curations` :
+### 4. Carte multi-badges
 
-```sql
-ALTER TABLE exploration_curations
-  ADD COLUMN secondary_categories text[] DEFAULT '{}',
-  ADD COLUMN classification_evidence jsonb DEFAULT '[]'::jsonb,
-  ADD COLUMN classification_source text DEFAULT 'ai',
-    -- 'knowledge_base' | 'gbif' | 'inaturalist' | 'ai' | 'curator'
-  ADD COLUMN classification_confidence numeric(3,2),
-    -- 0.00 à 1.00
-  ADD COLUMN needs_review boolean DEFAULT false;
+Fichier : `src/components/community/insights/curation/CuratedSpeciesCard.tsx`
 
-CREATE INDEX idx_curations_needs_review
-  ON exploration_curations(exploration_id) WHERE needs_review = true;
-```
+- Remplacer le `<span>` de catégorie unique par un cluster `<CategoryBadge>` :
+  - 1 badge principal (taille `sm`), puis jusqu'à 2 badges secondaires (taille `xs`, variant `secondary`).
+  - Si plus de 2 secondaires : « +N » qui ouvre la sheet.
+- Pastille « À réviser » (point ambré + tooltip) en overlay top-left de la vignette quand `needs_review`.
+- Click sur un badge → ouvre la sheet (state remonté via prop optionnelle `onOpenEvidence(curation)` à `OeilCuration`, qui contrôle un seul Sheet partagé pour éviter les multiples portails).
 
-**Format `classification_evidence`** (JSON) :
-```json
-[
-  { "source": "INPN", "ref_code": "TAXREF-103027",
-    "url": "https://inpn.mnhn.fr/espece/cd_nom/103027",
-    "quote": "Statut: Indigène. Protection nationale art. 1.",
-    "fetched_at": "2026-05-01" }
-]
-```
+### 5. Onglet « À réviser » dans `OeilCuration`
 
-## Fichier `species-knowledge-base.json` — structure
+Fichier : `src/components/community/insights/curation/OeilCuration.tsx`
 
-```json
-{
-  "version": "2026.05.01",
-  "species": {
-    "Quercus robur": {
-      "primary": "indigene",
-      "secondary": ["patrimoniale"],
-      "evidence": [
-        { "source": "INPN", "ref_code": "TAXREF-cdnom-610645",
-          "url": "https://inpn.mnhn.fr/espece/cd_nom/610645",
-          "quote": "Statut biogéographique : Indigène en France métropolitaine" }
-      ],
-      "habitat_dordogne": "Forêts de plaine, bocage",
-      "notes": "Espèce parapluie historique du bocage périgourdin"
-    },
-    "Robinia pseudoacacia": {
-      "primary": "eee",
-      "secondary": ["auxiliaire"],
-      "evidence": [
-        { "source": "INPN-EEE", "url": "https://inpn.mnhn.fr/espece/cd_nom/103029",
-          "quote": "Espèce exotique envahissante avérée — Liste France métropolitaine" }
-      ]
-    }
-  }
-}
-```
+- Ajouter un 5ᵉ onglet (curateurs uniquement), entre « Suggestions IA » et « Terrain » :
+  ```
+  { id: 'review', label: 'À réviser', count: needsReviewCount, icon: <AlertCircle/>, hidden: !isCurator }
+  ```
+- Calcule `needsReviewItems = pool.filter(s => curationByKey.get(s.key)?.needs_review)`.
+- Vue dédiée : grille triée par `classification_confidence` ascendant. Bandeau d'intro : « Ces espèces ont une classification automatique à confirmer. Cliquez sur un badge pour voir les sources, puis validez ou corrigez. »
+- Compteur affiché en rouge/ambré si > 0 pour signaler au curateur qu'il y a du travail.
+- Filtre catégorie réutilisé tel quel.
 
-Couvre les ~250 espèces les plus probables en Dordogne (chêne pédonculé, robinier, jussie, loutre, milan noir, pissenlit, pucerons communs, abeilles…). Versionné dans le repo, éditable par PR, **auditable**.
+### 6. Sheet partagée au niveau `OeilCuration`
 
-## Edge function refactorisée — `analyze-exploration-species`
+Pour éviter d'instancier une `Sheet` par carte :
+- State `evidenceFor: ExplorationCuration | null` dans `OeilCuration`.
+- Passé à `SpeciesGrid` puis à `CuratedSpeciesCard` via `onOpenEvidence`.
+- Une seule `<ClassificationEvidenceSheet curation={evidenceFor} species={...} onClose={...} />` rendue en bas du composant.
 
-```text
-1. Auth + curator check (inchangé)
-2. Build species pool depuis biodiversity_snapshots (inchangé)
-3. Pour chaque espèce :
-   a. Lookup dans knowledge-base.json → si trouvé : source='knowledge_base', confidence=1.0
-   b. Sinon → fetch GBIF + iNaturalist en parallèle, croise avec liste EEE statique
-   c. Sinon → batch IA (max 30 espèces/appel) avec tool schema imposant evidence[]
-4. Insert dans exploration_curations avec evidence + source + confidence
-5. needs_review=true si confidence < 0.6 OU si evidence.length === 0
-```
+### Détails techniques
 
-## UI — composants à créer / refondre
+- **Aucune nouvelle migration SQL** : les colonnes existent déjà depuis Phase 1.
+- **Compatibilité** : tant qu'une curation n'a pas encore été retraitée par le nouveau pipeline, `secondary_categories=[]`, `classification_evidence=[]`, `classification_source=null`. Les badges et la sheet doivent gérer ces cas (afficher « Source non documentée » + CTA « Relancer l'analyse IA »).
+- **Lecteurs publics** : la sheet et le badge cliquable fonctionnent aussi pour `isCurator=false` (lecture seule, pas de bouton de modification). C'est le socle de l'expérience publique « voir d'où vient cette information ».
+- **i18n / sobriété** : libellés sources humanisés via une petite map dans `curationCategories.ts` (`SOURCE_LABELS`). Citations affichées en italique entre guillemets français « ».
 
-### A. Badge cliquable — `<CategoryBadge />`
-Click → ouvre `<ClassificationEvidenceSheet />` (Sheet shadcn) avec :
-- Label catégorie + couleur + icône
-- Liste des `evidence` : source (logo INPN/UICN/GBIF), citation, lien externe
-- Niveau de confiance (jauge)
-- Source (knowledge_base / gbif / ai / curator) avec libellé clair
-- Si curateur : bouton « Corriger la classification »
+### Fichiers touchés
 
-### B. Card refondue — multi-badges
-```text
-┌──────────────┐
-│ [photo]      │
-│              │
-│ Pissenlit    │
-│ Taraxacum    │
-│ ┌─────────┐  │  ← badge principal (pleine couleur)
-│ │ Bio-ind │  │
-│ └─────────┘  │
-│ ⊕Indigène ⊕Auxiliaire   ← secondaires (outline)
-└──────────────┘
-```
+- Nouveau : `src/components/community/insights/curation/CategoryBadge.tsx`
+- Nouveau : `src/components/community/insights/curation/ClassificationEvidenceSheet.tsx`
+- Modifié : `src/hooks/useExplorationCurations.ts` (type + payload + select)
+- Modifié : `src/components/community/insights/curation/CuratedSpeciesCard.tsx` (cluster badges + pastille review + prop `onOpenEvidence`)
+- Modifié : `src/components/community/insights/curation/OeilCuration.tsx` (onglet « À réviser », sheet partagée, branchement `onOpenEvidence`)
+- Modifié : `src/components/community/insights/curation/curationCategories.ts` (ajout `SOURCE_LABELS`)
 
-### C. Filtres — adaptation des chips
-- 6 chips au lieu de 5
-- Filtre matche `primary OR secondary.includes(cat)`
-- Compteur reste contextuel à l'onglet (correctif récent préservé)
+### Hors scope (Phase 4)
 
-### D. Tableau de bord curateur — onglet « Classification »
-Nouveau sous-onglet dans Apprendre→L'œil :
-- Liste des espèces avec `needs_review=true` en priorité
-- Stats globales (nb par catégorie, % couvert par knowledge_base vs IA)
-- Bouton « Promouvoir cette classification au knowledge_base » → génère un patch JSON pour PR
-
-### E. Page publique « Dossier vivant » — `/lecteurs/<slug>/dossier-vivant`
-Nouveau template public (priorité haute selon votre choix) :
-```text
-┌─ HÉRO ──────────────────────────────────────┐
-│ [Photo signature] Titre exploration         │
-│ Sous-titre géopoétique + fréquence du jour  │
-└─────────────────────────────────────────────┘
-
-┌─ CHIFFRES VIVANTS ──────────────────────────┐
-│ 142 espèces · 6 catégories · 23 sources    │
-└─────────────────────────────────────────────┘
-
-┌─ PAR CATÉGORIE (sections déroulantes) ─────┐
-│ ▸ 🌿 Indigènes (87) — chênaie périgourdine  │
-│ ▸ 🪲 Bio-indicatrices (12) — sols vivants   │
-│ ▸ 🐝 Auxiliaires (18) — pollinisateurs…     │
-│ ▸ ⚠ EEE (4) — vigilance robinier, jussie    │
-│ ▸ 💎 Patrimoniales (6) — loutre, milan noir │
-│ ▸ 🌾 Ravageurs (3) — équilibre à veiller    │
-│   Chaque carte cliquable → fiche + sources  │
-└─────────────────────────────────────────────┘
-
-┌─ CARTE DES OBSERVATIONS ───────────────────┐
-│ [Leaflet — markers colorés par catégorie]  │
-└────────────────────────────────────────────┘
-
-┌─ SOURCES & MÉTHODE ────────────────────────┐
-│ « Cette analyse croise INPN, UICN France,  │
-│ GBIF, iNaturalist et un référentiel local  │
-│ versionné. Toute classification est        │
-│ cliquable pour en voir les preuves. »      │
-│ + bouton « Télécharger en PDF »            │
-└────────────────────────────────────────────┘
-```
-
-Couleurs/typo : Forêt Émeraude (dark) + Papier Crème (light), conformes au design system.
-
-### F. Export PDF dossier
-Bouton sur la page publique → réutilise l'infrastructure d'export PDF existante (`pdfExportUtils.ts`) avec template dédié intégrant les sources.
-
-## Plan de livraison (4 phases)
-
-**Phase 1 — Fondations (référentiel + schéma)**
-1. Migration SQL (colonnes `secondary_categories`, `classification_evidence`, `classification_source`, `classification_confidence`, `needs_review`)
-2. Création `src/data/species-knowledge-base.json` avec 50 espèces dordoniennes seed
-3. Création `src/data/eee-france-metropolitaine.json` (liste UE 1143/2014 + INPN)
-4. Mise à jour `curationCategories.ts` : 6 nouvelles catégories + couleurs
-
-**Phase 2 — Moteur de classification cascade**
-1. Refonte edge function `analyze-exploration-species` avec cascade KB → GBIF/iNat → IA
-2. Tool schema IA imposant `evidence[]` non vide
-3. Tests unitaires sur quelques cas clés (Quercus robur, Robinia, Lutra lutra, espèce inconnue)
-
-**Phase 3 — UI auditabilité**
-1. Composant `<CategoryBadge />` cliquable
-2. Composant `<ClassificationEvidenceSheet />`
-3. Refonte `<CuratedSpeciesCard />` multi-badges
-4. Adaptation chips filtre (6 catégories, match primary OR secondary)
-5. Sous-onglet curateur « Classification à réviser »
-
-**Phase 4 — Page publique « Dossier vivant »**
-1. Route `/lecteurs/<slug>/dossier-vivant`
-2. Template hero + sections par catégorie + carte
-3. Bouton export PDF
-4. Lien depuis page exploration publique existante
-
-## Pourquoi cette approche
-
-- **Sourçable** : chaque badge a au moins une URL INPN/UICN/UE/iNat consultable
-- **Explicable** : la cascade KB→API→IA dit toujours d'où vient la décision
-- **Auditable** : `classification_source` + `confidence` + `evidence[]` permettent de rejouer/contester chaque classification
-- **Évolutif** : le knowledge-base.json grandit avec les corrections curateur
-- **Wahou** : la page publique transforme une donnée scientifique en récit géopoétique avec preuves cliquables — rare dans le paysage des outils naturalistes
-
-## Notes
-
-- Le correctif récent sur les compteurs de chips contextuels est préservé
-- Le système de pin/épinglage et de score IA reste inchangé
-- Les 5 anciennes catégories (`emblematique`, `parapluie`, `protegee`) sont remappées à la migration : `protegee → patrimoniale`, `parapluie → indigene+secondary patrimoniale`, `emblematique → patrimoniale` (avec `needs_review=true` pour relecture)
-- L'effet « wahou » repose sur 3 piliers : transparence radicale (sources), beauté visuelle (Forêt Émeraude + Papier Crème), narration (textes éditoriaux par catégorie)
+- Page publique `/lecteurs/<slug>/dossier-vivant` et export PDF : seront construits en Phase 4, en réutilisant `<CategoryBadge />` et `<ClassificationEvidenceSheet />`.

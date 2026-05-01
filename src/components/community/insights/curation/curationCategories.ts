@@ -127,3 +127,18 @@ export const PRIMARY_PRIORITY: Record<CategoryValue, number> = {
   auxiliaire: 5,
   indigene: 6,
 };
+
+/**
+ * Libellés humanisés pour la provenance d'une classification.
+ * Utilisé par <ClassificationEvidenceSheet /> et <CategoryBadge />.
+ */
+export const SOURCE_LABELS: Record<string, { label: string; tone: string }> = {
+  knowledge_base: { label: 'Base de connaissance vérifiée', tone: 'text-emerald-700' },
+  gbif: { label: 'GBIF (registre mondial)', tone: 'text-sky-700' },
+  inaturalist: { label: 'iNaturalist', tone: 'text-sky-700' },
+  ai: { label: 'Analyse IA', tone: 'text-violet-700' },
+  curator: { label: 'Validé par un curateur', tone: 'text-amber-700' },
+};
+
+export const getSourceLabel = (source?: string | null): string =>
+  source ? SOURCE_LABELS[source]?.label ?? source : 'Source non documentée';

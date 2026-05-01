@@ -6,6 +6,21 @@ import { toast } from 'sonner';
 export type CurationSense = 'oeil' | 'main' | 'coeur' | 'oreille' | 'palais';
 export type CurationEntityType = 'species' | 'media' | 'text' | 'audio' | 'palais_entry';
 
+export type ClassificationSource =
+  | 'knowledge_base'
+  | 'gbif'
+  | 'inaturalist'
+  | 'ai'
+  | 'curator'
+  | null;
+
+export interface ClassificationEvidenceItem {
+  source: string;
+  quote?: string;
+  url?: string;
+  reference?: string;
+}
+
 export interface ExplorationCuration {
   id: string;
   exploration_id: string;
@@ -24,6 +39,12 @@ export interface ExplorationCuration {
   ai_score?: number | null;
   ai_reason?: string | null;
   ai_criteria?: Record<string, any> | null;
+  // Phase 1+ — sources auditables
+  secondary_categories?: string[];
+  classification_evidence?: ClassificationEvidenceItem[];
+  classification_source?: ClassificationSource;
+  classification_confidence?: number | null;
+  needs_review?: boolean;
 }
 
 /** Récupère toutes les curations d'une exploration (ou filtré par sens) */
@@ -43,7 +64,7 @@ export const useExplorationCurations = (
       if (sense) q = q.eq('sense', sense);
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as ExplorationCuration[];
+      return (data || []) as unknown as ExplorationCuration[];
     },
     enabled: !!explorationId,
     staleTime: 60 * 1000,
@@ -91,6 +112,12 @@ interface UpsertPayload {
   title?: string | null;
   description?: string | null;
   media_ids?: string[];
+  // Phase 3 — édition curateur sur la classification auditable
+  secondary_categories?: string[];
+  classification_evidence?: ClassificationEvidenceItem[];
+  classification_source?: ClassificationSource;
+  classification_confidence?: number | null;
+  needs_review?: boolean;
 }
 
 export const useUpsertCuration = () => {
@@ -101,14 +128,19 @@ export const useUpsertCuration = () => {
     mutationFn: async (payload: UpsertPayload) => {
       if (!user?.id) throw new Error('Authentification requise');
       if (payload.id) {
+        const updates: Record<string, any> = {};
+        if (payload.category !== undefined) updates.category = payload.category;
+        if (payload.title !== undefined) updates.title = payload.title;
+        if (payload.description !== undefined) updates.description = payload.description;
+        if (payload.media_ids !== undefined) updates.media_ids = payload.media_ids;
+        if (payload.secondary_categories !== undefined) updates.secondary_categories = payload.secondary_categories;
+        if (payload.classification_evidence !== undefined) updates.classification_evidence = payload.classification_evidence as any;
+        if (payload.classification_source !== undefined) updates.classification_source = payload.classification_source;
+        if (payload.classification_confidence !== undefined) updates.classification_confidence = payload.classification_confidence;
+        if (payload.needs_review !== undefined) updates.needs_review = payload.needs_review;
         const { data, error } = await supabase
           .from('exploration_curations')
-          .update({
-            category: payload.category ?? null,
-            title: payload.title ?? null,
-            description: payload.description ?? null,
-            media_ids: payload.media_ids ?? [],
-          })
+          .update(updates)
           .eq('id', payload.id)
           .select()
           .single();
