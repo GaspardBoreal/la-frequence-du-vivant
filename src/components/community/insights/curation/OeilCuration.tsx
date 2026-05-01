@@ -286,6 +286,45 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           </div>
         )}
 
+        {/* Filtres par catégorie d'espèces */}
+        {(pool.length > 0 || curations.length > 0) && (view !== 'terrain') && (
+          <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-none">
+            <button
+              onClick={() => setCategoryFilter(null)}
+              className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border transition ${
+                categoryFilter === null
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
+              }`}
+            >
+              Toutes
+            </button>
+            {CATEGORIES.map(cat => {
+              const isActive = categoryFilter === cat.value;
+              const count = categoryCounts[cat.value] || 0;
+              return (
+                <button
+                  key={cat.value}
+                  onClick={() => setCategoryFilter(isActive ? null : cat.value)}
+                  className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border transition flex items-center gap-1 ${
+                    isActive
+                      ? `${cat.color} ring-1 ring-current/40`
+                      : count === 0
+                      ? 'bg-card text-muted-foreground/50 border-border/50 hover:text-muted-foreground'
+                      : `${cat.color} opacity-70 hover:opacity-100`
+                  }`}
+                  title={cat.label}
+                >
+                  <span>{cat.label}</span>
+                  {count > 0 && (
+                    <span className="text-[9px] opacity-80">({count})</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Empty pool */}
         {pool.length === 0 && manual.length === 0 && (
           <div className="rounded-xl border border-border bg-card p-6 text-center">
