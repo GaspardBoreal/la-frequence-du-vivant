@@ -30,16 +30,6 @@ const CeQueNousAvonsVu: React.FC<Props> = ({ explorationId, marcheEventId, onNav
 
   return (
     <div className="space-y-4">
-      {/* Bandeau curateur */}
-      {isCurator && (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          <p className="text-xs text-foreground">
-            Mode curation activé : épinglez les éléments remarquables pour construire le dossier de cette exploration.
-          </p>
-        </div>
-      )}
-
       {/* Sélecteur 5 sens */}
       <div className="grid grid-cols-5 gap-1.5">
         {SENSES.map(s => {
