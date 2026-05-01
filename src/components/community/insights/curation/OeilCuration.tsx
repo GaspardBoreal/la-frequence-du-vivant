@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Eye, Search, Sparkles, ImageOff, X, Plus, Wand2, Loader2, Star, Hand } from 'lucide-react';
+import { Eye, Search, Sparkles, X, Plus, Wand2, Loader2, Hand } from 'lucide-react';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import {
   useExplorationCurations,
@@ -13,12 +13,15 @@ import {
 } from '@/hooks/useExplorationAiAnalysis';
 import { useExplorationManualSpecies } from '@/hooks/useExplorationManualSpecies';
 import { useExplorationMarchesGpsStatus } from '@/hooks/useExplorationMarchesGpsStatus';
-import PinToggle from './PinToggle';
+import { useSpeciesTranslationBatch, type SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import ManualSpeciesModal from './ManualSpeciesModal';
+import CuratedSpeciesCard, { type CuratedSpeciesItem } from './CuratedSpeciesCard';
+import SpeciesDetailModal from '@/components/biodiversity/SpeciesDetailModal';
+import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 interface Props {
   explorationId: string;
@@ -58,6 +61,45 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [view, setView] = useState<View>('selection');
   const [search, setSearch] = useState('');
   const [showManualModal, setShowManualModal] = useState(false);
+  const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+
+  // Batch FR translations for the whole observed pool (single network round)
+  const speciesForTranslation = useMemo(
+    () =>
+      pool
+        .filter(s => !!s.scientificName)
+        .map(s => ({
+          scientificName: s.scientificName as string,
+          commonName: s.commonName ?? undefined,
+        })),
+    [pool]
+  );
+  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
+  const translationMap = useMemo(
+    () => new Map((translations || []).map(t => [t.scientificName, t])),
+    [translations]
+  );
+
+  const handleSpeciesClick = (species: CuratedSpeciesItem, displayName: string) => {
+    const kingdom: BiodiversitySpecies['kingdom'] = (() => {
+      const g = (species.group || '').toLowerCase();
+      if (g === 'animalia') return 'Animalia';
+      if (g === 'plantae') return 'Plantae';
+      if (g === 'fungi') return 'Fungi';
+      return 'Other';
+    })();
+    setSelectedSpecies({
+      id: species.key,
+      scientificName: species.scientificName || '',
+      commonName: displayName || species.commonName || species.scientificName || '',
+      kingdom,
+      family: '',
+      observations: species.count,
+      lastSeen: '',
+      source: 'inaturalist',
+      attributions: [],
+    });
+  };
 
   const curationByKey = useMemo(() => {
     const m = new Map<string, ExplorationCuration>();
@@ -259,6 +301,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                 : "L'ambassadeur n'a pas encore sélectionné d'espèces remarquables."
             }
             upsert={upsert}
+            translationMap={translationMap}
+            onSpeciesClick={handleSpeciesClick}
           />
         )}
 
@@ -278,6 +322,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             emptyMessage="Aucune suggestion IA. Lance l’analyse pour en obtenir."
             upsert={upsert}
             showAiBadges
+            translationMap={translationMap}
+            onSpeciesClick={handleSpeciesClick}
           />
         )}
 
@@ -289,6 +335,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             explorationId={explorationId}
             emptyMessage="Aucune espèce dans le pool."
             upsert={upsert}
+            translationMap={translationMap}
+            onSpeciesClick={handleSpeciesClick}
           />
         )}
 
@@ -306,6 +354,12 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           onClose={() => setShowManualModal(false)}
           explorationId={explorationId}
         />
+
+        <SpeciesDetailModal
+          species={selectedSpecies}
+          isOpen={!!selectedSpecies}
+          onClose={() => setSelectedSpecies(null)}
+        />
       </div>
     </TooltipProvider>
   );
@@ -313,13 +367,24 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
 // ---------- Species grid (pool / IA / selection) ----------
 const SpeciesGrid: React.FC<{
-  items: { species: any; curation?: ExplorationCuration }[];
+  items: { species: CuratedSpeciesItem; curation?: ExplorationCuration }[];
   isCurator: boolean;
   explorationId: string;
   emptyMessage: string;
   showAiBadges?: boolean;
   upsert: ReturnType<typeof useUpsertCuration>;
-}> = ({ items, isCurator, explorationId, emptyMessage, showAiBadges, upsert }) => {
+  translationMap: Map<string, SpeciesTranslation>;
+  onSpeciesClick: (species: CuratedSpeciesItem, displayName: string) => void;
+}> = ({
+  items,
+  isCurator,
+  explorationId,
+  emptyMessage,
+  showAiBadges,
+  upsert,
+  translationMap,
+  onSpeciesClick,
+}) => {
   if (items.length === 0) {
     return (
       <div className="rounded-xl border border-border/60 border-dashed bg-card/50 p-6 text-center">
@@ -332,80 +397,22 @@ const SpeciesGrid: React.FC<{
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
       {items.map(({ species, curation }) => {
         const isPinned = !!curation && curation.display_order < 9999;
-        const stars = scoreToStars(curation?.ai_score);
+        const translation = species.scientificName
+          ? translationMap.get(species.scientificName)
+          : undefined;
 
         return (
-          <div
+          <CuratedSpeciesCard
             key={species.key}
-            className={`relative rounded-xl border overflow-hidden bg-card group transition ${
-              isPinned ? 'border-amber-500/50 shadow-sm' : 'border-border'
-            }`}
-          >
-            {/* Image */}
-            <div className="aspect-square bg-muted relative">
-              {species.imageUrl ? (
-                <img
-                  src={species.imageUrl}
-                  alt={species.commonName || species.scientificName || ''}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
-                  <ImageOff className="w-8 h-8" />
-                </div>
-              )}
-              {isCurator && (
-                <div className="absolute top-1.5 right-1.5">
-                  <PinToggle
-                    explorationId={explorationId}
-                    sense="oeil"
-                    entityType="species"
-                    entityId={species.key}
-                    existing={curation}
-                    category={curation?.category}
-                  />
-                </div>
-              )}
-              <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-medium backdrop-blur-sm">
-                {species.count} obs.
-              </div>
-              {showAiBadges && stars > 0 && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-amber-500/95 text-white text-[10px] font-semibold backdrop-blur-sm flex items-center gap-0.5 cursor-help">
-                      {Array.from({ length: stars }).map((_, i) => (
-                        <Star key={i} className="w-2.5 h-2.5 fill-current" />
-                      ))}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    <p className="text-xs italic">{curation?.ai_reason || 'Suggestion IA'}</p>
-                    {curation?.ai_criteria && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {Object.entries(curation.ai_criteria as any).map(([k, v]) => (
-                          <span key={k} className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                            {k}: {String(v)}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-
-            <div className="p-2 space-y-1">
-              <p className="text-xs font-semibold text-foreground line-clamp-1">
-                {species.commonName || species.scientificName}
-              </p>
-              {species.commonName && species.scientificName && (
-                <p className="text-[10px] text-muted-foreground italic line-clamp-1">
-                  {species.scientificName}
-                </p>
-              )}
-
-              {isPinned && curation && (
+            species={species}
+            curation={curation}
+            isCurator={isCurator}
+            explorationId={explorationId}
+            translation={translation}
+            showAiBadges={showAiBadges}
+            onClick={onSpeciesClick}
+            footer={
+              isPinned && curation ? (
                 <CategoryControl
                   isCurator={isCurator}
                   curation={curation}
@@ -420,13 +427,14 @@ const SpeciesGrid: React.FC<{
                     });
                   }}
                 />
-              )}
-            </div>
-          </div>
+              ) : null
+            }
+          />
         );
       })}
     </div>
   );
+
 };
 
 // ---------- Manual species (terrain) grid ----------
