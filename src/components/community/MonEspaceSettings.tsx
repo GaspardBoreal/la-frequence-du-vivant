@@ -371,6 +371,67 @@ const MonEspaceSettings: React.FC<MonEspaceSettingsProps> = ({
             </div>
           </div>
 
+          {/* Section 3: Mieux vous connaître */}
+          <div className="space-y-1">
+            <h3 className="text-xs font-semibold text-emerald-300/70 uppercase tracking-wider px-1">Mieux vous connaître</h3>
+            <p className="text-[11px] text-emerald-200/40 px-1 mb-2 flex items-start gap-1.5">
+              <ShieldCheck className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              Ces informations restent privées. Seules des statistiques anonymisées contribuent à démontrer l'impact collectif des Marches du Vivant.
+            </p>
+            <div className="space-y-2">
+              {editing ? (
+                <>
+                  <div>
+                    <label className="text-xs text-emerald-200/40 mb-1 flex items-center gap-1.5">
+                      <UserCircle2 className="w-3 h-3" /> Genre
+                    </label>
+                    <Select value={formData.genre} onValueChange={v => updateField('genre', v)}>
+                      <SelectTrigger className="bg-white/10 border-white/20 text-white h-9 text-sm">
+                        <SelectValue placeholder="Choisir..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-emerald-950 border-white/20">
+                        {GENDER_OPTIONS.map(o => (
+                          <SelectItem key={o.value} value={o.value} className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">{o.emoji} {o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-emerald-200/40 mb-1 flex items-center gap-1.5">
+                      <Briefcase className="w-3 h-3" /> Activité
+                    </label>
+                    <Select value={formData.csp} onValueChange={v => updateField('csp', v)}>
+                      <SelectTrigger className="bg-white/10 border-white/20 text-white h-9 text-sm">
+                        <SelectValue placeholder="Choisir..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-emerald-950 border-white/20">
+                        {CSP_OPTIONS.map(o => (
+                          <SelectItem key={o.value} value={o.value} className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-emerald-200/40 mb-1 block">Précision (facultatif)</label>
+                    <Input
+                      maxLength={80}
+                      value={formData.csp_precision}
+                      onChange={e => updateField('csp_precision', e.target.value)}
+                      placeholder="ex. maraîcher bio"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-9 text-sm"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ReadOnlyField icon={UserCircle2} label="Genre" value={genderLabel(profile.genre)} />
+                  <ReadOnlyField icon={Briefcase} label="Activité" value={cspLabel(profile.csp)} />
+                  <ReadOnlyField icon={Sparkles} label="Précision" value={profile.csp_precision || null} />
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="space-y-2 pt-2">
             {editing ? (
