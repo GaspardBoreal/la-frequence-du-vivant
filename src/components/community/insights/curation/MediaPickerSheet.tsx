@@ -102,6 +102,7 @@ const MediaPickerSheet: React.FC<Props> = ({
     { id: 'all', label: 'Tous', icon: Layers },
     { id: 'photo', label: 'Photos', icon: ImageIcon },
     { id: 'video', label: 'Vidéos', icon: Film },
+    { id: 'audio', label: 'Audios', icon: Mic },
     { id: 'conv', label: 'Convivialité', icon: Sparkles },
   ];
 
