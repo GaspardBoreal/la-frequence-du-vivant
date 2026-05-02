@@ -182,6 +182,10 @@ const CommunityProfilesAdmin: React.FC = () => {
         <Tabs defaultValue="communaute" className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto mb-6">
             <TabsTrigger value="communaute">Communauté</TabsTrigger>
+            <TabsTrigger value="profils">
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Profils
+            </TabsTrigger>
             <TabsTrigger value="activites">Activités</TabsTrigger>
             <TabsTrigger value="affiliation">Affiliation marcheurs</TabsTrigger>
             <TabsTrigger value="marcheurs">Inscriptions</TabsTrigger>
