@@ -519,6 +519,8 @@ const CommunityProfilesAdmin: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <MarcheurEditSheet profile={editing} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );
 };
