@@ -4,6 +4,14 @@ import { useConvivialitePhotos, type ConvivialitePhoto } from '@/hooks/useConviv
 
 export type MediaSource = 'conv' | 'media' | 'audio';
 export type MediaType = 'photo' | 'video' | 'audio';
+export type GpsSource = 'exif' | 'step' | 'event';
+
+export interface MarcheStep {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+}
 
 export interface MediaItem {
   key: string; // 'conv:<uuid>' | 'media:<uuid>' | 'audio:<uuid>'
@@ -13,6 +21,9 @@ export interface MediaItem {
   titre?: string | null;
   authorName?: string | null;
   marcheEventId?: string;
+  marcheId?: string | null;
+  marcheStepName?: string | null;
+  gps?: { lat: number; lng: number; source: GpsSource } | null;
   createdAt: string;
   durationSec?: number | null;
 }
@@ -24,6 +35,7 @@ export interface MarcheEventGroup {
   date: string;
   latitude: number | null;
   longitude: number | null;
+  steps: MarcheStep[];
   items: MediaItem[];
 }
 
