@@ -287,38 +287,60 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
               </div>
             </div>
 
-            {current.titre && (
+            {current.titre && !isUuidLike(current.titre) && (
               <p className="px-4 text-xs text-muted-foreground italic truncate">{current.titre}</p>
             )}
 
-            {/* Map or Convivialité banner */}
+            {/* Map / location block */}
             <div className="px-4 mt-3">
-              {isConv || !originEvent || originPoint == null ? (
+              {isConv ? (
+                /* True Convivialité photo (no marche attachment at all). */
                 <div className="rounded-xl border border-border bg-muted/30 px-3 py-3 flex items-center gap-2 text-xs text-muted-foreground">
                   <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>Photo partagée sur le mur Convivialité (sans rattachement à une marche).</span>
+                </div>
+              ) : !hasMap ? (
+                /* Marche-linked but no GPS available anywhere. */
+                <div className="space-y-2">
+                  <div className="rounded-xl border border-border bg-muted/30 px-3 py-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span>Localisation GPS non disponible pour ce média.</span>
+                  </div>
+                  {originEvent && (
+                    <div className="flex items-start gap-2 text-xs">
+                      <MapPin className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground truncate">
+                          {current.marcheStepName || originEvent.title}
+                        </p>
+                        <p className="text-muted-foreground truncate">
+                          {originEvent.lieu || '—'}{dateLabel ? ` · ${dateLabel}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
                   <div className="h-40 sm:h-48 rounded-xl overflow-hidden border border-border relative">
                     <MapContainer
-                      center={originPoint as LatLngExpression}
-                      zoom={12}
+                      center={(focusPoint ?? allMapPoints[0]) as LatLngExpression}
+                      zoom={13}
                       scrollWheelZoom={false}
                       zoomControl={false}
                       style={{ height: '100%', width: '100%' }}
                       attributionControl={false}
                     >
-                      <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      />
-                      <FitBounds points={points} focus={originPoint} />
-                      {eventsGeo.map(ev => {
-                        const isOrigin = ev.id === originEvent.id;
+                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <FitBounds points={allMapPoints} focus={focusPoint ?? undefined} />
+
+                      {/* All marche steps of this event */}
+                      {eventSteps.map(step => {
+                        const isOrigin = originStep?.id === step.id;
                         return (
                           <CircleMarker
-                            key={ev.id}
-                            center={[ev.latitude!, ev.longitude!]}
+                            key={step.id}
+                            center={[step.lat, step.lng]}
                             radius={isOrigin ? 10 : 5}
                             pathOptions={{
                               color: isOrigin ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
@@ -329,22 +351,61 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
                           >
                             <Tooltip direction="top" offset={[0, -6]} opacity={1} permanent={isOrigin}>
                               <span className={isOrigin ? 'font-semibold' : 'opacity-70'}>
-                                {ev.title}
+                                {step.name}
                               </span>
                             </Tooltip>
                           </CircleMarker>
                         );
                       })}
+
+                      {/* EXIF point (precise capture location) */}
+                      {exifPoint && (
+                        <CircleMarker
+                          center={exifPoint}
+                          radius={7}
+                          pathOptions={{
+                            color: 'hsl(var(--primary))',
+                            fillColor: 'hsl(var(--primary))',
+                            fillOpacity: 1,
+                            weight: 2,
+                            className: 'animate-pulse',
+                          }}
+                        >
+                          <Tooltip direction="top" offset={[0, -6]} opacity={1} permanent>
+                            <span className="font-semibold">Ici</span>
+                          </Tooltip>
+                        </CircleMarker>
+                      )}
                     </MapContainer>
                   </div>
 
                   <div className="flex items-start gap-2 text-xs">
                     <MapPin className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-foreground truncate">{originEvent.title}</p>
-                      <p className="text-muted-foreground truncate">
-                        {originEvent.lieu || '—'}{dateLabel ? ` · ${dateLabel}` : ''}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      {current.marcheStepName ? (
+                        <>
+                          <p className="font-semibold text-foreground truncate">
+                            {current.marcheStepName}
+                          </p>
+                          <p className="text-muted-foreground truncate">
+                            {originEvent?.title}
+                            {dateLabel ? ` · ${dateLabel}` : ''}
+                          </p>
+                        </>
+                      ) : originEvent ? (
+                        <>
+                          <p className="font-semibold text-foreground truncate">{originEvent.title}</p>
+                          <p className="text-muted-foreground truncate">
+                            {originEvent.lieu || '—'}{dateLabel ? ` · ${dateLabel}` : ''}
+                          </p>
+                        </>
+                      ) : null}
+                      {current.gps && (
+                        <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                          <Locate className="w-2.5 h-2.5" />
+                          {GPS_SOURCE_LABEL[current.gps.source]}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
