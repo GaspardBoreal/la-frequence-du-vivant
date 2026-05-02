@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Check, Image as ImageIcon, Film, Sparkles, Layers, Play } from 'lucide-react';
+import { X, Check, Image as ImageIcon, Film, Sparkles, Layers, Play, Mic, Pause } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
