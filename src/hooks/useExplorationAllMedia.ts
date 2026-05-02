@@ -22,6 +22,8 @@ export interface MarcheEventGroup {
   title: string;
   lieu: string | null;
   date: string;
+  latitude: number | null;
+  longitude: number | null;
   items: MediaItem[];
 }
 
@@ -49,7 +51,7 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
       // 1. Events
       const { data: events, error: evErr } = await supabase
         .from('marche_events')
-        .select('id, title, lieu, date_marche')
+        .select('id, title, lieu, date_marche, latitude, longitude')
         .eq('exploration_id', explorationId)
         .order('date_marche', { ascending: true });
       if (evErr) throw evErr;
@@ -101,6 +103,8 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
         title: ev.title,
         lieu: ev.lieu,
         date: ev.date_marche,
+        latitude: ev.latitude ?? null,
+        longitude: ev.longitude ?? null,
         items: grouped[ev.id] || [],
       }));
     },

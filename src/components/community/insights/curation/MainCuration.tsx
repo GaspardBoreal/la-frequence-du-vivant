@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import MediaPickerSheet from './MediaPickerSheet';
+import MediaLightbox from './MediaLightbox';
 
 interface Props {
   explorationId: string;
@@ -49,6 +50,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [lightbox, setLightbox] = useState<{ items: MediaItem[]; index: number } | null>(null);
 
   const mediaIndex = useMemo(() => buildMediaIndex(allMedia), [allMedia]);
 
@@ -166,7 +168,13 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                 {items.length > 0 && (
                   <div className={`grid gap-0.5 ${items.length === 1 ? 'grid-cols-1' : 'grid-cols-3'}`}>
                     {items.slice(0, 6).map((it, i) => (
-                      <div key={it.key} className="relative">
+                      <button
+                        type="button"
+                        key={it.key}
+                        onClick={() => setLightbox({ items, index: i })}
+                        className="relative block focus:outline-none focus:ring-2 focus:ring-primary/60"
+                        aria-label={`Ouvrir ${it.titre || 'le média'} en grand`}
+                      >
                         {renderThumb(
                           it,
                           items.length === 1 ? 'aspect-[16/9]' : 'aspect-square'
@@ -176,7 +184,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                             +{items.length - 6}
                           </div>
                         )}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -317,6 +325,14 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         explorationId={explorationId}
         selectedKeys={editor.mediaKeys}
         onConfirm={(keys) => setEditor(s => ({ ...s, mediaKeys: keys }))}
+      />
+
+      <MediaLightbox
+        open={!!lightbox}
+        onOpenChange={(v) => { if (!v) setLightbox(null); }}
+        items={lightbox?.items || []}
+        startIndex={lightbox?.index ?? 0}
+        marcheEvents={allMedia.events}
       />
     </div>
   );

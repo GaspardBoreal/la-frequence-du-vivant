@@ -1,41 +1,62 @@
-# Correction : sauvegarde des pratiques éditoriales multi-sources
+## Objectif
 
-## Diagnostic
+Dans `Ce que nous avons vu → La main` (pratiques emblématiques), rendre chaque photo/vidéo cliquable. L'ouverture déclenche un **lightbox mobile-first** qui présente :
 
-L'erreur `invalid input syntax for type uuid: "media:4514b801-..."` provient de la colonne `exploration_curations.media_ids` qui est typée `uuid[]` en base. Or, depuis l'introduction du sélecteur multi-sources (marches + Convivialité), nous stockons des **clés composites** au format `media:<uuid>` et `conv:<uuid>` pour distinguer la source de chaque média. Postgres rejette donc l'INSERT.
+1. Le média en grand (zoom plein écran, swipe entre médias d'une même pratique)
+2. Une **mini-carte Leaflet** affichant tous les points GPS des marches de l'événement, avec le point de la marche d'origine **mis en valeur** (taille, couleur, halo, label)
+3. Le **nom du marcheur** (auteur du média) avec micro-avatar / initiales
+4. Un **slot badge** (placeholder visuel pour la future fonctionnalité de points gagnés)
 
-Bonne nouvelle : la table est actuellement vide (`SELECT … WHERE array_length(media_ids,1) > 0` → 0 ligne), aucune donnée à migrer.
+## UX mobile-first
 
-## Solution retenue
+- Sheet plein écran sur mobile, dialog centré sur desktop (≥sm:640).
+- Layout vertical : image (60vh max) → barre méta (auteur + badge slot) → mini-carte (h-40 mobile / h-48 desktop) → titre marche + lieu + date.
+- Navigation entre médias d'une même pratique : flèches discrètes + swipe gauche/droite (touch), `Esc` pour fermer, tap sur fond pour fermer.
+- Glassmorphism léger compatible thèmes Papier Crème / Forêt Émeraude (CSS vars existantes : `bg-card/95 backdrop-blur`, `border-border`).
+- Les vidéos s'ouvrent avec controls natifs HTML5 (pas de carte mise en avant si vidéo, mais on garde la carte si on connaît le marche_event).
 
-Faire évoluer la colonne `media_ids` de `uuid[]` vers `text[]`. C'est la solution la plus alignée avec l'architecture validée précédemment (clés composites stables) et la plus simple côté code (le frontend manipule déjà des `string`).
+## Mini-carte
 
-### Migration SQL
+- `react-leaflet` (déjà utilisé dans `ExplorationCarteTab`).
+- Tuiles OSM, zoom calculé pour englober tous les points (`fitBounds`) avec padding.
+- Marqueurs :
+  - **Origine** : cercle plus grand (`radius 10`), couleur primaire emerald (`#0D6B58` light / accent dark), halo pulsant subtil, popup avec titre marche.
+  - **Autres marches** : petits cercles gris translucides (`radius 5`, `opacity 0.5`).
+- Si une seule marche : centrage sur ce point, zoom 13.
+- Si média provient du **mur Convivialité** (pas de marche associée) : la carte est masquée, on affiche à la place une bannière douce « Photo partagée sur le mur Convivialité ».
 
-```sql
-ALTER TABLE public.exploration_curations
-  ALTER COLUMN media_ids TYPE text[] USING media_ids::text[];
+## Emplacement badge
+
+Réservation visuelle propre, prête à brancher plus tard :
+- Pastille ronde 28×28 à droite du nom auteur, état vide = pointillé `border-dashed border-muted-foreground/40` + tooltip « Badge à venir ».
+- Une prop optionnelle `badge?: { icon, label, color }` est acceptée mais non utilisée pour l'instant.
+
+## Architecture technique
+
+**Nouveau composant** : `src/components/community/insights/curation/MediaLightbox.tsx`
+- Props : `open, onOpenChange, items: MediaItem[], startIndex, marcheEventsGeo: Array<{id,title,lieu,date,latitude,longitude}>`
+- État local : index courant + handlers swipe (touchstart/touchend, threshold 50px).
+- Utilise `Dialog` de shadcn pour a11y / focus trap.
+
+**Hook léger** : étendre `useExplorationAllMedia` pour exposer la liste des `marche_events` avec leurs coordonnées GPS (déjà sélectionnées via `marche_events.id, title, lieu, date_marche` ; ajouter `latitude, longitude`). Type `MarcheEventGroup` enrichi de `latitude`, `longitude`.
+
+**Intégration dans `MainCuration.tsx`** :
+- Récupérer `allMedia.events` pour construire `marcheEventsGeo`.
+- Ajouter état `lightbox: { open, items, index } | null`.
+- Wrapper chaque thumb dans un `<button onClick>` qui ouvre le lightbox avec les items de la pratique courante et l'index cliqué.
+- Conserver le comportement existant de la grille + overlay « +N ».
+
+**Aucune migration DB** nécessaire (latitude/longitude déjà présents sur `marche_events`).
+
+## Fichiers touchés
+
+```text
+src/hooks/useExplorationAllMedia.ts        (étendre select + type)
+src/components/community/insights/curation/MainCuration.tsx   (intégration lightbox)
+src/components/community/insights/curation/MediaLightbox.tsx  (nouveau)
 ```
 
-Aucune RLS, contrainte ou index à toucher (la colonne n'est référencée nulle part en clé étrangère ni indexée).
+## Hors scope (préparé, non livré)
 
-### Côté code
-
-- `useExplorationCurations.ts` : ajuster le type TypeScript de `media_ids` (`string[]` au lieu de `string[]` issu de uuid — déjà `string[]` côté TS, donc rien à changer fonctionnellement, juste vérifier).
-- `MainCuration.tsx` et `MediaPickerSheet.tsx` : aucun changement, ils manipulent déjà des clés composites.
-- `src/integrations/supabase/types.ts` : régénéré automatiquement par Supabase après la migration.
-
-## Validation
-
-Après migration, recréer une pratique avec un mélange de médias issus de marches et du mur Convivialité, puis vérifier en base :
-
-```sql
-SELECT title, media_ids FROM exploration_curations ORDER BY created_at DESC LIMIT 1;
-```
-
-Les valeurs doivent ressembler à `{"media:4514b801-…","conv:abc123-…"}`.
-
-## Fichiers impactés
-
-- **Migration DB** : `exploration_curations.media_ids` → `text[]`
-- **Vérification** : `src/hooks/useExplorationCurations.ts` (types)
+- Calcul réel des points/badges gagnés par photo (à brancher plus tard sur le slot prévu).
+- Lightbox équivalent dans `OeilCuration / OreilleCuration / PalaisCuration` (le composant sera réutilisable, mais on cible uniquement « La main » pour cette itération).
