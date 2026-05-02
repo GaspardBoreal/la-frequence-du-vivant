@@ -177,7 +177,7 @@ const CommunityProfilesAdmin: React.FC = () => {
             <TabsTrigger value="communaute">Communauté</TabsTrigger>
             <TabsTrigger value="activites">Activités</TabsTrigger>
             <TabsTrigger value="affiliation">Affiliation marcheurs</TabsTrigger>
-            <TabsTrigger value="marcheurs">Marcheurs</TabsTrigger>
+            <TabsTrigger value="marcheurs">Inscriptions</TabsTrigger>
           </TabsList>
 
           {/* ===== COMMUNAUTÉ ===== */}
