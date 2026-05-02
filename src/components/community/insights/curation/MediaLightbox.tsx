@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones, Locate } from 'lucide-react';
 import type { LatLngExpression, LatLngBoundsExpression } from 'leaflet';
@@ -14,6 +15,64 @@ const GPS_SOURCE_LABEL: Record<GpsSource, string> = {
   exif: 'Position issue de la photo',
   step: 'Position de l’étape de marche',
   event: 'Position de l’événement',
+};
+
+// Numbered marker — same visual language as ExplorationCarteTab.
+function createNumberedIcon(num: number, isOrigin: boolean): L.DivIcon {
+  const size = isOrigin ? 38 : 22;
+  const fontSize = isOrigin ? 14 : 11;
+  const opacity = isOrigin ? 1 : 0.78;
+  const border = isOrigin ? '2.5px solid #fbbf24' : '1.5px solid rgba(255,255,255,0.7)';
+  const shadow = isOrigin
+    ? '0 2px 10px rgba(16,185,129,0.55), 0 0 0 5px rgba(251,191,36,0.25)'
+    : '0 1px 4px rgba(0,0,0,0.35)';
+  const pulse = isOrigin ? 'animation: media-origin-pulse 2.2s ease-in-out infinite;' : '';
+  return L.divIcon({
+    className: 'media-lightbox-numbered-marker',
+    html: `
+      <div style="
+        width:${size}px;height:${size}px;
+        background:linear-gradient(135deg,#10b981,#059669);
+        border:${border};
+        border-radius:50%;
+        display:flex;align-items:center;justify-content:center;
+        color:white;font-weight:700;font-size:${fontSize}px;
+        box-shadow:${shadow};
+        opacity:${opacity};
+        ${pulse}
+      ">${num}</div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2 - 4],
+  });
+}
+
+// Arrow decorators along the polyline — identical pattern to ExplorationCarteTab.
+const ArrowDecorators: React.FC<{ positions: [number, number][] }> = ({ positions }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (positions.length < 2) return;
+    const arrows: L.Marker[] = [];
+    for (let i = 0; i < positions.length - 1; i++) {
+      const [lat1, lng1] = positions[i];
+      const [lat2, lng2] = positions[i + 1];
+      const midLat = (lat1 + lat2) / 2;
+      const midLng = (lng1 + lng2) / 2;
+      const angle = (Math.atan2(lat2 - lat1, lng2 - lng1) * 180) / Math.PI;
+      const icon = L.divIcon({
+        className: 'media-lightbox-arrow',
+        html: `<div style="transform:rotate(${90 - angle}deg);color:#10b981;font-size:13px;opacity:0.55;text-shadow:0 1px 2px rgba(0,0,0,0.5);">▲</div>`,
+        iconSize: [13, 13],
+        iconAnchor: [6.5, 6.5],
+      });
+      const marker = L.marker([midLat, midLng], { icon, interactive: false });
+      marker.addTo(map);
+      arrows.push(marker);
+    }
+    return () => { arrows.forEach(a => map.removeLayer(a)); };
+  }, [positions, map]);
+  return null;
 };
 
 interface BadgeData {
@@ -41,7 +100,7 @@ const FitBounds: React.FC<{ points: [number, number][]; focus?: [number, number]
     }
     if (points.length >= 2) {
       const bounds = points as LatLngBoundsExpression;
-      map.fitBounds(bounds, { padding: [24, 24], maxZoom: 14 });
+      map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
     } else if (points.length === 1) {
       map.setView(points[0] as LatLngExpression, 13, { animate: true });
     }
@@ -322,7 +381,38 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="h-[38dvh] sm:h-72 rounded-xl overflow-hidden border border-border relative">
+                      <div className="h-[42dvh] sm:h-80 rounded-xl overflow-hidden border border-border relative media-lightbox-map">
+                        <style>{`
+                          .media-lightbox-map .leaflet-container { background: #0f1419; }
+                          .media-lightbox-map .carte-tiles-dark { filter: brightness(0.62) saturate(0.35); }
+                          .media-lightbox-numbered-marker { background: none !important; border: none !important; }
+                          .media-lightbox-arrow { background: none !important; border: none !important; }
+                          @keyframes media-origin-pulse {
+                            0%, 100% { box-shadow: 0 2px 10px rgba(16,185,129,0.55), 0 0 0 5px rgba(251,191,36,0.25); }
+                            50% { box-shadow: 0 2px 14px rgba(16,185,129,0.7), 0 0 0 10px rgba(251,191,36,0.12); }
+                          }
+                          .media-lightbox-map .leaflet-tooltip.media-origin-tip {
+                            background: rgba(15,20,25,0.92);
+                            color: #fff;
+                            border: 1px solid rgba(251,191,36,0.45);
+                            border-radius: 999px;
+                            padding: 2px 8px;
+                            font-size: 11px;
+                            font-weight: 600;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                          }
+                          .media-lightbox-map .leaflet-tooltip.media-origin-tip::before { display: none; }
+                          .media-lightbox-map .leaflet-tooltip.media-exif-tip {
+                            background: rgba(16,185,129,0.95);
+                            color: #fff;
+                            border: none;
+                            border-radius: 999px;
+                            padding: 2px 8px;
+                            font-size: 11px;
+                            font-weight: 600;
+                          }
+                          .media-lightbox-map .leaflet-tooltip.media-exif-tip::before { display: none; }
+                        `}</style>
                         <MapContainer
                           center={(focusPoint ?? allMapPoints[0]) as LatLngExpression}
                           zoom={13}
@@ -331,67 +421,82 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
                           style={{ height: '100%', width: '100%' }}
                           attributionControl={false}
                         >
-                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                          <TileLayer
+                            url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
+                            className="carte-tiles-dark"
+                          />
                           <FitBounds points={allMapPoints} focus={focusPoint ?? undefined} />
 
-                          {/* All marche steps of this event */}
+                          {/* Polyline reliant les étapes dans l'ordre du parcours */}
+                          {eventSteps.length >= 2 && (
+                            <>
+                              <Polyline
+                                positions={eventSteps.map(s => [s.lat, s.lng] as [number, number])}
+                                pathOptions={{ color: '#10b981', weight: 2.5, opacity: 0.55 }}
+                              />
+                              <ArrowDecorators positions={eventSteps.map(s => [s.lat, s.lng] as [number, number])} />
+                            </>
+                          )}
+
+                          {/* Marqueurs numérotés pour toutes les étapes */}
                           {eventSteps.map(step => {
                             const isOrigin = originStep?.id === step.id;
                             return (
-                              <CircleMarker
+                              <Marker
                                 key={step.id}
-                                center={[step.lat, step.lng]}
-                                radius={isOrigin ? 9 : 4}
-                                pathOptions={{
-                                  color: isOrigin ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
-                                  fillColor: isOrigin ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
-                                  fillOpacity: isOrigin ? 0.9 : 0.3,
-                                  weight: isOrigin ? 3 : 1,
-                                  className: isOrigin ? 'animate-pulse' : '',
-                                }}
+                                position={[step.lat, step.lng]}
+                                icon={createNumberedIcon(step.order, isOrigin)}
+                                zIndexOffset={isOrigin ? 1000 : 0}
                               >
-                                <Tooltip
-                                  direction="top"
-                                  offset={[0, -6]}
-                                  opacity={isOrigin ? 1 : 0.85}
-                                  permanent={isOrigin}
-                                >
-                                  <span className={isOrigin ? 'font-semibold' : 'opacity-70 text-[11px]'}>
+                                {isOrigin && (
+                                  <Tooltip
+                                    direction="top"
+                                    offset={[0, -22]}
+                                    permanent
+                                    className="media-origin-tip"
+                                  >
                                     {step.name}
-                                  </span>
-                                </Tooltip>
-                              </CircleMarker>
+                                  </Tooltip>
+                                )}
+                                {!isOrigin && (
+                                  <Tooltip direction="top" offset={[0, -14]} opacity={0.95}>
+                                    <span className="text-[11px]">#{step.order} · {step.name}</span>
+                                  </Tooltip>
+                                )}
+                              </Marker>
                             );
                           })}
 
-                          {/* EXIF point (precise capture location) */}
+                          {/* Point EXIF — capture précise hors étape */}
                           {exifPoint && (
                             <CircleMarker
                               center={exifPoint}
                               radius={7}
                               pathOptions={{
-                                color: 'hsl(var(--primary))',
-                                fillColor: 'hsl(var(--primary))',
+                                color: '#fbbf24',
+                                fillColor: '#fbbf24',
                                 fillOpacity: 1,
                                 weight: 2,
                                 className: 'animate-pulse',
                               }}
                             >
-                              <Tooltip direction="top" offset={[0, -6]} opacity={1} permanent>
-                                <span className="font-semibold">Ici</span>
+                              <Tooltip direction="top" offset={[0, -8]} permanent className="media-exif-tip">
+                                Ici
                               </Tooltip>
                             </CircleMarker>
                           )}
                         </MapContainer>
 
-                        {/* Compact legend overlay */}
+                        {/* Légende compacte */}
                         {eventSteps.length > 1 && (
-                          <div className="absolute bottom-2 left-2 z-[400] px-2 py-1 rounded-md bg-background/85 backdrop-blur border border-border text-[10px] text-muted-foreground flex items-center gap-2">
+                          <div className="absolute bottom-2 left-2 z-[400] px-2.5 py-1 rounded-full bg-background/85 backdrop-blur border border-border text-[10px] text-muted-foreground flex items-center gap-2.5">
                             <span className="inline-flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full bg-primary" /> ici
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-amber-400/50" />
+                              {originStep ? `étape ${originStep.order}` : 'ici'}
                             </span>
                             <span className="inline-flex items-center gap-1 opacity-70">
-                              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" /> autres étapes
+                              <span className="w-2 h-2 rounded-full bg-emerald-500/60" />
+                              parcours ({eventSteps.length})
                             </span>
                           </div>
                         )}
