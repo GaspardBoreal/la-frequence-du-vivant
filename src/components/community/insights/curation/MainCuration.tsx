@@ -50,6 +50,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [lightbox, setLightbox] = useState<{ items: MediaItem[]; index: number } | null>(null);
 
   const mediaIndex = useMemo(() => buildMediaIndex(allMedia), [allMedia]);
 
