@@ -1,53 +1,58 @@
-## Diagnostic
+## Objectif
 
-La photo affichée est bien rattachée à la marche **DEVIAT Point 10 HAIES** mais la lightbox affiche à tort « Photo partagée sur le mur Convivialité ».
+La mini-carte du lightbox `/marches-du-vivant/mon-espace/exploration/.../` n'affiche aujourd'hui que le point principal (gros cercle pulsant + tooltip permanent). Les **12 autres étapes de l'exploration** sont pourtant déjà chargées par le hook `useExplorationAllMedia` (vérifié en BDD : 13 étapes avec GPS pour DEVIAT) — elles sont rendues comme petits cercles `radius:4 opacity:0.3` qui se perdent visuellement.
 
-Trois sources de coordonnées GPS coexistent pour un média de marche, par ordre de précision décroissante :
+On va reprendre **le langage visuel exact de l'onglet Carte** (`ExplorationCarteTab`) afin d'avoir une expérience cohérente et beaucoup plus inspirante.
 
-1. **EXIF du média** : `marcheur_medias.metadata.gps.{latitude,longitude}` — coordonnées exactes du déclenchement.
-2. **Étape de marche** : `marcheur_medias.marche_id` → `marches.{latitude,longitude}` — point GPS de l'étape (ex. « Point 10 HAIES »).
-3. **Événement de marche** : `marche_events.{latitude,longitude}` — souvent NULL (cas du jeu de données actuel).
+## Ce qui change
 
-Notre lightbox actuel utilise uniquement (3), donc tombe en NULL et bascule sur le message Convivialité, alors même que `marcheEventId` est renseigné. Bug logique : `isConv || !originEvent || originPoint == null` confond « pas de marche » et « marche sans GPS d'événement ».
+### 1. Mini-carte du lightbox — refonte visuelle
 
-## Solution
+Fichier : `src/components/community/insights/curation/MediaLightbox.tsx`
 
-### 1. Hook `useExplorationAllMedia`
+- **Tuiles dark géopoétiques** (OSM-FR + classe CSS `carte-tiles-dark` comme l'onglet Carte) au lieu de l'OSM standard clair actuel.
+- **Marqueurs numérotés émeraude** pour TOUTES les étapes (réutilisation du langage de `createNumberedIcon`) :
+  - Étapes voisines : taille 22px, dégradé émeraude, opacité 0.6, bordure blanche fine, **numéro d'ordre visible**.
+  - Étape origine (celle de la photo) : taille 38px, dégradé émeraude saturé, bordure ambre + halo pulsant, numéro en gras.
+- **Polyline émeraude** reliant les étapes dans l'ordre (avec petites flèches directionnelles) — comme l'onglet Carte. Permet de voir le parcours dans lequel s'inscrit la photo.
+- **Point EXIF "Ici"** (si métadonnée GPS de la photo) : conservé en marqueur primaire pulsant, dissocié des étapes.
+- **Tooltip permanent compact** sur l'étape origine : juste le nom court (ex. `Point 10 HAIES`) avec fond sombre semi-transparent et texte petit, pour ne plus écraser la carte.
+- **FitBounds** ajusté avec `padding [32, 32]` et `maxZoom: 14` pour garantir qu'on voie l'ensemble du parcours autour du point principal.
+- **Légende** sous la carte simplifiée : `● ici (étape 10) · ● autres étapes du parcours`.
 
-- Sélectionner aussi `marche_id` et `metadata` sur `marcheur_medias`.
-- Charger une fois pour toutes les **étapes de marche** (`marches.id, nom_marche, latitude, longitude`) liées à l'événement via `exploration_marches` filtré sur `exploration_id`.
-- Enrichir `MediaItem` avec :
-  - `marcheId?: string`
-  - `marcheStepName?: string`
-  - `gps?: { lat: number; lng: number; source: 'exif' | 'step' | 'event' }` calculé en cascade (EXIF → étape → événement).
-- Enrichir `MarcheEventGroup` avec `steps: { id, name, lat, lng }[]` (utilisé pour dessiner toutes les étapes sur la carte).
+### 2. Tri des étapes par ordre
 
-### 2. `MediaLightbox`
+Le hook retourne aujourd'hui les steps sans ordre garanti. On va :
+- Ajouter `ordre` au select dans `useExplorationAllMedia.ts` (table `marches.ordre` ou via `exploration_marches.ordre` selon ce qui existe — à vérifier au moment de l'implé) et trier les steps.
+- Cela permet (a) d'afficher le bon numéro sur chaque marqueur et (b) de tracer la polyline dans le bon sens.
 
-- Nouvelle prop : `eventSteps: Map<eventId, MarcheStep[]>` (ou récupérée depuis le `marcheEvents` enrichi).
-- Logique d'affichage :
-  - Si `current.source === 'conv'` (vraie photo Convivialité) → bannière actuelle inchangée.
-  - Sinon (média d'une marche) :
-    - Toujours afficher le **bloc carte**.
-    - Marqueurs sur la carte : toutes les **étapes** de la marche-jour (cercles gris, légers), plus l'étape d'origine en évidence (cercle emerald large, label permanent).
-    - Si `gps` du média (EXIF) disponible → ajouter un **point « ici »** distinct (icône MapPin colorée) avec halo, et `fitBounds` autour de tous les points.
-    - Si aucune coordonnée disponible (ni EXIF, ni étape, ni événement) → remplacer la carte par une bannière douce « Localisation GPS non disponible pour ce média » (et non plus le message Convivialité erroné).
-- Méta sous la carte : titre marche-jour + nom de l'étape + lieu + date + indication discrète de la source GPS (« Point GPS issu du déclenchement / de l'étape »).
+### 3. Calcul de l'index "courant"
 
-### 3. `MainCuration` & autres consommateurs
+Pour afficher le bon numéro sur le marqueur origine, on utilise l'index dans le tableau trié `eventSteps`. Le n° devient une donnée du `MarcheStep` (champ `order`).
 
-- Aucune modification fonctionnelle ; passer simplement `marcheEvents` (déjà enrichi) au `MediaLightbox`.
-- `MediaPickerSheet` : continue à afficher correctement, le `marcheEventId` n'a jamais été montré ici, donc rien à changer côté UI.
+## Hors scope
 
-### 4. Cosmétique : ne plus afficher l'UUID de fichier comme « titre »
+- Aucun changement de schéma BDD.
+- Aucun changement sur le layout général du lightbox (média | meta), juste sur le bloc carte.
+- Pas de touche aux flèches de navigation, à l'audio, aux titres, etc.
 
-Quand `titre` ressemble à un UUID brut (regex `/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-...{12}$/`), masquer ce sous-titre dans la lightbox — c'est un nom de fichier iPhone, pas une légende. On affiche à la place le nom de l'étape de marche (« DEVIAT Point 10 HAIES »).
+## Détails techniques
+
+```text
+MediaLightbox map block
+├── MapContainer (dark tiles "carte-tiles-dark")
+│   ├── Polyline emerald (positions = eventSteps triées)
+│   ├── ArrowDecorators (mêmes que l'onglet Carte)
+│   ├── Marker × N (numbered, taille selon isOrigin)
+│   │     └── Tooltip permanent compact si isOrigin
+│   └── CircleMarker EXIF (si exifPoint)
+└── Légende compacte
+```
+
+Réutilisation : on importe les helpers `createNumberedIcon` + `ArrowDecorators` depuis un nouveau petit fichier partagé `src/components/community/exploration/mapMarkers.ts` (extrait minimal de `ExplorationCarteTab`) pour ne pas dupliquer la logique. Si ça crée trop de mouvement, on fait simplement un copier-paste local des deux helpers dans `MediaLightbox.tsx` (≈40 lignes).
 
 ## Fichiers touchés
 
-```text
-src/hooks/useExplorationAllMedia.ts                              (charger marches/steps + EXIF + cascade GPS)
-src/components/community/insights/curation/MediaLightbox.tsx     (logique GPS, étapes, message neutre, masque UUID)
-```
-
-Aucune migration DB — toutes les colonnes existent déjà.
+- `src/components/community/insights/curation/MediaLightbox.tsx` — refonte du bloc carte.
+- `src/hooks/useExplorationAllMedia.ts` — ajouter `order` aux steps, tri par ordre.
+- (optionnel) `src/components/community/exploration/mapMarkers.ts` — extraction helpers.
