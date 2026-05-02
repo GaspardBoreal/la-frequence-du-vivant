@@ -451,6 +451,7 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
                             className="carte-tiles-dark"
                           />
                           <FitBounds points={allMapPoints} focus={focusPoint ?? undefined} />
+                          <ZoomControls />
 
                           {/* Polyline reliant les étapes dans l'ordre du parcours */}
                           {eventSteps.length >= 2 && (
