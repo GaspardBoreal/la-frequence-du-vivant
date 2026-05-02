@@ -194,20 +194,17 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
         (grouped[a.marche_event_id] ||= []).push(item);
       });
 
-      // Per-event step set: union of step IDs referenced by that event's medias/audios.
-      const stepsByEvent: Record<string, Set<string>> = {};
-      const noteStep = (eventId: string, marcheId: string | null | undefined) => {
-        if (!marcheId || !stepById.has(marcheId)) return;
-        (stepsByEvent[eventId] ||= new Set()).add(marcheId);
-      };
-      medias.forEach(m => noteStep(m.marche_event_id, m.marche_id));
-      audios.forEach(a => noteStep(a.marche_event_id, a.marche_id));
+      // Per-event steps: ALL steps linked to the exploration that belong to this event.
+      // We need every step (not just those with a media) to give geographic context
+      // — neighbouring steps render as small grey dots so the user can situate
+      // the highlighted point within the broader walk.
+      // exploration_marches has no event_id link, so we surface ALL exploration
+      // steps on every event of that exploration. Acceptable: an exploration is
+      // a single coherent territory.
+      const allExplorationSteps: MarcheStep[] = Array.from(stepById.values());
 
       return events.map(ev => {
-        const stepIds = stepsByEvent[ev.id];
-        const steps: MarcheStep[] = stepIds
-          ? Array.from(stepIds).map(id => stepById.get(id)!).filter(Boolean)
-          : [];
+        const steps: MarcheStep[] = allExplorationSteps;
         return {
           id: ev.id,
           title: ev.title,
