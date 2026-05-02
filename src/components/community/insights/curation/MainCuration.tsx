@@ -122,6 +122,15 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             <Play className="w-2.5 h-2.5 fill-white" /> vidéo
           </div>
         </>
+      ) : item.type === 'audio' ? (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-amber-500/10 px-2 text-center">
+          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center mb-1 shadow">
+            <Mic className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-[10px] leading-tight font-medium text-emerald-900 dark:text-emerald-100 line-clamp-2">
+            {item.titre || 'Audio'}
+          </span>
+        </div>
       ) : (
         <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" />
       )}
