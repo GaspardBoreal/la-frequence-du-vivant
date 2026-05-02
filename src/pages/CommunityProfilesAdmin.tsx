@@ -307,21 +307,8 @@ const CommunityProfilesAdmin: React.FC = () => {
           </TabsContent>
 
           {/* ===== PROFILS ===== */}
-          <TabsContent value="profils" className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Qui marche avec nous ?</h2>
-              <p className="text-sm text-muted-foreground">
-                Une mosaïque vivante des marcheur·euse·s qui relient le grand public à l'agroécologie,
-                à l'écotourisme et à la géopoétique. Données privées, agrégats anonymisés.
-              </p>
-            </div>
-            <ProfilsImpactDashboard />
-            {profiles && (
-              <ProfilsMosaique
-                profiles={profiles as unknown as (EditableProfile & { marches_count?: number })[]}
-                onEdit={openEditor}
-              />
-            )}
+          <TabsContent value="profils">
+            <ProfilsPanel />
           </TabsContent>
 
           {/* ===== ACTIVITÉS ===== */}
