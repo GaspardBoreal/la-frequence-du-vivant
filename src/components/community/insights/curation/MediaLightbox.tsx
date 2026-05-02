@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones, Locate } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones, Locate, Plus, Minus } from 'lucide-react';
 import type { LatLngExpression, LatLngBoundsExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { MediaItem, MarcheEventGroup, GpsSource } from '@/hooks/useExplorationAllMedia';
