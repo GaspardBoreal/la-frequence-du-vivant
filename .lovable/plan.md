@@ -1,139 +1,42 @@
-## Objectif
+## Diagnostic
 
-Enrichir les fiches marcheurs avec des données de qualification (CSP, tranche d'âge dérivée, genre), permettre leur édition côté admin et côté marcheur, et créer un onglet **Profils** « wahou » qui démontre l'impact sociétal des Marches du Vivant.
+L'erreur observée dans le toast (`Edge Function returned a non-2xx status code`) provient des logs de l'edge function `admin-create-marcheur` :
 
-Principe directeur : **détail privé (admin uniquement), agrégats anonymisés publics**.
-
----
-
-## 1. Schéma de données (migration SQL)
-
-Ajouts à `community_profiles` :
-
-- `genre` — enum `profile_gender` : `femme`, `homme`, `non_binaire`, `prefere_ne_pas_dire` (nullable)
-- `csp` — enum `profile_csp` aligné INSEE PCS-2020 niveau 1 :
-  - `agriculteurs` (Agriculteurs exploitants)
-  - `artisans_commercants` (Artisans, commerçants, chefs d'entreprise)
-  - `cadres` (Cadres et professions intellectuelles supérieures)
-  - `professions_intermediaires`
-  - `employes`
-  - `ouvriers`
-  - `retraites`
-  - `etudiants` (Élèves, étudiants)
-  - `sans_activite` (Autres personnes sans activité professionnelle)
-  - `prefere_ne_pas_dire`
-- `csp_precision` — text nullable (champ libre court : « ingénieur agronome », « libraire »…)
-
-Tranche d'âge **calculée** depuis `date_naissance` (déjà présent) → pas de stockage redondant. Une fonction SQL helper `public.age_bracket(date)` renvoie l'une des 6 tranches demandées.
-
-RLS : politiques existantes conservées. `genre` et `csp` ne sont jamais exposés bruts via RPC publique. Les vues publiques (`/lecteurs/`) n'affichent rien de neuf.
-
-RPC agrégats (SECURITY DEFINER) `get_community_impact_aggregates()` renvoyant :
-- répartition par tranche d'âge (count par bucket)
-- répartition par genre
-- répartition par CSP
-- croisements CSP × tranche d'âge
-- répartition par rôle communautaire
-- nombre de territoires (explorations) touchés
-
-Aucune ligne nominative renvoyée — uniquement des comptages avec seuil minimal de 3 par cellule (k-anonymat léger).
-
----
-
-## 2. Onglets admin `/admin/community`
-
-### 2.a Édition d'une fiche marcheur (transverse à tous les onglets)
-
-- Bouton « Éditer » sur chaque ligne (onglet Inscriptions + futur onglet Profils) ouvre un **Sheet latéral** `MarcheurEditSheet`.
-- Champs éditables : prénom, nom, ville, téléphone, date de naissance, motivation, kigo_accueil, superpouvoir_sensoriel, niveau_intimite_vivant, avatar_url, **genre**, **csp**, **csp_precision**, rôle (admin only), formation_validée, certification_validée.
-- Hors scope : email (auth), mot de passe.
-- Validation Zod côté client. Mutation via `supabase.from('community_profiles').update()` puis invalidation des queries.
-
-### 2.b Nouvel onglet « Profils »
-
-Layout en deux étages :
-
-```text
-┌──────────────────────────────────────────────────────────┐
-│  BANDEAU IMPACT (dataviz animées)                        │
-│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────┐ │
-│  │ Pyramide   │ │ Donut      │ │ Treemap    │ │ Carte  │ │
-│  │ des âges   │ │ Genres     │ │ CSP        │ │ Terr.  │ │
-│  └────────────┘ └────────────┘ └────────────┘ └────────┘ │
-│  + compteurs animés : N marcheurs · M territoires · …    │
-├──────────────────────────────────────────────────────────┤
-│  MOSAÏQUE VIVANTE (cartes-portraits filtrables)          │
-│  Filtres : tranche d'âge · genre · CSP · rôle · territ.  │
-│  Recherche texte                                         │
-│  Tri : récents · alphabétique · plus actifs              │
-│  Cartes : avatar · nom · rôle · âge · CSP · ville ·      │
-│           kigo · superpouvoir · CTA Éditer               │
-│  Pagination ou scroll infini                             │
-└──────────────────────────────────────────────────────────┘
+```
+AuthApiError: Error sending invite email
+status: 500, code: "unexpected_failure"
 ```
 
-Composants :
-- `ProfilsImpactDashboard.tsx` — bandeau dataviz (Recharts déjà utilisé).
-- `ProfilsMosaique.tsx` — grille de `ProfilCard.tsx`.
-- `ProfilCard.tsx` — carte glassmorphism, palette du thème actif (Papier Crème / Forêt Émeraude), hover révèle motivation + bouton Éditer.
-- Réutilise `MarcheurEditSheet` pour l'édition.
+Cause racine : Supabase Auth tente d'envoyer l'email d'invitation via `inviteUserByEmail`, mais **aucun SMTP custom n'est configuré** sur le projet (ou le SMTP par défaut de Supabase a échoué pour cette adresse — quotas, domaine non vérifié, etc.). L'edge function plante alors sans créer ni l'utilisateur ni le profil.
 
-Style : respect strict des thèmes existants, animations sobres (framer-motion déjà présent), pas de banderole pédagogique (sobriété informationnelle).
+## Correctif proposé
 
-Export CSV (admin) optionnel — colonnes : prénom, nom, ville, tranche d'âge, genre, CSP, rôle, marches_count, créé le.
+Rendre la fonction **résiliente** : ne jamais bloquer la création d'un marcheur à cause d'un email.
 
----
+### 1. Edge function `admin-create-marcheur`
 
-## 3. Édition côté marcheur — `/marches-du-vivant/mon-espace`
+- Si `send_invite=true` et que `inviteUserByEmail` échoue → **fallback automatique** sur `createUser` avec un mot de passe temporaire fort généré côté serveur.
+- Retourner dans la réponse :
+  - `invite_sent: boolean`
+  - `temporary_password: string | null` (le mot de passe à transmettre manuellement si l'invitation a échoué)
+  - `warning: string | null` (message explicatif pour l'admin)
+- Améliorer les logs (`console.warn` sur fallback, `console.error` détaillé sur échec réel).
+- Retourner `400` plutôt que `500` pour les erreurs métier (email déjà pris, profil rejeté), pour que le message d'erreur Supabase remonte correctement côté client.
 
-Dans la section **Édition Profil** existante (`MonEspaceSettings.tsx` / hub glassmorphism), ajouter une sous-section **« Mieux vous connaître »** :
+### 2. Composant `NewMarcheurDialog.tsx`
 
-- Champ Date de naissance (déjà présent ? — sinon ajout)
-- Sélecteur Genre (4 options + « préfère ne pas dire »)
-- Sélecteur CSP (10 entrées INSEE)
-- Précision libre (placeholder : « ex. maraîcher bio »)
-- Bandeau d'explication courte : « Ces informations restent privées. Seules des statistiques anonymisées contribuent à démontrer l'impact collectif des Marches du Vivant. »
-- Lien vers une page « Pourquoi ces questions ? » (future, non bloquante).
+- Lire `data.temporary_password` et `data.warning` dans le `onSuccess` :
+  - Si `invite_sent === true` → toast succès "Invitation envoyée à {email}".
+  - Sinon → afficher un **toast d'avertissement persistant** avec le mot de passe temporaire à copier (bouton copier), pour que l'admin puisse le transmettre.
+- Améliorer la gestion d'erreur : afficher le `error` renvoyé par l'edge function (au lieu du message générique de `functions.invoke`).
 
-Validation Zod identique au backoffice.
+### 3. (Optionnel — recommandation pour plus tard)
 
----
+Si la création par invitation est l'expérience souhaitée à long terme, configurer un SMTP custom (Resend, déjà utilisé par le CRM du projet) dans Supabase → Auth → SMTP Settings. Cela sortirait du scope de ce correctif immédiat mais serait à signaler à l'utilisateur.
 
-## 4. Fichiers à créer / modifier
+## Fichiers modifiés
 
-**Migration SQL**
-- `supabase/migrations/<ts>_community_profiles_qualification.sql` — enums, colonnes, fonction `age_bracket`, RPC `get_community_impact_aggregates`.
+- `supabase/functions/admin-create-marcheur/index.ts` — fallback invitation→direct, meilleurs codes HTTP, retour du mot de passe temporaire.
+- `src/components/admin/community/NewMarcheurDialog.tsx` — affichage du mot de passe temporaire avec copie, message d'erreur détaillé.
 
-**Référentiel partagé**
-- `src/lib/communityProfileTaxonomy.ts` — listes Genre, CSP, Tranches d'âge + helpers `computeAgeBracket(date)`, labels FR.
-
-**Admin**
-- `src/components/admin/community/MarcheurEditSheet.tsx` (nouveau)
-- `src/components/admin/community/ProfilsImpactDashboard.tsx` (nouveau)
-- `src/components/admin/community/ProfilsMosaique.tsx` (nouveau)
-- `src/components/admin/community/ProfilCard.tsx` (nouveau)
-- `src/pages/CommunityProfilesAdmin.tsx` — ajouter onglet « Profils », brancher Sheet d'édition sur l'onglet Inscriptions.
-- `src/hooks/useCommunityImpactAggregates.ts` (nouveau, appelle la RPC)
-
-**Mon Espace**
-- `src/components/community/MonEspaceSettings.tsx` — section « Mieux vous connaître ».
-
-**Types**
-- `src/integrations/supabase/types.ts` est régénéré automatiquement par la migration.
-
----
-
-## 5. Sécurité & confidentialité
-
-- Genre / CSP traités comme PII : jamais renvoyés par les RPC publiques.
-- `get_community_impact_aggregates` SECURITY DEFINER, accessible authentifié + service role. Une variante publique `get_community_impact_public` peut renvoyer uniquement des pourcentages globaux (pas de cellules < 3) si on souhaite l'afficher hors admin (hors scope immédiat — à confirmer plus tard).
-- L'admin reste seul à voir le détail nominatif (RLS existante sur `community_profiles`).
-- `csp_precision` text borné à 80 caractères, `trim` + Zod.
-
----
-
-## 6. Hors scope (à expliciter)
-
-- Pages publiques d'impact (rapport annuel grand public) : non incluses, mais la RPC d'agrégats les rendra possibles ensuite.
-- Migration des marcheurs déjà inscrits : champs nullables, pas de back-fill. Un encart « Complétez votre profil » apparaîtra dans Mon Espace tant que genre + CSP ne sont pas renseignés.
-- Email / mot de passe : non éditables depuis le Sheet admin (gérés par Supabase Auth).
+Aucune migration de base nécessaire.
