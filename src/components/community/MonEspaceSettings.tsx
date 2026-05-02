@@ -135,6 +135,9 @@ const MonEspaceSettings: React.FC<MonEspaceSettingsProps> = ({
       kigo_accueil: profile.kigo_accueil || '',
       superpouvoir_sensoriel: profile.superpouvoir_sensoriel || '',
       niveau_intimite_vivant: profile.niveau_intimite_vivant || '',
+      genre: profile.genre || '',
+      csp: profile.csp || '',
+      csp_precision: profile.csp_precision || '',
     });
   };
 
@@ -153,6 +156,9 @@ const MonEspaceSettings: React.FC<MonEspaceSettingsProps> = ({
           kigo_accueil: formData.kigo_accueil || null,
           superpouvoir_sensoriel: formData.superpouvoir_sensoriel || null,
           niveau_intimite_vivant: formData.niveau_intimite_vivant || null,
+          genre: (formData.genre as never) || null,
+          csp: (formData.csp as never) || null,
+          csp_precision: formData.csp_precision.trim().slice(0, 80) || null,
         })
         .eq('user_id', profile.user_id);
 
