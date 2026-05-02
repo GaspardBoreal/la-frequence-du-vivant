@@ -1,6 +1,11 @@
 // Admin-only edge function to create a new marcheur (auth user + community_profile)
 import { validateAuth, createServiceClient, corsHeaders, forbiddenResponse } from '../_shared/auth-helper.ts';
 
+function generatePassword() {
+  const base = crypto.randomUUID().replace(/-/g, '');
+  return base.slice(0, 12) + 'A1!x';
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -37,26 +42,47 @@ Deno.serve(async (req) => {
     const admin = createServiceClient();
 
     let newUserId: string | null = null;
+    let inviteSent = false;
+    let generatedPassword: string | null = null;
+    let inviteWarning: string | null = null;
 
+    // Try invite first if requested, but fall back to direct creation if SMTP fails
     if (send_invite) {
-      // Send invitation email — user sets their own password
       const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
         data: { prenom, nom, created_by_admin: user!.id },
       });
-      if (error) throw error;
-      newUserId = data.user?.id ?? null;
-    } else {
-      // Create user directly with provided password (or auto-generated)
-      const finalPassword = password && password.length >= 8
-        ? password
-        : crypto.randomUUID().slice(0, 12) + 'A1!';
+      if (!error && data?.user?.id) {
+        newUserId = data.user.id;
+        inviteSent = true;
+      } else {
+        console.warn('[admin-create-marcheur] invite failed, falling back to direct creation:', error?.message);
+        inviteWarning = `Email d'invitation non envoyé (SMTP indisponible). Compte créé avec un mot de passe temporaire — à transmettre manuellement au marcheur.`;
+        // If invite created an orphan user (rare), the next createUser will fail with "already registered"
+        // We try to capture the user that was created by invite even though email failed
+        // by attempting createUser; if conflict, surface explanatory error.
+      }
+    }
+
+    if (!newUserId) {
+      // Direct creation (either explicitly requested, or invite fallback)
+      const finalPassword = (password && String(password).length >= 8)
+        ? String(password)
+        : generatePassword();
+      generatedPassword = finalPassword;
+
       const { data, error } = await admin.auth.admin.createUser({
         email,
         password: finalPassword,
         email_confirm: true,
         user_metadata: { prenom, nom, created_by_admin: user!.id },
       });
-      if (error) throw error;
+      if (error) {
+        console.error('[admin-create-marcheur] createUser failed:', error);
+        return new Response(
+          JSON.stringify({ error: error.message || "Impossible de créer l'utilisateur." }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       newUserId = data.user?.id ?? null;
     }
 
@@ -86,19 +112,30 @@ Deno.serve(async (req) => {
       .single();
 
     if (profileError) {
+      console.error('[admin-create-marcheur] profile insert failed:', profileError);
       // Rollback: delete the auth user we just created to avoid orphans
       await admin.auth.admin.deleteUser(newUserId).catch(() => {});
-      throw profileError;
+      return new Response(
+        JSON.stringify({ error: profileError.message || 'Erreur création profil' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('[admin-create-marcheur] created', { newUserId, by: user!.id });
+    console.log('[admin-create-marcheur] created', { newUserId, by: user!.id, inviteSent });
 
     return new Response(
-      JSON.stringify({ success: true, user_id: newUserId, profile }),
+      JSON.stringify({
+        success: true,
+        user_id: newUserId,
+        profile,
+        invite_sent: inviteSent,
+        temporary_password: generatedPassword,
+        warning: inviteWarning,
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (e) {
-    console.error('[admin-create-marcheur] error', e);
+    console.error('[admin-create-marcheur] unexpected error', e);
     return new Response(
       JSON.stringify({ error: (e as Error).message || 'Erreur inconnue' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
