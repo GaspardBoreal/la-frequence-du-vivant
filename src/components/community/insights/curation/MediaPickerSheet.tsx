@@ -215,56 +215,80 @@ const MediaPickerSheet: React.FC<Props> = ({
                     <p className="text-[11px] italic text-muted-foreground/70 px-1 py-3">
                       Aucun média pour cette marche.
                     </p>
-                  ) : (
-                    <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
-                      {section.items.map(item => {
-                        const selected = draft.has(item.key);
-                        return (
-                          <button
-                            key={item.key}
-                            type="button"
-                            onClick={() => toggle(item.key)}
-                            className={cn(
-                              'relative aspect-square rounded-lg overflow-hidden border-2 transition group',
-                              selected ? 'border-emerald-500' : 'border-transparent hover:border-border'
-                            )}
-                          >
-                            {item.type === 'video' ? (
-                              <>
-                                <video
-                                  src={`${item.url}#t=0.1`}
-                                  preload="metadata"
-                                  muted
-                                  playsInline
-                                  className="w-full h-full object-cover bg-muted"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                                <div className="absolute bottom-1 left-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[9px] font-medium">
-                                  <Play className="w-2.5 h-2.5 fill-white" />
-                                  {formatDuration(item.durationSec) || 'vidéo'}
-                                </div>
-                              </>
-                            ) : (
-                              <img
-                                src={item.url}
-                                alt={item.titre || ''}
-                                loading="lazy"
-                                decoding="async"
-                                className="w-full h-full object-cover bg-muted"
+                  ) : (() => {
+                    const visualItems = section.items.filter(i => i.type !== 'audio');
+                    const audioItems = section.items.filter(i => i.type === 'audio');
+                    return (
+                      <div className="mt-2 space-y-2">
+                        {visualItems.length > 0 && (
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
+                            {visualItems.map(item => {
+                              const selected = draft.has(item.key);
+                              return (
+                                <button
+                                  key={item.key}
+                                  type="button"
+                                  onClick={() => toggle(item.key)}
+                                  className={cn(
+                                    'relative aspect-square rounded-lg overflow-hidden border-2 transition group',
+                                    selected ? 'border-emerald-500' : 'border-transparent hover:border-border'
+                                  )}
+                                >
+                                  {item.type === 'video' ? (
+                                    <>
+                                      <video
+                                        src={`${item.url}#t=0.1`}
+                                        preload="metadata"
+                                        muted
+                                        playsInline
+                                        className="w-full h-full object-cover bg-muted"
+                                      />
+                                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                                      <div className="absolute bottom-1 left-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[9px] font-medium">
+                                        <Play className="w-2.5 h-2.5 fill-white" />
+                                        {formatDuration(item.durationSec) || 'vidéo'}
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <img
+                                      src={item.url}
+                                      alt={item.titre || ''}
+                                      loading="lazy"
+                                      decoding="async"
+                                      className="w-full h-full object-cover bg-muted"
+                                    />
+                                  )}
+                                  {selected && (
+                                    <div className="absolute inset-0 bg-emerald-500/30 flex items-center justify-center">
+                                      <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow">
+                                        <Check className="w-3.5 h-3.5 text-white" />
+                                      </div>
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {audioItems.length > 0 && (
+                          <div className="space-y-1.5">
+                            {audioItems.map(item => (
+                              <AudioPickerCard
+                                key={item.key}
+                                item={item}
+                                selected={draft.has(item.key)}
+                                playing={playingKey === item.key}
+                                onToggleSelect={() => toggle(item.key)}
+                                onTogglePlay={() => setPlayingKey(k => k === item.key ? null : item.key)}
+                                formatDuration={formatDuration}
                               />
-                            )}
-                            {selected && (
-                              <div className="absolute inset-0 bg-emerald-500/30 flex items-center justify-center">
-                                <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow">
-                                  <Check className="w-3.5 h-3.5 text-white" />
-                                </div>
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </section>
               ))}
             </div>
