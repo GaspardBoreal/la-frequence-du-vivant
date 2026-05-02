@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConvivialitePhotos, type ConvivialitePhoto } from '@/hooks/useConvivialitePhotos';
 
-export type MediaSource = 'conv' | 'media';
-export type MediaType = 'photo' | 'video';
+export type MediaSource = 'conv' | 'media' | 'audio';
+export type MediaType = 'photo' | 'video' | 'audio';
 
 export interface MediaItem {
-  key: string; // 'conv:<uuid>' | 'media:<uuid>'
+  key: string; // 'conv:<uuid>' | 'media:<uuid>' | 'audio:<uuid>'
   source: MediaSource;
   type: MediaType;
   url: string;
