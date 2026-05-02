@@ -282,12 +282,18 @@ const CommunityProfilesAdmin: React.FC = () => {
                               {profile.certification_validee ? 'Validée' : 'Valider'}
                             </Button>
                           </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="ghost" onClick={() => openEditor(profile as unknown as EditableProfile)}>
+                              <Pencil className="h-3.5 w-3.5 mr-1" />
+                              Éditer
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
                     {filtered?.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                           Aucun profil trouvé.
                         </TableCell>
                       </TableRow>
