@@ -51,7 +51,7 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
       // 1. Events
       const { data: events, error: evErr } = await supabase
         .from('marche_events')
-        .select('id, title, lieu, date_marche')
+        .select('id, title, lieu, date_marche, latitude, longitude')
         .eq('exploration_id', explorationId)
         .order('date_marche', { ascending: true });
       if (evErr) throw evErr;
