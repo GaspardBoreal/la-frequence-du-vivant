@@ -269,8 +269,11 @@ export type Database = {
           avatar_url: string | null
           certification_validee: boolean
           created_at: string
+          csp: Database["public"]["Enums"]["profile_csp"] | null
+          csp_precision: string | null
           date_naissance: string | null
           formation_validee: boolean
+          genre: Database["public"]["Enums"]["profile_gender"] | null
           id: string
           kigo_accueil: string | null
           marches_count: number
@@ -290,8 +293,11 @@ export type Database = {
           avatar_url?: string | null
           certification_validee?: boolean
           created_at?: string
+          csp?: Database["public"]["Enums"]["profile_csp"] | null
+          csp_precision?: string | null
           date_naissance?: string | null
           formation_validee?: boolean
+          genre?: Database["public"]["Enums"]["profile_gender"] | null
           id?: string
           kigo_accueil?: string | null
           marches_count?: number
@@ -311,8 +317,11 @@ export type Database = {
           avatar_url?: string | null
           certification_validee?: boolean
           created_at?: string
+          csp?: Database["public"]["Enums"]["profile_csp"] | null
+          csp_precision?: string | null
           date_naissance?: string | null
           formation_validee?: boolean
+          genre?: Database["public"]["Enums"]["profile_gender"] | null
           id?: string
           kigo_accueil?: string | null
           marches_count?: number
@@ -4009,6 +4018,7 @@ export type Database = {
         Args: { operation_type: string }
         Returns: boolean
       }
+      age_bracket: { Args: { _birth: string }; Returns: string }
       can_create_marche: { Args: { _user_id: string }; Returns: boolean }
       can_initialize_admin_system: { Args: never; Returns: boolean }
       can_upload_convivialite: {
@@ -4155,6 +4165,7 @@ export type Database = {
         Args: { _share_token: string }
         Returns: Json
       }
+      get_community_impact_aggregates: { Args: never; Returns: Json }
       get_current_admin_email: { Args: never; Returns: string }
       get_current_admin_email_secure: { Args: never; Returns: string }
       get_current_admin_info: {
@@ -4430,6 +4441,18 @@ export type Database = {
         | "valorisation"
       insight_event_type: "agroecologique" | "eco_poetique" | "eco_tourisme"
       media_type: "photo" | "audio" | "video" | "document"
+      profile_csp:
+        | "agriculteurs"
+        | "artisans_commercants"
+        | "cadres"
+        | "professions_intermediaires"
+        | "employes"
+        | "ouvriers"
+        | "retraites"
+        | "etudiants"
+        | "sans_activite"
+        | "prefere_ne_pas_dire"
+      profile_gender: "femme" | "homme" | "non_binaire" | "prefere_ne_pas_dire"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4578,6 +4601,19 @@ export const Constants = {
       ],
       insight_event_type: ["agroecologique", "eco_poetique", "eco_tourisme"],
       media_type: ["photo", "audio", "video", "document"],
+      profile_csp: [
+        "agriculteurs",
+        "artisans_commercants",
+        "cadres",
+        "professions_intermediaires",
+        "employes",
+        "ouvriers",
+        "retraites",
+        "etudiants",
+        "sans_activite",
+        "prefere_ne_pas_dire",
+      ],
+      profile_gender: ["femme", "homme", "non_binaire", "prefere_ne_pas_dire"],
     },
   },
 } as const
