@@ -326,6 +326,14 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         selectedKeys={editor.mediaKeys}
         onConfirm={(keys) => setEditor(s => ({ ...s, mediaKeys: keys }))}
       />
+
+      <MediaLightbox
+        open={!!lightbox}
+        onOpenChange={(v) => { if (!v) setLightbox(null); }}
+        items={lightbox?.items || []}
+        startIndex={lightbox?.index ?? 0}
+        marcheEvents={allMedia.events}
+      />
     </div>
   );
 };
