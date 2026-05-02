@@ -30,6 +30,9 @@ interface CommunityProfile {
   niveau_intimite_vivant: string | null;
   created_at: string;
   updated_at: string;
+  genre?: string | null;
+  csp?: string | null;
+  csp_precision?: string | null;
 }
 
 interface MonEspaceSettingsProps {
