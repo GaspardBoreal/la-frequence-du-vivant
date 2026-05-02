@@ -1,62 +1,132 @@
-# Mosaïque des activités — libellés toujours lisibles
+# Sélecteur unifié de médias pour une "Nouvelle pratique éditoriale"
 
-## Problème
+## Contexte
 
-Le `Treemap` de Recharts utilisé dans `ProfilsImpactDashboard.tsx` (ligne 137) est rendu sans prop `content`. Par défaut Recharts ne dessine **aucun texte** dans les tuiles — le libellé n'apparaît qu'au survol via le tooltip. Sur l'écran fourni, on voit donc des blocs colorés où seules deux ou trois activités se devinent, et il faut passer la souris pour identifier les autres. Sur mobile (pas de hover), c'est totalement illisible.
+Dans `MainCuration.tsx` (onglet *La Main* → *Pratiques emblématiques* d'une exploration), le sélecteur de médias actuel ne propose que les photos du **mur Convivialité**. Il faut pouvoir piocher dans **tous les médias de toutes les marches** rattachées à l'événement (exploration), tout en conservant les photos Convivialité, le tout dans une UX mobile-first soignée.
 
-## Objectif
+## Sources à agréger
 
-Afficher en permanence, dans chaque tuile, le **libellé de l'activité** et sa **valeur**, de façon élégante, sans débordement, et lisible sur fond clair comme foncé.
+Pour une exploration donnée, on rassemble :
 
-## Approche
+1. **Convivialité** — `exploration_convivialite_photos` (via `useConvivialitePhotos`)
+2. **Photos & vidéos des marcheurs** — `marcheur_medias` (`type_media = 'photo' | 'video'`) joints à `marche_events.exploration_id`
+3. *(préparé pour évolutions)* Audios — `marcheur_audio`. Hors périmètre v1 du sélecteur visuel mais l'architecture le permettra.
 
-Fournir au `<Treemap>` un composant `content` personnalisé qui dessine pour chaque cellule :
-
-1. Un `<rect>` rempli de la couleur de la tuile (déjà fournie via `fill`).
-2. Un libellé multi-lignes (nom court de la CSP) centré.
-3. Une valeur secondaire (nombre de marcheur·euse·s) sous le libellé, plus petite et semi-transparente.
-
-Règles d'élégance et de lisibilité :
-
-- **Adaptation à la taille de la tuile** : taille de police calculée à partir de `min(width, height)` (clamp 10–16 px). Si la tuile est trop petite (< 44 px de large ou < 30 px de haut), on n'affiche que le libellé tronqué ; si elle est minuscule (< 28×22), rien — pour ne pas bruiter.
-- **Couleur de texte automatique** : on calcule la luminance HSL de `fill` ; si la tuile est claire, texte `hsl(220 25% 12%)`, sinon texte `#fff`. La valeur secondaire reprend la même couleur avec `opacity: 0.78`.
-- **Coupure intelligente du libellé** : on découpe le `name` en mots, on remplit chaque ligne en respectant la largeur disponible (≈ `(width - 12) / (fontSize * 0.55)` caractères), max 2 lignes, ellipsis sur la 2ᵉ si dépassement. Évite les coupures hideuses comme « Em\nployé·e ».
-- **Padding interne** de 6 px, libellé centré (`textAnchor="middle"`) à `x + width/2`, vertical centering basé sur le nombre de lignes effectives.
-- **Stroke des tuiles** déjà à `hsl(var(--background))` — on garde, ça donne le grain mosaïque propre.
-- **Tooltip conservé** pour afficher le libellé long complet (ex. « Cadres et professions intellectuelles supérieures ») au survol — utile car on n'affiche que le `short` dans la tuile.
-
-Bonus design (léger) :
-
-- Léger arrondi `rx={4}` sur les rectangles pour adoucir la mosaïque (cohérent avec le reste du dashboard qui utilise `rounded-lg`).
-- Ombre portée subtile sur le texte foncé sur fond clair via `paintOrder="stroke"` + `stroke="rgba(255,255,255,0.4)"` `strokeWidth={2}` pour garantir le contraste même si une tuile a une couleur intermédiaire.
-- Hauteur de la carte portée à `240` (au lieu de `220`) pour que les tuiles aient un peu plus d'air vertical — aligne aussi mieux avec la `Card` voisine du donut qui a sa légende sous le graphe.
-
-## Détails techniques
-
-Fichier touché : `src/components/admin/community/ProfilsImpactDashboard.tsx`
-
-1. Ajouter un composant local `CSPTreemapContent` (rendu SVG `<g><rect/><text/></g>`) implémentant les règles ci-dessus. Recharts lui passe `x, y, width, height, name, value, fill, depth` via props.
-2. Passer ce composant via `content={<CSPTreemapContent />}` au `<Treemap>`.
-3. Ajouter un `<Tooltip>` enfant du `<Treemap>` avec le même style que les autres graphes pour conserver l'info détaillée au survol.
-4. Garder `CSP_OPTIONS[i].short` comme `name` (déjà le cas) — c'est le label affiché dans la tuile ; le tooltip pourra remonter le `label` long si on l'ajoute au `cspData` (champ `fullName`).
-5. Aucune dépendance nouvelle, aucune migration, aucun changement de RPC.
-
-## Aperçu visuel
+Chaque média est identifié par une **clé composite** stable :
 
 ```text
-┌────────────────────────────────────────────────┐
-│  Mosaïque des activités                        │
-│  Tous les métiers convergent vers le vivant    │
-│ ┌───────────┬──────────────────┬─────────────┐ │
-│ │           │                  │ Sans        │ │
-│ │  Cadre    │   Employé·e      │ activité    │ │
-│ │   12      │      28          │    4        │ │
-│ │           │                  ├─────────────┤ │
-│ │           ├──────────────────┤ Retraité·e  │ │
-│ │           │   Étudiant·e     │     3       │ │
-│ │           │       9          │             │ │
-│ └───────────┴──────────────────┴─────────────┘ │
-└────────────────────────────────────────────────┘
+conv:<uuid>         → photo Convivialité
+media:<uuid>        → marcheur_medias (photo ou vidéo)
 ```
 
-Tous les libellés visibles d'un coup d'œil, plus besoin de hover, et le rendu reste cohérent avec le ton minimaliste « sobriété informationnelle » du reste du dashboard.
+Le champ `media_ids text[]` de `exploration_curations` accepte déjà ce format (les valeurs existantes `<uuid>` brutes seront migrées implicitement en lecture : un `id` sans préfixe = `conv:<id>`).
+
+## UX mobile-first du sélecteur
+
+Composant nouveau : `MediaPickerSheet.tsx` ouvert depuis l'éditeur de pratique. Sur mobile, plein écran via `Sheet` (Radix) ; sur desktop, modale large.
+
+```text
+┌──────────────────────────────────────────┐
+│  ✕   Choisir les médias        3 sélect. │  ← header sticky
+├──────────────────────────────────────────┤
+│  [🖼 Photos] [🎞 Vidéos] [✨ Convivialité]│  ← filtres type (chips)
+├──────────────────────────────────────────┤
+│  ▾ Toutes les marches            [▿]     │  ← filtre marche (sélecteur)
+├──────────────────────────────────────────┤
+│  ┃ Marche du 12 mai · Beynac             │  ← section sticky par marche
+│  ┃ ────────                              │
+│  ┃ ▢ ▢ ▢ ▢                               │  grille 3 col mobile / 5 desktop
+│  ┃ ▢ ▢ ▢                                  │
+│  ┃                                        │
+│  ┃ Marche du 18 mai · La Roque-Gageac    │
+│  ┃ ▢ ▢ ▢ ▢ ▢ ▢                            │
+│                                          │
+│  ┃ ✨ Convivialité                       │
+│  ┃ ▢ ▢ ▢                                  │
+├──────────────────────────────────────────┤
+│  [ Annuler ]      [ Valider · 3 médias ] │  ← footer sticky safe-area
+└──────────────────────────────────────────┘
+```
+
+Détails UX :
+
+- **Filtres rapides en chips** (haut, scrollables horizontalement) : `Tous` / `Photos` / `Vidéos` / `Convivialité`. État actif = pastille emerald, inactif = bordure douce.
+- **Sélecteur de marche** : un `<Select>` listant *Toutes les marches* + chaque marche (date + ville). Permet de focaliser quand il y en a beaucoup.
+- **Regroupement par marche** : titres sticky (date + lieu + compteur). Convivialité est une section virtuelle en fin (ou en tête, selon filtre).
+- **Grille de vignettes** : carrés `aspect-square`, `grid-cols-3 sm:grid-cols-4 md:grid-cols-5`, gap 1.5. Vignettes cliquables avec coche emerald (cohérent avec l'existant). Vidéos : badge ▶ + durée si dispo.
+- **Compteur global** dans le header + bouton flottant *Valider · N médias* en footer, en `position: sticky` avec `pb-[env(safe-area-inset-bottom)]`.
+- **Lazy loading** des images (`loading="lazy"`, `decoding="async"`).
+- **État vide** explicite par section : *« Aucun média pour cette marche »* sans casser la liste.
+- **Recherche optionnelle (v1.1)** : input texte filtrant par titre — non bloquant pour la v1.
+- **Animation** d'apparition `Sheet` (slide-up mobile, fade desktop) déjà fournie par shadcn.
+
+## Architecture technique
+
+### Nouveau hook `useExplorationAllMedia(explorationId)`
+
+```text
+returns {
+  marches: Array<{ id, ville, date, nom_marche }>,
+  byMarche: Record<marcheId, MediaItem[]>,   // marcheur_medias photo/video
+  convivialite: MediaItem[],                  // exploration_convivialite_photos
+}
+
+interface MediaItem {
+  key: string;        // 'conv:uuid' | 'media:uuid'
+  source: 'conv' | 'media';
+  type: 'photo' | 'video';
+  url: string;
+  thumbUrl?: string;
+  titre?: string | null;
+  authorName?: string;
+  marcheId?: string;
+  createdAt: string;
+}
+```
+
+Implémentation :
+- `marche_events` filtrés par `exploration_id` → liste des `event_id` + leur marche associée (jointure `marches`).
+- `marcheur_medias` `IN (event_ids)` filtré `is_public=true`, types `photo|video`.
+- `exploration_convivialite_photos` (réutiliser `useConvivialitePhotos` en interne).
+- Tri : par `created_at DESC` au sein de chaque marche.
+
+### Adaptations `MainCuration.tsx`
+
+1. Remplacer la grille interne du dialog par un bouton *« Choisir les médias »* qui ouvre `MediaPickerSheet`.
+2. Rendre la galerie d'aperçu de la pratique compatible **multi-sources** :
+   - construire une `Map<key, MediaItem>` à partir de `useExplorationAllMedia`.
+   - rétro-compatibilité : si une entrée stockée n'a pas de préfixe, la traiter comme `conv:<id>`.
+   - Vidéos : afficher la vignette poster (1ère frame via `<video preload="metadata">` + `#t=0.1`) avec badge ▶.
+
+### Nouveau composant `MediaPickerSheet.tsx`
+
+Props :
+```text
+{
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  explorationId: string;
+  selectedKeys: string[];
+  onConfirm: (keys: string[]) => void;
+}
+```
+- État local `draft: Set<string>` initialisé depuis `selectedKeys` ; `onConfirm` à la validation uniquement.
+- Utilise `useIsMobile()` pour basculer `Sheet` (mobile) / `Dialog` (desktop), ou simplement `Sheet side="bottom"` partout (plus simple et déjà mobile-first).
+
+### Pas de changement de schéma DB
+
+Le champ `media_ids text[]` accepte déjà des chaînes arbitraires. Aucune migration requise. Les anciennes pratiques restent lisibles grâce au fallback `id → conv:id`.
+
+## Fichiers impactés
+
+- **Créé** : `src/hooks/useExplorationAllMedia.ts`
+- **Créé** : `src/components/community/insights/curation/MediaPickerSheet.tsx`
+- **Modifié** : `src/components/community/insights/curation/MainCuration.tsx`
+  - rendu galerie multi-sources + ouverture du picker
+  - normalisation `id → conv:id` au chargement
+
+## Hors périmètre
+
+- Sélection d'audios/textes (peut être ajoutée ensuite via les chips de type).
+- Réordonnancement de la sélection (drag-and-drop) — possible en v1.1.
+- Filtre par auteur ou par date — pas demandé, on garde la sobriété.
