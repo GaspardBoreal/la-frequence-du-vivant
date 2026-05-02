@@ -95,6 +95,9 @@ const MonEspaceSettings: React.FC<MonEspaceSettingsProps> = ({
     kigo_accueil: '',
     superpouvoir_sensoriel: '',
     niveau_intimite_vivant: '',
+    genre: '',
+    csp: '',
+    csp_precision: '',
   });
 
   const initials = `${profile.prenom[0] || ''}${profile.nom[0] || ''}`.toUpperCase();
