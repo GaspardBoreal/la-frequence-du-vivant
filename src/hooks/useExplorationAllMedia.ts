@@ -90,8 +90,9 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
           .order('created_at', { ascending: false }),
         supabase
           .from('exploration_marches')
-          .select('marche_id, marches!inner(id, nom_marche, latitude, longitude)')
-          .eq('exploration_id', explorationId),
+          .select('marche_id, ordre, marches!inner(id, nom_marche, latitude, longitude)')
+          .eq('exploration_id', explorationId)
+          .order('ordre', { ascending: true }),
       ]);
       if (mediasRes.error) throw mediasRes.error;
       if (audiosRes.error) throw audiosRes.error;
@@ -99,17 +100,22 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
       const medias = mediasRes.data || [];
       const audios = audiosRes.data || [];
 
-      // Build step lookup (id → MarcheStep) – only steps with GPS are useful
+      // Build step lookup (id → MarcheStep) – only steps with GPS are useful.
+      // Preserve exploration ordering (1-based index over the sorted rows so
+      // numbering stays continuous even when some steps lack GPS).
       const stepById = new Map<string, MarcheStep>();
-      ((stepsLinkRes.data || []) as Array<{ marches: { id: string; nom_marche: string | null; latitude: number | null; longitude: number | null } | null }>)
+      let displayIndex = 0;
+      ((stepsLinkRes.data || []) as Array<{ ordre: number | null; marches: { id: string; nom_marche: string | null; latitude: number | null; longitude: number | null } | null }>)
         .forEach(row => {
           const m = row.marches;
           if (m && m.latitude != null && m.longitude != null) {
+            displayIndex += 1;
             stepById.set(m.id, {
               id: m.id,
               name: m.nom_marche || 'Étape de marche',
               lat: Number(m.latitude),
               lng: Number(m.longitude),
+              order: displayIndex,
             });
           }
         });
