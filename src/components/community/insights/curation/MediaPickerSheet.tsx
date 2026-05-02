@@ -132,7 +132,10 @@ const MediaPickerSheet: React.FC<Props> = ({
           </div>
 
           {/* Type chips */}
-          <div className="mt-3 -mx-4 px-4 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+          <div
+            className="mt-3 -mx-4 px-4 flex items-center gap-1.5 overflow-x-auto"
+            style={{ scrollbarWidth: 'none' }}
+          >
             {chips.map(c => {
               const Icon = c.icon;
               const active = typeFilter === c.id;
