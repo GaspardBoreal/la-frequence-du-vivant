@@ -71,6 +71,7 @@ const MediaPickerSheet: React.FC<Props> = ({
         let items = ev.items;
         if (typeFilter === 'photo') items = items.filter(i => i.type === 'photo');
         else if (typeFilter === 'video') items = items.filter(i => i.type === 'video');
+        else if (typeFilter === 'audio') items = items.filter(i => i.type === 'audio');
         out.push({
           id: ev.id,
           kind: 'event',
