@@ -103,6 +103,8 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
         title: ev.title,
         lieu: ev.lieu,
         date: ev.date_marche,
+        latitude: ev.latitude ?? null,
+        longitude: ev.longitude ?? null,
         items: grouped[ev.id] || [],
       }));
     },
