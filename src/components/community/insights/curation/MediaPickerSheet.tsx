@@ -16,7 +16,7 @@ interface Props {
   onConfirm: (keys: string[]) => void;
 }
 
-type TypeFilter = 'all' | 'photo' | 'video' | 'conv';
+type TypeFilter = 'all' | 'photo' | 'video' | 'audio' | 'conv';
 
 const formatDate = (iso: string) => {
   try {
