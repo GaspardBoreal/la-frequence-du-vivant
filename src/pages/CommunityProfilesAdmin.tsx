@@ -17,6 +17,7 @@ import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import MarcheurEditSheet, { type EditableProfile } from '@/components/admin/community/MarcheurEditSheet';
 import ProfilsImpactDashboard from '@/components/admin/community/ProfilsImpactDashboard';
 import ProfilsMosaique from '@/components/admin/community/ProfilsMosaique';
+import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import NewMarcheurDialog from '@/components/admin/community/NewMarcheurDialog';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
