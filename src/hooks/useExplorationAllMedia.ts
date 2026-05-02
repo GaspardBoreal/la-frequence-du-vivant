@@ -194,19 +194,31 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
         (grouped[a.marche_event_id] ||= []).push(item);
       });
 
-      // All steps available globally for the exploration (will be filtered per event in lightbox)
-      const allSteps = Array.from(stepById.values());
+      // Per-event step set: union of step IDs referenced by that event's medias/audios.
+      const stepsByEvent: Record<string, Set<string>> = {};
+      const noteStep = (eventId: string, marcheId: string | null | undefined) => {
+        if (!marcheId || !stepById.has(marcheId)) return;
+        (stepsByEvent[eventId] ||= new Set()).add(marcheId);
+      };
+      medias.forEach(m => noteStep(m.marche_event_id, m.marche_id));
+      audios.forEach(a => noteStep(a.marche_event_id, a.marche_id));
 
-      return events.map(ev => ({
-        id: ev.id,
-        title: ev.title,
-        lieu: ev.lieu,
-        date: ev.date_marche,
-        latitude: ev.latitude ?? null,
-        longitude: ev.longitude ?? null,
-        steps: allSteps, // shared pool – lightbox highlights origin step
-        items: grouped[ev.id] || [],
-      }));
+      return events.map(ev => {
+        const stepIds = stepsByEvent[ev.id];
+        const steps: MarcheStep[] = stepIds
+          ? Array.from(stepIds).map(id => stepById.get(id)!).filter(Boolean)
+          : [];
+        return {
+          id: ev.id,
+          title: ev.title,
+          lieu: ev.lieu,
+          date: ev.date_marche,
+          latitude: ev.latitude ?? null,
+          longitude: ev.longitude ?? null,
+          steps,
+          items: grouped[ev.id] || [],
+        };
+      });
     },
     enabled: !!explorationId,
     staleTime: 60_000,
