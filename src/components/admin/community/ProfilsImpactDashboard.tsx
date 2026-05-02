@@ -70,6 +70,7 @@ export const ProfilsImpactDashboard: React.FC<ProfilsImpactDashboardProps> = ({ 
 
   const cspData = CSP_OPTIONS.map((c, i) => ({
     name: c.short,
+    fullName: c.label,
     size: data.by_csp[c.value] || 0,
     fill: TREEMAP_COLORS[i % TREEMAP_COLORS.length],
   })).filter(d => d.size > 0);
