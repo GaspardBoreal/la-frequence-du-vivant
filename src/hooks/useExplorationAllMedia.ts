@@ -11,6 +11,8 @@ export interface MarcheStep {
   name: string;
   lat: number;
   lng: number;
+  /** 1-based index in the exploration walking order. */
+  order: number;
 }
 
 export interface MediaItem {
