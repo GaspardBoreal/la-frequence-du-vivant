@@ -64,6 +64,7 @@ const MediaPickerSheet: React.FC<Props> = ({
 
     const showConv = typeFilter === 'all' || typeFilter === 'conv' || typeFilter === 'photo';
     const showEvents = typeFilter !== 'conv';
+    // audio filter: convivialité (photos only) doesn't apply
 
     if (showEvents) {
       data.events.forEach(ev => {
