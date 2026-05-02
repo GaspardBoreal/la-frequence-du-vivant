@@ -46,8 +46,13 @@ const Counter: React.FC<{ value: number; label: string; icon: React.ElementType;
   </Card>
 );
 
-export const ProfilsImpactDashboard: React.FC = () => {
-  const { data, isLoading } = useCommunityImpactAggregates();
+interface ProfilsImpactDashboardProps {
+  /** Restreint les agrégats aux participant·e·s d'un événement précis. */
+  eventId?: string | null;
+}
+
+export const ProfilsImpactDashboard: React.FC<ProfilsImpactDashboardProps> = ({ eventId }) => {
+  const { data, isLoading } = useCommunityImpactAggregates(eventId ?? null);
 
   if (isLoading || !data) {
     return <div className="text-muted-foreground text-sm">Chargement des indicateurs d'impact…</div>;

@@ -4166,6 +4166,10 @@ export type Database = {
         Returns: Json
       }
       get_community_impact_aggregates: { Args: never; Returns: Json }
+      get_community_impact_aggregates_scoped: {
+        Args: { p_event_id?: string }
+        Returns: Json
+      }
       get_current_admin_email: { Args: never; Returns: string }
       get_current_admin_email_secure: { Args: never; Returns: string }
       get_current_admin_info: {
