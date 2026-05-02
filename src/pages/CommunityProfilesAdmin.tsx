@@ -8,12 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList, Pencil, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import ActivityDashboard from '@/components/admin/ActivityDashboard';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
+import MarcheurEditSheet, { type EditableProfile } from '@/components/admin/community/MarcheurEditSheet';
+import ProfilsImpactDashboard from '@/components/admin/community/ProfilsImpactDashboard';
+import ProfilsMosaique from '@/components/admin/community/ProfilsMosaique';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   marcheur_en_devenir: { label: 'En devenir', icon: Footprints, color: 'text-muted-foreground' },
@@ -28,6 +31,10 @@ const CommunityProfilesAdmin: React.FC = () => {
   const [search, setSearch] = useState('');
   const [marcheursSearch, setMarcheursSearch] = useState('');
   const [eventFilter, setEventFilter] = useState<string>('all');
+  const [editing, setEditing] = useState<EditableProfile | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const openEditor = (p: EditableProfile) => { setEditing(p); setEditOpen(true); };
 
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['community-profiles-admin'],
@@ -175,6 +182,10 @@ const CommunityProfilesAdmin: React.FC = () => {
         <Tabs defaultValue="communaute" className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto mb-6">
             <TabsTrigger value="communaute">Communauté</TabsTrigger>
+            <TabsTrigger value="profils">
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Profils
+            </TabsTrigger>
             <TabsTrigger value="activites">Activités</TabsTrigger>
             <TabsTrigger value="affiliation">Affiliation marcheurs</TabsTrigger>
             <TabsTrigger value="marcheurs">Inscriptions</TabsTrigger>
@@ -226,6 +237,7 @@ const CommunityProfilesAdmin: React.FC = () => {
                       <TableHead>Ville</TableHead>
                       <TableHead>Formation</TableHead>
                       <TableHead>Certification</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -270,12 +282,18 @@ const CommunityProfilesAdmin: React.FC = () => {
                               {profile.certification_validee ? 'Validée' : 'Valider'}
                             </Button>
                           </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="ghost" onClick={() => openEditor(profile as unknown as EditableProfile)}>
+                              <Pencil className="h-3.5 w-3.5 mr-1" />
+                              Éditer
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
                     {filtered?.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                           Aucun profil trouvé.
                         </TableCell>
                       </TableRow>
@@ -283,6 +301,24 @@ const CommunityProfilesAdmin: React.FC = () => {
                   </TableBody>
                 </Table>
               </Card>
+            )}
+          </TabsContent>
+
+          {/* ===== PROFILS ===== */}
+          <TabsContent value="profils" className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Qui marche avec nous ?</h2>
+              <p className="text-sm text-muted-foreground">
+                Une mosaïque vivante des marcheur·euse·s qui relient le grand public à l'agroécologie,
+                à l'écotourisme et à la géopoétique. Données privées, agrégats anonymisés.
+              </p>
+            </div>
+            <ProfilsImpactDashboard />
+            {profiles && (
+              <ProfilsMosaique
+                profiles={profiles as unknown as (EditableProfile & { marches_count?: number })[]}
+                onEdit={openEditor}
+              />
             )}
           </TabsContent>
 
@@ -483,6 +519,8 @@ const CommunityProfilesAdmin: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <MarcheurEditSheet profile={editing} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );
 };
