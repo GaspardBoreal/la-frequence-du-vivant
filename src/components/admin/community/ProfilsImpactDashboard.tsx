@@ -115,8 +115,9 @@ export const ProfilsImpactDashboard: React.FC = () => {
             {genderData.map(d => (
               <div key={d.name} className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full" style={{ background: d.color }} />
-                <span className="text-muted-foreground">{d.name}</span>
-                <span className="ml-auto text-foreground font-medium">{d.value}</span>
+                <span className="text-muted-foreground">
+                  {d.name} <span className="text-foreground font-medium">({d.value})</span>
+                </span>
               </div>
             ))}
           </div>
