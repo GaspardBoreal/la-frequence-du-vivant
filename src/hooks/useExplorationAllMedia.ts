@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConvivialitePhotos, type ConvivialitePhoto } from '@/hooks/useConvivialitePhotos';
 
-export type MediaSource = 'conv' | 'media';
-export type MediaType = 'photo' | 'video';
+export type MediaSource = 'conv' | 'media' | 'audio';
+export type MediaType = 'photo' | 'video' | 'audio';
 
 export interface MediaItem {
-  key: string; // 'conv:<uuid>' | 'media:<uuid>'
+  key: string; // 'conv:<uuid>' | 'media:<uuid>' | 'audio:<uuid>'
   source: MediaSource;
   type: MediaType;
   url: string;
@@ -59,18 +59,32 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
 
       const eventIds = events.map(e => e.id);
 
-      // 2. Public medias
-      const { data: medias, error: mErr } = await supabase
-        .from('marcheur_medias')
-        .select('id, type_media, url_fichier, external_url, titre, marche_event_id, user_id, created_at, duree_secondes')
-        .in('marche_event_id', eventIds)
-        .eq('is_public', true)
-        .in('type_media', ['photo', 'video'])
-        .order('created_at', { ascending: false });
-      if (mErr) throw mErr;
+      // 2. Public medias (photos/vidéos) + audios en parallèle
+      const [mediasRes, audiosRes] = await Promise.all([
+        supabase
+          .from('marcheur_medias')
+          .select('id, type_media, url_fichier, external_url, titre, marche_event_id, user_id, created_at, duree_secondes')
+          .in('marche_event_id', eventIds)
+          .eq('is_public', true)
+          .in('type_media', ['photo', 'video'])
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('marcheur_audio')
+          .select('id, url_fichier, titre, marche_event_id, user_id, created_at, duree_secondes')
+          .in('marche_event_id', eventIds)
+          .eq('is_public', true)
+          .order('created_at', { ascending: false }),
+      ]);
+      if (mediasRes.error) throw mediasRes.error;
+      if (audiosRes.error) throw audiosRes.error;
+      const medias = mediasRes.data || [];
+      const audios = audiosRes.data || [];
 
       // 3. Author profiles
-      const userIds = Array.from(new Set((medias || []).map(m => m.user_id)));
+      const userIds = Array.from(new Set([
+        ...medias.map(m => m.user_id),
+        ...audios.map(a => a.user_id),
+      ]));
       const { data: profiles } = userIds.length > 0
         ? await supabase
             .from('community_profiles')
@@ -80,7 +94,7 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
       const profMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
       const grouped: Record<string, MediaItem[]> = {};
-      (medias || []).forEach(m => {
+      medias.forEach(m => {
         const url = m.url_fichier || m.external_url;
         if (!url) return;
         const prof = profMap.get(m.user_id);
@@ -96,6 +110,22 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
           durationSec: m.duree_secondes ?? null,
         };
         (grouped[m.marche_event_id] ||= []).push(item);
+      });
+      audios.forEach(a => {
+        if (!a.url_fichier) return;
+        const prof = profMap.get(a.user_id);
+        const item: MediaItem = {
+          key: `audio:${a.id}`,
+          source: 'audio',
+          type: 'audio',
+          url: a.url_fichier,
+          titre: a.titre,
+          authorName: prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null,
+          marcheEventId: a.marche_event_id,
+          createdAt: a.created_at,
+          durationSec: a.duree_secondes ?? null,
+        };
+        (grouped[a.marche_event_id] ||= []).push(item);
       });
 
       return events.map(ev => ({

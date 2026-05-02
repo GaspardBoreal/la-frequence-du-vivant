@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones } from 'lucide-react';
 import type { LatLngExpression, LatLngBoundsExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { MediaItem, MarcheEventGroup } from '@/hooks/useExplorationAllMedia';
@@ -143,7 +143,14 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
           </button>
 
           {/* Media area */}
-          <div className="relative bg-black flex items-center justify-center" style={{ minHeight: '38vh' }}>
+          <div
+            className={`relative flex items-center justify-center ${
+              current.type === 'audio'
+                ? 'bg-gradient-to-br from-emerald-600/20 via-emerald-500/10 to-amber-500/10'
+                : 'bg-black'
+            }`}
+            style={{ minHeight: '38vh' }}
+          >
             {current.type === 'video' ? (
               <video
                 key={current.key}
@@ -152,6 +159,25 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
                 playsInline
                 className="max-h-[60vh] w-full object-contain bg-black"
               />
+            ) : current.type === 'audio' ? (
+              <div className="w-full px-5 py-8 sm:py-10 flex flex-col items-center gap-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-600 flex items-center justify-center shadow-lg">
+                  <Headphones className="w-7 h-7 text-white" />
+                </div>
+                <div className="max-w-md">
+                  <p className="text-base font-semibold text-foreground leading-snug">
+                    {current.titre || 'Enregistrement sonore'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Capture sonore de marche</p>
+                </div>
+                <audio
+                  key={current.key}
+                  src={current.url}
+                  controls
+                  preload="metadata"
+                  className="w-full max-w-md"
+                />
+              </div>
             ) : (
               <img
                 key={current.key}
