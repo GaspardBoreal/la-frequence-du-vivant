@@ -17,6 +17,7 @@ import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import MarcheurEditSheet, { type EditableProfile } from '@/components/admin/community/MarcheurEditSheet';
 import ProfilsImpactDashboard from '@/components/admin/community/ProfilsImpactDashboard';
 import ProfilsMosaique from '@/components/admin/community/ProfilsMosaique';
+import NewMarcheurDialog from '@/components/admin/community/NewMarcheurDialog';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   marcheur_en_devenir: { label: 'En devenir', icon: Footprints, color: 'text-muted-foreground' },
@@ -176,7 +177,8 @@ const CommunityProfilesAdmin: React.FC = () => {
           <Link to="/admin">
             <Button variant="outline"><ArrowLeft className="h-4 w-4 mr-2" />Retour</Button>
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">Communauté des Marcheurs</h1>
+          <h1 className="text-2xl font-bold text-foreground flex-1">Communauté des Marcheurs</h1>
+          <NewMarcheurDialog />
         </div>
 
         <Tabs defaultValue="communaute" className="w-full">
