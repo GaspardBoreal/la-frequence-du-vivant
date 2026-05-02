@@ -15,11 +15,22 @@ export interface CommunityImpactAggregates {
   top_cities: { ville: string; count: number }[];
 }
 
-export function useCommunityImpactAggregates() {
+/**
+ * Agrégats d'impact des marcheur·euse·s.
+ * - Sans paramètre → agrégats globaux (toute la communauté).
+ * - Avec `eventId` → agrégats limités aux participant·e·s de cet événement.
+ *
+ * Utilise la RPC `get_community_impact_aggregates_scoped(p_event_id)` qui,
+ * appelée avec `null`, renvoie le même résultat que l'ancienne RPC globale.
+ */
+export function useCommunityImpactAggregates(eventId?: string | null) {
   return useQuery({
-    queryKey: ['community-impact-aggregates'],
+    queryKey: ['community-impact-aggregates', eventId ?? 'all'],
     queryFn: async (): Promise<CommunityImpactAggregates> => {
-      const { data, error } = await supabase.rpc('get_community_impact_aggregates' as never);
+      const { data, error } = await supabase.rpc(
+        'get_community_impact_aggregates_scoped' as never,
+        { p_event_id: eventId ?? null } as never,
+      );
       if (error) throw error;
       return data as unknown as CommunityImpactAggregates;
     },
