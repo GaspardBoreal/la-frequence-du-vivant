@@ -231,6 +231,9 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
     url: p.url,
     titre: null,
     authorName: [p.author_prenom, p.author_nom].filter(Boolean).join(' ') || null,
+    marcheId: null,
+    marcheStepName: null,
+    gps: null,
     createdAt: p.created_at,
   }));
 
