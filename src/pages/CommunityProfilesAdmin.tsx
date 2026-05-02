@@ -8,12 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList, Pencil, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import ActivityDashboard from '@/components/admin/ActivityDashboard';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
+import MarcheurEditSheet, { type EditableProfile } from '@/components/admin/community/MarcheurEditSheet';
+import ProfilsImpactDashboard from '@/components/admin/community/ProfilsImpactDashboard';
+import ProfilsMosaique from '@/components/admin/community/ProfilsMosaique';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   marcheur_en_devenir: { label: 'En devenir', icon: Footprints, color: 'text-muted-foreground' },
