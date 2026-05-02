@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import MediaPickerSheet from './MediaPickerSheet';
+import MediaLightbox from './MediaLightbox';
 
 interface Props {
   explorationId: string;
