@@ -315,4 +315,98 @@ const MediaPickerSheet: React.FC<Props> = ({
   );
 };
 
+interface AudioPickerCardProps {
+  item: MediaItem;
+  selected: boolean;
+  playing: boolean;
+  onToggleSelect: () => void;
+  onTogglePlay: () => void;
+  formatDuration: (sec?: number | null) => string | null;
+}
+
+const AudioPickerCard: React.FC<AudioPickerCardProps> = ({
+  item, selected, playing, onToggleSelect, onTogglePlay, formatDuration,
+}) => {
+  const audioRef = React.useRef<HTMLAudioElement>(null);
+
+  // Sync external playing state with the audio element
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (playing) {
+      el.play().catch(() => { /* user gesture / autoplay policy */ });
+    } else {
+      el.pause();
+    }
+  }, [playing]);
+
+  const duration = formatDuration(item.durationSec);
+  const meta = [item.authorName, duration].filter(Boolean).join(' · ');
+
+  return (
+    <div
+      className={cn(
+        'relative rounded-xl border-2 transition bg-card',
+        selected ? 'border-emerald-500' : 'border-border hover:border-muted-foreground/40'
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggleSelect}
+        className="w-full text-left flex items-center gap-3 p-2.5 sm:p-3"
+      >
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onTogglePlay(); }}
+          className={cn(
+            'shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition',
+            playing
+              ? 'bg-emerald-600 text-white shadow'
+              : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20'
+          )}
+          aria-label={playing ? 'Pause' : 'Écouter'}
+        >
+          {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground truncate">
+            {item.titre || 'Enregistrement sans titre'}
+          </p>
+          {meta && (
+            <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
+              <Mic className="w-3 h-3 shrink-0" />
+              <span className="truncate">{meta}</span>
+            </p>
+          )}
+        </div>
+        <div
+          className={cn(
+            'shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition border-2',
+            selected
+              ? 'bg-emerald-500 border-emerald-500'
+              : 'border-border bg-background'
+          )}
+          aria-hidden
+        >
+          {selected && <Check className="w-3.5 h-3.5 text-white" />}
+        </div>
+      </button>
+
+      {playing && (
+        <div className="px-2.5 sm:px-3 pb-2.5 sm:pb-3 -mt-1">
+          <audio
+            ref={audioRef}
+            src={item.url}
+            controls
+            preload="metadata"
+            className="w-full h-9"
+            onEnded={onTogglePlay}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default MediaPickerSheet;
+
