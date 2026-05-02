@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones, Locate } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones, Locate, Plus, Minus } from 'lucide-react';
 import type { LatLngExpression, LatLngBoundsExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { MediaItem, MarcheEventGroup, GpsSource } from '@/hooks/useExplorationAllMedia';
@@ -73,6 +73,31 @@ const ArrowDecorators: React.FC<{ positions: [number, number][] }> = ({ position
     return () => { arrows.forEach(a => map.removeLayer(a)); };
   }, [positions, map]);
   return null;
+};
+
+// Compact zoom controls overlay (mobile-friendly).
+const ZoomControls: React.FC = () => {
+  const map = useMap();
+  return (
+    <div className="absolute top-2 right-2 z-[500] flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); map.zoomIn(); }}
+        aria-label="Zoomer"
+        className="w-8 h-8 rounded-lg bg-background/85 backdrop-blur border border-border text-foreground flex items-center justify-center hover:bg-background transition active:scale-95"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); map.zoomOut(); }}
+        aria-label="Dézoomer"
+        className="w-8 h-8 rounded-lg bg-background/85 backdrop-blur border border-border text-foreground flex items-center justify-center hover:bg-background transition active:scale-95"
+      >
+        <Minus className="w-4 h-4" />
+      </button>
+    </div>
+  );
 };
 
 interface BadgeData {
@@ -426,6 +451,7 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
                             className="carte-tiles-dark"
                           />
                           <FitBounds points={allMapPoints} focus={focusPoint ?? undefined} />
+                          <ZoomControls />
 
                           {/* Polyline reliant les étapes dans l'ordre du parcours */}
                           {eventSteps.length >= 2 && (
