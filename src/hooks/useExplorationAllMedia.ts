@@ -71,26 +71,46 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
 
       const eventIds = events.map(e => e.id);
 
-      // 2. Public medias (photos/vidéos) + audios en parallèle
-      const [mediasRes, audiosRes] = await Promise.all([
+      // 2. Public medias (photos/vidéos) + audios + steps (marches) en parallèle
+      const [mediasRes, audiosRes, stepsLinkRes] = await Promise.all([
         supabase
           .from('marcheur_medias')
-          .select('id, type_media, url_fichier, external_url, titre, marche_event_id, user_id, created_at, duree_secondes')
+          .select('id, type_media, url_fichier, external_url, titre, marche_event_id, marche_id, metadata, user_id, created_at, duree_secondes')
           .in('marche_event_id', eventIds)
           .eq('is_public', true)
           .in('type_media', ['photo', 'video'])
           .order('created_at', { ascending: false }),
         supabase
           .from('marcheur_audio')
-          .select('id, url_fichier, titre, marche_event_id, user_id, created_at, duree_secondes')
+          .select('id, url_fichier, titre, marche_event_id, marche_id, user_id, created_at, duree_secondes')
           .in('marche_event_id', eventIds)
           .eq('is_public', true)
           .order('created_at', { ascending: false }),
+        supabase
+          .from('exploration_marches')
+          .select('marche_id, marches!inner(id, nom_marche, latitude, longitude)')
+          .eq('exploration_id', explorationId),
       ]);
       if (mediasRes.error) throw mediasRes.error;
       if (audiosRes.error) throw audiosRes.error;
+      if (stepsLinkRes.error) throw stepsLinkRes.error;
       const medias = mediasRes.data || [];
       const audios = audiosRes.data || [];
+
+      // Build step lookup (id → MarcheStep) – only steps with GPS are useful
+      const stepById = new Map<string, MarcheStep>();
+      ((stepsLinkRes.data || []) as Array<{ marches: { id: string; nom_marche: string | null; latitude: number | null; longitude: number | null } | null }>)
+        .forEach(row => {
+          const m = row.marches;
+          if (m && m.latitude != null && m.longitude != null) {
+            stepById.set(m.id, {
+              id: m.id,
+              name: m.nom_marche || 'Étape de marche',
+              lat: Number(m.latitude),
+              lng: Number(m.longitude),
+            });
+          }
+        });
 
       // 3. Author profiles
       const userIds = Array.from(new Set([
@@ -105,11 +125,38 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
         : { data: [] as { user_id: string; prenom: string | null; nom: string | null }[] };
       const profMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
+      const eventById = new Map(events.map(e => [e.id, e]));
+
+      const computeGps = (
+        metadata: any,
+        marcheId: string | null | undefined,
+        eventId: string,
+      ): MediaItem['gps'] => {
+        // 1) EXIF
+        const exifLat = Number(metadata?.gps?.latitude);
+        const exifLng = Number(metadata?.gps?.longitude);
+        if (Number.isFinite(exifLat) && Number.isFinite(exifLng) && (exifLat !== 0 || exifLng !== 0)) {
+          return { lat: exifLat, lng: exifLng, source: 'exif' };
+        }
+        // 2) Step
+        if (marcheId) {
+          const s = stepById.get(marcheId);
+          if (s) return { lat: s.lat, lng: s.lng, source: 'step' };
+        }
+        // 3) Event
+        const ev = eventById.get(eventId);
+        if (ev?.latitude != null && ev?.longitude != null) {
+          return { lat: Number(ev.latitude), lng: Number(ev.longitude), source: 'event' };
+        }
+        return null;
+      };
+
       const grouped: Record<string, MediaItem[]> = {};
       medias.forEach(m => {
         const url = m.url_fichier || m.external_url;
         if (!url) return;
         const prof = profMap.get(m.user_id);
+        const stepName = m.marche_id ? stepById.get(m.marche_id)?.name ?? null : null;
         const item: MediaItem = {
           key: `media:${m.id}`,
           source: 'media',
@@ -118,6 +165,9 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
           titre: m.titre,
           authorName: prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null,
           marcheEventId: m.marche_event_id,
+          marcheId: m.marche_id ?? null,
+          marcheStepName: stepName,
+          gps: computeGps(m.metadata, m.marche_id, m.marche_event_id),
           createdAt: m.created_at,
           durationSec: m.duree_secondes ?? null,
         };
@@ -126,6 +176,7 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
       audios.forEach(a => {
         if (!a.url_fichier) return;
         const prof = profMap.get(a.user_id);
+        const stepName = a.marche_id ? stepById.get(a.marche_id)?.name ?? null : null;
         const item: MediaItem = {
           key: `audio:${a.id}`,
           source: 'audio',
@@ -134,11 +185,17 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
           titre: a.titre,
           authorName: prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null,
           marcheEventId: a.marche_event_id,
+          marcheId: a.marche_id ?? null,
+          marcheStepName: stepName,
+          gps: computeGps(null, a.marche_id, a.marche_event_id),
           createdAt: a.created_at,
           durationSec: a.duree_secondes ?? null,
         };
         (grouped[a.marche_event_id] ||= []).push(item);
       });
+
+      // All steps available globally for the exploration (will be filtered per event in lightbox)
+      const allSteps = Array.from(stepById.values());
 
       return events.map(ev => ({
         id: ev.id,
@@ -147,6 +204,7 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
         date: ev.date_marche,
         latitude: ev.latitude ?? null,
         longitude: ev.longitude ?? null,
+        steps: allSteps, // shared pool – lightbox highlights origin step
         items: grouped[ev.id] || [],
       }));
     },
