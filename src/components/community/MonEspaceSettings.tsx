@@ -75,6 +75,9 @@ interface FormData {
   kigo_accueil: string;
   superpouvoir_sensoriel: string;
   niveau_intimite_vivant: string;
+  genre: string;
+  csp: string;
+  csp_precision: string;
 }
 
 const MonEspaceSettings: React.FC<MonEspaceSettingsProps> = ({
