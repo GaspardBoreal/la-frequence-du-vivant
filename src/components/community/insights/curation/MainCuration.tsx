@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Hand, Plus, Pencil, Trash2, Image as ImageIcon, Play } from 'lucide-react';
+import { Hand, Plus, Pencil, Trash2, Image as ImageIcon, Play, Mic } from 'lucide-react';
 import {
   useExplorationCurations,
   useUpsertCuration,
