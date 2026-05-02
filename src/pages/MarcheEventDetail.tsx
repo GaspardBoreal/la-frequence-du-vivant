@@ -125,9 +125,13 @@ const MarcheEventDetail: React.FC = () => {
   });
 
   // Participant profiles (separate query)
-  const participantUserIds = useMemo(() => participations?.map(p => p.user_id) ?? [], [participations]);
+  const participantUserIds = useMemo(
+    () => (participations?.map(p => p.user_id) ?? []).slice().sort(),
+    [participations],
+  );
   const { data: participantProfiles } = useQuery({
-    queryKey: ['participant-profiles', participantUserIds],
+    // v2 : ajout du champ date_naissance — bump pour invalider l'ancien cache.
+    queryKey: ['participant-profiles', 'v2', participantUserIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('community_profiles')
