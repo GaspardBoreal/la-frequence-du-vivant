@@ -2,10 +2,19 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones, Locate } from 'lucide-react';
 import type { LatLngExpression, LatLngBoundsExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { MediaItem, MarcheEventGroup } from '@/hooks/useExplorationAllMedia';
+import type { MediaItem, MarcheEventGroup, GpsSource } from '@/hooks/useExplorationAllMedia';
+
+const UUID_RE = /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
+const isUuidLike = (s?: string | null) => !!s && UUID_RE.test(s.trim());
+
+const GPS_SOURCE_LABEL: Record<GpsSource, string> = {
+  exif: 'Position issue de la photo',
+  step: 'Position de l’étape de marche',
+  event: 'Position de l’événement',
+};
 
 interface BadgeData {
   label: string;
