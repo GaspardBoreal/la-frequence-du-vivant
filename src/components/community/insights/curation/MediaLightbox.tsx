@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones } from 'lucide-react';
 import type { LatLngExpression, LatLngBoundsExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { MediaItem, MarcheEventGroup } from '@/hooks/useExplorationAllMedia';
