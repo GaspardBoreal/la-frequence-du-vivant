@@ -131,7 +131,7 @@ const MarcheEventDetail: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('community_profiles')
-        .select('user_id, prenom, nom, role')
+        .select('user_id, prenom, nom, role, date_naissance')
         .in('user_id', participantUserIds);
       if (error) throw error;
       return data;
@@ -568,6 +568,7 @@ const MarcheEventDetail: React.FC = () => {
                   <TableRow>
                      <TableHead>Nom</TableHead>
                      <TableHead>Rôle</TableHead>
+                     <TableHead>Âge</TableHead>
                      <TableHead>Validé le</TableHead>
                      <TableHead>Méthode</TableHead>
                      <TableHead className="w-10"></TableHead>
@@ -575,11 +576,23 @@ const MarcheEventDetail: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {participations.map((p: any) => {
-                    const profile = getParticipantProfile(p.user_id);
+                    const profile = getParticipantProfile(p.user_id) as any;
+                    let age: number | null = null;
+                    if (profile?.date_naissance) {
+                      const dob = new Date(profile.date_naissance);
+                      if (!isNaN(dob.getTime())) {
+                        const now = new Date();
+                        let a = now.getFullYear() - dob.getFullYear();
+                        const m = now.getMonth() - dob.getMonth();
+                        if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) a--;
+                        if (a >= 0 && a < 130) age = a;
+                      }
+                    }
                     return (
                       <TableRow key={p.id}>
                         <TableCell>{profile?.prenom} {profile?.nom}</TableCell>
                         <TableCell className="capitalize">{profile?.role?.replace(/_/g, ' ') || '—'}</TableCell>
+                        <TableCell className="tabular-nums">{age !== null ? `${age} ans` : '—'}</TableCell>
                         <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
                         <TableCell>
                            {p.validation_method === 'admin_retroactif' ? (
