@@ -43,6 +43,7 @@ const MediaPickerSheet: React.FC<Props> = ({
   // Reset draft when reopening with new selection
   useEffect(() => {
     if (open) setDraft(new Set(selectedKeys));
+    else setPlayingKey(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
