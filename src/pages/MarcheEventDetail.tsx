@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, CheckCircle2, Save, Trash2, Plus, Printer, Users, MapPin, Tag, TreePine } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Save, Trash2, Plus, Printer, Users, MapPin, Tag, TreePine, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
@@ -22,6 +22,7 @@ import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta, type MarcheEventType } from
 import EventBiodiversityTab from '@/components/community/EventBiodiversityTab';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import LivingPathOverview from '@/components/admin/LivingPathOverview';
+import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -291,6 +292,10 @@ const MarcheEventDetail: React.FC = () => {
               <TabsTrigger value="empreinte" className="flex items-center gap-1.5">
                 <TreePine className="h-3.5 w-3.5" />
                 Empreinte Vivante
+              </TabsTrigger>
+              <TabsTrigger value="profils" className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                Profils
               </TabsTrigger>
             </TabsList>
           )}
@@ -619,6 +624,13 @@ const MarcheEventDetail: React.FC = () => {
                   eventDescription={event?.description}
                   eventType={event?.event_type}
                   marches={explorationMarches as any[] | undefined}
+                />
+              </TabsContent>
+              <TabsContent value="profils" className="mt-4">
+                <ProfilsPanel
+                  scope={{ type: 'event', eventId: id! }}
+                  title="Profils des participant·e·s"
+                  subtitle="Portrait collectif des marcheur·euse·s validé·e·s sur cet événement. Données privées, agrégats anonymisés."
                 />
               </TabsContent>
             </>
