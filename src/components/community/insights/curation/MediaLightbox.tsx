@@ -80,23 +80,47 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
   }, [open, items.length, onOpenChange]);
 
   const current = items[index];
-  const eventsGeo = useMemo(
-    () => marcheEvents.filter(e => e.latitude != null && e.longitude != null),
-    [marcheEvents]
-  );
   const originEvent = useMemo(
     () => marcheEvents.find(e => e.id === current?.marcheEventId) || null,
     [marcheEvents, current]
   );
 
-  const points: [number, number][] = useMemo(
-    () => eventsGeo.map(e => [e.latitude!, e.longitude!]),
-    [eventsGeo]
+  // Per-event steps (already filtered to those used by this event's medias).
+  const eventSteps = originEvent?.steps ?? [];
+
+  // Origin step = step matching the current media's marcheId (if any).
+  const originStep = useMemo(
+    () => (current?.marcheId ? eventSteps.find(s => s.id === current.marcheId) ?? null : null),
+    [eventSteps, current]
   );
-  const originPoint: [number, number] | undefined =
-    originEvent?.latitude != null && originEvent?.longitude != null
-      ? [originEvent.latitude, originEvent.longitude]
-      : undefined;
+
+  // Photo's own GPS (EXIF) — distinct point on the map when available.
+  const exifPoint: [number, number] | null =
+    current?.gps?.source === 'exif' ? [current.gps.lat, current.gps.lng] : null;
+
+  // All map points used to fit bounds: every step + EXIF + event center.
+  const allMapPoints: [number, number][] = useMemo(() => {
+    const pts: [number, number][] = eventSteps.map(s => [s.lat, s.lng]);
+    if (exifPoint) pts.push(exifPoint);
+    if (
+      originEvent?.latitude != null &&
+      originEvent?.longitude != null &&
+      pts.length === 0
+    ) {
+      pts.push([originEvent.latitude, originEvent.longitude]);
+    }
+    return pts;
+  }, [eventSteps, exifPoint, originEvent]);
+
+  // Effective center for the map (used when there's only one point).
+  const focusPoint: [number, number] | null =
+    exifPoint
+      ?? (originStep ? [originStep.lat, originStep.lng] : null)
+      ?? (originEvent?.latitude != null && originEvent?.longitude != null
+        ? [originEvent.latitude, originEvent.longitude]
+        : null);
+
+  const hasMap = allMapPoints.length > 0 || focusPoint != null;
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
