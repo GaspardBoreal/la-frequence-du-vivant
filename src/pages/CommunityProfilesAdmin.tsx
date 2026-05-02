@@ -31,6 +31,10 @@ const CommunityProfilesAdmin: React.FC = () => {
   const [search, setSearch] = useState('');
   const [marcheursSearch, setMarcheursSearch] = useState('');
   const [eventFilter, setEventFilter] = useState<string>('all');
+  const [editing, setEditing] = useState<EditableProfile | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const openEditor = (p: EditableProfile) => { setEditing(p); setEditOpen(true); };
 
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['community-profiles-admin'],
