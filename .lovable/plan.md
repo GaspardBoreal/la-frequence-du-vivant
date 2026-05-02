@@ -1,65 +1,112 @@
 ## Objectif
 
-Reproduire à l'identique l'onglet **Profils** (mosaïque + dashboard d'impact) de `/admin/community` dans `/admin/marche-events`, avec un code **factorisé** : un seul jeu de composants servant les deux pages, pour que tout ajout fonctionnel futur s'applique automatiquement aux deux.
+Afficher l'onglet **Profils** (mosaïque + dashboard d'impact) dans 3 contextes, avec **un seul code source** :
+
+1. `/admin/community` → tous les marcheur·euse·s (déjà en place).
+2. `/admin/marche-events` → tous les marcheur·euse·s (déjà en place).
+3. `/admin/marche-events/:id` → **uniquement les participants validés de cet événement** (à ajouter).
+
+Tout ajout fonctionnel futur (KPI, filtre, action…) doit s'appliquer automatiquement aux trois.
 
 ## Analyse de l'existant
 
-L'onglet "Profils" actuel dans `CommunityProfilesAdmin.tsx` est déjà presque entièrement factorisé :
+- `ProfilsPanel` (composant racine) charge aujourd'hui **tous** les `community_profiles` et rend `<ProfilsImpactDashboard />` + `<ProfilsMosaique>` + `<MarcheurEditSheet>`.
+- `ProfilsMosaique` est déjà 100 % réutilisable : il reçoit `profiles` en prop et gère ses filtres internes.
+- `ProfilsImpactDashboard` est aujourd'hui **autonome** : il appelle `useCommunityImpactAggregates` qui frappe la RPC `get_community_impact_aggregates()` — sans paramètre, donc agrégats globaux.
+- `MarcheEventDetail.tsx` a déjà une requête `marche-participations` filtrée sur `marche_event_id = :id`, et un onglet `Tabs` (3 triggers actuellement : Informations / Parcours vivant / Empreinte).
+- La RPC actuelle ne sait pas filtrer par événement.
 
-- `ProfilsImpactDashboard` (compteurs animés + pyramide âges + donut genres + treemap CSP) — **autonome**, alimenté par le hook `useCommunityImpactAggregates` (RPC `get_community_impact_aggregates`).
-- `ProfilsMosaique` — reçoit `profiles` + `onEdit` en props, gère ses propres filtres internes (recherche, âge, genre, CSP, rôle).
-- `MarcheurEditSheet` — sheet d'édition, pilotée par état `editing`/`editOpen`.
+## Stratégie : un seul `ProfilsPanel` qui s'adapte au contexte
 
-Le seul "glue code" non factorisé dans `CommunityProfilesAdmin` est :
-1. La requête `community-profiles-admin` qui charge `community_profiles`.
-2. L'état local `editing/editOpen` + la fonction `openEditor`.
-3. Le rendu du `<MarcheurEditSheet>`.
-4. Le header "Qui marche avec nous ?".
+### 1. Étendre `ProfilsPanel` avec une prop `scope` optionnelle
 
-## Stratégie de factorisation
+```ts
+type ProfilsScope =
+  | { type: 'all' }                       // défaut — comportement actuel
+  | { type: 'event'; eventId: string };   // restreint à un événement
+```
 
-Créer **un composant unique réutilisable** qui encapsule tout le bloc "Profils" (header + dashboard + mosaïque + sheet d'édition + chargement des données). Les deux pages l'importent tel quel.
+- Sans `scope` (ou `scope.type === 'all'`) → comportement strictement identique à aujourd'hui (zéro régression sur `/admin/community` et `/admin/marche-events`).
+- Avec `scope.type === 'event'` :
+  - La requête `community-profiles-admin` devient `community-profiles-by-event` (clé incluant `eventId`) : on récupère d'abord les `user_id` validés de `marche_participations` pour cet événement, puis les `community_profiles` correspondants.
+  - On passe le scope à `ProfilsImpactDashboard` pour qu'il agrège sur le même sous-ensemble.
 
-### Nouveau composant
+### 2. Rendre `ProfilsImpactDashboard` "scope-aware" via une nouvelle RPC paramétrée
 
-**`src/components/admin/community/ProfilsPanel.tsx`**
+Créer une RPC `get_community_impact_aggregates_scoped(p_event_id uuid default null)` :
+- Même logique que l'actuelle (mêmes clés JSON, même structure de retour → zéro changement côté UI).
+- Si `p_event_id` est NULL → résultat identique à la fonction actuelle.
+- Si `p_event_id` est fourni → la CTE `base` est filtrée :
+  ```sql
+  WHERE cp.user_id IN (
+    SELECT mp.user_id
+    FROM public.marche_participations mp
+    WHERE mp.marche_event_id = p_event_id
+  )
+  ```
+- `territories_count` devient le nombre d'`exploration_id` distincts liés à ce seul événement (1 ou 0), ce qui reste cohérent.
+- Garde le check `check_is_admin_user(auth.uid())` + `SECURITY DEFINER` + `SET search_path = public`.
+- L'ancienne RPC `get_community_impact_aggregates()` est conservée pour ne rien casser, mais le hook est mis à jour pour appeler la nouvelle (avec `null` par défaut → comportement identique).
 
-Responsabilités (extraites depuis `CommunityProfilesAdmin`) :
-- Charger `community_profiles` via React Query (clé `community-profiles-admin` — partagée pour bénéficier du cache).
-- Gérer l'état `editing` / `editOpen`.
-- Rendre, dans cet ordre :
-  - Header "Qui marche avec nous ?" + sous-titre (props `title` / `subtitle` optionnelles pour personnaliser si besoin, défaut = textes actuels).
-  - `<ProfilsImpactDashboard />`
-  - `<ProfilsMosaique profiles={...} onEdit={openEditor} />`
-  - `<MarcheurEditSheet open={editOpen} onOpenChange={setEditOpen} profile={editing} />` (même invalidation de queries qu'aujourd'hui).
+Le hook `useCommunityImpactAggregates(eventId?: string)` accepte un argument optionnel et l'inclut dans la queryKey.
 
-Aucun nouveau hook réseau n'est créé : `ProfilsImpactDashboard` et `ProfilsMosaique` restent inchangés.
+### 3. Nouvel onglet dans `MarcheEventDetail.tsx`
 
-### Refactor `CommunityProfilesAdmin.tsx`
+- Élargir la `TabsList` (ajout d'un 4ᵉ trigger « Profils » avec icône `Sparkles`).
+- Ajouter `<TabsContent value="profils"><ProfilsPanel scope={{ type: 'event', eventId: id }} title="Profils des participant·e·s" subtitle="Portrait collectif des marcheur·euse·s validé·e·s sur cet événement." /></TabsContent>`.
+- Onglet visible uniquement quand `!isNew` (cohérent avec les autres onglets dépendants de l'`id`).
 
-Remplacer le contenu actuel du `TabsContent value="profils"` par `<ProfilsPanel />`. Supprimer de la page :
-- L'état `editing` / `editOpen` / `openEditor` **uniquement s'il n'est plus utilisé ailleurs**. Vérification : `openEditor` est aussi appelé depuis l'onglet "Communauté" (bouton Éditer dans la table). On garde donc l'état + le `<MarcheurEditSheet>` au niveau page pour l'onglet Communauté, et `ProfilsPanel` gère son propre `MarcheurEditSheet` interne (deux instances n'entrent pas en conflit puisqu'une seule est ouverte à la fois). Comportement identique pour l'utilisateur.
+## Garantie d'identité parfaite entre les 3 contextes
 
-### Ajout dans `MarcheEventsAdmin.tsx`
+- Un seul composant `ProfilsPanel` rendu dans les 3 pages.
+- Un seul composant `ProfilsImpactDashboard` rendu, alimenté par un seul hook.
+- Un seul composant `ProfilsMosaique` (mêmes filtres internes, mêmes cartes).
+- Un seul `MarcheurEditSheet` (édition identique partout).
+- Les caches React Query sont segmentés par scope (`['community-profiles-admin']` global vs `['community-profiles-by-event', eventId]`) → pas de pollution croisée.
 
-- Importer `ProfilsPanel`.
-- Ajouter un 5ᵉ onglet `profils` dans la `TabsList` (icône `Sparkles`, label "Profils"), géré via le param URL `?tab=profils` (la page utilise déjà `useSearchParams` pour les onglets).
-- Ajuster la grille de la `TabsList` : `grid-cols-4` → `grid-cols-5`.
-- Ajouter un `<TabsContent value="profils"><ProfilsPanel /></TabsContent>`.
+Toute évolution future (nouveau KPI, nouvelle colonne, nouveau filtre) ne se fait **qu'à un seul endroit** et apparaît instantanément dans les trois vues.
 
-Le `EventsKpiBanner` et `EventsFiltersBar` restent affichés au-dessus des onglets — comportement actuel inchangé pour les autres onglets. Pour l'onglet Profils, ces filtres ne s'appliquent pas (les profils ne sont pas filtrables par type/statut d'événement), ce qui est cohérent : ils sont simplement ignorés par `ProfilsPanel` qui a ses propres filtres internes.
+## Détails techniques
 
-## Garantie d'identité parfaite
+**Migration SQL** (1 nouvelle fonction, ancienne préservée) :
+```sql
+CREATE OR REPLACE FUNCTION public.get_community_impact_aggregates_scoped(
+  p_event_id uuid DEFAULT NULL
+) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+DECLARE result jsonb;
+BEGIN
+  IF NOT public.check_is_admin_user(auth.uid()) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+  WITH base AS (
+    SELECT cp.user_id, cp.role::text AS role, cp.genre::text AS genre,
+           cp.csp::text AS csp, public.age_bracket(cp.date_naissance) AS bracket,
+           cp.ville, cp.marches_count
+    FROM public.community_profiles cp
+    WHERE p_event_id IS NULL
+       OR cp.user_id IN (
+            SELECT mp.user_id FROM public.marche_participations mp
+            WHERE mp.marche_event_id = p_event_id
+          )
+  )
+  SELECT jsonb_build_object(
+    'total', (SELECT COUNT(*) FROM base),
+    /* ... mêmes clés que l'actuelle, en remplaçant simplement
+       le sous-select 'territories_count' par une version filtrée si p_event_id non null ... */
+    ...
+  ) INTO result;
+  RETURN result;
+END $$;
+```
 
-Puisque les deux pages rendent **exactement le même composant `<ProfilsPanel />`** :
-- Les compteurs, chartes, mosaïque, filtres, sheet d'édition sont littéralement le même code.
-- Tout ajout futur (nouveau KPI, nouveau filtre, nouvelle colonne, nouvelle action) se fait dans `ProfilsPanel` (ou ses enfants) et apparaît instantanément dans les deux pages.
-- Le cache React Query (`community-profiles-admin`, `community-impact-aggregates`) est partagé, donc pas de double fetch quand on navigue entre les deux pages.
+**Fichiers touchés :**
+- **Migration** : nouvelle RPC `get_community_impact_aggregates_scoped`.
+- **Modifié** : `src/hooks/useCommunityImpactAggregates.ts` — accepte `eventId?: string`, appelle la nouvelle RPC.
+- **Modifié** : `src/components/admin/community/ProfilsImpactDashboard.tsx` — accepte une prop optionnelle `eventId`, la transmet au hook.
+- **Modifié** : `src/components/admin/community/ProfilsPanel.tsx` — accepte `scope?`, charge les profils via la requête appropriée, transmet `eventId` au dashboard.
+- **Modifié** : `src/pages/MarcheEventDetail.tsx` — nouveau `TabsTrigger` + `TabsContent` "Profils" avec `<ProfilsPanel scope={{ type: 'event', eventId: id }} />`.
 
-## Fichiers touchés
+**Pas de modification** sur `CommunityProfilesAdmin.tsx` ni `MarcheEventsAdmin.tsx` : ils continuent de rendre `<ProfilsPanel />` sans scope → comportement strictement inchangé.
 
-- **Créé** : `src/components/admin/community/ProfilsPanel.tsx` (~80 lignes — extraction directe).
-- **Modifié** : `src/pages/CommunityProfilesAdmin.tsx` — `TabsContent value="profils"` remplacé par `<ProfilsPanel />`.
-- **Modifié** : `src/pages/MarcheEventsAdmin.tsx` — ajout d'un onglet "Profils" + `<TabsContent>` correspondant, `grid-cols-4` → `grid-cols-5`.
-
-Aucune migration SQL, aucun changement de hook ou d'API. Risque de régression minimal : la logique d'origine est déplacée bit-pour-bit, pas réécrite.
+**Risque de régression** : minimal — l'ancienne RPC reste en place, les usages sans scope passent par un chemin de code (`p_event_id = NULL`) qui produit le même résultat que la fonction historique.
