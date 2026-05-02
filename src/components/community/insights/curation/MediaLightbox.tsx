@@ -75,6 +75,31 @@ const ArrowDecorators: React.FC<{ positions: [number, number][] }> = ({ position
   return null;
 };
 
+// Compact zoom controls overlay (mobile-friendly).
+const ZoomControls: React.FC = () => {
+  const map = useMap();
+  return (
+    <div className="absolute top-2 right-2 z-[500] flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); map.zoomIn(); }}
+        aria-label="Zoomer"
+        className="w-8 h-8 rounded-lg bg-background/85 backdrop-blur border border-border text-foreground flex items-center justify-center hover:bg-background transition active:scale-95"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); map.zoomOut(); }}
+        aria-label="Dézoomer"
+        className="w-8 h-8 rounded-lg bg-background/85 backdrop-blur border border-border text-foreground flex items-center justify-center hover:bg-background transition active:scale-95"
+      >
+        <Minus className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};
+
 interface BadgeData {
   label: string;
   color?: string;
