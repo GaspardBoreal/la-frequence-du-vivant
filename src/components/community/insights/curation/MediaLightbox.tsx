@@ -100,7 +100,7 @@ const FitBounds: React.FC<{ points: [number, number][]; focus?: [number, number]
     }
     if (points.length >= 2) {
       const bounds = points as LatLngBoundsExpression;
-      map.fitBounds(bounds, { padding: [24, 24], maxZoom: 14 });
+      map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
     } else if (points.length === 1) {
       map.setView(points[0] as LatLngExpression, 13, { animate: true });
     }
