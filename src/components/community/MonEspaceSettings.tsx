@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, User, MapPin, Mail, Phone, Calendar, Heart, Sparkles, Mountain, MessageSquare, Pencil, Save, X } from 'lucide-react';
+import { LogOut, User, MapPin, Mail, Phone, Calendar, Heart, Sparkles, Mountain, MessageSquare, Pencil, Save, X, Briefcase, UserCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,7 @@ import RoleBadge from './RoleBadge';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { CSP_OPTIONS, GENDER_OPTIONS, cspLabel, genderLabel } from '@/lib/communityProfileTaxonomy';
 
 interface CommunityProfile {
   id: string;
