@@ -17,6 +17,64 @@ const GPS_SOURCE_LABEL: Record<GpsSource, string> = {
   event: 'Position de l’événement',
 };
 
+// Numbered marker — same visual language as ExplorationCarteTab.
+function createNumberedIcon(num: number, isOrigin: boolean): L.DivIcon {
+  const size = isOrigin ? 38 : 22;
+  const fontSize = isOrigin ? 14 : 11;
+  const opacity = isOrigin ? 1 : 0.78;
+  const border = isOrigin ? '2.5px solid #fbbf24' : '1.5px solid rgba(255,255,255,0.7)';
+  const shadow = isOrigin
+    ? '0 2px 10px rgba(16,185,129,0.55), 0 0 0 5px rgba(251,191,36,0.25)'
+    : '0 1px 4px rgba(0,0,0,0.35)';
+  const pulse = isOrigin ? 'animation: media-origin-pulse 2.2s ease-in-out infinite;' : '';
+  return L.divIcon({
+    className: 'media-lightbox-numbered-marker',
+    html: `
+      <div style="
+        width:${size}px;height:${size}px;
+        background:linear-gradient(135deg,#10b981,#059669);
+        border:${border};
+        border-radius:50%;
+        display:flex;align-items:center;justify-content:center;
+        color:white;font-weight:700;font-size:${fontSize}px;
+        box-shadow:${shadow};
+        opacity:${opacity};
+        ${pulse}
+      ">${num}</div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2 - 4],
+  });
+}
+
+// Arrow decorators along the polyline — identical pattern to ExplorationCarteTab.
+const ArrowDecorators: React.FC<{ positions: [number, number][] }> = ({ positions }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (positions.length < 2) return;
+    const arrows: L.Marker[] = [];
+    for (let i = 0; i < positions.length - 1; i++) {
+      const [lat1, lng1] = positions[i];
+      const [lat2, lng2] = positions[i + 1];
+      const midLat = (lat1 + lat2) / 2;
+      const midLng = (lng1 + lng2) / 2;
+      const angle = (Math.atan2(lat2 - lat1, lng2 - lng1) * 180) / Math.PI;
+      const icon = L.divIcon({
+        className: 'media-lightbox-arrow',
+        html: `<div style="transform:rotate(${90 - angle}deg);color:#10b981;font-size:13px;opacity:0.55;text-shadow:0 1px 2px rgba(0,0,0,0.5);">▲</div>`,
+        iconSize: [13, 13],
+        iconAnchor: [6.5, 6.5],
+      });
+      const marker = L.marker([midLat, midLng], { icon, interactive: false });
+      marker.addTo(map);
+      arrows.push(marker);
+    }
+    return () => { arrows.forEach(a => map.removeLayer(a)); };
+  }, [positions, map]);
+  return null;
+};
+
 interface BadgeData {
   label: string;
   color?: string;
