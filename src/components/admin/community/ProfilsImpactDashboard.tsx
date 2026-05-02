@@ -51,6 +51,112 @@ interface ProfilsImpactDashboardProps {
   eventId?: string | null;
 }
 
+/** Luminance d'une couleur HSL "hsl(h s% l%)" -> 0–100. Sert à choisir un texte clair ou foncé. */
+const hslLightness = (hsl: string): number => {
+  const m = hsl.match(/hsl\(\s*\d+\s+\d+%\s+(\d+(?:\.\d+)?)%/i);
+  return m ? parseFloat(m[1]) : 50;
+};
+
+/** Découpe un libellé en max 2 lignes sans casser les mots ; ajoute une ellipse si débordement. */
+const wrapLabel = (label: string, maxCharsPerLine: number): string[] => {
+  if (maxCharsPerLine <= 2) return [];
+  const words = label.split(/\s+/);
+  const lines: string[] = [];
+  let current = '';
+  let truncated = false;
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length <= maxCharsPerLine) {
+      current = candidate;
+    } else {
+      if (current) lines.push(current);
+      if (lines.length >= 2) { truncated = true; break; }
+      current = word.length > maxCharsPerLine ? word.slice(0, Math.max(1, maxCharsPerLine - 1)) + '…' : word;
+    }
+  }
+  if (current && lines.length < 2) lines.push(current);
+  if (truncated && lines.length === 2 && !lines[1].endsWith('…')) {
+    const last = lines[1];
+    lines[1] = last.length > 1 ? last.slice(0, Math.max(1, last.length - 1)) + '…' : last + '…';
+  }
+  return lines;
+};
+
+interface CSPTileProps {
+  x?: number; y?: number; width?: number; height?: number;
+  name?: string; value?: number; fill?: string;
+}
+
+/**
+ * Rendu personnalisé d'une tuile CSP : libellé + valeur visibles en permanence,
+ * sans hover requis. Police, coupure et couleur du texte s'adaptent à la taille
+ * et à la luminosité de la tuile pour rester lisible et élégant.
+ */
+const CSPTreemapTile: React.FC<CSPTileProps> = ({
+  x = 0, y = 0, width = 0, height = 0, name = '', value = 0, fill = 'hsl(160 60% 45%)',
+}) => {
+  const isLight = hslLightness(fill) >= 62;
+  const textColor = isLight ? 'hsl(220 25% 12%)' : '#ffffff';
+
+  const tooSmall = width < 28 || height < 22;
+  const baseFont = Math.max(10, Math.min(15, Math.round(Math.min(width, height) / 7)));
+  const padding = 6;
+  const innerW = Math.max(0, width - padding * 2);
+  const maxChars = Math.max(2, Math.floor(innerW / (baseFont * 0.55)));
+  const compact = width < 56 || height < 44;
+  const lines = tooSmall ? [] : wrapLabel(name, maxChars).slice(0, compact ? 1 : 2);
+
+  const showValue = !tooSmall && height >= 44 && width >= 44;
+  const valueFont = Math.max(10, Math.round(baseFont * 0.85));
+  const lineHeight = baseFont * 1.15;
+  const blockHeight = lines.length * lineHeight + (showValue ? valueFont * 1.4 : 0);
+  const startY = y + (height - blockHeight) / 2 + baseFont * 0.85;
+
+  return (
+    <g>
+      <rect
+        x={x} y={y} width={width} height={height}
+        rx={4} ry={4}
+        style={{ fill, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+      />
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={x + width / 2}
+          y={startY + i * lineHeight}
+          textAnchor="middle"
+          fontSize={baseFont}
+          fontWeight={600}
+          fill={textColor}
+          style={{
+            paintOrder: 'stroke',
+            stroke: isLight ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.28)',
+            strokeWidth: 2,
+            strokeLinejoin: 'round',
+            pointerEvents: 'none',
+          }}
+        >
+          {line}
+        </text>
+      ))}
+      {showValue && (
+        <text
+          x={x + width / 2}
+          y={startY + lines.length * lineHeight + valueFont * 0.95}
+          textAnchor="middle"
+          fontSize={valueFont}
+          fontWeight={500}
+          fill={textColor}
+          opacity={0.78}
+          style={{ pointerEvents: 'none' }}
+        >
+          {value.toLocaleString('fr-FR')}
+        </text>
+      )}
+    </g>
+  );
+};
+
 export const ProfilsImpactDashboard: React.FC<ProfilsImpactDashboardProps> = ({ eventId }) => {
   const { data, isLoading } = useCommunityImpactAggregates(eventId ?? null);
 
@@ -70,6 +176,7 @@ export const ProfilsImpactDashboard: React.FC<ProfilsImpactDashboardProps> = ({ 
 
   const cspData = CSP_OPTIONS.map((c, i) => ({
     name: c.short,
+    fullName: c.label,
     size: data.by_csp[c.value] || 0,
     fill: TREEMAP_COLORS[i % TREEMAP_COLORS.length],
   })).filter(d => d.size > 0);
@@ -128,16 +235,28 @@ export const ProfilsImpactDashboard: React.FC<ProfilsImpactDashboardProps> = ({ 
           </div>
         </Card>
 
-        {/* Treemap CSP */}
+        {/* Treemap CSP — libellés visibles en permanence */}
         <Card className="p-4">
           <h4 className="text-sm font-semibold text-foreground mb-1">Mosaïque des activités</h4>
           <p className="text-xs text-muted-foreground mb-3">Tous les métiers convergent vers le vivant</p>
           {cspData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <Treemap data={cspData} dataKey="size" stroke="hsl(var(--background))" />
+            <ResponsiveContainer width="100%" height={240}>
+              <Treemap
+                data={cspData}
+                dataKey="size"
+                nameKey="name"
+                stroke="hsl(var(--background))"
+                isAnimationActive={false}
+                content={<CSPTreemapTile />}
+              >
+                <Tooltip
+                  contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: number, _n, p: any) => [`${v} marcheur·euse·s`, p?.payload?.fullName ?? p?.payload?.name]}
+                />
+              </Treemap>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[220px] flex items-center justify-center text-xs text-muted-foreground">
+            <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground">
               Aucune activité renseignée pour l'instant.
             </div>
           )}

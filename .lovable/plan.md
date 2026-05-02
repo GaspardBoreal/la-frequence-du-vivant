@@ -1,112 +1,62 @@
+# Mosaïque des activités — libellés toujours lisibles
+
+## Problème
+
+Le `Treemap` de Recharts utilisé dans `ProfilsImpactDashboard.tsx` (ligne 137) est rendu sans prop `content`. Par défaut Recharts ne dessine **aucun texte** dans les tuiles — le libellé n'apparaît qu'au survol via le tooltip. Sur l'écran fourni, on voit donc des blocs colorés où seules deux ou trois activités se devinent, et il faut passer la souris pour identifier les autres. Sur mobile (pas de hover), c'est totalement illisible.
+
 ## Objectif
 
-Afficher l'onglet **Profils** (mosaïque + dashboard d'impact) dans 3 contextes, avec **un seul code source** :
+Afficher en permanence, dans chaque tuile, le **libellé de l'activité** et sa **valeur**, de façon élégante, sans débordement, et lisible sur fond clair comme foncé.
 
-1. `/admin/community` → tous les marcheur·euse·s (déjà en place).
-2. `/admin/marche-events` → tous les marcheur·euse·s (déjà en place).
-3. `/admin/marche-events/:id` → **uniquement les participants validés de cet événement** (à ajouter).
+## Approche
 
-Tout ajout fonctionnel futur (KPI, filtre, action…) doit s'appliquer automatiquement aux trois.
+Fournir au `<Treemap>` un composant `content` personnalisé qui dessine pour chaque cellule :
 
-## Analyse de l'existant
+1. Un `<rect>` rempli de la couleur de la tuile (déjà fournie via `fill`).
+2. Un libellé multi-lignes (nom court de la CSP) centré.
+3. Une valeur secondaire (nombre de marcheur·euse·s) sous le libellé, plus petite et semi-transparente.
 
-- `ProfilsPanel` (composant racine) charge aujourd'hui **tous** les `community_profiles` et rend `<ProfilsImpactDashboard />` + `<ProfilsMosaique>` + `<MarcheurEditSheet>`.
-- `ProfilsMosaique` est déjà 100 % réutilisable : il reçoit `profiles` en prop et gère ses filtres internes.
-- `ProfilsImpactDashboard` est aujourd'hui **autonome** : il appelle `useCommunityImpactAggregates` qui frappe la RPC `get_community_impact_aggregates()` — sans paramètre, donc agrégats globaux.
-- `MarcheEventDetail.tsx` a déjà une requête `marche-participations` filtrée sur `marche_event_id = :id`, et un onglet `Tabs` (3 triggers actuellement : Informations / Parcours vivant / Empreinte).
-- La RPC actuelle ne sait pas filtrer par événement.
+Règles d'élégance et de lisibilité :
 
-## Stratégie : un seul `ProfilsPanel` qui s'adapte au contexte
+- **Adaptation à la taille de la tuile** : taille de police calculée à partir de `min(width, height)` (clamp 10–16 px). Si la tuile est trop petite (< 44 px de large ou < 30 px de haut), on n'affiche que le libellé tronqué ; si elle est minuscule (< 28×22), rien — pour ne pas bruiter.
+- **Couleur de texte automatique** : on calcule la luminance HSL de `fill` ; si la tuile est claire, texte `hsl(220 25% 12%)`, sinon texte `#fff`. La valeur secondaire reprend la même couleur avec `opacity: 0.78`.
+- **Coupure intelligente du libellé** : on découpe le `name` en mots, on remplit chaque ligne en respectant la largeur disponible (≈ `(width - 12) / (fontSize * 0.55)` caractères), max 2 lignes, ellipsis sur la 2ᵉ si dépassement. Évite les coupures hideuses comme « Em\nployé·e ».
+- **Padding interne** de 6 px, libellé centré (`textAnchor="middle"`) à `x + width/2`, vertical centering basé sur le nombre de lignes effectives.
+- **Stroke des tuiles** déjà à `hsl(var(--background))` — on garde, ça donne le grain mosaïque propre.
+- **Tooltip conservé** pour afficher le libellé long complet (ex. « Cadres et professions intellectuelles supérieures ») au survol — utile car on n'affiche que le `short` dans la tuile.
 
-### 1. Étendre `ProfilsPanel` avec une prop `scope` optionnelle
+Bonus design (léger) :
 
-```ts
-type ProfilsScope =
-  | { type: 'all' }                       // défaut — comportement actuel
-  | { type: 'event'; eventId: string };   // restreint à un événement
-```
-
-- Sans `scope` (ou `scope.type === 'all'`) → comportement strictement identique à aujourd'hui (zéro régression sur `/admin/community` et `/admin/marche-events`).
-- Avec `scope.type === 'event'` :
-  - La requête `community-profiles-admin` devient `community-profiles-by-event` (clé incluant `eventId`) : on récupère d'abord les `user_id` validés de `marche_participations` pour cet événement, puis les `community_profiles` correspondants.
-  - On passe le scope à `ProfilsImpactDashboard` pour qu'il agrège sur le même sous-ensemble.
-
-### 2. Rendre `ProfilsImpactDashboard` "scope-aware" via une nouvelle RPC paramétrée
-
-Créer une RPC `get_community_impact_aggregates_scoped(p_event_id uuid default null)` :
-- Même logique que l'actuelle (mêmes clés JSON, même structure de retour → zéro changement côté UI).
-- Si `p_event_id` est NULL → résultat identique à la fonction actuelle.
-- Si `p_event_id` est fourni → la CTE `base` est filtrée :
-  ```sql
-  WHERE cp.user_id IN (
-    SELECT mp.user_id
-    FROM public.marche_participations mp
-    WHERE mp.marche_event_id = p_event_id
-  )
-  ```
-- `territories_count` devient le nombre d'`exploration_id` distincts liés à ce seul événement (1 ou 0), ce qui reste cohérent.
-- Garde le check `check_is_admin_user(auth.uid())` + `SECURITY DEFINER` + `SET search_path = public`.
-- L'ancienne RPC `get_community_impact_aggregates()` est conservée pour ne rien casser, mais le hook est mis à jour pour appeler la nouvelle (avec `null` par défaut → comportement identique).
-
-Le hook `useCommunityImpactAggregates(eventId?: string)` accepte un argument optionnel et l'inclut dans la queryKey.
-
-### 3. Nouvel onglet dans `MarcheEventDetail.tsx`
-
-- Élargir la `TabsList` (ajout d'un 4ᵉ trigger « Profils » avec icône `Sparkles`).
-- Ajouter `<TabsContent value="profils"><ProfilsPanel scope={{ type: 'event', eventId: id }} title="Profils des participant·e·s" subtitle="Portrait collectif des marcheur·euse·s validé·e·s sur cet événement." /></TabsContent>`.
-- Onglet visible uniquement quand `!isNew` (cohérent avec les autres onglets dépendants de l'`id`).
-
-## Garantie d'identité parfaite entre les 3 contextes
-
-- Un seul composant `ProfilsPanel` rendu dans les 3 pages.
-- Un seul composant `ProfilsImpactDashboard` rendu, alimenté par un seul hook.
-- Un seul composant `ProfilsMosaique` (mêmes filtres internes, mêmes cartes).
-- Un seul `MarcheurEditSheet` (édition identique partout).
-- Les caches React Query sont segmentés par scope (`['community-profiles-admin']` global vs `['community-profiles-by-event', eventId]`) → pas de pollution croisée.
-
-Toute évolution future (nouveau KPI, nouvelle colonne, nouveau filtre) ne se fait **qu'à un seul endroit** et apparaît instantanément dans les trois vues.
+- Léger arrondi `rx={4}` sur les rectangles pour adoucir la mosaïque (cohérent avec le reste du dashboard qui utilise `rounded-lg`).
+- Ombre portée subtile sur le texte foncé sur fond clair via `paintOrder="stroke"` + `stroke="rgba(255,255,255,0.4)"` `strokeWidth={2}` pour garantir le contraste même si une tuile a une couleur intermédiaire.
+- Hauteur de la carte portée à `240` (au lieu de `220`) pour que les tuiles aient un peu plus d'air vertical — aligne aussi mieux avec la `Card` voisine du donut qui a sa légende sous le graphe.
 
 ## Détails techniques
 
-**Migration SQL** (1 nouvelle fonction, ancienne préservée) :
-```sql
-CREATE OR REPLACE FUNCTION public.get_community_impact_aggregates_scoped(
-  p_event_id uuid DEFAULT NULL
-) RETURNS jsonb
-LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
-DECLARE result jsonb;
-BEGIN
-  IF NOT public.check_is_admin_user(auth.uid()) THEN
-    RAISE EXCEPTION 'Forbidden';
-  END IF;
-  WITH base AS (
-    SELECT cp.user_id, cp.role::text AS role, cp.genre::text AS genre,
-           cp.csp::text AS csp, public.age_bracket(cp.date_naissance) AS bracket,
-           cp.ville, cp.marches_count
-    FROM public.community_profiles cp
-    WHERE p_event_id IS NULL
-       OR cp.user_id IN (
-            SELECT mp.user_id FROM public.marche_participations mp
-            WHERE mp.marche_event_id = p_event_id
-          )
-  )
-  SELECT jsonb_build_object(
-    'total', (SELECT COUNT(*) FROM base),
-    /* ... mêmes clés que l'actuelle, en remplaçant simplement
-       le sous-select 'territories_count' par une version filtrée si p_event_id non null ... */
-    ...
-  ) INTO result;
-  RETURN result;
-END $$;
+Fichier touché : `src/components/admin/community/ProfilsImpactDashboard.tsx`
+
+1. Ajouter un composant local `CSPTreemapContent` (rendu SVG `<g><rect/><text/></g>`) implémentant les règles ci-dessus. Recharts lui passe `x, y, width, height, name, value, fill, depth` via props.
+2. Passer ce composant via `content={<CSPTreemapContent />}` au `<Treemap>`.
+3. Ajouter un `<Tooltip>` enfant du `<Treemap>` avec le même style que les autres graphes pour conserver l'info détaillée au survol.
+4. Garder `CSP_OPTIONS[i].short` comme `name` (déjà le cas) — c'est le label affiché dans la tuile ; le tooltip pourra remonter le `label` long si on l'ajoute au `cspData` (champ `fullName`).
+5. Aucune dépendance nouvelle, aucune migration, aucun changement de RPC.
+
+## Aperçu visuel
+
+```text
+┌────────────────────────────────────────────────┐
+│  Mosaïque des activités                        │
+│  Tous les métiers convergent vers le vivant    │
+│ ┌───────────┬──────────────────┬─────────────┐ │
+│ │           │                  │ Sans        │ │
+│ │  Cadre    │   Employé·e      │ activité    │ │
+│ │   12      │      28          │    4        │ │
+│ │           │                  ├─────────────┤ │
+│ │           ├──────────────────┤ Retraité·e  │ │
+│ │           │   Étudiant·e     │     3       │ │
+│ │           │       9          │             │ │
+│ └───────────┴──────────────────┴─────────────┘ │
+└────────────────────────────────────────────────┘
 ```
 
-**Fichiers touchés :**
-- **Migration** : nouvelle RPC `get_community_impact_aggregates_scoped`.
-- **Modifié** : `src/hooks/useCommunityImpactAggregates.ts` — accepte `eventId?: string`, appelle la nouvelle RPC.
-- **Modifié** : `src/components/admin/community/ProfilsImpactDashboard.tsx` — accepte une prop optionnelle `eventId`, la transmet au hook.
-- **Modifié** : `src/components/admin/community/ProfilsPanel.tsx` — accepte `scope?`, charge les profils via la requête appropriée, transmet `eventId` au dashboard.
-- **Modifié** : `src/pages/MarcheEventDetail.tsx` — nouveau `TabsTrigger` + `TabsContent` "Profils" avec `<ProfilsPanel scope={{ type: 'event', eventId: id }} />`.
-
-**Pas de modification** sur `CommunityProfilesAdmin.tsx` ni `MarcheEventsAdmin.tsx` : ils continuent de rendre `<ProfilsPanel />` sans scope → comportement strictement inchangé.
-
-**Risque de régression** : minimal — l'ancienne RPC reste en place, les usages sans scope passent par un chemin de code (`p_event_id = NULL`) qui produit le même résultat que la fonction historique.
+Tous les libellés visibles d'un coup d'œil, plus besoin de hover, et le rendu reste cohérent avec le ton minimaliste « sobriété informationnelle » du reste du dashboard.
