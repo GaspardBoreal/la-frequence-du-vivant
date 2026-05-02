@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Plus, List, Map as MapIcon, BarChart3, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Plus, List, Map as MapIcon, BarChart3, Lightbulb, Sparkles } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import EventsKpiBanner from '@/components/admin/marche-events/EventsKpiBanner';
 import EventsFiltersBar from '@/components/admin/marche-events/EventsFiltersBar';
@@ -10,6 +10,7 @@ import EventsListTab from '@/components/admin/marche-events/EventsListTab';
 import EventsMapTab from '@/components/admin/marche-events/EventsMapTab';
 import EventsAnalyticsTab from '@/components/admin/marche-events/EventsAnalyticsTab';
 import EventsRecommendationsTab from '@/components/admin/marche-events/EventsRecommendationsTab';
+import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import {
   useMarcheEventsStats,
   type EventsFilters,
@@ -111,7 +112,7 @@ const MarcheEventsAdmin: React.FC = () => {
 
         {/* Tabs */}
         <Tabs value={tab} onValueChange={handleTabChange}>
-          <TabsList className="w-full grid grid-cols-4 h-auto">
+          <TabsList className="w-full grid grid-cols-5 h-auto">
             <TabsTrigger value="list" className="flex-col sm:flex-row gap-1 py-2 text-xs sm:text-sm">
               <List className="h-4 w-4" /><span>Liste</span>
             </TabsTrigger>
@@ -124,6 +125,9 @@ const MarcheEventsAdmin: React.FC = () => {
             <TabsTrigger value="reco" className="flex-col sm:flex-row gap-1 py-2 text-xs sm:text-sm">
               <Lightbulb className="h-4 w-4" /><span className="hidden xs:inline">Recommandations</span>
               <span className="xs:hidden">Reco</span>
+            </TabsTrigger>
+            <TabsTrigger value="profils" className="flex-col sm:flex-row gap-1 py-2 text-xs sm:text-sm">
+              <Sparkles className="h-4 w-4" /><span>Profils</span>
             </TabsTrigger>
           </TabsList>
 
@@ -144,6 +148,9 @@ const MarcheEventsAdmin: React.FC = () => {
           </TabsContent>
           <TabsContent value="reco" className="mt-4">
             <EventsRecommendationsTab filters={filters} active={tab === 'reco'} />
+          </TabsContent>
+          <TabsContent value="profils" className="mt-4">
+            <ProfilsPanel />
           </TabsContent>
         </Tabs>
       </div>
