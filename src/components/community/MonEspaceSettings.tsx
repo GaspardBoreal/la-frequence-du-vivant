@@ -114,6 +114,9 @@ const MonEspaceSettings: React.FC<MonEspaceSettingsProps> = ({
         kigo_accueil: profile.kigo_accueil || '',
         superpouvoir_sensoriel: profile.superpouvoir_sensoriel || '',
         niveau_intimite_vivant: profile.niveau_intimite_vivant || '',
+        genre: profile.genre || '',
+        csp: profile.csp || '',
+        csp_precision: profile.csp_precision || '',
       });
     }
   }, [profile]);
