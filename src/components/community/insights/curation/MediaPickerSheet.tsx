@@ -38,6 +38,7 @@ const MediaPickerSheet: React.FC<Props> = ({
   const [draft, setDraft] = useState<Set<string>>(new Set(selectedKeys));
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [marcheFilter, setMarcheFilter] = useState<string>('all');
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
 
   // Reset draft when reopening with new selection
   useEffect(() => {
