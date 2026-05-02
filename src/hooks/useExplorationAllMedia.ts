@@ -22,6 +22,8 @@ export interface MarcheEventGroup {
   title: string;
   lieu: string | null;
   date: string;
+  latitude: number | null;
+  longitude: number | null;
   items: MediaItem[];
 }
 
