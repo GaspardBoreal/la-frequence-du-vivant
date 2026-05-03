@@ -57,6 +57,7 @@ const ARROW_COLORS: Record<MapStyle, string> = {
 function DynamicTileLayer({ mapStyle }: { mapStyle: MapStyle }) {
   const map = useMap();
   const [currentLayer, setCurrentLayer] = useState<L.TileLayer | null>(null);
+  const cadastreOverlayRef = useRef<L.TileLayer | null>(null);
 
   useEffect(() => {
     if (currentLayer) {
@@ -71,8 +72,28 @@ function DynamicTileLayer({ mapStyle }: { mapStyle: MapStyle }) {
     layer.addTo(map);
     setCurrentLayer(layer);
 
+    // Overlay cadastre (Etalab) seulement en mode cadastre
+    if (cadastreOverlayRef.current) {
+      map.removeLayer(cadastreOverlayRef.current);
+      cadastreOverlayRef.current = null;
+    }
+    if (mapStyle === 'cadastre') {
+      const overlay = L.tileLayer('https://cadastre.data.gouv.fr/map/{z}/{x}/{y}.png', {
+        attribution: '&copy; Etalab — Cadastre',
+        opacity: 0.55,
+        maxZoom: 20,
+        pane: 'overlayPane',
+      });
+      overlay.addTo(map);
+      cadastreOverlayRef.current = overlay;
+    }
+
     return () => {
       map.removeLayer(layer);
+      if (cadastreOverlayRef.current) {
+        map.removeLayer(cadastreOverlayRef.current);
+        cadastreOverlayRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapStyle, map]);
