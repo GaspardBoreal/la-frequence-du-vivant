@@ -205,6 +205,8 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
           stats: { ...stats, speciesCount },
           totalContributions: total + speciesCount,
           speciesObserved: obsByMarcheur.get(m.id) || [],
+          userId: linkedUser,
+          crewId: m.id,
         });
       });
 
