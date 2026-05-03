@@ -35,7 +35,7 @@ const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] =
 
 const marcheursSubTabs: { key: MarcheursSubTab; label: string; icon: typeof Users }[] = [
   { key: 'convivialite', label: 'Convivialité', icon: Sparkles },
-  { key: 'profils', label: 'Profils', icon: Users },
+  { key: 'profils', label: 'Marcheurs', icon: Users },
 ];
 
 const sensoryTabs: { key: SensoryTab; label: string; icon: typeof Eye }[] = [
