@@ -4086,6 +4086,7 @@ export type Database = {
       }
       age_bracket: { Args: { _birth: string }; Returns: string }
       can_create_marche: { Args: { _user_id: string }; Returns: boolean }
+      can_curate_audio: { Args: { _user_id: string }; Returns: boolean }
       can_initialize_admin_system: { Args: never; Returns: boolean }
       can_upload_convivialite: {
         Args: { _exploration_id: string; _user_id: string }
