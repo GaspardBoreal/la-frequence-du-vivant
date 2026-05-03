@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Music, Plus, Globe, User, Users, Headphones } from 'lucide-react';
+import { Music, Plus, Globe, User, Users, Headphones, Pencil, Check, X, Bold, Italic, Underline, ShieldCheck } from 'lucide-react';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   useUploadAudio,
   useUpdateContribution,
   useDeleteContribution,
 } from '@/hooks/useMarcheurContributions';
+import { useCanCurateAudio } from '@/hooks/useCanCurateAudio';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 import FileUploadZone from '@/components/community/contributions/FileUploadZone';
 import ContributionItem from '@/components/community/contributions/ContributionItem';
 import SortToggle from '@/components/community/contributions/SortToggle';
