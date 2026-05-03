@@ -699,13 +699,14 @@ const MarcheurCard: React.FC<{
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const totalContribs = marcheur.totalContributions || 0;
   const isCommunity = marcheur.source === 'community';
-  const userId = isCommunity ? marcheur.id.replace('community-', '') : null;
+  const resolvedUserId = marcheur.userId ?? (isCommunity ? marcheur.id.replace('community-', '') : null);
+  const resolvedCrewId = marcheur.crewId ?? (marcheur.source === 'crew' ? marcheur.id.replace('crew-', '') : null);
   const photoCount = marcheur.stats.photos + marcheur.stats.videos;
   
   // Real contributions count from biodiversity snapshots
   const { data: contributionsCount } = useWalkerContributionsCount(marcheur.prenom, marcheur.nom, explorationMarcheIds, explorationId);
   const realContribCount = contributionsCount || 0;
-  const hasContent = totalContribs > 0 || realContribCount > 0;
+  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0;
 
   return (
     <motion.div
