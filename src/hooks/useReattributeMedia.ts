@@ -42,6 +42,7 @@ export function useReattributeMedia() {
       qc.invalidateQueries({ queryKey: ['convivialite-photos', vars.explorationId] });
       qc.invalidateQueries({ queryKey: ['reattribution-picker', vars.explorationId] });
       qc.invalidateQueries({ queryKey: ['exploration-marcheurs', vars.explorationId] });
+      qc.invalidateQueries({ queryKey: ['exploration-participants', vars.explorationId] });
       // Legacy fiche view (MarcheDetailModal / VoirTab)
       qc.invalidateQueries({ queryKey: ['marcheur-medias'] });
       if (vars.marcheurId) {
