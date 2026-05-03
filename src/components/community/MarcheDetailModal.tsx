@@ -932,10 +932,30 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   // Stats for badge indicators (must be after activeMarcheId is derived)
   const { data: stats } = useMarcheurStats(marcheEventId, userId, activeMarcheId);
 
+  // Count of available descriptions (Présentation / En détail) for current step
+  const { data: lireCount = 0 } = useQuery({
+    queryKey: ['marche-descriptions-count', activeMarcheId],
+    queryFn: async () => {
+      if (!activeMarcheId) return 0;
+      const { data, error } = await supabase
+        .from('marches')
+        .select('descriptif_court, descriptif_long')
+        .eq('id', activeMarcheId)
+        .maybeSingle();
+      if (error) throw error;
+      let n = 0;
+      if ((data?.descriptif_court || '').trim()) n++;
+      if ((data?.descriptif_long || '').trim()) n++;
+      return n;
+    },
+    enabled: open && !!activeMarcheId,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const tabCounts: Record<TabKey, number> = {
     voir: stats?.totalMedias || 0,
     ecouter: stats?.totalAudio || 0,
-    lire: 0,
+    lire: lireCount,
     ecrire: stats?.totalTextes || 0,
     vivant: 0,
   };
