@@ -69,34 +69,40 @@ const ObservationsSubTab: React.FC<{
   prenom: string;
 }> = ({ userId, crewId, explorationId, explorationEventIds, stats, prenom }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+  const [manualOrder, setManualOrder] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [editedItems, setEditedItems] = useState<any[] | null>(null);
+  const { user, isAdmin } = useAuth();
+  const reorderMutation = useReorderMarcheurObservations();
+
+  const queryKey = ['marcheur-observations-photos', userId, crewId, explorationId, explorationEventIds];
 
   const { data: items, isLoading } = useQuery({
-    queryKey: ['marcheur-observations-photos', userId, crewId, explorationId, explorationEventIds],
+    queryKey,
     queryFn: async () => {
       const out: Array<{
         id: string;
+        rowId: string;
         url: string;
         titre: string | null;
         type: 'photo' | 'video';
         created_at: string;
         kind: 'media' | 'conv';
+        ordre: number | null;
       }> = [];
 
-      // Exclusive ownership: a media belongs to its attributed marcheur if set,
-      // otherwise to its uploader — never both.
       const belongsToMe = (row: { user_id: string | null; attributed_marcheur_id: string | null }) => {
         if (row.attributed_marcheur_id) return !!crewId && row.attributed_marcheur_id === crewId;
         return !!userId && row.user_id === userId;
       };
 
-      // 1+2 — marcheur_medias (uploaded by me without re-attribution, OR re-attributed to me)
       if (userId || crewId) {
         const orParts: string[] = [];
         if (userId) orParts.push(`user_id.eq.${userId}`);
         if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
         let q = supabase
           .from('marcheur_medias')
-          .select('id, url_fichier, external_url, titre, type_media, created_at, user_id, attributed_marcheur_id')
+          .select('id, url_fichier, external_url, titre, type_media, created_at, user_id, attributed_marcheur_id, ordre')
           .eq('is_public', true)
           .in('type_media', ['photo', 'video'])
           .or(orParts.join(','))
@@ -105,28 +111,29 @@ const ObservationsSubTab: React.FC<{
         if (explorationEventIds?.length) q = q.in('marche_event_id', explorationEventIds);
         const { data } = await q;
         (data || []).forEach((m: any) => {
-          if (!belongsToMe(m)) return; // exclude uploads re-attributed elsewhere
+          if (!belongsToMe(m)) return;
           const url = m.url_fichier || m.external_url;
           if (!url) return;
           out.push({
             id: `media-${m.id}`,
+            rowId: m.id,
             url,
             titre: m.titre,
             type: m.type_media === 'video' ? 'video' : 'photo',
             created_at: m.created_at,
             kind: 'media',
+            ordre: m.ordre ?? null,
           });
         });
       }
 
-      // 3 — exploration_convivialite_photos (same exclusive rule)
       if (explorationId && (userId || crewId)) {
         const orParts: string[] = [];
         if (userId) orParts.push(`user_id.eq.${userId}`);
         if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
         const { data } = await supabase
           .from('exploration_convivialite_photos')
-          .select('id, url, created_at, user_id, attributed_marcheur_id')
+          .select('id, url, created_at, user_id, attributed_marcheur_id, position')
           .eq('exploration_id', explorationId)
           .eq('is_hidden', false)
           .or(orParts.join(','))
@@ -137,11 +144,13 @@ const ObservationsSubTab: React.FC<{
           if (!p.url) return;
           out.push({
             id: `conv-${p.id}`,
+            rowId: p.id,
             url: p.url,
             titre: null,
             type: 'photo',
             created_at: p.created_at,
             kind: 'conv',
+            ordre: p.position ?? null,
           });
         });
       }
@@ -152,23 +161,85 @@ const ObservationsSubTab: React.FC<{
     staleTime: 60_000,
   });
 
+  // Sort: manual ordering (asc) when no edit, else by date
   const sorted = useMemo(() => {
     if (!items) return [];
     const arr = [...items];
-    arr.sort((a, b) => {
-      const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      return sort === 'desc' ? diff : -diff;
-    });
+    if (manualOrder) {
+      arr.sort((a, b) => {
+        const ao = a.ordre ?? 9999;
+        const bo = b.ordre ?? 9999;
+        if (ao !== bo) return ao - bo;
+        // Tie-break by date desc
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    } else {
+      arr.sort((a, b) => {
+        const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return sort === 'desc' ? diff : -diff;
+      });
+    }
     return arr;
-  }, [items, sort]);
+  }, [items, sort, manualOrder]);
 
-  const photoCount = sorted.filter(i => i.type === 'photo').length;
-  const videoCount = sorted.filter(i => i.type === 'video').length;
-  const totalMedia = sorted.length || stats.photos + stats.videos;
+  const displayedItems = editMode && editedItems ? editedItems : sorted;
+  const photoCount = displayedItems.filter((i: any) => i.type === 'photo').length;
+  const videoCount = displayedItems.filter((i: any) => i.type === 'video').length;
+  const totalMedia = displayedItems.length || stats.photos + stats.videos;
+
+  // Permissions: owner of the user account, or owner of the linked crew, or admin
+  const canReorder =
+    !!isAdmin ||
+    (!!userId && !!user && user.id === userId);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleEnterEdit = () => {
+    setEditedItems([...sorted]);
+    setManualOrder(true);
+    setEditMode(true);
+  };
+  const handleCancel = () => {
+    setEditedItems(null);
+    setEditMode(false);
+  };
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id || !editedItems) return;
+    const oldIdx = editedItems.findIndex((p: any) => p.id === active.id);
+    const newIdx = editedItems.findIndex((p: any) => p.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    setEditedItems(arrayMove(editedItems, oldIdx, newIdx));
+  };
+  const handleSave = async () => {
+    if (!editedItems) return;
+    const payload = editedItems.map((it: any, idx: number) => ({
+      kind: it.kind,
+      id: it.rowId,
+      ordre: idx + 1,
+    }));
+    try {
+      await reorderMutation.mutateAsync({
+        ownerUserId: userId ?? null,
+        ownerCrewId: crewId ?? null,
+        items: payload,
+        invalidateKey: queryKey,
+      });
+      toast.success('Ordre des photos enregistré');
+      setEditMode(false);
+      setEditedItems(null);
+    } catch (err: any) {
+      toast.error(getErrorMessage(err, 'Échec de la sauvegarde de l\'ordre'));
+    }
+  };
 
   return (
     <div className="px-3 pt-3 pb-3 space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-xs font-medium text-muted-foreground flex items-center gap-2">
           <span className="inline-flex items-center gap-1">
             <Camera className="w-3.5 h-3.5 text-emerald-500" />
@@ -182,7 +253,46 @@ const ObservationsSubTab: React.FC<{
           )}
           <span className="text-muted-foreground/70">· {totalMedia} média{totalMedia > 1 ? 's' : ''}</span>
         </p>
-        <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
+        <div className="flex items-center gap-2">
+          {!editMode && (
+            <SortToggle
+              sort={sort}
+              onToggle={() => {
+                setManualOrder(false);
+                setSort(s => s === 'desc' ? 'asc' : 'desc');
+              }}
+            />
+          )}
+          {canReorder && !editMode && displayedItems.length > 1 && (
+            <button
+              onClick={handleEnterEdit}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/60 hover:bg-muted text-xs font-medium border border-border/60 transition"
+              title="Réorganiser les photos"
+            >
+              <ArrowUpDown className="w-3 h-3" />
+              <span>Réorganiser</span>
+            </button>
+          )}
+          {editMode && (
+            <>
+              <button
+                onClick={handleCancel}
+                disabled={reorderMutation.isPending}
+                className="px-2.5 py-1 rounded-full bg-muted/60 hover:bg-muted text-xs font-medium border border-border/60 transition disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={reorderMutation.isPending}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition disabled:opacity-50"
+              >
+                <Check className="w-3 h-3" />
+                {reorderMutation.isPending ? 'Sauvegarde…' : 'Enregistrer'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {isLoading && (
@@ -193,9 +303,9 @@ const ObservationsSubTab: React.FC<{
         </div>
       )}
 
-      {sorted.length > 0 && (
+      {displayedItems.length > 0 && !editMode && (
         <div className="grid grid-cols-3 gap-2">
-          {sorted.map((photo, i) => {
+          {displayedItems.map((photo: any, i: number) => {
             const dateStr = photo.created_at
               ? format(new Date(photo.created_at), 'dd MMM · HH:mm', { locale: fr })
               : '';
@@ -228,11 +338,55 @@ const ObservationsSubTab: React.FC<{
         </div>
       )}
 
-      {!isLoading && sorted.length === 0 && (
+      {editMode && editedItems && (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={editedItems.map((p: any) => p.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-3 gap-2">
+              {editedItems.map((photo: any, i: number) => (
+                <SortableObservationTile key={photo.id} photo={photo} index={i} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+
+      {!isLoading && displayedItems.length === 0 && (
         <p className="text-xs text-muted-foreground italic text-center py-4">
           Aucune observation visuelle partagée
         </p>
       )}
+    </div>
+  );
+};
+
+// Sortable tile used in edit mode
+const SortableObservationTile: React.FC<{ photo: any; index: number }> = ({ photo, index }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: photo.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <img
+        src={photo.url}
+        alt={photo.titre || `Photo ${index + 1}`}
+        className="aspect-square w-full rounded-xl object-cover ring-2 ring-emerald-500/40"
+        loading="lazy"
+        draggable={false}
+      />
+      <span className="absolute top-1 left-1 text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded-full">
+        {index + 1}
+      </span>
+      <button
+        {...attributes}
+        {...listeners}
+        className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+        title="Glisser pour déplacer"
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 };
