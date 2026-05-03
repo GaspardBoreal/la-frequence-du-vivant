@@ -9,7 +9,7 @@ export interface CadastrePoint {
   label?: string;
 }
 
-const STALE = 30 * 60 * 1000;
+const STALE = 5 * 60 * 1000;
 
 /** Charge en parallèle les parcelles LEXICON pour une liste de points. */
 export function useLexiconParcels(points: CadastrePoint[], enabled: boolean) {
@@ -57,11 +57,17 @@ export function useLexiconParcelsWithGeometry(points: CadastrePoint[], enabled: 
         (lex?.success && (lex.data?.parcel_id || lex.data?.identifiant_cadastral)) || null;
       return {
         queryKey: ['cadastre-geometry', parcelId],
-        queryFn: () => fetchParcelGeometryById(parcelId as string),
+        queryFn: async () => {
+          const g = await fetchParcelGeometryById(parcelId as string);
+          // Force retry si null (ne pas cacher d'échec en valeur stable)
+          if (!g) throw new Error('cadastre-geometry-null');
+          return g;
+        },
         enabled: enabled && !!parcelId,
         staleTime: STALE,
         gcTime: 60 * 60 * 1000,
-        retry: 1,
+        retry: 2,
+        retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 4000),
       };
     }),
   });
