@@ -10,6 +10,8 @@ import LireDescriptionsTab from './exploration/LireDescriptionsTab';
 import { usePhotoGpsCheck, formatDistance, distanceColor, distanceEmoji, type PhotoGpsResult } from '@/hooks/usePhotoGpsCheck';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import MediaLightbox, { type LightboxItem } from './contributions/MediaLightbox';
+import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import { useIsCurator } from '@/hooks/useExplorationCurations';
 import { motion, AnimatePresence } from 'framer-motion';
 import GpsMapView from './contributions/GpsMapView';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
