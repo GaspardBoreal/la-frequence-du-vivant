@@ -6,9 +6,11 @@ import { useChatPageContextStore } from '@/hooks/useChatPageContext';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${chatConfig.edgeFunctionPath}`;
-
-export function useChatStream(currentContext: ChatContext = 'dashboard') {
+export function useChatStream(
+  currentContext: ChatContext = 'dashboard',
+  edgeFunctionPath: string = chatConfig.edgeFunctionPath,
+) {
+  const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${edgeFunctionPath}`;
   const pageEntity = useChatPageContextStore((s) => s.entity);
   const pageState = useChatPageContextStore((s) => s.pageState);
   const [messages, setMessages] = useState<Msg[]>([]);

@@ -1,10 +1,6 @@
-import { LayoutDashboard, CalendarHeart, Users, Map, FileDown, Wrench } from 'lucide-react';
+import { LayoutDashboard, CalendarHeart, Users, Map, FileDown, Wrench, Compass } from 'lucide-react';
 
 // ─── CHAT CONFIG — La Fréquence du Vivant (Admin) ───────────────
-// Tout ce qui change d'un projet à l'autre vit ici.
-// Pour réutiliser ce chatbot dans un autre projet : duplique le
-// dossier chatbot/ + les hooks useChat*, puis édite UNIQUEMENT
-// ce fichier.
 // ────────────────────────────────────────────────────────────────
 
 export type ChatContext =
@@ -13,7 +9,8 @@ export type ChatContext =
   | 'community'
   | 'marches'
   | 'exportations'
-  | 'outils';
+  | 'outils'
+  | 'exploration';
 
 export interface ChatConfig {
   assistantName: string;
@@ -75,6 +72,7 @@ export const chatConfig: ChatConfig = {
     marches: 'Marches',
     exportations: 'Exportations',
     outils: 'Outils',
+    exploration: 'Exploration',
   },
   contextIcons: {
     dashboard: LayoutDashboard,
@@ -83,6 +81,7 @@ export const chatConfig: ChatConfig = {
     marches: Map,
     exportations: FileDown,
     outils: Wrench,
+    exploration: Compass,
   },
 
   suggestions: {
@@ -115,6 +114,12 @@ export const chatConfig: ChatConfig = {
     ],
     outils: [
       { emoji: '🛠️', text: 'Quels outils sont disponibles ?' },
+    ],
+    exploration: [
+      { emoji: '🌿', text: 'Fais-moi une synthèse de cette exploration' },
+      { emoji: '🦉', text: 'Quelle biodiversité observée ici ?' },
+      { emoji: '📍', text: 'Quels points de marche composent ce parcours ?' },
+      { emoji: '🎙️', text: 'Aide-moi à préparer une restitution publique' },
     ],
   },
 
