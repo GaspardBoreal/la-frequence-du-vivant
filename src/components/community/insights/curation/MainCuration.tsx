@@ -344,6 +344,9 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         items={lightbox?.items || []}
         startIndex={lightbox?.index ?? 0}
         marcheEvents={allMedia.events}
+        canReattribute={isCurator}
+        marcheurs={marcheurs}
+        explorationId={explorationId}
       />
     </div>
   );
