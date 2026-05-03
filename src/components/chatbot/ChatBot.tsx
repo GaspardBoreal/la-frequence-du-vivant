@@ -285,8 +285,16 @@ export function ChatBot({
                     <span className="text-lg">{chatConfig.assistantEmoji}</span>
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-primary-foreground">
-                      {chatConfig.assistantName}
+                    <h3 className="text-sm font-semibold text-primary-foreground flex items-center gap-1.5">
+                      {assistantNameOverride ?? chatConfig.assistantName}
+                      {roleBadge && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-primary-foreground/15 text-primary-foreground text-[9px] border-0 px-1.5 py-0"
+                        >
+                          {roleBadge}
+                        </Badge>
+                      )}
                     </h3>
                     <p className="text-[10px] text-primary-foreground/70 truncate max-w-[220px]">
                       {voiceMode
