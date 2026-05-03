@@ -1518,6 +1518,7 @@ export type Database = {
           prenom: string
           role: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1532,6 +1533,7 @@ export type Database = {
           prenom: string
           role?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1546,6 +1548,7 @@ export type Database = {
           prenom?: string
           role?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4435,10 +4438,20 @@ export type Database = {
           rec_opus_id: string
         }[]
       }
-      reattribute_media: {
-        Args: { _marcheur_id: string; _media_id: string; _source: string }
-        Returns: Json
-      }
+      reattribute_media:
+        | {
+            Args: { _marcheur_id: string; _media_id: string; _source: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _marcheur_id: string
+              _media_id: string
+              _source: string
+              _user_id?: string
+            }
+            Returns: Json
+          }
       record_community_affiliate_event: {
         Args: {
           _event_type: string

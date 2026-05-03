@@ -175,31 +175,24 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({
               type="button"
               disabled={!canEditCredit}
               onClick={() => canEditCredit && setAttributionOpen(true)}
-              className={`flex items-center gap-2 -mx-1 px-2 py-1 rounded-lg transition text-left ${
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full transition text-left shadow-lg shadow-black/40 backdrop-blur ring-1 ${
                 canEditCredit
-                  ? 'hover:bg-white/10 cursor-pointer'
-                  : 'cursor-default'
+                  ? 'bg-emerald-600/90 hover:bg-emerald-500 ring-emerald-300/40 cursor-pointer'
+                  : 'bg-emerald-600/85 ring-emerald-300/30 cursor-default'
               }`}
               aria-label={canEditCredit ? 'Réattribuer la photo' : undefined}
             >
-              <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                <User className="w-3.5 h-3.5 text-emerald-300" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[9px] uppercase tracking-wider text-white/40 leading-none">
-                  {item.attributedMarcheurId ? 'Crédité·e à' : 'Marcheur·euse'}
-                  {item.attributedMarcheurId && item.uploaderName && item.uploaderName !== displayName && (
-                    <span className="normal-case tracking-normal text-white/30 ml-1">
-                      · upload {item.uploaderName}
-                    </span>
-                  )}
-                </div>
-                <div className="text-white text-xs font-medium truncate flex items-center gap-1.5 mt-0.5">
-                  {displayName || 'Anonyme'}
-                  {canEditCredit && <Pencil className="w-3 h-3 text-white/40 shrink-0" />}
-                </div>
-              </div>
+              <User className="w-4 h-4 text-white shrink-0" />
+              <span className="text-white font-semibold text-sm drop-shadow truncate max-w-[60vw]">
+                {displayName || 'Anonyme'}
+              </span>
+              {canEditCredit && <Pencil className="w-3.5 h-3.5 text-white/85 shrink-0" />}
             </button>
+          )}
+          {item.attributedMarcheurId && item.uploaderName && item.uploaderName !== displayName && (
+            <p className="text-white/50 text-[11px] -mt-1">
+              upload&nbsp;: {item.uploaderName}
+            </p>
           )}
 
           <div className="flex items-center gap-2 text-white/50 text-xs">
