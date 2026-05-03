@@ -1,88 +1,53 @@
-# Onglet "Profils" dans la vue Marcheurs (exploration)
+## Problème
 
-## Objectif
-Réutiliser les 3 widgets de l'onglet Profils de `/admin/marche-events/:id` :
-- Pyramide des âges
-- Tisser la diversité (donut genres)
-- Mosaïque des activités (treemap CSP)
+Dans **Marches → Écouter** (modal d'une marche), les sons d'un marcheur (`marcheur_audio`) apparaissent sur **toutes les étapes du même événement**, alors qu'ils sont attachés à une étape précise (`marche_id`).
 
-Et les afficher dans un nouvel onglet **"Profils"** placé **après "Marcheurs"** dans le sous‑menu de la vue `Marcheurs` d'une exploration (`/marches-du-vivant/mon-espace/exploration/:id`).
+Cause : `MarcheurAudioPanel` ne filtre `ownerAudio` que par `marche_event_id` — il ignore `activeMarcheId`. Les audios admin (`marche_audio`), eux, sont déjà filtrés par `marche_id` (donc OK étape 1 vs 2), mais les sons utilisateurs ne le sont pas.
 
-Contrainte clé : **un seul code source** pour les 3 widgets, déjà utilisé sur 2 pages admin (`ProfilsImpactDashboard` rendu via `ProfilsPanel`). Toute évolution future doit profiter aux 3 vues.
+La table `marcheur_audio` possède bien la colonne `marche_id` (3/3 lignes renseignées). On peut donc filtrer proprement.
 
-## Analyse de l'existant
+## Comportement cible
 
-- Code admin : `src/components/admin/community/ProfilsImpactDashboard.tsx` rend les 5 compteurs + les 3 widgets cibles, alimenté par `useCommunityImpactAggregates(eventId | null)` → RPC `get_community_impact_aggregates_scoped(p_event_id uuid)`.
-- Cette RPC :
-  - filtre par participants d'**un événement** (ou global si `null`) ;
-  - **bloque les non‑admins** (`check_is_admin_user`) → inutilisable côté communauté.
-- Le sous‑menu actuel de la vue Marcheurs vit dans `src/components/community/ExplorationMarcheurPage.tsx` (`marcheursSubTabs` = `convivialite`, `profils`). Le label `profils` y désigne en réalité l'onglet "Marcheurs" (composant `MarcheursTab`). À renommer proprement.
+| Vue | Scope attendu pour les sons marcheur |
+|-----|--------------------------------------|
+| Marches → Écouter (étape précise) | uniquement les sons de **cette étape** (`marche_id = activeMarcheId`) |
+| Marcheurs → Marcheurs → Écoute (vue exploration) | tous les sons de l'exploration (inchangé) |
 
-## Plan
+## Changement
 
-### 1. Backend — RPC scopée exploration, accessible aux marcheur·euse·s
+**Fichier : `src/components/community/audio/MarcheurAudioPanel.tsx`**
 
-Nouvelle migration SQL :
+Dans la query `marcheur-panel-owner-audio` :
+- Inclure `activeMarcheId` dans la `queryKey`.
+- Si `activeMarcheId` est fourni, ajouter `.eq('marche_id', activeMarcheId)` au SELECT.
 
-- Étendre `get_community_impact_aggregates_scoped` (ou créer `get_community_impact_aggregates_by_exploration(p_exploration_id uuid)`) qui :
-  - agrège les `community_profiles` des `user_id` ayant une `marche_participations` validée sur un `marche_events.exploration_id = p_exploration_id` ;
-  - renvoie le **même JSON** que la RPC existante (`total`, `with_*`, `by_age`, `by_gender`, `by_csp`, `by_role`, `csp_x_age`, `top_cities`, `territories_count`).
-- Sécurité : `SECURITY DEFINER`, `STABLE`, `search_path = public`. Accessible à `authenticated` (pas de garde admin). Aucune PII renvoyée — uniquement des agrégats (counts par tranche/genre/CSP), donc safe vis‑à‑vis du RLS sur `community_profiles`.
-- `GRANT EXECUTE ... TO authenticated`.
+Aucun changement nécessaire ailleurs : `MarcheDetailModal.EcouterTab` passe déjà `activeMarcheId`, et `MarcheursTab` ne le passe pas (donc comportement exploration préservé).
 
-### 2. Hook — extension non cassante
+## Détail technique
 
-`src/hooks/useCommunityImpactAggregates.ts` :
-- Garder la signature actuelle `(eventId?: string | null)` intacte (admin).
-- Ajouter `useCommunityImpactAggregatesByExploration(explorationId?: string | null)` qui appelle la nouvelle RPC. Même type `CommunityImpactAggregates`.
-
-### 3. Factorisation du composant widgets
-
-Extraire les 3 widgets (Pyramide, Donut, Treemap) dans un sous‑composant **partagé** :
-
+```ts
+const { data: ownerAudio } = useQuery({
+  queryKey: ['marcheur-panel-owner-audio', ownerUserId, ownerCrewId, marcheEventIds, activeMarcheId, sort],
+  queryFn: async () => {
+    if (!marcheEventIds.length || (!ownerUserId && !ownerCrewId)) return [];
+    const orParts: string[] = [];
+    if (ownerUserId) orParts.push(`user_id.eq.${ownerUserId}`);
+    if (ownerCrewId) orParts.push(`attributed_marcheur_id.eq.${ownerCrewId}`);
+    let q = supabase
+      .from('marcheur_audio')
+      .select('*')
+      .in('marche_event_id', marcheEventIds)
+      .or(orParts.join(','));
+    if (activeMarcheId) q = q.eq('marche_id', activeMarcheId);
+    const { data } = await q.order('created_at', { ascending: sort === 'asc' });
+    return (data || []).filter((a: any) => a.is_public || (effectiveViewerUserId && a.user_id === effectiveViewerUserId));
+  },
+  enabled: marcheEventIds.length > 0 && !!(ownerUserId || ownerCrewId),
+  staleTime: 30_000,
+});
 ```
-src/components/community/profils/
-  ProfilsWidgets.tsx        ← uniquement les 3 cartes Recharts + CSPTreemapTile
-  ProfilsScopeContainer.tsx ← wrapper qui choisit le bon hook (event|exploration|global)
-```
 
-- `ProfilsWidgets` reçoit en props `data: CommunityImpactAggregates` (pure présentation, aucune dépendance admin).
-- `ProfilsImpactDashboard` (admin) est refactoré pour **composer** : compteurs (admin only) + `<ProfilsWidgets data={data} />`. Aucune régression visuelle sur les 2 pages admin existantes.
-- Aucun composant Recharts dupliqué : un seul endroit à maintenir → toute évolution (couleurs, légendes, accessibilité) se propage aux 3 vues.
+## Risque / régressions
 
-### 4. Intégration dans la vue Marcheurs
-
-`src/components/community/ExplorationMarcheurPage.tsx` :
-- Renommer la clé existante `profils` → `marcheurs` (label inchangé "Marcheurs"), pour libérer le nom.
-- Ajouter une 3ᵉ entrée à `marcheursSubTabs` :
-
-  ```ts
-  { key: 'convivialite', label: 'Convivialité', icon: Sparkles },
-  { key: 'marcheurs',    label: 'Marcheurs',    icon: Users },
-  { key: 'profils',      label: 'Profils',      icon: PieChart },
-  ```
-
-- Brancher le rendu : si `activeMarcheursSubTab === 'profils'` → `<ProfilsScopeContainer scope={{ type: 'exploration', explorationId: effectiveExplorationId }} />` qui appelle le nouveau hook et rend `<ProfilsWidgets />`.
-- Tracking activité (`trackActivity('tab_switch', 'tab:marcheurs:profils')`) — déjà géré génériquement.
-
-### 5. UX & responsive
-
-- Mobile‑first : la grille `lg:grid-cols-3` du `ProfilsWidgets` s'empile naturellement sur petit écran ; conserver `ResponsiveContainer` Recharts.
-- Pas de compteurs/PII dans la version communauté — uniquement les 3 widgets demandés + un en‑tête sobre ("Qui marche sur cette exploration ?") aligné sur la sobriété informationnelle.
-- État vide : afficher un message neutre quand `total === 0`.
-
-## Fichiers touchés
-
-- **Nouveau** : `supabase/migrations/<ts>_profils_widgets_by_exploration.sql`
-- **Nouveau** : `src/components/community/profils/ProfilsWidgets.tsx`
-- **Nouveau** : `src/components/community/profils/ProfilsScopeContainer.tsx`
-- **Modifié** : `src/hooks/useCommunityImpactAggregates.ts` (ajout du hook exploration)
-- **Modifié** : `src/components/admin/community/ProfilsImpactDashboard.tsx` (utilise `ProfilsWidgets`)
-- **Modifié** : `src/components/community/ExplorationMarcheurPage.tsx` (3ᵉ sous‑onglet)
-- **Mémoire** : MAJ `mem://features/mon-espace/exploration-dedicated-page-architecture` (4 sous‑onglets désormais).
-
-## Risques & garde‑fous
-
-- RPC sans garde admin → ne renvoie que des **agrégats** ; aucune ligne PII. À documenter dans le commentaire SQL.
-- Refactor admin : vérifier visuellement les pages `/admin/community` et `/admin/marche-events` après extraction (mêmes props, mêmes données).
-- Ne pas casser la clé d'onglet existante : migration de `profils → marcheurs` à appliquer dans le state initial et dans le tracking.
+- Les sons historiques sans `marche_id` (aucun aujourd'hui : 3/3 OK) seraient cachés en vue étape — acceptable, ils restent visibles dans Marcheurs → Écoute.
+- Aucun impact RLS, aucun changement de schéma, aucune migration.
