@@ -112,17 +112,27 @@ serve(async (req) => {
       ? `\n\n### Vue rubrique (\`${validScope}\`)\n\`\`\`json\n${JSON.stringify(contextData, null, 2)}\n\`\`\``
       : `\n\n### Vue rubrique (\`${validScope}\`)\n_Indisponible._`;
 
-    const entityBlock = entityContext
+    const filtersJson = pageState?.filters
+      ? `\n- Filtres / sous-état actifs :\n\`\`\`json\n${JSON.stringify(pageState.filters, null, 2)}\n\`\`\``
+      : "";
+    const visibleJson = pageState?.visibleData && Object.keys(pageState.visibleData).length > 0
+      ? `\n- **DONNÉES RÉELLEMENT AFFICHÉES À L'ÉCRAN** (priorité absolue sur les agrégats globaux pour répondre à "ce que tu vois") :\n\`\`\`json\n${JSON.stringify(pageState.visibleData, null, 2)}\n\`\`\``
+      : "";
+
+    const entityBlock = entityContext || pageState?.label || pageState?.activeTab
       ? `\n\n### Fiche en cours de consultation
-- Type : \`${entity.type}\`
+- Type : \`${entity?.type ?? "(inconnu)"}\`
 - Libellé visible à l'écran : ${pageState?.label ? `"${pageState.label}"` : "(non fourni)"}
-- Onglet ouvert : ${pageState?.activeTab ?? "(non fourni)"}
-- Données détaillées :
+- Onglet ouvert : ${pageState?.activeTab ?? "(non fourni)"}${filtersJson}${visibleJson}
+- Données détaillées de la fiche (agrégats globaux) :
 \`\`\`json
 ${JSON.stringify(entityContext, null, 2)}
 \`\`\`
 
-> ⚠️ Quand l'utilisateur dit « cette exploration », « cette marche », « cet événement » → réfère-toi TOUJOURS à cette fiche en cours.`
+> ⚠️ RÈGLES CONTEXTUELLES :
+> 1. Quand l'utilisateur dit « cette exploration », « cette page », « cet onglet » → réfère-toi à la fiche + l'onglet courant ci-dessus.
+> 2. Quand il demande « ce que tu vois sur cette page », « combien d'éléments affichés », « liste-moi… » → utilise EN PRIORITÉ \`DONNÉES RÉELLEMENT AFFICHÉES À L'ÉCRAN\` qui reflète exactement l'écran courant. Les agrégats globaux peuvent diverger.
+> 3. Si \`DONNÉES RÉELLEMENT AFFICHÉES\` est absent, dis honnêtement que tu n'as pas de snapshot de l'écran et propose de te fier aux agrégats globaux.`
       : "";
 
     const contextBlock = `\n\n## CONTEXTE FRAIS (extrait de la base au ${new Date().toISOString()})${scopeBlock}${entityBlock}`;

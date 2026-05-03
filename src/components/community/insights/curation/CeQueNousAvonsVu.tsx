@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, Hand, Heart, Ear, Utensils, Sparkles } from 'lucide-react';
 import { useIsCurator } from '@/hooks/useExplorationCurations';
+import { chatPageContext } from '@/hooks/useChatPageContext';
 import OeilCuration from './OeilCuration';
 import MainCuration from './MainCuration';
 import OreilleCuration from './OreilleCuration';
@@ -27,6 +28,15 @@ interface Props {
 const CeQueNousAvonsVu: React.FC<Props> = ({ explorationId, marcheEventId, onNavigateToMarche }) => {
   const [activeSense, setActiveSense] = useState<SenseKey>('oeil');
   const { data: isCurator } = useIsCurator(explorationId);
+
+  // Publie au ChatBot le sens en cours pour enrichir le tabPath et les filtres
+  React.useEffect(() => {
+    const senseLabel = SENSES.find(s => s.key === activeSense)?.label || activeSense;
+    chatPageContext.setPageState({
+      activeTab: `Apprendre › Ce que nous avons vu › ${senseLabel}`,
+      filters: { apprendreSense: activeSense, apprendreSubTab: 'decouvertes' },
+    });
+  }, [activeSense]);
 
   return (
     <div className="space-y-4">
