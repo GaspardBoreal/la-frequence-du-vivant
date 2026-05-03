@@ -595,6 +595,19 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
           </div>
         </motion.div>
       </motion.div>
+
+      {canReattribute && current && current.source !== 'audio' && current.rawId && (
+        <MediaAttributionSheet
+          open={attributionOpen}
+          onOpenChange={setAttributionOpen}
+          source={current.source}
+          mediaId={current.rawId}
+          explorationId={explorationId}
+          marcheurs={marcheurs}
+          currentAttributedId={current.attributedMarcheurId ?? null}
+          uploaderName={current.uploaderName ?? null}
+        />
+      )}
     </AnimatePresence>,
     document.body
   );
