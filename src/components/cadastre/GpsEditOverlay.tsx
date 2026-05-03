@@ -169,6 +169,45 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({
                 <X className="w-3.5 h-3.5" /> Fermer
               </button>
             </div>
+
+            {/* Bouton MAJ GPS Marche : visible uniquement après preview résolue + droits curateur */}
+            {canPersist && marcheId && submitted && geometry?.coordinates && (
+              <div className="mt-2 pt-2 border-t border-white/10">
+                {!confirmingSave ? (
+                  <button
+                    onClick={() => setConfirmingSave(true)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/40 text-blue-100 text-xs font-medium transition-colors"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    MAJ GPS Marche
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="text-[11px] text-white/80 leading-snug">
+                      Remplacer définitivement les coordonnées GPS de cette marche par
+                      <span className="font-mono text-amber-200"> {submitted.lat.toFixed(6)}, {submitted.lng.toFixed(6)}</span> ?
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleConfirmSave}
+                        disabled={saving}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-white text-xs font-semibold disabled:opacity-60"
+                      >
+                        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                        Confirmer
+                      </button>
+                      <button
+                        onClick={() => setConfirmingSave(false)}
+                        disabled={saving}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/15 text-white/80 text-xs"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {isError && (
               <div className="mt-2 text-[11px] text-red-300">Échec de l'appel cadastre.</div>
             )}
