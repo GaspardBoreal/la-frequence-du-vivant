@@ -221,6 +221,45 @@ const ExplorationMarcheurPage: React.FC = () => {
     vivant: 0,
   };
 
+  // ─── Contexte ChatBot IA : path d'onglet hiérarchique + état d'écran ───
+  const globalTabLabel = globalTabs.find(t => t.key === activeGlobalTab)?.label || activeGlobalTab;
+  const sensoryLabel = sensoryTabs.find(t => t.key === activeSensoryTab)?.label;
+  const marcheursSubLabel = marcheursSubTabs.find(t => t.key === activeMarcheursSubTab)?.label;
+
+  const tabPath = useMemo(() => {
+    const parts: string[] = [globalTabLabel];
+    if (activeGlobalTab === 'marches' && sensoryLabel) parts.push(sensoryLabel);
+    if (activeGlobalTab === 'marcheurs' && marcheursSubLabel) parts.push(marcheursSubLabel);
+    return parts.join(' › ');
+  }, [activeGlobalTab, globalTabLabel, sensoryLabel, marcheursSubLabel]);
+
+  const explorationLabel = useMemo(() => {
+    const title = exploration?.name || marcheEvent?.title || 'Exploration';
+    const lieu = marcheEvent?.lieu ? ` · ${marcheEvent.lieu}` : '';
+    const dateStr = marcheEvent?.date_marche
+      ? ` (${format(new Date(marcheEvent.date_marche), 'dd MMMM yyyy', { locale: fr })})`
+      : '';
+    return `${title}${lieu}${dateStr}`;
+  }, [exploration?.name, marcheEvent?.title, marcheEvent?.lieu, marcheEvent?.date_marche]);
+
+  useChatPageContextProvider(
+    effectiveExplorationId ? { type: 'exploration', id: effectiveExplorationId } : null,
+    {
+      label: explorationLabel,
+      activeTab: tabPath,
+      filters: {
+        globalTab: activeGlobalTab,
+        sensoryTab: activeGlobalTab === 'marches' ? activeSensoryTab : undefined,
+        marcheursSubTab: activeGlobalTab === 'marcheurs' ? activeMarcheursSubTab : undefined,
+        activeStepIndex,
+        activeMarche: activeMarche
+          ? { id: activeMarche.id, nom: activeMarche.nom_marche || activeMarche.ville, ville: activeMarche.ville }
+          : undefined,
+        currentMarcheEventId: marcheEventId || undefined,
+      },
+    },
+  );
+
   if (!rawParam) {
     navigate('/marches-du-vivant/mon-espace');
     return null;
