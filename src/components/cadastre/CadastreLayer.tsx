@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import { CadastrePoint, useLexiconParcelsWithGeometry } from './useLexiconParcels';
