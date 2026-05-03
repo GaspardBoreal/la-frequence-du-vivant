@@ -177,8 +177,8 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 // Custom numbered marker icon
-function createNumberedIcon(num: number, isActive: boolean, contribCount: number): L.DivIcon {
-  const size = Math.min(40, 28 + Math.floor(contribCount / 3) * 2);
+function createNumberedIcon(num: number, isActive: boolean, contribCount: number, uniformSize = false): L.DivIcon {
+  const size = uniformSize ? 32 : Math.min(40, 28 + Math.floor(contribCount / 3) * 2);
   const pulseClass = isActive ? 'animate-pulse' : '';
   return L.divIcon({
     className: 'custom-numbered-marker',
