@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import * as SheetPrimitive from '@radix-ui/react-dialog';
+import { Sheet, SheetHeader, SheetTitle, SheetDescription, SheetPortal, SheetOverlay } from '@/components/ui/sheet';
 import { Search, Check, UserCircle2, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
