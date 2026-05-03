@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Crosshair, Send, X, Loader2 } from 'lucide-react';
+import { Crosshair, Send, X, Loader2, Save, Check } from 'lucide-react';
 import { useLexiconParcelWithGeometryAt } from './useLexiconParcels';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface GpsEditOverlayProps {
   initialLat: number;
@@ -11,6 +14,10 @@ interface GpsEditOverlayProps {
   onClose: () => void;
   /** Callback déclenché à la soumission avec la nouvelle géométrie LEXICON. */
   onPreview: (preview: { lat: number; lng: number; geometry: any; data: any } | null) => void;
+  /** Identifiant de la marche pour la persistance GPS (optionnel). */
+  marcheId?: string;
+  /** Si vrai, expose le bouton « MAJ GPS Marche » (Ambassadeur/Sentinelle/Admin). */
+  canPersist?: boolean;
 }
 
 const draggableIcon = L.divIcon({
@@ -25,11 +32,21 @@ const draggableIcon = L.divIcon({
   iconAnchor: [14, 14],
 });
 
-const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng, onClose, onPreview }) => {
+const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({
+  initialLat,
+  initialLng,
+  onClose,
+  onPreview,
+  marcheId,
+  canPersist = false,
+}) => {
   const map = useMap();
+  const queryClient = useQueryClient();
   const [lat, setLat] = useState(initialLat);
   const [lng, setLng] = useState(initialLng);
   const [submitted, setSubmitted] = useState<{ lat: number; lng: number } | null>(null);
+  const [confirmingSave, setConfirmingSave] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const { lexicon, geometry, isFetching, isError } = useLexiconParcelWithGeometryAt(
     submitted?.lat ?? null,
@@ -37,11 +54,9 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
     !!submitted,
   );
 
-  // Pousse la preview au parent dès qu'une géométrie est résolue + recadre la carte
   useEffect(() => {
     if (!submitted || !geometry?.coordinates) return;
     onPreview({ lat: submitted.lat, lng: submitted.lng, geometry, data: lexicon });
-    // Ferme toute popup résiduelle et recadre sur la nouvelle parcelle
     try {
       map.closePopup();
       const bounds = L.geoJSON(geometry as any).getBounds();
@@ -53,10 +68,10 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
     }
   }, [geometry, submitted, lexicon, onPreview, map]);
 
-  // Réinitialise la preview si l'utilisateur déplace le marqueur après soumission
   useEffect(() => {
     if (submitted && (submitted.lat !== lat || submitted.lng !== lng)) {
       setSubmitted(null);
+      setConfirmingSave(false);
       onPreview(null);
     }
   }, [lat, lng, submitted, onPreview]);
@@ -67,8 +82,31 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
   };
   const handleCancel = () => {
     setSubmitted(null);
+    setConfirmingSave(false);
     onPreview(null);
     onClose();
+  };
+
+  const handleConfirmSave = async () => {
+    if (!marcheId || !submitted) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('marches')
+        .update({ latitude: submitted.lat, longitude: submitted.lng })
+        .eq('id', marcheId);
+      if (error) throw error;
+      toast.success('Coordonnées GPS mises à jour', {
+        description: `Lat ${submitted.lat.toFixed(6)} · Lng ${submitted.lng.toFixed(6)}`,
+      });
+      await queryClient.invalidateQueries();
+      onPreview(null);
+      onClose();
+    } catch (e: any) {
+      console.error('[GpsEditOverlay] update failed', e);
+      toast.error('Échec de la mise à jour GPS', { description: e?.message || 'Erreur inconnue' });
+      setSaving(false);
+    }
   };
 
   const showLoader = isFetching && !geometry;
@@ -131,6 +169,45 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
                 <X className="w-3.5 h-3.5" /> Fermer
               </button>
             </div>
+
+            {/* Bouton MAJ GPS Marche : visible uniquement après preview résolue + droits curateur */}
+            {canPersist && marcheId && submitted && geometry?.coordinates && (
+              <div className="mt-2 pt-2 border-t border-white/10">
+                {!confirmingSave ? (
+                  <button
+                    onClick={() => setConfirmingSave(true)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/40 text-blue-100 text-xs font-medium transition-colors"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    MAJ GPS Marche
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="text-[11px] text-white/80 leading-snug">
+                      Remplacer définitivement les coordonnées GPS de cette marche par
+                      <span className="font-mono text-amber-200"> {submitted.lat.toFixed(6)}, {submitted.lng.toFixed(6)}</span> ?
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleConfirmSave}
+                        disabled={saving}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-white text-xs font-semibold disabled:opacity-60"
+                      >
+                        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                        Confirmer
+                      </button>
+                      <button
+                        onClick={() => setConfirmingSave(false)}
+                        disabled={saving}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/15 text-white/80 text-xs"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {isError && (
               <div className="mt-2 text-[11px] text-red-300">Échec de l'appel cadastre.</div>
             )}

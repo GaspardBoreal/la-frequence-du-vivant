@@ -1079,6 +1079,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               initialLng={target.longitude!}
               onClose={() => { setGpsEditPointId(null); setCadastrePreview(null); }}
               onPreview={setCadastrePreview}
+              marcheId={target.id}
+              canPersist={canEditGps}
             />
           );
         })()}
