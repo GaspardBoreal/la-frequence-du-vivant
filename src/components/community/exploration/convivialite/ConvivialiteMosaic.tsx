@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Flag, Trash2, X, GripVertical, ArrowUpDown, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flag, Trash2, X, GripVertical, ArrowUpDown, Check, Pencil, User } from 'lucide-react';
 import {
   DndContext,
   PointerSensor,
@@ -20,12 +20,17 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ConvivialitePhoto } from '@/hooks/useConvivialitePhotos';
+import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
 
 interface Props {
   photos: ConvivialitePhoto[];
+  explorationId?: string;
   currentUserId?: string;
   isAdmin?: boolean;
   canReorder?: boolean;
+  /** Whether the current user can reattribute photo credits. */
+  canReattribute?: boolean;
   onReport: (photo: ConvivialitePhoto) => void;
   onDelete: (photo: ConvivialitePhoto) => void;
   onReorder?: (orderedIds: string[]) => void;
