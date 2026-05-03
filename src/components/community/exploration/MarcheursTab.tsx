@@ -36,45 +36,122 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 };
 
 // --- Observations sub-tab: photos sorted by date ---
-const ObservationsSubTab: React.FC<{ userId: string; explorationEventIds?: string[]; stats: MarcheurWithStats['stats']; prenom: string }> = ({ userId, explorationEventIds, stats, prenom }) => {
-  const [sort, setSort] = useState<'desc' | 'asc'>('asc');
+// Resolves the marcher's media across THREE buckets, honoring re-attribution:
+//   1. marcheur_medias uploaded by them (user_id)
+//   2. marcheur_medias re-attributed to their editorial card (attributed_marcheur_id)
+//   3. exploration_convivialite_photos (uploaded OR re-attributed)
+const ObservationsSubTab: React.FC<{
+  userId?: string | null;
+  crewId?: string | null;
+  explorationId?: string;
+  explorationEventIds?: string[];
+  stats: MarcheurWithStats['stats'];
+  prenom: string;
+}> = ({ userId, crewId, explorationId, explorationEventIds, stats, prenom }) => {
+  const [sort, setSort] = useState<'desc' | 'asc'>('desc');
 
-  const { data: photos, isLoading } = useQuery({
-    queryKey: ['marcheur-observations-photos', userId, explorationEventIds],
+  const { data: items, isLoading } = useQuery({
+    queryKey: ['marcheur-observations-photos', userId, crewId, explorationId, explorationEventIds],
     queryFn: async () => {
-      let query = supabase
-        .from('marcheur_medias')
-        .select('id, url_fichier, external_url, titre, type_media, created_at')
-        .eq('user_id', userId)
-        .eq('is_public', true)
-        .in('type_media', ['photo', 'video'])
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (explorationEventIds?.length) query = query.in('marche_event_id', explorationEventIds);
-      const { data } = await query;
-      return data || [];
+      const out: Array<{
+        id: string;
+        url: string;
+        titre: string | null;
+        type: 'photo' | 'video';
+        created_at: string;
+        kind: 'media' | 'conv';
+      }> = [];
+
+      // 1+2 — marcheur_medias (uploader OR attribution)
+      if (userId || crewId) {
+        const orParts: string[] = [];
+        if (userId) orParts.push(`user_id.eq.${userId}`);
+        if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
+        let q = supabase
+          .from('marcheur_medias')
+          .select('id, url_fichier, external_url, titre, type_media, created_at')
+          .eq('is_public', true)
+          .in('type_media', ['photo', 'video'])
+          .or(orParts.join(','))
+          .order('created_at', { ascending: false })
+          .limit(100);
+        if (explorationEventIds?.length) q = q.in('marche_event_id', explorationEventIds);
+        const { data } = await q;
+        (data || []).forEach((m: any) => {
+          const url = m.url_fichier || m.external_url;
+          if (!url) return;
+          out.push({
+            id: `media-${m.id}`,
+            url,
+            titre: m.titre,
+            type: m.type_media === 'video' ? 'video' : 'photo',
+            created_at: m.created_at,
+            kind: 'media',
+          });
+        });
+      }
+
+      // 3 — exploration_convivialite_photos (uploader OR attribution)
+      if (explorationId && (userId || crewId)) {
+        const orParts: string[] = [];
+        if (userId) orParts.push(`user_id.eq.${userId}`);
+        if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
+        const { data } = await supabase
+          .from('exploration_convivialite_photos')
+          .select('id, url, created_at')
+          .eq('exploration_id', explorationId)
+          .eq('is_hidden', false)
+          .or(orParts.join(','))
+          .order('created_at', { ascending: false })
+          .limit(100);
+        (data || []).forEach((p: any) => {
+          if (!p.url) return;
+          out.push({
+            id: `conv-${p.id}`,
+            url: p.url,
+            titre: null,
+            type: 'photo',
+            created_at: p.created_at,
+            kind: 'conv',
+          });
+        });
+      }
+
+      return out;
     },
+    enabled: !!(userId || crewId),
     staleTime: 60_000,
   });
 
   const sorted = useMemo(() => {
-    if (!photos) return [];
-    const items = [...photos];
-    items.sort((a, b) => {
+    if (!items) return [];
+    const arr = [...items];
+    arr.sort((a, b) => {
       const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       return sort === 'desc' ? diff : -diff;
     });
-    return items;
-  }, [photos, sort]);
+    return arr;
+  }, [items, sort]);
 
-  const totalMedia = stats.photos + stats.videos;
+  const photoCount = sorted.filter(i => i.type === 'photo').length;
+  const videoCount = sorted.filter(i => i.type === 'video').length;
+  const totalMedia = sorted.length || stats.photos + stats.videos;
 
   return (
     <div className="px-3 pt-3 pb-3 space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-          <Camera className="w-3.5 h-3.5 text-emerald-500" />
-          <span className="text-foreground">{totalMedia}</span> photo{totalMedia > 1 ? 's' : ''}
+        <p className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+          <span className="inline-flex items-center gap-1">
+            <Camera className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-foreground">{photoCount || stats.photos}</span>
+          </span>
+          {(videoCount > 0 || stats.videos > 0) && (
+            <span className="inline-flex items-center gap-1">
+              <Eye className="w-3.5 h-3.5 text-cyan-500" />
+              <span className="text-foreground">{videoCount || stats.videos}</span>
+            </span>
+          )}
+          <span className="text-muted-foreground/70">· {totalMedia} média{totalMedia > 1 ? 's' : ''}</span>
         </p>
         <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
       </div>
@@ -90,8 +167,6 @@ const ObservationsSubTab: React.FC<{ userId: string; explorationEventIds?: strin
       {sorted.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
           {sorted.map((photo, i) => {
-            const url = photo.url_fichier || photo.external_url;
-            if (!url) return null;
             const dateStr = photo.created_at
               ? format(new Date(photo.created_at), 'dd MMM · HH:mm', { locale: fr })
               : '';
@@ -104,12 +179,17 @@ const ObservationsSubTab: React.FC<{ userId: string; explorationEventIds?: strin
                 className="relative group"
               >
                 <img
-                  src={url}
+                  src={photo.url}
                   alt={photo.titre || `Photo ${i + 1}`}
                   className="aspect-square w-full rounded-xl object-cover ring-1 ring-border/50 group-hover:ring-emerald-500/40 transition-all"
                   loading="lazy"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
+                {photo.kind === 'conv' && (
+                  <span className="absolute top-1 right-1 text-[8px] font-medium bg-emerald-600/85 text-white px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                    Convivialité
+                  </span>
+                )}
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent rounded-b-xl px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <p className="text-[9px] text-white/90 truncate">{photo.titre || dateStr}</p>
                 </div>
@@ -127,6 +207,7 @@ const ObservationsSubTab: React.FC<{ userId: string; explorationEventIds?: strin
     </div>
   );
 };
+
 
 // Normalize string: remove accents/diacritics, lowercase, trim
 const normalizeStr = (str: string) =>
@@ -618,13 +699,14 @@ const MarcheurCard: React.FC<{
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const totalContribs = marcheur.totalContributions || 0;
   const isCommunity = marcheur.source === 'community';
-  const userId = isCommunity ? marcheur.id.replace('community-', '') : null;
+  const resolvedUserId = marcheur.userId ?? (isCommunity ? marcheur.id.replace('community-', '') : null);
+  const resolvedCrewId = marcheur.crewId ?? (marcheur.source === 'crew' ? marcheur.id.replace('crew-', '') : null);
   const photoCount = marcheur.stats.photos + marcheur.stats.videos;
   
   // Real contributions count from biodiversity snapshots
   const { data: contributionsCount } = useWalkerContributionsCount(marcheur.prenom, marcheur.nom, explorationMarcheIds, explorationId);
   const realContribCount = contributionsCount || 0;
-  const hasContent = totalContribs > 0 || realContribCount > 0;
+  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0;
 
   return (
     <motion.div
@@ -718,8 +800,15 @@ const MarcheurCard: React.FC<{
             <AnimatePresence mode="wait">
               {activeSubTab === 'observations' && (
                 <motion.div key="obs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  {isCommunity && userId ? (
-                    <ObservationsSubTab userId={userId} explorationEventIds={explorationEventIds} stats={marcheur.stats} prenom={marcheur.prenom} />
+                  {(resolvedUserId || resolvedCrewId) ? (
+                    <ObservationsSubTab
+                      userId={resolvedUserId}
+                      crewId={resolvedCrewId}
+                      explorationId={explorationId}
+                      explorationEventIds={explorationEventIds}
+                      stats={marcheur.stats}
+                      prenom={marcheur.prenom}
+                    />
                   ) : (
                     <div className="px-3 py-4 text-center">
                       <p className="text-xs text-muted-foreground italic">Observations de l'équipe</p>

@@ -24,6 +24,10 @@ export interface MarcheurWithStats {
   };
   totalContributions: number;
   speciesObserved: SpeciesObservation[];
+  /** auth.users id when known (community source, or crew row linked to a user). */
+  userId?: string | null;
+  /** exploration_marcheurs.id when this person has an editorial card. */
+  crewId?: string | null;
 }
 
 export function useExplorationParticipants(explorationId?: string, marcheEventId?: string) {
@@ -114,6 +118,19 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
         return { userId: uploaderId, crewId: null as string | null };
       };
 
+      // Convivialité photos: per exploration, can be reattributed to a crew row
+      const { data: convPhotos } = await supabase
+        .from('exploration_convivialite_photos')
+        .select('user_id, attributed_marcheur_id')
+        .eq('exploration_id', explorationId)
+        .eq('is_hidden', false);
+
+      (convPhotos || []).forEach((p: any) => {
+        const { userId, crewId } = route(p.user_id, p.attributed_marcheur_id);
+        const bucket = userId ? ensureUser(userId) : crewId ? ensureCrew(crewId) : null;
+        if (bucket) bucket.photos++;
+      });
+
       if (eventIds.length) {
         const [{ data: medias }, { data: audios }, { data: textes }] = await Promise.all([
           supabase
@@ -188,6 +205,8 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
           stats: { ...stats, speciesCount },
           totalContributions: total + speciesCount,
           speciesObserved: obsByMarcheur.get(m.id) || [],
+          userId: linkedUser,
+          crewId: m.id,
         });
       });
 
@@ -206,6 +225,8 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
           stats: { ...s, speciesCount: 0 },
           totalContributions: total,
           speciesObserved: [],
+          userId: cu.user_id,
+          crewId: crewIdByUserId.get(cu.user_id) ?? null,
         });
       });
 
@@ -224,6 +245,8 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
           stats: { ...s, speciesCount: 0 },
           totalContributions: total,
           speciesObserved: [],
+          userId: p.user_id,
+          crewId: crewIdByUserId.get(p.user_id) ?? null,
         });
       });
 
