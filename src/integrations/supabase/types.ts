@@ -4475,6 +4475,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      reorder_marcheur_observation_photos: {
+        Args: {
+          p_items: Json
+          p_owner_crew_id: string
+          p_owner_user_id: string
+        }
+        Returns: undefined
+      }
       shares_marche_event: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
