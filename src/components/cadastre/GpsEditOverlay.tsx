@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Marker } from 'react-leaflet';
+import { Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Crosshair, Send, X, Loader2 } from 'lucide-react';
-import { useLexiconParcelAt } from './useLexiconParcels';
+import { useLexiconParcelWithGeometryAt } from './useLexiconParcels';
 
 interface GpsEditOverlayProps {
   initialLat: number;
@@ -26,28 +26,53 @@ const draggableIcon = L.divIcon({
 });
 
 const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng, onClose, onPreview }) => {
+  const map = useMap();
   const [lat, setLat] = useState(initialLat);
   const [lng, setLng] = useState(initialLng);
   const [submitted, setSubmitted] = useState<{ lat: number; lng: number } | null>(null);
 
-  const { data, isFetching, isError } = useLexiconParcelAt(
+  const { lexicon, geometry, isFetching, isError } = useLexiconParcelWithGeometryAt(
     submitted?.lat ?? null,
     submitted?.lng ?? null,
     !!submitted,
   );
 
+  // Pousse la preview au parent dès qu'une géométrie est résolue + recadre la carte
   useEffect(() => {
-    if (!data || !submitted) return;
-    const geometry = data?.data?._raw?.cadastre?.shape || data?.data?.geometry;
-    onPreview({ lat: submitted.lat, lng: submitted.lng, geometry, data: data?.data });
-  }, [data, submitted, onPreview]);
+    if (!submitted || !geometry?.coordinates) return;
+    onPreview({ lat: submitted.lat, lng: submitted.lng, geometry, data: lexicon });
+    // Ferme toute popup résiduelle et recadre sur la nouvelle parcelle
+    try {
+      map.closePopup();
+      const bounds = L.geoJSON(geometry as any).getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { maxZoom: 18, padding: [40, 40] });
+      }
+    } catch {
+      /* noop */
+    }
+  }, [geometry, submitted, lexicon, onPreview, map]);
 
-  const handleSubmit = () => setSubmitted({ lat, lng });
+  // Réinitialise la preview si l'utilisateur déplace le marqueur après soumission
+  useEffect(() => {
+    if (submitted && (submitted.lat !== lat || submitted.lng !== lng)) {
+      setSubmitted(null);
+      onPreview(null);
+    }
+  }, [lat, lng, submitted, onPreview]);
+
+  const handleSubmit = () => {
+    map.closePopup();
+    setSubmitted({ lat, lng });
+  };
   const handleCancel = () => {
     setSubmitted(null);
     onPreview(null);
     onClose();
   };
+
+  const showLoader = isFetching && !geometry;
+  const showNoParcel = !!submitted && !isFetching && !geometry;
 
   return (
     <>
@@ -93,10 +118,10 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSubmit}
-                disabled={isFetching}
+                disabled={showLoader}
                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/30 hover:bg-emerald-500/40 border border-emerald-400/40 text-emerald-100 text-xs font-medium disabled:opacity-50"
               >
-                {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                {showLoader ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 Soumettre
               </button>
               <button
@@ -107,7 +132,12 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
               </button>
             </div>
             {isError && (
-              <div className="mt-2 text-[11px] text-red-300">Échec de l'appel LEXICON.</div>
+              <div className="mt-2 text-[11px] text-red-300">Échec de l'appel cadastre.</div>
+            )}
+            {showNoParcel && !isError && (
+              <div className="mt-2 text-[11px] text-amber-200">
+                Aucune parcelle cadastrale trouvée à cet emplacement.
+              </div>
             )}
             {!submitted && (
               <div className="mt-2 text-[10px] text-white/50">
