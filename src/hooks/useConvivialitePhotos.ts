@@ -16,7 +16,11 @@ export interface ConvivialitePhoto {
   is_hidden: boolean;
   position: number;
   created_at: string;
-  // Enriched
+  /** Marcheur officially credited (overrides uploader). */
+  attributed_marcheur_id?: string | null;
+  /** Resolved name of the attributed marcheur, when present. */
+  attributed_full_name?: string | null;
+  // Enriched (uploader profile)
   author_prenom?: string | null;
   author_nom?: string | null;
   author_avatar?: string | null;
