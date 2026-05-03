@@ -1,97 +1,79 @@
 ## Objectif
 
-Dans la vue **Mon Espace > Exploration > Marcheurs > Marcheurs** :
+Permettre d'ajouter/éditer un **descriptif riche** (gras / italique / souligné) à chaque son affiché dans `Marcheurs > Marcheurs > Écoute` (et dans `Marches > Voir > Écouter` puisque le composant est partagé), avec règles :
 
-1. Compter et afficher les **audios** d'un marcheur (badge dans l'en-tête + onglet d'écoute).
-2. Ajouter un onglet **Écoute** entre `Observations` et `Contributions`, avec le **même lecteur** que `Marches > Écouter` (image 3).
-3. **Factoriser** le code : un composant unique partagé entre les deux vues, pour que toute évolution (upload, tri, lecture, suppression, ré-attribution) bénéficie aux deux.
+- **Propriétaire du son** : peut éditer le descriptif de ses propres sons.
+- **Ambassadeur, Sentinelle, Administrateur** : peuvent éditer le descriptif de **tous** les sons.
+- **Marcheur standard** : lecture seule.
 
-## Diagnostic
+## 1. Backend (migration Supabase)
 
-- `useExplorationParticipants` calcule déjà `stats.sons` à partir de `marcheur_audio` (ligne ~142–164) en respectant `attributed_marcheur_id`. Donc le **comptage backend existe**, il n'est juste pas affiché dans la card et il n'y a pas d'onglet pour les écouter.
-- `MarcheDetailModal.tsx` contient `EcouterTab` (lignes 504–639) : section admin (`marche_audio`) + Mes sons + Sons des autres + zone d'upload. C'est ce composant qu'on va extraire.
-- `MarcheursTab.tsx` n'a actuellement que 3 sous-onglets : `observations | contributions | impact`.
+La colonne `marcheur_audio.description` existe déjà (cf. `useMarcheurContributions.ts`). On ajoute uniquement les permissions élevées :
 
-## Plan technique
+a) **Fonction SECURITY DEFINER** `can_curate_audio(_user_id uuid)` → `boolean`  
+   Réutilise la logique de `can_upload_convivialite` (sans dépendance exploration_id) :
+   - admin via `check_is_admin_user`
+   - `community_profiles.role IN ('ambassadeur', 'sentinelle')`
 
-### 1. Extraire un composant partagé `MarcheurAudioPanel`
+b) **Policy RLS UPDATE** sur `public.marcheur_audio` :  
+   `CREATE POLICY "Curators can update audio descriptions" ON marcheur_audio FOR UPDATE USING (can_curate_audio(auth.uid())) WITH CHECK (can_curate_audio(auth.uid()));`  
+   Les propriétaires gardent leur policy existante "Users update own audio". Les admins gardent "Admins full access audio".
 
-Nouveau fichier : `src/components/community/audio/MarcheurAudioPanel.tsx`
+c) **Trigger garde-fou** `BEFORE UPDATE` sur `marcheur_audio` : si l'appelant n'est ni propriétaire ni curator, autoriser uniquement la modification de `description` / `updated_at` (interdit changements de `is_public`, `url_fichier`, `marche_event_id`, etc.). Évite qu'un ambassadeur escalade au-delà du périmètre demandé.
 
-- Props :
-  ```ts
-  {
-    ownerUserId: string | null;     // user dont on affiche les sons
-    ownerCrewId?: string | null;    // pour la ré-attribution éditoriale
-    marcheIds: string[];            // 1+ marches (admin audio)
-    marcheEventIds: string[];       // 1+ events (sons marcheurs)
-    canUpload: boolean;             // owner ou admin
-    activeMarcheId?: string;        // pour rattacher l'upload
-    variant?: 'modal' | 'inline';   // pour ajuster les paddings
-  }
-  ```
-- Logique :
-  - **Admin audios** : `marche_audio` filtré par `marche_id IN marcheIds`, trié par `ordre`.
-  - **Sons du marcheur** : `marcheur_audio` filtré par `marche_event_id IN marcheEventIds` ET `(user_id = ownerUserId OR attributed_marcheur_id = ownerCrewId)` ET `is_public = true` côté visiteur (côté owner : tout).
-  - Tri (Récent/Ancien) via le `SortToggle` existant.
-  - Upload : réutilise `useUploadAudio` (déjà invalide la query key `['marcheur-audio', marcheEventId]`). Si `canUpload === false`, on masque le bouton "Ajouter un son".
-  - Édition / suppression : réutilise `useUpdateContribution` / `useDeleteContribution` quand `isOwner`.
-- Sortie HTML identique à l'actuel `EcouterTab` (sections "De l'exploration" / "Mes sons" / "Des marcheurs" + `<audio controls>`).
+## 2. Composant partagé `MarcheurAudioPanel.tsx`
 
-### 2. Brancher la factorisation côté Marches
+- Récupérer le rôle viewer via un nouveau hook léger `useCanCurateAudio()` (query sur `community_profiles` + `check_is_admin_user`, cache 60s, déjà appelé une fois au montage du panel).
+- Pour chaque son rendu (`Mes sons` ET `Des marcheurs`) :
+  - Calcul `canEditDescription = isOwner || canCurate`.
+  - Sous le lecteur `<audio>`, afficher la description en HTML sanitizé (`DOMPurify` déjà utilisé via `htmlSanitizer.ts`) avec classe `prose-sm`.
+  - Bouton crayon **"Décrire"** visible si `canEditDescription`.
+  - En mode édition : `RichTextEditor` (`@/components/ui/rich-text-editor`) avec toolbar Gras/Italique/Souligné, hauteur min 80 px, **mobile first** (toolbar sticky en haut du champ, boutons ≥ 40 px tactiles).
+  - Boutons Enregistrer / Annuler. Save → `useUpdateContribution({ table: 'marcheur_audio', id, updates: { description } })`.
 
-- Dans `MarcheDetailModal.tsx`, remplacer `EcouterTab` par un wrapper qui appelle `<MarcheurAudioPanel marcheIds={[marcheId]} marcheEventIds={[marcheEventId]} ownerUserId={userId} canUpload={true} variant="modal" activeMarcheId={activeMarcheId} />`.
-- Aucune régression visuelle attendue (le composant garde les mêmes classes).
+## 3. UX / UI mobile-first
 
-### 3. Brancher dans `MarcheursTab.tsx`
+```text
+┌───────────────────────────────┐
+│ ▶ ──────●─────  0:42 / 1:30  │  lecteur audio
+├───────────────────────────────┤
+│ 🎵 Pouillot Véloce  · 03 mai │
+│ ┌───────────────────────────┐ │
+│ │ Chant entendu près du     │ │  description (HTML)
+│ │ sentier, **très clair**.  │ │
+│ └───────────────────────────┘ │
+│                       [✎]    │  bouton "Décrire" (si droits)
+└───────────────────────────────┘
+```
 
-- Étendre `MarcheurSubTab` :
-  ```ts
-  type MarcheurSubTab = 'observations' | 'ecoute' | 'contributions' | 'impact';
-  ```
-- Ajouter dans `subTabConfig` (entre `observations` et `contributions`) :
-  ```ts
-  { key: 'ecoute', label: 'Écoute', icon: Headphones }
-  ```
-  (`Headphones` à importer de `lucide-react`).
-- Rendu conditionnel :
-  ```tsx
-  {activeSubTab === 'ecoute' && (
-    <MarcheurAudioPanel
-      ownerUserId={resolvedUserId}
-      ownerCrewId={resolvedCrewId}
-      marcheIds={explorationMarcheIds}
-      marcheEventIds={explorationEventIds}
-      canUpload={!!user && user.id === resolvedUserId}
-      variant="inline"
-    />
-  )}
-  ```
+En mode édition :
 
-### 4. Badge audio dans l'en-tête de la card
+```text
+┌───────────────────────────────┐
+│ [B] [I] [U]            [×]   │  toolbar sticky
+│ ┌───────────────────────────┐ │
+│ │ contentEditable…          │ │
+│ └───────────────────────────┘ │
+│           [Annuler] [Enreg.] │
+└───────────────────────────────┘
+```
 
-- Dans `MarcheurCard`, après le badge "photoCount", ajouter (si `marcheur.stats.sons > 0`) :
-  ```tsx
-  <div className="... bg-muted/60 ..." title={`${marcheur.stats.sons} son${...}`}>
-    <Headphones className="w-3 h-3 text-violet-500" />
-    <span className="text-[11px] font-semibold">{marcheur.stats.sons}</span>
-  </div>
-  ```
-- `hasContent` doit aussi prendre en compte `stats.sons > 0` pour que la card s'ouvre quand il n'y a que des audios.
+- États visibles : vide → placeholder `Ajouter un descriptif…` (italique, opacity 50).  
+- Curators (non-owner) : badge discret `Édition curatoriale` à côté du crayon pour transparence.  
+- Sanitize : whitelist `<b>, <strong>, <i>, <em>, <u>, <br>, <p>` uniquement.  
+- Accessibilité : raccourcis Ctrl/Cmd + B/I/U déjà gérés par `RichTextEditor`.
 
-### 5. Compteur global "X observations publiques"
+## 4. Fichiers touchés
 
-- Le bandeau supérieur affiche `69 observations publiques` (somme des `totalContributions`). `stats.sons` est déjà inclus dans `total = photos + videos + sons + textes`, donc rien à changer ici — les audios étaient comptés mais pas révélés ; ils le seront via le badge + onglet.
+- **Migration** : `supabase/migrations/<ts>_marcheur_audio_description_curators.sql` (fonction + policy + trigger garde-fou).
+- **Hook nouveau** : `src/hooks/useCanCurateAudio.ts`.
+- **Édité** : `src/components/community/audio/MarcheurAudioPanel.tsx` — bloc description + édition pour chaque item, remplace le rendu actuel par un sous-composant `<AudioDescriptionBlock />` factorisé en bas du fichier.
+- **Réutilisé sans modification** : `MarcheDetailModal.tsx` (déjà sur `MarcheurAudioPanel`) bénéficie automatiquement.
 
-## Fichiers touchés
+## 5. Invalidations & cache
 
-- **Nouveau** : `src/components/community/audio/MarcheurAudioPanel.tsx` (factorisation).
-- **Modifié** : `src/components/community/MarcheDetailModal.tsx` (réécrit `EcouterTab` comme thin wrapper).
-- **Modifié** : `src/components/community/exploration/MarcheursTab.tsx` (sous-onglet Écoute + badge audio).
-- Aucune migration DB.
+`useUpdateContribution` invalide déjà `['marcheur-audio']`. Ajouter aussi `['marcheur-panel-owner-audio']` (key utilisée par le panel) dans son `onSuccess` pour rafraîchir immédiatement la vue.
 
-## Risques / vérifications
+## 6. Mémoire
 
-- Filtre RLS sur `marcheur_audio` : un visiteur ne doit voir que les audios `is_public=true` ou les siens. Le composant respecte déjà cette règle dans le filtre.
-- Re-attribution : `marcheur_audio.attributed_marcheur_id` doit exister (il est utilisé par `useExplorationParticipants`). À vérifier dans les types ; sinon, fallback sur `user_id` uniquement.
-- Upload : seul l'utilisateur connecté propriétaire de la card peut uploader (les admins n'uploadent pas pour autrui ici, comme dans la vue Marches).
+Mettre à jour `mem://features/community/walker-engagement-tracking-logic` ou créer `mem://features/community/marcheur-audio-description-logic` pour documenter : descriptif riche, droits owner + ambassadeur/sentinelle/admin, sanitisation HTML.
