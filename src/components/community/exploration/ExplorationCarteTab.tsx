@@ -1039,6 +1039,35 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             onChange={setCreatePosition}
           />
         )}
+
+        {/* Cadastre overlay (LEXICON parcels for each step) */}
+        {mapStyle === 'cadastre' && (
+          <CadastreLayer
+            points={geoMarches.map(m => ({
+              id: m.id,
+              lat: m.latitude!,
+              lng: m.longitude!,
+              label: m.nom_marche || undefined,
+            }))}
+            enabled={mapStyle === 'cadastre'}
+            previewGeometry={cadastrePreview?.geometry}
+            previewData={cadastrePreview?.data}
+          />
+        )}
+
+        {/* GPS edit overlay (Cadastre mode, curators only) */}
+        {mapStyle === 'cadastre' && canEditGps && gpsEditPointId && (() => {
+          const target = geoMarches.find(m => m.id === gpsEditPointId);
+          if (!target) return null;
+          return (
+            <GpsEditOverlay
+              initialLat={target.latitude!}
+              initialLng={target.longitude!}
+              onClose={() => { setGpsEditPointId(null); setCadastrePreview(null); }}
+              onPreview={setCadastrePreview}
+            />
+          );
+        })()}
       </MapContainer>
 
       {/* Map style toggle */}
