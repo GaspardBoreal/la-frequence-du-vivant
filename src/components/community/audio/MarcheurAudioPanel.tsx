@@ -82,18 +82,21 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
 
   // ── Sons du marcheur (marcheur_audio) ──
   const { data: ownerAudio } = useQuery({
-    queryKey: ['marcheur-panel-owner-audio', ownerUserId, ownerCrewId, marcheEventIds, sort],
+    queryKey: ['marcheur-panel-owner-audio', ownerUserId, ownerCrewId, marcheEventIds, activeMarcheId, sort],
     queryFn: async () => {
       if (!marcheEventIds.length || (!ownerUserId && !ownerCrewId)) return [];
       const orParts: string[] = [];
       if (ownerUserId) orParts.push(`user_id.eq.${ownerUserId}`);
       if (ownerCrewId) orParts.push(`attributed_marcheur_id.eq.${ownerCrewId}`);
-      const { data } = await supabase
+      let query = supabase
         .from('marcheur_audio')
         .select('*')
         .in('marche_event_id', marcheEventIds)
-        .or(orParts.join(','))
-        .order('created_at', { ascending: sort === 'asc' });
+        .or(orParts.join(','));
+      // Scope à l'étape courante (vue Marches → Écouter) : évite que les sons d'une étape
+      // apparaissent sur les autres étapes du même événement.
+      if (activeMarcheId) query = query.eq('marche_id', activeMarcheId);
+      const { data } = await query.order('created_at', { ascending: sort === 'asc' });
 
       // Filtre RLS-friendly : viewer voit ses propres + les publics
       return (data || []).filter((a: any) => {
