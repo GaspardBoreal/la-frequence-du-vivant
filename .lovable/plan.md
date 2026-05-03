@@ -1,79 +1,88 @@
+# Onglet "Profils" dans la vue Marcheurs (exploration)
+
 ## Objectif
+Réutiliser les 3 widgets de l'onglet Profils de `/admin/marche-events/:id` :
+- Pyramide des âges
+- Tisser la diversité (donut genres)
+- Mosaïque des activités (treemap CSP)
 
-Permettre d'ajouter/éditer un **descriptif riche** (gras / italique / souligné) à chaque son affiché dans `Marcheurs > Marcheurs > Écoute` (et dans `Marches > Voir > Écouter` puisque le composant est partagé), avec règles :
+Et les afficher dans un nouvel onglet **"Profils"** placé **après "Marcheurs"** dans le sous‑menu de la vue `Marcheurs` d'une exploration (`/marches-du-vivant/mon-espace/exploration/:id`).
 
-- **Propriétaire du son** : peut éditer le descriptif de ses propres sons.
-- **Ambassadeur, Sentinelle, Administrateur** : peuvent éditer le descriptif de **tous** les sons.
-- **Marcheur standard** : lecture seule.
+Contrainte clé : **un seul code source** pour les 3 widgets, déjà utilisé sur 2 pages admin (`ProfilsImpactDashboard` rendu via `ProfilsPanel`). Toute évolution future doit profiter aux 3 vues.
 
-## 1. Backend (migration Supabase)
+## Analyse de l'existant
 
-La colonne `marcheur_audio.description` existe déjà (cf. `useMarcheurContributions.ts`). On ajoute uniquement les permissions élevées :
+- Code admin : `src/components/admin/community/ProfilsImpactDashboard.tsx` rend les 5 compteurs + les 3 widgets cibles, alimenté par `useCommunityImpactAggregates(eventId | null)` → RPC `get_community_impact_aggregates_scoped(p_event_id uuid)`.
+- Cette RPC :
+  - filtre par participants d'**un événement** (ou global si `null`) ;
+  - **bloque les non‑admins** (`check_is_admin_user`) → inutilisable côté communauté.
+- Le sous‑menu actuel de la vue Marcheurs vit dans `src/components/community/ExplorationMarcheurPage.tsx` (`marcheursSubTabs` = `convivialite`, `profils`). Le label `profils` y désigne en réalité l'onglet "Marcheurs" (composant `MarcheursTab`). À renommer proprement.
 
-a) **Fonction SECURITY DEFINER** `can_curate_audio(_user_id uuid)` → `boolean`  
-   Réutilise la logique de `can_upload_convivialite` (sans dépendance exploration_id) :
-   - admin via `check_is_admin_user`
-   - `community_profiles.role IN ('ambassadeur', 'sentinelle')`
+## Plan
 
-b) **Policy RLS UPDATE** sur `public.marcheur_audio` :  
-   `CREATE POLICY "Curators can update audio descriptions" ON marcheur_audio FOR UPDATE USING (can_curate_audio(auth.uid())) WITH CHECK (can_curate_audio(auth.uid()));`  
-   Les propriétaires gardent leur policy existante "Users update own audio". Les admins gardent "Admins full access audio".
+### 1. Backend — RPC scopée exploration, accessible aux marcheur·euse·s
 
-c) **Trigger garde-fou** `BEFORE UPDATE` sur `marcheur_audio` : si l'appelant n'est ni propriétaire ni curator, autoriser uniquement la modification de `description` / `updated_at` (interdit changements de `is_public`, `url_fichier`, `marche_event_id`, etc.). Évite qu'un ambassadeur escalade au-delà du périmètre demandé.
+Nouvelle migration SQL :
 
-## 2. Composant partagé `MarcheurAudioPanel.tsx`
+- Étendre `get_community_impact_aggregates_scoped` (ou créer `get_community_impact_aggregates_by_exploration(p_exploration_id uuid)`) qui :
+  - agrège les `community_profiles` des `user_id` ayant une `marche_participations` validée sur un `marche_events.exploration_id = p_exploration_id` ;
+  - renvoie le **même JSON** que la RPC existante (`total`, `with_*`, `by_age`, `by_gender`, `by_csp`, `by_role`, `csp_x_age`, `top_cities`, `territories_count`).
+- Sécurité : `SECURITY DEFINER`, `STABLE`, `search_path = public`. Accessible à `authenticated` (pas de garde admin). Aucune PII renvoyée — uniquement des agrégats (counts par tranche/genre/CSP), donc safe vis‑à‑vis du RLS sur `community_profiles`.
+- `GRANT EXECUTE ... TO authenticated`.
 
-- Récupérer le rôle viewer via un nouveau hook léger `useCanCurateAudio()` (query sur `community_profiles` + `check_is_admin_user`, cache 60s, déjà appelé une fois au montage du panel).
-- Pour chaque son rendu (`Mes sons` ET `Des marcheurs`) :
-  - Calcul `canEditDescription = isOwner || canCurate`.
-  - Sous le lecteur `<audio>`, afficher la description en HTML sanitizé (`DOMPurify` déjà utilisé via `htmlSanitizer.ts`) avec classe `prose-sm`.
-  - Bouton crayon **"Décrire"** visible si `canEditDescription`.
-  - En mode édition : `RichTextEditor` (`@/components/ui/rich-text-editor`) avec toolbar Gras/Italique/Souligné, hauteur min 80 px, **mobile first** (toolbar sticky en haut du champ, boutons ≥ 40 px tactiles).
-  - Boutons Enregistrer / Annuler. Save → `useUpdateContribution({ table: 'marcheur_audio', id, updates: { description } })`.
+### 2. Hook — extension non cassante
 
-## 3. UX / UI mobile-first
+`src/hooks/useCommunityImpactAggregates.ts` :
+- Garder la signature actuelle `(eventId?: string | null)` intacte (admin).
+- Ajouter `useCommunityImpactAggregatesByExploration(explorationId?: string | null)` qui appelle la nouvelle RPC. Même type `CommunityImpactAggregates`.
 
-```text
-┌───────────────────────────────┐
-│ ▶ ──────●─────  0:42 / 1:30  │  lecteur audio
-├───────────────────────────────┤
-│ 🎵 Pouillot Véloce  · 03 mai │
-│ ┌───────────────────────────┐ │
-│ │ Chant entendu près du     │ │  description (HTML)
-│ │ sentier, **très clair**.  │ │
-│ └───────────────────────────┘ │
-│                       [✎]    │  bouton "Décrire" (si droits)
-└───────────────────────────────┘
+### 3. Factorisation du composant widgets
+
+Extraire les 3 widgets (Pyramide, Donut, Treemap) dans un sous‑composant **partagé** :
+
+```
+src/components/community/profils/
+  ProfilsWidgets.tsx        ← uniquement les 3 cartes Recharts + CSPTreemapTile
+  ProfilsScopeContainer.tsx ← wrapper qui choisit le bon hook (event|exploration|global)
 ```
 
-En mode édition :
+- `ProfilsWidgets` reçoit en props `data: CommunityImpactAggregates` (pure présentation, aucune dépendance admin).
+- `ProfilsImpactDashboard` (admin) est refactoré pour **composer** : compteurs (admin only) + `<ProfilsWidgets data={data} />`. Aucune régression visuelle sur les 2 pages admin existantes.
+- Aucun composant Recharts dupliqué : un seul endroit à maintenir → toute évolution (couleurs, légendes, accessibilité) se propage aux 3 vues.
 
-```text
-┌───────────────────────────────┐
-│ [B] [I] [U]            [×]   │  toolbar sticky
-│ ┌───────────────────────────┐ │
-│ │ contentEditable…          │ │
-│ └───────────────────────────┘ │
-│           [Annuler] [Enreg.] │
-└───────────────────────────────┘
-```
+### 4. Intégration dans la vue Marcheurs
 
-- États visibles : vide → placeholder `Ajouter un descriptif…` (italique, opacity 50).  
-- Curators (non-owner) : badge discret `Édition curatoriale` à côté du crayon pour transparence.  
-- Sanitize : whitelist `<b>, <strong>, <i>, <em>, <u>, <br>, <p>` uniquement.  
-- Accessibilité : raccourcis Ctrl/Cmd + B/I/U déjà gérés par `RichTextEditor`.
+`src/components/community/ExplorationMarcheurPage.tsx` :
+- Renommer la clé existante `profils` → `marcheurs` (label inchangé "Marcheurs"), pour libérer le nom.
+- Ajouter une 3ᵉ entrée à `marcheursSubTabs` :
 
-## 4. Fichiers touchés
+  ```ts
+  { key: 'convivialite', label: 'Convivialité', icon: Sparkles },
+  { key: 'marcheurs',    label: 'Marcheurs',    icon: Users },
+  { key: 'profils',      label: 'Profils',      icon: PieChart },
+  ```
 
-- **Migration** : `supabase/migrations/<ts>_marcheur_audio_description_curators.sql` (fonction + policy + trigger garde-fou).
-- **Hook nouveau** : `src/hooks/useCanCurateAudio.ts`.
-- **Édité** : `src/components/community/audio/MarcheurAudioPanel.tsx` — bloc description + édition pour chaque item, remplace le rendu actuel par un sous-composant `<AudioDescriptionBlock />` factorisé en bas du fichier.
-- **Réutilisé sans modification** : `MarcheDetailModal.tsx` (déjà sur `MarcheurAudioPanel`) bénéficie automatiquement.
+- Brancher le rendu : si `activeMarcheursSubTab === 'profils'` → `<ProfilsScopeContainer scope={{ type: 'exploration', explorationId: effectiveExplorationId }} />` qui appelle le nouveau hook et rend `<ProfilsWidgets />`.
+- Tracking activité (`trackActivity('tab_switch', 'tab:marcheurs:profils')`) — déjà géré génériquement.
 
-## 5. Invalidations & cache
+### 5. UX & responsive
 
-`useUpdateContribution` invalide déjà `['marcheur-audio']`. Ajouter aussi `['marcheur-panel-owner-audio']` (key utilisée par le panel) dans son `onSuccess` pour rafraîchir immédiatement la vue.
+- Mobile‑first : la grille `lg:grid-cols-3` du `ProfilsWidgets` s'empile naturellement sur petit écran ; conserver `ResponsiveContainer` Recharts.
+- Pas de compteurs/PII dans la version communauté — uniquement les 3 widgets demandés + un en‑tête sobre ("Qui marche sur cette exploration ?") aligné sur la sobriété informationnelle.
+- État vide : afficher un message neutre quand `total === 0`.
 
-## 6. Mémoire
+## Fichiers touchés
 
-Mettre à jour `mem://features/community/walker-engagement-tracking-logic` ou créer `mem://features/community/marcheur-audio-description-logic` pour documenter : descriptif riche, droits owner + ambassadeur/sentinelle/admin, sanitisation HTML.
+- **Nouveau** : `supabase/migrations/<ts>_profils_widgets_by_exploration.sql`
+- **Nouveau** : `src/components/community/profils/ProfilsWidgets.tsx`
+- **Nouveau** : `src/components/community/profils/ProfilsScopeContainer.tsx`
+- **Modifié** : `src/hooks/useCommunityImpactAggregates.ts` (ajout du hook exploration)
+- **Modifié** : `src/components/admin/community/ProfilsImpactDashboard.tsx` (utilise `ProfilsWidgets`)
+- **Modifié** : `src/components/community/ExplorationMarcheurPage.tsx` (3ᵉ sous‑onglet)
+- **Mémoire** : MAJ `mem://features/mon-espace/exploration-dedicated-page-architecture` (4 sous‑onglets désormais).
+
+## Risques & garde‑fous
+
+- RPC sans garde admin → ne renvoie que des **agrégats** ; aucune ligne PII. À documenter dans le commentaire SQL.
+- Refactor admin : vérifier visuellement les pages `/admin/community` et `/admin/marche-events` après extraction (mêmes props, mêmes données).
+- Ne pas casser la clé d'onglet existante : migration de `profils → marcheurs` à appliquer dans le state initial et dans le tracking.
