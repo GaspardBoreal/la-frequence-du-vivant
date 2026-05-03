@@ -1,10 +1,6 @@
-import { LayoutDashboard, CalendarHeart, Users, Map, FileDown, Wrench } from 'lucide-react';
+import { LayoutDashboard, CalendarHeart, Users, Map, FileDown, Wrench, Compass } from 'lucide-react';
 
 // ─── CHAT CONFIG — La Fréquence du Vivant (Admin) ───────────────
-// Tout ce qui change d'un projet à l'autre vit ici.
-// Pour réutiliser ce chatbot dans un autre projet : duplique le
-// dossier chatbot/ + les hooks useChat*, puis édite UNIQUEMENT
-// ce fichier.
 // ────────────────────────────────────────────────────────────────
 
 export type ChatContext =
@@ -13,7 +9,8 @@ export type ChatContext =
   | 'community'
   | 'marches'
   | 'exportations'
-  | 'outils';
+  | 'outils'
+  | 'exploration';
 
 export interface ChatConfig {
   assistantName: string;
