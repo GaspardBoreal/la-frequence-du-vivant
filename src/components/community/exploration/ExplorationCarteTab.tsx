@@ -600,6 +600,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   // GPS edit (Cadastre mode) state
   const [gpsEditPointId, setGpsEditPointId] = useState<string | null>(null);
   const [cadastrePreview, setCadastrePreview] = useState<{ lat: number; lng: number; geometry: any; data: any } | null>(null);
+  const stepMarkerRefs = useRef<Map<string, L.Marker>>(new Map());
   const [showCreateHint, setShowCreateHint] = useState(false);
   useEffect(() => {
     if (!userCanCreate) return;
