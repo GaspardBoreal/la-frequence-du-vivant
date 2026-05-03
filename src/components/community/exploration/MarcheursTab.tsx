@@ -800,8 +800,15 @@ const MarcheurCard: React.FC<{
             <AnimatePresence mode="wait">
               {activeSubTab === 'observations' && (
                 <motion.div key="obs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  {isCommunity && userId ? (
-                    <ObservationsSubTab userId={userId} explorationEventIds={explorationEventIds} stats={marcheur.stats} prenom={marcheur.prenom} />
+                  {(resolvedUserId || resolvedCrewId) ? (
+                    <ObservationsSubTab
+                      userId={resolvedUserId}
+                      crewId={resolvedCrewId}
+                      explorationId={explorationId}
+                      explorationEventIds={explorationEventIds}
+                      stats={marcheur.stats}
+                      prenom={marcheur.prenom}
+                    />
                   ) : (
                     <div className="px-3 py-4 text-center">
                       <p className="text-xs text-muted-foreground italic">Observations de l'équipe</p>
