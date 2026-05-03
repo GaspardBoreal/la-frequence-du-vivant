@@ -941,6 +941,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               key={marche.id}
               position={[marche.latitude!, marche.longitude!]}
               icon={createNumberedIcon(index + 1, activeMarker === index, totalContrib, mapStyle === 'cadastre')}
+              ref={(ref) => {
+                if (ref) stepMarkerRefs.current.set(marche.id, ref as unknown as L.Marker);
+                else stepMarkerRefs.current.delete(marche.id);
+              }}
               eventHandlers={{
                 click: () => setActiveMarker(index),
               }}
