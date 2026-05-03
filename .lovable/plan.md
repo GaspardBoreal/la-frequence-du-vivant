@@ -1,42 +1,70 @@
-## Diagnostic
+## Objectif
 
-Une photo réattribuée doit être créditée à **une seule personne** : l'attribué·e si `attributed_marcheur_id` est renseigné, sinon l'uploader. Aujourd'hui Gaspard voit ses 4 photos même réattribuées car la règle d'exclusivité n'est appliquée nulle part.
+Dans `Marcheurs → Marcheurs`, lorsqu'on ouvre le bandeau d'un marcheur, permettre le **classement (drag-and-drop)** des photos de l'onglet *Observations*, à la manière de `Marches → Voir` (cf. `MediaUploadSection` + `SortablePhotoCard`) et de la mosaïque Convivialité (`ConvivialiteMosaic`).
 
-Deux endroits à corriger :
+## Analyse de l'existant
 
-### 1. `useExplorationParticipants.ts` (comptage des badges)
+- Les photos affichées dans `ObservationsSubTab` (`src/components/community/exploration/MarcheursTab.tsx`) proviennent de **deux tables hétérogènes** :
+  - `marcheur_medias` (colonne `ordre` existe) — photos & vidéos liées aux events
+  - `exploration_convivialite_photos` (colonne `position` existe) — mur convivialité de l'exploration
+- Règle d'appartenance déjà en place (`belongsToMe`) : exclusive à l'utilisateur réattribué, sinon à l'uploader.
+- **RLS contraignant** : `marcheur_medias` n'est modifiable que par l'uploader (`user_id = auth.uid()`) ou un admin ; idem pour `exploration_convivialite_photos` (admin uniquement). Or un marcheur peut être propriétaire **par réattribution** d'une photo qu'il n'a pas uploadée → il n'aura pas le droit UPDATE direct.
+- L'ordre actuel d'affichage est par `created_at` via `SortToggle` (asc/desc).
 
-La fonction `route()` est correcte côté attribution (elle redirige vers la fiche/user attribué) mais **ne désactive pas l'uploader d'origine**. Or `route()` retourne déjà `userId` ou `crewId` selon priorité — donc la fix est juste de vérifier que la branche `attributedCrewId` ignore complètement l'uploader. À la lecture du code, c'est déjà le cas (le `else` n'est pas pris si `attributedCrewId`). **Bug réel ailleurs** : regardons l'agrégation côté Gaspard. Gaspard est `crew` (Sentinelle, fiche éditoriale). Les 4 photos qu'il a uploadées ont `user_id = gaspard_uid` + `attributed_marcheur_id = sophie_crew_id`. La fonction `route(gaspard_uid, sophie_crew_id)` retourne donc `{userId: sophie_user, crewId: null}` — correct. Donc le badge de Gaspard ne devrait PAS les compter.
+## Décision d'architecture
 
-Mais Gaspard affiche `49` photos. Très probablement, il a aussi de **vraies** photos non réattribuées dans `marcheur_medias`. Le badge est donc juste pour `marcheur_medias`. **À vérifier** : si Gaspard est aussi listé dans `crewIdByUserId` et que ses 4 photos Convivialité sont uploadées par lui sans être réattribuées… non, elles SONT réattribuées. Donc le comptage hook est OK.
+L'ordre demandé est **un ordre personnel** au marcheur (la même photo ne peut pas exister dans deux galeries puisque l'appartenance est exclusive), donc on peut l'écrire **directement sur la ligne** :
+- `marcheur_medias.ordre`
+- `exploration_convivialite_photos.position`
 
-→ Aucun changement nécessaire dans `useExplorationParticipants.ts`. Le badge `49` de Gaspard est légitime (autres photos).
+Pour contourner les RLS quand l'utilisateur courant n'est pas l'uploader (cas de la réattribution) ou n'est pas admin, on passera par une **RPC `SECURITY DEFINER`** unique côté Supabase qui valide la légitimité (admin OU propriétaire effectif via `attributed_marcheur_id` lié à son `user_id`, OU uploader d'origine sans réattribution).
 
-### 2. `ObservationsSubTab` dans `MarcheursTab.tsx` (vrai bug)
+## Plan d'implémentation
 
-La requête utilise `.or(user_id.eq.gaspard, attributed_marcheur_id.eq.gaspard_crew)`. Le second filtre matche ses propres uploads, mais le premier matche **toutes** ses photos uploadées — y compris celles réattribuées à Sophie. Aucun filtrage post-requête.
+### 1. Backend Supabase (migration)
 
-**Correctif** : appliquer une règle d'exclusivité côté client après la requête :
+Créer la fonction `public.reorder_marcheur_observation_photos(p_owner_user_id uuid, p_owner_crew_id uuid, p_items jsonb)` :
+- `p_items` = tableau `[{ kind: 'media' | 'conv', id: uuid, ordre: int }, ...]`
+- Vérifie l'autorisation : `auth.uid() = p_owner_user_id` OU `has_role(auth.uid(),'admin')` OU rôle ambassadeur/sentinelle gérant la fiche crew.
+- Pour chaque item : recalcule `belongsToMe` côté SQL (mêmes règles que le front) puis update `ordre` (medias) ou `position` (convivialité).
+- `SECURITY DEFINER`, `SET search_path = public`.
 
-```ts
-const belongsToMe = (row) => {
-  if (row.attributed_marcheur_id) return crewId && row.attributed_marcheur_id === crewId;
-  return userId && row.user_id === userId;
-};
-```
+### 2. Hook React
 
-Et filtrer les résultats des deux requêtes (`marcheur_medias` et `exploration_convivialite_photos`) avec ce prédicat. Ajouter `user_id, attributed_marcheur_id` au SELECT pour disposer des champs.
+Nouveau `src/hooks/useReorderMarcheurObservations.ts` (mutation TanStack) :
+- Appelle la RPC, invalide la query `['marcheur-observations-photos', userId, crewId, ...]`.
+- Optimistic update.
 
-### 3. Vérification du compteur d'en-tête
+### 3. UI — `ObservationsSubTab` (`MarcheursTab.tsx`)
 
-Confirmer que pour Gaspard, `stats.photos` n'inclut pas les 4 photos réattribuées à Sophie. La fonction `route()` du hook l'écarte déjà via la branche `attributedCrewId`. Aucun changement.
+Sur le modèle `ConvivialiteMosaic` :
+- Ajout d'états `editMode`, `orderedItems`.
+- Bouton **Réorganiser** (visible si `canReorder`) à côté du `SortToggle`. Désactive automatiquement le tri par date pendant l'édition (force ordre manuel).
+- En mode édition :
+  - `DndContext` + `SortableContext` (`rectSortingStrategy`) avec `PointerSensor` + `TouchSensor` (delay 200ms pour mobile).
+  - `SortablePhotoTile` interne (poignée `GripVertical`, badge index) — composant local léger réutilisant l'esthétique actuelle (carrés `aspect-square`).
+  - Boutons **Annuler** / **Enregistrer l'ordre** (toast succès/erreur).
+- Hors édition : tri par `ordre`/`position` (asc) puis fallback `created_at`. Le `SortToggle` reste disponible et bascule entre *Ordre manuel* et *Date*.
 
-## Résultat attendu
+`canReorder` = vrai si `currentUserId === userId` OU si l'utilisateur courant est admin/sentinelle (réutiliser les hooks `useAuth` + `useCommunityProfile` déjà disponibles).
 
-- **Gaspard** : son bandeau déplié n'affiche plus les 4 photos réattribuées à Sophie.
-- **Sophie** : continue d'afficher les 4 photos.
-- **Comportement par défaut** : un upload non réattribué reste visible chez l'uploader.
+### 4. Tri en lecture
 
-## Fichier modifié
+Mettre à jour la requête `ObservationsSubTab` pour sélectionner `ordre` (medias) et `position` (convivialité) et trier en priorité par cet index manuel quand le mode "manuel" est actif.
 
-- `src/components/community/exploration/MarcheursTab.tsx` — `ObservationsSubTab` : ajout du prédicat `belongsToMe` appliqué sur les résultats des deux requêtes, et inclusion de `user_id, attributed_marcheur_id` dans les SELECT.
+### 5. QA
+
+- Vérifier qu'un marcheur réordonne bien des photos qui lui sont **réattribuées** (cas Sophie D).
+- Vérifier qu'un marcheur sans droit ne voit pas le bouton.
+- Vérifier que l'ordre persiste après refresh et reste cohérent dans les autres vues qui consomment ces tables (galerie publique convivialité, etc.) — l'usage de `position`/`ordre` y est déjà répandu, donc cohérent.
+
+## Fichiers impactés
+
+- `supabase/migrations/<new>.sql` — RPC `reorder_marcheur_observation_photos`.
+- `src/hooks/useReorderMarcheurObservations.ts` — nouveau.
+- `src/components/community/exploration/MarcheursTab.tsx` — refactor `ObservationsSubTab` (DnD, mode édition, tri manuel).
+
+## Hors scope
+
+- Réordonner les vidéos / sons / textes (uniquement photos comme demandé).
+- Modifier l'ordre dans les galeries publiques tierces (impact indirect via `ordre`/`position` accepté et souhaitable).
