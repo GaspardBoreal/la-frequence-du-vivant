@@ -1,70 +1,97 @@
 ## Objectif
 
-Dans `Marcheurs → Marcheurs`, lorsqu'on ouvre le bandeau d'un marcheur, permettre le **classement (drag-and-drop)** des photos de l'onglet *Observations*, à la manière de `Marches → Voir` (cf. `MediaUploadSection` + `SortablePhotoCard`) et de la mosaïque Convivialité (`ConvivialiteMosaic`).
+Dans la vue **Mon Espace > Exploration > Marcheurs > Marcheurs** :
 
-## Analyse de l'existant
+1. Compter et afficher les **audios** d'un marcheur (badge dans l'en-tête + onglet d'écoute).
+2. Ajouter un onglet **Écoute** entre `Observations` et `Contributions`, avec le **même lecteur** que `Marches > Écouter` (image 3).
+3. **Factoriser** le code : un composant unique partagé entre les deux vues, pour que toute évolution (upload, tri, lecture, suppression, ré-attribution) bénéficie aux deux.
 
-- Les photos affichées dans `ObservationsSubTab` (`src/components/community/exploration/MarcheursTab.tsx`) proviennent de **deux tables hétérogènes** :
-  - `marcheur_medias` (colonne `ordre` existe) — photos & vidéos liées aux events
-  - `exploration_convivialite_photos` (colonne `position` existe) — mur convivialité de l'exploration
-- Règle d'appartenance déjà en place (`belongsToMe`) : exclusive à l'utilisateur réattribué, sinon à l'uploader.
-- **RLS contraignant** : `marcheur_medias` n'est modifiable que par l'uploader (`user_id = auth.uid()`) ou un admin ; idem pour `exploration_convivialite_photos` (admin uniquement). Or un marcheur peut être propriétaire **par réattribution** d'une photo qu'il n'a pas uploadée → il n'aura pas le droit UPDATE direct.
-- L'ordre actuel d'affichage est par `created_at` via `SortToggle` (asc/desc).
+## Diagnostic
 
-## Décision d'architecture
+- `useExplorationParticipants` calcule déjà `stats.sons` à partir de `marcheur_audio` (ligne ~142–164) en respectant `attributed_marcheur_id`. Donc le **comptage backend existe**, il n'est juste pas affiché dans la card et il n'y a pas d'onglet pour les écouter.
+- `MarcheDetailModal.tsx` contient `EcouterTab` (lignes 504–639) : section admin (`marche_audio`) + Mes sons + Sons des autres + zone d'upload. C'est ce composant qu'on va extraire.
+- `MarcheursTab.tsx` n'a actuellement que 3 sous-onglets : `observations | contributions | impact`.
 
-L'ordre demandé est **un ordre personnel** au marcheur (la même photo ne peut pas exister dans deux galeries puisque l'appartenance est exclusive), donc on peut l'écrire **directement sur la ligne** :
-- `marcheur_medias.ordre`
-- `exploration_convivialite_photos.position`
+## Plan technique
 
-Pour contourner les RLS quand l'utilisateur courant n'est pas l'uploader (cas de la réattribution) ou n'est pas admin, on passera par une **RPC `SECURITY DEFINER`** unique côté Supabase qui valide la légitimité (admin OU propriétaire effectif via `attributed_marcheur_id` lié à son `user_id`, OU uploader d'origine sans réattribution).
+### 1. Extraire un composant partagé `MarcheurAudioPanel`
 
-## Plan d'implémentation
+Nouveau fichier : `src/components/community/audio/MarcheurAudioPanel.tsx`
 
-### 1. Backend Supabase (migration)
+- Props :
+  ```ts
+  {
+    ownerUserId: string | null;     // user dont on affiche les sons
+    ownerCrewId?: string | null;    // pour la ré-attribution éditoriale
+    marcheIds: string[];            // 1+ marches (admin audio)
+    marcheEventIds: string[];       // 1+ events (sons marcheurs)
+    canUpload: boolean;             // owner ou admin
+    activeMarcheId?: string;        // pour rattacher l'upload
+    variant?: 'modal' | 'inline';   // pour ajuster les paddings
+  }
+  ```
+- Logique :
+  - **Admin audios** : `marche_audio` filtré par `marche_id IN marcheIds`, trié par `ordre`.
+  - **Sons du marcheur** : `marcheur_audio` filtré par `marche_event_id IN marcheEventIds` ET `(user_id = ownerUserId OR attributed_marcheur_id = ownerCrewId)` ET `is_public = true` côté visiteur (côté owner : tout).
+  - Tri (Récent/Ancien) via le `SortToggle` existant.
+  - Upload : réutilise `useUploadAudio` (déjà invalide la query key `['marcheur-audio', marcheEventId]`). Si `canUpload === false`, on masque le bouton "Ajouter un son".
+  - Édition / suppression : réutilise `useUpdateContribution` / `useDeleteContribution` quand `isOwner`.
+- Sortie HTML identique à l'actuel `EcouterTab` (sections "De l'exploration" / "Mes sons" / "Des marcheurs" + `<audio controls>`).
 
-Créer la fonction `public.reorder_marcheur_observation_photos(p_owner_user_id uuid, p_owner_crew_id uuid, p_items jsonb)` :
-- `p_items` = tableau `[{ kind: 'media' | 'conv', id: uuid, ordre: int }, ...]`
-- Vérifie l'autorisation : `auth.uid() = p_owner_user_id` OU `has_role(auth.uid(),'admin')` OU rôle ambassadeur/sentinelle gérant la fiche crew.
-- Pour chaque item : recalcule `belongsToMe` côté SQL (mêmes règles que le front) puis update `ordre` (medias) ou `position` (convivialité).
-- `SECURITY DEFINER`, `SET search_path = public`.
+### 2. Brancher la factorisation côté Marches
 
-### 2. Hook React
+- Dans `MarcheDetailModal.tsx`, remplacer `EcouterTab` par un wrapper qui appelle `<MarcheurAudioPanel marcheIds={[marcheId]} marcheEventIds={[marcheEventId]} ownerUserId={userId} canUpload={true} variant="modal" activeMarcheId={activeMarcheId} />`.
+- Aucune régression visuelle attendue (le composant garde les mêmes classes).
 
-Nouveau `src/hooks/useReorderMarcheurObservations.ts` (mutation TanStack) :
-- Appelle la RPC, invalide la query `['marcheur-observations-photos', userId, crewId, ...]`.
-- Optimistic update.
+### 3. Brancher dans `MarcheursTab.tsx`
 
-### 3. UI — `ObservationsSubTab` (`MarcheursTab.tsx`)
+- Étendre `MarcheurSubTab` :
+  ```ts
+  type MarcheurSubTab = 'observations' | 'ecoute' | 'contributions' | 'impact';
+  ```
+- Ajouter dans `subTabConfig` (entre `observations` et `contributions`) :
+  ```ts
+  { key: 'ecoute', label: 'Écoute', icon: Headphones }
+  ```
+  (`Headphones` à importer de `lucide-react`).
+- Rendu conditionnel :
+  ```tsx
+  {activeSubTab === 'ecoute' && (
+    <MarcheurAudioPanel
+      ownerUserId={resolvedUserId}
+      ownerCrewId={resolvedCrewId}
+      marcheIds={explorationMarcheIds}
+      marcheEventIds={explorationEventIds}
+      canUpload={!!user && user.id === resolvedUserId}
+      variant="inline"
+    />
+  )}
+  ```
 
-Sur le modèle `ConvivialiteMosaic` :
-- Ajout d'états `editMode`, `orderedItems`.
-- Bouton **Réorganiser** (visible si `canReorder`) à côté du `SortToggle`. Désactive automatiquement le tri par date pendant l'édition (force ordre manuel).
-- En mode édition :
-  - `DndContext` + `SortableContext` (`rectSortingStrategy`) avec `PointerSensor` + `TouchSensor` (delay 200ms pour mobile).
-  - `SortablePhotoTile` interne (poignée `GripVertical`, badge index) — composant local léger réutilisant l'esthétique actuelle (carrés `aspect-square`).
-  - Boutons **Annuler** / **Enregistrer l'ordre** (toast succès/erreur).
-- Hors édition : tri par `ordre`/`position` (asc) puis fallback `created_at`. Le `SortToggle` reste disponible et bascule entre *Ordre manuel* et *Date*.
+### 4. Badge audio dans l'en-tête de la card
 
-`canReorder` = vrai si `currentUserId === userId` OU si l'utilisateur courant est admin/sentinelle (réutiliser les hooks `useAuth` + `useCommunityProfile` déjà disponibles).
+- Dans `MarcheurCard`, après le badge "photoCount", ajouter (si `marcheur.stats.sons > 0`) :
+  ```tsx
+  <div className="... bg-muted/60 ..." title={`${marcheur.stats.sons} son${...}`}>
+    <Headphones className="w-3 h-3 text-violet-500" />
+    <span className="text-[11px] font-semibold">{marcheur.stats.sons}</span>
+  </div>
+  ```
+- `hasContent` doit aussi prendre en compte `stats.sons > 0` pour que la card s'ouvre quand il n'y a que des audios.
 
-### 4. Tri en lecture
+### 5. Compteur global "X observations publiques"
 
-Mettre à jour la requête `ObservationsSubTab` pour sélectionner `ordre` (medias) et `position` (convivialité) et trier en priorité par cet index manuel quand le mode "manuel" est actif.
+- Le bandeau supérieur affiche `69 observations publiques` (somme des `totalContributions`). `stats.sons` est déjà inclus dans `total = photos + videos + sons + textes`, donc rien à changer ici — les audios étaient comptés mais pas révélés ; ils le seront via le badge + onglet.
 
-### 5. QA
+## Fichiers touchés
 
-- Vérifier qu'un marcheur réordonne bien des photos qui lui sont **réattribuées** (cas Sophie D).
-- Vérifier qu'un marcheur sans droit ne voit pas le bouton.
-- Vérifier que l'ordre persiste après refresh et reste cohérent dans les autres vues qui consomment ces tables (galerie publique convivialité, etc.) — l'usage de `position`/`ordre` y est déjà répandu, donc cohérent.
+- **Nouveau** : `src/components/community/audio/MarcheurAudioPanel.tsx` (factorisation).
+- **Modifié** : `src/components/community/MarcheDetailModal.tsx` (réécrit `EcouterTab` comme thin wrapper).
+- **Modifié** : `src/components/community/exploration/MarcheursTab.tsx` (sous-onglet Écoute + badge audio).
+- Aucune migration DB.
 
-## Fichiers impactés
+## Risques / vérifications
 
-- `supabase/migrations/<new>.sql` — RPC `reorder_marcheur_observation_photos`.
-- `src/hooks/useReorderMarcheurObservations.ts` — nouveau.
-- `src/components/community/exploration/MarcheursTab.tsx` — refactor `ObservationsSubTab` (DnD, mode édition, tri manuel).
-
-## Hors scope
-
-- Réordonner les vidéos / sons / textes (uniquement photos comme demandé).
-- Modifier l'ordre dans les galeries publiques tierces (impact indirect via `ordre`/`position` accepté et souhaitable).
+- Filtre RLS sur `marcheur_audio` : un visiteur ne doit voir que les audios `is_public=true` ou les siens. Le composant respecte déjà cette règle dans le filtre.
+- Re-attribution : `marcheur_audio.attributed_marcheur_id` doit exister (il est utilisé par `useExplorationParticipants`). À vérifier dans les types ; sinon, fallback sur `user_id` uniquement.
+- Upload : seul l'utilisateur connecté propriétaire de la card peut uploader (les admins n'uploadent pas pour autrui ici, comme dans la vue Marches).
