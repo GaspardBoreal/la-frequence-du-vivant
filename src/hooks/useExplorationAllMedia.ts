@@ -174,18 +174,23 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
       };
 
       const grouped: Record<string, MediaItem[]> = {};
-      medias.forEach(m => {
+      medias.forEach((m: any) => {
         const url = m.url_fichier || m.external_url;
         if (!url) return;
         const prof = profMap.get(m.user_id);
+        const uploaderName = prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null;
+        const attributedName = m.attributed_marcheur_id ? marcheurNameById.get(m.attributed_marcheur_id) ?? null : null;
         const stepName = m.marche_id ? stepById.get(m.marche_id)?.name ?? null : null;
         const item: MediaItem = {
           key: `media:${m.id}`,
+          rawId: m.id,
           source: 'media',
           type: m.type_media === 'video' ? 'video' : 'photo',
           url,
           titre: m.titre,
-          authorName: prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null,
+          authorName: attributedName || uploaderName,
+          uploaderName,
+          attributedMarcheurId: m.attributed_marcheur_id ?? null,
           marcheEventId: m.marche_event_id,
           marcheId: m.marche_id ?? null,
           marcheStepName: stepName,
@@ -195,17 +200,22 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
         };
         (grouped[m.marche_event_id] ||= []).push(item);
       });
-      audios.forEach(a => {
+      audios.forEach((a: any) => {
         if (!a.url_fichier) return;
         const prof = profMap.get(a.user_id);
+        const uploaderName = prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null;
+        const attributedName = a.attributed_marcheur_id ? marcheurNameById.get(a.attributed_marcheur_id) ?? null : null;
         const stepName = a.marche_id ? stepById.get(a.marche_id)?.name ?? null : null;
         const item: MediaItem = {
           key: `audio:${a.id}`,
+          rawId: a.id,
           source: 'audio',
           type: 'audio',
           url: a.url_fichier,
           titre: a.titre,
-          authorName: prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null,
+          authorName: attributedName || uploaderName,
+          uploaderName,
+          attributedMarcheurId: a.attributed_marcheur_id ?? null,
           marcheEventId: a.marche_event_id,
           marcheId: a.marche_id ?? null,
           marcheStepName: stepName,
