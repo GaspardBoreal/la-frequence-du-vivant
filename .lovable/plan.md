@@ -1,56 +1,94 @@
-## Problèmes constatés
+# Chatbot IA contextuel — Ambassadeur/Sentinelle/Admin sur pages publiques
 
-Après clic sur **Soumettre** dans la fenêtre « REPOSITIONNEMENT — APERÇU LOCAL » :
+## Objectif
+Mettre à disposition le chatbot existant (déjà actif sur `/admin/*`) sur **toutes les pages publiques liées aux marches et explorations**, mais uniquement pour les profils **Ambassadeur, Sentinelle ou Administrateur**, avec une isolation stricte de sécurité.
 
-1. La popup Leaflet du point de marche reste ouverte et masque la carte.
-2. Le nouveau pourtour cadastral n'est pas (ou mal) dessiné : `GpsEditOverlay` se contente de l'éventuel `_raw.cadastre.shape` renvoyé par LEXICON au point cliqué, qui est souvent absent. Aucun appel à `cadastre-proxy` n'est fait pour récupérer la vraie géométrie de la parcelle correspondant au nouveau lat/lng.
-
-## Correctifs proposés
-
-### 1. Fermer la popup à la soumission (`ExplorationCarteTab.tsx`)
-
-- Conserver une `Map<string, L.Marker>` via `ref` callback sur chaque `<Marker>` des étapes (clé = `marche.id`).
-- Au moment où `setGpsEditPointId(marche.id)` est déclenché par le bouton « Repositionner », fermer immédiatement la popup associée : `markerRefs.current.get(id)?.closePopup()`.
-- En complément, dans `GpsEditOverlay`, après une soumission réussie (preview prêt), appeler `map.closePopup()` via un `useMap()` interne pour garantir qu'aucune popup résiduelle ne reste ouverte sur la carte.
-
-### 2. Dessiner robustement le pourtour preview
-
-Mettre à niveau `GpsEditOverlay.tsx` pour utiliser exactement la même chaîne de résolution que `CadastreLayer` :
+## Architecture proposée
 
 ```text
-LEXICON (lat,lng) ──► parcel_id ──► cadastre-proxy ──► Polygon GeoJSON
-                              └──► fallback _raw.geolocation.shape
-                              └──► fallback _raw.cadastre.shape
-                              └──► fallback geometry brute
+┌───────────────────────────────────────────────────────────┐
+│  Pages publiques (/galerie-fleuve, /marches, /traversees) │
+│                                                            │
+│   <CommunityChatBotMount />   ← nouveau composant         │
+│      │                                                     │
+│      ├─ useCommunityAuth()  → role ∈ {ambassadeur,        │
+│      │                                  sentinelle}        │
+│      ├─ useAuth().isAdmin   → admin                        │
+│      └─ détecte route + entité (slug exploration / id     │
+│         marche) → setContext(...)                          │
+│                                                            │
+│   <ChatBot edgeFunctionPath="community-chat" />           │
+│           (réutilisé tel quel, paramétrable)               │
+└───────────────────────────────────────────────────────────┘
+                       │ JWT
+                       ▼
+┌───────────────────────────────────────────────────────────┐
+│  edge function community-chat  (NOUVELLE, isolée)         │
+│   1. getUser() → 401 si invalide                           │
+│   2. RPC has_community_chat_access(user_id) → 403 sinon   │
+│   3. RPC get_admin_chatbot_context (réutilisée)           │
+│   4. RPC get_admin_entity_context (réutilisée)            │
+│   5. Stream Lovable AI Gateway                             │
+└───────────────────────────────────────────────────────────┘
 ```
 
-Concrètement :
+## Étapes
 
-- Ajouter un nouveau hook `useLexiconParcelWithGeometryAt(lat, lng, enabled)` dans `useLexiconParcels.ts` qui :
-  - exécute `useLexiconParcelAt`
-  - puis un second `useQuery` `['cadastre-geometry', parcelId]` (réutilise `fetchParcelGeometryById`) avec `retry: 2` et throw-on-null (cohérent avec `useLexiconParcelsWithGeometry`).
-  - retourne `{ lexicon, geometry, isFetching, isError }`.
-- Dans `GpsEditOverlay` :
-  - remplacer l'appel actuel par ce nouveau hook.
-  - dans le `useEffect`, calculer `geometry = realGeom || _raw.geolocation.shape || _raw.cadastre.shape || geometry` avant `onPreview(...)`.
-  - garder le bouton « Soumettre » dans l'état chargement tant que la géométrie n'est pas résolue (afficher `Loader2` jusqu'à preview non null ou erreur).
-  - en cas d'échec définitif (`isError` après retries), afficher un message « Aucune parcelle cadastrale trouvée à cet emplacement » au lieu de fermer.
+### 1. Backend — autorisation serveur
+- **Migration SQL** : créer `public.has_community_chat_access(_user_id uuid) returns boolean` `SECURITY DEFINER`, qui retourne `true` si l'utilisateur est admin (`has_role('admin')`) **ou** si `community_profiles.role IN ('ambassadeur','sentinelle')`.
+- Grant EXECUTE à `authenticated`.
+- Aucune modification de `admin-chat` ni des RPC `get_admin_*` (réutilisées telles quelles, déjà SECURITY DEFINER avec leurs propres vérifs internes ; on ajoutera un paramètre/bypass uniquement si elles refusent les non-admins — à valider après lecture).
 
-### 3. Centrage sur la nouvelle géométrie (UX)
+### 2. Edge function `community-chat` (nouvelle, isolée)
+- Copie quasi-identique de `admin-chat/index.ts` :
+  - même CORS, même streaming Lovable AI, même prompt système.
+  - **Différence clé** : remplacer `check_is_admin_user` par `has_community_chat_access`.
+  - Whitelist de `scope` adaptée : `['exploration', 'marches', 'community']`.
+  - Validation Zod-like des champs (`messages`, `entity.type ∈ {marche_event, exploration}`, ids ≤200 chars).
+- `verify_jwt = false` (validation en code via `getUser()`).
 
-Une fois la preview reçue, dans `GpsEditOverlay` (qui a accès à `useMap()`), appeler `map.fitBounds(L.geoJSON(geometry).getBounds(), { maxZoom: 18, padding: [40,40] })` pour que le nouveau contour bleu pointillé soit immédiatement visible.
+### 3. Frontend — hook & composant de montage
+- **`useCanUseContextualChat()`** (nouveau hook, `src/hooks/useCanUseContextualChat.ts`) :
+  - combine `useAuth().isAdmin` + `useCommunityAuth().profile?.role`.
+  - retourne `{ canUse: boolean, role: 'admin'|'ambassadeur'|'sentinelle'|null }`.
+- **`CommunityChatBotMount.tsx`** (nouveau, sur le modèle de `AdminChatBotMount`) :
+  - actif sur les routes : `/galerie-fleuve/*`, `/marches/*`, `/traversees/*`, `/exploration/*`, `/marche/*` (préciser à partir de `App.tsx` lors de l'implémentation).
+  - **non monté** si `!canUse`.
+  - détection d'entité depuis l'URL :
+    - `/galerie-fleuve/exploration/:slug` → résout slug → id via une petite query → `{ type: 'exploration', id }`.
+    - `/marches/:id` ou `/marche/:id` → `{ type: 'marche_event', id }`.
+  - met à jour `chatPageContext` quand l'utilisateur ouvre une étape/fiche (les composants existants peuvent appeler `useChatPageContextProvider`).
+- Monté dans `App.tsx` à côté de `AdminChatBotMount`.
 
-### 4. Robustesse & nettoyage
+### 4. Configuration chat (réutilisable, pas de duplication massive)
+- Étendre `chatConfig.ts` :
+  - ajouter contexte `'exploration'` aux `ChatContext`.
+  - `edgeFunctionPath` devient un paramètre prop du `<ChatBot>` (au lieu d'être global), pour que admin et community pointent sur des fonctions différentes.
+  - suggestions dédiées (FR, sobres) par contexte communautaire.
+- `useChatStream` accepte une prop `edgeFunctionPath` (au lieu de lire `chatConfig.edgeFunctionPath` en module-scope).
 
-- Annuler la preview (`onPreview(null)`) si l'utilisateur déplace à nouveau le marqueur après soumission (effet sur `lat/lng` qui réinitialise `submitted`).
-- Pas de modification du `CadastreLayer` (déjà capable d'afficher `previewGeometry` au-dessus).
+### 5. UX/UI
+- Bouton flottant identique (cohérence visuelle), mais **libellé/emoji** légers ajustés selon le rôle (ex. badge "Ambassadeur" / "Sentinelle" / "Admin" dans le header du panneau).
+- Welcome message contextuel : "Bonjour Ambassadeur, je peux t'aider à analyser cette exploration / cette marche…".
+- Aucun changement sur `/admin/*` (mount séparé).
 
-## Fichiers modifiés
+### 6. Sécurité — défense en profondeur
+- **Client** : `useCanUseContextualChat` masque le bouton.
+- **Serveur** : `community-chat` revérifie le JWT + appelle `has_community_chat_access`. Toute tentative d'appel direct sans rôle valide → 403.
+- **RLS** : les RPC `get_admin_*` restent `SECURITY DEFINER` ; vérifier qu'elles ne fuitent pas de PII supplémentaire pour les non-admins (audit lors de l'implémentation, restreindre les champs renvoyés si nécessaire en créant `get_community_entity_context` allégée si on découvre des PII sensibles côté admin).
 
-- `src/components/cadastre/GpsEditOverlay.tsx` — hook étendu, fermeture popup, fitBounds, états de chargement.
-- `src/components/cadastre/useLexiconParcels.ts` — ajout `useLexiconParcelWithGeometryAt`.
-- `src/components/community/exploration/ExplorationCarteTab.tsx` — `markerRefs` + fermeture popup au clic sur « Repositionner ».
+## Questions ouvertes à trancher pendant l'implémentation
+- Les RPC `get_admin_*` exposent-elles des emails/téléphones ? Si oui → créer une variante `get_community_entity_context` filtrée. À auditer dès la première étape.
+- Pour les Ambassadeurs/Sentinelles : faut-il limiter les marches/explorations visibles à celles où ils sont participants ? (Par défaut, on garde la même portée que l'admin — à confirmer après mise en service.)
 
-## Hors scope
-
-- Persistance en base du nouveau lat/lng (toujours preview local uniquement, conformément à l'overlay actuel).
+## Fichiers impactés
+- **Nouveaux** :
+  - `supabase/functions/community-chat/index.ts`
+  - `supabase/migrations/<ts>_has_community_chat_access.sql`
+  - `src/hooks/useCanUseContextualChat.ts`
+  - `src/components/chatbot/CommunityChatBotMount.tsx`
+- **Modifiés** :
+  - `src/components/chatbot/chatConfig.ts` (ajout contexte `exploration`, suggestions)
+  - `src/hooks/useChatStream.ts` (param `edgeFunctionPath`)
+  - `src/components/chatbot/ChatBot.tsx` (prop `edgeFunctionPath`)
+  - `src/App.tsx` (mount du nouveau composant)
