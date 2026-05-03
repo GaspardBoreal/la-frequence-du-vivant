@@ -228,7 +228,8 @@ const MediaAttributionSheet: React.FC<Props> = ({
             </Button>
           </div>
         </div>
-      </SheetContent>
+        </SheetPrimitive.Content>
+      </SheetPortal>
     </Sheet>
   );
 };
