@@ -1,157 +1,72 @@
+## Diagnostic
 
-# Réattribuer une photo à son véritable auteur
+**Bug bloquant — la feuille de réattribution n'apparaît pas**
 
-## Le problème
+La `MediaAttributionSheet` repose sur le composant `Sheet` de shadcn/Radix, dont l'overlay et le contenu sont fixés à `z-50` (`src/components/ui/sheet.tsx`).
 
-Sur le terrain, c'est très souvent **l'ambassadeur** (ou la sentinelle) qui upload les photos pour tout le groupe. Résultat : toutes les photos s'affichent au crédit de l'uploader, alors qu'elles ont été prises par d'autres marcheurs (ex. la photo de l'orchidée pourpre prise par Marie‑Josée Daubigeon mais uploadée par Gaspard).
+Or les lightbox depuis lesquels on déclenche l'attribution sont à des z-index bien plus élevés :
+- `contributions/MediaLightbox` (vue Fiche, MarcheDetailModal) : `z-[60]`
+- `ConvivialiteMosaic` lightbox : `z-[100]`
+- `insights/curation/MediaLightbox` : `z-[1000]`
+- `ConvivialiteImmersiveView` : `z-[1100]`
 
-Aujourd'hui aucun écran ne permet de **corriger ce crédit**. Cette fonctionnalité est essentielle pour la justesse narrative et pour la valorisation individuelle de chaque marcheur·euse.
+Résultat : quand on clique sur le crayon, la sheet s'ouvre **derrière** l'overlay noir du lightbox parent → invisible et non interactive. Aucune erreur console car le Radix Dialog est bien monté.
 
-## Principe UX
+**Lisibilité chip auteur (Copie 2)**
 
-Une **action discrète mais découvrable**, placée **dans le Lightbox** (point d'entrée naturel : on regarde la photo → on voit qui en est crédité → on corrige). Pas de nouvel écran, pas de menu enfoui — un simple geste depuis la photo elle-même.
+Dans `ConvivialiteMosaic.tsx` (lightbox), le chip auteur en bas de l'image est `bg-white/10` avec un `ring-1 ring-white/15`. Sur fond clair (forêt, ciel), le contraste est faible et la pastille disparaît visuellement, contrairement à la Copie 1 (vue immersive de la mosaïque) où la pill émeraude pleine ressort bien.
 
-```text
-┌──────────────────────────────────┐
-│ Photo plein écran                │
-│                                  │
-│                                  │
-│                                  │
-├──────────────────────────────────┤
-│ [Avatar] Marie‑Josée D.   [✏️]  │  ← chip auteur cliquable (admin only)
-│ ────────  Marcheuse              │
-│                                  │
-│ Étape 11 · ORIG…                 │
-│ [mini-carte]                     │
-└──────────────────────────────────┘
+## Corrections
+
+### 1. `src/components/community/insights/curation/MediaAttributionSheet.tsx` — fix z-index
+
+Remplacer le `<SheetContent>` par un portail explicite avec overlay et content forcés au-dessus de tous les lightbox :
+
+```tsx
+<Sheet open={open} onOpenChange={onOpenChange}>
+  <SheetPortal>
+    <SheetOverlay className="z-[1200]" />
+    <SheetPrimitive.Content
+      className="fixed bottom-0 inset-x-0 z-[1210] ... rounded-t-2xl ..."
+    >
+      ...
+    </SheetPrimitive.Content>
+  </SheetPortal>
+</Sheet>
 ```
 
-### Le geste de réattribution
+Approche choisie : importer `SheetPortal`, `SheetOverlay` depuis `@/components/ui/sheet` et `SheetPrimitive` depuis `@radix-ui/react-dialog` afin de surcharger `z-index` sans toucher au composant UI partagé (qui est utilisé partout). On conserve toute la mise en forme actuelle (handle drag, header, search, liste, footer sticky).
 
-Quand un **ambassadeur / sentinelle / admin** est connecté, le bloc « auteur » devient interactif :
+### 2. `src/components/community/exploration/convivialite/ConvivialiteMosaic.tsx` — renforcer chip auteur
 
-- **Indice visuel** : petite icône crayon `✏️` à droite du nom + l'ensemble du chip prend un fond légèrement teinté au survol/tap, avec ring émeraude subtil.
-- **Tap sur le chip** → ouvre une **bottom-sheet** (mobile-first), inspirée du `MediaPickerSheet` déjà existant dans le projet.
+Lignes 252–278 : transformer le bouton en pastille émeraude affirmée + agrandir typo + ombre douce, conformément à la Copie 1.
 
-### La bottom-sheet « Crédit de la photo »
-
-```text
-╭──────────────────────────────────╮
-│         ▬▬▬                      │  drag handle
-│                                  │
-│ Crédit de la photo               │
-│ Qui a pris cette photo ?         │
-│                                  │
-│ 🔍 Rechercher un marcheur…       │
-│                                  │
-│ ┌──────────────────────────────┐ │
-│ │ ● Gaspard Boréal     ☑ actuel│ │
-│ │   Ambassadeur · uploader     │ │
-│ ├──────────────────────────────┤ │
-│ │ ○ Marie‑Josée Daubigeon      │ │
-│ │   Marcheuse                  │ │
-│ ├──────────────────────────────┤ │
-│ │ ○ Anne Lefèvre               │ │
-│ │   Scientifique               │ │
-│ └──────────────────────────────┘ │
-│                                  │
-│ [Annuler]   [Confirmer le crédit]│
-╰──────────────────────────────────╯
+```tsx
+className={`group inline-flex items-center gap-2 px-4 py-2 rounded-full
+  shadow-lg shadow-black/40 backdrop-blur transition
+  ${canReattribute
+    ? 'bg-emerald-600/90 hover:bg-emerald-500 ring-1 ring-emerald-300/40 cursor-pointer'
+    : 'bg-emerald-600/85 ring-1 ring-emerald-300/30 cursor-default'}`}
 ```
+- Icône `User` en blanc opaque
+- `<span>` en `text-white font-semibold text-sm`
+- Crayon en `text-white/85`
 
-Détails UX :
-- **Liste = tous les marcheurs de l'exploration** (`exploration_marcheurs`), triés par `ordre`, avec pastille couleur, rôle en sous-titre, avatar si présent.
-- **Recherche live** dès 6+ marcheurs (utile pour les grands événements).
-- **Marqueur visuel** sur l'auteur actuel + sur l'uploader d'origine (badge « uploader » discret en gris) — important pour la transparence et la traçabilité.
-- **Option « Retirer le crédit »** en bas (lien texte gris) : restaure le comportement par défaut (= afficher l'uploader).
-- **Confirmation optimiste** : la sheet se ferme immédiatement, le chip auteur du Lightbox se met à jour avec une animation flip discrète, toast `Photo créditée à Marie‑Josée Daubigeon`. Annulation possible via le toast.
+### 3. Vérification de cohérence
 
-### Mobile first
+- `contributions/MediaLightbox.tsx` (z-[60]) : déjà branché sur la même `MediaAttributionSheet`, bénéficiera automatiquement du fix.
+- `insights/curation/MediaLightbox.tsx` (z-[1000]) : idem.
+- Aucun changement de schéma DB ni de RPC.
 
-- Sheet plein écran < 640 px, hauteur 70 dvh, scroll interne.
-- Items de liste 56 px de haut (cible tactile confortable).
-- Bouton primaire collant en bas (safe-area iOS respectée).
-- Sur desktop : même composant en modal centré (max-w-md).
+## Fichiers modifiés
 
-### Découvrabilité non‑intrusive
+- `src/components/community/insights/curation/MediaAttributionSheet.tsx` — overlay + content z-[1200/1210], portail explicite
+- `src/components/community/exploration/convivialite/ConvivialiteMosaic.tsx` — pastille auteur émeraude renforcée (mobile-first, contraste AA)
 
-- Pour les utilisateurs **sans droit**, aucun changement visible (chip non interactif, pas d'icône crayon).
-- Pour ceux **avec droit**, un micro‑onboarding une seule fois : tooltip discret « Vous pouvez réattribuer cette photo » au premier ouverture du Lightbox (clé localStorage), puis silence.
+## QA après implémentation
 
-## Portée fonctionnelle
-
-S'applique aux deux galeries demandées :
-1. **Marcheurs → Convivialité** (vue fiche / mur convivialité) → photos `exploration_convivialite_photos`.
-2. **Marches → toutes les marches de l'événement** (vue fiche) → photos & vidéos `marcheur_medias`.
-
-Dans les deux cas, on traverse le **MediaLightbox** existant (`src/components/community/insights/curation/MediaLightbox.tsx`), donc une seule intégration UI couvre les deux cas.
-
-## Plan technique (résumé)
-
-### 1. Migration SQL
-
-Ajouter dans `marcheur_medias` et `exploration_convivialite_photos` une colonne :
-
-```sql
-attributed_marcheur_id uuid references exploration_marcheurs(id) on delete set null
-```
-
-- Ne touche **pas** à `user_id` (= uploader, traçabilité préservée).
-- Index sur `attributed_marcheur_id`.
-- RLS update policy : autorisée si `is_admin(auth.uid())` OR rôle `ambassadeur|sentinelle` sur l'exploration concernée.
-- Idem pour `marcheur_audio` (cohérence — même bug latent).
-
-### 2. RPC
-
-`reattribute_media(_source text, _media_id uuid, _marcheur_id uuid | null)`
-- Switch sur `_source` ∈ {`media`, `conv`, `audio`}.
-- Vérifie côté serveur le droit (admin OR ambassadeur/sentinelle de l'exploration parente).
-- Vérifie que `_marcheur_id` appartient bien à la même exploration.
-- Met à jour la colonne, retourne la nouvelle ligne enrichie.
-
-### 3. Hook React
-
-`useReattributeMedia()` (mutation TanStack) :
-- Optimistic update sur `['exploration-all-media', explorationId]` et `['convivialite-photos', explorationId]`.
-- Invalidation au succès. Rollback + toast erreur sinon.
-
-### 4. Enrichissement des données
-
-Dans `useExplorationAllMedia.ts` et `useConvivialitePhotos.ts` :
-- Sélectionner `attributed_marcheur_id`.
-- Si présent → résoudre `prenom/nom` via la map `exploration_marcheurs` déjà chargée (passer `explorationId` au hook conv).
-- `MediaItem.authorName` = nom attribué si défini, sinon nom uploader (comportement actuel).
-- Ajouter `MediaItem.attributedMarcheurId` et `MediaItem.uploaderName` (pour afficher « uploader » dans la sheet).
-
-### 5. Composants UI
-
-- **Nouveau** : `src/components/community/insights/curation/MediaAttributionSheet.tsx` (bottom sheet shadcn `Sheet` `side="bottom"`).
-- **Modifié** : `MediaLightbox.tsx`
-  - Props : ajouter `canReattribute: boolean`, `marcheurs: ExplorationMarcheur[]`.
-  - Rendre le bloc auteur interactif conditionnellement, ouvrir la sheet.
-- **Modifiés (call sites)** : `MainCuration.tsx`, `ConvivialiteImmersiveView.tsx`, `MarcheDetailModal.tsx` (et `contributions/MediaLightbox.tsx` si on étend aussi le 2ᵉ lightbox legacy) — passer `canReattribute = isAdmin || ['ambassadeur','sentinelle'].includes(userRole)` et la liste des marcheurs (déjà disponible via `useExplorationMarcheurs`).
-
-### 6. Garde-fous
-
-- Sécurité : RLS + RPC `SECURITY DEFINER` (jamais de check côté client uniquement).
-- Logging : insérer une trace dans une table `media_attribution_log` (qui a réattribué quoi à qui, quand) — utile en cas de litige ou abus. Pas exposée en UI dans cette première itération.
-- Mémoriser un préférence légère : si l'admin attribue 3 photos d'affilée à la même personne, proposer un bouton « Tout attribuer à Marie‑Josée pour cette session » (V2 — pas dans cette itération).
-
-## Fichiers impactés
-
-- migration SQL nouvelle
-- `src/integrations/supabase/types.ts` (régénéré)
-- `src/hooks/useExplorationAllMedia.ts`
-- `src/hooks/useConvivialitePhotos.ts`
-- `src/hooks/useReattributeMedia.ts` (nouveau)
-- `src/components/community/insights/curation/MediaLightbox.tsx`
-- `src/components/community/insights/curation/MediaAttributionSheet.tsx` (nouveau)
-- `src/components/community/insights/curation/MainCuration.tsx`
-- `src/components/community/exploration/convivialite/ConvivialiteImmersiveView.tsx`
-- `src/components/community/MarcheDetailModal.tsx`
-
-## Hors périmètre (V2 possibles)
-
-- Co-crédit (plusieurs marcheurs sur une même photo).
-- Attribution en lot depuis une vue grille.
-- Notification au marcheur crédité (« une photo a été attribuée à vous »).
+1. Vue Convivialité (mosaïque) → ouvrir une photo → cliquer le crayon → la bottom-sheet doit apparaître **par-dessus** l'overlay noir.
+2. Vue Fiche (`MarcheDetailModal` › Voir) → ouvrir une photo → crayon → sheet visible.
+3. Vue Curation (`MainCuration`) → idem.
+4. Sur mobile (375px) et desktop (≥640px) : sheet ancrée en bas avec safe-area, scroll interne fonctionnel, bouton Confirmer atteignable.
+5. Pastille auteur dans la lightbox Convivialité : nom lisible sur photos très claires (ciel, neige) et très sombres (forêt).

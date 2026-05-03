@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import * as SheetPrimitive from '@radix-ui/react-dialog';
+import { Sheet, SheetHeader, SheetTitle, SheetDescription, SheetPortal, SheetOverlay } from '@/components/ui/sheet';
 import { Search, Check, UserCircle2, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
@@ -88,10 +89,11 @@ const MediaAttributionSheet: React.FC<Props> = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="p-0 rounded-t-2xl max-h-[85dvh] sm:max-w-md sm:mx-auto sm:rounded-2xl flex flex-col gap-0 border-t border-border"
-      >
+      <SheetPortal>
+        <SheetOverlay className="z-[1200]" />
+        <SheetPrimitive.Content
+          className="fixed bottom-0 inset-x-0 z-[1210] bg-background p-0 rounded-t-2xl max-h-[85dvh] sm:max-w-md sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:rounded-2xl flex flex-col gap-0 border border-border shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:data-[state=closed]:fade-out-0 sm:data-[state=open]:fade-in-0 sm:data-[state=closed]:slide-out-to-bottom-2 sm:data-[state=open]:slide-in-from-bottom-2"
+        >
         <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted-foreground/30 sm:hidden" />
 
         <SheetHeader className="px-5 pt-3 pb-2 text-left">
@@ -226,7 +228,8 @@ const MediaAttributionSheet: React.FC<Props> = ({
             </Button>
           </div>
         </div>
-      </SheetContent>
+        </SheetPrimitive.Content>
+      </SheetPortal>
     </Sheet>
   );
 };
