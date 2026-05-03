@@ -38,14 +38,18 @@ interface Props {
 
 const ConvivialiteMosaic: React.FC<Props> = ({
   photos,
+  explorationId,
   currentUserId,
   isAdmin,
   canReorder = false,
+  canReattribute = false,
   onReport,
   onDelete,
   onReorder,
 }) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [attributionOpen, setAttributionOpen] = useState(false);
+  const { data: marcheurs = [] } = useExplorationMarcheurs(canReattribute ? explorationId : undefined);
   const [editMode, setEditMode] = useState(false);
   const [orderedPhotos, setOrderedPhotos] = useState<ConvivialitePhoto[]>(photos);
   const initialIds = useMemo(() => photos.map((p) => p.id).join('|'), [photos]);
