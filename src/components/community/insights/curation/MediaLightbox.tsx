@@ -347,20 +347,48 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
               <div className="flex flex-col">
                 {/* Author + Badge slot */}
                 <div className="px-4 pt-3 pb-2 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500/20 to-amber-500/10 border border-border flex items-center justify-center text-xs font-semibold text-emerald-700 dark:text-emerald-300 shrink-0">
-                    {initials(current.authorName)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                      <User className="w-3 h-3" /> Marcheur·euse
+                  <button
+                    type="button"
+                    disabled={!canReattribute}
+                    onClick={() => canReattribute && setAttributionOpen(true)}
+                    className={`flex-1 min-w-0 flex items-center gap-3 -mx-1 px-1 py-1 rounded-xl transition ${
+                      canReattribute
+                        ? 'hover:bg-emerald-500/5 ring-0 hover:ring-1 hover:ring-emerald-500/30 cursor-pointer text-left'
+                        : 'cursor-default text-left'
+                    }`}
+                    aria-label={canReattribute ? 'Réattribuer la photo' : undefined}
+                  >
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500/20 to-amber-500/10 border border-border flex items-center justify-center text-xs font-semibold text-emerald-700 dark:text-emerald-300 shrink-0">
+                      {initials(current.authorName)}
                     </div>
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {current.authorName || 'Anonyme'}
-                    </p>
-                  </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <User className="w-3 h-3" />
+                        {current.attributedMarcheurId ? 'Crédité·e à' : 'Marcheur·euse'}
+                        {current.attributedMarcheurId && current.uploaderName && current.uploaderName !== current.authorName && (
+                          <span className="normal-case tracking-normal text-muted-foreground/60">
+                            · upload {current.uploaderName}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
+                        {current.authorName || 'Anonyme'}
+                        {canReattribute && (
+                          <Pencil className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+                        )}
+                      </p>
+                    </div>
+                  </button>
 
                   {/* Badge slot */}
                   <div
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium ${
+                      badge
+                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                        : 'border border-dashed border-muted-foreground/40 text-muted-foreground/70'
+                    }`}
+                    title={badge ? badge.label : 'Badge à venir'}
+                  >
                     className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium ${
                       badge
                         ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30'
