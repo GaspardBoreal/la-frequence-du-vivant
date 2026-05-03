@@ -108,6 +108,7 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
   const uploadAudio = useUploadAudio(effectiveViewerUserId || '');
   const updateContrib = useUpdateContribution();
   const deleteContrib = useDeleteContribution();
+  const { data: canCurate = false } = useCanCurateAudio();
 
   // "Mes sons" = sons appartenant au viewer (uploadeur réel) parmi ceux affichés
   const myAudio = (ownerAudio || []).filter(
