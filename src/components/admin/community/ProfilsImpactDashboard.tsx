@@ -1,15 +1,11 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { useCommunityImpactAggregates } from '@/hooks/useCommunityImpactAggregates';
-import { AGE_BRACKETS, CSP_OPTIONS, GENDER_OPTIONS } from '@/lib/communityProfileTaxonomy';
-import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
-  PieChart, Pie, Cell, Treemap,
-} from 'recharts';
 import { Users, MapPinned, Sprout, HeartHandshake, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ProfilsWidgets from '@/components/community/profils/ProfilsWidgets';
 
-const GENDER_COLORS: Record<string, string> = {
+const _UNUSED_GENDER_COLORS: Record<string, string> = {
   femme: 'hsl(340 70% 60%)',
   homme: 'hsl(200 70% 55%)',
   non_binaire: 'hsl(280 60% 65%)',
