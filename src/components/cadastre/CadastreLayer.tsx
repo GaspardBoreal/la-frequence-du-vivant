@@ -1,5 +1,5 @@
 import React from 'react';
-import { GeoJSON } from 'react-leaflet';
+import { GeoJSON, Pane } from 'react-leaflet';
 import L from 'leaflet';
 import { CadastrePoint, useLexiconParcelsWithGeometry } from './useLexiconParcels';
 import { extractParcelInfo, geometryCentroid } from './cadastreUtils';
@@ -36,11 +36,12 @@ const CadastreLayer: React.FC<CadastreLayerProps> = ({ points, enabled = true, p
   if (!enabled) return null;
 
   return (
-    <>
+    <Pane name="cadastre-parcels" style={{ zIndex: 450 }}>
       {items.map(({ point, lexicon, geometry: realGeom }) => {
-        // Priorité: géométrie cadastre-proxy (vraie parcelle) > shape LEXICON > geometry brute
+        // Priorité: géométrie cadastre-proxy (vraie parcelle) > shape LEXICON (geolocation/cadastre) > geometry brute
         const geometry =
           realGeom ||
+          lexicon?._raw?.geolocation?.shape ||
           lexicon?._raw?.cadastre?.shape ||
           lexicon?.geometry ||
           lexicon?._raw?.geometry;
@@ -48,7 +49,7 @@ const CadastreLayer: React.FC<CadastreLayerProps> = ({ points, enabled = true, p
         const info = extractParcelInfo(lexicon);
         const centroid = geometryCentroid(geometry) || { lat: point.lat, lng: point.lng };
         return (
-          <GeoJSON key={`${point.id}-${info.parcelId || 'p'}`} data={geometry as any} style={STYLE}>
+          <GeoJSON key={`${point.id}-${info.parcelId || 'p'}`} data={geometry as any} style={STYLE} pane="cadastre-parcels">
             <ParcelPopup info={info} centroid={centroid} />
           </GeoJSON>
         );
@@ -59,6 +60,7 @@ const CadastreLayer: React.FC<CadastreLayerProps> = ({ points, enabled = true, p
           key={`preview-${JSON.stringify(previewGeometry.coordinates).slice(0, 50)}`}
           data={previewGeometry as any}
           style={PREVIEW_STYLE}
+          pane="cadastre-parcels"
         >
           <ParcelPopup
             info={extractParcelInfo(previewData)}
@@ -66,7 +68,7 @@ const CadastreLayer: React.FC<CadastreLayerProps> = ({ points, enabled = true, p
           />
         </GeoJSON>
       )}
-    </>
+    </Pane>
   );
 };
 
