@@ -4370,6 +4370,10 @@ export type Database = {
       }
       get_user_event_ids: { Args: { _user_id: string }; Returns: string[] }
       has_any_crm_role: { Args: { _user_id: string }; Returns: boolean }
+      has_community_chat_access: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       has_crm_role: {
         Args: {
           _role: Database["public"]["Enums"]["crm_role"]
