@@ -881,6 +881,7 @@ const MarcheurCard: React.FC<{
   totalMarchesCount: number;
 }> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
+  const { user: viewer } = useAuth();
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const totalContribs = marcheur.totalContributions || 0;
   const isCommunity = marcheur.source === 'community';
