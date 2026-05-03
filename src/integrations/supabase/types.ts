@@ -1099,6 +1099,7 @@ export type Database = {
       }
       exploration_convivialite_photos: {
         Row: {
+          attributed_marcheur_id: string | null
           created_at: string
           exploration_id: string
           height: number | null
@@ -1113,6 +1114,7 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          attributed_marcheur_id?: string | null
           created_at?: string
           exploration_id: string
           height?: number | null
@@ -1127,6 +1129,7 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          attributed_marcheur_id?: string | null
           created_at?: string
           exploration_id?: string
           height?: number | null
@@ -1141,6 +1144,13 @@ export type Database = {
           width?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "exploration_convivialite_photos_attributed_marcheur_id_fkey"
+            columns: ["attributed_marcheur_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_marcheurs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "exploration_convivialite_photos_exploration_id_fkey"
             columns: ["exploration_id"]
@@ -2850,6 +2860,7 @@ export type Database = {
       }
       marcheur_audio: {
         Row: {
+          attributed_marcheur_id: string | null
           created_at: string
           description: string | null
           duree_secondes: number | null
@@ -2865,6 +2876,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attributed_marcheur_id?: string | null
           created_at?: string
           description?: string | null
           duree_secondes?: number | null
@@ -2880,6 +2892,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attributed_marcheur_id?: string | null
           created_at?: string
           description?: string | null
           duree_secondes?: number | null
@@ -2895,6 +2908,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "marcheur_audio_attributed_marcheur_id_fkey"
+            columns: ["attributed_marcheur_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_marcheurs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "marcheur_audio_marche_event_id_fkey"
             columns: ["marche_event_id"]
@@ -2913,6 +2933,7 @@ export type Database = {
       }
       marcheur_medias: {
         Row: {
+          attributed_marcheur_id: string | null
           created_at: string
           description: string | null
           duree_secondes: number | null
@@ -2932,6 +2953,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attributed_marcheur_id?: string | null
           created_at?: string
           description?: string | null
           duree_secondes?: number | null
@@ -2951,6 +2973,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attributed_marcheur_id?: string | null
           created_at?: string
           description?: string | null
           duree_secondes?: number | null
@@ -2970,6 +2993,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "marcheur_medias_attributed_marcheur_id_fkey"
+            columns: ["attributed_marcheur_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_marcheurs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "marcheur_medias_marche_event_id_fkey"
             columns: ["marche_event_id"]
@@ -3093,6 +3123,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      media_attribution_log: {
+        Row: {
+          created_at: string
+          exploration_id: string | null
+          id: string
+          media_id: string
+          new_marcheur_id: string | null
+          performed_by: string
+          previous_marcheur_id: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          exploration_id?: string | null
+          id?: string
+          media_id: string
+          new_marcheur_id?: string | null
+          performed_by: string
+          previous_marcheur_id?: string | null
+          source: string
+        }
+        Update: {
+          created_at?: string
+          exploration_id?: string | null
+          id?: string
+          media_id?: string
+          new_marcheur_id?: string | null
+          performed_by?: string
+          previous_marcheur_id?: string | null
+          source?: string
+        }
+        Relationships: []
       }
       narrative_fragments: {
         Row: {
@@ -4371,6 +4434,10 @@ export type Database = {
           migration_log: string
           rec_opus_id: string
         }[]
+      }
+      reattribute_media: {
+        Args: { _marcheur_id: string; _media_id: string; _source: string }
+        Returns: Json
       }
       record_community_affiliate_event: {
         Args: {
