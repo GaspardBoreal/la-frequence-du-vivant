@@ -62,22 +62,30 @@ const ObservationsSubTab: React.FC<{
         kind: 'media' | 'conv';
       }> = [];
 
-      // 1+2 — marcheur_medias (uploader OR attribution)
+      // Exclusive ownership: a media belongs to its attributed marcheur if set,
+      // otherwise to its uploader — never both.
+      const belongsToMe = (row: { user_id: string | null; attributed_marcheur_id: string | null }) => {
+        if (row.attributed_marcheur_id) return !!crewId && row.attributed_marcheur_id === crewId;
+        return !!userId && row.user_id === userId;
+      };
+
+      // 1+2 — marcheur_medias (uploaded by me without re-attribution, OR re-attributed to me)
       if (userId || crewId) {
         const orParts: string[] = [];
         if (userId) orParts.push(`user_id.eq.${userId}`);
         if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
         let q = supabase
           .from('marcheur_medias')
-          .select('id, url_fichier, external_url, titre, type_media, created_at')
+          .select('id, url_fichier, external_url, titre, type_media, created_at, user_id, attributed_marcheur_id')
           .eq('is_public', true)
           .in('type_media', ['photo', 'video'])
           .or(orParts.join(','))
           .order('created_at', { ascending: false })
-          .limit(100);
+          .limit(200);
         if (explorationEventIds?.length) q = q.in('marche_event_id', explorationEventIds);
         const { data } = await q;
         (data || []).forEach((m: any) => {
+          if (!belongsToMe(m)) return; // exclude uploads re-attributed elsewhere
           const url = m.url_fichier || m.external_url;
           if (!url) return;
           out.push({
@@ -91,20 +99,21 @@ const ObservationsSubTab: React.FC<{
         });
       }
 
-      // 3 — exploration_convivialite_photos (uploader OR attribution)
+      // 3 — exploration_convivialite_photos (same exclusive rule)
       if (explorationId && (userId || crewId)) {
         const orParts: string[] = [];
         if (userId) orParts.push(`user_id.eq.${userId}`);
         if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
         const { data } = await supabase
           .from('exploration_convivialite_photos')
-          .select('id, url, created_at')
+          .select('id, url, created_at, user_id, attributed_marcheur_id')
           .eq('exploration_id', explorationId)
           .eq('is_hidden', false)
           .or(orParts.join(','))
           .order('created_at', { ascending: false })
-          .limit(100);
+          .limit(200);
         (data || []).forEach((p: any) => {
+          if (!belongsToMe(p)) return;
           if (!p.url) return;
           out.push({
             id: `conv-${p.id}`,
