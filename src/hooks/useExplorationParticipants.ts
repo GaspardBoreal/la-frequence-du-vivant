@@ -24,6 +24,10 @@ export interface MarcheurWithStats {
   };
   totalContributions: number;
   speciesObserved: SpeciesObservation[];
+  /** auth.users id when known (community source, or crew row linked to a user). */
+  userId?: string | null;
+  /** exploration_marcheurs.id when this person has an editorial card. */
+  crewId?: string | null;
 }
 
 export function useExplorationParticipants(explorationId?: string, marcheEventId?: string) {
