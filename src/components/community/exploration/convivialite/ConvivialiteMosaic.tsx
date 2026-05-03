@@ -254,20 +254,20 @@ const ConvivialiteMosaic: React.FC<Props> = ({
                 type="button"
                 disabled={!canReattribute}
                 onClick={() => canReattribute && setAttributionOpen(true)}
-                className={`group inline-flex items-center gap-2 px-3 py-2 rounded-full transition ${
+                className={`group inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-lg shadow-black/40 backdrop-blur transition ${
                   canReattribute
-                    ? 'bg-white/10 hover:bg-emerald-500/20 ring-1 ring-white/15 hover:ring-emerald-400/50 cursor-pointer'
-                    : 'cursor-default'
+                    ? 'bg-emerald-600/90 hover:bg-emerald-500 ring-1 ring-emerald-300/40 cursor-pointer'
+                    : 'bg-emerald-600/85 ring-1 ring-emerald-300/30 cursor-default'
                 }`}
                 aria-label={canReattribute ? 'Réattribuer la photo' : undefined}
               >
-                <User className="w-3.5 h-3.5 text-white/70" />
-                <span className="font-semibold text-white">
+                <User className="w-4 h-4 text-white" />
+                <span className="text-white font-semibold text-sm drop-shadow">
                   {lightboxPhoto.attributed_full_name
                     || `${lightboxPhoto.author_prenom ?? ''} ${lightboxPhoto.author_nom ?? ''}`.trim()
                     || 'Anonyme'}
                 </span>
-                {canReattribute && <Pencil className="w-3 h-3 text-white/60" />}
+                {canReattribute && <Pencil className="w-3.5 h-3.5 text-white/85" />}
               </button>
               <div className="text-white/60 text-xs mt-1">
                 {new Date(lightboxPhoto.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
