@@ -20,6 +20,8 @@ const COMMUNITY_ROUTE_PATTERNS = [
   '/traversees/:slug',
   '/traversees',
   '/marcheur/:slug/carnet',
+  '/marches-du-vivant/mon-espace',
+  '/marches-du-vivant/mon-espace/*',
 ];
 
 function isCommunityRoute(pathname: string): boolean {
@@ -34,6 +36,7 @@ function detectContext(pathname: string): ChatContext {
   }
   if (pathname.startsWith('/marche/') || pathname.startsWith('/marches/')) return 'marches';
   if (pathname.startsWith('/marcheur/')) return 'community';
+  if (pathname.startsWith('/marches-du-vivant/mon-espace')) return 'community';
   return 'exploration';
 }
 
@@ -81,6 +84,12 @@ function CommunityChatBotInner() {
   const marcheMatch =
     matchPath({ path: '/marche/:slug', end: false }, location.pathname) ||
     matchPath({ path: '/marches/:id', end: false }, location.pathname);
+  // Mon Espace : l'id d'exploration est déjà un UUID dans l'URL
+  const monEspaceExplorationMatch = matchPath(
+    { path: '/marches-du-vivant/mon-espace/exploration/:id/*', end: false },
+    location.pathname,
+  );
+  const monEspaceExplorationId = (monEspaceExplorationMatch?.params as any)?.id as string | undefined;
 
   const explorationSlug = (explorationMatch?.params as any)?.slug as string | undefined;
   const marcheSlug = (marcheMatch?.params as any)?.slug || (marcheMatch?.params as any)?.id;
@@ -88,13 +97,20 @@ function CommunityChatBotInner() {
   const explorationId = useExplorationIdFromSlug(explorationSlug);
   const marcheEventId = useMarcheEventIdFromSlug(marcheSlug);
 
-  const context = useMemo(() => detectContext(location.pathname), [location.pathname]);
+  const directExplorationId =
+    monEspaceExplorationId && UUID_RE.test(monEspaceExplorationId) ? monEspaceExplorationId : null;
+
+  const context = useMemo(
+    () => (directExplorationId ? 'exploration' : detectContext(location.pathname)),
+    [location.pathname, directExplorationId],
+  );
 
   const urlEntity: ChatEntity | null = useMemo(() => {
+    if (directExplorationId) return { type: 'exploration', id: directExplorationId };
     if (explorationId) return { type: 'exploration', id: explorationId };
     if (marcheEventId) return { type: 'marche_event', id: marcheEventId };
     return null;
-  }, [explorationId, marcheEventId]);
+  }, [directExplorationId, explorationId, marcheEventId]);
 
   const roleBadge =
     role === 'admin' ? 'Admin' : role === 'ambassadeur' ? 'Ambassadeur' : role === 'sentinelle' ? 'Sentinelle' : null;
