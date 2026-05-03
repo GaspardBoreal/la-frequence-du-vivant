@@ -17,11 +17,18 @@ export interface MarcheStep {
 
 export interface MediaItem {
   key: string; // 'conv:<uuid>' | 'media:<uuid>' | 'audio:<uuid>'
+  /** Bare UUID of the underlying row (without the source prefix). */
+  rawId: string;
   source: MediaSource;
   type: MediaType;
   url: string;
   titre?: string | null;
+  /** Display name = attributed marcheur name if defined, else uploader name. */
   authorName?: string | null;
+  /** Original uploader's full name (for attribution UI). */
+  uploaderName?: string | null;
+  /** Marcheur currently credited for this media (overrides uploader). */
+  attributedMarcheurId?: string | null;
   marcheEventId?: string;
   marcheId?: string | null;
   marcheStepName?: string | null;
