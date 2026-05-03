@@ -30,6 +30,7 @@ import {
   useMarcheurStats, useReorderContributions,
 } from '@/hooks/useMarcheurContributions';
 import DraggableContributionGrid from './contributions/DraggableContributionGrid';
+import MarcheurAudioPanel from './audio/MarcheurAudioPanel';
 
 interface MarcheDetailModalProps {
   open: boolean;
