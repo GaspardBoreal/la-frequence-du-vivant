@@ -16,12 +16,9 @@ export interface CommunityImpactAggregates {
 }
 
 /**
- * Agrégats d'impact des marcheur·euse·s.
- * - Sans paramètre → agrégats globaux (toute la communauté).
- * - Avec `eventId` → agrégats limités aux participant·e·s de cet événement.
- *
- * Utilise la RPC `get_community_impact_aggregates_scoped(p_event_id)` qui,
- * appelée avec `null`, renvoie le même résultat que l'ancienne RPC globale.
+ * Agrégats d'impact (admin uniquement, RPC gardée).
+ * - Sans paramètre → agrégats globaux.
+ * - Avec `eventId` → limités aux participant·e·s d'un événement.
  */
 export function useCommunityImpactAggregates(eventId?: string | null) {
   return useQuery({
@@ -34,6 +31,26 @@ export function useCommunityImpactAggregates(eventId?: string | null) {
       if (error) throw error;
       return data as unknown as CommunityImpactAggregates;
     },
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Agrégats d'impact pour les marcheur·euse·s d'une exploration donnée.
+ * Accessible aux utilisateurs connectés (RPC anonymisée — agrégats uniquement).
+ */
+export function useCommunityImpactAggregatesByExploration(explorationId?: string | null) {
+  return useQuery({
+    queryKey: ['community-impact-aggregates-by-exploration', explorationId],
+    queryFn: async (): Promise<CommunityImpactAggregates> => {
+      const { data, error } = await supabase.rpc(
+        'get_community_impact_aggregates_by_exploration' as never,
+        { p_exploration_id: explorationId } as never,
+      );
+      if (error) throw error;
+      return data as unknown as CommunityImpactAggregates;
+    },
+    enabled: !!explorationId,
     staleTime: 60_000,
   });
 }

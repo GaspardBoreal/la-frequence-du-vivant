@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, MapPin, Footprints, Users, Map, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, PenLine, Leaf, TreePine, GraduationCap, Sparkles } from 'lucide-react';
+import { ArrowLeft, MapPin, Footprints, Users, Map, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, PenLine, Leaf, TreePine, GraduationCap, Sparkles, PieChart } from 'lucide-react';
+import ProfilsScopeContainer from './profils/ProfilsScopeContainer';
 import ConvivialiteContent from './exploration/convivialite/ConvivialiteContent';
 import LireDescriptionsTab from './exploration/LireDescriptionsTab';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,7 +24,7 @@ import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheD
 
 type GlobalTab = 'carte' | 'marcheurs' | 'marches' | 'biodiversite' | 'apprendre';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'ecrire' | 'vivant';
-type MarcheursSubTab = 'convivialite' | 'profils';
+type MarcheursSubTab = 'convivialite' | 'marcheurs' | 'profils';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
   { key: 'carte', label: 'Carte', icon: Map },
@@ -35,7 +36,8 @@ const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] =
 
 const marcheursSubTabs: { key: MarcheursSubTab; label: string; icon: typeof Users }[] = [
   { key: 'convivialite', label: 'Convivialité', icon: Sparkles },
-  { key: 'profils', label: 'Marcheurs', icon: Users },
+  { key: 'marcheurs', label: 'Marcheurs', icon: Users },
+  { key: 'profils', label: 'Profils', icon: PieChart },
 ];
 
 const sensoryTabs: { key: SensoryTab; label: string; icon: typeof Eye }[] = [
@@ -425,7 +427,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  {activeMarcheursSubTab === 'convivialite' ? (
+                  {activeMarcheursSubTab === 'convivialite' && (
                     <ConvivialiteContent
                       explorationId={effectiveExplorationId || undefined}
                       explorationName={exploration?.name}
@@ -434,10 +436,17 @@ const ExplorationMarcheurPage: React.FC = () => {
                       isAdmin={isAdmin}
                       variant="inline"
                     />
-                  ) : (
+                  )}
+                  {activeMarcheursSubTab === 'marcheurs' && (
                     <MarcheursTab
                       explorationId={effectiveExplorationId || undefined}
                       marcheEventId={marcheEventId || undefined}
+                      explorationName={exploration?.name}
+                    />
+                  )}
+                  {activeMarcheursSubTab === 'profils' && (
+                    <ProfilsScopeContainer
+                      explorationId={effectiveExplorationId || undefined}
                       explorationName={exploration?.name}
                     />
                   )}
