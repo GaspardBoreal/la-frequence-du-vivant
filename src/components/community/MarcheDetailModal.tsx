@@ -297,7 +297,14 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
       )}
 
       {lightboxIndex !== null && (
-        <MediaLightbox items={lightboxItems} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+        <MediaLightbox
+          items={lightboxItems}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          canReattribute={!!isCurator}
+          marcheurs={explorationMarcheurs}
+          explorationId={explorationId ?? undefined}
+        />
       )}
 
       {/* Action bar */}
