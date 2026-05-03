@@ -114,6 +114,19 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
         return { userId: uploaderId, crewId: null as string | null };
       };
 
+      // Convivialité photos: per exploration, can be reattributed to a crew row
+      const { data: convPhotos } = await supabase
+        .from('exploration_convivialite_photos')
+        .select('user_id, attributed_marcheur_id')
+        .eq('exploration_id', explorationId)
+        .eq('is_hidden', false);
+
+      (convPhotos || []).forEach((p: any) => {
+        const { userId, crewId } = route(p.user_id, p.attributed_marcheur_id);
+        const bucket = userId ? ensureUser(userId) : crewId ? ensureCrew(crewId) : null;
+        if (bucket) bucket.photos++;
+      });
+
       if (eventIds.length) {
         const [{ data: medias }, { data: audios }, { data: textes }] = await Promise.all([
           supabase
