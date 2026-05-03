@@ -825,6 +825,7 @@ const MarcheurImpactBlock: React.FC<{
 // --- Sub-tab navigation pills ---
 const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementType }[] = [
   { key: 'observations', label: 'Observations', icon: Camera },
+  { key: 'ecoute', label: 'Écoute', icon: Headphones },
   { key: 'contributions', label: 'Contributions', icon: Leaf },
   { key: 'impact', label: 'Votre impact', icon: TrendingUp },
 ];
