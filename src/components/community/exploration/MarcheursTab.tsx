@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useReorderMarcheurObservations } from '@/hooks/useReorderMarcheurObservations';
+import MarcheurAudioPanel from '@/components/community/audio/MarcheurAudioPanel';
 import {
   DndContext,
   PointerSensor,
@@ -46,7 +47,7 @@ type ShareKitState = {
   generatedCount: number;
 };
 
-type MarcheurSubTab = 'observations' | 'contributions' | 'impact';
+type MarcheurSubTab = 'observations' | 'ecoute' | 'contributions' | 'impact';
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
@@ -824,6 +825,7 @@ const MarcheurImpactBlock: React.FC<{
 // --- Sub-tab navigation pills ---
 const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementType }[] = [
   { key: 'observations', label: 'Observations', icon: Camera },
+  { key: 'ecoute', label: 'Écoute', icon: Headphones },
   { key: 'contributions', label: 'Contributions', icon: Leaf },
   { key: 'impact', label: 'Votre impact', icon: TrendingUp },
 ];
@@ -879,17 +881,19 @@ const MarcheurCard: React.FC<{
   totalMarchesCount: number;
 }> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
+  const { user: viewer } = useAuth();
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const totalContribs = marcheur.totalContributions || 0;
   const isCommunity = marcheur.source === 'community';
   const resolvedUserId = marcheur.userId ?? (isCommunity ? marcheur.id.replace('community-', '') : null);
   const resolvedCrewId = marcheur.crewId ?? (marcheur.source === 'crew' ? marcheur.id.replace('crew-', '') : null);
   const photoCount = marcheur.stats.photos + marcheur.stats.videos;
+  const audioCount = marcheur.stats.sons || 0;
   
   // Real contributions count from biodiversity snapshots
   const { data: contributionsCount } = useWalkerContributionsCount(marcheur.prenom, marcheur.nom, explorationMarcheIds, explorationId);
   const realContribCount = contributionsCount || 0;
-  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0;
+  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0 || audioCount > 0;
 
   return (
     <motion.div
@@ -927,6 +931,12 @@ const MarcheurCard: React.FC<{
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${photoCount} observation${photoCount > 1 ? 's' : ''} publique${photoCount > 1 ? 's' : ''}`}>
               <Camera className="w-3 h-3 text-emerald-500" />
               <span className="text-[11px] font-semibold text-foreground">{photoCount}</span>
+            </div>
+          )}
+          {audioCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${audioCount} son${audioCount > 1 ? 's' : ''} partagé${audioCount > 1 ? 's' : ''}`}>
+              <Headphones className="w-3 h-3 text-violet-500" />
+              <span className="text-[11px] font-semibold text-foreground">{audioCount}</span>
             </div>
           )}
           {realContribCount > 0 && (
@@ -997,6 +1007,20 @@ const MarcheurCard: React.FC<{
                       <p className="text-xs text-muted-foreground italic">Observations de l'équipe</p>
                     </div>
                   )}
+                </motion.div>
+              )}
+
+              {activeSubTab === 'ecoute' && (
+                <motion.div key="ecoute" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <MarcheurAudioPanel
+                    ownerUserId={resolvedUserId}
+                    ownerCrewId={resolvedCrewId}
+                    marcheIds={explorationMarcheIds}
+                    marcheEventIds={explorationEventIds}
+                    canUpload={!!viewer && !!resolvedUserId && viewer.id === resolvedUserId}
+                    viewerUserId={viewer?.id ?? null}
+                    variant="inline"
+                  />
                 </motion.div>
               )}
 

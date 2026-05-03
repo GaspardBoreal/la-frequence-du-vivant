@@ -30,6 +30,7 @@ import {
   useMarcheurStats, useReorderContributions,
 } from '@/hooks/useMarcheurContributions';
 import DraggableContributionGrid from './contributions/DraggableContributionGrid';
+import MarcheurAudioPanel from './audio/MarcheurAudioPanel';
 
 interface MarcheDetailModalProps {
   open: boolean;
@@ -501,140 +502,20 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
   );
 };
 
-// ─── Écouter Tab ───
+// ─── Écouter Tab ─── (utilise désormais MarcheurAudioPanel partagé)
 export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
-  const { trackActivity } = useActivityTracker();
-  const [sort, setSort] = useState<'desc' | 'asc'>('asc');
-  const [showUpload, setShowUpload] = useState(false);
-
-  const { data: adminAudio } = useQuery({
-    queryKey: ['marche-detail-audio', marcheId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('marche_audio')
-        .select('id, url_supabase, titre, duree_secondes, type_audio')
-        .eq('marche_id', marcheId)
-        .order('ordre')
-        .limit(20);
-      return data || [];
-    },
-    enabled: !!marcheId,
-  });
-
-  const { data: userAudio } = useMarcheurAudio(marcheEventId, userId, sort, activeMarcheId);
-  const uploadAudio = useUploadAudio(userId);
-  const updateContrib = useUpdateContribution();
-  const deleteContrib = useDeleteContribution();
-
-  const myAudio = userAudio?.filter(a => a.user_id === userId) || [];
-  const othersAudio = userAudio?.filter(a => a.user_id !== userId && a.is_public) || [];
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setShowUpload(!showUpload)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs hover:bg-violet-500/20 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Ajouter un son
-        </button>
-        <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
-      </div>
-
-      {showUpload && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-          <FileUploadZone
-            accept="audio/*"
-            label="Enregistrements sonores"
-            icon={<Music className="w-6 h-6 text-violet-400/60" />}
-            isUploading={uploadAudio.isPending}
-            onFilesSelected={(files, isPublic) => {
-              uploadAudio.mutate({ files, marcheEventId, isPublic, marcheId: activeMarcheId });
-              trackActivity(userId, 'media_upload', 'audio', { marcheEventId, metadata: { count: files.length } });
-            }}
-          />
-        </motion.div>
-      )}
-
-      {/* Admin audio */}
-      {adminAudio && adminAudio.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Globe className="w-3 h-3 text-emerald-400/50" />
-            <span className="text-emerald-200/40 text-[10px] uppercase tracking-wider">De l'exploration</span>
-          </div>
-          <div className="space-y-2">
-            {adminAudio.map(audio => (
-              <div key={audio.id} className="bg-white/5 rounded-lg border border-white/10 p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Music className="w-4 h-4 text-violet-400 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-white text-xs font-medium truncate">{audio.titre || 'Enregistrement'}</p>
-                    {audio.duree_secondes && (
-                      <p className="text-emerald-200/40 text-[10px]">
-                        {Math.floor(audio.duree_secondes / 60)}:{String(audio.duree_secondes % 60).padStart(2, '0')}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <audio controls className="w-full h-8" preload="none">
-                  <source src={audio.url_supabase} />
-                </audio>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* My audio */}
-      {myAudio.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <User className="w-3 h-3 text-amber-400" />
-            <span className="text-amber-300/60 text-[10px] uppercase tracking-wider">Mes sons ({myAudio.length})</span>
-          </div>
-          <div className="space-y-2">
-            {myAudio.map(a => (
-              <ContributionItem
-                key={a.id}
-                id={a.id}
-                type="audio"
-                titre={a.titre}
-                description={a.description}
-                url={a.url_fichier}
-                isPublic={a.is_public}
-                sharedToWeb={(a as any).shared_to_web}
-                isOwner={true}
-                createdAt={a.created_at}
-                onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_audio', id, updates })}
-                onDelete={(id) => deleteContrib.mutate({ table: 'marcheur_audio', id, storageUrl: a.url_fichier })}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Others audio */}
-      {othersAudio.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Users className="w-3 h-3 text-blue-400" />
-            <span className="text-blue-300/60 text-[10px] uppercase tracking-wider">Des marcheurs ({othersAudio.length})</span>
-          </div>
-          <div className="space-y-2">
-            {othersAudio.map(a => (
-              <ContributionItem key={a.id} id={a.id} type="audio" titre={a.titre} url={a.url_fichier}
-                isPublic={a.is_public} isOwner={false} createdAt={a.created_at} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!adminAudio?.length && !myAudio.length && !othersAudio.length && !showUpload && (
-        <EmptyState message="Aucun enregistrement sonore" sub="Appuyez sur + Ajouter pour partager vos sons" />
-      )}
-    </div>
+    <MarcheurAudioPanel
+      ownerUserId={userId}
+      ownerCrewId={null}
+      marcheIds={activeMarcheId ? [activeMarcheId] : marcheId ? [marcheId] : []}
+      marcheEventIds={marcheEventId ? [marcheEventId] : []}
+      canUpload={true}
+      activeMarcheId={activeMarcheId || marcheId}
+      activeMarcheEventId={marcheEventId}
+      viewerUserId={userId}
+      variant="modal"
+    />
   );
 };
 
