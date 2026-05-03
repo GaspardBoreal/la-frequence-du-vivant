@@ -6,13 +6,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
-import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Palette, Globe, Mountain, Crosshair, X, Star, Sparkles } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Palette, Globe, Mountain, Crosshair, X, Star, Sparkles, LandPlot, Move } from 'lucide-react';
 import { PhotoGpsButton, PhotoGpsMarker, usePhotoGpsDrop } from './PhotoGpsDropTool';
 import CreateMarcheDrawer from './CreateMarcheDrawer';
 import { canCreateMarche, computeMarcheDefaults } from './createMarcheUtils';
+import CadastreLayer from '@/components/cadastre/CadastreLayer';
+import GpsEditOverlay from '@/components/cadastre/GpsEditOverlay';
+import { useCanCurateAudio } from '@/hooks/useCanCurateAudio';
 import 'leaflet/dist/leaflet.css';
 
-type MapStyle = 'geopoetic' | 'satellite' | 'terrain';
+type MapStyle = 'geopoetic' | 'satellite' | 'terrain' | 'cadastre';
 
 const TILE_CONFIGS: Record<MapStyle, { url: string; attribution: string; maxZoom?: number }> = {
   geopoetic: {
@@ -29,24 +32,32 @@ const TILE_CONFIGS: Record<MapStyle, { url: string; attribution: string; maxZoom
     attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
     maxZoom: 17,
   },
+  cadastre: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap &middot; &copy; Etalab Cadastre',
+    maxZoom: 19,
+  },
 };
 
 const POLYLINE_COLORS: Record<MapStyle, string> = {
   geopoetic: '#10b981',
   satellite: '#fbbf24',
   terrain: '#10b981',
+  cadastre: '#0d6b58',
 };
 
 const ARROW_COLORS: Record<MapStyle, string> = {
   geopoetic: '#10b981',
   satellite: '#fbbf24',
   terrain: '#10b981',
+  cadastre: '#0d6b58',
 };
 
 // Dynamic tile layer that swaps without remounting the map
 function DynamicTileLayer({ mapStyle }: { mapStyle: MapStyle }) {
   const map = useMap();
   const [currentLayer, setCurrentLayer] = useState<L.TileLayer | null>(null);
+  const cadastreOverlayRef = useRef<L.TileLayer | null>(null);
 
   useEffect(() => {
     if (currentLayer) {
@@ -61,8 +72,28 @@ function DynamicTileLayer({ mapStyle }: { mapStyle: MapStyle }) {
     layer.addTo(map);
     setCurrentLayer(layer);
 
+    // Overlay cadastre (Etalab) seulement en mode cadastre
+    if (cadastreOverlayRef.current) {
+      map.removeLayer(cadastreOverlayRef.current);
+      cadastreOverlayRef.current = null;
+    }
+    if (mapStyle === 'cadastre') {
+      const overlay = L.tileLayer('https://cadastre.data.gouv.fr/map/{z}/{x}/{y}.png', {
+        attribution: '&copy; Etalab — Cadastre',
+        opacity: 0.55,
+        maxZoom: 20,
+        pane: 'overlayPane',
+      });
+      overlay.addTo(map);
+      cadastreOverlayRef.current = overlay;
+    }
+
     return () => {
       map.removeLayer(layer);
+      if (cadastreOverlayRef.current) {
+        map.removeLayer(cadastreOverlayRef.current);
+        cadastreOverlayRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapStyle, map]);
@@ -76,6 +107,7 @@ function MapStyleToggle({ mapStyle, onChange }: { mapStyle: MapStyle; onChange: 
     { key: 'geopoetic', icon: <Palette className="w-4 h-4" />, label: 'Géo' },
     { key: 'satellite', icon: <Globe className="w-4 h-4" />, label: 'Sat' },
     { key: 'terrain', icon: <Mountain className="w-4 h-4" />, label: 'Relief' },
+    { key: 'cadastre', icon: <LandPlot className="w-4 h-4" />, label: 'Cadastre' },
   ];
 
   return (
@@ -567,8 +599,11 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
+  const { data: canEditGps = false } = useCanCurateAudio();
 
-  // One-time hint for the "Créer une marche" button
+  // GPS edit (Cadastre mode) state
+  const [gpsEditPointId, setGpsEditPointId] = useState<string | null>(null);
+  const [cadastrePreview, setCadastrePreview] = useState<{ lat: number; lng: number; geometry: any; data: any } | null>(null);
   const [showCreateHint, setShowCreateHint] = useState(false);
   useEffect(() => {
     if (!userCanCreate) return;
@@ -974,6 +1009,16 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                       Explorer cette étape →
                     </button>
                   )}
+
+                  {mapStyle === 'cadastre' && canEditGps && (
+                    <button
+                      onClick={() => setGpsEditPointId(marche.id)}
+                      className="w-full mt-1.5 py-1.5 rounded-lg bg-blue-500/15 border border-blue-400/30 text-blue-200 text-[11px] font-medium hover:bg-blue-500/25 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Move className="w-3 h-3" />
+                      Repositionner (aperçu)
+                    </button>
+                  )}
                 </div>
               </Popup>
             </Marker>
@@ -1004,6 +1049,35 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             onChange={setCreatePosition}
           />
         )}
+
+        {/* Cadastre overlay (LEXICON parcels for each step) */}
+        {mapStyle === 'cadastre' && (
+          <CadastreLayer
+            points={geoMarches.map(m => ({
+              id: m.id,
+              lat: m.latitude!,
+              lng: m.longitude!,
+              label: m.nom_marche || undefined,
+            }))}
+            enabled={mapStyle === 'cadastre'}
+            previewGeometry={cadastrePreview?.geometry}
+            previewData={cadastrePreview?.data}
+          />
+        )}
+
+        {/* GPS edit overlay (Cadastre mode, curators only) */}
+        {mapStyle === 'cadastre' && canEditGps && gpsEditPointId && (() => {
+          const target = geoMarches.find(m => m.id === gpsEditPointId);
+          if (!target) return null;
+          return (
+            <GpsEditOverlay
+              initialLat={target.latitude!}
+              initialLng={target.longitude!}
+              onClose={() => { setGpsEditPointId(null); setCadastrePreview(null); }}
+              onPreview={setCadastrePreview}
+            />
+          );
+        })()}
       </MapContainer>
 
       {/* Map style toggle */}

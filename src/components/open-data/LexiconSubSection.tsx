@@ -8,7 +8,7 @@ import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useLexiconData } from '../../hooks/useLexiconData';
 import LexiconStructuredDisplay from './LexiconStructuredDisplay';
-import CadastralMap from './CadastralMap';
+import CadastreMapStandalone from '@/components/cadastre/CadastreMapStandalone';
 
 interface LexiconSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -57,11 +57,10 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-        <CadastralMap 
-          latitude={marche.latitude} 
+        <CadastreMapStandalone
+          latitude={marche.latitude}
           longitude={marche.longitude}
-          parcelGeometry={lexiconResponse?.data?.geometry}
-          parcelData={lexiconResponse?.data}
+          pointId={`bioac-${marche.latitude}-${marche.longitude}`}
           className="w-full h-[500px]"
         />
           </motion.div>
