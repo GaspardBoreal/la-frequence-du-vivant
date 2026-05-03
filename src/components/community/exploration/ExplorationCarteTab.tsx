@@ -1019,6 +1019,12 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                       Repositionner (aperçu)
                     </button>
                   )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+        {/* User GPS marker */}
         {userLocation && (
           <UserLocationMarker
             position={userLocation}
