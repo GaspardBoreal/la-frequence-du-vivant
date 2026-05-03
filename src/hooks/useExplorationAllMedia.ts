@@ -255,11 +255,17 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
 
   const convivialite: MediaItem[] = convPhotos.map((p: ConvivialitePhoto) => ({
     key: `conv:${p.id}`,
+    rawId: p.id,
     source: 'conv',
     type: 'photo',
     url: p.url,
     titre: null,
-    authorName: [p.author_prenom, p.author_nom].filter(Boolean).join(' ') || null,
+    authorName:
+      (p.attributed_full_name && p.attributed_full_name.trim())
+      || [p.author_prenom, p.author_nom].filter(Boolean).join(' ')
+      || null,
+    uploaderName: [p.author_prenom, p.author_nom].filter(Boolean).join(' ') || null,
+    attributedMarcheurId: p.attributed_marcheur_id ?? null,
     marcheId: null,
     marcheStepName: null,
     gps: null,
