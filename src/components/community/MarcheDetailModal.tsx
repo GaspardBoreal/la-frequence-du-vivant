@@ -93,7 +93,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
     queryFn: async () => {
       const { data } = await supabase
         .from('marche_photos')
-        .select('id, url_supabase, titre, description')
+        .select('id, url_supabase, titre')
         .eq('marche_id', marcheId)
         .order('ordre')
         .limit(20);
@@ -101,6 +101,23 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
     },
     enabled: !!marcheId,
   });
+
+  // Resolve exploration_id (for curator check + marcheurs list used by attribution sheet)
+  const { data: explorationId } = useQuery({
+    queryKey: ['marche-event-exploration', marcheEventId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marche_events')
+        .select('exploration_id')
+        .eq('id', marcheEventId)
+        .single();
+      return data?.exploration_id ?? null;
+    },
+    enabled: !!marcheEventId,
+  });
+
+  const { data: isCurator } = useIsCurator(explorationId ?? undefined);
+  const { data: explorationMarcheurs = [] } = useExplorationMarcheurs(explorationId ?? undefined);
 
   // User contributions
   const { data: userMedias, isLoading: isLoadingUser } = useMarcheurMedias(marcheEventId, userId, sort, activeMarcheId);
@@ -113,6 +130,32 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
   const myMedias = userMedias?.filter(m => m.user_id === userId) || [];
   const othersMedias = userMedias?.filter(m => m.user_id !== userId && m.is_public) || [];
 
+  // Resolve uploader names (for the attribution credit chip)
+  const uploaderIds = React.useMemo(
+    () => Array.from(new Set([...myMedias, ...othersMedias].map(m => m.user_id))),
+    [myMedias, othersMedias],
+  );
+  const { data: uploaderProfiles = [] } = useQuery({
+    queryKey: ['marcheur-medias-uploaders', uploaderIds.sort().join(',')],
+    queryFn: async () => {
+      if (!uploaderIds.length) return [];
+      const { data } = await supabase
+        .from('community_profiles')
+        .select('user_id, prenom, nom')
+        .in('user_id', uploaderIds);
+      return data || [];
+    },
+    enabled: uploaderIds.length > 0,
+  });
+  const uploaderNameById = React.useMemo(() => {
+    const map = new Map<string, string>();
+    uploaderProfiles.forEach((p: any) => {
+      const full = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim();
+      if (full) map.set(p.user_id, full);
+    });
+    return map;
+  }, [uploaderProfiles]);
+
   // Build unified lightbox items array
   const lightboxItems: LightboxItem[] = React.useMemo(() => {
     const items: LightboxItem[] = [];
@@ -123,15 +166,25 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
     // My contributions
     myMedias.forEach(m => {
       const url = m.url_fichier || m.external_url;
-      if (url) items.push({ url, type: m.type_media, titre: m.titre, isPublic: m.is_public, isOwner: true, createdAt: m.created_at });
+      if (url) items.push({
+        url, type: m.type_media, titre: m.titre, isPublic: m.is_public, isOwner: true, createdAt: m.created_at,
+        id: m.id, source: 'media',
+        attributedMarcheurId: (m as any).attributed_marcheur_id ?? null,
+        uploaderName: uploaderNameById.get(m.user_id) ?? null,
+      });
     });
     // Others' public contributions
     othersMedias.forEach(m => {
       const url = m.url_fichier || m.external_url;
-      if (url) items.push({ url, type: m.type_media, titre: m.titre, isPublic: true, isOwner: false, createdAt: m.created_at });
+      if (url) items.push({
+        url, type: m.type_media, titre: m.titre, isPublic: true, isOwner: false, createdAt: m.created_at,
+        id: m.id, source: 'media',
+        attributedMarcheurId: (m as any).attributed_marcheur_id ?? null,
+        uploaderName: uploaderNameById.get(m.user_id) ?? null,
+      });
     });
     return items;
-  }, [adminPhotos, myMedias, othersMedias]);
+  }, [adminPhotos, myMedias, othersMedias, uploaderNameById]);
 
   // Track offset for each section to compute lightbox index
   const adminCount = adminPhotos?.length || 0;
