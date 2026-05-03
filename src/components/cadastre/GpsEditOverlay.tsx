@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Crosshair, Send, X, Loader2 } from 'lucide-react';
+import { Crosshair, Send, X, Loader2, Save, Check } from 'lucide-react';
 import { useLexiconParcelWithGeometryAt } from './useLexiconParcels';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface GpsEditOverlayProps {
   initialLat: number;
@@ -11,6 +14,10 @@ interface GpsEditOverlayProps {
   onClose: () => void;
   /** Callback déclenché à la soumission avec la nouvelle géométrie LEXICON. */
   onPreview: (preview: { lat: number; lng: number; geometry: any; data: any } | null) => void;
+  /** Identifiant de la marche pour la persistance GPS (optionnel). */
+  marcheId?: string;
+  /** Si vrai, expose le bouton « MAJ GPS Marche » (Ambassadeur/Sentinelle/Admin). */
+  canPersist?: boolean;
 }
 
 const draggableIcon = L.divIcon({
