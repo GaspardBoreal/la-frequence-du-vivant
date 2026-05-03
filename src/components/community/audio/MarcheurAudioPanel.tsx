@@ -270,7 +270,14 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
                   isPublic={a.is_public}
                   isOwner={false}
                   createdAt={a.created_at}
-              />
+                />
+                <AudioDescriptionBlock
+                  audioId={a.id}
+                  description={a.description}
+                  canEdit={canCurate}
+                  isCuratorEdit={canCurate}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -284,6 +291,171 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
               ? 'Aucun enregistrement sonore — Appuyez sur + pour partager vos sons'
               : 'Aucun enregistrement sonore partagé'}
           </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// Sous-composant : description riche (B / I / U) d'un son
+// ─────────────────────────────────────────────────────────────
+
+interface AudioDescriptionBlockProps {
+  audioId: string;
+  description?: string | null;
+  canEdit: boolean;
+  isCuratorEdit?: boolean;
+}
+
+const ALLOWED_DESC_TAGS = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'span'];
+
+const AudioDescriptionBlock: React.FC<AudioDescriptionBlockProps> = ({
+  audioId,
+  description,
+  canEdit,
+  isCuratorEdit,
+}) => {
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const editorRef = React.useRef<HTMLDivElement>(null);
+
+  const cleanInitial = sanitizeHtml(description || '');
+  const isEmpty = !cleanInitial || cleanInitial.replace(/<[^>]+>/g, '').trim() === '';
+
+  React.useEffect(() => {
+    if (editing && editorRef.current) {
+      editorRef.current.innerHTML = cleanInitial;
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [editing, cleanInitial]);
+
+  const exec = (cmd: string) => {
+    document.execCommand(cmd, false);
+    editorRef.current?.focus();
+  };
+
+  const handleSave = async () => {
+    if (!editorRef.current) return;
+    setSaving(true);
+    const raw = editorRef.current.innerHTML;
+    const DOMPurify = (await import('dompurify')).default;
+    const clean = DOMPurify.sanitize(raw, {
+      ALLOWED_TAGS: ALLOWED_DESC_TAGS,
+      ALLOWED_ATTR: [],
+    });
+    const { error } = await supabase
+      .from('marcheur_audio')
+      .update({ description: clean, updated_at: new Date().toISOString() })
+      .eq('id', audioId);
+    setSaving(false);
+    if (error) {
+      const { toast } = await import('sonner');
+      toast.error(`Erreur : ${error.message}`);
+      return;
+    }
+    qc.invalidateQueries({ queryKey: ['marcheur-panel-owner-audio'] });
+    qc.invalidateQueries({ queryKey: ['marcheur-audio'] });
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <div className="px-3 -mt-1 pb-2 flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          {isEmpty ? (
+            <p className="text-[11px] italic text-muted-foreground/50">
+              {canEdit ? 'Ajouter un descriptif…' : ''}
+            </p>
+          ) : (
+            <div
+              className="text-[12px] leading-snug text-foreground/85 prose prose-sm max-w-none [&_p]:my-0.5"
+              dangerouslySetInnerHTML={{ __html: cleanInitial }}
+            />
+          )}
+        </div>
+        {canEdit && (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-violet-500/10 text-violet-300/80 hover:text-violet-200 transition-colors"
+            title={isCuratorEdit ? 'Édition curatoriale' : 'Modifier le descriptif'}
+            aria-label="Modifier le descriptif"
+          >
+            <Pencil className="w-3 h-3" />
+            {isCuratorEdit && <ShieldCheck className="w-3 h-3 text-amber-300/80" />}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-3 mb-2 rounded-lg border border-violet-500/30 bg-violet-500/5 overflow-hidden">
+      <div className="flex items-center gap-1 p-2 border-b border-violet-500/20 bg-violet-500/10 sticky top-0">
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); exec('bold'); }}
+          className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-violet-500/20 text-violet-100"
+          title="Gras (Ctrl+B)"
+        >
+          <Bold className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); exec('italic'); }}
+          className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-violet-500/20 text-violet-100"
+          title="Italique (Ctrl+I)"
+        >
+          <Italic className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); exec('underline'); }}
+          className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-violet-500/20 text-violet-100"
+          title="Souligné (Ctrl+U)"
+        >
+          <Underline className="w-4 h-4" />
+        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            onClick={() => setEditing(false)}
+            disabled={saving}
+            className="h-9 px-2 flex items-center gap-1 rounded-md hover:bg-white/10 text-muted-foreground text-xs"
+          >
+            <X className="w-3.5 h-3.5" /> Annuler
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="h-9 px-3 flex items-center gap-1 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-200 text-xs disabled:opacity-50"
+          >
+            <Check className="w-3.5 h-3.5" /> {saving ? '…' : 'Enregistrer'}
+          </button>
+        </div>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        className="min-h-[80px] p-3 text-sm text-foreground focus:outline-none prose prose-sm max-w-none [&_p]:my-1"
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && ['b', 'i', 'u'].includes(e.key.toLowerCase())) {
+            e.preventDefault();
+            const k = e.key.toLowerCase();
+            exec(k === 'b' ? 'bold' : k === 'i' ? 'italic' : 'underline');
+          }
+        }}
+      />
+      {isCuratorEdit && (
+        <div className="px-3 py-1.5 bg-amber-500/5 border-t border-amber-500/20 flex items-center gap-1.5 text-[10px] text-amber-300/80">
+          <ShieldCheck className="w-3 h-3" />
+          Édition curatoriale — vos modifications seront visibles par tous.
         </div>
       )}
     </div>
