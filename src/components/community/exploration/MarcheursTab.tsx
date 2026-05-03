@@ -47,7 +47,7 @@ type ShareKitState = {
   generatedCount: number;
 };
 
-type MarcheurSubTab = 'observations' | 'contributions' | 'impact';
+type MarcheurSubTab = 'observations' | 'ecoute' | 'contributions' | 'impact';
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
