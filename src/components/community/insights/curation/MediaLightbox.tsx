@@ -147,7 +147,8 @@ function initials(name?: string | null): string {
   return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?';
 }
 
-const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex, marcheEvents, badges }) => {
+const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex, marcheEvents, badges, canReattribute, marcheurs = [], explorationId }) => {
+  const [attributionOpen, setAttributionOpen] = useState(false);
   const [index, setIndex] = useState(startIndex);
   const touchStartX = useRef<number | null>(null);
 
