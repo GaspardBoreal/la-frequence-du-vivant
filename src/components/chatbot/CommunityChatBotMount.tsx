@@ -61,35 +61,13 @@ function useExplorationIdFromSlug(slug: string | undefined): string | null {
   return id;
 }
 
-/** Hook : résout un slug de marche-event vers son id. */
-function useMarcheEventIdFromSlug(slug: string | undefined): string | null {
-  const [id, setId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!slug) {
-      setId(null);
-      return;
-    }
-    if (UUID_RE.test(slug)) {
-      setId(slug);
-      return;
-    }
-    let cancelled = false;
-    // Marches publiques : MarcheDetail utilise marches.slug ; on cherche d'abord
-    // un marche_event lié, sinon on retourne null (la fiche d'événement
-    // n'est pas systématiquement reliée à une marche publique).
-    supabase
-      .from('marche_events')
-      .select('id')
-      .eq('slug', slug)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) setId(data?.id ?? null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
-  return id;
+/** Hook : résout un slug de marche-event vers son id (uuid) si possible. */
+function useMarcheEventIdFromSlug(slugOrId: string | undefined): string | null {
+  // Pour les pages /marche/:slug et /marches/:id, on ne tente la résolution
+  // que si la valeur est déjà un UUID (cas /marches/:id). Sinon on laisse
+  // le contexte exploration prendre le relais.
+  if (!slugOrId) return null;
+  return UUID_RE.test(slugOrId) ? slugOrId : null;
 }
 
 function CommunityChatBotInner() {
