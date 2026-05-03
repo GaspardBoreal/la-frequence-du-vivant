@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,9 +18,11 @@ import ExplorationCarteTab from './exploration/ExplorationCarteTab';
 import { useAuth } from '@/hooks/useAuth';
 import EventBiodiversityTab from './EventBiodiversityTab';
 import ApprendreTab from './insights/ApprendreTab';
+import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
+
 
 type GlobalTab = 'carte' | 'marcheurs' | 'marches' | 'biodiversite' | 'apprendre';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'ecrire' | 'vivant';
