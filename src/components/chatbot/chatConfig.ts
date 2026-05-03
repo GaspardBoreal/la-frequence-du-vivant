@@ -73,6 +73,7 @@ export const chatConfig: ChatConfig = {
     exportations: 'Exportations',
     outils: 'Outils',
     exploration: 'Exploration',
+  },
   contextIcons: {
     dashboard: LayoutDashboard,
     events: CalendarHeart,
@@ -81,6 +82,7 @@ export const chatConfig: ChatConfig = {
     exportations: FileDown,
     outils: Wrench,
     exploration: Compass,
+  },
 
   suggestions: {
     dashboard: [
