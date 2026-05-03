@@ -32,11 +32,21 @@ const draggableIcon = L.divIcon({
   iconAnchor: [14, 14],
 });
 
-const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng, onClose, onPreview }) => {
+const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({
+  initialLat,
+  initialLng,
+  onClose,
+  onPreview,
+  marcheId,
+  canPersist = false,
+}) => {
   const map = useMap();
+  const queryClient = useQueryClient();
   const [lat, setLat] = useState(initialLat);
   const [lng, setLng] = useState(initialLng);
   const [submitted, setSubmitted] = useState<{ lat: number; lng: number } | null>(null);
+  const [confirmingSave, setConfirmingSave] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const { lexicon, geometry, isFetching, isError } = useLexiconParcelWithGeometryAt(
     submitted?.lat ?? null,
@@ -44,11 +54,9 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
     !!submitted,
   );
 
-  // Pousse la preview au parent dès qu'une géométrie est résolue + recadre la carte
   useEffect(() => {
     if (!submitted || !geometry?.coordinates) return;
     onPreview({ lat: submitted.lat, lng: submitted.lng, geometry, data: lexicon });
-    // Ferme toute popup résiduelle et recadre sur la nouvelle parcelle
     try {
       map.closePopup();
       const bounds = L.geoJSON(geometry as any).getBounds();
@@ -60,10 +68,10 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
     }
   }, [geometry, submitted, lexicon, onPreview, map]);
 
-  // Réinitialise la preview si l'utilisateur déplace le marqueur après soumission
   useEffect(() => {
     if (submitted && (submitted.lat !== lat || submitted.lng !== lng)) {
       setSubmitted(null);
+      setConfirmingSave(false);
       onPreview(null);
     }
   }, [lat, lng, submitted, onPreview]);
@@ -74,8 +82,31 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
   };
   const handleCancel = () => {
     setSubmitted(null);
+    setConfirmingSave(false);
     onPreview(null);
     onClose();
+  };
+
+  const handleConfirmSave = async () => {
+    if (!marcheId || !submitted) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('marches')
+        .update({ latitude: submitted.lat, longitude: submitted.lng })
+        .eq('id', marcheId);
+      if (error) throw error;
+      toast.success('Coordonnées GPS mises à jour', {
+        description: `Lat ${submitted.lat.toFixed(6)} · Lng ${submitted.lng.toFixed(6)}`,
+      });
+      await queryClient.invalidateQueries();
+      onPreview(null);
+      onClose();
+    } catch (e: any) {
+      console.error('[GpsEditOverlay] update failed', e);
+      toast.error('Échec de la mise à jour GPS', { description: e?.message || 'Erreur inconnue' });
+      setSaving(false);
+    }
   };
 
   const showLoader = isFetching && !geometry;
