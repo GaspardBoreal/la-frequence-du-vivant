@@ -1,5 +1,6 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { fetchLexiconParcelData } from '@/utils/lexiconApi';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface CadastrePoint {
   id: string;
@@ -8,7 +9,7 @@ export interface CadastrePoint {
   label?: string;
 }
 
-const STALE = 5 * 60 * 1000;
+const STALE = 30 * 60 * 1000;
 
 /** Charge en parallèle les parcelles LEXICON pour une liste de points. */
 export function useLexiconParcels(points: CadastrePoint[], enabled: boolean) {
@@ -18,10 +19,59 @@ export function useLexiconParcels(points: CadastrePoint[], enabled: boolean) {
       queryFn: () => fetchLexiconParcelData(p.lat, p.lng),
       enabled: enabled && Number.isFinite(p.lat) && Number.isFinite(p.lng),
       staleTime: STALE,
-      gcTime: 10 * 60 * 1000,
+      gcTime: 60 * 60 * 1000,
       retry: 1,
     })),
   });
+}
+
+/** Récupère la géométrie réelle (Polygon GeoJSON) d'une parcelle via cadastre-proxy. */
+async function fetchParcelGeometryById(parcelId: string): Promise<any | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('cadastre-proxy', {
+      body: { parcelId },
+    });
+    if (error) {
+      console.error('[useLexiconParcels] cadastre-proxy error', error);
+      return null;
+    }
+    if (data?.success && data?.data) {
+      // data.data est typiquement { geometry, properties } ou directement une feature/geometry
+      return data.data.geometry || data.data;
+    }
+    return null;
+  } catch (e) {
+    console.error('[useLexiconParcels] cadastre-proxy invoke failed', e);
+    return null;
+  }
+}
+
+/** Hook composé : LEXICON puis géométrie cadastre-proxy en parallèle pour chaque point. */
+export function useLexiconParcelsWithGeometry(points: CadastrePoint[], enabled: boolean) {
+  const lexiconQueries = useLexiconParcels(points, enabled);
+
+  const geometryQueries = useQueries({
+    queries: points.map((p, i) => {
+      const lex = lexiconQueries[i]?.data;
+      const parcelId =
+        (lex?.success && (lex.data?.parcel_id || lex.data?.identifiant_cadastral)) || null;
+      return {
+        queryKey: ['cadastre-geometry', parcelId],
+        queryFn: () => fetchParcelGeometryById(parcelId as string),
+        enabled: enabled && !!parcelId,
+        staleTime: STALE,
+        gcTime: 60 * 60 * 1000,
+        retry: 1,
+      };
+    }),
+  });
+
+  return points.map((p, i) => ({
+    point: p,
+    lexicon: lexiconQueries[i]?.data?.success ? lexiconQueries[i].data.data : null,
+    geometry: geometryQueries[i]?.data || null,
+    isLoading: lexiconQueries[i]?.isLoading || geometryQueries[i]?.isLoading,
+  }));
 }
 
 /** Charge une parcelle ponctuellement (clic carte / repositionnement). */

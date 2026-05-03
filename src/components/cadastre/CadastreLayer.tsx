@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
-import { CadastrePoint, useLexiconParcels } from './useLexiconParcels';
+import { CadastrePoint, useLexiconParcelsWithGeometry } from './useLexiconParcels';
 import { extractParcelInfo, geometryCentroid } from './cadastreUtils';
 import ParcelPopup from './ParcelPopup';
 
@@ -31,28 +31,24 @@ const PREVIEW_STYLE: L.PathOptions = {
 };
 
 const CadastreLayer: React.FC<CadastreLayerProps> = ({ points, enabled = true, previewGeometry, previewData }) => {
-  const queries = useLexiconParcels(points, enabled);
-
-  const items = useMemo(
-    () =>
-      queries.map((q, i) => ({
-        point: points[i],
-        data: q.data?.success ? q.data.data : null,
-      })),
-    [queries, points],
-  );
+  const items = useLexiconParcelsWithGeometry(points, enabled);
 
   if (!enabled) return null;
 
   return (
     <>
-      {items.map(({ point, data }) => {
-        const geometry = data?._raw?.cadastre?.shape || data?.geometry || data?._raw?.geometry;
+      {items.map(({ point, lexicon, geometry: realGeom }) => {
+        // Priorité: géométrie cadastre-proxy (vraie parcelle) > shape LEXICON > geometry brute
+        const geometry =
+          realGeom ||
+          lexicon?._raw?.cadastre?.shape ||
+          lexicon?.geometry ||
+          lexicon?._raw?.geometry;
         if (!geometry?.coordinates) return null;
-        const info = extractParcelInfo(data);
+        const info = extractParcelInfo(lexicon);
         const centroid = geometryCentroid(geometry) || { lat: point.lat, lng: point.lng };
         return (
-          <GeoJSON key={point.id} data={geometry as any} style={STYLE}>
+          <GeoJSON key={`${point.id}-${info.parcelId || 'p'}`} data={geometry as any} style={STYLE}>
             <ParcelPopup info={info} centroid={centroid} />
           </GeoJSON>
         );
