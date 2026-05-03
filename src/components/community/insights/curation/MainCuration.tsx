@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import MediaPickerSheet from './MediaPickerSheet';
 import MediaLightbox from './MediaLightbox';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 
 interface Props {
   explorationId: string;
@@ -55,6 +56,20 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [lightbox, setLightbox] = useState<{ items: MediaItem[]; index: number } | null>(null);
 
   const mediaIndex = useMemo(() => buildMediaIndex(allMedia), [allMedia]);
+
+  // Snapshot des pratiques visibles pour le ChatBot IA contextuel
+  useChatTabSnapshot(
+    'apprendre.main.pratiques',
+    {
+      count: entries.length,
+      items: entries.slice(0, 20).map(e => ({
+        id: e.id,
+        title: e.title,
+        description: e.description ? String(e.description).slice(0, 280) : null,
+        media_count: (e.media_ids || []).length,
+      })),
+    },
+  );
 
   // Lock body scroll while picker is open (mobile)
   useEffect(() => {
