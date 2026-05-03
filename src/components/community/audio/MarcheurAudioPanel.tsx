@@ -216,28 +216,35 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
           </div>
           <div className="space-y-2">
             {myAudio.map((a: any) => (
-              <ContributionItem
-                key={a.id}
-                id={a.id}
-                type="audio"
-                titre={a.titre}
-                description={a.description}
-                url={a.url_fichier}
-                isPublic={a.is_public}
-                sharedToWeb={(a as any).shared_to_web}
-                isOwner={true}
-                createdAt={a.created_at}
-                onUpdate={(id, updates) =>
-                  updateContrib.mutate({ table: 'marcheur_audio', id, updates })
-                }
-                onDelete={(id) =>
-                  deleteContrib.mutate({
-                    table: 'marcheur_audio',
-                    id,
-                    storageUrl: a.url_fichier,
-                  })
-                }
-              />
+              <div key={a.id} className="space-y-1">
+                <ContributionItem
+                  id={a.id}
+                  type="audio"
+                  titre={a.titre}
+                  description={a.description}
+                  url={a.url_fichier}
+                  isPublic={a.is_public}
+                  sharedToWeb={(a as any).shared_to_web}
+                  isOwner={true}
+                  createdAt={a.created_at}
+                  onUpdate={(id, updates) =>
+                    updateContrib.mutate({ table: 'marcheur_audio', id, updates })
+                  }
+                  onDelete={(id) =>
+                    deleteContrib.mutate({
+                      table: 'marcheur_audio',
+                      id,
+                      storageUrl: a.url_fichier,
+                    })
+                  }
+                />
+                <AudioDescriptionBlock
+                  audioId={a.id}
+                  description={a.description}
+                  canEdit={true}
+                  isCuratorEdit={false}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -254,15 +261,15 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
           </div>
           <div className="space-y-2">
             {othersAudio.map((a: any) => (
-              <ContributionItem
-                key={a.id}
-                id={a.id}
-                type="audio"
-                titre={a.titre}
-                url={a.url_fichier}
-                isPublic={a.is_public}
-                isOwner={false}
-                createdAt={a.created_at}
+              <div key={a.id} className="space-y-1">
+                <ContributionItem
+                  id={a.id}
+                  type="audio"
+                  titre={a.titre}
+                  url={a.url_fichier}
+                  isPublic={a.is_public}
+                  isOwner={false}
+                  createdAt={a.created_at}
               />
             ))}
           </div>
