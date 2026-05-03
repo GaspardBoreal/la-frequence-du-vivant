@@ -1,4 +1,4 @@
-import { useLocation, useParams, matchPath } from 'react-router-dom';
+import { useLocation, matchPath } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { ChatBot } from './ChatBot';
 import type { ChatContext } from './chatConfig';
