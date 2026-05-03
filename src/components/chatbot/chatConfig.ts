@@ -72,7 +72,7 @@ export const chatConfig: ChatConfig = {
     marches: 'Marches',
     exportations: 'Exportations',
     outils: 'Outils',
-  },
+    exploration: 'Exploration',
   contextIcons: {
     dashboard: LayoutDashboard,
     events: CalendarHeart,
@@ -80,7 +80,7 @@ export const chatConfig: ChatConfig = {
     marches: Map,
     exportations: FileDown,
     outils: Wrench,
-  },
+    exploration: Compass,
 
   suggestions: {
     dashboard: [
@@ -112,6 +112,12 @@ export const chatConfig: ChatConfig = {
     ],
     outils: [
       { emoji: '🛠️', text: 'Quels outils sont disponibles ?' },
+    ],
+    exploration: [
+      { emoji: '🌿', text: 'Fais-moi une synthèse de cette exploration' },
+      { emoji: '🦉', text: 'Quelle biodiversité observée ici ?' },
+      { emoji: '📍', text: 'Quels points de marche composent ce parcours ?' },
+      { emoji: '🎙️', text: 'Aide-moi à préparer une restitution publique' },
     ],
   },
 
