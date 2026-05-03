@@ -8,8 +8,11 @@ interface Args {
   source: ReattributeSource;
   /** UUID of the underlying row (marcheur_medias.id, marcheur_audio.id, exploration_convivialite_photos.id). */
   mediaId: string;
-  /** New marcheur attribution, or null to clear and fall back to uploader. */
+  /** Existing exploration_marcheurs.id, or null to clear / use userId instead. */
   marcheurId: string | null;
+  /** When set (and marcheurId is null), credits the photo to this auth user.
+   *  The RPC will reuse or auto-create a "shadow" editorial row for them. */
+  userId?: string | null;
   /** Used for query-cache invalidation (TanStack queries keyed by exploration). */
   explorationId?: string;
   /** For UI: name shown in the success toast. */
@@ -24,11 +27,12 @@ interface Args {
 export function useReattributeMedia() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ source, mediaId, marcheurId }: Args) => {
+    mutationFn: async ({ source, mediaId, marcheurId, userId }: Args) => {
       const { data, error } = await (supabase as any).rpc('reattribute_media', {
         _source: source,
         _media_id: mediaId,
         _marcheur_id: marcheurId,
+        _user_id: userId ?? null,
       });
       if (error) throw error;
       return data;
@@ -36,6 +40,8 @@ export function useReattributeMedia() {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['exploration-all-media', vars.explorationId] });
       qc.invalidateQueries({ queryKey: ['convivialite-photos', vars.explorationId] });
+      qc.invalidateQueries({ queryKey: ['reattribution-picker', vars.explorationId] });
+      qc.invalidateQueries({ queryKey: ['exploration-marcheurs', vars.explorationId] });
       // Legacy fiche view (MarcheDetailModal / VoirTab)
       qc.invalidateQueries({ queryKey: ['marcheur-medias'] });
       if (vars.marcheurId) {
