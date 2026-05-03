@@ -887,11 +887,12 @@ const MarcheurCard: React.FC<{
   const resolvedUserId = marcheur.userId ?? (isCommunity ? marcheur.id.replace('community-', '') : null);
   const resolvedCrewId = marcheur.crewId ?? (marcheur.source === 'crew' ? marcheur.id.replace('crew-', '') : null);
   const photoCount = marcheur.stats.photos + marcheur.stats.videos;
+  const audioCount = marcheur.stats.sons || 0;
   
   // Real contributions count from biodiversity snapshots
   const { data: contributionsCount } = useWalkerContributionsCount(marcheur.prenom, marcheur.nom, explorationMarcheIds, explorationId);
   const realContribCount = contributionsCount || 0;
-  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0;
+  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0 || audioCount > 0;
 
   return (
     <motion.div
