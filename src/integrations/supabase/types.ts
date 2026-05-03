@@ -4233,6 +4233,10 @@ export type Database = {
         Returns: Json
       }
       get_community_impact_aggregates: { Args: never; Returns: Json }
+      get_community_impact_aggregates_by_exploration: {
+        Args: { p_exploration_id: string }
+        Returns: Json
+      }
       get_community_impact_aggregates_scoped: {
         Args: { p_event_id?: string }
         Returns: Json
