@@ -36,6 +36,8 @@ export function useReattributeMedia() {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['exploration-all-media', vars.explorationId] });
       qc.invalidateQueries({ queryKey: ['convivialite-photos', vars.explorationId] });
+      // Legacy fiche view (MarcheDetailModal / VoirTab)
+      qc.invalidateQueries({ queryKey: ['marcheur-medias'] });
       if (vars.marcheurId) {
         toast.success(
           vars.marcheurName
