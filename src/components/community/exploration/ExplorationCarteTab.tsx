@@ -599,8 +599,11 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
+  const { data: canEditGps = false } = useCanCurateAudio();
 
-  // One-time hint for the "Créer une marche" button
+  // GPS edit (Cadastre mode) state
+  const [gpsEditPointId, setGpsEditPointId] = useState<string | null>(null);
+  const [cadastrePreview, setCadastrePreview] = useState<{ lat: number; lng: number; geometry: any; data: any } | null>(null);
   const [showCreateHint, setShowCreateHint] = useState(false);
   useEffect(() => {
     if (!userCanCreate) return;
