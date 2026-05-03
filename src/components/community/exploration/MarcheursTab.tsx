@@ -1010,6 +1010,20 @@ const MarcheurCard: React.FC<{
                 </motion.div>
               )}
 
+              {activeSubTab === 'ecoute' && (
+                <motion.div key="ecoute" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <MarcheurAudioPanel
+                    ownerUserId={resolvedUserId}
+                    ownerCrewId={resolvedCrewId}
+                    marcheIds={explorationMarcheIds}
+                    marcheEventIds={explorationEventIds}
+                    canUpload={!!viewer && !!resolvedUserId && viewer.id === resolvedUserId}
+                    viewerUserId={viewer?.id ?? null}
+                    variant="inline"
+                  />
+                </motion.div>
+              )}
+
               {activeSubTab === 'contributions' && (
                 <motion.div key="contribs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} />
