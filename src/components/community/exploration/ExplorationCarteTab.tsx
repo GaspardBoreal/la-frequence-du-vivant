@@ -86,6 +86,7 @@ function MapStyleToggle({ mapStyle, onChange }: { mapStyle: MapStyle; onChange: 
     { key: 'geopoetic', icon: <Palette className="w-4 h-4" />, label: 'Géo' },
     { key: 'satellite', icon: <Globe className="w-4 h-4" />, label: 'Sat' },
     { key: 'terrain', icon: <Mountain className="w-4 h-4" />, label: 'Relief' },
+    { key: 'cadastre', icon: <LandPlot className="w-4 h-4" />, label: 'Cadastre' },
   ];
 
   return (
