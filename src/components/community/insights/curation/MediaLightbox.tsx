@@ -389,13 +389,6 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
                     }`}
                     title={badge ? badge.label : 'Badge à venir'}
                   >
-                    className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium ${
-                      badge
-                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                        : 'border border-dashed border-muted-foreground/40 text-muted-foreground/70'
-                    }`}
-                    title={badge ? badge.label : 'Badge à venir'}
-                  >
                     {badge ? (
                       <>
                         {badge.icon ?? <Award className="w-3.5 h-3.5" />}
