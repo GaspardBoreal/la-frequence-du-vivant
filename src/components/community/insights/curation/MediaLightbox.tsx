@@ -116,6 +116,12 @@ interface Props {
   marcheEvents: MarcheEventGroup[];
   /** Optional badge data per media key (future: points/awards). */
   badges?: Record<string, BadgeData | undefined>;
+  /** Whether the current user can reattribute photo credits (admin/ambassadeur/sentinelle). */
+  canReattribute?: boolean;
+  /** All marcheurs of the exploration (used by the attribution bottom-sheet). */
+  marcheurs?: ExplorationMarcheur[];
+  /** Exploration id (for cache invalidation after reattribution). */
+  explorationId?: string;
 }
 
 const FitBounds: React.FC<{ points: [number, number][]; focus?: [number, number] }> = ({ points, focus }) => {
