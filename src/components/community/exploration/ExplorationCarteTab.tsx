@@ -1009,12 +1009,16 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                       Explorer cette étape →
                     </button>
                   )}
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-        {/* User GPS marker */}
+
+                  {mapStyle === 'cadastre' && canEditGps && (
+                    <button
+                      onClick={() => setGpsEditPointId(marche.id)}
+                      className="w-full mt-1.5 py-1.5 rounded-lg bg-blue-500/15 border border-blue-400/30 text-blue-200 text-[11px] font-medium hover:bg-blue-500/25 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Move className="w-3 h-3" />
+                      Repositionner (aperçu)
+                    </button>
+                  )}
         {userLocation && (
           <UserLocationMarker
             position={userLocation}
