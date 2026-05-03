@@ -8,7 +8,7 @@ import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useLexiconData } from '../../hooks/useLexiconData';
 import LexiconStructuredDisplay from './LexiconStructuredDisplay';
-import CadastralMap from './CadastralMap';
+import CadastreMapStandalone from '@/components/cadastre/CadastreMapStandalone';
 
 interface LexiconSubSectionProps {
   marche: MarcheTechnoSensible;
