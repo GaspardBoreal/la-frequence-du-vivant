@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Marker } from 'react-leaflet';
 import L from 'leaflet';
 import { Crosshair, Send, X, Loader2 } from 'lucide-react';
@@ -70,50 +71,53 @@ const GpsEditOverlay: React.FC<GpsEditOverlayProps> = ({ initialLat, initialLng,
         }}
       />
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1100] w-[min(92vw,420px)]">
-        <div className="bg-black/85 backdrop-blur-xl border border-white/15 rounded-2xl px-4 py-3 shadow-xl shadow-black/30 text-white">
-          <div className="flex items-center gap-2 mb-2">
-            <Crosshair className="w-4 h-4 text-amber-300" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-amber-300">
-              Repositionnement — aperçu local
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mb-3 font-mono text-xs">
-            <div className="bg-white/5 rounded-md px-2 py-1.5">
-              <div className="text-[10px] text-white/50">Lat</div>
-              <div>{lat.toFixed(6)}</div>
+      {createPortal(
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[10000] w-[min(92vw,420px)] pointer-events-auto">
+          <div className="bg-black/85 backdrop-blur-xl border border-white/15 rounded-2xl px-4 py-3 shadow-xl shadow-black/40 text-white">
+            <div className="flex items-center gap-2 mb-2">
+              <Crosshair className="w-4 h-4 text-amber-300" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-amber-300">
+                Repositionnement — aperçu local
+              </span>
             </div>
-            <div className="bg-white/5 rounded-md px-2 py-1.5">
-              <div className="text-[10px] text-white/50">Lng</div>
-              <div>{lng.toFixed(6)}</div>
+            <div className="grid grid-cols-2 gap-2 mb-3 font-mono text-xs">
+              <div className="bg-white/5 rounded-md px-2 py-1.5">
+                <div className="text-[10px] text-white/50">Lat</div>
+                <div>{lat.toFixed(6)}</div>
+              </div>
+              <div className="bg-white/5 rounded-md px-2 py-1.5">
+                <div className="text-[10px] text-white/50">Lng</div>
+                <div>{lng.toFixed(6)}</div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSubmit}
-              disabled={isFetching}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/30 hover:bg-emerald-500/40 border border-emerald-400/40 text-emerald-100 text-xs font-medium disabled:opacity-50"
-            >
-              {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              Soumettre
-            </button>
-            <button
-              onClick={handleCancel}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/15 text-white/80 text-xs"
-            >
-              <X className="w-3.5 h-3.5" /> Fermer
-            </button>
-          </div>
-          {isError && (
-            <div className="mt-2 text-[11px] text-red-300">Échec de l'appel LEXICON.</div>
-          )}
-          {!submitted && (
-            <div className="mt-2 text-[10px] text-white/50">
-              Glissez le marqueur puis cliquez sur Soumettre. Aucune sauvegarde en base.
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSubmit}
+                disabled={isFetching}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/30 hover:bg-emerald-500/40 border border-emerald-400/40 text-emerald-100 text-xs font-medium disabled:opacity-50"
+              >
+                {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                Soumettre
+              </button>
+              <button
+                onClick={handleCancel}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/15 text-white/80 text-xs"
+              >
+                <X className="w-3.5 h-3.5" /> Fermer
+              </button>
             </div>
-          )}
-        </div>
-      </div>
+            {isError && (
+              <div className="mt-2 text-[11px] text-red-300">Échec de l'appel LEXICON.</div>
+            )}
+            {!submitted && (
+              <div className="mt-2 text-[10px] text-white/50">
+                Glissez le marqueur puis cliquez sur Soumettre. Aucune sauvegarde en base.
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body,
+      )}
     </>
   );
 };
