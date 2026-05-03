@@ -225,6 +225,8 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
           stats: { ...s, speciesCount: 0 },
           totalContributions: total,
           speciesObserved: [],
+          userId: cu.user_id,
+          crewId: crewIdByUserId.get(cu.user_id) ?? null,
         });
       });
 
