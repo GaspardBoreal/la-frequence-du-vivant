@@ -1,57 +1,42 @@
 ## Diagnostic
 
-Sophie D apparaît à 0 photo alors que 4 photos lui ont été réattribuées. Vérifié en base :
+Une photo réattribuée doit être créditée à **une seule personne** : l'attribué·e si `attributed_marcheur_id` est renseigné, sinon l'uploader. Aujourd'hui Gaspard voit ses 4 photos même réattribuées car la règle d'exclusivité n'est appliquée nulle part.
 
-- `marcheur_medias` / `marcheur_audio` : aucune ligne pour Sophie (ni en upload, ni en réattribution).
-- `exploration_convivialite_photos` : **4 lignes** avec `attributed_marcheur_id` = sa fiche éditoriale (uploadées par Gaspard, réattribuées à Sophie).
+Deux endroits à corriger :
 
-Deux bugs distincts dans la fiche Marcheurs :
+### 1. `useExplorationParticipants.ts` (comptage des badges)
 
-1. **Comptage** — `useExplorationParticipants` n'agrège que `marcheur_medias`, `marcheur_audio`, `marcheur_textes`. La table `exploration_convivialite_photos` est ignorée → toutes les photos Convivialité (uploadées ou réattribuées) ne sont jamais comptées dans les badges du bandeau.
+La fonction `route()` est correcte côté attribution (elle redirige vers la fiche/user attribué) mais **ne désactive pas l'uploader d'origine**. Or `route()` retourne déjà `userId` ou `crewId` selon priorité — donc la fix est juste de vérifier que la branche `attributedCrewId` ignore complètement l'uploader. À la lecture du code, c'est déjà le cas (le `else` n'est pas pris si `attributedCrewId`). **Bug réel ailleurs** : regardons l'agrégation côté Gaspard. Gaspard est `crew` (Sentinelle, fiche éditoriale). Les 4 photos qu'il a uploadées ont `user_id = gaspard_uid` + `attributed_marcheur_id = sophie_crew_id`. La fonction `route(gaspard_uid, sophie_crew_id)` retourne donc `{userId: sophie_user, crewId: null}` — correct. Donc le badge de Gaspard ne devrait PAS les compter.
 
-2. **Affichage du panneau déplié** — `ObservationsSubTab` ne requête que `marcheur_medias` filtré sur `user_id = userId` (uploader). Donc :
-   - les photos Convivialité ne s'affichent jamais (mauvaise table) ;
-   - les photos `marcheur_medias` réattribuées à Sophie (si elles existaient) seraient masquées car filtrées sur l'uploader, pas sur l'attribution.
+Mais Gaspard affiche `49` photos. Très probablement, il a aussi de **vraies** photos non réattribuées dans `marcheur_medias`. Le badge est donc juste pour `marcheur_medias`. **À vérifier** : si Gaspard est aussi listé dans `crewIdByUserId` et que ses 4 photos Convivialité sont uploadées par lui sans être réattribuées… non, elles SONT réattribuées. Donc le comptage hook est OK.
 
-## Correctifs
+→ Aucun changement nécessaire dans `useExplorationParticipants.ts`. Le badge `49` de Gaspard est légitime (autres photos).
 
-### 1. `src/hooks/useExplorationParticipants.ts`
+### 2. `ObservationsSubTab` dans `MarcheursTab.tsx` (vrai bug)
 
-Ajouter une 4ᵉ source dans l'agrégation (en parallèle des médias, audio, textes) :
+La requête utilise `.or(user_id.eq.gaspard, attributed_marcheur_id.eq.gaspard_crew)`. Le second filtre matche ses propres uploads, mais le premier matche **toutes** ses photos uploadées — y compris celles réattribuées à Sophie. Aucun filtrage post-requête.
+
+**Correctif** : appliquer une règle d'exclusivité côté client après la requête :
 
 ```ts
-supabase
-  .from('exploration_convivialite_photos')
-  .select('user_id, attributed_marcheur_id')
-  .eq('exploration_id', explorationId)
-  .eq('is_hidden', false)
+const belongsToMe = (row) => {
+  if (row.attributed_marcheur_id) return crewId && row.attributed_marcheur_id === crewId;
+  return userId && row.user_id === userId;
+};
 ```
 
-Réutiliser la fonction `route(uploaderId, attributedCrewId)` déjà en place pour créditer la photo au bon user (ou crew shadow). Incrémenter `bucket.photos++`. Cela corrige automatiquement la dédoublonnage Sophie D et alimente le badge caméra.
+Et filtrer les résultats des deux requêtes (`marcheur_medias` et `exploration_convivialite_photos`) avec ce prédicat. Ajouter `user_id, attributed_marcheur_id` au SELECT pour disposer des champs.
 
-### 2. `ObservationsSubTab` dans `src/components/community/exploration/MarcheursTab.tsx`
+### 3. Vérification du compteur d'en-tête
 
-Refondre la requête pour fusionner trois sources, toutes filtrées sur l'auteur **effectif** (uploader OU attribution) :
-
-- `marcheur_medias` : `user_id.eq.${userId}` **OR** `attributed_marcheur_id.in.(${crewIdsLinkedToUser})` — via `.or(...)`. Pour les crew shadow non liés à un user (cas Gaspard), n'inclure que la branche `attributed_marcheur_id`.
-- `exploration_convivialite_photos` : même logique sur `exploration_id`.
-- Mapper en items normalisés `{ id, url, titre, created_at, kind: 'photo'|'video' }`.
-
-Pour résoudre proprement, étendre la signature pour passer `marcheur` (au lieu d'un simple `userId`) afin que le composant connaisse aussi `crewIdLinkedToThisUser` (résolu côté hook : exposer `crewId?: string` dans `MarcheurWithStats` quand la fiche éditoriale lui est rattachée, ou faire une mini-requête `exploration_marcheurs` côté composant).
-
-Rendre le sous-onglet disponible aussi pour `source === 'crew'` (actuellement bloqué par `isCommunity && userId`), pour que les marcheurs purement éditoriaux (sans compte auth) puissent quand même afficher les photos qui leur ont été réattribuées.
-
-### 3. Header badges dynamiques
-
-Dans `MarcheurCard` (l 622), garder `photoCount = stats.photos + stats.videos` ; il devient correct grâce au correctif (1). Aucun autre changement nécessaire.
-
-### 4. Invalidations
-
-Ajouter `qc.invalidateQueries({ queryKey: ['marcheur-observations-photos'] })` dans `useReattributeMedia` pour rafraîchir la liste dépliée après toute réattribution.
+Confirmer que pour Gaspard, `stats.photos` n'inclut pas les 4 photos réattribuées à Sophie. La fonction `route()` du hook l'écarte déjà via la branche `attributedCrewId`. Aucun changement.
 
 ## Résultat attendu
 
-- Sophie D affiche `📷 4` dans son bandeau.
-- En dépliant : les 4 photos Convivialité s'affichent en grille, avec date, triables.
-- Les marcheurs éditoriaux (sans compte) peuvent désormais aussi recevoir et afficher des médias réattribués.
-- Aucune régression : marcheurs ayant uploadé eux-mêmes continuent d'être comptés via la branche `user_id` du `route()`.
+- **Gaspard** : son bandeau déplié n'affiche plus les 4 photos réattribuées à Sophie.
+- **Sophie** : continue d'afficher les 4 photos.
+- **Comportement par défaut** : un upload non réattribué reste visible chez l'uploader.
+
+## Fichier modifié
+
+- `src/components/community/exploration/MarcheursTab.tsx` — `ObservationsSubTab` : ajout du prédicat `belongsToMe` appliqué sur les résultats des deux requêtes, et inclusion de `user_id, attributed_marcheur_id` dans les SELECT.
