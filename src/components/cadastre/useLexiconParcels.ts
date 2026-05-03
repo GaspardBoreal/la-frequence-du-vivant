@@ -90,3 +90,46 @@ export function useLexiconParcelAt(lat: number | null, lng: number | null, enabl
     retry: 1,
   });
 }
+
+/** Variante : LEXICON + cadastre-proxy en cascade pour un point unique. */
+export function useLexiconParcelWithGeometryAt(
+  lat: number | null,
+  lng: number | null,
+  enabled = true,
+) {
+  const lexiconQuery = useLexiconParcelAt(lat, lng, enabled);
+  const lex = lexiconQuery.data;
+  const parcelId =
+    (lex?.success && (lex.data?.parcel_id || lex.data?.identifiant_cadastral)) || null;
+
+  const geometryQuery = useQuery({
+    queryKey: ['cadastre-geometry', parcelId],
+    queryFn: async () => {
+      const g = await fetchParcelGeometryById(parcelId as string);
+      if (!g) throw new Error('cadastre-geometry-null');
+      return g;
+    },
+    enabled: enabled && !!parcelId,
+    staleTime: STALE,
+    gcTime: 60 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 4000),
+  });
+
+  const lexiconData = lex?.success ? lex.data : null;
+  const fallbackGeom =
+    lexiconData?._raw?.geolocation?.shape ||
+    lexiconData?._raw?.cadastre?.shape ||
+    lexiconData?.geometry ||
+    lexiconData?._raw?.geometry ||
+    null;
+  const geometry = geometryQuery.data || fallbackGeom;
+
+  return {
+    lexicon: lexiconData,
+    geometry,
+    isFetching: lexiconQuery.isFetching || geometryQuery.isFetching,
+    isError: lexiconQuery.isError || (!!parcelId && geometryQuery.isError && !fallbackGeom),
+    isResolved: !!geometry || (lexiconQuery.isFetched && !parcelId && !fallbackGeom),
+  };
+}

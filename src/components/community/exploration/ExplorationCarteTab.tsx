@@ -600,6 +600,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   // GPS edit (Cadastre mode) state
   const [gpsEditPointId, setGpsEditPointId] = useState<string | null>(null);
   const [cadastrePreview, setCadastrePreview] = useState<{ lat: number; lng: number; geometry: any; data: any } | null>(null);
+  const stepMarkerRefs = useRef<Map<string, L.Marker>>(new Map());
   const [showCreateHint, setShowCreateHint] = useState(false);
   useEffect(() => {
     if (!userCanCreate) return;
@@ -940,6 +941,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               key={marche.id}
               position={[marche.latitude!, marche.longitude!]}
               icon={createNumberedIcon(index + 1, activeMarker === index, totalContrib, mapStyle === 'cadastre')}
+              ref={(ref) => {
+                if (ref) stepMarkerRefs.current.set(marche.id, ref as unknown as L.Marker);
+                else stepMarkerRefs.current.delete(marche.id);
+              }}
               eventHandlers={{
                 click: () => setActiveMarker(index),
               }}
@@ -1008,7 +1013,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
                   {mapStyle === 'cadastre' && canEditGps && (
                     <button
-                      onClick={() => setGpsEditPointId(marche.id)}
+                      onClick={() => {
+                        stepMarkerRefs.current.get(marche.id)?.closePopup();
+                        setGpsEditPointId(marche.id);
+                      }}
                       className="w-full mt-1.5 py-1.5 rounded-lg bg-blue-500/15 border border-blue-400/30 text-blue-200 text-[11px] font-medium hover:bg-blue-500/25 transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Move className="w-3 h-3" />
