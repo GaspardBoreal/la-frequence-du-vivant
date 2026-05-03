@@ -80,18 +80,18 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
 
       const eventIds = events.map(e => e.id);
 
-      // 2. Public medias (photos/vidéos) + audios + steps (marches) en parallèle
-      const [mediasRes, audiosRes, stepsLinkRes] = await Promise.all([
+      // 2. Public medias (photos/vidéos) + audios + steps (marches) + marcheurs en parallèle
+      const [mediasRes, audiosRes, stepsLinkRes, marcheursRes] = await Promise.all([
         supabase
           .from('marcheur_medias')
-          .select('id, type_media, url_fichier, external_url, titre, marche_event_id, marche_id, metadata, user_id, created_at, duree_secondes')
+          .select('id, type_media, url_fichier, external_url, titre, marche_event_id, marche_id, metadata, user_id, attributed_marcheur_id, created_at, duree_secondes')
           .in('marche_event_id', eventIds)
           .eq('is_public', true)
           .in('type_media', ['photo', 'video'])
           .order('created_at', { ascending: false }),
         supabase
           .from('marcheur_audio')
-          .select('id, url_fichier, titre, marche_event_id, marche_id, user_id, created_at, duree_secondes')
+          .select('id, url_fichier, titre, marche_event_id, marche_id, user_id, attributed_marcheur_id, created_at, duree_secondes')
           .in('marche_event_id', eventIds)
           .eq('is_public', true)
           .order('created_at', { ascending: false }),
@@ -100,12 +100,19 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
           .select('marche_id, ordre, marches!inner(id, nom_marche, latitude, longitude)')
           .eq('exploration_id', explorationId)
           .order('ordre', { ascending: true }),
+        supabase
+          .from('exploration_marcheurs')
+          .select('id, prenom, nom')
+          .eq('exploration_id', explorationId),
       ]);
       if (mediasRes.error) throw mediasRes.error;
       if (audiosRes.error) throw audiosRes.error;
       if (stepsLinkRes.error) throw stepsLinkRes.error;
       const medias = mediasRes.data || [];
       const audios = audiosRes.data || [];
+      const marcheurNameById = new Map(
+        (marcheursRes.data || []).map((m: any) => [m.id, `${m.prenom ?? ''} ${m.nom ?? ''}`.trim()]),
+      );
 
       // Build step lookup (id → MarcheStep) – only steps with GPS are useful.
       // Preserve exploration ordering (1-based index over the sorted rows so
