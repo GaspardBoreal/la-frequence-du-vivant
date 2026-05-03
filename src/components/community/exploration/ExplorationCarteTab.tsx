@@ -32,18 +32,25 @@ const TILE_CONFIGS: Record<MapStyle, { url: string; attribution: string; maxZoom
     attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
     maxZoom: 17,
   },
+  cadastre: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap &middot; &copy; Etalab Cadastre',
+    maxZoom: 19,
+  },
 };
 
 const POLYLINE_COLORS: Record<MapStyle, string> = {
   geopoetic: '#10b981',
   satellite: '#fbbf24',
   terrain: '#10b981',
+  cadastre: '#0d6b58',
 };
 
 const ARROW_COLORS: Record<MapStyle, string> = {
   geopoetic: '#10b981',
   satellite: '#fbbf24',
   terrain: '#10b981',
+  cadastre: '#0d6b58',
 };
 
 // Dynamic tile layer that swaps without remounting the map
