@@ -185,7 +185,9 @@ const ConvivialiteMosaic: React.FC<Props> = ({
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition" />
                 <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition flex items-end justify-between text-white text-[11px]">
                   <span className="font-medium drop-shadow">
-                    {photo.author_prenom} {photo.author_nom}
+                    {photo.attributed_full_name
+                      || `${photo.author_prenom ?? ''} ${photo.author_nom ?? ''}`.trim()
+                      || 'Anonyme'}
                   </span>
                   <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                     <button
