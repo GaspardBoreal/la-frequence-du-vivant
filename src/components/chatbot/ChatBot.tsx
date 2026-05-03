@@ -34,9 +34,21 @@ interface ChatBotProps {
   currentContext?: ChatContext;
   /** Entité détectée via l'URL — fallback si aucune page n'a posé de contexte explicite */
   urlEntity?: ChatEntity | null;
+  /** Edge function à appeler (admin-chat par défaut, community-chat pour pages publiques) */
+  edgeFunctionPath?: string;
+  /** Override du nom affiché (ex: "Compagnon du Vivant" sur pages publiques) */
+  assistantNameOverride?: string;
+  /** Badge rôle affiché dans le header (ex: "Ambassadeur") */
+  roleBadge?: string | null;
 }
 
-export function ChatBot({ currentContext = 'dashboard', urlEntity = null }: ChatBotProps) {
+export function ChatBot({
+  currentContext = 'dashboard',
+  urlEntity = null,
+  edgeFunctionPath,
+  assistantNameOverride,
+  roleBadge = null,
+}: ChatBotProps) {
   // Si l'URL contient une entité et qu'aucune page n'en a posé d'explicite, on l'enregistre.
   useEffect(() => {
     if (urlEntity && !chatPageContext.getState().entity) {
@@ -53,7 +65,7 @@ export function ChatBot({ currentContext = 'dashboard', urlEntity = null }: Chat
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
   const [interruptBanner, setInterruptBanner] = useState(false);
-  const { messages, isLoading, wasStopped, send, stop, reset } = useChatStream(currentContext);
+  const { messages, isLoading, wasStopped, send, stop, reset } = useChatStream(currentContext, edgeFunctionPath);
   const { exportPrint } = useChatExport(messages);
   const isMobile = useIsMobile();
   const {
