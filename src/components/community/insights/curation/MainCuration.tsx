@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import MediaPickerSheet from './MediaPickerSheet';
 import MediaLightbox from './MediaLightbox';
+import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 
 interface Props {
   explorationId: string;
