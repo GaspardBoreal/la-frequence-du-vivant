@@ -16,7 +16,11 @@ export interface ConvivialitePhoto {
   is_hidden: boolean;
   position: number;
   created_at: string;
-  // Enriched
+  /** Marcheur officially credited (overrides uploader). */
+  attributed_marcheur_id?: string | null;
+  /** Resolved name of the attributed marcheur, when present. */
+  attributed_full_name?: string | null;
+  // Enriched (uploader profile)
   author_prenom?: string | null;
   author_nom?: string | null;
   author_avatar?: string | null;
@@ -37,21 +41,33 @@ export function useConvivialitePhotos(explorationId: string | undefined) {
         .order('created_at', { ascending: true });
       if (error) throw error;
       const photos = (data || []) as ConvivialitePhoto[];
-      // Enrich with author profiles
+      // Enrich with author profiles + attributed marcheur names
       const userIds = Array.from(new Set(photos.map(p => p.user_id)));
-      if (userIds.length === 0) return photos;
-      const { data: profiles } = await supabase
-        .from('community_profiles')
-        .select('user_id, prenom, nom, avatar_url')
-        .in('user_id', userIds);
-      const map = new Map((profiles || []).map(p => [p.user_id, p]));
+      const attributedIds = Array.from(
+        new Set(photos.map(p => p.attributed_marcheur_id).filter(Boolean) as string[]),
+      );
+      const [profilesRes, marcheursRes] = await Promise.all([
+        userIds.length > 0
+          ? supabase.from('community_profiles').select('user_id, prenom, nom, avatar_url').in('user_id', userIds)
+          : Promise.resolve({ data: [] as any[] } as any),
+        attributedIds.length > 0
+          ? (supabase as any).from('exploration_marcheurs').select('id, prenom, nom').in('id', attributedIds)
+          : Promise.resolve({ data: [] as any[] } as any),
+      ]);
+      const profMap = new Map(((profilesRes as any).data || []).map((p: any) => [p.user_id, p]));
+      const marcheurMap = new Map(
+        ((marcheursRes as any).data || []).map((m: any) => [m.id, `${m.prenom ?? ''} ${m.nom ?? ''}`.trim()]),
+      );
       return photos.map(p => {
-        const prof = map.get(p.user_id);
+        const prof = profMap.get(p.user_id) as any;
         return {
           ...p,
           author_prenom: prof?.prenom || null,
           author_nom: prof?.nom || null,
           author_avatar: prof?.avatar_url || null,
+          attributed_full_name: p.attributed_marcheur_id
+            ? (marcheurMap.get(p.attributed_marcheur_id) as string | undefined) ?? null
+            : null,
         };
       });
     },

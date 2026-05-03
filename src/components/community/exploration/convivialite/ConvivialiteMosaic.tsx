@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Flag, Trash2, X, GripVertical, ArrowUpDown, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flag, Trash2, X, GripVertical, ArrowUpDown, Check, Pencil, User } from 'lucide-react';
 import {
   DndContext,
   PointerSensor,
@@ -20,12 +20,17 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ConvivialitePhoto } from '@/hooks/useConvivialitePhotos';
+import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
 
 interface Props {
   photos: ConvivialitePhoto[];
+  explorationId?: string;
   currentUserId?: string;
   isAdmin?: boolean;
   canReorder?: boolean;
+  /** Whether the current user can reattribute photo credits. */
+  canReattribute?: boolean;
   onReport: (photo: ConvivialitePhoto) => void;
   onDelete: (photo: ConvivialitePhoto) => void;
   onReorder?: (orderedIds: string[]) => void;
@@ -33,14 +38,18 @@ interface Props {
 
 const ConvivialiteMosaic: React.FC<Props> = ({
   photos,
+  explorationId,
   currentUserId,
   isAdmin,
   canReorder = false,
+  canReattribute = false,
   onReport,
   onDelete,
   onReorder,
 }) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [attributionOpen, setAttributionOpen] = useState(false);
+  const { data: marcheurs = [] } = useExplorationMarcheurs(canReattribute ? explorationId : undefined);
   const [editMode, setEditMode] = useState(false);
   const [orderedPhotos, setOrderedPhotos] = useState<ConvivialitePhoto[]>(photos);
   const initialIds = useMemo(() => photos.map((p) => p.id).join('|'), [photos]);
@@ -240,15 +249,49 @@ const ConvivialiteMosaic: React.FC<Props> = ({
               onClick={(e) => e.stopPropagation()}
               className="max-w-[92vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
             />
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/90 text-sm text-center">
-              <div className="font-semibold">{lightboxPhoto.author_prenom} {lightboxPhoto.author_nom}</div>
-              <div className="text-white/60 text-xs">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/90 text-sm text-center max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                disabled={!canReattribute}
+                onClick={() => canReattribute && setAttributionOpen(true)}
+                className={`group inline-flex items-center gap-2 px-3 py-2 rounded-full transition ${
+                  canReattribute
+                    ? 'bg-white/10 hover:bg-emerald-500/20 ring-1 ring-white/15 hover:ring-emerald-400/50 cursor-pointer'
+                    : 'cursor-default'
+                }`}
+                aria-label={canReattribute ? 'Réattribuer la photo' : undefined}
+              >
+                <User className="w-3.5 h-3.5 text-white/70" />
+                <span className="font-semibold text-white">
+                  {lightboxPhoto.attributed_full_name
+                    || `${lightboxPhoto.author_prenom ?? ''} ${lightboxPhoto.author_nom ?? ''}`.trim()
+                    || 'Anonyme'}
+                </span>
+                {canReattribute && <Pencil className="w-3 h-3 text-white/60" />}
+              </button>
+              <div className="text-white/60 text-xs mt-1">
                 {new Date(lightboxPhoto.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {lightboxPhoto.attributed_full_name && lightboxPhoto.author_prenom && (
+                  <span className="ml-2 opacity-70">· upload {lightboxPhoto.author_prenom} {lightboxPhoto.author_nom}</span>
+                )}
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {canReattribute && lightboxPhoto && (
+        <MediaAttributionSheet
+          open={attributionOpen}
+          onOpenChange={setAttributionOpen}
+          source="conv"
+          mediaId={lightboxPhoto.id}
+          explorationId={explorationId}
+          marcheurs={marcheurs}
+          currentAttributedId={lightboxPhoto.attributed_marcheur_id ?? null}
+          uploaderName={[lightboxPhoto.author_prenom, lightboxPhoto.author_nom].filter(Boolean).join(' ') || null}
+        />
+      )}
     </>
   );
 };

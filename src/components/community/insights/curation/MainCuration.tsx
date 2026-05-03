@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import MediaPickerSheet from './MediaPickerSheet';
 import MediaLightbox from './MediaLightbox';
+import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 
 interface Props {
   explorationId: string;
@@ -45,6 +46,7 @@ const emptyEditor: EditorState = {
 const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const { data: entries = [], isLoading } = useExplorationCurations(explorationId, 'main');
   const { data: allMedia } = useExplorationAllMedia(explorationId);
+  const { data: marcheurs = [] } = useExplorationMarcheurs(explorationId);
   const upsert = useUpsertCuration();
   const del = useDeleteCuration();
 
@@ -342,6 +344,9 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         items={lightbox?.items || []}
         startIndex={lightbox?.index ?? 0}
         marcheEvents={allMedia.events}
+        canReattribute={isCurator}
+        marcheurs={marcheurs}
+        explorationId={explorationId}
       />
     </div>
   );

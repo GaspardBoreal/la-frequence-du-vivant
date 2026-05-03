@@ -3,10 +3,12 @@ import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones, Locate, Plus, Minus } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, User, Award, Sparkles, Headphones, Locate, Plus, Minus, Pencil } from 'lucide-react';
 import type { LatLngExpression, LatLngBoundsExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { MediaItem, MarcheEventGroup, GpsSource } from '@/hooks/useExplorationAllMedia';
+import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
+import MediaAttributionSheet from './MediaAttributionSheet';
 
 const UUID_RE = /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
 const isUuidLike = (s?: string | null) => !!s && UUID_RE.test(s.trim());
@@ -114,6 +116,12 @@ interface Props {
   marcheEvents: MarcheEventGroup[];
   /** Optional badge data per media key (future: points/awards). */
   badges?: Record<string, BadgeData | undefined>;
+  /** Whether the current user can reattribute photo credits (admin/ambassadeur/sentinelle). */
+  canReattribute?: boolean;
+  /** All marcheurs of the exploration (used by the attribution bottom-sheet). */
+  marcheurs?: ExplorationMarcheur[];
+  /** Exploration id (for cache invalidation after reattribution). */
+  explorationId?: string;
 }
 
 const FitBounds: React.FC<{ points: [number, number][]; focus?: [number, number] }> = ({ points, focus }) => {
@@ -139,7 +147,8 @@ function initials(name?: string | null): string {
   return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?';
 }
 
-const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex, marcheEvents, badges }) => {
+const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex, marcheEvents, badges, canReattribute, marcheurs = [], explorationId }) => {
+  const [attributionOpen, setAttributionOpen] = useState(false);
   const [index, setIndex] = useState(startIndex);
   const touchStartX = useRef<number | null>(null);
 
@@ -338,17 +347,38 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
               <div className="flex flex-col">
                 {/* Author + Badge slot */}
                 <div className="px-4 pt-3 pb-2 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500/20 to-amber-500/10 border border-border flex items-center justify-center text-xs font-semibold text-emerald-700 dark:text-emerald-300 shrink-0">
-                    {initials(current.authorName)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                      <User className="w-3 h-3" /> Marcheur·euse
+                  <button
+                    type="button"
+                    disabled={!canReattribute}
+                    onClick={() => canReattribute && setAttributionOpen(true)}
+                    className={`flex-1 min-w-0 flex items-center gap-3 -mx-1 px-1 py-1 rounded-xl transition ${
+                      canReattribute
+                        ? 'hover:bg-emerald-500/5 ring-0 hover:ring-1 hover:ring-emerald-500/30 cursor-pointer text-left'
+                        : 'cursor-default text-left'
+                    }`}
+                    aria-label={canReattribute ? 'Réattribuer la photo' : undefined}
+                  >
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500/20 to-amber-500/10 border border-border flex items-center justify-center text-xs font-semibold text-emerald-700 dark:text-emerald-300 shrink-0">
+                      {initials(current.authorName)}
                     </div>
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {current.authorName || 'Anonyme'}
-                    </p>
-                  </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <User className="w-3 h-3" />
+                        {current.attributedMarcheurId ? 'Crédité·e à' : 'Marcheur·euse'}
+                        {current.attributedMarcheurId && current.uploaderName && current.uploaderName !== current.authorName && (
+                          <span className="normal-case tracking-normal text-muted-foreground/60">
+                            · upload {current.uploaderName}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
+                        {current.authorName || 'Anonyme'}
+                        {canReattribute && (
+                          <Pencil className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+                        )}
+                      </p>
+                    </div>
+                  </button>
 
                   {/* Badge slot */}
                   <div
@@ -565,6 +595,19 @@ const MediaLightbox: React.FC<Props> = ({ open, onOpenChange, items, startIndex,
           </div>
         </motion.div>
       </motion.div>
+
+      {canReattribute && current && current.source !== 'audio' && current.rawId && (
+        <MediaAttributionSheet
+          open={attributionOpen}
+          onOpenChange={setAttributionOpen}
+          source={current.source}
+          mediaId={current.rawId}
+          explorationId={explorationId}
+          marcheurs={marcheurs}
+          currentAttributedId={current.attributedMarcheurId ?? null}
+          uploaderName={current.uploaderName ?? null}
+        />
+      )}
     </AnimatePresence>,
     document.body
   );

@@ -17,11 +17,18 @@ export interface MarcheStep {
 
 export interface MediaItem {
   key: string; // 'conv:<uuid>' | 'media:<uuid>' | 'audio:<uuid>'
+  /** Bare UUID of the underlying row (without the source prefix). */
+  rawId: string;
   source: MediaSource;
   type: MediaType;
   url: string;
   titre?: string | null;
+  /** Display name = attributed marcheur name if defined, else uploader name. */
   authorName?: string | null;
+  /** Original uploader's full name (for attribution UI). */
+  uploaderName?: string | null;
+  /** Marcheur currently credited for this media (overrides uploader). */
+  attributedMarcheurId?: string | null;
   marcheEventId?: string;
   marcheId?: string | null;
   marcheStepName?: string | null;
@@ -73,18 +80,18 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
 
       const eventIds = events.map(e => e.id);
 
-      // 2. Public medias (photos/vidéos) + audios + steps (marches) en parallèle
-      const [mediasRes, audiosRes, stepsLinkRes] = await Promise.all([
+      // 2. Public medias (photos/vidéos) + audios + steps (marches) + marcheurs en parallèle
+      const [mediasRes, audiosRes, stepsLinkRes, marcheursRes] = await Promise.all([
         supabase
           .from('marcheur_medias')
-          .select('id, type_media, url_fichier, external_url, titre, marche_event_id, marche_id, metadata, user_id, created_at, duree_secondes')
+          .select('id, type_media, url_fichier, external_url, titre, marche_event_id, marche_id, metadata, user_id, attributed_marcheur_id, created_at, duree_secondes')
           .in('marche_event_id', eventIds)
           .eq('is_public', true)
           .in('type_media', ['photo', 'video'])
           .order('created_at', { ascending: false }),
         supabase
           .from('marcheur_audio')
-          .select('id, url_fichier, titre, marche_event_id, marche_id, user_id, created_at, duree_secondes')
+          .select('id, url_fichier, titre, marche_event_id, marche_id, user_id, attributed_marcheur_id, created_at, duree_secondes')
           .in('marche_event_id', eventIds)
           .eq('is_public', true)
           .order('created_at', { ascending: false }),
@@ -93,12 +100,19 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
           .select('marche_id, ordre, marches!inner(id, nom_marche, latitude, longitude)')
           .eq('exploration_id', explorationId)
           .order('ordre', { ascending: true }),
+        supabase
+          .from('exploration_marcheurs')
+          .select('id, prenom, nom')
+          .eq('exploration_id', explorationId),
       ]);
       if (mediasRes.error) throw mediasRes.error;
       if (audiosRes.error) throw audiosRes.error;
       if (stepsLinkRes.error) throw stepsLinkRes.error;
       const medias = mediasRes.data || [];
       const audios = audiosRes.data || [];
+      const marcheurNameById = new Map(
+        (marcheursRes.data || []).map((m: any) => [m.id, `${m.prenom ?? ''} ${m.nom ?? ''}`.trim()]),
+      );
 
       // Build step lookup (id → MarcheStep) – only steps with GPS are useful.
       // Preserve exploration ordering (1-based index over the sorted rows so
@@ -160,18 +174,23 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
       };
 
       const grouped: Record<string, MediaItem[]> = {};
-      medias.forEach(m => {
+      medias.forEach((m: any) => {
         const url = m.url_fichier || m.external_url;
         if (!url) return;
         const prof = profMap.get(m.user_id);
+        const uploaderName = prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null;
+        const attributedName = m.attributed_marcheur_id ? marcheurNameById.get(m.attributed_marcheur_id) ?? null : null;
         const stepName = m.marche_id ? stepById.get(m.marche_id)?.name ?? null : null;
         const item: MediaItem = {
           key: `media:${m.id}`,
+          rawId: m.id,
           source: 'media',
           type: m.type_media === 'video' ? 'video' : 'photo',
           url,
           titre: m.titre,
-          authorName: prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null,
+          authorName: attributedName || uploaderName,
+          uploaderName,
+          attributedMarcheurId: m.attributed_marcheur_id ?? null,
           marcheEventId: m.marche_event_id,
           marcheId: m.marche_id ?? null,
           marcheStepName: stepName,
@@ -181,17 +200,22 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
         };
         (grouped[m.marche_event_id] ||= []).push(item);
       });
-      audios.forEach(a => {
+      audios.forEach((a: any) => {
         if (!a.url_fichier) return;
         const prof = profMap.get(a.user_id);
+        const uploaderName = prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null;
+        const attributedName = a.attributed_marcheur_id ? marcheurNameById.get(a.attributed_marcheur_id) ?? null : null;
         const stepName = a.marche_id ? stepById.get(a.marche_id)?.name ?? null : null;
         const item: MediaItem = {
           key: `audio:${a.id}`,
+          rawId: a.id,
           source: 'audio',
           type: 'audio',
           url: a.url_fichier,
           titre: a.titre,
-          authorName: prof ? `${prof.prenom ?? ''} ${prof.nom ?? ''}`.trim() : null,
+          authorName: attributedName || uploaderName,
+          uploaderName,
+          attributedMarcheurId: a.attributed_marcheur_id ?? null,
           marcheEventId: a.marche_event_id,
           marcheId: a.marche_id ?? null,
           marcheStepName: stepName,
@@ -231,11 +255,17 @@ export function useExplorationAllMedia(explorationId: string | undefined) {
 
   const convivialite: MediaItem[] = convPhotos.map((p: ConvivialitePhoto) => ({
     key: `conv:${p.id}`,
+    rawId: p.id,
     source: 'conv',
     type: 'photo',
     url: p.url,
     titre: null,
-    authorName: [p.author_prenom, p.author_nom].filter(Boolean).join(' ') || null,
+    authorName:
+      (p.attributed_full_name && p.attributed_full_name.trim())
+      || [p.author_prenom, p.author_nom].filter(Boolean).join(' ')
+      || null,
+    uploaderName: [p.author_prenom, p.author_nom].filter(Boolean).join(' ') || null,
+    attributedMarcheurId: p.attributed_marcheur_id ?? null,
     marcheId: null,
     marcheStepName: null,
     gps: null,

@@ -109,9 +109,11 @@ const ConvivialiteContent: React.FC<ConvivialiteContentProps> = ({
       ) : mode === 'mosaic' ? (
         <ConvivialiteMosaic
           photos={visiblePhotos}
+          explorationId={explorationId}
           currentUserId={userId}
           isAdmin={isAdmin}
           canReorder={canReorder}
+          canReattribute={!!isAdmin || ['ambassadeur','sentinelle'].includes(userRole || '')}
           onReport={(p) => setReportPhoto(p)}
           onDelete={handleDelete}
           onReorder={(orderedIds) => reorderPhotos(orderedIds)}
