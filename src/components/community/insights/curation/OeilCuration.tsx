@@ -216,8 +216,13 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       source = reviewItems;
     }
     source.forEach(x => {
-      const cat = x.curation?.category;
-      if (cat) counts[cat] = (counts[cat] || 0) + 1;
+      const cats = new Set<string>();
+      if (x.curation?.category) cats.add(x.curation.category);
+      const secondaries = (x.curation?.secondary_categories as string[] | undefined) || [];
+      secondaries.forEach(c => cats.add(c));
+      cats.forEach(cat => {
+        counts[cat] = (counts[cat] || 0) + 1;
+      });
     });
     return counts;
   }, [view, pinnedSpecies, aiSuggestions, filteredPool, curationByKey]);
