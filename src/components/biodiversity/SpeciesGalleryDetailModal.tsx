@@ -110,8 +110,11 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   const isEnglishFallback = frenchName === species.name && translation?.source === 'fallback';
 
   const hasPhoto = photos.length > 0;
+  const hasMarches = speciesMarches.length > 0;
+  const hasAudio = xenoCantoData && xenoCantoData.recordings.length > 0;
   const hasObservers = observers.length > 0;
   const uniqueObserversCount = new Set(observers.map((o) => o.marcheurId)).size;
+  const kingdomInfo = getKingdomInfo(kingdom);
   const KingdomIcon = kingdomInfo.icon;
 
   // Check if current photo is from marcheur (personal photo)
