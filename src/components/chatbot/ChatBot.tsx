@@ -288,25 +288,26 @@ export function ChatBot({
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className={chatClasses}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-border bg-primary px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-foreground/20">
+              {/* Header — 2 zones intangibles : titre fluide / actions sanctuarisées */}
+              <div className="flex items-center justify-between gap-2 border-b border-border bg-primary px-3 py-2.5 sm:px-4 sm:py-3">
+                {/* Zone titre — flex-1 min-w-0 pour laisser la place aux actions */}
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20">
                     <span className="text-lg">{chatConfig.assistantEmoji}</span>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-primary-foreground flex items-center gap-1.5">
-                      {assistantNameOverride ?? chatConfig.assistantName}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold text-primary-foreground flex items-center gap-1.5 truncate">
+                      <span className="truncate">{assistantNameOverride ?? chatConfig.assistantName}</span>
                       {roleBadge && (
                         <Badge
                           variant="secondary"
-                          className="bg-primary-foreground/15 text-primary-foreground text-[9px] border-0 px-1.5 py-0"
+                          className="shrink-0 bg-primary-foreground/15 text-primary-foreground text-[9px] border-0 px-1.5 py-0"
                         >
                           {roleBadge}
                         </Badge>
                       )}
                     </h3>
-                    <p className="text-[10px] text-primary-foreground/70 truncate max-w-[220px]">
+                    <p className="text-[10px] text-primary-foreground/70 truncate">
                       {voiceMode
                         ? '🎙️ Mode vocal actif'
                         : focalEntity && focalState?.label
@@ -317,58 +318,57 @@ export function ChatBot({
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  {isExpanded && (
-                    <Badge
-                      variant="secondary"
-                      className="mr-2 bg-primary-foreground/15 text-primary-foreground text-[10px] border-0"
-                    >
-                      {chatConfig.contextLabels[currentContext]}
-                    </Badge>
-                  )}
-                  {ttsSupported && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={toggleVoiceMode}
-                      className={`h-8 w-8 transition-colors ${
-                        voiceMode
-                          ? 'text-primary-foreground bg-primary-foreground/20'
-                          : 'text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10'
-                      }`}
-                      title={voiceMode ? 'Désactiver la lecture auto' : 'Activer la lecture auto'}
-                    >
-                      {voiceMode ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                    </Button>
-                  )}
-                  {messages.length > 0 && !isLoading && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => (isMobile ? setDrawerOpen(true) : exportPrint())}
-                      className="h-8 w-8 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
-                      title="Exporter la conversation"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {messages.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleReset}
-                      className="h-8 w-8 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
-                      title="Nouvelle conversation"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                  )}
+
+                {/* Zone actions — shrink-0, toujours visible */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Plus d'actions"
+                        className="h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                        title="Plus d'actions"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-60">
+                      <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                        {chatConfig.contextLabels[currentContext]}
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {ttsSupported && (
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); toggleVoiceMode(); }}>
+                          {voiceMode ? <Volume2 className="h-4 w-4 mr-2" /> : <VolumeX className="h-4 w-4 mr-2" />}
+                          <span className="flex-1">Lecture vocale auto</span>
+                          {voiceMode && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        disabled={messages.length === 0 || isLoading}
+                        onSelect={() => (isMobile ? setDrawerOpen(true) : exportPrint())}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Exporter la conversation
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={messages.length === 0}
+                        onSelect={handleReset}
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Nouvelle conversation
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
                   {!isMobile && (
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={toggleExpanded}
-                      className="h-8 w-8 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                      aria-label={isExpanded ? 'Réduire' : 'Ouvrir en grand'}
+                      className="h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
                       title={isExpanded ? 'Réduire' : 'Ouvrir en grand'}
                     >
                       {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -381,7 +381,9 @@ export function ChatBot({
                       setIsOpen(false);
                       setIsExpanded(false);
                     }}
-                    className="h-8 w-8 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                    aria-label="Fermer le chat"
+                    className="h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                    title="Fermer"
                   >
                     <X className="h-4 w-4" />
                   </Button>
