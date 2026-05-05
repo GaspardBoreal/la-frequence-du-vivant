@@ -95,6 +95,32 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
     explorationId,
   );
 
+  // Snapshot pour le ChatBot (screen-awareness) — DOIT être appelé avant tout
+  // early return pour préserver l'ordre des hooks entre les renders.
+  const _uniqueObserversCount = new Set(observers.map((o) => o.marcheurId)).size;
+  useChatTabSnapshot(
+    'apprendre.especeOuverte',
+    isOpen && species
+      ? {
+          nom_fr: translation?.commonName || photoData?.commonName || species.name,
+          nom_sci: species.scientificName,
+          observations_total: species.count,
+          marches: speciesMarches.slice(0, 20).map((m) => ({
+            nom: m.marcheName,
+            ville: m.ville,
+            date: m.observationDate,
+            obs: m.observationCount,
+          })),
+          observateurs: observers.slice(0, 30).map((o) => ({
+            nom: o.fullName,
+            marche: o.marcheName,
+            date: o.observationDate,
+          })),
+          observateurs_uniques: _uniqueObserversCount,
+        }
+      : undefined,
+  );
+
   if (!species) return null;
 
   // Use fetched data if available, otherwise fall back to props
@@ -128,31 +154,6 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 
   const totalMarchesCount = speciesMarches.length;
   const isLoading = photoLoading || translationLoading;
-
-  // Snapshot pour le ChatBot (screen-awareness) — l'IA voit la fiche ouverte
-  useChatTabSnapshot(
-    isOpen ? 'apprendre.especeOuverte' : '__inactive__',
-    isOpen
-      ? {
-          nom_fr: frenchName,
-          nom_sci: species.scientificName,
-          regne: kingdomInfo.label,
-          observations_total: species.count,
-          marches: speciesMarches.slice(0, 20).map((m) => ({
-            nom: m.marcheName,
-            ville: m.ville,
-            date: m.observationDate,
-            obs: m.observationCount,
-          })),
-          observateurs: observers.slice(0, 30).map((o) => ({
-            nom: o.fullName,
-            marche: o.marcheName,
-            date: o.observationDate,
-          })),
-          observateurs_uniques: uniqueObserversCount,
-        }
-      : undefined,
-  );
 
   const nextPhoto = () => setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
   const prevPhoto = () => setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length);
