@@ -253,7 +253,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       source = reviewItems;
     }
     if (categoryFilter && view !== 'terrain') {
-      source = source.filter(x => x.curation?.category === categoryFilter);
+      source = source.filter(x => matchesCategory(x.curation, categoryFilter));
     }
     return source;
   }, [view, categoryFilter, search, pinnedSpecies, aiSuggestions, filteredPool, reviewItems, curationByKey]);
