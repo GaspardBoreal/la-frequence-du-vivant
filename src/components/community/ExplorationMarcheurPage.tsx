@@ -32,8 +32,8 @@ const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] =
   { key: 'carte', label: 'Carte', icon: Map },
   { key: 'marcheurs', label: 'Marcheurs', icon: Users },
   { key: 'marches', label: 'Marches', icon: Footprints },
-  { key: 'biodiversite', label: 'Empreinte', icon: TreePine },
   { key: 'apprendre', label: 'Apprendre', icon: GraduationCap },
+  { key: 'biodiversite', label: 'Synthèse', icon: TreePine },
 ];
 
 const marcheursSubTabs: { key: MarcheursSubTab; label: string; icon: typeof Users }[] = [
