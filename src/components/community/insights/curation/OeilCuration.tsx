@@ -440,6 +440,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-none">
             <button
               onClick={() => setCategoryFilter(null)}
+              data-chat-chip
+              data-chat-active={categoryFilter === null ? 'true' : 'false'}
               className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border transition ${
                 categoryFilter === null
                   ? 'bg-primary text-primary-foreground border-primary'
@@ -455,6 +457,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                 <button
                   key={cat.value}
                   onClick={() => setCategoryFilter(isActive ? null : cat.value)}
+                  data-chat-chip
+                  data-chat-active={isActive ? 'true' : 'false'}
                   className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border transition flex items-center gap-1 ${
                     isActive
                       ? `${cat.color} ring-1 ring-current/40`
@@ -464,10 +468,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                   }`}
                   title={cat.label}
                 >
-                  <span>{cat.label}</span>
-                  {count > 0 && (
-                    <span className="text-[9px] opacity-80">({count})</span>
-                  )}
+                  <span>{cat.label} {count > 0 ? `(${count})` : ''}</span>
                 </button>
               );
             })}
