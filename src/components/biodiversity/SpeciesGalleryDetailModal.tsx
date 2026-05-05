@@ -297,7 +297,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                     </TabsTrigger>
                     <TabsTrigger value="observers" className="data-[state=active]:bg-white/10 text-xs">
                       <Users className="w-3 h-3 mr-1.5" />
-                      Marcheurs
+                      Observateurs
                       {hasObservers && (
                         <span className="ml-1 text-[10px] opacity-70">({uniqueObserversCount})</span>
                       )}
