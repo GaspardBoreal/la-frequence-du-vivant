@@ -583,8 +583,10 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           explorationId={explorationId}
         />
 
-        <SpeciesDetailModal
+        <SpeciesGalleryDetailModal
           species={selectedSpecies}
+          explorationId={explorationId}
+          allEventMarches={allEventMarches}
           isOpen={!!selectedSpecies}
           onClose={() => setSelectedSpecies(null)}
         />
