@@ -86,9 +86,16 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   );
 
   // Apply category filter on a list of {species, curation}
+  // Une espèce correspond si la catégorie est sa primaire OU dans ses secondaires.
+  const matchesCategory = (curation: ExplorationCuration | undefined, cat: string): boolean => {
+    if (!curation) return false;
+    if (curation.category === cat) return true;
+    const secondaries = (curation.secondary_categories as string[] | undefined) || [];
+    return secondaries.includes(cat);
+  };
   const applyCategoryFilter = <T extends { curation?: ExplorationCuration }>(items: T[]): T[] => {
     if (!categoryFilter) return items;
-    return items.filter(x => x.curation?.category === categoryFilter);
+    return items.filter(x => matchesCategory(x.curation, categoryFilter));
   };
 
   // Wrap setView so that switching tab clears the category filter — avoids
