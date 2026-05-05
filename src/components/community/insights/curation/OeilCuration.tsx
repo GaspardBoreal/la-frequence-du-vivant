@@ -120,27 +120,17 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     displayName: string,
     photos: string[],
   ) => {
-    const kingdom: BiodiversitySpecies['kingdom'] = (() => {
-      const g = (species.group || '').toLowerCase();
-      if (g === 'animalia') return 'Animalia';
-      if (g === 'plantae') return 'Plantae';
-      if (g === 'fungi') return 'Fungi';
-      return 'Other';
-    })();
+    const g = (species.group || '').toLowerCase();
+    const kingdom =
+      g === 'animalia' ? 'Animalia' :
+      g === 'plantae' ? 'Plantae' :
+      g === 'fungi' ? 'Fungi' : 'Other';
     setSelectedSpecies({
-      id: species.key,
+      name: displayName || species.commonName || species.scientificName || '',
       scientificName: species.scientificName || '',
-      commonName: displayName || species.commonName || species.scientificName || '',
+      count: species.count,
       kingdom,
-      family: '',
-      observations: species.count,
-      lastSeen: '',
-      source: 'inaturalist',
-      attributions: [],
       photos,
-      photoData: photos[0]
-        ? { url: photos[0], source: 'inaturalist', attribution: '' }
-        : undefined,
     });
   };
 
