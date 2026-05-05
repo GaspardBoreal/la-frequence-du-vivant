@@ -14,9 +14,12 @@ import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import { useSpeciesMarches } from '@/hooks/useSpeciesMarches';
 import { useSpeciesXenoCanto } from '@/hooks/useSpeciesXenoCanto';
+import { useSpeciesObservers } from '@/hooks/useSpeciesObservers';
+import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 import SpeciesMarchesTab from './species-modal/SpeciesMarchesTab';
 import SpeciesAudioPlayer from './species-modal/SpeciesAudioPlayer';
 import SpeciesMiniMap from './species-modal/SpeciesMiniMap';
+import SpeciesObserversTab from './species-modal/SpeciesObserversTab';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface SpeciesGalleryDetailModalProps {
