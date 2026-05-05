@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { 
   ExternalLink, Leaf, Bird, Bug, HelpCircle, Loader2, 
-  MapPin, List, Music, ChevronLeft, ChevronRight, X
+  MapPin, List, Music, ChevronLeft, ChevronRight, X, Users
 } from 'lucide-react';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
