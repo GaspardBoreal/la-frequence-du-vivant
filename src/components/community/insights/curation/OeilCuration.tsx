@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Eye, Search, Sparkles, X, Plus, Wand2, Loader2, Hand, AlertCircle } from 'lucide-react';
 import ClassificationEvidenceSheet from './ClassificationEvidenceSheet';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { chatPageContext, useChatTabSnapshot } from '@/hooks/useChatPageContext';
 
 interface Props {
   explorationId: string;
@@ -221,6 +222,68 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   const handleAi = () => triggerAi.mutate(explorationId);
 
+  // ─── Snapshot Chat IA : ce qui est RÉELLEMENT visible dans la grille ───
+  // Reproduit la même logique de filtrage que les vues SpeciesGrid plus bas
+  // pour que l'IA reçoive la liste exacte affichée à l'écran.
+  const visibleSpecies = useMemo(() => {
+    let source: { species: CuratedSpeciesItem; curation?: ExplorationCuration }[] = [];
+    if (view === 'selection') {
+      source = pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }));
+    } else if (view === 'suggestions') {
+      const q = search.trim().toLowerCase();
+      source = aiSuggestions.filter(x => {
+        if (!q) return true;
+        return (
+          x.species.scientificName?.toLowerCase().includes(q) ||
+          x.species.commonName?.toLowerCase().includes(q)
+        );
+      });
+    } else if (view === 'pool') {
+      source = filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }));
+    } else if (view === 'review') {
+      source = reviewItems;
+    }
+    if (categoryFilter && view !== 'terrain') {
+      source = source.filter(x => x.curation?.category === categoryFilter);
+    }
+    return source;
+  }, [view, categoryFilter, search, pinnedSpecies, aiSuggestions, filteredPool, reviewItems, curationByKey]);
+
+  // Publie les filtres dans pageState (lus directement par l'edge function)
+  useEffect(() => {
+    chatPageContext.setPageState({
+      filters: {
+        oeilView: view,
+        oeilCategory: categoryFilter || undefined,
+        oeilSearch: search.trim() || undefined,
+        oeilVisibleCount: visibleSpecies.length,
+      },
+    });
+  }, [view, categoryFilter, search, visibleSpecies.length]);
+
+  // Publie la liste précise des espèces visibles (max 30, payload léger)
+  useChatTabSnapshot(
+    'apprendre.oeil.especesVisibles',
+    visibleSpecies.length > 0
+      ? {
+          view,
+          categorie: categoryFilter,
+          recherche: search.trim() || undefined,
+          total: visibleSpecies.length,
+          tronquee: visibleSpecies.length > 30,
+          items: visibleSpecies.slice(0, 30).map(({ species, curation }) => ({
+            nom_fr: species.displayName || species.commonName || species.scientificName,
+            nom_sci: species.scientificName,
+            categorie: curation?.category || null,
+            categories_secondaires: (curation?.secondary_categories as string[] | undefined) || undefined,
+            observations: species.count,
+            epinglee: !!curation && curation.display_order < 9999,
+          })),
+        }
+      : null,
+  );
+
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
@@ -377,6 +440,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-none">
             <button
               onClick={() => setCategoryFilter(null)}
+              data-chat-chip
+              data-chat-active={categoryFilter === null ? 'true' : 'false'}
               className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border transition ${
                 categoryFilter === null
                   ? 'bg-primary text-primary-foreground border-primary'
@@ -392,6 +457,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                 <button
                   key={cat.value}
                   onClick={() => setCategoryFilter(isActive ? null : cat.value)}
+                  data-chat-chip
+                  data-chat-active={isActive ? 'true' : 'false'}
                   className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border transition flex items-center gap-1 ${
                     isActive
                       ? `${cat.color} ring-1 ring-current/40`
@@ -401,10 +468,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                   }`}
                   title={cat.label}
                 >
-                  <span>{cat.label}</span>
-                  {count > 0 && (
-                    <span className="text-[9px] opacity-80">({count})</span>
-                  )}
+                  <span>{cat.label} {count > 0 ? `(${count})` : ''}</span>
                 </button>
               );
             })}
