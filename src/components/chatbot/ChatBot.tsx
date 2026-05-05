@@ -15,9 +15,19 @@ import {
   Minimize2,
   Paperclip,
   FileText,
+  MoreVertical,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 import { useChatStream } from '@/hooks/useChatStream';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useDocumentExtractor } from '@/hooks/useDocumentExtractor';
