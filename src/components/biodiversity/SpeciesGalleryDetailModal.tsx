@@ -8,15 +8,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { 
   ExternalLink, Leaf, Bird, Bug, HelpCircle, Loader2, 
-  MapPin, List, Music, ChevronLeft, ChevronRight, X
+  MapPin, List, Music, ChevronLeft, ChevronRight, X, Users
 } from 'lucide-react';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import { useSpeciesMarches } from '@/hooks/useSpeciesMarches';
 import { useSpeciesXenoCanto } from '@/hooks/useSpeciesXenoCanto';
+import { useSpeciesObservers } from '@/hooks/useSpeciesObservers';
+import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 import SpeciesMarchesTab from './species-modal/SpeciesMarchesTab';
 import SpeciesAudioPlayer from './species-modal/SpeciesAudioPlayer';
 import SpeciesMiniMap from './species-modal/SpeciesMiniMap';
+import SpeciesObserversTab from './species-modal/SpeciesObserversTab';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface SpeciesGalleryDetailModalProps {
@@ -86,6 +89,12 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
     species?.kingdom
   );
 
+  // Fetch observers (marcheurs ayant vu l'espèce sur cet événement)
+  const { data: observers = [], isLoading: observersLoading } = useSpeciesObservers(
+    isOpen ? species?.scientificName : undefined,
+    explorationId,
+  );
+
   if (!species) return null;
 
   // Use fetched data if available, otherwise fall back to props
@@ -103,6 +112,8 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   const hasPhoto = photos.length > 0;
   const hasMarches = speciesMarches.length > 0;
   const hasAudio = xenoCantoData && xenoCantoData.recordings.length > 0;
+  const hasObservers = observers.length > 0;
+  const uniqueObserversCount = new Set(observers.map((o) => o.marcheurId)).size;
   const kingdomInfo = getKingdomInfo(kingdom);
   const KingdomIcon = kingdomInfo.icon;
 
@@ -117,6 +128,31 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 
   const totalMarchesCount = speciesMarches.length;
   const isLoading = photoLoading || translationLoading;
+
+  // Snapshot pour le ChatBot (screen-awareness) — l'IA voit la fiche ouverte
+  useChatTabSnapshot(
+    isOpen ? 'apprendre.especeOuverte' : '__inactive__',
+    isOpen
+      ? {
+          nom_fr: frenchName,
+          nom_sci: species.scientificName,
+          regne: kingdomInfo.label,
+          observations_total: species.count,
+          marches: speciesMarches.slice(0, 20).map((m) => ({
+            nom: m.marcheName,
+            ville: m.ville,
+            date: m.observationDate,
+            obs: m.observationCount,
+          })),
+          observateurs: observers.slice(0, 30).map((o) => ({
+            nom: o.fullName,
+            marche: o.marcheName,
+            date: o.observationDate,
+          })),
+          observateurs_uniques: uniqueObserversCount,
+        }
+      : undefined,
+  );
 
   const nextPhoto = () => setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
   const prevPhoto = () => setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length);
@@ -233,27 +269,35 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                 <Badge variant="outline" className="bg-white/5 text-white/70 border-white/20">
                   {species.count} observation{species.count > 1 ? 's' : ''}
                   {hasMarches && ` sur ${totalMarchesCount} marche${totalMarchesCount > 1 ? 's' : ''}`}
+                  {hasObservers && ` · ${uniqueObserversCount} marcheur${uniqueObserversCount > 1 ? 's' : ''}`}
                 </Badge>
               </div>
             </div>
 
             {/* Marches Section - with tabs */}
-            {(hasMarches || marchesLoading) && (
-              <div className="space-y-3">
+            {(hasMarches || hasObservers || marchesLoading || observersLoading) && (
+              <div className="space-y-3" data-chat-card data-chat-title={`Observé — ${frenchName}`}>
                 <div className="flex items-center gap-2 text-white/70">
                   <MapPin className="w-4 h-4" />
                   <span className="text-sm font-medium">Observé sur ces marches</span>
                 </div>
                 
                 <Tabs defaultValue="list" className="w-full">
-                  <TabsList className="w-full bg-white/5 border border-white/10">
-                    <TabsTrigger value="list" className="flex-1 data-[state=active]:bg-white/10">
+                  <TabsList className="w-full bg-white/5 border border-white/10 grid grid-cols-3">
+                    <TabsTrigger value="list" className="data-[state=active]:bg-white/10 text-xs">
                       <List className="w-3 h-3 mr-1.5" />
                       Liste
                     </TabsTrigger>
-                    <TabsTrigger value="map" className="flex-1 data-[state=active]:bg-white/10">
+                    <TabsTrigger value="map" className="data-[state=active]:bg-white/10 text-xs">
                       <MapPin className="w-3 h-3 mr-1.5" />
                       Carte
+                    </TabsTrigger>
+                    <TabsTrigger value="observers" className="data-[state=active]:bg-white/10 text-xs">
+                      <Users className="w-3 h-3 mr-1.5" />
+                      Marcheurs
+                      {hasObservers && (
+                        <span className="ml-1 text-[10px] opacity-70">({uniqueObserversCount})</span>
+                      )}
                     </TabsTrigger>
                   </TabsList>
                   
@@ -263,6 +307,10 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                   
                   <TabsContent value="map" className="mt-3">
                     <SpeciesMiniMap marches={speciesMarches} isLoading={marchesLoading} allEventMarches={allEventMarches} />
+                  </TabsContent>
+
+                  <TabsContent value="observers" className="mt-3">
+                    <SpeciesObserversTab observers={observers} isLoading={observersLoading} />
                   </TabsContent>
                 </Tabs>
               </div>

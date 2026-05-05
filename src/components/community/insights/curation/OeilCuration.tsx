@@ -17,9 +17,9 @@ import { useExplorationMarchesGpsStatus } from '@/hooks/useExplorationMarchesGps
 import { useSpeciesTranslationBatch, type SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import ManualSpeciesModal from './ManualSpeciesModal';
 import CuratedSpeciesCard, { type CuratedSpeciesItem } from './CuratedSpeciesCard';
-import SpeciesDetailModal from '@/components/biodiversity/SpeciesDetailModal';
+import SpeciesGalleryDetailModal from '@/components/biodiversity/SpeciesGalleryDetailModal';
+import { useExplorationAllMarches } from '@/hooks/useExplorationAllMarches';
 import { CATEGORIES, getCatStyle, getCatLabel } from './curationCategories';
-import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,7 +53,14 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
-  const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+  const [selectedSpecies, setSelectedSpecies] = useState<{
+    name: string;
+    scientificName: string;
+    count: number;
+    kingdom: string;
+    photos?: string[];
+  } | null>(null);
+  const { data: allEventMarches } = useExplorationAllMarches(explorationId);
   // Phase 3 — sheet partagée pour exposer les évidences sourcées
   const [evidenceFor, setEvidenceFor] = useState<{
     curation: ExplorationCuration;
@@ -113,27 +120,17 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     displayName: string,
     photos: string[],
   ) => {
-    const kingdom: BiodiversitySpecies['kingdom'] = (() => {
-      const g = (species.group || '').toLowerCase();
-      if (g === 'animalia') return 'Animalia';
-      if (g === 'plantae') return 'Plantae';
-      if (g === 'fungi') return 'Fungi';
-      return 'Other';
-    })();
+    const g = (species.group || '').toLowerCase();
+    const kingdom =
+      g === 'animalia' ? 'Animalia' :
+      g === 'plantae' ? 'Plantae' :
+      g === 'fungi' ? 'Fungi' : 'Other';
     setSelectedSpecies({
-      id: species.key,
+      name: displayName || species.commonName || species.scientificName || '',
       scientificName: species.scientificName || '',
-      commonName: displayName || species.commonName || species.scientificName || '',
+      count: species.count,
       kingdom,
-      family: '',
-      observations: species.count,
-      lastSeen: '',
-      source: 'inaturalist',
-      attributions: [],
       photos,
-      photoData: photos[0]
-        ? { url: photos[0], source: 'inaturalist', attribution: '' }
-        : undefined,
     });
   };
 
@@ -586,8 +583,10 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           explorationId={explorationId}
         />
 
-        <SpeciesDetailModal
+        <SpeciesGalleryDetailModal
           species={selectedSpecies}
+          explorationId={explorationId}
+          allEventMarches={allEventMarches}
           isOpen={!!selectedSpecies}
           onClose={() => setSelectedSpecies(null)}
         />

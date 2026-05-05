@@ -1,135 +1,102 @@
 
-# Faire voir réellement l'écran au Compagnon du Vivant
+# Fiche espèce unifiée — Apprendre → L'Œil
 
-## Diagnostic
+## Objectif
 
-Sur la copie d'écran, l'utilisateur est dans **Apprendre › L'œil › Sélection finale**, filtre catégorie = **Auxiliaire** (4 cartes affichées). Pourtant l'IA répond qu'elle "n'a pas de liste nominative filtrée".
-
-Cause racine vérifiée dans le code :
-- `OeilCuration.tsx` (l'écran réellement affiché) **ne publie rien** dans `chatPageContext.visibleData`. Seul `MainCuration` le fait (instrumentation manuelle, ajoutée au loop précédent).
-- Le filtre `categoryFilter='auxiliaire'`, l'onglet `view`, la recherche `search` et **la liste des cartes effectivement visibles** ne sont jamais transmis.
-- Côté edge function `community-chat`, la règle "priorité absolue" sur `visibleData` est déjà en place — elle ne voit simplement rien à prioriser.
-
-Le pattern actuel (un `useChatTabSnapshot` par sous-composant) ne passera jamais à l'échelle des dizaines d'onglets de Mon Espace : oublis garantis, dette qui grossit à chaque nouvelle vue.
-
-## Stratégie : double couche, générique d'abord, ciblée ensuite
-
-### Couche 1 — Capture DOM générique (zéro effort par page)
-
-Un seul composant `<ChatViewportObserver>` monté **à la racine de Mon Espace**. Il observe le viewport principal et, à chaque changement (route, scroll arrêté, mutation DOM, switch d'onglet), il extrait un snapshot textuel léger de ce que l'utilisateur voit. Il publie sous la clé `screen.dom` dans `visibleData`.
-
-Mécanique :
-- Sélecteur racine : `<main>` ou `[data-chat-viewport]` posé une seule fois sur le wrapper de page Mon Espace.
-- Pour chaque élément interactif/structurant `data-chat-*` ou éléments standards (`button[aria-pressed=true]`, onglets actifs, chips sélectionnés, headings `h1-h3`, cartes avec `data-chat-card`), on collecte :
-  - rôle (tab/chip/card/heading/badge)
-  - libellé textuel court (max 80 chars)
-  - état (actif/sélectionné/épinglé)
-- Throttle à 400ms via `MutationObserver` + `IntersectionObserver` pour ne capter que ce qui est réellement dans le viewport.
-- Snapshot final = `{ activeChips: [...], visibleCards: [{ title, subtitle, badges }], headings: [...] }` plafonné à ~60 entrées / 6 KB.
-
-Avantage : **toutes** les pages de Mon Espace deviennent immédiatement "vues" par l'IA, sans toucher à chaque composant.
-
-### Couche 2 — Marqueurs sémantiques minimaux
-
-Les composants riches (cartes d'espèces, médias, pratiques) reçoivent juste **un attribut HTML** :
-
-```tsx
-<div data-chat-card data-chat-title="Fusain d'Europe" data-chat-badges="Auxiliaire,4 obs.">
-```
-
-Aucun hook, aucune logique — juste de la donnée structurée que la couche 1 lit. C'est ce qui rend le snapshot lisible par l'IA (titre, catégorie, compteur).
-
-À ajouter en priorité (les plus consultés) :
-- `CuratedSpeciesCard` (Œil)
-- `MainCuration` PracticeCard
-- `OreilleCuration` SoundCard
-- `MediaCard` (Voir / Convivialité)
-- Chips de filtres : `data-chat-chip` + `data-chat-active`
-
-### Couche 3 — Filtres explicites publiés dans `filters`
-
-Là où il existe des filtres décisifs (catégorie d'espèce, recherche, sous-onglet `view`), un petit `useEffect` pousse la valeur dans `chatPageContext.setPageState({ filters: ... })`. Concrètement pour `OeilCuration` :
-
-```ts
-useEffect(() => {
-  chatPageContext.setPageState({
-    filters: {
-      oeilView: view,                  // 'selection' | 'pool' | 'suggestions' | 'review' | 'terrain'
-      oeilCategory: categoryFilter,    // 'auxiliaire', 'indigene', etc.
-      oeilSearch: search || undefined,
-      oeilVisibleCount: visibleItems.length,
-    },
-  });
-}, [view, categoryFilter, search, visibleItems.length]);
-```
-
-Et la **liste précise** des espèces visibles après filtrage (max 30, champs minimaux) :
-
-```ts
-useChatTabSnapshot('apprendre.oeil.especes', visibleItems.slice(0, 30).map(x => ({
-  nom_fr: displayName(x),
-  nom_sci: x.species.scientificName,
-  categorie: x.curation?.category,
-  observations: x.species.count,
-})));
-```
-
-À répliquer pour Oreille, Palais, Cœur, Voir/Marches, EventBiodiversity (top espèces visibles).
-
-### Couche 4 — Renforcement du prompt edge function
-
-Dans `community-chat`, ajouter une règle :
-
-> Quand un filtre est actif (`filters.oeilCategory`, `filters.search`, etc.), tu DOIS répondre uniquement à partir de `visibleData` ou `screen.dom`. Tu ne dois JAMAIS dire "je n'ai pas la liste filtrée" si `visibleData` contient une slice non vide. Si la slice est plafonnée (`...30`), précise-le.
-
-Et logguer côté edge function la taille de `visibleData` reçue (pour debug futur).
-
-## Détails techniques
-
-**Nouveau fichier** : `src/components/chatbot/ChatViewportObserver.tsx`
-- Monté dans `MarchesDuVivantMonEspace.tsx` (wrapper de toutes les sous-routes /mon-espace).
-- `MutationObserver` + `IntersectionObserver` sur `[data-chat-viewport]`.
-- Throttle 400ms, snapshot dans `chatPageContext.setVisibleSlice('screen.dom', snapshot)`.
-- Auto-cleanup au démontage.
-
-**Wrapper** : ajouter `data-chat-viewport` sur le `<div className="min-h-screen ...">` racine de `ExplorationMarcheurPage` et des autres pages Mon Espace.
-
-**Modifs ciblées** :
-- `OeilCuration.tsx` : ajout `data-chat-card` + `data-chat-*` sur `CuratedSpeciesCard`, publication `filters` + snapshot `apprendre.oeil.especes`.
-- `OreilleCuration.tsx` / `PalaisCuration.tsx` : même pattern allégé.
-- `EventBiodiversityTab.tsx` : snapshot des top espèces et catégorie sélectionnée.
-- `community-chat/index.ts` : règle prompt renforcée + log `visibleDataKeys`.
-
-**Plafonds (anti-explosion payload)** :
-- snapshot DOM ≤ 6 KB
-- chaque slice métier ≤ 30 items
-- payload total `visibleData` ≤ 16 KB (truncation avec marqueur `...truncated`).
+Remplacer la fiche actuelle (peu lisible : famille vide, "Vu le Invalid Date", traduction cassée, pas de marches, pas de carte, pas de liens GBIF/iNat) par la fiche riche déjà utilisée sur Empreinte/Synthèse, et y ajouter un nouvel onglet **Observateurs** listant les marcheurs ayant vu l'espèce sur l'événement.
 
 ## Résultat attendu
 
-Sur la même question ("regarde les espèces identifiées comme auxiliaires ?"), l'IA recevra :
+Quand on clique sur "Buddleja de David" depuis Apprendre → L'Œil :
 
-```json
-{
-  "filters": { "oeilView": "selection", "oeilCategory": "auxiliaire", "oeilVisibleCount": 4 },
-  "visibleData": {
-    "apprendre.oeil.especes": [
-      { "nom_fr": "Fusain d'Europe", "nom_sci": "Euonymus europaeus", "categorie": "auxiliaire", "observations": 4 },
-      { "nom_fr": "Cerisier sauvage", "nom_sci": "Prunus avium", "categorie": "auxiliaire", "observations": 4 },
-      ...
-    ],
-    "screen.dom": { "activeChips": ["Auxiliaire (4)"], "visibleCards": [...] }
-  }
-}
-```
+- Hero photo plein cadre (carrousel si plusieurs photos) + lightbox.
+- Nom FR + nom scientifique + badges (règne, "N obs. sur M marches").
+- Bloc "Observé sur ces marches" avec **3 onglets** :
+  - **Liste** — marches avec ville, date d'observation, nb d'obs.
+  - **Carte** — points d'observation sur fond de toutes les marches de l'événement.
+  - **Observateurs** *(nouveau)* — avatar + nom + marche + date pour chaque marcheur ayant observé l'espèce sur l'événement.
+- Lecteur audio Xeno-Canto si disponible (faune sonore).
+- Liens externes : GBIF, iNaturalist, Xeno-Canto.
+- Mobile-first : modal scrollable, onglets pleine largeur, tap targets ≥ 44px.
 
-Et pourra répondre précisément "Oui, 4 espèces sont actuellement classées Auxiliaire à l'écran : …".
+## Plan d'implémentation
 
-## Étapes d'implémentation
+### 1. Unifier sur le modal riche (zéro régression)
 
-1. Créer `ChatViewportObserver` + helper `extractDomSnapshot`.
-2. Le monter dans `MarchesDuVivantMonEspace.tsx`, ajouter `data-chat-viewport` sur les pages.
-3. Instrumenter `OeilCuration` (filtres + snapshot espèces visibles + `data-chat-*` sur cards).
-4. Étendre à `OreilleCuration`, `PalaisCuration`, `EventBiodiversityTab`, `MediaCard`.
-5. Renforcer le prompt + ajouter log dans `community-chat/index.ts`.
-6. Tester sur 3 cas : Œil/Auxiliaire (cas signalé), Oreille filtré, Synthèse onglet espèces.
+Dans `src/components/community/insights/curation/OeilCuration.tsx` :
+- Remplacer l'import et l'usage de `SpeciesDetailModal` par `SpeciesGalleryDetailModal`.
+- Adapter `handleSpeciesClick` pour produire le shape attendu par le modal riche : `{ name, scientificName, count, kingdom, photos }`.
+- Récupérer `allEventMarches` (déjà fait dans `EventBiodiversityTab` via `useQuery` sur `exploration_marches`) et l'extraire dans un petit hook réutilisable `useExplorationAllMarches(explorationId)`, puis le passer au modal pour la carte de fond.
+- Supprimer le state `BiodiversitySpecies` devenu inutile.
+
+Bénéfices immédiats : la date "Invalid Date" disparaît (le modal riche n'affiche pas ce champ), le nom FR fonctionne (`useSpeciesTranslation` + `useSpeciesPhoto`), les marches + carte + liens GBIF/iNat apparaissent.
+
+### 2. Nouvel onglet "Observateurs"
+
+#### 2a. Hook `useSpeciesObservers`
+
+Nouveau fichier `src/hooks/useSpeciesObservers.ts` :
+- Input : `scientificName`, `explorationId`.
+- Étapes :
+  1. Récupérer les `marche_id` de l'exploration (mêmes filtres `publication_status` que `useSpeciesMarches`).
+  2. `select` sur `marcheur_observations` : `marcheur_id, marche_id, observation_date, photo_url` filtré `ilike species_scientific_name`.
+  3. Récupérer infos marche (`nom_marche`, `ville`) et profils (`profiles.user_id, prenom, nom, avatar_url`) en deux requêtes batch.
+  4. Retourner une liste triée par date desc :
+     ```ts
+     { userId, prenom, nom, avatarUrl, marcheId, marcheName, ville, observationDate, photoUrl? }[]
+     ```
+- Cache 30 min, `enabled` = `!!scientificName && !!explorationId`.
+
+Sécurité : `marcheur_observations` étant déjà visible aux co-participants via RLS existante (mémoire `co-participant-visibility-logic`), aucune nouvelle policy. Si la jointure profiles fuite des PII non désirées, on remplacera par un RPC `SECURITY DEFINER` retournant uniquement les colonnes publiques (prenom, nom, avatar) — à confirmer pendant l'implémentation.
+
+#### 2b. Composant `SpeciesObserversTab`
+
+Nouveau fichier `src/components/biodiversity/species-modal/SpeciesObserversTab.tsx` :
+- Affiche `Loader` pendant chargement, `EmptyState` si vide ("Aucun marcheur n'a encore enregistré d'observation pour cette espèce").
+- Liste de cartes compactes :
+  - Avatar 40×40 (fallback initiales).
+  - Ligne 1 : `Prénom Nom` (truncate).
+  - Ligne 2 : `marcheName · ville` en `text-xs text-white/60`.
+  - Ligne 3 : badge date relative (`il y a 3 jours`) + mini-vignette photo si `photo_url`.
+- Clic sur une carte → ouvre `/communaute/marcheur/{slug}` (route publique existante via `useCommunityProfile` slug). Optionnel : à brancher après validation.
+
+#### 2c. Intégration dans le modal riche
+
+Dans `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` :
+- Importer `useSpeciesObservers` et `SpeciesObserversTab`.
+- Étendre les Tabs de 2 → 3 onglets : `Liste / Carte / Observateurs`.
+- Le badge sous "Observé sur ces marches" devient : `N obs. sur M marches · K marcheurs`.
+- L'onglet Observateurs apparaît même si Marches est vide tant que `observers.length > 0` (cas où l'observation existe via `marcheur_observations` sans snapshot agrégé).
+
+### 3. Cohérence ChatBot (screen-awareness)
+
+Pour rester aligné avec l'architecture mémoire `chatbot-screen-awareness-architecture` :
+- Quand le modal espèce est ouvert, publier une slice `useChatTabSnapshot('apprendre.oeil.especeOuverte', { nom, sci, marches: [...], observateurs: [...] })`.
+- Marquer le DialogContent avec `data-chat-card data-chat-title={frenchName}` pour la couche DOM générique.
+
+Permet à l'IA de répondre "qui a vu Buddleja ?" directement depuis le contexte écran.
+
+## Détails techniques
+
+### Fichiers modifiés
+- `src/components/community/insights/curation/OeilCuration.tsx` — bascule sur modal riche, branche `allEventMarches`.
+- `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` — 3e onglet Observateurs, snapshot chatbot, `data-chat-*`.
+
+### Fichiers créés
+- `src/hooks/useSpeciesObservers.ts`
+- `src/hooks/useExplorationAllMarches.ts` (extraction du fetch dupliqué dans `EventBiodiversityTab`).
+- `src/components/biodiversity/species-modal/SpeciesObserversTab.tsx`
+
+### Pas de migration BDD
+Toutes les données nécessaires sont accessibles via tables existantes (`marcheur_observations`, `profiles`, `exploration_marches`, `marches`) avec les RLS actuelles.
+
+### QA mobile-first (375 px)
+- Tabs Liste/Carte/Observateurs en `grid-cols-3`, label texte court, icône + label vertical si overflow.
+- Carte d'observateur : padding 12 px, gap 12 px, ligne ≤ 2 lignes max, touch target avatar+nom ≥ 48 px.
+- Modal `max-h-[90vh] overflow-y-auto` déjà en place, on conserve.
+
+### Hors-scope (non traité dans cette itération)
+- Badge "Photo marcheur" calculé proprement (logique actuelle approximative dans le modal riche).
+- Ouverture profil marcheur au clic sur un observateur (à brancher dans une 2e itération si validé).
+- Date d'observation primaire dans le header (le modal riche ne l'affiche pas car elle est multi-valeur ; visible par marche/observateur dans les onglets).
+
