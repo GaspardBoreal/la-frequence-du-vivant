@@ -17,9 +17,9 @@ import { useExplorationMarchesGpsStatus } from '@/hooks/useExplorationMarchesGps
 import { useSpeciesTranslationBatch, type SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import ManualSpeciesModal from './ManualSpeciesModal';
 import CuratedSpeciesCard, { type CuratedSpeciesItem } from './CuratedSpeciesCard';
-import SpeciesDetailModal from '@/components/biodiversity/SpeciesDetailModal';
+import SpeciesGalleryDetailModal from '@/components/biodiversity/SpeciesGalleryDetailModal';
+import { useExplorationAllMarches } from '@/hooks/useExplorationAllMarches';
 import { CATEGORIES, getCatStyle, getCatLabel } from './curationCategories';
-import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
