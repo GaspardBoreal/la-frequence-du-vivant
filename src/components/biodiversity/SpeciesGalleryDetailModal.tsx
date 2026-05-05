@@ -89,6 +89,12 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
     species?.kingdom
   );
 
+  // Fetch observers (marcheurs ayant vu l'espèce sur cet événement)
+  const { data: observers = [], isLoading: observersLoading } = useSpeciesObservers(
+    isOpen ? species?.scientificName : undefined,
+    explorationId,
+  );
+
   if (!species) return null;
 
   // Use fetched data if available, otherwise fall back to props
@@ -104,9 +110,8 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   const isEnglishFallback = frenchName === species.name && translation?.source === 'fallback';
 
   const hasPhoto = photos.length > 0;
-  const hasMarches = speciesMarches.length > 0;
-  const hasAudio = xenoCantoData && xenoCantoData.recordings.length > 0;
-  const kingdomInfo = getKingdomInfo(kingdom);
+  const hasObservers = observers.length > 0;
+  const uniqueObserversCount = new Set(observers.map((o) => o.marcheurId)).size;
   const KingdomIcon = kingdomInfo.icon;
 
   // Check if current photo is from marcheur (personal photo)
