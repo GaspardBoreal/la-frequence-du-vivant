@@ -92,11 +92,22 @@ const CuratedSpeciesCard: React.FC<Props> = ({
     if (onClick) onClick(species, displayName, photos);
   };
 
+  const chatBadges = [
+    category ? `Catégorie:${category}` : null,
+    ...secondaries.map(s => `Cat:${s}`),
+    `${species.count} obs.`,
+    isPinned ? 'Épinglée' : null,
+  ].filter(Boolean).join(',');
+
   return (
     <div
       className={`relative rounded-xl border overflow-hidden bg-card group transition ${
         isPinned ? 'border-amber-500/50 shadow-sm' : 'border-border'
       }`}
+      data-chat-card
+      data-chat-title={displayName}
+      data-chat-subtitle={species.scientificName || undefined}
+      data-chat-badges={chatBadges}
     >
       <div
         className="aspect-square bg-muted relative cursor-zoom-in"
