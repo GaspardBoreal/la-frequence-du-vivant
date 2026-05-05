@@ -97,7 +97,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 
   // Snapshot pour le ChatBot (screen-awareness) — DOIT être appelé avant tout
   // early return pour préserver l'ordre des hooks entre les renders.
-  const _uniqueObserversCount = new Set(observers.map((o) => o.marcheurId)).size;
+  const _uniqueObserversCount = new Set(observers.map((o) => o.observerName)).size;
   useChatTabSnapshot(
     'apprendre.especeOuverte',
     isOpen && species
@@ -111,10 +111,12 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
             date: m.observationDate,
             obs: m.observationCount,
           })),
-          observateurs: observers.slice(0, 30).map((o) => ({
-            nom: o.fullName,
-            marche: o.marcheName,
+          observateurs_citoyens: observers.slice(0, 30).map((o) => ({
+            nom: o.observerName,
+            source: o.source,
+            url: o.originalUrl,
             date: o.observationDate,
+            lieu: o.locationName,
           })),
           observateurs_uniques: _uniqueObserversCount,
         }
@@ -139,7 +141,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   const hasMarches = speciesMarches.length > 0;
   const hasAudio = xenoCantoData && xenoCantoData.recordings.length > 0;
   const hasObservers = observers.length > 0;
-  const uniqueObserversCount = new Set(observers.map((o) => o.marcheurId)).size;
+  const uniqueObserversCount = new Set(observers.map((o) => o.observerName)).size;
   const kingdomInfo = getKingdomInfo(kingdom);
   const KingdomIcon = kingdomInfo.icon;
 
@@ -295,7 +297,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                     </TabsTrigger>
                     <TabsTrigger value="observers" className="data-[state=active]:bg-white/10 text-xs">
                       <Users className="w-3 h-3 mr-1.5" />
-                      Marcheurs
+                      Observateurs
                       {hasObservers && (
                         <span className="ml-1 text-[10px] opacity-70">({uniqueObserversCount})</span>
                       )}

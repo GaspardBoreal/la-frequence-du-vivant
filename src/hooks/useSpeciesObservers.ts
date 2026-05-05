@@ -1,88 +1,113 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export type ObserverSource = 'inaturalist' | 'gbif' | 'ebird' | 'other';
+
 export interface SpeciesObserver {
-  marcheurId: string;
-  prenom: string;
-  nom: string;
-  fullName: string;
-  avatarUrl?: string;
-  role?: string;
-  marcheId: string;
-  marcheName: string;
-  ville: string;
+  /** Identifiant stable pour le rendu (source + url ou index) */
+  id: string;
+  /** Nom de l'observateur tel que publié par la source citoyenne */
+  observerName: string;
+  /** Institution / plateforme citoyenne (iNaturalist Community, eBird/Cornell Lab, GBIF…) */
+  observerInstitution?: string;
+  source: ObserverSource;
+  /** Lien direct vers l'observation publique source */
+  originalUrl?: string;
   observationDate?: string;
-  photoUrl?: string;
+  locationName?: string;
+  /** Marche de l'exploration sur laquelle l'attribution a été agrégée */
+  marcheId?: string;
+  marcheName?: string;
+  ville?: string;
+  /** Méthode renseignée par la source (Observation, Observation validée…) */
+  method?: string;
 }
 
+const detectSource = (raw?: string): ObserverSource => {
+  const s = (raw || '').toLowerCase();
+  if (s.includes('inat')) return 'inaturalist';
+  if (s.includes('ebird')) return 'ebird';
+  if (s.includes('gbif')) return 'gbif';
+  return 'other';
+};
+
 /**
- * Liste des marcheurs ayant observé une espèce sur l'ensemble des marches d'une
- * exploration. Une entrée par couple (marcheur × marche) — un même marcheur peut
- * apparaître plusieurs fois s'il a vu l'espèce sur plusieurs marches.
+ * Liste des **observateurs citoyens** ayant rapporté une espèce dans le périmètre
+ * d'une exploration. Source : `biodiversity_snapshots.species_data[].attributions[]`
+ * (iNaturalist, eBird, GBIF). Ce ne sont **pas** les marcheurs de la communauté —
+ * ce sont les contributeurs des plateformes naturalistes citoyennes dont les
+ * observations alimentent la curation scientifique de la vue Apprendre → L'Œil.
  *
- * Sécurité : `marcheur_observations` et `exploration_marcheurs` sont déjà
- * protégées par RLS visible aux co-participants. Aucun accès direct à `profiles`
- * (PII) — on lit uniquement les champs de présentation publics depuis
- * `exploration_marcheurs` (prenom, nom, avatar_url, role).
+ * Sécurité : aucune donnée PII utilisateur n'est exposée — uniquement les noms
+ * publics rendus publics par les contributeurs sur leur plateforme respective.
  */
 export function useSpeciesObservers(
   scientificName: string | undefined,
   explorationId: string | undefined,
 ) {
   return useQuery({
-    queryKey: ['species-observers', scientificName, explorationId],
+    queryKey: ['species-observers-citizen', scientificName, explorationId],
     queryFn: async (): Promise<SpeciesObserver[]> => {
       if (!scientificName || !explorationId) return [];
 
-      // 1. Marcheurs de l'exploration (présentation safe : pas de PII profiles)
-      const { data: marcheurs } = await supabase
-        .from('exploration_marcheurs')
-        .select('id, prenom, nom, avatar_url, role')
-        .eq('exploration_id', explorationId);
-      if (!marcheurs || marcheurs.length === 0) return [];
-      const marcheurMap = new Map(marcheurs.map((m: any) => [m.id, m]));
-      const marcheurIds = marcheurs.map((m: any) => m.id);
-
-      // 2. Marches publiées de l'exploration
-      const { data: explorationMarches } = await supabase
+      // 1. Marches de l'exploration
+      const { data: em } = await supabase
         .from('exploration_marches')
         .select('marche_id, marches (id, nom_marche, ville)')
-        .eq('exploration_id', explorationId)
-        .in('publication_status', ['published', 'published_public']);
+        .eq('exploration_id', explorationId);
+      const marcheIds = (em || []).map((x: any) => x.marche_id).filter(Boolean);
+      if (marcheIds.length === 0) return [];
+
       const marcheInfoMap = new Map<string, { name: string; ville: string }>();
-      (explorationMarches || []).forEach((em: any) => {
-        if (em.marches) {
-          marcheInfoMap.set(em.marche_id, {
-            name: em.marches.nom_marche || em.marches.ville || '',
-            ville: em.marches.ville || '',
+      (em || []).forEach((row: any) => {
+        if (row.marches) {
+          marcheInfoMap.set(row.marche_id, {
+            name: row.marches.nom_marche || row.marches.ville || '',
+            ville: row.marches.ville || '',
           });
         }
       });
 
-      // 3. Observations de l'espèce par ces marcheurs
-      const { data: observations } = await supabase
-        .from('marcheur_observations')
-        .select('marcheur_id, marche_id, observation_date, photo_url')
-        .in('marcheur_id', marcheurIds)
-        .ilike('species_scientific_name', scientificName);
+      // 2. Snapshots biodiversité associés
+      const { data: snaps } = await supabase
+        .from('biodiversity_snapshots')
+        .select('marche_id, species_data')
+        .in('marche_id', marcheIds);
+      if (!snaps || snaps.length === 0) return [];
 
+      const target = scientificName.toLowerCase().trim();
       const out: SpeciesObserver[] = [];
-      (observations || []).forEach((obs: any) => {
-        const m = marcheurMap.get(obs.marcheur_id);
-        const mi = marcheInfoMap.get(obs.marche_id);
-        if (!m || !mi) return;
-        out.push({
-          marcheurId: m.id,
-          prenom: m.prenom || '',
-          nom: m.nom || '',
-          fullName: `${m.prenom || ''} ${m.nom || ''}`.trim() || 'Marcheur',
-          avatarUrl: m.avatar_url || undefined,
-          role: m.role || undefined,
-          marcheId: obs.marche_id,
-          marcheName: mi.name,
-          ville: mi.ville,
-          observationDate: obs.observation_date,
-          photoUrl: obs.photo_url || undefined,
+      const seen = new Set<string>();
+
+      snaps.forEach((snap: any) => {
+        const arr: any[] = Array.isArray(snap.species_data) ? snap.species_data : [];
+        arr.forEach((sp) => {
+          const sci = (sp.scientificName || sp.scientific_name || '').toString().toLowerCase().trim();
+          if (sci !== target) return;
+          const attribs: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+          const mi = marcheInfoMap.get(snap.marche_id);
+          attribs.forEach((a, idx) => {
+            const observerName = (a.observerName || '').toString().trim();
+            if (!observerName) return;
+            const source = detectSource(a.source);
+            // Déduplication : même observateur + même URL d'observation
+            const dedupKey = `${observerName}|${a.originalUrl || `${snap.marche_id}-${idx}`}`;
+            if (seen.has(dedupKey)) return;
+            seen.add(dedupKey);
+            out.push({
+              id: dedupKey,
+              observerName,
+              observerInstitution: a.observerInstitution || undefined,
+              source,
+              originalUrl: a.originalUrl || undefined,
+              observationDate: a.date || undefined,
+              locationName: a.locationName || undefined,
+              method: a.observationMethod || undefined,
+              marcheId: snap.marche_id,
+              marcheName: mi?.name,
+              ville: mi?.ville,
+            });
+          });
         });
       });
 
@@ -91,7 +116,7 @@ export function useSpeciesObservers(
         const da = a.observationDate ? new Date(a.observationDate).getTime() : 0;
         const db = b.observationDate ? new Date(b.observationDate).getTime() : 0;
         if (db !== da) return db - da;
-        return a.fullName.localeCompare(b.fullName);
+        return a.observerName.localeCompare(b.observerName);
       });
       return out;
     },
