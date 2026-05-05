@@ -115,9 +115,29 @@ serve(async (req) => {
     const filtersJson = pageState?.filters
       ? `\n- Filtres / sous-état actifs :\n\`\`\`json\n${JSON.stringify(pageState.filters, null, 2)}\n\`\`\``
       : "";
-    const visibleJson = pageState?.visibleData && Object.keys(pageState.visibleData).length > 0
+    const visibleKeys = pageState?.visibleData ? Object.keys(pageState.visibleData) : [];
+    const hasVisible = visibleKeys.length > 0;
+    const visibleJson = hasVisible
       ? `\n- **DONNÉES RÉELLEMENT AFFICHÉES À L'ÉCRAN** (priorité absolue sur les agrégats globaux pour répondre à "ce que tu vois") :\n\`\`\`json\n${JSON.stringify(pageState.visibleData, null, 2)}\n\`\`\``
       : "";
+
+    // Détection de filtres actifs (catégorie, recherche, sous-onglet ciblé)
+    const activeFiltersHint = pageState?.filters
+      ? Object.entries(pageState.filters)
+          .filter(([k, v]) => v !== undefined && v !== null && v !== '' && (typeof v !== 'number' || k.endsWith('Count')))
+          .map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`)
+          .join(', ')
+      : '';
+
+    console.log('[community-chat] context summary:', {
+      scope: validScope,
+      entityType: entity?.type,
+      entityId: entity?.id,
+      activeTab: pageState?.activeTab,
+      visibleKeys,
+      visibleBytes: hasVisible ? JSON.stringify(pageState.visibleData).length : 0,
+      activeFilters: activeFiltersHint,
+    });
 
     const entityBlock = entityContext || pageState?.label || pageState?.activeTab
       ? `\n\n### Fiche en cours de consultation
@@ -129,10 +149,13 @@ serve(async (req) => {
 ${JSON.stringify(entityContext, null, 2)}
 \`\`\`
 
-> ⚠️ RÈGLES CONTEXTUELLES :
+> ⚠️ RÈGLES CONTEXTUELLES STRICTES :
 > 1. Quand l'utilisateur dit « cette exploration », « cette page », « cet onglet » → réfère-toi à la fiche + l'onglet courant ci-dessus.
-> 2. Quand il demande « ce que tu vois sur cette page », « combien d'éléments affichés », « liste-moi… » → utilise EN PRIORITÉ \`DONNÉES RÉELLEMENT AFFICHÉES À L'ÉCRAN\` qui reflète exactement l'écran courant. Les agrégats globaux peuvent diverger.
-> 3. Si \`DONNÉES RÉELLEMENT AFFICHÉES\` est absent, dis honnêtement que tu n'as pas de snapshot de l'écran et propose de te fier aux agrégats globaux.`
+> 2. Quand il demande « ce que tu vois », « regarde X », « combien d'éléments affichés », « liste-moi… », ou pose une question sur une catégorie / un filtre actif → utilise EN PRIORITÉ ABSOLUE \`DONNÉES RÉELLEMENT AFFICHÉES À L'ÉCRAN\` (clé \`visibleData\`). Cette source reflète exactement l'écran courant ; les agrégats globaux peuvent diverger.
+> 3. Si \`filters\` contient une catégorie, une recherche ou un sous-onglet (ex: \`oeilCategory\`, \`oeilSearch\`, \`oeilView\`), l'utilisateur voit une vue FILTRÉE. Tu dois répondre uniquement à partir de \`visibleData\` correspondant. NE DIS JAMAIS « je n'ai pas la liste filtrée » si \`visibleData\` contient une slice non vide pour cet onglet.
+> 4. Si une slice \`visibleData\` indique \`tronquee: true\`, précise que tu listes les premiers éléments visibles et invite à affiner si besoin.
+> 5. Si \`visibleData\` est absent ou vide, dis honnêtement que tu n'as pas de snapshot d'écran ; propose alors les agrégats globaux à la place.
+> 6. La clé \`screen.dom\` (si présente) est un instantané générique du DOM (cartes visibles, chips actifs, titres) — utilise-la comme garde-fou pour vérifier ce que l'utilisateur voit, en complément des slices métier.`
       : "";
 
     const contextBlock = `\n\n## CONTEXTE FRAIS (extrait de la base au ${new Date().toISOString()})${scopeBlock}${entityBlock}`;
