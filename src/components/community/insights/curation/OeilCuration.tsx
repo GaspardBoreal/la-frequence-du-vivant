@@ -53,7 +53,14 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
-  const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+  const [selectedSpecies, setSelectedSpecies] = useState<{
+    name: string;
+    scientificName: string;
+    count: number;
+    kingdom: string;
+    photos?: string[];
+  } | null>(null);
+  const { data: allEventMarches } = useExplorationAllMarches(explorationId);
   // Phase 3 — sheet partagée pour exposer les évidences sourcées
   const [evidenceFor, setEvidenceFor] = useState<{
     curation: ExplorationCuration;
