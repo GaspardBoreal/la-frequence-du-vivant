@@ -86,9 +86,16 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   );
 
   // Apply category filter on a list of {species, curation}
+  // Une espèce correspond si la catégorie est sa primaire OU dans ses secondaires.
+  const matchesCategory = (curation: ExplorationCuration | undefined, cat: string): boolean => {
+    if (!curation) return false;
+    if (curation.category === cat) return true;
+    const secondaries = (curation.secondary_categories as string[] | undefined) || [];
+    return secondaries.includes(cat);
+  };
   const applyCategoryFilter = <T extends { curation?: ExplorationCuration }>(items: T[]): T[] => {
     if (!categoryFilter) return items;
-    return items.filter(x => x.curation?.category === categoryFilter);
+    return items.filter(x => matchesCategory(x.curation, categoryFilter));
   };
 
   // Wrap setView so that switching tab clears the category filter — avoids
@@ -209,8 +216,13 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       source = reviewItems;
     }
     source.forEach(x => {
-      const cat = x.curation?.category;
-      if (cat) counts[cat] = (counts[cat] || 0) + 1;
+      const cats = new Set<string>();
+      if (x.curation?.category) cats.add(x.curation.category);
+      const secondaries = (x.curation?.secondary_categories as string[] | undefined) || [];
+      secondaries.forEach(c => cats.add(c));
+      cats.forEach(cat => {
+        counts[cat] = (counts[cat] || 0) + 1;
+      });
     });
     return counts;
   }, [view, pinnedSpecies, aiSuggestions, filteredPool, curationByKey]);
@@ -241,7 +253,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       source = reviewItems;
     }
     if (categoryFilter && view !== 'terrain') {
-      source = source.filter(x => x.curation?.category === categoryFilter);
+      source = source.filter(x => matchesCategory(x.curation, categoryFilter));
     }
     return source;
   }, [view, categoryFilter, search, pinnedSpecies, aiSuggestions, filteredPool, reviewItems, curationByKey]);
