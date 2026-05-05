@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import EventBiodiversityTab from './EventBiodiversityTab';
 import ApprendreTab from './insights/ApprendreTab';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
+import ChatViewportObserver from '@/components/chatbot/ChatViewportObserver';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -281,7 +282,8 @@ const ExplorationMarcheurPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" data-chat-viewport>
+      <ChatViewportObserver />
       {/* Sticky Header */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-3">
