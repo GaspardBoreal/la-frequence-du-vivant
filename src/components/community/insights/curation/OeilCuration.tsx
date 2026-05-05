@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Eye, Search, Sparkles, X, Plus, Wand2, Loader2, Hand, AlertCircle } from 'lucide-react';
 import ClassificationEvidenceSheet from './ClassificationEvidenceSheet';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { chatPageContext, useChatTabSnapshot } from '@/hooks/useChatPageContext';
 
 interface Props {
   explorationId: string;
