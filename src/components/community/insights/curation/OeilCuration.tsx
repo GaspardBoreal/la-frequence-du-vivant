@@ -222,6 +222,68 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   const handleAi = () => triggerAi.mutate(explorationId);
 
+  // ─── Snapshot Chat IA : ce qui est RÉELLEMENT visible dans la grille ───
+  // Reproduit la même logique de filtrage que les vues SpeciesGrid plus bas
+  // pour que l'IA reçoive la liste exacte affichée à l'écran.
+  const visibleSpecies = useMemo(() => {
+    let source: { species: CuratedSpeciesItem; curation?: ExplorationCuration }[] = [];
+    if (view === 'selection') {
+      source = pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }));
+    } else if (view === 'suggestions') {
+      const q = search.trim().toLowerCase();
+      source = aiSuggestions.filter(x => {
+        if (!q) return true;
+        return (
+          x.species.scientificName?.toLowerCase().includes(q) ||
+          x.species.commonName?.toLowerCase().includes(q)
+        );
+      });
+    } else if (view === 'pool') {
+      source = filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }));
+    } else if (view === 'review') {
+      source = reviewItems;
+    }
+    if (categoryFilter && view !== 'terrain') {
+      source = source.filter(x => x.curation?.category === categoryFilter);
+    }
+    return source;
+  }, [view, categoryFilter, search, pinnedSpecies, aiSuggestions, filteredPool, reviewItems, curationByKey]);
+
+  // Publie les filtres dans pageState (lus directement par l'edge function)
+  useEffect(() => {
+    chatPageContext.setPageState({
+      filters: {
+        oeilView: view,
+        oeilCategory: categoryFilter || undefined,
+        oeilSearch: search.trim() || undefined,
+        oeilVisibleCount: visibleSpecies.length,
+      },
+    });
+  }, [view, categoryFilter, search, visibleSpecies.length]);
+
+  // Publie la liste précise des espèces visibles (max 30, payload léger)
+  useChatTabSnapshot(
+    'apprendre.oeil.especesVisibles',
+    visibleSpecies.length > 0
+      ? {
+          view,
+          categorie: categoryFilter,
+          recherche: search.trim() || undefined,
+          total: visibleSpecies.length,
+          tronquee: visibleSpecies.length > 30,
+          items: visibleSpecies.slice(0, 30).map(({ species, curation }) => ({
+            nom_fr: species.displayName || species.commonName || species.scientificName,
+            nom_sci: species.scientificName,
+            categorie: curation?.category || null,
+            categories_secondaires: (curation?.secondary_categories as string[] | undefined) || undefined,
+            observations: species.count,
+            epinglee: !!curation && curation.display_order < 9999,
+          })),
+        }
+      : null,
+  );
+
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
