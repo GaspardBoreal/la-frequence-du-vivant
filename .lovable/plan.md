@@ -1,37 +1,67 @@
-## Problème
+## Diagnostic — pourquoi le 2e clic sur le point intermédiaire jaune ne fait rien
 
-En mode "Choisir les 2 points sur la carte", cliquer sur l'étape 8 ouvre son popup ("DEVIAT Point 07…") au lieu d'enregistrer le 1ᵉʳ point voisin. Le bandeau "Cliquez sur le 1ᵉʳ point voisin…" reste donc bloqué.
+En reproduisant mentalement le scénario de la copie d'écran (point 8 sélectionné en bleu, étoile jaune entre le 8 et le waypoint orange à gauche), deux causes très probables se cumulent :
 
-**Cause racine** : les `CircleMarker` cyan du mode pick (lignes 1049-1082) sont rendus **avant** les `Marker` numérotés des étapes (lignes 1100+) et avant les `WaypointMarker`. Leaflet empile les couches dans l'ordre de création — les marqueurs numérotés captent donc le clic en premier et déclenchent leur popup. Le `handlePickEndpoint` n'est jamais appelé.
+### Cause 1 — Cible cliquable minuscule (cause principale)
+Le waypoint orange (`waypointIcon`) ne fait que **7×7 px** avec `iconAnchor [3.5,3.5]`. Le halo cyan que l'on voit autour est purement décoratif (`interactive: false`, ajouté lors du fix précédent justement pour ne pas bloquer les clics). Résultat : pour valider le 2e endpoint il faut viser un disque de 7 px — au moindre décalage, Leaflet ne déclenche aucun événement et "rien ne se passe", sans même un toast d'erreur.
+
+### Cause 2 — Filet de sécurité trop strict si la paire ne matche aucun candidat
+Si malgré tout le clic touche le waypoint mais que la paire `(step8, wp)` ne figure pas dans les 4 meilleurs `SegmentCandidate` retenus (`limit = 4` sur `detectSegmentCandidates`, calculés autour du **clic initial** = étoile jaune), `handlePickEndpoint` tombe dans la branche `found < 0` et affiche un toast d'erreur, ce qui peut passer inaperçu si la cible cliquable est aussi le problème.
+
+Aujourd'hui l'algorithme exige que la paire `{idA, idB}` corresponde aux endpoints **exacts** d'un candidat pré-calculé. C'est fragile : l'utilisateur peut très bien désigner un segment valide du tracé qui n'est pas dans le top-4.
+
+---
 
 ## Solution proposée
 
-**1. Forcer la priorité des halos cyan en mode pick**
+### 1. Élargir la cible cliquable en mode pick (fix principal)
+Dans `ExplorationCarteTab.tsx`, à l'intérieur du bloc `{pickMode && pendingWaypoint && (...)}`, transformer les `CircleMarker` cyan d'overlay en cibles **interactives** :
 
-Déplacer le bloc des `CircleMarker` cyan (`pickMode && pendingWaypoint && …`) **après** le rendu des marqueurs numérotés et des `WaypointMarker`, et leur attribuer un `pane` Leaflet dédié avec un `zIndex` élevé (ex. créer un pane `pick-overlay` à `zIndex: 650` dans un `useEffect` au montage de la carte).
+- Mettre `interactive: true` sur les halos cyan des steps **et** des waypoints.
+- Leur attacher directement `eventHandlers={{ click: () => handlePickEndpoint({ kind, id, lat, lng }) }}`.
+- Corollaire : on n'a plus besoin du `pickModeOnClick` injecté dans `WaypointMarker` ni du branchement `pickMode` sur les markers numérotés (le halo, plus large, intercepte le clic en premier puisqu'il est rendu après).
 
-**2. Neutraliser les popups pendant le pick**
+Bénéfice : zone cliquable de 18 px (steps) / 14 px (waypoints) au lieu de 7 px, et plus aucune interférence avec les popups natifs.
 
-Quand `pickMode` est actif :
-- Passer une prop `disablePopup` aux marqueurs numérotés (étapes) et à `WaypointMarker` qui empêche l'ouverture du popup et propage le clic vers le halo (`L.DomEvent.stopPropagation` désactivé, ou simplement `eventHandlers.click` qui appelle `handlePickEndpoint` avec les coordonnées du marqueur sous-jacent).
-- Alternative plus simple et plus robuste : **router le clic du marqueur lui-même** vers `handlePickEndpoint` quand `pickMode` est actif, au lieu de s'appuyer sur les `CircleMarker` cyan. Les halos cyan ne servent alors qu'au feedback visuel (`interactive: false` sur leur `pathOptions`).
+### 2. Recalculer les candidats à la volée si la paire n'est pas dans le top-4 (fix de robustesse)
+Dans `handlePickEndpoint`, lorsque `findIndex` renvoie -1, au lieu d'abandonner avec un toast d'erreur :
 
-**3. Feedback amélioré**
+- Reconstruire dynamiquement le candidat à partir de la paire `(pickedA, ep)` en parcourant `geoMarches` + `waypoints` pour retrouver `(after_marche_id, ordre)` du segment qui a ces deux ids comme endpoints consécutifs.
+- Si trouvé → l'ajouter à `pendingWaypoint.candidates` et sélectionner ce nouvel index.
+- Sinon seulement → toast "Ces 2 points ne sont pas voisins sur le tracé" + reset stage A.
 
-- Dès que `pickedA` est défini, le bandeau passe à "Cliquez sur le 2ᵈ point voisin" (déjà fait) + ajout d'un toast court "Point 1 sélectionné : étape 8".
-- Bouton "Annuler" reste accessible.
-- Si le 2ᵈ point cliqué est identique au 1ᵉʳ → toast d'erreur "Choisissez un point différent".
-- Si aucune candidate ne correspond aux 2 IDs → toast "Ces 2 points ne sont pas adjacents dans le tracé proposé".
+### 3. Feedback visuel renforcé
+- Toast "Point 1 sélectionné — cliquez sur le point voisin" quand `pickedA` est posé.
+- Le halo `pickedA` (cyan foncé) reste tel quel.
+- Curseur `crosshair` sur le conteneur Leaflet en mode pick (CSS).
 
-## Fichiers à modifier
+---
 
-- `src/components/community/exploration/ExplorationCarteTab.tsx`
-  - Créer pane `pick-overlay` (zIndex 650).
-  - Réordonner le bloc pick après les marqueurs numérotés/waypoints, ou router le clic des marqueurs vers `handlePickEndpoint` en mode pick.
-  - Ajouter toasts de feedback.
-- `src/components/community/exploration/WaypointMarker.tsx` : prop `pickMode?: { onPick: () => void }` qui remplace le comportement par défaut du clic.
-- Marqueurs étape numérotés : même traitement (intercepter `click` quand `pickMode` actif).
+## Détails techniques
 
-## Approche recommandée
+**Fichier `ExplorationCarteTab.tsx`**
+- Bloc `{pickMode && pendingWaypoint && (...)}` (lignes ~1049-1076) : passer `interactive: true` et ajouter `eventHandlers.click` sur chaque `CircleMarker`.
+- `handlePickEndpoint` (lignes ~621-648) : avant l'erreur, tenter une reconstruction du segment via une nouvelle helper `findSegmentByEndpoints(aId, bId, geoMarches, waypoints)` qui retourne `{after_marche_id, ordre, p1, p2, ...} | null`.
+- Nettoyer : retirer le branchement `pickMode` dans le `eventHandlers.click` du Marker numéroté (ligne ~1112) — devenu redondant et plus fragile que le halo.
+- Ajouter une classe CSS sur le conteneur quand `pickMode` actif (curseur crosshair).
 
-L'option **"router le clic du marqueur vers handlePickEndpoint"** (point 2 alt.) est la plus fiable : pas de dépendance au z-order Leaflet, pas de pane custom, comportement déterministe sur mobile et desktop. Les halos cyan deviennent purement décoratifs (`interactive: false`).
+**Fichier `WaypointMarker.tsx`**
+- Retirer le prop `pickModeOnClick` et la branche associée dans `eventHandlers.click` (devenue inutile).
+- `draggable` redevient simplement `canEdit`.
+
+**Nouvelle helper (dans `WaypointMarker.tsx`, exportée)**
+```ts
+export function findSegmentByEndpoints(
+  aId: string, bId: string,
+  geoMarches: {id,latitude,longitude}[],
+  waypoints: ExplorationWaypoint[],
+): SegmentCandidate | null
+```
+Parcourt chaque segment principal (entre 2 steps) en intercalant ses waypoints triés par `ordre`, puis renvoie le micro-segment dont `{p1.id, p2.id} === {aId, bId}`.
+
+---
+
+## Pourquoi ça résout le bug observé
+- Cause 1 : le clic atteint maintenant un disque de 14 px → le 2e endpoint se sélectionne sans viser au pixel près.
+- Cause 2 : même si la paire n'était pas dans le top-4 des candidats, elle est reconnue dynamiquement → plus de cul-de-sac silencieux.
+- Bonus : la suppression du double chemin (halo décoratif + interception sur les markers réels) supprime toute possibilité de race condition Leaflet entre popup et pick-handler.
