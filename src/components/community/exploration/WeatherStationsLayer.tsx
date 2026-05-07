@@ -1,9 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Marker, Polyline, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { useNearestLexiconStations } from '@/hooks/useNearestLexiconStations';
-import type { ResolvedStationCoords } from '@/utils/weatherStationResolver';
-import { calculateDistance, formatDistance, getDataQuality } from '@/utils/weatherStationGeolocation';
+import { useNearestStations } from '@/hooks/useNearestStations';
+import {
+  calculateDistance,
+  formatDistance,
+  getDataQuality,
+} from '@/utils/weatherStationGeolocation';
+import type { StationCoordSource } from '@/utils/weatherStationResolver';
 
 interface MarchePoint {
   id: string;
@@ -15,7 +19,7 @@ interface MarchePoint {
 
 interface WeatherStationsLayerProps {
   marches: MarchePoint[];
-  maxDistanceKm?: number;
+  radiusKm?: number;
   showLinks?: boolean;
 }
 
@@ -41,7 +45,7 @@ const stationIcon = L.divIcon({
   popupAnchor: [0, -18],
 });
 
-const sourceLabel = (source: ResolvedStationCoords['source']) => {
+const sourceLabel = (source: StationCoordSource) => {
   switch (source) {
     case 'local': return 'Précis';
     case 'cached': return 'Précis';
@@ -53,7 +57,7 @@ const sourceLabel = (source: ResolvedStationCoords['source']) => {
 
 const WeatherStationsLayer: React.FC<WeatherStationsLayerProps> = ({
   marches,
-  maxDistanceKm = 100,
+  radiusKm = 60,
   showLinks = true,
 }) => {
   const points = useMemo(
@@ -64,53 +68,40 @@ const WeatherStationsLayer: React.FC<WeatherStationsLayerProps> = ({
     [marches]
   );
 
-  const { pointStations, resolved } = useNearestLexiconStations(points);
+  const { stations, pointLinks } = useNearestStations(points, radiusKm);
 
-  // Group by station code → list of marches
-  const grouped = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        code: string;
-        name: string;
-        coords: ResolvedStationCoords;
-        points: { marche: MarchePoint; distance: number }[];
-      }
-    >();
-    for (const ps of pointStations) {
-      if (!ps.station) continue;
-      const coords = resolved[ps.station.code];
-      if (!coords) continue;
-      const marche = marches.find((m) => m.id === ps.pointId);
-      if (!marche) continue;
-      const distance = calculateDistance(
-        { lat: marche.latitude, lng: marche.longitude },
-        { lat: coords.lat, lng: coords.lng }
-      );
-      if (distance > maxDistanceKm) continue;
-      const entry =
-        map.get(ps.station.code) ?? {
-          code: ps.station.code,
-          name: ps.station.name,
-          coords,
-          points: [],
-        };
-      entry.points.push({ marche, distance });
-      map.set(ps.station.code, entry);
+  const marcheById = useMemo(() => {
+    const m = new Map<string, MarchePoint>();
+    marches.forEach((x) => m.set(x.id, x));
+    return m;
+  }, [marches]);
+
+  // Group points by their nearest station for popup display
+  const stationPoints = useMemo(() => {
+    const map = new Map<string, { marche: MarchePoint; distance: number }[]>();
+    for (const link of pointLinks) {
+      const m = marcheById.get(link.pointId);
+      if (!m) continue;
+      const arr = map.get(link.stationCode) ?? [];
+      arr.push({ marche: m, distance: link.distance });
+      map.set(link.stationCode, arr);
     }
-    return Array.from(map.values());
-  }, [pointStations, resolved, marches, maxDistanceKm]);
+    return map;
+  }, [pointLinks, marcheById]);
 
   return (
     <>
       {showLinks &&
-        grouped.flatMap(({ code, coords, points }) =>
-          points.map(({ marche }) => (
+        pointLinks.map((link) => {
+          const station = stations.find((s) => s.code === link.stationCode);
+          const marche = marcheById.get(link.pointId);
+          if (!station || !marche) return null;
+          return (
             <Polyline
-              key={`link-${code}-${marche.id}`}
+              key={`link-${link.stationCode}-${link.pointId}`}
               positions={[
                 [marche.latitude, marche.longitude],
-                [coords.lat, coords.lng],
+                [station.lat, station.lng],
               ]}
               pathOptions={{
                 color: '#0ea5e9',
@@ -119,17 +110,21 @@ const WeatherStationsLayer: React.FC<WeatherStationsLayerProps> = ({
                 dashArray: '3, 6',
               }}
             />
-          ))
-        )}
+          );
+        })}
 
-      {grouped.map(({ code, name, coords, points }) => {
-        const minDist = Math.min(...points.map((p) => p.distance));
-        const quality = getDataQuality(minDist);
-        const approx = coords.source === 'geocoded' || coords.source === 'commune';
+      {stations.map((station) => {
+        const linked = stationPoints.get(station.code) ?? [];
+        const minDist = linked.length
+          ? Math.min(...linked.map((p) => p.distance))
+          : 0;
+        const quality = getDataQuality(minDist || 0);
+        const approx =
+          station.source === 'geocoded' || station.source === 'commune';
         return (
           <Marker
-            key={code}
-            position={[coords.lat, coords.lng]}
+            key={station.code}
+            position={[station.lat, station.lng]}
             icon={stationIcon}
           >
             <Popup className="exploration-carte-popup" maxWidth={280} minWidth={220}>
@@ -144,48 +139,62 @@ const WeatherStationsLayer: React.FC<WeatherStationsLayerProps> = ({
                     <div className="text-[10px] uppercase tracking-wider text-sky-300/80 font-semibold">
                       Station météo
                     </div>
-                    <div className="text-sm font-semibold leading-tight truncate">{name}</div>
-                    <div className="text-[11px] text-white/50 font-mono">{code}</div>
+                    <div className="text-sm font-semibold leading-tight truncate">{station.name}</div>
+                    <div className="text-[11px] text-white/50 font-mono">{station.code}</div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-[11px] mb-2 flex-wrap">
-                  <span
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
-                    style={{ backgroundColor: `${quality.color}25`, color: quality.color }}
-                  >
+                  {linked.length > 0 && (
                     <span
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: quality.color }}
-                    />
-                    {approx ? '~' : ''}{formatDistance(minDist)} · {quality.level}
-                  </span>
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
+                      style={{ backgroundColor: `${quality.color}25`, color: quality.color }}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: quality.color }}
+                      />
+                      {approx ? '~' : ''}{formatDistance(minDist)} · {quality.level}
+                    </span>
+                  )}
                   <span className="text-[9px] uppercase tracking-wider text-white/40">
-                    {sourceLabel(coords.source)}
+                    {sourceLabel(station.source)}
                   </span>
+                  {station.isLexicon && (
+                    <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                      LEXICON
+                    </span>
+                  )}
                 </div>
 
-                <div className="text-[11px] text-white/65 leading-snug mb-2">
-                  Rattachée à {points.length} point{points.length > 1 ? 's' : ''} de marche
-                </div>
-
-                <ul className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                  {points
-                    .sort((a, b) => a.distance - b.distance)
-                    .map(({ marche, distance }) => (
-                      <li
-                        key={marche.id}
-                        className="flex items-center justify-between gap-2 text-[11px] bg-white/5 rounded-md px-2 py-1"
-                      >
-                        <span className="truncate text-white/85">
-                          {marche.nom_marche || marche.ville || 'Point'}
-                        </span>
-                        <span className="text-sky-300/90 font-mono shrink-0">
-                          {approx ? '~' : ''}{formatDistance(distance)}
-                        </span>
-                      </li>
-                    ))}
-                </ul>
+                {linked.length > 0 ? (
+                  <>
+                    <div className="text-[11px] text-white/65 leading-snug mb-2">
+                      Rattachée à {linked.length} point{linked.length > 1 ? 's' : ''} de marche
+                    </div>
+                    <ul className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                      {linked
+                        .sort((a, b) => a.distance - b.distance)
+                        .map(({ marche, distance }) => (
+                          <li
+                            key={marche.id}
+                            className="flex items-center justify-between gap-2 text-[11px] bg-white/5 rounded-md px-2 py-1"
+                          >
+                            <span className="truncate text-white/85">
+                              {marche.nom_marche || marche.ville || 'Point'}
+                            </span>
+                            <span className="text-sky-300/90 font-mono shrink-0">
+                              {approx ? '~' : ''}{formatDistance(distance)}
+                            </span>
+                          </li>
+                        ))}
+                    </ul>
+                  </>
+                ) : (
+                  <div className="text-[11px] text-white/55 italic">
+                    Station dans le périmètre — aucun point n'est plus proche d'elle.
+                  </div>
+                )}
               </div>
             </Popup>
           </Marker>
