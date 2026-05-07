@@ -1109,7 +1109,14 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                 else stepMarkerRefs.current.delete(marche.id);
               }}
               eventHandlers={{
-                click: () => setActiveMarker(index),
+                click: (e) => {
+                  if (pickMode) {
+                    (e.target as L.Marker).closePopup();
+                    handlePickEndpoint({ kind: 'step', id: marche.id, lat: marche.latitude!, lng: marche.longitude! });
+                    return;
+                  }
+                  setActiveMarker(index);
+                },
               }}
             >
               <Popup className="exploration-carte-popup" maxWidth={260} minWidth={220}>
