@@ -112,16 +112,6 @@ function pointToSegmentKmWithT(plat: number, plng: number, alat: number, alng: n
   return { dist: haversineKm(py, px, cy, cx), t };
 }
 
-function pointToSegmentKm(plat: number, plng: number, alat: number, alng: number, blat: number, blng: number) {
-  // Treat lat/lng as small-area planar
-  const ax = alng, ay = alat, bx = blng, by = blat, px = plng, py = plat;
-  const dx = bx - ax, dy = by - ay;
-  const len2 = dx * dx + dy * dy;
-  let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
-  t = Math.max(0, Math.min(1, t));
-  const cx = ax + t * dx, cy = ay + t * dy;
-  return haversineKm(py, px, cy, cx);
-}
 
 interface CreateHandlerProps {
   active: boolean;
