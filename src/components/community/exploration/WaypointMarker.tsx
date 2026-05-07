@@ -198,25 +198,34 @@ interface WaypointMarkerProps {
   waypoint: ExplorationWaypoint;
   canEdit: boolean;
   segmentLabel?: string;
+  /** When set, clicking the marker calls this handler instead of opening the popup */
+  pickModeOnClick?: (ep: { kind: 'waypoint'; id: string; lat: number; lng: number }) => void;
 }
 
-export function WaypointMarker({ waypoint, canEdit, segmentLabel }: WaypointMarkerProps) {
+export function WaypointMarker({ waypoint, canEdit, segmentLabel, pickModeOnClick }: WaypointMarkerProps) {
   const [popupOpen, setPopupOpen] = useState(false);
   const update = useUpdateWaypoint();
   const del = useDeleteWaypoint();
   const collect = useCollectWaypointBio();
   const { data: snapshot, isLoading } = useWaypointBioSnapshots(popupOpen ? waypoint.id : undefined);
+  const isPickMode = !!pickModeOnClick;
 
   return (
     <Marker
       position={[waypoint.latitude, waypoint.longitude]}
       icon={waypointIcon}
-      draggable={canEdit}
+      draggable={canEdit && !isPickMode}
       eventHandlers={{
         popupopen: () => setPopupOpen(true),
         popupclose: () => setPopupOpen(false),
+        click: (e) => {
+          if (isPickMode) {
+            (e.target as L.Marker).closePopup();
+            pickModeOnClick!({ kind: 'waypoint', id: waypoint.id, lat: waypoint.latitude, lng: waypoint.longitude });
+          }
+        },
         dragend: (e) => {
-          if (!canEdit) return;
+          if (!canEdit || isPickMode) return;
           const ll = (e.target as L.Marker).getLatLng();
           update.mutate({
             id: waypoint.id,
@@ -227,6 +236,7 @@ export function WaypointMarker({ waypoint, canEdit, segmentLabel }: WaypointMark
         },
       }}
     >
+      {!isPickMode && (
       <Popup minWidth={220}>
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-1.5 font-semibold text-amber-700">
@@ -303,6 +313,7 @@ export function WaypointMarker({ waypoint, canEdit, segmentLabel }: WaypointMark
           )}
         </div>
       </Popup>
+      )}
     </Marker>
   );
 }

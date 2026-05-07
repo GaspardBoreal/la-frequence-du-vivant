@@ -1045,18 +1045,15 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           </>
         )}
 
-        {/* Manual pick-mode: clickable halos on every step + waypoint */}
+        {/* Manual pick-mode: decorative cyan halos (non-interactive — clicks go to underlying markers) */}
         {pickMode && pendingWaypoint && (
           <>
-            {geoMarches.map((m, i) => (
+            {geoMarches.map((m) => (
               <CircleMarker
                 key={`pick-step-${m.id}`}
                 center={[m.latitude!, m.longitude!]}
-                radius={16}
-                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.35 }}
-                eventHandlers={{
-                  click: () => handlePickEndpoint({ kind: 'step', id: m.id, lat: m.latitude!, lng: m.longitude! }),
-                }}
+                radius={18}
+                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.25, interactive: false }}
               />
             ))}
             {waypoints.map((wp) => (
@@ -1064,18 +1061,15 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                 key={`pick-wp-${wp.id}`}
                 center={[wp.latitude, wp.longitude]}
                 radius={14}
-                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.35 }}
-                eventHandlers={{
-                  click: () => handlePickEndpoint({ kind: 'waypoint', id: wp.id, lat: wp.latitude, lng: wp.longitude }),
-                }}
+                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.25, interactive: false }}
               />
             ))}
             {/* Highlight the first picked point */}
             {pickMode.pickedA && (
               <CircleMarker
                 center={[pickMode.pickedA.lat, pickMode.pickedA.lng]}
-                radius={20}
-                pathOptions={{ color: '#0e7490', weight: 4, opacity: 1, fillColor: '#06b6d4', fillOpacity: 0.5 }}
+                radius={22}
+                pathOptions={{ color: '#0e7490', weight: 4, opacity: 1, fillColor: '#06b6d4', fillOpacity: 0.45, interactive: false }}
               />
             )}
           </>
@@ -1093,6 +1087,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               waypoint={wp}
               canEdit={userCanCreate}
               segmentLabel={segLabel}
+              pickModeOnClick={pickMode ? handlePickEndpoint : undefined}
             />
           );
         })}
@@ -1114,9 +1109,17 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                 else stepMarkerRefs.current.delete(marche.id);
               }}
               eventHandlers={{
-                click: () => setActiveMarker(index),
+                click: (e) => {
+                  if (pickMode) {
+                    (e.target as L.Marker).closePopup();
+                    handlePickEndpoint({ kind: 'step', id: marche.id, lat: marche.latitude!, lng: marche.longitude! });
+                    return;
+                  }
+                  setActiveMarker(index);
+                },
               }}
             >
+              {!pickMode && (
               <Popup className="exploration-carte-popup" maxWidth={260} minWidth={220}>
                 <div className="bg-black/80 backdrop-blur-xl rounded-xl p-3 -m-3 text-white">
                   {/* Hero photo */}
@@ -1193,6 +1196,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                   )}
                 </div>
               </Popup>
+              )}
             </Marker>
           );
         })}
