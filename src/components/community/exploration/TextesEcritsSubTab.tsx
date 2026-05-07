@@ -77,16 +77,25 @@ const TextesEcritsSubTab: React.FC<TextesEcritsSubTabProps> = ({
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: textes = [], isLoading } = useQuery({
-    queryKey: ['event-textes-ecrits', marcheEventId],
+    queryKey: ['textes-ecrits', marcheEventId, explorationId],
     queryFn: async () => {
-      if (!marcheEventId) return [];
-      const { data, error } = await supabase.rpc('get_event_public_textes', {
-        p_event_id: marcheEventId,
-      });
-      if (error) throw error;
-      return (data || []) as unknown as TexteRow[];
+      if (marcheEventId) {
+        const { data, error } = await supabase.rpc('get_event_public_textes', {
+          p_event_id: marcheEventId,
+        });
+        if (error) throw error;
+        return (data || []) as unknown as TexteRow[];
+      }
+      if (explorationId) {
+        const { data, error } = await supabase.rpc('get_exploration_public_textes', {
+          p_exploration_id: explorationId,
+        });
+        if (error) throw error;
+        return (data || []) as unknown as TexteRow[];
+      }
+      return [];
     },
-    enabled: !!marcheEventId,
+    enabled: !!(marcheEventId || explorationId),
   });
 
   const authorMap = useMemo(() => {
