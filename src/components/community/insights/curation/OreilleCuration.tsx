@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Ear,
@@ -335,6 +335,7 @@ const OreilleCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           </div>
           <div className="h-48 w-full">
             <MapContainer
+              key={mapKey}
               center={mapCenter}
               zoom={10}
               scrollWheelZoom={false}
