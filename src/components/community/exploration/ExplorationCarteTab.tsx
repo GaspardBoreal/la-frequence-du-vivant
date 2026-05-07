@@ -1415,64 +1415,45 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Create-marche button (Ambassadeur / Sentinelle / Admin) */}
-      {userCanCreate && explorationId && !isCreatingMarche && (
+      {/* Map options menu (regroupe création + couches d'affichage) */}
+      {explorationId && !isCreatingMarche && (
         <div className="absolute bottom-20 left-4 z-[1000] flex flex-col items-start gap-2">
-          {showCreateHint && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              className="bg-black/75 backdrop-blur-xl rounded-lg border border-amber-400/30 px-2.5 py-1.5 text-[10px] text-amber-100 shadow-md max-w-[180px]"
-            >
-              Vous pouvez ajouter une marche ici
-            </motion.div>
-          )}
-          <button
-            onClick={handleStartCreate}
-            className="relative h-10 px-3 rounded-xl bg-amber-500/25 backdrop-blur-md border border-amber-400/50 text-amber-100 flex items-center gap-1.5 hover:bg-amber-500/35 hover:border-amber-400/70 transition-all duration-200 active:scale-95 shadow-md shadow-amber-500/20"
-            aria-label="Créer une nouvelle marche ici"
-            title="Créer une nouvelle marche"
-          >
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            <span className="text-[11px] font-semibold tracking-wide">point de marche</span>
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-          </button>
-          {marcheEventId && (
-            <button
-              onClick={() => setIsCreatingWaypoint(v => !v)}
-              className={`relative h-10 px-3 rounded-xl backdrop-blur-md border flex items-center gap-1.5 transition-all duration-200 active:scale-95 shadow-md ${
-                isCreatingWaypoint
-                  ? 'bg-amber-400/40 border-amber-300/70 text-amber-50 shadow-amber-400/30'
-                  : 'bg-amber-500/15 border-amber-400/30 text-amber-100/90 hover:bg-amber-500/25'
-              }`}
-              aria-label="Ajouter un point intermédiaire"
-              title={isCreatingWaypoint ? 'Cliquez sur la carte pour placer le point' : 'Ajouter un point intermédiaire'}
-            >
-              <Sparkles className="w-3.5 h-3.5" strokeWidth={2.5} />
-              <span className="text-[11px] font-semibold tracking-wide">
-                {isCreatingWaypoint ? 'Cliquez sur la carte…' : 'point intermédiaire'}
-              </span>
-            </button>
-          )}
-          {explorationId && (
-            <button
-              onClick={() => updateLoop.mutate({ id: explorationId, is_loop: !isLoop })}
-              disabled={updateLoop.isPending}
-              className={`relative h-10 px-3 rounded-xl backdrop-blur-md border flex items-center gap-1.5 transition-all duration-200 active:scale-95 shadow-md ${
-                isLoop
-                  ? 'bg-emerald-500/30 border-emerald-300/60 text-emerald-50 shadow-emerald-400/30'
-                  : 'bg-amber-500/15 border-amber-400/30 text-amber-100/90 hover:bg-amber-500/25'
-              }`}
-              aria-label="Basculer le mode boucle fermée"
-              title={isLoop ? 'Boucle fermée : ON (cliquer pour désactiver)' : 'Boucle fermée : OFF (cliquer pour fermer le tracé)'}
-            >
-              <span className="text-base leading-none">⟳</span>
-              <span className="text-[11px] font-semibold tracking-wide">
-                {isLoop ? 'boucle : ON' : 'boucle : OFF'}
-              </span>
-            </button>
-          )}
+          <AnimatePresence>
+            {userCanCreate && showCreateHint && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                className="bg-black/75 backdrop-blur-xl rounded-lg border border-amber-400/30 px-2.5 py-1.5 text-[10px] text-amber-100 shadow-md max-w-[180px]"
+              >
+                Vous pouvez ajouter une marche ici
+              </motion.div>
+            )}
+            {isCreatingWaypoint && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                className="bg-black/75 backdrop-blur-xl rounded-lg border border-amber-400/40 px-2.5 py-1.5 text-[10px] text-amber-100 shadow-md max-w-[200px]"
+              >
+                Cliquez sur la carte pour placer le point intermédiaire
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <MapOptionsMenu
+            userCanCreate={userCanCreate}
+            marcheEventId={marcheEventId}
+            explorationId={explorationId}
+            isLoop={isLoop}
+            isLoopPending={updateLoop.isPending}
+            isCreatingWaypoint={isCreatingWaypoint}
+            layers={mapLayers}
+            activeBadgeCount={(isLoop ? 1 : 0) + mapLayersActiveCount}
+            onToggleLoop={() => updateLoop.mutate({ id: explorationId, is_loop: !isLoop })}
+            onStartCreateMarche={handleStartCreate}
+            onToggleCreateWaypoint={() => setIsCreatingWaypoint(v => !v)}
+            onToggleLayer={toggleMapLayer}
+          />
         </div>
       )}
 
