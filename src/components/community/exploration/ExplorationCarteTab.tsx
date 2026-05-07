@@ -22,6 +22,7 @@ import { useExplorationById, useUpdateExplorationLoop } from '@/hooks/useExplora
 import { WaypointMarker, WaypointCreateHandler, detectSegmentCandidates, findSegmentByEndpoints, waypointDraftIcon, type SegmentCandidate } from './WaypointMarker';
 import { WaypointInsertConfirmDialog } from './WaypointInsertConfirmDialog';
 import MapOptionsMenu from './MapOptionsMenu';
+import WeatherStationsLayer from './WeatherStationsLayer';
 import { useMapLayers } from '@/hooks/useMapLayers';
 import 'leaflet/dist/leaflet.css';
 
@@ -1271,6 +1272,19 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           <DraggableCreateMarker
             position={createPosition}
             onChange={setCreatePosition}
+          />
+        )}
+
+        {/* Weather stations layer */}
+        {mapLayers.weatherStations !== 'off' && (
+          <WeatherStationsLayer
+            marches={geoMarches.map(m => ({
+              id: m.id,
+              latitude: m.latitude!,
+              longitude: m.longitude!,
+              nom_marche: m.nom_marche,
+              ville: m.ville,
+            }))}
           />
         )}
 
