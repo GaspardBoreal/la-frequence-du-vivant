@@ -1256,13 +1256,27 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
       {/* Confirm dialog for waypoint insertion */}
       {pendingWaypoint && (
-        <WaypointInsertConfirmDialog
-          open={!!pendingWaypoint && !pickMode}
-          candidates={pendingWaypoint.candidates.slice(0, 4)}
-          selectedIdx={pendingWaypoint.selectedIdx < 4 ? pendingWaypoint.selectedIdx : 0}
-          onSelect={(idx) => setPendingWaypoint((p) => (p ? { ...p, selectedIdx: idx } : p))}
-          onHover={setHoveredCandidateIdx}
-          onPickOnMap={() => { setPickMode({ stage: 'A' }); setHoveredCandidateIdx(null); }}
+        {(() => {
+          // Display top 4 candidates, plus the selected one if it's outside that window
+          const top = pendingWaypoint.candidates.slice(0, 4);
+          const sel = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+          const display = sel && !top.includes(sel) ? [...top, sel] : top;
+          const dialogSelectedIdx = sel ? display.indexOf(sel) : 0;
+          return (
+            <WaypointInsertConfirmDialog
+              open={!!pendingWaypoint && !pickMode}
+              candidates={display}
+              selectedIdx={dialogSelectedIdx}
+              onSelect={(idx) => {
+                const realIdx = pendingWaypoint.candidates.indexOf(display[idx]);
+                if (realIdx >= 0) setPendingWaypoint((p) => (p ? { ...p, selectedIdx: realIdx } : p));
+              }}
+              onHover={(idx) => {
+                if (idx === null) { setHoveredCandidateIdx(null); return; }
+                const realIdx = pendingWaypoint.candidates.indexOf(display[idx]);
+                setHoveredCandidateIdx(realIdx >= 0 ? realIdx : null);
+              }}
+              onPickOnMap={() => { setPickMode({ stage: 'A' }); setHoveredCandidateIdx(null); }}
           buildLabel={(c) => {
             const a = geoMarches[c.afterMarcheIndex];
             const b = geoMarches[c.afterMarcheIndex + 1];
