@@ -723,14 +723,17 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     [geoMarches]
   );
 
-  // Total distance
-  const totalDistance = useMemo(() => {
-    let d = 0;
-    for (let i = 1; i < positions.length; i++) {
-      d += haversineKm(positions[i - 1][0], positions[i - 1][1], positions[i][0], positions[i][1]);
-    }
-    return d;
-  }, [positions]);
+  // Route + distances (with waypoints)
+  const route = useMemo(
+    () => buildRouteWithWaypoints(
+      geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
+      waypoints,
+    ),
+    [geoMarches, waypoints],
+  );
+  const totalDistance = route.crowKm;
+  const estimatedDistance = route.estimatedKm;
+  const polylinePositions = showWaypoints ? route.positions : positions;
 
   const bioByMarche = useMemo(() => {
     const map = new Map<string, number>();
