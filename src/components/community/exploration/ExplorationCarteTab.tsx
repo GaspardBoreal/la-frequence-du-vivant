@@ -964,7 +964,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               lng,
               geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
               waypoints,
-              4,
+              Number.POSITIVE_INFINITY,
             );
             if (!candidates.length || !marcheEventId) {
               toast.error('Impossible de détecter un segment');
