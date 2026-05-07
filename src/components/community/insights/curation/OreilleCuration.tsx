@@ -329,12 +329,12 @@ const OreilleCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
       {/* Cartographie sonore */}
       {mapPoints.length > 0 && (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden relative z-0 isolate">
           <div className="px-3 py-2 text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5" />
             Cartographie sonore
           </div>
-          <div className="h-48 w-full">
+          <div className="h-48 w-full relative z-0 [&_.leaflet-pane]:!z-0 [&_.leaflet-top]:!z-[1] [&_.leaflet-bottom]:!z-[1] [&_.leaflet-control]:!z-[1]">
             <MapContainer
               key={mapKey}
               center={mapCenter}
