@@ -233,6 +233,20 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   const handleAi = () => triggerAi.mutate(explorationId);
 
+  // Auto-switch : si la Sélection finale est vide et que l'utilisateur n'a pas
+  // choisi d'onglet manuellement, basculer sur le premier onglet non vide
+  // (Terrain → Pool/Observées) pour éviter un écran vide trompeur.
+  useEffect(() => {
+    if (hasUserPickedView) return;
+    if (view !== 'selection') return;
+    if (pinnedSpecies.length > 0) return;
+    if (manual.length > 0) {
+      setView('terrain');
+    } else if (pool.length > 0) {
+      setView('pool');
+    }
+  }, [hasUserPickedView, view, pinnedSpecies.length, manual.length, pool.length]);
+
   // ─── Snapshot Chat IA : ce qui est RÉELLEMENT visible dans la grille ───
   // Reproduit la même logique de filtrage que les vues SpeciesGrid plus bas
   // pour que l'IA reçoive la liste exacte affichée à l'écran.
