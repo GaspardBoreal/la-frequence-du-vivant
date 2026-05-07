@@ -612,7 +612,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const updateLoop = useUpdateExplorationLoop();
   const createWaypoint = useCreateWaypoint();
   const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
-  const { layers: mapLayers, toggleLayer: toggleMapLayer, setWeatherStationsMode, activeCount: mapLayersActiveCount } = useMapLayers(explorationId);
+  const { layers: mapLayers, toggleLayer: toggleMapLayer, setWeatherStationsMode, setWeatherStationsRadius, activeCount: mapLayersActiveCount } = useMapLayers(explorationId);
   const hideMarcheMarkers = mapLayers.weatherStations === 'on_only';
   const [pendingWaypoint, setPendingWaypoint] = useState<{
     lat: number;
@@ -1285,6 +1285,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               nom_marche: m.nom_marche,
               ville: m.ville,
             }))}
+            radiusKm={mapLayers.weatherStationsRadius}
           />
         )}
 
@@ -1472,6 +1473,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             onToggleCreateWaypoint={() => setIsCreatingWaypoint(v => !v)}
             onToggleLayer={toggleMapLayer}
             onSetWeatherStationsMode={setWeatherStationsMode}
+            onSetWeatherStationsRadius={setWeatherStationsRadius}
           />
         </div>
       )}

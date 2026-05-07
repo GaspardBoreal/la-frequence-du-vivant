@@ -131,6 +131,73 @@ export const WEATHER_STATIONS: Record<string, WeatherStation> = {
     elevation: 100,
     region: 'Nouvelle-Aquitaine',
     department: 'Charente'
+  },
+  '16374001': {
+    code: '16374001',
+    name: 'CHASSENEUIL',
+    coordinates: { lat: 45.821, lng: 0.450 },
+    elevation: 110,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Charente'
+  },
+  // Dordogne (ouest)
+  '24322001': {
+    code: '24322001',
+    name: 'PERIGUEUX-BASSILLAC',
+    coordinates: { lat: 45.198, lng: 0.815 },
+    elevation: 95,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Dordogne'
+  },
+  '24520001': {
+    code: '24520001',
+    name: 'SAINT-ASTIER',
+    coordinates: { lat: 45.143, lng: 0.519 },
+    elevation: 70,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Dordogne'
+  },
+  '24350001': {
+    code: '24350001',
+    name: 'RIBERAC',
+    coordinates: { lat: 45.247, lng: 0.327 },
+    elevation: 70,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Dordogne'
+  },
+  '24291001': {
+    code: '24291001',
+    name: 'MUSSIDAN',
+    coordinates: { lat: 45.040, lng: 0.371 },
+    elevation: 50,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Dordogne'
+  },
+  // Gironde (est)
+  '33243001': {
+    code: '33243001',
+    name: 'LIBOURNE',
+    coordinates: { lat: 44.916, lng: -0.244 },
+    elevation: 20,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Gironde'
+  },
+  // Charente-Maritime
+  '17299001': {
+    code: '17299001',
+    name: 'PONS',
+    coordinates: { lat: 45.578, lng: -0.547 },
+    elevation: 35,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Charente-Maritime'
+  },
+  '17415001': {
+    code: '17415001',
+    name: 'SAINTES',
+    coordinates: { lat: 45.749, lng: -0.625 },
+    elevation: 35,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Charente-Maritime'
   }
 };
 
