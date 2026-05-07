@@ -604,6 +604,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
   // Waypoints (intermediate route points)
   const { data: waypoints = [] } = useExplorationWaypoints(marcheEventId);
+  const { data: explorationData } = useExplorationById(explorationId || '');
+  const isLoop = !!explorationData?.is_loop;
+  const updateLoop = useUpdateExplorationLoop();
   const createWaypoint = useCreateWaypoint();
   const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
   const [pendingWaypoint, setPendingWaypoint] = useState<{
