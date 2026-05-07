@@ -4407,6 +4407,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_exploration_public_textes: {
+        Args: { p_exploration_id: string }
+        Returns: Json
+      }
       get_marche_events_dashboard_stats: {
         Args: { _search?: string; _status?: string; _type?: string }
         Returns: Json
