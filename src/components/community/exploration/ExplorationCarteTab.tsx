@@ -611,7 +611,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const updateLoop = useUpdateExplorationLoop();
   const createWaypoint = useCreateWaypoint();
   const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
-  const { layers: mapLayers, toggleLayer: toggleMapLayer, activeCount: mapLayersActiveCount } = useMapLayers(explorationId);
+  const { layers: mapLayers, toggleLayer: toggleMapLayer, setWeatherStationsMode, activeCount: mapLayersActiveCount } = useMapLayers(explorationId);
+  const hideMarcheMarkers = mapLayers.weatherStations === 'on_only';
   const [pendingWaypoint, setPendingWaypoint] = useState<{
     lat: number;
     lng: number;
@@ -1140,7 +1141,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         })}
 
         {/* Numbered markers with progressive reveal */}
-        {geoMarches.map((marche, index) => {
+        {!hideMarcheMarkers && geoMarches.map((marche, index) => {
           if (index >= visibleMarkers) return null;
           const stats = contribStats?.[marche.id];
           const speciesCount = bioByMarche.get(marche.id) || 0;
@@ -1456,6 +1457,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             onStartCreateMarche={handleStartCreate}
             onToggleCreateWaypoint={() => setIsCreatingWaypoint(v => !v)}
             onToggleLayer={toggleMapLayer}
+            onSetWeatherStationsMode={setWeatherStationsMode}
           />
         </div>
       )}
