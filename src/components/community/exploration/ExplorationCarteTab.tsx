@@ -956,26 +956,48 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         <WaypointCreateHandler
           active={isCreatingWaypoint}
           onPick={(lat, lng) => {
-            const seg = detectSegmentForPoint(
+            const candidates = detectSegmentCandidates(
               lat,
               lng,
               geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
               waypoints,
+              4,
             );
-            if (!seg || !marcheEventId) {
-              toast.error('Impossible de détecter le segment');
+            if (!candidates.length || !marcheEventId) {
+              toast.error('Impossible de détecter un segment');
               return;
             }
-            createWaypoint.mutate({
-              marche_event_id: marcheEventId,
-              after_marche_id: seg.after_marche_id,
-              ordre: seg.ordre,
-              latitude: lat,
-              longitude: lng,
-            });
+            setPendingWaypoint({ lat, lng, candidates, selectedIdx: 0 });
             setIsCreatingWaypoint(false);
           }}
         />
+
+        {/* Draft waypoint marker + preview polylines while confirming */}
+        {pendingWaypoint && (
+          <>
+            <Marker
+              position={[pendingWaypoint.lat, pendingWaypoint.lng]}
+              icon={waypointDraftIcon}
+              interactive={false}
+            />
+            {(() => {
+              const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+              if (!c) return null;
+              return (
+                <>
+                  <Polyline
+                    positions={[[pendingWaypoint.lat, pendingWaypoint.lng], [c.p1.latitude, c.p1.longitude]]}
+                    pathOptions={{ color: '#d97706', weight: 2, opacity: 0.75, dashArray: '4, 6' }}
+                  />
+                  <Polyline
+                    positions={[[pendingWaypoint.lat, pendingWaypoint.lng], [c.p2.latitude, c.p2.longitude]]}
+                    pathOptions={{ color: '#d97706', weight: 2, opacity: 0.75, dashArray: '4, 6' }}
+                  />
+                </>
+              );
+            })()}
+          </>
+        )}
 
         {/* Render waypoints */}
         {showWaypoints && waypoints.map((wp) => {
