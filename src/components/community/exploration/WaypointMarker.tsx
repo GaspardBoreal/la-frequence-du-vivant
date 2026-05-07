@@ -102,12 +102,19 @@ export function detectSegmentForPoint(
   return null;
 }
 
+export type EndpointKind = 'step' | 'waypoint';
+export interface CandidateEndpoint {
+  kind: EndpointKind;
+  id: string;
+  latitude: number;
+  longitude: number;
+}
 export interface SegmentCandidate {
   after_marche_id: string;
   ordre: number;
   score: number;
-  p1: { latitude: number; longitude: number };
-  p2: { latitude: number; longitude: number };
+  p1: CandidateEndpoint;
+  p2: CandidateEndpoint;
   afterMarcheIndex: number; // 0-based index of after_marche in geoMarches
   kInSegment: number;       // ordre slot inside this main segment
   totalInSegment: number;   // total existing waypoints in the same main segment
