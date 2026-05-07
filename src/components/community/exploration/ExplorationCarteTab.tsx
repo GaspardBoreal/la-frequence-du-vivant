@@ -13,6 +13,12 @@ import { canCreateMarche, computeMarcheDefaults } from './createMarcheUtils';
 import CadastreLayer from '@/components/cadastre/CadastreLayer';
 import GpsEditOverlay from '@/components/cadastre/GpsEditOverlay';
 import { useCanCurateAudio } from '@/hooks/useCanCurateAudio';
+import {
+  useExplorationWaypoints,
+  useCreateWaypoint,
+  buildRouteWithWaypoints,
+} from '@/hooks/useExplorationWaypoints';
+import { WaypointMarker, WaypointCreateHandler, detectSegmentForPoint, waypointDraftIcon } from './WaypointMarker';
 import 'leaflet/dist/leaflet.css';
 
 type MapStyle = 'geopoetic' | 'satellite' | 'terrain' | 'cadastre';
