@@ -1,47 +1,58 @@
-## Objectif
+# Améliorer l'insertion d'un point intermédiaire
 
-Lever l'ambiguïté lors du placement d'un point intermédiaire quand le tracé fait un aller-retour : laisser l'utilisateur **confirmer ou corriger** le segment d'insertion juste après avoir cliqué sur la carte.
+## Diagnostic
 
-## Comportement actuel
+Sur la copie 1, le tracé zigzague **avant même** d'insérer un nouveau point : les points intermédiaires existants sont déjà mal rattachés à un segment (mauvais `after_marche_id` / `ordre`). Le mode « Suggéré » de la copie 2 propose bien « Entre étape 8 et point intermédiaire 1/1 » avec un détour de 9 m… mais ce « point intermédiaire 1/1 » n'est pas celui que vous croyez voir : c'est le premier point du segment 8→9 dans la base, pas le point jaune visible en haut à gauche (qui est probablement rattaché à un autre segment, ex. 10→11 ou 11→12, d'où le zigzag).
 
-Le clic déclenche immédiatement la création du waypoint via `detectSegmentForPoint` (heuristique « detour »). Si la détection se trompe (cas aller-retour entre étape 7 et waypoint orange), aucun moyen de corriger sans supprimer puis recréer.
+Aucune des 4 propositions ne peut donc résoudre le problème : les **endpoints affichés ne correspondent pas aux points visibles à l'écran** car les libellés sont calculés à partir de la structure interne (souvent fausse), pas de la géométrie réelle.
 
-## Nouveau flux
+## Solution proposée
 
-1. Clic sur la carte en mode « point intermédiaire » → on n'écrit pas tout de suite en base.
-2. Apparition d'un **marqueur fantôme** (le `waypointDraftIcon` pulsant existe déjà) à l'emplacement cliqué.
-3. Ouverture d'une **modale de confirmation** (Dialog shadcn) :
-   - Titre : « Où insérer ce point ? »
-   - Sélecteur (Select) listant tous les segments candidats du tracé, formulés lisiblement :
-     - « Entre étape 7 et étape 8 »
-     - « Entre étape 7 et point intermédiaire (1/2) »
-     - « Entre point intermédiaire (1/2) et étape 8 »
-     - etc.
-   - Le segment **présélectionné** = celui retourné par la détection auto actuelle (badge « suggéré »).
-   - On affiche les 3-4 meilleurs candidats classés par score « detour », pas les 50 segments du tracé, pour ne pas noyer l'utilisateur.
-   - Boutons : **Confirmer** / **Annuler**.
-4. Pendant que la modale est ouverte, un **trait pointillé d'aperçu** (Polyline ambre) relie le point fantôme aux 2 endpoints du segment sélectionné, et se met à jour quand on change la sélection. Ainsi l'utilisateur voit visuellement l'insertion avant de valider.
-5. **Confirmer** → création réelle via `useCreateWaypoint` avec `after_marche_id` + `ordre` du segment choisi. **Annuler** → on retire le marqueur fantôme.
+Trois améliorations cumulatives, du plus simple au plus complet.
 
-## Fichiers concernés
+### 1. Libellés enrichis avec coordonnées et survol cartographique
 
-- `src/components/community/exploration/WaypointMarker.tsx`
-  - Exposer une variante `detectSegmentCandidates(...)` qui renvoie un **tableau trié** des N meilleurs segments (au lieu d'un seul), avec libellé déjà formaté.
-- `src/components/community/exploration/ExplorationCarteTab.tsx`
-  - Remplacer la création immédiate dans le handler de clic par : `setPendingWaypoint({ lat, lng, candidates, selectedIdx: 0 })`.
-  - Ajouter le **draft Marker** + la **Polyline d'aperçu** (Leaflet) pendant que `pendingWaypoint` existe.
-  - Ajouter une nouvelle modale `WaypointInsertConfirmDialog` (peut vivre dans le même fichier ou un fichier voisin).
+Dans `WaypointInsertConfirmDialog`, au lieu de « point intermédiaire 1/1 » abstrait :
+- Afficher l'**id court** ou les **coordonnées tronquées** de chaque endpoint (`p1`, `p2`).
+- Au **survol d'une option**, faire clignoter sur la carte 2 gros cercles ambrés autour de `p1` et `p2` du candidat, plus la polyline ambre courante. Le ghost marker reste fixe.
 
-## Hors périmètre
+→ L'utilisateur voit immédiatement quels 2 points réels sont concernés, sans deviner.
 
-- Pas de changement de la métrique `detectSegmentForPoint` elle-même (déjà bonne dans 80 % des cas, juste insuffisante pour les aller-retours).
-- Pas de changement DB / RLS / Edge Function.
-- Pas de changement visuel des waypoints existants (taille, couleur).
-- Pas de glisser-déposer pour réassigner un waypoint déjà créé (peut venir plus tard si besoin).
+### 2. Mode « sélection directe sur la carte » (bouton dans le dialog)
+
+Ajouter un bouton **« Choisir les 2 points sur la carte »** dans le dialog. En cliquant :
+- Le dialog se réduit en bandeau flottant.
+- Tous les points (étapes principales + waypoints existants) deviennent **cliquables et numérotés temporairement** (gros halos cyan).
+- L'utilisateur clique sur le **point A** puis le **point B** (étape 8 puis le point jaune visible).
+- Le segment correspondant est calculé déterministiquement à partir des 2 IDs choisis (peu importe la position du clic initial).
+- Confirmation directe.
+
+→ 0 % d'ambiguïté : l'utilisateur désigne explicitement les 2 voisins.
+
+### 3. Réparer le tracé existant : drag-and-drop des waypoints entre segments
+
+Bouton **« Réorganiser le tracé »** au-dessus de la carte. Mode édition :
+- Les points intermédiaires deviennent draggables non plus seulement géographiquement (déjà le cas) mais aussi **logiquement** : un panneau latéral liste les segments (Étape 7→8, Étape 8→9, …) avec les waypoints rattachés en dnd-kit.
+- L'utilisateur réordonne / déplace un waypoint d'un segment à un autre → mise à jour `after_marche_id` + `ordre` via `useUpdateWaypoint`.
+
+→ Permet de corriger les zigzags hérités sans avoir à supprimer / recréer.
+
+## Périmètre
+
+- **Frontend uniquement.** Pas de migration DB, pas d'Edge Function modifiée.
+- Fichiers touchés :
+  - `WaypointInsertConfirmDialog.tsx` — survol + bouton « Choisir sur la carte ».
+  - `ExplorationCarteTab.tsx` — état `pickingMode`, halos temporaires, panneau de réorganisation.
+  - `WaypointMarker.tsx` — exposer `waypointHighlightIcon` pour le survol.
+  - Nouveau `WaypointReorderPanel.tsx` (étape 3, optionnel selon priorité).
+- Réutilise `useUpdateWaypoint` pour la réattribution.
 
 ## Détails techniques
 
-- `detectSegmentCandidates` : même boucle que `detectSegmentForPoint`, mais on accumule tous les segments dans un tableau, on trie par `score` (detour) croissant, on tronque à 4. Chaque entrée porte `{ after_marche_id, ordre, score, label }`.
-- Le `label` est construit côté `ExplorationCarteTab` (qui connaît la numérotation des étapes et l'ordre des waypoints existants par segment) — `WaypointMarker` ne renvoie que les indices, le label est calculé dans le tab via une petite fonction utilitaire.
-- L'aperçu visuel : 2 `<Polyline>` ambre pointillés (waypoint draft → endpoint A, waypoint draft → endpoint B), épaisseur 2, opacité 0.7.
-- Modale : composant shadcn `Dialog` déjà utilisé ailleurs dans le projet, donc cohérent visuellement.
+- **Survol (1)** : `onMouseEnter` sur chaque bouton du dialog → `setHoveredCandidate(idx)`. La carte lit cet état et rend 2 `<CircleMarker>` ambrés (rayon 14 px) sur `p1` et `p2`.
+- **Sélection directe (2)** : `pickingMode: 'idle' | 'pickA' | 'pickB'`. Chaque marqueur (étape ou waypoint) attache un `eventHandlers.click` conditionnel. Une fois A et B choisis, on cherche dans la liste générée par `detectSegmentCandidates` (étendue à `limit: Infinity`) le candidat dont `(p1, p2)` matche les 2 IDs — on récupère son `after_marche_id` et `ordre`.
+- **Réorganisation (3)** : `@dnd-kit/sortable` déjà utilisé dans le projet (cf. mémoire « marcheur observations reordering »). Mutation par batch via `useUpdateWaypoint`.
+
+## Recommandation
+
+Implémenter **étapes 1 + 2** d'abord (valeur immédiate, faible risque). L'étape 3 peut être une seconde itération si le besoin de corriger l'existant persiste.
