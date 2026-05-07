@@ -18,6 +18,7 @@ import {
   useCreateWaypoint,
   buildRouteWithWaypoints,
 } from '@/hooks/useExplorationWaypoints';
+import { useExplorationById, useUpdateExplorationLoop } from '@/hooks/useExplorations';
 import { WaypointMarker, WaypointCreateHandler, detectSegmentCandidates, findSegmentByEndpoints, waypointDraftIcon, type SegmentCandidate } from './WaypointMarker';
 import { WaypointInsertConfirmDialog } from './WaypointInsertConfirmDialog';
 import 'leaflet/dist/leaflet.css';
@@ -603,6 +604,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
   // Waypoints (intermediate route points)
   const { data: waypoints = [] } = useExplorationWaypoints(marcheEventId);
+  const { data: explorationData } = useExplorationById(explorationId || '');
+  const isLoop = !!explorationData?.is_loop;
+  const updateLoop = useUpdateExplorationLoop();
   const createWaypoint = useCreateWaypoint();
   const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
   const [pendingWaypoint, setPendingWaypoint] = useState<{
@@ -645,6 +649,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           bId,
           geoMarchesRef.current.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
           waypointsRef.current,
+          isLoop,
         );
         if (reconstructed) resolved = reconstructed;
       }
@@ -664,7 +669,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       setHoveredCandidateIdx(null);
       return null;
     });
-  }, [pendingWaypoint, marcheEventId, createWaypoint]);
+  }, [pendingWaypoint, marcheEventId, createWaypoint, isLoop]);
 
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
@@ -791,12 +796,15 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     () => buildRouteWithWaypoints(
       geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
       waypoints,
+      isLoop,
     ),
-    [geoMarches, waypoints],
+    [geoMarches, waypoints, isLoop],
   );
   const totalDistance = route.crowKm;
   const estimatedDistance = route.estimatedKm;
-  const polylinePositions = showWaypoints ? route.positions : positions;
+  const polylinePositions = showWaypoints
+    ? route.positions
+    : (isLoop && positions.length >= 2 ? [...positions, positions[0]] : positions);
 
   const bioByMarche = useMemo(() => {
     const map = new Map<string, number>();
@@ -1018,6 +1026,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
               waypoints,
               Number.POSITIVE_INFINITY,
+              isLoop,
             );
             if (!candidates.length || !marcheEventId) {
               toast.error('Impossible de détecter un segment');
@@ -1443,6 +1452,24 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               <Sparkles className="w-3.5 h-3.5" strokeWidth={2.5} />
               <span className="text-[11px] font-semibold tracking-wide">
                 {isCreatingWaypoint ? 'Cliquez sur la carte…' : 'point intermédiaire'}
+              </span>
+            </button>
+          )}
+          {explorationId && (
+            <button
+              onClick={() => updateLoop.mutate({ id: explorationId, is_loop: !isLoop })}
+              disabled={updateLoop.isPending}
+              className={`relative h-10 px-3 rounded-xl backdrop-blur-md border flex items-center gap-1.5 transition-all duration-200 active:scale-95 shadow-md ${
+                isLoop
+                  ? 'bg-emerald-500/30 border-emerald-300/60 text-emerald-50 shadow-emerald-400/30'
+                  : 'bg-amber-500/15 border-amber-400/30 text-amber-100/90 hover:bg-amber-500/25'
+              }`}
+              aria-label="Basculer le mode boucle fermée"
+              title={isLoop ? 'Boucle fermée : ON (cliquer pour désactiver)' : 'Boucle fermée : OFF (cliquer pour fermer le tracé)'}
+            >
+              <span className="text-base leading-none">⟳</span>
+              <span className="text-[11px] font-semibold tracking-wide">
+                {isLoop ? 'boucle : ON' : 'boucle : OFF'}
               </span>
             </button>
           )}

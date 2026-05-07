@@ -1750,6 +1750,7 @@ export type Database = {
             | Database["public"]["Enums"]["exploration_type"]
             | null
           id: string
+          is_loop: boolean
           language: string
           meta_description: string | null
           meta_keywords: string[]
@@ -1767,6 +1768,7 @@ export type Database = {
             | Database["public"]["Enums"]["exploration_type"]
             | null
           id?: string
+          is_loop?: boolean
           language?: string
           meta_description?: string | null
           meta_keywords?: string[]
@@ -1784,6 +1786,7 @@ export type Database = {
             | Database["public"]["Enums"]["exploration_type"]
             | null
           id?: string
+          is_loop?: boolean
           language?: string
           meta_description?: string | null
           meta_keywords?: string[]

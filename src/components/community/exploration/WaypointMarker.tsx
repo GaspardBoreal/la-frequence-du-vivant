@@ -130,6 +130,7 @@ export function detectSegmentCandidates(
   geoMarches: { id: string; latitude: number; longitude: number }[],
   waypoints: ExplorationWaypoint[],
   limit = 4,
+  isLoop = false,
 ): SegmentCandidate[] {
   if (geoMarches.length < 2) return [];
   const byAfter = new Map<string, ExplorationWaypoint[]>();
@@ -140,8 +141,11 @@ export function detectSegmentCandidates(
   byAfter.forEach((arr) => arr.sort((a, b) => a.ordre - b.ordre));
 
   const candidates: SegmentCandidate[] = [];
-  for (let i = 0; i < geoMarches.length - 1; i++) {
-    const a = geoMarches[i]; const b = geoMarches[i + 1];
+  const lastIdx = geoMarches.length - 1;
+  const totalMain = isLoop ? geoMarches.length : geoMarches.length - 1;
+  for (let i = 0; i < totalMain; i++) {
+    const a = geoMarches[i];
+    const b = i === lastIdx ? geoMarches[0] : geoMarches[i + 1];
     const wpsHere = byAfter.get(a.id) || [];
     const seg = [a, ...wpsHere, b];
     const segMeta: EndpointKind[] = ['step', ...wpsHere.map(() => 'waypoint' as EndpointKind), 'step'];
@@ -176,6 +180,7 @@ export function findSegmentByEndpoints(
   bId: string,
   geoMarches: { id: string; latitude: number; longitude: number }[],
   waypoints: ExplorationWaypoint[],
+  isLoop = false,
 ): SegmentCandidate | null {
   if (geoMarches.length < 2) return null;
   const byAfter = new Map<string, ExplorationWaypoint[]>();
@@ -185,8 +190,11 @@ export function findSegmentByEndpoints(
   });
   byAfter.forEach((arr) => arr.sort((a, b) => a.ordre - b.ordre));
 
-  for (let i = 0; i < geoMarches.length - 1; i++) {
-    const a = geoMarches[i]; const b = geoMarches[i + 1];
+  const lastIdx = geoMarches.length - 1;
+  const totalMain = isLoop ? geoMarches.length : geoMarches.length - 1;
+  for (let i = 0; i < totalMain; i++) {
+    const a = geoMarches[i];
+    const b = i === lastIdx ? geoMarches[0] : geoMarches[i + 1];
     const wpsHere = byAfter.get(a.id) || [];
     const seg = [a, ...wpsHere, b];
     const segMeta: EndpointKind[] = ['step', ...wpsHere.map(() => 'waypoint' as EndpointKind), 'step'];
