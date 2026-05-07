@@ -1276,9 +1276,17 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                   <span className="font-semibold">{geoMarches.length} étapes</span>
                 </div>
                 {totalDistance > 0 && (
-                  <span className="text-white/60">
-                    ~{totalDistance < 1 ? `${Math.round(totalDistance * 1000)} m` : `${Math.round(totalDistance)} km`}
-                  </span>
+                  <button
+                    onClick={() => setShowDistanceMode(m => m === 'estimated' ? 'crow' : 'estimated')}
+                    className="text-white/60 hover:text-white/90 tabular-nums"
+                    title="Basculer vol d'oiseau / estimé"
+                  >
+                    {showDistanceMode === 'estimated' && estimatedDistance > totalDistance ? (
+                      <>~{estimatedDistance < 1 ? `${Math.round(estimatedDistance * 1000)} m` : `${estimatedDistance.toFixed(1)} km`} estimés</>
+                    ) : (
+                      <>~{totalDistance < 1 ? `${Math.round(totalDistance * 1000)} m` : `${totalDistance.toFixed(1)} km`} vol d'oiseau</>
+                    )}
+                  </button>
                 )}
                 {bioSummary && bioSummary.totalSpecies > 0 && (
                   <div className="flex items-center gap-1">
