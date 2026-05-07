@@ -617,51 +617,54 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [showWaypoints, setShowWaypoints] = useState(true);
   const [showDistanceMode, setShowDistanceMode] = useState<'estimated' | 'crow'>('estimated');
 
-  // Resolve a (kind, id) endpoint to a SegmentCandidate index for a given pending waypoint
+  // Resolve a (kind, id) endpoint to a SegmentCandidate for a given pending waypoint.
+  // When the user has picked both endpoints, we commit the waypoint immediately
+  // (no re-confirmation popup) — their intent is unambiguous.
   const handlePickEndpoint = useCallback((ep: { kind: 'step' | 'waypoint'; id: string; lat: number; lng: number }) => {
     setPickMode((curr) => {
       if (!curr) return curr;
       if (!curr.pickedA) {
-        toast.success('Point 1 sélectionné — cliquez sur le point voisin');
+        toast.success('Point 1 sélectionné — cliquez sur le 2ᵉ point voisin');
         return { stage: 'B', pickedA: ep };
       }
-      if (!pendingWaypoint) return null;
+      if (!pendingWaypoint || !marcheEventId) return null;
       const aId = curr.pickedA.id;
       const bId = ep.id;
       if (aId === bId) {
         toast.error('Choisissez 2 points différents');
         return curr;
       }
-      let found = pendingWaypoint.candidates.findIndex(
+      let resolved = pendingWaypoint.candidates.find(
         (c) =>
           (c.p1.id === aId && c.p2.id === bId) ||
           (c.p1.id === bId && c.p2.id === aId),
       );
-      let nextCandidates = pendingWaypoint.candidates;
-      if (found < 0) {
-        // Reconstruct on the fly: the pair may form a valid segment outside the top-N
+      if (!resolved) {
         const reconstructed = findSegmentByEndpoints(
           aId,
           bId,
           geoMarchesRef.current.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
           waypointsRef.current,
         );
-        if (reconstructed) {
-          nextCandidates = [...pendingWaypoint.candidates, reconstructed];
-          found = nextCandidates.length - 1;
-        }
+        if (reconstructed) resolved = reconstructed;
       }
-      if (found < 0) {
+      if (!resolved) {
         toast.error('Ces 2 points ne sont pas voisins sur le tracé');
         return { stage: 'A', pickedA: undefined };
       }
-      const finalIdx = found;
-      const finalCandidates = nextCandidates;
-      setPendingWaypoint((p) => (p ? { ...p, candidates: finalCandidates, selectedIdx: finalIdx } : p));
-      toast.success("Segment sélectionné — confirmez l'insertion");
+      // Commit immediately — no popup re-opening
+      createWaypoint.mutate({
+        marche_event_id: marcheEventId,
+        after_marche_id: resolved.after_marche_id,
+        ordre: resolved.ordre,
+        latitude: pendingWaypoint.lat,
+        longitude: pendingWaypoint.lng,
+      });
+      setPendingWaypoint(null);
+      setHoveredCandidateIdx(null);
       return null;
     });
-  }, [pendingWaypoint]);
+  }, [pendingWaypoint, marcheEventId, createWaypoint]);
 
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
