@@ -1,60 +1,85 @@
-# Synchroniser le chatbot avec la Synthèse
+# Refonte "Le Cœur" — Galerie immersive des écrits
 
-## Diagnostic
+## Vision
 
-Les deux composants ne calculent pas de la même façon :
+Faire de l'onglet "Le Cœur" un **livre vivant collectif** où chaque texte de marcheur est mis en valeur comme une œuvre. Mobile-first, avec une esthétique éditoriale (typographie serif, citations en exergue, papier crème / forêt émeraude selon le thème).
 
-- **Synthèse (UI)** dans `EventBiodiversityTab.tsx` : parcourt `species_data` de chaque snapshot et **déduplique par `scientificName`** dans une `Map` → **38 espèces uniques**.
-- **Chatbot** : reçoit son contexte via la RPC `get_admin_entity_context`, qui fait `SUM(bs.total_species)` sur les snapshots → **77 (somme brute, double-comptage)**. Une espèce vue sur 3 étapes est comptée 3 fois.
+## Ce qui change
 
-Même problème pour `birds`, `plants`, `fungi`, `others` (qui sont aussi des `SUM` non dédupliqués).
+L'onglet actuel (`TextesEcritsSubTab.tsx`) affiche les textes dans des accordéons fonctionnels mais sans souffle. On garde la donnée et la logique RPC, mais on refait toute la couche présentation.
 
-## Solution
+## 1. Hero d'ouverture (mobile-first)
 
-Corriger la RPC `get_admin_entity_context` pour qu'elle déduplique les espèces par `scientificName` à partir du JSONB `species_data`, exactement comme la Synthèse.
+En haut de l'onglet, un bandeau poétique :
+- Compteur animé : "**X voix · Y écrits · Z points de marche**"
+- Sous-titre cursif : "*Ce que les marcheurs ont confié au papier*"
+- Petit défilement horizontal d'avatars des auteurs (comme les "stories")
+- Filtres pills discrets : Tous · par type (poème, fragment, lettre, haïku…) · par marcheur · par point
 
-### Migration SQL
+## 2. Vue principale — "Le Mur des écrits" (par défaut, mobile)
 
-Remplacer le bloc `'biodiversity'` (event) par un calcul basé sur l'agrégation déduppliquée :
+Une **mosaïque masonry** plein écran de cartes-citations :
+- Chaque carte = un extrait du texte (3-4 lignes en serif italique)
+- Hauteur variable selon longueur → effet Pinterest poétique
+- Fond papier (light) ou parchemin sombre (dark) avec léger grain
+- Coin replié subtil (skeuomorphisme délicat)
+- Badge type texte (poème, haïku…) en filigrane
+- Avatar + prénom de l'auteur en pied de carte
+- Pastille de couleur selon le **point de marche** (gradient lié à l'ordre de la marche)
+- Animation `fade-in` + `scale-in` séquentielle au scroll
+- Tap → ouvre la **vue fiche immersive**
 
-```sql
-'biodiversity', (
-  WITH all_species AS (
-    SELECT DISTINCT ON (lower(coalesce(sp->>'scientificName', sp->>'commonName')))
-      coalesce(sp->>'scientificName', sp->>'commonName') AS sci,
-      sp->>'kingdom' AS kingdom
-    FROM biodiversity_snapshots bs
-    CROSS JOIN LATERAL jsonb_array_elements(coalesce(bs.species_data, '[]'::jsonb)) sp
-    WHERE bs.marche_id IN (
-      SELECT marche_id FROM exploration_marches WHERE exploration_id = me.exploration_id
-    )
-    AND coalesce(sp->>'scientificName', sp->>'commonName') IS NOT NULL
-  )
-  SELECT jsonb_build_object(
-    'total_species',  count(*),
-    'birds',          count(*) FILTER (WHERE kingdom = 'Animalia'),
-    'plants',         count(*) FILTER (WHERE kingdom = 'Plantae'),
-    'fungi',          count(*) FILTER (WHERE kingdom = 'Fungi'),
-    'others',         count(*) FILTER (WHERE kingdom NOT IN ('Animalia','Plantae','Fungi') OR kingdom IS NULL),
-    'snapshots_count',(SELECT count(*) FROM biodiversity_snapshots bs2
-                       WHERE bs2.marche_id IN (SELECT marche_id FROM exploration_marches WHERE exploration_id = me.exploration_id))
-  )
-  FROM all_species
-)
-```
+Sur desktop : 2-3 colonnes masonry. Sur mobile : 1 colonne pleine largeur avec espacement généreux.
 
-Appliquer la même correction au branche `_type = 'exploration'` si elle expose aussi un bloc biodiversity (à vérifier dans la suite de la fonction).
+## 3. Vues alternatives (toggle segmenté en haut)
 
-## Fichiers modifiés
+Trois modes au lieu de deux :
 
-- **migration SQL** : redéfinir `public.get_admin_entity_context(_type text, _id text)` (CREATE OR REPLACE FUNCTION) avec le bloc biodiversity dédupliqué.
+- **Mur** (défaut) — masonry décrit ci-dessus
+- **Marcheurs** — chaque marcheur = une "page d'auteur" avec son avatar large, bio courte, et ses textes en stack vertical
+- **Itinéraire** — les écrits suivent l'ordre des points de marche, avec une ligne verticale pointillée façon journal de bord
 
-## Validation
+Le toggle remplace l'actuel pill discret par un segmented control plus design.
 
-1. Recharger la page Synthèse de l'exploration DEVIAT (Charente).
-2. Re-poser la question au chatbot : il doit annoncer **38 espèces totales** (et non 77), avec faune/flore/champignons cohérents.
-3. Vérifier sur 1-2 autres explorations que les totaux RPC ≈ totaux affichés dans la Synthèse.
+## 4. Vue fiche immersive (sheet plein écran sur mobile)
 
-## Pourquoi pas (seulement) un snapshot d'écran ?
+Au tap sur un texte, on ouvre une **lecture plein écran** plutôt qu'un dialog classique :
+- Sur mobile : `Sheet` qui monte du bas, plein écran, scroll vertical
+- Header collant : avatar auteur + prénom + type de texte + bouton fermer
+- Titre du texte en très grande typographie serif (style livre)
+- Contenu en serif 18px, interligne généreuse, marges respirantes
+- Lettrine sur la première lettre du texte
+- Footer : point de marche cliquable (→ navigue vers la marche), date, bouton partager (lien copiable + Web Share API mobile)
+- Navigation **swipe gauche/droite** pour passer au texte suivant/précédent du même mode de tri
+- Indicateur "Texte 3 / 18" discret en haut
 
-Publier `visibleData` via `useChatTabSnapshot` depuis la Synthèse fonctionnerait *quand l'onglet est ouvert*, mais la Synthèse n'est pas toujours active quand on parle au chatbot. Corriger la RPC garantit la cohérence **en toutes circonstances** (onglet Carte, Apprendre, etc.) et reste la source de vérité partagée.
+## 5. Polish
+
+- Typographie : utiliser une serif éditoriale (Cormorant, Lora ou existante du projet)
+- Tokens sémantiques uniquement (pas de couleurs en dur) — respect des thèmes Papier Crème / Forêt Émeraude
+- États vides : déjà beau, conserver
+- Skeleton loaders au lieu d'attente vide
+- Préserver `?texte=…` pour partage direct
+- Respect du principe "Sobriété Informationnelle" : un seul élément focal par écran
+
+## Détails techniques
+
+**Fichier modifié :**
+- `src/components/community/exploration/TextesEcritsSubTab.tsx` — refonte complète de la couche UI, logique de fetch et RPC inchangée
+
+**Nouveaux sous-composants** (dans le même fichier ou extraits) :
+- `EcritHero` — bandeau d'ouverture avec compteurs et avatars
+- `MurMasonry` — grille masonry des cartes citations
+- `CitationCard` — carte individuelle avec effet papier
+- `MarcheurPage` — vue page-auteur
+- `ItineraireTimeline` — timeline verticale par point
+- `LectureImmersive` — Sheet plein écran avec swipe (Framer Motion drag)
+- `SegmentedToggle` — toggle 3-positions amélioré
+
+**Dépendances :** déjà disponibles (`framer-motion`, `@/components/ui/sheet`, dnd non requis, Web Share API native).
+
+**Aucun changement** : RPC `get_event_public_textes`, schéma DB, RLS, hooks de fetch.
+
+## Question pour toi
+
+Une seule question avant de coder.
