@@ -79,6 +79,14 @@ export const useIsCurator = (explorationId: string | null | undefined) => {
     queryKey: ['is-curator', user?.id, explorationId],
     queryFn: async () => {
       if (!user?.id || !explorationId) return false;
+      // Les admins sont curateurs partout
+      const { data: adminRow } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      if (adminRow) return true;
       // Récupère le rôle communauté
       const { data: profile } = await supabase
         .from('community_profiles')
