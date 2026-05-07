@@ -163,6 +163,9 @@ export function detectSegmentCandidates(
       });
     }
   }
+  candidates.sort((a, b) => a.score - b.score);
+  return candidates.slice(0, limit);
+}
 
 function pointToSegmentKmWithT(plat: number, plng: number, alat: number, alng: number, blat: number, blng: number) {
   const ax = alng, ay = alat, bx = blng, by = blat, px = plng, py = plat;
@@ -172,10 +175,8 @@ function pointToSegmentKmWithT(plat: number, plng: number, alat: number, alng: n
   const tClamped = Math.max(0, Math.min(1, t));
   const cx = ax + tClamped * dx, cy = ay + tClamped * dy;
   return { dist: haversineKm(py, px, cy, cx), t };
-  }
-  candidates.sort((a, b) => a.score - b.score);
-  return candidates.slice(0, limit);
 }
+
 
 
 interface CreateHandlerProps {
