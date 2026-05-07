@@ -1,119 +1,75 @@
-# Refonte UX/UI — Menu unifié "Options carte"
+## Objectif
 
-## Contexte
+Ajouter dans le menu **Options carte** (FAB existant) une option **Station météo** à 3 états, et afficher sur la carte la station Lexicon la plus proche de chaque point de marche, avec une couche dédiée mobile-first.
 
-Aujourd'hui, 3 boutons empilés en bas-gauche (`+ point de marche`, `point intermédiaire`, `boucle : OFF/ON`) occupent ~150px de hauteur en permanence et masquent la carte. Avec l'ajout d'options de couches (stations météo, et bientôt d'autres : cadastre détaillé, courbes de niveau, espèces visibles, etc.), cette colonne va exploser. Sur mobile (375px de large), c'est intenable.
+## États du contrôle
 
-## Diagnostic UX
+Remplacer le `Switch` simple actuel `weatherStations` par un sélecteur **3 états** (segmented control vertical de 3 lignes) :
 
-Deux familles d'options se mélangent visuellement aujourd'hui, alors qu'elles relèvent de logiques différentes :
+1. **OFF** — Aucune station affichée (défaut)
+2. **ON · avec points de marche** — Stations + tous les marqueurs de marche restent visibles
+3. **ON · sans points de marche** — Stations seules + lignes de tracé conservées, mais marqueurs de marche masqués (focus météo)
 
-| Famille | Nature | Exemples | Permission |
-|---|---|---|---|
-| **Actions de création** (édition) | momentanées, modales (mode "je place un point") | + point de marche, + point intermédiaire | Ambassadeur+ |
-| **Couches d'affichage** (lecture) | persistantes, toggle on/off | boucle, stations météo, cadastre, espèces… | Tout le monde |
+Stocké dans `useMapLayers` sous `weatherStations: 'off' | 'on_with_marches' | 'on_only'`.
 
-Les regrouper dans un seul menu fourre-tout serait une faute. La proposition les sépare proprement tout en gardant une seule porte d'entrée discrète.
+## UX du contrôle (mobile-first)
 
-## Proposition — un FAB unique "Options" qui ouvre un panneau contextuel
-
-### Au repos (état par défaut)
-
-Un seul bouton circulaire en bas-gauche, symétrique du chatbot en bas-droite :
+Dans `MapOptionsMenu`, la ligne « Stations météo » devient une carte dépliable :
 
 ```text
-        ┌──────────────────── carte ────────────────────┐
-        │                                                │
-        │                                                │
-        │                                          [+]   │  ← zoom
-        │                                          [-]   │
-        │                                                │
-        │  (⚙)                              (📷) (◎)    │  ← FAB Options + photo + géoloc
-        │                                                │
-        │  ━━━ 13 étapes ━━ 8.1 km ━━ 38 espèces ━━━━━  │
-        └────────────────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│ ☁  Stations météo            [ON · focus]▾│
+│    Plus proches des points de marche       │
+└────────────────────────────────────────────┘
+   ▼ déplié (radio group, large tap targets)
+   ○ Désactivé
+   ● Avec points de marche
+   ○ Focus météo (masquer les points)
 ```
 
-- Bouton `(⚙)` rond 44×44 (cible tactile WCAG), même style glassmorphism que les autres FAB existants (`bg-black/60 backdrop-blur-xl border-white/15`)
-- Pastille (badge) discrète en haut-droite **uniquement** si une couche non-défaut est active (ex. `boucle ON` ou `stations météo` cochée) → indique silencieusement qu'il y a un état à voir
-- Icône : `SlidersHorizontal` (lucide) — sémantique "réglages d'affichage"
+- Tap targets ≥ 44px, `RadioGroup` shadcn
+- Badge d'état coloré (ardoise / émeraude / sky)
+- Haptique léger à chaque changement
+- Le badge global du FAB compte « météo activée » si ≠ off
 
-### Au tap (ouvert) — Bottom sheet sur mobile, popover sur desktop
+## Couche carte (`WeatherStationsLayer`)
 
-**Mobile (< 768px) — Bottom sheet** qui glisse depuis le bas, hauteur `auto` max 70vh, drag-handle en haut, fermeture par swipe-down ou tap à l'extérieur. Ne masque jamais le bandeau de stats du bas.
+Nouveau composant `src/components/community/exploration/WeatherStationsLayer.tsx` :
 
-**Desktop (≥ 768px) — Popover** ancré au FAB, largeur 280px, ouvre vers le haut-droite, fermeture au clic extérieur.
+- Reçoit la liste des points de marche (`marches` déjà disponible dans `ExplorationCarteTab`)
+- Pour chaque point, appelle `fetchLexiconParcelData(lat, lng)` via un hook batch `useNearestWeatherStations(points)` qui :
+  - Déduplique les coords arrondies à 3 décimales (~110 m)
+  - Utilise `useQueries` (React Query) avec `staleTime: 30 min`
+  - Extrait la station la plus proche depuis la réponse Lexicon (mêmes parsers que `WeatherStationModal` / `weatherStationDatabase`)
+- Rend un `Marker` Leaflet par station unique avec icône SVG dédiée (nuage + thermomètre, couleur sky)
+- Polyline pointillée fine reliant chaque point de marche à sa station (≤ 1px, sky/40%) pour visualiser l'appariement
+- Popup : nom station, code, distance, altitude, bouton « Voir détails » qui ouvre `WeatherStationModal` existant
 
-Contenu commun, structuré en 2 sections claires :
+## Refacto minimal
 
-```text
-┌─ Options carte ──────────────────── ✕ ┐
-│                                        │
-│  AJOUTER                               │ ← visible seulement si userCanCreate
-│  ┌──────────────────────────────────┐ │
-│  │ ⊕  Point de marche          ›    │ │ ← lance le mode création
-│  │ ✦  Point intermédiaire      ›    │ │
-│  └──────────────────────────────────┘ │
-│                                        │
-│  AFFICHER                              │
-│  ┌──────────────────────────────────┐ │
-│  │ ⟳  Boucle fermée         [●  ]  │ │ ← Switch (shadcn)
-│  │ 🌤 Stations météo         [  ●]  │ │
-│  │ 📐 Cadastre détaillé      [  ●]  │ │ ← futur, prêt à brancher
-│  │ 🦋 Espèces récentes       [  ●]  │ │ ← futur
-│  └──────────────────────────────────┘ │
-│                                        │
-└────────────────────────────────────────┘
-```
-
-- **AJOUTER** : items cliquables (rows), pas des switches — déclenche une action puis ferme le sheet automatiquement (l'utilisateur revient à la carte pour placer le point). Le hint "Cliquez sur la carte…" s'affiche en haut de la carte sous forme de bandeau temporaire (pattern déjà existant dans le code).
-- **AFFICHER** : `Switch` shadcn alignés à droite, label clair à gauche, icône à gauche. Toggle immédiat, pas de validation.
-- Les sections vides (ex. lecteur sans droits de création) sont masquées → pas de header "AJOUTER" orphelin.
-- L'item `Stations météo` apparaît dans toutes les vues carte (Géo/Sat/Relief/Cadastre).
-
-### Micro-interactions
-
-- Ouverture : `motion` spring `damping: 24, stiffness: 300` (cohérent avec le reste de l'app)
-- Le FAB se transforme légèrement (rotation 90° de l'icône) quand le sheet est ouvert pour signaler l'état
-- Haptic léger sur mobile (`navigator.vibrate(10)`) au toggle d'un switch
-- Auto-close du sheet 250ms après le tap sur un item d'action (`AJOUTER`)
-- Le badge sur le FAB compte le nombre de couches actives non-défaut (`2` si boucle ON + météo ON)
-
-### Accessibilité
-
-- `aria-expanded`, `aria-controls` sur le FAB
-- Focus trap dans le sheet ouvert, `Escape` ferme
-- `role="switch"` natif via shadcn Switch
-- Labels explicites : "Afficher les stations météo proches"
-
-## Implémentation technique
-
-### Nouveau composant
-`src/components/community/exploration/MapOptionsMenu.tsx`
-- Props : `userCanCreate: boolean`, `marcheEventId?: string`, `explorationId: string`, `isLoop: boolean`, `onToggleLoop`, `onStartCreateMarche`, `onStartCreateWaypoint`, `layers: { weatherStations: boolean }`, `onToggleLayer(key)`
-- Détection mobile via `useIsMobile()` → choix Sheet (shadcn) vs Popover (shadcn)
-- Compte les couches actives pour le badge
-
-### État des couches
-- Nouveau hook léger `useMapLayers()` (zustand-like local ou simple `useState` levé dans `ExplorationCarteTab`) avec persistance `localStorage` par exploration : `mapLayers:{explorationId}` → `{ weatherStations: false, ... }`
-- Pré-câblage pour futures couches (cadastre, espèces) sans refactor.
-
-### Refacto `ExplorationCarteTab.tsx` (lignes 1418-1477)
-- Supprimer la pile de 3 boutons en bas-gauche
-- Remplacer par `<MapOptionsMenu …/>` au même emplacement
-- Le bandeau-hint "Cliquez sur la carte…" pour la création reste (déjà présent), juste déplacé en haut centre
-
-### Couche stations météo (préparation seulement, branchement réel hors-scope)
-- Ajouter un layer Leaflet conditionnel `{layers.weatherStations && <WeatherStationsLayer marcheEventId={…} />}` — composant à créer dans une étape ultérieure quand le data-source sera décidé. Pour cette itération, on câble juste le toggle qui ne fait rien visuellement (ou affiche un toast "Bientôt disponible").
+1. `**useMapLayers.ts**` : changer `weatherStations: boolean` → union string ; helper `setWeatherStationsMode(mode)` ; `activeCount` compte si `!== 'off'`
+2. `**MapOptionsMenu.tsx**` : remplacer la `LayerRow` météo par un nouveau composant `WeatherStationsRow` (collapse + RadioGroup) ; retirer le toast « bientôt disponible »
+3. `**ExplorationCarteTab.tsx**` :
+  - Monter `<WeatherStationsLayer>` à l'intérieur du `<MapContainer>` quand mode ≠ off
+  - Quand mode = `'on_only'`, masquer les marqueurs de marche existants (props `hideMarcheMarkers` ou simple condition de rendu sur `marches.map(...)`) — les tracés (polylines) restent
+4. **Hook `useNearestWeatherStations.ts**` (nouveau) : encapsule le batch React Query + extraction station
 
 ## Hors scope
 
-- Implémentation réelle de la couche stations météo (data + markers Leaflet) → tâche suivante
-- Couches cadastre détaillé / espèces récentes (juste prévues dans la structure)
-- Refonte des autres FAB (photo GPS, géoloc) — restent en bas-droite
+- Cadastre détaillé / espèces récentes (restent « bientôt disponible »)
+- Affichage des N stations alternatives sur la carte (reste dans la modal existante)
+- Cache serveur (on reste sur le proxy Lexicon actuel + cache React Query)
 
 ## Fichiers touchés
 
-- ➕ `src/components/community/exploration/MapOptionsMenu.tsx` (nouveau)
-- ➕ `src/hooks/useMapLayers.ts` (nouveau, léger)
-- ✏️ `src/components/community/exploration/ExplorationCarteTab.tsx` (lignes 1418-1477 + injection du layer)
+- `src/hooks/useMapLayers.ts` (modif type)
+- `src/hooks/useNearestWeatherStations.ts` (nouveau)
+- `src/components/community/exploration/MapOptionsMenu.tsx` (collapse + RadioGroup)
+- `src/components/community/exploration/WeatherStationsLayer.tsx` (nouveau)
+- `src/components/community/exploration/ExplorationCarteTab.tsx` (montage couche + masquage conditionnel des marqueurs)
+
+## Questions ouvertes (réponds si tu veux ajuster, sinon on part sur les défauts)
+
+1. **Distance max** d'une station pertinente — défaut **65 km**, au-delà on n'affiche pas le marqueur.
+2. **Déduplication** — si deux points de marche partagent la même station, on n'affiche **qu'un marqueur** avec liste des points reliés. OK
+3. **Polylines de rattachement** point→station — défaut **activées en pointillés discrets**.

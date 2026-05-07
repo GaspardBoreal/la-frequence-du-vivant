@@ -9,14 +9,16 @@ import {
   LandPlot,
   Leaf,
   ChevronRight,
+  ChevronDown,
   X,
+  Check,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
-import type { MapLayersState } from '@/hooks/useMapLayers';
+import type { MapLayersState, WeatherStationsMode } from '@/hooks/useMapLayers';
 
 interface MapOptionsMenuProps {
   userCanCreate: boolean;
@@ -31,6 +33,7 @@ interface MapOptionsMenuProps {
   onStartCreateMarche: () => void;
   onToggleCreateWaypoint: () => void;
   onToggleLayer: (key: keyof MapLayersState) => void;
+  onSetWeatherStationsMode: (mode: WeatherStationsMode) => void;
 }
 
 const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
@@ -45,6 +48,7 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
   onStartCreateMarche,
   onToggleCreateWaypoint,
   onToggleLayer,
+  onSetWeatherStationsMode,
 }) => {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -160,13 +164,12 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
               onToggleLoop();
             }}
           />
-          <LayerRow
-            icon={<CloudSun className="w-4 h-4" strokeWidth={2.5} />}
-            iconClass="bg-sky-500/20 border-sky-400/30 text-sky-200"
-            label="Stations météo"
-            description="Stations les plus proches des points"
-            checked={layers.weatherStations}
-            onCheckedChange={() => handleLayer('weatherStations', true)}
+          <WeatherStationsRow
+            mode={layers.weatherStations}
+            onChange={(m) => {
+              haptic();
+              onSetWeatherStationsMode(m);
+            }}
           />
           <LayerRow
             icon={<LandPlot className="w-4 h-4" strokeWidth={2.5} />}
@@ -220,7 +223,7 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
         side="top"
         align="start"
         sideOffset={12}
-        className="w-[300px] bg-black/85 backdrop-blur-2xl border border-white/15 text-white rounded-2xl p-4 shadow-2xl"
+        className="w-[320px] bg-black/85 backdrop-blur-2xl border border-white/15 text-white rounded-2xl p-4 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold flex items-center gap-2">
@@ -277,5 +280,109 @@ const LayerRow: React.FC<LayerRowProps> = ({
     <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
   </label>
 );
+
+const WEATHER_OPTIONS: {
+  value: WeatherStationsMode;
+  label: string;
+  description: string;
+}[] = [
+  { value: 'off', label: 'Désactivé', description: 'Aucune station affichée' },
+  { value: 'on_with_marches', label: 'Avec points de marche', description: 'Stations + points visibles' },
+  { value: 'on_only', label: 'Focus météo', description: 'Stations seules (points masqués)' },
+];
+
+const BADGE_STYLES: Record<WeatherStationsMode, { label: string; cls: string }> = {
+  off: { label: 'OFF', cls: 'bg-white/10 text-white/60 border-white/15' },
+  on_with_marches: { label: 'ON', cls: 'bg-sky-500/20 text-sky-200 border-sky-400/40' },
+  on_only: { label: 'FOCUS', cls: 'bg-sky-500/30 text-sky-100 border-sky-300/60' },
+};
+
+interface WeatherStationsRowProps {
+  mode: WeatherStationsMode;
+  onChange: (mode: WeatherStationsMode) => void;
+}
+
+const WeatherStationsRow: React.FC<WeatherStationsRowProps> = ({ mode, onChange }) => {
+  const [expanded, setExpanded] = useState(mode !== 'off');
+  const badge = BADGE_STYLES[mode];
+
+  return (
+    <div className="bg-transparent">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center gap-3 px-3 py-3 hover:bg-white/5 transition-colors text-left"
+        aria-expanded={expanded}
+      >
+        <span className="w-8 h-8 rounded-lg border bg-sky-500/20 border-sky-400/30 text-sky-200 flex items-center justify-center shrink-0">
+          <CloudSun className="w-4 h-4" strokeWidth={2.5} />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-sm font-medium text-white/90">Stations météo</span>
+          <span className="block text-[11px] text-white/50 truncate">
+            Plus proches des points de marche
+          </span>
+        </span>
+        <span
+          className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${badge.cls}`}
+        >
+          {badge.label}
+        </span>
+        <motion.span animate={{ rotate: expanded ? 180 : 0 }} className="text-white/50">
+          <ChevronDown className="w-4 h-4" />
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-2 pb-2 space-y-1">
+              {WEATHER_OPTIONS.map((opt) => {
+                const selected = mode === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => onChange(opt.value)}
+                    className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-colors min-h-[44px] ${
+                      selected
+                        ? 'bg-sky-500/15 border border-sky-400/40'
+                        : 'bg-white/[0.03] border border-white/5 hover:bg-white/5'
+                    }`}
+                    aria-pressed={selected}
+                  >
+                    <span
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        selected ? 'border-sky-300 bg-sky-400' : 'border-white/30'
+                      }`}
+                    >
+                      {selected && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span
+                        className={`block text-[13px] font-medium ${
+                          selected ? 'text-sky-100' : 'text-white/85'
+                        }`}
+                      >
+                        {opt.label}
+                      </span>
+                      <span className="block text-[11px] text-white/50">{opt.description}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default MapOptionsMenu;
