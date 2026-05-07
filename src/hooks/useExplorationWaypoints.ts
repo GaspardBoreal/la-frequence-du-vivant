@@ -178,6 +178,7 @@ export const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: numb
 export const buildRouteWithWaypoints = (
   geoMarches: { id: string; latitude: number; longitude: number }[],
   waypoints: ExplorationWaypoint[],
+  isLoop = false,
 ) => {
   const byAfter = new Map<string, ExplorationWaypoint[]>();
   waypoints.forEach((w) => {
@@ -209,6 +210,22 @@ export const buildRouteWithWaypoints = (
       estimatedKm += haversineKm(prevPt.latitude, prevPt.longitude, next.latitude, next.longitude);
     }
   });
+
+  // Closing segment: last step → first step (with its waypoints)
+  if (isLoop && geoMarches.length >= 2) {
+    const last = geoMarches[geoMarches.length - 1];
+    const first = geoMarches[0];
+    const wps = byAfter.get(last.id) || [];
+    let prevPt: { latitude: number; longitude: number } = last;
+    wps.forEach((w) => {
+      positions.push([w.latitude, w.longitude]);
+      estimatedKm += haversineKm(prevPt.latitude, prevPt.longitude, w.latitude, w.longitude);
+      prevPt = w;
+    });
+    positions.push([first.latitude, first.longitude]);
+    estimatedKm += haversineKm(prevPt.latitude, prevPt.longitude, first.latitude, first.longitude);
+    crowKm += haversineKm(last.latitude, last.longitude, first.latitude, first.longitude);
+  }
 
   return { positions, estimatedKm, crowKm };
 };
