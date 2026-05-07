@@ -1257,10 +1257,12 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       {/* Confirm dialog for waypoint insertion */}
       {pendingWaypoint && (
         <WaypointInsertConfirmDialog
-          open={!!pendingWaypoint}
-          candidates={pendingWaypoint.candidates}
-          selectedIdx={pendingWaypoint.selectedIdx}
+          open={!!pendingWaypoint && !pickMode}
+          candidates={pendingWaypoint.candidates.slice(0, 4)}
+          selectedIdx={pendingWaypoint.selectedIdx < 4 ? pendingWaypoint.selectedIdx : 0}
           onSelect={(idx) => setPendingWaypoint((p) => (p ? { ...p, selectedIdx: idx } : p))}
+          onHover={setHoveredCandidateIdx}
+          onPickOnMap={() => { setPickMode({ stage: 'A' }); setHoveredCandidateIdx(null); }}
           buildLabel={(c) => {
             const a = geoMarches[c.afterMarcheIndex];
             const b = geoMarches[c.afterMarcheIndex + 1];
