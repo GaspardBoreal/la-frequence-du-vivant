@@ -640,7 +640,12 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       let nextCandidates = pendingWaypoint.candidates;
       if (found < 0) {
         // Reconstruct on the fly: the pair may form a valid segment outside the top-N
-        const reconstructed = findSegmentByEndpoints(aId, bId, geoMarches as any, waypoints);
+        const reconstructed = findSegmentByEndpoints(
+          aId,
+          bId,
+          geoMarchesRef.current.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
+          waypointsRef.current,
+        );
         if (reconstructed) {
           nextCandidates = [...pendingWaypoint.candidates, reconstructed];
           found = nextCandidates.length - 1;
@@ -656,7 +661,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       toast.success("Segment sélectionné — confirmez l'insertion");
       return null;
     });
-  }, [pendingWaypoint, geoMarches, waypoints]);
+  }, [pendingWaypoint]);
 
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
