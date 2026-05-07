@@ -57,6 +57,26 @@ export const useCreateWaypoint = () => {
       label?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
+
+      // Shift existing waypoints in the same main segment that sit at or after
+      // the new ordre — otherwise insertion at an occupied slot creates an
+      // ordre-tie and the new point renders in the wrong position.
+      const { data: existing, error: existingErr } = await supabase
+        .from('exploration_waypoints')
+        .select('id, ordre')
+        .eq('marche_event_id', input.marche_event_id)
+        .eq('after_marche_id', input.after_marche_id)
+        .gte('ordre', input.ordre)
+        .order('ordre', { ascending: false });
+      if (existingErr) throw existingErr;
+      for (const w of existing || []) {
+        const { error: upErr } = await supabase
+          .from('exploration_waypoints')
+          .update({ ordre: w.ordre + 1 })
+          .eq('id', w.id);
+        if (upErr) throw upErr;
+      }
+
       const { data, error } = await supabase
         .from('exploration_waypoints')
         .insert({ ...input, created_by: user?.id ?? null })

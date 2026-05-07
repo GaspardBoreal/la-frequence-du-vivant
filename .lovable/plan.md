@@ -1,35 +1,59 @@
-# Diagnostic
+## Diagnostic — pourquoi la popup réapparaît
 
-La popup "Où insérer ce point ?" est rendue par le composant shadcn `Dialog`, dont l'overlay et le contenu utilisent `z-50`. Or, la carte d'exploration superpose plusieurs panneaux flottants en `z-[1000]` / `z-[1001]` / `z-[1100]` :
+Voici la séquence réelle dans `ExplorationCarteTab.tsx` :
 
-- Barre de stats en bas (`13 étapes · ~7.7 km · 38 espèces`) → `z-[1000]`
-- Boutons d'actions latéraux → `z-[1000]`
-- Bandeau du mode picking → `z-[1100]`
+1. Tu places le point jaune → `pendingWaypoint` est créé → la popup s'ouvre (car `open = !!pendingWaypoint && !pickMode`).
+2. Tu cliques **« Aucune ne correspond — choisir les 2 points sur la carte »** → `setPickMode({stage:'A'})` → la popup se ferme (car `pickMode` devient truthy).
+3. Tu cliques sur le point 8 → `handlePickEndpoint` enregistre `pickedA` et passe à `stage:'B'`.
+4. Tu cliques sur le point intermédiaire voisin → `handlePickEndpoint` :
+   - retrouve (ou reconstruit) le segment correspondant,
+   - met à jour `pendingWaypoint.selectedIdx` sur ce segment,
+   - **fait `return null` sur `pickMode`**.
+5. Conséquence : `pickMode` redevient `null`, mais `pendingWaypoint` est toujours là → la condition `open = !!pendingWaypoint && !pickMode` redevient `true` → **la popup se rouvre**.
 
-Résultat visible sur la capture : la modale est correctement centrée verticalement, mais sa partie basse — y compris le bouton **"Confirmer l'insertion"** — passe **derrière** la barre noire du bas. Le footer est donc visuellement tronqué et non cliquable sur la zone masquée.
+C'est exactement ce que tu vois (capture 2) : la popup réapparaît avec « Suggéré » sur l'option 1 (qui est effectivement le segment que tu viens de choisir manuellement, étape 8 ↔ point intermédiaire 1/1). Si ensuite tu cliques **Confirmer** et que le waypoint apparaît mal placé (associé à l'étape 9), c'est un second bug : l'index du segment renvoyé par `findSegmentByEndpoints` est mal traduit en `(after_marche_id, ordre)` quand le voisin est un waypoint et non une étape.
 
-C'est exactement ce que le screenshot montre : le bouton orange "Confirmer l'insertion" apparaît coupé à la ligne pile où commence la barre `13 étapes / km / espèces`.
+Donc il y a **deux problèmes** à régler ensemble pour que le flux soit clair et correct.
 
-# Solution
+## Plan de correction
 
-Forcer un z-index supérieur à 1100 pour cette modale précisément (sans toucher au composant shadcn générique, qui est utilisé partout ailleurs).
+### 1. Supprimer la popup de re-confirmation après un pick manuel
 
-## Changement unique
+Quand l'utilisateur a explicitement cliqué sur 2 points sur la carte, son intention est sans ambiguïté : on doit **créer le waypoint immédiatement**, sans rouvrir la popup pour redemander la même chose.
 
-**`src/components/community/exploration/WaypointInsertConfirmDialog.tsx`**
+Dans `ExplorationCarteTab.tsx`, fonction `handlePickEndpoint` (~ligne 621) :
 
-Ajouter `z-[1200]` sur le `DialogContent` (et passer une classe overlay équivalente si nécessaire). Le `DialogContent` Radix monte dans un `Portal` à la racine du `<body>`, donc seul le z-index compte (pas d'effet de stacking context piégé).
+- Au lieu de seulement mettre à jour `pendingWaypoint.selectedIdx` et de fermer `pickMode`, il faut **déclencher directement** `createWaypoint.mutate(...)` avec le segment résolu, puis nettoyer `pendingWaypoint`, `pickMode`, `hoveredCandidateIdx`.
+- Toast de succès : « Point intermédiaire ajouté entre {label} ».
+- Sortir la logique de création dans une petite helper `commitWaypoint(c: SegmentCandidate)` réutilisée par `onConfirm` du dialog **et** par le pick manuel — pour éviter la duplication.
 
-```text
-<DialogContent className="... z-[1200] ...">
-```
+### 2. Garantir que le segment reconstruit cible le bon couple (after_marche_id, ordre)
 
-Note : Radix attache l'overlay et le content au même portal ; relever uniquement `DialogContent` suffit pour que la modale + son footer passent au-dessus de la barre stats. L'overlay sombre reste en `z-50` (acceptable car les éléments carte en `z-[1000]` ne capturent pas les clics utiles pendant que la modale est ouverte — Radix bloque déjà l'interaction via `pointer-events`).
+Toujours dans `handlePickEndpoint`, brancher la vérification suivante avant de commit :
 
-Si nécessaire en complément (ceinture + bretelles) : ajouter une classe overlay custom via le rendu shadcn — mais le seul changement requis pour résoudre le bug visible est le z-index du `DialogContent`.
+- Re-loguer (debug temporaire) `c.after_marche_id`, `c.ordre`, `c.afterMarcheIndex`, `c.kInSegment`, `c.totalInSegment` pour le segment résolu.
+- Ouvrir `findSegmentByEndpoints` (probablement dans `WaypointMarker.tsx` ou un util voisin) et vérifier que pour le couple **(étape N, waypoint W situé entre étapes N et N+1)** la fonction renvoie bien :
+  - `after_marche_id = étape N`,
+  - `ordre = ordre(W) - 1` si on insère **avant** W, ou `ordre(W) + 1` si on insère **après** W,
+  - et **pas** `after_marche_id = étape N+1` (qui causerait l'attachement visuel à l'étape 9 que tu observes).
+- Corriger le calcul dans `findSegmentByEndpoints` pour les segments mixtes (étape ↔ waypoint et waypoint ↔ waypoint) selon la position réelle du point jaune par rapport aux deux endpoints.
 
-# Vérification
+### 3. Ajustement UX du bandeau pick-mode
 
-Après le changement :
-1. Reproduire le scénario : créer un point intermédiaire jaune → cliquer point 8 → cliquer point voisin → la modale "Où insérer ce point ?" doit apparaître intégralement au-dessus de la barre `13 étapes`, avec le bouton "Confirmer l'insertion" entièrement visible et cliquable.
-2. Capture d'écran via `browser--screenshot` à viewport 1046×754 pour confirmer que le footer n'est plus tronqué.
+Le bandeau cyan « Cliquez sur le 2ᵉ point voisin » doit clairement annoncer ce qui va se passer :
+
+- Étape A : « Cliquez sur le 1ᵉʳ point voisin (étape ou point intermédiaire) ».
+- Étape B : « Cliquez sur le 2ᵉ point voisin — l'insertion sera validée automatiquement ».
+
+Cela évite à l'utilisateur de chercher un bouton « Confirmer » qui n'existera plus à cette étape.
+
+## Fichiers touchés
+
+- `src/components/community/exploration/ExplorationCarteTab.tsx` — refacto `handlePickEndpoint`, extraction `commitWaypoint`, message du bandeau pick-mode.
+- `src/components/community/exploration/WaypointMarker.tsx` (ou util voisin contenant `findSegmentByEndpoints`) — correction du calcul `(after_marche_id, ordre)` pour les segments impliquant un waypoint.
+
+## Vérification
+
+1. Reproduire le scénario complet (point jaune → pick step 8 → pick waypoint voisin) → le waypoint doit être créé **sans** réouverture de popup, et **placé exactement entre les 2 points choisis** sur la polyline.
+2. Tester aussi le cas waypoint ↔ waypoint et étape ↔ étape adjacentes pour confirmer la régression non introduite.
+3. Capture d'écran après création pour confirmer la position visuelle.
