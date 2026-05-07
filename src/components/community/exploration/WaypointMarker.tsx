@@ -144,6 +144,7 @@ export function detectSegmentCandidates(
     const a = geoMarches[i]; const b = geoMarches[i + 1];
     const wpsHere = byAfter.get(a.id) || [];
     const seg = [a, ...wpsHere, b];
+    const segMeta: EndpointKind[] = ['step', ...wpsHere.map(() => 'waypoint' as EndpointKind), 'step'];
     for (let k = 0; k < seg.length - 1; k++) {
       const p1 = seg[k]; const p2 = seg[k + 1];
       const d1 = haversineKm(lat, lng, p1.latitude, p1.longitude);
@@ -154,17 +155,14 @@ export function detectSegmentCandidates(
         after_marche_id: a.id,
         ordre: k,
         score,
-        p1: { latitude: p1.latitude, longitude: p1.longitude },
-        p2: { latitude: p2.latitude, longitude: p2.longitude },
+        p1: { kind: segMeta[k], id: p1.id, latitude: p1.latitude, longitude: p1.longitude },
+        p2: { kind: segMeta[k + 1], id: p2.id, latitude: p2.latitude, longitude: p2.longitude },
         afterMarcheIndex: i,
         kInSegment: k,
         totalInSegment: wpsHere.length,
       });
     }
   }
-  candidates.sort((a, b) => a.score - b.score);
-  return candidates.slice(0, limit);
-}
 
 function pointToSegmentKmWithT(plat: number, plng: number, alat: number, alng: number, blat: number, blng: number) {
   const ax = alng, ay = alat, bx = blng, by = blat, px = plng, py = plat;
