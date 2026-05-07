@@ -313,6 +313,7 @@ export function WaypointMarker({ waypoint, canEdit, segmentLabel, pickModeOnClic
           )}
         </div>
       </Popup>
+      )}
     </Marker>
   );
 }
