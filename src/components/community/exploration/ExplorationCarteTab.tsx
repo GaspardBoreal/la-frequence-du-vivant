@@ -1196,6 +1196,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                   )}
                 </div>
               </Popup>
+              )}
             </Marker>
           );
         })}
