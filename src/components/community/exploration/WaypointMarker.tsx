@@ -17,15 +17,15 @@ import { fr } from 'date-fns/locale';
 export const waypointIcon = L.divIcon({
   className: 'waypoint-dot',
   html: `<div style="
-    width:14px;height:14px;border-radius:50%;
-    background:radial-gradient(circle at 30% 30%, rgba(252,211,77,0.95), rgba(217,119,6,0.85));
-    border:2px solid rgba(254,243,199,0.7);
-    box-shadow:0 0 0 4px rgba(217,119,6,0.18), 0 1px 4px rgba(0,0,0,0.3);
+    width:7px;height:7px;border-radius:50%;
+    background:rgba(217,119,6,0.75);
+    border:1px solid rgba(254,243,199,0.55);
+    box-shadow:0 0 0 1.5px rgba(217,119,6,0.12);
     transition: transform 120ms ease;
   "></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
-  popupAnchor: [0, -8],
+  iconSize: [7, 7],
+  iconAnchor: [3.5, 3.5],
+  popupAnchor: [0, -5],
 });
 
 export const waypointDraftIcon = L.divIcon({
