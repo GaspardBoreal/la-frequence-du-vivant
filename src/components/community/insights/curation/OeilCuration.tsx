@@ -103,6 +103,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   // hiding the entire grid when the active category has no items in the new tab.
   const handleViewChange = (next: View) => {
     setView(next);
+    setHasUserPickedView(true);
     setCategoryFilter(null);
   };
 
