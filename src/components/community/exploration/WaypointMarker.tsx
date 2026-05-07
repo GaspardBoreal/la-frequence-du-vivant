@@ -102,12 +102,19 @@ export function detectSegmentForPoint(
   return null;
 }
 
+export type EndpointKind = 'step' | 'waypoint';
+export interface CandidateEndpoint {
+  kind: EndpointKind;
+  id: string;
+  latitude: number;
+  longitude: number;
+}
 export interface SegmentCandidate {
   after_marche_id: string;
   ordre: number;
   score: number;
-  p1: { latitude: number; longitude: number };
-  p2: { latitude: number; longitude: number };
+  p1: CandidateEndpoint;
+  p2: CandidateEndpoint;
   afterMarcheIndex: number; // 0-based index of after_marche in geoMarches
   kInSegment: number;       // ordre slot inside this main segment
   totalInSegment: number;   // total existing waypoints in the same main segment
@@ -137,6 +144,7 @@ export function detectSegmentCandidates(
     const a = geoMarches[i]; const b = geoMarches[i + 1];
     const wpsHere = byAfter.get(a.id) || [];
     const seg = [a, ...wpsHere, b];
+    const segMeta: EndpointKind[] = ['step', ...wpsHere.map(() => 'waypoint' as EndpointKind), 'step'];
     for (let k = 0; k < seg.length - 1; k++) {
       const p1 = seg[k]; const p2 = seg[k + 1];
       const d1 = haversineKm(lat, lng, p1.latitude, p1.longitude);
@@ -147,8 +155,8 @@ export function detectSegmentCandidates(
         after_marche_id: a.id,
         ordre: k,
         score,
-        p1: { latitude: p1.latitude, longitude: p1.longitude },
-        p2: { latitude: p2.latitude, longitude: p2.longitude },
+        p1: { kind: segMeta[k], id: p1.id, latitude: p1.latitude, longitude: p1.longitude },
+        p2: { kind: segMeta[k + 1], id: p2.id, latitude: p2.latitude, longitude: p2.longitude },
         afterMarcheIndex: i,
         kInSegment: k,
         totalInSegment: wpsHere.length,
@@ -168,6 +176,7 @@ function pointToSegmentKmWithT(plat: number, plng: number, alat: number, alng: n
   const cx = ax + tClamped * dx, cy = ay + tClamped * dy;
   return { dist: haversineKm(py, px, cy, cx), t };
 }
+
 
 
 interface CreateHandlerProps {

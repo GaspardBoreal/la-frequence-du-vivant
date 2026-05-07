@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Circle, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -611,8 +611,41 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     candidates: SegmentCandidate[];
     selectedIdx: number;
   } | null>(null);
+  const [hoveredCandidateIdx, setHoveredCandidateIdx] = useState<number | null>(null);
+  // Manual segment-pick mode (for when no candidate matches what the user sees)
+  const [pickMode, setPickMode] = useState<null | { stage: 'A' | 'B'; pickedA?: { kind: 'step' | 'waypoint'; id: string; lat: number; lng: number } }>(null);
   const [showWaypoints, setShowWaypoints] = useState(true);
   const [showDistanceMode, setShowDistanceMode] = useState<'estimated' | 'crow'>('estimated');
+
+  // Resolve a (kind, id) endpoint to a SegmentCandidate index for a given pending waypoint
+  const handlePickEndpoint = useCallback((ep: { kind: 'step' | 'waypoint'; id: string; lat: number; lng: number }) => {
+    setPickMode((curr) => {
+      if (!curr) return curr;
+      if (!curr.pickedA) {
+        return { stage: 'B', pickedA: ep };
+      }
+      // Have A + B → find candidate matching both endpoints (any order)
+      if (!pendingWaypoint) return null;
+      const aId = curr.pickedA.id;
+      const bId = ep.id;
+      if (aId === bId) {
+        toast.error('Choisissez 2 points différents');
+        return curr;
+      }
+      const found = pendingWaypoint.candidates.findIndex(
+        (c) =>
+          (c.p1.id === aId && c.p2.id === bId) ||
+          (c.p1.id === bId && c.p2.id === aId),
+      );
+      if (found < 0) {
+        toast.error('Ces 2 points ne forment pas un segment du tracé');
+        return { stage: 'A', pickedA: undefined };
+      }
+      setPendingWaypoint((p) => (p ? { ...p, selectedIdx: found } : p));
+      toast.success('Segment sélectionné — confirmez l\'insertion');
+      return null;
+    });
+  }, [pendingWaypoint]);
 
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
@@ -961,7 +994,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               lng,
               geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
               waypoints,
-              4,
+              Number.POSITIVE_INFINITY,
             );
             if (!candidates.length || !marcheEventId) {
               toast.error('Impossible de détecter un segment');
@@ -981,7 +1014,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               interactive={false}
             />
             {(() => {
-              const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+              // Show hovered candidate if any, else the selected one
+              const idx = hoveredCandidateIdx ?? pendingWaypoint.selectedIdx;
+              const c = pendingWaypoint.candidates[idx];
               if (!c) return null;
               return (
                 <>
@@ -993,9 +1028,56 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                     positions={[[pendingWaypoint.lat, pendingWaypoint.lng], [c.p2.latitude, c.p2.longitude]]}
                     pathOptions={{ color: '#d97706', weight: 2, opacity: 0.75, dashArray: '4, 6' }}
                   />
+                  {/* Halos around the 2 endpoints — pulses on hover */}
+                  <CircleMarker
+                    center={[c.p1.latitude, c.p1.longitude]}
+                    radius={hoveredCandidateIdx !== null ? 18 : 12}
+                    pathOptions={{ color: '#f59e0b', weight: 3, opacity: 0.9, fillColor: '#fde68a', fillOpacity: 0.25 }}
+                  />
+                  <CircleMarker
+                    center={[c.p2.latitude, c.p2.longitude]}
+                    radius={hoveredCandidateIdx !== null ? 18 : 12}
+                    pathOptions={{ color: '#f59e0b', weight: 3, opacity: 0.9, fillColor: '#fde68a', fillOpacity: 0.25 }}
+                  />
                 </>
               );
             })()}
+          </>
+        )}
+
+        {/* Manual pick-mode: clickable halos on every step + waypoint */}
+        {pickMode && pendingWaypoint && (
+          <>
+            {geoMarches.map((m, i) => (
+              <CircleMarker
+                key={`pick-step-${m.id}`}
+                center={[m.latitude!, m.longitude!]}
+                radius={16}
+                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.35 }}
+                eventHandlers={{
+                  click: () => handlePickEndpoint({ kind: 'step', id: m.id, lat: m.latitude!, lng: m.longitude! }),
+                }}
+              />
+            ))}
+            {waypoints.map((wp) => (
+              <CircleMarker
+                key={`pick-wp-${wp.id}`}
+                center={[wp.latitude, wp.longitude]}
+                radius={14}
+                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.35 }}
+                eventHandlers={{
+                  click: () => handlePickEndpoint({ kind: 'waypoint', id: wp.id, lat: wp.latitude, lng: wp.longitude }),
+                }}
+              />
+            ))}
+            {/* Highlight the first picked point */}
+            {pickMode.pickedA && (
+              <CircleMarker
+                center={[pickMode.pickedA.lat, pickMode.pickedA.lng]}
+                radius={20}
+                pathOptions={{ color: '#0e7490', weight: 4, opacity: 1, fillColor: '#06b6d4', fillOpacity: 0.5 }}
+              />
+            )}
           </>
         )}
 
@@ -1173,45 +1255,75 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       </MapContainer>
 
       {/* Confirm dialog for waypoint insertion */}
-      {pendingWaypoint && (
-        <WaypointInsertConfirmDialog
-          open={!!pendingWaypoint}
-          candidates={pendingWaypoint.candidates}
-          selectedIdx={pendingWaypoint.selectedIdx}
-          onSelect={(idx) => setPendingWaypoint((p) => (p ? { ...p, selectedIdx: idx } : p))}
-          buildLabel={(c) => {
-            const a = geoMarches[c.afterMarcheIndex];
-            const b = geoMarches[c.afterMarcheIndex + 1];
-            const stepA = c.afterMarcheIndex + 1;
-            const stepB = c.afterMarcheIndex + 2;
-            // Inside a main segment, the "ordre k" position means:
-            //   k=0 → between étape A and the 1st waypoint (or étape B if none)
-            //   k=N → between the Nth waypoint and étape B
-            if (c.totalInSegment === 0) {
-              return `Entre étape ${stepA} et étape ${stepB}`;
-            }
-            const left = c.kInSegment === 0
-              ? `étape ${stepA}`
-              : `point intermédiaire ${c.kInSegment}/${c.totalInSegment}`;
-            const right = c.kInSegment === c.totalInSegment
-              ? `étape ${stepB}`
-              : `point intermédiaire ${c.kInSegment + 1}/${c.totalInSegment}`;
-            return `Entre ${left} et ${right}`;
-          }}
-          onCancel={() => setPendingWaypoint(null)}
-          onConfirm={() => {
-            if (!marcheEventId || !pendingWaypoint) return;
-            const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
-            createWaypoint.mutate({
-              marche_event_id: marcheEventId,
-              after_marche_id: c.after_marche_id,
-              ordre: c.ordre,
-              latitude: pendingWaypoint.lat,
-              longitude: pendingWaypoint.lng,
-            });
-            setPendingWaypoint(null);
-          }}
-        />
+      {pendingWaypoint && (() => {
+        // Display top 4 candidates, plus the selected one if it's outside that window
+        const top = pendingWaypoint.candidates.slice(0, 4);
+        const sel = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+        const display = sel && !top.includes(sel) ? [...top, sel] : top;
+        const dialogSelectedIdx = sel ? display.indexOf(sel) : 0;
+        return (
+          <WaypointInsertConfirmDialog
+            open={!!pendingWaypoint && !pickMode}
+            candidates={display}
+            selectedIdx={dialogSelectedIdx}
+            onSelect={(idx) => {
+              const realIdx = pendingWaypoint.candidates.indexOf(display[idx]);
+              if (realIdx >= 0) setPendingWaypoint((p) => (p ? { ...p, selectedIdx: realIdx } : p));
+            }}
+            onHover={(idx) => {
+              if (idx === null) { setHoveredCandidateIdx(null); return; }
+              const realIdx = pendingWaypoint.candidates.indexOf(display[idx]);
+              setHoveredCandidateIdx(realIdx >= 0 ? realIdx : null);
+            }}
+            onPickOnMap={() => { setPickMode({ stage: 'A' }); setHoveredCandidateIdx(null); }}
+            buildLabel={(c) => {
+              const stepA = c.afterMarcheIndex + 1;
+              const stepB = c.afterMarcheIndex + 2;
+              if (c.totalInSegment === 0) {
+                return `Entre étape ${stepA} et étape ${stepB}`;
+              }
+              const left = c.kInSegment === 0
+                ? `étape ${stepA}`
+                : `point intermédiaire ${c.kInSegment}/${c.totalInSegment}`;
+              const right = c.kInSegment === c.totalInSegment
+                ? `étape ${stepB}`
+                : `point intermédiaire ${c.kInSegment + 1}/${c.totalInSegment}`;
+              return `Entre ${left} et ${right}`;
+            }}
+            onCancel={() => { setPendingWaypoint(null); setPickMode(null); setHoveredCandidateIdx(null); }}
+            onConfirm={() => {
+              if (!marcheEventId || !pendingWaypoint) return;
+              const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+              createWaypoint.mutate({
+                marche_event_id: marcheEventId,
+                after_marche_id: c.after_marche_id,
+                ordre: c.ordre,
+                latitude: pendingWaypoint.lat,
+                longitude: pendingWaypoint.lng,
+              });
+              setPendingWaypoint(null);
+              setPickMode(null);
+              setHoveredCandidateIdx(null);
+            }}
+          />
+        );
+      })()}
+
+      {/* Pick-mode floating banner */}
+      {pickMode && pendingWaypoint && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] bg-cyan-900/95 text-white text-sm px-4 py-2 rounded-full shadow-xl border border-cyan-400/40 backdrop-blur flex items-center gap-3">
+          <span>
+            {pickMode.pickedA
+              ? 'Cliquez sur le 2ᵉ point voisin'
+              : 'Cliquez sur le 1ᵉʳ point voisin (étape ou point intermédiaire)'}
+          </span>
+          <button
+            onClick={() => setPickMode(null)}
+            className="text-cyan-200 hover:text-white text-xs underline"
+          >
+            Annuler
+          </button>
+        </div>
       )}
 
 
