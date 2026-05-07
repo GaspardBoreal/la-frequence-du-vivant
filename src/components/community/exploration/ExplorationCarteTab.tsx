@@ -611,6 +611,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     candidates: SegmentCandidate[];
     selectedIdx: number;
   } | null>(null);
+  const [hoveredCandidateIdx, setHoveredCandidateIdx] = useState<number | null>(null);
+  // Manual segment-pick mode (for when no candidate matches what the user sees)
+  const [pickMode, setPickMode] = useState<null | { stage: 'A' | 'B'; pickedA?: { kind: 'step' | 'waypoint'; id: string; lat: number; lng: number } }>(null);
   const [showWaypoints, setShowWaypoints] = useState(true);
   const [showDistanceMode, setShowDistanceMode] = useState<'estimated' | 'crow'>('estimated');
 
