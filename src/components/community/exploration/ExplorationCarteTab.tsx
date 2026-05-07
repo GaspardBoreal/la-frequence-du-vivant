@@ -1255,61 +1255,75 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       </MapContainer>
 
       {/* Confirm dialog for waypoint insertion */}
-      {pendingWaypoint && (
-        {(() => {
-          // Display top 4 candidates, plus the selected one if it's outside that window
-          const top = pendingWaypoint.candidates.slice(0, 4);
-          const sel = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
-          const display = sel && !top.includes(sel) ? [...top, sel] : top;
-          const dialogSelectedIdx = sel ? display.indexOf(sel) : 0;
-          return (
-            <WaypointInsertConfirmDialog
-              open={!!pendingWaypoint && !pickMode}
-              candidates={display}
-              selectedIdx={dialogSelectedIdx}
-              onSelect={(idx) => {
-                const realIdx = pendingWaypoint.candidates.indexOf(display[idx]);
-                if (realIdx >= 0) setPendingWaypoint((p) => (p ? { ...p, selectedIdx: realIdx } : p));
-              }}
-              onHover={(idx) => {
-                if (idx === null) { setHoveredCandidateIdx(null); return; }
-                const realIdx = pendingWaypoint.candidates.indexOf(display[idx]);
-                setHoveredCandidateIdx(realIdx >= 0 ? realIdx : null);
-              }}
-              onPickOnMap={() => { setPickMode({ stage: 'A' }); setHoveredCandidateIdx(null); }}
-          buildLabel={(c) => {
-            const a = geoMarches[c.afterMarcheIndex];
-            const b = geoMarches[c.afterMarcheIndex + 1];
-            const stepA = c.afterMarcheIndex + 1;
-            const stepB = c.afterMarcheIndex + 2;
-            // Inside a main segment, the "ordre k" position means:
-            //   k=0 → between étape A and the 1st waypoint (or étape B if none)
-            //   k=N → between the Nth waypoint and étape B
-            if (c.totalInSegment === 0) {
-              return `Entre étape ${stepA} et étape ${stepB}`;
-            }
-            const left = c.kInSegment === 0
-              ? `étape ${stepA}`
-              : `point intermédiaire ${c.kInSegment}/${c.totalInSegment}`;
-            const right = c.kInSegment === c.totalInSegment
-              ? `étape ${stepB}`
-              : `point intermédiaire ${c.kInSegment + 1}/${c.totalInSegment}`;
-            return `Entre ${left} et ${right}`;
-          }}
-          onCancel={() => setPendingWaypoint(null)}
-          onConfirm={() => {
-            if (!marcheEventId || !pendingWaypoint) return;
-            const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
-            createWaypoint.mutate({
-              marche_event_id: marcheEventId,
-              after_marche_id: c.after_marche_id,
-              ordre: c.ordre,
-              latitude: pendingWaypoint.lat,
-              longitude: pendingWaypoint.lng,
-            });
-            setPendingWaypoint(null);
-          }}
-        />
+      {pendingWaypoint && (() => {
+        // Display top 4 candidates, plus the selected one if it's outside that window
+        const top = pendingWaypoint.candidates.slice(0, 4);
+        const sel = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+        const display = sel && !top.includes(sel) ? [...top, sel] : top;
+        const dialogSelectedIdx = sel ? display.indexOf(sel) : 0;
+        return (
+          <WaypointInsertConfirmDialog
+            open={!!pendingWaypoint && !pickMode}
+            candidates={display}
+            selectedIdx={dialogSelectedIdx}
+            onSelect={(idx) => {
+              const realIdx = pendingWaypoint.candidates.indexOf(display[idx]);
+              if (realIdx >= 0) setPendingWaypoint((p) => (p ? { ...p, selectedIdx: realIdx } : p));
+            }}
+            onHover={(idx) => {
+              if (idx === null) { setHoveredCandidateIdx(null); return; }
+              const realIdx = pendingWaypoint.candidates.indexOf(display[idx]);
+              setHoveredCandidateIdx(realIdx >= 0 ? realIdx : null);
+            }}
+            onPickOnMap={() => { setPickMode({ stage: 'A' }); setHoveredCandidateIdx(null); }}
+            buildLabel={(c) => {
+              const stepA = c.afterMarcheIndex + 1;
+              const stepB = c.afterMarcheIndex + 2;
+              if (c.totalInSegment === 0) {
+                return `Entre étape ${stepA} et étape ${stepB}`;
+              }
+              const left = c.kInSegment === 0
+                ? `étape ${stepA}`
+                : `point intermédiaire ${c.kInSegment}/${c.totalInSegment}`;
+              const right = c.kInSegment === c.totalInSegment
+                ? `étape ${stepB}`
+                : `point intermédiaire ${c.kInSegment + 1}/${c.totalInSegment}`;
+              return `Entre ${left} et ${right}`;
+            }}
+            onCancel={() => { setPendingWaypoint(null); setPickMode(null); setHoveredCandidateIdx(null); }}
+            onConfirm={() => {
+              if (!marcheEventId || !pendingWaypoint) return;
+              const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+              createWaypoint.mutate({
+                marche_event_id: marcheEventId,
+                after_marche_id: c.after_marche_id,
+                ordre: c.ordre,
+                latitude: pendingWaypoint.lat,
+                longitude: pendingWaypoint.lng,
+              });
+              setPendingWaypoint(null);
+              setPickMode(null);
+              setHoveredCandidateIdx(null);
+            }}
+          />
+        );
+      })()}
+
+      {/* Pick-mode floating banner */}
+      {pickMode && pendingWaypoint && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] bg-cyan-900/95 text-white text-sm px-4 py-2 rounded-full shadow-xl border border-cyan-400/40 backdrop-blur flex items-center gap-3">
+          <span>
+            {pickMode.pickedA
+              ? 'Cliquez sur le 2ᵉ point voisin'
+              : 'Cliquez sur le 1ᵉʳ point voisin (étape ou point intermédiaire)'}
+          </span>
+          <button
+            onClick={() => setPickMode(null)}
+            className="text-cyan-200 hover:text-white text-xs underline"
+          >
+            Annuler
+          </button>
+        </div>
       )}
 
 
