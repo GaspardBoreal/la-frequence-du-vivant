@@ -622,9 +622,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     setPickMode((curr) => {
       if (!curr) return curr;
       if (!curr.pickedA) {
+        toast.success('Point 1 sélectionné — cliquez sur le point voisin');
         return { stage: 'B', pickedA: ep };
       }
-      // Have A + B → find candidate matching both endpoints (any order)
       if (!pendingWaypoint) return null;
       const aId = curr.pickedA.id;
       const bId = ep.id;
@@ -632,20 +632,31 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         toast.error('Choisissez 2 points différents');
         return curr;
       }
-      const found = pendingWaypoint.candidates.findIndex(
+      let found = pendingWaypoint.candidates.findIndex(
         (c) =>
           (c.p1.id === aId && c.p2.id === bId) ||
           (c.p1.id === bId && c.p2.id === aId),
       );
+      let nextCandidates = pendingWaypoint.candidates;
       if (found < 0) {
-        toast.error('Ces 2 points ne forment pas un segment du tracé');
+        // Reconstruct on the fly: the pair may form a valid segment outside the top-N
+        const reconstructed = findSegmentByEndpoints(aId, bId, geoMarches as any, waypoints);
+        if (reconstructed) {
+          nextCandidates = [...pendingWaypoint.candidates, reconstructed];
+          found = nextCandidates.length - 1;
+        }
+      }
+      if (found < 0) {
+        toast.error('Ces 2 points ne sont pas voisins sur le tracé');
         return { stage: 'A', pickedA: undefined };
       }
-      setPendingWaypoint((p) => (p ? { ...p, selectedIdx: found } : p));
-      toast.success('Segment sélectionné — confirmez l\'insertion');
+      const finalIdx = found;
+      const finalCandidates = nextCandidates;
+      setPendingWaypoint((p) => (p ? { ...p, candidates: finalCandidates, selectedIdx: finalIdx } : p));
+      toast.success("Segment sélectionné — confirmez l'insertion");
       return null;
     });
-  }, [pendingWaypoint]);
+  }, [pendingWaypoint, geoMarches, waypoints]);
 
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
