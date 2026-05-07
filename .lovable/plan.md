@@ -1,75 +1,72 @@
-## Objectif
+## Diagnostic
 
-Ajouter dans le menu **Options carte** (FAB existant) une option **Station météo** à 3 états, et afficher sur la carte la station Lexicon la plus proche de chaque point de marche, avec une couche dédiée mobile-first.
+L'écart vient du fait que la couche carte n'utilise PAS LEXICON.
 
-## États du contrôle
+- `WeatherStationsLayer.tsx` appelle `findNearestWeatherStation()` qui scanne **uniquement la base locale `weatherStationDatabase.ts`** — ~13 stations codées en dur (BLAYE, ST EMILION, BORDEAUX-MÉRIGNAC, BERGERAC…).
+- PASSIRAC (`16256001`) et BARBEZIEUX (`16028001`) **ne sont pas dans cette base locale** → l'algo retombe sur la station la plus proche *de la base locale*, soit BLAYE / ST EMILION.
+- À l'inverse, la fiche bioacoustique (`/bioacoustique/...`) appelle LEXICON via `fetchLexiconParcelData(lat, lng)`. LEXICON renvoie pour chaque parcelle le champ `last-year-weather-reports.station` (ex. `"BARBEZIEUX 16028001"` ou `"PASSIRAC 16256001"`) — c'est la station Météo-France réellement la plus proche.
 
-Remplacer le `Switch` simple actuel `weatherStations` par un sélecteur **3 états** (segmented control vertical de 3 lignes) :
+Conclusion : la carte doit interroger LEXICON pour chaque point de marche, exactement comme la fiche bioacoustique, au lieu de s'appuyer sur la mini-base locale.
 
-1. **OFF** — Aucune station affichée (défaut)
-2. **ON · avec points de marche** — Stations + tous les marqueurs de marche restent visibles
-3. **ON · sans points de marche** — Stations seules + lignes de tracé conservées, mais marqueurs de marche masqués (focus météo)
+## Stratégie retenue
 
-Stocké dans `useMapLayers` sous `weatherStations: 'off' | 'on_with_marches' | 'on_only'`.
+1. **Source de vérité = LEXICON** (par point de marche).
+2. **Coordonnées de la station** : LEXICON ne les fournit pas. On utilise un résolveur en cascade :
+   - a. Lookup dans `WEATHER_STATIONS` local (rapide, exact) ;
+   - b. Sinon, géocodage du nom de la station via Nominatim (déjà utilisé dans `src/utils/geocoding.ts`) — résultat persisté en `localStorage` (clé `weatherStationCoords:<code>`) pour ne géocoder qu'une fois ;
+   - c. Sinon, fallback : on positionne la station au centroïde de la commune renvoyée par LEXICON (`information.city` → géocodage commune+code postal).
+3. **Cache** : React Query par point (`['lexicon-station', lat, lng]`, `staleTime: 30 min`) + résolveur de coords mémoïsé.
+4. **Dédup** par `station code` ; un même marker regroupe tous les points qu'il sert.
+5. **Robustesse** : si LEXICON répond sans station (mer, étranger, panne), on tombe en dernier recours sur l'ancienne logique locale, mais on tag la station `source: 'fallback-local'` (badge discret dans le popup).
 
-## UX du contrôle (mobile-first)
+## Implémentation
 
-Dans `MapOptionsMenu`, la ligne « Stations météo » devient une carte dépliable :
+### 1. Nouveau hook `useNearestLexiconStations`
+`src/hooks/useNearestLexiconStations.ts`
 
-```text
-┌────────────────────────────────────────────┐
-│ ☁  Stations météo            [ON · focus]▾│
-│    Plus proches des points de marche       │
-└────────────────────────────────────────────┘
-   ▼ déplié (radio group, large tap targets)
-   ○ Désactivé
-   ● Avec points de marche
-   ○ Focus météo (masquer les points)
+- Entrée : `points: { id, lat, lng }[]`
+- Pour chaque point : `useQueries` React Query → `fetchLexiconParcelData(lat, lng)`.
+- Parse `data?._raw?.['last-year-weather-reports']?.station?.value` (regex `/^(.+?)\s+(\d{8})$/`) → `{ name, code }`.
+- Renvoie `{ pointId, station: { code, name, city, postalCode }, raw }[]`.
+
+### 2. Résolveur de coordonnées `resolveStationCoordinates`
+`src/utils/weatherStationResolver.ts` (nouveau)
+
+```ts
+async function resolveStationCoordinates(
+  station: { code: string; name: string; city?: string; postalCode?: string }
+): Promise<{ lat: number; lng: number; source: 'local' | 'geocoded' | 'commune' }>
 ```
 
-- Tap targets ≥ 44px, `RadioGroup` shadcn
-- Badge d'état coloré (ardoise / émeraude / sky)
-- Haptique léger à chaque changement
-- Le badge global du FAB compte « météo activée » si ≠ off
+- `getStationByCode(code)` → si trouvé, retourne `coordinates`.
+- Sinon `localStorage.getItem('weatherStationCoords:'+code)`.
+- Sinon `geocodeAddress(name + ' France')` puis `geocodeAddress(city + ' ' + postalCode)`.
+- Persiste en `localStorage`.
 
-## Couche carte (`WeatherStationsLayer`)
+### 3. Refacto `WeatherStationsLayer.tsx`
 
-Nouveau composant `src/components/community/exploration/WeatherStationsLayer.tsx` :
+- Remplacer `findNearestWeatherStation` par `useNearestLexiconStations(marches)`.
+- Pour chaque résultat, appel `resolveStationCoordinates` (via un petit hook `useResolvedStations`).
+- Regroupement par `station.code`, calcul des distances `marche → station` avec `calculateDistance`.
+- Conserver l'icône, les polylines pointillées, le popup actuel.
+- Ajouter dans le popup : badge `source` (Local · Géocodé · Commune) en `text-[9px]` discret.
+- Ajouter une légende (1 état) : si une station est résolue par géocodage approximatif, indiquer `~` devant la distance.
 
-- Reçoit la liste des points de marche (`marches` déjà disponible dans `ExplorationCarteTab`)
-- Pour chaque point, appelle `fetchLexiconParcelData(lat, lng)` via un hook batch `useNearestWeatherStations(points)` qui :
-  - Déduplique les coords arrondies à 3 décimales (~110 m)
-  - Utilise `useQueries` (React Query) avec `staleTime: 30 min`
-  - Extrait la station la plus proche depuis la réponse Lexicon (mêmes parsers que `WeatherStationModal` / `weatherStationDatabase`)
-- Rend un `Marker` Leaflet par station unique avec icône SVG dédiée (nuage + thermomètre, couleur sky)
-- Polyline pointillée fine reliant chaque point de marche à sa station (≤ 1px, sky/40%) pour visualiser l'appariement
-- Popup : nom station, code, distance, altitude, bouton « Voir détails » qui ouvre `WeatherStationModal` existant
+### 4. Pas de changement
+- `useMapLayers` (3 modes), `MapOptionsMenu`, `ExplorationCarteTab` restent identiques.
+- L'ancien `findNearestWeatherStation` est conservé pour `WeatherVisualization` (fiche bioacoustique).
 
-## Refacto minimal
+## Fichiers
 
-1. `**useMapLayers.ts**` : changer `weatherStations: boolean` → union string ; helper `setWeatherStationsMode(mode)` ; `activeCount` compte si `!== 'off'`
-2. `**MapOptionsMenu.tsx**` : remplacer la `LayerRow` météo par un nouveau composant `WeatherStationsRow` (collapse + RadioGroup) ; retirer le toast « bientôt disponible »
-3. `**ExplorationCarteTab.tsx**` :
-  - Monter `<WeatherStationsLayer>` à l'intérieur du `<MapContainer>` quand mode ≠ off
-  - Quand mode = `'on_only'`, masquer les marqueurs de marche existants (props `hideMarcheMarkers` ou simple condition de rendu sur `marches.map(...)`) — les tracés (polylines) restent
-4. **Hook `useNearestWeatherStations.ts**` (nouveau) : encapsule le batch React Query + extraction station
+Créés :
+- `src/hooks/useNearestLexiconStations.ts`
+- `src/utils/weatherStationResolver.ts`
 
-## Hors scope
+Modifiés :
+- `src/components/community/exploration/WeatherStationsLayer.tsx`
 
-- Cadastre détaillé / espèces récentes (restent « bientôt disponible »)
-- Affichage des N stations alternatives sur la carte (reste dans la modal existante)
-- Cache serveur (on reste sur le proxy Lexicon actuel + cache React Query)
+## Garanties
 
-## Fichiers touchés
-
-- `src/hooks/useMapLayers.ts` (modif type)
-- `src/hooks/useNearestWeatherStations.ts` (nouveau)
-- `src/components/community/exploration/MapOptionsMenu.tsx` (collapse + RadioGroup)
-- `src/components/community/exploration/WeatherStationsLayer.tsx` (nouveau)
-- `src/components/community/exploration/ExplorationCarteTab.tsx` (montage couche + masquage conditionnel des marqueurs)
-
-## Questions ouvertes (réponds si tu veux ajuster, sinon on part sur les défauts)
-
-1. **Distance max** d'une station pertinente — défaut **65 km**, au-delà on n'affiche pas le marqueur.
-2. **Déduplication** — si deux points de marche partagent la même station, on n'affiche **qu'un marqueur** avec liste des points reliés. OK
-3. **Polylines de rattachement** point→station — défaut **activées en pointillés discrets**.
+- DEVIAT Point 00 → LEXICON renvoie PASSIRAC (16256001) → résolu par géocodage Nominatim "PASSIRAC France" → marker affiché à ~60 km, pointillé jusqu'au point.
+- Aucune régression pour les points dont la station est dans la base locale (lookup direct, instantané).
+- Cache React Query + localStorage : 1 appel LEXICON par point unique sur la durée de la session.

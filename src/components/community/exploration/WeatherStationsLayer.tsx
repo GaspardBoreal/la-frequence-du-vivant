@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Marker, Polyline, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { findNearestWeatherStation, type WeatherStation } from '@/utils/weatherStationDatabase';
+import { useNearestLexiconStations } from '@/hooks/useNearestLexiconStations';
+import type { ResolvedStationCoords } from '@/utils/weatherStationResolver';
 import { calculateDistance, formatDistance, getDataQuality } from '@/utils/weatherStationGeolocation';
 
 interface MarchePoint {
@@ -40,41 +41,76 @@ const stationIcon = L.divIcon({
   popupAnchor: [0, -18],
 });
 
+const sourceLabel = (source: ResolvedStationCoords['source']) => {
+  switch (source) {
+    case 'local': return 'Précis';
+    case 'cached': return 'Précis';
+    case 'geocoded': return 'Géocodé';
+    case 'commune': return 'Commune';
+    default: return '—';
+  }
+};
+
 const WeatherStationsLayer: React.FC<WeatherStationsLayerProps> = ({
   marches,
-  maxDistanceKm = 65,
+  maxDistanceKm = 100,
   showLinks = true,
 }) => {
-  const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const points = useMemo(
+    () =>
+      marches
+        .filter((m) => Number.isFinite(m.latitude) && Number.isFinite(m.longitude))
+        .map((m) => ({ id: m.id, latitude: m.latitude, longitude: m.longitude })),
+    [marches]
+  );
 
-  // Group: each unique station -> list of marches it serves (with per-marche distance)
+  const { pointStations, resolved } = useNearestLexiconStations(points);
+
+  // Group by station code → list of marches
   const grouped = useMemo(() => {
     const map = new Map<
       string,
-      { station: WeatherStation; points: { marche: MarchePoint; distance: number }[] }
+      {
+        code: string;
+        name: string;
+        coords: ResolvedStationCoords;
+        points: { marche: MarchePoint; distance: number }[];
+      }
     >();
-    for (const m of marches) {
-      if (m.latitude == null || m.longitude == null) continue;
-      const station = findNearestWeatherStation({ lat: m.latitude, lng: m.longitude }, maxDistanceKm);
-      if (!station) continue;
-      const distance = calculateDistance({ lat: m.latitude, lng: m.longitude }, station.coordinates);
-      const entry = map.get(station.code) ?? { station, points: [] };
-      entry.points.push({ marche: m, distance });
-      map.set(station.code, entry);
+    for (const ps of pointStations) {
+      if (!ps.station) continue;
+      const coords = resolved[ps.station.code];
+      if (!coords) continue;
+      const marche = marches.find((m) => m.id === ps.pointId);
+      if (!marche) continue;
+      const distance = calculateDistance(
+        { lat: marche.latitude, lng: marche.longitude },
+        { lat: coords.lat, lng: coords.lng }
+      );
+      if (distance > maxDistanceKm) continue;
+      const entry =
+        map.get(ps.station.code) ?? {
+          code: ps.station.code,
+          name: ps.station.name,
+          coords,
+          points: [],
+        };
+      entry.points.push({ marche, distance });
+      map.set(ps.station.code, entry);
     }
     return Array.from(map.values());
-  }, [marches, maxDistanceKm]);
+  }, [pointStations, resolved, marches, maxDistanceKm]);
 
   return (
     <>
       {showLinks &&
-        grouped.flatMap(({ station, points }) =>
+        grouped.flatMap(({ code, coords, points }) =>
           points.map(({ marche }) => (
             <Polyline
-              key={`link-${station.code}-${marche.id}`}
+              key={`link-${code}-${marche.id}`}
               positions={[
                 [marche.latitude, marche.longitude],
-                [station.coordinates.lat, station.coordinates.lng],
+                [coords.lat, coords.lng],
               ]}
               pathOptions={{
                 color: '#0ea5e9',
@@ -86,15 +122,15 @@ const WeatherStationsLayer: React.FC<WeatherStationsLayerProps> = ({
           ))
         )}
 
-      {grouped.map(({ station, points }) => {
+      {grouped.map(({ code, name, coords, points }) => {
         const minDist = Math.min(...points.map((p) => p.distance));
         const quality = getDataQuality(minDist);
+        const approx = coords.source === 'geocoded' || coords.source === 'commune';
         return (
           <Marker
-            key={station.code}
-            position={[station.coordinates.lat, station.coordinates.lng]}
+            key={code}
+            position={[coords.lat, coords.lng]}
             icon={stationIcon}
-            eventHandlers={{ click: () => setSelectedCode(station.code) }}
           >
             <Popup className="exploration-carte-popup" maxWidth={280} minWidth={220}>
               <div className="bg-black/85 backdrop-blur-xl rounded-xl p-3 -m-3 text-white">
@@ -108,12 +144,12 @@ const WeatherStationsLayer: React.FC<WeatherStationsLayerProps> = ({
                     <div className="text-[10px] uppercase tracking-wider text-sky-300/80 font-semibold">
                       Station météo
                     </div>
-                    <div className="text-sm font-semibold leading-tight truncate">{station.name}</div>
-                    <div className="text-[11px] text-white/50 font-mono">{station.code}</div>
+                    <div className="text-sm font-semibold leading-tight truncate">{name}</div>
+                    <div className="text-[11px] text-white/50 font-mono">{code}</div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] mb-2">
+                <div className="flex items-center gap-2 text-[11px] mb-2 flex-wrap">
                   <span
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
                     style={{ backgroundColor: `${quality.color}25`, color: quality.color }}
@@ -122,11 +158,11 @@ const WeatherStationsLayer: React.FC<WeatherStationsLayerProps> = ({
                       className="w-1.5 h-1.5 rounded-full"
                       style={{ backgroundColor: quality.color }}
                     />
-                    {formatDistance(minDist)} · {quality.level}
+                    {approx ? '~' : ''}{formatDistance(minDist)} · {quality.level}
                   </span>
-                  {station.elevation != null && (
-                    <span className="text-white/55">{station.elevation} m</span>
-                  )}
+                  <span className="text-[9px] uppercase tracking-wider text-white/40">
+                    {sourceLabel(coords.source)}
+                  </span>
                 </div>
 
                 <div className="text-[11px] text-white/65 leading-snug mb-2">
@@ -145,7 +181,7 @@ const WeatherStationsLayer: React.FC<WeatherStationsLayerProps> = ({
                           {marche.nom_marche || marche.ville || 'Point'}
                         </span>
                         <span className="text-sky-300/90 font-mono shrink-0">
-                          {formatDistance(distance)}
+                          {approx ? '~' : ''}{formatDistance(distance)}
                         </span>
                       </li>
                     ))}
