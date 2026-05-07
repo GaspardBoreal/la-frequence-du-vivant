@@ -12,9 +12,29 @@ export interface Exploration {
   meta_description?: string;
   meta_keywords: string[];
   published: boolean;
+  is_loop?: boolean;
   created_at: string;
   updated_at: string;
 }
+
+// Mutation pour basculer le mode "boucle fermée" d'une exploration
+export const useUpdateExplorationLoop = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, is_loop }: { id: string; is_loop: boolean }) => {
+      const { error } = await supabase
+        .from('explorations')
+        .update({ is_loop })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['exploration-by-id', vars.id] });
+      qc.invalidateQueries({ queryKey: ['exploration'] });
+      qc.invalidateQueries({ queryKey: ['explorations'] });
+    },
+  });
+};
 
 export interface NarrativeLandscape {
   id: string;
