@@ -167,6 +167,51 @@ export function detectSegmentCandidates(
   return candidates.slice(0, limit);
 }
 
+/**
+ * Find the segment whose endpoints exactly match the given pair of ids (any order).
+ * Returns null if the two ids are not consecutive endpoints anywhere on the route.
+ */
+export function findSegmentByEndpoints(
+  aId: string,
+  bId: string,
+  geoMarches: { id: string; latitude: number; longitude: number }[],
+  waypoints: ExplorationWaypoint[],
+): SegmentCandidate | null {
+  if (geoMarches.length < 2) return null;
+  const byAfter = new Map<string, ExplorationWaypoint[]>();
+  waypoints.forEach((w) => {
+    const arr = byAfter.get(w.after_marche_id) || [];
+    arr.push(w); byAfter.set(w.after_marche_id, arr);
+  });
+  byAfter.forEach((arr) => arr.sort((a, b) => a.ordre - b.ordre));
+
+  for (let i = 0; i < geoMarches.length - 1; i++) {
+    const a = geoMarches[i]; const b = geoMarches[i + 1];
+    const wpsHere = byAfter.get(a.id) || [];
+    const seg = [a, ...wpsHere, b];
+    const segMeta: EndpointKind[] = ['step', ...wpsHere.map(() => 'waypoint' as EndpointKind), 'step'];
+    for (let k = 0; k < seg.length - 1; k++) {
+      const p1 = seg[k]; const p2 = seg[k + 1];
+      const match =
+        (p1.id === aId && p2.id === bId) ||
+        (p1.id === bId && p2.id === aId);
+      if (match) {
+        return {
+          after_marche_id: a.id,
+          ordre: k,
+          score: 0,
+          p1: { kind: segMeta[k], id: p1.id, latitude: p1.latitude, longitude: p1.longitude },
+          p2: { kind: segMeta[k + 1], id: p2.id, latitude: p2.latitude, longitude: p2.longitude },
+          afterMarcheIndex: i,
+          kInSegment: k,
+          totalInSegment: wpsHere.length,
+        };
+      }
+    }
+  }
+  return null;
+}
+
 function pointToSegmentKmWithT(plat: number, plng: number, alat: number, alng: number, blat: number, blng: number) {
   const ax = alng, ay = alat, bx = blng, by = blat, px = plng, py = plat;
   const dx = bx - ax, dy = by - ay;
