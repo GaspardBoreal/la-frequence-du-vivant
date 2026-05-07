@@ -649,6 +649,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           bId,
           geoMarchesRef.current.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
           waypointsRef.current,
+          isLoop,
         );
         if (reconstructed) resolved = reconstructed;
       }
