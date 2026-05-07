@@ -617,6 +617,36 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [showWaypoints, setShowWaypoints] = useState(true);
   const [showDistanceMode, setShowDistanceMode] = useState<'estimated' | 'crow'>('estimated');
 
+  // Resolve a (kind, id) endpoint to a SegmentCandidate index for a given pending waypoint
+  const handlePickEndpoint = useCallback((ep: { kind: 'step' | 'waypoint'; id: string; lat: number; lng: number }) => {
+    setPickMode((curr) => {
+      if (!curr) return curr;
+      if (!curr.pickedA) {
+        return { stage: 'B', pickedA: ep };
+      }
+      // Have A + B → find candidate matching both endpoints (any order)
+      if (!pendingWaypoint) return null;
+      const aId = curr.pickedA.id;
+      const bId = ep.id;
+      if (aId === bId) {
+        toast.error('Choisissez 2 points différents');
+        return curr;
+      }
+      const found = pendingWaypoint.candidates.findIndex(
+        (c) =>
+          (c.p1.id === aId && c.p2.id === bId) ||
+          (c.p1.id === bId && c.p2.id === aId),
+      );
+      if (found < 0) {
+        toast.error('Ces 2 points ne forment pas un segment du tracé');
+        return { stage: 'A', pickedA: undefined };
+      }
+      setPendingWaypoint((p) => (p ? { ...p, selectedIdx: found } : p));
+      toast.success('Segment sélectionné — confirmez l\'insertion');
+      return null;
+    });
+  }, [pendingWaypoint]);
+
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
 
