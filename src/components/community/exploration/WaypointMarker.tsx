@@ -102,6 +102,63 @@ export function detectSegmentForPoint(
   return null;
 }
 
+export interface SegmentCandidate {
+  after_marche_id: string;
+  ordre: number;
+  score: number;
+  p1: { latitude: number; longitude: number };
+  p2: { latitude: number; longitude: number };
+  afterMarcheIndex: number; // 0-based index of after_marche in geoMarches
+  kInSegment: number;       // ordre slot inside this main segment
+  totalInSegment: number;   // total existing waypoints in the same main segment
+}
+
+/**
+ * Returns all candidate insertion segments, ranked by detour score (best first).
+ * Useful for offering the user a confirmation/correction UI.
+ */
+export function detectSegmentCandidates(
+  lat: number,
+  lng: number,
+  geoMarches: { id: string; latitude: number; longitude: number }[],
+  waypoints: ExplorationWaypoint[],
+  limit = 4,
+): SegmentCandidate[] {
+  if (geoMarches.length < 2) return [];
+  const byAfter = new Map<string, ExplorationWaypoint[]>();
+  waypoints.forEach((w) => {
+    const arr = byAfter.get(w.after_marche_id) || [];
+    arr.push(w); byAfter.set(w.after_marche_id, arr);
+  });
+  byAfter.forEach((arr) => arr.sort((a, b) => a.ordre - b.ordre));
+
+  const candidates: SegmentCandidate[] = [];
+  for (let i = 0; i < geoMarches.length - 1; i++) {
+    const a = geoMarches[i]; const b = geoMarches[i + 1];
+    const wpsHere = byAfter.get(a.id) || [];
+    const seg = [a, ...wpsHere, b];
+    for (let k = 0; k < seg.length - 1; k++) {
+      const p1 = seg[k]; const p2 = seg[k + 1];
+      const d1 = haversineKm(lat, lng, p1.latitude, p1.longitude);
+      const d2 = haversineKm(lat, lng, p2.latitude, p2.longitude);
+      const d12 = haversineKm(p1.latitude, p1.longitude, p2.latitude, p2.longitude);
+      const score = Math.max(0, d1 + d2 - d12);
+      candidates.push({
+        after_marche_id: a.id,
+        ordre: k,
+        score,
+        p1: { latitude: p1.latitude, longitude: p1.longitude },
+        p2: { latitude: p2.latitude, longitude: p2.longitude },
+        afterMarcheIndex: i,
+        kInSegment: k,
+        totalInSegment: wpsHere.length,
+      });
+    }
+  }
+  candidates.sort((a, b) => a.score - b.score);
+  return candidates.slice(0, limit);
+}
+
 function pointToSegmentKmWithT(plat: number, plng: number, alat: number, alng: number, blat: number, blng: number) {
   const ax = alng, ay = alat, bx = blng, by = blat, px = plng, py = plat;
   const dx = bx - ax, dy = by - ay;
