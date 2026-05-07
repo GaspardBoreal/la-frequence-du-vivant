@@ -1,0 +1,89 @@
+import React from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Sparkles } from 'lucide-react';
+import type { SegmentCandidate } from './WaypointMarker';
+
+interface Props {
+  open: boolean;
+  candidates: SegmentCandidate[];
+  selectedIdx: number;
+  onSelect: (idx: number) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+  buildLabel: (c: SegmentCandidate) => string;
+}
+
+export function WaypointInsertConfirmDialog({
+  open,
+  candidates,
+  selectedIdx,
+  onSelect,
+  onConfirm,
+  onCancel,
+  buildLabel,
+}: Props) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-600" />
+            Où insérer ce point ?
+          </DialogTitle>
+          <DialogDescription>
+            Confirmez le segment d'insertion. Le tracé en pointillé ambre montre
+            l'aperçu en direct sur la carte.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2 py-2">
+          {candidates.map((c, i) => {
+            const isSelected = i === selectedIdx;
+            const isSuggested = i === 0;
+            return (
+              <button
+                key={`${c.after_marche_id}-${c.ordre}`}
+                type="button"
+                onClick={() => onSelect(i)}
+                className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-all ${
+                  isSelected
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 shadow-sm'
+                    : 'border-border hover:border-amber-300 hover:bg-muted/50'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{buildLabel(c)}</span>
+                  {isSuggested && (
+                    <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                      Suggéré
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">
+                  Détour : {(c.score * 1000).toFixed(0)} m
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="outline" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button onClick={onConfirm} className="bg-amber-600 hover:bg-amber-700">
+            Confirmer l'insertion
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

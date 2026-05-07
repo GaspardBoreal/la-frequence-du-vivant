@@ -18,7 +18,8 @@ import {
   useCreateWaypoint,
   buildRouteWithWaypoints,
 } from '@/hooks/useExplorationWaypoints';
-import { WaypointMarker, WaypointCreateHandler, detectSegmentForPoint, waypointDraftIcon } from './WaypointMarker';
+import { WaypointMarker, WaypointCreateHandler, detectSegmentCandidates, waypointDraftIcon, type SegmentCandidate } from './WaypointMarker';
+import { WaypointInsertConfirmDialog } from './WaypointInsertConfirmDialog';
 import 'leaflet/dist/leaflet.css';
 
 type MapStyle = 'geopoetic' | 'satellite' | 'terrain' | 'cadastre';
@@ -604,6 +605,12 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const { data: waypoints = [] } = useExplorationWaypoints(marcheEventId);
   const createWaypoint = useCreateWaypoint();
   const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
+  const [pendingWaypoint, setPendingWaypoint] = useState<{
+    lat: number;
+    lng: number;
+    candidates: SegmentCandidate[];
+    selectedIdx: number;
+  } | null>(null);
   const [showWaypoints, setShowWaypoints] = useState(true);
   const [showDistanceMode, setShowDistanceMode] = useState<'estimated' | 'crow'>('estimated');
 
@@ -949,26 +956,48 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         <WaypointCreateHandler
           active={isCreatingWaypoint}
           onPick={(lat, lng) => {
-            const seg = detectSegmentForPoint(
+            const candidates = detectSegmentCandidates(
               lat,
               lng,
               geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
               waypoints,
+              4,
             );
-            if (!seg || !marcheEventId) {
-              toast.error('Impossible de détecter le segment');
+            if (!candidates.length || !marcheEventId) {
+              toast.error('Impossible de détecter un segment');
               return;
             }
-            createWaypoint.mutate({
-              marche_event_id: marcheEventId,
-              after_marche_id: seg.after_marche_id,
-              ordre: seg.ordre,
-              latitude: lat,
-              longitude: lng,
-            });
+            setPendingWaypoint({ lat, lng, candidates, selectedIdx: 0 });
             setIsCreatingWaypoint(false);
           }}
         />
+
+        {/* Draft waypoint marker + preview polylines while confirming */}
+        {pendingWaypoint && (
+          <>
+            <Marker
+              position={[pendingWaypoint.lat, pendingWaypoint.lng]}
+              icon={waypointDraftIcon}
+              interactive={false}
+            />
+            {(() => {
+              const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+              if (!c) return null;
+              return (
+                <>
+                  <Polyline
+                    positions={[[pendingWaypoint.lat, pendingWaypoint.lng], [c.p1.latitude, c.p1.longitude]]}
+                    pathOptions={{ color: '#d97706', weight: 2, opacity: 0.75, dashArray: '4, 6' }}
+                  />
+                  <Polyline
+                    positions={[[pendingWaypoint.lat, pendingWaypoint.lng], [c.p2.latitude, c.p2.longitude]]}
+                    pathOptions={{ color: '#d97706', weight: 2, opacity: 0.75, dashArray: '4, 6' }}
+                  />
+                </>
+              );
+            })()}
+          </>
+        )}
 
         {/* Render waypoints */}
         {showWaypoints && waypoints.map((wp) => {
@@ -1142,6 +1171,49 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           );
         })()}
       </MapContainer>
+
+      {/* Confirm dialog for waypoint insertion */}
+      {pendingWaypoint && (
+        <WaypointInsertConfirmDialog
+          open={!!pendingWaypoint}
+          candidates={pendingWaypoint.candidates}
+          selectedIdx={pendingWaypoint.selectedIdx}
+          onSelect={(idx) => setPendingWaypoint((p) => (p ? { ...p, selectedIdx: idx } : p))}
+          buildLabel={(c) => {
+            const a = geoMarches[c.afterMarcheIndex];
+            const b = geoMarches[c.afterMarcheIndex + 1];
+            const stepA = c.afterMarcheIndex + 1;
+            const stepB = c.afterMarcheIndex + 2;
+            // Inside a main segment, the "ordre k" position means:
+            //   k=0 → between étape A and the 1st waypoint (or étape B if none)
+            //   k=N → between the Nth waypoint and étape B
+            if (c.totalInSegment === 0) {
+              return `Entre étape ${stepA} et étape ${stepB}`;
+            }
+            const left = c.kInSegment === 0
+              ? `étape ${stepA}`
+              : `point intermédiaire ${c.kInSegment}/${c.totalInSegment}`;
+            const right = c.kInSegment === c.totalInSegment
+              ? `étape ${stepB}`
+              : `point intermédiaire ${c.kInSegment + 1}/${c.totalInSegment}`;
+            return `Entre ${left} et ${right}`;
+          }}
+          onCancel={() => setPendingWaypoint(null)}
+          onConfirm={() => {
+            if (!marcheEventId || !pendingWaypoint) return;
+            const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+            createWaypoint.mutate({
+              marche_event_id: marcheEventId,
+              after_marche_id: c.after_marche_id,
+              ordre: c.ordre,
+              latitude: pendingWaypoint.lat,
+              longitude: pendingWaypoint.lng,
+            });
+            setPendingWaypoint(null);
+          }}
+        />
+      )}
+
 
       {/* Map style toggle */}
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
