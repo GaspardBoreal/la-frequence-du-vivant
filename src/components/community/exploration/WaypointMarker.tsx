@@ -172,6 +172,9 @@ function pointToSegmentKmWithT(plat: number, plng: number, alat: number, alng: n
   const tClamped = Math.max(0, Math.min(1, t));
   const cx = ax + tClamped * dx, cy = ay + tClamped * dy;
   return { dist: haversineKm(py, px, cy, cx), t };
+  }
+  candidates.sort((a, b) => a.score - b.score);
+  return candidates.slice(0, limit);
 }
 
 
