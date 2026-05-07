@@ -1206,6 +1206,23 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             <span className="text-[11px] font-semibold tracking-wide">point de marche</span>
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
           </button>
+          {marcheEventId && (
+            <button
+              onClick={() => setIsCreatingWaypoint(v => !v)}
+              className={`relative h-10 px-3 rounded-xl backdrop-blur-md border flex items-center gap-1.5 transition-all duration-200 active:scale-95 shadow-md ${
+                isCreatingWaypoint
+                  ? 'bg-amber-400/40 border-amber-300/70 text-amber-50 shadow-amber-400/30'
+                  : 'bg-amber-500/15 border-amber-400/30 text-amber-100/90 hover:bg-amber-500/25'
+              }`}
+              aria-label="Ajouter un point intermédiaire"
+              title={isCreatingWaypoint ? 'Cliquez sur la carte pour placer le point' : 'Ajouter un point intermédiaire'}
+            >
+              <Sparkles className="w-3.5 h-3.5" strokeWidth={2.5} />
+              <span className="text-[11px] font-semibold tracking-wide">
+                {isCreatingWaypoint ? 'Cliquez sur la carte…' : 'point intermédiaire'}
+              </span>
+            </button>
+          )}
         </div>
       )}
 
