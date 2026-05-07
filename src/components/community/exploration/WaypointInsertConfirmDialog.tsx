@@ -36,8 +36,8 @@ export function WaypointInsertConfirmDialog({
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
+        <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-600" />
             Où insérer ce point ?
@@ -48,7 +48,7 @@ export function WaypointInsertConfirmDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 py-2">
+        <div className="flex-1 overflow-y-auto px-6 py-2 space-y-2 min-h-0">
           {candidates.map((c, i) => {
             const isSelected = i === selectedIdx;
             const isSuggested = i === 0;
@@ -81,22 +81,22 @@ export function WaypointInsertConfirmDialog({
               </button>
             );
           })}
+
+          <button
+            type="button"
+            onClick={onPickOnMap}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-cyan-400 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-300 text-sm font-medium hover:bg-cyan-100 dark:hover:bg-cyan-950/40 transition"
+          >
+            <MousePointerClick className="w-4 h-4" />
+            Aucune ne correspond — choisir les 2 points sur la carte
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={onPickOnMap}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-cyan-400 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-300 text-sm font-medium hover:bg-cyan-100 dark:hover:bg-cyan-950/40 transition"
-        >
-          <MousePointerClick className="w-4 h-4" />
-          Aucune ne correspond — choisir les 2 points sur la carte
-        </button>
-
-        <DialogFooter className="gap-2 sm:gap-2">
+        <DialogFooter className="px-6 py-4 border-t bg-background shrink-0 gap-2 sm:gap-2">
           <Button variant="outline" onClick={onCancel}>
             Annuler
           </Button>
-          <Button onClick={onConfirm} className="bg-amber-600 hover:bg-amber-700">
+          <Button onClick={onConfirm} className="bg-amber-600 hover:bg-amber-700 focus-visible:ring-2 focus-visible:ring-amber-400">
             Confirmer l'insertion
           </Button>
         </DialogFooter>
