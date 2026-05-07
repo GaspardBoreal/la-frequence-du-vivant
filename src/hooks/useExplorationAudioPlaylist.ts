@@ -6,11 +6,15 @@ export interface AudioTrackEnhanced extends ExplorationAudioTrack {
   marcheName: string;
   marcheLocation?: string;
   marcheIndex: number;
+  marcheId?: string;
+  marcheLat?: number | null;
+  marcheLng?: number | null;
   audioIndex: number;
   totalTracksInMarche: number;
   globalIndex: number;
   type_audio?: string | null;
   literary_type?: string | null;
+  transcription_text?: string | null;
 }
 
 export const useExplorationAudioPlaylist = (explorationId: string) => {
@@ -39,11 +43,15 @@ export const useExplorationAudioPlaylist = (explorationId: string) => {
               marcheName: marche.marche?.nom_marche || `Marche ${marcheIndex + 1}`,
               marcheLocation: marche.marche?.ville,
               marcheIndex,
+              marcheId: marche.marche?.id,
+              marcheLat: (marche.marche as any)?.latitude ?? null,
+              marcheLng: (marche.marche as any)?.longitude ?? null,
               audioIndex,
               totalTracksInMarche: sortedAudio.length,
               globalIndex: globalIndex++,
               type_audio: (audio as any).type_audio || null,
-              literary_type: (audio as any).literary_type || null
+              literary_type: (audio as any).literary_type || null,
+              transcription_text: (audio as any).transcription_text || null,
             });
           });
         }

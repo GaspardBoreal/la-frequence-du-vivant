@@ -9,13 +9,13 @@ import OreilleCuration from './OreilleCuration';
 import PalaisCuration from './PalaisCuration';
 import TextesEcritsSubTab from '@/components/community/exploration/TextesEcritsSubTab';
 
-type SenseKey = 'oeil' | 'main' | 'coeur' | 'oreille' | 'palais';
+type SenseKey = 'oeil' | 'main' | 'oreille' | 'coeur' | 'palais';
 
 const SENSES: { key: SenseKey; label: string; icon: typeof Eye; verb: string }[] = [
   { key: 'oeil', label: "L'œil", icon: Eye, verb: 'Voir les espèces remarquables' },
   { key: 'main', label: 'La main', icon: Hand, verb: 'Découvrir les pratiques' },
-  { key: 'coeur', label: 'Le cœur', icon: Heart, verb: 'Lire les textes' },
   { key: 'oreille', label: "L'oreille", icon: Ear, verb: 'Écouter les sons' },
+  { key: 'coeur', label: 'Le cœur', icon: Heart, verb: 'Lire les textes' },
   { key: 'palais', label: 'Le palais', icon: Utensils, verb: 'Goûter le territoire' },
 ];
 
