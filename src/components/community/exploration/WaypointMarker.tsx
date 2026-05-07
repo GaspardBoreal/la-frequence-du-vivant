@@ -62,32 +62,56 @@ export function detectSegmentForPoint(
   });
   byAfter.forEach((arr) => arr.sort((a, b) => a.ordre - b.ordre));
 
-  let best: { after: string; ordre: number; dist: number } | null = null;
+  // Primary metric: "detour" = d(click,p1) + d(click,p2) - d(p1,p2).
+  // ~0 when the click lies between p1 and p2; grows fast otherwise.
+  // This favours the segment whose endpoints actually bracket the click,
+  // instead of a parallel neighbour that just happens to be perpendicularly close.
+  let bestDetour: { after: string; ordre: number; score: number; perp: number } | null = null;
+  let bestPerp: { after: string; ordre: number; perp: number; inside: boolean } | null = null;
+
   for (let i = 0; i < geoMarches.length - 1; i++) {
     const a = geoMarches[i]; const b = geoMarches[i + 1];
     const seg = [a, ...(byAfter.get(a.id) || []), b];
     for (let k = 0; k < seg.length - 1; k++) {
       const p1 = seg[k]; const p2 = seg[k + 1];
-      // Approx distance from (lat,lng) to segment via projection (planar approx)
-      const dist = pointToSegmentKm(lat, lng, p1.latitude, p1.longitude, p2.latitude, p2.longitude);
-      if (!best || dist < best.dist) {
-        best = { after: a.id, ordre: k, dist };
+      const d1 = haversineKm(lat, lng, p1.latitude, p1.longitude);
+      const d2 = haversineKm(lat, lng, p2.latitude, p2.longitude);
+      const d12 = haversineKm(p1.latitude, p1.longitude, p2.latitude, p2.longitude);
+      const detour = Math.max(0, d1 + d2 - d12);
+      const { dist: perp, t } = pointToSegmentKmWithT(lat, lng, p1.latitude, p1.longitude, p2.latitude, p2.longitude);
+      const inside = t > 0 && t < 1;
+      if (!bestDetour || detour < bestDetour.score) {
+        bestDetour = { after: a.id, ordre: k, score: detour, perp };
+      }
+      if (!bestPerp || perp < bestPerp.perp) {
+        bestPerp = { after: a.id, ordre: k, perp, inside };
       }
     }
   }
-  return best ? { after_marche_id: best.after, ordre: best.ordre } : null;
+
+  // Fallback: if the best detour is large (>150 m) and the click doesn't project
+  // inside that segment, defer to the classic perpendicular metric.
+  if (bestDetour && bestPerp) {
+    const detourTooLarge = bestDetour.score > 0.15;
+    const perpInside = bestPerp.inside;
+    if (detourTooLarge && perpInside) {
+      return { after_marche_id: bestPerp.after, ordre: bestPerp.ordre };
+    }
+    return { after_marche_id: bestDetour.after, ordre: bestDetour.ordre };
+  }
+  return null;
 }
 
-function pointToSegmentKm(plat: number, plng: number, alat: number, alng: number, blat: number, blng: number) {
-  // Treat lat/lng as small-area planar
+function pointToSegmentKmWithT(plat: number, plng: number, alat: number, alng: number, blat: number, blng: number) {
   const ax = alng, ay = alat, bx = blng, by = blat, px = plng, py = plat;
   const dx = bx - ax, dy = by - ay;
   const len2 = dx * dx + dy * dy;
   let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
-  t = Math.max(0, Math.min(1, t));
-  const cx = ax + t * dx, cy = ay + t * dy;
-  return haversineKm(py, px, cy, cx);
+  const tClamped = Math.max(0, Math.min(1, t));
+  const cx = ax + tClamped * dx, cy = ay + tClamped * dy;
+  return { dist: haversineKm(py, px, cy, cx), t };
 }
+
 
 interface CreateHandlerProps {
   active: boolean;
