@@ -605,6 +605,12 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const { data: waypoints = [] } = useExplorationWaypoints(marcheEventId);
   const createWaypoint = useCreateWaypoint();
   const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
+  const [pendingWaypoint, setPendingWaypoint] = useState<{
+    lat: number;
+    lng: number;
+    candidates: SegmentCandidate[];
+    selectedIdx: number;
+  } | null>(null);
   const [showWaypoints, setShowWaypoints] = useState(true);
   const [showDistanceMode, setShowDistanceMode] = useState<'estimated' | 'crow'>('estimated');
 
