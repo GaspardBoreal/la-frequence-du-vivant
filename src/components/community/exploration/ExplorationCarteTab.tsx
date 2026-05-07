@@ -1172,6 +1172,49 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         })()}
       </MapContainer>
 
+      {/* Confirm dialog for waypoint insertion */}
+      {pendingWaypoint && (
+        <WaypointInsertConfirmDialog
+          open={!!pendingWaypoint}
+          candidates={pendingWaypoint.candidates}
+          selectedIdx={pendingWaypoint.selectedIdx}
+          onSelect={(idx) => setPendingWaypoint((p) => (p ? { ...p, selectedIdx: idx } : p))}
+          buildLabel={(c) => {
+            const a = geoMarches[c.afterMarcheIndex];
+            const b = geoMarches[c.afterMarcheIndex + 1];
+            const stepA = c.afterMarcheIndex + 1;
+            const stepB = c.afterMarcheIndex + 2;
+            // Inside a main segment, the "ordre k" position means:
+            //   k=0 → between étape A and the 1st waypoint (or étape B if none)
+            //   k=N → between the Nth waypoint and étape B
+            if (c.totalInSegment === 0) {
+              return `Entre étape ${stepA} et étape ${stepB}`;
+            }
+            const left = c.kInSegment === 0
+              ? `étape ${stepA}`
+              : `point intermédiaire ${c.kInSegment}/${c.totalInSegment}`;
+            const right = c.kInSegment === c.totalInSegment
+              ? `étape ${stepB}`
+              : `point intermédiaire ${c.kInSegment + 1}/${c.totalInSegment}`;
+            return `Entre ${left} et ${right}`;
+          }}
+          onCancel={() => setPendingWaypoint(null)}
+          onConfirm={() => {
+            if (!marcheEventId || !pendingWaypoint) return;
+            const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+            createWaypoint.mutate({
+              marche_event_id: marcheEventId,
+              after_marche_id: c.after_marche_id,
+              ordre: c.ordre,
+              latitude: pendingWaypoint.lat,
+              longitude: pendingWaypoint.lng,
+            });
+            setPendingWaypoint(null);
+          }}
+        />
+      )}
+
+
       {/* Map style toggle */}
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
 
