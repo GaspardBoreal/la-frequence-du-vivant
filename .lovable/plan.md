@@ -1,60 +1,60 @@
-# Couverture étendue des stations météo (est & sud)
+# Synchroniser le chatbot avec la Synthèse
 
 ## Diagnostic
 
-Sur l'exploration de Déviat, deux causes expliquent l'absence de stations à l'est et au sud :
+Les deux composants ne calculent pas de la même façon :
 
-1. **Filtrage géographique injuste** : `useNearestStations` filtre les stations par distance au **barycentre** des points. Or BLAYE (~55km) et ST EMILION (~58km), bien qu'à <60km de plusieurs points individuels, peuvent être exclues si le barycentre est légèrement décalé.
-2. **DB locale lacunaire** : aucune station Dordogne ouest (Périgueux, Ribérac, Mussidan), Charente est, ou Libourne. LEXICON ne renvoie que la plus proche par point (PASSIRAC), donc ces stations ne sont jamais découvertes.
+- **Synthèse (UI)** dans `EventBiodiversityTab.tsx` : parcourt `species_data` de chaque snapshot et **déduplique par `scientificName`** dans une `Map` → **38 espèces uniques**.
+- **Chatbot** : reçoit son contexte via la RPC `get_admin_entity_context`, qui fait `SUM(bs.total_species)` sur les snapshots → **77 (somme brute, double-comptage)**. Une espèce vue sur 3 étapes est comptée 3 fois.
 
-## Changements
+Même problème pour `birds`, `plants`, `fungi`, `others` (qui sont aussi des `SUM` non dédupliqués).
 
-### 1. Filtrage par point (au lieu du barycentre)
-**`src/hooks/useNearestStations.ts`** — Une station est conservée si elle est à ≤ `radiusKm` d'**au moins un** point de marche (au lieu du barycentre). Effet immédiat : BLAYE et ST EMILION apparaissent à 60km.
+## Solution
 
-### 2. Slider de rayon dans le menu d'options
-**`src/components/community/exploration/MapOptionsMenu.tsx`** — Ajout d'un slider 40–100km (pas de 10km, défaut 60) sous le toggle « Stations météo », visible uniquement quand la couche est active.
+Corriger la RPC `get_admin_entity_context` pour qu'elle déduplique les espèces par `scientificName` à partir du JSONB `species_data`, exactement comme la Synthèse.
 
-**`src/hooks/useMapLayers.ts`** — Ajout de `weatherStationsRadius: number` (défaut 60) dans l'état persisté, avec setter `setWeatherStationsRadius`.
+### Migration SQL
 
-**`src/components/community/exploration/ExplorationCarteTab.tsx`** — Passe `radiusKm={layers.weatherStationsRadius}` à `<WeatherStationsLayer>`.
+Remplacer le bloc `'biodiversity'` (event) par un calcul basé sur l'agrégation déduppliquée :
 
-### 3. Enrichissement de la DB locale
-**`src/utils/weatherStationDatabase.ts`** — Ajout de stations Météo France connues pour combler le vide est/sud :
-- `24322001` PÉRIGUEUX-BASSILLAC (45.198, 0.815)
-- `24520001` SAINT-ASTIER (45.143, 0.519)
-- `24350001` RIBÉRAC (45.247, 0.327)
-- `24291001` MUSSIDAN (45.040, 0.371)
-- `33243001` LIBOURNE (44.916, -0.244)
-- `17299001` PONS (45.578, -0.547)
-- `17415001` SAINTES (45.749, -0.625)
-- `16374001` CHASSENEUIL (45.821, 0.450)
-
-Coordonnées vérifiées via communes officielles. Si une station se révèle imprécise, le résolveur LEXICON pourra la corriger.
-
-### 4. Scan LEXICON multi-directionnel (découverte de stations cachées)
-**`src/hooks/useNearestLexiconStations.ts`** — Étendre `MarchePointInput[]` avec une **grille de points fictifs** (8 directions cardinales × distance = `radiusKm/2`) autour du barycentre, pour forcer LEXICON à révéler les stations officielles non locales (ex: une station Météo France à Nontron ou Aulnay).
-
-Implémentation : nouvelle fonction utilitaire `generateScanGrid(center, distanceKm)` retournant 8 points (`scan-N`, `scan-NE`, …). Ces points sont **uniquement** utilisés pour enrichir le pool de stations découvertes ; ils ne sont **pas** inclus dans `pointLinks` (filtrage par préfixe `scan-`).
-
-## Détails techniques
-
-- **Filtrage par point (perf)** : O(stations × points). Pour 13 points × ~25 stations candidates = négligeable.
-- **Grille de scan** : 8 points fictifs supplémentaires → +8 appels LEXICON via le hook existant. Calcul Haversine pour positionner chaque point fictif à `radiusKm/2` du barycentre, dans les 8 directions cardinales.
-- **Slider** : utilise le composant `Slider` de shadcn déjà présent dans le projet. Persisté dans `localStorage` via la clé existante `mapLayers:{explorationId}`.
-- **Migration `useMapLayers`** : ajouter dans `migrate()` un fallback `weatherStationsRadius: 60` si absent.
-
-## Résultat attendu
-
-```text
-Avant (60km, barycentre)              Après (60km, par point + DB enrichie + scan)
-                                      
-        COGNAC ANGOULÊME                   COGNAC  ANGOULÊME  CHASSENEUIL
-                                      SAINTES                            
-        BARBEZIEUX                            BARBEZIEUX  RIBÉRAC
-        PASSIRAC                              PASSIRAC  ST-ASTIER  PÉRIGUEUX
-                                      PONS         •points•      MUSSIDAN
-        (rien)                                BLAYE  ST EMILION  LIBOURNE
+```sql
+'biodiversity', (
+  WITH all_species AS (
+    SELECT DISTINCT ON (lower(coalesce(sp->>'scientificName', sp->>'commonName')))
+      coalesce(sp->>'scientificName', sp->>'commonName') AS sci,
+      sp->>'kingdom' AS kingdom
+    FROM biodiversity_snapshots bs
+    CROSS JOIN LATERAL jsonb_array_elements(coalesce(bs.species_data, '[]'::jsonb)) sp
+    WHERE bs.marche_id IN (
+      SELECT marche_id FROM exploration_marches WHERE exploration_id = me.exploration_id
+    )
+    AND coalesce(sp->>'scientificName', sp->>'commonName') IS NOT NULL
+  )
+  SELECT jsonb_build_object(
+    'total_species',  count(*),
+    'birds',          count(*) FILTER (WHERE kingdom = 'Animalia'),
+    'plants',         count(*) FILTER (WHERE kingdom = 'Plantae'),
+    'fungi',          count(*) FILTER (WHERE kingdom = 'Fungi'),
+    'others',         count(*) FILTER (WHERE kingdom NOT IN ('Animalia','Plantae','Fungi') OR kingdom IS NULL),
+    'snapshots_count',(SELECT count(*) FROM biodiversity_snapshots bs2
+                       WHERE bs2.marche_id IN (SELECT marche_id FROM exploration_marches WHERE exploration_id = me.exploration_id))
+  )
+  FROM all_species
+)
 ```
 
-L'utilisateur pourra de plus pousser à 80 ou 100km via le slider pour faire apparaître BERGERAC, ST GERVAIS, BORDEAUX-MERIGNAC, etc.
+Appliquer la même correction au branche `_type = 'exploration'` si elle expose aussi un bloc biodiversity (à vérifier dans la suite de la fonction).
+
+## Fichiers modifiés
+
+- **migration SQL** : redéfinir `public.get_admin_entity_context(_type text, _id text)` (CREATE OR REPLACE FUNCTION) avec le bloc biodiversity dédupliqué.
+
+## Validation
+
+1. Recharger la page Synthèse de l'exploration DEVIAT (Charente).
+2. Re-poser la question au chatbot : il doit annoncer **38 espèces totales** (et non 77), avec faune/flore/champignons cohérents.
+3. Vérifier sur 1-2 autres explorations que les totaux RPC ≈ totaux affichés dans la Synthèse.
+
+## Pourquoi pas (seulement) un snapshot d'écran ?
+
+Publier `visibleData` via `useChatTabSnapshot` depuis la Synthèse fonctionnerait *quand l'onglet est ouvert*, mais la Synthèse n'est pas toujours active quand on parle au chatbot. Corriger la RPC garantit la cohérence **en toutes circonstances** (onglet Carte, Apprendre, etc.) et reste la source de vérité partagée.
