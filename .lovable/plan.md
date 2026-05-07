@@ -1,70 +1,95 @@
-## Problème observé
+## Points intermédiaires (waypoints) sur le parcours
 
-Dans `src/components/chatbot/ChatBot.tsx`, le header (lignes 282-379) empile **jusqu'à 7 éléments** côté droit (Badge contexte + TTS + Download + Reset + Maximize + Close, parfois suivi du bouton "Écouter" dans le message). En largeur 380px (mode dock) ou ~456px (mobile), la rangée déborde dès qu'une réponse est rendue, masquant Fermer (X) et Agrandir (⤢) — exactement ce que montre la copie 2.
+Objectif : permettre de tracer fidèlement le chemin réel entre deux points de marche officiels, sans polluer les vues qui listent les "vraies" marches.
 
-Causes :
-1. `flex items-center gap-1` sans `shrink-0` sur les boutons → la rangée d'actions est compressée par le bloc titre.
-2. Le bloc titre n'a pas `min-w-0` → il refuse de céder de la place.
-3. Le sous-titre `max-w-[220px]` reste large même quand des actions apparaissent.
-4. Aucune action critique (Fermer / Agrandir) n'est sanctuarisée.
+### 1. Stockage — nouvelle table `exploration_waypoints`
 
-## Solution — Header mobile-first à 2 zones intangibles
+Colonnes :
+- `id` (uuid, PK)
+- `marche_event_id` (uuid, FK → marche_events, ON DELETE CASCADE)
+- `after_marche_id` (uuid, FK → marches) — étape principale qui précède le waypoint dans l'ordre
+- `ordre` (integer) — position au sein du segment `after_marche_id → suivant`
+- `latitude`, `longitude` (numeric)
+- `label` (text, nullable) — note libre courte
+- `include_in_biodiversity` (boolean, default false) — opt-in pour comptage global
+- `biodiversity_synced_at`, `cadastre_synced_at` (timestamptz, nullable)
+- `created_by`, `created_at`, `updated_at`
 
-### Architecture cible
+RLS :
+- Lecture : tout participant à l'événement (mêmes règles que `marches`)
+- Écriture / update / delete : mêmes rôles que création de marche (sentinelle, ambassadeur, admin) — via `has_role` et fonction `can_edit_marche_event(event_id)` réutilisable
+
+Index : `(marche_event_id, after_marche_id, ordre)`.
+
+### 2. Création / édition (les deux modes)
+
+- **Bouton dédié** à côté de `+ point de marche` : pastille ambre `+ point intermédiaire`. Mode actif → tap sur la carte ouvre une mini-fiche (segment détecté auto, label optionnel, valider).
+- **Clic long sur la carte** entre 2 étapes : détecte le segment le plus proche (projection point/segment haversine), insère à l'ordre correct.
+- Marker draggable une fois posé (snap au segment voisin pour réordonner).
+- Suppression via popup du waypoint.
+- Permissions vérifiées côté UI (boutons cachés) ET côté RLS.
+
+### 3. Rendu visuel
+
+- Petit cercle ambre/sable semi-transparent (12px, halo doux), sans numéro, opacité 0.7, ring `border-amber-300/40`.
+- Tooltip au survol : "Point intermédiaire · entre étape 4 et 5".
+- Polyline principale **passe par les waypoints** : on construit un tableau `routePositions = [étape1, ...wp(1→2), étape2, ...wp(2→3), étape3, ...]` qui remplace `positions` dans la `<Polyline>` et `ArrowDecorators`.
+- Couleur/dashArray inchangés — la cohérence vient du fait que le trait suit désormais le vrai chemin.
+- Toggle "Afficher les points intermédiaires" dans le menu carte (ON par défaut). OFF → markers cachés mais polyline reste sur waypoints.
+
+### 4. Distance affichée
+
+Compteur bas de carte affichera deux valeurs :
+```
+13 étapes      ~7,2 km vol d'oiseau · ~8,4 km estimés      38 espèces
+```
+- **Vol d'oiseau** : somme haversine étape→étape (valeur actuelle).
+- **Estimé** : somme haversine étape→waypoint→…→étape suivante (utilise les waypoints comme proxys du chemin réel).
+- Sur petit écran : une seule valeur visible (`estimés` prioritaire), tap → bascule.
+
+### 5. Biodiversité & cadastre par waypoint
+
+Au clic sur un waypoint → popup ambre avec :
+- Coordonnées + label
+- Bouton **Biodiversité (500 m)** : lance `collect-event-biodiversity` adapté pour accepter `(lat, lng, radius)` au lieu d'un `marche_id`. Stocke le snapshot dans une table légère `waypoint_biodiversity_snapshots` (par waypoint_id) ou réutilise le mécanisme existant avec `source = 'waypoint'`.
+- Bouton **Cadastre** : ouvre/centre le calque cadastre déjà présent (`mapStyle = 'cadastre'`) sur la position du waypoint et affiche les parcelles via le proxy LEXICON existant.
+- État de fraîcheur affiché (synced_at).
+
+### 6. Agrégation Synthèse — toggle "Inclure les points intermédiaires"
+
+Dans l'onglet **Synthèse** :
+- Toggle persisté (localStorage par event) : `Inclure les points intermédiaires dans les statistiques`.
+- OFF (défaut) : compteurs et listes d'espèces inchangés.
+- ON : agrège les snapshots des waypoints `include_in_biodiversity = true` au total esp/observations, déduplication par nom scientifique normalisé NFD (règle existante).
+- Un petit badge `+ N pts intermédiaires` apparaît dans les KPIs concernés.
+
+### 7. Vues impactées
+
+- ✅ Carte marcheur (`ExplorationCarteTab`) : markers + polyline + distance + popup actions.
+- ✅ Carte admin événements (`EventsMapTab` + `MarcheMapView` si applicable) : markers visibles, lecture seule, polyline mise à jour.
+- ❌ Onglets **Marches**, **Marcheurs**, **Apprendre**, listes/exports/CRM : **aucun changement** — ils interrogent `marches`/`marche_events`, jamais `exploration_waypoints`.
+- ❌ `useExplorationMarchesList`, `useMarcheurContributions`, exports Word/PDF/CSV des marches : intacts.
+
+### 8. Points techniques
+
+- Hook `useExplorationWaypoints(eventId)` (React Query, staleTime 5min).
+- Hook `useRouteWithWaypoints(geoMarches, waypoints)` → mémoïse `routePositions` + `estimatedDistanceKm`.
+- Mutations `useCreateWaypoint`, `useUpdateWaypoint` (drag), `useDeleteWaypoint` avec invalidation.
+- Edge function `collect-waypoint-biodiversity` (clone allégée de `collect-event-biodiversity`) — 500 m hardcodé, cohérent avec règle mémoire existante.
+- Migration SQL : table + RLS + trigger updated_at.
+- Mémoire projet à enrichir : `mem://features/mon-espace/exploration-waypoints-logic`.
+
+### 9. Hors périmètre (à confirmer plus tard)
+
+- Routing réel via OSRM/ORS (la valeur "estimée" reste une approximation polyligne pour l'instant).
+- Édition collaborative multi-rôles au-delà des curateurs.
+- Affichage waypoints dans les exports PDF / ePub publics.
+
+### Schéma flux
 
 ```text
-┌──────────────────────────────────────────────────────────┐
-│ [emoji] Titre + badge          [⋯ menu] [⤢] [×]         │
-│         Sous-titre tronqué…                              │
-└──────────────────────────────────────────────────────────┘
-   ↑ flex-1 min-w-0 truncate       ↑ shrink-0, toujours visibles
+[étape 4] --•--•--•-- [étape 5]
+            ^waypoints ambre (ordre 1,2,3 du segment 4→5)
+            polyline = [4, wp1, wp2, wp3, 5]
+            distance estimée = haversine(4,wp1)+(wp1,wp2)+(wp2,wp3)+(wp3,5)
 ```
-
-**Règle d'or** : 3 boutons toujours affichés côté droit, quel que soit l'état :
-- **Menu "⋯" (More)** — regroupe TTS, Download, Reset, et toute action future
-- **Agrandir / Réduire (⤢ / ⤡)** — desktop uniquement
-- **Fermer (×)** — toujours
-
-### Détails UI
-
-1. **Bloc titre** (gauche) : ajouter `min-w-0 flex-1` au container, `truncate` au `<h3>` et au `<p>`. Le sous-titre perd `max-w-[220px]` (devient fluide).
-2. **Bloc actions** (droite) : `shrink-0 flex items-center gap-0.5`.
-3. **Menu "⋯"** : composant `DropdownMenu` (shadcn, déjà dispo) avec items :
-   - 🔊 Lecture vocale auto (toggle, état coché si actif)
-   - ⬇ Exporter la conversation (désactivé si `messages.length === 0`)
-   - 🔄 Nouvelle conversation (désactivé si vide)
-   - Séparateur, puis info contexte (lecture seule)
-4. **Badge contexte expanded** (ligne 311-318) : déplacé sous le titre comme petite pastille, plus dans la barre d'actions.
-5. **Mobile (`isMobile`)** : Agrandir masqué (déjà le cas), menu "⋯" reste, Fermer reste. Boutons `h-9 w-9` (zone tactile ≥ 36px), espacement `gap-1`.
-6. **Desktop dock (380px)** : 3 icônes + menu = ~144px réservés à droite, le titre prend le reste avec ellipsis.
-
-### Pourquoi un menu "⋯" plutôt que tout aplatir ?
-
-- Évite le débordement définitivement (3 boutons fixes, peu importe combien d'actions on ajoute plus tard).
-- Suit les conventions iOS/Android (overflow menu).
-- Garde Fermer/Agrandir comme actions primaires visuellement isolées.
-- Permet d'ajouter sans peur : copier conversation, partager, langue, modèle, etc.
-
-### Accessibilité
-
-- Chaque bouton garde son `title` + `aria-label`.
-- Le menu "⋯" a `aria-label="Plus d'actions"`.
-- Échappement (Esc) ferme le menu (géré par Radix DropdownMenu).
-- L'état actif de "Lecture vocale auto" est indiqué par une coche dans le menu.
-
-## Fichiers à modifier
-
-- **`src/components/chatbot/ChatBot.tsx`** — refonte du header (lignes 282-379) :
-  - Bloc titre : `min-w-0 flex-1`, retirer `max-w-[220px]`, ajouter `truncate`.
-  - Bloc actions : remplacer la liste de boutons conditionnels par : `[DropdownMenu ⋯] [Maximize si !mobile] [Close]`.
-  - Badge contexte expanded : repositionné sous le titre en pastille discrète.
-  - Importer `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem`, `DropdownMenuCheckboxItem`, `DropdownMenuSeparator` de `@/components/ui/dropdown-menu`.
-  - Importer `MoreVertical` de `lucide-react`.
-
-Aucun autre fichier touché. Aucune logique métier ni hook modifié — uniquement la présentation du header.
-
-## Hors-scope
-
-- Pas de refonte du body, des suggestions, ni de la barre input.
-- Pas de changement du comportement TTS/STT.
-- Pas de nouvelles actions (juste réorganisation des existantes).
