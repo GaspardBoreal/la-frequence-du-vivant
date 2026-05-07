@@ -1353,7 +1353,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] bg-cyan-900/95 text-white text-sm px-4 py-2 rounded-full shadow-xl border border-cyan-400/40 backdrop-blur flex items-center gap-3">
           <span>
             {pickMode.pickedA
-              ? 'Cliquez sur le 2ᵉ point voisin'
+              ? 'Cliquez sur le 2ᵉ point voisin — l\'insertion sera validée automatiquement'
               : 'Cliquez sur le 1ᵉʳ point voisin (étape ou point intermédiaire)'}
           </span>
           <button
