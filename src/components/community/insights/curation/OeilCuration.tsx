@@ -394,7 +394,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               tone: reviewItems.length > 0 ? 'amber' : undefined,
             },
             { id: 'terrain' as View, label: 'Terrain', count: manual.length, icon: <Hand className="w-3 h-3" /> },
-            { id: 'pool' as View, label: 'Pool observé', count: pool.length, hidden: !isCurator },
+            // "Pool observé" pour curateurs, "Observées" en lecture seule pour marcheurs
+            { id: 'pool' as View, label: isCurator ? 'Pool observé' : 'Observées', count: pool.length },
           ]
             .filter(t => !t.hidden)
             .map(t => {
