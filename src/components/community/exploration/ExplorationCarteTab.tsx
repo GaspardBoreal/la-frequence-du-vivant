@@ -768,6 +768,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     console.log('[CarteTab] marches reçues:', marches.map(m => ({ id: m.id, lat: m.latitude, lng: m.longitude })));
     return marches.filter(m => m.latitude != null && m.longitude != null);
   }, [marches]);
+  const geoMarchesRef = useRef(geoMarches);
+  useEffect(() => { geoMarchesRef.current = geoMarches; }, [geoMarches]);
+  const waypointsRef = useRef(waypoints);
+  useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
 
   const positions: [number, number][] = useMemo(
     () => geoMarches.map(m => [m.latitude!, m.longitude!]),
