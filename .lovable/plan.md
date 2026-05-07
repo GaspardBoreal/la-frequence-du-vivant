@@ -1,59 +1,52 @@
-## Diagnostic — pourquoi la popup réapparaît
+# Gérer le bouclage du tracé (étape N → étape 1)
 
-Voici la séquence réelle dans `ExplorationCarteTab.tsx` :
+## Le problème
 
-1. Tu places le point jaune → `pendingWaypoint` est créé → la popup s'ouvre (car `open = !!pendingWaypoint && !pickMode`).
-2. Tu cliques **« Aucune ne correspond — choisir les 2 points sur la carte »** → `setPickMode({stage:'A'})` → la popup se ferme (car `pickMode` devient truthy).
-3. Tu cliques sur le point 8 → `handlePickEndpoint` enregistre `pickedA` et passe à `stage:'B'`.
-4. Tu cliques sur le point intermédiaire voisin → `handlePickEndpoint` :
-   - retrouve (ou reconstruit) le segment correspondant,
-   - met à jour `pendingWaypoint.selectedIdx` sur ce segment,
-   - **fait `return null` sur `pickMode`**.
-5. Conséquence : `pickMode` redevient `null`, mais `pendingWaypoint` est toujours là → la condition `open = !!pendingWaypoint && !pickMode` redevient `true` → **la popup se rouvre**.
+Aujourd'hui, le tracé est strictement linéaire : on ne crée des segments qu'entre `étape i` et `étape i+1`. Le segment de fermeture entre la **dernière étape** (point 13) et la **première étape** (point 1) n'existe pas dans `detectSegmentCandidates` / `findSegmentByEndpoints`. Résultat : impossible d'insérer un point intermédiaire sur ce tronçon, d'où le message *« Ces 2 points ne sont pas voisins sur le tracé »*.
 
-C'est exactement ce que tu vois (capture 2) : la popup réapparaît avec « Suggéré » sur l'option 1 (qui est effectivement le segment que tu viens de choisir manuellement, étape 8 ↔ point intermédiaire 1/1). Si ensuite tu cliques **Confirmer** et que le waypoint apparaît mal placé (associé à l'étape 9), c'est un second bug : l'index du segment renvoyé par `findSegmentByEndpoints` est mal traduit en `(after_marche_id, ordre)` quand le voisin est un waypoint et non une étape.
+## Solution proposée — simple et explicite
 
-Donc il y a **deux problèmes** à régler ensemble pour que le flux soit clair et correct.
+Introduire un **mode "Boucle fermée"** activable depuis l'onglet Carte (toggle visible à côté des boutons "+ point de marche" / "point intermédiaire"). Quand le mode est ON :
 
-## Plan de correction
+1. Une polyline de fermeture (dernière étape → première étape) s'affiche, avec le même style pointillé/flèches que le reste du tracé.
+2. Le segment virtuel `lastStep → firstStep` est ajouté aux fonctions de détection, donc :
+   - on peut cliquer dans cette zone pour insérer un point intermédiaire ;
+   - la sélection manuelle des 2 voisins fonctionne aussi (dernière étape ↔ point 1, ou avec d'autres waypoints du même tronçon).
+3. Les waypoints insérés sur ce tronçon sont stockés avec `after_marche_id = id(dernière étape)`, ce qui s'intègre naturellement au modèle existant (pas de migration).
+4. Le calcul de distance affichée (`~8.2 km estimés`) inclut ce segment de fermeture quand la boucle est active.
 
-### 1. Supprimer la popup de re-confirmation après un pick manuel
+Le toggle est persistant via une colonne `is_loop boolean default false` sur `explorations` (migration légère, valeur par défaut sûre = pas de régression sur les tracés ouverts existants).
 
-Quand l'utilisateur a explicitement cliqué sur 2 points sur la carte, son intention est sans ambiguïté : on doit **créer le waypoint immédiatement**, sans rouvrir la popup pour redemander la même chose.
+## UX
 
-Dans `ExplorationCarteTab.tsx`, fonction `handlePickEndpoint` (~ligne 621) :
+- Pastille "Boucle : OFF/ON" près des contrôles d'édition de la carte (mode édition uniquement).
+- Quand ON : un petit indicateur visuel (icône ⟳) apparaît sur le segment de fermeture pour bien signaler qu'il s'agit d'un retour vers le point 1.
+- Quand OFF : comportement actuel inchangé.
 
-- Au lieu de seulement mettre à jour `pendingWaypoint.selectedIdx` et de fermer `pickMode`, il faut **déclencher directement** `createWaypoint.mutate(...)` avec le segment résolu, puis nettoyer `pendingWaypoint`, `pickMode`, `hoveredCandidateIdx`.
-- Toast de succès : « Point intermédiaire ajouté entre {label} ».
-- Sortir la logique de création dans une petite helper `commitWaypoint(c: SegmentCandidate)` réutilisée par `onConfirm` du dialog **et** par le pick manuel — pour éviter la duplication.
+## Détails techniques
 
-### 2. Garantir que le segment reconstruit cible le bon couple (after_marche_id, ordre)
+**Migration**
+```sql
+alter table public.explorations
+  add column if not exists is_loop boolean not null default false;
+```
 
-Toujours dans `handlePickEndpoint`, brancher la vérification suivante avant de commit :
+**`WaypointMarker.tsx`** — `detectSegmentCandidates` et `findSegmentByEndpoints`
+- Nouveau paramètre `isLoop: boolean`.
+- Si `isLoop && geoMarches.length >= 2`, ajouter une itération supplémentaire avec `a = geoMarches[last]`, `b = geoMarches[0]`, en utilisant les waypoints de `byAfter.get(a.id)` (mêmes règles d'ordre).
 
-- Re-loguer (debug temporaire) `c.after_marche_id`, `c.ordre`, `c.afterMarcheIndex`, `c.kInSegment`, `c.totalInSegment` pour le segment résolu.
-- Ouvrir `findSegmentByEndpoints` (probablement dans `WaypointMarker.tsx` ou un util voisin) et vérifier que pour le couple **(étape N, waypoint W situé entre étapes N et N+1)** la fonction renvoie bien :
-  - `after_marche_id = étape N`,
-  - `ordre = ordre(W) - 1` si on insère **avant** W, ou `ordre(W) + 1` si on insère **après** W,
-  - et **pas** `after_marche_id = étape N+1` (qui causerait l'attachement visuel à l'étape 9 que tu observes).
-- Corriger le calcul dans `findSegmentByEndpoints` pour les segments mixtes (étape ↔ waypoint et waypoint ↔ waypoint) selon la position réelle du point jaune par rapport aux deux endpoints.
+**`ExplorationCarteTab.tsx`**
+- Lire `exploration.is_loop` ; passer aux deux fonctions ci-dessus.
+- Ajouter une `<Polyline>` de fermeture quand `isLoop` (mêmes options de style que la principale + `ArrowDecorators`).
+- Ajouter le toggle UI (mutation update sur `explorations.is_loop`).
+- Ajuster le calcul `~X km estimés` pour inclure le segment de fermeture.
 
-### 3. Ajustement UX du bandeau pick-mode
+**Aucun changement** nécessaire dans `useCreateWaypoint` : le stockage `(after_marche_id = dernière étape, ordre = k)` reste cohérent.
 
-Le bandeau cyan « Cliquez sur le 2ᵉ point voisin » doit clairement annoncer ce qui va se passer :
+## Fichiers à modifier
 
-- Étape A : « Cliquez sur le 1ᵉʳ point voisin (étape ou point intermédiaire) ».
-- Étape B : « Cliquez sur le 2ᵉ point voisin — l'insertion sera validée automatiquement ».
-
-Cela évite à l'utilisateur de chercher un bouton « Confirmer » qui n'existera plus à cette étape.
-
-## Fichiers touchés
-
-- `src/components/community/exploration/ExplorationCarteTab.tsx` — refacto `handlePickEndpoint`, extraction `commitWaypoint`, message du bandeau pick-mode.
-- `src/components/community/exploration/WaypointMarker.tsx` (ou util voisin contenant `findSegmentByEndpoints`) — correction du calcul `(after_marche_id, ordre)` pour les segments impliquant un waypoint.
-
-## Vérification
-
-1. Reproduire le scénario complet (point jaune → pick step 8 → pick waypoint voisin) → le waypoint doit être créé **sans** réouverture de popup, et **placé exactement entre les 2 points choisis** sur la polyline.
-2. Tester aussi le cas waypoint ↔ waypoint et étape ↔ étape adjacentes pour confirmer la régression non introduite.
-3. Capture d'écran après création pour confirmer la position visuelle.
+- `supabase/migrations/<new>.sql` (ajout colonne `is_loop`)
+- `src/components/community/exploration/WaypointMarker.tsx` (param `isLoop` dans les deux helpers)
+- `src/components/community/exploration/ExplorationCarteTab.tsx` (toggle, polyline de fermeture, propagation `isLoop`, distance)
+- `src/types/exploration.ts` (ajout `is_loop?: boolean`)
+- `src/hooks/useExplorations.ts` (mutation pour basculer le toggle, ou réutiliser un hook update existant)
