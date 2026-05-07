@@ -1,70 +1,60 @@
+# Couverture étendue des stations météo (est & sud)
+
 ## Diagnostic
 
-Aujourd'hui `WeatherStationsLayer` interroge LEXICON pour chaque point de marche. LEXICON renvoyant **une seule** station (la plus proche), tous les points de Déviat retombent sur **PASSIRAC** → BARBEZIEUX, BLAYE, ST EMILION ne sont jamais cités, donc jamais affichés. C'est une régression par rapport au scan local précédent.
+Sur l'exploration de Déviat, deux causes expliquent l'absence de stations à l'est et au sud :
 
-## Objectif
+1. **Filtrage géographique injuste** : `useNearestStations` filtre les stations par distance au **barycentre** des points. Or BLAYE (~55km) et ST EMILION (~58km), bien qu'à <60km de plusieurs points individuels, peuvent être exclues si le barycentre est légèrement décalé.
+2. **DB locale lacunaire** : aucune station Dordogne ouest (Périgueux, Ribérac, Mussidan), Charente est, ou Libourne. LEXICON ne renvoie que la plus proche par point (PASSIRAC), donc ces stations ne sont jamais découvertes.
 
-Afficher **toutes les stations météo connues** situées dans un rayon paramétrable autour de l'exploration, et relier visuellement chaque point de marche à **sa station la plus proche** (1 polyline par point).
+## Changements
 
-## Stratégie
+### 1. Filtrage par point (au lieu du barycentre)
+**`src/hooks/useNearestStations.ts`** — Une station est conservée si elle est à ≤ `radiusKm` d'**au moins un** point de marche (au lieu du barycentre). Effet immédiat : BLAYE et ST EMILION apparaissent à 60km.
 
-Source de vérité = base locale `WEATHER_STATIONS` enrichie progressivement par LEXICON (qui sert désormais de **découverte de nouvelles stations** plutôt que de filtre).
+### 2. Slider de rayon dans le menu d'options
+**`src/components/community/exploration/MapOptionsMenu.tsx`** — Ajout d'un slider 40–100km (pas de 10km, défaut 60) sous le toggle « Stations météo », visible uniquement quand la couche est active.
 
-### Pipeline
+**`src/hooks/useMapLayers.ts`** — Ajout de `weatherStationsRadius: number` (défaut 60) dans l'état persisté, avec setter `setWeatherStationsRadius`.
 
-```text
-1. Collecte des candidats stations
-   ├─ a) Toutes les stations locales (WEATHER_STATIONS)
-   ├─ b) Stations LEXICON découvertes pour chaque point (résolues via resolver)
-   └─ c) Cache localStorage des stations déjà géocodées (sessions précédentes)
+**`src/components/community/exploration/ExplorationCarteTab.tsx`** — Passe `radiusKm={layers.weatherStationsRadius}` à `<WeatherStationsLayer>`.
 
-2. Filtrage par rayon
-   └─ Calcul du barycentre des points de marche
-   └─ On garde toute station à ≤ radiusKm du barycentre (défaut 60 km, configurable)
+### 3. Enrichissement de la DB locale
+**`src/utils/weatherStationDatabase.ts`** — Ajout de stations Météo France connues pour combler le vide est/sud :
+- `24322001` PÉRIGUEUX-BASSILLAC (45.198, 0.815)
+- `24520001` SAINT-ASTIER (45.143, 0.519)
+- `24350001` RIBÉRAC (45.247, 0.327)
+- `24291001` MUSSIDAN (45.040, 0.371)
+- `33243001` LIBOURNE (44.916, -0.244)
+- `17299001` PONS (45.578, -0.547)
+- `17415001` SAINTES (45.749, -0.625)
+- `16374001` CHASSENEUIL (45.821, 0.450)
 
-3. Rattachement 1 point → 1 station
-   └─ Pour chaque point, on cherche la station la plus proche parmi les candidates filtrées
-   └─ 1 polyline pointillée bleue par point vers SA station
+Coordonnées vérifiées via communes officielles. Si une station se révèle imprécise, le résolveur LEXICON pourra la corriger.
 
-4. Rendu
-   └─ 1 marker par station unique (déduplication par code)
-   └─ Popup listant les points rattachés + distance individuelle
-```
+### 4. Scan LEXICON multi-directionnel (découverte de stations cachées)
+**`src/hooks/useNearestLexiconStations.ts`** — Étendre `MarchePointInput[]` avec une **grille de points fictifs** (8 directions cardinales × distance = `radiusKm/2`) autour du barycentre, pour forcer LEXICON à révéler les stations officielles non locales (ex: une station Météo France à Nontron ou Aulnay).
 
-## Changements de code
-
-### `src/utils/weatherStationDatabase.ts`
-- Ajouter **PASSIRAC** (`16256001`) et **BARBEZIEUX** (`16028001`, à confirmer) avec coordonnées précises pour éviter de dépendre du géocodage Nominatim.
-- Exposer un helper `getAllStations(): WeatherStation[]`.
-
-### `src/hooks/useNearestStations.ts` (nouveau, remplace `useNearestLexiconStations`)
-- Inputs : `points[]`, `radiusKm` (default 60).
-- Étape 1 : appelle `useNearestLexiconStations` (existant) pour **enrichir** la liste des stations connues — on garde le côté "vérité officielle" pour découvrir des stations absentes du local.
-- Étape 2 : fusionne `WEATHER_STATIONS` + stations LEXICON résolues + cache localStorage.
-- Étape 3 : calcule le barycentre des points, filtre les stations à ≤ `radiusKm`.
-- Étape 4 : pour chaque point, calcule `nearestStationCode` (Haversine).
-- Returns : `{ stations: ResolvedWithMeta[], pointLinks: { pointId, stationCode, distance }[] }`.
-
-### `src/components/community/exploration/WeatherStationsLayer.tsx`
-- Remplace `useNearestLexiconStations` par `useNearestStations`.
-- Rendu :
-  - 1 `Marker` par station retournée (toutes celles dans le rayon).
-  - 1 `Polyline` par `pointLinks` (chaque point relié à sa station la plus proche).
-  - Popup station inchangée (liste les points rattachés avec leur distance).
-- Nouvelle prop `radiusKm` (default 60) pour exposer le réglage au menu d'options plus tard.
-
-### `src/components/community/exploration/MapOptionsMenu.tsx` (optionnel, phase 2)
-- Sous l'option "Focus météo", ajouter un slider compact 20–100 km pour ajuster le rayon. (À confirmer si on l'implémente maintenant ou plus tard.)
+Implémentation : nouvelle fonction utilitaire `generateScanGrid(center, distanceKm)` retournant 8 points (`scan-N`, `scan-NE`, …). Ces points sont **uniquement** utilisés pour enrichir le pool de stations découvertes ; ils ne sont **pas** inclus dans `pointLinks` (filtrage par préfixe `scan-`).
 
 ## Détails techniques
 
-- **Barycentre** : moyenne arithmétique simple lat/lng des points valides — suffisant pour des explorations ≤ 50 km de diamètre.
-- **Déduplication marker** : par `station.code`.
-- **Performance** : aucun appel réseau supplémentaire — LEXICON déjà appelé, géocodage déjà caché. Le filtrage est O(stations × points), négligeable.
-- **Cohérence visuelle** : la polyline relie toujours UN point à UNE station (pas de croisements multiples), et un point est relié à la **vraie** plus proche géographiquement (pas forcément celle annoncée par LEXICON, qui peut être périmée ou administrative).
-- **Indicateur popup** : ajouter un petit badge "LEXICON" si la station est aussi celle pointée par LEXICON pour au moins un des points (transparence sur la source officielle).
+- **Filtrage par point (perf)** : O(stations × points). Pour 13 points × ~25 stations candidates = négligeable.
+- **Grille de scan** : 8 points fictifs supplémentaires → +8 appels LEXICON via le hook existant. Calcul Haversine pour positionner chaque point fictif à `radiusKm/2` du barycentre, dans les 8 directions cardinales.
+- **Slider** : utilise le composant `Slider` de shadcn déjà présent dans le projet. Persisté dans `localStorage` via la clé existante `mapLayers:{explorationId}`.
+- **Migration `useMapLayers`** : ajouter dans `migrate()` un fallback `weatherStationsRadius: 60` si absent.
 
 ## Résultat attendu
 
-Sur Déviat, dans un rayon de 60 km, on verra simultanément :
-PASSIRAC, BARBEZIEUX, BLAYE, ST EMILION, BORDEAUX-MERIGNAC, BERGERAC, ST GERVAIS, ST EMILION… chacune en marker, avec les 13 points reliés à leur station la plus proche respective.
+```text
+Avant (60km, barycentre)              Après (60km, par point + DB enrichie + scan)
+                                      
+        COGNAC ANGOULÊME                   COGNAC  ANGOULÊME  CHASSENEUIL
+                                      SAINTES                            
+        BARBEZIEUX                            BARBEZIEUX  RIBÉRAC
+        PASSIRAC                              PASSIRAC  ST-ASTIER  PÉRIGUEUX
+                                      PONS         •points•      MUSSIDAN
+        (rien)                                BLAYE  ST EMILION  LIBOURNE
+```
+
+L'utilisateur pourra de plus pousser à 80 ou 100km via le slider pour faire apparaître BERGERAC, ST GERVAIS, BORDEAUX-MERIGNAC, etc.

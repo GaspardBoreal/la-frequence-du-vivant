@@ -3,13 +3,9 @@ import {
   useNearestLexiconStations,
   type MarchePointInput,
 } from './useNearestLexiconStations';
-import { getAllStations, type WeatherStation } from '@/utils/weatherStationDatabase';
+import { getAllStations } from '@/utils/weatherStationDatabase';
 import { calculateDistance } from '@/utils/weatherStationGeolocation';
-import {
-  resolveStationCoordinates,
-  type ResolvedStationCoords,
-  type StationCoordSource,
-} from '@/utils/weatherStationResolver';
+import type { StationCoordSource } from '@/utils/weatherStationResolver';
 
 export interface NearbyStation {
   code: string;
@@ -17,7 +13,7 @@ export interface NearbyStation {
   lat: number;
   lng: number;
   source: StationCoordSource;
-  isLexicon: boolean; // true if at least one point's LEXICON points here
+  isLexicon: boolean;
 }
 
 export interface PointStationLink {
@@ -25,6 +21,8 @@ export interface PointStationLink {
   stationCode: string;
   distance: number;
 }
+
+const SCAN_PREFIX = 'scan-';
 
 const computeBarycenter = (points: MarchePointInput[]) => {
   if (!points.length) return null;
@@ -35,24 +33,65 @@ const computeBarycenter = (points: MarchePointInput[]) => {
   return { lat: sum.lat / points.length, lng: sum.lng / points.length };
 };
 
+/** 8 directions cardinales, distance en km depuis le centre */
+const generateScanGrid = (
+  center: { lat: number; lng: number },
+  distanceKm: number
+): MarchePointInput[] => {
+  const R = 6371;
+  const dirs = [0, 45, 90, 135, 180, 225, 270, 315];
+  const ang = distanceKm / R;
+  const lat1 = (center.lat * Math.PI) / 180;
+  const lng1 = (center.lng * Math.PI) / 180;
+  return dirs.map((bearingDeg) => {
+    const brng = (bearingDeg * Math.PI) / 180;
+    const lat2 = Math.asin(
+      Math.sin(lat1) * Math.cos(ang) +
+        Math.cos(lat1) * Math.sin(ang) * Math.cos(brng)
+    );
+    const lng2 =
+      lng1 +
+      Math.atan2(
+        Math.sin(brng) * Math.sin(ang) * Math.cos(lat1),
+        Math.cos(ang) - Math.sin(lat1) * Math.sin(lat2)
+      );
+    return {
+      id: `${SCAN_PREFIX}${bearingDeg}`,
+      latitude: (lat2 * 180) / Math.PI,
+      longitude: (lng2 * 180) / Math.PI,
+    };
+  });
+};
+
 export const useNearestStations = (
   points: MarchePointInput[],
   radiusKm: number = 60
 ) => {
-  const { pointStations, resolved, isLoading } =
-    useNearestLexiconStations(points);
+  // Grille de scan : 8 points fictifs autour du barycentre, à radius/2,
+  // pour découvrir des stations LEXICON non locales (est/sud).
+  const scanGrid = useMemo(() => {
+    const center = computeBarycenter(points);
+    if (!center) return [];
+    return generateScanGrid(center, Math.max(20, Math.round(radiusKm / 2)));
+  }, [points, radiusKm]);
 
-  // Stations LEXICON découvertes mais absentes du local — résolues via geocoding.
-  // Déjà fait par le hook LEXICON; on reflète juste resolved[].
+  const lexiconInput = useMemo(
+    () => [...points, ...scanGrid],
+    [points, scanGrid]
+  );
+
+  const { pointStations, resolved, isLoading } =
+    useNearestLexiconStations(lexiconInput);
+
   const lexiconCodes = useMemo(
-    () => new Set(pointStations.filter((p) => p.station).map((p) => p.station!.code)),
+    () =>
+      new Set(pointStations.filter((p) => p.station).map((p) => p.station!.code)),
     [pointStations]
   );
 
-  // Fusion : stations locales + stations LEXICON résolues
+  // Fusion : DB locale + LEXICON résolues
   const allCandidates = useMemo<NearbyStation[]>(() => {
     const map = new Map<string, NearbyStation>();
-    // Locales
     for (const s of getAllStations()) {
       map.set(s.code, {
         code: s.code,
@@ -63,7 +102,6 @@ export const useNearestStations = (
         isLexicon: lexiconCodes.has(s.code),
       });
     }
-    // LEXICON résolues
     for (const ps of pointStations) {
       if (!ps.station) continue;
       if (map.has(ps.station.code)) {
@@ -84,36 +122,42 @@ export const useNearestStations = (
     return Array.from(map.values());
   }, [pointStations, resolved, lexiconCodes]);
 
-  // Filtrage par rayon autour du barycentre
+  // Filtrage : station gardée si à ≤ radius d'AU MOINS UN point de marche réel
   const stations = useMemo<NearbyStation[]>(() => {
-    const center = computeBarycenter(points);
-    if (!center) return [];
-    return allCandidates.filter(
-      (s) =>
-        calculateDistance(center, { lat: s.lat, lng: s.lng }) <= radiusKm
+    if (!points.length) return [];
+    return allCandidates.filter((s) =>
+      points.some(
+        (p) =>
+          calculateDistance(
+            { lat: p.latitude, lng: p.longitude },
+            { lat: s.lat, lng: s.lng }
+          ) <= radiusKm
+      )
     );
   }, [allCandidates, points, radiusKm]);
 
-  // Pour chaque point : station la plus proche parmi `stations`
+  // Pour chaque point réel : station la plus proche
   const pointLinks = useMemo<PointStationLink[]>(() => {
     if (!stations.length) return [];
-    return points.map((p) => {
-      let best: NearbyStation | null = null;
-      let bestD = Infinity;
-      for (const s of stations) {
-        const d = calculateDistance(
-          { lat: p.latitude, lng: p.longitude },
-          { lat: s.lat, lng: s.lng }
-        );
-        if (d < bestD) {
-          bestD = d;
-          best = s;
+    return points
+      .map((p) => {
+        let best: NearbyStation | null = null;
+        let bestD = Infinity;
+        for (const s of stations) {
+          const d = calculateDistance(
+            { lat: p.latitude, lng: p.longitude },
+            { lat: s.lat, lng: s.lng }
+          );
+          if (d < bestD) {
+            bestD = d;
+            best = s;
+          }
         }
-      }
-      return best
-        ? { pointId: p.id, stationCode: best.code, distance: bestD }
-        : { pointId: p.id, stationCode: '', distance: Infinity };
-    }).filter((l) => l.stationCode);
+        return best
+          ? { pointId: p.id, stationCode: best.code, distance: bestD }
+          : { pointId: p.id, stationCode: '', distance: Infinity };
+      })
+      .filter((l) => l.stationCode);
   }, [points, stations]);
 
   return { stations, pointLinks, isLoading };

@@ -34,6 +34,7 @@ interface MapOptionsMenuProps {
   onToggleCreateWaypoint: () => void;
   onToggleLayer: (key: keyof MapLayersState) => void;
   onSetWeatherStationsMode: (mode: WeatherStationsMode) => void;
+  onSetWeatherStationsRadius: (radiusKm: number) => void;
 }
 
 const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
@@ -49,6 +50,7 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
   onToggleCreateWaypoint,
   onToggleLayer,
   onSetWeatherStationsMode,
+  onSetWeatherStationsRadius,
 }) => {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -166,9 +168,14 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
           />
           <WeatherStationsRow
             mode={layers.weatherStations}
+            radiusKm={layers.weatherStationsRadius}
             onChange={(m) => {
               haptic();
               onSetWeatherStationsMode(m);
+            }}
+            onRadiusChange={(r) => {
+              haptic();
+              onSetWeatherStationsRadius(r);
             }}
           />
           <LayerRow
@@ -299,10 +306,17 @@ const BADGE_STYLES: Record<WeatherStationsMode, { label: string; cls: string }> 
 
 interface WeatherStationsRowProps {
   mode: WeatherStationsMode;
+  radiusKm: number;
   onChange: (mode: WeatherStationsMode) => void;
+  onRadiusChange: (radiusKm: number) => void;
 }
 
-const WeatherStationsRow: React.FC<WeatherStationsRowProps> = ({ mode, onChange }) => {
+const WeatherStationsRow: React.FC<WeatherStationsRowProps> = ({
+  mode,
+  radiusKm,
+  onChange,
+  onRadiusChange,
+}) => {
   const [expanded, setExpanded] = useState(mode !== 'off');
   const badge = BADGE_STYLES[mode];
 
@@ -377,6 +391,33 @@ const WeatherStationsRow: React.FC<WeatherStationsRowProps> = ({ mode, onChange 
                   </button>
                 );
               })}
+
+              {mode !== 'off' && (
+                <div className="mt-2 px-2.5 py-3 rounded-lg bg-white/[0.03] border border-white/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] uppercase tracking-wider text-white/55 font-semibold">
+                      Rayon de recherche
+                    </span>
+                    <span className="text-[12px] font-mono text-sky-200">{radiusKm} km</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={40}
+                    max={100}
+                    step={10}
+                    value={radiusKm}
+                    onChange={(e) => onRadiusChange(Number(e.target.value))}
+                    className="w-full h-1.5 rounded-full appearance-none bg-white/15 accent-sky-400 cursor-pointer"
+                    aria-label="Rayon de recherche des stations météo"
+                  />
+                  <div className="flex justify-between text-[9px] text-white/40 mt-1 font-mono">
+                    <span>40</span>
+                    <span>60</span>
+                    <span>80</span>
+                    <span>100</span>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
