@@ -326,31 +326,6 @@ const OreilleCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         </div>
       </div>
 
-      {/* Suggestions IA d'écoute */}
-      {suggestions.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Et si vous écoutiez…
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {suggestions.map(({ label, track }) => (
-              <button
-                key={`sug-${track.id}`}
-                onClick={() => playTrack(track)}
-                className="text-left rounded-lg border border-border bg-muted/30 hover:bg-muted/60 p-2.5 transition"
-              >
-                <div className="text-[11px] text-muted-foreground">{label}</div>
-                <div className="text-sm font-medium line-clamp-1 mt-0.5">{track.title}</div>
-                <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                  {track.marcheName}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Cartographie sonore */}
       {mapPoints.length > 0 && (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
