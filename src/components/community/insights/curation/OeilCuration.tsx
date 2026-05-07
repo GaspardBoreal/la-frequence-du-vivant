@@ -50,6 +50,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const upsert = useUpsertCuration();
 
   const [view, setView] = useState<View>('selection');
+  const [hasUserPickedView, setHasUserPickedView] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
