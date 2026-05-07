@@ -1453,6 +1453,24 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               </span>
             </button>
           )}
+          {explorationId && (
+            <button
+              onClick={() => updateLoop.mutate({ id: explorationId, is_loop: !isLoop })}
+              disabled={updateLoop.isPending}
+              className={`relative h-10 px-3 rounded-xl backdrop-blur-md border flex items-center gap-1.5 transition-all duration-200 active:scale-95 shadow-md ${
+                isLoop
+                  ? 'bg-emerald-500/30 border-emerald-300/60 text-emerald-50 shadow-emerald-400/30'
+                  : 'bg-amber-500/15 border-amber-400/30 text-amber-100/90 hover:bg-amber-500/25'
+              }`}
+              aria-label="Basculer le mode boucle fermée"
+              title={isLoop ? 'Boucle fermée : ON (cliquer pour désactiver)' : 'Boucle fermée : OFF (cliquer pour fermer le tracé)'}
+            >
+              <span className="text-base leading-none">⟳</span>
+              <span className="text-[11px] font-semibold tracking-wide">
+                {isLoop ? 'boucle : ON' : 'boucle : OFF'}
+              </span>
+            </button>
+          )}
         </div>
       )}
 
