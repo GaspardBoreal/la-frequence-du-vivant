@@ -21,6 +21,8 @@ import {
 import { useExplorationById, useUpdateExplorationLoop } from '@/hooks/useExplorations';
 import { WaypointMarker, WaypointCreateHandler, detectSegmentCandidates, findSegmentByEndpoints, waypointDraftIcon, type SegmentCandidate } from './WaypointMarker';
 import { WaypointInsertConfirmDialog } from './WaypointInsertConfirmDialog';
+import MapOptionsMenu from './MapOptionsMenu';
+import { useMapLayers } from '@/hooks/useMapLayers';
 import 'leaflet/dist/leaflet.css';
 
 type MapStyle = 'geopoetic' | 'satellite' | 'terrain' | 'cadastre';
@@ -609,6 +611,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const updateLoop = useUpdateExplorationLoop();
   const createWaypoint = useCreateWaypoint();
   const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
+  const { layers: mapLayers, toggleLayer: toggleMapLayer, activeCount: mapLayersActiveCount } = useMapLayers(explorationId);
   const [pendingWaypoint, setPendingWaypoint] = useState<{
     lat: number;
     lng: number;
