@@ -802,7 +802,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   );
   const totalDistance = route.crowKm;
   const estimatedDistance = route.estimatedKm;
-  const polylinePositions = showWaypoints ? route.positions : positions;
+  const polylinePositions = showWaypoints
+    ? route.positions
+    : (isLoop && positions.length >= 2 ? [...positions, positions[0]] : positions);
 
   const bioByMarche = useMemo(() => {
     const map = new Map<string, number>();
