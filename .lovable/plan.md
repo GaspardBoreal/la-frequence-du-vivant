@@ -1,52 +1,119 @@
-# Gérer le bouclage du tracé (étape N → étape 1)
+# Refonte UX/UI — Menu unifié "Options carte"
 
-## Le problème
+## Contexte
 
-Aujourd'hui, le tracé est strictement linéaire : on ne crée des segments qu'entre `étape i` et `étape i+1`. Le segment de fermeture entre la **dernière étape** (point 13) et la **première étape** (point 1) n'existe pas dans `detectSegmentCandidates` / `findSegmentByEndpoints`. Résultat : impossible d'insérer un point intermédiaire sur ce tronçon, d'où le message *« Ces 2 points ne sont pas voisins sur le tracé »*.
+Aujourd'hui, 3 boutons empilés en bas-gauche (`+ point de marche`, `point intermédiaire`, `boucle : OFF/ON`) occupent ~150px de hauteur en permanence et masquent la carte. Avec l'ajout d'options de couches (stations météo, et bientôt d'autres : cadastre détaillé, courbes de niveau, espèces visibles, etc.), cette colonne va exploser. Sur mobile (375px de large), c'est intenable.
 
-## Solution proposée — simple et explicite
+## Diagnostic UX
 
-Introduire un **mode "Boucle fermée"** activable depuis l'onglet Carte (toggle visible à côté des boutons "+ point de marche" / "point intermédiaire"). Quand le mode est ON :
+Deux familles d'options se mélangent visuellement aujourd'hui, alors qu'elles relèvent de logiques différentes :
 
-1. Une polyline de fermeture (dernière étape → première étape) s'affiche, avec le même style pointillé/flèches que le reste du tracé.
-2. Le segment virtuel `lastStep → firstStep` est ajouté aux fonctions de détection, donc :
-   - on peut cliquer dans cette zone pour insérer un point intermédiaire ;
-   - la sélection manuelle des 2 voisins fonctionne aussi (dernière étape ↔ point 1, ou avec d'autres waypoints du même tronçon).
-3. Les waypoints insérés sur ce tronçon sont stockés avec `after_marche_id = id(dernière étape)`, ce qui s'intègre naturellement au modèle existant (pas de migration).
-4. Le calcul de distance affichée (`~8.2 km estimés`) inclut ce segment de fermeture quand la boucle est active.
+| Famille | Nature | Exemples | Permission |
+|---|---|---|---|
+| **Actions de création** (édition) | momentanées, modales (mode "je place un point") | + point de marche, + point intermédiaire | Ambassadeur+ |
+| **Couches d'affichage** (lecture) | persistantes, toggle on/off | boucle, stations météo, cadastre, espèces… | Tout le monde |
 
-Le toggle est persistant via une colonne `is_loop boolean default false` sur `explorations` (migration légère, valeur par défaut sûre = pas de régression sur les tracés ouverts existants).
+Les regrouper dans un seul menu fourre-tout serait une faute. La proposition les sépare proprement tout en gardant une seule porte d'entrée discrète.
 
-## UX
+## Proposition — un FAB unique "Options" qui ouvre un panneau contextuel
 
-- Pastille "Boucle : OFF/ON" près des contrôles d'édition de la carte (mode édition uniquement).
-- Quand ON : un petit indicateur visuel (icône ⟳) apparaît sur le segment de fermeture pour bien signaler qu'il s'agit d'un retour vers le point 1.
-- Quand OFF : comportement actuel inchangé.
+### Au repos (état par défaut)
 
-## Détails techniques
+Un seul bouton circulaire en bas-gauche, symétrique du chatbot en bas-droite :
 
-**Migration**
-```sql
-alter table public.explorations
-  add column if not exists is_loop boolean not null default false;
+```text
+        ┌──────────────────── carte ────────────────────┐
+        │                                                │
+        │                                                │
+        │                                          [+]   │  ← zoom
+        │                                          [-]   │
+        │                                                │
+        │  (⚙)                              (📷) (◎)    │  ← FAB Options + photo + géoloc
+        │                                                │
+        │  ━━━ 13 étapes ━━ 8.1 km ━━ 38 espèces ━━━━━  │
+        └────────────────────────────────────────────────┘
 ```
 
-**`WaypointMarker.tsx`** — `detectSegmentCandidates` et `findSegmentByEndpoints`
-- Nouveau paramètre `isLoop: boolean`.
-- Si `isLoop && geoMarches.length >= 2`, ajouter une itération supplémentaire avec `a = geoMarches[last]`, `b = geoMarches[0]`, en utilisant les waypoints de `byAfter.get(a.id)` (mêmes règles d'ordre).
+- Bouton `(⚙)` rond 44×44 (cible tactile WCAG), même style glassmorphism que les autres FAB existants (`bg-black/60 backdrop-blur-xl border-white/15`)
+- Pastille (badge) discrète en haut-droite **uniquement** si une couche non-défaut est active (ex. `boucle ON` ou `stations météo` cochée) → indique silencieusement qu'il y a un état à voir
+- Icône : `SlidersHorizontal` (lucide) — sémantique "réglages d'affichage"
 
-**`ExplorationCarteTab.tsx`**
-- Lire `exploration.is_loop` ; passer aux deux fonctions ci-dessus.
-- Ajouter une `<Polyline>` de fermeture quand `isLoop` (mêmes options de style que la principale + `ArrowDecorators`).
-- Ajouter le toggle UI (mutation update sur `explorations.is_loop`).
-- Ajuster le calcul `~X km estimés` pour inclure le segment de fermeture.
+### Au tap (ouvert) — Bottom sheet sur mobile, popover sur desktop
 
-**Aucun changement** nécessaire dans `useCreateWaypoint` : le stockage `(after_marche_id = dernière étape, ordre = k)` reste cohérent.
+**Mobile (< 768px) — Bottom sheet** qui glisse depuis le bas, hauteur `auto` max 70vh, drag-handle en haut, fermeture par swipe-down ou tap à l'extérieur. Ne masque jamais le bandeau de stats du bas.
 
-## Fichiers à modifier
+**Desktop (≥ 768px) — Popover** ancré au FAB, largeur 280px, ouvre vers le haut-droite, fermeture au clic extérieur.
 
-- `supabase/migrations/<new>.sql` (ajout colonne `is_loop`)
-- `src/components/community/exploration/WaypointMarker.tsx` (param `isLoop` dans les deux helpers)
-- `src/components/community/exploration/ExplorationCarteTab.tsx` (toggle, polyline de fermeture, propagation `isLoop`, distance)
-- `src/types/exploration.ts` (ajout `is_loop?: boolean`)
-- `src/hooks/useExplorations.ts` (mutation pour basculer le toggle, ou réutiliser un hook update existant)
+Contenu commun, structuré en 2 sections claires :
+
+```text
+┌─ Options carte ──────────────────── ✕ ┐
+│                                        │
+│  AJOUTER                               │ ← visible seulement si userCanCreate
+│  ┌──────────────────────────────────┐ │
+│  │ ⊕  Point de marche          ›    │ │ ← lance le mode création
+│  │ ✦  Point intermédiaire      ›    │ │
+│  └──────────────────────────────────┘ │
+│                                        │
+│  AFFICHER                              │
+│  ┌──────────────────────────────────┐ │
+│  │ ⟳  Boucle fermée         [●  ]  │ │ ← Switch (shadcn)
+│  │ 🌤 Stations météo         [  ●]  │ │
+│  │ 📐 Cadastre détaillé      [  ●]  │ │ ← futur, prêt à brancher
+│  │ 🦋 Espèces récentes       [  ●]  │ │ ← futur
+│  └──────────────────────────────────┘ │
+│                                        │
+└────────────────────────────────────────┘
+```
+
+- **AJOUTER** : items cliquables (rows), pas des switches — déclenche une action puis ferme le sheet automatiquement (l'utilisateur revient à la carte pour placer le point). Le hint "Cliquez sur la carte…" s'affiche en haut de la carte sous forme de bandeau temporaire (pattern déjà existant dans le code).
+- **AFFICHER** : `Switch` shadcn alignés à droite, label clair à gauche, icône à gauche. Toggle immédiat, pas de validation.
+- Les sections vides (ex. lecteur sans droits de création) sont masquées → pas de header "AJOUTER" orphelin.
+- L'item `Stations météo` apparaît dans toutes les vues carte (Géo/Sat/Relief/Cadastre).
+
+### Micro-interactions
+
+- Ouverture : `motion` spring `damping: 24, stiffness: 300` (cohérent avec le reste de l'app)
+- Le FAB se transforme légèrement (rotation 90° de l'icône) quand le sheet est ouvert pour signaler l'état
+- Haptic léger sur mobile (`navigator.vibrate(10)`) au toggle d'un switch
+- Auto-close du sheet 250ms après le tap sur un item d'action (`AJOUTER`)
+- Le badge sur le FAB compte le nombre de couches actives non-défaut (`2` si boucle ON + météo ON)
+
+### Accessibilité
+
+- `aria-expanded`, `aria-controls` sur le FAB
+- Focus trap dans le sheet ouvert, `Escape` ferme
+- `role="switch"` natif via shadcn Switch
+- Labels explicites : "Afficher les stations météo proches"
+
+## Implémentation technique
+
+### Nouveau composant
+`src/components/community/exploration/MapOptionsMenu.tsx`
+- Props : `userCanCreate: boolean`, `marcheEventId?: string`, `explorationId: string`, `isLoop: boolean`, `onToggleLoop`, `onStartCreateMarche`, `onStartCreateWaypoint`, `layers: { weatherStations: boolean }`, `onToggleLayer(key)`
+- Détection mobile via `useIsMobile()` → choix Sheet (shadcn) vs Popover (shadcn)
+- Compte les couches actives pour le badge
+
+### État des couches
+- Nouveau hook léger `useMapLayers()` (zustand-like local ou simple `useState` levé dans `ExplorationCarteTab`) avec persistance `localStorage` par exploration : `mapLayers:{explorationId}` → `{ weatherStations: false, ... }`
+- Pré-câblage pour futures couches (cadastre, espèces) sans refactor.
+
+### Refacto `ExplorationCarteTab.tsx` (lignes 1418-1477)
+- Supprimer la pile de 3 boutons en bas-gauche
+- Remplacer par `<MapOptionsMenu …/>` au même emplacement
+- Le bandeau-hint "Cliquez sur la carte…" pour la création reste (déjà présent), juste déplacé en haut centre
+
+### Couche stations météo (préparation seulement, branchement réel hors-scope)
+- Ajouter un layer Leaflet conditionnel `{layers.weatherStations && <WeatherStationsLayer marcheEventId={…} />}` — composant à créer dans une étape ultérieure quand le data-source sera décidé. Pour cette itération, on câble juste le toggle qui ne fait rien visuellement (ou affiche un toast "Bientôt disponible").
+
+## Hors scope
+
+- Implémentation réelle de la couche stations météo (data + markers Leaflet) → tâche suivante
+- Couches cadastre détaillé / espèces récentes (juste prévues dans la structure)
+- Refonte des autres FAB (photo GPS, géoloc) — restent en bas-droite
+
+## Fichiers touchés
+
+- ➕ `src/components/community/exploration/MapOptionsMenu.tsx` (nouveau)
+- ➕ `src/hooks/useMapLayers.ts` (nouveau, léger)
+- ✏️ `src/components/community/exploration/ExplorationCarteTab.tsx` (lignes 1418-1477 + injection du layer)
