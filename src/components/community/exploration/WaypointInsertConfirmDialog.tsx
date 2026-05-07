@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, MousePointerClick } from 'lucide-react';
 import type { SegmentCandidate } from './WaypointMarker';
 
 interface Props {
@@ -16,6 +16,8 @@ interface Props {
   candidates: SegmentCandidate[];
   selectedIdx: number;
   onSelect: (idx: number) => void;
+  onHover: (idx: number | null) => void;
+  onPickOnMap: () => void;
   onConfirm: () => void;
   onCancel: () => void;
   buildLabel: (c: SegmentCandidate) => string;
@@ -26,6 +28,8 @@ export function WaypointInsertConfirmDialog({
   candidates,
   selectedIdx,
   onSelect,
+  onHover,
+  onPickOnMap,
   onConfirm,
   onCancel,
   buildLabel,
@@ -39,8 +43,8 @@ export function WaypointInsertConfirmDialog({
             Où insérer ce point ?
           </DialogTitle>
           <DialogDescription>
-            Confirmez le segment d'insertion. Le tracé en pointillé ambre montre
-            l'aperçu en direct sur la carte.
+            Survolez une option pour voir ses 2 voisins clignoter sur la carte.
+            Si rien ne correspond, choisissez les 2 points vous-même.
           </DialogDescription>
         </DialogHeader>
 
@@ -53,6 +57,10 @@ export function WaypointInsertConfirmDialog({
                 key={`${c.after_marche_id}-${c.ordre}`}
                 type="button"
                 onClick={() => onSelect(i)}
+                onMouseEnter={() => onHover(i)}
+                onMouseLeave={() => onHover(null)}
+                onFocus={() => onHover(i)}
+                onBlur={() => onHover(null)}
                 className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-all ${
                   isSelected
                     ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 shadow-sm'
@@ -74,6 +82,15 @@ export function WaypointInsertConfirmDialog({
             );
           })}
         </div>
+
+        <button
+          type="button"
+          onClick={onPickOnMap}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-cyan-400 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-300 text-sm font-medium hover:bg-cyan-100 dark:hover:bg-cyan-950/40 transition"
+        >
+          <MousePointerClick className="w-4 h-4" />
+          Aucune ne correspond — choisir les 2 points sur la carte
+        </button>
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" onClick={onCancel}>
