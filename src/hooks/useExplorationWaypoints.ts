@@ -172,33 +172,23 @@ export const buildRouteWithWaypoints = (
   let crowKm = 0;
 
   geoMarches.forEach((m, i) => {
+    positions.push([m.latitude, m.longitude]);
     if (i > 0) {
       const prev = geoMarches[i - 1];
       crowKm += haversineKm(prev.latitude, prev.longitude, m.latitude, m.longitude);
     }
-    if (i > 0) {
-      const wpsForPrev = byAfter.get(geoMarches[i - 1].id) || [];
-      let prevPt = geoMarches[i - 1];
-      wpsForPrev.forEach((w) => {
+    if (i < geoMarches.length - 1) {
+      const wps = byAfter.get(m.id) || [];
+      let prevPt: { latitude: number; longitude: number } = m;
+      wps.forEach((w) => {
         positions.push([w.latitude, w.longitude]);
         estimatedKm += haversineKm(prevPt.latitude, prevPt.longitude, w.latitude, w.longitude);
-        prevPt = { id: w.id, latitude: w.latitude, longitude: w.longitude };
+        prevPt = w;
       });
-      estimatedKm += haversineKm(prevPt.latitude, prevPt.longitude, m.latitude, m.longitude);
-    }
-    positions.unshift; // noop kept for clarity
-    positions.push([m.latitude, m.longitude]);
-  });
-
-  // Re-build positions array correctly (the unshift noop above kept order; ensure we didn't double-add starts)
-  const correctPositions: [number, number][] = [];
-  geoMarches.forEach((m, i) => {
-    correctPositions.push([m.latitude, m.longitude]);
-    const wps = byAfter.get(m.id) || [];
-    if (i < geoMarches.length - 1) {
-      wps.forEach((w) => correctPositions.push([w.latitude, w.longitude]));
+      const next = geoMarches[i + 1];
+      estimatedKm += haversineKm(prevPt.latitude, prevPt.longitude, next.latitude, next.longitude);
     }
   });
 
-  return { positions: correctPositions, estimatedKm, crowKm };
+  return { positions, estimatedKm, crowKm };
 };
