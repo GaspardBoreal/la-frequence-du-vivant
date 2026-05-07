@@ -1065,30 +1065,42 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           </>
         )}
 
-        {/* Manual pick-mode: decorative cyan halos (non-interactive — clicks go to underlying markers) */}
+        {/* Manual pick-mode: interactive cyan halos that capture clicks for endpoint selection */}
         {pickMode && pendingWaypoint && (
           <>
             {geoMarches.map((m) => (
               <CircleMarker
                 key={`pick-step-${m.id}`}
                 center={[m.latitude!, m.longitude!]}
-                radius={18}
-                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.25, interactive: false }}
+                radius={20}
+                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.3, interactive: true, bubblingMouseEvents: false }}
+                eventHandlers={{
+                  click: (e) => {
+                    L.DomEvent.stopPropagation(e as any);
+                    handlePickEndpoint({ kind: 'step', id: m.id, lat: m.latitude!, lng: m.longitude! });
+                  },
+                }}
               />
             ))}
             {waypoints.map((wp) => (
               <CircleMarker
                 key={`pick-wp-${wp.id}`}
                 center={[wp.latitude, wp.longitude]}
-                radius={14}
-                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.25, interactive: false }}
+                radius={16}
+                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.3, interactive: true, bubblingMouseEvents: false }}
+                eventHandlers={{
+                  click: (e) => {
+                    L.DomEvent.stopPropagation(e as any);
+                    handlePickEndpoint({ kind: 'waypoint', id: wp.id, lat: wp.latitude, lng: wp.longitude });
+                  },
+                }}
               />
             ))}
-            {/* Highlight the first picked point */}
+            {/* Highlight the first picked point (decorative, on top) */}
             {pickMode.pickedA && (
               <CircleMarker
                 center={[pickMode.pickedA.lat, pickMode.pickedA.lng]}
-                radius={22}
+                radius={24}
                 pathOptions={{ color: '#0e7490', weight: 4, opacity: 1, fillColor: '#06b6d4', fillOpacity: 0.45, interactive: false }}
               />
             )}
