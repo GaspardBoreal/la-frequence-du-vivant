@@ -1119,6 +1119,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                 },
               }}
             >
+              {!pickMode && (
               <Popup className="exploration-carte-popup" maxWidth={260} minWidth={220}>
                 <div className="bg-black/80 backdrop-blur-xl rounded-xl p-3 -m-3 text-white">
                   {/* Hero photo */}
