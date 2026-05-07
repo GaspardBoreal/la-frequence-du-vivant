@@ -36,7 +36,7 @@ export function WaypointInsertConfirmDialog({
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
+      <DialogContent className="sm:max-w-md max-h-[85vh] !flex !flex-col !grid-cols-none !p-0 overflow-hidden !gap-0 top-[5vh] translate-y-0 sm:top-[50%] sm:translate-y-[-50%]">
         <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-600" />
