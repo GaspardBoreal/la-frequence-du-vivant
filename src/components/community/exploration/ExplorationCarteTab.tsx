@@ -600,6 +600,13 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [createPosition, setCreatePosition] = useState<{ lat: number; lng: number } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Waypoints (intermediate route points)
+  const { data: waypoints = [] } = useExplorationWaypoints(marcheEventId);
+  const createWaypoint = useCreateWaypoint();
+  const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
+  const [showWaypoints, setShowWaypoints] = useState(true);
+  const [showDistanceMode, setShowDistanceMode] = useState<'estimated' | 'crow'>('estimated');
+
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
 
