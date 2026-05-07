@@ -6,11 +6,15 @@ export interface AudioTrackEnhanced extends ExplorationAudioTrack {
   marcheName: string;
   marcheLocation?: string;
   marcheIndex: number;
+  marcheId?: string;
+  marcheLat?: number | null;
+  marcheLng?: number | null;
   audioIndex: number;
   totalTracksInMarche: number;
   globalIndex: number;
   type_audio?: string | null;
   literary_type?: string | null;
+  transcription_text?: string | null;
 }
 
 export const useExplorationAudioPlaylist = (explorationId: string) => {
