@@ -1,0 +1,1 @@
+ALTER TABLE public.explorations ADD COLUMN IF NOT EXISTS is_loop boolean NOT NULL DEFAULT false;
