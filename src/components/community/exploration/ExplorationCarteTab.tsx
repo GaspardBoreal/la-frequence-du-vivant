@@ -1087,6 +1087,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               waypoint={wp}
               canEdit={userCanCreate}
               segmentLabel={segLabel}
+              pickModeOnClick={pickMode ? handlePickEndpoint : undefined}
             />
           );
         })}
