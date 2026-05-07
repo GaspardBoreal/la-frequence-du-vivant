@@ -929,10 +929,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         <FitBounds positions={positions} />
 
         {/* Route polyline */}
-        {positions.length > 1 && (
+        {polylinePositions.length > 1 && (
           <>
             <Polyline
-              positions={positions}
+              positions={polylinePositions}
               pathOptions={{
                 color: POLYLINE_COLORS[mapStyle],
                 weight: 3,
@@ -941,9 +941,50 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                 lineCap: 'round',
               }}
             />
-            <ArrowDecorators positions={positions} color={ARROW_COLORS[mapStyle]} />
+            <ArrowDecorators positions={polylinePositions} color={ARROW_COLORS[mapStyle]} />
           </>
         )}
+
+        {/* Waypoint click handler (intermediate point creation mode) */}
+        <WaypointCreateHandler
+          active={isCreatingWaypoint}
+          onPick={(lat, lng) => {
+            const seg = detectSegmentForPoint(
+              lat,
+              lng,
+              geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
+              waypoints,
+            );
+            if (!seg || !marcheEventId) {
+              toast.error('Impossible de détecter le segment');
+              return;
+            }
+            createWaypoint.mutate({
+              marche_event_id: marcheEventId,
+              after_marche_id: seg.after_marche_id,
+              ordre: seg.ordre,
+              latitude: lat,
+              longitude: lng,
+            });
+            setIsCreatingWaypoint(false);
+          }}
+        />
+
+        {/* Render waypoints */}
+        {showWaypoints && waypoints.map((wp) => {
+          const idxA = geoMarches.findIndex(m => m.id === wp.after_marche_id);
+          const segLabel = idxA >= 0 && idxA < geoMarches.length - 1
+            ? `Entre étape ${idxA + 1} et ${idxA + 2}`
+            : undefined;
+          return (
+            <WaypointMarker
+              key={wp.id}
+              waypoint={wp}
+              canEdit={userCanCreate}
+              segmentLabel={segLabel}
+            />
+          );
+        })}
 
         {/* Numbered markers with progressive reveal */}
         {geoMarches.map((marche, index) => {
