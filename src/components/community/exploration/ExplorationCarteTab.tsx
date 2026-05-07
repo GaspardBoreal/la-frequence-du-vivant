@@ -13,6 +13,12 @@ import { canCreateMarche, computeMarcheDefaults } from './createMarcheUtils';
 import CadastreLayer from '@/components/cadastre/CadastreLayer';
 import GpsEditOverlay from '@/components/cadastre/GpsEditOverlay';
 import { useCanCurateAudio } from '@/hooks/useCanCurateAudio';
+import {
+  useExplorationWaypoints,
+  useCreateWaypoint,
+  buildRouteWithWaypoints,
+} from '@/hooks/useExplorationWaypoints';
+import { WaypointMarker, WaypointCreateHandler, detectSegmentForPoint, waypointDraftIcon } from './WaypointMarker';
 import 'leaflet/dist/leaflet.css';
 
 type MapStyle = 'geopoetic' | 'satellite' | 'terrain' | 'cadastre';
@@ -594,6 +600,13 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [createPosition, setCreatePosition] = useState<{ lat: number; lng: number } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Waypoints (intermediate route points)
+  const { data: waypoints = [] } = useExplorationWaypoints(marcheEventId);
+  const createWaypoint = useCreateWaypoint();
+  const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
+  const [showWaypoints, setShowWaypoints] = useState(true);
+  const [showDistanceMode, setShowDistanceMode] = useState<'estimated' | 'crow'>('estimated');
+
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
 
@@ -710,14 +723,17 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     [geoMarches]
   );
 
-  // Total distance
-  const totalDistance = useMemo(() => {
-    let d = 0;
-    for (let i = 1; i < positions.length; i++) {
-      d += haversineKm(positions[i - 1][0], positions[i - 1][1], positions[i][0], positions[i][1]);
-    }
-    return d;
-  }, [positions]);
+  // Route + distances (with waypoints)
+  const route = useMemo(
+    () => buildRouteWithWaypoints(
+      geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
+      waypoints,
+    ),
+    [geoMarches, waypoints],
+  );
+  const totalDistance = route.crowKm;
+  const estimatedDistance = route.estimatedKm;
+  const polylinePositions = showWaypoints ? route.positions : positions;
 
   const bioByMarche = useMemo(() => {
     const map = new Map<string, number>();
@@ -913,10 +929,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         <FitBounds positions={positions} />
 
         {/* Route polyline */}
-        {positions.length > 1 && (
+        {polylinePositions.length > 1 && (
           <>
             <Polyline
-              positions={positions}
+              positions={polylinePositions}
               pathOptions={{
                 color: POLYLINE_COLORS[mapStyle],
                 weight: 3,
@@ -925,9 +941,50 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                 lineCap: 'round',
               }}
             />
-            <ArrowDecorators positions={positions} color={ARROW_COLORS[mapStyle]} />
+            <ArrowDecorators positions={polylinePositions} color={ARROW_COLORS[mapStyle]} />
           </>
         )}
+
+        {/* Waypoint click handler (intermediate point creation mode) */}
+        <WaypointCreateHandler
+          active={isCreatingWaypoint}
+          onPick={(lat, lng) => {
+            const seg = detectSegmentForPoint(
+              lat,
+              lng,
+              geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
+              waypoints,
+            );
+            if (!seg || !marcheEventId) {
+              toast.error('Impossible de détecter le segment');
+              return;
+            }
+            createWaypoint.mutate({
+              marche_event_id: marcheEventId,
+              after_marche_id: seg.after_marche_id,
+              ordre: seg.ordre,
+              latitude: lat,
+              longitude: lng,
+            });
+            setIsCreatingWaypoint(false);
+          }}
+        />
+
+        {/* Render waypoints */}
+        {showWaypoints && waypoints.map((wp) => {
+          const idxA = geoMarches.findIndex(m => m.id === wp.after_marche_id);
+          const segLabel = idxA >= 0 && idxA < geoMarches.length - 1
+            ? `Entre étape ${idxA + 1} et ${idxA + 2}`
+            : undefined;
+          return (
+            <WaypointMarker
+              key={wp.id}
+              waypoint={wp}
+              canEdit={userCanCreate}
+              segmentLabel={segLabel}
+            />
+          );
+        })}
 
         {/* Numbered markers with progressive reveal */}
         {geoMarches.map((marche, index) => {
@@ -1149,6 +1206,23 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             <span className="text-[11px] font-semibold tracking-wide">point de marche</span>
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
           </button>
+          {marcheEventId && (
+            <button
+              onClick={() => setIsCreatingWaypoint(v => !v)}
+              className={`relative h-10 px-3 rounded-xl backdrop-blur-md border flex items-center gap-1.5 transition-all duration-200 active:scale-95 shadow-md ${
+                isCreatingWaypoint
+                  ? 'bg-amber-400/40 border-amber-300/70 text-amber-50 shadow-amber-400/30'
+                  : 'bg-amber-500/15 border-amber-400/30 text-amber-100/90 hover:bg-amber-500/25'
+              }`}
+              aria-label="Ajouter un point intermédiaire"
+              title={isCreatingWaypoint ? 'Cliquez sur la carte pour placer le point' : 'Ajouter un point intermédiaire'}
+            >
+              <Sparkles className="w-3.5 h-3.5" strokeWidth={2.5} />
+              <span className="text-[11px] font-semibold tracking-wide">
+                {isCreatingWaypoint ? 'Cliquez sur la carte…' : 'point intermédiaire'}
+              </span>
+            </button>
+          )}
         </div>
       )}
 
@@ -1202,9 +1276,17 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                   <span className="font-semibold">{geoMarches.length} étapes</span>
                 </div>
                 {totalDistance > 0 && (
-                  <span className="text-white/60">
-                    ~{totalDistance < 1 ? `${Math.round(totalDistance * 1000)} m` : `${Math.round(totalDistance)} km`}
-                  </span>
+                  <button
+                    onClick={() => setShowDistanceMode(m => m === 'estimated' ? 'crow' : 'estimated')}
+                    className="text-white/60 hover:text-white/90 tabular-nums"
+                    title="Basculer vol d'oiseau / estimé"
+                  >
+                    {showDistanceMode === 'estimated' && estimatedDistance > totalDistance ? (
+                      <>~{estimatedDistance < 1 ? `${Math.round(estimatedDistance * 1000)} m` : `${estimatedDistance.toFixed(1)} km`} estimés</>
+                    ) : (
+                      <>~{totalDistance < 1 ? `${Math.round(totalDistance * 1000)} m` : `${totalDistance.toFixed(1)} km`} vol d'oiseau</>
+                    )}
+                  </button>
                 )}
                 {bioSummary && bioSummary.totalSpecies > 0 && (
                   <div className="flex items-center gap-1">

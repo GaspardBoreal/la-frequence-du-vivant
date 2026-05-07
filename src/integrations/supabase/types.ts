@@ -1678,6 +1678,69 @@ export type Database = {
           },
         ]
       }
+      exploration_waypoints: {
+        Row: {
+          after_marche_id: string
+          biodiversity_synced_at: string | null
+          cadastre_synced_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          include_in_biodiversity: boolean
+          label: string | null
+          latitude: number
+          longitude: number
+          marche_event_id: string
+          ordre: number
+          updated_at: string
+        }
+        Insert: {
+          after_marche_id: string
+          biodiversity_synced_at?: string | null
+          cadastre_synced_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          include_in_biodiversity?: boolean
+          label?: string | null
+          latitude: number
+          longitude: number
+          marche_event_id: string
+          ordre?: number
+          updated_at?: string
+        }
+        Update: {
+          after_marche_id?: string
+          biodiversity_synced_at?: string | null
+          cadastre_synced_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          include_in_biodiversity?: boolean
+          label?: string | null
+          latitude?: number
+          longitude?: number
+          marche_event_id?: string
+          ordre?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_waypoints_after_marche_id_fkey"
+            columns: ["after_marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exploration_waypoints_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       explorations: {
         Row: {
           cover_image_url: string | null
@@ -4009,6 +4072,41 @@ export type Database = {
         }
         Relationships: []
       }
+      waypoint_biodiversity_snapshots: {
+        Row: {
+          collected_at: string
+          id: string
+          observations_count: number
+          species: Json
+          species_count: number
+          waypoint_id: string
+        }
+        Insert: {
+          collected_at?: string
+          id?: string
+          observations_count?: number
+          species?: Json
+          species_count?: number
+          waypoint_id: string
+        }
+        Update: {
+          collected_at?: string
+          id?: string
+          observations_count?: number
+          species?: Json
+          species_count?: number
+          waypoint_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waypoint_biodiversity_snapshots_waypoint_id_fkey"
+            columns: ["waypoint_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_waypoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weather_snapshots: {
         Row: {
           created_at: string
@@ -4087,6 +4185,10 @@ export type Database = {
       age_bracket: { Args: { _birth: string }; Returns: string }
       can_create_marche: { Args: { _user_id: string }; Returns: boolean }
       can_curate_audio: { Args: { _user_id: string }; Returns: boolean }
+      can_edit_marche_event: {
+        Args: { _event_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_initialize_admin_system: { Args: never; Returns: boolean }
       can_upload_convivialite: {
         Args: { _exploration_id: string; _user_id: string }
