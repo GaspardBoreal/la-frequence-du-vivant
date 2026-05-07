@@ -98,8 +98,46 @@ export const WEATHER_STATIONS: Record<string, WeatherStation> = {
     elevation: 69,
     region: 'Nouvelle-Aquitaine',
     department: 'Pyrénées-Atlantiques'
+  },
+  // Charente
+  '16256001': {
+    code: '16256001',
+    name: 'PASSIRAC',
+    coordinates: { lat: 45.4131, lng: -0.1517 },
+    elevation: 90,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Charente'
+  },
+  '16028001': {
+    code: '16028001',
+    name: 'BARBEZIEUX',
+    coordinates: { lat: 45.4744, lng: -0.1525 },
+    elevation: 75,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Charente'
+  },
+  '16089001': {
+    code: '16089001',
+    name: 'COGNAC',
+    coordinates: { lat: 45.6589, lng: -0.3175 },
+    elevation: 30,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Charente'
+  },
+  '16015001': {
+    code: '16015001',
+    name: 'ANGOULEME',
+    coordinates: { lat: 45.7289, lng: 0.2206 },
+    elevation: 100,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Charente'
   }
 };
+
+/**
+ * Récupère toutes les stations connues
+ */
+export const getAllStations = (): WeatherStation[] => Object.values(WEATHER_STATIONS);
 
 /**
  * Trouve la station météorologique la plus proche d'un point donné
