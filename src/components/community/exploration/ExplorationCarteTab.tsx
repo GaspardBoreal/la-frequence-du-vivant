@@ -669,7 +669,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       setHoveredCandidateIdx(null);
       return null;
     });
-  }, [pendingWaypoint, marcheEventId, createWaypoint]);
+  }, [pendingWaypoint, marcheEventId, createWaypoint, isLoop]);
 
   const userCanCreate = canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
