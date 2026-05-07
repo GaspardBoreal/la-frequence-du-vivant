@@ -1,33 +1,35 @@
-## Diagnostic
+# Diagnostic
 
-Sur la copie d'écran 3 :
-- Le toast "Segment sélectionné — confirmez l'insertion" s'affiche (la sélection a bien fonctionné).
-- Le dialog "Où insérer ce point ?" s'est rouvert avec le bon segment surligné.
-- **MAIS** le bouton orange "Confirmer l'insertion" est tronqué tout en bas de l'écran : on devine sa moitié supérieure orange, et il n'y a aucun moyen de scroller dans le dialog.
+La popup "Où insérer ce point ?" est rendue par le composant shadcn `Dialog`, dont l'overlay et le contenu utilisent `z-50`. Or, la carte d'exploration superpose plusieurs panneaux flottants en `z-[1000]` / `z-[1001]` / `z-[1100]` :
 
-Cause : `DialogContent` n'a pas de `max-height` ni de zone scrollable interne. Avec 4 candidats + textes + bouton "choisir sur la carte" + footer, la hauteur dépasse celle du viewport (~754 px ici, encore moins après les marges du Dialog) et le footer sort hors champ. Aucun overflow scroll n'est défini, donc l'utilisateur ne peut ni voir ni atteindre "Confirmer".
+- Barre de stats en bas (`13 étapes · ~7.7 km · 38 espèces`) → `z-[1000]`
+- Boutons d'actions latéraux → `z-[1000]`
+- Bandeau du mode picking → `z-[1100]`
 
-## Solution
+Résultat visible sur la capture : la modale est correctement centrée verticalement, mais sa partie basse — y compris le bouton **"Confirmer l'insertion"** — passe **derrière** la barre noire du bas. Le footer est donc visuellement tronqué et non cliquable sur la zone masquée.
 
-Rendre le `DialogContent` borné en hauteur avec footer collant et corps scrollable.
+C'est exactement ce que le screenshot montre : le bouton orange "Confirmer l'insertion" apparaît coupé à la ligne pile où commence la barre `13 étapes / km / espèces`.
 
-### Fichier `WaypointInsertConfirmDialog.tsx`
+# Solution
 
-1. **`DialogContent`** : ajouter `max-h-[85vh] flex flex-col p-0 overflow-hidden` pour piloter la hauteur et la structure.
-2. **`DialogHeader`** : `px-6 pt-6 pb-2 shrink-0`.
-3. Wrapper le bloc des candidats + bouton "Aucune ne correspond" dans un `<div className="flex-1 overflow-y-auto px-6 py-2 space-y-2">` → c'est cette zone qui scrolle si trop d'options.
-4. **`DialogFooter`** : ajouter `px-6 py-4 border-t bg-background shrink-0` pour qu'il reste toujours visible en bas (collant).
-5. Bouton "Confirmer l'insertion" : ajouter `aria-label` et un focus visible plus marqué pour aider en cas de viewport étroit.
+Forcer un z-index supérieur à 1100 pour cette modale précisément (sans toucher au composant shadcn générique, qui est utilisé partout ailleurs).
 
-### Bonus robustesse
+## Changement unique
 
-Quand le `pickMode` se termine avec succès (`selectedIdx` mis à jour via la sélection sur la carte) :
-- Dans `ExplorationCarteTab.tsx`, après `setPendingWaypoint(... selectedIdx: finalIdx ...)`, ajouter un toast persistant ou un re-focus sur le bouton "Confirmer" pour que l'utilisateur sache où aller.
-- Optionnel : fermer le toast toast.success existant et le remplacer par un toast avec une action "Confirmer" cliquable directement (`toast.success("...", { action: { label: 'Confirmer', onClick: confirmInsert } })`) — confort supplémentaire si la viewport est petite.
+**`src/components/community/exploration/WaypointInsertConfirmDialog.tsx`**
 
-## Pourquoi ça résout le bug
+Ajouter `z-[1200]` sur le `DialogContent` (et passer une classe overlay équivalente si nécessaire). Le `DialogContent` Radix monte dans un `Portal` à la racine du `<body>`, donc seul le z-index compte (pas d'effet de stacking context piégé).
 
-- La hauteur du Dialog est désormais bornée à 85% du viewport.
-- Le footer (avec "Confirmer l'insertion") est hors de la zone scrollable et reste toujours visible.
-- Si la liste de candidats grandit, c'est elle qui scrolle, pas l'écran.
-- Le toast d'action offre un raccourci immédiat même sans toucher au Dialog.
+```text
+<DialogContent className="... z-[1200] ...">
+```
+
+Note : Radix attache l'overlay et le content au même portal ; relever uniquement `DialogContent` suffit pour que la modale + son footer passent au-dessus de la barre stats. L'overlay sombre reste en `z-50` (acceptable car les éléments carte en `z-[1000]` ne capturent pas les clics utiles pendant que la modale est ouverte — Radix bloque déjà l'interaction via `pointer-events`).
+
+Si nécessaire en complément (ceinture + bretelles) : ajouter une classe overlay custom via le rendu shadcn — mais le seul changement requis pour résoudre le bug visible est le z-index du `DialogContent`.
+
+# Vérification
+
+Après le changement :
+1. Reproduire le scénario : créer un point intermédiaire jaune → cliquer point 8 → cliquer point voisin → la modale "Où insérer ce point ?" doit apparaître intégralement au-dessus de la barre `13 étapes`, avec le bouton "Confirmer l'insertion" entièrement visible et cliquable.
+2. Capture d'écran via `browser--screenshot` à viewport 1046×754 pour confirmer que le footer n'est plus tronqué.
