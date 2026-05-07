@@ -18,7 +18,7 @@ import {
   useCreateWaypoint,
   buildRouteWithWaypoints,
 } from '@/hooks/useExplorationWaypoints';
-import { WaypointMarker, WaypointCreateHandler, detectSegmentCandidates, waypointDraftIcon, type SegmentCandidate } from './WaypointMarker';
+import { WaypointMarker, WaypointCreateHandler, detectSegmentCandidates, findSegmentByEndpoints, waypointDraftIcon, type SegmentCandidate } from './WaypointMarker';
 import { WaypointInsertConfirmDialog } from './WaypointInsertConfirmDialog';
 import 'leaflet/dist/leaflet.css';
 
