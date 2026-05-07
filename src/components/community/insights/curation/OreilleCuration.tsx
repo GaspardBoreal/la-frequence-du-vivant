@@ -95,6 +95,7 @@ const noteIcon = L.divIcon({
 });
 
 const OreilleCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
+  const mapKey = useId();
   const { audioPlaylist, totalDuration, totalMarches, isLoading } =
     useExplorationAudioPlaylist(explorationId);
   const { toast } = useToast();
