@@ -236,6 +236,7 @@ export function WaypointMarker({ waypoint, canEdit, segmentLabel, pickModeOnClic
         },
       }}
     >
+      {!isPickMode && (
       <Popup minWidth={220}>
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-1.5 font-semibold text-amber-700">
