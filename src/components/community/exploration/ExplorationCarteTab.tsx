@@ -796,8 +796,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     () => buildRouteWithWaypoints(
       geoMarches.map(m => ({ id: m.id, latitude: m.latitude!, longitude: m.longitude! })),
       waypoints,
+      isLoop,
     ),
-    [geoMarches, waypoints],
+    [geoMarches, waypoints, isLoop],
   );
   const totalDistance = route.crowKm;
   const estimatedDistance = route.estimatedKm;
