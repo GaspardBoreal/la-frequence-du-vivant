@@ -50,6 +50,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const upsert = useUpsertCuration();
 
   const [view, setView] = useState<View>('selection');
+  const [hasUserPickedView, setHasUserPickedView] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
@@ -102,6 +103,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   // hiding the entire grid when the active category has no items in the new tab.
   const handleViewChange = (next: View) => {
     setView(next);
+    setHasUserPickedView(true);
     setCategoryFilter(null);
   };
 
@@ -230,6 +232,20 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const stale = isAnalysisStale(lastAnalysis);
 
   const handleAi = () => triggerAi.mutate(explorationId);
+
+  // Auto-switch : si la Sélection finale est vide et que l'utilisateur n'a pas
+  // choisi d'onglet manuellement, basculer sur le premier onglet non vide
+  // (Terrain → Pool/Observées) pour éviter un écran vide trompeur.
+  useEffect(() => {
+    if (hasUserPickedView) return;
+    if (view !== 'selection') return;
+    if (pinnedSpecies.length > 0) return;
+    if (manual.length > 0) {
+      setView('terrain');
+    } else if (pool.length > 0) {
+      setView('pool');
+    }
+  }, [hasUserPickedView, view, pinnedSpecies.length, manual.length, pool.length]);
 
   // ─── Snapshot Chat IA : ce qui est RÉELLEMENT visible dans la grille ───
   // Reproduit la même logique de filtrage que les vues SpeciesGrid plus bas
@@ -392,7 +408,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               tone: reviewItems.length > 0 ? 'amber' : undefined,
             },
             { id: 'terrain' as View, label: 'Terrain', count: manual.length, icon: <Hand className="w-3 h-3" /> },
-            { id: 'pool' as View, label: 'Pool observé', count: pool.length, hidden: !isCurator },
+            // "Pool observé" pour curateurs, "Observées" en lecture seule pour marcheurs
+            { id: 'pool' as View, label: isCurator ? 'Pool observé' : 'Observées', count: pool.length },
           ]
             .filter(t => !t.hidden)
             .map(t => {
@@ -502,20 +519,50 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
         {/* Vue Sélection */}
         {view === 'selection' && (
-          <SpeciesGrid
-            items={applyCategoryFilter(pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
-            isCurator={isCurator}
-            explorationId={explorationId}
-            emptyMessage={
-              isCurator
-                ? 'Aucune espèce épinglée. Lance l’analyse IA ou ajoute une espèce terrain.'
-                : "L'ambassadeur n'a pas encore sélectionné d'espèces remarquables."
-            }
-            upsert={upsert}
-            translationMap={translationMap}
-            onSpeciesClick={handleSpeciesClick}
-            onOpenEvidence={handleOpenEvidence}
-          />
+          <>
+            {pinnedSpecies.length === 0 && (pool.length > 0 || manual.length > 0) && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm space-y-2">
+                <p className="text-foreground">
+                  {isCurator
+                    ? "Aucune espèce épinglée pour l'instant."
+                    : "L'ambassadeur n'a pas encore sélectionné d'espèces remarquables."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {pool.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => handleViewChange('pool')}>
+                      Voir les {pool.length} espèce{pool.length > 1 ? 's' : ''} {isCurator ? 'du pool' : 'observées'}
+                    </Button>
+                  )}
+                  {manual.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => handleViewChange('terrain')}>
+                      <Hand className="w-3.5 h-3.5 mr-1.5" />
+                      Voir les {manual.length} observation{manual.length > 1 ? 's' : ''} terrain
+                    </Button>
+                  )}
+                  {isCurator && pool.length > 0 && (
+                    <Button size="sm" onClick={handleAi} disabled={triggerAi.isPending}>
+                      {triggerAi.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 mr-1.5" />}
+                      Lancer l'analyse IA
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+            <SpeciesGrid
+              items={applyCategoryFilter(pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
+              isCurator={isCurator}
+              explorationId={explorationId}
+              emptyMessage={
+                isCurator
+                  ? 'Aucune espèce épinglée. Lance l’analyse IA ou ajoute une espèce terrain.'
+                  : "L'ambassadeur n'a pas encore sélectionné d'espèces remarquables."
+              }
+              upsert={upsert}
+              translationMap={translationMap}
+              onSpeciesClick={handleSpeciesClick}
+              onOpenEvidence={handleOpenEvidence}
+            />
+          </>
         )}
 
         {/* Vue Suggestions IA */}
