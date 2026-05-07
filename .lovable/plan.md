@@ -1,67 +1,33 @@
-## Diagnostic — pourquoi le 2e clic sur le point intermédiaire jaune ne fait rien
+## Diagnostic
 
-En reproduisant mentalement le scénario de la copie d'écran (point 8 sélectionné en bleu, étoile jaune entre le 8 et le waypoint orange à gauche), deux causes très probables se cumulent :
+Sur la copie d'écran 3 :
+- Le toast "Segment sélectionné — confirmez l'insertion" s'affiche (la sélection a bien fonctionné).
+- Le dialog "Où insérer ce point ?" s'est rouvert avec le bon segment surligné.
+- **MAIS** le bouton orange "Confirmer l'insertion" est tronqué tout en bas de l'écran : on devine sa moitié supérieure orange, et il n'y a aucun moyen de scroller dans le dialog.
 
-### Cause 1 — Cible cliquable minuscule (cause principale)
-Le waypoint orange (`waypointIcon`) ne fait que **7×7 px** avec `iconAnchor [3.5,3.5]`. Le halo cyan que l'on voit autour est purement décoratif (`interactive: false`, ajouté lors du fix précédent justement pour ne pas bloquer les clics). Résultat : pour valider le 2e endpoint il faut viser un disque de 7 px — au moindre décalage, Leaflet ne déclenche aucun événement et "rien ne se passe", sans même un toast d'erreur.
+Cause : `DialogContent` n'a pas de `max-height` ni de zone scrollable interne. Avec 4 candidats + textes + bouton "choisir sur la carte" + footer, la hauteur dépasse celle du viewport (~754 px ici, encore moins après les marges du Dialog) et le footer sort hors champ. Aucun overflow scroll n'est défini, donc l'utilisateur ne peut ni voir ni atteindre "Confirmer".
 
-### Cause 2 — Filet de sécurité trop strict si la paire ne matche aucun candidat
-Si malgré tout le clic touche le waypoint mais que la paire `(step8, wp)` ne figure pas dans les 4 meilleurs `SegmentCandidate` retenus (`limit = 4` sur `detectSegmentCandidates`, calculés autour du **clic initial** = étoile jaune), `handlePickEndpoint` tombe dans la branche `found < 0` et affiche un toast d'erreur, ce qui peut passer inaperçu si la cible cliquable est aussi le problème.
+## Solution
 
-Aujourd'hui l'algorithme exige que la paire `{idA, idB}` corresponde aux endpoints **exacts** d'un candidat pré-calculé. C'est fragile : l'utilisateur peut très bien désigner un segment valide du tracé qui n'est pas dans le top-4.
+Rendre le `DialogContent` borné en hauteur avec footer collant et corps scrollable.
 
----
+### Fichier `WaypointInsertConfirmDialog.tsx`
 
-## Solution proposée
+1. **`DialogContent`** : ajouter `max-h-[85vh] flex flex-col p-0 overflow-hidden` pour piloter la hauteur et la structure.
+2. **`DialogHeader`** : `px-6 pt-6 pb-2 shrink-0`.
+3. Wrapper le bloc des candidats + bouton "Aucune ne correspond" dans un `<div className="flex-1 overflow-y-auto px-6 py-2 space-y-2">` → c'est cette zone qui scrolle si trop d'options.
+4. **`DialogFooter`** : ajouter `px-6 py-4 border-t bg-background shrink-0` pour qu'il reste toujours visible en bas (collant).
+5. Bouton "Confirmer l'insertion" : ajouter `aria-label` et un focus visible plus marqué pour aider en cas de viewport étroit.
 
-### 1. Élargir la cible cliquable en mode pick (fix principal)
-Dans `ExplorationCarteTab.tsx`, à l'intérieur du bloc `{pickMode && pendingWaypoint && (...)}`, transformer les `CircleMarker` cyan d'overlay en cibles **interactives** :
+### Bonus robustesse
 
-- Mettre `interactive: true` sur les halos cyan des steps **et** des waypoints.
-- Leur attacher directement `eventHandlers={{ click: () => handlePickEndpoint({ kind, id, lat, lng }) }}`.
-- Corollaire : on n'a plus besoin du `pickModeOnClick` injecté dans `WaypointMarker` ni du branchement `pickMode` sur les markers numérotés (le halo, plus large, intercepte le clic en premier puisqu'il est rendu après).
+Quand le `pickMode` se termine avec succès (`selectedIdx` mis à jour via la sélection sur la carte) :
+- Dans `ExplorationCarteTab.tsx`, après `setPendingWaypoint(... selectedIdx: finalIdx ...)`, ajouter un toast persistant ou un re-focus sur le bouton "Confirmer" pour que l'utilisateur sache où aller.
+- Optionnel : fermer le toast toast.success existant et le remplacer par un toast avec une action "Confirmer" cliquable directement (`toast.success("...", { action: { label: 'Confirmer', onClick: confirmInsert } })`) — confort supplémentaire si la viewport est petite.
 
-Bénéfice : zone cliquable de 18 px (steps) / 14 px (waypoints) au lieu de 7 px, et plus aucune interférence avec les popups natifs.
+## Pourquoi ça résout le bug
 
-### 2. Recalculer les candidats à la volée si la paire n'est pas dans le top-4 (fix de robustesse)
-Dans `handlePickEndpoint`, lorsque `findIndex` renvoie -1, au lieu d'abandonner avec un toast d'erreur :
-
-- Reconstruire dynamiquement le candidat à partir de la paire `(pickedA, ep)` en parcourant `geoMarches` + `waypoints` pour retrouver `(after_marche_id, ordre)` du segment qui a ces deux ids comme endpoints consécutifs.
-- Si trouvé → l'ajouter à `pendingWaypoint.candidates` et sélectionner ce nouvel index.
-- Sinon seulement → toast "Ces 2 points ne sont pas voisins sur le tracé" + reset stage A.
-
-### 3. Feedback visuel renforcé
-- Toast "Point 1 sélectionné — cliquez sur le point voisin" quand `pickedA` est posé.
-- Le halo `pickedA` (cyan foncé) reste tel quel.
-- Curseur `crosshair` sur le conteneur Leaflet en mode pick (CSS).
-
----
-
-## Détails techniques
-
-**Fichier `ExplorationCarteTab.tsx`**
-- Bloc `{pickMode && pendingWaypoint && (...)}` (lignes ~1049-1076) : passer `interactive: true` et ajouter `eventHandlers.click` sur chaque `CircleMarker`.
-- `handlePickEndpoint` (lignes ~621-648) : avant l'erreur, tenter une reconstruction du segment via une nouvelle helper `findSegmentByEndpoints(aId, bId, geoMarches, waypoints)` qui retourne `{after_marche_id, ordre, p1, p2, ...} | null`.
-- Nettoyer : retirer le branchement `pickMode` dans le `eventHandlers.click` du Marker numéroté (ligne ~1112) — devenu redondant et plus fragile que le halo.
-- Ajouter une classe CSS sur le conteneur quand `pickMode` actif (curseur crosshair).
-
-**Fichier `WaypointMarker.tsx`**
-- Retirer le prop `pickModeOnClick` et la branche associée dans `eventHandlers.click` (devenue inutile).
-- `draggable` redevient simplement `canEdit`.
-
-**Nouvelle helper (dans `WaypointMarker.tsx`, exportée)**
-```ts
-export function findSegmentByEndpoints(
-  aId: string, bId: string,
-  geoMarches: {id,latitude,longitude}[],
-  waypoints: ExplorationWaypoint[],
-): SegmentCandidate | null
-```
-Parcourt chaque segment principal (entre 2 steps) en intercalant ses waypoints triés par `ordre`, puis renvoie le micro-segment dont `{p1.id, p2.id} === {aId, bId}`.
-
----
-
-## Pourquoi ça résout le bug observé
-- Cause 1 : le clic atteint maintenant un disque de 14 px → le 2e endpoint se sélectionne sans viser au pixel près.
-- Cause 2 : même si la paire n'était pas dans le top-4 des candidats, elle est reconnue dynamiquement → plus de cul-de-sac silencieux.
-- Bonus : la suppression du double chemin (halo décoratif + interception sur les markers réels) supprime toute possibilité de race condition Leaflet entre popup et pick-handler.
+- La hauteur du Dialog est désormais bornée à 85% du viewport.
+- Le footer (avec "Confirmer l'insertion") est hors de la zone scrollable et reste toujours visible.
+- Si la liste de candidats grandit, c'est elle qui scrolle, pas l'écran.
+- Le toast d'action offre un raccourci immédiat même sans toucher au Dialog.
