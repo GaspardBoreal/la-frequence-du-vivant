@@ -984,7 +984,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               interactive={false}
             />
             {(() => {
-              const c = pendingWaypoint.candidates[pendingWaypoint.selectedIdx];
+              // Show hovered candidate if any, else the selected one
+              const idx = hoveredCandidateIdx ?? pendingWaypoint.selectedIdx;
+              const c = pendingWaypoint.candidates[idx];
               if (!c) return null;
               return (
                 <>
@@ -996,9 +998,56 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                     positions={[[pendingWaypoint.lat, pendingWaypoint.lng], [c.p2.latitude, c.p2.longitude]]}
                     pathOptions={{ color: '#d97706', weight: 2, opacity: 0.75, dashArray: '4, 6' }}
                   />
+                  {/* Halos around the 2 endpoints — pulses on hover */}
+                  <CircleMarker
+                    center={[c.p1.latitude, c.p1.longitude]}
+                    radius={hoveredCandidateIdx !== null ? 18 : 12}
+                    pathOptions={{ color: '#f59e0b', weight: 3, opacity: 0.9, fillColor: '#fde68a', fillOpacity: 0.25 }}
+                  />
+                  <CircleMarker
+                    center={[c.p2.latitude, c.p2.longitude]}
+                    radius={hoveredCandidateIdx !== null ? 18 : 12}
+                    pathOptions={{ color: '#f59e0b', weight: 3, opacity: 0.9, fillColor: '#fde68a', fillOpacity: 0.25 }}
+                  />
                 </>
               );
             })()}
+          </>
+        )}
+
+        {/* Manual pick-mode: clickable halos on every step + waypoint */}
+        {pickMode && pendingWaypoint && (
+          <>
+            {geoMarches.map((m, i) => (
+              <CircleMarker
+                key={`pick-step-${m.id}`}
+                center={[m.latitude!, m.longitude!]}
+                radius={16}
+                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.35 }}
+                eventHandlers={{
+                  click: () => handlePickEndpoint({ kind: 'step', id: m.id, lat: m.latitude!, lng: m.longitude! }),
+                }}
+              />
+            ))}
+            {waypoints.map((wp) => (
+              <CircleMarker
+                key={`pick-wp-${wp.id}`}
+                center={[wp.latitude, wp.longitude]}
+                radius={14}
+                pathOptions={{ color: '#06b6d4', weight: 3, opacity: 0.9, fillColor: '#67e8f9', fillOpacity: 0.35 }}
+                eventHandlers={{
+                  click: () => handlePickEndpoint({ kind: 'waypoint', id: wp.id, lat: wp.latitude, lng: wp.longitude }),
+                }}
+              />
+            ))}
+            {/* Highlight the first picked point */}
+            {pickMode.pickedA && (
+              <CircleMarker
+                center={[pickMode.pickedA.lat, pickMode.pickedA.lng]}
+                radius={20}
+                pathOptions={{ color: '#0e7490', weight: 4, opacity: 1, fillColor: '#06b6d4', fillOpacity: 0.5 }}
+              />
+            )}
           </>
         )}
 
