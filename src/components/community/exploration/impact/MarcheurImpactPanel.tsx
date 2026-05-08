@@ -122,6 +122,8 @@ const MarcheurImpactPanel: React.FC<Props> = ({
         taxonomicFamilies={taxonomicGroups}
         sentinelleScore={score}
         sentinelleLabel={label}
+        sentinelleBreakdown={sentinelle.breakdown}
+        sentinelleNextTip={sentinelle.nextTip}
         hasTemoignage={hasTemoignage}
       />
     </>
