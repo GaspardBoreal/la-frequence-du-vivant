@@ -30,6 +30,7 @@ const migrate = (raw: any): MapLayersState => {
   }
   const r = Number(merged.weatherStationsRadius);
   merged.weatherStationsRadius = Number.isFinite(r) && r >= 20 && r <= 200 ? r : 60;
+  merged.showWaypoints = Boolean(merged.showWaypoints);
   return merged as MapLayersState;
 };
 
