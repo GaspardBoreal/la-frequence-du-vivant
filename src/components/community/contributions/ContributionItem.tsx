@@ -108,12 +108,22 @@ function copyShareLink(id: string, type: string) {
 
 const ContributionItem: React.FC<ContributionItemProps> = ({
   id, type, titre, description, url, externalUrl, contenu, typeTexte,
-  isPublic, sharedToWeb, isOwner, createdAt, viewMode = 'fiche', gpsDistance, onUpdate, onDelete, onClick,
+  isPublic, sharedToWeb, isOwner, createdAt, viewMode = 'fiche', gpsDistance,
+  canReattribute, explorationId, attributedMarcheurId, uploaderName, uploaderMarcheurId,
+  onUpdate, onDelete, onClick,
 }) => {
   const [editing, setEditing] = useState(false);
   const [editTitre, setEditTitre] = useState(titre || '');
   const [editDesc, setEditDesc] = useState(description || contenu || '');
   const [editTypeTexte, setEditTypeTexte] = useState(typeTexte || 'texte-libre');
+  const [attributionOpen, setAttributionOpen] = useState(false);
+
+  const reattributeSource: ReattributeSource | null =
+    type === 'photo' || type === 'video' ? 'media'
+      : type === 'audio' ? 'audio'
+      : type === 'texte' ? 'texte'
+      : null;
+  const showCreditButton = !!canReattribute && !!reattributeSource && !!explorationId;
 
   const Icon = typeIcons[type];
   const displayUrl = url || externalUrl;
