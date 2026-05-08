@@ -1,3 +1,4 @@
+import { SpeciesName } from '@/components/species/SpeciesName';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'react-leaflet';
 import { motion, AnimatePresence } from 'framer-motion';

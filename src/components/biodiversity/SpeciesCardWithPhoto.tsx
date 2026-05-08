@@ -1,3 +1,4 @@
+import { SpeciesName } from '@/components/species/SpeciesName';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '../ui/badge';

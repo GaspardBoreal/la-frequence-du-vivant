@@ -1,3 +1,4 @@
+import { SpeciesName } from '@/components/species/SpeciesName';
 import React, { useState, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';

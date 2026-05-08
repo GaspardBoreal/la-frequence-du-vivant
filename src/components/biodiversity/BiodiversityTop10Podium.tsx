@@ -1,3 +1,4 @@
+import { SpeciesName } from '@/components/species/SpeciesName';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Medal, Play, X } from 'lucide-react';
