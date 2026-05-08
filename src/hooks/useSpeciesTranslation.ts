@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 
 export interface SpeciesTranslation {
   scientificName: string;
@@ -10,6 +12,11 @@ export interface SpeciesTranslation {
   confidence: 'high' | 'medium' | 'low';
 }
 
+/**
+ * @deprecated Préférer `<SpeciesName />` ou `useFrenchSpeciesNamesAuto`.
+ * Conservé pour la compat de quelques composants. Utilise désormais le
+ * résolveur centralisé sous le capot (avec auto-fill via edge function).
+ */
 export const useSpeciesTranslation = (scientificName: string, originalCommonName?: string) => {
   const { language } = useLanguage();
 
