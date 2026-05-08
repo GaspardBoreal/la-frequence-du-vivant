@@ -1431,6 +1431,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
             explorationId={explorationId}
             explorationMarcheIds={explorationMarcheIds}
             totalMarchesCount={explorationMarcheIds.length}
+            testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
           />
         ))}
       </div>
