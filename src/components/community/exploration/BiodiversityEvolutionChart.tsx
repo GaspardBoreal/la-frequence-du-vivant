@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  defs,
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { Activity, Info, Leaf, Eye } from 'lucide-react';
