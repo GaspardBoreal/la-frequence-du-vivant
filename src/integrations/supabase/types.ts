@@ -3135,6 +3135,7 @@ export type Database = {
       }
       marcheur_textes: {
         Row: {
+          attributed_user_id: string | null
           contenu: string
           created_at: string
           id: string
@@ -3149,6 +3150,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attributed_user_id?: string | null
           contenu?: string
           created_at?: string
           id?: string
@@ -3163,6 +3165,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attributed_user_id?: string | null
           contenu?: string
           created_at?: string
           id?: string
