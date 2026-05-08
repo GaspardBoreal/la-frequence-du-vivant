@@ -681,8 +681,25 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
   const updateContrib = useUpdateContribution();
   const deleteContrib = useDeleteContribution();
 
-  const myTextes = userTextes?.filter(t => t.user_id === userId) || [];
-  const othersTextes = userTextes?.filter(t => t.user_id !== userId && t.is_public) || [];
+  // Curator capability for credit reattribution
+  const { data: explorationId } = useQuery({
+    queryKey: ['marche-event-exploration', marcheEventId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marche_events')
+        .select('exploration_id')
+        .eq('id', marcheEventId)
+        .single();
+      return data?.exploration_id ?? null;
+    },
+    enabled: !!marcheEventId,
+  });
+  const { data: isCurator } = useIsCurator(explorationId ?? undefined);
+
+  // Effective author = attributed_user_id ?? user_id
+  const effectiveAuthor = (t: any) => (t.attributed_user_id ?? t.user_id) as string;
+  const myTextes = userTextes?.filter(t => effectiveAuthor(t) === userId) || [];
+  const othersTextes = userTextes?.filter(t => effectiveAuthor(t) !== userId && t.is_public) || [];
 
   const handleSubmit = () => {
     if (!newContenu.trim()) return;
