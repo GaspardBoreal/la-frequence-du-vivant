@@ -23,15 +23,56 @@ interface BatchTranslationResponse {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// ---------- INPN lookup ----------
+// ---------- INPN lookup (currently offline due to MNHN cyberattack 2025) ----------
 async function fetchInpn(scientificName: string): Promise<string | null> {
   try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 3000);
     const r = await fetch(
-      `https://taxref.mnhn.fr/api/taxa/search?scientificNames=${encodeURIComponent(scientificName)}`
+      `https://taxref.mnhn.fr/api/taxa/search?scientificNames=${encodeURIComponent(scientificName)}`,
+      { signal: ctrl.signal }
     );
+    clearTimeout(t);
     if (!r.ok) return null;
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('json')) return null; // INPN currently returns HTML maintenance page
     const j = await r.json();
     return j._embedded?.taxa?.[0]?.frenchVernacularName || null;
+  } catch {
+    return null;
+  }
+}
+
+// ---------- Wikipedia FR lookup (most reliable while INPN is down) ----------
+// Strategy: hit fr.wikipedia.org REST summary by scientific name. If the page
+// is the species page, the `displaytitle` is usually the French vernacular
+// name; otherwise we fall back to the page title. We accept the result only
+// if the page is in French and the scientific name appears in the extract
+// (sanity check to avoid resolving a homonym to an unrelated topic).
+async function fetchWikipediaFr(scientificName: string): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const url = `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(scientificName.replace(/ /g, '_'))}`;
+    const r = await fetch(url, {
+      signal: ctrl.signal,
+      headers: { 'Accept': 'application/json', 'User-Agent': 'la-frequence-du-vivant/1.0' },
+    });
+    clearTimeout(t);
+    if (!r.ok) return null;
+    const j: any = await r.json();
+    if (j.type === 'disambiguation') return null;
+    const extract: string = j.extract || '';
+    // Sanity check: the scientific name (or its genus) must appear in the extract
+    const genus = scientificName.split(' ')[0];
+    if (!extract.toLowerCase().includes(genus.toLowerCase())) return null;
+    const raw: string = (j.displaytitle || j.title || '').replace(/<[^>]+>/g, '').trim();
+    if (!raw) return null;
+    // If Wikipedia returned the scientific name itself (italicised page title),
+    // there's no vernacular FR name on Wikipedia → don't claim one.
+    if (raw.toLowerCase() === scientificName.toLowerCase()) return null;
+    if (raw.toLowerCase() === genus.toLowerCase()) return null;
+    return raw;
   } catch {
     return null;
   }
@@ -109,28 +150,45 @@ async function handleBatch(req: Request): Promise<Response> {
   const missing = items.filter(i => !cached.has(i.scientificName.trim()));
   console.log(`[translate-species batch] ${cached.size} cached, ${missing.length} to resolve`);
 
-  // 1. Try INPN for first 10 missing (fast and accurate)
+  // 1. Try INPN (fast & accurate, but currently offline due to MNHN cyberattack)
   const inpnResults: Record<string, string> = {};
-  const inpnTargets = missing.slice(0, 10);
   await Promise.all(
-    inpnTargets.map(async it => {
+    missing.slice(0, 10).map(async it => {
       const fr = await fetchInpn(it.scientificName.trim());
       if (fr) inpnResults[it.scientificName.trim()] = fr;
     })
   );
 
-  // 2. AI for the rest
-  const stillMissing = missing.filter(i => !inpnResults[i.scientificName.trim()]);
+  // 2. Wikipedia FR fallback (most reliable source while INPN is down)
+  const wikiResults: Record<string, string> = {};
+  await Promise.all(
+    missing
+      .filter(i => !inpnResults[i.scientificName.trim()])
+      .map(async it => {
+        const fr = await fetchWikipediaFr(it.scientificName.trim());
+        if (fr) wikiResults[it.scientificName.trim()] = fr;
+      })
+  );
+
+  // 3. AI as last resort — marked LOW confidence so curators can spot hallucinations
+  const stillMissing = missing.filter(
+    i => !inpnResults[i.scientificName.trim()] && !wikiResults[i.scientificName.trim()]
+  );
   const aiResults = await aiBatchTranslate(stillMissing);
 
-  // 3. Persist new translations
+  // 4. Persist new translations (DB trigger guarantees `manual` rows are never overwritten)
   const toInsert: any[] = [];
   Object.entries(inpnResults).forEach(([sci, fr]) => {
     toInsert.push({ scientific_name: sci, common_name_fr: fr, source: 'inpn', confidence_level: 'high' });
   });
-  Object.entries(aiResults).forEach(([sci, fr]) => {
+  Object.entries(wikiResults).forEach(([sci, fr]) => {
     if (!inpnResults[sci]) {
-      toInsert.push({ scientific_name: sci, common_name_fr: fr, source: 'ai', confidence_level: 'medium' });
+      toInsert.push({ scientific_name: sci, common_name_fr: fr, source: 'wikipedia', confidence_level: 'high' });
+    }
+  });
+  Object.entries(aiResults).forEach(([sci, fr]) => {
+    if (!inpnResults[sci] && !wikiResults[sci]) {
+      toInsert.push({ scientific_name: sci, common_name_fr: fr, source: 'ai', confidence_level: 'low' });
     }
   });
 
@@ -140,6 +198,8 @@ async function handleBatch(req: Request): Promise<Response> {
       .upsert(toInsert, { onConflict: 'scientific_name', ignoreDuplicates: false });
     if (error) console.error('Upsert failed', error);
   }
+
+  Object.assign(inpnResults, wikiResults); // for response merge below
 
   const translations: Record<string, string> = {};
   cached.forEach((v, k) => (translations[k] = v));
