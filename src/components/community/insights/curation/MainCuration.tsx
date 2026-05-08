@@ -71,12 +71,71 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const { data: marcheurs = [] } = useExplorationMarcheurs(explorationId);
   const upsert = useUpsertCuration();
   const del = useDeleteCuration();
+  const qc = useQueryClient();
 
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [lightbox, setLightbox] = useState<{ items: MediaItem[]; index: number } | null>(null);
+  const [sortMode, setSortMode] = useState<'alpha' | 'manual'>('alpha');
+  const [reorderMode, setReorderMode] = useState(false);
+  const [manualOrder, setManualOrder] = useState<ExplorationCuration[]>([]);
+  const [savingOrder, setSavingOrder] = useState(false);
 
   const mediaIndex = useMemo(() => buildMediaIndex(allMedia), [allMedia]);
+
+  const sortedEntries = useMemo(() => {
+    if (sortMode === 'alpha') {
+      return [...entries].sort((a, b) =>
+        (a.title || '').localeCompare(b.title || '', 'fr', { sensitivity: 'base' })
+      );
+    }
+    return entries;
+  }, [entries, sortMode]);
+
+  useEffect(() => {
+    if (reorderMode) setManualOrder(sortedEntries);
+  }, [reorderMode]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setManualOrder(items => {
+      const oldIdx = items.findIndex(i => i.id === active.id);
+      const newIdx = items.findIndex(i => i.id === over.id);
+      if (oldIdx < 0 || newIdx < 0) return items;
+      return arrayMove(items, oldIdx, newIdx);
+    });
+  };
+
+  const saveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      const results = await Promise.all(
+        manualOrder.map((entry, idx) =>
+          supabase
+            .from('exploration_curations')
+            .update({ display_order: idx })
+            .eq('id', entry.id)
+        )
+      );
+      const firstError = results.find(r => r.error);
+      if (firstError?.error) throw firstError.error;
+      qc.invalidateQueries({ queryKey: ['exploration-curations', explorationId] });
+      toast.success('Ordre enregistré');
+      setReorderMode(false);
+      setSortMode('manual');
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur lors de l\'enregistrement');
+    } finally {
+      setSavingOrder(false);
+    }
+  };
 
   // Snapshot des pratiques visibles pour le ChatBot IA contextuel
   useChatTabSnapshot(
