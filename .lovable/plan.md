@@ -1,164 +1,98 @@
-# Refonte "Votre Impact" — Empreinte du Marcheur
 
-Remplacer le panneau plat actuel (territoires pionniers + familles + indice) par une **expérience Stories verticales swipables**, mobile-first, type Spotify Wrapped / Strava Year-in-Review, déclenchée depuis l'onglet "Votre impact".
+# Refonte de l'Indice de Sentinelle V2 — avec pédagogie intégrée
 
----
+## Objectif
+1. Creuser les écarts entre marcheurs (volume √, sensibles dominantes).
+2. **Rendre la notation transparente et ludique** : chaque marcheur comprend d'un coup d'œil comment son score est calculé et ce qu'il peut faire pour le faire grimper.
 
-## 1. Le déclencheur (ce qui reste visible inline)
+## Nouvelle formule (total /100)
 
-Dans la carte du marcheur, l'onglet **"Votre impact"** affiche désormais une **carte-vignette teaser** ultra-condensée :
+| Composante | Poids | Formule | Plafond |
+|---|---:|---|---|
+| **Piliers actifs** | **20 pts** | `(nb_piliers / 5) × 20` | 5 piliers (photo, son, texte, témoignage, espèce sensible) |
+| **Volume des contributions** | **20 pts** | `min(√total / √64, 1) × 20` | sature à 64 contributions |
+| **Diversité d'espèces** | **20 pts** | `min(species / 20, 1) × 20` | sature à 20 espèces |
+| **Espèces sensibles** | **40 pts** | `min((bio×1.5 + aux×1.0 + EEE×2.0) / 15, 1) × 40` | sature ~10 sensibles pondérées |
+
+**Plancher** : 15 dès la 1ʳᵉ contribution. **Plage cible** : 15 → 85.
+
+## Tiers
+| Score | Tier | Couleur |
+|---|---|---|
+| 0–25 | Marcheur curieux | sauge |
+| 26–50 | Éclaireur attentif | vert d'eau |
+| 51–75 | Ambassadeur confirmé | émeraude |
+| 76–100 | Sentinelle vigilante | or pulsant |
+
+## Pédagogie intégrée — la grande nouveauté
+
+Chaque story affiche **deux niveaux de lecture** :
+
+### A. Bandeau "Comment ça marche ?" (méthode générale)
+Petit encart pliable (ouvert par défaut au 1er passage, mémorisé via `localStorage`), formulé simplement et imagé :
+
+> **Votre Indice de Sentinelle (sur 100)**
+> Il mesure 4 choses, par ordre d'importance :
+>
+> - 🌿 **Vos détections précieuses** *(jusqu'à 40 pts)* — bio-indicateurs, auxiliaires, espèces invasives. **Le cœur du score.**
+> - 🪶 **La variété de vos gestes** *(20 pts)* — photo, son, texte, témoignage, espèce sensible. 1 geste par catégorie = bonus.
+> - 📸 **Votre volume de contributions** *(20 pts)* — plus vous documentez, plus ça monte (mais en racine carrée : pas besoin d'en faire 1000).
+> - 🦋 **La diversité d'espèces** *(20 pts)* — chaque nouvelle espèce compte jusqu'à 20.
+
+### B. Encart "Votre score, expliqué" (calcul personnel)
+Sous la jauge, **4 mini-barres horizontales** + libellé en clair :
 
 ```
-┌─────────────────────────────────────────┐
-│  ◉ Empreinte vibrante (anim. pulse)     │
-│                                         │
-│   Indice Sentinelle  ▸  72/100          │
-│   ▰▰▰▰▰▰▰▱▱▱  Voix du Vivant           │
-│                                         │
-│   [3 badges miniatures côte à côte]     │
-│                                         │
-│   ▶ Découvrir mon empreinte             │
-└─────────────────────────────────────────┘
+🌿 Détections précieuses    ●●○○○○○○○○   0 / 40   → "Détectez 1 bio-indicateur : +6 pts"
+🪶 Variété des gestes       ●●●○○        12 / 20  → "Ajoutez 1 témoignage : +4 pts"
+📸 Volume                   ████████     18 / 20  → "Quasi au max"
+🦋 Diversité d'espèces      ●●○○○○○○○○   2 / 20   → "+1 espèce = +1 pt"
+                                        ─────
+                                        TOTAL    32 / 100
 ```
 
-Tap sur la carte → ouvre les **Stories plein écran** (drawer mobile, modal centré desktop).
+Chaque ligne contient :
+- Une icône + libellé court
+- Une barre visuelle (10 segments ou continue)
+- Le score obtenu / max
+- **Une astuce contextuelle** ("+X pts si vous faites Y") calculée dynamiquement selon ce qui manque le plus
 
----
+### C. Tooltip "Pourquoi 40% pour les sensibles ?"
+Mini-popover (i) à côté du titre du score :
+> "Repérer une espèce bio-indicatrice, c'est lire la santé du milieu. C'est le geste qui apporte le plus à la science citoyenne — donc le plus valorisé."
 
-## 2. L'Empreinte écologique pulsante (métaphore visuelle centrale)
+## Application aux 3 marcheurs (avec décomposition affichée)
 
-Une **forme SVG vivante** au cœur de chaque story, composée de 4 anneaux concentriques pulsants qui réagissent aux données du marcheur :
+| Marcheur | Piliers | Volume | Espèces | Sensibles | **Total** | Conseil affiché |
+|---|---:|---:|---:|---:|---:|---|
+| **Gaspard** (52 contribs, 2 esp, 0 sensible) | 12 | 18 | 2 | **0** | **32** | "1 bio-indicateur = +6 pts" |
+| **Sophie** (17 contribs, 2 esp, 0 sensible) | 12 | 10 | 2 | **0** | **24** | "Ajoutez 1 son : +4 pts" |
+| **Jean-paul** (1 témoignage) | 4 | 2.5 | 2 | 0 | **15** (plancher) | "1 photo : +4 pts" |
 
-```text
-        ╭─── Anneau 4 : Sensibilité ─────╮
-       │   (bio-ind / aux / EEE)         │
-       │  ╭─── Anneau 3 : Témoignage ──╮ │
-       │  │  (textes + voix + récits)  │ │
-       │  │ ╭── Anneau 2 : Écoute ──╮ │ │
-       │  │ │  (audios)              │ │ │
-       │  │ │ ╭─ Anneau 1 : Voir ─╮ │ │ │
-       │  │ │ │   (photos)        │ │ │ │
-       │  │ │ ╰────  ◉  ─────────╯ │ │ │
-       │  │ ╰──────────────────────╯ │ │
-       │  ╰─────────────────────────╯  │
-        ╰───────────────────────────────╯
-```
+## Détails techniques
 
-- Chaque anneau **épaissit** selon le volume contribué dans cette dimension.
-- Chaque anneau **pulse** (animation `pulse` lente) à un rythme proportionnel à la fréquence de contribution.
-- Les **bio-indicateurs** ajoutent des **points lumineux verts** sur l'anneau 4.
-- Les **auxiliaires** ajoutent des **points dorés**.
-- Les **EEE détectées** ajoutent des **points rouges clignotants** (signal d'alerte précieux).
-- Couleurs en HSL via tokens : `--primary`, `--accent`, `amber`, `rose` (déjà dans le DS Forêt Émeraude).
+**Fichiers à modifier**
+- `src/components/community/exploration/impact/MarcheurImpactPanel.tsx` — nouveau calcul `computeSentinelleIndex()` retournant `{ total, breakdown, tier, nextTip }`.
+- `src/components/community/exploration/impact/stories/StoryIndice.tsx` — affichage refondu (jauge + 4 mini-barres + bandeau pédagogique pliable + tooltip).
 
-C'est **la signature visuelle unique** de chaque marcheur — son empreinte n'a la même forme que celle d'aucun autre.
+**Fichiers à créer**
+- `src/components/community/exploration/impact/ScoreBreakdown.tsx` — composant réutilisable des 4 mini-barres.
+- `src/components/community/exploration/impact/HowItWorksBanner.tsx` — bandeau pliable avec mémorisation `localStorage('impact-how-it-works-collapsed')`.
+- `src/lib/sentinelleIndex.ts` — pure fonction de calcul (testable).
 
----
+**Logique du `nextTip`** (conseil dynamique)
+Calcule le geste qui rapporte le plus de points pour l'effort le plus faible :
+1. Si aucune sensible → "1 bio-indicateur = +6 pts" (priorité absolue)
+2. Sinon si pilier manquant → "Ajoutez 1 [pilier] : +4 pts"
+3. Sinon si volume < 64 → "+5 contribs = +X pts"
+4. Sinon si espèces < 20 → "+1 espèce = +1 pt"
 
-## 3. Les 6 Stories swipables (verticales, plein écran)
+**Design tokens** : utiliser les variables HSL existantes (`--primary`, `--accent`, `--muted-foreground`). Émeraude/or pour le tier sentinelle, sauge pour les barres au repos.
 
-Format Instagram Stories : barre de progression en haut, swipe horizontal, tap pour avancer, durée auto-play 5s par story (pause au tap-hold).
+**Mémoire à mettre à jour**
+- `mem://features/community/marcheur-impact-stories-logic` : ajouter section "V2 scoring" + "pédagogie intégrée (bandeau + breakdown + nextTip)".
 
-### Story 1 — "Votre Empreinte"
-Plein écran : l'Empreinte pulsante au centre, animée d'entrée (build progressif des anneaux). Sous-titre poétique : *"Voici la trace que vous laissez dans le vivant."*
-
-### Story 2 — "Indice de Sentinelle"
-Grosse jauge circulaire 0-100 + libellé évolutif :
-- 0-25 : *Marcheur en éveil*
-- 26-50 : *Explorateur attentif*
-- 51-75 : *Voix du Vivant*
-- 76-100 : *Sentinelle de la biodiversité*
-
-Calcul : pondère **diversité** (5 piliers : photo / audio / texte / témoignage / espèces sensibles) plutôt que volume. Privilégie celui qui couvre tous les piliers à celui qui en spamme un seul.
-
-### Story 3 — "Vos Familles du Vivant"
-Anneau central + cartes-espèces empilées qui défilent (oiseaux, plantes, champignons, etc.) avec compteur animé. Mise en avant des **3 espèces les plus rares observées**.
-
-### Story 4 — "Vos Détections Précieuses" ⭐
-Le cœur du panel, dédié aux espèces sensibles :
-- 🟢 **N bio-indicateurs** détectés → *"Vous lisez la santé du milieu"*
-- 🟡 **N auxiliaires** détectés → *"Vous reconnaissez les alliés"*
-- 🔴 **N EEE signalées** → *"Vous protégez l'écosystème"*
-
-Chaque catégorie pulse avec sa couleur. Tap sur une catégorie → liste des espèces détectées.
-
-### Story 5 — "Vos Badges" (collection rare)
-Grille 3×N des badges débloqués, avec ceux **non débloqués grisés** pour donner envie. Catégories proposées :
-
-| Badge | Condition |
-|---|---|
-| Œil du Vivant | 1ère photo |
-| Voix du Vivant | 1er audio |
-| Plume du Vivant | 1er texte |
-| Témoin du Vivant | 1er témoignage |
-| Quintessence | 1 contribution dans chacun des 5 piliers |
-| Lecteur de milieu | 3 bio-indicateurs détectés |
-| Allié du vivant | 5 auxiliaires détectés |
-| Sentinelle vigilante | 1 EEE signalée |
-| Garde-frontière | 5 EEE signalées |
-| Pionnier | 1 territoire pionnier |
-| Cartographe | 5 territoires pionniers |
-| Polyglotte du vivant | 5 familles taxonomiques différentes |
-| Constance | 3 marches consécutives avec contribution |
-
-Chaque badge a une icône Lucide + animation `scale-in` au déblocage.
-
-### Story 6 — "Votre Prochain Palier"
-Toujours afficher l'objectif suivant pour la dopamine :
-- *"Plus que 2 audios pour devenir Voix du Vivant"*
-- *"1 EEE détectée vous fait gagner le badge Sentinelle vigilante"*
-
-CTA en bas : **[Partager mon empreinte]** → génère un PNG de l'Empreinte + score, partageable WhatsApp/Instagram (déjà mémo "WhatsApp strategy" existante).
-
----
-
-## 4. Architecture technique
-
-### Calcul des stats sensibles (front-only au début)
-- Croiser `marcheur.speciesObserved` avec `src/data/species-knowledge-base.json` (déjà existant, contient `primary: bio-indicateur | auxiliaire | eee`).
-- Hook `useMarcheurSensibleSpecies(speciesObserved)` → retourne `{ bioIndicateurs[], auxiliaires[], eee[] }`.
-- Calcul des badges : pure fonction `computeMarcheurBadges(marcheur, sensibleSpecies, snapshots)` → liste `{ id, unlocked, label, condition }`.
-
-### Composants à créer (`src/components/community/exploration/impact/`)
-- `ImpactTeaserCard.tsx` — vignette inline (remplace `ImpactSubTab` actuel)
-- `ImpactStoriesViewer.tsx` — orchestrateur Stories (barre progression, swipe, autoplay, framer-motion)
-- `EmpreinteVivante.tsx` — SVG anneaux pulsants
-- `stories/StoryEmpreinte.tsx`
-- `stories/StorySentinelle.tsx`
-- `stories/StoryFamilles.tsx`
-- `stories/StoryDetections.tsx`
-- `stories/StoryBadges.tsx`
-- `stories/StoryPalier.tsx`
-
-### Hooks
-- `useMarcheurSensibleSpecies.ts` — classification bio/aux/EEE
-- `useMarcheurBadges.ts` — computation + memo
-- `useImpactStories.ts` — state machine (currentIndex, autoplay, pause)
-
-### Partage (Story 6 CTA)
-- `html-to-image` (déjà dispo dans le projet ?) ou `dom-to-image` pour snapshot l'Empreinte → blob → Web Share API.
-
-### Pas de migration DB nécessaire pour la V1
-La classification s'appuie sur le JSON existant + données déjà chargées (`marcheur.stats`, `speciesObserved`, `snapshots`). Une V2 pourrait persister `marcheur_badges_unlocked` dans Supabase pour l'historique.
-
----
-
-## 5. Mobile-first & Desktop
-
-- **Mobile** : drawer plein écran (vh:100), swipe horizontal natif, gestures Framer Motion.
-- **Desktop** : modal centré 420×740 (ratio téléphone), navigation flèches clavier + clic sur les côtés.
-- Toutes animations respectent `prefers-reduced-motion`.
-- Couleurs via tokens HSL du DS (Papier Crème / Forêt Émeraude) — **aucun** hex direct dans les composants.
-
----
-
-## 6. Mémoire à enregistrer après implémentation
-
-- `mem://features/community/marcheur-impact-stories-logic` — Stories swipables (Empreinte, Sentinelle, Détections, Badges, Palier) basées sur diversité × sensibilité.
-- `mem://features/community/marcheur-badges-catalog` — Liste canonique des 13 badges et leurs conditions.
-
----
-
-## Livrable de cette itération
-
-V1 fonctionnelle complète : teaser inline + 6 stories swipables + Empreinte SVG animée + 13 badges + classification bio/aux/EEE. Aucun changement DB. Partage social en bonus si temps.
+## Hors scope
+- 12 badges (collection inchangée)
+- Autres stories (Empreinte, Familles, Détections, Palier, Badges) — pas modifiées
+- Aucune modification DB
