@@ -38,6 +38,7 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import MarcheurImpactPanel from './impact/MarcheurImpactPanel';
 
 interface MarcheursTabProps {
   explorationId?: string;
@@ -1249,12 +1250,13 @@ const MarcheurCard: React.FC<{
 
               {activeSubTab === 'impact' && (
                 <motion.div key="impact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <MarcheurImpactBlock
+                  <MarcheurImpactPanel
                     marcheur={marcheur}
                     explorationId={explorationId}
                     explorationMarcheIds={explorationMarcheIds}
                     totalMarchesCount={totalMarchesCount}
                     isExpanded={isExpanded}
+                    hasTemoignage={hasTestimony}
                   />
                   <CitizenScienceCTA />
                 </motion.div>
