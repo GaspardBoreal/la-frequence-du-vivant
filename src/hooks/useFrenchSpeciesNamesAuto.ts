@@ -103,10 +103,23 @@ export const useFrenchSpeciesNamesAuto = (
 
     (async () => {
       try {
+        // Wait for an authenticated session if available — the edge function
+        // requires an Authorization header. If the user is anonymous, we still
+        // try once (the cache may already cover this set on next visit).
+        const { data: sess } = await supabase.auth.getSession();
+        if (!sess?.session) {
+          // Allow a retry on a future render once auth resolves
+          requestedRef.current.delete(key);
+          return;
+        }
+
         const { data, error } = await supabase.functions.invoke('translate-species', {
           body: { items, targetLanguage: 'fr' },
         });
-        if (error || !data?.translations) return;
+        if (error || !data?.translations) {
+          requestedRef.current.delete(key);
+          return;
+        }
         const newTranslations = data.translations as Record<string, string>;
         if (Object.keys(newTranslations).length === 0) return;
 
@@ -127,6 +140,7 @@ export const useFrenchSpeciesNamesAuto = (
         });
       } catch (e) {
         console.warn('[useFrenchSpeciesNamesAuto] auto-fill failed', e);
+        requestedRef.current.delete(key);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
