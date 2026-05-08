@@ -1,50 +1,79 @@
-# Correctif — source de vérité des marcheurs
+## Objectif
 
-## Diagnostic
+Dans la vue **Marcheurs → Marcheurs** (`MarcheursTab.tsx`), pour chaque marcheur ayant un témoignage dans `event_testimonies` :
 
-Je m'étais trompé de table. La liste réelle des marcheurs d'un événement vit dans `marche_participations(user_id, marche_event_id)` — c'est elle qui alimente l'onglet "Marcheurs" de la Synthèse. La table `exploration_marcheurs` est plus restrictive et ne contient pas tout le monde.
+1. Afficher un **badge compteur** sur la ligne fermée (à côté des badges Camera / Headphones / Feather / Leaf).
+2. Ajouter un **sous-onglet "Témoignage"** entre `Textes` et `Contributions`, présentant la citation de manière hyper élégante (carte poétique).
 
-Vérification sur l'événement DEVIAT `df85910e-82da-4ef7-98d2-d4c827d1d0ec` : **10 marcheurs validés**, dont les 8 du fichier Excel (les 4 manquants précédemment + les 4 déjà importés).
+---
 
-## Correctifs
+## 1. Picto proposé — `Quote` (lucide-react)
 
-### 1. Migration : remplacer la fonction de matching
+Recommandation : **icône `Quote` de lucide-react**, en **rose/fuchsia** (`text-rose-400`), pour se distinguer des 4 catégories existantes :
 
-```sql
-CREATE OR REPLACE FUNCTION public.match_marcheur_for_event(_name text, _event_id uuid)
-RETURNS uuid
-LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-  SELECT mp.user_id
-  FROM public.marche_participations mp
-  JOIN public.community_profiles cp ON cp.user_id = mp.user_id
-  WHERE mp.marche_event_id = _event_id
-    AND lower(extensions.unaccent(coalesce(cp.prenom,'') || ' ' || coalesce(cp.nom,'')))
-        = lower(extensions.unaccent(_name))
-  LIMIT 1;
-$$;
+| Catégorie | Icône | Couleur |
+|-----------|-------|---------|
+| Observations | Camera | emerald |
+| Écoute | Headphones | violet |
+| Textes | Feather | amber-400 |
+| **Témoignage** | **Quote** | **rose-400** |
+| Contributions | Leaf | amber-500 |
+
+`Quote` est universellement reconnu comme « parole rapportée », sobre, cohérent avec la famille lucide déjà utilisée. Comme un marcheur n'a au plus qu'**un seul témoignage**, le badge affichera juste l'icône (sans chiffre) ou `1` selon la convention voulue.
+
+Alternatives possibles si tu préfères : `MessageCircleHeart` (chaleureux), `MessageSquareQuote` (explicite), `Sparkles` (poétique).
+
+---
+
+## 2. Changements dans `MarcheursTab.tsx`
+
+### a) Hook compteur de témoignages
+Récupérer en une requête tous les `event_testimonies` (par `user_id`) pour les events de l'exploration → exposer un Map `userId → testimony`. Soit via un nouveau hook léger `useExplorationTestimoniesByUser(explorationEventIds)`, soit en réutilisant `useExplorationTestimonies` déjà créé (qui agrège déjà tous les témoignages de l'exploration) et en mémoïsant un index par `user_id`.
+
+### b) Badge fermé (ligne ~1071-1096)
+Ajouter après le badge `textesCount` :
+```tsx
+{hasTestimony && (
+  <div className="...rounded-full..." title="A laissé un témoignage">
+    <Quote className="w-3 h-3 text-rose-400" />
+  </div>
+)}
 ```
 
-Source unique : `marche_participations` jointe à `community_profiles` pour le nom.
+### c) Sous-onglet (ligne 829-832)
+Insérer entre `textes` et `contributions` :
+```ts
+{ key: 'temoignage', label: 'Témoignage', icon: Quote }
+```
+Et n'afficher l'onglet que si `hasTestimony` (filtrer `subTabConfig` par marcheur).
 
-### 2. Import des 4 témoignages restants
+### d) Composant `TemoignageSubTab` — design élégant
 
-Insertion via migration (avec `ON CONFLICT DO UPDATE`) :
-- Laurence Karki → `0c9a3fbe-20d0-4989-bde9-24678768e85f`
-- Victor Boixeda → `7a5cc1a2-301c-4070-ae62-248558ce0eec`
-- Jean-Paul Chiron → `1f211844-7d66-479c-8e01-4f3180b3ac24`
-- Jean-François Servant → `52650e0c-76ec-4aa5-a405-6969a9ec03c6`
+```text
+┌────────────────────────────────────────────┐
+│        ❝  (Quote icon, large, rose/30)     │
+│                                            │
+│   « C'était vraiment cette notion d'être   │
+│     à la rencontre des autres... »         │
+│                                            │
+│              — Sophie D                    │
+└────────────────────────────────────────────┘
+```
 
-Tous rattachés à l'événement `df85910e...`. Les 4 déjà importés restent inchangés.
+- Fond : `bg-gradient-to-br from-rose-500/5 via-transparent to-amber-500/5`
+- Bordure douce : `border border-rose-500/10`
+- Quote icon décorative (40px, opacity-20) en haut-gauche
+- Citation en `font-serif italic text-base leading-relaxed`
+- Signature `— Prénom Nom` en `text-xs text-muted-foreground` à droite
+- Animation : `motion.div` avec `initial opacity-0 y-4` → entrée douce
+- Padding généreux (`p-6`) pour respirer
 
-### 3. Suite (inchangée)
+### e) Étendre `hasContent`
+Inclure `hasTestimony` pour permettre l'expand des marcheurs n'ayant *que* un témoignage.
 
-Une fois ce correctif appliqué :
-- Hook `useExplorationTestimonies(explorationId)` (jointure `event_testimonies` ↔ `marche_events.exploration_id`)
-- Onglet "Témoignages" dans `EventBiodiversityTab.tsx` entre Taxons et Analyse IA
-- 4 modes : Mur de cartes / Carrousel / Nuage de mots cliquable / Constellation
-- Curation owner+admin (édition + toggle publication)
-- Tracking ChatBot (`data-chat-section="temoignages"`)
+---
 
-Désolé pour le détour — j'aurais dû vérifier la source affichée à l'écran avant.
+## Fichiers modifiés
+- `src/components/community/exploration/MarcheursTab.tsx` — badge + sous-onglet + nouveau sous-composant `TemoignageSubTab`
+
+Aucune modification DB ni d'autre composant requis (les témoignages sont déjà en base).
