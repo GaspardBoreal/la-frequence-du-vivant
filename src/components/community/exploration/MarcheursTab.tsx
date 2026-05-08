@@ -927,10 +927,30 @@ const TextesSubTab: React.FC<{
               {!t.is_public && isOwner && (
                 <span className="px-1.5 py-0.5 rounded bg-white/5 text-muted-foreground">Privé</span>
               )}
+              {isCurator && explorationId && (
+                <button
+                  onClick={() => setCreditTextId(t.id)}
+                  className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-amber-500/15 text-amber-400 transition-colors"
+                  title="Modifier le crédit (auteur réel)"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span className="text-[10px]">Crédit</span>
+                </button>
+              )}
             </div>
           </article>
         ))}
       </div>
+      {creditTextId && explorationId && (
+        <MediaAttributionSheet
+          open={!!creditTextId}
+          onOpenChange={(o) => !o && setCreditTextId(null)}
+          source="texte"
+          mediaId={creditTextId}
+          explorationId={explorationId}
+          currentAttributedId={null}
+        />
+      )}
     </div>
   );
 };
