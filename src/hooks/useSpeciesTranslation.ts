@@ -90,59 +90,57 @@ export const useSpeciesTranslation = (scientificName: string, originalCommonName
   });
 };
 
-// Hook for batch translation of multiple species
-export const useSpeciesTranslationBatch = (species: Array<{ scientificName: string; commonName?: string }>) => {
+/**
+ * Batch translation hook — alias autour de `useFrenchSpeciesNamesAuto`.
+ *
+ * Garantit que toutes les espèces affichées dans l'app voient leur nom FR
+ * auto-rempli en arrière-plan (edge function `translate-species`), même pour
+ * les écrans qui n'ont pas encore migré vers `<SpeciesName />`.
+ *
+ * Signature publique inchangée : retourne un tableau `SpeciesTranslation[]`
+ * dans le même ordre que l'entrée.
+ */
+export const useSpeciesTranslationBatch = (
+  species: Array<{ scientificName: string; commonName?: string }>
+) => {
   const { language } = useLanguage();
+  const auto = useFrenchSpeciesNamesAuto(species);
 
-  return useQuery({
-    queryKey: ['species-translation-batch', species.map(s => s.scientificName).sort(), language],
-    queryFn: async (): Promise<SpeciesTranslation[]> => {
-      if (language === 'en') {
-        return species.map(s => ({
-          scientificName: s.scientificName,
-          commonName: s.commonName || s.scientificName,
-          originalCommonName: s.commonName,
-          source: 'local' as const,
-          confidence: 'high' as const
-        }));
-      }
+  const data = useMemo<SpeciesTranslation[] | undefined>(() => {
+    // Mode anglais : on garde le nom d'origine
+    if (language === 'en') {
+      return species.map(s => ({
+        scientificName: s.scientificName,
+        commonName: s.commonName || s.scientificName,
+        originalCommonName: s.commonName,
+        source: 'local' as const,
+        confidence: 'high' as const,
+      }));
+    }
 
-      // Get all available French translations
-      const scientificNames = species.map(s => s.scientificName);
-      const { data: translations } = await supabase
-        .from('species_translations')
-        .select('scientific_name, common_name_fr, common_name_en, source, confidence_level')
-        .in('scientific_name', scientificNames);
+    if (!auto.data) return undefined;
 
-      const translationMap = new Map(
-        translations?.map(t => [t.scientific_name, t]) || []
-      );
-
-      return species.map(s => {
-        const translation = translationMap.get(s.scientificName);
-        
-        if (translation?.common_name_fr) {
-          return {
-            scientificName: s.scientificName,
-            commonName: translation.common_name_fr,
-            originalCommonName: s.commonName,
-            source: 'local' as const,
-            confidence: translation.confidence_level as 'high' | 'medium' | 'low'
-          };
-        }
-
+    return species.map(s => {
+      const resolved = auto.data!.get(s.scientificName);
+      const fr = resolved?.commonNameFr;
+      if (fr) {
         return {
           scientificName: s.scientificName,
-          commonName: s.commonName || s.scientificName,
+          commonName: fr,
           originalCommonName: s.commonName,
-          source: 'fallback' as const,
-          confidence: 'low' as const
+          source: 'local' as const,
+          confidence: 'high' as const,
         };
-      });
-    },
-    staleTime: 1000 * 60 * 60 * 24,
-    gcTime: 1000 * 60 * 60 * 24 * 7,
-    enabled: species.length > 0,
-    retry: 1,
-  });
+      }
+      return {
+        scientificName: s.scientificName,
+        commonName: s.commonName || s.scientificName,
+        originalCommonName: s.commonName,
+        source: 'fallback' as const,
+        confidence: 'low' as const,
+      };
+    });
+  }, [language, species, auto.data]);
+
+  return { ...auto, data } as typeof auto & { data: SpeciesTranslation[] | undefined };
 };
