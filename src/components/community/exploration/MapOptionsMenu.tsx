@@ -29,6 +29,7 @@ interface MapOptionsMenuProps {
   isCreatingWaypoint: boolean;
   layers: MapLayersState;
   activeBadgeCount: number;
+  waypointsCount?: number;
   onToggleLoop: () => void;
   onStartCreateMarche: () => void;
   onToggleCreateWaypoint: () => void;
