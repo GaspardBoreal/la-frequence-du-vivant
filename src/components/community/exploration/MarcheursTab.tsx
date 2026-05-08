@@ -836,35 +836,51 @@ const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementTyp
 // --- Textes sub-tab: marcheur's written texts (own + public from others) ---
 const TextesSubTab: React.FC<{
   userId?: string | null;
+  crewId?: string | null;
   explorationEventIds?: string[];
   explorationId?: string;
-}> = ({ userId, explorationEventIds, explorationId }) => {
+}> = ({ userId, crewId, explorationEventIds, explorationId }) => {
   const { user: viewer } = useAuth();
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
   const [creditTextId, setCreditTextId] = useState<string | null>(null);
   const { data: isCurator } = useIsCurator(explorationId);
 
   const { data: textes, isLoading } = useQuery({
-    queryKey: ['marcheur-textes-exploration', userId, explorationEventIds, sort],
+    queryKey: ['marcheur-textes-exploration', userId, crewId, explorationEventIds, sort],
     queryFn: async () => {
-      if (!userId || !explorationEventIds?.length) return [];
-      // Fetch any text in scope where the effective author = userId
-      // (typeur OR explicitly attributed to this user)
+      if (!explorationEventIds?.length) return [];
+      // Pull every text in scope where this marcheur could be the effective author:
+      // - typist (user_id), reattributed user (attributed_user_id), reattributed crew (attributed_marcheur_id)
+      const orParts: string[] = [];
+      if (userId) {
+        orParts.push(`user_id.eq.${userId}`);
+        orParts.push(`attributed_user_id.eq.${userId}`);
+      }
+      if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
+      if (!orParts.length) return [];
+
       const { data, error } = await supabase
         .from('marcheur_textes')
         .select('*')
         .in('marche_event_id', explorationEventIds)
-        .or(`user_id.eq.${userId},attributed_user_id.eq.${userId}`)
+        .or(orParts.join(','))
         .order('created_at', { ascending: sort === 'asc' });
       if (error) throw error;
-      // Effective author: attributed_user_id ?? user_id
-      return (data || []).filter((t: any) => (t.attributed_user_id ?? t.user_id) === userId);
+      // Effective author resolution (mirrors useExplorationParticipants):
+      // - attributed_marcheur_id wins (if present)
+      // - else attributed_user_id
+      // - else user_id (typist)
+      return (data || []).filter((t: any) => {
+        if (t.attributed_marcheur_id) return crewId && t.attributed_marcheur_id === crewId;
+        if (t.attributed_user_id) return userId && t.attributed_user_id === userId;
+        return userId && t.user_id === userId;
+      });
     },
-    enabled: !!userId && !!explorationEventIds?.length,
+    enabled: !!explorationEventIds?.length && (!!userId || !!crewId),
     staleTime: 60_000,
   });
 
-  if (!userId) {
+  if (!userId && !crewId) {
     return (
       <div className="px-3 py-4 text-center">
         <p className="text-xs text-muted-foreground italic">Textes de l'équipe non disponibles</p>
@@ -1158,7 +1174,7 @@ const MarcheurCard: React.FC<{
 
               {activeSubTab === 'textes' && (
                 <motion.div key="textes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <TextesSubTab userId={resolvedUserId} explorationEventIds={explorationEventIds} explorationId={explorationId} />
+                  <TextesSubTab userId={resolvedUserId} crewId={resolvedCrewId} explorationEventIds={explorationEventIds} explorationId={explorationId} />
                 </motion.div>
               )}
 

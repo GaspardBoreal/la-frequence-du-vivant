@@ -696,56 +696,89 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
   });
   const { data: isCurator } = useIsCurator(explorationId ?? undefined);
 
-  // Effective author = attributed_user_id ?? user_id
-  const effectiveAuthor = (t: any) => (t.attributed_user_id ?? t.user_id) as string;
-  const myTextes = userTextes?.filter(t => effectiveAuthor(t) === userId) || [];
-  const othersTextes = userTextes?.filter(t => effectiveAuthor(t) !== userId && t.is_public) || [];
+  // Effective author key — supports crew reattribution (attributed_marcheur_id),
+  // user reattribution (attributed_user_id), and falls back to typist (user_id).
+  // Returns "user:<uid>" or "crew:<cid>" so crew rows without a linked account
+  // are properly counted on their own.
+  const effectiveAuthorKey = (t: any): string => {
+    if (t.attributed_marcheur_id) return `crew:${t.attributed_marcheur_id}`;
+    if (t.attributed_user_id) return `user:${t.attributed_user_id}`;
+    return `user:${t.user_id}`;
+  };
+  const myKey = `user:${userId}`;
+  const myTextes = userTextes?.filter(t => effectiveAuthorKey(t) === myKey) || [];
+  const othersTextes = userTextes?.filter(t => effectiveAuthorKey(t) !== myKey && t.is_public) || [];
 
-  // Resolve author profiles for "Des marcheurs" grouping (avatar + nom)
-  const authorIds = React.useMemo(
-    () => Array.from(new Set(othersTextes.map(t => effectiveAuthor(t)).filter(Boolean))),
+  // Resolve author profiles (users) and crew rows for "Des marcheurs" grouping
+  const otherKeys = React.useMemo(
+    () => Array.from(new Set(othersTextes.map(t => effectiveAuthorKey(t)))),
     [othersTextes],
   );
+  const otherUserIds = React.useMemo(
+    () => otherKeys.filter(k => k.startsWith('user:')).map(k => k.slice(5)),
+    [otherKeys],
+  );
+  const otherCrewIds = React.useMemo(
+    () => otherKeys.filter(k => k.startsWith('crew:')).map(k => k.slice(5)),
+    [otherKeys],
+  );
+
   const { data: authorProfiles = [] } = useQuery({
-    queryKey: ['marcheur-textes-authors', authorIds.sort().join(',')],
+    queryKey: ['marcheur-textes-authors', otherUserIds.sort().join(',')],
     queryFn: async () => {
-      if (!authorIds.length) return [];
+      if (!otherUserIds.length) return [];
       const { data } = await supabase
         .from('community_profiles')
         .select('user_id, prenom, nom, avatar_url')
-        .in('user_id', authorIds);
+        .in('user_id', otherUserIds);
       return data || [];
     },
-    enabled: authorIds.length > 0,
+    enabled: otherUserIds.length > 0,
   });
-  const authorInfoById = React.useMemo(() => {
+  const { data: crewProfiles = [] } = useQuery({
+    queryKey: ['marcheur-textes-crew', otherCrewIds.sort().join(',')],
+    queryFn: async () => {
+      if (!otherCrewIds.length) return [];
+      const { data } = await supabase
+        .from('exploration_marcheurs')
+        .select('id, prenom, nom, avatar_url')
+        .in('id', otherCrewIds);
+      return data || [];
+    },
+    enabled: otherCrewIds.length > 0,
+  });
+  const authorInfoByKey = React.useMemo(() => {
     const map = new Map<string, { fullName: string; avatarUrl: string | null }>();
     (authorProfiles as any[]).forEach((p) => {
       const full = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim();
-      map.set(p.user_id, { fullName: full || 'Marcheur', avatarUrl: p.avatar_url ?? null });
+      map.set(`user:${p.user_id}`, { fullName: full || 'Marcheur', avatarUrl: p.avatar_url ?? null });
+    });
+    (crewProfiles as any[]).forEach((p) => {
+      const full = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim();
+      map.set(`crew:${p.id}`, { fullName: full || 'Marcheur', avatarUrl: p.avatar_url ?? null });
     });
     return map;
-  }, [authorProfiles]);
+  }, [authorProfiles, crewProfiles]);
 
   const othersGroups = React.useMemo(() => {
     const groups = new Map<string, { authorId: string; fullName: string; avatarUrl: string | null; isCredited: boolean; textes: typeof othersTextes }>();
     othersTextes.forEach(t => {
-      const aid = effectiveAuthor(t);
-      const info = authorInfoById.get(aid);
-      const isCredited = !!t.attributed_user_id;
-      if (!groups.has(aid)) {
-        groups.set(aid, {
-          authorId: aid,
+      const key = effectiveAuthorKey(t);
+      const info = authorInfoByKey.get(key);
+      const isCredited = !!t.attributed_user_id || !!t.attributed_marcheur_id;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          authorId: key,
           fullName: info?.fullName || 'Marcheur',
           avatarUrl: info?.avatarUrl ?? null,
           isCredited,
           textes: [],
         });
       }
-      groups.get(aid)!.textes.push(t);
+      groups.get(key)!.textes.push(t);
     });
     return Array.from(groups.values());
-  }, [othersTextes, authorInfoById]);
+  }, [othersTextes, authorInfoByKey]);
 
   const handleSubmit = () => {
     if (!newContenu.trim()) return;
