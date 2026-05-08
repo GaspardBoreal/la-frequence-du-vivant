@@ -1,76 +1,50 @@
-# Témoignages des marcheurs — révision
+# Correctif — source de vérité des marcheurs
 
-**Changement clé** : les témoignages sont rattachés à l'**événement** (`marche_events`), pas à l'exploration. Une exploration agrège tous les témoignages des marches qui la composent.
+## Diagnostic
 
-## 1. Base de données
+Je m'étais trompé de table. La liste réelle des marcheurs d'un événement vit dans `marche_participations(user_id, marche_event_id)` — c'est elle qui alimente l'onglet "Marcheurs" de la Synthèse. La table `exploration_marcheurs` est plus restrictive et ne contient pas tout le monde.
 
-### Table `event_testimonies`
-- `event_id` (uuid NOT NULL, FK marche_events ON DELETE CASCADE) — **rattachement principal**
-- `user_id` (uuid NOT NULL) — marcheur lié (matching strict, NULL refusé)
-- `author_name` (text NOT NULL) — nom affiché tel qu'importé
-- `quote` (text NOT NULL)
-- `display_order` (int, défaut 0)
-- `is_published` (bool, défaut true)
-- timestamps standard
-- Contrainte unique `(event_id, user_id)` — un témoignage par marcheur par événement
-- Index sur `event_id`, `user_id`
+Vérification sur l'événement DEVIAT `df85910e-82da-4ef7-98d2-d4c827d1d0ec` : **10 marcheurs validés**, dont les 8 du fichier Excel (les 4 manquants précédemment + les 4 déjà importés).
 
-### RLS
-- **SELECT** public si `is_published = true`
-- **ALL** réservé au propriétaire (`user_id = auth.uid()`) ou aux admins (via `is_admin_user()` existant)
+## Correctifs
 
-### RPC matching
-`match_marcheur_by_name(_name text, _event_id uuid)` :
-- Recherche dans `exploration_marcheurs` lié à l'exploration de l'événement (via `marche_events.exploration_id`)
-- Normalisation `lower(unaccent(prenom || ' ' || nom))`
-- Retourne `user_id` ou NULL
+### 1. Migration : remplacer la fonction de matching
 
-## 2. Import du fichier `Témoignage_DEVIAT.xlsx`
-
-L'exploration courante `70fcd8d1...` ("DEVIAT Marcher sur un sol qui respire") contient une marche `df85910e-82da-4ef7-98d2-d4c827d1d0ec` ("DEVIAT Le Réveil de la Terre…"). Cette marche sera la cible.
-
-Mais : sur les 8 marcheurs du fichier, seuls 4 sont déjà inscrits dans `exploration_marcheurs` de cette exploration (Marie-Josee Daubigeon, Nathan Chaur, Sophie D, Karine Log) — Gaspard Boréal aussi mais absent du fichier. Les 4 autres (Jean-Paul Chiron, Laurence Karki, Victor Boixeda, Jean-François Servant) ne sont pas trouvés dans cette exploration.
-
-→ Question résiduelle posée à l'implémentation : **veux-tu que je tente aussi de matcher dans les autres explorations DEVIAT** (607a0ae3 "première découverte" et 20dd3be8 "du 11.03.26 à aujourd'hui") avant import ? En mode strict, les non-matchés seront simplement listés dans le rapport.
-
-Script one-shot via `code--exec` :
-1. Parse XLSX
-2. Pour chaque ligne → RPC matching sur `event_id = df85910e...`
-3. INSERT si match
-4. Rapport : importés vs non matchés
-
-## 3. Onglet "Témoignages" dans la Synthèse
-
-Dans `EventBiodiversityTab.tsx`, ajout entre `taxons` et `analyse` :
-```ts
-{ key: 'temoignages', label: 'Témoignages' }
+```sql
+CREATE OR REPLACE FUNCTION public.match_marcheur_for_event(_name text, _event_id uuid)
+RETURNS uuid
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+  SELECT mp.user_id
+  FROM public.marche_participations mp
+  JOIN public.community_profiles cp ON cp.user_id = mp.user_id
+  WHERE mp.marche_event_id = _event_id
+    AND lower(extensions.unaccent(coalesce(cp.prenom,'') || ' ' || coalesce(cp.nom,'')))
+        = lower(extensions.unaccent(_name))
+  LIMIT 1;
+$$;
 ```
 
-Ce composant agrège les témoignages de **toutes les marches de l'exploration** affichée (puisque la Synthèse est au niveau exploration). Hook `useExplorationTestimonies(explorationId)` qui fait `select * from event_testimonies where event_id in (select id from marche_events where exploration_id = ?)`.
+Source unique : `marche_participations` jointe à `community_profiles` pour le nom.
 
-### 4 modes d'affichage (sélecteur animé)
-1. **Mur de cartes citation** (défaut) — masonry, guillemet géant en watermark, citation en serif, avatar+nom en pied
-2. **Carrousel immersif** — plein largeur, fade+slide, autoplay 8s, swipe mobile
-3. **Nuage de mots interactif** ⭐ — tokenisation FR (stop-words), taille = √fréquence, palette dégradée, **clic mot → drawer avec marcheurs ayant utilisé le mot, surligné dans le témoignage**
-4. **Constellation sensible** — SVG, témoignages en spirale autour d'un mot-thème, hover focus
+### 2. Import des 4 témoignages restants
 
-### Curation
-Owner ou admin : éditer (RichTextEditor) / masquer (toggle `is_published`).
+Insertion via migration (avec `ON CONFLICT DO UPDATE`) :
+- Laurence Karki → `0c9a3fbe-20d0-4989-bde9-24678768e85f`
+- Victor Boixeda → `7a5cc1a2-301c-4070-ae62-248558ce0eec`
+- Jean-Paul Chiron → `1f211844-7d66-479c-8e01-4f3180b3ac24`
+- Jean-François Servant → `52650e0c-76ec-4aa5-a405-6969a9ec03c6`
 
-## 4. ChatBot
-`data-chat-section="temoignages"` + publish au `chatPageContext` (mode actif, nb témoignages).
+Tous rattachés à l'événement `df85910e...`. Les 4 déjà importés restent inchangés.
 
-## Fichiers
-**Créés**
-- migration SQL (table + RLS + RPC)
-- `src/hooks/useExplorationTestimonies.ts`
-- `src/components/community/insights/testimonies/TestimoniesTab.tsx`
-- `src/components/community/insights/testimonies/modes/{QuoteWall,ImmersiveCarousel,WordCloud,Constellation}.tsx`
-- `src/components/community/insights/testimonies/utils/tokenize.ts`
+### 3. Suite (inchangée)
 
-**Modifié**
-- `src/components/community/EventBiodiversityTab.tsx`
+Une fois ce correctif appliqué :
+- Hook `useExplorationTestimonies(explorationId)` (jointure `event_testimonies` ↔ `marche_events.exploration_id`)
+- Onglet "Témoignages" dans `EventBiodiversityTab.tsx` entre Taxons et Analyse IA
+- 4 modes : Mur de cartes / Carrousel / Nuage de mots cliquable / Constellation
+- Curation owner+admin (édition + toggle publication)
+- Tracking ChatBot (`data-chat-section="temoignages"`)
 
-**Mémoire** : nouvelle entrée `mem://features/community/event-testimonies-logic`.
-
-Aucune dépendance npm ajoutée (Framer Motion + Tailwind).
+Désolé pour le détour — j'aurais dû vérifier la source affichée à l'écran avant.
