@@ -47,7 +47,7 @@ type ShareKitState = {
   generatedCount: number;
 };
 
-type MarcheurSubTab = 'observations' | 'ecoute' | 'contributions' | 'impact';
+type MarcheurSubTab = 'observations' | 'ecoute' | 'textes' | 'contributions' | 'impact';
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
@@ -826,9 +826,106 @@ const MarcheurImpactBlock: React.FC<{
 const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementType }[] = [
   { key: 'observations', label: 'Observations', icon: Camera },
   { key: 'ecoute', label: 'Écoute', icon: Headphones },
+  { key: 'textes', label: 'Textes', icon: Feather },
   { key: 'contributions', label: 'Contributions', icon: Leaf },
   { key: 'impact', label: 'Votre impact', icon: TrendingUp },
 ];
+
+// --- Textes sub-tab: marcheur's written texts (own + public from others) ---
+const TextesSubTab: React.FC<{
+  userId?: string | null;
+  explorationEventIds?: string[];
+}> = ({ userId, explorationEventIds }) => {
+  const { user: viewer } = useAuth();
+  const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+
+  const { data: textes, isLoading } = useQuery({
+    queryKey: ['marcheur-textes-exploration', userId, explorationEventIds, sort],
+    queryFn: async () => {
+      if (!userId || !explorationEventIds?.length) return [];
+      const { data, error } = await supabase
+        .from('marcheur_textes')
+        .select('*')
+        .eq('user_id', userId)
+        .in('marche_event_id', explorationEventIds)
+        .order('created_at', { ascending: sort === 'asc' });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userId && !!explorationEventIds?.length,
+    staleTime: 60_000,
+  });
+
+  if (!userId) {
+    return (
+      <div className="px-3 py-4 text-center">
+        <p className="text-xs text-muted-foreground italic">Textes de l'équipe non disponibles</p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="px-3 py-4 text-center">
+        <p className="text-xs text-muted-foreground italic">Chargement…</p>
+      </div>
+    );
+  }
+
+  const isOwner = !!viewer && viewer.id === userId;
+  const visible = (textes || []).filter((t: any) => t.is_public || isOwner);
+
+  if (!visible.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <Feather className="w-8 h-8 text-amber-400/40 mb-2" />
+        <p className="text-xs text-muted-foreground italic">Aucun texte partagé</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-3 py-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Feather className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-[11px] font-semibold text-foreground">{visible.length} texte{visible.length > 1 ? 's' : ''}</span>
+        </div>
+        <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
+      </div>
+      <div className="space-y-2">
+        {visible.map((t: any) => (
+          <article
+            key={t.id}
+            className="rounded-xl border border-amber-500/15 bg-gradient-to-br from-amber-500/5 to-transparent p-3 space-y-1.5"
+          >
+            <div className="flex items-center gap-2 flex-wrap">
+              {t.type_texte && (
+                <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">
+                  {t.type_texte.replace('-', ' ')}
+                </span>
+              )}
+              {t.titre && (
+                <h4 className="text-[13px] font-semibold text-foreground leading-tight">{t.titre}</h4>
+              )}
+            </div>
+            {t.contenu && (
+              <p className="text-[12px] text-muted-foreground whitespace-pre-line leading-relaxed">
+                {t.contenu}
+              </p>
+            )}
+            <div className="flex items-center gap-2 pt-1 text-[10px] text-muted-foreground/70">
+              <span>{format(new Date(t.created_at), 'dd MMM yyyy', { locale: fr })}</span>
+              {!t.is_public && isOwner && (
+                <span className="px-1.5 py-0.5 rounded bg-white/5 text-muted-foreground">Privé</span>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 // Hook to get real contributions count from biodiversity snapshots
 const useWalkerContributionsCount = (prenom: string, nom: string, explorationMarcheIds: string[], explorationId?: string) => {
@@ -1028,6 +1125,12 @@ const MarcheurCard: React.FC<{
                     viewerUserId={viewer?.id ?? null}
                     variant="inline"
                   />
+                </motion.div>
+              )}
+
+              {activeSubTab === 'textes' && (
+                <motion.div key="textes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <TextesSubTab userId={resolvedUserId} explorationEventIds={explorationEventIds} />
                 </motion.div>
               )}
 
