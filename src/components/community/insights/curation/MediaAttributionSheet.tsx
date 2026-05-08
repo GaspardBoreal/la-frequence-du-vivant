@@ -152,10 +152,16 @@ const MediaAttributionSheet: React.FC<Props> = ({
           <SheetHeader className="px-5 pt-3 pb-2 text-left">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <SheetTitle className="text-base">Crédit de la photo</SheetTitle>
+              <SheetTitle className="text-base">
+                {source === 'texte' ? 'Crédit du texte' : source === 'audio' ? 'Crédit de l’audio' : 'Crédit de la photo'}
+              </SheetTitle>
             </div>
             <SheetDescription className="text-xs">
-              Qui a réellement pris cette photo&nbsp;? Le crédit sera mis à jour partout dans l'exploration.
+              {source === 'texte'
+                ? "Qui est l'auteur·e de ce texte ? Le crédit sera mis à jour partout dans l'exploration."
+                : source === 'audio'
+                ? "Qui a réellement enregistré cet audio ? Le crédit sera mis à jour partout dans l'exploration."
+                : "Qui a réellement pris cette photo ? Le crédit sera mis à jour partout dans l'exploration."}
             </SheetDescription>
           </SheetHeader>
 
