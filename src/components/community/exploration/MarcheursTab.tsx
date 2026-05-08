@@ -835,7 +835,8 @@ const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementTyp
 const TextesSubTab: React.FC<{
   userId?: string | null;
   explorationEventIds?: string[];
-}> = ({ userId, explorationEventIds }) => {
+  explorationId?: string;
+}> = ({ userId, explorationEventIds, explorationId }) => {
   const { user: viewer } = useAuth();
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
 
