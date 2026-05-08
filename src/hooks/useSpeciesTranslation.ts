@@ -142,5 +142,19 @@ export const useSpeciesTranslationBatch = (
     });
   }, [language, species, auto.data]);
 
-  return { ...auto, data } as typeof auto & { data: SpeciesTranslation[] | undefined };
+  return {
+    data,
+    isLoading: auto.isLoading,
+    isError: auto.isError,
+    error: auto.error,
+    isFetching: auto.isFetching,
+    refetch: auto.refetch,
+  } as {
+    data: SpeciesTranslation[] | undefined;
+    isLoading: boolean;
+    isError: boolean;
+    error: unknown;
+    isFetching: boolean;
+    refetch: typeof auto.refetch;
+  };
 };
