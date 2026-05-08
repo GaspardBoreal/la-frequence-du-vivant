@@ -1,5 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Hand, Plus, Pencil, Trash2, Image as ImageIcon, Play, Mic } from 'lucide-react';
+import { Hand, Plus, Pencil, Trash2, Image as ImageIcon, Play, Mic, ArrowDownAZ, GripVertical, Check } from 'lucide-react';
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+  useSortable,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useExplorationCurations,
   useUpsertCuration,
