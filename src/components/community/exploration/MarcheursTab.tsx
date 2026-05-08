@@ -1312,6 +1312,30 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     return m;
   }, [testimonies]);
 
+  // Single shared query: contribution counts per observer for the whole exploration
+  const { data: contribsByName } = useExplorationContributionsCounts(explorationId, explorationMarcheIds);
+
+  // Sort: total contributions DESC, then alpha (prenom, nom) ASC
+  const sortedMarcheurs = useMemo(() => {
+    if (!marcheurs?.length) return marcheurs ?? [];
+    const collator = new Intl.Collator('fr', { sensitivity: 'base', usage: 'sort' });
+    const score = (m: MarcheurWithStats) => {
+      const photos = m.stats.photos + m.stats.videos;
+      const sons = m.stats.sons || 0;
+      const textes = m.stats.textes || 0;
+      const tem = m.userId && testimoniesByUser.has(m.userId) ? 1 : 0;
+      const contribs = lookupContributions(contribsByName, m.prenom, m.nom);
+      return photos + sons + textes + tem + contribs;
+    };
+    return [...marcheurs].sort((a, b) => {
+      const diff = score(b) - score(a);
+      if (diff !== 0) return diff;
+      const p = collator.compare(a.prenom || '', b.prenom || '');
+      if (p !== 0) return p;
+      return collator.compare(a.nom || '', b.nom || '');
+    });
+  }, [marcheurs, contribsByName, testimoniesByUser]);
+
   const createAffiliateLink = async (channel: 'copy' | 'share') => {
     if (!explorationId) {
       toast.error('Exploration introuvable pour générer le lien');
