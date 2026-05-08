@@ -998,6 +998,50 @@ export type Database = {
           },
         ]
       }
+      event_testimonies: {
+        Row: {
+          author_name: string
+          created_at: string
+          display_order: number
+          event_id: string
+          id: string
+          is_published: boolean
+          quote: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_name: string
+          created_at?: string
+          display_order?: number
+          event_id: string
+          id?: string
+          is_published?: boolean
+          quote: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_name?: string
+          created_at?: string
+          display_order?: number
+          event_id?: string
+          id?: string
+          is_published?: boolean
+          quote?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_testimonies_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exploration_ai_analyses: {
         Row: {
           analyzed_at: string
@@ -4560,6 +4604,10 @@ export type Database = {
           metadata: Json
           similarity: number
         }[]
+      }
+      match_marcheur_for_event: {
+        Args: { _event_id: string; _name: string }
+        Returns: string
       }
       migrate_vocabulary_categorization: {
         Args: never
