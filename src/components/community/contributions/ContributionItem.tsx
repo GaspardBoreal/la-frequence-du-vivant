@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, MapPin, Link2, Users, Earth } from 'lucide-react';
+import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, MapPin, Link2, Users, Earth, Sparkles } from 'lucide-react';
+import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
+import type { ReattributeSource } from '@/hooks/useReattributeMedia';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -28,6 +30,16 @@ export interface ContributionItemProps {
   createdAt: string;
   viewMode?: 'immersion' | 'fiche';
   gpsDistance?: { distanceM: number | null; hasGps: boolean; gpsLat?: number; gpsLng?: number } | null;
+  /** Curator (admin / ambassadeur / sentinelle) → enables credit reattribution. */
+  canReattribute?: boolean;
+  /** Used by the attribution sheet for cache invalidation + picker. */
+  explorationId?: string;
+  /** Editorial marcheur currently credited (null = original uploader/typeur). */
+  attributedMarcheurId?: string | null;
+  /** Display name of the typeur/uploader, shown in the "remove credit" hint. */
+  uploaderName?: string | null;
+  /** Editorial marcheur id matching the typeur (if any), used to flag the picker row. */
+  uploaderMarcheurId?: string | null;
   onUpdate?: (id: string, updates: Record<string, any>) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
@@ -96,12 +108,22 @@ function copyShareLink(id: string, type: string) {
 
 const ContributionItem: React.FC<ContributionItemProps> = ({
   id, type, titre, description, url, externalUrl, contenu, typeTexte,
-  isPublic, sharedToWeb, isOwner, createdAt, viewMode = 'fiche', gpsDistance, onUpdate, onDelete, onClick,
+  isPublic, sharedToWeb, isOwner, createdAt, viewMode = 'fiche', gpsDistance,
+  canReattribute, explorationId, attributedMarcheurId, uploaderName, uploaderMarcheurId,
+  onUpdate, onDelete, onClick,
 }) => {
   const [editing, setEditing] = useState(false);
   const [editTitre, setEditTitre] = useState(titre || '');
   const [editDesc, setEditDesc] = useState(description || contenu || '');
   const [editTypeTexte, setEditTypeTexte] = useState(typeTexte || 'texte-libre');
+  const [attributionOpen, setAttributionOpen] = useState(false);
+
+  const reattributeSource: ReattributeSource | null =
+    type === 'photo' || type === 'video' ? 'media'
+      : type === 'audio' ? 'audio'
+      : type === 'texte' ? 'texte'
+      : null;
+  const showCreditButton = !!canReattribute && !!reattributeSource && !!explorationId;
 
   const Icon = typeIcons[type];
   const displayUrl = url || externalUrl;
@@ -255,14 +277,24 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
               </div>
             )}
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className="text-emerald-200/30 text-[10px]">
                   {format(new Date(createdAt), 'dd MMM yyyy', { locale: fr })}
                 </span>
                 <VisibilityBadge level={visibility} />
               </div>
 
+              <div className="flex items-center gap-1">
+                {showCreditButton && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setAttributionOpen(true); }}
+                    className="p-1 rounded hover:bg-amber-500/15 transition-colors"
+                    title="Modifier le crédit (auteur réel)"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                  </button>
+                )}
               {isOwner && (
                 <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   {/* Visibility selector */}
@@ -316,10 +348,24 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
                   </button>
                 </div>
               )}
+              </div>
             </div>
           </>
         )}
       </div>
+
+      {showCreditButton && reattributeSource && explorationId && (
+        <MediaAttributionSheet
+          open={attributionOpen}
+          onOpenChange={setAttributionOpen}
+          source={reattributeSource}
+          mediaId={id}
+          explorationId={explorationId}
+          currentAttributedId={attributedMarcheurId ?? null}
+          uploaderName={uploaderName ?? null}
+          uploaderMarcheurId={uploaderMarcheurId ?? null}
+        />
+      )}
     </div>
   );
 };

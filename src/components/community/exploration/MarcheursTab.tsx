@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather, Sparkles } from 'lucide-react';
+import { useIsCurator } from '@/hooks/useExplorationCurations';
+import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
@@ -835,22 +837,28 @@ const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementTyp
 const TextesSubTab: React.FC<{
   userId?: string | null;
   explorationEventIds?: string[];
-}> = ({ userId, explorationEventIds }) => {
+  explorationId?: string;
+}> = ({ userId, explorationEventIds, explorationId }) => {
   const { user: viewer } = useAuth();
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+  const [creditTextId, setCreditTextId] = useState<string | null>(null);
+  const { data: isCurator } = useIsCurator(explorationId);
 
   const { data: textes, isLoading } = useQuery({
     queryKey: ['marcheur-textes-exploration', userId, explorationEventIds, sort],
     queryFn: async () => {
       if (!userId || !explorationEventIds?.length) return [];
+      // Fetch any text in scope where the effective author = userId
+      // (typeur OR explicitly attributed to this user)
       const { data, error } = await supabase
         .from('marcheur_textes')
         .select('*')
-        .eq('user_id', userId)
         .in('marche_event_id', explorationEventIds)
+        .or(`user_id.eq.${userId},attributed_user_id.eq.${userId}`)
         .order('created_at', { ascending: sort === 'asc' });
       if (error) throw error;
-      return data || [];
+      // Effective author: attributed_user_id ?? user_id
+      return (data || []).filter((t: any) => (t.attributed_user_id ?? t.user_id) === userId);
     },
     enabled: !!userId && !!explorationEventIds?.length,
     staleTime: 60_000,
@@ -873,7 +881,7 @@ const TextesSubTab: React.FC<{
   }
 
   const isOwner = !!viewer && viewer.id === userId;
-  const visible = (textes || []).filter((t: any) => t.is_public || isOwner);
+  const visible = (textes || []).filter((t: any) => t.is_public || isOwner || isCurator);
 
   if (!visible.length) {
     return (
@@ -919,10 +927,30 @@ const TextesSubTab: React.FC<{
               {!t.is_public && isOwner && (
                 <span className="px-1.5 py-0.5 rounded bg-white/5 text-muted-foreground">Privé</span>
               )}
+              {isCurator && explorationId && (
+                <button
+                  onClick={() => setCreditTextId(t.id)}
+                  className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-amber-500/15 text-amber-400 transition-colors"
+                  title="Modifier le crédit (auteur réel)"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span className="text-[10px]">Crédit</span>
+                </button>
+              )}
             </div>
           </article>
         ))}
       </div>
+      {creditTextId && explorationId && (
+        <MediaAttributionSheet
+          open={!!creditTextId}
+          onOpenChange={(o) => !o && setCreditTextId(null)}
+          source="texte"
+          mediaId={creditTextId}
+          explorationId={explorationId}
+          currentAttributedId={null}
+        />
+      )}
     </div>
   );
 };
@@ -1130,7 +1158,7 @@ const MarcheurCard: React.FC<{
 
               {activeSubTab === 'textes' && (
                 <motion.div key="textes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <TextesSubTab userId={resolvedUserId} explorationEventIds={explorationEventIds} />
+                  <TextesSubTab userId={resolvedUserId} explorationEventIds={explorationEventIds} explorationId={explorationId} />
                 </motion.div>
               )}
 

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type ReattributeSource = 'media' | 'audio' | 'conv';
+export type ReattributeSource = 'media' | 'audio' | 'conv' | 'texte';
 
 interface Args {
   source: ReattributeSource;
@@ -45,6 +45,12 @@ export function useReattributeMedia() {
       qc.invalidateQueries({ queryKey: ['exploration-participants', vars.explorationId] });
       // Legacy fiche view (MarcheDetailModal / VoirTab)
       qc.invalidateQueries({ queryKey: ['marcheur-medias'] });
+      // Texts
+      qc.invalidateQueries({ queryKey: ['marcheur-textes'] });
+      qc.invalidateQueries({ queryKey: ['marcheur-textes-exploration'] });
+      qc.invalidateQueries({ queryKey: ['exploration-text-stats'] });
+      qc.invalidateQueries({ queryKey: ['exploration-texts'] });
+      qc.invalidateQueries({ queryKey: ['marche-detail-textes'] });
       if (vars.marcheurId) {
         toast.success(
           vars.marcheurName

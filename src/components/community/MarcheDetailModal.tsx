@@ -681,8 +681,25 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
   const updateContrib = useUpdateContribution();
   const deleteContrib = useDeleteContribution();
 
-  const myTextes = userTextes?.filter(t => t.user_id === userId) || [];
-  const othersTextes = userTextes?.filter(t => t.user_id !== userId && t.is_public) || [];
+  // Curator capability for credit reattribution
+  const { data: explorationId } = useQuery({
+    queryKey: ['marche-event-exploration', marcheEventId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marche_events')
+        .select('exploration_id')
+        .eq('id', marcheEventId)
+        .single();
+      return data?.exploration_id ?? null;
+    },
+    enabled: !!marcheEventId,
+  });
+  const { data: isCurator } = useIsCurator(explorationId ?? undefined);
+
+  // Effective author = attributed_user_id ?? user_id
+  const effectiveAuthor = (t: any) => (t.attributed_user_id ?? t.user_id) as string;
+  const myTextes = userTextes?.filter(t => effectiveAuthor(t) === userId) || [];
+  const othersTextes = userTextes?.filter(t => effectiveAuthor(t) !== userId && t.is_public) || [];
 
   const handleSubmit = () => {
     if (!newContenu.trim()) return;
@@ -804,6 +821,8 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
                 sharedToWeb={(t as any).shared_to_web}
                 isOwner={true}
                 createdAt={t.created_at}
+                canReattribute={!!isCurator}
+                explorationId={explorationId ?? undefined}
                 onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_textes', id, updates })}
                 onDelete={(id) => deleteContrib.mutate({ table: 'marcheur_textes', id })}
               />
@@ -822,7 +841,8 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
           <div className="space-y-2">
             {othersTextes.map(t => (
               <ContributionItem key={t.id} id={t.id} type="texte" titre={t.titre} contenu={t.contenu}
-                typeTexte={t.type_texte} isPublic={t.is_public} isOwner={false} createdAt={t.created_at} />
+                typeTexte={t.type_texte} isPublic={t.is_public} isOwner={false} createdAt={t.created_at}
+                canReattribute={!!isCurator} explorationId={explorationId ?? undefined} />
             ))}
           </div>
         </div>
