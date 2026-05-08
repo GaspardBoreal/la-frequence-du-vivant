@@ -7,7 +7,7 @@ import MediaAttributionSheet from '@/components/community/insights/curation/Medi
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
-import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
+import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -465,8 +465,7 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
 
   const species = speciesFromSnapshots || [];
   const speciesForTranslation = species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }));
-  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
-  const translationMap = new Map(translations?.map(t => [t.scientificName, t]) || []);
+  const { data: frNamesMap } = useFrenchSpeciesNamesAuto(speciesForTranslation);
 
   const getKingdomInfo = (kingdom: string) => {
     if (kingdom === 'Animalia') return { icon: Bird, color: 'text-sky-500', bgColor: 'bg-sky-500/10', label: 'Faune' };
@@ -534,8 +533,7 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
 
       <div className="space-y-2">
         {sorted.map((obs, i) => {
-          const translation = translationMap.get(obs.scientificName);
-          const frenchName = translation?.commonName || obs.commonName;
+          const frenchName = frNamesMap?.get(obs.scientificName)?.commonNameFr || null;
           const kingdomInfo = getKingdomInfo(obs.kingdom);
           const KingdomIcon = kingdomInfo.icon;
           const dateStr = obs.date
