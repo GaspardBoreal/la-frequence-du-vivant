@@ -880,7 +880,7 @@ const TextesSubTab: React.FC<{
     staleTime: 60_000,
   });
 
-  if (!userId) {
+  if (!userId && !crewId) {
     return (
       <div className="px-3 py-4 text-center">
         <p className="text-xs text-muted-foreground italic">Textes de l'équipe non disponibles</p>
