@@ -437,12 +437,10 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">Récit / description</label>
-              <Textarea
+              <RichTextEditor
                 value={editor.description}
-                onChange={e => setEditor(s => ({ ...s, description: e.target.value }))}
+                onChange={(html) => setEditor(s => ({ ...s, description: html }))}
                 placeholder="Racontez le geste, le savoir-faire, le contexte…"
-                rows={5}
-                maxLength={2000}
               />
             </div>
 
