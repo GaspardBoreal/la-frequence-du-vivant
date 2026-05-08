@@ -46,6 +46,7 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
   isCreatingWaypoint,
   layers,
   activeBadgeCount,
+  waypointsCount = 0,
   onToggleLoop,
   onStartCreateMarche,
   onToggleCreateWaypoint,
