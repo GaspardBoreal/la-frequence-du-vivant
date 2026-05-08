@@ -16,7 +16,9 @@ import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
-type SubTab = 'synthese' | 'taxons' | 'textes' | 'analyse';
+import TestimoniesTab from './insights/testimonies/TestimoniesTab';
+
+type SubTab = 'synthese' | 'taxons' | 'temoignages' | 'textes' | 'analyse';
 
 
 interface EventBiodiversityTabProps {
