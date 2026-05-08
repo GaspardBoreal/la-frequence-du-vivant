@@ -877,22 +877,32 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
         </div>
       )}
 
-      {/* Others texts */}
-      {othersTextes.length > 0 && (
-        <div className="space-y-1.5">
+      {/* Others texts — groupés par auteur effectif (avec crédits) */}
+      {othersGroups.map(group => (
+        <div key={group.authorId} className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <Users className="w-3 h-3 text-blue-400" />
-            <span className="text-blue-300/60 text-[10px] uppercase tracking-wider">Des marcheurs ({othersTextes.length})</span>
+            {group.avatarUrl ? (
+              <img
+                src={group.avatarUrl}
+                alt=""
+                className={`w-5 h-5 rounded-full object-cover ring-1 ${group.isCredited ? 'ring-amber-400/40' : 'ring-blue-400/40'}`}
+              />
+            ) : (
+              <Users className={`w-3 h-3 ${group.isCredited ? 'text-amber-400' : 'text-blue-400'}`} />
+            )}
+            <span className={`text-[10px] uppercase tracking-wider ${group.isCredited ? 'text-amber-300/70' : 'text-blue-300/70'}`}>
+              {group.isCredited ? `Crédité à ${group.fullName}` : group.fullName} ({group.textes.length})
+            </span>
           </div>
           <div className="space-y-2">
-            {othersTextes.map(t => (
+            {group.textes.map(t => (
               <ContributionItem key={t.id} id={t.id} type="texte" titre={t.titre} contenu={t.contenu}
                 typeTexte={t.type_texte} isPublic={t.is_public} isOwner={false} createdAt={t.created_at}
                 canReattribute={!!isCurator} explorationId={explorationId ?? undefined} />
             ))}
           </div>
         </div>
-      )}
+      ))}
 
       {!kigos?.length && !myTextes.length && !othersTextes.length && !showNew && (
         <EmptyState message="Aucun texte pour cette marche" sub="Appuyez sur + Écrire pour partager vos mots" />
