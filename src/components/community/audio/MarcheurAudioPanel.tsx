@@ -121,6 +121,85 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
     (a: any) => !effectiveViewerUserId || a.user_id !== effectiveViewerUserId,
   );
 
+  // Resolve attributed crew (exploration_marcheurs) → user_id + nom + avatar
+  const attributedCrewIds = React.useMemo(
+    () => Array.from(new Set(othersAudio.map((a: any) => a.attributed_marcheur_id).filter(Boolean))) as string[],
+    [othersAudio],
+  );
+  const { data: crewInfos = [] } = useQuery({
+    queryKey: ['marcheur-panel-audio-attributed-crews', attributedCrewIds.sort().join(',')],
+    queryFn: async () => {
+      if (!attributedCrewIds.length) return [];
+      const { data } = await supabase
+        .from('exploration_marcheurs')
+        .select('id, user_id, prenom, nom, avatar_url, couleur')
+        .in('id', attributedCrewIds);
+      return data || [];
+    },
+    enabled: attributedCrewIds.length > 0,
+  });
+  const crewInfoById = React.useMemo(() => {
+    const map = new Map<string, { userId: string | null; fullName: string; avatarUrl: string | null }>();
+    (crewInfos as any[]).forEach((c) => {
+      const full = `${c.prenom ?? ''} ${c.nom ?? ''}`.trim();
+      map.set(c.id, { userId: c.user_id ?? null, fullName: full || 'Marcheur', avatarUrl: c.avatar_url ?? null });
+    });
+    return map;
+  }, [crewInfos]);
+
+  // Resolve uploader profiles for non-attributed audios
+  const uploaderIds = React.useMemo(
+    () => Array.from(new Set(othersAudio.filter((a: any) => !a.attributed_marcheur_id).map((a: any) => a.user_id).filter(Boolean))) as string[],
+    [othersAudio],
+  );
+  const { data: uploaderProfiles = [] } = useQuery({
+    queryKey: ['marcheur-panel-audio-uploaders', uploaderIds.sort().join(',')],
+    queryFn: async () => {
+      if (!uploaderIds.length) return [];
+      const { data } = await supabase
+        .from('community_profiles')
+        .select('user_id, prenom, nom, avatar_url')
+        .in('user_id', uploaderIds);
+      return data || [];
+    },
+    enabled: uploaderIds.length > 0,
+  });
+  const uploaderInfoById = React.useMemo(() => {
+    const map = new Map<string, { fullName: string; avatarUrl: string | null }>();
+    (uploaderProfiles as any[]).forEach((p) => {
+      const full = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim();
+      map.set(p.user_id, { fullName: full || 'Marcheur', avatarUrl: p.avatar_url ?? null });
+    });
+    return map;
+  }, [uploaderProfiles]);
+
+  // Group othersAudio by effective author (attributed crew or uploader)
+  const othersGroups = React.useMemo(() => {
+    type G = { key: string; fullName: string; avatarUrl: string | null; isCredited: boolean; audios: any[] };
+    const groups = new Map<string, G>();
+    othersAudio.forEach((a: any) => {
+      let key: string;
+      let fullName: string;
+      let avatarUrl: string | null;
+      let isCredited = false;
+      if (a.attributed_marcheur_id) {
+        const info = crewInfoById.get(a.attributed_marcheur_id);
+        key = `crew:${a.attributed_marcheur_id}`;
+        fullName = info?.fullName || 'Marcheur';
+        avatarUrl = info?.avatarUrl ?? null;
+        isCredited = true;
+      } else {
+        const info = uploaderInfoById.get(a.user_id);
+        key = `user:${a.user_id}`;
+        fullName = info?.fullName || 'Marcheur';
+        avatarUrl = info?.avatarUrl ?? null;
+      }
+      if (!groups.has(key)) groups.set(key, { key, fullName, avatarUrl, isCredited, audios: [] });
+      groups.get(key)!.audios.push(a);
+    });
+    return Array.from(groups.values());
+  }, [othersAudio, crewInfoById, uploaderInfoById]);
+
   const padding = variant === 'modal' ? '' : 'px-3 pt-3 pb-3';
 
   const isEmpty =
@@ -254,17 +333,25 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
         </div>
       )}
 
-      {/* Sons des autres */}
-      {othersAudio.length > 0 && (
-        <div className="space-y-1.5">
+      {/* Sons des autres — groupés par auteur effectif (avec crédits) */}
+      {othersGroups.map(group => (
+        <div key={group.key} className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <Users className="w-3 h-3 text-blue-400" />
-            <span className="text-blue-300/80 text-[10px] uppercase tracking-wider">
-              Des marcheurs ({othersAudio.length})
+            {group.avatarUrl ? (
+              <img
+                src={group.avatarUrl}
+                alt=""
+                className={`w-5 h-5 rounded-full object-cover ring-1 ${group.isCredited ? 'ring-amber-400/40' : 'ring-blue-400/40'}`}
+              />
+            ) : (
+              <Users className={`w-3 h-3 ${group.isCredited ? 'text-amber-400' : 'text-blue-400'}`} />
+            )}
+            <span className={`text-[10px] uppercase tracking-wider ${group.isCredited ? 'text-amber-300/80' : 'text-blue-300/80'}`}>
+              {group.isCredited ? `Crédité à ${group.fullName}` : group.fullName} ({group.audios.length})
             </span>
           </div>
           <div className="space-y-2">
-            {othersAudio.map((a: any) => (
+            {group.audios.map((a: any) => (
               <div key={a.id} className="space-y-1">
                 <ContributionItem
                   id={a.id}
@@ -285,7 +372,7 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
             ))}
           </div>
         </div>
-      )}
+      ))}
 
       {isEmpty && (
         <div className="px-3 py-6 text-center">

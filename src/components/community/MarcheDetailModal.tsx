@@ -701,6 +701,52 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
   const myTextes = userTextes?.filter(t => effectiveAuthor(t) === userId) || [];
   const othersTextes = userTextes?.filter(t => effectiveAuthor(t) !== userId && t.is_public) || [];
 
+  // Resolve author profiles for "Des marcheurs" grouping (avatar + nom)
+  const authorIds = React.useMemo(
+    () => Array.from(new Set(othersTextes.map(t => effectiveAuthor(t)).filter(Boolean))),
+    [othersTextes],
+  );
+  const { data: authorProfiles = [] } = useQuery({
+    queryKey: ['marcheur-textes-authors', authorIds.sort().join(',')],
+    queryFn: async () => {
+      if (!authorIds.length) return [];
+      const { data } = await supabase
+        .from('community_profiles')
+        .select('user_id, prenom, nom, avatar_url')
+        .in('user_id', authorIds);
+      return data || [];
+    },
+    enabled: authorIds.length > 0,
+  });
+  const authorInfoById = React.useMemo(() => {
+    const map = new Map<string, { fullName: string; avatarUrl: string | null }>();
+    (authorProfiles as any[]).forEach((p) => {
+      const full = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim();
+      map.set(p.user_id, { fullName: full || 'Marcheur', avatarUrl: p.avatar_url ?? null });
+    });
+    return map;
+  }, [authorProfiles]);
+
+  const othersGroups = React.useMemo(() => {
+    const groups = new Map<string, { authorId: string; fullName: string; avatarUrl: string | null; isCredited: boolean; textes: typeof othersTextes }>();
+    othersTextes.forEach(t => {
+      const aid = effectiveAuthor(t);
+      const info = authorInfoById.get(aid);
+      const isCredited = !!t.attributed_user_id;
+      if (!groups.has(aid)) {
+        groups.set(aid, {
+          authorId: aid,
+          fullName: info?.fullName || 'Marcheur',
+          avatarUrl: info?.avatarUrl ?? null,
+          isCredited,
+          textes: [],
+        });
+      }
+      groups.get(aid)!.textes.push(t);
+    });
+    return Array.from(groups.values());
+  }, [othersTextes, authorInfoById]);
+
   const handleSubmit = () => {
     if (!newContenu.trim()) return;
     createTexte.mutate({
@@ -831,22 +877,32 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
         </div>
       )}
 
-      {/* Others texts */}
-      {othersTextes.length > 0 && (
-        <div className="space-y-1.5">
+      {/* Others texts — groupés par auteur effectif (avec crédits) */}
+      {othersGroups.map(group => (
+        <div key={group.authorId} className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <Users className="w-3 h-3 text-blue-400" />
-            <span className="text-blue-300/60 text-[10px] uppercase tracking-wider">Des marcheurs ({othersTextes.length})</span>
+            {group.avatarUrl ? (
+              <img
+                src={group.avatarUrl}
+                alt=""
+                className={`w-5 h-5 rounded-full object-cover ring-1 ${group.isCredited ? 'ring-amber-400/40' : 'ring-blue-400/40'}`}
+              />
+            ) : (
+              <Users className={`w-3 h-3 ${group.isCredited ? 'text-amber-400' : 'text-blue-400'}`} />
+            )}
+            <span className={`text-[10px] uppercase tracking-wider ${group.isCredited ? 'text-amber-300/70' : 'text-blue-300/70'}`}>
+              {group.isCredited ? `Crédité à ${group.fullName}` : group.fullName} ({group.textes.length})
+            </span>
           </div>
           <div className="space-y-2">
-            {othersTextes.map(t => (
+            {group.textes.map(t => (
               <ContributionItem key={t.id} id={t.id} type="texte" titre={t.titre} contenu={t.contenu}
                 typeTexte={t.type_texte} isPublic={t.is_public} isOwner={false} createdAt={t.created_at}
                 canReattribute={!!isCurator} explorationId={explorationId ?? undefined} />
             ))}
           </div>
         </div>
-      )}
+      ))}
 
       {!kigos?.length && !myTextes.length && !othersTextes.length && !showNew && (
         <EmptyState message="Aucun texte pour cette marche" sub="Appuyez sur + Écrire pour partager vos mots" />
