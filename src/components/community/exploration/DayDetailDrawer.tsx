@@ -2,6 +2,7 @@ import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Sparkles, MapPin, Users, ExternalLink, Leaf, Bird, TreePine, Bug } from 'lucide-react';
 import type { DayBucket, DayObservation } from '@/hooks/useBiodiversityEvolution';
+import { SpeciesName } from '@/components/species/SpeciesName';
 
 interface Props {
   open: boolean;
@@ -50,18 +51,23 @@ const SpeciesRow: React.FC<{ obs: DayObservation; isNew?: boolean }> = ({ obs, i
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium text-foreground truncate">
-            {obs.commonNameFr || obs.commonName || obs.scientificName}
-          </span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className="min-w-0 flex-1">
+            <SpeciesName
+              scientificName={obs.scientificName}
+              commonName={obs.commonName}
+              size="sm"
+              truncate
+              showScientific
+            />
+          </div>
           {isNew && (
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] font-semibold">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] font-semibold flex-shrink-0">
               <Sparkles className="w-2.5 h-2.5" />
               1ère obs.
             </span>
           )}
         </div>
-        <div className="text-[11px] text-muted-foreground italic truncate">{obs.scientificName}</div>
       </div>
       {obs.originalUrl && (
         <a

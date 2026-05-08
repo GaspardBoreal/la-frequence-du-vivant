@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useFrenchSpeciesNamesAuto } from './useFrenchSpeciesNamesAuto';
 
 export type DateSource = 'observation' | 'collection';
 export type EvolutionMetric = 'species' | 'observations';
@@ -84,6 +85,24 @@ export function useBiodiversityEvolution(
   snapshots: any[] | undefined | null,
   opts: UseEvolutionOpts
 ): EvolutionResult {
+  // Collect species list once for the FR resolver (auto-fills DB cache in bg)
+  const speciesForFr = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Array<{ scientificName: string; commonName: string | null }> = [];
+    (snapshots || []).forEach((snap: any) => {
+      const sd = snap?.species_data;
+      if (!Array.isArray(sd)) return;
+      sd.forEach((sp: any) => {
+        const sci = (sp?.scientificName || sp?.commonName || '').toString().trim();
+        if (!sci || seen.has(sci)) return;
+        seen.add(sci);
+        list.push({ scientificName: sci, commonName: sp?.commonName?.toString().trim() || null });
+      });
+    });
+    return list;
+  }, [snapshots]);
+  const { data: frMap } = useFrenchSpeciesNamesAuto(speciesForFr);
+
   return useMemo(() => {
     const empty: EvolutionResult = {
       series: [],
@@ -135,7 +154,7 @@ export function useBiodiversityEvolution(
             const obs: DayObservation = {
               scientificName: sciName,
               commonName: sp.commonName,
-              commonNameFr: sp.commonNameFr,
+              commonNameFr: frMap?.get(sciName)?.commonNameFr ?? sp.commonNameFr ?? null,
               kingdom: sp.kingdom,
               photo: Array.isArray(sp.photos) && sp.photos[0] ? sp.photos[0] : undefined,
               observerName: att.observerName,
@@ -170,7 +189,7 @@ export function useBiodiversityEvolution(
           const obs: DayObservation = {
             scientificName: sciName,
             commonName: sp.commonName,
-            commonNameFr: sp.commonNameFr,
+            commonNameFr: frMap?.get(sciName)?.commonNameFr ?? sp.commonNameFr ?? null,
             kingdom: sp.kingdom,
             photo: Array.isArray(sp.photos) && sp.photos[0] ? sp.photos[0] : undefined,
             marcheId: snap.marche_id,
@@ -247,5 +266,5 @@ export function useBiodiversityEvolution(
       totalSpecies: seenSpecies.size,
       totalObservations: totalObs,
     };
-  }, [snapshots, opts.dateSource, opts.metric, opts.period]);
+  }, [snapshots, opts.dateSource, opts.metric, opts.period, frMap]);
 }
