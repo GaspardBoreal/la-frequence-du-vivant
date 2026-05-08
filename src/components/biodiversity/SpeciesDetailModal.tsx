@@ -149,7 +149,9 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                 <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center mb-4">
                   <Camera className="h-8 w-8 text-muted-foreground/60" />
                 </div>
-                <h4 className="font-medium text-muted-foreground mb-2">{species.commonName}</h4>
+                <h4 className="font-medium text-muted-foreground mb-2">
+                  <SpeciesName scientificName={species.scientificName} commonName={species.commonName} size="sm" />
+                </h4>
                 <p className="text-sm text-muted-foreground/80">Aucune photo disponible</p>
               </div>
             )}
@@ -168,8 +170,7 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                     </div>
                   ) : (
                     <>
-                      <h3 className="font-semibold text-foreground">{displayName}</h3>
-                      <p className="text-sm text-muted-foreground italic">{species.scientificName}</p>
+                      <SpeciesName scientificName={species.scientificName} commonName={species.commonName} size="md" showScientific />
                       <p className="text-sm text-muted-foreground">Famille: {species.family}</p>
                       
                       {/* Indicateur de traduction */}

@@ -139,8 +139,7 @@ export const SpeciesXenoCantoModal: React.FC<SpeciesXenoCantoModalProps> = ({
                       {/* Informations */}
                       <div className="flex-1 space-y-3">
                         <div>
-                          <h3 className="font-semibold text-lg">{speciesItem.commonName}</h3>
-                          <p className="text-muted-foreground italic">{speciesItem.scientificName}</p>
+                          <SpeciesName scientificName={speciesItem.scientificName} commonName={speciesItem.commonName} size="lg" showScientific />
                         </div>
 
                         {/* Badges de qualité et type */}
