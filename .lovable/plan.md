@@ -1,85 +1,46 @@
-# Refonte "Le Cœur" — Galerie immersive des écrits
+# Attribution réelle dans l'onglet Voir
 
-## Vision
+## Diagnostic
 
-Faire de l'onglet "Le Cœur" un **livre vivant collectif** où chaque texte de marcheur est mis en valeur comme une œuvre. Mobile-first, avec une esthétique éditoriale (typographie serif, citations en exergue, papier crème / forêt émeraude selon le thème).
+Dans `MarcheDetailModal.tsx > VoirTab`, le tri se fait sur l'**uploader** :
 
-## Ce qui change
+```ts
+const myMedias = userMedias?.filter(m => m.user_id === userId) || [];
+const othersMedias = userMedias?.filter(m => m.user_id !== userId && m.is_public) || [];
+```
 
-L'onglet actuel (`TextesEcritsSubTab.tsx`) affiche les textes dans des accordéons fonctionnels mais sans souffle. On garde la donnée et la logique RPC, mais on refait toute la couche présentation.
+`m.user_id` reste toujours Gaspard (uploader), même après réattribution. L'auteur réel est porté par `attributed_marcheur_id` (FK vers `exploration_marcheurs`), table qui possède une colonne `user_id` reliant le marcheur éditorial à un compte (Sophie D.).
 
-## 1. Hero d'ouverture (mobile-first)
+→ Toutes les photos uploadées par Gaspard remontent sous "Mes contributions", même celles créditées à Sophie.
 
-En haut de l'onglet, un bandeau poétique :
-- Compteur animé : "**X voix · Y écrits · Z points de marche**"
-- Sous-titre cursif : "*Ce que les marcheurs ont confié au papier*"
-- Petit défilement horizontal d'avatars des auteurs (comme les "stories")
-- Filtres pills discrets : Tous · par type (poème, fragment, lettre, haïku…) · par marcheur · par point
+## Correction (UI uniquement, robuste)
 
-## 2. Vue principale — "Le Mur des écrits" (par défaut, mobile)
+### 1. Calcul d'un `effectiveAuthorUserId` par média
+- Si `attributed_marcheur_id` défini → résoudre le `user_id` du marcheur via la liste `explorationMarcheurs` déjà chargée.
+- Sinon → fallback sur l'uploader `m.user_id`.
+- Si le marcheur attribué n'a pas de `user_id` (cas "shadow") → traiter comme auteur tiers identifié par son nom.
 
-Une **mosaïque masonry** plein écran de cartes-citations :
-- Chaque carte = un extrait du texte (3-4 lignes en serif italique)
-- Hauteur variable selon longueur → effet Pinterest poétique
-- Fond papier (light) ou parchemin sombre (dark) avec léger grain
-- Coin replié subtil (skeuomorphisme délicat)
-- Badge type texte (poème, haïku…) en filigrane
-- Avatar + prénom de l'auteur en pied de carte
-- Pastille de couleur selon le **point de marche** (gradient lié à l'ordre de la marche)
-- Animation `fade-in` + `scale-in` séquentielle au scroll
-- Tap → ouvre la **vue fiche immersive**
+### 2. Trois buckets d'affichage
+- **Mes contributions** : `effectiveAuthorUserId === userId` (Gaspard ne voit ici que ce qui lui revient vraiment).
+- **Crédités à d'autres marcheurs** : groupés par marcheur attribué avec en-tête (avatar + nom + compteur), même si je suis l'uploader (sinon je perds la trace de mes uploads recrédités).
+- **Des marcheurs** : photos uploadées par d'autres et non attribuées à moi, filtrées par `is_public` comme aujourd'hui.
 
-Sur desktop : 2-3 colonnes masonry. Sur mobile : 1 colonne pleine largeur avec espacement généreux.
+### 3. Cas miroir
+Photo attribuée à moi mais uploadée par un autre → remonte automatiquement dans "Mes contributions". Comportement symétrique et cohérent.
 
-## 3. Vues alternatives (toggle segmenté en haut)
+### 4. Lightbox & permissions
+- `isOwner` devient `effectiveAuthorUserId === userId`.
+- Les actions édition/suppression restent contrôlées par RLS côté serveur (pas de changement back).
 
-Trois modes au lieu de deux :
+### 5. En-têtes par groupe
+Réutiliser le style amber/blue existant. Sous-titre par marcheur attribué : avatar `exploration_marcheurs.avatar_url`, nom complet, badge "crédité".
 
-- **Mur** (défaut) — masonry décrit ci-dessus
-- **Marcheurs** — chaque marcheur = une "page d'auteur" avec son avatar large, bio courte, et ses textes en stack vertical
-- **Itinéraire** — les écrits suivent l'ordre des points de marche, avec une ligne verticale pointillée façon journal de bord
+## Fichiers impactés
 
-Le toggle remplace l'actuel pill discret par un segmented control plus design.
+- `src/components/community/MarcheDetailModal.tsx` — refactor du composant `VoirTab` uniquement (calcul des groupes + rendu en sections par auteur).
 
-## 4. Vue fiche immersive (sheet plein écran sur mobile)
+## Hors périmètre
 
-Au tap sur un texte, on ouvre une **lecture plein écran** plutôt qu'un dialog classique :
-- Sur mobile : `Sheet` qui monte du bas, plein écran, scroll vertical
-- Header collant : avatar auteur + prénom + type de texte + bouton fermer
-- Titre du texte en très grande typographie serif (style livre)
-- Contenu en serif 18px, interligne généreuse, marges respirantes
-- Lettrine sur la première lettre du texte
-- Footer : point de marche cliquable (→ navigue vers la marche), date, bouton partager (lien copiable + Web Share API mobile)
-- Navigation **swipe gauche/droite** pour passer au texte suivant/précédent du même mode de tri
-- Indicateur "Texte 3 / 18" discret en haut
-
-## 5. Polish
-
-- Typographie : utiliser une serif éditoriale (Cormorant, Lora ou existante du projet)
-- Tokens sémantiques uniquement (pas de couleurs en dur) — respect des thèmes Papier Crème / Forêt Émeraude
-- États vides : déjà beau, conserver
-- Skeleton loaders au lieu d'attente vide
-- Préserver `?texte=…` pour partage direct
-- Respect du principe "Sobriété Informationnelle" : un seul élément focal par écran
-
-## Détails techniques
-
-**Fichier modifié :**
-- `src/components/community/exploration/TextesEcritsSubTab.tsx` — refonte complète de la couche UI, logique de fetch et RPC inchangée
-
-**Nouveaux sous-composants** (dans le même fichier ou extraits) :
-- `EcritHero` — bandeau d'ouverture avec compteurs et avatars
-- `MurMasonry` — grille masonry des cartes citations
-- `CitationCard` — carte individuelle avec effet papier
-- `MarcheurPage` — vue page-auteur
-- `ItineraireTimeline` — timeline verticale par point
-- `LectureImmersive` — Sheet plein écran avec swipe (Framer Motion drag)
-- `SegmentedToggle` — toggle 3-positions amélioré
-
-**Dépendances :** déjà disponibles (`framer-motion`, `@/components/ui/sheet`, dnd non requis, Web Share API native).
-
-**Aucun changement** : RPC `get_event_public_textes`, schéma DB, RLS, hooks de fetch.
-
-## Question pour toi
-
-Une seule question avant de coder.
+- Pas de migration SQL (données et RLS déjà correctes, pur affichage).
+- Pas de modification du hook `useReattributeMedia` ni du RPC `reattribute_media`.
+- Onglet **Lire** non modifié (même logique applicable si confirmé ensuite).

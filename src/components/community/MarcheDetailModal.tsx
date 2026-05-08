@@ -128,13 +128,78 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
   const deleteContrib = useDeleteContribution();
   const reorderContribs = useReorderContributions();
 
-  const myMedias = userMedias?.filter(m => m.user_id === userId) || [];
-  const othersMedias = userMedias?.filter(m => m.user_id !== userId && m.is_public) || [];
+  // Map exploration_marcheurs.id → { user_id, fullName, avatar_url, couleur }
+  // (the public hook ExplorationMarcheur omits user_id, so we fetch it directly)
+  const { data: marcheurAttribMap } = useQuery({
+    queryKey: ['marcheur-attrib-map', explorationId],
+    queryFn: async () => {
+      if (!explorationId) return new Map<string, { userId: string | null; fullName: string; avatarUrl: string | null; couleur: string | null }>();
+      const { data } = await supabase
+        .from('exploration_marcheurs')
+        .select('id, user_id, prenom, nom, avatar_url, couleur')
+        .eq('exploration_id', explorationId);
+      const map = new Map<string, { userId: string | null; fullName: string; avatarUrl: string | null; couleur: string | null }>();
+      (data || []).forEach((m: any) => {
+        map.set(m.id, {
+          userId: m.user_id ?? null,
+          fullName: `${m.prenom ?? ''} ${m.nom ?? ''}`.trim(),
+          avatarUrl: m.avatar_url ?? null,
+          couleur: m.couleur ?? null,
+        });
+      });
+      return map;
+    },
+    enabled: !!explorationId,
+  });
 
-  // Resolve uploader names (for the attribution credit chip)
+  // Compute the effective author for each media (real photographer, not uploader)
+  const allMedias = userMedias || [];
+  const effectiveAuthor = (m: any): { userId: string | null; marcheurId: string | null; fullName: string | null; avatarUrl: string | null; couleur: string | null } => {
+    const attribId = m.attributed_marcheur_id ?? null;
+    if (attribId && marcheurAttribMap?.has(attribId)) {
+      const info = marcheurAttribMap.get(attribId)!;
+      return { userId: info.userId, marcheurId: attribId, fullName: info.fullName || null, avatarUrl: info.avatarUrl, couleur: info.couleur };
+    }
+    return { userId: m.user_id ?? null, marcheurId: null, fullName: null, avatarUrl: null, couleur: null };
+  };
+
+  // Bucket 1 — Mes contributions: media whose effective author is me
+  const myMedias = allMedias.filter(m => effectiveAuthor(m).userId === userId);
+  // Bucket 2 — Crédités à d'autres marcheurs: attributed to someone else (regardless of who uploaded)
+  const creditedToOthers = allMedias.filter(m => {
+    const a = effectiveAuthor(m);
+    return a.marcheurId && a.userId !== userId;
+  });
+  // Bucket 3 — Des marcheurs: uploaded by others, not attributed to me, public
+  const othersMedias = allMedias.filter(m => {
+    const a = effectiveAuthor(m);
+    return a.marcheurId === null && m.user_id !== userId && m.is_public;
+  });
+
+  // Group bucket 2 by attributed marcheur
+  const creditedGroups = React.useMemo(() => {
+    const groups = new Map<string, { marcheurId: string; fullName: string; avatarUrl: string | null; couleur: string | null; medias: typeof allMedias }>();
+    creditedToOthers.forEach(m => {
+      const a = effectiveAuthor(m);
+      if (!a.marcheurId) return;
+      if (!groups.has(a.marcheurId)) {
+        groups.set(a.marcheurId, {
+          marcheurId: a.marcheurId,
+          fullName: a.fullName || 'Marcheur',
+          avatarUrl: a.avatarUrl,
+          couleur: a.couleur,
+          medias: [],
+        });
+      }
+      groups.get(a.marcheurId)!.medias.push(m);
+    });
+    return Array.from(groups.values());
+  }, [creditedToOthers, marcheurAttribMap]);
+
+  // Resolve uploader names (for the attribution credit chip in lightbox)
   const uploaderIds = React.useMemo(
-    () => Array.from(new Set([...myMedias, ...othersMedias].map(m => m.user_id))),
-    [myMedias, othersMedias],
+    () => Array.from(new Set(allMedias.map(m => m.user_id))),
+    [allMedias],
   );
   const { data: uploaderProfiles = [] } = useQuery({
     queryKey: ['marcheur-medias-uploaders', uploaderIds.sort().join(',')],
@@ -157,39 +222,33 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
     return map;
   }, [uploaderProfiles]);
 
-  // Build unified lightbox items array
+  // Build unified lightbox items array (order MUST match render order: admin → mine → credited groups → others)
   const lightboxItems: LightboxItem[] = React.useMemo(() => {
     const items: LightboxItem[] = [];
-    // Admin photos
     (adminPhotos || []).forEach(p => items.push({
       url: p.url_supabase, type: 'photo', titre: p.titre, isPublic: true, isOwner: false,
     }));
-    // My contributions
-    myMedias.forEach(m => {
+    const pushMedia = (m: any, isOwner: boolean) => {
       const url = m.url_fichier || m.external_url;
-      if (url) items.push({
-        url, type: m.type_media, titre: m.titre, isPublic: m.is_public, isOwner: true, createdAt: m.created_at,
-        id: m.id, source: 'media',
+      if (!url) return;
+      items.push({
+        url, type: m.type_media, titre: m.titre,
+        isPublic: isOwner ? m.is_public : true,
+        isOwner, createdAt: m.created_at, id: m.id, source: 'media',
         attributedMarcheurId: (m as any).attributed_marcheur_id ?? null,
         uploaderName: uploaderNameById.get(m.user_id) ?? null,
       });
-    });
-    // Others' public contributions
-    othersMedias.forEach(m => {
-      const url = m.url_fichier || m.external_url;
-      if (url) items.push({
-        url, type: m.type_media, titre: m.titre, isPublic: true, isOwner: false, createdAt: m.created_at,
-        id: m.id, source: 'media',
-        attributedMarcheurId: (m as any).attributed_marcheur_id ?? null,
-        uploaderName: uploaderNameById.get(m.user_id) ?? null,
-      });
-    });
+    };
+    myMedias.forEach(m => pushMedia(m, true));
+    creditedGroups.forEach(g => g.medias.forEach(m => pushMedia(m, false)));
+    othersMedias.forEach(m => pushMedia(m, false));
     return items;
-  }, [adminPhotos, myMedias, othersMedias, uploaderNameById]);
+  }, [adminPhotos, myMedias, creditedGroups, othersMedias, uploaderNameById]);
 
-  // Track offset for each section to compute lightbox index
+  // Offsets for lightbox indexing
   const adminCount = adminPhotos?.length || 0;
   const myCount = myMedias.length;
+  const creditedCount = creditedGroups.reduce((sum, g) => sum + g.medias.length, 0);
 
   // Build GPS distance map for fiche mode
   const gpsMap = React.useMemo(() => {
@@ -467,7 +526,46 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
         </div>
       )}
 
-      {/* Others' contributions */}
+      {/* Crédités à d'autres marcheurs (real photographer ≠ uploader) */}
+      {creditedGroups.map((group, gIdx) => {
+        const offsetBefore =
+          adminCount + myCount +
+          creditedGroups.slice(0, gIdx).reduce((s, g) => s + g.medias.length, 0);
+        return (
+          <div key={group.marcheurId} className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              {group.avatarUrl ? (
+                <img src={group.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover ring-1 ring-amber-400/40" />
+              ) : (
+                <User className="w-3 h-3 text-amber-400" />
+              )}
+              <span className="text-amber-300/70 text-[10px] uppercase tracking-wider">
+                Crédité à {group.fullName} ({group.medias.length})
+              </span>
+            </div>
+            <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'}`}>
+              {group.medias.map((m, i) => (
+                <ContributionItem
+                  key={m.id}
+                  id={m.id}
+                  type={m.type_media}
+                  titre={m.titre}
+                  url={m.url_fichier}
+                  externalUrl={m.external_url}
+                  isPublic={m.is_public}
+                  isOwner={false}
+                  createdAt={m.created_at}
+                  viewMode={viewMode}
+                  gpsDistance={viewMode === 'fiche' ? getGpsDistance(m.id) : null}
+                  onClick={() => setLightboxIndex(offsetBefore + i)}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Others' contributions (uploaded by others, not attributed) */}
       {othersMedias.length > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
@@ -488,14 +586,14 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
                 createdAt={m.created_at}
                 viewMode={viewMode}
                 gpsDistance={viewMode === 'fiche' ? getGpsDistance(m.id) : null}
-                onClick={() => setLightboxIndex(adminCount + myCount + i)}
+                onClick={() => setLightboxIndex(adminCount + myCount + creditedCount + i)}
               />
             ))}
           </div>
         </div>
       )}
 
-      {!adminPhotos?.length && !myMedias.length && !othersMedias.length && !showUpload && (
+      {!adminPhotos?.length && !myMedias.length && !creditedGroups.length && !othersMedias.length && !showUpload && (
         <EmptyState message="Aucune photo pour cette marche" sub="Appuyez sur + Ajouter pour partager vos photos" />
       )}
     </div>
