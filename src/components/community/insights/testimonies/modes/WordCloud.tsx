@@ -14,7 +14,7 @@ const seededRotation = (word: string) => {
 };
 
 const WordCloud: React.FC<Props> = ({ items }) => {
-  const [active, setActive] = useState<{ word: string; ids: string[] } | null>(null);
+  const [active, setActive] = useState<{ word: string; key: string; ids: string[] } | null>(null);
 
   const words = useMemo(
     () => buildWordCloud(items.map((i) => ({ id: i.id, quote: i.quote }))).slice(0, 60),
@@ -27,11 +27,13 @@ const WordCloud: React.FC<Props> = ({ items }) => {
     return items.filter((t) => active.ids.includes(t.id));
   }, [active, items]);
 
-  const highlight = (text: string, word: string) => {
-    const re = new RegExp(`(${word})`, 'gi');
-    return text.split(re).map((p, i) =>
-      p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') ===
-      word.toLowerCase() ? (
+  // Surligne le mot dans le témoignage en restant insensible aux accents.
+  const highlight = (text: string, key: string) => {
+    const normalize = (s: string) =>
+      s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const parts = text.split(/(\p{L}+)/u);
+    return parts.map((p, i) =>
+      /\p{L}/u.test(p) && normalize(p) === key ? (
         <mark key={i} className="bg-amber-500/20 text-foreground rounded px-0.5">{p}</mark>
       ) : (
         <span key={i}>{p}</span>
