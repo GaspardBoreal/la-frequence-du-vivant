@@ -43,37 +43,58 @@ const STOP_WORDS = new Set([
 ]);
 
 export interface WordEntry {
-  word: string;
+  word: string; // forme d'affichage (avec accents)
+  key: string;  // forme normalisée (sans accents) pour matching
   count: number;
   testimonyIds: string[];
 }
 
-export function tokenizeQuote(text: string): string[] {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    // Apostrophes (toutes variantes) → espace pour casser les élisions (quelqu'un, parce qu', aujourd'hui...)
-    .replace(/[''‛`´«»""„]/g, ' ')
-    .split(/[^a-z-]+/i)
-    .map((w) => w.trim().replace(/^-+|-+$/g, ''))
-    .filter((w) => w.length >= 4 && !STOP_WORDS.has(w));
+const normalize = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+/**
+ * Tokenise un texte en préservant la forme accentuée d'origine.
+ * Retourne des paires { display, key } où key est normalisé (sans accents).
+ */
+export function tokenizeQuote(text: string): { display: string; key: string }[] {
+  // On casse les apostrophes (toutes variantes) pour gérer les élisions.
+  const cleaned = text.replace(/[''‛`´«»""„]/g, ' ');
+  // Split sur tout ce qui n'est pas lettre (Unicode) ou tiret.
+  const raw = cleaned.split(/[^\p{L}-]+/u);
+  const out: { display: string; key: string }[] = [];
+  for (const w of raw) {
+    const display = w.trim().replace(/^-+|-+$/g, '').toLowerCase();
+    if (!display) continue;
+    const key = normalize(display);
+    if (key.length < 4 || STOP_WORDS.has(key)) continue;
+    out.push({ display, key });
+  }
+  return out;
 }
 
 export function buildWordCloud(items: { id: string; quote: string }[]): WordEntry[] {
-  const map = new Map<string, { count: number; ids: Set<string> }>();
+  const map = new Map<
+    string,
+    { count: number; ids: Set<string>; forms: Map<string, number> }
+  >();
   for (const it of items) {
     const seen = new Set<string>();
-    for (const w of tokenizeQuote(it.quote)) {
-      if (seen.has(w)) continue;
-      seen.add(w);
-      const entry = map.get(w) || { count: 0, ids: new Set<string>() };
+    for (const { display, key } of tokenizeQuote(it.quote)) {
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const entry =
+        map.get(key) || { count: 0, ids: new Set<string>(), forms: new Map<string, number>() };
       entry.count += 1;
       entry.ids.add(it.id);
-      map.set(w, entry);
+      entry.forms.set(display, (entry.forms.get(display) || 0) + 1);
+      map.set(key, entry);
     }
   }
   return Array.from(map.entries())
-    .map(([word, v]) => ({ word, count: v.count, testimonyIds: Array.from(v.ids) }))
+    .map(([key, v]) => {
+      // forme d'affichage la plus fréquente (préserve les accents)
+      const word = Array.from(v.forms.entries()).sort((a, b) => b[1] - a[1])[0][0];
+      return { word, key, count: v.count, testimonyIds: Array.from(v.ids) };
+    })
     .sort((a, b) => b.count - a.count);
 }
