@@ -56,6 +56,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
   footer,
   onOpenEvidence,
 }) => {
+  const [attributeOpen, setAttributeOpen] = useState(false);
   // Only fetch a remote photo when we don't already have a usable one
   const shouldFetchPhoto = !species.imageUrl && !!species.scientificName;
   const { data: photoData, isLoading: photoLoading } = useSpeciesPhoto(
