@@ -7,6 +7,7 @@ export interface MapLayersState {
   weatherStationsRadius: number; // km, 40-100
   cadastreDetail: boolean;
   recentSpecies: boolean;
+  showWaypoints: boolean;
 }
 
 const DEFAULTS: MapLayersState = {
@@ -14,6 +15,7 @@ const DEFAULTS: MapLayersState = {
   weatherStationsRadius: 60,
   cadastreDetail: false,
   recentSpecies: false,
+  showWaypoints: false,
 };
 
 const storageKey = (explorationId: string) => `mapLayers:${explorationId}`;
