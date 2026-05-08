@@ -100,8 +100,6 @@ export const useMapLayers = (explorationId: string | null | undefined) => {
 
   const activeCount =
     (layers.weatherStations !== 'off' ? 1 : 0) +
-    (layers.cadastreDetail ? 1 : 0) +
-    (layers.recentSpecies ? 1 : 0) +
     (layers.showWaypoints ? 1 : 0);
 
   return {
