@@ -193,15 +193,20 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     }
   }, [curations, evidenceFor]);
 
-  const filteredPool = useMemo(() => {
+  // Helper : matching FR + Latin (+ original commonName si présent)
+  const matchesSearch = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return pool;
-    return pool.filter(
-      s =>
-        s.scientificName?.toLowerCase().includes(q) ||
-        s.commonName?.toLowerCase().includes(q)
-    );
-  }, [pool, search]);
+    if (!q) return () => true;
+    return (sp: { scientificName?: string | null; commonName?: string | null }) => {
+      if (!sp) return false;
+      const sci = (sp.scientificName || '').toLowerCase();
+      const cn = (sp.commonName || '').toLowerCase();
+      const fr = (sp.scientificName ? translationMap.get(sp.scientificName)?.commonName || '' : '').toLowerCase();
+      return sci.includes(q) || cn.includes(q) || fr.includes(q);
+    };
+  }, [search, translationMap]);
+
+  const filteredPool = useMemo(() => pool.filter(matchesSearch), [pool, matchesSearch]);
 
   // Category counts contextual to the active tab — guarantees the chip
   // counter equals the number of cards the user will actually see.
@@ -394,6 +399,27 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           </div>
         )}
 
+        {/* Recherche globale (au-dessus des onglets) — nom français OU latin */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher une espèce (nom français ou latin)…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9 pr-9 h-9 text-sm"
+            aria-label="Rechercher une espèce par nom français ou latin"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+              aria-label="Effacer la recherche"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
         {/* Tabs */}
         <div className="flex flex-wrap items-center gap-1 border-b border-border">
           {[
@@ -408,7 +434,6 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               tone: reviewItems.length > 0 ? 'amber' : undefined,
             },
             { id: 'terrain' as View, label: 'Terrain', count: manual.length, icon: <Hand className="w-3 h-3" /> },
-            // "Pool observé" pour curateurs, "Observées" en lecture seule pour marcheurs
             { id: 'pool' as View, label: isCurator ? 'Pool observé' : 'Observées', count: pool.length },
           ]
             .filter(t => !t.hidden)
@@ -440,26 +465,6 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             })}
         </div>
 
-        {/* Recherche pour pool/suggestions */}
-        {(view === 'pool' || view === 'suggestions') && isCurator && (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher une espèce…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        )}
 
         {/* Filtres par catégorie d'espèces */}
         {(pool.length > 0 || curations.length > 0) && (view !== 'terrain') && (
@@ -549,7 +554,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               </div>
             )}
             <SpeciesGrid
-              items={applyCategoryFilter(pinnedSpecies.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
+              items={applyCategoryFilter(pinnedSpecies.filter(matchesSearch).map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
               isCurator={isCurator}
               explorationId={explorationId}
               emptyMessage={
@@ -568,14 +573,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Suggestions IA */}
         {view === 'suggestions' && (
           <SpeciesGrid
-            items={applyCategoryFilter(aiSuggestions).filter(x => {
-              const q = search.trim().toLowerCase();
-              if (!q) return true;
-              return (
-                x.species.scientificName?.toLowerCase().includes(q) ||
-                x.species.commonName?.toLowerCase().includes(q)
-              );
-            })}
+            items={applyCategoryFilter(aiSuggestions).filter(x => matchesSearch(x.species))}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage="Aucune suggestion IA. Lance l’analyse pour en obtenir."
@@ -615,7 +613,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               </div>
             )}
             <SpeciesGrid
-              items={applyCategoryFilter(reviewItems)}
+              items={applyCategoryFilter(reviewItems.filter(x => matchesSearch(x.species)))}
               isCurator={isCurator}
               explorationId={explorationId}
               emptyMessage="Aucune classification en attente — bravo, tout est à jour !"
@@ -630,7 +628,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Terrain */}
         {view === 'terrain' && (
           <ManualSpeciesGrid
-            items={manual}
+            items={manual.filter(m => matchesSearch({ scientificName: m.scientific_name, commonName: m.common_name }))}
             isCurator={isCurator}
             onAdd={() => setShowManualModal(true)}
           />
