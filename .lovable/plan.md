@@ -1,97 +1,115 @@
-# Réattribution unifiée Photo · Audio · Texte
+## Diagnostic du bug
 
-## Constat
+Dans la marche DEVIAT, le texte "Pissenlit" a été ré-attribué à Karine Log via le bouton « Crédit ». Pourtant la liste « Marcheurs » montre 3 textes pour Gaspard Boréal et 0 pour Karine. Le panneau de Gaspard, lui, n'en affiche que 2 (filtre `effectiveAuthor` correctement appliqué). Trois bugs convergent.
 
-- **Photo (Voir)** et **Audio (Écouter)** utilisent déjà :
-  - RPC `public.reattribute_media(_source, _media_id, _marcheur_id, _user_id)`
-  - Hook `useReattributeMedia` (sources : `'media' | 'audio' | 'conv'`)
-  - Picker unifié `useReattributionPicker` (marcheurs éditoriaux ∪ participants validés)
-  - Composant `MediaAttributionSheet` (recherche + sélection + retrait)
-  - Garde curatoriale `useIsCurator` (admin / ambassadeur / sentinelle)
+### Bug 1 — Le compteur global ignore la ré-attribution des textes
 
-- **Texte (Écrire)** stocke l'auteur sur `marcheur_textes.user_id` uniquement, sans champ d'attribution distinct. Aucune UI ne permet à un curateur de re-créditer un texte écrit par un marcheur "à la place" d'un autre marcheur (cas Victor → coccinelle, Pissenlit, etc.).
-
-## Objectif
-
-Un curateur (admin / ambassadeur / sentinelle) peut **re-créditer un texte** vers n'importe quel marcheur éditorial *ou* participant validé de l'exploration, exactement comme pour une photo, **sans dupliquer la logique** : même RPC, même hook, même Sheet, même picker.
-
-## Modèle de données
-
-Aligner `marcheur_textes` sur le pattern photo : conserver l'uploader/typeur (`user_id`) et ajouter une attribution séparée. Cela préserve les droits d'édition du rédacteur original et la traçabilité.
+`src/hooks/useExplorationParticipants.ts` (lignes 165-168) :
 
 ```text
-marcheur_textes
-├─ user_id              (typeur — inchangé, conserve les droits RLS d'édition)
-└─ attributed_user_id   (NEW, nullable — auteur affiché si non NULL)
+(textes || []).forEach((t: any) => {
+  if (!t.user_id) return;
+  ensureUser(t.user_id).textes++;   // ← ignore attributed_user_id
+});
 ```
 
-Auteur effectif affiché partout = `attributed_user_id ?? user_id`.
+Pour les **photos** et **audio**, le code passe par `route(uploaderId, attributed_marcheur_id)` qui résout vers le bon bucket. Pour les **textes**, on incrémente toujours `user_id` (le typeur). Résultat : le texte « Pissenlit » reste compté chez Gaspard.
 
-## Plan technique
+### Bug 2 — Asymétrie de schéma : textes vs photos/audio
 
-### 1. Migration SQL
+| Table | `user_id` | `attributed_marcheur_id` (crew) | `attributed_user_id` (auth) |
+|---|---|---|---|
+| `marcheur_medias` | oui | oui | non |
+| `marcheur_audio` | oui | oui | non |
+| `marcheur_textes` | oui | **non** | oui (ajouté la dernière fois) |
 
-- `ALTER TABLE marcheur_textes ADD COLUMN attributed_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;`
-- Index : `CREATE INDEX idx_marcheur_textes_attributed_user ON marcheur_textes(attributed_user_id) WHERE attributed_user_id IS NOT NULL;`
-- RLS lecture publique : pas de changement (la policy `is_public OR user_id = auth.uid()` reste correcte ; le typeur conserve l'édition).
-- Étendre `media_attribution_log.source` pour accepter `'texte'`.
-- Réécrire `public.reattribute_media` :
-  - Accepter `_source = 'texte'`.
-  - Résoudre `exploration_id` via `marcheur_textes → marche_events → exploration_id`.
-  - Mode b (`_marcheur_id` fourni) : récupérer `user_id` de la ligne `exploration_marcheurs` → écrire `attributed_user_id = em.user_id` (rejet si `user_id` éditorial NULL → fallback : créer/réutiliser une row éditoriale shadow comme pour photos via mode c en interne).
-  - Mode c (`_user_id` fourni) : vérifier participation validée, écrire `attributed_user_id = _user_id`.
-  - Mode a (les deux NULL) : `attributed_user_id = NULL` (revient au typeur).
-  - Logger dans `media_attribution_log` avec `source='texte'`.
-- Garde existante `is_exploration_curator(_uid)` réutilisée à l'identique.
+Conséquence : un texte ne peut être ré-attribué qu'à une personne disposant d'un compte `auth.users`. Karine Log n'a pas de compte → la ré-attribution actuelle ne peut pas lui « donner » le texte de manière propre. Si l'attribution affichée dans le panneau de marche provient d'un autre champ (lien fragile via `metadata`, ou via le crew row), le compteur global reste incohérent.
 
-### 2. Frontend — réutilisation pure
+### Bug 3 — Les listes par marcheur n'utilisent pas la même règle de routage
 
-- `useReattributeMedia` : étendre le type `ReattributeSource` à `'media' | 'audio' | 'conv' | 'texte'`. Ajouter invalidation des queries textes :
-  - `['marcheur-textes', ...]`, `['marcheur-textes-exploration', ...]`, `['exploration-text-stats', ...]`, `['exploration-texts', ...]`.
-- `MediaAttributionSheet` : aucun changement, c'est déjà générique sur `source: ReattributeSource`.
-- `useReattributionPicker` : aucun changement.
+`TextesSubTab` (MarcheursTab.tsx l. 847-862) requête par `user_id.eq OR attributed_user_id.eq` puis filtre `effectiveAuthor = attributed_user_id ?? user_id`. Les photos/audio dans `MarcheDetailModal` et `MarcheurAudioPanel` utilisent une **autre** clé (`attributed_marcheur_id` → `crewId/userId` via `route()`). Trois implémentations concurrentes = trois résultats divergents.
 
-### 3. UI — onglet Écrire (LireTab dans MarcheDetailModal)
+---
 
-Dans les blocs *Mes textes* et *Des marcheurs* (lignes ~788–829) :
+## Plan de correction
 
-- Calculer l'auteur affiché à partir de `attributed_user_id ?? user_id` côté hook `useMarcheurTextes` (et regrouper "Des marcheurs" par cet identifiant).
-- Sur chaque `ContributionItem` de type `texte`, ajouter — si `isCurator` — une mini-action "Crédit" (icône `Sparkles` ou `Pencil`, même langage visuel que photo) qui ouvre `MediaAttributionSheet` avec :
-  - `source="texte"`
-  - `mediaId={t.id}`
-  - `explorationId`
-  - `currentAttributedId={attributedMarcheurId}` (résolu via `useReattributionPicker` à partir de `attributed_user_id ?? user_id`)
-  - `uploaderName={typeur.fullName}` pour l'option "Retirer le crédit"
-- Réutiliser le même bouton dans `TextesSubTab` de `MarcheursTab.tsx` (vue marcheur agrégée).
+### Étape 1 — Unifier le schéma (migration SQL)
 
-### 4. Cohérence des reads
+Ajouter `attributed_marcheur_id` sur `marcheur_textes` pour aligner les 3 médias :
 
-Tous les sélecteurs lisant `marcheur_textes` doivent projeter `attributed_user_id`. Mettre à jour :
+```text
+ALTER TABLE marcheur_textes
+  ADD COLUMN attributed_marcheur_id uuid
+  REFERENCES exploration_marcheurs(id) ON DELETE SET NULL;
+CREATE INDEX ... ON marcheur_textes(attributed_marcheur_id) WHERE NOT NULL;
+```
 
-- `useMarcheurTextes` (dans `MarcheDetailModal`) — filtrage et regroupement par auteur effectif.
-- `TextesSubTab` (`MarcheursTab.tsx`) — la query par `userId` doit filtrer `OR(user_id.eq.userId, attributed_user_id.eq.userId)` puis exclure les textes ré-attribués ailleurs : `attributed_user_id IS NULL OR attributed_user_id = userId`.
-- `useExplorationTextsOptimized` / agrégats `stats.textes` : compter par auteur effectif (utiliser `COALESCE(attributed_user_id, user_id)`).
+Garder `attributed_user_id` (rétro-compatibilité). La règle de résolution devient :
 
-### 5. Régénération `types.ts`
+```text
+effectiveCrewId = attributed_marcheur_id
+effectiveUserId = attributed_user_id ?? user_id
+```
 
-Auto via Supabase après migration approuvée. Aucun edit manuel.
+### Étape 2 — Mettre à jour la RPC `reattribute_media` (source='texte')
 
-## Sécurité
+La fonction doit, pour les textes :
+- Si la cible est un crew row sans compte → écrire `attributed_marcheur_id` (et nettoyer `attributed_user_id`).
+- Si la cible est un crew row lié à un user → écrire les **deux** colonnes (cohérence).
+- Si la cible est un user pur → écrire `attributed_user_id` seul.
 
-- Le typeur original garde l'édition/suppression (RLS inchangée sur `user_id = auth.uid()`).
-- Seul un curateur peut modifier `attributed_user_id` (toujours via la RPC `SECURITY DEFINER`, jamais en UPDATE direct).
-- Toute réattribution est tracée dans `media_attribution_log`.
+Cela débloque la ré-attribution vers Karine Log (crew sans compte).
 
-## Hors scope
+### Étape 3 — Centraliser la fonction `route()` (helper partagé)
 
-- Pas de changement sur les hooks/composants photo/audio existants (zéro régression).
-- Pas de changement sur `kigo_entries` (pas demandé).
-- Pas de migration de données : `attributed_user_id` reste NULL pour tout l'existant — comportement identique.
+Créer `src/utils/mediaRouting.ts` exportant :
 
-## Livrables
+```text
+type Routed = { userId: string | null; crewId: string | null };
+routeMedia(uploaderId, attributedCrewId, opts):  Routed   // photos/audio
+routeTexte(uploaderId, attributedCrewId, attributedUserId, opts): Routed
+```
 
-1. Migration SQL (1 fichier) — colonne + RPC mise à jour + log accept `'texte'`.
-2. `src/hooks/useReattributeMedia.ts` — ajout source `'texte'` + invalidations.
-3. `src/components/community/MarcheDetailModal.tsx` (`LireTab`) — bouton crédit + Sheet.
-4. `src/components/community/exploration/MarcheursTab.tsx` (`TextesSubTab`) — bouton crédit + Sheet + query par auteur effectif.
-5. Hooks textes (`useMarcheTextes`, `useMarcheurTextes`, `useExplorationTextsOptimized`) — résolution auteur effectif.
+avec `opts` contenant `crewUserByCrewId` et `crewIdByUserId` pour fusionner crew↔user. Une seule source de vérité, importée partout.
+
+### Étape 4 — Corriger `useExplorationParticipants.ts`
+
+- Ajouter `attributed_marcheur_id` et `attributed_user_id` au SELECT des textes.
+- Remplacer la boucle textes par le même pattern que photos :
+
+```text
+(textes || []).forEach((t) => {
+  const { userId, crewId } = routeTexte(t.user_id, t.attributed_marcheur_id, t.attributed_user_id, opts);
+  const bucket = userId ? ensureUser(userId) : crewId ? ensureCrew(crewId) : null;
+  if (bucket) bucket.textes++;
+});
+```
+
+### Étape 5 — Aligner les vues détail
+
+- `TextesSubTab` (MarcheursTab.tsx) : filtrer via `routeTexte(...)` au lieu du `effectiveAuthor` ad-hoc, afin de gérer aussi les marcheurs crew sans compte (`crewId === marcheur.crewId`).
+- `MarcheDetailModal` (section textes, groupes « Crédité à … ») : grouper par `routeTexte(...)` au lieu de `attributed_user_id ?? user_id`.
+- `MarcheurAudioPanel` et `ContributionItem` : harmoniser sur le même helper (déjà très proches).
+
+### Étape 6 — Invalidations cache
+
+Compléter `useReattributeMedia` pour invalider également :
+- `['exploration-participants', explorationId]` (compteurs de la liste Marcheurs).
+- `['marcheur-textes-exploration']` et `['marcheur-textes', marcheEventId]`.
+
+### Étape 7 — Vérification ciblée
+
+1. Ouvrir DEVIAT → onglet Marcheurs : Gaspard doit afficher **2 textes**, Karine **1**.
+2. Cliquer Karine → onglet Textes : « Pissenlit » visible, badge « Crédité ».
+3. Cliquer Gaspard → onglet Textes : « Pissenlit » absent, les 2 autres présents.
+4. Le panneau Marche → groupe « Crédité à Karine L (1) » présent dans la section textes.
+5. Photos et audio : aucun changement de comportement (régression check).
+
+---
+
+## Détails techniques
+
+- Migration idempotente (`ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`).
+- Pas de back-fill nécessaire : les textes existants conservent leur `attributed_user_id` (compatible avec la nouvelle règle).
+- Le helper `routeTexte` priorise `attributed_marcheur_id` (la convention crew-first des photos/audio), ce qui garantit que si un curateur change d'avis et choisit un crew row, c'est lui qui gagne.
+- Tous les fichiers touchés sont front + 1 migration + 1 update de RPC. Aucun changement de Storage.
