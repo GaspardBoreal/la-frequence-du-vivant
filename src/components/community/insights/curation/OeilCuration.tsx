@@ -573,14 +573,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Suggestions IA */}
         {view === 'suggestions' && (
           <SpeciesGrid
-            items={applyCategoryFilter(aiSuggestions).filter(x => {
-              const q = search.trim().toLowerCase();
-              if (!q) return true;
-              return (
-                x.species.scientificName?.toLowerCase().includes(q) ||
-                x.species.commonName?.toLowerCase().includes(q)
-              );
-            })}
+            items={applyCategoryFilter(aiSuggestions).filter(x => matchesSearch(x.species))}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage="Aucune suggestion IA. Lance l’analyse pour en obtenir."
