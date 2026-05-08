@@ -7,6 +7,7 @@ export interface MapLayersState {
   weatherStationsRadius: number; // km, 40-100
   cadastreDetail: boolean;
   recentSpecies: boolean;
+  showWaypoints: boolean;
 }
 
 const DEFAULTS: MapLayersState = {
@@ -14,6 +15,7 @@ const DEFAULTS: MapLayersState = {
   weatherStationsRadius: 60,
   cadastreDetail: false,
   recentSpecies: false,
+  showWaypoints: false,
 };
 
 const storageKey = (explorationId: string) => `mapLayers:${explorationId}`;
@@ -28,6 +30,7 @@ const migrate = (raw: any): MapLayersState => {
   }
   const r = Number(merged.weatherStationsRadius);
   merged.weatherStationsRadius = Number.isFinite(r) && r >= 20 && r <= 200 ? r : 60;
+  merged.showWaypoints = Boolean(merged.showWaypoints);
   return merged as MapLayersState;
 };
 
@@ -102,7 +105,8 @@ export const useMapLayers = (explorationId: string | null | undefined) => {
   const activeCount =
     (layers.weatherStations !== 'off' ? 1 : 0) +
     (layers.cadastreDetail ? 1 : 0) +
-    (layers.recentSpecies ? 1 : 0);
+    (layers.recentSpecies ? 1 : 0) +
+    (layers.showWaypoints ? 1 : 0);
 
   return {
     layers,

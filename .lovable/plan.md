@@ -1,48 +1,51 @@
-# Améliorations du Nuage de mots (témoignages)
+## Objectif
 
-## 1. Filtrage des mots parasites
+Permettre à l'utilisateur de masquer ou afficher les points intermédiaires de la carte d'exploration depuis le panneau « Options carte », avec un état **caché par défaut** pour épurer la lecture du tracé.
 
-Fichier : `src/components/community/insights/testimonies/utils/tokenize.ts`
+## Comportement UX
 
-**Problème** : des fragments d'élisions (`quelqu` ← quelqu'un, `parce` ← parce que), des conjugaisons (`était`, `prend`, `passent`) et des mots vides (`vrai`, `truc`, `chose`, `fois`) apparaissent.
+- Section **Afficher** : ajout d'une nouvelle ligne « **Points intermédiaires** » placée juste sous **Boucle fermée** (logique : ce sont deux options structurelles du tracé, avant les couches contextuelles météo / cadastre / espèces).
+- État par défaut : **OFF** (les points intermédiaires sont masqués au premier chargement).
+- L'état est mémorisé par exploration via `localStorage` (cohérent avec les autres couches).
+- Sous-titre dynamique : 
+  - OFF → « Tracé épuré (points masqués) »
+  - ON → « X points affichés sur la carte » (compteur live)
+- Le toggle masque à la fois :
+  - Les **marqueurs étoilés ambrés** des waypoints
+  - Leur **prise en compte dans le tracé de la polyline** (la ligne redevient un trait direct entre points de marche numérotés)
+- Le **badge de compteur** du bouton « Options carte » prend en compte cette nouvelle couche quand elle est active.
 
-**Corrections** :
+## Design (cohérent avec l'existant)
 
-- **Couper aussi sur l'apostrophe** avant tokenisation, pour que `quelqu'un` produise `un` (filtré) au lieu de `quelqu`. Idem `aujourd'hui`, `jusqu'à`.
-- **Étendre la stop-list** (formes accentuées ET désaccentuées, puisqu'on normalise NFD) :
-  - Verbes très fréquents : `etait`, `etaient`, `etre`, `ete`, `prend`, `prends`, `prendre`, `prenait`, `prennent`, `passe`, `passent`, `passer`, `passait`, `va`, `vais`, `vont`, `allait`, `allais`, `dit`, `dire`, `disait`, `voir`, `vois`, `voit`, `voyait`, `vu`, `savoir`, `sait`, `savait`, `peut`, `pouvoir`, `pouvait`, `veut`, `vouloir`, `voulait`, `mettre`, `met`, `donne`, `donner`, `trouve`, `trouver`, `arrive`, `arriver`.
-  - Locutions tronquées / mots de liaison : `parce`, `quelqu`, `aujourdhui`, `jusqu`, `lorsqu`, `puisqu`, `presqu`, `quoiqu`.
-  - Mots peu signifiants : `truc`, `chose`, `choses`, `fois`, `vrai`, `vraie`, `vraiment`, `super`, `genre`, `etc`, `cetait`, `cest`, `juste`, `dejà`, `deja`, `enfin`, `donc`, `puis`, `aussi`, `tres`, `assez`, `parfois`, `souvent`.
-  - Démonstratifs / interrogatifs restants : `celle`, `ceux`, `celles`, `quoi`, `dont`, `ou`.
+- Icône : `Sparkles` (Lucide) — même symbole que pour la création d'un point intermédiaire (cohérence visuelle entre « créer » et « afficher »).
+- Couleur : palette **ambre** (`bg-amber-500/15 border-amber-400/30 text-amber-200`) pour signaler que c'est l'écho visuel des points intermédiaires (qui sont déjà ambrés sur la carte).
+- Réutilisation du composant `LayerRow` existant — zéro duplication, transitions et hover déjà gérés.
+- Toast léger « Points intermédiaires affichés / masqués » au changement (optionnel, en utilisant `sonner` déjà importé) pour confirmer l'action sans interrompre.
 
-- Garder le seuil `length ≥ 4` mais le passer à **≥ 5 pour les verbes courts** est risqué — on s'appuie plutôt sur la stop-list.
+## Fichiers à modifier
 
-## 2. Redesign moderne du nuage
+```text
+src/hooks/useMapLayers.ts
+  - Ajout de `showWaypoints: boolean` dans MapLayersState
+  - DEFAULTS.showWaypoints = false
+  - migrate() : valeur par défaut false si absente
+  - activeCount inclut +1 si showWaypoints
 
-Fichier : `src/components/community/insights/testimonies/modes/WordCloud.tsx`
+src/components/community/exploration/MapOptionsMenu.tsx
+  - Nouvelle prop optionnelle `waypointsCount?: number`
+  - Nouveau LayerRow « Points intermédiaires » (icône Sparkles ambrée)
+    inséré juste après « Boucle fermée »
 
-**Objectif** : passer d'un patchwork multicolore plat à un nuage **éditorial, élégant, plus poétique** — proche d'une œuvre typographique.
+src/components/community/exploration/ExplorationCarteTab.tsx
+  - Remplacer `useState(true)` du `showWaypoints` local
+    par la valeur dérivée de `mapLayers.showWaypoints`
+  - Passer `waypointsCount={waypoints.length}` au menu
+  - Brancher onToggle sur toggleMapLayer('showWaypoints')
+  - Mettre à jour le calcul du badge count
+```
 
-**Direction visuelle** :
+## Notes techniques
 
-- **Palette monochromatique** alignée sur la marque (Forêt Émeraude en dark, Papier Crème en light) avec **un seul accent** chaud (`amber`) pour les mots du top 5. Fini l'arc-en-ciel.
-- **Typographie hiérarchisée** :
-  - Top 3 : `font-serif italic` taille XL (jusqu'à 4rem), couleur accent.
-  - Mots moyens : `font-semibold` sans-serif, `text-foreground`.
-  - Mots faibles : `font-light` `text-muted-foreground`, opacité réduite.
-- **Container** : carte avec `bg-gradient-to-br from-emerald-500/[0.03] via-card to-amber-500/[0.03]`, bordure douce, `rounded-3xl`, ombre `shadow-elegant`, padding généreux (`p-10 sm:p-14`), masque radial sur les bords (`[mask-image:radial-gradient(...)]`) pour fondu organique.
-- **Layout** : `flex-wrap` centré avec `gap-x-4 gap-y-3`, **rotation aléatoire douce** (-6° à +6°) sur les mots non-top pour casser la grille.
-- **Interaction** :
-  - Hover : `scale-110`, halo lumineux (`drop-shadow-[0_0_12px_hsl(var(--primary)/0.4)]`), curseur `pointer`.
-  - Mot actif : underline animée (motion `layoutId`).
-- **Animation d'entrée** : stagger plus poétique (`delay: i * 0.04`, `ease: [0.22, 1, 0.36, 1]`), apparition `blur-sm → blur-0`.
-- **Header discret** au-dessus : petit label `Les mots qui reviennent` en `uppercase tracking-[0.3em] text-xs text-muted-foreground`.
-
-**Modal de détail** : même esprit éditorial — supprimer le vert vif, utiliser `text-foreground` + accent `amber-500` pour le mot-clé, fond `bg-card/95 backdrop-blur-xl`.
-
-## Détails techniques
-
-- Aucune nouvelle dépendance.
-- Modifs limitées à 2 fichiers : `tokenize.ts` (stop-words + split apostrophe), `WordCloud.tsx` (rendu).
-- Tokens sémantiques uniquement (pas de couleurs hardcodées hors palette Tailwind déjà utilisée par le projet).
-- Compatible thèmes clair/sombre (déjà gérés par `text-foreground`, `bg-card`, etc.).
+- Le state local actuel `showWaypoints` (ligne 626) est supprimé au profit du store persistant `useMapLayers` — un seul source of truth.
+- La migration `migrate()` garantit que les utilisateurs existants ayant déjà un `mapLayers` en localStorage récupèrent `showWaypoints: false` automatiquement.
+- Aucun changement backend, purement UI/state local.
