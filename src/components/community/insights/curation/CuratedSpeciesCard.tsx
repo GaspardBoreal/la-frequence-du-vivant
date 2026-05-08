@@ -245,6 +245,16 @@ const CuratedSpeciesCard: React.FC<Props> = ({
 
         {footer}
       </div>
+
+      {isCurator && species.scientificName && (
+        <AttribuerObservationDialog
+          open={attributeOpen}
+          onOpenChange={setAttributeOpen}
+          explorationId={explorationId}
+          speciesScientificName={species.scientificName}
+          speciesDisplayName={displayName}
+        />
+      )}
     </div>
   );
 };
