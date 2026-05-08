@@ -163,7 +163,7 @@ const WordCloud: React.FC<Props> = ({ items }) => {
                   >
                     <Quote className="w-4 h-4 text-amber-500/50 mb-1.5" />
                     <p className="text-sm font-serif italic text-foreground/90 leading-relaxed">
-                      {highlight(t.quote, active.word)}
+                      {highlight(t.quote, active.key)}
                     </p>
                     <div className="mt-2.5 text-xs font-semibold text-foreground/70">
                       — {t.author_name}
