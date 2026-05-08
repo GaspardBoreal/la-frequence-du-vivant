@@ -533,8 +533,7 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
 
       <div className="space-y-2">
         {sorted.map((obs, i) => {
-          const translation = translationMap.get(obs.scientificName);
-          const frenchName = translation?.commonName || obs.commonName;
+          const frenchName = frNamesMap?.get(obs.scientificName)?.commonNameFr || null;
           const kingdomInfo = getKingdomInfo(obs.kingdom);
           const KingdomIcon = kingdomInfo.icon;
           const dateStr = obs.date
