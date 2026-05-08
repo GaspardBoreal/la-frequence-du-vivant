@@ -1117,6 +1117,11 @@ const MarcheurCard: React.FC<{
               <span className="text-[11px] font-semibold text-foreground">{textesCount}</span>
             </div>
           )}
+          {hasTestimony && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20" title="A laissé un témoignage">
+              <Quote className="w-3 h-3 text-rose-400" />
+            </div>
+          )}
           {realContribCount > 0 && (
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${realContribCount} espèce${realContribCount > 1 ? 's' : ''} identifiée${realContribCount > 1 ? 's' : ''}`}>
               <Leaf className="w-3 h-3 text-amber-500" />
