@@ -623,7 +623,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [hoveredCandidateIdx, setHoveredCandidateIdx] = useState<number | null>(null);
   // Manual segment-pick mode (for when no candidate matches what the user sees)
   const [pickMode, setPickMode] = useState<null | { stage: 'A' | 'B'; pickedA?: { kind: 'step' | 'waypoint'; id: string; lat: number; lng: number } }>(null);
-  // showWaypoints is now driven by mapLayers (persisted, default OFF)
+  const showWaypoints = mapLayers.showWaypoints;
   const [showDistanceMode, setShowDistanceMode] = useState<'estimated' | 'crow'>('estimated');
 
   // Resolve a (kind, id) endpoint to a SegmentCandidate for a given pending waypoint.
