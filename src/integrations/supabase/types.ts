@@ -3135,6 +3135,7 @@ export type Database = {
       }
       marcheur_textes: {
         Row: {
+          attributed_marcheur_id: string | null
           attributed_user_id: string | null
           contenu: string
           created_at: string
@@ -3150,6 +3151,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attributed_marcheur_id?: string | null
           attributed_user_id?: string | null
           contenu?: string
           created_at?: string
@@ -3165,6 +3167,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attributed_marcheur_id?: string | null
           attributed_user_id?: string | null
           contenu?: string
           created_at?: string
@@ -3180,6 +3183,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "marcheur_textes_attributed_marcheur_id_fkey"
+            columns: ["attributed_marcheur_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_marcheurs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "marcheur_textes_marche_event_id_fkey"
             columns: ["marche_event_id"]
