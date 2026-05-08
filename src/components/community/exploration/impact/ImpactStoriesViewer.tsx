@@ -255,7 +255,8 @@ const StoryFamilles: React.FC<{
   taxonomicFamilies: { label: string; count: number; icon: React.ElementType; color: string }[];
 }> = ({ marcheur, taxonomicFamilies }) => {
   const speciesNames = useMemo(() => marcheur.speciesObserved.map(s => s.scientificName).slice(0, 3), [marcheur.speciesObserved]);
-  const { frNamesMap } = useFrenchSpeciesNamesAuto(speciesNames);
+  const speciesInputs = useMemo(() => speciesNames.map(scientificName => ({ scientificName })), [speciesNames]);
+  const { data: frNamesMap } = useFrenchSpeciesNamesAuto(speciesInputs);
 
   return (
     <div className="flex flex-col items-center text-center text-white">
