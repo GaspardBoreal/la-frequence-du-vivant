@@ -134,9 +134,26 @@ const CuratedSpeciesCard: React.FC<Props> = ({
 
         {isCurator && (
           <div
-            className="absolute top-1.5 right-1.5"
+            className="absolute top-1.5 right-1.5 flex items-center gap-1"
             onClick={(e) => e.stopPropagation()}
           >
+            {species.scientificName && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setAttributeOpen(true); }}
+                    className="p-1.5 rounded-md bg-background/90 hover:bg-primary hover:text-primary-foreground border border-border shadow-sm transition"
+                    aria-label="Attribuer à un marcheur"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p className="text-xs">Attribuer à un marcheur</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             <PinToggle
               explorationId={explorationId}
               sense="oeil"
