@@ -1,109 +1,77 @@
-# Constats
+# Problème identifié
 
-Le problème vu dans **Marches → Vivant** n’est pas un oubli de traduction en base.
+Le bug n’est plus un problème d’affichage UI.
 
-- Les espèces visibles sur ta capture **existent déjà en français** dans `species_translations` :
-  - `Prunus persica` → `Pêcher`
-  - `Salix integra` → `Saule intégral`
-  - `Cardamine pratensis` → `Fleur de coucou`
-  - `Prunus` → `Prunier, cerises et alliés`
-- Donc le bug est dans la **couche d’affichage / résolution**, pas dans les données.
+La modale visible dans **Marches → Vivant** affiche bien ce qu’elle lit dans la base :
+- `Tettigonia viridissima` est actuellement enregistrée dans `species_translations`
+- avec `common_name_fr = "Crapaud vert"`
+- `source = 'ai'`
+- `confidence_level = 'medium'`
 
-## Problème exact
+Donc l’application affiche une **mauvaise traduction persistée en base**, pas un oubli de rendu.
 
-Il y a aujourd’hui **deux logiques concurrentes** dans l’app :
+## Ce que ça signifie
+- les correctifs précédents sur les hooks ont bien unifié l’affichage
+- mais ils affichent maintenant fidèlement une donnée erronée du cache partagé
+- tant que cette ligne reste en base, elle continuera à réapparaître partout
 
-1. **Nouvelle logique robuste**
-   - `<SpeciesName />`
-   - `useFrenchSpeciesNamesAuto`
-   - Elle affiche toujours le meilleur nom FR disponible et auto-remplit les manquants.
+## Signal inquiétant
+Le cache contient aujourd’hui beaucoup d’entrées `source = 'ai' / confidence = 'medium'` (1579 lignes), et plusieurs ont l’air fragiles ou discutables. Le problème est donc **systémique**, pas seulement isolé à cette espèce.
 
-2. **Ancienne logique encore active dans SpeciesExplorer / cartes / modales**
-   - `useSpeciesTranslation` / `useSpeciesTranslationBatch`
-   - Elle dépend encore de `LanguageContext` et de `localStorage('biodiversity-language')`
-   - Si la langue stockée est `en`, elle **force l’affichage anglais**, même si la traduction FR existe déjà.
+# Plan de résolution robuste
 
-C’est pour cela que :
-- certains écrans sont bien en français,
-- mais **Marches → Vivant** reste en anglais.
+## 1. Corriger immédiatement les traductions fausses connues
+- Remplacer la ligne erronée pour `Tettigonia viridissima` par le bon nom français usuel : **Grande sauterelle verte**.
+- Ajouter un mécanisme de **surcouche manuelle prioritaire** pour les cas validés/corrigés.
+- Faire en sorte qu’une correction humaine ne puisse jamais être réécrasée par l’auto-traduction.
 
-Autrement dit : **le bug principal est architectural**.
+## 2. Sécuriser la logique de remplissage automatique
+- Modifier `translate-species` pour que l’AI ne soit plus traitée comme une vérité finale.
+- Ne plus insérer automatiquement une traduction AI en production sans garde-fous.
+- Si la source fiable n’est pas disponible, enregistrer l’entrée comme **candidate** ou la laisser en fallback, au lieu d’afficher une fausse certitude.
 
-## Risque secondaire identifié
+## 3. Ajouter une validation avant persistance
+Mettre en place une validation défensive avant `upsert` :
+- ne jamais écraser une entrée `manual` / `high`
+- bloquer les réponses manifestement incohérentes
+- journaliser les cas douteux pour revue
+- option robuste : n’afficher automatiquement que les traductions `manual` ou `high`, et garder les `ai/medium` comme suggestions internes
 
-Le hook `useFrenchSpeciesNamesAuto` fait un appel batch à l’edge function pour les noms manquants, mais son mécanisme actuel peut ne pas rejouer proprement si l’utilisateur n’est pas encore authentifié au premier rendu.
+## 4. Rendre l’affichage plus sûr côté frontend
+- Faire privilégier les traductions **validées** seulement.
+- Si une traduction n’est pas validée, afficher le fallback sûr :
+  - nom français manuel si disponible
+  - sinon nom d’origine
+  - sinon nom scientifique
+- Éviter qu’une hallucination AI apparaisse comme nom principal sans indication.
 
-Ce n’est **pas la cause du cas de ta capture** (car les traductions existent déjà), mais c’est un vrai point de robustesse à corriger pour éviter d’autres trous plus tard.
-
-# Solution robuste proposée
-
-## 1. Unifier la règle produit
-Faire des noms d’espèces une **couche FR centralisée par défaut** sur tout le périmètre Marches / Vivant / Apprendre / Synthèse.
-
-Concrètement :
-- on **retire la dépendance cachée** à `LanguageContext` pour les noms d’espèces sur ces écrans,
-- on fait de `<SpeciesName />` ou d’un résolveur FR centralisé **la seule voie autorisée**.
-
-## 2. Corriger les écrans encore branchés sur l’ancienne logique
-Refactorer les composants qui affichent encore `translation?.commonName || species.commonName` pour qu’ils passent tous par le résolveur universel.
-
-Priorité :
-- `src/components/biodiversity/SpeciesExplorer.tsx`
-- `src/components/audio/EnhancedSpeciesCard.tsx`
-- `src/components/biodiversity/SpeciesDisplay.tsx`
-- `src/components/biodiversity/SpeciesDetailModal.tsx`
-
-## 3. Rendre la recherche et les filtres bilingues mais l’affichage FR
-Dans `SpeciesExplorer`, la recherche doit matcher :
-- nom FR résolu,
-- nom commun brut d’origine,
-- nom scientifique.
-
-Ainsi :
-- l’interface affiche toujours le **français**,
-- mais on peut encore retrouver une espèce si une donnée source arrive en anglais.
-
-## 4. Durcir l’auto-translation manquante
-Fiabiliser `useFrenchSpeciesNamesAuto` pour que les traductions manquantes soient bien retentées quand la session/auth devient disponible.
-
-Objectif :
-- éviter les faux “ça ne traduit pas” sur des espèces jamais vues auparavant,
-- garantir le remplissage progressif du cache partagé.
-
-## 5. Verrouiller la règle dans le code
-Ajouter une règle explicite de migration :
-- tout affichage d’espèce doit passer par `<SpeciesName />` ou un hook reposant sur `useFrenchSpeciesNamesAuto`.
-- on laisse les anciens hooks seulement comme compat technique temporaire, plus comme source d’affichage.
-
-# Implémentation prévue
-
-## Fichiers ciblés
-- `src/components/biodiversity/SpeciesExplorer.tsx`
-- `src/components/audio/EnhancedSpeciesCard.tsx`
-- `src/components/biodiversity/SpeciesDisplay.tsx`
-- `src/components/biodiversity/SpeciesDetailModal.tsx`
-- `src/hooks/useSpeciesTranslation.ts`
-- `src/hooks/useFrenchSpeciesNamesAuto.ts`
-- mémoire technique espèces FR
-
-## Résultat attendu
-- **Marches → Vivant** affiche immédiatement les noms FR déjà connus.
-- Les nouvelles espèces sans traduction sont auto-remplies en arrière-plan.
-- La logique devient cohérente entre **Synthèse**, **Marches**, **Apprendre**, **L’œil**, **modales**, **cartes** et **listes**.
-- On supprime la possibilité qu’un `localStorage` caché remette des écrans en anglais sans signal visible.
+## 5. Auditer le stock existant de traductions AI
+- Scanner les lignes `source = 'ai'` existantes.
+- Identifier les plus suspectes pour correction.
+- Préparer une stratégie de nettoyage progressif du cache déjà pollué.
 
 # Détail technique
 
-- Remplacer l’affichage textuel direct par `<SpeciesName />` ou une donnée enrichie `resolvedDisplayName`.
-- Faire en sorte que `useSpeciesTranslationBatch` ne soit plus piloté par `language === 'en'` pour ce domaine.
-- Ajouter un retry propre côté `useFrenchSpeciesNamesAuto` quand l’auth est prête.
-- Vérifier les usages de `LanguageToggle` pour qu’il ne pilote plus implicitement la langue des noms sur les vues FR métier.
+## Fichiers à modifier
+- `supabase/functions/translate-species/index.ts`
+- `src/hooks/useFrenchSpeciesNamesAuto.ts`
+- `src/hooks/useSpeciesTranslation.ts`
+- éventuellement la logique de lecture publique des traductions pour prioriser les entrées validées
 
-# Validation
+## Donnée à corriger
+- table `public.species_translations`
+- ligne : `scientific_name = 'Tettigonia viridissima'`
 
-Je validerai ensuite sur le parcours réel :
-- `/marches-du-vivant/mon-espace/exploration/...` → onglet **Marches → Vivant**
-- **Synthèse → Taxons observés**
-- **Apprendre → Ce que nous avons vu → l’œil**
+## Stratégie backend recommandée
+```text
+source prioritaire d’affichage
+manual/high
+  > inpn/high
+  > ai/medium seulement si explicitement autorisée
+  > fallback commonName/scientificName
+```
 
-avec contrôle sur les espèces de ta capture (`Peach`, `dappled willow`, `Cuckooflower`, etc.) pour confirmer le rendu final en français.
+## Résultat attendu
+- `Tettigonia viridissima` s’affiche en **Grande sauterelle verte**
+- les futures hallucinations AI ne polluent plus silencieusement le cache partagé
+- les écrans biodiversité restent cohérents même quand une source externe fiable est indisponible
