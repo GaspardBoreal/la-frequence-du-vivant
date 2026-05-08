@@ -1,50 +1,104 @@
-## Objectif
+# Témoignages des marcheurs
 
-Permettre la mise en forme enrichie (gras, italique, souligné, listes, sauts de ligne) du **récit / description** des Pratiques emblématiques, à la fois en édition et en affichage.
+Module narratif pour faire entendre la voix des marcheurs dans la Synthèse d'une exploration. 4 modes d'affichage immersifs, dont un nuage de mots interactif.
 
-## Analyse de l'existant
+## 1. Base de données
 
-- Composant : `src/components/community/insights/curation/MainCuration.tsx`
-- Champ actuel : `<Textarea>` simple (ligne 437-443) → `editor.description` (string)
-- Affichage actuel : `<p className="whitespace-pre-line">{entry.description}</p>` (ligne 403-407)
-- Stockage BDD : colonne `description` de `exploration_curations` (text)
-- Composant rich text déjà disponible dans le projet : `src/components/ui/rich-text-editor.tsx` (TipTap, déjà utilisé dans MarcheTextesAdmin, ExplorationForm, etc.)
-- Sanitiseur déjà disponible : `src/utils/htmlSanitizer.ts` (`sanitizeHtml`, autorise `strong`, `em`, `u`, `b`, `i`, `p`, `br`, `ul`, `ol`, `li`, etc.)
+### Nouvelle table `exploration_testimonies`
+- `exploration_id` (uuid, FK explorations) — rattachement principal (niveau exploration)
+- `user_id` (uuid, FK profiles) — **strict**, NOT NULL
+- `author_name` (text) — nom affiché tel qu'importé (cache lisible)
+- `quote` (text NOT NULL) — texte du témoignage
+- `source_event_id` (uuid nullable) — marche d'origine si connue (DEVIAT)
+- `display_order` (int, défaut 0)
+- `is_published` (bool, défaut true)
+- timestamps standard
+- Index unique `(exploration_id, user_id)` — un témoignage par marcheur par exploration
+- Index sur `exploration_id`
 
-## Solution
+### RLS
+- **SELECT** : public si `is_published = true` (cohérent avec la vue Synthèse partageable)
+- **INSERT/UPDATE/DELETE** : owner (`user_id = auth.uid()`) OU curator (ambassadeur/sentinelle/admin sur l'exploration), via la fonction `has_role` existante
 
-### Copie 1 — Édition enrichie (dialog "Modifier la pratique")
+### Matching strict des marcheurs
+RPC SQL `match_marcheur_by_name(_name text, _exploration_id uuid)` :
+- Normalisation NFD + unaccent + lowercase (réutilise le pattern Identity matching existant)
+- Recherche dans `profiles` parmi les participants à l'exploration (via `exploration_marcheurs`)
+- Retourne `user_id` ou `null`
 
-Remplacer le `<Textarea>` du champ "Récit / description" par `<RichTextEditor>` :
+## 2. Import du fichier DEVIAT
 
-- Toolbar minimale : **Gras**, *Italique*, <u>Souligné</u>, listes à puces, sauts de paragraphe
-- `value={editor.description}` (HTML string) / `onChange={(html) => setEditor(s => ({...s, description: html}))}`
-- Conserver `maxLength` indicatif (compté sur le texte brut) et placeholder
-- Aucune migration BDD : la colonne `description` (text) accueille déjà du HTML
+Script one-shot via `code--exec` :
+1. Parser l'Excel (8 lignes)
+2. Pour chaque ligne, appeler le RPC de matching avec `exploration_id = 70fcd8d1-7f63-43c8-a2bd-2cd436523437`
+3. **Mode strict** : insertion uniquement si match trouvé
+4. Rapport final : N importés / N non matchés (liste des noms à traiter manuellement)
+5. `source_event_id` = ID de la marche DEVIAT si trouvée par recherche `nom ILIKE '%DEVIAT%'` dans cette exploration
 
-### Copie 2 — Affichage enrichi (vue carte de pratique)
+Les guillemets typographiques `« »` sont conservés tels quels (style éditorial).
 
-Remplacer le `<p className="whitespace-pre-line">…</p>` par un bloc HTML sanitisé :
+## 3. Nouvel onglet "Témoignages" dans Synthèse
 
-```tsx
-<div
-  className="text-xs text-muted-foreground prose prose-sm max-w-none
-             [&_strong]:font-semibold [&_em]:italic [&_u]:underline
-             [&_ul]:list-disc [&_ul]:pl-4 [&_p]:mb-1.5"
-  dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.description) }}
-/>
+Insertion dans `EventBiodiversityTab.tsx` ligne 351-356 entre `taxons` et `analyse` :
+```
+{ key: 'temoignages', label: 'Témoignages' }
 ```
 
-- Sécurité : `sanitizeHtml` (DOMPurify) bloque `<script>`, attributs `on*`, etc.
-- Rétrocompatibilité : les descriptions existantes en texte brut s'afficheront identiquement (DOMPurify laisse passer le texte simple ; les retours à la ligne `\n` seront préservés via `whitespace-pre-line` conservé en fallback class).
+### Composant `TestimoniesTab.tsx`
+Sélecteur de mode (4 vues, switch animé) :
 
-### Détails techniques
+#### Mode 1 — Mur de cartes (par défaut)
+Grille masonry responsive (CSS columns 1/2/3 selon breakpoint).
+Carte = guillemet géant (`«` 80px en watermark), citation en serif élégant, avatar + nom du marcheur en bas.
+Hover : légère élévation, halo couleur primaire.
 
-- Aucune migration SQL nécessaire (colonne `text` existante).
-- Aucun nouveau package : TipTap déjà installé.
-- Pas d'impact sur le tri (alpha / manuel) ajouté précédemment, qui s'appuie sur `title` et `display_order`.
-- Pas d'impact sur la liste publique en lecture seule (même composant d'affichage).
+#### Mode 2 — Carrousel immersif
+Plein largeur, fond gradient subtil (palette saisonnière de l'exploration).
+Une citation à la fois en typographie XL, transitions fade + slide.
+Auto-play optionnel (8s), navigation flèches + dots, swipe mobile.
 
-## Fichiers modifiés
+#### Mode 3 — Nuage de mots interactif ⭐
+- Tokenisation côté client (filtre stop-words FR : `de, la, le, les, et, à, c'est, qui, que, j'ai, on, en...`)
+- Conserve mots ≥ 4 lettres, normalise (lowercase, sans accents pour clé, affichage avec accent original le plus fréquent)
+- Taille de police = f(fréquence) entre 14px et 56px
+- Couleur = palette dégradée par fréquence
+- Layout : `react-d3-cloud` ou implémentation maison spirale (préférence : maison, < 100 lignes, évite dep)
+- **Clic sur un mot** → drawer/sheet latéral listant chaque marcheur ayant utilisé ce mot avec son témoignage complet (mot surligné dans le texte)
 
-- `src/components/community/insights/curation/MainCuration.tsx` (1 import RichTextEditor + sanitizeHtml, 1 remplacement Textarea, 1 remplacement bloc d'affichage)
+#### Mode 4 — Constellation sensible
+Layout SVG : témoignages disposés en cercle/spirale autour d'un mot-thème central (ex: "Vivant").
+Lignes fines reliant chaque carte au centre. Au survol, la carte s'agrandit, les autres s'estompent.
+Animation d'entrée séquentielle (Framer Motion stagger).
+
+### Curation
+Si l'utilisateur connecté est curator (ou owner d'un témoignage) :
+- Bouton "Modifier" sur chaque carte → édition inline du `quote` (RichTextEditor existant — gras/italique/souligné cohérent avec MainCuration)
+- Bouton "Masquer" (toggle `is_published`)
+
+### Hook
+`useExplorationTestimonies(explorationId)` — React Query, partage la même fraîcheur que les autres hooks de l'exploration.
+
+## 4. Tracking ChatBot
+Ajouter `data-chat-section="temoignages"` sur le conteneur + publier dans `chatPageContext` le mode actif et le nombre de témoignages, pour que l'IA puisse référencer les voix des marcheurs.
+
+## Détails techniques
+
+**Fichiers créés**
+- `supabase/migrations/...sql` (table + RLS + RPC matching)
+- `src/hooks/useExplorationTestimonies.ts`
+- `src/components/community/insights/testimonies/TestimoniesTab.tsx`
+- `src/components/community/insights/testimonies/modes/QuoteWall.tsx`
+- `src/components/community/insights/testimonies/modes/ImmersiveCarousel.tsx`
+- `src/components/community/insights/testimonies/modes/WordCloud.tsx`
+- `src/components/community/insights/testimonies/modes/Constellation.tsx`
+- `src/components/community/insights/testimonies/utils/tokenize.ts` (stop-words FR + tokenizer)
+
+**Fichiers modifiés**
+- `src/components/community/EventBiodiversityTab.tsx` (ajout onglet + render)
+
+**Aucune dépendance npm** : tout est fait avec Framer Motion + Tailwind déjà présents.
+
+**Mémoire** : nouveau fichier `mem://features/community/testimonies-logic` ajouté à l'index.
+
+## Question résiduelle (peut être traitée à l'implémentation)
+Le fichier ne contient pas l'événement source précis dans la donnée — je recherche par nom `DEVIAT` dans `marche_events` liés à l'exploration `70fcd8d1...`. Si plusieurs ou zéro résultat, je laisse `source_event_id = null` et je te le signale dans le rapport d'import.
