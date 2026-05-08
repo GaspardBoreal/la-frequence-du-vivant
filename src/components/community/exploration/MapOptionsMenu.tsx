@@ -6,8 +6,6 @@ import {
   Sparkles,
   RotateCw,
   CloudSun,
-  LandPlot,
-  Leaf,
   ChevronRight,
   ChevronDown,
   X,
