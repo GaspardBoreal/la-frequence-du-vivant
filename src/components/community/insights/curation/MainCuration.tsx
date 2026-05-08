@@ -39,6 +39,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 import MediaPickerSheet from './MediaPickerSheet';
 import MediaLightbox from './MediaLightbox';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
