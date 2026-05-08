@@ -1,3 +1,4 @@
+import { SpeciesName } from '@/components/species/SpeciesName';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'react-leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -494,8 +495,7 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                              </div>
                            )}
                            <div className="flex-1">
-                             <div className="font-medium">{species.commonName}</div>
-                             <div className="text-muted-foreground italic text-xs">{species.scientificName}</div>
+                             <SpeciesName scientificName={species.scientificName} commonName={species.commonName} size="sm" showScientific truncate />
                            </div>
                          </div>
                        );
@@ -597,8 +597,7 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                          
                            <div className="flex-1 space-y-2">
                              <div>
-                               <h4 className="font-semibold">{species.commonName}</h4>
-                               <p className="text-sm text-muted-foreground italic">{species.scientificName}</p>
+                               <SpeciesName scientificName={species.scientificName} commonName={species.commonName} size="md" showScientific />
                              </div>
                              
                              <div className="flex flex-wrap gap-2">

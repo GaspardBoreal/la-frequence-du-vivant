@@ -1,3 +1,4 @@
+import { SpeciesName } from '@/components/species/SpeciesName';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, TrendingDown, ArrowRight, MapPin, AlertCircle, Sparkles } from 'lucide-react';
@@ -84,8 +85,7 @@ const BiodiversityRiskRadar: React.FC<BiodiversityRiskRadarProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium text-red-800">{species.commonName}</div>
-                  <div className="text-xs text-red-600 italic">{species.species}</div>
+                  <SpeciesName scientificName={species.species} commonName={species.commonName} size="sm" className="text-red-800" scientificClassName="text-red-600" showScientific />
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-red-600">
@@ -126,8 +126,7 @@ const BiodiversityRiskRadar: React.FC<BiodiversityRiskRadarProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium text-green-800">{species.commonName}</div>
-                  <div className="text-xs text-green-600 italic">{species.species}</div>
+                  <SpeciesName scientificName={species.species} commonName={species.commonName} size="sm" className="text-green-800" scientificClassName="text-green-600" showScientific />
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-green-600">
@@ -161,8 +160,7 @@ const BiodiversityRiskRadar: React.FC<BiodiversityRiskRadarProps> = ({
             <div className="flex items-center gap-3">
               {getStatusIcon(species.status)}
               <div>
-                <div className="font-medium">{species.commonName}</div>
-                <div className="text-xs opacity-70 italic">{species.species}</div>
+                <SpeciesName scientificName={species.species} commonName={species.commonName} size="sm" showScientific />
               </div>
             </div>
             
@@ -275,8 +273,7 @@ const BiodiversityRiskRadar: React.FC<BiodiversityRiskRadarProps> = ({
               <div className="flex items-center gap-3 mb-4">
                 {getStatusIcon(selectedSpecies.status)}
                 <div>
-                  <h3 className="text-xl font-bold">{selectedSpecies.commonName}</h3>
-                  <p className="text-sm text-gray-600 italic">{selectedSpecies.species}</p>
+                  <SpeciesName scientificName={selectedSpecies.species} commonName={selectedSpecies.commonName} size="lg" showScientific />
                 </div>
               </div>
               

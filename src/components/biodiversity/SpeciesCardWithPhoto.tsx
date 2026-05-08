@@ -1,3 +1,4 @@
+import { SpeciesName } from '@/components/species/SpeciesName';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '../ui/badge';
@@ -79,9 +80,7 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
 
             {/* Hover-only name */}
             <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-              <h3 className="font-semibold text-sm text-white leading-tight truncate">
-                {species.commonNameFr || species.name}
-              </h3>
+              <SpeciesName scientificName={species.scientificName} commonName={species.commonNameFr || species.name} size="sm" truncate className="text-white [&>span]:text-white" />
             </div>
           </div>
         </div>
@@ -132,9 +131,7 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
           
           {/* Common name only */}
           <div className="absolute bottom-0 left-0 right-0 p-2 md:p-3 text-white">
-            <h3 className="font-bold text-xs md:text-sm truncate">
-              {species.commonNameFr || species.name}
-            </h3>
+            <SpeciesName scientificName={species.scientificName} commonName={species.commonNameFr || species.name} size="sm" truncate className="text-white [&>span]:text-white" />
           </div>
 
           {/* Badge */}

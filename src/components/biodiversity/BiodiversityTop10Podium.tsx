@@ -1,3 +1,4 @@
+import { SpeciesName } from '@/components/species/SpeciesName';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Medal, Play, X } from 'lucide-react';
@@ -118,7 +119,7 @@ const BiodiversityTop10Podium: React.FC<BiodiversityTop10PodiumProps> = ({ speci
                   {/* Species name */}
                   <div className="text-center">
                     <div className="font-bold text-white text-xs sm:text-sm md:text-base truncate max-w-full px-1">
-                      {sp.name}
+                      <SpeciesName scientificName={sp.scientificName} commonName={sp.name} size="sm" truncate className="text-white [&>span]:text-white" />
                     </div>
                     <div className="text-white/70 text-[10px] sm:text-xs italic truncate max-w-full px-1 hidden sm:block">
                       {sp.scientificName}
@@ -198,8 +199,7 @@ const BiodiversityTop10Podium: React.FC<BiodiversityTop10PodiumProps> = ({ speci
               </div>
 
               <div className="text-center text-white">
-                <h3 className="text-xl md:text-2xl font-bold mb-1">{selectedSpecies.name}</h3>
-                <p className="text-white/70 italic mb-4">{selectedSpecies.scientificName}</p>
+                <SpeciesName scientificName={selectedSpecies.scientificName} commonName={selectedSpecies.name} size="lg" showScientific className="text-white [&>span]:text-white mb-4" scientificClassName="text-white/70" />
                 
                 <div className="flex justify-center gap-3 md:gap-4 mb-6 flex-wrap">
                   <Badge className="bg-white/20 text-white">
