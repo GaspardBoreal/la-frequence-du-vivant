@@ -1067,6 +1067,13 @@ const MarcheurCard: React.FC<{
     [hasTestimony]
   );
 
+  const subTabCounts: Partial<Record<MarcheurSubTab, number>> = {
+    observations: photoCount,
+    ecoute: audioCount,
+    textes: textesCount,
+    contributions: realContribCount,
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
