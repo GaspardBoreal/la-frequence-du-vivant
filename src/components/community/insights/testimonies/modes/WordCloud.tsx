@@ -99,7 +99,7 @@ const WordCloud: React.FC<Props> = ({ items }) => {
                   opacity: 1,
                   filter: 'drop-shadow(0 0 14px hsl(var(--primary) / 0.45))',
                 }}
-                onClick={() => setActive({ word: w.word, ids: w.testimonyIds })}
+                onClick={() => setActive({ word: w.word, key: w.key, ids: w.testimonyIds })}
                 className={`leading-none cursor-pointer transition-colors hover:text-foreground ${cls}`}
                 style={{
                   fontSize: `${size}rem`,
