@@ -1,79 +1,48 @@
-## Objectif
+# Améliorations du Nuage de mots (témoignages)
 
-Dans la vue **Marcheurs → Marcheurs** (`MarcheursTab.tsx`), pour chaque marcheur ayant un témoignage dans `event_testimonies` :
+## 1. Filtrage des mots parasites
 
-1. Afficher un **badge compteur** sur la ligne fermée (à côté des badges Camera / Headphones / Feather / Leaf).
-2. Ajouter un **sous-onglet "Témoignage"** entre `Textes` et `Contributions`, présentant la citation de manière hyper élégante (carte poétique).
+Fichier : `src/components/community/insights/testimonies/utils/tokenize.ts`
 
----
+**Problème** : des fragments d'élisions (`quelqu` ← quelqu'un, `parce` ← parce que), des conjugaisons (`était`, `prend`, `passent`) et des mots vides (`vrai`, `truc`, `chose`, `fois`) apparaissent.
 
-## 1. Picto proposé — `Quote` (lucide-react)
+**Corrections** :
 
-Recommandation : **icône `Quote` de lucide-react**, en **rose/fuchsia** (`text-rose-400`), pour se distinguer des 4 catégories existantes :
+- **Couper aussi sur l'apostrophe** avant tokenisation, pour que `quelqu'un` produise `un` (filtré) au lieu de `quelqu`. Idem `aujourd'hui`, `jusqu'à`.
+- **Étendre la stop-list** (formes accentuées ET désaccentuées, puisqu'on normalise NFD) :
+  - Verbes très fréquents : `etait`, `etaient`, `etre`, `ete`, `prend`, `prends`, `prendre`, `prenait`, `prennent`, `passe`, `passent`, `passer`, `passait`, `va`, `vais`, `vont`, `allait`, `allais`, `dit`, `dire`, `disait`, `voir`, `vois`, `voit`, `voyait`, `vu`, `savoir`, `sait`, `savait`, `peut`, `pouvoir`, `pouvait`, `veut`, `vouloir`, `voulait`, `mettre`, `met`, `donne`, `donner`, `trouve`, `trouver`, `arrive`, `arriver`.
+  - Locutions tronquées / mots de liaison : `parce`, `quelqu`, `aujourdhui`, `jusqu`, `lorsqu`, `puisqu`, `presqu`, `quoiqu`.
+  - Mots peu signifiants : `truc`, `chose`, `choses`, `fois`, `vrai`, `vraie`, `vraiment`, `super`, `genre`, `etc`, `cetait`, `cest`, `juste`, `dejà`, `deja`, `enfin`, `donc`, `puis`, `aussi`, `tres`, `assez`, `parfois`, `souvent`.
+  - Démonstratifs / interrogatifs restants : `celle`, `ceux`, `celles`, `quoi`, `dont`, `ou`.
 
-| Catégorie | Icône | Couleur |
-|-----------|-------|---------|
-| Observations | Camera | emerald |
-| Écoute | Headphones | violet |
-| Textes | Feather | amber-400 |
-| **Témoignage** | **Quote** | **rose-400** |
-| Contributions | Leaf | amber-500 |
+- Garder le seuil `length ≥ 4` mais le passer à **≥ 5 pour les verbes courts** est risqué — on s'appuie plutôt sur la stop-list.
 
-`Quote` est universellement reconnu comme « parole rapportée », sobre, cohérent avec la famille lucide déjà utilisée. Comme un marcheur n'a au plus qu'**un seul témoignage**, le badge affichera juste l'icône (sans chiffre) ou `1` selon la convention voulue.
+## 2. Redesign moderne du nuage
 
-Alternatives possibles si tu préfères : `MessageCircleHeart` (chaleureux), `MessageSquareQuote` (explicite), `Sparkles` (poétique).
+Fichier : `src/components/community/insights/testimonies/modes/WordCloud.tsx`
 
----
+**Objectif** : passer d'un patchwork multicolore plat à un nuage **éditorial, élégant, plus poétique** — proche d'une œuvre typographique.
 
-## 2. Changements dans `MarcheursTab.tsx`
+**Direction visuelle** :
 
-### a) Hook compteur de témoignages
-Récupérer en une requête tous les `event_testimonies` (par `user_id`) pour les events de l'exploration → exposer un Map `userId → testimony`. Soit via un nouveau hook léger `useExplorationTestimoniesByUser(explorationEventIds)`, soit en réutilisant `useExplorationTestimonies` déjà créé (qui agrège déjà tous les témoignages de l'exploration) et en mémoïsant un index par `user_id`.
+- **Palette monochromatique** alignée sur la marque (Forêt Émeraude en dark, Papier Crème en light) avec **un seul accent** chaud (`amber`) pour les mots du top 5. Fini l'arc-en-ciel.
+- **Typographie hiérarchisée** :
+  - Top 3 : `font-serif italic` taille XL (jusqu'à 4rem), couleur accent.
+  - Mots moyens : `font-semibold` sans-serif, `text-foreground`.
+  - Mots faibles : `font-light` `text-muted-foreground`, opacité réduite.
+- **Container** : carte avec `bg-gradient-to-br from-emerald-500/[0.03] via-card to-amber-500/[0.03]`, bordure douce, `rounded-3xl`, ombre `shadow-elegant`, padding généreux (`p-10 sm:p-14`), masque radial sur les bords (`[mask-image:radial-gradient(...)]`) pour fondu organique.
+- **Layout** : `flex-wrap` centré avec `gap-x-4 gap-y-3`, **rotation aléatoire douce** (-6° à +6°) sur les mots non-top pour casser la grille.
+- **Interaction** :
+  - Hover : `scale-110`, halo lumineux (`drop-shadow-[0_0_12px_hsl(var(--primary)/0.4)]`), curseur `pointer`.
+  - Mot actif : underline animée (motion `layoutId`).
+- **Animation d'entrée** : stagger plus poétique (`delay: i * 0.04`, `ease: [0.22, 1, 0.36, 1]`), apparition `blur-sm → blur-0`.
+- **Header discret** au-dessus : petit label `Les mots qui reviennent` en `uppercase tracking-[0.3em] text-xs text-muted-foreground`.
 
-### b) Badge fermé (ligne ~1071-1096)
-Ajouter après le badge `textesCount` :
-```tsx
-{hasTestimony && (
-  <div className="...rounded-full..." title="A laissé un témoignage">
-    <Quote className="w-3 h-3 text-rose-400" />
-  </div>
-)}
-```
+**Modal de détail** : même esprit éditorial — supprimer le vert vif, utiliser `text-foreground` + accent `amber-500` pour le mot-clé, fond `bg-card/95 backdrop-blur-xl`.
 
-### c) Sous-onglet (ligne 829-832)
-Insérer entre `textes` et `contributions` :
-```ts
-{ key: 'temoignage', label: 'Témoignage', icon: Quote }
-```
-Et n'afficher l'onglet que si `hasTestimony` (filtrer `subTabConfig` par marcheur).
+## Détails techniques
 
-### d) Composant `TemoignageSubTab` — design élégant
-
-```text
-┌────────────────────────────────────────────┐
-│        ❝  (Quote icon, large, rose/30)     │
-│                                            │
-│   « C'était vraiment cette notion d'être   │
-│     à la rencontre des autres... »         │
-│                                            │
-│              — Sophie D                    │
-└────────────────────────────────────────────┘
-```
-
-- Fond : `bg-gradient-to-br from-rose-500/5 via-transparent to-amber-500/5`
-- Bordure douce : `border border-rose-500/10`
-- Quote icon décorative (40px, opacity-20) en haut-gauche
-- Citation en `font-serif italic text-base leading-relaxed`
-- Signature `— Prénom Nom` en `text-xs text-muted-foreground` à droite
-- Animation : `motion.div` avec `initial opacity-0 y-4` → entrée douce
-- Padding généreux (`p-6`) pour respirer
-
-### e) Étendre `hasContent`
-Inclure `hasTestimony` pour permettre l'expand des marcheurs n'ayant *que* un témoignage.
-
----
-
-## Fichiers modifiés
-- `src/components/community/exploration/MarcheursTab.tsx` — badge + sous-onglet + nouveau sous-composant `TemoignageSubTab`
-
-Aucune modification DB ni d'autre composant requis (les témoignages sont déjà en base).
+- Aucune nouvelle dépendance.
+- Modifs limitées à 2 fichiers : `tokenize.ts` (stop-words + split apostrophe), `WordCloud.tsx` (rendu).
+- Tokens sémantiques uniquement (pas de couleurs hardcodées hors palette Tailwind déjà utilisée par le projet).
+- Compatible thèmes clair/sombre (déjà gérés par `text-foreground`, `bg-card`, etc.).
