@@ -4,9 +4,12 @@ import { X, ChevronLeft, ChevronRight, Share2, Lock, Sparkles, MapPin, Leaf, Bir
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import EmpreinteVivante from './EmpreinteVivante';
+import HowItWorksBanner from './HowItWorksBanner';
+import ScoreBreakdown from './ScoreBreakdown';
 import type { MarcheurWithStats } from '@/hooks/useExplorationParticipants';
 import type { SensibleBuckets } from '@/lib/speciesClassification';
 import type { BadgesResult } from '@/hooks/useMarcheurBadges';
+import type { SentinelleBreakdown, SentinelleNextTip } from '@/lib/sentinelleIndex';
 import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 
 const STORY_DURATION = 6000; // ms
