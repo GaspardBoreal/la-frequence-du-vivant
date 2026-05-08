@@ -437,21 +437,36 @@ export function useMarcheurStats(marcheEventId: string, userId: string, marcheId
       const filterCol = marcheId ? 'marche_id' : 'marche_event_id';
       const filterVal = marcheId || marcheEventId;
       
-      const [myMedias, myAudio, myTextes, totalMedias, totalAudio, totalTextes] = await Promise.all([
+      const [myMedias, myAudio, myTextes, totalMedias, totalAudio, textRowsRes] = await Promise.all([
         supabase.from('marcheur_medias').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).eq('user_id', userId),
         supabase.from('marcheur_audio').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).eq('user_id', userId),
         supabase.from('marcheur_textes').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).eq('user_id', userId),
         supabase.from('marcheur_medias').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).or(`user_id.eq.${userId},is_public.eq.true`),
         supabase.from('marcheur_audio').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).or(`user_id.eq.${userId},is_public.eq.true`),
-        supabase.from('marcheur_textes').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).or(`user_id.eq.${userId},is_public.eq.true`),
+        // Textes: count after resolving effective author (matches LireTab display logic).
+        supabase
+          .from('marcheur_textes')
+          .select('id, user_id, attributed_user_id, attributed_marcheur_id, is_public')
+          .eq(filterCol, filterVal)
+          .or(`user_id.eq.${userId},attributed_user_id.eq.${userId},is_public.eq.true`),
       ]);
+      // Effective-author rule: attributed_marcheur_id wins, else attributed_user_id, else user_id.
+      // Visible to viewer = mine (effective author = me) OR public (and authored by someone else).
+      const totalTextes = ((textRowsRes as any).data || []).filter((t: any) => {
+        let effectiveUser: string | null;
+        if (t.attributed_marcheur_id) effectiveUser = null; // crew with no linked user
+        else if (t.attributed_user_id) effectiveUser = t.attributed_user_id;
+        else effectiveUser = t.user_id;
+        const mine = effectiveUser === userId;
+        return mine || !!t.is_public;
+      }).length;
       return {
         medias: myMedias.count || 0,
         audio: myAudio.count || 0,
         textes: myTextes.count || 0,
         totalMedias: totalMedias.count || 0,
         totalAudio: totalAudio.count || 0,
-        totalTextes: totalTextes.count || 0,
+        totalTextes,
       };
     },
     enabled: !!marcheEventId && !!userId,
