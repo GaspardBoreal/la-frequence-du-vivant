@@ -333,17 +333,25 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
         </div>
       )}
 
-      {/* Sons des autres */}
-      {othersAudio.length > 0 && (
-        <div className="space-y-1.5">
+      {/* Sons des autres — groupés par auteur effectif (avec crédits) */}
+      {othersGroups.map(group => (
+        <div key={group.key} className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <Users className="w-3 h-3 text-blue-400" />
-            <span className="text-blue-300/80 text-[10px] uppercase tracking-wider">
-              Des marcheurs ({othersAudio.length})
+            {group.avatarUrl ? (
+              <img
+                src={group.avatarUrl}
+                alt=""
+                className={`w-5 h-5 rounded-full object-cover ring-1 ${group.isCredited ? 'ring-amber-400/40' : 'ring-blue-400/40'}`}
+              />
+            ) : (
+              <Users className={`w-3 h-3 ${group.isCredited ? 'text-amber-400' : 'text-blue-400'}`} />
+            )}
+            <span className={`text-[10px] uppercase tracking-wider ${group.isCredited ? 'text-amber-300/80' : 'text-blue-300/80'}`}>
+              {group.isCredited ? `Crédité à ${group.fullName}` : group.fullName} ({group.audios.length})
             </span>
           </div>
           <div className="space-y-2">
-            {othersAudio.map((a: any) => (
+            {group.audios.map((a: any) => (
               <div key={a.id} className="space-y-1">
                 <ContributionItem
                   id={a.id}
@@ -364,7 +372,7 @@ const MarcheurAudioPanel: React.FC<MarcheurAudioPanelProps> = ({
             ))}
           </div>
         </div>
-      )}
+      ))}
 
       {isEmpty && (
         <div className="px-3 py-6 text-center">
