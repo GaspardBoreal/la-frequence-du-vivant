@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useLanguage } from '@/contexts/LanguageContext';
+
 import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 
 export interface SpeciesTranslation {
@@ -18,21 +18,11 @@ export interface SpeciesTranslation {
  * résolveur centralisé sous le capot (avec auto-fill via edge function).
  */
 export const useSpeciesTranslation = (scientificName: string, originalCommonName?: string) => {
-  const { language } = useLanguage();
-
   return useQuery({
-    queryKey: ['species-translation', scientificName, language],
+    queryKey: ['species-translation', scientificName],
     queryFn: async (): Promise<SpeciesTranslation> => {
-      // For English, return original data
-      if (language === 'en') {
-        return {
-          scientificName,
-          commonName: originalCommonName || scientificName,
-          originalCommonName,
-          source: 'local',
-          confidence: 'high'
-        };
-      }
+      // Note: la langue UI ne pilote plus l'affichage des noms d'espèces.
+      // On retourne toujours le meilleur nom FR connu.
 
       // Try to get French translation from local database first
       const { data: translation } = await supabase
@@ -103,21 +93,13 @@ export const useSpeciesTranslation = (scientificName: string, originalCommonName
 export const useSpeciesTranslationBatch = (
   species: Array<{ scientificName: string; commonName?: string }>
 ) => {
-  const { language } = useLanguage();
+  // NOTE: la langue UI ne pilote PLUS l'affichage des noms d'espèces.
+  // Les écrans métier (Marches, Vivant, Synthèse, L'œil...) doivent
+  // toujours afficher le meilleur nom FR disponible — sinon l'utilisateur
+  // voit de l'anglais alors que la traduction existe en base.
   const auto = useFrenchSpeciesNamesAuto(species);
 
   const data = useMemo<SpeciesTranslation[] | undefined>(() => {
-    // Mode anglais : on garde le nom d'origine
-    if (language === 'en') {
-      return species.map(s => ({
-        scientificName: s.scientificName,
-        commonName: s.commonName || s.scientificName,
-        originalCommonName: s.commonName,
-        source: 'local' as const,
-        confidence: 'high' as const,
-      }));
-    }
-
     if (!auto.data) return undefined;
 
     return species.map(s => {
@@ -140,7 +122,7 @@ export const useSpeciesTranslationBatch = (
         confidence: 'low' as const,
       };
     });
-  }, [language, species, auto.data]);
+  }, [species, auto.data]);
 
   return {
     data,

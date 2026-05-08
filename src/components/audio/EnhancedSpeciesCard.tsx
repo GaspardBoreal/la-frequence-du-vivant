@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
 import { MiniSpectrogramPreview } from './MiniSpectrogramPreview';
-import { useSpeciesTranslation, SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
+import { SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
+import { SpeciesName } from '@/components/species/SpeciesName';
 
 interface EnhancedSpeciesCardProps {
   species: BiodiversitySpecies;
@@ -37,19 +38,9 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
       ? { url: fetchedPhotoData.photos[0], source: 'inaturalist' as const, attribution: '' }
       : null;
 
-  // Call edge function if we don't have a good French translation
-  const shouldCallEdgeFunction = !propTranslation || 
-    (propTranslation.source === 'fallback' && propTranslation.confidence === 'low');
-  
-  const { data: fetchedTranslation, isLoading: isTranslating } = useSpeciesTranslation(
-    shouldCallEdgeFunction ? species.scientificName : '', 
-    shouldCallEdgeFunction ? species.commonName : ''
-  );
-  
-  // Use fetched translation if available and better than prop, otherwise use prop
-  const translation = (fetchedTranslation && fetchedTranslation.source !== 'fallback') 
-    ? fetchedTranslation 
-    : (propTranslation || fetchedTranslation);
+  // Use the prop translation directly — auto-fill is handled centrally
+  // by useFrenchSpeciesNamesAuto via the parent batch hook.
+  const translation = propTranslation;
 
   const hasAudio = species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
   const hasPhoto = !!effectivePhoto && !imageError;
@@ -158,9 +149,13 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-sm leading-tight truncate">
-              {translation?.commonName || species.commonName}
-            </h3>
+            <SpeciesName
+              scientificName={species.scientificName}
+              commonName={translation?.commonName || species.commonName}
+              size="sm"
+              truncate
+              className="font-medium leading-tight"
+            />
             
             {/* Audio Controls */}
             {hasAudio && (

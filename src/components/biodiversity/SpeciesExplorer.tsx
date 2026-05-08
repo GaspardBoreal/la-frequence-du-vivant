@@ -176,14 +176,18 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(s =>
-        s.commonName.toLowerCase().includes(term) ||
-        s.scientificName.toLowerCase().includes(term)
-      );
+      filtered = filtered.filter(s => {
+        const fr = translationMap.get(s.scientificName)?.commonName || '';
+        return (
+          fr.toLowerCase().includes(term) ||
+          s.commonName.toLowerCase().includes(term) ||
+          s.scientificName.toLowerCase().includes(term)
+        );
+      });
     }
 
     return filtered.sort((a, b) => b.observations - a.observations);
-  }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm]);
+  }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm, translationMap]);
 
   const gridCols = compact
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
