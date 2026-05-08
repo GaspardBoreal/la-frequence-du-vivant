@@ -1071,6 +1071,7 @@ const MarcheurCard: React.FC<{
     observations: photoCount,
     ecoute: audioCount,
     textes: textesCount,
+    temoignage: hasTestimony ? 1 : 0,
     contributions: realContribCount,
   };
 
