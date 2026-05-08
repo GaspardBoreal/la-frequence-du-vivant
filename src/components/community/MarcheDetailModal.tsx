@@ -207,20 +207,45 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
       if (!uploaderIds.length) return [];
       const { data } = await supabase
         .from('community_profiles')
-        .select('user_id, prenom, nom')
+        .select('user_id, prenom, nom, avatar_url')
         .in('user_id', uploaderIds);
       return data || [];
     },
     enabled: uploaderIds.length > 0,
   });
-  const uploaderNameById = React.useMemo(() => {
-    const map = new Map<string, string>();
+  const uploaderInfoById = React.useMemo(() => {
+    const map = new Map<string, { fullName: string; avatarUrl: string | null }>();
     uploaderProfiles.forEach((p: any) => {
       const full = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim();
-      if (full) map.set(p.user_id, full);
+      map.set(p.user_id, { fullName: full || 'Marcheur', avatarUrl: p.avatar_url ?? null });
     });
     return map;
   }, [uploaderProfiles]);
+  const uploaderNameById = React.useMemo(() => {
+    const map = new Map<string, string>();
+    uploaderInfoById.forEach((info, id) => {
+      if (info.fullName) map.set(id, info.fullName);
+    });
+    return map;
+  }, [uploaderInfoById]);
+
+  // Group "Des marcheurs" by uploader
+  const othersGroups = React.useMemo(() => {
+    const groups = new Map<string, { userId: string; fullName: string; avatarUrl: string | null; medias: typeof allMedias }>();
+    othersMedias.forEach(m => {
+      const info = uploaderInfoById.get(m.user_id);
+      if (!groups.has(m.user_id)) {
+        groups.set(m.user_id, {
+          userId: m.user_id,
+          fullName: info?.fullName || 'Marcheur',
+          avatarUrl: info?.avatarUrl ?? null,
+          medias: [],
+        });
+      }
+      groups.get(m.user_id)!.medias.push(m);
+    });
+    return Array.from(groups.values());
+  }, [othersMedias, uploaderInfoById]);
 
   // Build unified lightbox items array (order MUST match render order: admin → mine → credited groups → others)
   const lightboxItems: LightboxItem[] = React.useMemo(() => {
@@ -241,7 +266,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
     };
     myMedias.forEach(m => pushMedia(m, true));
     creditedGroups.forEach(g => g.medias.forEach(m => pushMedia(m, false)));
-    othersMedias.forEach(m => pushMedia(m, false));
+    othersGroups.forEach(g => g.medias.forEach(m => pushMedia(m, false)));
     return items;
   }, [adminPhotos, myMedias, creditedGroups, othersMedias, uploaderNameById]);
 
@@ -565,33 +590,44 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
         );
       })}
 
-      {/* Others' contributions (uploaded by others, not attributed) */}
-      {othersMedias.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Users className="w-3 h-3 text-blue-400" />
-            <span className="text-blue-300/60 text-[10px] uppercase tracking-wider">Des marcheurs ({othersMedias.length})</span>
+      {/* Others' contributions (uploaded by others, not attributed), grouped by uploader */}
+      {othersGroups.map((group, gIdx) => {
+        const offsetBefore =
+          adminCount + myCount + creditedCount +
+          othersGroups.slice(0, gIdx).reduce((s, g) => s + g.medias.length, 0);
+        return (
+          <div key={group.userId} className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              {group.avatarUrl ? (
+                <img src={group.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover ring-1 ring-blue-400/40" />
+              ) : (
+                <Users className="w-3 h-3 text-blue-400" />
+              )}
+              <span className="text-blue-300/70 text-[10px] uppercase tracking-wider">
+                {group.fullName} ({group.medias.length})
+              </span>
+            </div>
+            <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'}`}>
+              {group.medias.map((m, i) => (
+                <ContributionItem
+                  key={m.id}
+                  id={m.id}
+                  type={m.type_media}
+                  titre={m.titre}
+                  url={m.url_fichier}
+                  externalUrl={m.external_url}
+                  isPublic={m.is_public}
+                  isOwner={false}
+                  createdAt={m.created_at}
+                  viewMode={viewMode}
+                  gpsDistance={viewMode === 'fiche' ? getGpsDistance(m.id) : null}
+                  onClick={() => setLightboxIndex(offsetBefore + i)}
+                />
+              ))}
+            </div>
           </div>
-          <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'}`}>
-            {othersMedias.map((m, i) => (
-              <ContributionItem
-                key={m.id}
-                id={m.id}
-                type={m.type_media}
-                titre={m.titre}
-                url={m.url_fichier}
-                externalUrl={m.external_url}
-                isPublic={m.is_public}
-                isOwner={false}
-                createdAt={m.created_at}
-                viewMode={viewMode}
-                gpsDistance={viewMode === 'fiche' ? getGpsDistance(m.id) : null}
-                onClick={() => setLightboxIndex(adminCount + myCount + creditedCount + i)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+        );
+      })}
 
       {!adminPhotos?.length && !myMedias.length && !creditedGroups.length && !othersMedias.length && !showUpload && (
         <EmptyState message="Aucune photo pour cette marche" sub="Appuyez sur + Ajouter pour partager vos photos" />
