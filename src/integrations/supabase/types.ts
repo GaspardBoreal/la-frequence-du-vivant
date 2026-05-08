@@ -4662,6 +4662,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_species_translation_manual: {
+        Args: { _common_name_fr: string; _scientific_name: string }
+        Returns: undefined
+      }
       shares_marche_event: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean

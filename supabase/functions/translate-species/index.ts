@@ -23,15 +23,56 @@ interface BatchTranslationResponse {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// ---------- INPN lookup ----------
+// ---------- INPN lookup (currently offline due to MNHN cyberattack 2025) ----------
 async function fetchInpn(scientificName: string): Promise<string | null> {
   try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 3000);
     const r = await fetch(
-      `https://taxref.mnhn.fr/api/taxa/search?scientificNames=${encodeURIComponent(scientificName)}`
+      `https://taxref.mnhn.fr/api/taxa/search?scientificNames=${encodeURIComponent(scientificName)}`,
+      { signal: ctrl.signal }
     );
+    clearTimeout(t);
     if (!r.ok) return null;
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('json')) return null; // INPN currently returns HTML maintenance page
     const j = await r.json();
     return j._embedded?.taxa?.[0]?.frenchVernacularName || null;
+  } catch {
+    return null;
+  }
+}
+
+// ---------- Wikipedia FR lookup (most reliable while INPN is down) ----------
+// Strategy: hit fr.wikipedia.org REST summary by scientific name. If the page
+// is the species page, the `displaytitle` is usually the French vernacular
+// name; otherwise we fall back to the page title. We accept the result only
+// if the page is in French and the scientific name appears in the extract
+// (sanity check to avoid resolving a homonym to an unrelated topic).
+async function fetchWikipediaFr(scientificName: string): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const url = `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(scientificName.replace(/ /g, '_'))}`;
+    const r = await fetch(url, {
+      signal: ctrl.signal,
+      headers: { 'Accept': 'application/json', 'User-Agent': 'la-frequence-du-vivant/1.0' },
+    });
+    clearTimeout(t);
+    if (!r.ok) return null;
+    const j: any = await r.json();
+    if (j.type === 'disambiguation') return null;
+    const extract: string = j.extract || '';
+    // Sanity check: the scientific name (or its genus) must appear in the extract
+    const genus = scientificName.split(' ')[0];
+    if (!extract.toLowerCase().includes(genus.toLowerCase())) return null;
+    const raw: string = (j.displaytitle || j.title || '').replace(/<[^>]+>/g, '').trim();
+    if (!raw) return null;
+    // If Wikipedia returned the scientific name itself (italicised page title),
+    // there's no vernacular FR name on Wikipedia → don't claim one.
+    if (raw.toLowerCase() === scientificName.toLowerCase()) return null;
+    if (raw.toLowerCase() === genus.toLowerCase()) return null;
+    return raw;
   } catch {
     return null;
   }
