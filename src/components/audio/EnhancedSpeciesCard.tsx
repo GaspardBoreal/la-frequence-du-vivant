@@ -38,19 +38,9 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
       ? { url: fetchedPhotoData.photos[0], source: 'inaturalist' as const, attribution: '' }
       : null;
 
-  // Call edge function if we don't have a good French translation
-  const shouldCallEdgeFunction = !propTranslation || 
-    (propTranslation.source === 'fallback' && propTranslation.confidence === 'low');
-  
-  const { data: fetchedTranslation, isLoading: isTranslating } = useSpeciesTranslation(
-    shouldCallEdgeFunction ? species.scientificName : '', 
-    shouldCallEdgeFunction ? species.commonName : ''
-  );
-  
-  // Use fetched translation if available and better than prop, otherwise use prop
-  const translation = (fetchedTranslation && fetchedTranslation.source !== 'fallback') 
-    ? fetchedTranslation 
-    : (propTranslation || fetchedTranslation);
+  // Use the prop translation directly — auto-fill is handled centrally
+  // by useFrenchSpeciesNamesAuto via the parent batch hook.
+  const translation = propTranslation;
 
   const hasAudio = species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
   const hasPhoto = !!effectivePhoto && !imageError;
