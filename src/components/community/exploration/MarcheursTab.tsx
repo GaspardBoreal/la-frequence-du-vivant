@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather, Sparkles } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather, Sparkles, Quote } from 'lucide-react';
+import { useExplorationTestimonies, type EventTestimony } from '@/hooks/useEventTestimonies';
 import { useIsCurator } from '@/hooks/useExplorationCurations';
 import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
