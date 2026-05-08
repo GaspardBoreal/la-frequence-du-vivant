@@ -4243,28 +4243,17 @@ export type Database = {
         Returns: boolean
       }
       age_bracket: { Args: { _birth: string }; Returns: string }
-      attribute_species_to_marcheurs:
-        | {
-            Args: {
-              p_exploration_id: string
-              p_marche_id: string
-              p_marcheur_ids: string[]
-              p_notes?: string
-              p_species: string
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_exploration_id: string
-              p_marche_id: string
-              p_marcheur_ids: string[]
-              p_notes?: string
-              p_species: string
-              p_user_ids?: string[]
-            }
-            Returns: number
-          }
+      attribute_species_to_marcheurs: {
+        Args: {
+          p_exploration_id: string
+          p_marche_id: string
+          p_marcheur_ids: string[]
+          p_notes?: string
+          p_species: string
+          p_user_ids?: string[]
+        }
+        Returns: number
+      }
       can_create_marche: { Args: { _user_id: string }; Returns: boolean }
       can_curate_audio: { Args: { _user_id: string }; Returns: boolean }
       can_edit_marche_event: {
