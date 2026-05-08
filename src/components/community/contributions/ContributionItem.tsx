@@ -30,6 +30,16 @@ export interface ContributionItemProps {
   createdAt: string;
   viewMode?: 'immersion' | 'fiche';
   gpsDistance?: { distanceM: number | null; hasGps: boolean; gpsLat?: number; gpsLng?: number } | null;
+  /** Curator (admin / ambassadeur / sentinelle) → enables credit reattribution. */
+  canReattribute?: boolean;
+  /** Used by the attribution sheet for cache invalidation + picker. */
+  explorationId?: string;
+  /** Editorial marcheur currently credited (null = original uploader/typeur). */
+  attributedMarcheurId?: string | null;
+  /** Display name of the typeur/uploader, shown in the "remove credit" hint. */
+  uploaderName?: string | null;
+  /** Editorial marcheur id matching the typeur (if any), used to flag the picker row. */
+  uploaderMarcheurId?: string | null;
   onUpdate?: (id: string, updates: Record<string, any>) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
