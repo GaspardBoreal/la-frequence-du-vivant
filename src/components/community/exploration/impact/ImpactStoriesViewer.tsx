@@ -33,7 +33,8 @@ const STORY_KEYS = ['empreinte', 'sentinelle', 'familles', 'detections', 'badges
 
 const ImpactStoriesViewer: React.FC<ImpactStoriesViewerProps> = ({
   open, onOpenChange, marcheur, sensible, badgesResult,
-  pioneerCount, taxonomicFamilies, sentinelleScore, sentinelleLabel, hasTemoignage,
+  pioneerCount, taxonomicFamilies, sentinelleScore, sentinelleLabel,
+  sentinelleBreakdown, sentinelleNextTip, hasTemoignage,
 }) => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
