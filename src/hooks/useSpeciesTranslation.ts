@@ -132,7 +132,7 @@ export const useSpeciesTranslationBatch = (
         confidence: 'low' as const,
       };
     });
-  }, [language, species, auto.data]);
+  }, [species, auto.data]);
 
   return {
     data,
