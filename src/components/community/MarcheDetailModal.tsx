@@ -821,6 +821,8 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
                 sharedToWeb={(t as any).shared_to_web}
                 isOwner={true}
                 createdAt={t.created_at}
+                canReattribute={!!isCurator}
+                explorationId={explorationId ?? undefined}
                 onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_textes', id, updates })}
                 onDelete={(id) => deleteContrib.mutate({ table: 'marcheur_textes', id })}
               />
