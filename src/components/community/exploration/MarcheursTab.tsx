@@ -1043,7 +1043,8 @@ const MarcheurCard: React.FC<{
   explorationId?: string;
   explorationMarcheIds: string[];
   totalMarchesCount: number;
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount }) => {
+  testimony?: EventTestimony | null;
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
   const { user: viewer } = useAuth();
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
@@ -1054,11 +1055,17 @@ const MarcheurCard: React.FC<{
   const photoCount = marcheur.stats.photos + marcheur.stats.videos;
   const audioCount = marcheur.stats.sons || 0;
   const textesCount = marcheur.stats.textes || 0;
-  
+  const hasTestimony = !!testimony;
+
   // Real contributions count from biodiversity snapshots
   const { data: contributionsCount } = useWalkerContributionsCount(marcheur.prenom, marcheur.nom, explorationMarcheIds, explorationId);
   const realContribCount = contributionsCount || 0;
-  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0 || audioCount > 0 || textesCount > 0;
+  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0 || audioCount > 0 || textesCount > 0 || hasTestimony;
+
+  const visibleSubTabs = useMemo(
+    () => subTabConfig.filter((t) => t.key !== 'temoignage' || hasTestimony),
+    [hasTestimony]
+  );
 
   return (
     <motion.div
