@@ -1,61 +1,76 @@
 ## Objectif
 
-Afficher discrètement un compteur à côté de chaque sous-onglet d'un marcheur déplié, uniquement quand la valeur > 0. Les onglets sans donnée n'affichent rien (ni 0, ni parenthèses vides). « Votre impact » n'affiche jamais de compteur (c'est une vue analytique, pas un volume).
+Trier la liste des marcheurs (vue Marcheurs → Marcheurs) par **total de contributions décroissant**, où chaque badge compte pour 1. En cas d'égalité parfaite : tri **alphabétique sur prénom puis nom**.
 
-## Mapping des compteurs
+## Définition du score (cohérent avec les badges visibles)
 
-| Sous-onglet      | Source (déjà calculée) | Affichage |
-|------------------|-------------------------|-----------|
-| Observations     | `photoCount` (photos + vidéos) | si > 0 |
-| Écoute           | `audioCount`           | si > 0 |
-| Textes           | `textesCount`          | si > 0 |
-| Témoignage       | `hasTestimony ? 1 : 0` | si présent (l'onglet n'apparaît déjà que dans ce cas) |
-| Contributions    | `realContribCount`     | si > 0 |
-| Votre impact     | — | jamais |
-
-Toutes ces valeurs existent déjà dans `MarcheurCard` (lignes 1055-1062). Aucune nouvelle requête, aucun appel back-end supplémentaire.
-
-## Design UX/UI (sobre et robuste)
-
-- Le compteur prend la forme d'une **petite pastille discrète** placée juste après le label du pill, et non d'un texte « (15) » en clair — plus moderne, lisible sur mobile, conforme aux patterns iOS/Material.
-- Format :
-  - **Inactif** : `bg-muted/70 text-muted-foreground` (fond neutre, chiffre estompé)
-  - **Actif** : `bg-emerald-500/15 text-emerald-700 dark:text-emerald-300` (suit la couleur du pill actif)
-- Taille : `text-[10px] font-semibold`, `min-w-[18px] h-[18px] px-1.5`, `rounded-full`, `tabular-nums` (alignement chiffres).
-- Espacement : `ml-0.5` après le label, transition couleur 150ms.
-- Pas de virgule ni de parenthèses, juste le nombre. Aria-label complet sur le bouton (« Observations, 15 éléments ») pour l'accessibilité.
-- Sur mobile (le pill row est scrollable horizontalement si débordement) : la pastille reste compacte donc n'augmente pas significativement la largeur d'un onglet.
-
-## Implémentation technique
-
-Un seul fichier touché : `src/components/community/exploration/MarcheursTab.tsx`.
-
-1. Construire dans `MarcheurCard` une `Map<MarcheurSubTab, number>` :
-```ts
-const subTabCounts: Partial<Record<MarcheurSubTab, number>> = {
-  observations: photoCount,
-  ecoute: audioCount,
-  textes: textesCount,
-  temoignage: hasTestimony ? 1 : 0,
-  contributions: realContribCount,
-};
+Pour chaque marcheur :
 ```
-2. Dans le rendu du pill (lignes 1156-1173), ajouter conditionnellement :
-```tsx
-{(subTabCounts[tab.key] ?? 0) > 0 && (
-  <span className={`ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums transition-colors ${
-    isActive
-      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-      : 'bg-muted/70 text-muted-foreground'
-  }`}>
-    {subTabCounts[tab.key]}
-  </span>
-)}
+score = photos + vidéos + sons + textes + (témoignage ? 1 : 0) + contributions(leaf)
 ```
-3. Ajouter `aria-label={\`${tab.label}${count ? `, ${count} élément${count > 1 ? 's' : ''}` : ''}\`}` sur le `<button>`.
+Soit exactement la somme des nombres affichés dans les pastilles à droite de chaque ligne. Exemples du screenshot :
+- Gaspard Boréal : 48 + 2 + 2 + 49 = **153**
+- Sophie D : 15 + 1 + 1 = **17**
+
+## Tri
+
+```
+1. score DESC
+2. prénom ASC (locale fr, insensible casse/accents via Intl.Collator)
+3. nom ASC (même collator)
+```
+
+## Problème actuel
+
+- `useExplorationParticipants` trie déjà par `totalContributions` (= photos+vidéos+sons+textes+`speciesCount`), mais :
+  - n'intègre **pas** le témoignage,
+  - utilise `speciesCount` (snapshot pré-agrégé) qui peut différer de `realContribCount` affiché dans le badge feuille (calculé via `useWalkerContributionsCount` par carte),
+  - ne définit pas de tri secondaire alphabétique.
+- Chaque `MarcheurCard` lance son propre `useWalkerContributionsCount` → N requêtes parallèles redondantes (même `in(marche_id, …)` à chaque fois). Inutilisable pour trier au niveau parent sans hisser cette donnée.
+
+## Architecture cible
+
+### 1. Nouveau hook `useExplorationContributionsCounts(explorationId, explorationMarcheIds)`
+
+Une seule requête sur `biodiversity_snapshots`, parcourt tous les `species_data → attributions`, dédoublonne par `scientificName|date|source` **par observateur**, et renvoie une `Map<normalizedFullName, number>`.
+
+Avantages : 1 requête au lieu de N, source de vérité unique réutilisée par le parent (tri) ET par les cartes (badge + compteur sous-onglet).
+
+### 2. Refactor `MarcheursTab` (parent)
+
+```
+- appelle useExplorationContributionsCounts → contribsByName
+- trie marcheurs avec le score complet :
+    score(m) = m.stats.photos + m.stats.videos + m.stats.sons
+             + m.stats.textes
+             + (testimoniesByUser.has(userKey(m)) ? 1 : 0)
+             + (contribsByName.get(normalize(`${m.prenom} ${m.nom}`)) ?? 0)
+- tie-break alphabétique via Intl.Collator('fr', { sensitivity: 'base' })
+- passe la valeur contributionsCount au composant MarcheurCard en prop
+```
+
+### 3. Refactor `MarcheurCard`
+
+- Reçoit `contributionsCount: number` en prop (au lieu d'appeler `useWalkerContributionsCount`).
+- Supprime l'appel local au hook → suppression des N requêtes redondantes.
+- Le hook `useWalkerContributionsCount` peut alors être retiré (ou conservé en utilitaire local si on veut le réutiliser ailleurs — à vérifier d'un grep).
+
+## Fichiers à modifier
+
+```text
+src/components/community/exploration/MarcheursTab.tsx
+  - Ajout du nouveau hook (ou import si extrait)
+  - Mémoisation `sortedMarcheurs` avec score + collator
+  - Passage de contributionsCount à chaque MarcheurCard
+  - Suppression de l'appel local useWalkerContributionsCount dans MarcheurCard
+```
+
+(Possible extraction du nouveau hook dans `src/hooks/useExplorationContributionsCounts.ts` pour la propreté — recommandé.)
 
 ## Notes de robustesse
 
-- Aucune logique nouvelle de comptage : on réutilise les sources existantes, déjà sécurisées (RLS sur les médias, RPC pour contributions).
-- Le count `temoignage` est toujours 1 quand l'onglet est visible — on peut donc choisir de **ne pas afficher** la pastille pour cet onglet (1 témoignage = pas d'info utile). À confirmer par défaut → **proposition retenue : ne pas afficher de compteur sur Témoignage** (la présence de l'onglet est déjà l'indicateur).
-- Pas d'impact sur le filtrage des onglets visibles ni sur les sources de données.
+- `Intl.Collator('fr', { sensitivity: 'base', usage: 'sort' })` gère accents et casse correctement (« Élise » entre « Eliott » et « Émile »).
+- `normalize()` (NFD, suppression des accents) déjà utilisé dans le code pour matcher noms d'observateurs : on le réutilise tel quel pour la clé de la Map.
+- Si `contribsByName` est encore en chargement, on tombe à 0 pour ce marcheur — l'ordre se réajustera automatiquement quand la requête termine (tri dans `useMemo` dépendant de la Map).
+- Performance : le tri se fait côté client sur un tableau déjà petit (≤ quelques dizaines de marcheurs).
+- Aucun changement back-end, aucune migration SQL.

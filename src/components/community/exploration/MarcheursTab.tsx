@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useReorderMarcheurObservations } from '@/hooks/useReorderMarcheurObservations';
+import { useExplorationContributionsCounts, lookupContributions } from '@/hooks/useExplorationContributionsCounts';
 import MarcheurAudioPanel from '@/components/community/audio/MarcheurAudioPanel';
 import {
   DndContext,
@@ -1044,7 +1045,8 @@ const MarcheurCard: React.FC<{
   explorationMarcheIds: string[];
   totalMarchesCount: number;
   testimony?: EventTestimony | null;
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony }) => {
+  contributionsCount?: number;
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0 }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
   const { user: viewer } = useAuth();
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
@@ -1057,9 +1059,8 @@ const MarcheurCard: React.FC<{
   const textesCount = marcheur.stats.textes || 0;
   const hasTestimony = !!testimony;
 
-  // Real contributions count from biodiversity snapshots
-  const { data: contributionsCount } = useWalkerContributionsCount(marcheur.prenom, marcheur.nom, explorationMarcheIds, explorationId);
-  const realContribCount = contributionsCount || 0;
+  // Real contributions count provided by parent (single shared query)
+  const realContribCount = contributionsCount;
   const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0 || audioCount > 0 || textesCount > 0 || hasTestimony;
 
   const visibleSubTabs = useMemo(
@@ -1311,6 +1312,30 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     return m;
   }, [testimonies]);
 
+  // Single shared query: contribution counts per observer for the whole exploration
+  const { data: contribsByName } = useExplorationContributionsCounts(explorationId, explorationMarcheIds);
+
+  // Sort: total contributions DESC, then alpha (prenom, nom) ASC
+  const sortedMarcheurs = useMemo(() => {
+    if (!marcheurs?.length) return marcheurs ?? [];
+    const collator = new Intl.Collator('fr', { sensitivity: 'base', usage: 'sort' });
+    const score = (m: MarcheurWithStats) => {
+      const photos = m.stats.photos + m.stats.videos;
+      const sons = m.stats.sons || 0;
+      const textes = m.stats.textes || 0;
+      const tem = m.userId && testimoniesByUser.has(m.userId) ? 1 : 0;
+      const contribs = lookupContributions(contribsByName, m.prenom, m.nom);
+      return photos + sons + textes + tem + contribs;
+    };
+    return [...marcheurs].sort((a, b) => {
+      const diff = score(b) - score(a);
+      if (diff !== 0) return diff;
+      const p = collator.compare(a.prenom || '', b.prenom || '');
+      if (p !== 0) return p;
+      return collator.compare(a.nom || '', b.nom || '');
+    });
+  }, [marcheurs, contribsByName, testimoniesByUser]);
+
   const createAffiliateLink = async (channel: 'copy' | 'share') => {
     if (!explorationId) {
       toast.error('Exploration introuvable pour générer le lien');
@@ -1442,7 +1467,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
 
       {/* Cards — all closed by default */}
       <div className="space-y-2">
-        {marcheurs.map((m, i) => (
+        {sortedMarcheurs.map((m, i) => (
           <MarcheurCard
             key={m.id}
             marcheur={m}
@@ -1454,6 +1479,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
             explorationMarcheIds={explorationMarcheIds}
             totalMarchesCount={explorationMarcheIds.length}
             testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
+            contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom)}
           />
         ))}
       </div>
