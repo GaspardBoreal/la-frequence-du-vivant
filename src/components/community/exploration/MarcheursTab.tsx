@@ -1153,7 +1153,7 @@ const MarcheurCard: React.FC<{
           >
             {/* Sub-tab pills */}
             <div className="flex gap-1 p-2 px-3">
-              {subTabConfig.map(tab => {
+              {visibleSubTabs.map(tab => {
                 const Icon = tab.icon;
                 const isActive = activeSubTab === tab.key;
                 return (
