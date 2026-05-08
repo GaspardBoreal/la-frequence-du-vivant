@@ -6,8 +6,6 @@ import {
   Sparkles,
   RotateCw,
   CloudSun,
-  LandPlot,
-  Leaf,
   ChevronRight,
   ChevronDown,
   X,
@@ -17,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { toast } from 'sonner';
+
 import type { MapLayersState, WeatherStationsMode } from '@/hooks/useMapLayers';
 
 interface MapOptionsMenuProps {
@@ -73,15 +71,7 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
     setTimeout(() => setOpen(false), 220);
   };
 
-  const handleLayer = (key: keyof MapLayersState, soon = false) => {
-    haptic();
-    onToggleLayer(key);
-    if (soon) {
-      toast.info('Bientôt disponible', {
-        description: 'Cette couche sera bientôt branchée sur les données réelles.',
-      });
-    }
-  };
+
 
   const Trigger = (
     <button
@@ -195,26 +185,11 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
               onSetWeatherStationsRadius(r);
             }}
           />
-          <LayerRow
-            icon={<LandPlot className="w-4 h-4" strokeWidth={2.5} />}
-            iconClass="bg-orange-500/20 border-orange-400/30 text-orange-200"
-            label="Cadastre détaillé"
-            description="Parcelles autour du tracé"
-            checked={layers.cadastreDetail}
-            onCheckedChange={() => handleLayer('cadastreDetail', true)}
-          />
-          <LayerRow
-            icon={<Leaf className="w-4 h-4" strokeWidth={2.5} />}
-            iconClass="bg-lime-500/20 border-lime-400/30 text-lime-200"
-            label="Espèces récentes"
-            description="Observations des 30 derniers jours"
-            checked={layers.recentSpecies}
-            onCheckedChange={() => handleLayer('recentSpecies', true)}
-          />
         </div>
       </section>
     </div>
   );
+
 
   if (isMobile) {
     return (
