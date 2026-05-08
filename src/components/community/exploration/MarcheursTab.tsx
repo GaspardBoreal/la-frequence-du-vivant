@@ -534,6 +534,7 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
       <div className="space-y-2">
         {sorted.map((obs, i) => {
           const frenchName = frNamesMap?.get(obs.scientificName)?.commonNameFr || null;
+          const primaryName = frenchName || obs.scientificName;
           const kingdomInfo = getKingdomInfo(obs.kingdom);
           const KingdomIcon = kingdomInfo.icon;
           const dateStr = obs.date
@@ -572,12 +573,12 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
                     {kingdomInfo.label}
                   </span>
                 </div>
-                <p className="text-xs font-semibold text-foreground truncate italic mt-0.5">
-                  {obs.scientificName}
+                <p className="text-xs font-semibold text-foreground truncate mt-0.5">
+                  {primaryName}
                 </p>
                 {frenchName && frenchName !== obs.scientificName && (
-                  <p className="text-[10px] text-muted-foreground truncate capitalize">
-                    {frenchName}
+                  <p className="text-[10px] text-muted-foreground truncate italic">
+                    {obs.scientificName}
                   </p>
                 )}
               </div>
