@@ -613,7 +613,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               </div>
             )}
             <SpeciesGrid
-              items={applyCategoryFilter(reviewItems)}
+              items={applyCategoryFilter(reviewItems.filter(x => matchesSearch(x.species)))}
               isCurator={isCurator}
               explorationId={explorationId}
               emptyMessage="Aucune classification en attente — bravo, tout est à jour !"
