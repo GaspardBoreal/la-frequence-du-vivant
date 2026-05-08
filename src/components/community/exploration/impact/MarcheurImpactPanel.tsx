@@ -6,6 +6,7 @@ import ImpactTeaserCard from './ImpactTeaserCard';
 import ImpactStoriesViewer from './ImpactStoriesViewer';
 import { useMarcheurSensibleSpecies } from '@/hooks/useMarcheurSensibleSpecies';
 import { useMarcheurBadges } from '@/hooks/useMarcheurBadges';
+import { computeSentinelleIndex } from '@/lib/sentinelleIndex';
 import type { MarcheurWithStats } from '@/hooks/useExplorationParticipants';
 
 interface Props {
@@ -78,28 +79,19 @@ const MarcheurImpactPanel: React.FC<Props> = ({
 
   const sensible = useMarcheurSensibleSpecies(marcheur.speciesObserved);
 
-  const { score, label } = useMemo(() => {
-    // Indice de Sentinelle = diversité (5 piliers) prioritaire sur le volume
-    const pillars = [
-      marcheur.stats.photos > 0,
-      marcheur.stats.sons > 0,
-      marcheur.stats.textes > 0,
-      hasTemoignage,
-      sensible.bioIndicateurs.length + sensible.auxiliaires.length + sensible.eee.length > 0,
-    ];
-    const pillarsScore = (pillars.filter(Boolean).length / 5) * 60;
-    const speciesScore = Math.min((marcheur.stats.speciesCount || 0) / 20, 1) * 25;
-    const sensibleBonus = Math.min(
-      (sensible.bioIndicateurs.length * 1.5 + sensible.auxiliaires.length * 1.0 + sensible.eee.length * 2.0) / 10,
-      1
-    ) * 15;
-    const total = Math.round(pillarsScore + speciesScore + sensibleBonus);
-    let lab = 'Marcheur en éveil';
-    if (total >= 76) lab = 'Sentinelle de la biodiversité';
-    else if (total >= 51) lab = 'Voix du Vivant';
-    else if (total >= 26) lab = 'Explorateur attentif';
-    return { score: total, label: lab };
-  }, [marcheur.stats, hasTemoignage, sensible]);
+  const sentinelle = useMemo(() => computeSentinelleIndex({
+    photos: marcheur.stats.photos,
+    sons: marcheur.stats.sons,
+    textes: marcheur.stats.textes,
+    hasTemoignage,
+    speciesCount: marcheur.stats.speciesCount || 0,
+    bioCount: sensible.bioIndicateurs.length,
+    auxCount: sensible.auxiliaires.length,
+    eeeCount: sensible.eee.length,
+  }), [marcheur.stats, hasTemoignage, sensible]);
+
+  const score = sentinelle.total;
+  const label = sentinelle.label;
 
   const badgesResult = useMarcheurBadges({
     marcheur,
@@ -130,6 +122,8 @@ const MarcheurImpactPanel: React.FC<Props> = ({
         taxonomicFamilies={taxonomicGroups}
         sentinelleScore={score}
         sentinelleLabel={label}
+        sentinelleBreakdown={sentinelle.breakdown}
+        sentinelleNextTip={sentinelle.nextTip}
         hasTemoignage={hasTemoignage}
       />
     </>

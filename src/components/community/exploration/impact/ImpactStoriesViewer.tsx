@@ -4,9 +4,12 @@ import { X, ChevronLeft, ChevronRight, Share2, Lock, Sparkles, MapPin, Leaf, Bir
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import EmpreinteVivante from './EmpreinteVivante';
+import HowItWorksBanner from './HowItWorksBanner';
+import ScoreBreakdown from './ScoreBreakdown';
 import type { MarcheurWithStats } from '@/hooks/useExplorationParticipants';
 import type { SensibleBuckets } from '@/lib/speciesClassification';
 import type { BadgesResult } from '@/hooks/useMarcheurBadges';
+import type { SentinelleBreakdown, SentinelleNextTip } from '@/lib/sentinelleIndex';
 import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 
 const STORY_DURATION = 6000; // ms
@@ -21,6 +24,8 @@ export interface ImpactStoriesViewerProps {
   taxonomicFamilies: { label: string; count: number; icon: React.ElementType; color: string }[];
   sentinelleScore: number;
   sentinelleLabel: string;
+  sentinelleBreakdown: SentinelleBreakdown;
+  sentinelleNextTip: SentinelleNextTip;
   hasTemoignage: boolean;
 }
 
@@ -28,7 +33,8 @@ const STORY_KEYS = ['empreinte', 'sentinelle', 'familles', 'detections', 'badges
 
 const ImpactStoriesViewer: React.FC<ImpactStoriesViewerProps> = ({
   open, onOpenChange, marcheur, sensible, badgesResult,
-  pioneerCount, taxonomicFamilies, sentinelleScore, sentinelleLabel, hasTemoignage,
+  pioneerCount, taxonomicFamilies, sentinelleScore, sentinelleLabel,
+  sentinelleBreakdown, sentinelleNextTip, hasTemoignage,
 }) => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -157,7 +163,12 @@ const ImpactStoriesViewer: React.FC<ImpactStoriesViewerProps> = ({
                 <StoryEmpreinte marcheur={marcheur} sensible={sensible} hasTemoignage={hasTemoignage} />
               )}
               {currentKey === 'sentinelle' && (
-                <StorySentinelle score={sentinelleScore} label={sentinelleLabel} />
+                <StorySentinelle
+                  score={sentinelleScore}
+                  label={sentinelleLabel}
+                  breakdown={sentinelleBreakdown}
+                  nextTip={sentinelleNextTip}
+                />
               )}
               {currentKey === 'familles' && (
                 <StoryFamilles marcheur={marcheur} taxonomicFamilies={taxonomicFamilies} />
@@ -217,35 +228,54 @@ const StoryEmpreinte: React.FC<{ marcheur: MarcheurWithStats; sensible: Sensible
   </div>
 );
 
-const StorySentinelle: React.FC<{ score: number; label: string }> = ({ score, label }) => {
-  const radius = 90;
+const StorySentinelle: React.FC<{
+  score: number;
+  label: string;
+  breakdown: SentinelleBreakdown;
+  nextTip: SentinelleNextTip;
+}> = ({ score, label, breakdown, nextTip }) => {
+  const radius = 60;
   const circumference = 2 * Math.PI * radius;
   return (
-    <div className="flex flex-col items-center text-center text-white">
-      <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-300/80 mb-2">Indice de Sentinelle</div>
-      <h2 className="text-xl font-light mb-8">{label}</h2>
-      <div className="relative" style={{ width: 220, height: 220 }}>
-        <svg width={220} height={220} className="-rotate-90">
-          <circle cx={110} cy={110} r={radius} fill="none" stroke="hsl(0 0% 100% / 0.1)" strokeWidth={8} />
+    <div className="flex flex-col items-center text-center text-white max-h-[calc(100dvh-120px)] sm:max-h-[620px] overflow-y-auto py-2 gap-3">
+      <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-300/80">Indice de Sentinelle</div>
+      <h2 className="text-base font-light">{label}</h2>
+
+      <div className="relative" style={{ width: 150, height: 150 }}>
+        <svg width={150} height={150} className="-rotate-90">
+          <circle cx={75} cy={75} r={radius} fill="none" stroke="hsl(0 0% 100% / 0.1)" strokeWidth={6} />
           <motion.circle
-            cx={110} cy={110} r={radius} fill="none"
-            stroke="hsl(150 70% 55%)" strokeWidth={8} strokeLinecap="round"
+            cx={75} cy={75} r={radius} fill="none"
+            stroke="hsl(150 70% 55%)" strokeWidth={6} strokeLinecap="round"
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset: circumference - (circumference * score) / 100 }}
-            transition={{ duration: 1.6, ease: 'easeOut' }}
-            style={{ filter: 'drop-shadow(0 0 12px hsl(150 70% 55%))' }}
+            transition={{ duration: 1.4, ease: 'easeOut' }}
+            style={{ filter: 'drop-shadow(0 0 10px hsl(150 70% 55%))' }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-            className="text-5xl font-bold text-white">{score}</motion.div>
-          <div className="text-xs text-white/60 mt-1">/ 100</div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
+            className="text-4xl font-bold text-white leading-none">{score}</motion.div>
+          <div className="text-[10px] text-white/60 mt-0.5">/ 100</div>
         </div>
       </div>
-      <p className="text-xs text-white/60 italic mt-8 max-w-[280px]">
-        Cet indice mesure la diversité de vos contributions, pas leur volume.
-      </p>
+
+      <ScoreBreakdown breakdown={breakdown} total={score} />
+
+      {nextTip.gain > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="w-full max-w-[320px] bg-emerald-500/10 border border-emerald-300/30 rounded-lg px-3 py-2 text-left"
+        >
+          <div className="text-[10px] uppercase tracking-wider text-emerald-300/90 mb-0.5">Prochain pas</div>
+          <div className="text-xs text-white/90 font-medium">{nextTip.text}</div>
+        </motion.div>
+      )}
+
+      <HowItWorksBanner />
     </div>
   );
 };
