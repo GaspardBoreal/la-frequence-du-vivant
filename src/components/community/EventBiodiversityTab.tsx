@@ -13,6 +13,7 @@ import { useTriggerBiodiversityCollection } from '@/hooks/useTriggerBiodiversity
 import { useExplorationParticipants } from '@/hooks/useExplorationParticipants';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
+import BiodiversityEvolutionChart from './exploration/BiodiversityEvolutionChart';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
