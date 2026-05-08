@@ -1163,10 +1163,13 @@ const MarcheurCard: React.FC<{
               {visibleSubTabs.map(tab => {
                 const Icon = tab.icon;
                 const isActive = activeSubTab === tab.key;
+                const count = subTabCounts[tab.key];
+                const showCount = typeof count === 'number' && count > 0;
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveSubTab(tab.key)}
+                    aria-label={showCount ? `${tab.label}, ${count} élément${count! > 1 ? 's' : ''}` : tab.label}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
                       isActive
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
@@ -1175,6 +1178,17 @@ const MarcheurCard: React.FC<{
                   >
                     <Icon className="w-3 h-3" />
                     {tab.label}
+                    {showCount && (
+                      <span
+                        className={`ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums transition-colors ${
+                          isActive
+                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-muted/70 text-muted-foreground'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
                   </button>
                 );
               })}
