@@ -701,6 +701,52 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
   const myTextes = userTextes?.filter(t => effectiveAuthor(t) === userId) || [];
   const othersTextes = userTextes?.filter(t => effectiveAuthor(t) !== userId && t.is_public) || [];
 
+  // Resolve author profiles for "Des marcheurs" grouping (avatar + nom)
+  const authorIds = React.useMemo(
+    () => Array.from(new Set(othersTextes.map(t => effectiveAuthor(t)).filter(Boolean))),
+    [othersTextes],
+  );
+  const { data: authorProfiles = [] } = useQuery({
+    queryKey: ['marcheur-textes-authors', authorIds.sort().join(',')],
+    queryFn: async () => {
+      if (!authorIds.length) return [];
+      const { data } = await supabase
+        .from('community_profiles')
+        .select('user_id, prenom, nom, avatar_url')
+        .in('user_id', authorIds);
+      return data || [];
+    },
+    enabled: authorIds.length > 0,
+  });
+  const authorInfoById = React.useMemo(() => {
+    const map = new Map<string, { fullName: string; avatarUrl: string | null }>();
+    (authorProfiles as any[]).forEach((p) => {
+      const full = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim();
+      map.set(p.user_id, { fullName: full || 'Marcheur', avatarUrl: p.avatar_url ?? null });
+    });
+    return map;
+  }, [authorProfiles]);
+
+  const othersGroups = React.useMemo(() => {
+    const groups = new Map<string, { authorId: string; fullName: string; avatarUrl: string | null; isCredited: boolean; textes: typeof othersTextes }>();
+    othersTextes.forEach(t => {
+      const aid = effectiveAuthor(t);
+      const info = authorInfoById.get(aid);
+      const isCredited = !!t.attributed_user_id;
+      if (!groups.has(aid)) {
+        groups.set(aid, {
+          authorId: aid,
+          fullName: info?.fullName || 'Marcheur',
+          avatarUrl: info?.avatarUrl ?? null,
+          isCredited,
+          textes: [],
+        });
+      }
+      groups.get(aid)!.textes.push(t);
+    });
+    return Array.from(groups.values());
+  }, [othersTextes, authorInfoById]);
+
   const handleSubmit = () => {
     if (!newContenu.trim()) return;
     createTexte.mutate({
