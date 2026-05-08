@@ -168,6 +168,21 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
               onToggleLoop();
             }}
           />
+          <LayerRow
+            icon={<Sparkles className="w-4 h-4" strokeWidth={2.5} />}
+            iconClass="bg-amber-500/15 border-amber-400/30 text-amber-200"
+            label="Points intermédiaires"
+            description={
+              layers.showWaypoints
+                ? `${waypointsCount} point${waypointsCount > 1 ? 's' : ''} affiché${waypointsCount > 1 ? 's' : ''} sur le tracé`
+                : 'Tracé épuré (points masqués)'
+            }
+            checked={layers.showWaypoints}
+            onCheckedChange={() => {
+              haptic();
+              onToggleLayer('showWaypoints');
+            }}
+          />
           <WeatherStationsRow
             mode={layers.weatherStations}
             radiusKm={layers.weatherStationsRadius}
