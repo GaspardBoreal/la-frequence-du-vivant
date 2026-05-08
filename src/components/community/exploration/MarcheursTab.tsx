@@ -1128,6 +1128,12 @@ const MarcheurCard: React.FC<{
                 </motion.div>
               )}
 
+              {activeSubTab === 'textes' && (
+                <motion.div key="textes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <TextesSubTab userId={resolvedUserId} explorationEventIds={explorationEventIds} />
+                </motion.div>
+              )}
+
               {activeSubTab === 'contributions' && (
                 <motion.div key="contribs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} />
