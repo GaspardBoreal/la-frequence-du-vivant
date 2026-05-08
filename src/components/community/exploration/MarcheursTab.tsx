@@ -841,19 +841,24 @@ const TextesSubTab: React.FC<{
 }> = ({ userId, explorationEventIds, explorationId }) => {
   const { user: viewer } = useAuth();
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+  const [creditTextId, setCreditTextId] = useState<string | null>(null);
+  const { data: isCurator } = useIsCurator(explorationId);
 
   const { data: textes, isLoading } = useQuery({
     queryKey: ['marcheur-textes-exploration', userId, explorationEventIds, sort],
     queryFn: async () => {
       if (!userId || !explorationEventIds?.length) return [];
+      // Fetch any text in scope where the effective author = userId
+      // (typeur OR explicitly attributed to this user)
       const { data, error } = await supabase
         .from('marcheur_textes')
         .select('*')
-        .eq('user_id', userId)
         .in('marche_event_id', explorationEventIds)
+        .or(`user_id.eq.${userId},attributed_user_id.eq.${userId}`)
         .order('created_at', { ascending: sort === 'asc' });
       if (error) throw error;
-      return data || [];
+      // Effective author: attributed_user_id ?? user_id
+      return (data || []).filter((t: any) => (t.attributed_user_id ?? t.user_id) === userId);
     },
     enabled: !!userId && !!explorationEventIds?.length,
     staleTime: 60_000,
@@ -876,7 +881,7 @@ const TextesSubTab: React.FC<{
   }
 
   const isOwner = !!viewer && viewer.id === userId;
-  const visible = (textes || []).filter((t: any) => t.is_public || isOwner);
+  const visible = (textes || []).filter((t: any) => t.is_public || isOwner || isCurator);
 
   if (!visible.length) {
     return (
