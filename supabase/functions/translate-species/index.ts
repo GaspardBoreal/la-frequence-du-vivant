@@ -150,28 +150,45 @@ async function handleBatch(req: Request): Promise<Response> {
   const missing = items.filter(i => !cached.has(i.scientificName.trim()));
   console.log(`[translate-species batch] ${cached.size} cached, ${missing.length} to resolve`);
 
-  // 1. Try INPN for first 10 missing (fast and accurate)
+  // 1. Try INPN (fast & accurate, but currently offline due to MNHN cyberattack)
   const inpnResults: Record<string, string> = {};
-  const inpnTargets = missing.slice(0, 10);
   await Promise.all(
-    inpnTargets.map(async it => {
+    missing.slice(0, 10).map(async it => {
       const fr = await fetchInpn(it.scientificName.trim());
       if (fr) inpnResults[it.scientificName.trim()] = fr;
     })
   );
 
-  // 2. AI for the rest
-  const stillMissing = missing.filter(i => !inpnResults[i.scientificName.trim()]);
+  // 2. Wikipedia FR fallback (most reliable source while INPN is down)
+  const wikiResults: Record<string, string> = {};
+  await Promise.all(
+    missing
+      .filter(i => !inpnResults[i.scientificName.trim()])
+      .map(async it => {
+        const fr = await fetchWikipediaFr(it.scientificName.trim());
+        if (fr) wikiResults[it.scientificName.trim()] = fr;
+      })
+  );
+
+  // 3. AI as last resort — marked LOW confidence so curators can spot hallucinations
+  const stillMissing = missing.filter(
+    i => !inpnResults[i.scientificName.trim()] && !wikiResults[i.scientificName.trim()]
+  );
   const aiResults = await aiBatchTranslate(stillMissing);
 
-  // 3. Persist new translations
+  // 4. Persist new translations (DB trigger guarantees `manual` rows are never overwritten)
   const toInsert: any[] = [];
   Object.entries(inpnResults).forEach(([sci, fr]) => {
     toInsert.push({ scientific_name: sci, common_name_fr: fr, source: 'inpn', confidence_level: 'high' });
   });
-  Object.entries(aiResults).forEach(([sci, fr]) => {
+  Object.entries(wikiResults).forEach(([sci, fr]) => {
     if (!inpnResults[sci]) {
-      toInsert.push({ scientific_name: sci, common_name_fr: fr, source: 'ai', confidence_level: 'medium' });
+      toInsert.push({ scientific_name: sci, common_name_fr: fr, source: 'wikipedia', confidence_level: 'high' });
+    }
+  });
+  Object.entries(aiResults).forEach(([sci, fr]) => {
+    if (!inpnResults[sci] && !wikiResults[sci]) {
+      toInsert.push({ scientific_name: sci, common_name_fr: fr, source: 'ai', confidence_level: 'low' });
     }
   });
 
@@ -181,6 +198,8 @@ async function handleBatch(req: Request): Promise<Response> {
       .upsert(toInsert, { onConflict: 'scientific_name', ignoreDuplicates: false });
     if (error) console.error('Upsert failed', error);
   }
+
+  Object.assign(inpnResults, wikiResults); // for response merge below
 
   const translations: Record<string, string> = {};
   cached.forEach((v, k) => (translations[k] = v));
