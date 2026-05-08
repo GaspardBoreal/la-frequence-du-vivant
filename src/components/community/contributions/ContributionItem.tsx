@@ -348,10 +348,24 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
                   </button>
                 </div>
               )}
+              </div>
             </div>
           </>
         )}
       </div>
+
+      {showCreditButton && reattributeSource && explorationId && (
+        <MediaAttributionSheet
+          open={attributionOpen}
+          onOpenChange={setAttributionOpen}
+          source={reattributeSource}
+          mediaId={id}
+          explorationId={explorationId}
+          currentAttributedId={attributedMarcheurId ?? null}
+          uploaderName={uploaderName ?? null}
+          uploaderMarcheurId={uploaderMarcheurId ?? null}
+        />
+      )}
     </div>
   );
 };
