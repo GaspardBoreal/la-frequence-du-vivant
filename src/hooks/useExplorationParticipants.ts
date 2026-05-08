@@ -109,15 +109,7 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
         return b;
       };
 
-      /** Resolve effective owner of a media row, honoring reattribution. */
-      const route = (uploaderId: string | null, attributedCrewId: string | null) => {
-        if (attributedCrewId) {
-          const linkedUser = crewUserByCrewId.get(attributedCrewId);
-          if (linkedUser) return { userId: linkedUser, crewId: null as string | null };
-          return { userId: null, crewId: attributedCrewId };
-        }
-        return { userId: uploaderId, crewId: null as string | null };
-      };
+      const maps: RoutingMaps = { crewUserByCrewId, crewIdByUserId };
 
       // Convivialité photos: per exploration, can be reattributed to a crew row
       const { data: convPhotos } = await supabase
@@ -127,7 +119,7 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
         .eq('is_hidden', false);
 
       (convPhotos || []).forEach((p: any) => {
-        const { userId, crewId } = route(p.user_id, p.attributed_marcheur_id);
+        const { userId, crewId } = routeMedia(p.user_id, p.attributed_marcheur_id, maps);
         const bucket = userId ? ensureUser(userId) : crewId ? ensureCrew(crewId) : null;
         if (bucket) bucket.photos++;
       });
@@ -146,26 +138,32 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
             .eq('is_public', true),
           supabase
             .from('marcheur_textes')
-            .select('user_id')
+            .select('user_id, attributed_marcheur_id, attributed_user_id')
             .in('marche_event_id', eventIds)
             .eq('is_public', true),
         ]);
 
         (medias || []).forEach((m: any) => {
-          const { userId, crewId } = route(m.user_id, m.attributed_marcheur_id);
+          const { userId, crewId } = routeMedia(m.user_id, m.attributed_marcheur_id, maps);
           const bucket = userId ? ensureUser(userId) : crewId ? ensureCrew(crewId) : null;
           if (!bucket) return;
           if (m.type_media === 'photo') bucket.photos++;
           else if (m.type_media === 'video') bucket.videos++;
         });
         (audios || []).forEach((a: any) => {
-          const { userId, crewId } = route(a.user_id, a.attributed_marcheur_id);
+          const { userId, crewId } = routeMedia(a.user_id, a.attributed_marcheur_id, maps);
           const bucket = userId ? ensureUser(userId) : crewId ? ensureCrew(crewId) : null;
           if (bucket) bucket.sons++;
         });
         (textes || []).forEach((t: any) => {
-          if (!t.user_id) return;
-          ensureUser(t.user_id).textes++;
+          const { userId, crewId } = routeTexte(
+            t.user_id,
+            t.attributed_marcheur_id,
+            t.attributed_user_id,
+            maps,
+          );
+          const bucket = userId ? ensureUser(userId) : crewId ? ensureCrew(crewId) : null;
+          if (bucket) bucket.textes++;
         });
       }
 
