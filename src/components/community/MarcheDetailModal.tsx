@@ -526,7 +526,46 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
         </div>
       )}
 
-      {/* Others' contributions */}
+      {/* Crédités à d'autres marcheurs (real photographer ≠ uploader) */}
+      {creditedGroups.map((group, gIdx) => {
+        const offsetBefore =
+          adminCount + myCount +
+          creditedGroups.slice(0, gIdx).reduce((s, g) => s + g.medias.length, 0);
+        return (
+          <div key={group.marcheurId} className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              {group.avatarUrl ? (
+                <img src={group.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover ring-1 ring-amber-400/40" />
+              ) : (
+                <User className="w-3 h-3 text-amber-400" />
+              )}
+              <span className="text-amber-300/70 text-[10px] uppercase tracking-wider">
+                Crédité à {group.fullName} ({group.medias.length})
+              </span>
+            </div>
+            <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'}`}>
+              {group.medias.map((m, i) => (
+                <ContributionItem
+                  key={m.id}
+                  id={m.id}
+                  type={m.type_media}
+                  titre={m.titre}
+                  url={m.url_fichier}
+                  externalUrl={m.external_url}
+                  isPublic={m.is_public}
+                  isOwner={false}
+                  createdAt={m.created_at}
+                  viewMode={viewMode}
+                  gpsDistance={viewMode === 'fiche' ? getGpsDistance(m.id) : null}
+                  onClick={() => setLightboxIndex(offsetBefore + i)}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Others' contributions (uploaded by others, not attributed) */}
       {othersMedias.length > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
@@ -547,14 +586,14 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
                 createdAt={m.created_at}
                 viewMode={viewMode}
                 gpsDistance={viewMode === 'fiche' ? getGpsDistance(m.id) : null}
-                onClick={() => setLightboxIndex(adminCount + myCount + i)}
+                onClick={() => setLightboxIndex(adminCount + myCount + creditedCount + i)}
               />
             ))}
           </div>
         </div>
       )}
 
-      {!adminPhotos?.length && !myMedias.length && !othersMedias.length && !showUpload && (
+      {!adminPhotos?.length && !myMedias.length && !creditedGroups.length && !othersMedias.length && !showUpload && (
         <EmptyState message="Aucune photo pour cette marche" sub="Appuyez sur + Ajouter pour partager vos photos" />
       )}
     </div>
