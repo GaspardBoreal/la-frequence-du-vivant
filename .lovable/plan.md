@@ -1,66 +1,69 @@
-## Le bug
+# Bug
 
-Sur DEVIAT Point 01 Descente, l'onglet **Écrire** affiche un badge "2" mais une seule fiche s'affiche ("Chevreuil – Crédité à Karine Log").
+Dans **Apprendre → Ce que nous avons vu → Le cœur (Textes)**, le haïku « Pissenlit » apparaît sous **Gaspard Boréal** alors qu'il a été réattribué à **Sophie D** (correctement affiché dans Marcheurs → Marcheurs).
 
-### Cause racine
+# Cause racine
 
-Le badge et l'affichage utilisent **deux logiques d'attribution différentes** :
+`TextesEcritsSubTab` consomme deux RPCs SECURITY DEFINER :
+- `get_exploration_public_textes(p_exploration_id)`
+- `get_event_public_textes(p_event_id)`
 
-- **Badge `tabCounts.ecrire`** (`MarcheDetailModal.tsx` ligne 1202) vient de `useMarcheurStats.totalTextes`, calculé en SQL par :
-  ```
-  marcheur_textes WHERE marche_id = X AND (user_id = moi OR is_public = true)
-  ```
-  → ignore complètement `attributed_user_id` / `attributed_marcheur_id`.
+Les deux renvoient `t.user_id` (l'uploader) et joignent `community_profiles` sur cet uploader. Elles **ignorent totalement** `attributed_user_id` et `attributed_marcheur_id`, alors que partout ailleurs (Marcheurs, badges, modal) on route via `routeTexte` (crew → user → uploader).
 
-- **Affichage `LireTab`** filtre ensuite par *effective author* :
-  - `myTextes` = textes dont l'auteur effectif est moi (donc un texte que j'ai tapé mais réattribué à quelqu'un d'autre **n'est plus à moi**)
-  - `othersTextes` = ceux des autres, **et seulement si `is_public = true`**
+Le frontend (`TextesEcritsSubTab`) groupe ensuite par `t.user_id` et appelle `authorMap.get(t.user_id)` → tout est attribué à l'uploader.
 
-### Données réelles pour Point 01 (Gaspard = b821bb9c)
+# Correctif
 
-| titre     | user_id | attributed_marcheur | is_public | compté ? | affiché ? |
-|-----------|---------|---------------------|-----------|----------|-----------|
-| Cerisier  | Gaspard | Karine (crew)       | false     | OUI (typist=moi) | NON (auteur effectif=Karine, mais privé → exclu de othersTextes) |
-| Chevreuil | Gaspard | Karine (crew)       | true      | OUI (public) | OUI (Crédité à Karine Log) |
+## 1. Migration SQL — recalculer l'auteur effectif côté RPC
 
-→ badge = 2, affiché = 1.
+Mettre à jour les deux fonctions pour exposer :
+- `user_id` = **auteur effectif** (priorité : `attributed_marcheur_id.user_id` > `attributed_user_id` > `user_id`)
+- `attributed_marcheur_id` (crew shadow non lié à un compte)
+- `author_prenom` / `author_nom` / `author_avatar` résolus depuis `community_profiles` si l'auteur effectif est un user, sinon depuis `exploration_marcheurs` (crew shadow)
 
-## Plan de correction
-
-Aligner le badge sur la **même règle que l'affichage** : compter les textes après résolution de l'auteur effectif et application des règles de visibilité.
-
-### Étape 1 — Corriger `useMarcheurStats` (textes seulement)
-
-`src/hooks/useMarcheurContributions.ts` (fonction `useMarcheurStats`) : remplacer le `count head:true` SQL pour les textes par un fetch léger des colonnes nécessaires + comptage côté client utilisant `routeTexte` :
-
-```ts
-// au lieu de count head:true
-const { data: textRows } = await supabase
-  .from('marcheur_textes')
-  .select('id, user_id, attributed_user_id, attributed_marcheur_id, is_public')
-  .eq(filterCol, filterVal)
-  .or(`user_id.eq.${userId},attributed_user_id.eq.${userId},is_public.eq.true`);
-
-// totalTextes = mes propres (auteur effectif=moi) + autres publics
-const total = (textRows || []).filter(t => {
-  const mineEffective =
-    (!t.attributed_marcheur_id && !t.attributed_user_id && t.user_id === userId) ||
-    (t.attributed_user_id === userId && !t.attributed_marcheur_id);
-  return mineEffective || (t.is_public && !mineEffective);
-}).length;
+Pseudocode SQL :
+```sql
+WITH resolved AS (
+  SELECT t.*,
+    em.user_id AS crew_user_id,
+    em.prenom  AS crew_prenom,
+    em.nom     AS crew_nom,
+    em.avatar_url AS crew_avatar,
+    COALESCE(em.user_id, t.attributed_user_id, t.user_id) AS effective_user_id
+  FROM marcheur_textes t
+  LEFT JOIN exploration_marcheurs em ON em.id = t.attributed_marcheur_id
+  WHERE ...
+)
+SELECT r.id,
+       COALESCE(r.effective_user_id, '00000000-0000-0000-0000-000000000000') AS user_id,
+       r.attributed_marcheur_id,
+       r.marche_id, r.marche_event_id, r.type_texte, r.titre, r.contenu,
+       r.is_public, r.ordre, r.created_at,
+       COALESCE(cp.prenom, r.crew_prenom)     AS author_prenom,
+       COALESCE(cp.nom,    r.crew_nom)        AS author_nom,
+       COALESCE(cp.avatar_url, r.crew_avatar) AS author_avatar
+FROM resolved r
+LEFT JOIN community_profiles cp ON cp.user_id = r.effective_user_id;
 ```
 
-(Photos/audio non concernés ici car le bug ne porte que sur `ecrire`. On pourra étendre plus tard si nécessaire.)
+Aucune autre RPC n'est touchée. Les conditions `is_public = true` et la portée (event/exploration) restent inchangées.
 
-### Étape 2 — Vérifier la cohérence
+## 2. Frontend — exposer l'attribution dans le typage
 
-Recharger la marche Point 01 :
-- badge "Écrire" doit afficher **1** (Chevreuil seul)
-- "Cerisier" reste invisible (privé + plus à Gaspard via auteur effectif)
-- Sur Point 03 (où "Pissenlit" est crédité à Karine et public), Karine doit avoir badge=1, Gaspard ne doit plus le compter.
+`src/components/community/exploration/TextesEcritsSubTab.tsx` :
+- Ajouter `attributed_marcheur_id?: string | null` dans `TexteRow`.
+- Construire la **clé d'auteur** comme `t.attributed_marcheur_id ?? t.user_id` partout où aujourd'hui on utilise `t.user_id` pour le groupement et le `authorMap` (modes "Mur", "Marcheurs", "Itinéraire", panneau de détail). Cela permet de distinguer un crew shadow non lié à un compte (deux haïkus du même crew shadow ne fusionnent pas avec un autre user qui n'a pas d'`attributed_user_id`).
 
-### Fichiers touchés
+Aucun changement nécessaire dans `MarcheursTab`, `MarcheDetailModal`, `useExplorationParticipants` ni `useMarcheurContributions` (déjà alignés via `routeTexte`).
 
-- `src/hooks/useMarcheurContributions.ts` — fonction `useMarcheurStats` (textes uniquement).
+# Fichiers touchés
 
-Aucune migration, aucun changement RLS, aucun changement UI.
+- `supabase/migrations/<timestamp>_fix_public_textes_effective_author.sql` (nouveau)
+- `src/components/community/exploration/TextesEcritsSubTab.tsx` (typage + clé de groupement)
+
+# Vérification
+
+Sur DEVIAT, le haïku « Pissenlit » :
+- doit apparaître sous **Sophie D** dans Apprendre → Le cœur (au lieu de Gaspard),
+- la carte/le détail doivent afficher avatar + nom de Sophie,
+- les compteurs « voix » (nombre d'auteurs distincts) doivent s'aligner sur Marcheurs.
