@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
@@ -889,11 +889,12 @@ const MarcheurCard: React.FC<{
   const resolvedCrewId = marcheur.crewId ?? (marcheur.source === 'crew' ? marcheur.id.replace('crew-', '') : null);
   const photoCount = marcheur.stats.photos + marcheur.stats.videos;
   const audioCount = marcheur.stats.sons || 0;
+  const textesCount = marcheur.stats.textes || 0;
   
   // Real contributions count from biodiversity snapshots
   const { data: contributionsCount } = useWalkerContributionsCount(marcheur.prenom, marcheur.nom, explorationMarcheIds, explorationId);
   const realContribCount = contributionsCount || 0;
-  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0 || audioCount > 0;
+  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0 || audioCount > 0 || textesCount > 0;
 
   return (
     <motion.div
@@ -937,6 +938,12 @@ const MarcheurCard: React.FC<{
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${audioCount} son${audioCount > 1 ? 's' : ''} partagé${audioCount > 1 ? 's' : ''}`}>
               <Headphones className="w-3 h-3 text-violet-500" />
               <span className="text-[11px] font-semibold text-foreground">{audioCount}</span>
+            </div>
+          )}
+          {textesCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${textesCount} texte${textesCount > 1 ? 's' : ''} partagé${textesCount > 1 ? 's' : ''}`}>
+              <Feather className="w-3 h-3 text-amber-400" />
+              <span className="text-[11px] font-semibold text-foreground">{textesCount}</span>
             </div>
           )}
           {realContribCount > 0 && (
