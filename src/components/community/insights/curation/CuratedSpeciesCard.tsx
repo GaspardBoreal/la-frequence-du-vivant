@@ -1,11 +1,12 @@
-import React from 'react';
-import { ImageOff, Star, Loader2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ImageOff, Star, Loader2, AlertCircle, UserPlus } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import type { SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import PinToggle from './PinToggle';
 import type { ExplorationCuration } from '@/hooks/useExplorationCurations';
 import { CategoryBadgeCluster } from './CategoryBadge';
+import AttribuerObservationDialog from './AttribuerObservationDialog';
 
 export interface CuratedSpeciesItem {
   key: string;
