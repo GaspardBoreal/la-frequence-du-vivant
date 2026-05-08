@@ -18,21 +18,11 @@ export interface SpeciesTranslation {
  * résolveur centralisé sous le capot (avec auto-fill via edge function).
  */
 export const useSpeciesTranslation = (scientificName: string, originalCommonName?: string) => {
-  const { language } = useLanguage();
-
   return useQuery({
-    queryKey: ['species-translation', scientificName, language],
+    queryKey: ['species-translation', scientificName],
     queryFn: async (): Promise<SpeciesTranslation> => {
-      // For English, return original data
-      if (language === 'en') {
-        return {
-          scientificName,
-          commonName: originalCommonName || scientificName,
-          originalCommonName,
-          source: 'local',
-          confidence: 'high'
-        };
-      }
+      // Note: la langue UI ne pilote plus l'affichage des noms d'espèces.
+      // On retourne toujours le meilleur nom FR connu.
 
       // Try to get French translation from local database first
       const { data: translation } = await supabase
