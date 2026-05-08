@@ -1,11 +1,12 @@
-import React from 'react';
-import { ImageOff, Star, Loader2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ImageOff, Star, Loader2, AlertCircle, UserPlus } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import type { SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import PinToggle from './PinToggle';
 import type { ExplorationCuration } from '@/hooks/useExplorationCurations';
 import { CategoryBadgeCluster } from './CategoryBadge';
+import AttribuerObservationDialog from './AttribuerObservationDialog';
 
 export interface CuratedSpeciesItem {
   key: string;
@@ -55,6 +56,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
   footer,
   onOpenEvidence,
 }) => {
+  const [attributeOpen, setAttributeOpen] = useState(false);
   // Only fetch a remote photo when we don't already have a usable one
   const shouldFetchPhoto = !species.imageUrl && !!species.scientificName;
   const { data: photoData, isLoading: photoLoading } = useSpeciesPhoto(
@@ -132,9 +134,26 @@ const CuratedSpeciesCard: React.FC<Props> = ({
 
         {isCurator && (
           <div
-            className="absolute top-1.5 right-1.5"
+            className="absolute top-1.5 right-1.5 flex items-center gap-1"
             onClick={(e) => e.stopPropagation()}
           >
+            {species.scientificName && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setAttributeOpen(true); }}
+                    className="p-1.5 rounded-md bg-background/90 hover:bg-primary hover:text-primary-foreground border border-border shadow-sm transition"
+                    aria-label="Attribuer à un marcheur"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p className="text-xs">Attribuer à un marcheur</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             <PinToggle
               explorationId={explorationId}
               sense="oeil"
@@ -226,6 +245,16 @@ const CuratedSpeciesCard: React.FC<Props> = ({
 
         {footer}
       </div>
+
+      {isCurator && species.scientificName && (
+        <AttribuerObservationDialog
+          open={attributeOpen}
+          onOpenChange={setAttributeOpen}
+          explorationId={explorationId}
+          speciesScientificName={species.scientificName}
+          speciesDisplayName={displayName}
+        />
+      )}
     </div>
   );
 };
