@@ -1281,6 +1281,14 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const explorationEventIds = explorationEventIdsData || [];
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
+  // Index testimonies by user_id for fast lookup per marcheur card
+  const { data: testimonies } = useExplorationTestimonies(explorationId);
+  const testimoniesByUser = useMemo(() => {
+    const m = new Map<string, EventTestimony>();
+    (testimonies || []).forEach((t) => { if (t.user_id) m.set(t.user_id, t); });
+    return m;
+  }, [testimonies]);
+
   const createAffiliateLink = async (channel: 'copy' | 'share') => {
     if (!explorationId) {
       toast.error('Exploration introuvable pour générer le lien');
