@@ -1,51 +1,61 @@
 ## Objectif
 
-Permettre à l'utilisateur de masquer ou afficher les points intermédiaires de la carte d'exploration depuis le panneau « Options carte », avec un état **caché par défaut** pour épurer la lecture du tracé.
+Afficher discrètement un compteur à côté de chaque sous-onglet d'un marcheur déplié, uniquement quand la valeur > 0. Les onglets sans donnée n'affichent rien (ni 0, ni parenthèses vides). « Votre impact » n'affiche jamais de compteur (c'est une vue analytique, pas un volume).
 
-## Comportement UX
+## Mapping des compteurs
 
-- Section **Afficher** : ajout d'une nouvelle ligne « **Points intermédiaires** » placée juste sous **Boucle fermée** (logique : ce sont deux options structurelles du tracé, avant les couches contextuelles météo / cadastre / espèces).
-- État par défaut : **OFF** (les points intermédiaires sont masqués au premier chargement).
-- L'état est mémorisé par exploration via `localStorage` (cohérent avec les autres couches).
-- Sous-titre dynamique : 
-  - OFF → « Tracé épuré (points masqués) »
-  - ON → « X points affichés sur la carte » (compteur live)
-- Le toggle masque à la fois :
-  - Les **marqueurs étoilés ambrés** des waypoints
-  - Leur **prise en compte dans le tracé de la polyline** (la ligne redevient un trait direct entre points de marche numérotés)
-- Le **badge de compteur** du bouton « Options carte » prend en compte cette nouvelle couche quand elle est active.
+| Sous-onglet      | Source (déjà calculée) | Affichage |
+|------------------|-------------------------|-----------|
+| Observations     | `photoCount` (photos + vidéos) | si > 0 |
+| Écoute           | `audioCount`           | si > 0 |
+| Textes           | `textesCount`          | si > 0 |
+| Témoignage       | `hasTestimony ? 1 : 0` | si présent (l'onglet n'apparaît déjà que dans ce cas) |
+| Contributions    | `realContribCount`     | si > 0 |
+| Votre impact     | — | jamais |
 
-## Design (cohérent avec l'existant)
+Toutes ces valeurs existent déjà dans `MarcheurCard` (lignes 1055-1062). Aucune nouvelle requête, aucun appel back-end supplémentaire.
 
-- Icône : `Sparkles` (Lucide) — même symbole que pour la création d'un point intermédiaire (cohérence visuelle entre « créer » et « afficher »).
-- Couleur : palette **ambre** (`bg-amber-500/15 border-amber-400/30 text-amber-200`) pour signaler que c'est l'écho visuel des points intermédiaires (qui sont déjà ambrés sur la carte).
-- Réutilisation du composant `LayerRow` existant — zéro duplication, transitions et hover déjà gérés.
-- Toast léger « Points intermédiaires affichés / masqués » au changement (optionnel, en utilisant `sonner` déjà importé) pour confirmer l'action sans interrompre.
+## Design UX/UI (sobre et robuste)
 
-## Fichiers à modifier
+- Le compteur prend la forme d'une **petite pastille discrète** placée juste après le label du pill, et non d'un texte « (15) » en clair — plus moderne, lisible sur mobile, conforme aux patterns iOS/Material.
+- Format :
+  - **Inactif** : `bg-muted/70 text-muted-foreground` (fond neutre, chiffre estompé)
+  - **Actif** : `bg-emerald-500/15 text-emerald-700 dark:text-emerald-300` (suit la couleur du pill actif)
+- Taille : `text-[10px] font-semibold`, `min-w-[18px] h-[18px] px-1.5`, `rounded-full`, `tabular-nums` (alignement chiffres).
+- Espacement : `ml-0.5` après le label, transition couleur 150ms.
+- Pas de virgule ni de parenthèses, juste le nombre. Aria-label complet sur le bouton (« Observations, 15 éléments ») pour l'accessibilité.
+- Sur mobile (le pill row est scrollable horizontalement si débordement) : la pastille reste compacte donc n'augmente pas significativement la largeur d'un onglet.
 
-```text
-src/hooks/useMapLayers.ts
-  - Ajout de `showWaypoints: boolean` dans MapLayersState
-  - DEFAULTS.showWaypoints = false
-  - migrate() : valeur par défaut false si absente
-  - activeCount inclut +1 si showWaypoints
+## Implémentation technique
 
-src/components/community/exploration/MapOptionsMenu.tsx
-  - Nouvelle prop optionnelle `waypointsCount?: number`
-  - Nouveau LayerRow « Points intermédiaires » (icône Sparkles ambrée)
-    inséré juste après « Boucle fermée »
+Un seul fichier touché : `src/components/community/exploration/MarcheursTab.tsx`.
 
-src/components/community/exploration/ExplorationCarteTab.tsx
-  - Remplacer `useState(true)` du `showWaypoints` local
-    par la valeur dérivée de `mapLayers.showWaypoints`
-  - Passer `waypointsCount={waypoints.length}` au menu
-  - Brancher onToggle sur toggleMapLayer('showWaypoints')
-  - Mettre à jour le calcul du badge count
+1. Construire dans `MarcheurCard` une `Map<MarcheurSubTab, number>` :
+```ts
+const subTabCounts: Partial<Record<MarcheurSubTab, number>> = {
+  observations: photoCount,
+  ecoute: audioCount,
+  textes: textesCount,
+  temoignage: hasTestimony ? 1 : 0,
+  contributions: realContribCount,
+};
 ```
+2. Dans le rendu du pill (lignes 1156-1173), ajouter conditionnellement :
+```tsx
+{(subTabCounts[tab.key] ?? 0) > 0 && (
+  <span className={`ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums transition-colors ${
+    isActive
+      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+      : 'bg-muted/70 text-muted-foreground'
+  }`}>
+    {subTabCounts[tab.key]}
+  </span>
+)}
+```
+3. Ajouter `aria-label={\`${tab.label}${count ? `, ${count} élément${count > 1 ? 's' : ''}` : ''}\`}` sur le `<button>`.
 
-## Notes techniques
+## Notes de robustesse
 
-- Le state local actuel `showWaypoints` (ligne 626) est supprimé au profit du store persistant `useMapLayers` — un seul source of truth.
-- La migration `migrate()` garantit que les utilisateurs existants ayant déjà un `mapLayers` en localStorage récupèrent `showWaypoints: false` automatiquement.
-- Aucun changement backend, purement UI/state local.
+- Aucune logique nouvelle de comptage : on réutilise les sources existantes, déjà sécurisées (RLS sur les médias, RPC pour contributions).
+- Le count `temoignage` est toujours 1 quand l'onglet est visible — on peut donc choisir de **ne pas afficher** la pastille pour cet onglet (1 témoignage = pas d'info utile). À confirmer par défaut → **proposition retenue : ne pas afficher de compteur sur Témoignage** (la présence de l'onglet est déjà l'indicateur).
+- Pas d'impact sur le filtrage des onglets visibles ni sur les sources de données.
