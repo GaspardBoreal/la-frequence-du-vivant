@@ -24,6 +24,8 @@ export interface ImpactStoriesViewerProps {
   taxonomicFamilies: { label: string; count: number; icon: React.ElementType; color: string }[];
   sentinelleScore: number;
   sentinelleLabel: string;
+  sentinelleBreakdown: SentinelleBreakdown;
+  sentinelleNextTip: SentinelleNextTip;
   hasTemoignage: boolean;
 }
 
