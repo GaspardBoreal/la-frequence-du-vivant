@@ -5,16 +5,12 @@ export type WeatherStationsMode = 'off' | 'on_with_marches' | 'on_only';
 export interface MapLayersState {
   weatherStations: WeatherStationsMode;
   weatherStationsRadius: number; // km, 40-100
-  cadastreDetail: boolean;
-  recentSpecies: boolean;
   showWaypoints: boolean;
 }
 
 const DEFAULTS: MapLayersState = {
   weatherStations: 'off',
   weatherStationsRadius: 60,
-  cadastreDetail: false,
-  recentSpecies: false,
   showWaypoints: false,
 };
 
