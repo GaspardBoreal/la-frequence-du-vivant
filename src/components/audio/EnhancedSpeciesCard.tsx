@@ -149,9 +149,13 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-sm leading-tight truncate">
-              {translation?.commonName || species.commonName}
-            </h3>
+            <SpeciesName
+              scientificName={species.scientificName}
+              commonName={translation?.commonName || species.commonName}
+              size="sm"
+              truncate
+              className="font-medium leading-tight"
+            />
             
             {/* Audio Controls */}
             {hasAudio && (
