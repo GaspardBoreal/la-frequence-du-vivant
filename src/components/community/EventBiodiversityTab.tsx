@@ -16,7 +16,9 @@ import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
-type SubTab = 'synthese' | 'taxons' | 'textes' | 'analyse';
+import TestimoniesTab from './insights/testimonies/TestimoniesTab';
+
+type SubTab = 'synthese' | 'taxons' | 'temoignages' | 'textes' | 'analyse';
 
 
 interface EventBiodiversityTabProps {
@@ -351,6 +353,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const subTabs: { key: SubTab; label: string }[] = [
     { key: 'synthese', label: 'Synthèse' },
     { key: 'taxons', label: 'Taxons observés' },
+    { key: 'temoignages', label: 'Témoignages' },
     ...(eventType === 'eco_poetique' ? [{ key: 'textes' as SubTab, label: 'Textes écrits' }] : []),
     { key: 'analyse', label: 'Analyse IA' },
   ];
@@ -408,6 +411,13 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               allEventMarches={allEventMarchesData}
               eventParticipants={eventParticipants}
             />
+          </motion.div>
+        )}
+
+        {/* TÉMOIGNAGES */}
+        {activeSubTab === 'temoignages' && (
+          <motion.div key="temoignages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <TestimoniesTab explorationId={explorationId} />
           </motion.div>
         )}
 
