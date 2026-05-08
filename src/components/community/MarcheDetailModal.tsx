@@ -266,7 +266,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
     };
     myMedias.forEach(m => pushMedia(m, true));
     creditedGroups.forEach(g => g.medias.forEach(m => pushMedia(m, false)));
-    othersMedias.forEach(m => pushMedia(m, false));
+    othersGroups.forEach(g => g.medias.forEach(m => pushMedia(m, false)));
     return items;
   }, [adminPhotos, myMedias, creditedGroups, othersMedias, uploaderNameById]);
 
