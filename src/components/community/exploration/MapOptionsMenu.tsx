@@ -71,15 +71,7 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
     setTimeout(() => setOpen(false), 220);
   };
 
-  const handleLayer = (key: keyof MapLayersState, soon = false) => {
-    haptic();
-    onToggleLayer(key);
-    if (soon) {
-      toast.info('Bientôt disponible', {
-        description: 'Cette couche sera bientôt branchée sur les données réelles.',
-      });
-    }
-  };
+
 
   const Trigger = (
     <button
