@@ -277,14 +277,24 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
               </div>
             )}
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className="text-emerald-200/30 text-[10px]">
                   {format(new Date(createdAt), 'dd MMM yyyy', { locale: fr })}
                 </span>
                 <VisibilityBadge level={visibility} />
               </div>
 
+              <div className="flex items-center gap-1">
+                {showCreditButton && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setAttributionOpen(true); }}
+                    className="p-1 rounded hover:bg-amber-500/15 transition-colors"
+                    title="Modifier le crédit (auteur réel)"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                  </button>
+                )}
               {isOwner && (
                 <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   {/* Visibility selector */}
