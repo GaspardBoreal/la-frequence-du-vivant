@@ -222,39 +222,33 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
     return map;
   }, [uploaderProfiles]);
 
-  // Build unified lightbox items array
+  // Build unified lightbox items array (order MUST match render order: admin → mine → credited groups → others)
   const lightboxItems: LightboxItem[] = React.useMemo(() => {
     const items: LightboxItem[] = [];
-    // Admin photos
     (adminPhotos || []).forEach(p => items.push({
       url: p.url_supabase, type: 'photo', titre: p.titre, isPublic: true, isOwner: false,
     }));
-    // My contributions
-    myMedias.forEach(m => {
+    const pushMedia = (m: any, isOwner: boolean) => {
       const url = m.url_fichier || m.external_url;
-      if (url) items.push({
-        url, type: m.type_media, titre: m.titre, isPublic: m.is_public, isOwner: true, createdAt: m.created_at,
-        id: m.id, source: 'media',
+      if (!url) return;
+      items.push({
+        url, type: m.type_media, titre: m.titre,
+        isPublic: isOwner ? m.is_public : true,
+        isOwner, createdAt: m.created_at, id: m.id, source: 'media',
         attributedMarcheurId: (m as any).attributed_marcheur_id ?? null,
         uploaderName: uploaderNameById.get(m.user_id) ?? null,
       });
-    });
-    // Others' public contributions
-    othersMedias.forEach(m => {
-      const url = m.url_fichier || m.external_url;
-      if (url) items.push({
-        url, type: m.type_media, titre: m.titre, isPublic: true, isOwner: false, createdAt: m.created_at,
-        id: m.id, source: 'media',
-        attributedMarcheurId: (m as any).attributed_marcheur_id ?? null,
-        uploaderName: uploaderNameById.get(m.user_id) ?? null,
-      });
-    });
+    };
+    myMedias.forEach(m => pushMedia(m, true));
+    creditedGroups.forEach(g => g.medias.forEach(m => pushMedia(m, false)));
+    othersMedias.forEach(m => pushMedia(m, false));
     return items;
-  }, [adminPhotos, myMedias, othersMedias, uploaderNameById]);
+  }, [adminPhotos, myMedias, creditedGroups, othersMedias, uploaderNameById]);
 
-  // Track offset for each section to compute lightbox index
+  // Offsets for lightbox indexing
   const adminCount = adminPhotos?.length || 0;
   const myCount = myMedias.length;
+  const creditedCount = creditedGroups.reduce((sum, g) => sum + g.medias.length, 0);
 
   // Build GPS distance map for fiche mode
   const gpsMap = React.useMemo(() => {
