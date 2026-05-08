@@ -103,21 +103,13 @@ export const useSpeciesTranslation = (scientificName: string, originalCommonName
 export const useSpeciesTranslationBatch = (
   species: Array<{ scientificName: string; commonName?: string }>
 ) => {
-  const { language } = useLanguage();
+  // NOTE: la langue UI ne pilote PLUS l'affichage des noms d'espèces.
+  // Les écrans métier (Marches, Vivant, Synthèse, L'œil...) doivent
+  // toujours afficher le meilleur nom FR disponible — sinon l'utilisateur
+  // voit de l'anglais alors que la traduction existe en base.
   const auto = useFrenchSpeciesNamesAuto(species);
 
   const data = useMemo<SpeciesTranslation[] | undefined>(() => {
-    // Mode anglais : on garde le nom d'origine
-    if (language === 'en') {
-      return species.map(s => ({
-        scientificName: s.scientificName,
-        commonName: s.commonName || s.scientificName,
-        originalCommonName: s.commonName,
-        source: 'local' as const,
-        confidence: 'high' as const,
-      }));
-    }
-
     if (!auto.data) return undefined;
 
     return species.map(s => {
