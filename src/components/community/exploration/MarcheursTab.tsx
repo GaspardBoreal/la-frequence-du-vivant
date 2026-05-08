@@ -465,8 +465,7 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
 
   const species = speciesFromSnapshots || [];
   const speciesForTranslation = species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }));
-  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
-  const translationMap = new Map(translations?.map(t => [t.scientificName, t]) || []);
+  const { data: frNamesMap } = useFrenchSpeciesNamesAuto(speciesForTranslation);
 
   const getKingdomInfo = (kingdom: string) => {
     if (kingdom === 'Animalia') return { icon: Bird, color: 'text-sky-500', bgColor: 'bg-sky-500/10', label: 'Faune' };
