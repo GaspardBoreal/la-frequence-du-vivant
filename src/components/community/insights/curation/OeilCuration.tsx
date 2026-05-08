@@ -193,15 +193,20 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     }
   }, [curations, evidenceFor]);
 
-  const filteredPool = useMemo(() => {
+  // Helper : matching FR + Latin (+ original commonName si présent)
+  const matchesSearch = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return pool;
-    return pool.filter(
-      s =>
-        s.scientificName?.toLowerCase().includes(q) ||
-        s.commonName?.toLowerCase().includes(q)
-    );
-  }, [pool, search]);
+    if (!q) return () => true;
+    return (sp: { scientificName?: string | null; commonName?: string | null }) => {
+      if (!sp) return false;
+      const sci = (sp.scientificName || '').toLowerCase();
+      const cn = (sp.commonName || '').toLowerCase();
+      const fr = (sp.scientificName ? translationMap.get(sp.scientificName)?.commonName || '' : '').toLowerCase();
+      return sci.includes(q) || cn.includes(q) || fr.includes(q);
+    };
+  }, [search, translationMap]);
+
+  const filteredPool = useMemo(() => pool.filter(matchesSearch), [pool, matchesSearch]);
 
   // Category counts contextual to the active tab — guarantees the chip
   // counter equals the number of cards the user will actually see.
