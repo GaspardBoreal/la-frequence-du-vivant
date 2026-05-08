@@ -39,6 +39,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 import MediaPickerSheet from './MediaPickerSheet';
 import MediaLightbox from './MediaLightbox';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
@@ -401,9 +403,10 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                     )}
                   </div>
                   {entry.description && (
-                    <p className="text-xs text-muted-foreground whitespace-pre-line">
-                      {entry.description}
-                    </p>
+                    <div
+                      className="text-xs text-muted-foreground max-w-none whitespace-pre-line [&_strong]:font-semibold [&_b]:font-semibold [&_em]:italic [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1.5 [&_p:last-child]:mb-0"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.description) }}
+                    />
                   )}
                 </div>
               </article>
@@ -434,12 +437,10 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">Récit / description</label>
-              <Textarea
+              <RichTextEditor
                 value={editor.description}
-                onChange={e => setEditor(s => ({ ...s, description: e.target.value }))}
+                onChange={(html) => setEditor(s => ({ ...s, description: html }))}
                 placeholder="Racontez le geste, le savoir-faire, le contexte…"
-                rows={5}
-                maxLength={2000}
               />
             </div>
 
