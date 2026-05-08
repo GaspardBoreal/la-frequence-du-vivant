@@ -154,7 +154,7 @@ export function useBiodiversityEvolution(
             const obs: DayObservation = {
               scientificName: sciName,
               commonName: sp.commonName,
-              commonNameFr: sp.commonNameFr,
+              commonNameFr: frMap?.get(sciName)?.commonNameFr ?? sp.commonNameFr ?? null,
               kingdom: sp.kingdom,
               photo: Array.isArray(sp.photos) && sp.photos[0] ? sp.photos[0] : undefined,
               observerName: att.observerName,
@@ -189,7 +189,7 @@ export function useBiodiversityEvolution(
           const obs: DayObservation = {
             scientificName: sciName,
             commonName: sp.commonName,
-            commonNameFr: sp.commonNameFr,
+            commonNameFr: frMap?.get(sciName)?.commonNameFr ?? sp.commonNameFr ?? null,
             kingdom: sp.kingdom,
             photo: Array.isArray(sp.photos) && sp.photos[0] ? sp.photos[0] : undefined,
             marcheId: snap.marche_id,
@@ -266,5 +266,5 @@ export function useBiodiversityEvolution(
       totalSpecies: seenSpecies.size,
       totalObservations: totalObs,
     };
-  }, [snapshots, opts.dateSource, opts.metric, opts.period]);
+  }, [snapshots, opts.dateSource, opts.metric, opts.period, frMap]);
 }
