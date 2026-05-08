@@ -1,104 +1,76 @@
-# Témoignages des marcheurs
+# Témoignages des marcheurs — révision
 
-Module narratif pour faire entendre la voix des marcheurs dans la Synthèse d'une exploration. 4 modes d'affichage immersifs, dont un nuage de mots interactif.
+**Changement clé** : les témoignages sont rattachés à l'**événement** (`marche_events`), pas à l'exploration. Une exploration agrège tous les témoignages des marches qui la composent.
 
 ## 1. Base de données
 
-### Nouvelle table `exploration_testimonies`
-- `exploration_id` (uuid, FK explorations) — rattachement principal (niveau exploration)
-- `user_id` (uuid, FK profiles) — **strict**, NOT NULL
-- `author_name` (text) — nom affiché tel qu'importé (cache lisible)
-- `quote` (text NOT NULL) — texte du témoignage
-- `source_event_id` (uuid nullable) — marche d'origine si connue (DEVIAT)
+### Table `event_testimonies`
+- `event_id` (uuid NOT NULL, FK marche_events ON DELETE CASCADE) — **rattachement principal**
+- `user_id` (uuid NOT NULL) — marcheur lié (matching strict, NULL refusé)
+- `author_name` (text NOT NULL) — nom affiché tel qu'importé
+- `quote` (text NOT NULL)
 - `display_order` (int, défaut 0)
 - `is_published` (bool, défaut true)
 - timestamps standard
-- Index unique `(exploration_id, user_id)` — un témoignage par marcheur par exploration
-- Index sur `exploration_id`
+- Contrainte unique `(event_id, user_id)` — un témoignage par marcheur par événement
+- Index sur `event_id`, `user_id`
 
 ### RLS
-- **SELECT** : public si `is_published = true` (cohérent avec la vue Synthèse partageable)
-- **INSERT/UPDATE/DELETE** : owner (`user_id = auth.uid()`) OU curator (ambassadeur/sentinelle/admin sur l'exploration), via la fonction `has_role` existante
+- **SELECT** public si `is_published = true`
+- **ALL** réservé au propriétaire (`user_id = auth.uid()`) ou aux admins (via `is_admin_user()` existant)
 
-### Matching strict des marcheurs
-RPC SQL `match_marcheur_by_name(_name text, _exploration_id uuid)` :
-- Normalisation NFD + unaccent + lowercase (réutilise le pattern Identity matching existant)
-- Recherche dans `profiles` parmi les participants à l'exploration (via `exploration_marcheurs`)
-- Retourne `user_id` ou `null`
+### RPC matching
+`match_marcheur_by_name(_name text, _event_id uuid)` :
+- Recherche dans `exploration_marcheurs` lié à l'exploration de l'événement (via `marche_events.exploration_id`)
+- Normalisation `lower(unaccent(prenom || ' ' || nom))`
+- Retourne `user_id` ou NULL
 
-## 2. Import du fichier DEVIAT
+## 2. Import du fichier `Témoignage_DEVIAT.xlsx`
+
+L'exploration courante `70fcd8d1...` ("DEVIAT Marcher sur un sol qui respire") contient une marche `df85910e-82da-4ef7-98d2-d4c827d1d0ec` ("DEVIAT Le Réveil de la Terre…"). Cette marche sera la cible.
+
+Mais : sur les 8 marcheurs du fichier, seuls 4 sont déjà inscrits dans `exploration_marcheurs` de cette exploration (Marie-Josee Daubigeon, Nathan Chaur, Sophie D, Karine Log) — Gaspard Boréal aussi mais absent du fichier. Les 4 autres (Jean-Paul Chiron, Laurence Karki, Victor Boixeda, Jean-François Servant) ne sont pas trouvés dans cette exploration.
+
+→ Question résiduelle posée à l'implémentation : **veux-tu que je tente aussi de matcher dans les autres explorations DEVIAT** (607a0ae3 "première découverte" et 20dd3be8 "du 11.03.26 à aujourd'hui") avant import ? En mode strict, les non-matchés seront simplement listés dans le rapport.
 
 Script one-shot via `code--exec` :
-1. Parser l'Excel (8 lignes)
-2. Pour chaque ligne, appeler le RPC de matching avec `exploration_id = 70fcd8d1-7f63-43c8-a2bd-2cd436523437`
-3. **Mode strict** : insertion uniquement si match trouvé
-4. Rapport final : N importés / N non matchés (liste des noms à traiter manuellement)
-5. `source_event_id` = ID de la marche DEVIAT si trouvée par recherche `nom ILIKE '%DEVIAT%'` dans cette exploration
+1. Parse XLSX
+2. Pour chaque ligne → RPC matching sur `event_id = df85910e...`
+3. INSERT si match
+4. Rapport : importés vs non matchés
 
-Les guillemets typographiques `« »` sont conservés tels quels (style éditorial).
+## 3. Onglet "Témoignages" dans la Synthèse
 
-## 3. Nouvel onglet "Témoignages" dans Synthèse
-
-Insertion dans `EventBiodiversityTab.tsx` ligne 351-356 entre `taxons` et `analyse` :
-```
+Dans `EventBiodiversityTab.tsx`, ajout entre `taxons` et `analyse` :
+```ts
 { key: 'temoignages', label: 'Témoignages' }
 ```
 
-### Composant `TestimoniesTab.tsx`
-Sélecteur de mode (4 vues, switch animé) :
+Ce composant agrège les témoignages de **toutes les marches de l'exploration** affichée (puisque la Synthèse est au niveau exploration). Hook `useExplorationTestimonies(explorationId)` qui fait `select * from event_testimonies where event_id in (select id from marche_events where exploration_id = ?)`.
 
-#### Mode 1 — Mur de cartes (par défaut)
-Grille masonry responsive (CSS columns 1/2/3 selon breakpoint).
-Carte = guillemet géant (`«` 80px en watermark), citation en serif élégant, avatar + nom du marcheur en bas.
-Hover : légère élévation, halo couleur primaire.
-
-#### Mode 2 — Carrousel immersif
-Plein largeur, fond gradient subtil (palette saisonnière de l'exploration).
-Une citation à la fois en typographie XL, transitions fade + slide.
-Auto-play optionnel (8s), navigation flèches + dots, swipe mobile.
-
-#### Mode 3 — Nuage de mots interactif ⭐
-- Tokenisation côté client (filtre stop-words FR : `de, la, le, les, et, à, c'est, qui, que, j'ai, on, en...`)
-- Conserve mots ≥ 4 lettres, normalise (lowercase, sans accents pour clé, affichage avec accent original le plus fréquent)
-- Taille de police = f(fréquence) entre 14px et 56px
-- Couleur = palette dégradée par fréquence
-- Layout : `react-d3-cloud` ou implémentation maison spirale (préférence : maison, < 100 lignes, évite dep)
-- **Clic sur un mot** → drawer/sheet latéral listant chaque marcheur ayant utilisé ce mot avec son témoignage complet (mot surligné dans le texte)
-
-#### Mode 4 — Constellation sensible
-Layout SVG : témoignages disposés en cercle/spirale autour d'un mot-thème central (ex: "Vivant").
-Lignes fines reliant chaque carte au centre. Au survol, la carte s'agrandit, les autres s'estompent.
-Animation d'entrée séquentielle (Framer Motion stagger).
+### 4 modes d'affichage (sélecteur animé)
+1. **Mur de cartes citation** (défaut) — masonry, guillemet géant en watermark, citation en serif, avatar+nom en pied
+2. **Carrousel immersif** — plein largeur, fade+slide, autoplay 8s, swipe mobile
+3. **Nuage de mots interactif** ⭐ — tokenisation FR (stop-words), taille = √fréquence, palette dégradée, **clic mot → drawer avec marcheurs ayant utilisé le mot, surligné dans le témoignage**
+4. **Constellation sensible** — SVG, témoignages en spirale autour d'un mot-thème, hover focus
 
 ### Curation
-Si l'utilisateur connecté est curator (ou owner d'un témoignage) :
-- Bouton "Modifier" sur chaque carte → édition inline du `quote` (RichTextEditor existant — gras/italique/souligné cohérent avec MainCuration)
-- Bouton "Masquer" (toggle `is_published`)
+Owner ou admin : éditer (RichTextEditor) / masquer (toggle `is_published`).
 
-### Hook
-`useExplorationTestimonies(explorationId)` — React Query, partage la même fraîcheur que les autres hooks de l'exploration.
+## 4. ChatBot
+`data-chat-section="temoignages"` + publish au `chatPageContext` (mode actif, nb témoignages).
 
-## 4. Tracking ChatBot
-Ajouter `data-chat-section="temoignages"` sur le conteneur + publier dans `chatPageContext` le mode actif et le nombre de témoignages, pour que l'IA puisse référencer les voix des marcheurs.
-
-## Détails techniques
-
-**Fichiers créés**
-- `supabase/migrations/...sql` (table + RLS + RPC matching)
+## Fichiers
+**Créés**
+- migration SQL (table + RLS + RPC)
 - `src/hooks/useExplorationTestimonies.ts`
 - `src/components/community/insights/testimonies/TestimoniesTab.tsx`
-- `src/components/community/insights/testimonies/modes/QuoteWall.tsx`
-- `src/components/community/insights/testimonies/modes/ImmersiveCarousel.tsx`
-- `src/components/community/insights/testimonies/modes/WordCloud.tsx`
-- `src/components/community/insights/testimonies/modes/Constellation.tsx`
-- `src/components/community/insights/testimonies/utils/tokenize.ts` (stop-words FR + tokenizer)
+- `src/components/community/insights/testimonies/modes/{QuoteWall,ImmersiveCarousel,WordCloud,Constellation}.tsx`
+- `src/components/community/insights/testimonies/utils/tokenize.ts`
 
-**Fichiers modifiés**
-- `src/components/community/EventBiodiversityTab.tsx` (ajout onglet + render)
+**Modifié**
+- `src/components/community/EventBiodiversityTab.tsx`
 
-**Aucune dépendance npm** : tout est fait avec Framer Motion + Tailwind déjà présents.
+**Mémoire** : nouvelle entrée `mem://features/community/event-testimonies-logic`.
 
-**Mémoire** : nouveau fichier `mem://features/community/testimonies-logic` ajouté à l'index.
-
-## Question résiduelle (peut être traitée à l'implémentation)
-Le fichier ne contient pas l'événement source précis dans la donnée — je recherche par nom `DEVIAT` dans `marche_events` liés à l'exploration `70fcd8d1...`. Si plusieurs ou zéro résultat, je laisse `source_event_id = null` et je te le signale dans le rapport d'import.
+Aucune dépendance npm ajoutée (Framer Motion + Tailwind).
