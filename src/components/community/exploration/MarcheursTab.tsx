@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useReorderMarcheurObservations } from '@/hooks/useReorderMarcheurObservations';
+import { useExplorationContributionsCounts, lookupContributions } from '@/hooks/useExplorationContributionsCounts';
 import MarcheurAudioPanel from '@/components/community/audio/MarcheurAudioPanel';
 import {
   DndContext,
