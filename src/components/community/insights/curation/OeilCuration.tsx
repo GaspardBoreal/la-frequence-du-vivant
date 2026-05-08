@@ -628,7 +628,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Terrain */}
         {view === 'terrain' && (
           <ManualSpeciesGrid
-            items={manual}
+            items={manual.filter(matchesSearch as any)}
             isCurator={isCurator}
             onAdd={() => setShowManualModal(true)}
           />
