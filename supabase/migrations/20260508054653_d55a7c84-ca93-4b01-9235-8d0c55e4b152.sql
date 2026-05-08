@@ -1,0 +1,1 @@
+UPDATE public.marcheur_textes SET is_public = true, updated_at = now() WHERE id = 'c96ffab7-dcaf-4874-a00e-bf1f3c357e38';
