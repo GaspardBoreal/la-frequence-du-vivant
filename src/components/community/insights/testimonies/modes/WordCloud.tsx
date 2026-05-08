@@ -14,7 +14,7 @@ const seededRotation = (word: string) => {
 };
 
 const WordCloud: React.FC<Props> = ({ items }) => {
-  const [active, setActive] = useState<{ word: string; ids: string[] } | null>(null);
+  const [active, setActive] = useState<{ word: string; key: string; ids: string[] } | null>(null);
 
   const words = useMemo(
     () => buildWordCloud(items.map((i) => ({ id: i.id, quote: i.quote }))).slice(0, 60),
@@ -27,11 +27,13 @@ const WordCloud: React.FC<Props> = ({ items }) => {
     return items.filter((t) => active.ids.includes(t.id));
   }, [active, items]);
 
-  const highlight = (text: string, word: string) => {
-    const re = new RegExp(`(${word})`, 'gi');
-    return text.split(re).map((p, i) =>
-      p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') ===
-      word.toLowerCase() ? (
+  // Surligne le mot dans le témoignage en restant insensible aux accents.
+  const highlight = (text: string, key: string) => {
+    const normalize = (s: string) =>
+      s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const parts = text.split(/(\p{L}+)/u);
+    return parts.map((p, i) =>
+      /\p{L}/u.test(p) && normalize(p) === key ? (
         <mark key={i} className="bg-amber-500/20 text-foreground rounded px-0.5">{p}</mark>
       ) : (
         <span key={i}>{p}</span>
@@ -97,7 +99,7 @@ const WordCloud: React.FC<Props> = ({ items }) => {
                   opacity: 1,
                   filter: 'drop-shadow(0 0 14px hsl(var(--primary) / 0.45))',
                 }}
-                onClick={() => setActive({ word: w.word, ids: w.testimonyIds })}
+                onClick={() => setActive({ word: w.word, key: w.key, ids: w.testimonyIds })}
                 className={`leading-none cursor-pointer transition-colors hover:text-foreground ${cls}`}
                 style={{
                   fontSize: `${size}rem`,
@@ -161,7 +163,7 @@ const WordCloud: React.FC<Props> = ({ items }) => {
                   >
                     <Quote className="w-4 h-4 text-amber-500/50 mb-1.5" />
                     <p className="text-sm font-serif italic text-foreground/90 leading-relaxed">
-                      {highlight(t.quote, active.word)}
+                      {highlight(t.quote, active.key)}
                     </p>
                     <div className="mt-2.5 text-xs font-semibold text-foreground/70">
                       — {t.author_name}
