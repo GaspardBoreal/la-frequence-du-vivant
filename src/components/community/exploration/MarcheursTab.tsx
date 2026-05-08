@@ -1467,7 +1467,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
 
       {/* Cards — all closed by default */}
       <div className="space-y-2">
-        {marcheurs.map((m, i) => (
+        {sortedMarcheurs.map((m, i) => (
           <MarcheurCard
             key={m.id}
             marcheur={m}
@@ -1479,6 +1479,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
             explorationMarcheIds={explorationMarcheIds}
             totalMarchesCount={explorationMarcheIds.length}
             testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
+            contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom)}
           />
         ))}
       </div>
