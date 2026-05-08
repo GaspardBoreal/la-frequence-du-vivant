@@ -207,20 +207,45 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
       if (!uploaderIds.length) return [];
       const { data } = await supabase
         .from('community_profiles')
-        .select('user_id, prenom, nom')
+        .select('user_id, prenom, nom, avatar_url')
         .in('user_id', uploaderIds);
       return data || [];
     },
     enabled: uploaderIds.length > 0,
   });
-  const uploaderNameById = React.useMemo(() => {
-    const map = new Map<string, string>();
+  const uploaderInfoById = React.useMemo(() => {
+    const map = new Map<string, { fullName: string; avatarUrl: string | null }>();
     uploaderProfiles.forEach((p: any) => {
       const full = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim();
-      if (full) map.set(p.user_id, full);
+      map.set(p.user_id, { fullName: full || 'Marcheur', avatarUrl: p.avatar_url ?? null });
     });
     return map;
   }, [uploaderProfiles]);
+  const uploaderNameById = React.useMemo(() => {
+    const map = new Map<string, string>();
+    uploaderInfoById.forEach((info, id) => {
+      if (info.fullName) map.set(id, info.fullName);
+    });
+    return map;
+  }, [uploaderInfoById]);
+
+  // Group "Des marcheurs" by uploader
+  const othersGroups = React.useMemo(() => {
+    const groups = new Map<string, { userId: string; fullName: string; avatarUrl: string | null; medias: typeof allMedias }>();
+    othersMedias.forEach(m => {
+      const info = uploaderInfoById.get(m.user_id);
+      if (!groups.has(m.user_id)) {
+        groups.set(m.user_id, {
+          userId: m.user_id,
+          fullName: info?.fullName || 'Marcheur',
+          avatarUrl: info?.avatarUrl ?? null,
+          medias: [],
+        });
+      }
+      groups.get(m.user_id)!.medias.push(m);
+    });
+    return Array.from(groups.values());
+  }, [othersMedias, uploaderInfoById]);
 
   // Build unified lightbox items array (order MUST match render order: admin → mine → credited groups → others)
   const lightboxItems: LightboxItem[] = React.useMemo(() => {
