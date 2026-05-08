@@ -830,9 +830,31 @@ const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementTyp
   { key: 'observations', label: 'Observations', icon: Camera },
   { key: 'ecoute', label: 'Écoute', icon: Headphones },
   { key: 'textes', label: 'Textes', icon: Feather },
+  { key: 'temoignage', label: 'Témoignage', icon: Quote },
   { key: 'contributions', label: 'Contributions', icon: Leaf },
   { key: 'impact', label: 'Votre impact', icon: TrendingUp },
 ];
+
+// --- Témoignage sub-tab: poetic display of marcheur's testimony ---
+const TemoignageSubTab: React.FC<{ testimony: EventTestimony }> = ({ testimony }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, ease: 'easeOut' }}
+    className="m-3 relative overflow-hidden rounded-2xl border border-rose-500/15 bg-gradient-to-br from-rose-500/5 via-transparent to-amber-500/5 p-6 sm:p-8"
+  >
+    <Quote className="absolute top-3 left-3 w-10 h-10 text-rose-400/20" strokeWidth={1.5} />
+    <Quote className="absolute bottom-3 right-3 w-8 h-8 text-rose-400/10 rotate-180" strokeWidth={1.5} />
+    <blockquote className="relative z-10 pt-6 px-2">
+      <p className="font-serif italic text-base sm:text-lg leading-relaxed text-foreground/90 text-center">
+        {testimony.quote}
+      </p>
+      <footer className="mt-4 text-right text-xs text-muted-foreground tracking-wide">
+        — {testimony.author_name}
+      </footer>
+    </blockquote>
+  </motion.div>
+);
 
 // --- Textes sub-tab: marcheur's written texts (own + public from others) ---
 const TextesSubTab: React.FC<{
