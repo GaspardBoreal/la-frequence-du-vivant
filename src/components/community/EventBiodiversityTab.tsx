@@ -13,6 +13,7 @@ import { useTriggerBiodiversityCollection } from '@/hooks/useTriggerBiodiversity
 import { useExplorationParticipants } from '@/hooks/useExplorationParticipants';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
+import BiodiversityEvolutionChart from './exploration/BiodiversityEvolutionChart';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
@@ -404,6 +405,16 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {/* TAXONS — via SpeciesExplorer unifié */}
         {activeSubTab === 'taxons' && (
           <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <BiodiversityEvolutionChart
+              snapshots={snapshots}
+              marchesById={new Map(
+                (allEventMarchesData || []).map(m => [
+                  m.marcheId,
+                  { name: m.marcheName, ville: m.ville, latitude: m.latitude, longitude: m.longitude },
+                ])
+              )}
+              onNavigateToMarche={onNavigateToMarche}
+            />
             <SpeciesExplorer
               species={allSpeciesWithFrNames}
               compact
