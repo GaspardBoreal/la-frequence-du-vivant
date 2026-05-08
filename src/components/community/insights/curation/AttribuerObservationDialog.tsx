@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, UserPlus, MapPin, CheckCircle2 } from 'lucide-react';
+import { Loader2, UserPlus, MapPin, CheckCircle2, Search } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import { useExplorationParticipants, type MarcheurWithStats } from '@/hooks/useExplorationParticipants';
 import { useExplorationAllMarches } from '@/hooks/useExplorationAllMarches';
 import { useSpeciesObservers } from '@/hooks/useSpeciesObservers';
 
@@ -24,79 +25,105 @@ interface Props {
 const normalize = (s: string): string =>
   s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
-/** Renvoie true si un nom citoyen "Sophie D" matche un marcheur "Sophie Dupont". */
-const fuzzyMatch = (citizenName: string, marcheurFullName: string): boolean => {
+/** "Sophie D" matche "Sophie Dupont" */
+const fuzzyMatch = (citizenName: string, fullName: string): boolean => {
   const c = normalize(citizenName);
-  const m = normalize(marcheurFullName);
+  const m = normalize(fullName);
   if (!c || !m) return false;
   if (m.includes(c) || c.includes(m)) return true;
-  // "Sophie D" vs "Sophie Dupont" : prénom + initiale
   const cParts = c.split(/\s+/);
   const mParts = m.split(/\s+/);
   if (cParts.length >= 2 && mParts.length >= 2) {
-    const sameFirst = cParts[0] === mParts[0];
-    const initialMatch = cParts[1].length === 1 && mParts[1].startsWith(cParts[1]);
-    if (sameFirst && (initialMatch || mParts[1].startsWith(cParts[1]))) return true;
+    if (cParts[0] === mParts[0] && mParts[1].startsWith(cParts[1])) return true;
   }
   return false;
 };
+
+/** Stable selection key: prefer userId (community), else crewId. */
+const selectionKey = (p: MarcheurWithStats): string => p.userId || p.crewId || `${p.prenom}-${p.nom}`;
 
 const AttribuerObservationDialog: React.FC<Props> = ({
   open, onOpenChange, explorationId, speciesScientificName, speciesDisplayName,
 }) => {
   const qc = useQueryClient();
-  const { data: marcheurs = [] } = useExplorationMarcheurs(explorationId);
+  const { data: participants = [], isLoading: loadingParts } = useExplorationParticipants(explorationId);
   const { data: marches = [] } = useExplorationAllMarches(explorationId);
   const { data: observers = [] } = useSpeciesObservers(speciesScientificName, explorationId);
 
-  const [selectedMarcheurs, setSelectedMarcheurs] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [marcheId, setMarcheId] = useState<string>('');
+  const [search, setSearch] = useState('');
 
-  // Pré-sélection floue à partir des observateurs citoyens détectés
-  useEffect(() => {
-    if (!open) return;
-    const matches = new Set<string>();
-    observers.forEach(o => {
-      marcheurs.forEach(m => {
-        if (fuzzyMatch(o.observerName, m.fullName)) matches.add(m.id);
-      });
-    });
-    setSelectedMarcheurs(matches);
-    // Marche par défaut : celle de la 1ʳᵉ observation citoyenne, sinon 1ʳᵉ marche
-    const firstObsMarcheId = observers.find(o => o.marcheId)?.marcheId;
-    setMarcheId(firstObsMarcheId || marches[0]?.marcheId || '');
-  }, [open, observers, marcheurs, marches]);
+  // Sort participants: alphabetical by first name
+  const sortedParticipants = useMemo(() => {
+    return [...participants].sort((a, b) =>
+      `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`, 'fr'),
+    );
+  }, [participants]);
 
+  // Fuzzy suggestions per participant
   const matchedSuggestions = useMemo(() => {
-    const map = new Map<string, string[]>(); // marcheurId -> citizenNames
-    observers.forEach(o => {
-      marcheurs.forEach(m => {
-        if (fuzzyMatch(o.observerName, m.fullName)) {
-          const arr = map.get(m.id) || [];
+    const map = new Map<string, string[]>();
+    sortedParticipants.forEach(p => {
+      const fullName = `${p.prenom} ${p.nom}`.trim();
+      observers.forEach(o => {
+        if (fuzzyMatch(o.observerName, fullName)) {
+          const key = selectionKey(p);
+          const arr = map.get(key) || [];
           if (!arr.includes(o.observerName)) arr.push(o.observerName);
-          map.set(m.id, arr);
+          map.set(key, arr);
         }
       });
     });
     return map;
-  }, [observers, marcheurs]);
+  }, [observers, sortedParticipants]);
 
-  const toggle = (id: string) => {
-    setSelectedMarcheurs(prev => {
+  useEffect(() => {
+    if (!open) return;
+    // Pre-select participants matching citizen observer names
+    const init = new Set<string>();
+    sortedParticipants.forEach(p => {
+      if (matchedSuggestions.get(selectionKey(p))) init.add(selectionKey(p));
+    });
+    setSelected(init);
+    const firstObsMarcheId = observers.find(o => o.marcheId)?.marcheId;
+    setMarcheId(firstObsMarcheId || marches[0]?.marcheId || '');
+    setSearch('');
+  }, [open, sortedParticipants, matchedSuggestions, observers, marches]);
+
+  const filtered = useMemo(() => {
+    const q = normalize(search);
+    if (!q) return sortedParticipants;
+    return sortedParticipants.filter(p => normalize(`${p.prenom} ${p.nom}`).includes(q));
+  }, [search, sortedParticipants]);
+
+  const toggle = (key: string) => {
+    setSelected(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   };
 
   const mutation = useMutation({
     mutationFn: async () => {
+      // Split selected into crew ids vs user ids
+      const crewIds: string[] = [];
+      const userIds: string[] = [];
+      sortedParticipants.forEach(p => {
+        const k = selectionKey(p);
+        if (!selected.has(k)) return;
+        if (p.crewId) crewIds.push(p.crewId);
+        else if (p.userId) userIds.push(p.userId);
+      });
+
       const { data, error } = await supabase.rpc('attribute_species_to_marcheurs', {
         p_exploration_id: explorationId,
         p_marche_id: marcheId,
         p_species: speciesScientificName,
-        p_marcheur_ids: Array.from(selectedMarcheurs),
+        p_marcheur_ids: crewIds,
         p_notes: `Attribution depuis L'Œil — ${speciesDisplayName}`,
+        p_user_ids: userIds,
       });
       if (error) throw error;
       return data as number;
@@ -118,7 +145,7 @@ const AttribuerObservationDialog: React.FC<Props> = ({
     },
   });
 
-  const canSubmit = selectedMarcheurs.size > 0 && !!marcheId && !mutation.isPending;
+  const canSubmit = selected.size > 0 && !!marcheId && !mutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,42 +195,56 @@ const AttribuerObservationDialog: React.FC<Props> = ({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">
-              Marcheurs à créditer ({selectedMarcheurs.size} sélectionné{selectedMarcheurs.size > 1 ? 's' : ''})
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">
+                Marcheurs à créditer ({selected.size}/{sortedParticipants.length})
+              </Label>
+              {loadingParts && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+            </div>
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Rechercher un participant…"
+                className="pl-8 h-8 text-xs"
+              />
+            </div>
             <ScrollArea className="h-64 rounded-md border border-border p-2">
               <div className="space-y-1">
-                {marcheurs.map(m => {
-                  const isSelected = selectedMarcheurs.has(m.id);
-                  const suggestions = matchedSuggestions.get(m.id);
+                {filtered.map(p => {
+                  const k = selectionKey(p);
+                  const isSelected = selected.has(k);
+                  const suggestions = matchedSuggestions.get(k);
+                  const fullName = `${p.prenom} ${p.nom}`.trim();
                   return (
                     <label
-                      key={m.id}
+                      key={k}
                       className={`flex items-center gap-2.5 p-2 rounded-md cursor-pointer transition ${
                         isSelected ? 'bg-primary/10' : 'hover:bg-muted/50'
                       }`}
                     >
-                      <Checkbox checked={isSelected} onCheckedChange={() => toggle(m.id)} />
+                      <Checkbox checked={isSelected} onCheckedChange={() => toggle(k)} />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate">{m.fullName}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium truncate">{fullName}</span>
                           {suggestions && suggestions.length > 0 && (
                             <Badge variant="default" className="text-[9px] gap-0.5 px-1.5">
                               <CheckCircle2 className="w-2.5 h-2.5" />
                               {suggestions.join(', ')}
                             </Badge>
                           )}
+                          <Badge variant="outline" className="text-[9px] capitalize">
+                            {p.source === 'crew' ? p.role || 'troupe' : 'communauté'}
+                          </Badge>
                         </div>
-                        {m.role && m.role !== 'marcheur' && (
-                          <span className="text-[10px] text-muted-foreground capitalize">{m.role}</span>
-                        )}
                       </div>
                     </label>
                   );
                 })}
-                {marcheurs.length === 0 && (
+                {filtered.length === 0 && !loadingParts && (
                   <p className="text-xs text-muted-foreground text-center p-4">
-                    Aucun marcheur dans cette exploration.
+                    {search ? 'Aucun participant trouvé.' : 'Aucun participant dans cette exploration.'}
                   </p>
                 )}
               </div>
