@@ -44,6 +44,7 @@ export interface MarcheurTexte {
   id: string;
   user_id: string;
   attributed_user_id: string | null;
+  attributed_marcheur_id: string | null;
   marche_event_id: string;
   marche_id: string | null;
   type_texte: string;
