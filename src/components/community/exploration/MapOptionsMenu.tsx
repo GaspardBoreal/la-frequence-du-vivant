@@ -193,26 +193,13 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
               onSetWeatherStationsRadius(r);
             }}
           />
-          <LayerRow
-            icon={<LandPlot className="w-4 h-4" strokeWidth={2.5} />}
-            iconClass="bg-orange-500/20 border-orange-400/30 text-orange-200"
-            label="Cadastre détaillé"
-            description="Parcelles autour du tracé"
-            checked={layers.cadastreDetail}
-            onCheckedChange={() => handleLayer('cadastreDetail', true)}
-          />
-          <LayerRow
-            icon={<Leaf className="w-4 h-4" strokeWidth={2.5} />}
-            iconClass="bg-lime-500/20 border-lime-400/30 text-lime-200"
-            label="Espèces récentes"
-            description="Observations des 30 derniers jours"
-            checked={layers.recentSpecies}
-            onCheckedChange={() => handleLayer('recentSpecies', true)}
-          />
         </div>
       </section>
     </div>
   );
+
+  // Note: kept dummy to avoid losing the closing tag context
+
 
   if (isMobile) {
     return (
