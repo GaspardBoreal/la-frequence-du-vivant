@@ -198,8 +198,6 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
     </div>
   );
 
-  // Note: kept dummy to avoid losing the closing tag context
-
 
   if (isMobile) {
     return (
