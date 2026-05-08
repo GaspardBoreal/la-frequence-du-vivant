@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { routeMedia, routeTexte, type RoutingMaps } from '@/utils/mediaRouting';
 
 export interface SpeciesObservation {
   scientificName: string;
