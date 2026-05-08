@@ -128,13 +128,78 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
   const deleteContrib = useDeleteContribution();
   const reorderContribs = useReorderContributions();
 
-  const myMedias = userMedias?.filter(m => m.user_id === userId) || [];
-  const othersMedias = userMedias?.filter(m => m.user_id !== userId && m.is_public) || [];
+  // Map exploration_marcheurs.id → { user_id, fullName, avatar_url, couleur }
+  // (the public hook ExplorationMarcheur omits user_id, so we fetch it directly)
+  const { data: marcheurAttribMap } = useQuery({
+    queryKey: ['marcheur-attrib-map', explorationId],
+    queryFn: async () => {
+      if (!explorationId) return new Map<string, { userId: string | null; fullName: string; avatarUrl: string | null; couleur: string | null }>();
+      const { data } = await supabase
+        .from('exploration_marcheurs')
+        .select('id, user_id, prenom, nom, avatar_url, couleur')
+        .eq('exploration_id', explorationId);
+      const map = new Map<string, { userId: string | null; fullName: string; avatarUrl: string | null; couleur: string | null }>();
+      (data || []).forEach((m: any) => {
+        map.set(m.id, {
+          userId: m.user_id ?? null,
+          fullName: `${m.prenom ?? ''} ${m.nom ?? ''}`.trim(),
+          avatarUrl: m.avatar_url ?? null,
+          couleur: m.couleur ?? null,
+        });
+      });
+      return map;
+    },
+    enabled: !!explorationId,
+  });
 
-  // Resolve uploader names (for the attribution credit chip)
+  // Compute the effective author for each media (real photographer, not uploader)
+  const allMedias = userMedias || [];
+  const effectiveAuthor = (m: any): { userId: string | null; marcheurId: string | null; fullName: string | null; avatarUrl: string | null; couleur: string | null } => {
+    const attribId = m.attributed_marcheur_id ?? null;
+    if (attribId && marcheurAttribMap?.has(attribId)) {
+      const info = marcheurAttribMap.get(attribId)!;
+      return { userId: info.userId, marcheurId: attribId, fullName: info.fullName || null, avatarUrl: info.avatarUrl, couleur: info.couleur };
+    }
+    return { userId: m.user_id ?? null, marcheurId: null, fullName: null, avatarUrl: null, couleur: null };
+  };
+
+  // Bucket 1 — Mes contributions: media whose effective author is me
+  const myMedias = allMedias.filter(m => effectiveAuthor(m).userId === userId);
+  // Bucket 2 — Crédités à d'autres marcheurs: attributed to someone else (regardless of who uploaded)
+  const creditedToOthers = allMedias.filter(m => {
+    const a = effectiveAuthor(m);
+    return a.marcheurId && a.userId !== userId;
+  });
+  // Bucket 3 — Des marcheurs: uploaded by others, not attributed to me, public
+  const othersMedias = allMedias.filter(m => {
+    const a = effectiveAuthor(m);
+    return a.marcheurId === null && m.user_id !== userId && m.is_public;
+  });
+
+  // Group bucket 2 by attributed marcheur
+  const creditedGroups = React.useMemo(() => {
+    const groups = new Map<string, { marcheurId: string; fullName: string; avatarUrl: string | null; couleur: string | null; medias: typeof allMedias }>();
+    creditedToOthers.forEach(m => {
+      const a = effectiveAuthor(m);
+      if (!a.marcheurId) return;
+      if (!groups.has(a.marcheurId)) {
+        groups.set(a.marcheurId, {
+          marcheurId: a.marcheurId,
+          fullName: a.fullName || 'Marcheur',
+          avatarUrl: a.avatarUrl,
+          couleur: a.couleur,
+          medias: [],
+        });
+      }
+      groups.get(a.marcheurId)!.medias.push(m);
+    });
+    return Array.from(groups.values());
+  }, [creditedToOthers, marcheurAttribMap]);
+
+  // Resolve uploader names (for the attribution credit chip in lightbox)
   const uploaderIds = React.useMemo(
-    () => Array.from(new Set([...myMedias, ...othersMedias].map(m => m.user_id))),
-    [myMedias, othersMedias],
+    () => Array.from(new Set(allMedias.map(m => m.user_id))),
+    [allMedias],
   );
   const { data: uploaderProfiles = [] } = useQuery({
     queryKey: ['marcheur-medias-uploaders', uploaderIds.sort().join(',')],
