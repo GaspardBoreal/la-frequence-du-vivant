@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { toast } from 'sonner';
+
 import type { MapLayersState, WeatherStationsMode } from '@/hooks/useMapLayers';
 
 interface MapOptionsMenuProps {
