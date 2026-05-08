@@ -163,7 +163,12 @@ const ImpactStoriesViewer: React.FC<ImpactStoriesViewerProps> = ({
                 <StoryEmpreinte marcheur={marcheur} sensible={sensible} hasTemoignage={hasTemoignage} />
               )}
               {currentKey === 'sentinelle' && (
-                <StorySentinelle score={sentinelleScore} label={sentinelleLabel} />
+                <StorySentinelle
+                  score={sentinelleScore}
+                  label={sentinelleLabel}
+                  breakdown={sentinelleBreakdown}
+                  nextTip={sentinelleNextTip}
+                />
               )}
               {currentKey === 'familles' && (
                 <StoryFamilles marcheur={marcheur} taxonomicFamilies={taxonomicFamilies} />
