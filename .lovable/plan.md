@@ -1,97 +1,46 @@
 ## Diagnostic
 
-Le bug : dans `DayDetailDrawer`, on lit `sp.commonNameFr` directement depuis `species_data` (snapshot) — mais ce champ n'y est jamais stocké. Les snapshots ne contiennent que `commonName` (anglais, source iNat/GBIF). La traduction FR vit uniquement dans la table `species_translations`.
+Les noms restent en anglais dans **Marches → Vivant** (`SpeciesExplorer`) à cause de la coexistence de **deux systèmes de traduction** non alignés :
 
-Deux systèmes existent en parallèle aujourd'hui :
-- `useSpeciesTranslation` (unitaire, avec fallback edge function `translate-species`)
-- `useFrenchSpeciesNames` (batch, lecture seule de la table)
-- `useExplorationSpeciesPool` enrichit déjà à la source → c'est pourquoi l'écran "Vivant" fonctionne.
+| Hook | Lit `species_translations` | Auto-fill via edge function | Utilisé par |
+|---|---|---|---|
+| `useSpeciesTranslationBatch` (ancien, `src/hooks/useSpeciesTranslation.ts`) | ✅ | ❌ | **SpeciesExplorer (Vivant)**, MarcheursTab, OeilCuration (Apprendre → L'œil), BioacousticSheet, SpeciesAudioModal, BiodiversityTestPanel |
+| `useFrenchSpeciesNamesAuto` (nouveau) | ✅ | ✅ via `translate-species` | DayDetailDrawer + modals Phase 2 |
 
-Cible : un **seul système** robuste, performant, utilisé partout, qui auto-traduit en arrière-plan ce qui manque.
+Conséquence : toute espèce absente de `species_translations` (Peach, dappled willow, Cuckooflower, Macroglossin…) **reste en EN à jamais** dans la grille Vivant, parce que l'ancien hook ne déclenche **jamais** la fonction edge. Aucun bug de rendu — c'est un oubli de la Phase 2 : ces écrans n'ont pas été migrés.
 
-## Architecture cible
+C'est exactement le **risque architectural** identifié dans la mémoire `french-name-resolution-architecture` : tant que deux hooks coexistent, certaines vues échappent à l'auto-traduction.
 
-### 1. Source de vérité unique : `useFrenchSpeciesNamesAuto` (nouveau hook)
+## Solution : convergence par la racine (pas écran par écran)
 
-Évolution de `useFrenchSpeciesNames` :
-- Lit la table `species_translations` en batch (comme aujourd'hui).
-- Pour les noms scientifiques **non trouvés**, déclenche en arrière-plan un appel batch à l'edge function `translate-species` (modifiée pour accepter un tableau et **INSERT** dans la table — cache permanent partagé).
-- Re-renvoie le résultat enrichi via React Query invalidation → swap doux EN → FR sans flicker (transition opacity 200ms côté composant).
-- Cache 24h client + cache DB permanent → 1 seule traduction LLM par espèce, jamais répétée.
+Au lieu de migrer 6+ composants un par un (risque d'oubli + churn), on **rebranche l'ancien hook sur le nouveau**. Une seule modification dans `useSpeciesTranslation.ts` répare automatiquement **tous** les écrans qui l'utilisent, sans toucher à leurs props ni à leur UI.
 
-### 2. Composant universel `<SpeciesName />` (nouveau)
+### Étapes
 
-```tsx
-<SpeciesName 
-  scientificName="Papaver rhoeas" 
-  commonName="common poppy"  // fallback EN
-  showScientific  // affiche italic en dessous
-  size="sm|md|lg"
-/>
-```
+1. **Refactor `useSpeciesTranslationBatch`** (`src/hooks/useSpeciesTranslation.ts`) :
+   - À l'intérieur, appeler `useFrenchSpeciesNamesAuto(species)` (qui lit le DB **et** déclenche l'edge function pour les manquantes).
+   - Mapper son résultat (`Map<scientificName, FrenchNameResolution>`) vers le format `SpeciesTranslation[]` attendu par les consommateurs existants.
+   - Garder strictement la même signature publique → zéro changement chez les appelants.
+   - Conserver la logique `language === 'en'` pour ne pas forcer FR si l'utilisateur est en EN.
 
-- Utilise `useFrenchSpeciesNamesAuto` en interne (batch via React Query, donc partage le cache si plusieurs `<SpeciesName />` sur la même page).
-- Affiche immédiatement `commonName` (EN) puis swap vers FR avec fade-in dès résolu.
-- Variante `<SpeciesNameInline />` pour les cas sans bloc (juste le texte).
+2. **Stabilisation des inputs** : dans `SpeciesExplorer` et `MarcheursTab`, le `useMemo` qui construit `speciesForTranslation` est déjà OK ; vérifier juste que la dépendance reste sur `species` pour éviter de retrigger inutilement l'edge function.
 
-### 3. Hook batch pour les listes : `useEnrichSpeciesList(species[])`
+3. **Marquer obsolète le hook unitaire `useSpeciesTranslation`** (singulier, non-batch) : ajouter un commentaire JSDoc `@deprecated — utiliser useFrenchSpeciesNamesAuto ou <SpeciesName />`. Pas de suppression dans cette passe.
 
-Pour les hooks qui produisent déjà des listes (snapshots, evolution, pool…) : un seul appel qui retourne la liste enrichie avec `displayName` + `commonNameFr` résolus. Évite N appels.
+4. **QA visuelle** : recharger l'écran Vivant → les espèces s'affichent en EN immédiatement puis swap en FR sous ~1–2s (latence edge function + invalidation cache). Au second chargement, FR direct (cache DB).
 
-### 4. Edge function `translate-species` — extension batch
+5. **Mémoire** : mettre à jour `mem://technical/species/french-name-resolution-architecture` pour noter que `useSpeciesTranslationBatch` est désormais un **alias** de `useFrenchSpeciesNamesAuto` (compat shim) et que tout nouvel écran doit utiliser directement `<SpeciesName />` ou `useFrenchSpeciesNamesAuto`.
 
-Aujourd'hui elle prend une espèce. À étendre pour accepter `{ items: [{scientificName, commonName}] }` et :
-- Filtrer celles déjà dans la table.
-- Appeler le LLM (Lovable AI Gateway, gemini-2.5-flash) en un seul prompt structuré pour les manquantes.
-- INSERT en bulk dans `species_translations` (source='ai', confidence='medium').
-- Retourner la map.
+### Pourquoi cette approche
 
-## Migration progressive
+- **Un seul fichier modifié** pour réparer 6 écrans (Vivant, Marcheurs, L'œil, Bioacoustique, Audio modal, Test panel).
+- **Aucune régression UI** possible : la signature et le format de retour restent identiques.
+- **Cohérence garantie** : impossible qu'un écran "oublie" l'auto-fill, puisqu'il n'y a plus qu'un seul moteur sous-jacent.
+- **Migration douce** vers `<SpeciesName />` : peut continuer écran par écran sans urgence, puisque le bug de fond est corrigé à la racine.
 
-### Phase 1 — Fix immédiat (DayDetailDrawer)
-- Modifier `useBiodiversityEvolution` pour appeler `useEnrichSpeciesList` sur toutes les espèces extraites.
-- Le drawer utilise `<SpeciesName />` → résolution garantie.
+## Fichiers touchés
 
-### Phase 2 — Drawers/modals d'espèces
-Migrer vers `<SpeciesName />` :
-- `SpeciesDetailModal.tsx`
-- `SpeciesGalleryDetailModal.tsx`
-- `SpeciesXenoCantoModal.tsx`
-- `SpeciesCardWithPhoto.tsx`
-- `EmblematicSpeciesGallery.tsx`
-- `BiodiversityTop10Podium.tsx`
-- `SpeciesExplorer.tsx` (vue "L'œil")
-- `BiodiversityRiskRadar.tsx`
-- `BiodiversityMap.tsx` (popups)
+- `src/hooks/useSpeciesTranslation.ts` — refactor de `useSpeciesTranslationBatch` en wrapper de `useFrenchSpeciesNamesAuto` ; JSDoc `@deprecated` sur le hook unitaire.
+- `mem://technical/species/french-name-resolution-architecture` — mise à jour de la note.
 
-`SpeciesDisplay.tsx` actuel devient un **wrapper deprecated** qui délègue à `<SpeciesName />` pour compatibilité descendante (pas de breaking change).
-
-### Phase 3 — Garde-fous
-- Mémoire projet : règle Core "Tout affichage de nom d'espèce passe par `<SpeciesName />` ou un hook qui enrichit via `useEnrichSpeciesList`. Jamais de `commonName` brut affiché."
-- Mémoire détaillée `mem://technical/species/french-name-resolution-architecture`.
-- Lint custom optionnel (commentaire JSDoc `@requires SpeciesName` sur les types contenant scientificName) — non bloquant.
-
-## Détails techniques
-
-**Fichiers créés** :
-- `src/hooks/useFrenchSpeciesNamesAuto.ts` (évolution avec auto-fill)
-- `src/hooks/useEnrichSpeciesList.ts` (helper pour listes)
-- `src/components/species/SpeciesName.tsx` (composant universel)
-- `src/components/species/SpeciesNameInline.tsx` (variante inline)
-
-**Fichiers modifiés** :
-- `supabase/functions/translate-species/index.ts` → mode batch + INSERT
-- `src/hooks/useBiodiversityEvolution.ts` → enrichit DayObservation
-- `src/components/community/exploration/DayDetailDrawer.tsx` → utilise `<SpeciesName />`
-- `src/components/biodiversity/SpeciesDisplay.tsx` → wrapper deprecated
-- ~10 composants migrés progressivement (Phase 2)
-
-**Aucune migration SQL** : la table `species_translations` existe déjà, RLS publique en lecture, INSERT via service_role depuis l'edge function.
-
-## UX inspirante
-
-- **Swap doux EN → FR** : opacity transition 200ms, jamais de layout shift (skeleton de largeur égale).
-- **Badge subtil** : petit point émeraude `•` en hover si traduction AI fraîche (transparence sur la qualité).
-- **Pas de blocage** : le nom EN s'affiche immédiatement, FR arrive quand prêt.
-- **Cohérence totale** : même typographie, même hiérarchie partout (titre commun + sous-titre scientifique italique).
-- **Accessibilité** : `<abbr title="nom scientifique">` sur le scientifique en mode inline pour SR.
+Aucun composant consommateur n'est modifié.
