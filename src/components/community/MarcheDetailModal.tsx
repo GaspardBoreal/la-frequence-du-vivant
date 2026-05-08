@@ -841,7 +841,8 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
           <div className="space-y-2">
             {othersTextes.map(t => (
               <ContributionItem key={t.id} id={t.id} type="texte" titre={t.titre} contenu={t.contenu}
-                typeTexte={t.type_texte} isPublic={t.is_public} isOwner={false} createdAt={t.created_at} />
+                typeTexte={t.type_texte} isPublic={t.is_public} isOwner={false} createdAt={t.created_at}
+                canReattribute={!!isCurator} explorationId={explorationId ?? undefined} />
             ))}
           </div>
         </div>
