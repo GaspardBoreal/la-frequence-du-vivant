@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather, Sparkles } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather, Sparkles, Quote } from 'lucide-react';
+import { useExplorationTestimonies, type EventTestimony } from '@/hooks/useEventTestimonies';
 import { useIsCurator } from '@/hooks/useExplorationCurations';
 import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -49,7 +50,7 @@ type ShareKitState = {
   generatedCount: number;
 };
 
-type MarcheurSubTab = 'observations' | 'ecoute' | 'textes' | 'contributions' | 'impact';
+type MarcheurSubTab = 'observations' | 'ecoute' | 'textes' | 'temoignage' | 'contributions' | 'impact';
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
@@ -829,9 +830,31 @@ const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementTyp
   { key: 'observations', label: 'Observations', icon: Camera },
   { key: 'ecoute', label: 'Écoute', icon: Headphones },
   { key: 'textes', label: 'Textes', icon: Feather },
+  { key: 'temoignage', label: 'Témoignage', icon: Quote },
   { key: 'contributions', label: 'Contributions', icon: Leaf },
   { key: 'impact', label: 'Votre impact', icon: TrendingUp },
 ];
+
+// --- Témoignage sub-tab: poetic display of marcheur's testimony ---
+const TemoignageSubTab: React.FC<{ testimony: EventTestimony }> = ({ testimony }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, ease: 'easeOut' }}
+    className="m-3 relative overflow-hidden rounded-2xl border border-rose-500/15 bg-gradient-to-br from-rose-500/5 via-transparent to-amber-500/5 p-6 sm:p-8"
+  >
+    <Quote className="absolute top-3 left-3 w-10 h-10 text-rose-400/20" strokeWidth={1.5} />
+    <Quote className="absolute bottom-3 right-3 w-8 h-8 text-rose-400/10 rotate-180" strokeWidth={1.5} />
+    <blockquote className="relative z-10 pt-6 px-2">
+      <p className="font-serif italic text-base sm:text-lg leading-relaxed text-foreground/90 text-center">
+        {testimony.quote}
+      </p>
+      <footer className="mt-4 text-right text-xs text-muted-foreground tracking-wide">
+        — {testimony.author_name}
+      </footer>
+    </blockquote>
+  </motion.div>
+);
 
 // --- Textes sub-tab: marcheur's written texts (own + public from others) ---
 const TextesSubTab: React.FC<{
@@ -1020,7 +1043,8 @@ const MarcheurCard: React.FC<{
   explorationId?: string;
   explorationMarcheIds: string[];
   totalMarchesCount: number;
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount }) => {
+  testimony?: EventTestimony | null;
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
   const { user: viewer } = useAuth();
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
@@ -1031,11 +1055,17 @@ const MarcheurCard: React.FC<{
   const photoCount = marcheur.stats.photos + marcheur.stats.videos;
   const audioCount = marcheur.stats.sons || 0;
   const textesCount = marcheur.stats.textes || 0;
-  
+  const hasTestimony = !!testimony;
+
   // Real contributions count from biodiversity snapshots
   const { data: contributionsCount } = useWalkerContributionsCount(marcheur.prenom, marcheur.nom, explorationMarcheIds, explorationId);
   const realContribCount = contributionsCount || 0;
-  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0 || audioCount > 0 || textesCount > 0;
+  const hasContent = totalContribs > 0 || realContribCount > 0 || photoCount > 0 || audioCount > 0 || textesCount > 0 || hasTestimony;
+
+  const visibleSubTabs = useMemo(
+    () => subTabConfig.filter((t) => t.key !== 'temoignage' || hasTestimony),
+    [hasTestimony]
+  );
 
   return (
     <motion.div
@@ -1087,6 +1117,11 @@ const MarcheurCard: React.FC<{
               <span className="text-[11px] font-semibold text-foreground">{textesCount}</span>
             </div>
           )}
+          {hasTestimony && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20" title="A laissé un témoignage">
+              <Quote className="w-3 h-3 text-rose-400" />
+            </div>
+          )}
           {realContribCount > 0 && (
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${realContribCount} espèce${realContribCount > 1 ? 's' : ''} identifiée${realContribCount > 1 ? 's' : ''}`}>
               <Leaf className="w-3 h-3 text-amber-500" />
@@ -1118,7 +1153,7 @@ const MarcheurCard: React.FC<{
           >
             {/* Sub-tab pills */}
             <div className="flex gap-1 p-2 px-3">
-              {subTabConfig.map(tab => {
+              {visibleSubTabs.map(tab => {
                 const Icon = tab.icon;
                 const isActive = activeSubTab === tab.key;
                 return (
@@ -1175,6 +1210,12 @@ const MarcheurCard: React.FC<{
               {activeSubTab === 'textes' && (
                 <motion.div key="textes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <TextesSubTab userId={resolvedUserId} crewId={resolvedCrewId} explorationEventIds={explorationEventIds} explorationId={explorationId} />
+                </motion.div>
+              )}
+
+              {activeSubTab === 'temoignage' && testimony && (
+                <motion.div key="temoignage" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <TemoignageSubTab testimony={testimony} />
                 </motion.div>
               )}
 
@@ -1239,6 +1280,14 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const explorationMarcheIds = explorationMarchesData || [];
   const explorationEventIds = explorationEventIdsData || [];
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
+
+  // Index testimonies by user_id for fast lookup per marcheur card
+  const { data: testimonies } = useExplorationTestimonies(explorationId);
+  const testimoniesByUser = useMemo(() => {
+    const m = new Map<string, EventTestimony>();
+    (testimonies || []).forEach((t) => { if (t.user_id) m.set(t.user_id, t); });
+    return m;
+  }, [testimonies]);
 
   const createAffiliateLink = async (channel: 'copy' | 'share') => {
     if (!explorationId) {
@@ -1382,6 +1431,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
             explorationId={explorationId}
             explorationMarcheIds={explorationMarcheIds}
             totalMarchesCount={explorationMarcheIds.length}
+            testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
           />
         ))}
       </div>
