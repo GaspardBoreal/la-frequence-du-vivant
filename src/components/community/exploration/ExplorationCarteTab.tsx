@@ -1468,6 +1468,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             isCreatingWaypoint={isCreatingWaypoint}
             layers={mapLayers}
             activeBadgeCount={(isLoop ? 1 : 0) + mapLayersActiveCount}
+            waypointsCount={waypoints.length}
             onToggleLoop={() => updateLoop.mutate({ id: explorationId, is_loop: !isLoop })}
             onStartCreateMarche={handleStartCreate}
             onToggleCreateWaypoint={() => setIsCreatingWaypoint(v => !v)}
