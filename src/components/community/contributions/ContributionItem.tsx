@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, MapPin, Link2, Users, Earth } from 'lucide-react';
+import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, MapPin, Link2, Users, Earth, Sparkles } from 'lucide-react';
+import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
+import type { ReattributeSource } from '@/hooks/useReattributeMedia';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
