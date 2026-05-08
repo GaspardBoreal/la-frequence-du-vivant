@@ -1,0 +1,1 @@
+INSERT INTO public.event_testimonies (event_id, user_id, author_name, quote) VALUES ('df85910e-82da-4ef7-98d2-d4c827d1d0ec', 'bc5ef59f-9279-4c3c-ab4e-362fbf5f3a1a', 'Karine Log', '« C''est vrai que ce que j''ai changé par rapport à mes habitudes, c''est que j''ai enfin regardé et observé. »') ON CONFLICT (event_id, user_id) DO UPDATE SET quote=EXCLUDED.quote, updated_at=now();
