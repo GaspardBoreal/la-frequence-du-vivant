@@ -940,6 +940,12 @@ const MarcheurCard: React.FC<{
               <span className="text-[11px] font-semibold text-foreground">{audioCount}</span>
             </div>
           )}
+          {textesCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${textesCount} texte${textesCount > 1 ? 's' : ''} partagé${textesCount > 1 ? 's' : ''}`}>
+              <Feather className="w-3 h-3 text-amber-400" />
+              <span className="text-[11px] font-semibold text-foreground">{textesCount}</span>
+            </div>
+          )}
           {realContribCount > 0 && (
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5" title={`${realContribCount} espèce${realContribCount > 1 ? 's' : ''} identifiée${realContribCount > 1 ? 's' : ''}`}>
               <Leaf className="w-3 h-3 text-amber-500" />
