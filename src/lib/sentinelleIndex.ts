@@ -7,7 +7,7 @@
  * - 20 pts : voix singulière (textes + sons + témoignages, valorisés ×2.5, sature à 10 pondérés)
  * - 10 pts : pratiques emblématiques (×2 / 10, sature à 5 pratiques)
  *
- * Plancher : 15 pts dès la 1ʳᵉ contribution.
+ * Plancher dégressif : 5 (1 contrib) · 8 (2) · 12 (3-5) · 15 (≥6 ou ≥2 piliers).
  */
 
 export interface SentinelleInputs {
