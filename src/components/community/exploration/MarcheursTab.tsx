@@ -8,6 +8,8 @@ import { useIsCurator } from '@/hooks/useExplorationCurations';
 import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
+import ScoreBreakdown from '@/components/community/exploration/impact/ScoreBreakdown';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
 import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 import { useQuery } from '@tanstack/react-query';
