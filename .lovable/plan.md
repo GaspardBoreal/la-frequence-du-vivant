@@ -1,77 +1,46 @@
-# Plan de correction du popup cadastre
+# Corriger un faux nom FR pour "Broad-bordered Bee Hawkmoth"
 
-## Diagnostic
-Le problème ne vient pas seulement du `popupPane` Leaflet.
-Sur cette vue, les points de marche sont rendus dans `ExplorationCarteTab` avant/après la couche cadastre, avec des `DivIcon` numérotés qui restent visuellement dominants. La capture montre que les marqueurs d’étapes traversent encore la carte popup, ce qui indique un conflit de superposition au niveau de l’assemblage des couches et du rendu des marqueurs, pas seulement du CSS du popup.
+## Constat
+L'app affiche "Agrion (ou Demoiselle)" pour `Hemaris fuciformis` (Broad-bordered Bee Hawkmoth). C'est une **hallucination** : un sphinx ne peut pas s'appeler "Agrion" (libellule). Le bon nom FR est **Sphinx fuciforme** (parfois "Sphinx gazé").
 
-## Ce que je propose
+## Pourquoi cela arrive
+L'architecture des noms FR repose sur 3 couches :
 
-### 1. Isoler clairement les couches Leaflet par rôle
-Dans `ExplorationCarteTab`, séparer explicitement :
-- la couche des points de marche
-- la couche cadastre
-- la couche popup cadastre
-
-Objectif : ne plus dépendre d’un simple `z-index` global sur `.leaflet-popup-pane`, mais contrôler la hiérarchie à la source avec des `Pane` dédiés.
-
-### 2. Déplacer les marqueurs d’étape dans un pane dédié plus bas
-Créer un pane spécifique pour les points de marche avec un `z-index` strictement inférieur au popup cadastre.
-
-Effet attendu :
-- les marqueurs restent au-dessus du fond de carte
-- ils passent toujours sous la fenêtre cadastre
-- le comportement reste stable après rerender, changement de mode, et mobile
-
-### 3. Attacher le popup cadastre à un pane dédié très prioritaire
-Au lieu de laisser le popup reposer uniquement sur le `popupPane` global, renforcer le rendu du cadastre avec une stratégie dédiée :
-- pane cadastre pour les polygones
-- pane popup cadastre pour la fenêtre d’info
-
-Objectif : éviter qu’un marqueur numéroté ou un autre overlay Leaflet reprenne la main visuellement.
-
-### 4. Neutraliser les priorités locales qui peuvent remonter les marqueurs
-Vérifier et corriger dans `ExplorationCarteTab` les priorités locales du type :
-- `zIndexOffset`
-- ordre de montage
-- styles implicites des `DivIcon`
-- éventuelles remontées lors de `setActiveMarker`, changement de style carte, preview GPS, rerender React-Leaflet
-
-Objectif : supprimer toute remontée involontaire d’un marqueur au-dessus du popup.
-
-### 5. Ajouter un test automatisé de non-régression
-Comme demandé précédemment, mettre en place un test visuel/automatisé qui vérifie que le popup cadastre reste au-dessus :
-- sur desktop
-- sur mobile
-- après rerender de couche / changement de mode cadastre
-
-Le test vérifiera au minimum :
-- présence du popup
-- ordre visuel supérieur du popup par rapport aux points
-- stabilité après interaction qui force un rerender
-
-## Fichiers probablement concernés
-- `src/components/community/exploration/ExplorationCarteTab.tsx`
-- `src/components/cadastre/CadastreLayer.tsx`
-- `src/components/cadastre/ParcelPopup.tsx`
-- `src/index.css`
-- nouveau fichier de test end-to-end ou de vérification visuelle
-
-## Résultat attendu
-Quand on clique sur une parcelle en vue cadastre :
-- aucune pastille de marche ne doit passer au-dessus de la fenêtre
-- la croix reste bien lisible
-- le comportement reste identique sur mobile et après rerender
-
-## Détail technique
-Approche recommandée :
 ```text
-MapContainer
-├── tilePane
-├── overlayPane
-├── pane: marche-steps       z-index bas
-├── pane: cadastre-parcels   z-index intermédiaire
-├── pane: cadastre-popup     z-index haut
-└── popup/tooltip strategy alignée sur ces panes
+<SpeciesName />
+   └─ useFrenchSpeciesNamesAuto
+        ├─ 1. Lit la table species_translations (cache partagé)
+        └─ 2. Si manquant → edge function translate-species (LLM)
+             └─ écrit le résultat dans species_translations
 ```
 
-Je privilégie cette correction structurelle plutôt qu’un nouveau sur-empilement CSS global, car la capture montre que le bug persiste malgré le `z-index` actuel sur `.leaflet-popup-pane`.
+Le mauvais nom est donc figé dans la table `species_translations` (probablement écrit par le LLM lors d'une première résolution ratée). Tant qu'il y est, **tous les utilisateurs voient "Agrion" pour ce sphinx**, et le résolveur ne réinterroge plus le LLM.
+
+## Ce qu'il faut faire — 3 niveaux
+
+### 1. Correction immédiate (la ligne fautive)
+Mettre à jour la ligne `Hemaris fuciformis` dans `species_translations` :
+- `common_name_fr` → "Sphinx fuciforme"
+- `source` → "manual"
+- `confidence` → "high"
+
+Effet : tout l'app affiche immédiatement le bon nom (le cache TanStack Query expire sous 24 h, les nouveaux mounts voient déjà la bonne valeur).
+
+### 2. Audit ciblé des hallucinations voisines
+Lister en base toutes les lignes où :
+- `source` n'est pas `manual` / `local`
+- ET `common_name_fr` contient un terme sans rapport taxonomique évident (ex. "Agrion", "Demoiselle", "Sphinx", "Mésange"…) appliqué à un genre incohérent.
+
+Au minimum, repasser sur tout le genre `Hemaris` et la famille `Sphingidae` pour vérifier qu'aucun autre sphinx n'a hérité d'un nom de libellule.
+
+### 3. Durcir l'edge function `translate-species`
+Pour éviter que ça se reproduise :
+- Renforcer le prompt : interdire d'inventer un nom vernaculaire si incertain ; en cas de doute renvoyer le nom scientifique tel quel.
+- Stocker `confidence: 'low'` quand le LLM n'est pas sûr, et **ne pas afficher** les `low` (fallback nom scientifique).
+- Optionnel : valider la cohérence taxonomique ordre/famille (ex. un Lepidoptera ne peut pas s'appeler "Agrion").
+
+## Pour le user (réponse directe à ta question)
+Pour qu'un nom FR soit affiché, il faut une ligne dans `species_translations` reliant le nom scientifique au nom FR. Mais ici, "Agrion" est faux — la bonne action n'est pas de **forcer** ce nom, c'est de **remplacer** la ligne fautive par "Sphinx fuciforme", puis durcir le LLM pour qu'il n'hallucine plus.
+
+## Question avant d'implémenter
+Confirme-moi : tu veux bien le **bon** nom FR ("Sphinx fuciforme"), pas littéralement "Agrion (ou Demoiselle)" ? Si oui je passe en build et je corrige la ligne + je propose le durcissement du prompt.
