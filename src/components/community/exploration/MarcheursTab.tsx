@@ -1399,6 +1399,10 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     return map;
   }, [curationsData]);
 
+  // Pratiques emblématiques associées par marcheur (sense='main')
+  const marcheurIdsList = useMemo(() => (marcheurs || []).map(m => m.id), [marcheurs]);
+  const { data: pratiquesCountsByMarcheur } = useMarcheursPratiquesCounts(explorationId, marcheurIdsList);
+
   // Per-marcheur Sentinelle index + sensible buckets — computed once for sort/filter/display
   type Metrics = { sentinelle: SentinelleResult; buckets: { bio: number; aux: number; eee: number } };
   const metricsById = useMemo(() => {
@@ -1415,6 +1419,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         bioCount: buckets.bioIndicateurs.length,
         auxCount: buckets.auxiliaires.length,
         eeeCount: buckets.eee.length,
+        pratiquesCount: pratiquesCountsByMarcheur?.get(m.id) || 0,
       });
       map.set(m.id, {
         sentinelle,
@@ -1426,7 +1431,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
       });
     });
     return map;
-  }, [marcheurs, curationByName, testimoniesByUser]);
+  }, [marcheurs, curationByName, testimoniesByUser, pratiquesCountsByMarcheur]);
 
   // Bucket counters: how many marcheurs have ≥1 species in each bucket
   const bucketCounts = useMemo(() => {
