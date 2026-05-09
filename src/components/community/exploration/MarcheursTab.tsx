@@ -1037,6 +1037,36 @@ const useWalkerContributionsCount = (prenom: string, nom: string, explorationMar
   });
 };
 
+type SentinelleBucketKey = 'bio' | 'aux' | 'eee';
+
+const TIER_CHIP_STYLE: Record<SentinelleTier, string> = {
+  curieux: 'bg-gradient-to-br from-slate-500/10 to-slate-500/5 text-slate-500 ring-1 ring-slate-500/20',
+  eclaireur: 'bg-gradient-to-br from-amber-500/15 to-amber-500/5 text-amber-500 ring-1 ring-amber-500/25',
+  ambassadeur: 'bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 text-emerald-500 dark:text-emerald-400 ring-1 ring-emerald-500/25',
+  sentinelle: 'bg-gradient-to-br from-violet-500/20 via-emerald-500/15 to-amber-500/15 text-emerald-500 dark:text-emerald-300 ring-1 ring-emerald-500/40 shadow-[0_0_18px_-6px_rgba(16,185,129,0.55)]',
+};
+
+const TIER_SHORT_LABEL: Record<SentinelleTier, string> = {
+  curieux: 'Curieux',
+  eclaireur: 'Éclaireur',
+  ambassadeur: 'Ambassadeur',
+  sentinelle: 'Sentinelle',
+};
+
+const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onClick?: (e: React.MouseEvent) => void }> = ({ sentinelle, onClick }) => (
+  <button
+    type="button"
+    onClick={(e) => { e.stopPropagation(); onClick?.(e); }}
+    title={`Indice Sentinelle ${sentinelle.total}/100 — ${sentinelle.label}`}
+    aria-label={`Indice Sentinelle ${sentinelle.total} sur 100, ${sentinelle.label}. Voir le détail.`}
+    className={`flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95 ${TIER_CHIP_STYLE[sentinelle.tier]}`}
+  >
+    <ShieldCheck className="w-3 h-3" />
+    <span className="text-[11px] font-bold tabular-nums leading-none">{sentinelle.total}</span>
+    <span className="hidden sm:inline text-[10px] font-medium leading-none opacity-90">{TIER_SHORT_LABEL[sentinelle.tier]}</span>
+  </button>
+);
+
 const MarcheurCard: React.FC<{
   marcheur: MarcheurWithStats;
   index: number;
@@ -1048,7 +1078,11 @@ const MarcheurCard: React.FC<{
   totalMarchesCount: number;
   testimony?: EventTestimony | null;
   contributionsCount?: number;
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0 }) => {
+  sentinelle: SentinelleResult;
+  highlightBuckets?: Set<SentinelleBucketKey>;
+  marcheurBuckets: { bio: number; aux: number; eee: number };
+  onOpenImpact: () => void;
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, onOpenImpact }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
   const { user: viewer } = useAuth();
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
