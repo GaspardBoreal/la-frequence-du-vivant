@@ -1625,39 +1625,135 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     );
   }
 
+  const sortBtn = (mode: SortMode, label: string, icon: React.ReactNode, ariaLabel: string) => {
+    const active = sortMode === mode;
+    return (
+      <button
+        type="button"
+        onClick={() => setSortMode(mode)}
+        aria-pressed={active}
+        aria-label={ariaLabel}
+        className={`inline-flex items-center gap-1 h-7 px-2 rounded-full text-[11px] font-medium transition-colors ${
+          active
+            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/30'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+        }`}
+      >
+        {icon}
+        <span>{label}</span>
+      </button>
+    );
+  };
+
+  const bucketChip = (key: SentinelleBucketKey, count: number, label: string, Icon: React.ComponentType<{ className?: string }>, palette: { active: string; idle: string }) => {
+    const active = activeBuckets.has(key);
+    return (
+      <button
+        type="button"
+        onClick={() => toggleBucket(key)}
+        aria-pressed={active}
+        aria-label={`Filtrer : marcheurs ayant identifié ${label.toLowerCase()}`}
+        className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium transition-all ${active ? palette.active : palette.idle}`}
+      >
+        <Icon className="w-3 h-3" />
+        <span>{label}</span>
+        <span className="ml-0.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-background/60 text-[10px] font-semibold tabular-nums">{count}</span>
+      </button>
+    );
+  };
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      {/* Summary */}
-      <div className="flex items-center gap-2 px-1">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+      {/* Summary + sort */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2 px-1">
         <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
           <Users className="w-4 h-4" />
-          <span className="text-sm font-semibold">{marcheurs.length} marcheur{marcheurs.length > 1 ? 's' : ''}</span>
+          <span className="text-sm font-semibold">{sortedMarcheurs.length}{activeBuckets.size > 0 ? ` / ${marcheurs.length}` : ''} marcheur{marcheurs.length > 1 ? 's' : ''}</span>
         </div>
         {totalContributions > 0 && (
           <span className="text-muted-foreground text-xs">
             · {totalContributions} observation{totalContributions > 1 ? 's' : ''} publique{totalContributions > 1 ? 's' : ''}
           </span>
         )}
+        <div className="flex-1" />
+        <div className="flex items-center gap-1 rounded-full bg-muted/40 dark:bg-white/5 p-0.5" role="group" aria-label="Trier les marcheurs">
+          {sortBtn('sentinelle-desc', '', <><ShieldCheck className="w-3 h-3" /><ArrowDownWideNarrow className="w-3 h-3" /></>, 'Trier par indice Sentinelle décroissant')}
+          {sortBtn('sentinelle-asc',  '', <><ShieldCheck className="w-3 h-3" /><ArrowUpNarrowWide className="w-3 h-3" /></>, 'Trier par indice Sentinelle croissant')}
+          {sortBtn('alpha', 'A→Z', null, 'Trier par ordre alphabétique')}
+        </div>
       </div>
 
+      {/* Sensible-species filter chips */}
+      {hasAnySensible && (
+        <div className="flex flex-wrap items-center gap-1.5 px-1">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 mr-0.5">Espèces remarquables</span>
+          {bucketCounts.bio > 0 && bucketChip('bio', bucketCounts.bio, 'Bio', Flower2, {
+            active: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/40',
+            idle: 'bg-emerald-500/5 text-emerald-600/70 dark:text-emerald-400/70 hover:bg-emerald-500/10',
+          })}
+          {bucketCounts.aux > 0 && bucketChip('aux', bucketCounts.aux, 'Auxiliaire', Bug, {
+            active: 'bg-amber-500/20 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/40',
+            idle: 'bg-amber-500/5 text-amber-600/70 dark:text-amber-400/70 hover:bg-amber-500/10',
+          })}
+          {bucketCounts.eee > 0 && bucketChip('eee', bucketCounts.eee, 'EEE', AlertTriangle, {
+            active: 'bg-rose-500/20 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500/40',
+            idle: 'bg-rose-500/5 text-rose-600/70 dark:text-rose-400/70 hover:bg-rose-500/10',
+          })}
+          {activeBuckets.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setActiveBuckets(new Set())}
+              className="inline-flex items-center gap-1 h-7 px-2 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              aria-label="Effacer les filtres d'espèces remarquables"
+            >
+              <XIcon className="w-3 h-3" />
+              Tout
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Cards — all closed by default */}
-      <div className="space-y-2">
-        {sortedMarcheurs.map((m, i) => (
-          <MarcheurCard
-            key={m.id}
-            marcheur={m}
-            index={i}
-            isExpanded={expandedId === m.id}
-            onToggle={() => setExpandedId(prev => prev === m.id ? null : m.id)}
-            explorationEventIds={explorationEventIds}
-            explorationId={explorationId}
-            explorationMarcheIds={explorationMarcheIds}
-            totalMarchesCount={explorationMarcheIds.length}
-            testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
-            contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom)}
-          />
-        ))}
-      </div>
+      {sortedMarcheurs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl border border-dashed border-border bg-muted/20">
+          <Sprout className="w-6 h-6 text-muted-foreground/60 mb-2" />
+          <p className="text-xs text-muted-foreground max-w-xs">
+            Aucun marcheur ne correspond à ces filtres pour l'instant.
+          </p>
+          <button
+            type="button"
+            onClick={() => setActiveBuckets(new Set())}
+            className="mt-3 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+          >
+            Voir tous les marcheurs
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sortedMarcheurs.map((m, i) => {
+            const metrics = metricsById.get(m.id)!;
+            return (
+              <MarcheurCard
+                key={m.id}
+                marcheur={m}
+                index={i}
+                isExpanded={expandedId === m.id}
+                onToggle={() => setExpandedId(prev => prev === m.id ? null : m.id)}
+                onForceOpen={() => setExpandedId(m.id)}
+                explorationEventIds={explorationEventIds}
+                explorationId={explorationId}
+                explorationMarcheIds={explorationMarcheIds}
+                totalMarchesCount={explorationMarcheIds.length}
+                testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
+                contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom)}
+                sentinelle={metrics.sentinelle}
+                marcheurBuckets={metrics.buckets}
+                highlightBuckets={activeBuckets}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {/* Engagement block */}
       <motion.div
