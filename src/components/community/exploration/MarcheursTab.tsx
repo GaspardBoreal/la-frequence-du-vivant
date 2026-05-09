@@ -1344,10 +1344,14 @@ const MarcheurCard: React.FC<{
   );
 };
 
+type SortMode = 'sentinelle-desc' | 'sentinelle-asc' | 'alpha';
+
 const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventId, explorationName }) => {
   const { data: marcheurs, isLoading } = useExplorationParticipants(explorationId, marcheEventId);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [shareKit, setShareKit] = useState<ShareKitState | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>('sentinelle-desc');
+  const [activeBuckets, setActiveBuckets] = useState<Set<SentinelleBucketKey>>(new Set());
 
   const { data: explorationMarchesData } = useQuery({
     queryKey: ['exploration-marche-ids', explorationId],
@@ -1391,26 +1395,121 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   // Single shared query: contribution counts per observer for the whole exploration
   const { data: contribsByName } = useExplorationContributionsCounts(explorationId, explorationMarcheIds);
 
-  // Sort: total contributions DESC, then alpha (prenom, nom) ASC
+  // Authoritative editorial curations from L'œil — single query for all marcheurs
+  const { data: curationsData } = useQuery({
+    queryKey: ['exploration-curations-species-categories', explorationId],
+    queryFn: async () => {
+      if (!explorationId) return [] as Array<{ entity_id: string | null; category: string | null }>;
+      const { data, error } = await supabase
+        .from('exploration_curations')
+        .select('entity_id, category')
+        .eq('exploration_id', explorationId)
+        .eq('sense', 'oeil')
+        .eq('entity_type', 'species');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!explorationId,
+    staleTime: 60_000,
+  });
+
+  const curationByName = useMemo(() => {
+    const map = new Map<string, SpeciesCategory | string | null>();
+    (curationsData || []).forEach((c: any) => {
+      if (c?.entity_id && c?.category) map.set(c.entity_id, c.category);
+    });
+    return map;
+  }, [curationsData]);
+
+  // Per-marcheur Sentinelle index + sensible buckets — computed once for sort/filter/display
+  type Metrics = { sentinelle: SentinelleResult; buckets: { bio: number; aux: number; eee: number } };
+  const metricsById = useMemo(() => {
+    const map = new Map<string, Metrics>();
+    (marcheurs || []).forEach((m) => {
+      const names = (m.speciesObserved || []).map(s => s.scientificName).filter(Boolean);
+      const buckets = bucketSensibleSpecies(names, curationByName);
+      const sentinelle = computeSentinelleIndex({
+        photos: m.stats.photos + m.stats.videos,
+        sons: m.stats.sons || 0,
+        textes: m.stats.textes || 0,
+        hasTemoignage: !!(m.userId && testimoniesByUser.has(m.userId)),
+        speciesCount: m.stats.speciesCount || 0,
+        bioCount: buckets.bioIndicateurs.length,
+        auxCount: buckets.auxiliaires.length,
+        eeeCount: buckets.eee.length,
+      });
+      map.set(m.id, {
+        sentinelle,
+        buckets: {
+          bio: buckets.bioIndicateurs.length,
+          aux: buckets.auxiliaires.length,
+          eee: buckets.eee.length,
+        },
+      });
+    });
+    return map;
+  }, [marcheurs, curationByName, testimoniesByUser]);
+
+  // Bucket counters: how many marcheurs have ≥1 species in each bucket
+  const bucketCounts = useMemo(() => {
+    let bio = 0, aux = 0, eee = 0;
+    metricsById.forEach((m) => {
+      if (m.buckets.bio > 0) bio++;
+      if (m.buckets.aux > 0) aux++;
+      if (m.buckets.eee > 0) eee++;
+    });
+    return { bio, aux, eee };
+  }, [metricsById]);
+
+  const hasAnySensible = bucketCounts.bio + bucketCounts.aux + bucketCounts.eee > 0;
+
+  const toggleBucket = (k: SentinelleBucketKey) => {
+    setActiveBuckets(prev => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+  };
+
+  // Sort + filter
   const sortedMarcheurs = useMemo(() => {
     if (!marcheurs?.length) return marcheurs ?? [];
     const collator = new Intl.Collator('fr', { sensitivity: 'base', usage: 'sort' });
-    const score = (m: MarcheurWithStats) => {
-      const photos = m.stats.photos + m.stats.videos;
-      const sons = m.stats.sons || 0;
-      const textes = m.stats.textes || 0;
-      const tem = m.userId && testimoniesByUser.has(m.userId) ? 1 : 0;
-      const contribs = lookupContributions(contribsByName, m.prenom, m.nom);
-      return photos + sons + textes + tem + contribs;
-    };
-    return [...marcheurs].sort((a, b) => {
-      const diff = score(b) - score(a);
-      if (diff !== 0) return diff;
+
+    let list = [...marcheurs];
+
+    if (activeBuckets.size > 0) {
+      list = list.filter((m) => {
+        const b = metricsById.get(m.id)?.buckets;
+        if (!b) return false;
+        if (activeBuckets.has('bio') && b.bio > 0) return true;
+        if (activeBuckets.has('aux') && b.aux > 0) return true;
+        if (activeBuckets.has('eee') && b.eee > 0) return true;
+        return false;
+      });
+    }
+
+    const alphaCmp = (a: MarcheurWithStats, b: MarcheurWithStats) => {
       const p = collator.compare(a.prenom || '', b.prenom || '');
       if (p !== 0) return p;
       return collator.compare(a.nom || '', b.nom || '');
-    });
-  }, [marcheurs, contribsByName, testimoniesByUser]);
+    };
+
+    if (sortMode === 'alpha') {
+      list.sort(alphaCmp);
+    } else {
+      const dir = sortMode === 'sentinelle-desc' ? -1 : 1;
+      list.sort((a, b) => {
+        const sa = metricsById.get(a.id)?.sentinelle.total ?? 0;
+        const sb = metricsById.get(b.id)?.sentinelle.total ?? 0;
+        const diff = (sa - sb) * dir;
+        if (diff !== 0) return diff;
+        return alphaCmp(a, b);
+      });
+    }
+
+    return list;
+  }, [marcheurs, metricsById, sortMode, activeBuckets]);
 
   const createAffiliateLink = async (channel: 'copy' | 'share') => {
     if (!explorationId) {
