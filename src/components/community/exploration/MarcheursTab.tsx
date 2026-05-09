@@ -1081,9 +1081,14 @@ const MarcheurCard: React.FC<{
   sentinelle: SentinelleResult;
   highlightBuckets?: Set<SentinelleBucketKey>;
   marcheurBuckets: { bio: number; aux: number; eee: number };
-  onOpenImpact: () => void;
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, onOpenImpact }) => {
+  onForceOpen: () => void;
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, onForceOpen }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
+
+  const openImpact = () => {
+    setActiveSubTab('impact');
+    if (!isExpanded) onForceOpen();
+  };
   const { user: viewer } = useAuth();
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const totalContribs = marcheur.totalContributions || 0;
