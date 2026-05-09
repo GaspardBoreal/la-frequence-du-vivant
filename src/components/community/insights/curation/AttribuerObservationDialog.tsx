@@ -88,26 +88,24 @@ const AttribuerObservationDialog: React.FC<Props> = ({
   const { data: curationInfo } = useQuery({
     queryKey: ['oeil-species-curation', explorationId, speciesScientificName],
     queryFn: async () => {
-      const [{ data: cur }, { data: obs }] = await Promise.all([
-        supabase
-          .from('exploration_curations')
-          .select('id, category')
-          .eq('exploration_id', explorationId)
-          .eq('sense', 'oeil')
-          .eq('entity_type', 'species')
-          .eq('entity_id', speciesScientificName)
-          .maybeSingle(),
-        supabase
-          .from('marcheur_observations')
-          .select('marcheur_id, user_id', { count: 'exact', head: false })
-          .eq('exploration_id', explorationId)
-          .eq('species_scientific_name', speciesScientificName),
-      ]);
+      const curRes: any = await supabase
+        .from('exploration_curations')
+        .select('id, category')
+        .eq('exploration_id', explorationId)
+        .eq('sense', 'oeil')
+        .eq('entity_type', 'species')
+        .eq('entity_id', speciesScientificName)
+        .maybeSingle();
+      const obsRes: any = await supabase
+        .from('marcheur_observations')
+        .select('marcheur_id, user_id')
+        .eq('exploration_id', explorationId)
+        .eq('species_scientific_name', speciesScientificName);
       const ids = new Set<string>();
-      (obs || []).forEach((r: any) => ids.add(r.marcheur_id || r.user_id));
+      ((obsRes.data as any[]) || []).forEach((r: any) => ids.add(r.marcheur_id || r.user_id));
       return {
-        curationId: (cur as any)?.id as string | undefined,
-        currentCategory: ((cur as any)?.category as SpeciesCategory | undefined) || undefined,
+        curationId: curRes.data?.id as string | undefined,
+        currentCategory: (curRes.data?.category as SpeciesCategory | undefined) || undefined,
         attributionCount: ids.size,
       };
     },
