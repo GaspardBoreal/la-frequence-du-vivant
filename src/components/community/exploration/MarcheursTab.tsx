@@ -1053,19 +1053,30 @@ const TIER_SHORT_LABEL: Record<SentinelleTier, string> = {
   sentinelle: 'Sentinelle',
 };
 
-const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onClick?: (e: React.MouseEvent) => void }> = ({ sentinelle, onClick }) => (
-  <button
-    type="button"
-    onClick={(e) => { e.stopPropagation(); onClick?.(e); }}
-    title={`Indice Sentinelle ${sentinelle.total}/100 — ${sentinelle.label}`}
-    aria-label={`Indice Sentinelle ${sentinelle.total} sur 100, ${sentinelle.label}. Voir le détail.`}
-    className={`flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0 transition-transform hover:scale-105 active:scale-95 ${TIER_CHIP_STYLE[sentinelle.tier]}`}
-  >
-    <ShieldCheck className="w-3 h-3" />
-    <span className="text-[11px] font-bold tabular-nums leading-none">{sentinelle.total}</span>
-    <span className="hidden sm:inline text-[10px] font-medium leading-none opacity-90">{TIER_SHORT_LABEL[sentinelle.tier]}</span>
-  </button>
-);
+const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () => void }> = ({ sentinelle, onActivate }) => {
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      onActivate();
+    }
+  };
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={(e) => { e.stopPropagation(); onActivate(); }}
+      onKeyDown={handleKey}
+      title={`Indice Sentinelle ${sentinelle.total}/100 — ${sentinelle.label}. Voir le détail.`}
+      aria-label={`Indice Sentinelle ${sentinelle.total} sur 100, ${sentinelle.label}. Voir le détail.`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0 cursor-pointer transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 ${TIER_CHIP_STYLE[sentinelle.tier]}`}
+    >
+      <ShieldCheck className="w-3 h-3" />
+      <span className="text-[11px] font-bold tabular-nums leading-none">{sentinelle.total}</span>
+      <span className="hidden sm:inline text-[10px] font-medium leading-none opacity-90">{TIER_SHORT_LABEL[sentinelle.tier]}</span>
+    </span>
+  );
+};
 
 const MarcheurCard: React.FC<{
   marcheur: MarcheurWithStats;
