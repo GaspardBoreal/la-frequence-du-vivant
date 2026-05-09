@@ -57,11 +57,11 @@ const ImpactTeaserCard: React.FC<ImpactTeaserCardProps> = ({
 
         <div className="flex-1 min-w-0">
           <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-300/80 mb-1">
-            Indice de Sentinelle
+            Fréquence du marcheur
           </div>
           <div className="flex items-baseline gap-1.5 mb-1.5">
             <span className="text-2xl font-bold text-white tabular-nums">{sentinelleScore}</span>
-            <span className="text-xs text-white/50">/100</span>
+            <span className="text-xs text-white/50">/ 100</span>
           </div>
           <div className="text-xs text-emerald-200 font-medium mb-2 truncate">{sentinelleLabel}</div>
 
