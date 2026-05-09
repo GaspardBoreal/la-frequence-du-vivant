@@ -148,7 +148,7 @@ export function computeSentinelleIndex(input: SentinelleInputs): SentinelleResul
 
   // Paliers de Fréquence (6 niveaux) — seuils inchangés (toujours /100)
   let tier: SentinelleTier = 'aucun';
-  if      (total >= 50) tier = 'engage';
+  if      (total >= 40) tier = 'engage';
   else if (total >= 30) tier = 'eclaireur';
   else if (total >= 16) tier = 'ecoute';
   else if (total >= 6)  tier = 'curieux';
