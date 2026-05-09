@@ -45,16 +45,21 @@ export const useCurationMarcheurs = (curationId: string | null | undefined) => {
   });
 };
 
-/** Liste les pratiques emblématiques portées par un marcheur (par crewId) */
-export const useMarcheurPratiques = (marcheurId: string | null | undefined) => {
+/**
+ * Liste les pratiques emblématiques portées par un marcheur.
+ * @param crewId — exploration_marcheurs.id (jamais un ID UI type "community-…" ou "crew-…").
+ */
+const isSyntheticUiId = (id: string) => id.startsWith('community-') || id.startsWith('crew-');
+
+export const useMarcheurPratiques = (crewId: string | null | undefined) => {
   return useQuery({
-    queryKey: ['marcheur-pratiques', marcheurId],
+    queryKey: ['marcheur-pratiques', crewId],
     queryFn: async () => {
-      if (!marcheurId) return [] as PratiqueForMarcheur[];
+      if (!crewId || isSyntheticUiId(crewId)) return [] as PratiqueForMarcheur[];
       const { data, error } = await supabase
         .from('curation_marcheurs')
         .select('role_label, curation:exploration_curations(id, exploration_id, sense, title, description, media_ids)')
-        .eq('marcheur_id', marcheurId);
+        .eq('marcheur_id', crewId);
       if (error) throw error;
       return ((data || []) as any[])
         .filter(row => row.curation?.sense === 'main')

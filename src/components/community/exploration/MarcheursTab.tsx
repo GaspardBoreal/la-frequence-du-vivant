@@ -1314,7 +1314,7 @@ const MarcheurCard: React.FC<{
                     explorationMarcheIds={explorationMarcheIds}
                   />
                   <PratiquesPorteesCard
-                    marcheurId={marcheur.id}
+                    marcheurId={resolvedCrewId}
                     prenom={marcheur.prenom}
                     explorationId={explorationId}
                   />
@@ -1406,7 +1406,12 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   }, [curationsData]);
 
   // Pratiques emblématiques associées par marcheur (sense='main')
-  const marcheurIdsList = useMemo(() => (marcheurs || []).map(m => m.id), [marcheurs]);
+  // IMPORTANT : on doit envoyer l'identifiant base (exploration_marcheurs.id = crewId),
+  // jamais l'ID UI synthétique (community-…/crew-…).
+  const marcheurIdsList = useMemo(
+    () => (marcheurs || []).map(m => m.crewId).filter((v): v is string => !!v),
+    [marcheurs],
+  );
   const { data: pratiquesCountsByMarcheur } = useMarcheursPratiquesCounts(explorationId, marcheurIdsList);
 
   // Per-marcheur Sentinelle index + sensible buckets — computed once for sort/filter/display
@@ -1425,7 +1430,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         bioCount: buckets.bioIndicateurs.length,
         auxCount: buckets.auxiliaires.length,
         eeeCount: buckets.eee.length,
-        pratiquesCount: pratiquesCountsByMarcheur?.get(m.id) || 0,
+        pratiquesCount: m.crewId ? (pratiquesCountsByMarcheur?.get(m.crewId) || 0) : 0,
       });
       map.set(m.id, {
         sentinelle,
