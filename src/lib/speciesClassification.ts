@@ -25,6 +25,18 @@ export function classifySpeciesPrimary(scientificName: string): SpeciesCategory 
   return null;
 }
 
+/** Returns the ordered, deduplicated list of categories proposable for a species
+ *  based on the KB (primary first, then secondaries). Used by the attribution
+ *  dialog to force the curator to pick a single identification when multiple
+ *  classifications coexist (e.g. Iris pseudacorus = indigene + bioindicatrice). */
+export function getSpeciesCategoryOptions(scientificName: string): SpeciesCategory[] {
+  if (!scientificName) return [];
+  const direct = KB[scientificName] || KB[scientificName.split(' ')[0]];
+  if (!direct) return [];
+  const ordered: SpeciesCategory[] = [direct.primary, ...(direct.secondary || [])];
+  return Array.from(new Set(ordered));
+}
+
 /** Legacy: returns primary + secondary categories for a scientific name (KB only).
  *  Prefer `classifySpeciesPrimary` for any counting/bucketing logic. */
 export function classifySpecies(scientificName: string): SpeciesCategory[] {
