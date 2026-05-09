@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather, Sparkles, Quote } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather, Sparkles, Quote, ShieldCheck, Bug, AlertTriangle, ArrowDownWideNarrow, ArrowUpNarrowWide, X as XIcon } from 'lucide-react';
+import { computeSentinelleIndex, type SentinelleResult, type SentinelleTier } from '@/lib/sentinelleIndex';
+import { bucketSensibleSpecies, type SpeciesCategory } from '@/lib/speciesClassification';
 import { useExplorationTestimonies, type EventTestimony } from '@/hooks/useEventTestimonies';
 import { useIsCurator } from '@/hooks/useExplorationCurations';
 import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
@@ -1035,6 +1037,47 @@ const useWalkerContributionsCount = (prenom: string, nom: string, explorationMar
   });
 };
 
+type SentinelleBucketKey = 'bio' | 'aux' | 'eee';
+
+const TIER_CHIP_STYLE: Record<SentinelleTier, string> = {
+  curieux: 'bg-gradient-to-br from-slate-500/10 to-slate-500/5 text-slate-500 ring-1 ring-slate-500/20',
+  eclaireur: 'bg-gradient-to-br from-amber-500/15 to-amber-500/5 text-amber-500 ring-1 ring-amber-500/25',
+  ambassadeur: 'bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 text-emerald-500 dark:text-emerald-400 ring-1 ring-emerald-500/25',
+  sentinelle: 'bg-gradient-to-br from-violet-500/20 via-emerald-500/15 to-amber-500/15 text-emerald-500 dark:text-emerald-300 ring-1 ring-emerald-500/40 shadow-[0_0_18px_-6px_rgba(16,185,129,0.55)]',
+};
+
+const TIER_SHORT_LABEL: Record<SentinelleTier, string> = {
+  curieux: 'Curieux',
+  eclaireur: 'Éclaireur',
+  ambassadeur: 'Ambassadeur',
+  sentinelle: 'Sentinelle',
+};
+
+const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () => void }> = ({ sentinelle, onActivate }) => {
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      onActivate();
+    }
+  };
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={(e) => { e.stopPropagation(); onActivate(); }}
+      onKeyDown={handleKey}
+      title={`Indice Sentinelle ${sentinelle.total}/100 — ${sentinelle.label}. Voir le détail.`}
+      aria-label={`Indice Sentinelle ${sentinelle.total} sur 100, ${sentinelle.label}. Voir le détail.`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0 cursor-pointer transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 ${TIER_CHIP_STYLE[sentinelle.tier]}`}
+    >
+      <ShieldCheck className="w-3 h-3" />
+      <span className="text-[11px] font-bold tabular-nums leading-none">{sentinelle.total}</span>
+      <span className="hidden sm:inline text-[10px] font-medium leading-none opacity-90">{TIER_SHORT_LABEL[sentinelle.tier]}</span>
+    </span>
+  );
+};
+
 const MarcheurCard: React.FC<{
   marcheur: MarcheurWithStats;
   index: number;
@@ -1046,8 +1089,17 @@ const MarcheurCard: React.FC<{
   totalMarchesCount: number;
   testimony?: EventTestimony | null;
   contributionsCount?: number;
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0 }) => {
+  sentinelle: SentinelleResult;
+  highlightBuckets?: Set<SentinelleBucketKey>;
+  marcheurBuckets: { bio: number; aux: number; eee: number };
+  onForceOpen: () => void;
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, onForceOpen }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
+
+  const openImpact = () => {
+    setActiveSubTab('impact');
+    if (!isExpanded) onForceOpen();
+  };
   const { user: viewer } = useAuth();
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const totalContribs = marcheur.totalContributions || 0;
@@ -1137,6 +1189,29 @@ const MarcheurCard: React.FC<{
               <span className="text-[11px] font-semibold text-foreground">{realContribCount}</span>
             </div>
           )}
+
+          {/* Bucket highlight pastilles — visible when filter is active */}
+          {highlightBuckets?.has('bio') && marcheurBuckets.bio > 0 && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/30" title={`${marcheurBuckets.bio} bio-indicateur${marcheurBuckets.bio > 1 ? 's' : ''}`}>
+              <Flower2 className="w-3 h-3 text-emerald-500" />
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{marcheurBuckets.bio}</span>
+            </div>
+          )}
+          {highlightBuckets?.has('aux') && marcheurBuckets.aux > 0 && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 ring-1 ring-amber-500/30" title={`${marcheurBuckets.aux} auxiliaire${marcheurBuckets.aux > 1 ? 's' : ''}`}>
+              <Bug className="w-3 h-3 text-amber-500" />
+              <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 tabular-nums">{marcheurBuckets.aux}</span>
+            </div>
+          )}
+          {highlightBuckets?.has('eee') && marcheurBuckets.eee > 0 && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-500/15 ring-1 ring-rose-500/30" title={`${marcheurBuckets.eee} EEE`}>
+              <AlertTriangle className="w-3 h-3 text-rose-500" />
+              <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 tabular-nums">{marcheurBuckets.eee}</span>
+            </div>
+          )}
+
+          {/* Sentinelle index chip */}
+          <SentinelleChip sentinelle={sentinelle} onActivate={openImpact} />
         </div>
 
         {hasContent && (
@@ -1269,10 +1344,14 @@ const MarcheurCard: React.FC<{
   );
 };
 
+type SortMode = 'sentinelle-desc' | 'sentinelle-asc' | 'alpha';
+
 const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventId, explorationName }) => {
   const { data: marcheurs, isLoading } = useExplorationParticipants(explorationId, marcheEventId);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [shareKit, setShareKit] = useState<ShareKitState | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>('sentinelle-desc');
+  const [activeBuckets, setActiveBuckets] = useState<Set<SentinelleBucketKey>>(new Set());
 
   const { data: explorationMarchesData } = useQuery({
     queryKey: ['exploration-marche-ids', explorationId],
@@ -1316,26 +1395,121 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   // Single shared query: contribution counts per observer for the whole exploration
   const { data: contribsByName } = useExplorationContributionsCounts(explorationId, explorationMarcheIds);
 
-  // Sort: total contributions DESC, then alpha (prenom, nom) ASC
+  // Authoritative editorial curations from L'œil — single query for all marcheurs
+  const { data: curationsData } = useQuery({
+    queryKey: ['exploration-curations-species-categories', explorationId],
+    queryFn: async () => {
+      if (!explorationId) return [] as Array<{ entity_id: string | null; category: string | null }>;
+      const { data, error } = await supabase
+        .from('exploration_curations')
+        .select('entity_id, category')
+        .eq('exploration_id', explorationId)
+        .eq('sense', 'oeil')
+        .eq('entity_type', 'species');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!explorationId,
+    staleTime: 60_000,
+  });
+
+  const curationByName = useMemo(() => {
+    const map = new Map<string, SpeciesCategory | string | null>();
+    (curationsData || []).forEach((c: any) => {
+      if (c?.entity_id && c?.category) map.set(c.entity_id, c.category);
+    });
+    return map;
+  }, [curationsData]);
+
+  // Per-marcheur Sentinelle index + sensible buckets — computed once for sort/filter/display
+  type Metrics = { sentinelle: SentinelleResult; buckets: { bio: number; aux: number; eee: number } };
+  const metricsById = useMemo(() => {
+    const map = new Map<string, Metrics>();
+    (marcheurs || []).forEach((m) => {
+      const names = (m.speciesObserved || []).map(s => s.scientificName).filter(Boolean);
+      const buckets = bucketSensibleSpecies(names, curationByName);
+      const sentinelle = computeSentinelleIndex({
+        photos: m.stats.photos + m.stats.videos,
+        sons: m.stats.sons || 0,
+        textes: m.stats.textes || 0,
+        hasTemoignage: !!(m.userId && testimoniesByUser.has(m.userId)),
+        speciesCount: m.stats.speciesCount || 0,
+        bioCount: buckets.bioIndicateurs.length,
+        auxCount: buckets.auxiliaires.length,
+        eeeCount: buckets.eee.length,
+      });
+      map.set(m.id, {
+        sentinelle,
+        buckets: {
+          bio: buckets.bioIndicateurs.length,
+          aux: buckets.auxiliaires.length,
+          eee: buckets.eee.length,
+        },
+      });
+    });
+    return map;
+  }, [marcheurs, curationByName, testimoniesByUser]);
+
+  // Bucket counters: how many marcheurs have ≥1 species in each bucket
+  const bucketCounts = useMemo(() => {
+    let bio = 0, aux = 0, eee = 0;
+    metricsById.forEach((m) => {
+      if (m.buckets.bio > 0) bio++;
+      if (m.buckets.aux > 0) aux++;
+      if (m.buckets.eee > 0) eee++;
+    });
+    return { bio, aux, eee };
+  }, [metricsById]);
+
+  const hasAnySensible = bucketCounts.bio + bucketCounts.aux + bucketCounts.eee > 0;
+
+  const toggleBucket = (k: SentinelleBucketKey) => {
+    setActiveBuckets(prev => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+  };
+
+  // Sort + filter
   const sortedMarcheurs = useMemo(() => {
     if (!marcheurs?.length) return marcheurs ?? [];
     const collator = new Intl.Collator('fr', { sensitivity: 'base', usage: 'sort' });
-    const score = (m: MarcheurWithStats) => {
-      const photos = m.stats.photos + m.stats.videos;
-      const sons = m.stats.sons || 0;
-      const textes = m.stats.textes || 0;
-      const tem = m.userId && testimoniesByUser.has(m.userId) ? 1 : 0;
-      const contribs = lookupContributions(contribsByName, m.prenom, m.nom);
-      return photos + sons + textes + tem + contribs;
-    };
-    return [...marcheurs].sort((a, b) => {
-      const diff = score(b) - score(a);
-      if (diff !== 0) return diff;
+
+    let list = [...marcheurs];
+
+    if (activeBuckets.size > 0) {
+      list = list.filter((m) => {
+        const b = metricsById.get(m.id)?.buckets;
+        if (!b) return false;
+        if (activeBuckets.has('bio') && b.bio > 0) return true;
+        if (activeBuckets.has('aux') && b.aux > 0) return true;
+        if (activeBuckets.has('eee') && b.eee > 0) return true;
+        return false;
+      });
+    }
+
+    const alphaCmp = (a: MarcheurWithStats, b: MarcheurWithStats) => {
       const p = collator.compare(a.prenom || '', b.prenom || '');
       if (p !== 0) return p;
       return collator.compare(a.nom || '', b.nom || '');
-    });
-  }, [marcheurs, contribsByName, testimoniesByUser]);
+    };
+
+    if (sortMode === 'alpha') {
+      list.sort(alphaCmp);
+    } else {
+      const dir = sortMode === 'sentinelle-desc' ? -1 : 1;
+      list.sort((a, b) => {
+        const sa = metricsById.get(a.id)?.sentinelle.total ?? 0;
+        const sb = metricsById.get(b.id)?.sentinelle.total ?? 0;
+        const diff = (sa - sb) * dir;
+        if (diff !== 0) return diff;
+        return alphaCmp(a, b);
+      });
+    }
+
+    return list;
+  }, [marcheurs, metricsById, sortMode, activeBuckets]);
 
   const createAffiliateLink = async (channel: 'copy' | 'share') => {
     if (!explorationId) {
@@ -1451,39 +1625,135 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     );
   }
 
+  const sortBtn = (mode: SortMode, label: string, icon: React.ReactNode, ariaLabel: string) => {
+    const active = sortMode === mode;
+    return (
+      <button
+        type="button"
+        onClick={() => setSortMode(mode)}
+        aria-pressed={active}
+        aria-label={ariaLabel}
+        className={`inline-flex items-center gap-1 h-7 px-2 rounded-full text-[11px] font-medium transition-colors ${
+          active
+            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/30'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+        }`}
+      >
+        {icon}
+        <span>{label}</span>
+      </button>
+    );
+  };
+
+  const bucketChip = (key: SentinelleBucketKey, count: number, label: string, Icon: React.ComponentType<{ className?: string }>, palette: { active: string; idle: string }) => {
+    const active = activeBuckets.has(key);
+    return (
+      <button
+        type="button"
+        onClick={() => toggleBucket(key)}
+        aria-pressed={active}
+        aria-label={`Filtrer : marcheurs ayant identifié ${label.toLowerCase()}`}
+        className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium transition-all ${active ? palette.active : palette.idle}`}
+      >
+        <Icon className="w-3 h-3" />
+        <span>{label}</span>
+        <span className="ml-0.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-background/60 text-[10px] font-semibold tabular-nums">{count}</span>
+      </button>
+    );
+  };
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      {/* Summary */}
-      <div className="flex items-center gap-2 px-1">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+      {/* Summary + sort */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2 px-1">
         <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
           <Users className="w-4 h-4" />
-          <span className="text-sm font-semibold">{marcheurs.length} marcheur{marcheurs.length > 1 ? 's' : ''}</span>
+          <span className="text-sm font-semibold">{sortedMarcheurs.length}{activeBuckets.size > 0 ? ` / ${marcheurs.length}` : ''} marcheur{marcheurs.length > 1 ? 's' : ''}</span>
         </div>
         {totalContributions > 0 && (
           <span className="text-muted-foreground text-xs">
             · {totalContributions} observation{totalContributions > 1 ? 's' : ''} publique{totalContributions > 1 ? 's' : ''}
           </span>
         )}
+        <div className="flex-1" />
+        <div className="flex items-center gap-1 rounded-full bg-muted/40 dark:bg-white/5 p-0.5" role="group" aria-label="Trier les marcheurs">
+          {sortBtn('sentinelle-desc', '', <><ShieldCheck className="w-3 h-3" /><ArrowDownWideNarrow className="w-3 h-3" /></>, 'Trier par indice Sentinelle décroissant')}
+          {sortBtn('sentinelle-asc',  '', <><ShieldCheck className="w-3 h-3" /><ArrowUpNarrowWide className="w-3 h-3" /></>, 'Trier par indice Sentinelle croissant')}
+          {sortBtn('alpha', 'A→Z', null, 'Trier par ordre alphabétique')}
+        </div>
       </div>
 
+      {/* Sensible-species filter chips */}
+      {hasAnySensible && (
+        <div className="flex flex-wrap items-center gap-1.5 px-1">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 mr-0.5">Espèces remarquables</span>
+          {bucketCounts.bio > 0 && bucketChip('bio', bucketCounts.bio, 'Bio', Flower2, {
+            active: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/40',
+            idle: 'bg-emerald-500/5 text-emerald-600/70 dark:text-emerald-400/70 hover:bg-emerald-500/10',
+          })}
+          {bucketCounts.aux > 0 && bucketChip('aux', bucketCounts.aux, 'Auxiliaire', Bug, {
+            active: 'bg-amber-500/20 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/40',
+            idle: 'bg-amber-500/5 text-amber-600/70 dark:text-amber-400/70 hover:bg-amber-500/10',
+          })}
+          {bucketCounts.eee > 0 && bucketChip('eee', bucketCounts.eee, 'EEE', AlertTriangle, {
+            active: 'bg-rose-500/20 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500/40',
+            idle: 'bg-rose-500/5 text-rose-600/70 dark:text-rose-400/70 hover:bg-rose-500/10',
+          })}
+          {activeBuckets.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setActiveBuckets(new Set())}
+              className="inline-flex items-center gap-1 h-7 px-2 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              aria-label="Effacer les filtres d'espèces remarquables"
+            >
+              <XIcon className="w-3 h-3" />
+              Tout
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Cards — all closed by default */}
-      <div className="space-y-2">
-        {sortedMarcheurs.map((m, i) => (
-          <MarcheurCard
-            key={m.id}
-            marcheur={m}
-            index={i}
-            isExpanded={expandedId === m.id}
-            onToggle={() => setExpandedId(prev => prev === m.id ? null : m.id)}
-            explorationEventIds={explorationEventIds}
-            explorationId={explorationId}
-            explorationMarcheIds={explorationMarcheIds}
-            totalMarchesCount={explorationMarcheIds.length}
-            testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
-            contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom)}
-          />
-        ))}
-      </div>
+      {sortedMarcheurs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl border border-dashed border-border bg-muted/20">
+          <Sprout className="w-6 h-6 text-muted-foreground/60 mb-2" />
+          <p className="text-xs text-muted-foreground max-w-xs">
+            Aucun marcheur ne correspond à ces filtres pour l'instant.
+          </p>
+          <button
+            type="button"
+            onClick={() => setActiveBuckets(new Set())}
+            className="mt-3 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+          >
+            Voir tous les marcheurs
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sortedMarcheurs.map((m, i) => {
+            const metrics = metricsById.get(m.id)!;
+            return (
+              <MarcheurCard
+                key={m.id}
+                marcheur={m}
+                index={i}
+                isExpanded={expandedId === m.id}
+                onToggle={() => setExpandedId(prev => prev === m.id ? null : m.id)}
+                onForceOpen={() => setExpandedId(m.id)}
+                explorationEventIds={explorationEventIds}
+                explorationId={explorationId}
+                explorationMarcheIds={explorationMarcheIds}
+                totalMarchesCount={explorationMarcheIds.length}
+                testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
+                contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom)}
+                sentinelle={metrics.sentinelle}
+                marcheurBuckets={metrics.buckets}
+                highlightBuckets={activeBuckets}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {/* Engagement block */}
       <motion.div
