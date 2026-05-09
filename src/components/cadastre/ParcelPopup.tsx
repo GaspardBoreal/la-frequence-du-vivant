@@ -17,7 +17,42 @@ const ParcelPopup: React.FC<ParcelPopupProps> = ({ info, centroid }) => {
   const w = summarizeWeather(weather);
 
   return (
-    <Popup className="cadastre-parcel-popup" maxWidth={300} minWidth={240}>
+    <Popup className="cadastre-parcel-popup" maxWidth={300} minWidth={240} autoPan={true}>
+      <style>{`
+        .leaflet-pane.leaflet-popup-pane { z-index: 1000 !important; }
+        .cadastre-parcel-popup { z-index: 1000 !important; }
+        .cadastre-parcel-popup .leaflet-popup-content-wrapper {
+          background: transparent !important;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.45) !important;
+          padding: 0 !important;
+          border-radius: 12px !important;
+        }
+        .cadastre-parcel-popup .leaflet-popup-content { margin: 0 !important; }
+        .cadastre-parcel-popup .leaflet-popup-tip { background: rgba(0,0,0,0.85) !important; }
+        .cadastre-parcel-popup .leaflet-popup-close-button {
+          top: 6px !important;
+          right: 6px !important;
+          width: 22px !important;
+          height: 22px !important;
+          line-height: 20px !important;
+          text-align: center !important;
+          color: #fff !important;
+          background: rgba(255,255,255,0.12) !important;
+          border: 1px solid rgba(255,255,255,0.35) !important;
+          border-radius: 9999px !important;
+          backdrop-filter: blur(6px);
+          font-size: 16px !important;
+          font-weight: 400 !important;
+          padding: 0 !important;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .cadastre-parcel-popup .leaflet-popup-close-button:hover {
+          background: rgba(239,68,68,0.85) !important;
+          border-color: rgba(255,255,255,0.6) !important;
+          transform: scale(1.08);
+        }
+      `}</style>
       <div className="bg-black/85 backdrop-blur-xl rounded-xl p-3 -m-3 text-white space-y-3">
         {/* Localisation */}
         <section>
