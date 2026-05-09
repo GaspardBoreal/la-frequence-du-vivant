@@ -1189,6 +1189,29 @@ const MarcheurCard: React.FC<{
               <span className="text-[11px] font-semibold text-foreground">{realContribCount}</span>
             </div>
           )}
+
+          {/* Bucket highlight pastilles — visible when filter is active */}
+          {highlightBuckets?.has('bio') && marcheurBuckets.bio > 0 && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/30" title={`${marcheurBuckets.bio} bio-indicateur${marcheurBuckets.bio > 1 ? 's' : ''}`}>
+              <Flower2 className="w-3 h-3 text-emerald-500" />
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{marcheurBuckets.bio}</span>
+            </div>
+          )}
+          {highlightBuckets?.has('aux') && marcheurBuckets.aux > 0 && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 ring-1 ring-amber-500/30" title={`${marcheurBuckets.aux} auxiliaire${marcheurBuckets.aux > 1 ? 's' : ''}`}>
+              <Bug className="w-3 h-3 text-amber-500" />
+              <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 tabular-nums">{marcheurBuckets.aux}</span>
+            </div>
+          )}
+          {highlightBuckets?.has('eee') && marcheurBuckets.eee > 0 && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-500/15 ring-1 ring-rose-500/30" title={`${marcheurBuckets.eee} EEE`}>
+              <AlertTriangle className="w-3 h-3 text-rose-500" />
+              <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 tabular-nums">{marcheurBuckets.eee}</span>
+            </div>
+          )}
+
+          {/* Sentinelle index chip */}
+          <SentinelleChip sentinelle={sentinelle} onActivate={openImpact} />
         </div>
 
         {hasContent && (
