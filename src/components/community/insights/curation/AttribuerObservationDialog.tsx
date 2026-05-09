@@ -96,7 +96,7 @@ const AttribuerObservationDialog: React.FC<Props> = ({
         .eq('entity_type', 'species')
         .eq('entity_id', speciesScientificName)
         .maybeSingle();
-      const obsRes: any = await supabase
+      const obsRes: any = await (supabase as any)
         .from('marcheur_observations')
         .select('marcheur_id, user_id')
         .eq('exploration_id', explorationId)
