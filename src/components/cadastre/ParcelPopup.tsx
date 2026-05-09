@@ -17,7 +17,7 @@ const ParcelPopup: React.FC<ParcelPopupProps> = ({ info, centroid }) => {
   const w = summarizeWeather(weather);
 
   return (
-    <Popup className="cadastre-parcel-popup" maxWidth={300} minWidth={240} autoPan={true}>
+    <Popup className="cadastre-parcel-popup" pane="cadastre-popup" maxWidth={300} minWidth={240} autoPan={true}>
       <div className="bg-black/85 backdrop-blur-xl rounded-xl p-3 -m-3 text-white space-y-3">
         {/* Localisation */}
         <section>

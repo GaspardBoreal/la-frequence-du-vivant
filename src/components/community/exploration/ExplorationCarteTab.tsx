@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Circle, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Circle, CircleMarker, Pane } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -1141,7 +1141,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           );
         })}
 
-        {/* Numbered markers with progressive reveal */}
+        {/* Numbered markers with progressive reveal — pane dédié sous le popup cadastre */}
+        <Pane name="marche-steps" style={{ zIndex: 590 }} />
         {!hideMarcheMarkers && geoMarches.map((marche, index) => {
           if (index >= visibleMarkers) return null;
           const stats = contribStats?.[marche.id];
@@ -1152,6 +1153,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             <Marker
               key={marche.id}
               position={[marche.latitude!, marche.longitude!]}
+              pane="marche-steps"
               icon={createNumberedIcon(index + 1, activeMarker === index, totalContrib, mapStyle === 'cadastre')}
               ref={(ref) => {
                 if (ref) stepMarkerRefs.current.set(marche.id, ref as unknown as L.Marker);

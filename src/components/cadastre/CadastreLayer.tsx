@@ -36,6 +36,9 @@ const CadastreLayer: React.FC<CadastreLayerProps> = ({ points, enabled = true, p
   if (!enabled) return null;
 
   return (
+    <>
+    {/* Pane dédié au popup cadastre — toujours au-dessus des marqueurs d'étapes */}
+    <Pane name="cadastre-popup" style={{ zIndex: 1100 }} />
     <Pane name="cadastre-parcels" style={{ zIndex: 450 }}>
       {items.map(({ point, lexicon, geometry: realGeom }) => {
         // Priorité: géométrie cadastre-proxy (vraie parcelle) > shape LEXICON (geolocation/cadastre) > geometry brute
@@ -69,6 +72,7 @@ const CadastreLayer: React.FC<CadastreLayerProps> = ({ points, enabled = true, p
         </GeoJSON>
       )}
     </Pane>
+    </>
   );
 };
 
