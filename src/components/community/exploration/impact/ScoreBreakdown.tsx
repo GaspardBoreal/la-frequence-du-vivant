@@ -58,6 +58,16 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total }) => {
       detail: `${breakdown.species.count} espèce${breakdown.species.count > 1 ? 's' : ''}`,
       color: 'hsl(210 60% 65%)',
     },
+    {
+      icon: '🌾',
+      label: 'Pratiques emblématiques',
+      value: breakdown.pratiques.value,
+      max: breakdown.pratiques.max,
+      detail: breakdown.pratiques.count > 0
+        ? `${breakdown.pratiques.count} pratique${breakdown.pratiques.count > 1 ? 's' : ''} portée${breakdown.pratiques.count > 1 ? 's' : ''}`
+        : 'À relier par un curateur',
+      color: 'hsl(40 75% 60%)',
+    },
   ];
 
   return (
