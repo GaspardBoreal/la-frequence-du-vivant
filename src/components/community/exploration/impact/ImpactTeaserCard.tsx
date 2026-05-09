@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Lock } from 'lucide-react';
+import { ChevronRight, Lock, Info } from 'lucide-react';
 import EmpreinteVivante from './EmpreinteVivante';
 import type { MarcheurWithStats } from '@/hooks/useExplorationParticipants';
 import type { SensibleBuckets } from '@/lib/speciesClassification';
