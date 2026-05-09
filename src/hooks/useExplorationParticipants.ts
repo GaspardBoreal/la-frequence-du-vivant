@@ -213,6 +213,9 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
       participants.forEach((cu: any) => {
         const s = userStats.get(cu.user_id) || newBucket();
         const total = s.photos + s.videos + s.sons + s.textes;
+        const linkedCrewId = crewIdByUserId.get(cu.user_id) ?? null;
+        const obs = (linkedCrewId && obsByMarcheur.get(linkedCrewId)) || [];
+        const speciesCnt = (linkedCrewId && speciesSetByMarcheur.get(linkedCrewId)?.size) || 0;
         results.push({
           id: `community-${cu.user_id}`,
           prenom: cu.prenom || 'Marcheur',
@@ -221,11 +224,11 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
           source: 'community',
           role: cu.role || 'marcheur_en_devenir',
           couleur: '#10b981',
-          stats: { ...s, speciesCount: 0 },
-          totalContributions: total,
-          speciesObserved: [],
+          stats: { ...s, speciesCount: speciesCnt },
+          totalContributions: total + speciesCnt,
+          speciesObserved: obs,
           userId: cu.user_id,
-          crewId: crewIdByUserId.get(cu.user_id) ?? null,
+          crewId: linkedCrewId,
         });
       });
 
@@ -233,6 +236,9 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
       orphanProfiles.forEach((p: any) => {
         const s = userStats.get(p.user_id) || newBucket();
         const total = s.photos + s.videos + s.sons + s.textes;
+        const linkedCrewId = crewIdByUserId.get(p.user_id) ?? null;
+        const obs = (linkedCrewId && obsByMarcheur.get(linkedCrewId)) || [];
+        const speciesCnt = (linkedCrewId && speciesSetByMarcheur.get(linkedCrewId)?.size) || 0;
         results.push({
           id: `community-${p.user_id}`,
           prenom: p.prenom || 'Marcheur',
@@ -241,11 +247,11 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
           source: 'community',
           role: p.role || 'marcheur_en_devenir',
           couleur: '#10b981',
-          stats: { ...s, speciesCount: 0 },
-          totalContributions: total,
-          speciesObserved: [],
+          stats: { ...s, speciesCount: speciesCnt },
+          totalContributions: total + speciesCnt,
+          speciesObserved: obs,
           userId: p.user_id,
-          crewId: crewIdByUserId.get(p.user_id) ?? null,
+          crewId: linkedCrewId,
         });
       });
 
