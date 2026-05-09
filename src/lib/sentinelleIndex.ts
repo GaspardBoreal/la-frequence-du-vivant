@@ -1,10 +1,11 @@
 /**
- * Indice de Sentinelle V3
+ * Indice de Sentinelle V4 — total /100
  * - 15 pts : variété des gestes (5 piliers)
- * - 15 pts : volume des contributions (racine carrée, sature à 64)
- * - 15 pts : diversité d'espèces (linéaire, sature à 20)
+ * - 10 pts : volume des contributions (√, sature à 64)
+ * - 10 pts : diversité d'espèces (linéaire, sature à 20)
  * - 35 pts : espèces sensibles (bio×1.5 + aux×1.0 + EEE×2.0, sature à ~10 pondérées)
  * - 20 pts : voix singulière (textes + sons + témoignages, valorisés ×2.5, sature à 10 pondérés)
+ * - 10 pts : pratiques emblématiques (×2 / 10, sature à 5 pratiques)
  *
  * Plancher : 15 pts dès la 1ʳᵉ contribution.
  */
@@ -18,6 +19,7 @@ export interface SentinelleInputs {
   bioCount: number;
   auxCount: number;
   eeeCount: number;
+  pratiquesCount?: number;
 }
 
 export type SentinelleTier = 'aucun' | 'eveil' | 'curieux' | 'ecoute' | 'eclaireur' | 'engage';
