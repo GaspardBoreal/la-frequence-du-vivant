@@ -90,8 +90,14 @@ const PILLAR_LABELS: Record<string, string> = {
   sensible: 'espèce sensible',
 };
 
+const VOLUME_MAX = 10;
+const SPECIES_MAX = 10;
+const PRATIQUES_MAX = 10;
+const PRATIQUES_CAP = 5;
+
 export function computeSentinelleIndex(input: SentinelleInputs): SentinelleResult {
   const { photos, sons, textes, hasTemoignage, speciesCount, bioCount, auxCount, eeeCount } = input;
+  const pratiquesCount = Math.max(0, input.pratiquesCount ?? 0);
 
   // 1. Piliers (15 pts)
   const pillarsState = {
@@ -105,12 +111,12 @@ export function computeSentinelleIndex(input: SentinelleInputs): SentinelleResul
   const pillarsValue = (pillarCount / 5) * 15;
   const missing = Object.entries(pillarsState).filter(([, v]) => !v).map(([k]) => PILLAR_LABELS[k]);
 
-  // 2. Volume √ (15 pts)
+  // 2. Volume √ (10 pts)
   const totalContribs = photos + sons + textes + (hasTemoignage ? 1 : 0);
-  const volumeValue = Math.min(Math.sqrt(totalContribs) / Math.sqrt(VOLUME_CAP), 1) * 15;
+  const volumeValue = Math.min(Math.sqrt(totalContribs) / Math.sqrt(VOLUME_CAP), 1) * VOLUME_MAX;
 
-  // 3. Espèces (15 pts)
-  const speciesValue = Math.min(speciesCount / SPECIES_CAP, 1) * 15;
+  // 3. Espèces (10 pts)
+  const speciesValue = Math.min(speciesCount / SPECIES_CAP, 1) * SPECIES_MAX;
 
   // 4. Sensibles (35 pts)
   const weighted = bioCount * 1.5 + auxCount * 1.0 + eeeCount * 2.0;
@@ -123,12 +129,15 @@ export function computeSentinelleIndex(input: SentinelleInputs): SentinelleResul
   // Plancher voix : au moins 5 pts dès la 1ʳᵉ contribution d'expression
   if (voixWeighted > 0 && voixValue < 5) voixValue = 5;
 
-  let total = pillarsValue + volumeValue + speciesValue + sensibleValue + voixValue;
+  // 6. Pratiques emblématiques (10 pts) — saveur agroécologique
+  const pratiquesValue = Math.min((pratiquesCount * 2) / PRATIQUES_MAX, 1) * PRATIQUES_MAX;
+
+  let total = pillarsValue + volumeValue + speciesValue + sensibleValue + voixValue + pratiquesValue;
   // Plancher 15 si au moins 1 contribution
   if (totalContribs > 0 && total < 15) total = 15;
   total = Math.round(total);
 
-  // Paliers de Fréquence (6 niveaux)
+  // Paliers de Fréquence (6 niveaux) — seuils inchangés (toujours /100)
   let tier: SentinelleTier = 'aucun';
   if      (total >= 50) tier = 'engage';
   else if (total >= 30) tier = 'eclaireur';
@@ -143,6 +152,7 @@ export function computeSentinelleIndex(input: SentinelleInputs): SentinelleResul
     speciesCount, speciesValue,
     bioCount, auxCount, eeeCount, weighted, sensibleValue,
     voixWeighted, voixValue,
+    pratiquesCount, pratiquesValue,
   });
 
   return {
@@ -150,11 +160,12 @@ export function computeSentinelleIndex(input: SentinelleInputs): SentinelleResul
     label,
     tier,
     breakdown: {
-      pillars:  { value: Math.round(pillarsValue),  max: 15, count: pillarCount, of: 5, missing },
-      volume:   { value: Math.round(volumeValue),   max: 15, raw: totalContribs, cap: VOLUME_CAP },
-      species:  { value: Math.round(speciesValue),  max: 15, count: speciesCount, cap: SPECIES_CAP },
-      sensible: { value: Math.round(sensibleValue), max: 35, bio: bioCount, aux: auxCount, eee: eeeCount, weighted, cap: SENSIBLE_CAP },
-      voix:     { value: Math.round(voixValue),     max: 20, textes, sons, temoignage: temoignageNum, weighted: voixWeighted, cap: VOIX_CAP },
+      pillars:   { value: Math.round(pillarsValue),   max: 15, count: pillarCount, of: 5, missing },
+      volume:    { value: Math.round(volumeValue),    max: VOLUME_MAX, raw: totalContribs, cap: VOLUME_CAP },
+      species:   { value: Math.round(speciesValue),   max: SPECIES_MAX, count: speciesCount, cap: SPECIES_CAP },
+      sensible:  { value: Math.round(sensibleValue),  max: 35, bio: bioCount, aux: auxCount, eee: eeeCount, weighted, cap: SENSIBLE_CAP },
+      voix:      { value: Math.round(voixValue),      max: 20, textes, sons, temoignage: temoignageNum, weighted: voixWeighted, cap: VOIX_CAP },
+      pratiques: { value: Math.round(pratiquesValue), max: PRATIQUES_MAX, count: pratiquesCount, cap: PRATIQUES_CAP },
     },
     nextTip,
   };
@@ -166,34 +177,40 @@ function computeNextTip(args: {
   speciesCount: number; speciesValue: number;
   bioCount: number; auxCount: number; eeeCount: number; weighted: number; sensibleValue: number;
   voixWeighted: number; voixValue: number;
+  pratiquesCount: number; pratiquesValue: number;
 }): SentinelleNextTip {
   // 1. Sensibles : prioritaire (gain énorme)
   if (args.weighted < 15) {
     const gain = Math.round((1.5 / 15) * 35);
     return { text: `Détectez 1 bio-indicateur : +${gain} pts`, gain };
   }
-  // 2. Voix singulière : valorise l'expression sensible
+  // 2. Pratiques emblématiques : saveur agroécologique, gain rapide
+  if (args.pratiquesCount < PRATIQUES_CAP) {
+    return { text: `Reliez ${args.pratiquesCount === 0 ? 'votre 1ʳᵉ' : '1'} pratique emblématique : +2 pts`, gain: 2 };
+  }
+  // 3. Voix singulière : valorise l'expression sensible
   if (args.voixWeighted < 10) {
     const next = args.voixWeighted + 2.5;
     const newVal = Math.min(next / 10, 1) * 20;
     const gain = Math.max(5, Math.round(newVal - args.voixValue));
     return { text: `Ajoutez 1 texte ou 1 son : +${gain} pts`, gain };
   }
-  // 3. Pilier manquant
+  // 4. Pilier manquant
   if (args.missing.length > 0) {
     const target = args.missing[0];
     return { text: `Ajoutez 1 ${target} : +3 pts`, gain: 3 };
   }
-  // 4. Volume
+  // 5. Volume
   if (args.totalContribs < 64) {
     const next = args.totalContribs + 5;
-    const newVal = Math.min(Math.sqrt(next) / Math.sqrt(64), 1) * 15;
+    const newVal = Math.min(Math.sqrt(next) / Math.sqrt(64), 1) * VOLUME_MAX;
     const gain = Math.max(1, Math.round(newVal - args.volumeValue));
     return { text: `+5 contributions : +${gain} pts`, gain };
   }
-  // 5. Espèces
+  // 6. Espèces
   if (args.speciesCount < 20) {
     return { text: '+1 espèce = +1 pt', gain: 1 };
   }
   return { text: 'Vous êtes au sommet de l\'indice !', gain: 0 };
 }
+
