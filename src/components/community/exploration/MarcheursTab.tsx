@@ -1036,13 +1036,12 @@ const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () =>
       onActivate();
     }
   };
-  return (
+  const chip = (
     <span
       role="button"
       tabIndex={0}
       onClick={(e) => { e.stopPropagation(); onActivate(); }}
       onKeyDown={handleKey}
-      title={`Fréquence ${sentinelle.total} — ${sentinelle.label}. Voir le détail.`}
       aria-label={`Fréquence ${sentinelle.total} sur 100, ${sentinelle.label}. Voir le détail.`}
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0 cursor-pointer transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 ${TIER_CHIP_STYLE[sentinelle.tier]}`}
     >
@@ -1050,6 +1049,28 @@ const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () =>
       <span className="text-[11px] font-bold tabular-nums leading-none">{sentinelle.total}</span>
       <span className="hidden sm:inline text-[10px] font-medium leading-none opacity-90">{TIER_SHORT_LABEL_LOCAL[sentinelle.tier]}</span>
     </span>
+  );
+  return (
+    <HoverCard openDelay={150} closeDelay={80}>
+      <HoverCardTrigger asChild>{chip}</HoverCardTrigger>
+      <HoverCardContent
+        side="left"
+        align="start"
+        className="w-[300px] p-3 bg-popover/95 backdrop-blur border-border shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-baseline justify-between mb-2">
+          <span className="text-sm font-semibold">Fréquence {sentinelle.total}/100</span>
+          <span className="text-xs text-muted-foreground">{sentinelle.label}</span>
+        </div>
+        <ScoreBreakdown breakdown={sentinelle.breakdown} total={sentinelle.total} />
+        {sentinelle.nextTip?.text && (
+          <p className="mt-2 text-[11px] text-muted-foreground italic border-t border-border/50 pt-2">
+            💡 {sentinelle.nextTip.text}
+          </p>
+        )}
+      </HoverCardContent>
+    </HoverCard>
   );
 };
 
