@@ -603,40 +603,6 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
   );
 };
 
-// CTA Science block (shared)
-const CitizenScienceCTA: React.FC = () => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay: 0.2 }}
-    className="mx-3 mb-3 p-3 rounded-xl bg-gradient-to-br from-emerald-500/5 to-amber-500/5 border border-emerald-500/15"
-  >
-    <p className="text-[11px] font-medium text-foreground mb-1">
-      🔬 Devenez contributeur citoyen !
-    </p>
-    <p className="text-[10px] text-muted-foreground mb-2.5 leading-relaxed">
-      Chaque observation nourrit la connaissance du vivant. Créez un compte pour que vos découvertes comptent dans la science mondiale.
-    </p>
-    <div className="flex gap-2">
-      <a
-        href="https://www.inaturalist.org/signup"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-600/20 transition-colors"
-      >
-        iNaturalist <ExternalLink className="w-2.5 h-2.5" />
-      </a>
-      <a
-        href="https://ebird.org/register"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-600/20 transition-colors"
-      >
-        eBird <ExternalLink className="w-2.5 h-2.5" />
-      </a>
-    </div>
-  </motion.div>
-);
 
 // --- Animated circular gauge SVG ---
 const CircularGauge: React.FC<{ score: number; size?: number }> = ({ score, size = 56 }) => {
