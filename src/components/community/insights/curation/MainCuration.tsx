@@ -411,7 +411,10 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                   )}
                   <PratiqueMarcheursPicker
                     curationId={entry.id}
-                    marcheurs={marcheurs as any}
+                    marcheurs={marcheurs.map(m => ({
+                      id: m.id, prenom: m.prenom, nom: m.nom,
+                      avatar_url: m.avatarUrl, couleur: m.couleur,
+                    }))}
                     isCurator={isCurator}
                   />
                 </div>
