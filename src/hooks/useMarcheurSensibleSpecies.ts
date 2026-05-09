@@ -19,10 +19,10 @@ export function useMarcheurSensibleSpecies(
   const { data: curations } = useQuery({
     queryKey: ['exploration-curations-species-categories', explorationId],
     queryFn: async () => {
-      if (!explorationId) return [] as Array<{ title: string | null; category: string | null }>;
+      if (!explorationId) return [] as Array<{ entity_id: string | null; category: string | null }>;
       const { data, error } = await supabase
         .from('exploration_curations')
-        .select('title, category')
+        .select('entity_id, category')
         .eq('exploration_id', explorationId)
         .eq('sense', 'oeil')
         .eq('entity_type', 'species');
@@ -36,7 +36,7 @@ export function useMarcheurSensibleSpecies(
   const curationByName = useMemo(() => {
     const map = new Map<string, SpeciesCategory | string | null>();
     (curations || []).forEach((c: any) => {
-      if (c?.title && c?.category) map.set(c.title, c.category);
+      if (c?.entity_id && c?.category) map.set(c.entity_id, c.category);
     });
     return map;
   }, [curations]);
