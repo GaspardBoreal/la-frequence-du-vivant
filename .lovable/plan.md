@@ -1,76 +1,50 @@
 ## Diagnostic
 
-L'attribution Carabe cuirassé → Sophie D + Laurence Karki a bien été enregistrée en base. Vérification SQL :
+L'indice de Sentinelle de Laurence Karki affiche **1 bio + 1 aux + 0 EEE** alors qu'elle n'a détecté qu'**une seule espèce auxiliaire** (Carabus coriaceus). Le Carabe est compté dans 2 buckets simultanément.
 
-```
-exploration_marcheurs.id  | prenom   | user_id  | species
-ab2ec703… (shadow)        | Sophie   | 58fd…    | Carabus coriaceus ✅
-f50e1e2e… (crew)          | Laurence | 0c9a…    | Carabus coriaceus ✅
-```
+**Cause racine** : deux problèmes superposés.
 
-Mais l'empreinte de Sophie affiche **0 auxiliaire / 0 espèce / 0 détection précieuse**. Deux bugs cumulés :
+1. **Source de vérité incorrecte.** `useMarcheurSensibleSpecies` lit `species-knowledge-base.json` (statique, multi-catégories : `primary` + `secondary[]`). Or l'écran "L'œil" (curation éditoriale via `exploration_curations`) classe chaque espèce avec **une seule catégorie primaire** (`category`) — c'est cette catégorie qui s'affiche en pastille (Auxiliaire pour Carabe). Le KB n'est qu'un fallback ; la curation éditoriale doit primer.
 
-### Bug 1 — Plomberie : les observations du shadow crew ne remontent pas vers le participant communauté
+2. **Entrée KB du genre `Carabus` sur-classifiée.** Ajoutée précédemment avec `secondary: ["indigene", "bioindicatrice"]`. Même corrigée, elle reste en double-comptage tant que le bucketing utilise primary + secondary.
 
-Dans `src/hooks/useExplorationParticipants.ts` :
+## Plan
 
-- la boucle "editorial crew" lit bien `marcheur_observations` et alimente `obsByMarcheur` / `speciesSetByMarcheur`,
-- mais elle **skippe** toute ligne crew dont le `user_id` est aussi un participant communauté (`if (m.user_id && participantUserIds.has(m.user_id)) return;`) — pour éviter le doublon visuel,
-- puis la boucle "community participants" émet `**speciesObserved: []` et `speciesCount: 0` en dur**, sans jamais regarder `crewIdByUserId.get(cu.user_id)`.
+### 1. Source de vérité = curation éditoriale (L'œil)
 
-Conséquence : pour tout marcheur communauté possédant un shadow crew (cas créé par la RPC d'attribution), ses espèces attribuées sont invisibles côté `MarcheurWithStats.speciesObserved` → `useMarcheurSensibleSpecies` reçoit `[]` → tous les compteurs sensibles tombent à 0. Même bug dans la boucle "orphan profiles".
+Refactor `useMarcheurSensibleSpecies(speciesObserved, explorationId?)` :
+- Lire `exploration_curations` (sense=`oeil`, entity_type=`species`) pour cette exploration.
+- Construire une map `scientificName → category` (la **catégorie primaire uniquement**, comme dans L'œil).
+- Pour chaque observation du marcheur : si curation existe, ranger dans le bucket de `category`. Sinon → fallback KB (primary uniquement, plus de secondary).
+- Garantit qu'une espèce ne tombe jamais dans 2 buckets.
 
-### Bug 2 — Classification : `Carabus coriaceus` absent du référentiel
+Propager `explorationId` dans :
+- `MarcheurImpactPanel.tsx` (et `ImpactStoriesViewer` qui reçoit `sensible`).
+- `useExplorationParticipants` ou hooks parents qui exposent déjà l'exploration courante.
 
-`src/data/species-knowledge-base.json` ne contient ni l'espèce ni le genre `Carabus`. Même une fois le bug 1 corrigé, `bucketSensibleSpecies(['Carabus coriaceus'])` retournerait des buckets vides, donc « 0 auxiliaire ».
+### 2. Nettoyer l'entrée KB Carabus (fallback)
 
-Le fallback genre existe déjà dans `classifySpecies` (`src/lib/speciesClassification.ts`) — il suffit d'ajouter une entrée genre `Carabus` pour couvrir tous les Carabidae prédateurs.
+Dans `species-knowledge-base.json`, retirer `bioindicatrice` du `secondary` de `Carabus`. Garder `primary: "auxiliaire"`, `secondary: ["indigene"]`.
 
-## Plan d'action
+### 3. Bucketing strict (plus de secondary)
 
-### 1. `src/hooks/useExplorationParticipants.ts` — propager les observations du shadow crew
+Modifier `bucketSensibleSpecies` (et `classifySpecies` côté fallback) pour ne retenir **que** la catégorie primaire. Aligne le comportement sur la pastille unique affichée dans L'œil et empêche tout futur double-comptage par d'autres entrées KB (par ex. les nombreuses espèces avec `bioindicatrice` + `auxiliaire` en secondary).
 
-Dans l'émission des participants communauté (et orphan profiles), résoudre le `crewId` lié et hériter de ses observations :
+### Vérification attendue après application
+
+Pour Laurence Karki (1 obs : Carabus coriaceus) :
+- `sensible: { bioIndicateurs: [], auxiliaires: ['Carabus coriaceus'], eee: [], patrimoniales: [] }`
+- Bandeau "Détections précieuses" : **0 bio · 1 aux · 0 EEE**
+- Pondération sensibles : `0×1.5 + 1×1.0 + 0×2.0 = 1` → +2.7 pts (au lieu de gonflage actuel)
+- Plus de divergence entre L'œil (Auxiliaire) et l'empreinte vivante.
+
+## Fichiers impactés
 
 ```text
-const linkedCrewId = crewIdByUserId.get(cu.user_id);
-const obs        = (linkedCrewId && obsByMarcheur.get(linkedCrewId)) || [];
-const speciesCnt = (linkedCrewId && speciesSetByMarcheur.get(linkedCrewId)?.size) || 0;
-…
-stats: { ...s, speciesCount: speciesCnt },
-totalContributions: total + speciesCnt, // cohérent avec la branche crew
-speciesObserved: obs,
-crewId: linkedCrewId ?? null,
+src/hooks/useMarcheurSensibleSpecies.ts      (signature + lecture curation)
+src/lib/speciesClassification.ts             (bucketing primary-only)
+src/data/species-knowledge-base.json         (Carabus: retirer bioindicatrice)
+src/components/community/exploration/impact/MarcheurImpactPanel.tsx  (passer explorationId)
 ```
 
-Idem pour la boucle `orphanProfiles`. Aucune autre route impactée : la branche crew pure (sans `user_id` participant) continue d'émettre comme avant.
-
-### 2. `src/data/species-knowledge-base.json` — ajouter le genre `Carabus`
-
-Ajouter une entrée genre (le fallback genre est déjà géré par `classifySpecies`) :
-
-```json
-"Carabus": {
-  "primary": "auxiliaire",
-  "secondary": ["indigene", "bioindicatrice"],
-  "evidence": [{
-    "source": "INRAE",
-    "ref_code": "Carabidae-prédateurs",
-    "url": "https://www6.inrae.fr/encyclopedie-pucerons/Especes-d-auxiliaires/Carabidae",
-    "quote": "Carabidae : prédateurs polyphages des cultures (limaces, larves, pucerons au sol). Bioindicateurs reconnus de la qualité des sols et des bocages."
-  }],
-  "habitat_dordogne": "Bocage, lisières forestières, prairies, sols vivants",
-  "notes": "Genre couvrant toutes les espèces de Carabes (dont Carabus coriaceus, le Carabe cuirassé). Auxiliaire majeur en agroécologie."
-}
-```
-
-### 3. Vérification
-
-- Ouvrir l'empreinte de Sophie D et Laurence Karki après rechargement du cache (`exploration-participants` a `staleTime: 30s`).
-- Attendu : `1 auxiliaire`, `1 espèce`, le bandeau « Détections précieuses » passe à 1 et l'Indice de Sentinelle progresse (≈ +3-4 pts via le bucket sensible + +1 via diversité d'espèces).
-
-## Hors scope
-
-- Pas de changement de la RPC d'attribution (elle écrit déjà correctement).
-- Pas de migration SQL.
-- Pas de changement UI : les écrans d'empreinte se mettront à jour automatiquement dès que `speciesObserved` sera correctement rempli.
+Aucune migration SQL nécessaire — `exploration_curations` existe déjà.
