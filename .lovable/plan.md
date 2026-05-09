@@ -1,59 +1,95 @@
-# Paliers de Fréquence — plus de nuance, vocabulaire aligné
+# Bandeau « Contributeur citoyen » intelligent et personnalisé
 
-## Objectif
+Transformer le bandeau statique actuel en **carte vivante** qui distingue les plateformes où le marcheur contribue déjà (avec son avatar et son profil iNaturalist réel) des plateformes encore à rejoindre, avec des invitations ciblées par taxon observé.
 
-Remplacer les 4 paliers actuels (Curieux / Éclaireur / Ambassadeur / Sentinelle) par **6 paliers** plus inspirants, et renommer le **score** en **Fréquence** dans toute l'UI.
+## Vision Wahouhh
 
-## Nouveaux paliers
+Au lieu de :
+> 🔬 Devenez contributeur citoyen ! [iNaturalist] [eBird]
 
-| Score | Palier | Tonalité |
+On affiche :
+```
+┌─ Vos plateformes citoyennes ──────────────────────────┐
+│                                                        │
+│ ✓ DÉJÀ ACTIF                                          │
+│ ┌─────────────────────────────────────────────┐       │
+│ │ 🟢 [avatar] iNaturalist · @gaspardboreal    │       │
+│ │    48 obs ici · 312 obs au total · 89 esp.  │       │
+│ │    Dernière : Iris faux-acore · 12 mai      │       │
+│ │                       [Voir mon profil →]    │       │
+│ └─────────────────────────────────────────────┘       │
+│                                                        │
+│ ⚡ À DÉCOUVRIR                                         │
+│ ┌─────────────────────────────────────────────┐       │
+│ │ 🐦 eBird                                     │       │
+│ │ Vous avez identifié 12 oiseaux. eBird est   │       │
+│ │ LA plateforme mondiale pour les oiseaux.    │       │
+│ │ Vos chants peuvent enrichir la science.     │       │
+│ │                          [Rejoindre eBird]   │       │
+│ └─────────────────────────────────────────────┘       │
+└────────────────────────────────────────────────────────┘
+```
+
+## Étapes
+
+### 1. Edge function `resolve-inaturalist-user`
+Nouvelle fonction qui prend une URL d'observation iNat (ex. `https://www.inaturalist.org/observations/123456`) et renvoie :
+- `login` (pseudo, ex. `gaspardboreal`)
+- `name` (nom affiché)
+- `icon_url` (avatar)
+- `observations_count` (total mondial)
+- `species_count`
+- `profile_url`
+
+Logique : extraire l'`observation_id` de l'URL → appeler `https://api.inaturalist.org/v1/observations/{id}` → renvoyer le bloc `user`. Cache mémoire 1h pour éviter de rappeler.
+
+### 2. Hook `useMarcheurCitizenPlatforms`
+Nouveau hook qui, à partir des observations déjà chargées du marcheur :
+- groupe par `source` → compte locales, dernière obs, kingdom dominant
+- pour chaque source détectée, prend la 1ère `originalUrl` valide et déclenche la résolution profil correspondante (iNat seulement pour le moment)
+- renvoie `{ active: [{platform, count, lastObs, profile?}], suggested: [{platform, reason, kingdomHint}] }`
+
+### 3. Refonte de `CitizenScienceCTA`
+- Reçoit `marcheur` + `observations` en props
+- Sépare visuellement deux blocs : **« Vos contributions »** (vert émeraude) et **« Élargir votre voix »** (ambre)
+- Carte active : avatar (ou initiales), badge ✓ "Actif", compteur local, total mondial, lien profil
+- Carte suggérée : invitation ciblée selon les kingdoms du marcheur (« Vous avez photographié 12 oiseaux → eBird », « 23 plantes → Pl@ntNet », etc.)
+- Mini-animation pulse sur le badge ✓
+- Plateformes couvertes : iNaturalist, eBird, GBIF (lecture seule, pas de signup), + suggestion conditionnelle Pl@ntNet si beaucoup de Plantae
+
+### 4. Mapping kingdom → invitation
+| Kingdom dominant | Plateforme suggérée | Phrase d'invitation |
 |---|---|---|
-| `0` | *(rien affiché)* | Le marcheur n'apparaît pas avec un palier — invitation implicite à entrer dans la fréquence. |
-| `1 – 5` | **Éveil** | Premier souffle, premier geste. |
-| `6 – 15` | **Curieux** | L'attention s'aiguise. |
-| `16 – 29` | **Écoute active** | La perception s'affine, le marcheur revient et observe. |
-| `30 – 49` | **Éclaireur** | Contribue régulièrement, ouvre la voie. |
-| `50 – 100` | **Engagé** | Voix singulière, présence assumée au service du Vivant. |
+| Animalia (oiseaux) | eBird | « 12 oiseaux identifiés. Rejoignez le 1er réseau ornitho mondial. » |
+| Plantae | Pl@ntNet (suggestion supplémentaire) | « 23 plantes observées. Pl@ntNet vous aide à les identifier en 1 clic. » |
+| Mixte | iNaturalist (si pas actif) | « Une plateforme universelle pour toutes vos rencontres. » |
 
-Chaque palier reçoit :
-- un **libellé court** (ex. `Engagé`) et un **libellé enrichi** (ex. `Marcheur engagé`)
-- une **couleur sémantique** (token HSL existant) du plus pâle au plus dense
-- une **micro-phrase poétique** affichée en tooltip / story (ex. Éveil : *« Un premier pas, déjà une présence. »*)
-
-## Renommage UI : SCORE → Fréquence
-
-Partout où le score 0-100 est affiché, on parle désormais de **Fréquence** :
-- Carte marcheur : `67 / 100` → **`Fréquence 67`**
-- Bloc impact : « Indice de Sentinelle » conservé comme nom du système, mais la valeur s'appelle **« Fréquence »**
-- Tooltip / breakdown : « Score total » → **« Fréquence du marcheur »**
-- Stories : « Ton score » → **« Ta Fréquence »**
-
-Le palier reste un *qualificatif* de la Fréquence : « Fréquence 32 — Éclaireur ».
-
-## Périmètre — UI uniquement
-
-- Aucune migration BDD.
-- Les **rôles communauté** (`community_profiles.role` = `curieux/eclaireur/ambassadeur/sentinelle`) restent inchangés : ils gouvernent la sécurité, RLS, droits de curation, badges. Ce sont **deux concepts distincts** des paliers de Fréquence (qui sont per-exploration).
-- Les types TS internes (`SentinelleTier`) gardent leurs noms techniques pour ne rien casser ; seuls les **libellés affichés** changent.
+### 5. États & dégradés
+- **Loading** profil iNat : skeleton avatar + "Chargement de votre profil…"
+- **Erreur** résolution : repli sur carte sobre "Plateforme active · X observations" + lien recherche par nom
+- **Aucune obs sur la plateforme** : carte invitation par défaut
 
 ## Détails techniques
 
-### `src/lib/sentinelleIndex.ts`
-- Étendre `SentinelleTier` : `'eveil' | 'curieux' | 'ecoute' | 'eclaireur' | 'engage' | 'aucun'`.
-- Réécrire la fonction de calcul du palier avec les nouveaux seuils (1-5, 6-15, 16-29, 30-49, 50+).
-- Ajouter un champ `tierPhrase` (micro-phrase poétique) et `tierColorToken` (token sémantique).
-- Retourner `tier: 'aucun'` quand `total === 0` pour que l'UI sache ne rien afficher.
+**Fichiers créés**
+- `supabase/functions/resolve-inaturalist-user/index.ts` — JWT validé, input `observation_url` ou `observation_id`, cache mémoire 1h, CORS standard.
+- `src/hooks/useMarcheurCitizenPlatforms.ts` — agrège `species` (déjà chargé dans `ContributionsSubTab`) + appelle l'edge function via `supabase.functions.invoke` pour iNat uniquement.
+- `src/components/community/exploration/impact/CitizenPlatformsCard.tsx` — nouveau composant remplaçant `CitizenScienceCTA`.
 
-### Composants UI à mettre à jour
-- `MarcheursTab.tsx` — masquer le palier si `tier === 'aucun'`, afficher `Fréquence {n}` + libellé palier.
-- `ScoreBreakdown.tsx`, `MarcheurImpactPanel.tsx`, `ImpactStoriesViewer.tsx`, `ValorizationBlock.tsx`, `ProgressionCard.tsx` — remplacer « score » / « Indice » (au sens valeur) par « Fréquence ».
-- `useMarcheurBadges.ts` — vérifier que les seuils de badges restent cohérents avec les nouveaux paliers ; ajuster si un badge se déclenchait sur l'ancien palier `eclaireur` (≥26).
-- Charte couleur : 6 tokens dégradés (du sable doux au vert profond) ajoutés à `index.css` si absents.
+**Fichiers modifiés**
+- `src/components/community/exploration/MarcheursTab.tsx` :
+  - Supprimer `CitizenScienceCTA` (lignes 606-638)
+  - Ligne 1342 : remplacer par `<CitizenPlatformsCard marcheur={marcheur} explorationId={...} />`
+  - Le composant interne fera ses propres queries (même logique d'agrégation que `ContributionsSubTab` lignes 380-467) — extraire cette agrégation dans un hook partagé `useMarcheurObservedSpecies` pour éviter la duplication.
 
-### Hors périmètre
-- Pas de changement aux rôles `community_profiles`.
-- Pas de changement à la formule de calcul du score (le rééquilibrage Voix singulière reste tel quel).
-- Pas de migration de la mémoire `community-progression-logic` (rôles ≠ paliers).
+**Données déjà disponibles** : `obs.source` (`inaturalist` / `ebird` / `gbif`), `obs.originalUrl`, `obs.kingdom`, `obs.scientificName`, `obs.date` — tout vient des snapshots biodiv déjà chargés.
 
-## Mémoire
-Mettre à jour `mem://features/community/marcheur-impact-stories-logic` et le core terminology pour refléter : « le score d'une exploration s'appelle **Fréquence**, décliné en 6 paliers UI ».
+**Sécurité** : edge function publique en lecture seule sur API iNat (open data), JWT vérifié uniquement pour rate-limiting basique. Aucune donnée sensible.
+
+**Performance** : 1 seul appel iNat par marcheur par session (cache React Query `staleTime: 1h`). Si 0 observation iNat → pas d'appel.
+
+## Hors périmètre
+
+- Pas de stockage du handle iNat en BDD (tout résolu à la volée — peut être ajouté plus tard si trop d'appels).
+- Pas de résolution eBird (API plus complexe, pas d'usage immédiat puisque suggestion).
+- Pas de modification du système de scoring/Fréquence.
