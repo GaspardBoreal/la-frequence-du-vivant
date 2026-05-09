@@ -44,6 +44,7 @@ import { sanitizeHtml } from '@/utils/htmlSanitizer';
 import MediaPickerSheet from './MediaPickerSheet';
 import MediaLightbox from './MediaLightbox';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import PratiqueMarcheursPicker from './PratiqueMarcheursPicker';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 
 interface Props {
