@@ -1683,8 +1683,8 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         )}
         <div className="flex-1" />
         <div className="flex items-center gap-1 rounded-full bg-muted/40 dark:bg-white/5 p-0.5" role="group" aria-label="Trier les marcheurs">
-          {sortBtn('sentinelle-desc', '', <><ShieldCheck className="w-3 h-3" /><ArrowDownWideNarrow className="w-3 h-3" /></>, 'Trier par indice Sentinelle décroissant')}
-          {sortBtn('sentinelle-asc',  '', <><ShieldCheck className="w-3 h-3" /><ArrowUpNarrowWide className="w-3 h-3" /></>, 'Trier par indice Sentinelle croissant')}
+          {sortBtn('sentinelle-desc', '', <><ShieldCheck className="w-3 h-3" /><ArrowDownWideNarrow className="w-3 h-3" /></>, 'Trier par Fréquence décroissante')}
+          {sortBtn('sentinelle-asc',  '', <><ShieldCheck className="w-3 h-3" /><ArrowUpNarrowWide className="w-3 h-3" /></>, 'Trier par Fréquence croissante')}
           {sortBtn('alpha', 'A→Z', null, 'Trier par ordre alphabétique')}
         </div>
       </div>
