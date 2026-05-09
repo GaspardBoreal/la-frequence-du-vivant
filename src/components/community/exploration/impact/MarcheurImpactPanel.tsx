@@ -80,6 +80,12 @@ const MarcheurImpactPanel: React.FC<Props> = ({
 
   const sensible = useMarcheurSensibleSpecies(marcheur.speciesObserved, explorationId);
 
+  const { data: pratiquesPortees = [] } = useMarcheurPratiques(marcheur.id);
+  const pratiquesScopeCount = useMemo(
+    () => (explorationId ? pratiquesPortees.filter(p => p.exploration_id === explorationId).length : pratiquesPortees.length),
+    [pratiquesPortees, explorationId],
+  );
+
   const sentinelle = useMemo(() => computeSentinelleIndex({
     photos: marcheur.stats.photos,
     sons: marcheur.stats.sons,
@@ -89,7 +95,8 @@ const MarcheurImpactPanel: React.FC<Props> = ({
     bioCount: sensible.bioIndicateurs.length,
     auxCount: sensible.auxiliaires.length,
     eeeCount: sensible.eee.length,
-  }), [marcheur.stats, hasTemoignage, sensible]);
+    pratiquesCount: pratiquesScopeCount,
+  }), [marcheur.stats, hasTemoignage, sensible, pratiquesScopeCount]);
 
   const score = sentinelle.total;
   const label = sentinelle.label;
