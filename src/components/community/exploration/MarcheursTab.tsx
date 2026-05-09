@@ -1340,7 +1340,11 @@ const MarcheurCard: React.FC<{
                     isExpanded={isExpanded}
                     hasTemoignage={hasTestimony}
                   />
-                  <CitizenScienceCTA />
+                  <CitizenPlatformsCard
+                    marcheur={{ prenom: marcheur.prenom, nom: marcheur.nom }}
+                    explorationId={explorationId}
+                    explorationMarcheIds={explorationMarcheIds}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
