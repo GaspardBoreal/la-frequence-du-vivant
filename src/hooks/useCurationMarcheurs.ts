@@ -103,10 +103,16 @@ export const useMarcheursPratiquesCounts = (
 export const useAttachPratique = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { curation_id: string; marcheur_id: string; role_label?: string | null }) => {
+    mutationFn: async (vars: {
+      curation_id: string;
+      marcheur_id?: string | null;
+      user_id?: string | null;
+      role_label?: string | null;
+    }) => {
       const { data, error } = await supabase.rpc('attach_pratique_to_marcheur', {
         p_curation_id: vars.curation_id,
-        p_marcheur_id: vars.marcheur_id,
+        p_marcheur_id: vars.marcheur_id ?? null,
+        p_user_id: vars.user_id ?? null,
         p_role_label: vars.role_label ?? null,
       });
       if (error) throw error;
@@ -114,8 +120,10 @@ export const useAttachPratique = () => {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['curation-marcheurs', vars.curation_id] });
-      qc.invalidateQueries({ queryKey: ['marcheur-pratiques', vars.marcheur_id] });
+      if (vars.marcheur_id) qc.invalidateQueries({ queryKey: ['marcheur-pratiques', vars.marcheur_id] });
       qc.invalidateQueries({ queryKey: ['marcheurs-pratiques-counts'] });
+      qc.invalidateQueries({ queryKey: ['exploration-participants'] });
+      qc.invalidateQueries({ queryKey: ['exploration-marcheurs'] });
       toast.success('Marcheur relié à la pratique');
     },
     onError: (e: any) => toast.error(e?.message || 'Erreur lors de l\'association'),

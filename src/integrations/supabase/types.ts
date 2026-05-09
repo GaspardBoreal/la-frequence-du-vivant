@@ -4288,14 +4288,24 @@ export type Database = {
         Returns: boolean
       }
       age_bracket: { Args: { _birth: string }; Returns: string }
-      attach_pratique_to_marcheur: {
-        Args: {
-          p_curation_id: string
-          p_marcheur_id: string
-          p_role_label?: string
-        }
-        Returns: string
-      }
+      attach_pratique_to_marcheur:
+        | {
+            Args: {
+              p_curation_id: string
+              p_marcheur_id?: string
+              p_role_label?: string
+              p_user_id?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_curation_id: string
+              p_marcheur_id: string
+              p_role_label?: string
+            }
+            Returns: string
+          }
       attribute_species_to_marcheurs: {
         Args: {
           p_exploration_id: string
