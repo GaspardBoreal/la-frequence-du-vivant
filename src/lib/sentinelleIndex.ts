@@ -125,11 +125,14 @@ export function computeSentinelleIndex(input: SentinelleInputs): SentinelleResul
   if (totalContribs > 0 && total < 15) total = 15;
   total = Math.round(total);
 
-  let tier: SentinelleTier = 'curieux';
-  let label = 'Marcheur curieux';
-  if (total >= 76)      { tier = 'sentinelle';  label = 'Sentinelle vigilante'; }
-  else if (total >= 51) { tier = 'ambassadeur'; label = 'Ambassadeur confirmé'; }
-  else if (total >= 26) { tier = 'eclaireur';   label = 'Éclaireur attentif'; }
+  // Paliers de Fréquence (6 niveaux)
+  let tier: SentinelleTier = 'aucun';
+  if      (total >= 50) tier = 'engage';
+  else if (total >= 30) tier = 'eclaireur';
+  else if (total >= 16) tier = 'ecoute';
+  else if (total >= 6)  tier = 'curieux';
+  else if (total >= 1)  tier = 'eveil';
+  const label = TIER_FULL_LABEL[tier];
 
   const nextTip = computeNextTip({
     pillarCount, missing,
