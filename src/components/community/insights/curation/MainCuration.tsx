@@ -409,6 +409,11 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                       dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.description) }}
                     />
                   )}
+                  <PratiqueMarcheursPicker
+                    curationId={entry.id}
+                    marcheurs={marcheurs as any}
+                    isCurator={isCurator}
+                  />
                 </div>
               </article>
             );
