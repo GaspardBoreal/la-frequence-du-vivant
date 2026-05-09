@@ -1,55 +1,59 @@
-# Catégorie unique à l'attribution
+# Paliers de Fréquence — plus de nuance, vocabulaire aligné
 
-## Intention
+## Objectif
 
-Quand une espèce a plusieurs identifications dans la KB (ex. *Iris pseudacorus* = Indigène + Bio-indicatrice), le curateur doit **trancher une catégorie unique** avant de pouvoir confirmer l'attribution. Ce choix devient la vérité éditoriale (curation L'Œil) et bascule l'espèce dans le bon bucket Sentinelle pour tous les marcheurs concernés.
+Remplacer les 4 paliers actuels (Curieux / Éclaireur / Ambassadeur / Sentinelle) par **6 paliers** plus inspirants, et renommer le **score** en **Fréquence** dans toute l'UI.
 
-## Comportement UX (dialogue d'attribution)
+## Nouveaux paliers
 
-Au-dessus du sélecteur de marche, ajout d'un bloc **« Identification de l'espèce »** :
+| Score | Palier | Tonalité |
+|---|---|---|
+| `0` | *(rien affiché)* | Le marcheur n'apparaît pas avec un palier — invitation implicite à entrer dans la fréquence. |
+| `1 – 5` | **Éveil** | Premier souffle, premier geste. |
+| `6 – 15` | **Curieux** | L'attention s'aiguise. |
+| `16 – 29` | **Écoute active** | La perception s'affine, le marcheur revient et observe. |
+| `30 – 49` | **Éclaireur** | Contribue régulièrement, ouvre la voie. |
+| `50 – 100` | **Engagé** | Voix singulière, présence assumée au service du Vivant. |
 
-- **Si KB.primary seul** → bandeau lecture seule : badge catégorie + « Classification confirmée ».
-- **Si KB.primary + secondaries** → groupe de chips radio (1 par catégorie KB), aucune pré-sélection. Tant qu'aucune chip n'est choisie, le bouton **Confirmer** reste désactivé avec libellé *« Choisissez une identification »*.
-- **Si une curation L'Œil existe déjà** → la chip correspondante est mise en valeur (ring + petit label « actuel ») mais le choix reste obligatoire et explicite à chaque attribution.
-- **Garde-fou conflit** : si une curation `sense='oeil'` existe déjà avec une catégorie ≠ choix curateur **ET** que d'autres marcheurs ont déjà été attribués sur cette espèce dans cette exploration, on bloque la soumission avec une AlertDialog :
-  > « *Iris faux-acore* est déjà classé **Bio-indicatrice** pour 3 marcheur·ses. Modifier l'identification écraserait leur classement. Voulez-vous **conserver Bio-indicatrice** ou **demander une validation curateur** ? »
-  Deux actions : **Conserver l'actuelle** (force le choix sur l'existant et continue) / **Annuler**.
+Chaque palier reçoit :
+- un **libellé court** (ex. `Engagé`) et un **libellé enrichi** (ex. `Marcheur engagé`)
+- une **couleur sémantique** (token HSL existant) du plus pâle au plus dense
+- une **micro-phrase poétique** affichée en tooltip / story (ex. Éveil : *« Un premier pas, déjà une présence. »*)
 
-Mobile-first : chips wrap sur 2 lignes, hauteur 32px, focus visible.
+## Renommage UI : SCORE → Fréquence
 
-## Persistance
+Partout où le score 0-100 est affiché, on parle désormais de **Fréquence** :
+- Carte marcheur : `67 / 100` → **`Fréquence 67`**
+- Bloc impact : « Indice de Sentinelle » conservé comme nom du système, mais la valeur s'appelle **« Fréquence »**
+- Tooltip / breakdown : « Score total » → **« Fréquence du marcheur »**
+- Stories : « Ton score » → **« Ta Fréquence »**
 
-Avant `attribute_species_to_marcheurs`, on **upsert une curation** :
-- `sense='oeil'`, `entity_type='species'`, `entity_id = scientificName`, `category = <choix>`, `classification_source='curator'`, `needs_review=false`.
-- L'override est immédiat car `bucketSensibleSpecies` consulte déjà `curationByName` avant la KB.
-- Conséquence directe : Iris classé « Bio-indicatrice » apparaît dans le bucket Bio des marcheurs attribués → recompte du Sentinelle Index sur invalidation.
+Le palier reste un *qualificatif* de la Fréquence : « Fréquence 32 — Éclaireur ».
+
+## Périmètre — UI uniquement
+
+- Aucune migration BDD.
+- Les **rôles communauté** (`community_profiles.role` = `curieux/eclaireur/ambassadeur/sentinelle`) restent inchangés : ils gouvernent la sécurité, RLS, droits de curation, badges. Ce sont **deux concepts distincts** des paliers de Fréquence (qui sont per-exploration).
+- Les types TS internes (`SentinelleTier`) gardent leurs noms techniques pour ne rien casser ; seuls les **libellés affichés** changent.
 
 ## Détails techniques
 
-**Fichiers à modifier (frontend uniquement) :**
+### `src/lib/sentinelleIndex.ts`
+- Étendre `SentinelleTier` : `'eveil' | 'curieux' | 'ecoute' | 'eclaireur' | 'engage' | 'aucun'`.
+- Réécrire la fonction de calcul du palier avec les nouveaux seuils (1-5, 6-15, 16-29, 30-49, 50+).
+- Ajouter un champ `tierPhrase` (micro-phrase poétique) et `tierColorToken` (token sémantique).
+- Retourner `tier: 'aucun'` quand `total === 0` pour que l'UI sache ne rien afficher.
 
-1. `src/lib/speciesClassification.ts`
-   - Exporter `getSpeciesCategoryOptions(scientificName): SpeciesCategory[]` qui renvoie `[primary, ...secondary]` à partir de la KB (déduplication, ordre stable).
+### Composants UI à mettre à jour
+- `MarcheursTab.tsx` — masquer le palier si `tier === 'aucun'`, afficher `Fréquence {n}` + libellé palier.
+- `ScoreBreakdown.tsx`, `MarcheurImpactPanel.tsx`, `ImpactStoriesViewer.tsx`, `ValorizationBlock.tsx`, `ProgressionCard.tsx` — remplacer « score » / « Indice » (au sens valeur) par « Fréquence ».
+- `useMarcheurBadges.ts` — vérifier que les seuils de badges restent cohérents avec les nouveaux paliers ; ajuster si un badge se déclenchait sur l'ancien palier `eclaireur` (≥26).
+- Charte couleur : 6 tokens dégradés (du sable doux au vert profond) ajoutés à `index.css` si absents.
 
-2. `src/components/community/insights/curation/AttribuerObservationDialog.tsx`
-   - Nouveau bloc « Identification » entre le bandeau observateurs et le select Marche.
-   - State : `chosenCategory: SpeciesCategory | null`, initialisé à `null` (jamais pré-rempli même si curation existe).
-   - Lookup : `useExplorationCurations(explorationId, 'oeil')` filtré par `entity_id === scientificName` pour récupérer la curation actuelle + `useExplorationMarcheurs` pour compter les attributions existantes (déjà disponible via `useExplorationParticipants` + comptage via observations, ou nouveau hook léger `useSpeciesAttributionCount`).
-   - `canSubmit = selected.size > 0 && !!marcheId && !!chosenCategory && !mutation.isPending`.
-   - Détection conflit avant `mutation.mutate()` → ouvre `AlertDialog` shadcn.
-   - Mutation enchaînée : `upsertCuration` (via `useUpsertCuration`) **puis** `attribute_species_to_marcheurs`. Si l'upsert échoue, on n'attribue pas.
+### Hors périmètre
+- Pas de changement aux rôles `community_profiles`.
+- Pas de changement à la formule de calcul du score (le rééquilibrage Voix singulière reste tel quel).
+- Pas de migration de la mémoire `community-progression-logic` (rôles ≠ paliers).
 
-3. `src/hooks/useExplorationCurations.ts`
-   - Aucun changement de signature, on réutilise `useUpsertCuration` tel quel (gère déjà id existant vs nouveau).
-
-4. Invalidations supplémentaires après succès :
-   - `['exploration-curations', explorationId]` (déjà géré par `useUpsertCuration`)
-   - `['marcheur-sensible-species']`, `['exploration-marcheurs']`, `['marcheur-impact-snapshots']` (déjà gérés).
-
-**Pas de migration SQL** : `exploration_curations` supporte déjà `sense='oeil' / entity_type='species' / category` et la RPC `attribute_species_to_marcheurs` reste inchangée.
-
-## Hors scope
-
-- Pas de changement du Sentinelle Index lui-même.
-- Pas de re-classification rétroactive des espèces déjà attribuées sans curation (elles continuent d'utiliser KB.primary tant qu'aucun curateur ne passe par le dialogue).
-- Pas d'extension à d'autres sens (Main, Cœur…) — uniquement L'Œil.
+## Mémoire
+Mettre à jour `mem://features/community/marcheur-impact-stories-logic` et le core terminology pour refléter : « le score d'une exploration s'appelle **Fréquence**, décliné en 6 paliers UI ».

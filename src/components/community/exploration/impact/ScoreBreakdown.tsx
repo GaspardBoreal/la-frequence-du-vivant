@@ -62,7 +62,7 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total }) => {
 
   return (
     <div className="w-full max-w-[320px] space-y-2">
-      <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Votre score, expliqué</div>
+      <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Votre Fréquence, expliquée</div>
       {rows.map((r, i) => {
         const pct = (r.value / r.max) * 100;
         return (
