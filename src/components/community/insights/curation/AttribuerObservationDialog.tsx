@@ -1,18 +1,26 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, UserPlus, MapPin, CheckCircle2, Search } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Loader2, UserPlus, MapPin, CheckCircle2, Search, Sparkles, AlertTriangle } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 import { useExplorationParticipants, type MarcheurWithStats } from '@/hooks/useExplorationParticipants';
 import { useExplorationAllMarches } from '@/hooks/useExplorationAllMarches';
 import { useSpeciesObservers } from '@/hooks/useSpeciesObservers';
+import { getSpeciesCategoryOptions } from '@/lib/speciesClassification';
+import type { SpeciesCategory } from '@/lib/speciesClassification';
+import { cn } from '@/lib/utils';
 
 interface Props {
   open: boolean;
