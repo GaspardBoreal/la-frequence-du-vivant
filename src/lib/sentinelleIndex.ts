@@ -20,7 +20,37 @@ export interface SentinelleInputs {
   eeeCount: number;
 }
 
-export type SentinelleTier = 'curieux' | 'eclaireur' | 'ambassadeur' | 'sentinelle';
+export type SentinelleTier = 'aucun' | 'eveil' | 'curieux' | 'ecoute' | 'eclaireur' | 'engage';
+
+/** Phrase poétique associée à chaque palier (affichée en tooltip / story). */
+export const TIER_PHRASES: Record<SentinelleTier, string> = {
+  aucun:     'En attente d\'une première trace.',
+  eveil:     'Un premier pas, déjà une présence.',
+  curieux:   'L\'attention s\'aiguise, le regard s\'ouvre.',
+  ecoute:    'L\'écoute s\'affine, la perception s\'installe.',
+  eclaireur: 'Contribue régulièrement et ouvre la voie.',
+  engage:    'Voix singulière au service du Vivant.',
+};
+
+/** Libellé court (chip). */
+export const TIER_SHORT_LABEL: Record<SentinelleTier, string> = {
+  aucun:     '',
+  eveil:     'Éveil',
+  curieux:   'Curieux',
+  ecoute:    'Écoute active',
+  eclaireur: 'Éclaireur',
+  engage:    'Engagé',
+};
+
+/** Libellé enrichi (titre / story). */
+export const TIER_FULL_LABEL: Record<SentinelleTier, string> = {
+  aucun:     'En attente',
+  eveil:     'Marcheur en éveil',
+  curieux:   'Marcheur curieux',
+  ecoute:    'Marcheur en écoute active',
+  eclaireur: 'Marcheur éclaireur',
+  engage:    'Marcheur engagé',
+};
 
 export interface SentinelleBreakdown {
   pillars:  { value: number; max: number; count: number; of: number; missing: string[] };
