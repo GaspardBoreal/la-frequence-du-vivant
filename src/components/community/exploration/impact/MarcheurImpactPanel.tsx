@@ -6,6 +6,7 @@ import ImpactTeaserCard from './ImpactTeaserCard';
 import ImpactStoriesViewer from './ImpactStoriesViewer';
 import { useMarcheurSensibleSpecies } from '@/hooks/useMarcheurSensibleSpecies';
 import { useMarcheurBadges } from '@/hooks/useMarcheurBadges';
+import { useMarcheurPratiques } from '@/hooks/useCurationMarcheurs';
 import { computeSentinelleIndex } from '@/lib/sentinelleIndex';
 import type { MarcheurWithStats } from '@/hooks/useExplorationParticipants';
 
