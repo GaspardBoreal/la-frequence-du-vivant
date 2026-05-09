@@ -77,7 +77,7 @@ const MarcheurImpactPanel: React.FC<Props> = ({
     return groups;
   }, [marcheur.speciesObserved, snapshots]);
 
-  const sensible = useMarcheurSensibleSpecies(marcheur.speciesObserved);
+  const sensible = useMarcheurSensibleSpecies(marcheur.speciesObserved, explorationId);
 
   const sentinelle = useMemo(() => computeSentinelleIndex({
     photos: marcheur.stats.photos,
