@@ -22,6 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useReorderMarcheurObservations } from '@/hooks/useReorderMarcheurObservations';
 import { useExplorationContributionsCounts, lookupContributions } from '@/hooks/useExplorationContributionsCounts';
 import MarcheurAudioPanel from '@/components/community/audio/MarcheurAudioPanel';
+import CitizenPlatformsCard from '@/components/community/exploration/impact/CitizenPlatformsCard';
 import {
   DndContext,
   PointerSensor,
