@@ -72,7 +72,7 @@ export const useMarcheurPratiques = (crewId: string | null | undefined) => {
           role_label: row.role_label,
         })) as PratiqueForMarcheur[];
     },
-    enabled: !!marcheurId,
+    enabled: !!crewId && !isSyntheticUiId(crewId),
     staleTime: 60_000,
   });
 };
