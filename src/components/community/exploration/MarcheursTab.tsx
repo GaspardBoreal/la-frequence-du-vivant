@@ -23,6 +23,7 @@ import { useReorderMarcheurObservations } from '@/hooks/useReorderMarcheurObserv
 import { useExplorationContributionsCounts, lookupContributions } from '@/hooks/useExplorationContributionsCounts';
 import MarcheurAudioPanel from '@/components/community/audio/MarcheurAudioPanel';
 import CitizenPlatformsCard from '@/components/community/exploration/impact/CitizenPlatformsCard';
+import { useMarcheursPratiquesCounts } from '@/hooks/useCurationMarcheurs';
 import {
   DndContext,
   PointerSensor,
