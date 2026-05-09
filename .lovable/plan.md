@@ -1,94 +1,80 @@
-## Vue Marcheurs → Marcheurs : score Sentinelle, tri & filtre espèces remarquables
 
-Trois ajouts sur la liste des marcheur·euse·s d'une exploration (`MarcheursTab.tsx`), alignés mobile-first et cohérents avec le design system (tokens `emerald/amber/rose/violet`, pastilles arrondies déjà en place).
+# Évolution de l'Indice de Sentinelle — Pilier "Voix singulière"
 
----
+## Constat
 
-### 1. Affichage élégant du score Sentinelle (par carte)
+Aujourd'hui, écrire un haïku rapporte **+4 pts** (1 pilier sur 5) — exactement comme cocher la case « j'ai mis 1 photo ». Karine Log, qui a pris la peine d'écrire, finit avec le même score que des marcheurs qui n'ont fait aucun geste sensible. L'écriture, l'enregistrement sonore et le témoignage — gestes plus rares et plus engageants — méritent d'être visiblement mieux récompensés.
 
-Un **chip Sentinelle** unique, posé à droite de la ligne d'en-tête, juste avant le chevron — visible carte fermée comme ouverte.
+## Nouvelle répartition (toujours sur 100 pts)
 
-```text
-┌─ Avatar ─┬─ Prénom NOM ────────┬─ pictos contribs ─┬── chip Sentinelle ──┬─ ⌄ ─┐
-│   LK     │  rôle               │ 📷7 🎧2 🪶1 🍃3   │ 🛡 72 · Ambassadeur │     │
-└──────────┴─────────────────────┴───────────────────┴─────────────────────┴─────┘
+| Bloc | Avant | Après | Variation |
+|---|---|---|---|
+| 🌿 Détections précieuses (bio/aux/EEE) | 40 | **35** | −5 |
+| 🪶 Variété des gestes (5 piliers) | 20 | **15** | −5 |
+| 🎙 **Voix singulière** (textes + sons + témoignages) | — | **20** | **NOUVEAU** |
+| 📸 Volume de contributions | 20 | **15** | −5 |
+| 🦋 Diversité d'espèces | 20 | **15** | −5 |
+| **Total** | 100 | **100** | = |
+
+## Le nouveau pilier "Voix singulière" en détail
+
+Calcul d'un score d'expression sensible, plafonné à 20 pts :
+
+```
+voix = textes × 2.5  +  sons × 2.5  +  temoignage × 2.5
+voixValue = min(voix / 10, 1) × 20
 ```
 
-Spécifications du chip :
-- Icône `ShieldCheck` (lucide), valeur entière `/100`, libellé du tier en `text-[10px]` masqué `<sm` (juste icône + chiffre sur mobile très étroit).
-- Couleur gradient selon le tier (`computeSentinelleIndex.tier`) :
-  - `curieux` → `from-slate-500/10 to-slate-500/5` + texte `text-slate-500`
-  - `eclaireur` → `from-amber-500/15 to-amber-500/5` + `text-amber-500`
-  - `ambassadeur` → `from-emerald-500/15 to-emerald-500/5` + `text-emerald-500`
-  - `sentinelle` → `from-violet-500/20 via-emerald-500/10 to-amber-500/15` + `text-emerald-400`, ring `ring-1 ring-emerald-500/30`, halo `shadow-[0_0_18px_-6px_rgba(16,185,129,0.5)]`
-- Tooltip natif `title` : `"Indice Sentinelle 72/100 — Ambassadeur"`.
-- Tap sur le chip → ouvre la carte directement sur le sous-onglet `impact` (où `MarcheurImpactPanel` détaille déjà la décomposition).
+- 1 texte (haïku, récit, légende — tous égaux) = **+5 pts** environ
+- 1 son = **+5 pts**
+- 1 témoignage post-événement = **+5 pts** (même traitement que les textes)
+- Saturation à 4 gestes cumulés (au-delà, on bascule sur le bloc volume)
+- Plancher : si au moins 1 contribution textuelle/sonore/témoignage → minimum 5 pts dans ce bloc
 
-Calcul : un seul `useMemo` au niveau du parent (`MarcheursTab`) construit pour chaque marcheur :
-- les buckets sensibles via `bucketSensibleSpecies(speciesNames, curationByName)` (la `curationByName` est hoistée du hook `useMarcheurSensibleSpecies` au parent — une seule requête `exploration_curations` pour toute la liste),
-- puis `computeSentinelleIndex({ photos, sons, textes, hasTemoignage, speciesCount, bioCount, auxCount, eeeCount })`.
+## Impact concret pour Karine Log (ex. 1 haïku, 0 photo, 0 son)
 
-Aucune requête supplémentaire n'est ajoutée par marcheur.
+| | Avant | Après |
+|---|---|---|
+| Piliers (1/5) | 4 | 3 |
+| Volume (1 contrib) | 2 | 2 |
+| Espèces | 0 | 0 |
+| Sensibles | 0 | 0 |
+| **Voix singulière** | — | **+5** |
+| Plancher | 15 | 15 |
+| **Total** | **15** | **20** |
 
----
+Une marcheuse avec **2 photos seulement** restera autour de 15 pts (plancher). L'écart se creuse en faveur de l'expression sensible.
 
-### 2. Tri par score Sentinelle (décroissant par défaut) + croissant + alpha
+## Aperçu UI
 
-Dans la barre de résumé existante (`Users · N marcheurs · X observations`), ajouter à droite un **segmented control compact** :
+Dans `ScoreBreakdown` (Stories), une nouvelle ligne apparaît :
 
-```text
-[ 🛡 ↓ ]  [ 🛡 ↑ ]  [ A→Z ]
+```
+🎙 Voix singulière           5 / 20
+   ─────────────────░░░░░
+   1 texte · 0 son · 0 témoignage
 ```
 
-- Composant : trois petits boutons `rounded-full` `h-7` `px-2` `text-[11px]`, état actif `bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20`, inactif `text-muted-foreground hover:bg-muted/50`.
-- État local `sortMode: 'sentinelle-desc' | 'sentinelle-asc' | 'alpha'`, défaut `'sentinelle-desc'`.
-- Mobile : le contrôle reste sur la même ligne (icônes seules + lettres) ; au besoin il wrappe sous le compteur (flex-wrap déjà en place).
-- Tri implémenté en remplaçant l'actuel `score()` du `useMemo` `sortedMarcheurs` par le score Sentinelle calculé en (1). Tie-break : ordre alphabétique FR via `Intl.Collator` (déjà présent).
+Le conseil dynamique (`nextTip`) priorisera : « Ajoutez 1 texte ou 1 son : +5 pts » si `voix < 20`, juste après la priorité bio-indicateur.
 
----
+Aucun changement dans les chips de la vue Marcheurs (le total sur 100 reste comparable). Aucun marcheur ne perd de points en valeur absolue significative — seuls les rangs se rééquilibrent en faveur des plus expressifs.
 
-### 3. Picto « espèces remarquables » : filtre rapide bio / auxiliaire / EEE
+## Détails techniques
 
-Sous la barre de tri, une rangée de **filter chips toggle** :
+**Fichiers modifiés :**
 
-```text
-Espèces remarquables :  [🌿 Bio · 4]  [🐞 Auxiliaire · 7]  [⚠ EEE · 1]   [✕ tout]
-```
+1. **`src/lib/sentinelleIndex.ts`** — refonte des coefficients :
+   - `SentinelleInputs` reste inchangé (déjà `photos`, `sons`, `textes`, `hasTemoignage`)
+   - `SentinelleBreakdown` gagne une 5ᵉ entrée `voix: { value, max, textes, sons, temoignage }`
+   - Nouvelles constantes : `VOIX_CAP = 10` (en unités pondérées), poids `pillars=15 / volume=15 / species=15 / sensible=35 / voix=20`
+   - Plancher de 15 pts conservé
+   - `computeNextTip` : nouvelle branche prioritaire #2 (juste après sensibles) si `voix < 20`
 
-Spécifications :
-- Trois chips, un par catégorie sensible :
-  - Bio → `Flower2`, palette emerald (`bg-emerald-500/10 text-emerald-500`, actif `ring-1 ring-emerald-500/40 bg-emerald-500/20`).
-  - Auxiliaire → `Bug` (lucide), palette amber.
-  - EEE → `AlertTriangle`, palette rose.
-- Compteur affiché = nombre de marcheurs qui ont ≥1 espèce dans ce bucket (pas le nombre d'espèces).
-- Multi-sélect en **OR** (un marcheur passe le filtre s'il satisfait au moins un chip actif) — cohérent avec un "raccourci de découverte".
-- Bouton `✕ tout` apparaît dès qu'au moins un chip est actif et réinitialise.
-- Si aucun chip actif → liste complète (comportement actuel).
-- Empty state si la combinaison de filtres ne renvoie personne : petit bloc inline `"Aucun marcheur n'a encore identifié d'espèce dans cette catégorie."` + bouton « Voir tous les marcheurs ».
-- Le chip est **caché** si tous les compteurs sont à 0 (exploration sans aucune espèce sensible identifiée), pour rester sobre.
+2. **`src/components/community/exploration/impact/ScoreBreakdown.tsx`** — ajout d'une 5ᵉ row 🎙 « Voix singulière », couleur `hsl(280 60% 65%)` (violet doux pour le poétique). Mettre à jour les `max` des autres rows (35/15/15/15).
 
-Tap sur un chip → également un cue visuel léger sur les cartes filtrées : ajout d'un mini-pastille colorée (`Flower2`/`Bug`/`AlertTriangle`) dans la ligne des pictos contributions, pour expliquer pourquoi le marcheur apparaît.
+3. **Mémoire** — mettre à jour [Impact Stories](mem://features/community/marcheur-impact-stories-logic) avec la nouvelle ventilation 35/20/15/15/15 et le pilier "Voix singulière".
 
----
-
-### Mobile-first & accessibilité
-
-- Tous les contrôles : cible tap ≥ 32px, `aria-pressed` sur les toggles, `aria-label` explicite (« Trier par score Sentinelle décroissant », « Filtrer : auxiliaires »).
-- Le chip Sentinelle reste visible même sur écrans étroits (les pictos contribs se compactent déjà via `flex-wrap` ; on garantit que le chip Sentinelle est `flex-shrink-0`).
-- Aucune nouvelle dépendance, aucun changement de schéma.
-
----
-
-### Détails techniques (pour implémentation)
-
-Fichiers touchés (front uniquement) :
-- `src/components/community/exploration/MarcheursTab.tsx` :
-  - Hoister la query `exploration_curations` (sense=`oeil`, entity_type=`species`) au niveau parent → `curationByName: Map`.
-  - Ajouter `marcheurMetrics: Map<id, { sentinelle: SentinelleResult; buckets: SensibleBuckets }>` via `useMemo`, partagé pour tri, filtre, chips et passage en prop à `MarcheurCard`.
-  - Remplacer le `score()` actuel par `metrics.sentinelle.total`.
-  - Ajouter état `sortMode` et `activeBuckets: Set<'bio'|'aux'|'eee'>`.
-  - Filtrer `sortedMarcheurs` selon `activeBuckets` avant rendu.
-- `MarcheurCard` reçoit `sentinelle: SentinelleResult` et `activeBuckets` ; affiche le chip + ouvre directement sur `impact` quand on tap le chip (via callback `onOpenImpact`).
-- Aucun changement à `useMarcheurSensibleSpecies`, `sentinelleIndex.ts`, `speciesClassification.ts` (ils sont déjà la source de vérité unique alignée sur L'œil).
-
-Pas de migration SQL. Pas d'edge function. Pas d'impact sur les vues admin.
+**Aucun changement** :
+- Pas de migration SQL
+- Pas de modification de `useMarcheurSensibleSpecies`, `useMarcheurBadges`, `MarcheurImpactPanel`, `MarcheursTab` (signatures inchangées)
+- Les seuils de tier (26/51/76) restent — un Sentinelle reste un Sentinelle
