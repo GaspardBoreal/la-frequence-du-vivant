@@ -12,7 +12,7 @@
   "species": {
     "Carabus": {
       "primary": "auxiliaire",
-      "secondary": ["indigene", "bioindicatrice"],
+      "secondary": ["indigene"],
       "evidence": [
         {
           "source": "INRAE",
