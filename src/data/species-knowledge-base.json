@@ -10,6 +10,20 @@
     "patrimoniale": "Espèce protégée par arrêté national/régional OU classée Liste Rouge UICN France ≥ NT (Quasi menacée)"
   },
   "species": {
+    "Carabus": {
+      "primary": "auxiliaire",
+      "secondary": ["indigene", "bioindicatrice"],
+      "evidence": [
+        {
+          "source": "INRAE",
+          "ref_code": "Carabidae-predateurs",
+          "url": "https://www6.inrae.fr/encyclopedie-pucerons/Especes-d-auxiliaires/Carabidae",
+          "quote": "Carabidae : prédateurs polyphages des cultures (limaces, larves, pucerons au sol). Bioindicateurs reconnus de la qualité des sols et des bocages."
+        }
+      ],
+      "habitat_dordogne": "Bocage, lisières forestières, prairies, sols vivants",
+      "notes": "Genre couvrant toutes les espèces de Carabes (dont Carabus coriaceus, le Carabe cuirassé). Auxiliaire majeur en agroécologie."
+    },
     "Quercus robur": {
       "primary": "indigene",
       "secondary": ["patrimoniale"],
