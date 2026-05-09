@@ -55,11 +55,12 @@ export const TIER_FULL_LABEL: Record<SentinelleTier, string> = {
 };
 
 export interface SentinelleBreakdown {
-  pillars:  { value: number; max: number; count: number; of: number; missing: string[] };
-  volume:   { value: number; max: number; raw: number; cap: number };
-  species:  { value: number; max: number; count: number; cap: number };
-  sensible: { value: number; max: number; bio: number; aux: number; eee: number; weighted: number; cap: number };
-  voix:     { value: number; max: number; textes: number; sons: number; temoignage: number; weighted: number; cap: number };
+  pillars:   { value: number; max: number; count: number; of: number; missing: string[] };
+  volume:    { value: number; max: number; raw: number; cap: number };
+  species:   { value: number; max: number; count: number; cap: number };
+  sensible:  { value: number; max: number; bio: number; aux: number; eee: number; weighted: number; cap: number };
+  voix:      { value: number; max: number; textes: number; sons: number; temoignage: number; weighted: number; cap: number };
+  pratiques: { value: number; max: number; count: number; cap: number };
 }
 
 export interface SentinelleNextTip {
