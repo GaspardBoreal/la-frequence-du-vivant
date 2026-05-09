@@ -1,95 +1,84 @@
-# Bandeau « Contributeur citoyen » intelligent et personnalisé
+# Pratiques emblématiques × Marcheurs — intégration dans la Fréquence
 
-Transformer le bandeau statique actuel en **carte vivante** qui distingue les plateformes où le marcheur contribue déjà (avec son avatar et son profil iNaturalist réel) des plateformes encore à rejoindre, avec des invitations ciblées par taxon observé.
+Faire de la mémoire d'un geste agroécologique (Jean-François Servant et ses pairs) un signal pleinement valorisé dans la Fréquence du marcheur, sans casser l'équilibre actuel du score.
 
-## Vision Wahouhh
+## 1. Modèle de données
 
-Au lieu de :
-> 🔬 Devenez contributeur citoyen ! [iNaturalist] [eBird]
+Les pratiques sont déjà stockées dans `exploration_curations` (sense = `'main'`). On ajoute simplement une **table de liaison** `curation_marcheurs` :
 
-On affiche :
-```
-┌─ Vos plateformes citoyennes ──────────────────────────┐
-│                                                        │
-│ ✓ DÉJÀ ACTIF                                          │
-│ ┌─────────────────────────────────────────────┐       │
-│ │ 🟢 [avatar] iNaturalist · @gaspardboreal    │       │
-│ │    48 obs ici · 312 obs au total · 89 esp.  │       │
-│ │    Dernière : Iris faux-acore · 12 mai      │       │
-│ │                       [Voir mon profil →]    │       │
-│ └─────────────────────────────────────────────┘       │
-│                                                        │
-│ ⚡ À DÉCOUVRIR                                         │
-│ ┌─────────────────────────────────────────────┐       │
-│ │ 🐦 eBird                                     │       │
-│ │ Vous avez identifié 12 oiseaux. eBird est   │       │
-│ │ LA plateforme mondiale pour les oiseaux.    │       │
-│ │ Vos chants peuvent enrichir la science.     │       │
-│ │                          [Rejoindre eBird]   │       │
-│ └─────────────────────────────────────────────┘       │
-└────────────────────────────────────────────────────────┘
+```text
+curation_marcheurs
+  id UUID PK
+  curation_id UUID  → exploration_curations(id) ON DELETE CASCADE
+  marcheur_name TEXT NOT NULL    (forme normalisée NFD, pour matcher les obs)
+  marcheur_profile_id UUID NULL  → community_profiles(id) si résolu
+  role_label TEXT NULL           ("Praticien", "Témoin", "Apprenti"…)
+  display_order INT
+  created_by UUID
+  created_at TIMESTAMPTZ
+  UNIQUE (curation_id, marcheur_name)
 ```
 
-## Étapes
+- Index sur `marcheur_name` et `marcheur_profile_id`.
+- RLS : lecture publique (cohérent avec curations existantes), écriture réservée à `admin` + curateurs (`ambassadeur`, `sentinelle`) via `has_role` / RPC `SECURITY DEFINER` pour insert/delete (mêmes garde-fous que le réordonnancement des curations).
 
-### 1. Edge function `resolve-inaturalist-user`
-Nouvelle fonction qui prend une URL d'observation iNat (ex. `https://www.inaturalist.org/observations/123456`) et renvoie :
-- `login` (pseudo, ex. `gaspardboreal`)
-- `name` (nom affiché)
-- `icon_url` (avatar)
-- `observations_count` (total mondial)
-- `species_count`
-- `profile_url`
+## 2. Édition (qui associe, où)
 
-Logique : extraire l'`observation_id` de l'URL → appeler `https://api.inaturalist.org/v1/observations/{id}` → renvoyer le bloc `user`. Cache mémoire 1h pour éviter de rappeler.
+Dans `MainCuration.tsx` (vue admin/curateur déjà existante de l'onglet **Apprendre → La main**) : sur chaque carte de pratique éditoriale, ajouter un bloc "Marcheurs associés" :
 
-### 2. Hook `useMarcheurCitizenPlatforms`
-Nouveau hook qui, à partir des observations déjà chargées du marcheur :
-- groupe par `source` → compte locales, dernière obs, kingdom dominant
-- pour chaque source détectée, prend la 1ère `originalUrl` valide et déclenche la résolution profil correspondante (iNat seulement pour le moment)
-- renvoie `{ active: [{platform, count, lastObs, profile?}], suggested: [{platform, reason, kingdomHint}] }`
+- Combobox de recherche (alimenté par `useExplorationMarcheurs`) → multi-sélection.
+- Chips supprimables.
+- Champ optionnel `role_label` par marcheur.
 
-### 3. Refonte de `CitizenScienceCTA`
-- Reçoit `marcheur` + `observations` en props
-- Sépare visuellement deux blocs : **« Vos contributions »** (vert émeraude) et **« Élargir votre voix »** (ambre)
-- Carte active : avatar (ou initiales), badge ✓ "Actif", compteur local, total mondial, lien profil
-- Carte suggérée : invitation ciblée selon les kingdoms du marcheur (« Vous avez photographié 12 oiseaux → eBird », « 23 plantes → Pl@ntNet », etc.)
-- Mini-animation pulse sur le badge ✓
-- Plateformes couvertes : iNaturalist, eBird, GBIF (lecture seule, pas de signup), + suggestion conditionnelle Pl@ntNet si beaucoup de Plantae
+Visible et modifiable par : admin, ambassadeur, sentinelle (réutilise `useCanCurateAudio`/équivalent).
 
-### 4. Mapping kingdom → invitation
-| Kingdom dominant | Plateforme suggérée | Phrase d'invitation |
+## 3. Nouveau calcul de Fréquence (toujours sur 100)
+
+Modification dans `src/lib/sentinelleIndex.ts` :
+
+| Critère | Avant | Après |
 |---|---|---|
-| Animalia (oiseaux) | eBird | « 12 oiseaux identifiés. Rejoignez le 1er réseau ornitho mondial. » |
-| Plantae | Pl@ntNet (suggestion supplémentaire) | « 23 plantes observées. Pl@ntNet vous aide à les identifier en 1 clic. » |
-| Mixte | iNaturalist (si pas actif) | « Une plateforme universelle pour toutes vos rencontres. » |
+| Détections précieuses | 35 | 35 |
+| Voix singulière | 20 | 20 |
+| Variété des gestes | 15 | 15 |
+| **Volume** | **15** | **10** |
+| **Diversité d'espèces** | **15** | **10** |
+| **Pratiques emblématiques** (nouveau) | — | **10** |
+| Total | 100 | 100 |
 
-### 5. États & dégradés
-- **Loading** profil iNat : skeleton avatar + "Chargement de votre profil…"
-- **Erreur** résolution : repli sur carte sobre "Plateforme active · X observations" + lien recherche par nom
-- **Aucune obs sur la plateforme** : carte invitation par défaut
+- Formule pratiques : `min(nbPratiques * 2 / 10, 1) * 10` → 5 pratiques saturent.
+- Plafonds ajustés : `VOLUME_MAX=10`, `SPECIES_MAX=10`, `PRATIQUES_MAX=10`, `PRATIQUES_CAP=5`.
+- `SentinelleInputs` reçoit un nouveau champ `pratiquesCount: number`.
+- `SentinelleBreakdown` reçoit `pratiques: { value, max:10, count, cap:5, titles: string[] }`.
+- `computeNextTip` : nouvelle branche prioritaire si `pratiquesCount === 0` → "Documentez une pratique avec un agriculteur : +2 pts".
+- Paliers (`eveil` / `curieux` / `ecoute` / `eclaireur` / `engage`) inchangés : seuils déjà calibrés sur 100.
+
+## 4. Affichage UI
+
+**4a. Ligne dans `ScoreBreakdown.tsx`** — sous "Diversité d'espèces" :
+- Icône 🌾, libellé "Pratiques emblématiques", couleur `hsl(40 70% 60%)` (paille / soleil).
+- Détail : "N pratique(s) documentée(s)".
+- Chips cliquables sous la barre (max 3 visibles + "…+N") → ouvrent la fiche pratique correspondante dans **Apprendre → La main**.
+
+**4b. Section dédiée dans le portfolio du marcheur** (`MarcheursTab.tsx`, juste sous `CitizenPlatformsCard`) :
+- Bloc "Pratiques portées par {prénom}", ton ambré chaleureux.
+- Pour chaque pratique : vignette (premier média), titre, role_label, courte description, lien vers la fiche complète.
+- Empty state inspirant : "Une pratique observée, c'est un savoir vivant transmis. Demandez à un curateur de relier {prénom} à un geste de terrain."
+
+## 5. Hooks & agrégation
+
+- Nouveau hook `useMarcheurPratiques(marcheurName, explorationIds)` → join `curation_marcheurs` × `exploration_curations` filtré par `sense='main'` et exploration en cours.
+- Brancher le résultat dans le calcul du portfolio (déjà alimenté par les inputs Sentinelle) en passant `pratiquesCount` à `computeSentinelleIndex`.
+
+## 6. Hors périmètre
+
+- Pas de changement sur Voix singulière / Détections précieuses / Variété.
+- Pas de migration des badges existants (12 badges) — sera traité ensuite si besoin.
+- Pas de modification du quiz, du CRM ou des publications publiques.
 
 ## Détails techniques
 
-**Fichiers créés**
-- `supabase/functions/resolve-inaturalist-user/index.ts` — JWT validé, input `observation_url` ou `observation_id`, cache mémoire 1h, CORS standard.
-- `src/hooks/useMarcheurCitizenPlatforms.ts` — agrège `species` (déjà chargé dans `ContributionsSubTab`) + appelle l'edge function via `supabase.functions.invoke` pour iNat uniquement.
-- `src/components/community/exploration/impact/CitizenPlatformsCard.tsx` — nouveau composant remplaçant `CitizenScienceCTA`.
-
-**Fichiers modifiés**
-- `src/components/community/exploration/MarcheursTab.tsx` :
-  - Supprimer `CitizenScienceCTA` (lignes 606-638)
-  - Ligne 1342 : remplacer par `<CitizenPlatformsCard marcheur={marcheur} explorationId={...} />`
-  - Le composant interne fera ses propres queries (même logique d'agrégation que `ContributionsSubTab` lignes 380-467) — extraire cette agrégation dans un hook partagé `useMarcheurObservedSpecies` pour éviter la duplication.
-
-**Données déjà disponibles** : `obs.source` (`inaturalist` / `ebird` / `gbif`), `obs.originalUrl`, `obs.kingdom`, `obs.scientificName`, `obs.date` — tout vient des snapshots biodiv déjà chargés.
-
-**Sécurité** : edge function publique en lecture seule sur API iNat (open data), JWT vérifié uniquement pour rate-limiting basique. Aucune donnée sensible.
-
-**Performance** : 1 seul appel iNat par marcheur par session (cache React Query `staleTime: 1h`). Si 0 observation iNat → pas d'appel.
-
-## Hors périmètre
-
-- Pas de stockage du handle iNat en BDD (tout résolu à la volée — peut être ajouté plus tard si trop d'appels).
-- Pas de résolution eBird (API plus complexe, pas d'usage immédiat puisque suggestion).
-- Pas de modification du système de scoring/Fréquence.
+- Migration SQL : table `curation_marcheurs` + index + RLS + RPC `attach_pratique_to_marcheur(curation_id, marcheur_name, role_label)` et `detach_pratique_from_marcheur(...)` en `SECURITY DEFINER` validant `has_role` admin/ambassadeur/sentinelle.
+- Normalisation `marcheur_name` côté RPC via `unaccent(lower(trim(...)))` (cohérent avec [Identity matching](mem://technical/community/identity-matching-logic)).
+- Invalidation React Query : clés `['marcheur-pratiques', marcheurName]` + `['exploration-curations', explorationId, 'main']`.
+- Mémoires à mettre à jour après implémentation : `mem://features/community/marcheur-impact-stories-logic` (nouveau critère) et création d'une mémoire `mem://features/community/pratiques-emblematiques-marcheurs-logic`.
