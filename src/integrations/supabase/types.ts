@@ -571,6 +571,51 @@ export type Database = {
           },
         ]
       }
+      curation_marcheurs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          curation_id: string
+          display_order: number
+          id: string
+          marcheur_id: string
+          role_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          curation_id: string
+          display_order?: number
+          id?: string
+          marcheur_id: string
+          role_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          curation_id?: string
+          display_order?: number
+          id?: string
+          marcheur_id?: string
+          role_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curation_marcheurs_curation_id_fkey"
+            columns: ["curation_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_curations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_marcheurs_marcheur_id_fkey"
+            columns: ["marcheur_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_marcheurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_collection_logs: {
         Row: {
           collection_mode: string
@@ -4243,6 +4288,14 @@ export type Database = {
         Returns: boolean
       }
       age_bracket: { Args: { _birth: string }; Returns: string }
+      attach_pratique_to_marcheur: {
+        Args: {
+          p_curation_id: string
+          p_marcheur_id: string
+          p_role_label?: string
+        }
+        Returns: string
+      }
       attribute_species_to_marcheurs: {
         Args: {
           p_exploration_id: string
@@ -4293,6 +4346,10 @@ export type Database = {
         Returns: undefined
       }
       delete_exploration_page: { Args: { page_id: string }; Returns: undefined }
+      detach_pratique_from_marcheur: {
+        Args: { p_curation_id: string; p_marcheur_id: string }
+        Returns: boolean
+      }
       generate_community_affiliate_link: {
         Args: {
           _channel: string

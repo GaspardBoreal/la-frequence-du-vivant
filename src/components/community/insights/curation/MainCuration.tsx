@@ -44,6 +44,7 @@ import { sanitizeHtml } from '@/utils/htmlSanitizer';
 import MediaPickerSheet from './MediaPickerSheet';
 import MediaLightbox from './MediaLightbox';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import PratiqueMarcheursPicker from './PratiqueMarcheursPicker';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 
 interface Props {
@@ -408,6 +409,14 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                       dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.description) }}
                     />
                   )}
+                  <PratiqueMarcheursPicker
+                    curationId={entry.id}
+                    marcheurs={marcheurs.map(m => ({
+                      id: m.id, prenom: m.prenom, nom: m.nom,
+                      avatar_url: m.avatarUrl, couleur: m.couleur,
+                    }))}
+                    isCurator={isCurator}
+                  />
                 </div>
               </article>
             );
