@@ -1313,6 +1313,11 @@ const MarcheurCard: React.FC<{
                     explorationId={explorationId}
                     explorationMarcheIds={explorationMarcheIds}
                   />
+                  <PratiquesPorteesCard
+                    marcheurId={marcheur.id}
+                    prenom={marcheur.prenom}
+                    explorationId={explorationId}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
