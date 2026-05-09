@@ -27,6 +27,14 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total }) => {
       color: 'hsl(150 70% 55%)',
     },
     {
+      icon: '🎙',
+      label: 'Voix singulière',
+      value: breakdown.voix.value,
+      max: breakdown.voix.max,
+      detail: `${breakdown.voix.textes} texte${breakdown.voix.textes > 1 ? 's' : ''} · ${breakdown.voix.sons} son${breakdown.voix.sons > 1 ? 's' : ''} · ${breakdown.voix.temoignage} témoignage`,
+      color: 'hsl(280 60% 65%)',
+    },
+    {
       icon: '🪶',
       label: 'Variété des gestes',
       value: breakdown.pillars.value,
