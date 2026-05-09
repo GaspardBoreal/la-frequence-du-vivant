@@ -5,7 +5,8 @@ import { useMarcheurPratiques } from '@/hooks/useCurationMarcheurs';
 import { sanitizeHtml } from '@/utils/htmlSanitizer';
 
 interface Props {
-  marcheurId: string;
+  /** crewId = exploration_marcheurs.id. Null si le participant n'a pas de carte éditoriale. */
+  marcheurId: string | null;
   prenom: string;
   explorationId?: string;
 }

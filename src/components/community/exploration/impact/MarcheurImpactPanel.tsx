@@ -80,7 +80,9 @@ const MarcheurImpactPanel: React.FC<Props> = ({
 
   const sensible = useMarcheurSensibleSpecies(marcheur.speciesObserved, explorationId);
 
-  const { data: pratiquesPortees = [] } = useMarcheurPratiques(marcheur.id);
+  // IMPORTANT : useMarcheurPratiques attend le crewId base (exploration_marcheurs.id),
+  // pas l'ID UI synthétique. Sans crewId, aucune pratique ne peut être rattachée.
+  const { data: pratiquesPortees = [] } = useMarcheurPratiques(marcheur.crewId ?? null);
   const pratiquesScopeCount = useMemo(
     () => (explorationId ? pratiquesPortees.filter(p => p.exploration_id === explorationId).length : pratiquesPortees.length),
     [pratiquesPortees, explorationId],
