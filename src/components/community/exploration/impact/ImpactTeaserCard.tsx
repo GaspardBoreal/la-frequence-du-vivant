@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Lock } from 'lucide-react';
+import { ChevronRight, Lock, Info } from 'lucide-react';
 import EmpreinteVivante from './EmpreinteVivante';
 import type { MarcheurWithStats } from '@/hooks/useExplorationParticipants';
 import type { SensibleBuckets } from '@/lib/speciesClassification';
@@ -62,6 +62,10 @@ const ImpactTeaserCard: React.FC<ImpactTeaserCardProps> = ({
           <div className="flex items-baseline gap-1.5 mb-1.5">
             <span className="text-2xl font-bold text-white tabular-nums">{sentinelleScore}</span>
             <span className="text-xs text-white/50">/ 100</span>
+            <span className="ml-1 inline-flex items-center gap-0.5 text-[10px] text-emerald-300/70 font-normal">
+              <Info className="w-3 h-3" />
+              <span className="hidden sm:inline">détail</span>
+            </span>
           </div>
           <div className="text-xs text-emerald-200 font-medium mb-2 truncate">{sentinelleLabel}</div>
 
