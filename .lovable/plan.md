@@ -1,96 +1,61 @@
-## Diagnostic
-L’association de la pratique fonctionne bien en base, mais elle n’impacte pas la Fréquence car le calcul lit le mauvais identifiant côté frontend.
+## Objectif
 
-### Constat vérifié
-- La liaison existe bien en base pour Jean‑François Servant :
-  - `exploration_curations.title = "Culture de Colza"`
-  - `curation_marcheurs.marcheur_id = 988e821e-196d-4cb6-b8ff-803adb5c2234`
-- Jean‑François existe bien dans `exploration_marcheurs` avec ce même `id`.
-- Le score n’utilise pas toujours cet identifiant base : plusieurs composants passent `marcheur.id`, qui est parfois un identifiant UI synthétique du type `community-<user_id>` ou `crew-<uuid>`.
-- Or `useMarcheurPratiques()` et `useMarcheursPratiquesCounts()` interrogent `curation_marcheurs.marcheur_id`, qui attend exclusivement un vrai `exploration_marcheurs.id`.
+Différencier les Marcheurs ayant peu de contributions de ceux qui s'investissent réellement (Marie‑Josée 9 photos + témoignage ne doit plus être à égalité avec Nathan / Jean‑paul qui n'ont qu'1 témoignage), et rendre la composition du score lisible au survol.
 
-### Cause racine
-Mismatch entre :
-- **ID UI de participant** (`community-...` / `crew-...`) utilisé pour afficher les personnes
-- **ID relationnel base** (`exploration_marcheurs.id`) utilisé dans `curation_marcheurs`
+## 1. Refonte du plancher dans `src/lib/sentinelleIndex.ts`
 
-Résultat :
-- l’écriture de l’association marche,
-- mais la relecture pour le score et la carte “Pratiques portées” retombe à 0.
+Remplacer le plancher fixe à 15 pts par un **plancher dégressif** proportionnel à l'engagement réel :
 
-## Correction robuste proposée
+```text
+totalContribs = photos + sons + textes + (témoignage ? 1 : 0)
+plancher =
+  0                       si totalContribs == 0
+  5                       si totalContribs == 1   (geste isolé)
+  8                       si totalContribs == 2   (deux gestes)
+  12                      si totalContribs entre 3 et 5
+  15                      si totalContribs ≥ 6  OU  ≥ 2 piliers débloqués
+```
 
-### 1. Normaliser la source d’identité pour les pratiques
-Corriger tous les consommateurs de pratiques pour qu’ils utilisent toujours le vrai `crewId` quand il existe, jamais `marcheur.id` directement.
+Conséquences attendues sur l'écran actuel :
 
-À corriger en priorité :
-- `src/components/community/exploration/impact/MarcheurImpactPanel.tsx`
-  - remplacer `useMarcheurPratiques(marcheur.id)` par `useMarcheurPratiques(resolvedCrewId)`
-- `src/components/community/exploration/impact/PratiquesPorteesCard.tsx`
-  - lui passer le vrai `crewId` résolu, pas l’ID synthétique d’affichage
-- tout autre usage similaire détecté pendant l’implémentation
+| Marcheur | Contribs | Score actuel | Nouveau score |
+|---|---|---|---|
+| Marie‑Josée (9 photos + 1 témoignage) | 10 | 15 | ~15 (atteint le plancher haut, mais aussi son score brut ~10 → reste 15 grâce aux 2 piliers) |
+| Nathan / Jean‑paul (1 témoignage) | 1 | 15 | **5** |
+| Karine (1 obs + témoignage) | 2 | 18 | 18 (inchangé, déjà au‑dessus) |
 
-### 2. Centraliser la résolution d’identité
-Pour éviter que le bug revienne ailleurs, introduire une règle unique :
-- **identité d’affichage** : `marcheur.id`
-- **identité relationnelle pour pratiques / observations / rattachements** : `marcheur.crewId` si présent, sinon `null`
+Ajuster également les seuils de paliers `eveil` (≥1) et `curieux` (≥6) pour rester cohérents avec le nouveau plancher (les marcheurs à 5 pts restent « Éveil »).
 
-Option robuste : petit helper partagé, par exemple :
-- `resolveMarcheurRelationIds(marcheur)`
-- retourne `userId`, `crewId`, `uiId`
+## 2. Popover « détail au survol » sur la liste Marcheurs
 
-Ainsi, tous les composants critiques consommeront la même logique au lieu de réinventer la résolution localement.
+Fichier : `src/components/community/exploration/MarcheursTab.tsx` → composant `SentinelleChip`.
 
-### 3. Sécuriser le hook de lecture des pratiques
-Durcir `useMarcheurPratiques()` pour expliciter qu’il prend un `crewId` réel uniquement.
+- Envelopper la pastille de score avec un `<HoverCard>` (shadcn) ; sur mobile (touch) garder le comportement actuel `onActivate` (ouverture de la fiche). Le `HoverCard` ne se déclenche pas au tap, donc pas de conflit.
+- Contenu du HoverCard : réutiliser `<ScoreBreakdown breakdown={...} total={...} />` déjà existant, dans une carte compacte (largeur ~ 280 px) avec en‑tête « Fréquence X/100 — Label » + petite ligne « Astuce : nextTip.text ».
+- Style : `bg-popover/95 backdrop-blur border-border` pour rester cohérent avec le thème glass.
 
-Améliorations proposées :
-- renommer le paramètre en `crewId`
-- court-circuiter immédiatement si la valeur ressemble à un ID synthétique (`community-` / `crew-`)
-- documenter clairement dans le hook qu’il cible `curation_marcheurs.marcheur_id`
+## 3. Fiche Marcheur (panneau d'impact)
 
-But : empêcher qu’un futur appel incorrect produise silencieusement un faux zéro.
+Fichier : `src/components/community/exploration/impact/MarcheurImpactPanel.tsx`.
 
-### 4. Vérifier le calcul agrégé dans la liste des marcheurs
-`MarcheursTab` semble déjà alimenter `useMarcheursPratiquesCounts()` avec les IDs UI `m.id`.
-Il faut le corriger pour envoyer les vrais `crewId` disponibles.
+- À côté du gros score affiché en tête de panneau, ajouter une icône `Info` (lucide) avec le même `<HoverCard>` ouvrant la même décomposition. (`<ScoreBreakdown />` y est probablement déjà rendu plus bas — dans ce cas ne pas dupliquer, juste rajouter l'icône Info qui scrolle/focus la section existante via `aria-describedby`.)
+- Vérifier après lecture du fichier s'il y a déjà un bloc `ScoreBreakdown` ; si oui, l'icône Info ouvre simplement un `Tooltip` rappelant « Voir détail plus bas ».
 
-Correction proposée :
-- construire la liste à partir de `marcheurs.map(m => m.crewId).filter(Boolean)`
-- lors du rendu, lire le compteur avec `m.crewId` plutôt que `m.id`
-- conserver `0` pour les participants sans carte `exploration_marcheurs`
+## 4. Pas d'impact attendu sur
 
-C’est important car sinon :
-- le score détaillé du panneau impact peut être faux,
-- et la liste globale des marcheurs peut rester désynchronisée.
+- Photos / volume : poids inchangés (volume reste à 10 pts max, √64).
+- Pratiques emblématiques, voix singulière, sensibles, espèces : formules inchangées.
+- Tri de la liste et BDD : aucune migration nécessaire, tout est calculé côté client.
 
-## Validation attendue
-Après implémentation, vérifier les cas suivants :
+## Fichiers modifiés
 
-### Cas principal
-- Jean‑François Servant lié à “Culture de Colza”
-- la ligne “Pratiques emblématiques” passe de `0 / 10` à `2 / 10`
-- le score global augmente en conséquence
-- la carte “Pratiques portées par Jean‑François” affiche bien la pratique
+- `src/lib/sentinelleIndex.ts` (logique plancher + commentaire d'en‑tête mis à jour)
+- `src/components/community/exploration/MarcheursTab.tsx` (HoverCard sur `SentinelleChip`)
+- `src/components/community/exploration/impact/MarcheurImpactPanel.tsx` (icône Info + HoverCard)
 
-### Cas de non-régression
-- un marcheur éditorial natif (`source = crew`) conserve un score correct
-- un participant communautaire déjà relié à une carte éditoriale (`community + crewId`) remonte bien ses pratiques
-- un participant sans `crewId` n’affiche pas de pratique portée tant qu’aucune carte relationnelle n’existe
-- l’ajout puis retrait d’une pratique met bien à jour le score après invalidation React Query
+## Validation
 
-## Détails techniques
-- Fichiers probablement concernés :
-  - `src/components/community/exploration/impact/MarcheurImpactPanel.tsx`
-  - `src/components/community/exploration/impact/PratiquesPorteesCard.tsx`
-  - `src/components/community/exploration/MarcheursTab.tsx`
-  - `src/hooks/useCurationMarcheurs.ts`
-- Pas de migration base nécessaire a priori : le problème est dans la lecture / résolution d’identité frontend.
-- La base est cohérente : la relation `curation_marcheurs -> exploration_marcheurs.id` fonctionne déjà.
-
-## Résultat visé
-Une association de pratique emblématique doit avoir un effet immédiat, cohérent et identique dans :
-- le score global de Fréquence,
-- le détail “Pratiques emblématiques”,
-- la carte “Pratiques portées”,
-- la liste des marcheurs.
+1. Sur l'exploration DEVIAT, vérifier que Nathan / Jean‑paul tombent à **5 — Éveil** et que Marie‑Josée reste **15 — Curieux** (ou Éveil suivant nouveau seuil).
+2. Au survol de la pastille (desktop), la décomposition apparaît avec piliers, volume, espèces, sensible, voix, pratiques + astuce.
+3. Au tap (mobile), comportement inchangé : ouvre la fiche Marcheur.
+4. La fiche détaillée affiche également l'accès rapide à la décomposition.
