@@ -1040,20 +1040,26 @@ const useWalkerContributionsCount = (prenom: string, nom: string, explorationMar
 type SentinelleBucketKey = 'bio' | 'aux' | 'eee';
 
 const TIER_CHIP_STYLE: Record<SentinelleTier, string> = {
-  curieux: 'bg-gradient-to-br from-slate-500/10 to-slate-500/5 text-slate-500 ring-1 ring-slate-500/20',
-  eclaireur: 'bg-gradient-to-br from-amber-500/15 to-amber-500/5 text-amber-500 ring-1 ring-amber-500/25',
-  ambassadeur: 'bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 text-emerald-500 dark:text-emerald-400 ring-1 ring-emerald-500/25',
-  sentinelle: 'bg-gradient-to-br from-violet-500/20 via-emerald-500/15 to-amber-500/15 text-emerald-500 dark:text-emerald-300 ring-1 ring-emerald-500/40 shadow-[0_0_18px_-6px_rgba(16,185,129,0.55)]',
+  aucun:     'bg-muted/40 text-muted-foreground ring-1 ring-border/40',
+  eveil:     'bg-gradient-to-br from-stone-400/15 to-stone-400/5 text-stone-500 dark:text-stone-300 ring-1 ring-stone-400/25',
+  curieux:   'bg-gradient-to-br from-sky-500/15 to-sky-500/5 text-sky-600 dark:text-sky-300 ring-1 ring-sky-500/25',
+  ecoute:    'bg-gradient-to-br from-amber-500/15 to-amber-500/5 text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/25',
+  eclaireur: 'bg-gradient-to-br from-orange-500/15 to-orange-500/5 text-orange-600 dark:text-orange-300 ring-1 ring-orange-500/30',
+  engage:    'bg-gradient-to-br from-emerald-500/20 via-emerald-500/15 to-amber-400/15 text-emerald-600 dark:text-emerald-300 ring-1 ring-emerald-500/40 shadow-[0_0_18px_-6px_rgba(16,185,129,0.55)]',
 };
 
-const TIER_SHORT_LABEL: Record<SentinelleTier, string> = {
-  curieux: 'Curieux',
+const TIER_SHORT_LABEL_LOCAL: Record<SentinelleTier, string> = {
+  aucun:     '',
+  eveil:     'Éveil',
+  curieux:   'Curieux',
+  ecoute:    'Écoute active',
   eclaireur: 'Éclaireur',
-  ambassadeur: 'Ambassadeur',
-  sentinelle: 'Sentinelle',
+  engage:    'Engagé',
 };
 
 const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () => void }> = ({ sentinelle, onActivate }) => {
+  // Palier 0 : aucun palier affiché — invitation implicite à entrer dans la fréquence
+  if (sentinelle.tier === 'aucun') return null;
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -1067,13 +1073,13 @@ const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () =>
       tabIndex={0}
       onClick={(e) => { e.stopPropagation(); onActivate(); }}
       onKeyDown={handleKey}
-      title={`Indice Sentinelle ${sentinelle.total}/100 — ${sentinelle.label}. Voir le détail.`}
-      aria-label={`Indice Sentinelle ${sentinelle.total} sur 100, ${sentinelle.label}. Voir le détail.`}
+      title={`Fréquence ${sentinelle.total} — ${sentinelle.label}. Voir le détail.`}
+      aria-label={`Fréquence ${sentinelle.total} sur 100, ${sentinelle.label}. Voir le détail.`}
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0 cursor-pointer transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 ${TIER_CHIP_STYLE[sentinelle.tier]}`}
     >
       <ShieldCheck className="w-3 h-3" />
       <span className="text-[11px] font-bold tabular-nums leading-none">{sentinelle.total}</span>
-      <span className="hidden sm:inline text-[10px] font-medium leading-none opacity-90">{TIER_SHORT_LABEL[sentinelle.tier]}</span>
+      <span className="hidden sm:inline text-[10px] font-medium leading-none opacity-90">{TIER_SHORT_LABEL_LOCAL[sentinelle.tier]}</span>
     </span>
   );
 };
