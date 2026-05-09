@@ -1,59 +1,96 @@
-# Plan de correction
-
 ## Diagnostic
-L’erreur vient bien de la fonction SQL `public.attach_pratique_to_marcheur` actuellement déployée.
+L’association de la pratique fonctionne bien en base, mais elle n’impacte pas la Fréquence car le calcul lit le mauvais identifiant côté frontend.
 
-- La fonction contient `public.has_role(v_caller, 'admin'::app_role)`.
-- Dans cette base, le type `public.app_role` n’existe pas.
-- Le seul enum trouvé est `public.crm_role`.
-- Résultat : l’appel RPC échoue avant même de créer/réutiliser la ligne marcheur de Jean‑François Servant.
+### Constat vérifié
+- La liaison existe bien en base pour Jean‑François Servant :
+  - `exploration_curations.title = "Culture de Colza"`
+  - `curation_marcheurs.marcheur_id = 988e821e-196d-4cb6-b8ff-803adb5c2234`
+- Jean‑François existe bien dans `exploration_marcheurs` avec ce même `id`.
+- Le score n’utilise pas toujours cet identifiant base : plusieurs composants passent `marcheur.id`, qui est parfois un identifiant UI synthétique du type `community-<user_id>` ou `crew-<uuid>`.
+- Or `useMarcheurPratiques()` et `useMarcheursPratiquesCounts()` interrogent `curation_marcheurs.marcheur_id`, qui attend exclusivement un vrai `exploration_marcheurs.id`.
 
-## Ce que je vais corriger
+### Cause racine
+Mismatch entre :
+- **ID UI de participant** (`community-...` / `crew-...`) utilisé pour afficher les personnes
+- **ID relationnel base** (`exploration_marcheurs.id`) utilisé dans `curation_marcheurs`
 
-### 1) Corriger la vérification d’autorisation dans la RPC
-Créer une migration qui remplace le cast invalide par le pattern compatible avec ce projet.
+Résultat :
+- l’écriture de l’association marche,
+- mais la relecture pour le score et la carte “Pratiques portées” retombe à 0.
 
-Approche prévue :
-- remplacer `app_role` par la logique réellement utilisée dans cette base ;
-- privilégier un check admin robuste et cohérent avec les autres fonctions récentes ;
-- conserver l’accès pour `ambassadeur` et `sentinelle` via `community_profiles.role`.
+## Correction robuste proposée
 
-### 2) Préserver la logique déjà ajoutée pour les participants non éditoriaux
-Je garde le comportement déjà prévu pour Jean‑François Servant :
-- si un `exploration_marcheurs` existe déjà pour lui, il est réutilisé ;
-- sinon la RPC crée automatiquement une ligne “shadow” liée à son `user_id` ;
-- l’association à la pratique est ensuite créée normalement.
+### 1. Normaliser la source d’identité pour les pratiques
+Corriger tous les consommateurs de pratiques pour qu’ils utilisent toujours le vrai `crewId` quand il existe, jamais `marcheur.id` directement.
 
-### 3) Vérifier la compatibilité des signatures et permissions
-Je vérifierai que la fonction corrigée reste compatible avec le frontend actuel :
-- `p_curation_id`
-- `p_marcheur_id`
-- `p_user_id`
-- `p_role_label`
+À corriger en priorité :
+- `src/components/community/exploration/impact/MarcheurImpactPanel.tsx`
+  - remplacer `useMarcheurPratiques(marcheur.id)` par `useMarcheurPratiques(resolvedCrewId)`
+- `src/components/community/exploration/impact/PratiquesPorteesCard.tsx`
+  - lui passer le vrai `crewId` résolu, pas l’ID synthétique d’affichage
+- tout autre usage similaire détecté pendant l’implémentation
 
-Et je conserverai les droits d’exécution pour les utilisateurs authentifiés autorisés.
+### 2. Centraliser la résolution d’identité
+Pour éviter que le bug revienne ailleurs, introduire une règle unique :
+- **identité d’affichage** : `marcheur.id`
+- **identité relationnelle pour pratiques / observations / rattachements** : `marcheur.crewId` si présent, sinon `null`
 
-## Validation prévue
-Après application de la migration, je validerai que :
-- Jean‑François Servant peut être associé sans erreur ;
-- les autres participants communautaires de l’exploration peuvent aussi être associés ;
-- les associations existantes ne sont pas cassées ;
-- l’erreur `type "app_role" does not exist` ne réapparaît plus.
+Option robuste : petit helper partagé, par exemple :
+- `resolveMarcheurRelationIds(marcheur)`
+- retourne `userId`, `crewId`, `uiId`
+
+Ainsi, tous les composants critiques consommeront la même logique au lieu de réinventer la résolution localement.
+
+### 3. Sécuriser le hook de lecture des pratiques
+Durcir `useMarcheurPratiques()` pour expliciter qu’il prend un `crewId` réel uniquement.
+
+Améliorations proposées :
+- renommer le paramètre en `crewId`
+- court-circuiter immédiatement si la valeur ressemble à un ID synthétique (`community-` / `crew-`)
+- documenter clairement dans le hook qu’il cible `curation_marcheurs.marcheur_id`
+
+But : empêcher qu’un futur appel incorrect produise silencieusement un faux zéro.
+
+### 4. Vérifier le calcul agrégé dans la liste des marcheurs
+`MarcheursTab` semble déjà alimenter `useMarcheursPratiquesCounts()` avec les IDs UI `m.id`.
+Il faut le corriger pour envoyer les vrais `crewId` disponibles.
+
+Correction proposée :
+- construire la liste à partir de `marcheurs.map(m => m.crewId).filter(Boolean)`
+- lors du rendu, lire le compteur avec `m.crewId` plutôt que `m.id`
+- conserver `0` pour les participants sans carte `exploration_marcheurs`
+
+C’est important car sinon :
+- le score détaillé du panneau impact peut être faux,
+- et la liste globale des marcheurs peut rester désynchronisée.
+
+## Validation attendue
+Après implémentation, vérifier les cas suivants :
+
+### Cas principal
+- Jean‑François Servant lié à “Culture de Colza”
+- la ligne “Pratiques emblématiques” passe de `0 / 10` à `2 / 10`
+- le score global augmente en conséquence
+- la carte “Pratiques portées par Jean‑François” affiche bien la pratique
+
+### Cas de non-régression
+- un marcheur éditorial natif (`source = crew`) conserve un score correct
+- un participant communautaire déjà relié à une carte éditoriale (`community + crewId`) remonte bien ses pratiques
+- un participant sans `crewId` n’affiche pas de pratique portée tant qu’aucune carte relationnelle n’existe
+- l’ajout puis retrait d’une pratique met bien à jour le score après invalidation React Query
 
 ## Détails techniques
-- **Base concernée :** fonction `public.attach_pratique_to_marcheur`
-- **Cause racine :** cast vers un enum inexistant (`app_role`)
-- **Enum réellement présent :** `public.crm_role`
-- **Impact attendu :** correction backend uniquement, sans refonte UI
+- Fichiers probablement concernés :
+  - `src/components/community/exploration/impact/MarcheurImpactPanel.tsx`
+  - `src/components/community/exploration/impact/PratiquesPorteesCard.tsx`
+  - `src/components/community/exploration/MarcheursTab.tsx`
+  - `src/hooks/useCurationMarcheurs.ts`
+- Pas de migration base nécessaire a priori : le problème est dans la lecture / résolution d’identité frontend.
+- La base est cohérente : la relation `curation_marcheurs -> exploration_marcheurs.id` fonctionne déjà.
 
-```text
-UI picker
-  -> RPC attach_pratique_to_marcheur
-      -> check autorisation admin/curateur
-      -> resolve marcheur existant ou shadow row
-      -> insert/update curation_marcheurs
-```
-
-## Livrable
-- une migration SQL ciblée pour corriger la RPC ;
-- puis la vérification fonctionnelle du flux d’association dans L’Oeil.
+## Résultat visé
+Une association de pratique emblématique doit avoir un effet immédiat, cohérent et identique dans :
+- le score global de Fréquence,
+- le détail “Pratiques emblématiques”,
+- la carte “Pratiques portées”,
+- la liste des marcheurs.
