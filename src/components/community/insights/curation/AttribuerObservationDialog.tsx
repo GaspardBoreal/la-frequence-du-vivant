@@ -50,26 +50,83 @@ const fuzzyMatch = (citizenName: string, fullName: string): boolean => {
 /** Stable selection key: prefer userId (community), else crewId. */
 const selectionKey = (p: MarcheurWithStats): string => p.userId || p.crewId || `${p.prenom}-${p.nom}`;
 
+const CATEGORY_LABELS: Record<SpeciesCategory, string> = {
+  bioindicatrice: 'Bio-indicatrice',
+  auxiliaire: 'Auxiliaire',
+  eee: 'EEE',
+  patrimoniale: 'Patrimoniale',
+  ravageur: 'Ravageur',
+  indigene: 'Indigène',
+};
+
+const CATEGORY_TONE: Record<SpeciesCategory, string> = {
+  bioindicatrice: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  auxiliaire: 'border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300',
+  eee: 'border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300',
+  patrimoniale: 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+  ravageur: 'border-orange-500/40 bg-orange-500/10 text-orange-700 dark:text-orange-300',
+  indigene: 'border-primary/40 bg-primary/10 text-primary',
+};
+
 const AttribuerObservationDialog: React.FC<Props> = ({
   open, onOpenChange, explorationId, speciesScientificName, speciesDisplayName,
 }) => {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const { data: participants = [], isLoading: loadingParts } = useExplorationParticipants(explorationId);
   const { data: marches = [] } = useExplorationAllMarches(explorationId);
   const { data: observers = [] } = useSpeciesObservers(speciesScientificName, explorationId);
 
+  // KB options for this species (primary + secondaries, deduped)
+  const categoryOptions = useMemo(
+    () => getSpeciesCategoryOptions(speciesScientificName),
+    [speciesScientificName],
+  );
+  const requiresChoice = categoryOptions.length > 1;
+
+  // Existing L'Œil curation for this species (if any) + count of marcheurs already attributed
+  const { data: curationInfo } = useQuery({
+    queryKey: ['oeil-species-curation', explorationId, speciesScientificName],
+    queryFn: async () => {
+      const [{ data: cur }, { data: obs }] = await Promise.all([
+        supabase
+          .from('exploration_curations')
+          .select('id, category')
+          .eq('exploration_id', explorationId)
+          .eq('sense', 'oeil')
+          .eq('entity_type', 'species')
+          .eq('entity_id', speciesScientificName)
+          .maybeSingle(),
+        supabase
+          .from('marcheur_observations')
+          .select('marcheur_id, user_id', { count: 'exact', head: false })
+          .eq('exploration_id', explorationId)
+          .eq('species_scientific_name', speciesScientificName),
+      ]);
+      const ids = new Set<string>();
+      (obs || []).forEach((r: any) => ids.add(r.marcheur_id || r.user_id));
+      return {
+        curationId: (cur as any)?.id as string | undefined,
+        currentCategory: ((cur as any)?.category as SpeciesCategory | undefined) || undefined,
+        attributionCount: ids.size,
+      };
+    },
+    enabled: open && !!explorationId && !!speciesScientificName,
+    staleTime: 30 * 1000,
+  });
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [marcheId, setMarcheId] = useState<string>('');
   const [search, setSearch] = useState('');
+  const [chosenCategory, setChosenCategory] = useState<SpeciesCategory | null>(null);
+  const [conflictOpen, setConflictOpen] = useState(false);
 
-  // Sort participants: alphabetical by first name
   const sortedParticipants = useMemo(() => {
     return [...participants].sort((a, b) =>
       `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`, 'fr'),
     );
   }, [participants]);
 
-  // Fuzzy suggestions per participant
   const matchedSuggestions = useMemo(() => {
     const map = new Map<string, string[]>();
     sortedParticipants.forEach(p => {
@@ -88,7 +145,6 @@ const AttribuerObservationDialog: React.FC<Props> = ({
 
   useEffect(() => {
     if (!open) return;
-    // Pre-select participants matching citizen observer names
     const init = new Set<string>();
     sortedParticipants.forEach(p => {
       if (matchedSuggestions.get(selectionKey(p))) init.add(selectionKey(p));
@@ -97,7 +153,9 @@ const AttribuerObservationDialog: React.FC<Props> = ({
     const firstObsMarcheId = observers.find(o => o.marcheId)?.marcheId;
     setMarcheId(firstObsMarcheId || marches[0]?.marcheId || '');
     setSearch('');
-  }, [open, sortedParticipants, matchedSuggestions, observers, marches]);
+    // Always reset category — explicit choice required at every attribution
+    setChosenCategory(requiresChoice ? null : (categoryOptions[0] ?? null));
+  }, [open, sortedParticipants, matchedSuggestions, observers, marches, requiresChoice, categoryOptions]);
 
   const filtered = useMemo(() => {
     const q = normalize(search);
@@ -113,29 +171,55 @@ const AttribuerObservationDialog: React.FC<Props> = ({
     });
   };
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      // Split selected into crew ids vs user ids
-      const crewIds: string[] = [];
-      const userIds: string[] = [];
-      sortedParticipants.forEach(p => {
-        const k = selectionKey(p);
-        if (!selected.has(k)) return;
-        if (p.crewId) crewIds.push(p.crewId);
-        else if (p.userId) userIds.push(p.userId);
-      });
+  const runAttribution = async (categoryToPersist: SpeciesCategory) => {
+    if (!user?.id) throw new Error('Authentification requise');
 
-      const { data, error } = await supabase.rpc('attribute_species_to_marcheurs', {
-        p_exploration_id: explorationId,
-        p_marche_id: marcheId,
-        p_species: speciesScientificName,
-        p_marcheur_ids: crewIds,
-        p_notes: `Attribution depuis L'Œil — ${speciesDisplayName}`,
-        p_user_ids: userIds,
-      });
+    // 1) Upsert L'Œil curation so the choice overrides the KB everywhere
+    if (curationInfo?.curationId) {
+      const { error } = await supabase
+        .from('exploration_curations')
+        .update({ category: categoryToPersist, classification_source: 'curator', needs_review: false })
+        .eq('id', curationInfo.curationId);
       if (error) throw error;
-      return data as number;
-    },
+    } else {
+      const { error } = await supabase.from('exploration_curations').insert({
+        exploration_id: explorationId,
+        sense: 'oeil',
+        entity_type: 'species',
+        entity_id: speciesScientificName,
+        category: categoryToPersist,
+        title: speciesDisplayName,
+        classification_source: 'curator',
+        needs_review: false,
+        created_by: user.id,
+      } as any);
+      if (error) throw error;
+    }
+
+    // 2) Attribute to marcheurs
+    const crewIds: string[] = [];
+    const userIds: string[] = [];
+    sortedParticipants.forEach(p => {
+      const k = selectionKey(p);
+      if (!selected.has(k)) return;
+      if (p.crewId) crewIds.push(p.crewId);
+      else if (p.userId) userIds.push(p.userId);
+    });
+
+    const { data, error } = await supabase.rpc('attribute_species_to_marcheurs', {
+      p_exploration_id: explorationId,
+      p_marche_id: marcheId,
+      p_species: speciesScientificName,
+      p_marcheur_ids: crewIds,
+      p_notes: `Attribution depuis L'Œil — ${speciesDisplayName} [${CATEGORY_LABELS[categoryToPersist]}]`,
+      p_user_ids: userIds,
+    });
+    if (error) throw error;
+    return data as number;
+  };
+
+  const mutation = useMutation({
+    mutationFn: (categoryToPersist: SpeciesCategory) => runAttribution(categoryToPersist),
     onSuccess: (count) => {
       toast.success(
         count > 0
@@ -144,20 +228,30 @@ const AttribuerObservationDialog: React.FC<Props> = ({
       );
       qc.invalidateQueries({ queryKey: ['exploration-marcheurs'] });
       qc.invalidateQueries({ queryKey: ['exploration-participants'] });
+      qc.invalidateQueries({ queryKey: ['exploration-curations', explorationId] });
+      qc.invalidateQueries({ queryKey: ['oeil-species-curation', explorationId, speciesScientificName] });
       qc.invalidateQueries({ queryKey: ['marcheur-impact-snapshots'] });
       qc.invalidateQueries({ queryKey: ['marcheur-observations'] });
+      qc.invalidateQueries({ queryKey: ['marcheur-sensible-species'] });
       onOpenChange(false);
     },
-    onError: (err: any) => {
-      toast.error(err?.message || 'Échec de l\'attribution');
-    },
+    onError: (err: any) => toast.error(err?.message || "Échec de l'attribution"),
   });
 
-  const canSubmit = selected.size > 0 && !!marcheId && !mutation.isPending;
+  const handleConfirm = () => {
+    if (!chosenCategory) return;
+    const existing = curationInfo?.currentCategory;
+    const conflict = existing && existing !== chosenCategory && (curationInfo?.attributionCount ?? 0) > 0;
+    if (conflict) { setConflictOpen(true); return; }
+    mutation.mutate(chosenCategory);
+  };
+
+  const canSubmit = selected.size > 0 && !!marcheId && !!chosenCategory && !mutation.isPending;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-primary" />
@@ -182,6 +276,56 @@ const AttribuerObservationDialog: React.FC<Props> = ({
                   </Badge>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Identification (catégorie unique) */}
+          {categoryOptions.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Identification de l'espèce
+                {requiresChoice && <span className="text-rose-500">*</span>}
+              </Label>
+              {requiresChoice ? (
+                <>
+                  <div className="flex flex-wrap gap-1.5">
+                    {categoryOptions.map(cat => {
+                      const isCurrent = curationInfo?.currentCategory === cat;
+                      const isActive = chosenCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setChosenCategory(cat)}
+                          className={cn(
+                            'h-8 px-3 rounded-full border text-xs font-medium transition flex items-center gap-1.5',
+                            CATEGORY_TONE[cat],
+                            isActive
+                              ? 'ring-2 ring-primary ring-offset-1 ring-offset-background scale-[1.02]'
+                              : 'opacity-70 hover:opacity-100',
+                          )}
+                          aria-pressed={isActive}
+                        >
+                          {CATEGORY_LABELS[cat]}
+                          {isCurrent && (
+                            <span className="text-[9px] uppercase tracking-wide opacity-80">actuel</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Cette espèce a plusieurs identifications possibles. Choisissez celle qui s'applique à cette observation.
+                  </p>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className={cn('h-7 px-2.5 rounded-full border text-xs font-medium inline-flex items-center', CATEGORY_TONE[categoryOptions[0]])}>
+                    {CATEGORY_LABELS[categoryOptions[0]]}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">Classification confirmée</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -262,13 +406,53 @@ const AttribuerObservationDialog: React.FC<Props> = ({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Annuler</Button>
-          <Button onClick={() => mutation.mutate()} disabled={!canSubmit}>
+          <Button onClick={handleConfirm} disabled={!canSubmit}>
             {mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Confirmer l'attribution
+            {requiresChoice && !chosenCategory ? 'Choisissez une identification' : "Confirmer l'attribution"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={conflictOpen} onOpenChange={setConflictOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" /> Identification déjà fixée
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            <span className="italic">{speciesDisplayName}</span> est déjà classé{' '}
+            <strong>{curationInfo?.currentCategory ? CATEGORY_LABELS[curationInfo.currentCategory] : ''}</strong>{' '}
+            pour {curationInfo?.attributionCount ?? 0} marcheur·se{(curationInfo?.attributionCount ?? 0) > 1 ? 's' : ''} dans cette exploration.
+            Modifier l'identification en <strong>{chosenCategory ? CATEGORY_LABELS[chosenCategory] : ''}</strong> écraserait leur classement Sentinelle.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              const keep = curationInfo?.currentCategory;
+              if (!keep) return;
+              setChosenCategory(keep);
+              setConflictOpen(false);
+              mutation.mutate(keep);
+            }}
+          >
+            Conserver l'actuelle
+          </Button>
+          <AlertDialogAction
+            onClick={() => {
+              setConflictOpen(false);
+              if (chosenCategory) mutation.mutate(chosenCategory);
+            }}
+          >
+            Forcer le nouveau choix
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
