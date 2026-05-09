@@ -238,7 +238,7 @@ const StorySentinelle: React.FC<{
   const circumference = 2 * Math.PI * radius;
   return (
     <div className="flex flex-col items-center text-center text-white max-h-[calc(100dvh-120px)] sm:max-h-[620px] overflow-y-auto py-2 gap-3">
-      <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-300/80">Indice de Sentinelle</div>
+      <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-300/80">Fréquence du marcheur</div>
       <h2 className="text-base font-light">{label}</h2>
 
       <div className="relative" style={{ width: 150, height: 150 }}>
