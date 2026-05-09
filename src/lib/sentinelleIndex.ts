@@ -133,8 +133,17 @@ export function computeSentinelleIndex(input: SentinelleInputs): SentinelleResul
   const pratiquesValue = Math.min((pratiquesCount * 2) / PRATIQUES_MAX, 1) * PRATIQUES_MAX;
 
   let total = pillarsValue + volumeValue + speciesValue + sensibleValue + voixValue + pratiquesValue;
-  // Plancher 15 si au moins 1 contribution
-  if (totalContribs > 0 && total < 15) total = 15;
+  // Plancher dégressif : reflète l'engagement réel sans tasser tout le monde à 15.
+  //   1 contrib  → 5    (geste isolé)
+  //   2 contribs → 8    (premier élan)
+  //   3-5        → 12   (présence régulière)
+  //   ≥6 OU ≥2 piliers → 15 (engagement diversifié)
+  let plancher = 0;
+  if (totalContribs >= 6 || pillarCount >= 2) plancher = 15;
+  else if (totalContribs >= 3) plancher = 12;
+  else if (totalContribs === 2) plancher = 8;
+  else if (totalContribs === 1) plancher = 5;
+  if (plancher > 0 && total < plancher) total = plancher;
   total = Math.round(total);
 
   // Paliers de Fréquence (6 niveaux) — seuils inchangés (toujours /100)
