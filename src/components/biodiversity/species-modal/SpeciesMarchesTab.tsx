@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, ExternalLink } from 'lucide-react';
+import { MapPin, ExternalLink, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { createSlug } from '@/utils/slugGenerator';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
@@ -78,6 +80,22 @@ const SpeciesMarchesTab: React.FC<SpeciesMarchesTabProps> = ({ marches, isLoadin
               <p className="text-xs font-medium text-white/90 leading-tight line-clamp-2 mb-2 mt-1 pr-4 group-hover:text-white transition-colors">
                 {marche.marcheName}
               </p>
+
+              {/* Date d'observation */}
+              {marche.observationDate && (
+                <div className="flex items-center gap-1 text-[10px] text-white/55 mb-1">
+                  <Calendar className="w-3 h-3 text-sky-400/60" />
+                  <span>
+                    {(() => {
+                      try {
+                        return format(new Date(marche.observationDate), 'd MMM yyyy', { locale: fr });
+                      } catch {
+                        return marche.observationDate;
+                      }
+                    })()}
+                  </span>
+                </div>
+              )}
 
               {/* Observation count - bottom */}
               <div className="flex items-center gap-1 text-[10px] text-white/50">

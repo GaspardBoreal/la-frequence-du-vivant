@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -6,20 +6,23 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
-import { 
-  ExternalLink, Leaf, Bird, Bug, HelpCircle, Loader2, 
-  MapPin, List, Music, ChevronLeft, ChevronRight, X, Users
+import {
+  ExternalLink, Leaf, Bird, Bug, HelpCircle,
+  MapPin, List, Music, ChevronLeft, ChevronRight, X, Users, Sparkles,
 } from 'lucide-react';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import { useSpeciesMarches } from '@/hooks/useSpeciesMarches';
 import { useSpeciesXenoCanto } from '@/hooks/useSpeciesXenoCanto';
 import { useSpeciesObservers } from '@/hooks/useSpeciesObservers';
+import { useSpeciesMarcheurPhotos } from '@/hooks/useSpeciesMarcheurPhotos';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
+import { useCanUseContextualChat } from '@/hooks/useCanUseContextualChat';
 import SpeciesMarchesTab from './species-modal/SpeciesMarchesTab';
 import SpeciesAudioPlayer from './species-modal/SpeciesAudioPlayer';
 import SpeciesMiniMap from './species-modal/SpeciesMiniMap';
 import SpeciesObserversTab from './species-modal/SpeciesObserversTab';
+import SpeciesPhotoCarousel, { type CarouselSlide } from './species-modal/SpeciesPhotoCarousel';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface SpeciesGalleryDetailModalProps {
@@ -95,6 +98,14 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
     explorationId,
   );
 
+  // Fetch photos prises par les marcheurs (table marcheur_observations)
+  const { data: marcheurPhotos = [], isLoading: marcheurPhotosLoading } = useSpeciesMarcheurPhotos(
+    isOpen ? species?.scientificName : undefined,
+    explorationId,
+  );
+
+  const { canUse: canChat } = useCanUseContextualChat();
+
   // Snapshot pour le ChatBot (screen-awareness) — DOIT être appelé avant tout
   // early return pour préserver l'ordre des hooks entre les renders.
   const _uniqueObserversCount = new Set(observers.map((o) => o.observerName)).size;
@@ -126,28 +137,23 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   if (!species) return null;
 
   // Use fetched data if available, otherwise fall back to props
-  const photos = (photoData?.photos && photoData.photos.length > 0) 
-    ? photoData.photos 
+  const photos = (photoData?.photos && photoData.photos.length > 0)
+    ? photoData.photos
     : species.photos || [];
-  const kingdom = (photoData?.kingdom && photoData.kingdom !== 'Unknown') 
-    ? photoData.kingdom 
+  const kingdom = (photoData?.kingdom && photoData.kingdom !== 'Unknown')
+    ? photoData.kingdom
     : species.kingdom;
 
   // French name priority: translation > photoData > original
   const frenchName = translation?.commonName || photoData?.commonName || species.name;
   const isEnglishFallback = frenchName === species.name && translation?.source === 'fallback';
 
-  const hasPhoto = photos.length > 0;
   const hasMarches = speciesMarches.length > 0;
   const hasAudio = xenoCantoData && xenoCantoData.recordings.length > 0;
   const hasObservers = observers.length > 0;
   const uniqueObserversCount = new Set(observers.map((o) => o.observerName)).size;
   const kingdomInfo = getKingdomInfo(kingdom);
   const KingdomIcon = kingdomInfo.icon;
-
-  // Check if current photo is from marcheur (personal photo)
-  const isMarcheurPhoto = species.photos && species.photos.length > 0 && currentPhotoIndex === 0 && 
-    species.photos[0]?.includes('supabase') || species.photos?.[0]?.includes('storage');
 
   // Build external search URLs
   const gbifSearchUrl = `https://www.gbif.org/species/search?q=${encodeURIComponent(species.scientificName)}`;
@@ -157,8 +163,46 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   const totalMarchesCount = speciesMarches.length;
   const isLoading = photoLoading || translationLoading;
 
-  const nextPhoto = () => setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
-  const prevPhoto = () => setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length);
+  // Build typed gallery slides (référence iNat ↔ photos marcheurs)
+  const gallerySlides = useMemo<CarouselSlide[]>(() => {
+    const slides: CarouselSlide[] = [];
+    // 1. Photo marcheur d'abord si présente dans species.photos (curation locale)
+    const localPhotos = (species.photos || []).filter((u) =>
+      u && (u.includes('supabase') || u.includes('storage')),
+    );
+    localPhotos.forEach((url) => {
+      // évite doublon si déjà dans marcheurPhotos
+      if (!marcheurPhotos.some((m) => m.url === url)) {
+        slides.push({ url, source: 'marcheur', observerName: 'Marcheur' });
+      }
+    });
+    // 2. Photos marcheurs via marcheur_observations
+    marcheurPhotos.forEach((m) => {
+      slides.push({
+        url: m.url,
+        source: 'marcheur',
+        observerName: m.observerName,
+        date: m.observationDate,
+        marcheName: m.marcheName,
+      });
+    });
+    // 3. Photos référence iNaturalist
+    photos.forEach((url) => {
+      if (slides.some((s) => s.url === url)) return;
+      slides.push({
+        url,
+        source: 'inat',
+        originalUrl: `https://www.inaturalist.org/taxa/search?q=${encodeURIComponent(species.scientificName)}`,
+      });
+    });
+    return slides;
+  }, [photos, marcheurPhotos, species.photos, species.scientificName]);
+
+  const lightboxPhotos = gallerySlides.map((s) => s.url);
+
+  const nextPhoto = () => setCurrentPhotoIndex((prev) => (prev + 1) % Math.max(lightboxPhotos.length, 1));
+  const prevPhoto = () => setCurrentPhotoIndex((prev) => (prev - 1 + Math.max(lightboxPhotos.length, 1)) % Math.max(lightboxPhotos.length, 1));
+  const hasPhoto = lightboxPhotos.length > 0;
 
   return (
     <>
@@ -169,83 +213,16 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
             <DialogTitle>Détails de l'espèce {species.scientificName}</DialogTitle>
           </VisuallyHidden.Root>
 
-          {/* Hero Image Section */}
-          <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-800 to-slate-900">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <Loader2 className="w-10 h-10 animate-spin text-white/40" />
-              </div>
-            ) : hasPhoto ? (
-              <>
-                <motion.img
-                  key={currentPhotoIndex}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  src={photos[currentPhotoIndex]}
-                  alt={frenchName}
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => setShowLightbox(true)}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                
-                {/* Navigation arrows */}
-                {photos.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevPhoto}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={nextPhoto}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
-
-                {/* Photo badges */}
-                <div className="absolute top-3 left-3 flex gap-2">
-                  {isMarcheurPhoto && (
-                    <Badge className="bg-amber-500/90 text-white text-xs">
-                      📸 Photo marcheur
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Photo counter */}
-                {photos.length > 1 && (
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {photos.slice(0, 5).map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentPhotoIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          index === currentPhotoIndex
-                            ? 'bg-white'
-                            : 'bg-white/40 hover:bg-white/60'
-                        }`}
-                      />
-                    ))}
-                    {photos.length > 5 && (
-                      <span className="text-xs text-white/60 ml-1">+{photos.length - 5}</span>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center text-white/40 space-y-2">
-                  <KingdomIcon className="w-16 h-16 mx-auto opacity-30" />
-                  <p className="text-sm">Photo non disponible</p>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Hero Carousel — Référence iNat ↔ Photos marcheurs */}
+          <SpeciesPhotoCarousel
+            slides={gallerySlides}
+            isLoading={isLoading || marcheurPhotosLoading}
+            onPhotoClick={(i) => {
+              setCurrentPhotoIndex(i);
+              setShowLightbox(true);
+            }}
+            emptyIcon={<KingdomIcon className="w-16 h-16 mx-auto opacity-30" />}
+          />
 
           {/* Content */}
           <div className="p-5 space-y-5">
@@ -276,6 +253,24 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                 </Badge>
               </div>
             </div>
+
+            {/* Bouton dialogue IA contextuel (admin / ambassadeur / sentinelle) */}
+            {canChat && (
+              <Button
+                onClick={() => {
+                  const prefill = `Parle-moi de ${frenchName} (${species.scientificName}) observée ${species.count} fois sur cette exploration. Pourquoi est-elle intéressante ici, et que peut-on apprendre de sa présence ?`;
+                  window.dispatchEvent(
+                    new CustomEvent('community-chat:open', {
+                      detail: { prefill, species: species.scientificName },
+                    }),
+                  );
+                }}
+                className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-white border-0 shadow-lg shadow-emerald-500/20 group"
+              >
+                <Sparkles className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
+                Discuter de cette espèce avec l'IA
+              </Button>
+            )}
 
             {/* Marches Section - with tabs */}
             {(hasMarches || hasObservers || marchesLoading || observersLoading) && (
@@ -388,14 +383,14 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
             <motion.img
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
-              src={photos[currentPhotoIndex]}
+              src={lightboxPhotos[currentPhotoIndex]}
               alt={frenchName}
               className="max-w-[90vw] max-h-[90vh] object-contain"
               onClick={(e) => e.stopPropagation()}
             />
             
             {/* Navigation in lightbox */}
-            {photos.length > 1 && (
+            {lightboxPhotos.length > 1 && (
               <>
                 <button
                   onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
