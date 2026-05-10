@@ -1335,7 +1335,7 @@ const MarcheurCard: React.FC<{
                     hasTemoignage={hasTestimony}
                   />
                   <CitizenPlatformsCard
-                    marcheur={{ prenom: marcheur.prenom, nom: marcheur.nom }}
+                    marcheur={{ prenom: marcheur.prenom, nom: marcheur.nom, userId: resolvedUserId }}
                     explorationId={explorationId}
                     explorationMarcheIds={explorationMarcheIds}
                   />
