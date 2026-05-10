@@ -372,7 +372,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
             />
             
             {/* Navigation in lightbox */}
-            {photos.length > 1 && (
+            {lightboxPhotos.length > 1 && (
               <>
                 <button
                   onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
