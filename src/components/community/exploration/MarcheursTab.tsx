@@ -1245,7 +1245,10 @@ const MarcheurCard: React.FC<{
               sensibleNames,
               uncuratedSpeciesNames,
               inatContributionsCount: realContribCount,
-              localSpeciesCount,
+              localSpeciesCount: marcheur.stats.localSpeciesCount ?? localSpeciesCount,
+              inatSpeciesCount: marcheur.stats.inatSpeciesCount || 0,
+              inatPhotosCount: marcheur.stats.inatPhotos || 0,
+              localPhotosCount: photoCount,
               pillarsMissing: sentinelle.breakdown.pillars.missing,
             }}
           />
