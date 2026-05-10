@@ -541,7 +541,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <User className="w-3 h-3 text-amber-400" />
-            <span className="text-amber-300/60 text-[10px] uppercase tracking-wider">Mes contributions ({myMedias.length})</span>
+            <span data-chat-heading className="text-amber-300/60 text-[10px] uppercase tracking-wider">Mes contributions ({myMedias.length})</span>
           </div>
           <DraggableContributionGrid
             items={myMedias.map(m => ({
@@ -581,7 +581,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
               ) : (
                 <User className="w-3 h-3 text-amber-400" />
               )}
-              <span className="text-amber-300/70 text-[10px] uppercase tracking-wider">
+              <span data-chat-heading className="text-amber-300/70 text-[10px] uppercase tracking-wider">
                 Crédité à {group.fullName} ({group.medias.length})
               </span>
             </div>
@@ -620,7 +620,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
               ) : (
                 <Users className="w-3 h-3 text-blue-400" />
               )}
-              <span className="text-blue-300/70 text-[10px] uppercase tracking-wider">
+              <span data-chat-heading className="text-blue-300/70 text-[10px] uppercase tracking-wider">
                 {group.fullName} ({group.medias.length})
               </span>
             </div>
@@ -879,7 +879,7 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
       {/* Kigos */}
       {kigos && kigos.length > 0 && (
         <div className="space-y-2">
-          <span className="text-emerald-200/40 text-[10px] uppercase tracking-wider">🌿 Kigo</span>
+          <span data-chat-heading className="text-emerald-200/40 text-[10px] uppercase tracking-wider">🌿 Kigo</span>
           {kigos.map(kigo => (
             <div key={kigo.id} className="bg-gradient-to-br from-amber-500/10 to-emerald-500/5 rounded-xl border border-amber-400/20 p-3 space-y-1.5">
               <div className="flex items-center gap-2">
@@ -902,7 +902,7 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <User className="w-3 h-3 text-amber-400" />
-            <span className="text-amber-300/60 text-[10px] uppercase tracking-wider">Mes textes ({myTextes.length})</span>
+            <span data-chat-heading className="text-amber-300/60 text-[10px] uppercase tracking-wider">Mes textes ({myTextes.length})</span>
           </div>
           <div className="space-y-2">
             {myTextes.map(t => (
