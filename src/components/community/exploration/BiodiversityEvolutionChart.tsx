@@ -52,7 +52,7 @@ const formatTickShort = (iso: string) => {
   }
 };
 
-const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, onNavigateToMarche }) => {
+const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, onNavigateToMarche, explorationId, allEventMarches }) => {
   const [metric, setMetric] = useState<EvolutionMetric>('species');
   const [period, setPeriod] = useState<EvolutionPeriod>('all');
   const [dateSource, setDateSource] = useState<DateSource>('observation');
