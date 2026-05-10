@@ -147,30 +147,60 @@ const ChatViewportObserver: React.FC<Props> = ({
   const timer = useRef<number | null>(null);
 
   useEffect(() => {
-    const findRoot = (): HTMLElement | null => {
-      if (rootSelector) return document.querySelector<HTMLElement>(rootSelector);
-      return (
-        document.querySelector<HTMLElement>('[data-chat-viewport]') ||
-        document.querySelector<HTMLElement>('main')
+    const findRoots = (): HTMLElement[] => {
+      const roots: HTMLElement[] = [];
+      const main =
+        (rootSelector
+          ? document.querySelector<HTMLElement>(rootSelector)
+          : document.querySelector<HTMLElement>('[data-chat-viewport]')) ||
+        document.querySelector<HTMLElement>('main');
+      if (main) roots.push(main);
+      // Overlays portaillés (Radix Dialog / Sheet, Vaul Drawer) — montés hors du viewport
+      const overlays = document.querySelectorAll<HTMLElement>(
+        '[role="dialog"][data-state="open"], [data-vaul-drawer][data-state="open"]'
       );
+      overlays.forEach(o => {
+        if (!roots.includes(o)) roots.push(o);
+      });
+      return roots;
     };
 
-    let root = findRoot();
-    let mo: MutationObserver | null = null;
+    let mainObserver: MutationObserver | null = null;
+    let bodyObserver: MutationObserver | null = null;
+
+    const mergeSnapshots = (snaps: DomSnapshot[]): DomSnapshot => {
+      const merged: DomSnapshot = {
+        activeChips: [],
+        headings: [],
+        visibleCards: [],
+        meta: { cardsTotal: 0, truncated: false, capturedAt: new Date().toISOString() },
+      };
+      snaps.forEach(s => {
+        s.activeChips.forEach(c => { if (!merged.activeChips.includes(c)) merged.activeChips.push(c); });
+        s.headings.forEach(h => { if (!merged.headings.includes(h)) merged.headings.push(h); });
+        merged.visibleCards.push(...s.visibleCards);
+        merged.meta.cardsTotal += s.meta.cardsTotal;
+        merged.meta.truncated = merged.meta.truncated || s.meta.truncated;
+      });
+      // Truncate after merge
+      if (merged.visibleCards.length > MAX_CARDS) {
+        merged.visibleCards = merged.visibleCards.slice(0, MAX_CARDS);
+        merged.meta.truncated = true;
+      }
+      return merged;
+    };
 
     const capture = () => {
-      if (!root) {
-        root = findRoot();
-        if (!root) return;
-      }
+      const roots = findRoots();
+      if (roots.length === 0) return;
       try {
-        const snap = extractDomSnapshot(root);
+        const snaps = roots.map(r => extractDomSnapshot(r));
+        const snap = mergeSnapshots(snaps);
         const serialized = JSON.stringify(snap);
         if (serialized === lastSerialized.current) return;
         lastSerialized.current = serialized;
         chatPageContext.setVisibleSlice(SNAPSHOT_KEY, snap);
       } catch (e) {
-        // Silencieux — l'observer ne doit jamais casser la page
         console.warn('[ChatViewportObserver] capture failed:', e);
       }
     };
@@ -186,18 +216,30 @@ const ChatViewportObserver: React.FC<Props> = ({
     // Capture initiale
     scheduleCapture();
 
-    // Observer mutations DOM (changements d'onglet, nouvelles cartes…)
-    if (root) {
-      mo = new MutationObserver(scheduleCapture);
-      mo.observe(root, {
+    // Observer mutations DOM dans la racine principale
+    const mainRoot = findRoots()[0];
+    if (mainRoot) {
+      mainObserver = new MutationObserver(scheduleCapture);
+      mainObserver.observe(mainRoot, {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['data-chat-active', 'aria-pressed', 'aria-selected', 'data-chat-title', 'data-chat-badges'],
+        attributeFilter: ['data-chat-active', 'aria-pressed', 'aria-selected', 'data-chat-title', 'data-chat-badges', 'data-state'],
       });
     }
 
-    // Capter aussi sur scroll (cartes entrant/sortant du viewport)
+    // Observer ouverture/fermeture des portails (Dialog, Sheet, Drawer) sur body
+    bodyObserver = new MutationObserver(scheduleCapture);
+    bodyObserver.observe(document.body, {
+      childList: true,
+      subtree: false,
+      attributes: false,
+    });
+    // Re-capture sur changement d'état des dialogues déjà existants
+    document.querySelectorAll('[role="dialog"], [data-vaul-drawer]').forEach(el => {
+      bodyObserver?.observe(el, { attributes: true, attributeFilter: ['data-state'] });
+    });
+
     window.addEventListener('scroll', scheduleCapture, { passive: true, capture: true });
     window.addEventListener('resize', scheduleCapture, { passive: true });
 
@@ -206,7 +248,8 @@ const ChatViewportObserver: React.FC<Props> = ({
         window.clearTimeout(timer.current);
         timer.current = null;
       }
-      mo?.disconnect();
+      mainObserver?.disconnect();
+      bodyObserver?.disconnect();
       window.removeEventListener('scroll', scheduleCapture, true);
       window.removeEventListener('resize', scheduleCapture);
       chatPageContext.setVisibleSlice(SNAPSHOT_KEY, undefined);
