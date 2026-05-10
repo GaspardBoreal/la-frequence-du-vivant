@@ -473,13 +473,22 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
       {showUpload && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
           <FileUploadZone
-            accept="image/*,video/*,.heic,.heif,.HEIC,.HEIF"
+            accept="image/*,video/*,image/heic,image/heif,.heic,.heif,.HEIC,.HEIF,.mov,.mp4"
             label="Photos & vidéos"
             icon={<Camera className="w-6 h-6 text-emerald-400/60" />}
             isUploading={uploadMedias.isPending}
             onFilesSelected={(files, isPublic) => {
-              const photos = files.filter(f => f.type.startsWith('image/'));
-              const videos = files.filter(f => f.type.startsWith('video/'));
+              const { photos, videos, unknown } = classifyBatch(files);
+              if (unknown.length) {
+                toast.error(
+                  `Format non supporté : ${unknown.map(f => f.name).join(', ')}`
+                );
+              }
+              if (!photos.length && !videos.length) return;
+              const total = photos.length + videos.length;
+              toast.info(
+                `Préparation de ${total} fichier${total > 1 ? 's' : ''}…`
+              );
               if (photos.length) {
                 uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo', marcheId: activeMarcheId });
                 trackActivity(userId, 'media_upload', 'photo', { marcheEventId, metadata: { count: photos.length } });
