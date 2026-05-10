@@ -76,10 +76,21 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
     }
   };
 
+  const displayTitle = translation?.commonName || species.commonName || species.scientificName;
+  const chatBadges = [
+    species.source,
+    hasAudio ? 'audio' : null,
+    hasPhoto ? 'photo' : null,
+  ].filter(Boolean).join(',');
+
   return (
     <Card 
       className="p-3 hover:shadow-md transition-all duration-200 cursor-pointer group"
       onClick={() => onSpeciesClick(species)}
+      data-chat-card=""
+      data-chat-title={displayTitle}
+      data-chat-subtitle={species.scientificName}
+      data-chat-badges={chatBadges}
     >
       <div className="flex items-center space-x-3">
         {/* Image/Spectrogram Container */}
