@@ -10,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
 import ScoreBreakdown from '@/components/community/exploration/impact/ScoreBreakdown';
+import ScoreCriterionDrawer from '@/components/community/exploration/impact/ScoreCriterionDrawer';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
 import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 import { useQuery } from '@tanstack/react-query';
@@ -1031,7 +1032,12 @@ const TIER_SHORT_LABEL_LOCAL: Record<SentinelleTier, string> = {
   engage:    'Engagé',
 };
 
-const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () => void }> = ({ sentinelle, onActivate }) => {
+const SentinelleChip: React.FC<{
+  sentinelle: SentinelleResult;
+  onActivate: () => void;
+  criterionDetails?: import('@/components/community/exploration/impact/ScoreCriterionDrawer').CriterionDetails;
+}> = ({ sentinelle, onActivate, criterionDetails }) => {
+  const [drawerKey, setDrawerKey] = useState<import('@/components/community/exploration/impact/ScoreCriterionDrawer').CriterionKey | null>(null);
   // Palier 0 : aucun palier affiché — invitation implicite à entrer dans la fréquence
   if (sentinelle.tier === 'aucun') return null;
   const handleKey = (e: React.KeyboardEvent) => {
@@ -1056,26 +1062,42 @@ const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () =>
     </span>
   );
   return (
-    <HoverCard openDelay={150} closeDelay={80}>
-      <HoverCardTrigger asChild>{chip}</HoverCardTrigger>
-      <HoverCardContent
-        side="left"
-        align="start"
-        className="w-[300px] p-3 bg-popover/95 backdrop-blur border-border shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-baseline justify-between mb-2">
-          <span className="text-sm font-semibold">Fréquence {sentinelle.total}/100</span>
-          <span className="text-xs text-muted-foreground">{sentinelle.label}</span>
-        </div>
-        <ScoreBreakdown breakdown={sentinelle.breakdown} total={sentinelle.total} />
-        {sentinelle.nextTip?.text && (
-          <p className="mt-2 text-[11px] text-muted-foreground italic border-t border-border/50 pt-2">
-            💡 {sentinelle.nextTip.text}
+    <>
+      <HoverCard openDelay={150} closeDelay={80}>
+        <HoverCardTrigger asChild>{chip}</HoverCardTrigger>
+        <HoverCardContent
+          side="left"
+          align="start"
+          className="w-[300px] p-3 bg-popover/95 backdrop-blur border-border shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-baseline justify-between mb-2">
+            <span className="text-sm font-semibold">Fréquence {sentinelle.total}/100</span>
+            <span className="text-xs text-muted-foreground">{sentinelle.label}</span>
+          </div>
+          <ScoreBreakdown
+            breakdown={sentinelle.breakdown}
+            total={sentinelle.total}
+            onCriterionSelect={(k) => setDrawerKey(k)}
+          />
+          {sentinelle.nextTip?.text && (
+            <p className="mt-2 text-[11px] text-muted-foreground italic border-t border-border/50 pt-2">
+              💡 {sentinelle.nextTip.text}
+            </p>
+          )}
+          <p className="mt-1 text-[10px] text-muted-foreground/80 text-center">
+            Cliquez sur un critère pour comprendre le calcul.
           </p>
-        )}
-      </HoverCardContent>
-    </HoverCard>
+        </HoverCardContent>
+      </HoverCard>
+      <ScoreCriterionDrawer
+        open={drawerKey !== null}
+        onOpenChange={(v) => { if (!v) setDrawerKey(null); }}
+        criterion={drawerKey}
+        breakdown={sentinelle.breakdown}
+        details={criterionDetails}
+      />
+    </>
   );
 };
 
@@ -1093,8 +1115,11 @@ const MarcheurCard: React.FC<{
   sentinelle: SentinelleResult;
   highlightBuckets?: Set<SentinelleBucketKey>;
   marcheurBuckets: { bio: number; aux: number; eee: number };
+  sensibleNames?: Array<{ name: string; cat: 'bio' | 'aux' | 'eee' }>;
+  uncuratedSpeciesNames?: string[];
+  localSpeciesCount?: number;
   onForceOpen: () => void;
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, onForceOpen }) => {
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, sensibleNames, uncuratedSpeciesNames, localSpeciesCount, onForceOpen }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
 
   const openImpact = () => {
@@ -1212,7 +1237,18 @@ const MarcheurCard: React.FC<{
           )}
 
           {/* Sentinelle index chip */}
-          <SentinelleChip sentinelle={sentinelle} onActivate={openImpact} />
+          <SentinelleChip
+            sentinelle={sentinelle}
+            onActivate={openImpact}
+            criterionDetails={{
+              marcheurName: `${marcheur.prenom} ${marcheur.nom}`.trim(),
+              sensibleNames,
+              uncuratedSpeciesNames,
+              inatContributionsCount: realContribCount,
+              localSpeciesCount,
+              pillarsMissing: sentinelle.breakdown.pillars.missing,
+            }}
+          />
         </div>
 
         {hasContent && (
@@ -1443,12 +1479,25 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const { data: pratiquesCountsByMarcheur } = useMarcheursPratiquesCounts(explorationId, marcheurIdsList);
 
   // Per-marcheur Sentinelle index + sensible buckets — computed once for sort/filter/display
-  type Metrics = { sentinelle: SentinelleResult; buckets: { bio: number; aux: number; eee: number } };
+  type Metrics = {
+    sentinelle: SentinelleResult;
+    buckets: { bio: number; aux: number; eee: number };
+    sensibleNames: Array<{ name: string; cat: 'bio' | 'aux' | 'eee' }>;
+    uncuratedSpeciesNames: string[];
+    localSpeciesCount: number;
+  };
   const metricsById = useMemo(() => {
     const map = new Map<string, Metrics>();
     (marcheurs || []).forEach((m) => {
       const names = (m.speciesObserved || []).map(s => s.scientificName).filter(Boolean);
       const buckets = bucketSensibleSpecies(names, curationByName);
+      const sensibleNames: Array<{ name: string; cat: 'bio' | 'aux' | 'eee' }> = [
+        ...buckets.bioIndicateurs.map(n => ({ name: n, cat: 'bio' as const })),
+        ...buckets.auxiliaires.map(n => ({ name: n, cat: 'aux' as const })),
+        ...buckets.eee.map(n => ({ name: n, cat: 'eee' as const })),
+      ];
+      const sensibleSet = new Set(sensibleNames.map(s => s.name));
+      const uncuratedSpeciesNames = names.filter(n => !sensibleSet.has(n));
       const sentinelle = computeSentinelleIndex({
         photos: m.stats.photos + m.stats.videos,
         sons: m.stats.sons || 0,
@@ -1467,6 +1516,9 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
           aux: buckets.auxiliaires.length,
           eee: buckets.eee.length,
         },
+        sensibleNames,
+        uncuratedSpeciesNames,
+        localSpeciesCount: m.stats.speciesCount || 0,
       });
     });
     return map;
@@ -1770,6 +1822,9 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom, aliasesByMarcheurId?.get(m.id))}
                 sentinelle={metrics.sentinelle}
                 marcheurBuckets={metrics.buckets}
+                sensibleNames={metrics.sensibleNames}
+                uncuratedSpeciesNames={metrics.uncuratedSpeciesNames}
+                localSpeciesCount={metrics.localSpeciesCount}
                 highlightBuckets={activeBuckets}
               />
             );
