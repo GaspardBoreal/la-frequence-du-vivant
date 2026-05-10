@@ -1245,7 +1245,10 @@ const MarcheurCard: React.FC<{
               sensibleNames,
               uncuratedSpeciesNames,
               inatContributionsCount: realContribCount,
-              localSpeciesCount,
+              localSpeciesCount: marcheur.stats.localSpeciesCount ?? localSpeciesCount,
+              inatSpeciesCount: marcheur.stats.inatSpeciesCount || 0,
+              inatPhotosCount: marcheur.stats.inatPhotos || 0,
+              localPhotosCount: photoCount,
               pillarsMissing: sentinelle.breakdown.pillars.missing,
             }}
           />
@@ -1498,8 +1501,11 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
       ];
       const sensibleSet = new Set(sensibleNames.map(s => s.name));
       const uncuratedSpeciesNames = names.filter(n => !sensibleSet.has(n));
+      const inatPhotos = m.stats.inatPhotos || 0;
       const sentinelle = computeSentinelleIndex({
-        photos: m.stats.photos + m.stats.videos,
+        // Les photos iNat (avec photoUrl) comptent comme contribution photo : active le pilier
+        // "photo" et alimente le Volume, sans modifier la formule existante.
+        photos: m.stats.photos + m.stats.videos + inatPhotos,
         sons: m.stats.sons || 0,
         textes: m.stats.textes || 0,
         hasTemoignage: !!(m.userId && testimoniesByUser.has(m.userId)),
@@ -1518,7 +1524,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         },
         sensibleNames,
         uncuratedSpeciesNames,
-        localSpeciesCount: m.stats.speciesCount || 0,
+        localSpeciesCount: (m.stats.localSpeciesCount ?? m.stats.speciesCount) || 0,
       });
     });
     return map;
