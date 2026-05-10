@@ -32,6 +32,13 @@ interface DomSnapshot {
     subtitle?: string;
     badges?: string[];
   }>;
+  /** Contexte de l'écran (modal, tab actif…). */
+  context?: {
+    type?: string;
+    title?: string;
+    subtitle?: string;
+    activeTab?: string;
+  };
   /** Méta : nombre total détecté (avant troncature). */
   meta: {
     cardsTotal: number;
@@ -129,6 +136,18 @@ function extractDomSnapshot(root: HTMLElement): DomSnapshot {
   });
 
   snapshot.meta.truncated = pool.length > MAX_CARDS;
+
+  // ── Contexte (data-chat-context, data-chat-active-tab) ────
+  const ctxEl = (root.matches('[data-chat-context]') ? root : root.querySelector('[data-chat-context]')) as HTMLElement | null;
+  if (ctxEl) {
+    snapshot.context = {
+      type: ctxEl.dataset.chatContext || undefined,
+      title: ctxEl.dataset.chatTitle || undefined,
+      subtitle: ctxEl.dataset.chatSubtitle || undefined,
+      activeTab: ctxEl.dataset.chatActiveTab || undefined,
+    };
+  }
+
   return snapshot;
 }
 
@@ -181,6 +200,8 @@ const ChatViewportObserver: React.FC<Props> = ({
         merged.visibleCards.push(...s.visibleCards);
         merged.meta.cardsTotal += s.meta.cardsTotal;
         merged.meta.truncated = merged.meta.truncated || s.meta.truncated;
+        // Le contexte le plus spécifique (overlay) écrase le contexte de la page principale
+        if (s.context) merged.context = s.context;
       });
       // Truncate after merge
       if (merged.visibleCards.length > MAX_CARDS) {
