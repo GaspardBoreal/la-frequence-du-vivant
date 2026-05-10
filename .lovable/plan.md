@@ -1,89 +1,83 @@
-## Diagnostic — Cas Laurence Karki
+## Diagnostic
 
-- Participation créée aujourd'hui sur l'événement `DEVIAT / Jardin Monde` (exploration `20dd3be8…`), méthode `admin_retroactif`.
-- Aucune ligne `exploration_marcheurs` créée pour cette exploration → sa fiche n'apparaît pas.
-- Ses 3 observations existantes restent rattachées à l'autre exploration (`70fcd8d1 — DEVIAT Marcher sur un sol qui respire`).
-- Son compte iNaturalist (`laurencekarki`) est bien lié dans `community_profile_science_accounts` → la matière première est exploitable.
+**Cause racine confirmée par requête SQL :**
 
-**Cause racine** : la création d'une `marche_participations` n'a aucun effet de bord. Pas de trigger, pas d'insertion dans `exploration_marcheurs`, pas de scan iNaturalist pour rattacher les observations dans le rayon GPS des marches de l'événement.
-
-## Objectif
-
-Quand on ajoute (manuellement ou par QR) un marcheur à un événement **après** qu'il a déjà observé sur iNaturalist dans la zone des marches, sa fiche Marcheur doit se construire toute seule, de manière idempotente et auditée.
-
-## Architecture proposée
-
-```text
-INSERT marche_participations (user_id, marche_event_id)
-        │
-        ▼
-TRIGGER AFTER INSERT  ─── ensure_exploration_marcheur()
-        │                      └─ upsert exploration_marcheurs (FROM community_profiles)
-        │
-        ▼
-pg_net.http_post  ──►  Edge Function: backfill-marcheur-inaturalist
-                                │
-                                ├─ lit science_accounts (network='inaturalist')
-                                ├─ pour chaque marche de l'exploration :
-                                │     fetch iNat /observations?user_id=…&lat=…&lng=…&radius=…
-                                ├─ filtre Haversine + dédup par scientificName
-                                ├─ INSERT marcheur_observations (ON CONFLICT DO NOTHING)
-                                └─ logge un rapport (backfill_log)
+Dans `biodiversity_snapshots.species_data[].attributions[]`, les observations iNaturalist sont stockées avec :
+```
+observerName = "laurencekarki"   (login iNat)
+source       = "inaturalist"
 ```
 
-## Étapes d'implémentation
+Mais l'onglet **Contributions** (et le compteur de contributions) fait le matching ainsi :
+```ts
+fullNameNorm = normalize("Laurence" + " " + "Karki")  // "laurence karki"
+match = observerNorm.includes(fullNameNorm)
+     || fullNameNorm.includes(observerNorm)
+// "laurencekarki".includes("laurence karki") → false
+// "laurence karki".includes("laurencekarki") → false
+```
 
-### 1. Migration DB
+→ **Aucun match**, donc `Aucune espèce identifiée`.
 
-- **Trigger `trg_participation_backfill_marcheur`** sur `marche_participations` AFTER INSERT.
-- **Fonction `ensure_exploration_marcheur(p_user_id, p_marche_event_id)`** (SECURITY DEFINER) :
-  - résout l'`exploration_id` via `marche_events`,
-  - upsert dans `exploration_marcheurs` (prenom/nom/avatar depuis `community_profiles`, role=`marcheur`, ordre=9999, couleur défaut),
-  - retourne le `crew_id`.
-- **Fonction `request_inaturalist_backfill(p_user_id, p_exploration_id)`** : déclenche `net.http_post` vers l'Edge Function (asynchrone, non bloquant).
-- **Table `marcheur_backfill_log`** (run_id, user_id, exploration_id, source, observations_inserted, error, created_at) pour traçabilité.
-- Réutilise l'unique index `marcheur_observations_unique_triplet` → idempotence garantie.
+À l'inverse, l'onglet **Synthèse → Taxons observés** propose un sélecteur d'observateur basé sur les `observerName` bruts présents dans les snapshots (donc `laurencekarki`), ce qui fonctionne directement. D'où l'incohérence (0 vs 6 / 0 vs 5).
 
-### 2. Edge Function `backfill-marcheur-inaturalist`
+Le même bug existe dans 3 endroits :
+- `MarcheursTab.tsx` `ContributionsSubTab` (l. 412-472)
+- `MarcheursTab.tsx` `useWalkerContributionsCount` (l. 972-1009)
+- `impact/CitizenPlatformsCard.tsx` (l. 84-90)
 
-- Entrée : `{ user_id, exploration_id, marche_event_id?, source: 'trigger'|'manual' }`.
-- Vérifie JWT (service role pour l'écriture).
-- Lit `community_profile_science_accounts` (network=`inaturalist`) → username.
-- Charge toutes les `marches` de l'exploration via `exploration_marches` (lat/lng + rayon de collecte = 500 m, cohérent avec `sync-biodiversity-snapshot`).
-- Pour chaque marche, appelle `https://api.inaturalist.org/v1/observations?user_login=…&lat=…&lng=…&radius=0.5&per_page=200` (paginé).
-- Filtre Haversine côté serveur (sécurité), normalise les `scientificName`.
-- INSERT dans `marcheur_observations (marcheur_id, marche_id, species_scientific_name, observation_date, notes='iNaturalist backfill', photo_url)` avec `ON CONFLICT DO NOTHING`.
-- Insère un résumé dans `marcheur_backfill_log`.
-- Optionnel : déclenche `sync-biodiversity-snapshot` pour chaque marche touchée.
+## Solution proposée — robuste pour tous les marcheurs iNat
 
-### 3. UX Admin — bouton de re-synchronisation manuelle
+**Principe :** étendre l'identité d'un marcheur à un ensemble d'**alias** (nom complet + tous ses logins de comptes science), puis matcher si l'`observerName` du snapshot **égale strictement** l'un des alias normalisés (et non plus via `includes` qui est trop permissif et casse sur les logins concaténés).
 
-- Dans `MarcheurObservationsManager` (fiche marcheur côté admin/L'Œil) : bouton **« Re-synchroniser depuis iNaturalist »**.
-- Affiche le dernier `marcheur_backfill_log` (date, nb d'obs ajoutées, statut).
-- Désactivé si pas de compte iNaturalist lié → CTA « Lier un compte iNaturalist ».
+### 1. Hook partagé `useMarcheurAliases(userId, prenom, nom)`
 
-### 4. Couverture des cas connexes
+Nouveau hook qui retourne un `Set<string>` d'alias normalisés :
+- `normalize(`${prenom} ${nom}`)` → `"laurence karki"`
+- `normalize(`${prenom}${nom}`)` → `"laurencekarki"` (variante concaténée, fallback)
+- Tous les `username` issus de `community_profile_science_accounts` du marcheur (réseaux `inaturalist`, `gbif`, `observation_org`, etc.), normalisés.
 
-- **Modification d'un événement** (changement de `exploration_id` ou ajout d'une marche dans l'exploration) : trigger AFTER UPDATE/INSERT sur `exploration_marches` → re-déclenche le backfill pour tous les marcheurs déjà présents dans l'exploration.
-- **Lien tardif d'un compte iNaturalist** : trigger AFTER INSERT sur `community_profile_science_accounts` (network=`inaturalist`) → backfill pour toutes les explorations où l'utilisateur a une participation validée.
+Une seule requête, mise en cache (5 min), réutilisable dans les 3 endroits.
 
-## Garde-fous
+### 2. Nouvelle logique de matching
 
-- **Idempotence** : unique triplet `(marcheur_id, marche_id, scientificName)`.
-- **Asynchrone** : `pg_net` ne bloque jamais l'INSERT de la participation (toast UI immédiat ; obs apparaissent quelques secondes après).
-- **Audit** : `marcheur_backfill_log` permet de diagnostiquer un cas comme Laurence en 1 clic.
-- **Scope** : limité aux marches de l'exploration de l'événement, rayon 500 m (constante partagée avec `sync-biodiversity-snapshot`).
-- **Sécurité** : Edge Function en service role, jamais exposée au client sans JWT vérifié.
-- **Dégradé gracieux** : si pas d'iNat lié → log « no_account », pas d'erreur ; bouton manuel disponible.
+Remplacer le `includes` bidirectionnel par une **égalité stricte** sur le `Set` d'alias :
+```ts
+const observerNorm = normalize(attr.observerName);
+if (aliases.has(observerNorm)) { ... }
+```
 
-## Hors-scope
+Cela règle aussi les faux positifs (ex. un observateur "Laurence" matchait "Laurence Karki" par inclusion).
 
-- Pas de modification du flux de curation `attribute_species_to_marcheurs` (L'Œil reste prioritaire et compatible).
-- Pas de récupération automatique des observations hors iNaturalist (eBird / GBIF / PlantNet) dans cette première itération — la même mécanique pourra être étendue ensuite.
-- Pas de changement UI de la fiche marcheur publique (les obs apparaîtront naturellement via les hooks existants `useExplorationMarcheurs` / `useExplorationParticipants`).
+### 3. Application aux 3 endroits
 
-## Validation post-déploiement
+- `ContributionsSubTab` → injecter `aliases`, remplacer le test
+- `useWalkerContributionsCount` → idem (le compteur "Contributions" sur la pastille du marcheur sera juste)
+- `CitizenPlatformsCard` → idem (les KPI iNat / GBIF du marcheur)
 
-1. Re-créer la participation de Laurence (ou cliquer le nouveau bouton « Re-synchroniser ») → vérifier qu'une ligne `exploration_marcheurs` apparaît dans exploration `20dd3be8…` et que ses obs iNat dans le rayon des 4 marches DEVIAT sont insérées.
-2. Vérifier `marcheur_backfill_log` (1 ligne, observations_inserted > 0).
-3. Vérifier que la fiche Marcheur s'affiche dans la vue Vivant de l'exploration.
+### 4. Pré-requis backfill (déjà en place)
+
+Pour que les nouvelles obs iNat apparaissent côté snapshots (et pas seulement dans `marcheur_observations`) :
+- Le snapshot biodiversité d'une marche est régénéré quand on visite l'onglet Vivant (logique existante `snapshot-sync-on-view-logic`).
+- Le nouvel ajout d'un compte iNat ou d'une participation déclenche déjà `backfill-marcheur-inaturalist` (table `marcheur_observations`) **et** doit invalider le snapshot pour forcer une régénération avec les nouvelles attributions.
+
+→ Ajouter dans le trigger `handle_science_account_backfill` et `handle_participation_backfill` un appel asynchrone à `sync-biodiversity-snapshot` pour chaque marche concernée (refresh forcé). C'est la pièce manquante pour que la chaîne soit complète : iNat → marcheur_observations → snapshot.species_data.attributions → UI Contributions.
+
+### 5. Validation
+
+Après déploiement :
+- Recharger l'onglet Vivant des 2 marches DEVIAT pour régénérer les snapshots
+- Vérifier que la fiche **Laurence Karki → Contributions** affiche bien 6 espèces (DEVIAT/Jardin) et 5 (Marcher sur un sol qui respire)
+- Vérifier que la pastille "Observations" du marcheur affiche le bon compteur
+
+## Détails techniques
+
+**Fichiers modifiés :**
+- `src/hooks/useMarcheurAliases.ts` (nouveau)
+- `src/lib/observerMatching.ts` (nouveau, fonction `matchesAlias` + `normalize` partagés)
+- `src/components/community/exploration/MarcheursTab.tsx` (2 zones)
+- `src/components/community/exploration/impact/CitizenPlatformsCard.tsx`
+- `supabase/migrations/...` : étendre les triggers iNat backfill pour forcer aussi un refresh du snapshot biodiversité de chaque marche concernée (via `pg_net` → fonction `sync-biodiversity-snapshot`).
+
+**Mémoire à mettre à jour :**
+- Ajouter une note dans `mem://technical/community/identity-matching-logic` : matching par égalité sur set d'alias (nom + logins science), jamais par `includes`.
