@@ -1,143 +1,39 @@
+## Diagnostic : pourquoi pas de GPS sur ta photo iPhone
 
-# Métadonnées photos : extraction & stockage robustes
+### Ce qui s'est passé
 
-## Objectif
+Le fichier est arrivé à 5,18 Mo — c'est bien une vraie photo, mais **sans EXIF GPS**. Notre pipeline d'extraction fonctionne (il a bien lu la taille, la date d'ajout, le type…), il n'y a tout simplement **rien à lire dans le fichier reçu**.
 
-Garantir que **chaque photo uploadée**, quel que soit le point d'entrée (marcheur, admin, drag GPS, curation manuelle), voit ses métadonnées EXIF extraites une seule fois et stockées de façon **uniforme, validée et atomique** dans la colonne `metadata` (jsonb) de la table cible.
+La cause est connue et n'a rien à voir avec ton compte ni avec notre code : **iOS supprime systématiquement les coordonnées GPS quand on choisit une photo depuis "Photothèque" via un `<input type="file">` web** (Safari, Chrome iOS, PWA, peu importe). C'est une protection de confidentialité Apple introduite avec iOS 14 et durcie depuis. La photo originale dans Photos contient bien le GPS, mais Safari le strippe avant de remettre le fichier au site.
 
-## État actuel (audit)
+### Comment vérifier en 30 secondes
 
-| Flow | Fichier | GPS extrait ? | Stocké en base ? |
-|---|---|---|---|
-| Marcheur upload (`marcheur_medias`) | `useMarcheurContributions.ts` | Oui (`exifr.gps` + `DateTimeOriginal`) | Oui dans `metadata` |
-| Admin upload simple (`marche_photos`) — `savePhotos` | `supabaseMarcheOperations.ts` | Non | `metadata: null` |
-| Admin upload détaillé (`marche_photos`) — `savePhoto` | `supabasePhotoOperations.ts` | Dépend de l'appelant (souvent vide) | Oui si fourni |
-| Curation manuelle d'espèce | `ManualSpeciesModal.tsx` | Oui mais usage local uniquement | Non persisté |
-| Drop GPS sur carte | `PhotoGpsDropTool.tsx` | Oui (point manuel) | Oui (`gps`, pas `date_taken`) |
-| Vidéos / Audio | `useMarcheurContributions`, `supabaseMarcheOperations` | Non | `metadata: null` |
+1. Ouvre la photo dans l'app Photos iOS → bouton "i" (info) en bas → tu dois voir une **carte** et des coordonnées. Si oui, le GPS est bien dans l'original.
+2. Réglages iOS → Confidentialité et sécurité → Service de localisation → **Appareil photo** doit être sur "Lors de l'utilisation" et "Position précise" activée.
 
-**Problèmes** : extraction dupliquée (3 endroits différents), schémas hétérogènes, `marche_photos` admin n'extrait jamais, fallback `usePhotoGpsCheck` re-télécharge le fichier depuis le storage à chaque visite (coûteux + sujet aux échecs CORS).
+### 3 solutions, par ordre de robustesse
 
-## Architecture cible
+#### A. Côté utilisateur (immédiat, sans code)
+Dans iOS, ouvre la photo → Partager → **"Enregistrer dans Fichiers"** (pas "Enregistrer l'image") → puis dans notre uploader, choisis "Parcourir" → Fichiers → la photo. Là, iOS ne strippe rien : on récupère le GPS.
 
-```text
-                ┌──────────────────────────────┐
-   File ───────▶│ extractMediaMetadata(file)   │── retourne MediaMetadata
-                │  (src/utils/mediaMetadata.ts)│   normalisée + validée
-                └──────────────┬───────────────┘
-                               │
-                ┌──────────────▼───────────────┐
-                │ uploadPhotoWithMetadata()    │── 1) upload Storage
-                │  (atomic helper)             │   2) insert DB (avec metadata)
-                │                              │   3) si insert KO → rollback Storage
-                └──────────────────────────────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        ▼                      ▼                      ▼
-  marcheur_medias        marche_photos          (futur) marche_videos
-```
+#### B. Côté code — ajouter capture caméra directe (impact faible)
+Ajouter un bouton "Prendre une photo" qui utilise `<input type="file" accept="image/*" capture="environment">`. Quand on capture **en direct depuis l'app web**, iOS conserve les EXIF (dont GPS si Localisation > Appareil photo est ON). Ça ne résout pas les imports depuis la photothèque, mais c'est le chemin le plus fiable pour les marcheurs sur le terrain.
 
-### Schéma normalisé `MediaMetadata` (jsonb)
+#### C. Côté code — fallback géoloc navigateur (filet de sécurité)
+Si après extraction EXIF on a `extraction_status !== 'ok'` ou `gps === null`, proposer un dialog : "Pas de GPS dans cette photo — utiliser ta position actuelle ?" → `navigator.geolocation.getCurrentPosition()` → on enregistre avec `gps.source: 'device_geolocation'` (nouveau, à ajouter au schéma à côté de `'exif'` / `'manual'`). Marqué clairement comme "position de l'appareil au moment de l'upload, pas forcément de la prise de vue".
 
-```ts
-{
-  schema_version: 1,
-  gps: { latitude: number, longitude: number, altitude?: number, accuracy?: number } | null,
-  date_taken: string | null,        // ISO 8601 UTC
-  dimensions: { width: number, height: number } | null,
-  orientation: number | null,       // 1..8 EXIF
-  camera: { make?: string, model?: string, lens?: string } | null,
-  exposure: { iso?: number, aperture?: number, shutter?: string, focal_mm?: number } | null,
-  file: { original_name: string, size_bytes: number, mime: string, was_heic_converted: boolean },
-  extracted_at: string,             // ISO timestamp d'extraction
-  extraction_status: 'ok' | 'partial' | 'failed',
-  extraction_warnings?: string[]    // ex: 'no_gps', 'no_date', 'exif_parse_error'
-}
-```
+### Ce que je propose comme plan d'action
 
-Toutes les clés inutiles sont **omises** (pas de `null` partout) pour garder le jsonb compact, sauf les 3 champs critiques (`gps`, `date_taken`, `dimensions`) qui restent à `null` explicite pour distinguer "absent" de "non extrait".
+1. **Documenter la cause** dans l'UI : quand on affiche "Aucune donnée GPS dans cette photo", ajouter une note discrète "💡 iOS supprime souvent le GPS lors du choix depuis Photos. [Astuce]" qui ouvre une mini-aide expliquant la solution A.
+2. **Ajouter le bouton capture caméra** (solution B) à côté du bouton upload existant dans `FileUploadZone`, visible surtout sur mobile.
+3. **Ajouter le fallback géoloc** (solution C) déclenché à la fin de l'upload si aucun GPS n'a été extrait, avec consentement explicite.
+4. **Étendre le schéma `MediaGps.source`** à `'exif' | 'manual' | 'device_geolocation'` pour tracer la provenance.
 
-## Étapes d'implémentation
+### Détails techniques
 
-### 1. Module unifié d'extraction
-**Nouveau fichier** : `src/utils/mediaMetadata.ts`
-- `extractMediaMetadata(file: File): Promise<MediaMetadata>`
-- Utilise `exifr.parse(file, { gps: true, tiff: true, exif: true, ifd0: true })` en un seul appel (plus rapide qu'aujourd'hui où on parse 2 fois).
-- Validation GPS : rejette `lat/lng` hors bornes ou `0,0` exact (souvent valeur sentinelle bidon).
-- Normalise `DateTimeOriginal` en ISO UTC (gère Date, string, fuseau).
-- Sur fichiers HEIC/HEIF : extrait l'EXIF du fichier **original** (avant conversion JPEG, sinon les données sont perdues).
-- Retourne toujours un objet (jamais null) avec `extraction_status` adéquat.
+- Aucune migration SQL nécessaire : `metadata` est déjà `jsonb`, on enrichit juste les valeurs possibles de `source`.
+- `FileUploadZone.tsx` : ajout d'un second `<input>` avec attribut `capture` et bouton "📷 Photo".
+- `useMarcheurContributions.ts` : après `preparePhotoForUpload`, si `metadata.gps === null`, push dans une queue "à géolocaliser" qui propose le dialog après l'upload (l'upload n'est pas bloquant).
+- Mémoire à créer : `mem://technical/uploads/ios-gps-stripping-known-issue` documentant la cause et les 3 contournements pour éviter qu'on re-debugge ça dans 6 mois.
 
-### 2. Helper d'upload atomique
-**Nouveau fichier** : `src/utils/uploadWithMetadata.ts`
-- `uploadPhotoWithMetadata({ file, bucket, folder, table, row })`:
-  1. Extraction EXIF (sur le `File` local, AVANT toute conversion HEIC).
-  2. Conversion HEIC → JPEG si nécessaire.
-  3. Upload vers Storage.
-  4. Insert DB avec `metadata` injecté.
-  5. **Si l'insert DB échoue → suppression du fichier Storage** (rollback) pour éviter les orphelins.
-  6. Retour typé du row inséré.
-- Logs structurés : `[upload]` `extracted_keys=…` `gps_present=…` `db_status=…`.
-
-### 3. Migration des call sites
-
-Remplacer l'extraction et l'insert par `uploadPhotoWithMetadata` dans :
-- `src/hooks/useMarcheurContributions.ts` (`useUploadMedias`) — supprime le bloc EXIF inline.
-- `src/utils/supabaseMarcheOperations.ts` (`savePhotos`) — corrige le `metadata: null`.
-- `src/utils/supabasePhotoOperations.ts` (`savePhoto`) — branche le helper, retire `validateMetadata` redondant.
-- `src/components/community/exploration/PhotoGpsDropTool.tsx` — fusionne le GPS manuel dans le metadata schema (ajoute un flag `gps.source: 'manual'`).
-- `src/components/community/insights/curation/ManualSpeciesModal.tsx` — persiste enfin l'EXIF lu.
-
-### 4. Backfill (optionnel mais recommandé)
-**Edge function** `backfill-media-metadata` (one-shot, déclenché manuellement) :
-- Sélectionne les rows `marche_photos` / `marcheur_medias` où `metadata IS NULL` ou `metadata->>'schema_version' IS NULL`.
-- Télécharge le fichier depuis Storage, extrait l'EXIF côté serveur (`exifr` ou via Deno équivalent), met à jour la row.
-- Pagination + checkpoint pour reprendre en cas d'arrêt. Limite 500 rows / run.
-
-### 5. Migration DB (légère)
-Aucune restructuration de colonne (déjà jsonb). Ajout d'un **index GIN partiel** pour accélérer les futures requêtes GPS / date :
-```sql
-CREATE INDEX IF NOT EXISTS idx_marcheur_medias_metadata_gps
-  ON public.marcheur_medias USING gin ((metadata->'gps'));
-CREATE INDEX IF NOT EXISTS idx_marche_photos_metadata_gps
-  ON public.marche_photos USING gin ((metadata->'gps'));
-```
-
-### 6. Mise à jour côté lecteurs
-- `usePhotoGpsCheck` : élargit `storedGps` pour reconnaître aussi `metadata.gps.latitude/longitude` (déjà le cas) et **ne déclenche le fallback `exifr.gps(url)` que si `extraction_status !== 'ok'`** (économie réseau majeure).
-- `MediaMetadataPanel` : déjà compatible, rien à changer.
-- `MediaLightbox` types (`gps`, `date_taken`, `width`/`height`) : alignés sur le nouveau schéma.
-
-### 7. Tests & validation
-- Test manuel iPhone HEIC : vérifier que GPS + date sont bien persistés (pas perdus pendant la conversion).
-- Test photo sans GPS : `extraction_status: 'partial'`, `extraction_warnings: ['no_gps']`.
-- Test rollback : forcer une erreur DB → vérifier que le fichier Storage est supprimé.
-- Test admin upload (formulaire de marche) : `metadata` non null après création.
-- Vérifier dans la DB :
-  ```sql
-  select count(*) filter (where metadata->'gps' is not null) as with_gps,
-         count(*) as total
-  from marcheur_medias where created_at > now() - interval '1 day';
-  ```
-
-## Détails techniques importants
-
-- **Robustesse extraction HEIC** : l'extraction DOIT précéder la conversion. `exifr` lit nativement les HEIC sur navigateur moderne ; sinon retourner `extraction_status: 'partial'` plutôt que de planter l'upload.
-- **Atomicité** : pas de transaction Postgres possible entre Storage + DB, donc on implémente un rollback applicatif (delete Storage si insert DB KO).
-- **Idempotence** : si l'utilisateur réessaie après crash réseau, le helper détecte un `metadata.file.original_name + size_bytes + user_id` existant et propose la dédup (option : skipper l'upload).
-- **PII / vie privée** : le GPS d'une photo est sensible. Il est déjà respecté par RLS (visible seulement selon `is_public`). On n'expose pas le GPS en clair dans les pages publiques sauf si la photo est `is_public = true`. Aucun changement nécessaire sur ce point, mais à confirmer.
-- **Pas de modif** des colonnes existantes (rétro-compatible).
-
-## Livrables
-
-- `src/utils/mediaMetadata.ts` (nouveau)
-- `src/utils/uploadWithMetadata.ts` (nouveau)
-- 4 fichiers refactorés (hooks + utils admin)
-- 1 migration SQL (2 index GIN)
-- 1 edge function backfill (optionnelle, à déclencher quand vous le souhaiterez)
-- 1 entrée mémoire `mem://technical/uploads/media-metadata-pipeline-logic`
-
-## Hors scope
-
-- Vidéos et audio (gardés sans métadonnées pour cette itération — peut être fait dans un second temps via `ffprobe` côté Edge).
-- Re-géolocalisation automatique des photos sans GPS (déjà gérée par `PhotoGpsDropTool` côté UI).
+Aucun changement BDD requis. Tout reste rétrocompatible.
