@@ -1443,12 +1443,25 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const { data: pratiquesCountsByMarcheur } = useMarcheursPratiquesCounts(explorationId, marcheurIdsList);
 
   // Per-marcheur Sentinelle index + sensible buckets — computed once for sort/filter/display
-  type Metrics = { sentinelle: SentinelleResult; buckets: { bio: number; aux: number; eee: number } };
+  type Metrics = {
+    sentinelle: SentinelleResult;
+    buckets: { bio: number; aux: number; eee: number };
+    sensibleNames: Array<{ name: string; cat: 'bio' | 'aux' | 'eee' }>;
+    uncuratedSpeciesNames: string[];
+    localSpeciesCount: number;
+  };
   const metricsById = useMemo(() => {
     const map = new Map<string, Metrics>();
     (marcheurs || []).forEach((m) => {
       const names = (m.speciesObserved || []).map(s => s.scientificName).filter(Boolean);
       const buckets = bucketSensibleSpecies(names, curationByName);
+      const sensibleNames: Array<{ name: string; cat: 'bio' | 'aux' | 'eee' }> = [
+        ...buckets.bioIndicateurs.map(n => ({ name: n, cat: 'bio' as const })),
+        ...buckets.auxiliaires.map(n => ({ name: n, cat: 'aux' as const })),
+        ...buckets.eee.map(n => ({ name: n, cat: 'eee' as const })),
+      ];
+      const sensibleSet = new Set(sensibleNames.map(s => s.name));
+      const uncuratedSpeciesNames = names.filter(n => !sensibleSet.has(n));
       const sentinelle = computeSentinelleIndex({
         photos: m.stats.photos + m.stats.videos,
         sons: m.stats.sons || 0,
@@ -1467,6 +1480,9 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
           aux: buckets.auxiliaires.length,
           eee: buckets.eee.length,
         },
+        sensibleNames,
+        uncuratedSpeciesNames,
+        localSpeciesCount: m.stats.speciesCount || 0,
       });
     });
     return map;
