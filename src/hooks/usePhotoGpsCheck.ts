@@ -50,6 +50,8 @@ interface PhotoInput {
   url: string;
   /** Pre-stored GPS from metadata column (if available) */
   storedGps?: { latitude: number; longitude: number } | null;
+  /** extraction_status from MediaMetadata, if known. 'ok' skips the EXIF fallback. */
+  extractionStatus?: 'ok' | 'partial' | 'failed';
 }
 
 export function usePhotoGpsCheck(marcheId: string) {
@@ -87,8 +89,9 @@ export function usePhotoGpsCheck(marcheId: string) {
             if (photo.storedGps?.latitude != null && photo.storedGps?.longitude != null) {
               lat = photo.storedGps.latitude;
               lng = photo.storedGps.longitude;
-            } else {
-              // Priority 2: fallback to runtime EXIF extraction
+            } else if (photo.extractionStatus !== 'ok') {
+              // Priority 2: fallback to runtime EXIF extraction (skip if extraction was already
+              // marked 'ok' but no GPS was present — re-fetching from storage is wasteful).
               const gps = await exifr.gps(photo.url);
               if (gps?.latitude != null && gps?.longitude != null) {
                 lat = gps.latitude;
