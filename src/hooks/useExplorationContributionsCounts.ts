@@ -66,22 +66,36 @@ export const useExplorationContributionsCounts = (
 };
 
 /**
- * Lookup helper: tries an exact match on the normalized full name first,
- * then falls back to a fuzzy contains-match (mirrors the original
- * useWalkerContributionsCount behavior).
+ * Lookup helper: matche en **égalité stricte** sur un set d'alias normalisés
+ * (nom complet + variantes + logins science iNaturalist/GBIF/eBird).
+ *
+ * Le fallback `includes` historique est volontairement supprimé : il causait
+ * des faux négatifs pour les logins iNat concaténés (`laurencekarki` ne
+ * matche pas `laurence karki`) ET des faux positifs (un observateur
+ * "Laurence" matchait n'importe quelle Laurence X).
  */
 export const lookupContributions = (
   counts: Map<string, number> | undefined,
   prenom: string,
-  nom: string
+  nom: string,
+  aliases?: string[]
 ): number => {
   if (!counts || counts.size === 0) return 0;
-  const target = normalizeName(`${prenom} ${nom}`);
-  if (!target) return 0;
-  const exact = counts.get(target);
-  if (typeof exact === 'number') return exact;
-  for (const [observer, count] of counts) {
-    if (observer.includes(target) || target.includes(observer)) return count;
+  const candidates = new Set<string>();
+  const full = normalizeName(`${prenom || ''} ${nom || ''}`);
+  if (full) {
+    candidates.add(full);
+    candidates.add(full.replace(/\s+/g, '')); // variante concaténée
+    candidates.add(normalizeName(`${nom || ''} ${prenom || ''}`));
   }
-  return 0;
+  (aliases || []).forEach((a) => {
+    const n = (a || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    if (n) candidates.add(n);
+  });
+  let total = 0;
+  candidates.forEach((c) => {
+    const v = counts.get(c);
+    if (typeof v === 'number') total += v;
+  });
+  return total;
 };
