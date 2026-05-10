@@ -1,7 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Globe, Lock, Loader2, X, Plus } from 'lucide-react';
+import { Upload, Globe, Lock, Loader2, X, Plus, Camera, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface FileUploadZoneProps {
   accept: string;
@@ -14,6 +19,9 @@ interface FileUploadZoneProps {
   compact?: boolean;
 }
 
+const isImageAccept = (accept: string) =>
+  accept.includes('image') || accept === '*' || accept.includes('*/*');
+
 const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   accept,
   multiple = true,
@@ -24,26 +32,72 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   compact = false,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [isPublic, setIsPublic] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = (files: FileList | null, source: 'picker' | 'camera' = 'picker') => {
     if (!files?.length) return;
     onFilesSelected(Array.from(files), isPublic);
-    if (inputRef.current) inputRef.current.value = '';
+    if (source === 'picker' && inputRef.current) inputRef.current.value = '';
+    if (source === 'camera' && cameraRef.current) cameraRef.current.value = '';
   };
+
+  const showCamera = isImageAccept(accept);
+
+  const GpsHint = (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 text-[10px] text-amber-300/70 hover:text-amber-200 transition-colors"
+          title="Conseil GPS iPhone"
+        >
+          <Info className="w-3 h-3" />
+          GPS iPhone ?
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 text-xs leading-relaxed">
+        <p className="font-medium mb-1">Pas de GPS sur tes photos iPhone&nbsp;?</p>
+        <p className="text-muted-foreground mb-2">
+          iOS supprime souvent les coordonnées quand tu choisis une photo depuis
+          <em> Photothèque</em>. Pour conserver le GPS&nbsp;:
+        </p>
+        <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+          <li>Utilise <strong>«&nbsp;Prendre une photo&nbsp;»</strong> pour shooter directement (le plus fiable).</li>
+          <li>Ou ouvre la photo dans Photos → <strong>Partager → Enregistrer dans Fichiers</strong>, puis remonte-la depuis l'app Fichiers.</li>
+          <li>Vérifie&nbsp;: Réglages iOS → Confidentialité → Service de localisation → <strong>Appareil photo</strong> sur «&nbsp;Lors de l'utilisation&nbsp;» avec position précise.</li>
+        </ul>
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          Sinon, on te proposera d'utiliser la position de ton téléphone à l'upload.
+        </p>
+      </PopoverContent>
+    </Popover>
+  );
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <input
           ref={inputRef}
           type="file"
           accept={accept}
           multiple={multiple}
-          onChange={e => handleFiles(e.target.files)}
+          onChange={e => handleFiles(e.target.files, 'picker')}
           className="hidden"
         />
+        {showCamera && (
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            // capture trigger native camera on mobile; ignored on desktop
+            // @ts-expect-error capture is a valid HTML attr
+            capture="environment"
+            onChange={e => handleFiles(e.target.files, 'camera')}
+            className="hidden"
+          />
+        )}
         <Button
           size="sm"
           variant="outline"
@@ -54,6 +108,19 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
           {label}
         </Button>
+        {showCamera && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => cameraRef.current?.click()}
+            disabled={isUploading}
+            className="h-8 bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 text-xs gap-1.5"
+            title="Prendre une photo (conserve le GPS)"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            Photo
+          </Button>
+        )}
         <button
           onClick={() => setIsPublic(!isPublic)}
           className={cn(
@@ -65,6 +132,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           {isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
           {isPublic ? 'Public' : 'Privé'}
         </button>
+        {showCamera && GpsHint}
       </div>
     );
   }
@@ -76,14 +144,25 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
         type="file"
         accept={accept}
         multiple={multiple}
-        onChange={e => handleFiles(e.target.files)}
+        onChange={e => handleFiles(e.target.files, 'picker')}
         className="hidden"
       />
+      {showCamera && (
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          // @ts-expect-error capture is a valid HTML attr
+          capture="environment"
+          onChange={e => handleFiles(e.target.files, 'camera')}
+          className="hidden"
+        />
+      )}
 
       <div
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+        onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files, 'picker'); }}
         onClick={() => !isUploading && inputRef.current?.click()}
         className={cn(
           "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
@@ -105,7 +184,23 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
         )}
       </div>
 
-      <div className="flex justify-center">
+      {showCamera && (
+        <div className="flex justify-center">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
+            disabled={isUploading}
+            className="h-8 bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 text-xs gap-1.5"
+            title="Prendre une photo (conserve le GPS)"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            Prendre une photo
+          </Button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-center gap-3">
         <button
           onClick={() => setIsPublic(!isPublic)}
           className={cn(
@@ -116,6 +211,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           {isPublic ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
           {isPublic ? 'Visible par les marcheurs' : 'Privé — vous seul'}
         </button>
+        {showCamera && GpsHint}
       </div>
     </div>
   );
