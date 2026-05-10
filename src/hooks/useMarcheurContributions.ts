@@ -242,7 +242,7 @@ export function useUploadAudio(userId: string) {
     }) => {
       const results: MarcheurAudio[] = [];
       for (const file of files) {
-        const url = await uploadFile(userId, file, 'audio');
+        const { url } = await uploadToStorage(userId, file, 'audio');
         
         const { data, error } = await supabase
           .from('marcheur_audio')
