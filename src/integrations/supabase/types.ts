@@ -386,6 +386,41 @@ export type Database = {
         }
         Relationships: []
       }
+      community_science_account_suggestions_ignored: {
+        Row: {
+          id: string
+          ignored_at: string
+          ignored_by: string | null
+          network: Database["public"]["Enums"]["science_network"]
+          observer_name: string
+          profile_id: string
+        }
+        Insert: {
+          id?: string
+          ignored_at?: string
+          ignored_by?: string | null
+          network: Database["public"]["Enums"]["science_network"]
+          observer_name: string
+          profile_id: string
+        }
+        Update: {
+          id?: string
+          ignored_at?: string
+          ignored_by?: string | null
+          network?: Database["public"]["Enums"]["science_network"]
+          observer_name?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_science_account_suggestions_ignored_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "community_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_contacts: {
         Row: {
           created_at: string | null
@@ -4794,6 +4829,24 @@ export type Database = {
       shares_marche_event: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
+      }
+      suggest_science_accounts: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          confidence: string
+          homonym_count: number
+          last_observation_date: string
+          network: Database["public"]["Enums"]["science_network"]
+          nom: string
+          observer_count: number
+          observer_name: string
+          prenom: string
+          profile_id: string
+          sample_url: string
+          species_count: number
+          ville: string
+        }[]
       }
       update_exploration_page:
         | {

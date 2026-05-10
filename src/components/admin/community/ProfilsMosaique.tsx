@@ -7,6 +7,7 @@ import {
 } from '@/lib/communityProfileTaxonomy';
 import ProfilCard from './ProfilCard';
 import NetworkFilters, { type NetworkFilterMode, type SpecialFilter } from './NetworkFilters';
+import SuggestionsBanner from './SuggestionsBanner';
 import type { EditableProfile } from './MarcheurEditSheet';
 import { useAllScienceAccounts } from '@/hooks/useScienceAccounts';
 import { NETWORK_ORDER, type ScienceAccount, type ScienceNetwork } from '@/types/scienceAccounts';
@@ -106,6 +107,7 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
 
   return (
     <div className="space-y-4">
+      <SuggestionsBanner />
       <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
         <div className="relative md:col-span-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

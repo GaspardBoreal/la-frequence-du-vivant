@@ -13,6 +13,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CSP_OPTIONS, GENDER_OPTIONS } from '@/lib/communityProfileTaxonomy';
 import ScienceAccountsEditor from './ScienceAccountsEditor';
+import ProfileSuggestionsList from './ProfileSuggestionsList';
 
 export interface EditableProfile {
   id: string;
@@ -231,7 +232,8 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
 
           <Separator />
 
-          <section>
+          <section className="space-y-3">
+            <ProfileSuggestionsList profileId={form.id} />
             <ScienceAccountsEditor profileId={form.id} />
           </section>
 
