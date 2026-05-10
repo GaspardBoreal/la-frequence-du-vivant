@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { routeMedia, routeTexte, type RoutingMaps } from '@/utils/mediaRouting';
+import { normalizeAlias } from '@/hooks/useMarcheurAliases';
 
 export interface SpeciesObservation {
   scientificName: string;
   photoUrl?: string;
   observationDate?: string;
+  /** 'local' = marcheur_observations, 'inat' (ou autre source citoyenne) = biodiversity_snapshots. */
+  origin?: 'local' | 'inat';
 }
 
 export interface MarcheurWithStats {
@@ -22,6 +25,12 @@ export interface MarcheurWithStats {
     sons: number;
     textes: number;
     speciesCount: number;
+    /** Photos issues d'observations citoyennes (iNat/GBIF/eBird) injectées via alias matching. */
+    inatPhotos?: number;
+    /** Espèces uniques apportées exclusivement par les snapshots citoyens. */
+    inatSpeciesCount?: number;
+    /** Espèces déjà présentes localement (= speciesCount - inatSpeciesCount). */
+    localSpeciesCount?: number;
   };
   totalContributions: number;
   speciesObserved: SpeciesObservation[];
