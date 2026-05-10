@@ -414,6 +414,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
                 ])
               )}
               onNavigateToMarche={onNavigateToMarche}
+              explorationId={explorationId}
+              allEventMarches={allEventMarchesData}
             />
             <SpeciesExplorer
               species={allSpeciesWithFrNames}

@@ -18,11 +18,14 @@ import {
   type DateSource,
 } from '@/hooks/useBiodiversityEvolution';
 import DayDetailDrawer from './DayDetailDrawer';
+import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface Props {
   snapshots: any[] | undefined;
   marchesById?: Map<string, { name: string; ville?: string; latitude?: number; longitude?: number }>;
   onNavigateToMarche?: (marcheId: string) => void;
+  explorationId?: string;
+  allEventMarches?: SpeciesMarcheData[];
 }
 
 const periodLabels: { key: EvolutionPeriod; label: string }[] = [
@@ -49,7 +52,7 @@ const formatTickShort = (iso: string) => {
   }
 };
 
-const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, onNavigateToMarche }) => {
+const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, onNavigateToMarche, explorationId, allEventMarches }) => {
   const [metric, setMetric] = useState<EvolutionMetric>('species');
   const [period, setPeriod] = useState<EvolutionPeriod>('all');
   const [dateSource, setDateSource] = useState<DateSource>('observation');
@@ -235,6 +238,8 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, o
         bucket={selectedDay ? byDay.get(selectedDay) || null : null}
         marchesById={marchesById}
         onNavigateToMarche={onNavigateToMarche}
+        explorationId={explorationId}
+        allEventMarches={allEventMarches}
       />
     </motion.div>
   );

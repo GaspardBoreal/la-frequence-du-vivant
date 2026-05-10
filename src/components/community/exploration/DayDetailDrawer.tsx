@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Sparkles, MapPin, Users, ExternalLink, Leaf, Bird, TreePine, Bug } from 'lucide-react';
 import type { DayBucket, DayObservation } from '@/hooks/useBiodiversityEvolution';
 import { SpeciesName } from '@/components/species/SpeciesName';
+import SpeciesGalleryDetailModal from '@/components/biodiversity/SpeciesGalleryDetailModal';
+import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface Props {
   open: boolean;
@@ -11,6 +13,8 @@ interface Props {
   bucket: DayBucket | null;
   marchesById?: Map<string, { name: string; ville?: string; latitude?: number; longitude?: number }>;
   onNavigateToMarche?: (marcheId: string) => void;
+  explorationId?: string;
+  allEventMarches?: SpeciesMarcheData[];
 }
 
 const formatDateFr = (iso: string) => {
@@ -39,10 +43,14 @@ const kingdomColor = (k?: string) => {
   }
 };
 
-const SpeciesRow: React.FC<{ obs: DayObservation; isNew?: boolean }> = ({ obs, isNew }) => {
+const SpeciesRow: React.FC<{ obs: DayObservation; isNew?: boolean; onClick?: () => void }> = ({ obs, isNew, onClick }) => {
   const Icon = kingdomIcon(obs.kingdom);
   return (
-    <div className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-muted/40 transition-colors">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-muted/40 transition-colors"
+    >
       {obs.photo ? (
         <img src={obs.photo} alt={obs.scientificName} className="w-10 h-10 rounded-lg object-cover bg-muted" loading="lazy" />
       ) : (
@@ -74,21 +82,23 @@ const SpeciesRow: React.FC<{ obs: DayObservation; isNew?: boolean }> = ({ obs, i
           href={obs.originalUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className="text-muted-foreground hover:text-foreground transition-colors"
           title="Voir sur iNaturalist"
         >
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
       )}
-    </div>
+    </button>
   );
 };
 
-const DayDetailDrawer: React.FC<Props> = ({ open, onClose, day, bucket, marchesById, onNavigateToMarche }) => {
+const DayDetailDrawer: React.FC<Props> = ({ open, onClose, day, bucket, marchesById, onNavigateToMarche, explorationId, allEventMarches }) => {
   const newSp = bucket ? Array.from(bucket.newSpecies.values()) : [];
   const reSp = bucket ? Array.from(bucket.reSpecies.values()) : [];
   const contributors = bucket ? Array.from(bucket.contributors.values()).sort((a, b) => b.count - a.count) : [];
   const marches = bucket ? Array.from(bucket.marcheIds) : [];
+  const [selectedSpecies, setSelectedSpecies] = useState<DayObservation | null>(null);
 
   return (
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
@@ -120,7 +130,7 @@ const DayDetailDrawer: React.FC<Props> = ({ open, onClose, day, bucket, marchesB
                   </h4>
                 </div>
                 <div className="space-y-0.5">
-                  {newSp.map(obs => <SpeciesRow key={obs.scientificName} obs={obs} isNew />)}
+                  {newSp.map(obs => <SpeciesRow key={obs.scientificName} obs={obs} isNew onClick={() => setSelectedSpecies(obs)} />)}
                 </div>
               </section>
             )}
@@ -135,7 +145,7 @@ const DayDetailDrawer: React.FC<Props> = ({ open, onClose, day, bucket, marchesB
                   </h4>
                 </div>
                 <div className="space-y-0.5">
-                  {reSp.map(obs => <SpeciesRow key={obs.scientificName} obs={obs} />)}
+                  {reSp.map(obs => <SpeciesRow key={obs.scientificName} obs={obs} onClick={() => setSelectedSpecies(obs)} />)}
                 </div>
               </section>
             )}
@@ -212,6 +222,20 @@ const DayDetailDrawer: React.FC<Props> = ({ open, onClose, day, bucket, marchesB
           </div>
         )}
       </SheetContent>
+
+      <SpeciesGalleryDetailModal
+        species={selectedSpecies ? {
+          name: selectedSpecies.commonName || selectedSpecies.scientificName,
+          scientificName: selectedSpecies.scientificName,
+          count: 1,
+          kingdom: selectedSpecies.kingdom || '',
+          photos: selectedSpecies.photo ? [selectedSpecies.photo] : undefined,
+        } : null}
+        explorationId={explorationId}
+        allEventMarches={allEventMarches}
+        isOpen={!!selectedSpecies}
+        onClose={() => setSelectedSpecies(null)}
+      />
     </Sheet>
   );
 };
