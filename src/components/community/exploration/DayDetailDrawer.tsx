@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Sparkles, MapPin, Users, ExternalLink, Leaf, Bird, TreePine, Bug } from 'lucide-react';
 import type { DayBucket, DayObservation } from '@/hooks/useBiodiversityEvolution';
 import { SpeciesName } from '@/components/species/SpeciesName';
+import SpeciesGalleryDetailModal from '@/components/biodiversity/SpeciesGalleryDetailModal';
+import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface Props {
   open: boolean;
@@ -11,6 +13,8 @@ interface Props {
   bucket: DayBucket | null;
   marchesById?: Map<string, { name: string; ville?: string; latitude?: number; longitude?: number }>;
   onNavigateToMarche?: (marcheId: string) => void;
+  explorationId?: string;
+  allEventMarches?: SpeciesMarcheData[];
 }
 
 const formatDateFr = (iso: string) => {
