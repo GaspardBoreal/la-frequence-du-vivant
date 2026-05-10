@@ -98,6 +98,14 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
     explorationId,
   );
 
+  // Fetch photos prises par les marcheurs (table marcheur_observations)
+  const { data: marcheurPhotos = [], isLoading: marcheurPhotosLoading } = useSpeciesMarcheurPhotos(
+    isOpen ? species?.scientificName : undefined,
+    explorationId,
+  );
+
+  const { canUse: canChat } = useCanUseContextualChat();
+
   // Snapshot pour le ChatBot (screen-awareness) — DOIT être appelé avant tout
   // early return pour préserver l'ordre des hooks entre les renders.
   const _uniqueObserversCount = new Set(observers.map((o) => o.observerName)).size;
