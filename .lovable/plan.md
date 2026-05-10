@@ -1,53 +1,66 @@
-## Analyse des 12 éléments de Faune
+## Diagnostic
 
-J'ai croisé chaque carte affichée à l'écran avec la table `species_translations`. Verdict :
+D'après le session replay et les logs :
 
-| # | Nom affiché | Nom scientifique | Statut | Correction proposée |
-|---|---|---|---|---|
-| 1 | **European Striped Shield** | *Graphosoma italicum* | ❌ Aucune entrée FR → affiche l'anglais brut | **Punaise arlequin** (alt : *Pentatome rayé*, *Gendarme d'Italie*) |
-| 2 | Tircis | *Pararge aegeria* | ✅ Correct | — |
-| 3 | Araignées du clade RTA | *Rta clade* | ✅ Acceptable (terme technique, pas de nom vernaculaire) | — |
-| 4 | Sphinx fuciforme | *Hemaris fuciformis* | ✅ Corrigé hier | — |
-| 5 | **Coenagrionidae** | *Coenagrionidae* | ❌ Latin recopié, pas un nom français | **Agrions** (alt : *Demoiselles*, *Coenagrionidés*) |
-| 6 | Ptérygotes | *Pterygota* | ✅ Correct (sous-classe) | — |
-| 7 | Mélitée | *Melitaea* | ⚠️ Singulier pour un genre — devrait être pluriel | **Mélitées** (alt : *Damiers*) |
-| 8 | Grande sauterelle verte | *Tettigonia viridissima* | ✅ Correct | — |
-| 9 | **Escargot de Bourgogne** | *Cornu aspersum* | ❌ **Erreur grave** : confusion d'espèce. *Escargot de Bourgogne* = *Helix pomatia* | **Petit-gris** (alt : *Escargot petit-gris*, *Escargot chagriné*) |
-| 10 | Punaise rouge du feu | *Pyrrhocoris apterus* | ⚠️ Nom inhabituel | **Gendarme** (alt : *Pyrrhocore aptère*, *Suisse*, *Cherche-midi*) |
-| 11 | Bourdon | *Bombus* | ✅ Correct | — |
-| 12 | **Bruant des roseaux** | *Emberiza cirlus* | ❌ **Erreur grave** : confusion d'espèce. *Bruant des roseaux* = *Emberiza schoeniclus* | **Bruant zizi** |
+1. Tu cliques sur « Visible par les marcheurs » (toggle public ON) ✅
+2. Tu sélectionnes le fichier `Arbre entrée 1 - 09 05 2026.HEIC` ✅
+3. La ligne suivante du replay est immédiatement `File selection cleared` — **aucune mutation n'est lancée, aucun toast, aucun appel réseau**.
 
-### Synthèse
-- **3 erreurs graves** (mauvaise espèce) : Cornu aspersum, Emberiza cirlus, Graphosoma italicum (anglais brut).
-- **2 imprécisions** : Coenagrionidae (latin), Mélitée (singulier).
-- **1 nom rare** : Pyrrhocoris apterus.
-- **6 noms corrects**, dont Sphinx fuciforme déjà corrigé.
+### Cause racine
 
-## Plan d'action
+Dans `src/components/community/MarcheDetailModal.tsx` (ligne 478-489), le handler filtre les fichiers ainsi :
 
-**Une seule migration SQL** sur `species_translations` qui :
-
-1. **Insère** la ligne manquante pour *Graphosoma italicum* (`source: 'manual'`, `confidence: 'high'`).
-2. **Met à jour** les 5 lignes existantes erronées ou imprécises :
-   - *Cornu aspersum* → "Petit-gris"
-   - *Emberiza cirlus* → "Bruant zizi"
-   - *Coenagrionidae* → "Agrions"
-   - *Melitaea* → "Mélitées"
-   - *Pyrrhocoris apterus* → "Gendarme"
-3. Pour chacune : `source = 'manual'`, `confidence_level = 'high'`, alternatives FR pertinentes dans `alternative_names_fr`. Cela les protège des futures réécritures par l'IA (logique déjà en place dans `translate-species`).
-
-Aucun changement de code, aucun changement de schéma. Les noms apparaîtront au prochain rafraîchissement du cache TanStack Query.
-
-### Détails techniques (SQL prévu)
-
-```sql
-INSERT INTO species_translations (scientific_name, common_name_fr, alternative_names_fr, source, confidence_level)
-VALUES ('Graphosoma italicum', 'Punaise arlequin', ARRAY['Pentatome rayé','Gendarme d''Italie'], 'manual', 'high')
-ON CONFLICT (scientific_name) DO UPDATE SET ...;
-
-UPDATE species_translations SET common_name_fr='Petit-gris',
-  alternative_names_fr=ARRAY['Escargot petit-gris','Escargot chagriné'],
-  source='manual', confidence_level='high'
-WHERE scientific_name='Cornu aspersum';
--- etc. pour les 4 autres
+```ts
+const photos = files.filter(f => f.type.startsWith('image/'));
+const videos = files.filter(f => f.type.startsWith('video/'));
 ```
+
+Or, sur **Windows + Chrome/Edge**, un fichier `.HEIC` arrive avec `file.type === ""` (le navigateur ne connaît pas le MIME HEIC). Résultat : il est exclu des deux buckets, **silencieusement droppé**, et `inputRef.current.value = ''` reset l'input. Aucune erreur, rien ne part.
+
+C'est exactement le pattern que la mémoire `mem://technical/uploads/heic-conversion-strategy` recommande d'éviter (« fail-fast policy » : jamais ignorer un HEIC).
+
+La conversion HEIC existe déjà et fonctionne (`useMarcheurContributions` appelle `convertHeicToJpeg`). Le problème est **uniquement le filtrage en amont** qui n'a jamais traité le cas MIME-vide.
+
+Pourquoi cela « fonctionnait avant » : soit tu uploadais des JPG, soit depuis un autre device (Safari iOS renvoie `image/heic`, qui matche `image/*`).
+
+## Plan de correctif (robuste)
+
+### 1. Détection multi-critères dans `MarcheDetailModal.tsx`
+
+Remplacer le filtre naïf par une fonction `classifyFile(file)` qui décide `'photo' | 'video' | 'unknown'` à partir de :
+- le MIME (`image/*`, `video/*`)
+- l'extension (`.heic`, `.heif`, `.jpg`, `.png`, `.webp`, `.mp4`, `.mov`, `.avi`, `.mkv`)
+- en réutilisant `isHeic()` déjà exporté par `src/utils/heicConverter.ts` (qui gère MIME, extension ET magic bytes)
+
+Tout fichier HEIC/HEIF est classé `photo` (la conversion JPEG arrive plus tard dans `useMarcheurContributions`).
+
+### 2. Fail-fast visible
+
+Si après classification certains fichiers restent `unknown`, afficher un `toast.error` listant leurs noms (« Format non supporté : … »). Plus de drop silencieux.
+
+### 3. Feedback de prise en compte
+
+Ajouter un `toast.info('Préparation de N photo(s)…')` dès qu'au moins un fichier est accepté, pour que l'utilisateur ait un retour immédiat même pendant la conversion HEIC (qui peut prendre quelques secondes sur gros fichiers).
+
+### 4. Élargir l'`accept` HTML
+
+Actuellement `accept="image/*,video/*,.heic,.heif,.HEIC,.HEIF"`. Ajouter `image/heic,image/heif` pour que Safari/Chrome récents pré-filtrent correctement, et `.mov,.mp4` explicites pour iOS.
+
+### 5. Appliquer le même fix au mode `compact` et aux autres `FileUploadZone` consommateurs
+
+Audit rapide des call-sites de `FileUploadZone` (grep `onFilesSelected`) pour s'assurer qu'aucun autre n'utilise un filtre `f.type.startsWith(...)` fragile. Centraliser la classification dans un util `src/utils/fileClassifier.ts` pour réutilisation.
+
+### Détails techniques
+
+- Nouveau fichier : `src/utils/fileClassifier.ts` exposant `classifyMediaFile(file): 'photo' | 'video' | 'unknown'`.
+- Édition : `src/components/community/MarcheDetailModal.tsx` (lignes 473-490).
+- Édition : autres consommateurs de `FileUploadZone` filtrant par MIME (à identifier en phase d'implémentation).
+- Aucune migration DB, aucune edge function touchée.
+- Aucun changement visuel.
+
+### Validation
+
+1. Réessayer l'upload du même `.HEIC` sur DEVIAT C 0867 → un toast « Préparation de 1 photo… » puis conversion + upload visible.
+2. Vérifier les logs console : `🔄 [HEIC] Conversion …` puis `✅ [HEIC] heic-to OK`.
+3. Tester avec un mix JPG + HEIC + MP4 dans le même drop.
+4. Tester un fichier `.txt` → toast d'erreur explicite, pas de drop silencieux.
