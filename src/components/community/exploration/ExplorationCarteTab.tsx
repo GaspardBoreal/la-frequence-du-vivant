@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
-import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Palette, Globe, Mountain, Crosshair, X, Star, Sparkles, LandPlot, Move } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Crosshair, X, Star, Sparkles, Move } from 'lucide-react';
 import { PhotoGpsButton, PhotoGpsMarker, usePhotoGpsDrop } from './PhotoGpsDropTool';
 import CreateMarcheDrawer from './CreateMarcheDrawer';
 import { canCreateMarche, computeMarcheDefaults } from './createMarcheUtils';
