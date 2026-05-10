@@ -238,6 +238,8 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, o
         bucket={selectedDay ? byDay.get(selectedDay) || null : null}
         marchesById={marchesById}
         onNavigateToMarche={onNavigateToMarche}
+        explorationId={explorationId}
+        allEventMarches={allEventMarches}
       />
     </motion.div>
   );
