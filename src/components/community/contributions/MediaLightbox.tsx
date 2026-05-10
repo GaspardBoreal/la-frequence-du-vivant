@@ -24,6 +24,15 @@ export interface LightboxItem {
   attributedMarcheurId?: string | null;
   /** Original uploader's display name. */
   uploaderName?: string | null;
+  /** Optional EXIF/technical metadata (gps, date_taken, dimensions). */
+  metadata?: {
+    gps?: { latitude: number; longitude: number } | null;
+    date_taken?: string | null;
+    width?: number | null;
+    height?: number | null;
+  } | null;
+  /** File size in bytes (taille_octets). */
+  sizeBytes?: number | null;
 }
 
 interface MediaLightboxProps {
