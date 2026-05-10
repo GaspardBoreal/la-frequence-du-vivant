@@ -264,6 +264,8 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
         isOwner, createdAt: m.created_at, id: m.id, source: 'media',
         attributedMarcheurId: (m as any).attributed_marcheur_id ?? null,
         uploaderName: uploaderNameById.get(m.user_id) ?? null,
+        metadata: (m as any).metadata ?? null,
+        sizeBytes: (m as any).taille_octets ?? null,
       });
     };
     myMedias.forEach(m => pushMedia(m, true));

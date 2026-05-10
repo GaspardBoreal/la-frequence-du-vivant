@@ -1,66 +1,91 @@
-## Diagnostic
+# Métadonnées photo dans le lightbox — option élégante & discrète
 
-D'après le session replay et les logs :
+## Idée UX
 
-1. Tu cliques sur « Visible par les marcheurs » (toggle public ON) ✅
-2. Tu sélectionnes le fichier `Arbre entrée 1 - 09 05 2026.HEIC` ✅
-3. La ligne suivante du replay est immédiatement `File selection cleared` — **aucune mutation n'est lancée, aucun toast, aucun appel réseau**.
+Ajouter dans le footer du `MediaLightbox` une petite **icône `Info` (ⓘ)** à côté du chip d'attribution. Au tap/clic, un **panneau glassmorphism** glisse depuis le bas (mobile) ou apparaît en popover ancré à l'icône (desktop), affichant les métadonnées techniques de la photo.
 
-### Cause racine
+Caractéristiques :
+- **Discret par défaut** : juste une icône 16px, opacité 60%, devient 100% au hover.
+- **Masqué si aucune métadonnée** : si `metadata` est vide → pas d'icône du tout (zéro pollution visuelle).
+- **Lecture seule** : pas d'édition, simple consultation.
+- **Tap-outside / Escape** pour fermer.
 
-Dans `src/components/community/MarcheDetailModal.tsx` (ligne 478-489), le handler filtre les fichiers ainsi :
+## Contenu du panneau
 
-```ts
-const photos = files.filter(f => f.type.startsWith('image/'));
-const videos = files.filter(f => f.type.startsWith('video/'));
+Affiché de manière sobre, ligne par ligne, avec icônes Lucide (12-14px, opacité 60%) :
+
+```text
+📍 Coordonnées GPS
+   45.415217, -0.004056              [Copier] [Voir sur la carte ↗]
+
+🕐 Prise de vue
+   8 avril 2026 · 18:06
+
+📐 Dimensions          1920 × 1440 px       (si présent)
+💾 Taille              2.4 Mo               (taille_octets)
+🌐 Visibilité          Public / Privé
+📅 Ajoutée le          10 mai 2026
 ```
 
-Or, sur **Windows + Chrome/Edge**, un fichier `.HEIC` arrive avec `file.type === ""` (le navigateur ne connaît pas le MIME HEIC). Résultat : il est exclu des deux buckets, **silencieusement droppé**, et `inputRef.current.value = ''` reset l'input. Aucune erreur, rien ne part.
+- **Copier** : copie `lat, lng` dans le presse-papier (toast confirm).
+- **Voir sur la carte ↗** : ouvre `https://www.openstreetmap.org/?mlat=...&mlon=...#map=18/...` dans un nouvel onglet.
+- Si pas de GPS → bloc GPS remplacé par une mention discrète "Aucune coordonnée GPS dans cette photo".
 
-C'est exactement le pattern que la mémoire `mem://technical/uploads/heic-conversion-strategy` recommande d'éviter (« fail-fast policy » : jamais ignorer un HEIC).
+## Détails techniques
 
-La conversion HEIC existe déjà et fonctionne (`useMarcheurContributions` appelle `convertHeicToJpeg`). Le problème est **uniquement le filtrage en amont** qui n'a jamais traité le cas MIME-vide.
+### 1. Étendre `LightboxItem` (`src/components/community/contributions/MediaLightbox.tsx`)
 
-Pourquoi cela « fonctionnait avant » : soit tu uploadais des JPG, soit depuis un autre device (Safari iOS renvoie `image/heic`, qui matche `image/*`).
+Ajouter champs optionnels :
+```ts
+metadata?: {
+  gps?: { latitude: number; longitude: number };
+  date_taken?: string;
+  width?: number;
+  height?: number;
+} | null;
+sizeBytes?: number | null;
+```
 
-## Plan de correctif (robuste)
+### 2. Nouveau composant `MediaMetadataPanel.tsx` (à côté de `MediaLightbox.tsx`)
 
-### 1. Détection multi-critères dans `MarcheDetailModal.tsx`
+- Reçoit `item: LightboxItem`.
+- Mobile (`< md`) : Sheet bottom (Radix `Sheet` côté `bottom`) avec backdrop semi-transparent.
+- Desktop (`>= md`) : `Popover` Radix ancré au bouton `Info`, aligné à droite.
+- Fond `bg-white/8 backdrop-blur-xl` + `ring-1 ring-white/15`, padding sobre, typo `text-xs/text-sm` blanc opacité graduelle.
+- Boutons "Copier" et "Voir sur la carte" en variantes `ghost` discrètes.
 
-Remplacer le filtre naïf par une fonction `classifyFile(file)` qui décide `'photo' | 'video' | 'unknown'` à partir de :
-- le MIME (`image/*`, `video/*`)
-- l'extension (`.heic`, `.heif`, `.jpg`, `.png`, `.webp`, `.mp4`, `.mov`, `.avi`, `.mkv`)
-- en réutilisant `isHeic()` déjà exporté par `src/utils/heicConverter.ts` (qui gère MIME, extension ET magic bytes)
+### 3. Bouton trigger dans le footer du lightbox
 
-Tout fichier HEIC/HEIF est classé `photo` (la conversion JPEG arrive plus tard dans `useMarcheurContributions`).
+À côté du chip d'attribution, ajouter (uniquement si `item.metadata` non vide) :
+```tsx
+<button aria-label="Métadonnées" className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition">
+  <Info className="w-4 h-4" />
+</button>
+```
 
-### 2. Fail-fast visible
+### 4. Propager les métadonnées depuis les hooks consommateurs
 
-Si après classification certains fichiers restent `unknown`, afficher un `toast.error` listant leurs noms (« Format non supporté : … »). Plus de drop silencieux.
+Identifier les call-sites qui construisent les `LightboxItem[]` (probablement `useExplorationAllMedia`, `useMarcheurContributions`, et la galerie de la `MarcheDetailModal`) et y ajouter le mapping :
+```ts
+metadata: row.metadata ?? null,
+sizeBytes: row.taille_octets ?? null,
+```
 
-### 3. Feedback de prise en compte
+Aucun changement de DB, aucun changement de RLS — les colonnes `metadata` et `taille_octets` sont déjà sélectionnées (à vérifier ; sinon ajouter au `select`).
 
-Ajouter un `toast.info('Préparation de N photo(s)…')` dès qu'au moins un fichier est accepté, pour que l'utilisateur ait un retour immédiat même pendant la conversion HEIC (qui peut prendre quelques secondes sur gros fichiers).
+### 5. Pas de changement de design tokens
 
-### 4. Élargir l'`accept` HTML
+Réutilise les classes existantes (`text-white/70`, `bg-white/10`, etc.) déjà utilisées dans le lightbox, cohérent avec le style sombre overlay.
 
-Actuellement `accept="image/*,video/*,.heic,.heif,.HEIC,.HEIF"`. Ajouter `image/heic,image/heif` pour que Safari/Chrome récents pré-filtrent correctement, et `.mov,.mp4` explicites pour iOS.
+## Validation
 
-### 5. Appliquer le même fix au mode `compact` et aux autres `FileUploadZone` consommateurs
+- Ouvrir une photo avec GPS → icône ⓘ visible → panneau affiche coords cliquables.
+- Ouvrir une photo sans metadata → aucune icône.
+- Tester mobile (sheet bottom) + desktop (popover).
+- Tester "Copier" + "Voir sur la carte".
 
-Audit rapide des call-sites de `FileUploadZone` (grep `onFilesSelected`) pour s'assurer qu'aucun autre n'utilise un filtre `f.type.startsWith(...)` fragile. Centraliser la classification dans un util `src/utils/fileClassifier.ts` pour réutilisation.
+## Hors scope
 
-### Détails techniques
-
-- Nouveau fichier : `src/utils/fileClassifier.ts` exposant `classifyMediaFile(file): 'photo' | 'video' | 'unknown'`.
-- Édition : `src/components/community/MarcheDetailModal.tsx` (lignes 473-490).
-- Édition : autres consommateurs de `FileUploadZone` filtrant par MIME (à identifier en phase d'implémentation).
-- Aucune migration DB, aucune edge function touchée.
-- Aucun changement visuel.
-
-### Validation
-
-1. Réessayer l'upload du même `.HEIC` sur DEVIAT C 0867 → un toast « Préparation de 1 photo… » puis conversion + upload visible.
-2. Vérifier les logs console : `🔄 [HEIC] Conversion …` puis `✅ [HEIC] heic-to OK`.
-3. Tester avec un mix JPG + HEIC + MP4 dans le même drop.
-4. Tester un fichier `.txt` → toast d'erreur explicite, pas de drop silencieux.
+- Pas d'édition des métadonnées.
+- Pas de re-extraction EXIF côté client.
+- Pas de changement sur les autres lightbox (PartagePublic, etc.) — uniquement `MediaLightbox.tsx`.

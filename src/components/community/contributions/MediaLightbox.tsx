@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { X, ChevronLeft, ChevronRight, Lock, Globe, User, Pencil } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Lock, Globe, User, Pencil, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
 import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
 import type { ReattributeSource } from '@/hooks/useReattributeMedia';
+import MediaMetadataPanel from './MediaMetadataPanel';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export interface LightboxItem {
   url: string;
@@ -22,6 +24,15 @@ export interface LightboxItem {
   attributedMarcheurId?: string | null;
   /** Original uploader's display name. */
   uploaderName?: string | null;
+  /** Optional EXIF/technical metadata (gps, date_taken, dimensions). */
+  metadata?: {
+    gps?: { latitude: number; longitude: number } | null;
+    date_taken?: string | null;
+    width?: number | null;
+    height?: number | null;
+  } | null;
+  /** File size in bytes (taille_octets). */
+  sizeBytes?: number | null;
 }
 
 interface MediaLightboxProps {
@@ -169,26 +180,49 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({
             <p className="text-white text-sm font-medium truncate">{item.titre}</p>
           )}
 
-          {/* Author / credit chip — interactive when curator */}
-          {(displayName || canEditCredit) && (
-            <button
-              type="button"
-              disabled={!canEditCredit}
-              onClick={() => canEditCredit && setAttributionOpen(true)}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full transition text-left shadow-lg shadow-black/40 backdrop-blur ring-1 ${
-                canEditCredit
-                  ? 'bg-emerald-600/90 hover:bg-emerald-500 ring-emerald-300/40 cursor-pointer'
-                  : 'bg-emerald-600/85 ring-emerald-300/30 cursor-default'
-              }`}
-              aria-label={canEditCredit ? 'Réattribuer la photo' : undefined}
-            >
-              <User className="w-4 h-4 text-white shrink-0" />
-              <span className="text-white font-semibold text-sm drop-shadow truncate max-w-[60vw]">
-                {displayName || 'Anonyme'}
-              </span>
-              {canEditCredit && <Pencil className="w-3.5 h-3.5 text-white/85 shrink-0" />}
-            </button>
-          )}
+          {/* Author / credit chip + metadata trigger */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {(displayName || canEditCredit) && (
+              <button
+                type="button"
+                disabled={!canEditCredit}
+                onClick={() => canEditCredit && setAttributionOpen(true)}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full transition text-left shadow-lg shadow-black/40 backdrop-blur ring-1 ${
+                  canEditCredit
+                    ? 'bg-emerald-600/90 hover:bg-emerald-500 ring-emerald-300/40 cursor-pointer'
+                    : 'bg-emerald-600/85 ring-emerald-300/30 cursor-default'
+                }`}
+                aria-label={canEditCredit ? 'Réattribuer la photo' : undefined}
+              >
+                <User className="w-4 h-4 text-white shrink-0" />
+                <span className="text-white font-semibold text-sm drop-shadow truncate max-w-[60vw]">
+                  {displayName || 'Anonyme'}
+                </span>
+                {canEditCredit && <Pencil className="w-3.5 h-3.5 text-white/85 shrink-0" />}
+              </button>
+            )}
+            {(item.metadata || item.sizeBytes) && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Métadonnées de la photo"
+                    className="p-1.5 rounded-full text-white/55 hover:text-white hover:bg-white/10 transition"
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="top"
+                  align="start"
+                  sideOffset={8}
+                  className="w-[280px] bg-black/85 backdrop-blur-xl border-white/10 text-white p-4 rounded-xl shadow-2xl"
+                >
+                  <MediaMetadataPanel item={item} />
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
           {item.attributedMarcheurId && item.uploaderName && item.uploaderName !== displayName && (
             <p className="text-white/50 text-[11px] -mt-1">
               upload&nbsp;: {item.uploaderName}
