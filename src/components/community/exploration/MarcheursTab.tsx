@@ -411,14 +411,16 @@ const normalizeStr = (str: string) =>
   str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
 
 // --- Contributions sub-tab: species from biodiversity snapshots ---
-const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId?: string; explorationMarcheIds: string[] }> = ({ marcheur, explorationId, explorationMarcheIds }) => {
+const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId?: string; explorationMarcheIds: string[]; resolvedUserId: string | null }> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
-  const fullNameNorm = normalizeStr(`${marcheur.prenom} ${marcheur.nom}`);
+  const { data: aliases } = useMarcheurAliases(resolvedUserId, marcheur.prenom, marcheur.nom);
+  const aliasesKey = (aliases || []).slice().sort().join('|');
 
   const { data: speciesFromSnapshots, isLoading } = useQuery({
-    queryKey: ['marcheur-contributions-species', explorationId, fullNameNorm],
+    queryKey: ['marcheur-contributions-species', explorationId, aliasesKey],
     queryFn: async () => {
-      if (!explorationMarcheIds.length) return [];
+      if (!explorationMarcheIds.length || !aliases || !aliases.length) return [];
+      const aliasSet = new Set(aliases);
       const { data } = await supabase
         .from('biodiversity_snapshots')
         .select('species_data')
@@ -442,8 +444,8 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
           const attributions = sp.attributions as any[];
           if (!Array.isArray(attributions)) continue;
           for (const attr of attributions) {
-            const observerNorm = normalizeStr(attr.observerName || '');
-            if (observerNorm.includes(fullNameNorm) || fullNameNorm.includes(observerNorm)) {
+            const observerNorm = normalizeAlias(attr.observerName || '');
+            if (aliasSet.has(observerNorm)) {
               const photoUrl = sp.photoData?.url || (Array.isArray(sp.photos) && sp.photos.length > 0 ? sp.photos[0] : null);
               results.push({
                 scientificName: sp.scientificName || '',
@@ -468,7 +470,7 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
         return true;
       });
     },
-    enabled: !!explorationId && explorationMarcheIds.length > 0,
+    enabled: !!explorationId && explorationMarcheIds.length > 0 && !!aliases?.length,
     staleTime: 60_000,
   });
 
