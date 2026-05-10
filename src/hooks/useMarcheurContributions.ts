@@ -123,49 +123,42 @@ export function useUploadMedias(userId: string) {
       for (const file of files) {
         const folder = typeMedia === 'photo' ? 'photos' : 'videos';
 
-        // Extract EXIF GPS + date from local File blob (fast, no network)
-        let metadata: Record<string, unknown> | null = null;
+        // Pipeline atomique : EXIF (sur original) → conversion HEIC → upload Storage → insert DB → rollback si KO
+        let metadata: MediaMetadata | null = null;
+        let processedFile: File = file;
         if (typeMedia === 'photo') {
-          try {
-            const [gps, exifData] = await Promise.all([
-              exifr.gps(file).catch(() => null),
-              exifr.parse(file, ['DateTimeOriginal']).catch(() => null),
-            ]);
-            const parts: Record<string, unknown> = {};
-            if (gps?.latitude != null && gps?.longitude != null) {
-              parts.gps = { latitude: gps.latitude, longitude: gps.longitude };
-            }
-            if (exifData?.DateTimeOriginal) {
-              parts.date_taken = exifData.DateTimeOriginal instanceof Date
-                ? exifData.DateTimeOriginal.toISOString()
-                : String(exifData.DateTimeOriginal);
-            }
-            if (Object.keys(parts).length > 0) metadata = parts;
-          } catch {
-            // EXIF extraction failed — continue without metadata
-          }
+          const prepared = await preparePhotoForUpload(file);
+          processedFile = prepared.processedFile;
+          metadata = prepared.metadata;
         }
 
-        const url = await uploadFile(userId, file, folder);
-        
-        const { data, error } = await supabase
-          .from('marcheur_medias')
-          .insert({
-            user_id: userId,
-            marche_event_id: marcheEventId,
-            type_media: typeMedia,
-            url_fichier: url,
-            titre: file.name.replace(/\.[^.]+$/, ''),
-            is_public: isPublic,
-            taille_octets: file.size,
-            ...(marcheId ? { marche_id: marcheId } : {}),
-            ...(metadata ? { metadata } : {}),
-          } as any)
-          .select()
-          .single();
-        
-        if (error) throw error;
-        results.push(data as MarcheurMedia);
+        const { url, path } = await uploadToStorage(userId, processedFile, folder);
+
+        const inserted = await insertWithStorageRollback({
+          bucket: MARCHEUR_BUCKET,
+          storagePath: path,
+          insertFn: async () => {
+            const { data, error } = await supabase
+              .from('marcheur_medias')
+              .insert({
+                user_id: userId,
+                marche_event_id: marcheEventId,
+                type_media: typeMedia,
+                url_fichier: url,
+                titre: file.name.replace(/\.[^.]+$/, ''),
+                is_public: isPublic,
+                taille_octets: processedFile.size,
+                ...(marcheId ? { marche_id: marcheId } : {}),
+                ...(metadata ? { metadata: metadata as unknown as Record<string, unknown> } : {}),
+              } as any)
+              .select()
+              .single();
+            if (error) throw error;
+            return data as MarcheurMedia;
+          },
+        });
+
+        results.push(inserted);
       }
       return results;
     },
