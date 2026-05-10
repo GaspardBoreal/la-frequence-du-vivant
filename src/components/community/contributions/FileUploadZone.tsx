@@ -92,7 +92,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
             type="file"
             accept="image/*"
             // capture trigger native camera on mobile; ignored on desktop
-            // @ts-expect-error capture is a valid HTML attr
+            
             capture="environment"
             onChange={e => handleFiles(e.target.files, 'camera')}
             className="hidden"
@@ -152,7 +152,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           ref={cameraRef}
           type="file"
           accept="image/*"
-          // @ts-expect-error capture is a valid HTML attr
+          
           capture="environment"
           onChange={e => handleFiles(e.target.files, 'camera')}
           className="hidden"
