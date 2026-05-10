@@ -1,8 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { SentinelleBreakdown } from '@/lib/sentinelleIndex';
+import type { CriterionKey } from './ScoreCriterionDrawer';
 
 interface Row {
+  key: CriterionKey;
   icon: string;
   label: string;
   value: number;
@@ -14,11 +16,13 @@ interface Row {
 interface Props {
   breakdown: SentinelleBreakdown;
   total: number;
+  onCriterionSelect?: (key: CriterionKey) => void;
 }
 
-const ScoreBreakdown: React.FC<Props> = ({ breakdown, total }) => {
+const ScoreBreakdown: React.FC<Props> = ({ breakdown, total, onCriterionSelect }) => {
   const rows: Row[] = [
     {
+      key: 'sensible',
       icon: '🌿',
       label: 'Détections précieuses',
       value: breakdown.sensible.value,
