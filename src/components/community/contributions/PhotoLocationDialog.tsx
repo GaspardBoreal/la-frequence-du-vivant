@@ -335,8 +335,9 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
             </a>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };
 
