@@ -5,10 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useMarcheurAliases, normalizeAlias } from '@/hooks/useMarcheurAliases';
 
 interface MarcheurLite {
   prenom: string;
   nom: string;
+  userId?: string | null;
 }
 
 interface CitizenPlatformsCardProps {
@@ -63,13 +65,15 @@ const PLATFORM_META: Record<Source, { label: string; signupUrl: string; color: s
 };
 
 const CitizenPlatformsCard: React.FC<CitizenPlatformsCardProps> = ({ marcheur, explorationId, explorationMarcheIds }) => {
-  const fullNameNorm = normalizeStr(`${marcheur.prenom} ${marcheur.nom}`);
+  const { data: aliases } = useMarcheurAliases(marcheur.userId ?? null, marcheur.prenom, marcheur.nom);
+  const aliasesKey = (aliases || []).slice().sort().join('|');
 
-  // Re-uses the same query key as ContributionsSubTab → React Query dedupes the call
+  // Re-uses the same query key shape as ContributionsSubTab → React Query dedupes the call
   const { data: observations, isLoading } = useQuery({
-    queryKey: ['marcheur-contributions-species', explorationId, fullNameNorm],
+    queryKey: ['marcheur-contributions-species', explorationId, aliasesKey],
     queryFn: async () => {
-      if (!explorationMarcheIds.length) return [];
+      if (!explorationMarcheIds.length || !aliases || !aliases.length) return [];
+      const aliasSet = new Set(aliases);
       const { data } = await supabase
         .from('biodiversity_snapshots')
         .select('species_data')
@@ -84,8 +88,8 @@ const CitizenPlatformsCard: React.FC<CitizenPlatformsCardProps> = ({ marcheur, e
           const attributions = sp.attributions as any[];
           if (!Array.isArray(attributions)) continue;
           for (const attr of attributions) {
-            const observerNorm = normalizeStr(attr.observerName || '');
-            if (observerNorm.includes(fullNameNorm) || fullNameNorm.includes(observerNorm)) {
+            const observerNorm = normalizeAlias(attr.observerName || '');
+            if (aliasSet.has(observerNorm)) {
               results.push({
                 scientificName: sp.scientificName || '',
                 kingdom: sp.kingdom || '',
@@ -105,7 +109,7 @@ const CitizenPlatformsCard: React.FC<CitizenPlatformsCardProps> = ({ marcheur, e
         return true;
       });
     },
-    enabled: !!explorationId && explorationMarcheIds.length > 0,
+    enabled: !!explorationId && explorationMarcheIds.length > 0 && !!aliases?.length,
     staleTime: 60_000,
   });
 
