@@ -208,7 +208,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   return (
     <>
       <Dialog open={isOpen && !showLightbox} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="bg-slate-900/98 backdrop-blur-xl border-white/10 text-white max-w-lg p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-slate-900/98 backdrop-blur-xl border-white/10 text-white max-w-2xl p-0 overflow-hidden max-h-[92vh] overflow-y-auto">
           {/* Accessible title (hidden) */}
           <VisuallyHidden.Root asChild>
             <DialogTitle>Détails de l'espèce {species.scientificName}</DialogTitle>
