@@ -173,6 +173,20 @@ export function ChatBot({
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 300);
   }, [isOpen]);
 
+  // Listen for global "open chat" requests (e.g. "Discuter de cette espèce avec l'IA")
+  useEffect(() => {
+    const onOpenRequest = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { prefill?: string } | undefined;
+      setIsOpen(true);
+      if (detail?.prefill) {
+        setInput(detail.prefill);
+        setTimeout(() => inputRef.current?.focus(), 350);
+      }
+    };
+    window.addEventListener('community-chat:open', onOpenRequest as EventListener);
+    return () => window.removeEventListener('community-chat:open', onOpenRequest as EventListener);
+  }, []);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isExpanded) setIsExpanded(false);
