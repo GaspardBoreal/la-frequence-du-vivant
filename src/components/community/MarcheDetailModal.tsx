@@ -14,6 +14,8 @@ import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import { useIsCurator } from '@/hooks/useExplorationCurations';
 import { motion, AnimatePresence } from 'framer-motion';
 import GpsMapView from './contributions/GpsMapView';
+import { toast } from 'sonner';
+import { classifyBatch } from '@/utils/fileClassifier';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { createSlug } from '@/utils/slugGenerator';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
