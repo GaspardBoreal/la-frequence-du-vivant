@@ -86,13 +86,23 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total, onCriterionSelect }
       <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Votre Fréquence, expliquée</div>
       {rows.map((r, i) => {
         const pct = (r.value / r.max) * 100;
+        const Tag: any = interactive ? motion.button : motion.div;
+        const interactiveProps = interactive
+          ? {
+              type: 'button' as const,
+              onClick: (e: React.MouseEvent) => { e.stopPropagation(); onCriterionSelect!(r.key); },
+              'aria-label': `Voir le détail du critère ${r.label}`,
+              className:
+                'w-full text-left bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/25 rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50',
+            }
+          : { className: 'bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5' };
         return (
-          <motion.div
+          <Tag
             key={r.label}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.15 + i * 0.08 }}
-            className="bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5"
+            {...interactiveProps}
           >
             <div className="flex items-center justify-between gap-2 mb-1">
               <div className="flex items-center gap-1.5 min-w-0">
@@ -113,7 +123,7 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total, onCriterionSelect }
               />
             </div>
             <div className="text-[10px] text-white/45 mt-1">{r.detail}</div>
-          </motion.div>
+          </Tag>
         );
       })}
       <div className="flex items-center justify-between pt-1.5 px-1 border-t border-white/10 mt-2">
