@@ -1404,6 +1404,8 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
 
   // Single shared query: contribution counts per observer for the whole exploration
   const { data: contribsByName } = useExplorationContributionsCounts(explorationId, explorationMarcheIds);
+  // Batch alias map (nom + logins iNat/GBIF/eBird) for all marcheurs
+  const { data: aliasesByMarcheurId } = useMarcheursAliasesMap(marcheurs);
 
   // Authoritative editorial curations from L'œil — single query for all marcheurs
   const { data: curationsData } = useQuery({
