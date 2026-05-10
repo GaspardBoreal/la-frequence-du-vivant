@@ -229,6 +229,12 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
             </div>
           </section>
 
+          <Separator />
+
+          <section>
+            <ScienceAccountsEditor profileId={form.id} />
+          </section>
+
           <div className="flex gap-2 pt-2 sticky bottom-0 bg-background py-3">
             <Button onClick={() => mutation.mutate(form)} disabled={mutation.isPending} className="flex-1">
               <Save className="h-4 w-4 mr-2" />
