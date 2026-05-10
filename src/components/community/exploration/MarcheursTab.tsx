@@ -23,6 +23,7 @@ import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useReorderMarcheurObservations } from '@/hooks/useReorderMarcheurObservations';
 import { useExplorationContributionsCounts, lookupContributions } from '@/hooks/useExplorationContributionsCounts';
+import { useMarcheurAliases, useMarcheursAliasesMap, normalizeAlias } from '@/hooks/useMarcheurAliases';
 import MarcheurAudioPanel from '@/components/community/audio/MarcheurAudioPanel';
 import CitizenPlatformsCard from '@/components/community/exploration/impact/CitizenPlatformsCard';
 import PratiquesPorteesCard from '@/components/community/exploration/impact/PratiquesPorteesCard';
@@ -410,14 +411,16 @@ const normalizeStr = (str: string) =>
   str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
 
 // --- Contributions sub-tab: species from biodiversity snapshots ---
-const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId?: string; explorationMarcheIds: string[] }> = ({ marcheur, explorationId, explorationMarcheIds }) => {
+const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId?: string; explorationMarcheIds: string[]; resolvedUserId: string | null }> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
-  const fullNameNorm = normalizeStr(`${marcheur.prenom} ${marcheur.nom}`);
+  const { data: aliases } = useMarcheurAliases(resolvedUserId, marcheur.prenom, marcheur.nom);
+  const aliasesKey = (aliases || []).slice().sort().join('|');
 
   const { data: speciesFromSnapshots, isLoading } = useQuery({
-    queryKey: ['marcheur-contributions-species', explorationId, fullNameNorm],
+    queryKey: ['marcheur-contributions-species', explorationId, aliasesKey],
     queryFn: async () => {
-      if (!explorationMarcheIds.length) return [];
+      if (!explorationMarcheIds.length || !aliases || !aliases.length) return [];
+      const aliasSet = new Set(aliases);
       const { data } = await supabase
         .from('biodiversity_snapshots')
         .select('species_data')
@@ -441,8 +444,8 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
           const attributions = sp.attributions as any[];
           if (!Array.isArray(attributions)) continue;
           for (const attr of attributions) {
-            const observerNorm = normalizeStr(attr.observerName || '');
-            if (observerNorm.includes(fullNameNorm) || fullNameNorm.includes(observerNorm)) {
+            const observerNorm = normalizeAlias(attr.observerName || '');
+            if (aliasSet.has(observerNorm)) {
               const photoUrl = sp.photoData?.url || (Array.isArray(sp.photos) && sp.photos.length > 0 ? sp.photos[0] : null);
               results.push({
                 scientificName: sp.scientificName || '',
@@ -467,7 +470,7 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
         return true;
       });
     },
-    enabled: !!explorationId && explorationMarcheIds.length > 0,
+    enabled: !!explorationId && explorationMarcheIds.length > 0 && !!aliases?.length,
     staleTime: 60_000,
   });
 
@@ -1317,7 +1320,7 @@ const MarcheurCard: React.FC<{
 
               {activeSubTab === 'contributions' && (
                 <motion.div key="contribs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} />
+                  <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} resolvedUserId={resolvedUserId} />
                 </motion.div>
               )}
 
@@ -1332,7 +1335,7 @@ const MarcheurCard: React.FC<{
                     hasTemoignage={hasTestimony}
                   />
                   <CitizenPlatformsCard
-                    marcheur={{ prenom: marcheur.prenom, nom: marcheur.nom }}
+                    marcheur={{ prenom: marcheur.prenom, nom: marcheur.nom, userId: resolvedUserId }}
                     explorationId={explorationId}
                     explorationMarcheIds={explorationMarcheIds}
                   />
@@ -1401,6 +1404,8 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
 
   // Single shared query: contribution counts per observer for the whole exploration
   const { data: contribsByName } = useExplorationContributionsCounts(explorationId, explorationMarcheIds);
+  // Batch alias map (nom + logins iNat/GBIF/eBird) for all marcheurs
+  const { data: aliasesByMarcheurId } = useMarcheursAliasesMap(marcheurs);
 
   // Authoritative editorial curations from L'œil — single query for all marcheurs
   const { data: curationsData } = useQuery({
@@ -1762,7 +1767,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 explorationMarcheIds={explorationMarcheIds}
                 totalMarchesCount={explorationMarcheIds.length}
                 testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
-                contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom)}
+                contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom, aliasesByMarcheurId?.get(m.id))}
                 sentinelle={metrics.sentinelle}
                 marcheurBuckets={metrics.buckets}
                 highlightBuckets={activeBuckets}
