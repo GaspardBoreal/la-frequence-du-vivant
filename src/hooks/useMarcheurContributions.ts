@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import exifr from 'exifr';
-import { convertHeicToJpeg, isHeic, HeicConversionError, HEIC_USER_MESSAGE } from '@/utils/heicConverter';
+import { preparePhotoForUpload, insertWithStorageRollback } from '@/utils/uploadWithMetadata';
+import type { MediaMetadata } from '@/utils/mediaMetadata';
 
 
 // ─── Types ───
@@ -58,41 +58,30 @@ export interface MarcheurTexte {
 
 type SortOrder = 'desc' | 'asc';
 
-// ─── Upload helper ───
-async function uploadFile(userId: string, file: File, folder: string): Promise<string> {
-  let processedFile = file;
+// ─── Upload helper (Storage seulement, le pipeline metadata est géré au-dessus) ───
+const MARCHEUR_BUCKET = 'marcheur-uploads';
 
-  // Conversion HEIC/HEIF robuste (cascade de stratégies, fail-fast).
-  // On ne tente la conversion que pour les fichiers de type image.
-  const looksImage = (file.type || '').startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp|tiff|heic|heif)$/i.test(file.name);
-  if (looksImage && (await isHeic(file))) {
-    try {
-      processedFile = await convertHeicToJpeg(file);
-    } catch (err) {
-      if (err instanceof HeicConversionError) {
-        // Politique stricte : on n'uploade JAMAIS un .heic non converti
-        // (illisible sur Android/desktop). Erreur explicite à l'utilisateur.
-        throw new Error(HEIC_USER_MESSAGE);
-      }
-      throw err;
-    }
-  }
-
+async function uploadToStorage(
+  userId: string,
+  processedFile: File,
+  folder: string
+): Promise<{ url: string; path: string }> {
   const ext = processedFile.name.split('.').pop() || 'bin';
   const path = `${userId}/${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const { error } = await supabase.storage
-    .from('marcheur-uploads')
+    .from(MARCHEUR_BUCKET)
     .upload(path, processedFile, { cacheControl: '3600', upsert: false });
 
   if (error) throw error;
 
   const { data: { publicUrl } } = supabase.storage
-    .from('marcheur-uploads')
+    .from(MARCHEUR_BUCKET)
     .getPublicUrl(path);
 
-  return publicUrl;
+  return { url: publicUrl, path };
 }
+
 
 // ─── Medias (photos + vidéos) ───
 export function useMarcheurMedias(marcheEventId: string, userId: string, sort: SortOrder = 'desc', marcheId?: string) {
@@ -134,49 +123,42 @@ export function useUploadMedias(userId: string) {
       for (const file of files) {
         const folder = typeMedia === 'photo' ? 'photos' : 'videos';
 
-        // Extract EXIF GPS + date from local File blob (fast, no network)
-        let metadata: Record<string, unknown> | null = null;
+        // Pipeline atomique : EXIF (sur original) → conversion HEIC → upload Storage → insert DB → rollback si KO
+        let metadata: MediaMetadata | null = null;
+        let processedFile: File = file;
         if (typeMedia === 'photo') {
-          try {
-            const [gps, exifData] = await Promise.all([
-              exifr.gps(file).catch(() => null),
-              exifr.parse(file, ['DateTimeOriginal']).catch(() => null),
-            ]);
-            const parts: Record<string, unknown> = {};
-            if (gps?.latitude != null && gps?.longitude != null) {
-              parts.gps = { latitude: gps.latitude, longitude: gps.longitude };
-            }
-            if (exifData?.DateTimeOriginal) {
-              parts.date_taken = exifData.DateTimeOriginal instanceof Date
-                ? exifData.DateTimeOriginal.toISOString()
-                : String(exifData.DateTimeOriginal);
-            }
-            if (Object.keys(parts).length > 0) metadata = parts;
-          } catch {
-            // EXIF extraction failed — continue without metadata
-          }
+          const prepared = await preparePhotoForUpload(file);
+          processedFile = prepared.processedFile;
+          metadata = prepared.metadata;
         }
 
-        const url = await uploadFile(userId, file, folder);
-        
-        const { data, error } = await supabase
-          .from('marcheur_medias')
-          .insert({
-            user_id: userId,
-            marche_event_id: marcheEventId,
-            type_media: typeMedia,
-            url_fichier: url,
-            titre: file.name.replace(/\.[^.]+$/, ''),
-            is_public: isPublic,
-            taille_octets: file.size,
-            ...(marcheId ? { marche_id: marcheId } : {}),
-            ...(metadata ? { metadata } : {}),
-          } as any)
-          .select()
-          .single();
-        
-        if (error) throw error;
-        results.push(data as MarcheurMedia);
+        const { url, path } = await uploadToStorage(userId, processedFile, folder);
+
+        const inserted = await insertWithStorageRollback({
+          bucket: MARCHEUR_BUCKET,
+          storagePath: path,
+          insertFn: async () => {
+            const { data, error } = await supabase
+              .from('marcheur_medias')
+              .insert({
+                user_id: userId,
+                marche_event_id: marcheEventId,
+                type_media: typeMedia,
+                url_fichier: url,
+                titre: file.name.replace(/\.[^.]+$/, ''),
+                is_public: isPublic,
+                taille_octets: processedFile.size,
+                ...(marcheId ? { marche_id: marcheId } : {}),
+                ...(metadata ? { metadata: metadata as unknown as Record<string, unknown> } : {}),
+              } as any)
+              .select()
+              .single();
+            if (error) throw error;
+            return data as MarcheurMedia;
+          },
+        });
+
+        results.push(inserted);
       }
       return results;
     },
@@ -260,7 +242,7 @@ export function useUploadAudio(userId: string) {
     }) => {
       const results: MarcheurAudio[] = [];
       for (const file of files) {
-        const url = await uploadFile(userId, file, 'audio');
+        const { url } = await uploadToStorage(userId, file, 'audio');
         
         const { data, error } = await supabase
           .from('marcheur_audio')

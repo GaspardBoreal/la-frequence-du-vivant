@@ -6,6 +6,7 @@ import L from 'leaflet';
 import { Camera, MapPin, Upload, Lock, Users, Globe, ChevronDown, X } from 'lucide-react';
 import exifr from 'exifr';
 import { supabase } from '@/integrations/supabase/client';
+import { buildManualMetadata } from '@/utils/mediaMetadata';
 
 interface MarcheOption {
   id: string;
@@ -134,9 +135,11 @@ export function PhotoGpsMarker({
         shared_to_web: sharedToWeb,
         taille_octets: point.file.size,
         metadata: {
-          gps: { latitude: point.lat, longitude: point.lng },
+          ...buildManualMetadata(point.file, {
+            latitude: point.lat,
+            longitude: point.lng,
+          }),
           date_taken: point.dateOriginal || null,
-          source: 'photo_gps_tool',
         },
       } as any);
       if (insertErr) throw insertErr;

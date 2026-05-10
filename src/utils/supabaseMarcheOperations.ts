@@ -212,23 +212,25 @@ interface MediaItem {
 
 // Fonction pour sauvegarder des photos
 export const savePhotos = async (marcheId: string, photos: MediaItem[]): Promise<void> => {
+  const { preparePhotoForUpload } = await import('./uploadWithMetadata');
   for (const photo of photos) {
     try {
-      const uploadResult = await uploadPhoto(photo.file, marcheId);
-      
+      // Extraction EXIF + conversion HEIC AVANT l'upload
+      const prepared = await preparePhotoForUpload(photo.file);
+      const uploadResult = await uploadPhoto(prepared.processedFile, marcheId);
+
       await supabase
         .from('marche_photos')
-        .insert({
+        .insert([{
           marche_id: marcheId,
           nom_fichier: photo.name,
           url_supabase: uploadResult.url,
           titre: photo.name,
           description: null,
-          ordre: null,
-          metadata: null
-        });
-        
-      console.log(`✅ Photo ${photo.name} sauvegardée`);
+          metadata: prepared.metadata as any,
+        }]);
+
+      console.log(`✅ Photo ${photo.name} sauvegardée (gps=${!!prepared.metadata.gps}, status=${prepared.metadata.extraction_status})`);
     } catch (error) {
       console.error(`❌ Erreur sauvegarde photo ${photo.name}:`, error);
       throw error;
