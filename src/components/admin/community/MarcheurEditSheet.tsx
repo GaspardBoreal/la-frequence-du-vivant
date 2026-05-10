@@ -13,6 +13,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CSP_OPTIONS, GENDER_OPTIONS } from '@/lib/communityProfileTaxonomy';
 import ScienceAccountsEditor from './ScienceAccountsEditor';
+import ProfileSuggestionsList from './ProfileSuggestionsList';
 
 export interface EditableProfile {
   id: string;
