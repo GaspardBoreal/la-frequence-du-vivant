@@ -134,6 +134,42 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
       : undefined,
   );
 
+  // Build typed gallery slides (référence iNat ↔ photos marcheurs)
+  // IMPORTANT: must run before any early return to keep hook order stable.
+  const gallerySlides = useMemo<CarouselSlide[]>(() => {
+    if (!species) return [];
+    const refPhotos = (photoData?.photos && photoData.photos.length > 0)
+      ? photoData.photos
+      : species.photos || [];
+    const slides: CarouselSlide[] = [];
+    const localPhotos = (species.photos || []).filter((u) =>
+      u && (u.includes('supabase') || u.includes('storage')),
+    );
+    localPhotos.forEach((url) => {
+      if (!marcheurPhotos.some((m) => m.url === url)) {
+        slides.push({ url, source: 'marcheur', observerName: 'Marcheur' });
+      }
+    });
+    marcheurPhotos.forEach((m) => {
+      slides.push({
+        url: m.url,
+        source: 'marcheur',
+        observerName: m.observerName,
+        date: m.observationDate,
+        marcheName: m.marcheName,
+      });
+    });
+    refPhotos.forEach((url) => {
+      if (slides.some((s) => s.url === url)) return;
+      slides.push({
+        url,
+        source: 'inat',
+        originalUrl: `https://www.inaturalist.org/taxa/search?q=${encodeURIComponent(species.scientificName)}`,
+      });
+    });
+    return slides;
+  }, [photoData?.photos, marcheurPhotos, species]);
+
   if (!species) return null;
 
   // Use fetched data if available, otherwise fall back to props
@@ -162,41 +198,6 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 
   const totalMarchesCount = speciesMarches.length;
   const isLoading = photoLoading || translationLoading;
-
-  // Build typed gallery slides (référence iNat ↔ photos marcheurs)
-  const gallerySlides = useMemo<CarouselSlide[]>(() => {
-    const slides: CarouselSlide[] = [];
-    // 1. Photo marcheur d'abord si présente dans species.photos (curation locale)
-    const localPhotos = (species.photos || []).filter((u) =>
-      u && (u.includes('supabase') || u.includes('storage')),
-    );
-    localPhotos.forEach((url) => {
-      // évite doublon si déjà dans marcheurPhotos
-      if (!marcheurPhotos.some((m) => m.url === url)) {
-        slides.push({ url, source: 'marcheur', observerName: 'Marcheur' });
-      }
-    });
-    // 2. Photos marcheurs via marcheur_observations
-    marcheurPhotos.forEach((m) => {
-      slides.push({
-        url: m.url,
-        source: 'marcheur',
-        observerName: m.observerName,
-        date: m.observationDate,
-        marcheName: m.marcheName,
-      });
-    });
-    // 3. Photos référence iNaturalist
-    photos.forEach((url) => {
-      if (slides.some((s) => s.url === url)) return;
-      slides.push({
-        url,
-        source: 'inat',
-        originalUrl: `https://www.inaturalist.org/taxa/search?q=${encodeURIComponent(species.scientificName)}`,
-      });
-    });
-    return slides;
-  }, [photos, marcheurPhotos, species.photos, species.scientificName]);
 
   const lightboxPhotos = gallerySlides.map((s) => s.url);
 
