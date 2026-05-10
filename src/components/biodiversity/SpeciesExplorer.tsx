@@ -212,7 +212,12 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   );
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div
+      className={`space-y-4 ${className}`}
+      data-chat-section="species-explorer"
+      data-chat-count={filteredSpecies.length}
+      data-chat-active-category={selectedCategory}
+    >
       {/* Filters */}
       <Card className="p-4">
         <div className="space-y-4">
