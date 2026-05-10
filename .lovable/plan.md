@@ -1,83 +1,98 @@
-## Diagnostic
+## Objectif
 
-**Cause racine confirmée par requête SQL :**
+Rendre chaque critère du popover **Fréquence /100** cliquable depuis *Marcheurs → Marcheurs*, avec une vue détaillée "wahouhh" qui :
+1. **Explique la formule** (le calcul, la pondération, le plafond)
+2. **Liste les éléments comptés** (espèces, photos, textes, pratiques…)
+3. **Révèle ce qui n'est PAS compté** — ex. les 5 contributions iNat de Laurence Karki n'alimentent pas son score parce que `m.stats` n'inclut que les médias locaux, pas les `biodiversity_snapshots`. Cette transparence est le cœur de la fonctionnalité.
+4. **Propose un prochain pas** chiffré ("+4 pts si tu détectes 1 bio-indicateur")
 
-Dans `biodiversity_snapshots.species_data[].attributions[]`, les observations iNaturalist sont stockées avec :
-```
-observerName = "laurencekarki"   (login iNat)
-source       = "inaturalist"
-```
+## Diagnostic préalable (à mentionner dans la vue)
 
-Mais l'onglet **Contributions** (et le compteur de contributions) fait le matching ainsi :
-```ts
-fullNameNorm = normalize("Laurence" + " " + "Karki")  // "laurence karki"
-match = observerNorm.includes(fullNameNorm)
-     || fullNameNorm.includes(observerNorm)
-// "laurencekarki".includes("laurence karki") → false
-// "laurence karki".includes("laurencekarki") → false
-```
+Le calcul actuel de `computeSentinelleIndex` (MarcheursTab.tsx L.1452) prend `m.stats.photos/sons/textes/speciesCount` qui proviennent des médias **locaux** de la marche. Les **observations iNaturalist remontées via `biodiversity_snapshots`** (visibles dans l'onglet Contributions) ne sont **pas injectées**. C'est pourquoi Laurence affiche `Diversité 1/10 · 2 espèces` alors que ses Contributions montrent **5 espèces**.
 
-→ **Aucun match**, donc `Aucune espèce identifiée`.
+## Plan UX — Drawer "Comprendre ce critère"
 
-À l'inverse, l'onglet **Synthèse → Taxons observés** propose un sélecteur d'observateur basé sur les `observerName` bruts présents dans les snapshots (donc `laurencekarki`), ce qui fonctionne directement. D'où l'incohérence (0 vs 6 / 0 vs 5).
+### 1. Rendre chaque ligne de `ScoreBreakdown` cliquable
+Ajouter un bouton (toute la ligne) qui ouvre un Sheet/Drawer latéral contextuel.
 
-Le même bug existe dans 3 endroits :
-- `MarcheursTab.tsx` `ContributionsSubTab` (l. 412-472)
-- `MarcheursTab.tsx` `useWalkerContributionsCount` (l. 972-1009)
-- `impact/CitizenPlatformsCard.tsx` (l. 84-90)
+### 2. Contenu du Drawer (template uniforme par critère)
 
-## Solution proposée — robuste pour tous les marcheurs iNat
-
-**Principe :** étendre l'identité d'un marcheur à un ensemble d'**alias** (nom complet + tous ses logins de comptes science), puis matcher si l'`observerName` du snapshot **égale strictement** l'un des alias normalisés (et non plus via `includes` qui est trop permissif et casse sur les logins concaténés).
-
-### 1. Hook partagé `useMarcheurAliases(userId, prenom, nom)`
-
-Nouveau hook qui retourne un `Set<string>` d'alias normalisés :
-- `normalize(`${prenom} ${nom}`)` → `"laurence karki"`
-- `normalize(`${prenom}${nom}`)` → `"laurencekarki"` (variante concaténée, fallback)
-- Tous les `username` issus de `community_profile_science_accounts` du marcheur (réseaux `inaturalist`, `gbif`, `observation_org`, etc.), normalisés.
-
-Une seule requête, mise en cache (5 min), réutilisable dans les 3 endroits.
-
-### 2. Nouvelle logique de matching
-
-Remplacer le `includes` bidirectionnel par une **égalité stricte** sur le `Set` d'alias :
-```ts
-const observerNorm = normalize(attr.observerName);
-if (aliases.has(observerNorm)) { ... }
+```text
+┌─────────────────────────────────────────┐
+│ 🌿 Détections précieuses      6 / 35    │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│ ▸ COMMENT ON CALCULE                    │
+│   bio×1.5 + aux×1.0 + EEE×2.0           │
+│   plafonné à 15 pondérés → ×35          │
+│                                         │
+│ ▸ CE QUI EST COMPTÉ (1 bio · 1 aux)     │
+│   • Lichen vert commun  (bio)  +1.5     │
+│   • Sphaeroderma rouge  (aux)  +1.0     │
+│                                         │
+│ ▸ CE QUI N'EST PAS (ENCORE) COMPTÉ      │
+│   ⚠ 3 espèces iNaturalist sans          │
+│     curation : Lotier, Immortelles,     │
+│     Araignée nursery → demander         │
+│     curation à un Ambassadeur           │
+│                                         │
+│ ▸ PROCHAIN PAS                          │
+│   +4 pts si 1 bio-indicateur de plus    │
+└─────────────────────────────────────────┘
 ```
 
-Cela règle aussi les faux positifs (ex. un observateur "Laurence" matchait "Laurence Karki" par inclusion).
+### 3. Templates par critère
 
-### 3. Application aux 3 endroits
+| Critère | Compté | Non compté à révéler |
+|---|---|---|
+| **Détections précieuses** | espèces curées bio/aux/EEE | espèces non encore curées (lien "demander curation") |
+| **Voix singulière** | textes éco-poétiques + sons + témoignage | brouillons, descriptions audio |
+| **Variété des gestes** | 5 piliers cochés | piliers manquants listés (photo/son/texte/témoignage/sensible) |
+| **Volume** | photos+vidéos+sons+textes+témoignage **locaux** | **⚠ Observations iNat (n=X) non comptées** — c'est ici que le bug Laurence est rendu visible |
+| **Diversité d'espèces** | espèces issues des médias locaux | **⚠ X espèces iNat non comptées dans le score** |
+| **Pratiques emblématiques** | curations `sense='main'` liées au marcheur | "À relier par un curateur" + CTA |
 
-- `ContributionsSubTab` → injecter `aliases`, remplacer le test
-- `useWalkerContributionsCount` → idem (le compteur "Contributions" sur la pastille du marcheur sera juste)
-- `CitizenPlatformsCard` → idem (les KPI iNat / GBIF du marcheur)
+### 4. Animation "wahouhh"
+- Ouverture en spring depuis la ligne cliquée (layoutId framer-motion)
+- Compteur qui s'incrémente pour la valeur (ex. `0 → 6`)
+- Petite barre de progression animée vers le palier suivant
+- Émoji de tête en grand format avec léger glow
 
-### 4. Pré-requis backfill (déjà en place)
+## Plan technique
 
-Pour que les nouvelles obs iNat apparaissent côté snapshots (et pas seulement dans `marcheur_observations`) :
-- Le snapshot biodiversité d'une marche est régénéré quand on visite l'onglet Vivant (logique existante `snapshot-sync-on-view-logic`).
-- Le nouvel ajout d'un compte iNat ou d'une participation déclenche déjà `backfill-marcheur-inaturalist` (table `marcheur_observations`) **et** doit invalider le snapshot pour forcer une régénération avec les nouvelles attributions.
+### Fichier nouveau : `src/components/community/exploration/impact/ScoreCriterionDrawer.tsx`
+- Sheet shadcn (side="right") ou Dialog responsive
+- Reçoit : `criterion` (clé : sensible/voix/pillars/volume/species/pratiques), `breakdown`, `details` (espèces nommées, items)
+- Affiche les 4 sections : formule / compté / non compté / prochain pas
 
-→ Ajouter dans le trigger `handle_science_account_backfill` et `handle_participation_backfill` un appel asynchrone à `sync-biodiversity-snapshot` pour chaque marche concernée (refresh forcé). C'est la pièce manquante pour que la chaîne soit complète : iNat → marcheur_observations → snapshot.species_data.attributions → UI Contributions.
+### Modifier `ScoreBreakdown.tsx`
+- Convertir chaque ligne `motion.div` en `motion.button`
+- Ajouter prop optionnelle `onCriterionClick(key)` (rétro-compatible : pas obligatoire pour ImpactStoriesViewer)
+- État local d'ouverture du Drawer
 
-### 5. Validation
+### Source des données "compté/non compté"
+Pour chaque marcheur (déjà dans `MarcheursTab.tsx`) il faut enrichir `metricsById` avec :
+- `localSpeciesNames` : depuis `m.speciesObserved`
+- `inatSpeciesNames` : croiser `biodiversity_snapshots` × aliases (déjà dispo via `useExplorationContributionsCounts` + `useMarcheurAliases`) → liste des noms iNat absents des médias locaux
+- `pillarsMissingLabels` : déjà dans `breakdown.pillars.missing`
+- `sensibleNamedList` : noms des espèces curées (via `curationByName`)
 
-Après déploiement :
-- Recharger l'onglet Vivant des 2 marches DEVIAT pour régénérer les snapshots
-- Vérifier que la fiche **Laurence Karki → Contributions** affiche bien 6 espèces (DEVIAT/Jardin) et 5 (Marcher sur un sol qui respire)
-- Vérifier que la pastille "Observations" du marcheur affiche le bon compteur
+### Révélation honnête du bug iNat
+Dans le drawer **Volume** et **Diversité d'espèces**, afficher un encart ambré :
+> "⚠ X observations iNaturalist sont visibles dans Contributions mais n'alimentent pas encore ce score. Une évolution est en cours pour les inclure."
 
-## Détails techniques
+Cela transforme un bug en **feature de transparence** et prépare le terrain pour le futur fix d'inclure les snapshots dans `SentinelleInputs`.
 
-**Fichiers modifiés :**
-- `src/hooks/useMarcheurAliases.ts` (nouveau)
-- `src/lib/observerMatching.ts` (nouveau, fonction `matchesAlias` + `normalize` partagés)
-- `src/components/community/exploration/MarcheursTab.tsx` (2 zones)
-- `src/components/community/exploration/impact/CitizenPlatformsCard.tsx`
-- `supabase/migrations/...` : étendre les triggers iNat backfill pour forcer aussi un refresh du snapshot biodiversité de chaque marche concernée (via `pg_net` → fonction `sync-biodiversity-snapshot`).
+## Fichiers touchés
+- ✏️ `src/components/community/exploration/impact/ScoreBreakdown.tsx` — lignes cliquables + état drawer
+- 🆕 `src/components/community/exploration/impact/ScoreCriterionDrawer.tsx` — drawer détaillé
+- ✏️ `src/components/community/exploration/MarcheursTab.tsx` — passe `details` enrichis (listes nommées + counts iNat) à `ScoreBreakdown`
 
-**Mémoire à mettre à jour :**
-- Ajouter une note dans `mem://technical/community/identity-matching-logic` : matching par égalité sur set d'alias (nom + logins science), jamais par `includes`.
+## Hors scope (à confirmer)
+- Le **fix structurel** consistant à injecter les espèces iNat dans `SentinelleInputs` n'est **pas** dans ce plan (il modifierait le score de tous les marcheurs et nécessite validation produit). Le drawer **rend visible** l'écart en attendant.
+
+## Questions pour valider
+
+1. **Format** : Drawer latéral droite (Sheet) ou Modal centré (Dialog) ? *(recommandé : Sheet droite, plus immersif sur desktop)*
+2. **Faut-il aussi un CTA action** dans le drawer (ex. "Demander curation à un Ambassadeur" qui notifie) ou rester purement explicatif pour cette V1 ?
+3. **Le fix iNat-dans-le-score** : tu veux qu'on planifie aussi l'injection des espèces iNat dans le calcul de Fréquence (changera le score de tous les marcheurs concernés rétroactivement), ou on garde la transparence "non compté" en V1 et on traite le fix dans un second temps ?
