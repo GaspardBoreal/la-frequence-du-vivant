@@ -137,28 +137,23 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   if (!species) return null;
 
   // Use fetched data if available, otherwise fall back to props
-  const photos = (photoData?.photos && photoData.photos.length > 0) 
-    ? photoData.photos 
+  const photos = (photoData?.photos && photoData.photos.length > 0)
+    ? photoData.photos
     : species.photos || [];
-  const kingdom = (photoData?.kingdom && photoData.kingdom !== 'Unknown') 
-    ? photoData.kingdom 
+  const kingdom = (photoData?.kingdom && photoData.kingdom !== 'Unknown')
+    ? photoData.kingdom
     : species.kingdom;
 
   // French name priority: translation > photoData > original
   const frenchName = translation?.commonName || photoData?.commonName || species.name;
   const isEnglishFallback = frenchName === species.name && translation?.source === 'fallback';
 
-  const hasPhoto = photos.length > 0;
   const hasMarches = speciesMarches.length > 0;
   const hasAudio = xenoCantoData && xenoCantoData.recordings.length > 0;
   const hasObservers = observers.length > 0;
   const uniqueObserversCount = new Set(observers.map((o) => o.observerName)).size;
   const kingdomInfo = getKingdomInfo(kingdom);
   const KingdomIcon = kingdomInfo.icon;
-
-  // Check if current photo is from marcheur (personal photo)
-  const isMarcheurPhoto = species.photos && species.photos.length > 0 && currentPhotoIndex === 0 && 
-    species.photos[0]?.includes('supabase') || species.photos?.[0]?.includes('storage');
 
   // Build external search URLs
   const gbifSearchUrl = `https://www.gbif.org/species/search?q=${encodeURIComponent(species.scientificName)}`;
@@ -168,8 +163,46 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   const totalMarchesCount = speciesMarches.length;
   const isLoading = photoLoading || translationLoading;
 
-  const nextPhoto = () => setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
-  const prevPhoto = () => setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length);
+  // Build typed gallery slides (référence iNat ↔ photos marcheurs)
+  const gallerySlides = useMemo<CarouselSlide[]>(() => {
+    const slides: CarouselSlide[] = [];
+    // 1. Photo marcheur d'abord si présente dans species.photos (curation locale)
+    const localPhotos = (species.photos || []).filter((u) =>
+      u && (u.includes('supabase') || u.includes('storage')),
+    );
+    localPhotos.forEach((url) => {
+      // évite doublon si déjà dans marcheurPhotos
+      if (!marcheurPhotos.some((m) => m.url === url)) {
+        slides.push({ url, source: 'marcheur', observerName: 'Marcheur' });
+      }
+    });
+    // 2. Photos marcheurs via marcheur_observations
+    marcheurPhotos.forEach((m) => {
+      slides.push({
+        url: m.url,
+        source: 'marcheur',
+        observerName: m.observerName,
+        date: m.observationDate,
+        marcheName: m.marcheName,
+      });
+    });
+    // 3. Photos référence iNaturalist
+    photos.forEach((url) => {
+      if (slides.some((s) => s.url === url)) return;
+      slides.push({
+        url,
+        source: 'inat',
+        originalUrl: `https://www.inaturalist.org/taxa/search?q=${encodeURIComponent(species.scientificName)}`,
+      });
+    });
+    return slides;
+  }, [photos, marcheurPhotos, species.photos, species.scientificName]);
+
+  const lightboxPhotos = gallerySlides.map((s) => s.url);
+
+  const nextPhoto = () => setCurrentPhotoIndex((prev) => (prev + 1) % Math.max(lightboxPhotos.length, 1));
+  const prevPhoto = () => setCurrentPhotoIndex((prev) => (prev - 1 + Math.max(lightboxPhotos.length, 1)) % Math.max(lightboxPhotos.length, 1));
+  const hasPhoto = lightboxPhotos.length > 0;
 
   return (
     <>
