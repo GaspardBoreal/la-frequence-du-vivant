@@ -133,11 +133,10 @@ export function PhotoGpsMarker({
         is_public: isPublic,
         shared_to_web: sharedToWeb,
         taille_octets: point.file.size,
-        metadata: {
-          gps: { latitude: point.lat, longitude: point.lng },
-          date_taken: point.dateOriginal || null,
-          source: 'photo_gps_tool',
-        },
+        metadata: buildManualMetadata(point.file, {
+          latitude: point.lat,
+          longitude: point.lng,
+        }),
       } as any);
       if (insertErr) throw insertErr;
 
