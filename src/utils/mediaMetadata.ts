@@ -96,10 +96,6 @@ export async function extractMediaMetadata(
   let parsed: any = null;
   try {
     parsed = await exifr.parse(file, {
-      gps: true,
-      tiff: true,
-      exif: true,
-      ifd0: true,
       pick: [
         'GPSLatitude', 'GPSLongitude', 'GPSAltitude', 'latitude', 'longitude',
         'DateTimeOriginal', 'CreateDate', 'ModifyDate',
