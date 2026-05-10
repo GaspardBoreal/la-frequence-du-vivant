@@ -136,6 +136,18 @@ function extractDomSnapshot(root: HTMLElement): DomSnapshot {
   });
 
   snapshot.meta.truncated = pool.length > MAX_CARDS;
+
+  // ── Contexte (data-chat-context, data-chat-active-tab) ────
+  const ctxEl = (root.matches('[data-chat-context]') ? root : root.querySelector('[data-chat-context]')) as HTMLElement | null;
+  if (ctxEl) {
+    snapshot.context = {
+      type: ctxEl.dataset.chatContext || undefined,
+      title: ctxEl.dataset.chatTitle || undefined,
+      subtitle: ctxEl.dataset.chatSubtitle || undefined,
+      activeTab: ctxEl.dataset.chatActiveTab || undefined,
+    };
+  }
+
   return snapshot;
 }
 
