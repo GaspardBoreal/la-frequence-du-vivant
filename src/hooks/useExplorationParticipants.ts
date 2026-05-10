@@ -264,6 +264,129 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
         });
       });
 
+      // Tag les observations existantes comme 'local'
+      results.forEach((r) => {
+        r.speciesObserved = r.speciesObserved.map((s) => ({ ...s, origin: 'local' as const }));
+        r.stats.localSpeciesCount = r.stats.speciesCount;
+        r.stats.inatPhotos = 0;
+        r.stats.inatSpeciesCount = 0;
+      });
+
+      // === Fusion des observations citoyennes (biodiversity_snapshots) via alias matching ===
+      // Source unifiée du score Sentinelle : ce qui est affiché dans l'onglet Contributions
+      // alimente aussi Diversité d'espèces / Volume / Pilier photo.
+      if (explorationId) {
+        const { data: explorationMarches } = await supabase
+          .from('exploration_marches')
+          .select('marche_id')
+          .eq('exploration_id', explorationId);
+        const marcheIds = (explorationMarches || []).map((r: any) => r.marche_id).filter(Boolean);
+
+        if (marcheIds.length > 0) {
+          const { data: snapshots } = await supabase
+            .from('biodiversity_snapshots')
+            .select('species_data')
+            .in('marche_id', marcheIds);
+
+          // Index : observerNorm -> observations
+          const byObserver = new Map<string, Array<{ sci: string; photo?: string; date?: string }>>();
+          for (const snap of snapshots || []) {
+            const arr = (snap as any).species_data;
+            if (!Array.isArray(arr)) continue;
+            for (const sp of arr) {
+              const fallbackPhoto = sp?.photoData?.url || (Array.isArray(sp?.photos) ? sp.photos[0] : null) || undefined;
+              const attrs = Array.isArray(sp?.attributions) ? sp.attributions : [];
+              for (const a of attrs) {
+                const obs = normalizeAlias(a?.observerName || '');
+                if (!obs || !sp?.scientificName) continue;
+                const list = byObserver.get(obs) || [];
+                list.push({ sci: sp.scientificName, photo: a?.photoUrl || fallbackPhoto, date: a?.date });
+                byObserver.set(obs, list);
+              }
+            }
+          }
+
+          // Pré-charge les usernames de comptes citoyens pour tous les userId connus
+          const userIds = results.map((r) => r.userId).filter((v): v is string => !!v);
+          const aliasesByUserId = new Map<string, Set<string>>();
+          if (userIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from('community_profiles')
+              .select('id, user_id')
+              .in('user_id', userIds);
+            const profileIdToUserId = new Map<string, string>();
+            (profiles || []).forEach((p: any) => {
+              if (p?.id && p?.user_id) profileIdToUserId.set(p.id, p.user_id);
+            });
+            const profileIds = Array.from(profileIdToUserId.keys());
+            if (profileIds.length > 0) {
+              const { data: accounts } = await supabase
+                .from('community_profile_science_accounts')
+                .select('profile_id, username')
+                .in('profile_id', profileIds);
+              (accounts || []).forEach((a: any) => {
+                const uid = profileIdToUserId.get(a.profile_id);
+                if (!uid) return;
+                const norm = normalizeAlias(a.username || '');
+                if (!norm) return;
+                let set = aliasesByUserId.get(uid);
+                if (!set) { set = new Set(); aliasesByUserId.set(uid, set); }
+                set.add(norm);
+              });
+            }
+          }
+
+          // Fusion par marcheur
+          results.forEach((r) => {
+            const aliasSet = new Set<string>();
+            const full = `${r.prenom || ''} ${r.nom || ''}`.trim();
+            const reversed = `${r.nom || ''} ${r.prenom || ''}`.trim();
+            const concat = `${r.prenom || ''}${r.nom || ''}`.trim();
+            [full, reversed, concat].forEach((s) => {
+              const n = normalizeAlias(s);
+              if (n) aliasSet.add(n);
+            });
+            if (r.userId) {
+              const extra = aliasesByUserId.get(r.userId);
+              if (extra) extra.forEach((a) => aliasSet.add(a));
+            }
+
+            const seenSpecies = new Set(r.speciesObserved.map((s) => s.scientificName));
+            const seenKey = new Set<string>(); // dedup intra-iNat
+            let inatPhotos = 0;
+            let inatSpeciesAdded = 0;
+
+            aliasSet.forEach((alias) => {
+              const list = byObserver.get(alias);
+              if (!list) return;
+              for (const item of list) {
+                const k = `${item.sci}|${item.date || ''}`;
+                if (seenKey.has(k)) continue;
+                seenKey.add(k);
+                if (item.photo) inatPhotos++;
+                if (!seenSpecies.has(item.sci)) {
+                  seenSpecies.add(item.sci);
+                  inatSpeciesAdded++;
+                  r.speciesObserved.push({
+                    scientificName: item.sci,
+                    photoUrl: item.photo,
+                    observationDate: item.date,
+                    origin: 'inat',
+                  });
+                }
+              }
+            });
+
+            if (inatPhotos > 0 || inatSpeciesAdded > 0) {
+              r.stats.inatPhotos = inatPhotos;
+              r.stats.inatSpeciesCount = inatSpeciesAdded;
+              r.stats.speciesCount = seenSpecies.size;
+              r.totalContributions += inatSpeciesAdded;
+            }
+          });
+        }
+      }
+
       // Sort by total contributions (most active first)
       results.sort((a, b) => b.totalContributions - a.totalContributions);
       return results;
