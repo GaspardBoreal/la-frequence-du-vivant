@@ -1,46 +1,73 @@
-# Corriger un faux nom FR pour "Broad-bordered Bee Hawkmoth"
+## Diagnostic
 
-## Constat
-L'app affiche "Agrion (ou Demoiselle)" pour `Hemaris fuciformis` (Broad-bordered Bee Hawkmoth). C'est une **hallucination** : un sphinx ne peut pas s'appeler "Agrion" (libellule). Le bon nom FR est **Sphinx fuciforme** (parfois "Sphinx gazé").
+La capture d'écran montre clairement 12 cartes (Sphinx fuciforme, Tircis, Coenagrionidae, Mélitée, Bourdon…). Le chatbot, lui, répond : « *les `visibleCards` sont vides dans mon flux de données actuel* » puis **invente** des exemples génériques (« Buse variable », « Mésange bleue », « Chardonneret »…). Deux bugs cumulés :
 
-## Pourquoi cela arrive
-L'architecture des noms FR repose sur 3 couches :
+### 1. La modale Marche est invisible pour l'observer DOM
+- `ChatViewportObserver` est monté dans `ExplorationMarcheurPage` avec `[data-chat-viewport]` comme racine.
+- La fiche d'un marche s'ouvre via `MarcheDetailModal` → `Dialog` (Radix) → **portail React monté dans `<body>`**, donc **hors** du `data-chat-viewport`.
+- Conséquence : `cards.length = 0`, `visibleCards = []`. L'IA ne « voit » rien de la fiche en cours.
 
-```text
-<SpeciesName />
-   └─ useFrenchSpeciesNamesAuto
-        ├─ 1. Lit la table species_translations (cache partagé)
-        └─ 2. Si manquant → edge function translate-species (LLM)
-             └─ écrit le résultat dans species_translations
-```
+### 2. Les cartes espèces n'ont aucun marqueur `data-chat-*`
+`EnhancedSpeciesCard` ne pose ni `data-chat-card`, ni `data-chat-title`, ni `data-chat-subtitle`. Même si l'observer scannait la modale, l'extraction par marqueurs explicites (la plus fiable) échouerait et retomberait sur des heuristiques fragiles (`h3, h4, .font-semibold`) qui ne s'appliquent pas à cette carte.
 
-Le mauvais nom est donc figé dans la table `species_translations` (probablement écrit par le LLM lors d'une première résolution ratée). Tant qu'il y est, **tous les utilisateurs voient "Agrion" pour ce sphinx**, et le résolveur ne réinterroge plus le LLM.
+### 3. Le prompt autorise implicitement la fabulation
+Le prompt actuel dit « si rien dans visibleData, dis-le honnêtement ». Le modèle l'a fait… puis a quand même inventé des **noms d'espèces fictifs** comme exemples illustratifs (« Buse variable », « Goldfinch → Chardonneret », « Mésange bleue / Blue Tit »). Aucune de ces espèces n'est dans la fiche. C'est de la pollution informationnelle pour un Ambassadeur.
 
-## Ce qu'il faut faire — 3 niveaux
+---
 
-### 1. Correction immédiate (la ligne fautive)
-Mettre à jour la ligne `Hemaris fuciformis` dans `species_translations` :
-- `common_name_fr` → "Sphinx fuciforme"
-- `source` → "manual"
-- `confidence` → "high"
+## Plan
 
-Effet : tout l'app affiche immédiatement le bon nom (le cache TanStack Query expire sous 24 h, les nouveaux mounts voient déjà la bonne valeur).
+### Étape 1 — Faire voir les portails (Dialog/Sheet/Drawer) à l'observer
 
-### 2. Audit ciblé des hallucinations voisines
-Lister en base toutes les lignes où :
-- `source` n'est pas `manual` / `local`
-- ET `common_name_fr` contient un terme sans rapport taxonomique évident (ex. "Agrion", "Demoiselle", "Sphinx", "Mésange"…) appliqué à un genre incohérent.
+Modifier `src/components/chatbot/ChatViewportObserver.tsx` :
+- Scanner **deux** racines à chaque capture : `[data-chat-viewport]` (la page) **et** tous les overlays Radix actifs (`[role="dialog"][data-state="open"]`, `[data-radix-portal]`, `[data-vaul-drawer][data-state="open"]`).
+- Fusionner les snapshots : chips/headings/cartes du portail s'ajoutent à ceux de la page (le portail prime quand il est ouvert).
+- Ajouter au `MutationObserver` une seconde observation sur `document.body` (filtre `data-state`, `data-radix-portal`) pour déclencher une re-capture à l'ouverture/fermeture d'une modale.
 
-Au minimum, repasser sur tout le genre `Hemaris` et la famille `Sphingidae` pour vérifier qu'aucun autre sphinx n'a hérité d'un nom de libellule.
+### Étape 2 — Marquer les cartes espèces et l'onglet actif
 
-### 3. Durcir l'edge function `translate-species`
-Pour éviter que ça se reproduise :
-- Renforcer le prompt : interdire d'inventer un nom vernaculaire si incertain ; en cas de doute renvoyer le nom scientifique tel quel.
-- Stocker `confidence: 'low'` quand le LLM n'est pas sûr, et **ne pas afficher** les `low` (fallback nom scientifique).
-- Optionnel : valider la cohérence taxonomique ordre/famille (ex. un Lepidoptera ne peut pas s'appeler "Agrion").
+`src/components/audio/EnhancedSpeciesCard.tsx` : sur le `<Card>` racine ajouter
+- `data-chat-card`
+- `data-chat-title={displayName /* FR via translation */}`
+- `data-chat-subtitle={species.scientificName}`
+- `data-chat-badges={[species.source, hasAudio ? 'audio' : null, hasPhoto ? 'photo' : null].filter(Boolean).join(',')}`
 
-## Pour le user (réponse directe à ta question)
-Pour qu'un nom FR soit affiché, il faut une ligne dans `species_translations` reliant le nom scientifique au nom FR. Mais ici, "Agrion" est faux — la bonne action n'est pas de **forcer** ce nom, c'est de **remplacer** la ligne fautive par "Sphinx fuciforme", puis durcir le LLM pour qu'il n'hallucine plus.
+`src/components/biodiversity/SpeciesExplorer.tsx` :
+- Sur les `TabsTrigger` de catégorie (`all/faune/plants/fungi/others`) → ajouter `data-chat-chip` ; le `data-state="active"` de Radix Tabs sera capté par les heuristiques `aria-selected` existantes (déjà couvert par l'observer).
+- Sur la racine du composant : ajouter `data-chat-section="species-explorer"` + un compteur visible `data-chat-count={filteredSpecies.length}` (informatif).
 
-## Question avant d'implémenter
-Confirme-moi : tu veux bien le **bon** nom FR ("Sphinx fuciforme"), pas littéralement "Agrion (ou Demoiselle)" ? Si oui je passe en build et je corrige la ligne + je propose le durcissement du prompt.
+### Étape 3 — Marquer la modale Marche
+
+`src/components/community/MarcheDetailModal.tsx` : sur le `DialogContent`, ajouter
+- `data-chat-context="marche-detail"`
+- `data-chat-title={titre du point de marche}`
+- `data-chat-subtitle={date + référence cadastrale visibles}`
+
+Cela donne au snapshot un libellé clair (« DEVIAT Point 00 une maison pour vivre (C 362) »).
+
+### Étape 4 — Durcir le prompt pour interdire les exemples inventés
+
+Dans `supabase/functions/community-chat/index.ts`, compléter `BASE_SYSTEM_PROMPT` par une règle anti-hallucination :
+
+> **INTERDICTION ABSOLUE** : ne **jamais** citer un nom d'espèce (français, latin ou anglais) qui n'apparaît pas littéralement dans `visibleData` ou dans le `entityContext` ci-dessous. Pas de « *si vous voyez Buse variable…* », pas d'exemples illustratifs nominatifs, pas de spéculations sur les confusions possibles avec *Goldfinch* / *Blue Tit*. Si la liste n'est pas fournie, dis « *Je ne vois pas la liste détaillée affichée à ton écran ; rouvre la fiche ou demande l'extrait* » et arrête-toi.
+
+Et une règle de **cohérence des compteurs** : ne pas faire d'arithmétique entre slices issues de filtres différents (12 visibles vs 15 globaux) sans avoir explicité le filtre actif (catégorie / source / contributeur).
+
+### Étape 5 — Validation
+
+1. Ouvrir l'exploration → cliquer sur le marche → onglet Marches → catégorie Faune.
+2. Demander au chatbot : « *Que vois-tu actuellement à l'écran ?* »
+3. Attendu : il liste les 12 espèces réellement affichées (Sphinx fuciforme, Tircis, Mélitée…), avec le filtre `Faune (12)` et les sources iNaturalist/Photo, sans inventer de nom.
+4. Tester aussi onglet Flore (22) et le passage Marches → Carte pour vérifier le re-snapshot.
+
+---
+
+## Fichiers modifiés
+
+- `src/components/chatbot/ChatViewportObserver.tsx` *(scan multi-racines + body)*
+- `src/components/audio/EnhancedSpeciesCard.tsx` *(marqueurs `data-chat-*`)*
+- `src/components/biodiversity/SpeciesExplorer.tsx` *(marqueurs onglets + section)*
+- `src/components/community/MarcheDetailModal.tsx` *(contexte modale)*
+- `supabase/functions/community-chat/index.ts` *(durcissement prompt)*
+
+Aucune migration DB. Aucune rupture d'API publique.
