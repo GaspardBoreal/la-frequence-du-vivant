@@ -1,41 +1,63 @@
-## Diagnostic
+# Factorisation du fond de carte multi-couches
 
-Le clic sur "Voir la carte" **ouvre bien la popup** (les logs confirment : warning React `DialogContent`, tuiles Leaflet chargées dans la session replay, slider à 80 manipulé). Mais **elle est invisible et inaccessible** car cachée derrière le lightbox photo.
+## Constat
 
-### Cause racine — conflit de z-index
+Aujourd'hui le code des fonds de carte est dupliqué :
+- **`ExplorationCarteTab.tsx`** (onglet Carte) embarque 4 styles complets : **Géo** (OSM France stylisée sombre), **Sat** (Esri imagery), **Relief** (OpenTopoMap), **Cadastre** (OSM + overlay Etalab) + un toggle riche.
+- **`PhotoLocationDialog.tsx`** (popup "Le lieu exact de cette photo") a une version réduite et différente : seulement Plan / Sat / Cadastre, OSM standard (pas la version stylisée), pas de Relief, design du toggle différent.
 
-| Élément | z-index |
-|---|---|
-| `MediaLightbox` (overlay plein écran) | `z-[60]` |
-| Popover métadonnées dans le lightbox | `z-[70]` |
-| `Dialog` shadcn (Overlay + Content) | `z-50` ← trop bas |
+Résultat : la popup ne profite pas de la richesse cartographique de l'onglet Carte (pas de Relief, pas de tuiles géopoétiques sombres, libellés et icônes incohérents).
 
-La popup s'ouvre **derrière** le voile noir du lightbox → impression que "rien ne s'exécute".
+## Objectif
 
-### Indice secondaire
+Extraire les briques de fond de carte dans un module partagé, puis les rebrancher des deux côtés pour garantir une expérience identique et faciliter toute future réutilisation (ex : carte d'une marche, carte d'une espèce, carte publique).
 
-Warning console : `Missing Description or aria-describedby` pour `DialogContent` → manque `DialogDescription` (accessibilité, à corriger en passant).
+## Plan d'action
 
-## Plan de résolution
+### 1. Créer un module partagé `src/components/maps/`
 
-### 1. Forcer le z-index de la popup carte au-dessus du lightbox
-Dans `PhotoLocationDialog.tsx`, passer une `className` à `<DialogContent>` avec `z-[80]`. Mais comme le `DialogOverlay` est rendu en interne par `DialogContent` avec un `z-50` figé, deux options :
+- **`mapStyles.ts`** — source unique de vérité :
+  - Type `MapStyle = 'geopoetic' | 'satellite' | 'terrain' | 'cadastre'`
+  - `TILE_CONFIGS` (url, attribution, maxZoom, className)
+  - Couleurs dérivées (polyline, accent) si utiles ailleurs
+- **`DynamicTileLayer.tsx`** — composant React-Leaflet qui swap les tuiles sans démonter la carte, gère l'overlay Cadastre Etalab (extrait tel quel de `ExplorationCarteTab`).
+- **`MapStyleToggle.tsx`** — toggle visuel Géo/Sat/Relief/Cadastre, avec une prop `compact?: boolean` pour la version popup (icônes seules, padding réduit) et `position?: 'top-right' | 'top-left' | 'inline'` pour le placement.
 
-- **Option A (ciblée, retenue)** : ne plus utiliser `DialogContent` directement. Importer `DialogPortal`, `DialogOverlay`, `DialogPrimitive.Content` depuis `@radix-ui/react-dialog` et reconstruire un wrapper local qui force overlay + content à `z-[80]` / `z-[81]`. Aucun impact sur les autres dialogs du projet.
-- **Option B (rejetée)** : modifier `src/components/ui/dialog.tsx` pour bumper le z-index global → effet de bord sur tous les autres dialogs.
+### 2. Refactor `ExplorationCarteTab.tsx`
 
-### 2. Corriger l'accessibilité
-Ajouter `<DialogDescription className="sr-only">Carte interactive ultra-zoomée sur la position GPS de la photo</DialogDescription>` pour supprimer le warning React.
+- Supprimer les définitions locales `MapStyle`, `TILE_CONFIGS`, `DynamicTileLayer`, `MapStyleToggle`.
+- Importer depuis `@/components/maps`.
+- Conserver localement uniquement ce qui est spécifique à la carte d'exploration (POLYLINE_COLORS, ARROW_COLORS, ZoomControls custom, etc.).
+- Comportement visuel inchangé.
 
-### 3. Garantir que l'overlay capte le clic en dehors
-Vérifier que `onOpenChange(false)` ferme bien la popup en cliquant sur le voile (Radix par défaut) — déjà OK.
+### 3. Refactor `PhotoLocationDialog.tsx`
+
+- Supprimer le `MapStyle = 'plan' | 'satellite' | 'cadastre'` local, le `TILES` local, le `CadastreOverlay` local et l'ancien sélecteur (icône Layers + bouton textuel).
+- Utiliser `DynamicTileLayer` + `MapStyleToggle` partagés (mode `compact` pour rester lisible dans la popup).
+- État par défaut : `mapStyle = 'satellite'` (cohérent avec l'usage "voir la position exacte" d'une photo). À confirmer si tu préfères `geopoetic`.
+- Garder intactes les deux fonctionnalités wahouhh ("Le cercle du vivant" + "Reposer mes pas ici"), le marker pulsant, les liens externes.
 
 ### 4. Vérification
-- Rouvrir le lightbox d'une photo géolocalisée.
-- Cliquer "Voir la carte" → popup visible centrée au-dessus du lightbox, carte zoom 19, marqueur pulsant.
-- Vérifier les 3 sliders (style, rayon) + les 2 wahouhh (boussole / Earth 3D).
-- Console : plus de warning aria-describedby.
 
-## Hors-scope
+- Ouvrir l'onglet **Carte** d'une exploration → les 4 boutons fonctionnent comme avant.
+- Ouvrir une photo géolocalisée → "Voir la carte" → la popup affiche désormais **Géo / Sat / Relief / Cadastre** identiques à ceux de l'onglet Carte, avec l'overlay Etalab en mode Cadastre.
+- Pas de régression de z-index (popup reste au-dessus du lightbox).
 
-Pas de modification du shadcn primitive global, pas de changement de la collecte EXIF, pas de migration SQL.
+## Détails techniques
+
+```text
+src/components/maps/
+├── mapStyles.ts          ← types + TILE_CONFIGS
+├── DynamicTileLayer.tsx  ← swap tuiles + overlay cadastre
+└── MapStyleToggle.tsx    ← UI segmented control (variants compact/full)
+```
+
+Aucune dépendance npm ajoutée. Aucun changement de schéma DB. Travail purement front / présentation.
+
+## Question
+
+Pour la popup "Le lieu exact de cette photo", quel **fond par défaut** préfères-tu à l'ouverture ?
+- `geopoetic` (cohérent avec l'onglet Carte, ambiance sombre)
+- `satellite` (montre immédiatement le lieu réel — plus immersif pour une photo)
+
+Si tu n'as pas de préférence forte je pars sur **satellite** (logique "voir là où la photo a été prise").
