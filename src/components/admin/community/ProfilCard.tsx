@@ -7,9 +7,11 @@ import {
   ageBracketLabel, computeAgeBracket, cspShortLabel, genderLabel,
 } from '@/lib/communityProfileTaxonomy';
 import type { EditableProfile } from './MarcheurEditSheet';
+import type { ScienceAccount } from '@/types/scienceAccounts';
+import NetworkBadge from './NetworkBadge';
 
 interface Props {
-  profile: EditableProfile & { marches_count?: number };
+  profile: EditableProfile & { marches_count?: number; science_accounts?: ScienceAccount[] };
   onEdit: (p: EditableProfile) => void;
 }
 
