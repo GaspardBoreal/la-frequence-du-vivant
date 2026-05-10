@@ -1031,7 +1031,12 @@ const TIER_SHORT_LABEL_LOCAL: Record<SentinelleTier, string> = {
   engage:    'Engagé',
 };
 
-const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () => void }> = ({ sentinelle, onActivate }) => {
+const SentinelleChip: React.FC<{
+  sentinelle: SentinelleResult;
+  onActivate: () => void;
+  criterionDetails?: import('@/components/community/exploration/impact/ScoreCriterionDrawer').CriterionDetails;
+}> = ({ sentinelle, onActivate, criterionDetails }) => {
+  const [drawerKey, setDrawerKey] = useState<import('@/components/community/exploration/impact/ScoreCriterionDrawer').CriterionKey | null>(null);
   // Palier 0 : aucun palier affiché — invitation implicite à entrer dans la fréquence
   if (sentinelle.tier === 'aucun') return null;
   const handleKey = (e: React.KeyboardEvent) => {
@@ -1056,26 +1061,42 @@ const SentinelleChip: React.FC<{ sentinelle: SentinelleResult; onActivate: () =>
     </span>
   );
   return (
-    <HoverCard openDelay={150} closeDelay={80}>
-      <HoverCardTrigger asChild>{chip}</HoverCardTrigger>
-      <HoverCardContent
-        side="left"
-        align="start"
-        className="w-[300px] p-3 bg-popover/95 backdrop-blur border-border shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-baseline justify-between mb-2">
-          <span className="text-sm font-semibold">Fréquence {sentinelle.total}/100</span>
-          <span className="text-xs text-muted-foreground">{sentinelle.label}</span>
-        </div>
-        <ScoreBreakdown breakdown={sentinelle.breakdown} total={sentinelle.total} />
-        {sentinelle.nextTip?.text && (
-          <p className="mt-2 text-[11px] text-muted-foreground italic border-t border-border/50 pt-2">
-            💡 {sentinelle.nextTip.text}
+    <>
+      <HoverCard openDelay={150} closeDelay={80}>
+        <HoverCardTrigger asChild>{chip}</HoverCardTrigger>
+        <HoverCardContent
+          side="left"
+          align="start"
+          className="w-[300px] p-3 bg-popover/95 backdrop-blur border-border shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-baseline justify-between mb-2">
+            <span className="text-sm font-semibold">Fréquence {sentinelle.total}/100</span>
+            <span className="text-xs text-muted-foreground">{sentinelle.label}</span>
+          </div>
+          <ScoreBreakdown
+            breakdown={sentinelle.breakdown}
+            total={sentinelle.total}
+            onCriterionSelect={(k) => setDrawerKey(k)}
+          />
+          {sentinelle.nextTip?.text && (
+            <p className="mt-2 text-[11px] text-muted-foreground italic border-t border-border/50 pt-2">
+              💡 {sentinelle.nextTip.text}
+            </p>
+          )}
+          <p className="mt-1 text-[10px] text-muted-foreground/80 text-center">
+            Cliquez sur un critère pour comprendre le calcul.
           </p>
-        )}
-      </HoverCardContent>
-    </HoverCard>
+        </HoverCardContent>
+      </HoverCard>
+      <ScoreCriterionDrawer
+        open={drawerKey !== null}
+        onOpenChange={(v) => { if (!v) setDrawerKey(null); }}
+        criterion={drawerKey}
+        breakdown={sentinelle.breakdown}
+        details={criterionDetails}
+      />
+    </>
   );
 };
 
