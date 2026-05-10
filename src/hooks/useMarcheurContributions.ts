@@ -192,7 +192,7 @@ export function useUploadMedias(userId: string) {
                   const { latitude, longitude, accuracy, altitude } = pos.coords;
                   const updates = missingGps.map(async (row: any) => {
                     const existing = (row.metadata as MediaMetadata | null) || null;
-                    const merged: MediaMetadata = {
+                    const base: MediaMetadata = existing || {
                       schema_version: 1,
                       gps: null,
                       date_taken: null,
@@ -200,7 +200,9 @@ export function useUploadMedias(userId: string) {
                       file: { original_name: '', size_bytes: 0, mime: '', was_heic_converted: false },
                       extracted_at: new Date().toISOString(),
                       extraction_status: 'partial',
-                      ...(existing || {}),
+                    };
+                    const merged: MediaMetadata = {
+                      ...base,
                       gps: {
                         latitude,
                         longitude,
@@ -209,13 +211,13 @@ export function useUploadMedias(userId: string) {
                         source: 'device_geolocation',
                       },
                       extraction_warnings: [
-                        ...((existing?.extraction_warnings) || []).filter(w => w !== 'no_gps'),
+                        ...((base.extraction_warnings) || []).filter(w => w !== 'no_gps'),
                         'gps_from_device_geolocation',
                       ],
                     };
                     return supabase
                       .from('marcheur_medias')
-                      .update({ metadata: merged as unknown as Record<string, unknown> })
+                      .update({ metadata: merged as any })
                       .eq('id', row.id);
                   });
                   const res = await Promise.all(updates);
