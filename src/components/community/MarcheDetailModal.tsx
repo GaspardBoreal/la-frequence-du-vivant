@@ -1205,7 +1205,13 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="bg-[#0a1a0f] border-emerald-500/20 max-w-md max-h-[85vh] overflow-hidden flex flex-col p-0">
+      <DialogContent
+        className="bg-[#0a1a0f] border-emerald-500/20 max-w-md max-h-[85vh] overflow-hidden flex flex-col p-0"
+        data-chat-context="marche-detail"
+        data-chat-title={eventTitle}
+        data-chat-subtitle={[eventDate, eventLieu].filter(Boolean).join(' • ')}
+        data-chat-active-tab={activeTab}
+      >
         <div className="p-4 pb-2 space-y-1">
           <DialogHeader>
             <DialogTitle className="text-white text-base font-semibold">{eventTitle}</DialogTitle>
