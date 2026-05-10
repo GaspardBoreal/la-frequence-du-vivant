@@ -165,6 +165,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
       <div
         className="relative overflow-hidden rounded-xl cursor-pointer group"
         onClick={onClick}
+        {...chatDataAttrs}
       >
         <div className="aspect-[3/4] relative bg-black/20">
           {type === 'photo' && displayUrl && (
