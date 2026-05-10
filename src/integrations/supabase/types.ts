@@ -264,6 +264,53 @@ export type Database = {
           },
         ]
       }
+      community_profile_science_accounts: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          external_id: string | null
+          id: string
+          network: Database["public"]["Enums"]["science_network"]
+          profile_id: string
+          profile_url: string | null
+          updated_at: string
+          username: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          external_id?: string | null
+          id?: string
+          network: Database["public"]["Enums"]["science_network"]
+          profile_id: string
+          profile_url?: string | null
+          updated_at?: string
+          username: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          external_id?: string | null
+          id?: string
+          network?: Database["public"]["Enums"]["science_network"]
+          profile_id?: string
+          profile_url?: string | null
+          updated_at?: string
+          username?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_profile_science_accounts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "community_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_profiles: {
         Row: {
           avatar_url: string | null
@@ -4806,6 +4853,13 @@ export type Database = {
         | "sans_activite"
         | "prefere_ne_pas_dire"
       profile_gender: "femme" | "homme" | "non_binaire" | "prefere_ne_pas_dire"
+      science_network:
+        | "inaturalist"
+        | "ebird"
+        | "gbif"
+        | "plantnet"
+        | "faune_france"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4967,6 +5021,14 @@ export const Constants = {
         "prefere_ne_pas_dire",
       ],
       profile_gender: ["femme", "homme", "non_binaire", "prefere_ne_pas_dire"],
+      science_network: [
+        "inaturalist",
+        "ebird",
+        "gbif",
+        "plantnet",
+        "faune_france",
+        "other",
+      ],
     },
   },
 } as const

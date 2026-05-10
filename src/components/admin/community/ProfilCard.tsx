@@ -7,9 +7,11 @@ import {
   ageBracketLabel, computeAgeBracket, cspShortLabel, genderLabel,
 } from '@/lib/communityProfileTaxonomy';
 import type { EditableProfile } from './MarcheurEditSheet';
+import type { ScienceAccount } from '@/types/scienceAccounts';
+import NetworkBadge from './NetworkBadge';
 
 interface Props {
-  profile: EditableProfile & { marches_count?: number };
+  profile: EditableProfile & { marches_count?: number; science_accounts?: ScienceAccount[] };
   onEdit: (p: EditableProfile) => void;
 }
 
@@ -80,7 +82,30 @@ export const ProfilCard: React.FC<Props> = ({ profile, onEdit }) => {
           )}
         </div>
 
-        <div className="relative mt-3 pt-3 border-t border-border/40 flex items-center justify-between">
+        {/* Comptes sciences participatives */}
+        <div className="relative mt-3 pt-2 border-t border-border/30">
+          {profile.science_accounts && profile.science_accounts.length > 0 ? (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {profile.science_accounts.map(a => (
+                <NetworkBadge
+                  key={a.id}
+                  network={a.network}
+                  username={a.username}
+                  url={a.profile_url}
+                  verified={a.verified}
+                  size="sm"
+                />
+              ))}
+              <span className="text-[10px] text-muted-foreground ml-auto">
+                {profile.science_accounts.length} compte{profile.science_accounts.length > 1 ? 's' : ''}
+              </span>
+            </div>
+          ) : (
+            <p className="text-[10px] text-muted-foreground italic">Pas de compte science participative</p>
+          )}
+        </div>
+
+        <div className="relative mt-2 pt-2 border-t border-border/40 flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground">
             {profile.marches_count ?? 0} marche{(profile.marches_count ?? 0) > 1 ? 's' : ''}
           </span>

@@ -6,7 +6,10 @@ import {
   AGE_BRACKETS, CSP_OPTIONS, GENDER_OPTIONS, computeAgeBracket,
 } from '@/lib/communityProfileTaxonomy';
 import ProfilCard from './ProfilCard';
+import NetworkFilters, { type NetworkFilterMode, type SpecialFilter } from './NetworkFilters';
 import type { EditableProfile } from './MarcheurEditSheet';
+import { useAllScienceAccounts } from '@/hooks/useScienceAccounts';
+import { NETWORK_ORDER, type ScienceAccount, type ScienceNetwork } from '@/types/scienceAccounts';
 
 interface Props {
   profiles: (EditableProfile & { marches_count?: number })[];
@@ -28,10 +31,50 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
   const [gender, setGender] = useState('all');
   const [csp, setCsp] = useState('all');
   const [role, setRole] = useState('all');
+  const [selectedNetworks, setSelectedNetworks] = useState<ScienceNetwork[]>([]);
+  const [networkMode, setNetworkMode] = useState<NetworkFilterMode>('or');
+  const [special, setSpecial] = useState<SpecialFilter>('none');
+
+  const { data: allAccounts = [] } = useAllScienceAccounts();
+
+  // Map profile_id → accounts
+  const accountsByProfile = useMemo(() => {
+    const map = new Map<string, ScienceAccount[]>();
+    for (const a of allAccounts) {
+      const arr = map.get(a.profile_id) || [];
+      arr.push(a);
+      map.set(a.profile_id, arr);
+    }
+    return map;
+  }, [allAccounts]);
+
+  // Enrich profiles
+  const enriched = useMemo(() => profiles.map(p => ({
+    ...p,
+    science_accounts: accountsByProfile.get(p.id) || [],
+  })), [profiles, accountsByProfile]);
+
+  // Counts per network (across visible profiles before network filter)
+  const networkCounts = useMemo(() => {
+    const c = Object.fromEntries(NETWORK_ORDER.map(k => [k, 0])) as Record<ScienceNetwork, number>;
+    for (const p of enriched) {
+      const seen = new Set<ScienceNetwork>();
+      for (const a of p.science_accounts) {
+        if (!seen.has(a.network)) { c[a.network]++; seen.add(a.network); }
+      }
+    }
+    return c;
+  }, [enriched]);
+
+  const totalWithAny = useMemo(
+    () => enriched.filter(p => p.science_accounts.length > 0).length,
+    [enriched],
+  );
+  const totalWithoutAny = enriched.length - totalWithAny;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return profiles.filter(p => {
+    return enriched.filter(p => {
       if (q) {
         const hay = `${p.prenom} ${p.nom} ${p.ville || ''} ${p.csp_precision || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -43,9 +86,23 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
         const b = computeAgeBracket(p.date_naissance);
         if (b !== age) return false;
       }
+
+      // Special filters
+      if (special === 'any' && p.science_accounts.length === 0) return false;
+      if (special === 'empty' && p.science_accounts.length > 0) return false;
+
+      // Network filter
+      if (selectedNetworks.length > 0) {
+        const owned = new Set(p.science_accounts.map(a => a.network));
+        if (networkMode === 'or') {
+          if (!selectedNetworks.some(n => owned.has(n))) return false;
+        } else {
+          if (!selectedNetworks.every(n => owned.has(n))) return false;
+        }
+      }
       return true;
     });
-  }, [profiles, search, age, gender, csp, role]);
+  }, [enriched, search, age, gender, csp, role, selectedNetworks, networkMode, special]);
 
   return (
     <div className="space-y-4">
@@ -81,6 +138,18 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
           </SelectContent>
         </Select>
       </div>
+
+      <NetworkFilters
+        selected={selectedNetworks}
+        onSelectedChange={setSelectedNetworks}
+        mode={networkMode}
+        onModeChange={setNetworkMode}
+        special={special}
+        onSpecialChange={setSpecial}
+        counts={networkCounts}
+        totalWithAny={totalWithAny}
+        totalWithoutAny={totalWithoutAny}
+      />
 
       <div className="flex items-center justify-between">
         <Select value={role} onValueChange={setRole}>

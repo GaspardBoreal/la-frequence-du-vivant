@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CSP_OPTIONS, GENDER_OPTIONS } from '@/lib/communityProfileTaxonomy';
+import ScienceAccountsEditor from './ScienceAccountsEditor';
 
 export interface EditableProfile {
   id: string;
@@ -226,6 +227,12 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
               </div>
               <Switch checked={form.certification_validee} onCheckedChange={v => update('certification_validee', v)} />
             </div>
+          </section>
+
+          <Separator />
+
+          <section>
+            <ScienceAccountsEditor profileId={form.id} />
           </section>
 
           <div className="flex gap-2 pt-2 sticky bottom-0 bg-background py-3">
