@@ -222,6 +222,20 @@ const DayDetailDrawer: React.FC<Props> = ({ open, onClose, day, bucket, marchesB
           </div>
         )}
       </SheetContent>
+
+      <SpeciesGalleryDetailModal
+        species={selectedSpecies ? {
+          name: selectedSpecies.commonName || selectedSpecies.scientificName,
+          scientificName: selectedSpecies.scientificName,
+          count: 1,
+          kingdom: selectedSpecies.kingdom || '',
+          photos: selectedSpecies.photo ? [selectedSpecies.photo] : undefined,
+        } : null}
+        explorationId={explorationId}
+        allEventMarches={allEventMarches}
+        isOpen={!!selectedSpecies}
+        onClose={() => setSelectedSpecies(null)}
+      />
     </Sheet>
   );
 };
