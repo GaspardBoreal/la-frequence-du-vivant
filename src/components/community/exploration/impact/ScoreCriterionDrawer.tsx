@@ -14,8 +14,14 @@ export interface CriterionDetails {
   uncuratedSpeciesNames?: string[];
   /** Nombre de contributions iNaturalist visibles dans l'onglet Contributions. */
   inatContributionsCount?: number;
-  /** Espèces uniques issues des médias locaux (= breakdown.species.count). */
+  /** Espèces uniques issues des médias locaux (sans iNat). */
   localSpeciesCount?: number;
+  /** Espèces uniques apportées exclusivement par les snapshots citoyens (iNat/GBIF/eBird). */
+  inatSpeciesCount?: number;
+  /** Photos iNat injectées dans le calcul Volume / pilier photo. */
+  inatPhotosCount?: number;
+  /** Photos locales (médias de la marche, hors iNat). */
+  localPhotosCount?: number;
   /** Piliers manquants (depuis breakdown.pillars.missing). */
   pillarsMissing?: string[];
 }
