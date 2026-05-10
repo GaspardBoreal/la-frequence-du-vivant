@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import exifr from 'exifr';
-import { convertHeicToJpeg, isHeic, HeicConversionError, HEIC_USER_MESSAGE } from '@/utils/heicConverter';
+import { preparePhotoForUpload, insertWithStorageRollback } from '@/utils/uploadWithMetadata';
+import type { MediaMetadata } from '@/utils/mediaMetadata';
 
 
 // ─── Types ───
@@ -58,41 +58,30 @@ export interface MarcheurTexte {
 
 type SortOrder = 'desc' | 'asc';
 
-// ─── Upload helper ───
-async function uploadFile(userId: string, file: File, folder: string): Promise<string> {
-  let processedFile = file;
+// ─── Upload helper (Storage seulement, le pipeline metadata est géré au-dessus) ───
+const MARCHEUR_BUCKET = 'marcheur-uploads';
 
-  // Conversion HEIC/HEIF robuste (cascade de stratégies, fail-fast).
-  // On ne tente la conversion que pour les fichiers de type image.
-  const looksImage = (file.type || '').startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp|tiff|heic|heif)$/i.test(file.name);
-  if (looksImage && (await isHeic(file))) {
-    try {
-      processedFile = await convertHeicToJpeg(file);
-    } catch (err) {
-      if (err instanceof HeicConversionError) {
-        // Politique stricte : on n'uploade JAMAIS un .heic non converti
-        // (illisible sur Android/desktop). Erreur explicite à l'utilisateur.
-        throw new Error(HEIC_USER_MESSAGE);
-      }
-      throw err;
-    }
-  }
-
+async function uploadToStorage(
+  userId: string,
+  processedFile: File,
+  folder: string
+): Promise<{ url: string; path: string }> {
   const ext = processedFile.name.split('.').pop() || 'bin';
   const path = `${userId}/${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const { error } = await supabase.storage
-    .from('marcheur-uploads')
+    .from(MARCHEUR_BUCKET)
     .upload(path, processedFile, { cacheControl: '3600', upsert: false });
 
   if (error) throw error;
 
   const { data: { publicUrl } } = supabase.storage
-    .from('marcheur-uploads')
+    .from(MARCHEUR_BUCKET)
     .getPublicUrl(path);
 
-  return publicUrl;
+  return { url: publicUrl, path };
 }
+
 
 // ─── Medias (photos + vidéos) ───
 export function useMarcheurMedias(marcheEventId: string, userId: string, sort: SortOrder = 'desc', marcheId?: string) {
