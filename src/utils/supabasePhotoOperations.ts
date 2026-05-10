@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { uploadPhoto } from './supabaseUpload';
 import { ProcessedPhoto } from './photoUtils';
+import { extractMediaMetadata } from './mediaMetadata';
 import { runSupabaseDiagnostic, validatePhotoData } from './supabaseDiagnostic';
 
 export interface ExistingPhoto {
