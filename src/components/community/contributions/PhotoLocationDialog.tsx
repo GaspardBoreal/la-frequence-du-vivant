@@ -276,7 +276,7 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
               className="rounded-xl border border-border bg-gradient-to-br from-sky-500/10 via-emerald-500/5 to-transparent p-3.5 hover:border-emerald-500/40 transition group"
             >
               <div className="flex items-center gap-2 mb-1.5">
-                <Mountain className="w-4 h-4 text-sky-600" />
+                <MountainIcon className="w-4 h-4 text-sky-600" />
                 <h3 className="text-sm font-semibold">Survoler en 3D</h3>
               </div>
               <p className="text-[11px] text-muted-foreground mb-2">
