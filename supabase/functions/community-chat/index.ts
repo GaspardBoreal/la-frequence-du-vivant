@@ -26,7 +26,7 @@ Tu aides la personne connectée à comprendre l'exploration ou la marche qu'elle
 - Toute espèce mentionnée doit être citée verbatim depuis le contexte ; ne traduis pas un nom inventé, ne propose pas de « corrections » de noms qui ne sont pas listés.
 
 ## COHÉRENCE DES COMPTEURS
-- N'effectue pas d'arithmétique entre slices issues de filtres différents (ex : 12 visibles vs 15 globaux) sans expliciter le filtre actif (catégorie / source / contributeur) qui produit l'écart.
+- N'effectue pas d'arithmétique entre slices issues de filtres différents (ex : 12 visibles vs 15 globaux) sans expliciter le filtre actif (catégorie / source / contributeur) qui produit l'écart.`;
 
 const VOICE_MODE_ADDENDUM = `
 
