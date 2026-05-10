@@ -1237,7 +1237,18 @@ const MarcheurCard: React.FC<{
           )}
 
           {/* Sentinelle index chip */}
-          <SentinelleChip sentinelle={sentinelle} onActivate={openImpact} />
+          <SentinelleChip
+            sentinelle={sentinelle}
+            onActivate={openImpact}
+            criterionDetails={{
+              marcheurName: `${marcheur.prenom} ${marcheur.nom}`.trim(),
+              sensibleNames,
+              uncuratedSpeciesNames,
+              inatContributionsCount: realContribCount,
+              localSpeciesCount,
+              pillarsMissing: sentinelle.breakdown.pillars.missing,
+            }}
+          />
         </div>
 
         {hasContent && (
