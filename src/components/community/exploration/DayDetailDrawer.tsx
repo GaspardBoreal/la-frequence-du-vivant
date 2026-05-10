@@ -145,7 +145,7 @@ const DayDetailDrawer: React.FC<Props> = ({ open, onClose, day, bucket, marchesB
                   </h4>
                 </div>
                 <div className="space-y-0.5">
-                  {reSp.map(obs => <SpeciesRow key={obs.scientificName} obs={obs} />)}
+                  {reSp.map(obs => <SpeciesRow key={obs.scientificName} obs={obs} onClick={() => setSelectedSpecies(obs)} />)}
                 </div>
               </section>
             )}
