@@ -162,10 +162,81 @@ export function useUploadMedias(userId: string) {
       }
       return results;
     },
-    onSuccess: (_, vars) => {
+    onSuccess: (results, vars) => {
       qc.invalidateQueries({ queryKey: ['marcheur-medias', vars.marcheEventId] });
       qc.invalidateQueries({ queryKey: ['photo-gps-check'] });
       toast.success(`${vars.files.length} fichier(s) ajouté(s)`);
+
+      // Filet de sécurité GPS : iOS strippe souvent le GPS quand on choisit
+      // depuis Photothèque. On propose à l'utilisateur d'utiliser sa position.
+      if (vars.typeMedia !== 'photo') return;
+      const missingGps = (results || []).filter((r: any) => {
+        const m = r?.metadata as MediaMetadata | null | undefined;
+        return r?.type_media === 'photo' && (!m || !m.gps);
+      });
+      if (missingGps.length === 0) return;
+      if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+
+      toast.info(
+        missingGps.length === 1
+          ? "1 photo sans GPS détectée"
+          : `${missingGps.length} photos sans GPS détectées`,
+        {
+          description: "Utiliser la position actuelle de votre téléphone ?",
+          duration: 15000,
+          action: {
+            label: 'Géolocaliser',
+            onClick: () => {
+              navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                  const { latitude, longitude, accuracy, altitude } = pos.coords;
+                  const updates = missingGps.map(async (row: any) => {
+                    const existing = (row.metadata as MediaMetadata | null) || null;
+                    const merged: MediaMetadata = {
+                      schema_version: 1,
+                      gps: null,
+                      date_taken: null,
+                      dimensions: null,
+                      file: { original_name: '', size_bytes: 0, mime: '', was_heic_converted: false },
+                      extracted_at: new Date().toISOString(),
+                      extraction_status: 'partial',
+                      ...(existing || {}),
+                      gps: {
+                        latitude,
+                        longitude,
+                        ...(typeof altitude === 'number' && Number.isFinite(altitude) ? { altitude } : {}),
+                        ...(typeof accuracy === 'number' && Number.isFinite(accuracy) ? { accuracy } : {}),
+                        source: 'device_geolocation',
+                      },
+                      extraction_warnings: [
+                        ...((existing?.extraction_warnings) || []).filter(w => w !== 'no_gps'),
+                        'gps_from_device_geolocation',
+                      ],
+                    };
+                    return supabase
+                      .from('marcheur_medias')
+                      .update({ metadata: merged as unknown as Record<string, unknown> })
+                      .eq('id', row.id);
+                  });
+                  const res = await Promise.all(updates);
+                  const firstErr = res.find(r => r.error);
+                  if (firstErr?.error) {
+                    toast.error(`Erreur géoloc: ${firstErr.error.message}`);
+                  } else {
+                    toast.success(`Position appliquée à ${missingGps.length} photo(s)`);
+                    qc.invalidateQueries({ queryKey: ['marcheur-medias', vars.marcheEventId] });
+                    qc.invalidateQueries({ queryKey: ['photo-gps-check'] });
+                  }
+                },
+                (err) => {
+                  toast.error(`Géolocalisation refusée: ${err.message}`);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+              );
+            },
+          },
+        }
+      );
     },
     onError: (err: Error) => toast.error(`Erreur: ${err.message}`),
   });
