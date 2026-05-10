@@ -227,7 +227,7 @@ export const savePhotos = async (marcheId: string, photos: MediaItem[]): Promise
           url_supabase: uploadResult.url,
           titre: photo.name,
           description: null,
-          metadata: prepared.metadata as unknown as Record<string, unknown>,
+          metadata: prepared.metadata as any,
         }]);
 
       console.log(`✅ Photo ${photo.name} sauvegardée (gps=${!!prepared.metadata.gps}, status=${prepared.metadata.extraction_status})`);
