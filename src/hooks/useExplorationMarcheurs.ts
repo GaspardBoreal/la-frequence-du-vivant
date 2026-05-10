@@ -11,6 +11,7 @@ export interface SpeciesInfo {
 
 export interface ExplorationMarcheur {
   id: string;
+  userId?: string | null;
   nom: string;
   prenom: string;
   fullName: string;
