@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Compass, Copy, ExternalLink, Layers, MapPin, Mountain, Sparkles, Wind } from 'lucide-react';
+import { Compass, Copy, ExternalLink, MapPin, Mountain as MountainIcon, Sparkles, Wind, X } from 'lucide-react';
 import { toast } from 'sonner';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { DynamicTileLayer, MapStyleToggle, type MapStyle } from '@/components/maps';
 
 interface Props {
   open: boolean;
@@ -37,40 +37,6 @@ const Recenter: React.FC<{ lat: number; lng: number; zoom: number }> = ({ lat, l
   useEffect(() => {
     map.setView([lat, lng], zoom, { animate: true });
   }, [lat, lng, zoom, map]);
-  return null;
-};
-
-type MapStyle = 'plan' | 'satellite' | 'cadastre';
-
-const TILES: Record<MapStyle, { url: string; attr: string; max: number }> = {
-  plan: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attr: '&copy; OpenStreetMap',
-    max: 19,
-  },
-  satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attr: 'Tiles &copy; Esri — World Imagery',
-    max: 19,
-  },
-  cadastre: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attr: '&copy; OpenStreetMap + Cadastre Etalab',
-    max: 19,
-  },
-};
-
-const CadastreOverlay: React.FC = () => {
-  const map = useMap();
-  useEffect(() => {
-    const layer = L.tileLayer('https://cadastre.data.gouv.fr/map/{z}/{x}/{y}.png', {
-      attribution: '&copy; Etalab — Cadastre',
-      opacity: 0.55,
-      maxZoom: 20,
-    });
-    layer.addTo(map);
-    return () => { map.removeLayer(layer); };
-  }, [map]);
   return null;
 };
 
@@ -118,7 +84,7 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
 
-  const tile = TILES[style];
+  
 
   const earthUrl = `https://earth.google.com/web/@${latitude},${longitude},100a,250d,35y,0h,60t,0r`;
   const gmapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
@@ -200,8 +166,7 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
             scrollWheelZoom
             className="w-full h-full z-0"
           >
-            <TileLayer url={tile.url} attribution={tile.attr} maxZoom={tile.max} maxNativeZoom={19} />
-            {style === 'cadastre' && <CadastreOverlay />}
+            <DynamicTileLayer mapStyle={style} />
             <Recenter lat={latitude} lng={longitude} zoom={zoom} />
             <Marker position={[latitude, longitude]} icon={pulseIcon} />
             <Circle
@@ -211,24 +176,12 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
             />
           </MapContainer>
 
-          {/* Style switcher */}
-          <div className="absolute top-3 left-3 z-[500] flex gap-1 p-1 rounded-lg bg-background/90 backdrop-blur border border-border shadow-md">
-            {(['plan', 'satellite', 'cadastre'] as MapStyle[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => setStyle(s)}
-                className={`px-2.5 py-1 text-[11px] rounded-md transition ${
-                  style === s ? 'bg-emerald-600 text-white' : 'text-foreground hover:bg-muted'
-                }`}
-              >
-                {s === 'plan' ? 'Plan' : s === 'satellite' ? 'Satellite' : 'Cadastre'}
-              </button>
-            ))}
-          </div>
+          {/* Style switcher — partagé avec l'onglet Carte */}
+          <MapStyleToggle mapStyle={style} onChange={setStyle} compact position="top-left" />
 
           {/* Zoom hint */}
-          <div className="absolute top-3 right-3 z-[500] px-2 py-1 rounded-md bg-background/90 backdrop-blur border border-border text-[10px] text-muted-foreground flex items-center gap-1">
-            <Layers className="w-3 h-3" /> zoom {zoom}
+          <div className="absolute top-3 right-3 z-[500] px-2 py-1 rounded-md bg-background/90 backdrop-blur border border-border text-[10px] text-muted-foreground">
+            zoom {zoom}
           </div>
         </div>
 
@@ -323,7 +276,7 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
               className="rounded-xl border border-border bg-gradient-to-br from-sky-500/10 via-emerald-500/5 to-transparent p-3.5 hover:border-emerald-500/40 transition group"
             >
               <div className="flex items-center gap-2 mb-1.5">
-                <Mountain className="w-4 h-4 text-sky-600" />
+                <MountainIcon className="w-4 h-4 text-sky-600" />
                 <h3 className="text-sm font-semibold">Survoler en 3D</h3>
               </div>
               <p className="text-[11px] text-muted-foreground mb-2">
