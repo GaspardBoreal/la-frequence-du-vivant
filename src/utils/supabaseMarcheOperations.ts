@@ -221,15 +221,14 @@ export const savePhotos = async (marcheId: string, photos: MediaItem[]): Promise
 
       await supabase
         .from('marche_photos')
-        .insert({
+        .insert([{
           marche_id: marcheId,
           nom_fichier: photo.name,
           url_supabase: uploadResult.url,
           titre: photo.name,
           description: null,
-          ordre: null,
           metadata: prepared.metadata as unknown as Record<string, unknown>,
-        });
+        }]);
 
       console.log(`✅ Photo ${photo.name} sauvegardée (gps=${!!prepared.metadata.gps}, status=${prepared.metadata.extraction_status})`);
     } catch (error) {
