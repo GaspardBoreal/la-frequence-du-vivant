@@ -129,6 +129,21 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
   const displayUrl = url || externalUrl;
   const visibility = getVisibilityLevel(isPublic, sharedToWeb);
 
+  // ─── ChatBot screen-awareness attributes ───
+  const chatTitle = titre || (type === 'texte' ? 'Texte sans titre' : type === 'audio' ? 'Audio sans titre' : type === 'video' ? 'Vidéo sans titre' : 'Photo sans titre');
+  const chatDateStr = (() => { try { return format(new Date(createdAt), 'd MMM yyyy', { locale: fr }); } catch { return ''; } })();
+  const chatVisibilityLabel = visibility === 'world' ? 'partagé au monde' : visibility === 'community' ? 'communauté' : 'privé';
+  const chatExcerpt = (description || contenu || '').replace(/<[^>]+>/g, '').trim().slice(0, 120);
+  const chatSubtitleParts = [type, chatVisibilityLabel, chatDateStr, isOwner ? 'mon contenu' : null, chatExcerpt || null].filter(Boolean);
+  const chatSubtitle = chatSubtitleParts.join(' • ');
+  const chatBadges = [type, chatVisibilityLabel, isOwner ? 'mine' : 'autre'].join(',');
+  const chatDataAttrs = {
+    'data-chat-card': '',
+    'data-chat-title': chatTitle,
+    'data-chat-subtitle': chatSubtitle,
+    'data-chat-badges': chatBadges,
+  } as Record<string, string>;
+
   const handleSave = () => {
     if (!onUpdate) return;
     if (type === 'texte') {
