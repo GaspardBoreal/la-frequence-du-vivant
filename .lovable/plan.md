@@ -1,68 +1,60 @@
-# Fiche espèce — UX wahouhh : carrousel sourcé, dates, dialogue IA
+## Diagnostic (data réelle de l'exploration)
 
-Cible : `SpeciesGalleryDetailModal` ouvert depuis l'onglet **Synthèse → Taxons observés** sur `/marches-du-vivant/mon-espace/exploration/:id`.
+Sur l'exploration `20dd3be8…`, Laurence Karki a **5 observations** dans `marcheur_observations` (issues du backfill iNaturalist) :
+- Flavoparmelia caperata, Helichrysum, Lotus corniculatus, Pisaura mirabilis, Sphaeroderma rubidum.
 
-## Ce qu'on ajoute
+L'espèce que tu viens d'ouvrir (la **Consoude / Symphytum officinale** dans la capture) **n'est dans aucune de ses observations** → c'est pour ça qu'on ne voit que la référence iNat. Aucune photo marcheur n'existe pour cette espèce dans la base.
 
-### 1. Carrousel "Référence iNaturalist ↔ Photos marcheurs" avec source visible
+**Et pour les 5 espèces où Laurence a une photo**, second souci : son `photo_url` pointe vers `inaturalist-open-data.s3.amazonaws.com/photos/…` (URL iNat, héritée du backfill). Notre dédup actuelle (`if slides.some(s => s.url === url) return;`) supprime alors la slide "Référence" puisqu'on push d'abord la marcheur — résultat : on voit la photo, mais elle est étiquetée "Photo · Laurence" sans qu'on sache que c'est aussi la photo iNat. Visuellement on ne perçoit pas la "comparaison".
 
-Aujourd'hui les `photos` sont fusionnées sans distinction de provenance. On va :
+## Plan
 
-- Construire un tableau typé `gallerySlides: { url, source: 'inat' | 'marcheur' | 'gbif', credit?: string, observerName?: string, date?: string, originalUrl?: string, marcheName?: string }[]`.
-  - **iNat / référence** : depuis `useSpeciesPhoto` (photo + credit existants).
-  - **Marcheur** : nouveau hook `useSpeciesMarcheurPhotos(scientificName, explorationId)` qui interroge `marcheur_observations` (jointure médias) filtré sur les marches de l'exploration, et expose `photo_url`, `marcheur_name`, `observation_date`, `marche_name`.
-- Dans le hero du modal :
-  - Remplacer la nav `<button prev/next>` par un **carrousel Embla** (`@/components/ui/carousel` déjà disponible) avec snap horizontal + swipe tactile.
-  - Sur chaque slide, en bas-gauche, une **pastille glassmorphique** (`bg-black/45 backdrop-blur`) :
-    - icône (Leaf/Camera) + libellé : `Référence · iNaturalist`, `Photo marcheur · Laurence K.`, `GBIF · …`
-    - sous-ligne discrète : date (format FR court) + lien "voir la source" si `originalUrl`.
-  - Badge "Référence" / "Communauté" en haut-gauche, code couleur (emerald = communauté, sky = référence).
-  - Indicateur de position : segments fins en bas (un par source), avec étiquette du groupe survolé.
-  - Petit bandeau d'intro la première fois : "Glissez pour comparer la référence aux observations des marcheurs" (dismissable, persisté en `localStorage`).
-- Lightbox conservée, en mode plein écran on garde le crédit + date en surimpression.
+### 1. Élargir les sources "Photos terrain" (hook `useSpeciesMarcheurPhotos`)
 
-### 2. Dates affichées dans l'onglet Liste
+Aujourd'hui : uniquement `marcheur_observations` filtré sur `exploration_marcheurs` (3 marcheurs éditoriaux max).
 
-Dans `SpeciesMarchesTab.tsx`, pour chaque carte de marche :
-- Ajouter une ligne sous le nom de la marche : `📅 {format(observationDate, 'd MMM yyyy', { locale: fr })}`.
-- Si plusieurs observations sur la même marche : afficher `Première : … · Dernière : …` (récupérer min/max depuis `useSpeciesMarches` qu'on enrichit avec `firstDate` / `lastDate`).
-- Tri secondaire des cartes : par date desc à l'intérieur du même `order`.
-- Style : pastille discrète `bg-white/5 text-white/60 text-[10px]`, icône Calendar lucide.
+À ajouter, fusionnés en un seul résultat trié par date desc :
+- **a. Snapshots iNat de l'événement** (`event_biodiversity_snapshots` ou équivalent) : toute observation citoyenne dans le périmètre, avec photo + nom de l'observateur iNat → badge **"Observation citoyenne · {observer}"** (teinte cyan, distincte du marcheur éditorial vert et de la référence taxon bleue).
+- **b. Médias `medias`** liés aux marches de l'exploration dont l'EXIF / tag pointe vers cette espèce (cas des photos uploadées par les marcheurs dans Convivialité avec un tag espèce).
 
-### 3. Dialoguer avec le chatbot depuis la fiche
+### 2. Corriger la déduplication (composant `SpeciesPhotoCarousel`)
 
-- Ajouter un bouton primaire "Discuter de cette espèce avec l'IA" dans le modal (sous l'identité, au-dessus de "Observé sur ces marches"), visible uniquement si `useCanUseContextualChat().canUse === true` (admin / ambassadeur / sentinelle).
-- Mécanique :
-  - Émettre `window.dispatchEvent(new CustomEvent('community-chat:open', { detail: { prefill, context } }))`.
-  - Dans `ChatBot.tsx`, écouter cet event : `setIsOpen(true)` + pré-remplir l'input avec un prompt contextualisé (ex. *"Parle-moi de la Mésange charbonnière observée 5 fois sur cette exploration, et explique pourquoi elle est sensible ici"*).
-  - Le snapshot `apprendre.especeOuverte` est déjà injecté (lignes 101-124) → l'IA a déjà le contexte filtré.
-- UX : micro-animation (sparkle) sur le bouton, libellé adaptatif selon le règne ("Demander à l'IA", "Comprendre cette espèce").
-- Sur mobile, le bouton flotte en bas du modal en sticky pour rester accessible.
+Au lieu de **supprimer** un doublon d'URL, **fusionner** les métadonnées :
+- une slide unique avec **deux badges empilés** : `Référence · iNaturalist` + `Photo · Laurence Karki`
+- footer date + marche + lien Source iNat conservé
+- Évite la perception "je ne vois qu'une photo, où est l'autre ?"
 
-## Détails techniques
+### 3. État vide explicite (UX)
 
-### Nouveaux fichiers
-- `src/hooks/useSpeciesMarcheurPhotos.ts` — query Supabase, retourne `MarcheurPhoto[]` (url, observerName, date, marcheName, marcheId).
-- `src/components/biodiversity/species-modal/SpeciesPhotoCarousel.tsx` — composant carrousel (Embla + crédits + badges sources).
+Si aucune photo "terrain" trouvée pour l'espèce :
+- afficher sous le hero une **bandelette** discrète :
+  > *"Pas encore de photo prise par un marcheur sur cette espèce. Sois le premier à la documenter lors de ta prochaine marche."*
+- avec un CTA secondaire vers `/marches-du-vivant/contribuer` (si rôle marcheur).
 
-### Fichiers modifiés
-- `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` :
-  - Construire `gallerySlides` typé, remplacer le hero existant par `<SpeciesPhotoCarousel slides={…} />`.
-  - Ajouter le bouton "Discuter avec l'IA" gated par `useCanUseContextualChat`.
-- `src/components/biodiversity/species-modal/SpeciesMarchesTab.tsx` :
-  - Afficher `observationDate` (+ `firstDate`/`lastDate` si dispo), ajouter icône Calendar, tri secondaire date desc.
-- `src/hooks/useSpeciesMarches.ts` :
-  - Étendre `SpeciesMarcheData` avec `firstDate?` / `lastDate?` calculés à partir des snapshots et `marcheur_observations`.
-- `src/components/chatbot/ChatBot.tsx` :
-  - `useEffect` qui écoute `community-chat:open` → `setIsOpen(true)` + setInput(prefill).
+### 4. Toggle segmenté plus pédagogique
 
-### Sécurité / RLS
-- `useSpeciesMarcheurPhotos` : filtrer strictement sur `marche_id ∈ exploration_marches(explorationId)` ; ne renvoyer que les médias des marcheurs publiés (statut `published`/`published_public`) pour respecter la visibilité existante. Pas d'exposition PII supplémentaire (le nom marcheur est déjà visible dans l'onglet Marcheurs).
+Renommer le toggle :
+- "Référence taxon" (bleu, photo officielle de l'espèce)
+- "Sur le terrain ({n})" (vert/cyan, photos prises dans le périmètre de l'exploration)
 
-### Mémoire à mettre à jour
-Une fois implémenté, créer `mem://features/community/species-card-carousel-and-chat-logic.md` (carrousel sourcé + dates dans liste + ouverture chat IA contextuelle via CustomEvent).
+Et ajouter un compteur précis par source dans les pastilles.
 
-## Hors-scope (à confirmer plus tard)
-- Comparaison côte-à-côte référence/marcheur en split-view.
-- Vote "ressemble / ne ressemble pas" sur les photos marcheurs.
-- Filtrage du carrousel par marcheur sélectionné.
+### 5. QA / vérification
+
+Tester sur 3 cas :
+1. **Symphytum officinale** (aucune photo terrain) → état vide affiché.
+2. **Lotus corniculatus** (photo Laurence avec URL iNat) → slide unique avec **double badge** Référence + Marcheur.
+3. Une espèce avec photo `medias` (storage Supabase) **et** photo Laurence iNat → 2 slides distinctes, toggle visible.
+
+## Fichiers concernés
+
+- `src/hooks/useSpeciesMarcheurPhotos.ts` — étendre aux snapshots iNat + médias liés.
+- `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` — fusion par URL au lieu de dédup, état vide.
+- `src/components/biodiversity/species-modal/SpeciesPhotoCarousel.tsx` — double badge, libellés du toggle, bandelette vide.
+- `mem://features/community/species-card-carousel-and-chat-logic.md` — documenter la fusion multi-sources.
+
+## Hors scope
+
+- Vue split-screen côte-à-côte référence/terrain (proposable plus tard).
+- Vote "ressemble / ne ressemble pas" sur la concordance.
+- Upload direct de photo depuis la fiche espèce.
