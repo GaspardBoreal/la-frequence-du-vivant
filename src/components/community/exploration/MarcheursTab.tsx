@@ -1822,6 +1822,9 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom, aliasesByMarcheurId?.get(m.id))}
                 sentinelle={metrics.sentinelle}
                 marcheurBuckets={metrics.buckets}
+                sensibleNames={metrics.sensibleNames}
+                uncuratedSpeciesNames={metrics.uncuratedSpeciesNames}
+                localSpeciesCount={metrics.localSpeciesCount}
                 highlightBuckets={activeBuckets}
               />
             );
