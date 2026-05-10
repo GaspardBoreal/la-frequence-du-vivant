@@ -1115,8 +1115,11 @@ const MarcheurCard: React.FC<{
   sentinelle: SentinelleResult;
   highlightBuckets?: Set<SentinelleBucketKey>;
   marcheurBuckets: { bio: number; aux: number; eee: number };
+  sensibleNames?: Array<{ name: string; cat: 'bio' | 'aux' | 'eee' }>;
+  uncuratedSpeciesNames?: string[];
+  localSpeciesCount?: number;
   onForceOpen: () => void;
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, onForceOpen }) => {
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, sensibleNames, uncuratedSpeciesNames, localSpeciesCount, onForceOpen }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
 
   const openImpact = () => {
