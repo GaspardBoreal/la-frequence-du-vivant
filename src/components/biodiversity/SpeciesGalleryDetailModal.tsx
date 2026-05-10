@@ -134,40 +134,50 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
       : undefined,
   );
 
-  // Build typed gallery slides (référence iNat ↔ photos marcheurs)
-  // IMPORTANT: must run before any early return to keep hook order stable.
+  // Build typed gallery slides — FUSION par URL (au lieu de dédup) pour conserver
+  // les deux étiquettes quand une photo terrain est aussi la référence iNat.
   const gallerySlides = useMemo<CarouselSlide[]>(() => {
     if (!species) return [];
     const refPhotos = (photoData?.photos && photoData.photos.length > 0)
       ? photoData.photos
       : species.photos || [];
-    const slides: CarouselSlide[] = [];
-    const localPhotos = (species.photos || []).filter((u) =>
-      u && (u.includes('supabase') || u.includes('storage')),
-    );
-    localPhotos.forEach((url) => {
-      if (!marcheurPhotos.some((m) => m.url === url)) {
-        slides.push({ url, source: 'marcheur', observerName: 'Marcheur' });
-      }
-    });
+    const refSet = new Set(refPhotos);
+    const byUrl = new Map<string, CarouselSlide>();
+
+    // 1. Photos terrain (marcheurs éditoriaux + observations citoyennes)
     marcheurPhotos.forEach((m) => {
-      slides.push({
+      const isAlsoRef = refSet.has(m.url);
+      byUrl.set(m.url, {
         url: m.url,
-        source: 'marcheur',
+        source: m.source === 'citizen' ? 'citizen' : 'marcheur',
         observerName: m.observerName,
         date: m.observationDate,
         marcheName: m.marcheName,
+        originalUrl: m.originalUrl,
+        alsoReference: isAlsoRef,
       });
     });
+
+    // 2. Photos locales storage (médias marcheurs sans entrée marcheur_observations)
+    (species.photos || [])
+      .filter((u) => u && (u.includes('supabase') || u.includes('storage')))
+      .forEach((url) => {
+        if (!byUrl.has(url)) {
+          byUrl.set(url, { url, source: 'marcheur', observerName: 'Marcheur' });
+        }
+      });
+
+    // 3. Référence iNat — n'ajoute que les URLs pas déjà présentes côté terrain
     refPhotos.forEach((url) => {
-      if (slides.some((s) => s.url === url)) return;
-      slides.push({
+      if (byUrl.has(url)) return;
+      byUrl.set(url, {
         url,
         source: 'inat',
         originalUrl: `https://www.inaturalist.org/taxa/search?q=${encodeURIComponent(species.scientificName)}`,
       });
     });
-    return slides;
+
+    return Array.from(byUrl.values());
   }, [photoData?.photos, marcheurPhotos, species]);
 
   if (!species) return null;

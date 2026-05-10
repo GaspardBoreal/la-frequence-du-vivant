@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import useEmblaCarousel from 'embla-carousel-react';
-import { ChevronLeft, ChevronRight, ExternalLink, Camera, Sparkles, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Camera, Sparkles, Loader2, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-export type CarouselSlideSource = 'inat' | 'marcheur' | 'gbif' | 'other';
+export type CarouselSlideSource = 'inat' | 'marcheur' | 'gbif' | 'citizen' | 'other';
 
 export interface CarouselSlide {
   url: string;
@@ -14,6 +14,8 @@ export interface CarouselSlide {
   date?: string;
   originalUrl?: string;
   marcheName?: string;
+  /** Cette photo terrain est aussi celle utilisée comme référence iNat → afficher 2 badges. */
+  alsoReference?: boolean;
 }
 
 interface SpeciesPhotoCarouselProps {
@@ -45,6 +47,13 @@ const SOURCE_META: Record<CarouselSlideSource, { label: string; short: string; t
     ring: 'ring-emerald-400/70',
     icon: <Camera className="w-3 h-3" />,
   },
+  citizen: {
+    label: 'Observation citoyenne',
+    short: 'Citoyen',
+    tone: 'bg-cyan-500/85 text-white border-cyan-300/40',
+    ring: 'ring-cyan-400/70',
+    icon: <Users className="w-3 h-3" />,
+  },
   other: {
     label: 'Photo',
     short: 'Photo',
@@ -53,6 +62,9 @@ const SOURCE_META: Record<CarouselSlideSource, { label: string; short: string; t
     icon: <Camera className="w-3 h-3" />,
   },
 };
+
+const isFieldSource = (s: CarouselSlideSource) => s === 'marcheur' || s === 'citizen';
+const isRefSource = (s: CarouselSlideSource) => s === 'inat' || s === 'gbif';
 
 const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
   slides,
@@ -73,10 +85,17 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
     };
   }, [emblaApi]);
 
-  const { firstRefIdx, firstMarcheurIdx, hasBoth } = useMemo(() => {
-    const refIdx = slides.findIndex((s) => s.source === 'inat' || s.source === 'gbif');
-    const mIdx = slides.findIndex((s) => s.source === 'marcheur');
-    return { firstRefIdx: refIdx, firstMarcheurIdx: mIdx, hasBoth: refIdx >= 0 && mIdx >= 0 };
+  const { firstRefIdx, firstFieldIdx, fieldCount, hasBoth, hasField } = useMemo(() => {
+    const refIdx = slides.findIndex((s) => isRefSource(s.source));
+    const fIdx = slides.findIndex((s) => isFieldSource(s.source) || s.alsoReference);
+    const fc = slides.filter((s) => isFieldSource(s.source) || s.alsoReference).length;
+    return {
+      firstRefIdx: refIdx,
+      firstFieldIdx: fIdx,
+      fieldCount: fc,
+      hasBoth: refIdx >= 0 && fIdx >= 0,
+      hasField: fIdx >= 0,
+    };
   }, [slides]);
 
   if (isLoading) {
@@ -99,8 +118,8 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
   }
 
   const current = slides[selected];
-  const currentMeta = SOURCE_META[current.source];
   const isMultiple = slides.length > 1;
+  const currentIsField = isFieldSource(current.source) || !!current.alsoReference;
 
   return (
     <div className="bg-slate-900">
@@ -124,24 +143,32 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
                     }}
                   />
 
-                  {/* Badge top-left : source */}
-                  <div className="absolute top-3 left-3">
+                  {/* Badges top-left : source + (référence aussi) */}
+                  <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border backdrop-blur ${meta.tone}`}
                     >
                       {meta.icon}
                       {slide.source === 'marcheur' && slide.observerName
-                        ? `Photo · ${slide.observerName}`
-                        : meta.label}
+                        ? `Marcheur · ${slide.observerName}`
+                        : slide.source === 'citizen' && slide.observerName
+                          ? `Citoyen · ${slide.observerName}`
+                          : meta.label}
                     </span>
+                    {slide.alsoReference && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border backdrop-blur bg-sky-500/85 text-white border-sky-300/40">
+                        <Sparkles className="w-3 h-3" />
+                        Aussi référence iNaturalist
+                      </span>
+                    )}
                   </div>
 
                   {/* Pastille bas-gauche : crédit + date + lien source */}
                   <div className="absolute bottom-2 left-2 right-2 flex items-end justify-between gap-2">
                     <div className="px-2.5 py-1.5 rounded-lg bg-black/55 backdrop-blur-md text-[11px] text-white/90 max-w-[75%]">
                       <div className="opacity-90 truncate">
-                        {slide.source === 'marcheur'
-                          ? slide.marcheName || 'Marche'
+                        {(slide.source === 'marcheur' || slide.source === 'citizen')
+                          ? slide.marcheName || 'Sur le terrain'
                           : meta.label}
                       </div>
                       {slide.date && (
@@ -205,7 +232,7 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
         )}
       </div>
 
-      {/* Toggle segmenté Référence ↔ Marcheurs (si les deux existent) */}
+      {/* Toggle segmenté Référence ↔ Sur le terrain */}
       {hasBoth && (
         <div className="px-3 pt-3 flex justify-center">
           <div className="inline-flex p-1 rounded-full bg-white/5 border border-white/10">
@@ -213,37 +240,47 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
               type="button"
               onClick={() => emblaApi?.scrollTo(firstRefIdx)}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                current.source === 'inat' || current.source === 'gbif'
+                isRefSource(current.source) && !current.alsoReference
                   ? 'bg-sky-500/90 text-white shadow'
                   : 'text-white/60 hover:text-white/90'
               }`}
             >
               <Sparkles className="w-3 h-3" />
-              Référence
+              Référence taxon
             </button>
             <button
               type="button"
-              onClick={() => emblaApi?.scrollTo(firstMarcheurIdx)}
+              onClick={() => emblaApi?.scrollTo(firstFieldIdx)}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                current.source === 'marcheur'
+                currentIsField
                   ? 'bg-emerald-500/90 text-white shadow'
                   : 'text-white/60 hover:text-white/90'
               }`}
             >
               <Camera className="w-3 h-3" />
-              Marcheurs ({slides.filter((s) => s.source === 'marcheur').length})
+              Sur le terrain ({fieldCount})
             </button>
           </div>
         </div>
       )}
 
-      {/* Thumbnail strip — visible dès qu'il y a ≥ 2 slides */}
+      {/* Bandelette état vide : aucune photo terrain */}
+      {!hasField && slides.length > 0 && (
+        <div className="px-4 pt-3">
+          <div className="text-[11px] text-white/55 text-center px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+            Pas encore de photo prise sur le terrain pour cette espèce — sois le premier à la documenter lors de ta prochaine marche.
+          </div>
+        </div>
+      )}
+
+      {/* Thumbnail strip */}
       {isMultiple && (
         <div className="px-3 pt-3 pb-1 overflow-x-auto scrollbar-thin">
           <div className="flex gap-2">
             {slides.map((s, i) => {
               const meta = SOURCE_META[s.source];
               const active = i === selected;
+              const isField = isFieldSource(s.source) || s.alsoReference;
               return (
                 <button
                   key={`thumb-${s.url}-${i}`}
@@ -264,10 +301,16 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
                   />
                   <span
                     className={`absolute bottom-0 inset-x-0 text-[8px] font-semibold text-white text-center py-0.5 ${
-                      s.source === 'marcheur' ? 'bg-emerald-600/85' : s.source === 'inat' ? 'bg-sky-600/85' : 'bg-slate-600/85'
+                      s.source === 'marcheur'
+                        ? 'bg-emerald-600/85'
+                        : s.source === 'citizen'
+                          ? 'bg-cyan-600/85'
+                          : isField
+                            ? 'bg-emerald-600/85'
+                            : 'bg-sky-600/85'
                     }`}
                   >
-                    {meta.short}
+                    {isField && s.source !== 'marcheur' && s.source !== 'citizen' ? 'Marcheur' : meta.short}
                   </span>
                 </button>
               );
