@@ -28,8 +28,9 @@ const Row: React.FC<{ icon: React.ReactNode; label: string; children: React.Reac
 );
 
 const MediaMetadataPanel: React.FC<Props> = ({ item }) => {
+  const [mapOpen, setMapOpen] = useState(false);
   const meta = item.metadata || {};
-  const gps = meta.gps;
+  const gps = meta.gps as ({ latitude: number; longitude: number; source?: string } | null | undefined);
   const dateTaken = meta.date_taken;
   const w = meta.width;
   const h = meta.height;
@@ -45,10 +46,6 @@ const MediaMetadataPanel: React.FC<Props> = ({ item }) => {
     }
   };
 
-  const osmUrl = gps
-    ? `https://www.openstreetmap.org/?mlat=${gps.latitude}&mlon=${gps.longitude}#map=18/${gps.latitude}/${gps.longitude}`
-    : null;
-
   return (
     <div className="space-y-3.5 text-left">
       {gps ? (
@@ -63,17 +60,21 @@ const MediaMetadataPanel: React.FC<Props> = ({ item }) => {
             >
               <Copy className="w-3 h-3" /> Copier
             </button>
-            {osmUrl && (
-              <a
-                href={osmUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-[10px] transition"
-              >
-                <ExternalLink className="w-3 h-3" /> Voir la carte
-              </a>
-            )}
+            <button
+              onClick={() => setMapOpen(true)}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-[10px] transition"
+            >
+              <MapIcon className="w-3 h-3" /> Voir la carte
+            </button>
           </div>
+          <PhotoLocationDialog
+            open={mapOpen}
+            onOpenChange={setMapOpen}
+            latitude={gps.latitude}
+            longitude={gps.longitude}
+            source={gps.source}
+            title={item.titre}
+          />
         </Row>
       ) : (
         <Row icon={<MapPin className="w-3.5 h-3.5" />} label="Coordonnées GPS">
