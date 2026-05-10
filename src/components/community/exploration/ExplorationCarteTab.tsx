@@ -11,6 +11,7 @@ import { PhotoGpsButton, PhotoGpsMarker, usePhotoGpsDrop } from './PhotoGpsDropT
 import CreateMarcheDrawer from './CreateMarcheDrawer';
 import { canCreateMarche, computeMarcheDefaults } from './createMarcheUtils';
 import CadastreLayer from '@/components/cadastre/CadastreLayer';
+import { DynamicTileLayer, MapStyleToggle, POLYLINE_COLORS, ARROW_COLORS, type MapStyle } from '@/components/maps';
 import GpsEditOverlay from '@/components/cadastre/GpsEditOverlay';
 import { useCanCurateAudio } from '@/hooks/useCanCurateAudio';
 import {
