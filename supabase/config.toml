@@ -91,3 +91,6 @@ verify_jwt = false
 
 [functions.analyze-exploration-species]
 verify_jwt = true
+
+[functions.backfill-marcheur-inaturalist]
+verify_jwt = false

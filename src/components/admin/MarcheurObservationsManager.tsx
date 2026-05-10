@@ -24,6 +24,7 @@ import {
   Trash2,
   ListTree
 } from 'lucide-react';
+import InaturalistSyncCard from './InaturalistSyncCard';
 
 interface MarcheurObservationsManagerProps {
   marcheur: ExplorationMarcheur;
@@ -847,6 +848,17 @@ export default function MarcheurObservationsManager({
   // SEARCH VIEW - Step 1
   return (
     <div className="space-y-4">
+      {/* iNATURALIST SYNC */}
+      <InaturalistSyncCard
+        userId={marcheur.userId || null}
+        explorationId={explorationId}
+        onSynced={() => {
+          queryClient.invalidateQueries({ queryKey: ['marcheur-observations'] });
+          queryClient.invalidateQueries({ queryKey: ['exploration-marcheurs', explorationId] });
+          onObservationsSaved?.();
+        }}
+      />
+
       {/* MY OBSERVATIONS SECTION */}
       {uniqueSpeciesCount > 0 && (
         <div className="border rounded-lg overflow-hidden bg-muted/20">

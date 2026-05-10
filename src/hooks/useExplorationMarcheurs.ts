@@ -11,6 +11,7 @@ export interface SpeciesInfo {
 
 export interface ExplorationMarcheur {
   id: string;
+  userId?: string | null;
   nom: string;
   prenom: string;
   fullName: string;
@@ -74,6 +75,7 @@ export function useExplorationMarcheurs(explorationId?: string) {
         
         return {
           id: m.id,
+          userId: m.user_id || null,
           nom: m.nom,
           prenom: m.prenom,
           fullName: `${m.prenom} ${m.nom}`,
