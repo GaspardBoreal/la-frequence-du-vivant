@@ -200,6 +200,8 @@ const ChatViewportObserver: React.FC<Props> = ({
         merged.visibleCards.push(...s.visibleCards);
         merged.meta.cardsTotal += s.meta.cardsTotal;
         merged.meta.truncated = merged.meta.truncated || s.meta.truncated;
+        // Le contexte le plus spécifique (overlay) écrase le contexte de la page principale
+        if (s.context) merged.context = s.context;
       });
       // Truncate after merge
       if (merged.visibleCards.length > MAX_CARDS) {
