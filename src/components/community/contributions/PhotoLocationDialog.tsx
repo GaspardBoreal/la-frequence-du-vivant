@@ -84,7 +84,7 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
 
-  const tile = TILES[style];
+  
 
   const earthUrl = `https://earth.google.com/web/@${latitude},${longitude},100a,250d,35y,0h,60t,0r`;
   const gmapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
