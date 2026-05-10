@@ -194,42 +194,53 @@ const ScoreCriterionDrawer: React.FC<Props> = ({ open, onOpenChange, criterion, 
   }
 
   if (criterion === 'volume') {
+    const totalRaw = breakdown.volume.raw;
+    const inatPhotos = details?.inatPhotosCount ?? 0;
+    const localPart = Math.max(0, totalRaw - inatPhotos);
     counted = (
-      <p>
-        <span className="font-semibold">{breakdown.volume.raw}</span> contribution{breakdown.volume.raw > 1 ? 's' : ''} locale{breakdown.volume.raw > 1 ? 's' : ''} (photos · vidéos · sons · textes · témoignage de cet événement).
-      </p>
-    );
-    const inat = details?.inatContributionsCount ?? 0;
-    if (inat > 0) {
-      notCounted = (
-        <>
-          <p>
-            <AlertTriangle className="inline w-3.5 h-3.5 text-amber-500 mr-1" />
-            <span className="font-semibold">{inat}</span> observation{inat > 1 ? 's' : ''} iNaturalist sont visibles dans l'onglet <em>Contributions</em> mais n'alimentent pas encore ce score.
+      <>
+        <p>
+          <span className="font-semibold">{totalRaw}</span> contribution{totalRaw > 1 ? 's' : ''} comptée{totalRaw > 1 ? 's' : ''}.
+        </p>
+        {inatPhotos > 0 ? (
+          <p className="text-[11px] text-muted-foreground">
+            <span className="font-medium text-foreground">{localPart}</span> locale{localPart > 1 ? 's' : ''} (médias de la marche)
+            {' + '}
+            <span className="font-medium text-emerald-500">{inatPhotos}</span> citoyenne{inatPhotos > 1 ? 's' : ''} (iNaturalist via alias)
           </p>
-          <p className="text-[11px] text-muted-foreground">Une évolution est en cours pour les inclure dans la Fréquence.</p>
-        </>
+        ) : null}
+      </>
+    );
+    const contribInat = details?.inatContributionsCount ?? 0;
+    // Si l'onglet Contributions montre plus que ce qui est comptabilisé, c'est un bug d'alias résiduel
+    if (contribInat > inatPhotos + localPart) {
+      const delta = contribInat - (inatPhotos + localPart);
+      notCounted = (
+        <p>
+          <AlertTriangle className="inline w-3.5 h-3.5 text-amber-500 mr-1" />
+          <span className="font-semibold">{delta}</span> observation{delta > 1 ? 's' : ''} visible{delta > 1 ? 's' : ''} dans l'onglet <em>Contributions</em> ne sont pas reliées à ce marcheur via ses alias science. Vérifier les comptes iNat/GBIF du profil.
+        </p>
       );
     }
     nextStep = <p>Volume sature à 64 contributions (courbe en racine carrée pour récompenser la régularité).</p>;
   }
 
   if (criterion === 'species') {
-    counted = <p><span className="font-semibold">{breakdown.species.count}</span> espèce{breakdown.species.count > 1 ? 's' : ''} unique{breakdown.species.count > 1 ? 's' : ''} issue{breakdown.species.count > 1 ? 's' : ''} des médias locaux.</p>;
-    const inat = details?.inatContributionsCount ?? 0;
-    const local = details?.localSpeciesCount ?? breakdown.species.count;
-    if (inat > local) {
-      const delta = inat - local;
-      notCounted = (
-        <>
-          <p>
-            <AlertTriangle className="inline w-3.5 h-3.5 text-amber-500 mr-1" />
-            <span className="font-semibold">{delta}</span> espèce{delta > 1 ? 's' : ''} supplémentaire{delta > 1 ? 's' : ''} apparaissent dans l'onglet <em>Contributions</em> via iNaturalist mais ne sont pas comptées ici.
+    const total = breakdown.species.count;
+    const inatSpecies = details?.inatSpeciesCount ?? 0;
+    const local = details?.localSpeciesCount ?? Math.max(0, total - inatSpecies);
+    counted = (
+      <>
+        <p><span className="font-semibold">{total}</span> espèce{total > 1 ? 's' : ''} unique{total > 1 ? 's' : ''} comptée{total > 1 ? 's' : ''}.</p>
+        {inatSpecies > 0 ? (
+          <p className="text-[11px] text-muted-foreground">
+            <span className="font-medium text-foreground">{local}</span> locale{local > 1 ? 's' : ''} (médias de la marche)
+            {' + '}
+            <span className="font-medium text-emerald-500">{inatSpecies}</span> citoyenne{inatSpecies > 1 ? 's' : ''} (iNaturalist via alias)
           </p>
-          <p className="text-[11px] text-muted-foreground">Inclusion prévue dans une prochaine itération du calcul.</p>
-        </>
-      );
-    }
+        ) : null}
+      </>
+    );
     nextStep = <p>Sature à 20 espèces — chaque espèce supplémentaire vaut ~0.5 pt.</p>;
   }
 
