@@ -6,6 +6,7 @@ import L from 'leaflet';
 import { Camera, MapPin, Upload, Lock, Users, Globe, ChevronDown, X } from 'lucide-react';
 import exifr from 'exifr';
 import { supabase } from '@/integrations/supabase/client';
+import { buildManualMetadata } from '@/utils/mediaMetadata';
 
 interface MarcheOption {
   id: string;
