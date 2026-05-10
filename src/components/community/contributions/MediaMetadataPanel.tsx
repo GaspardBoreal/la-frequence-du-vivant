@@ -1,9 +1,10 @@
-import React from 'react';
-import { MapPin, Clock, Ruler, HardDrive, Globe, Lock, Calendar, Copy, ExternalLink } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Clock, Ruler, HardDrive, Globe, Lock, Calendar, Copy, Map as MapIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import type { LightboxItem } from './MediaLightbox';
+import PhotoLocationDialog from './PhotoLocationDialog';
 
 interface Props {
   item: LightboxItem;
