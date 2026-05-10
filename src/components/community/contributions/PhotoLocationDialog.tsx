@@ -4,7 +4,9 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Compass, Copy, ExternalLink, Layers, MapPin, Mountain, Sparkles, Wind } from 'lucide-react';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 interface Props {
@@ -158,15 +160,37 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl w-[95vw] p-0 gap-0 overflow-hidden bg-background">
-        <DialogHeader className="px-5 py-3 border-b border-border">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <MapPin className="w-4 h-4 text-emerald-600" />
-            Le lieu exact de cette photo
-          </DialogTitle>
-          {title && <p className="text-xs text-muted-foreground mt-0.5 truncate">{title}</p>}
-        </DialogHeader>
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay
+          className={cn(
+            'fixed inset-0 z-[80] bg-black/85 backdrop-blur-sm',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+          )}
+        />
+        <DialogPrimitive.Content
+          className={cn(
+            'fixed left-[50%] top-[50%] z-[81] grid w-[95vw] max-w-3xl translate-x-[-50%] translate-y-[-50%]',
+            'gap-0 overflow-hidden border bg-background p-0 shadow-2xl rounded-xl',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+          )}
+        >
+          <DialogPrimitive.Title className="sr-only">Le lieu exact de cette photo</DialogPrimitive.Title>
+          <DialogPrimitive.Description className="sr-only">
+            Carte interactive ultra-zoomée centrée sur la position GPS de la photo, avec rayon de biodiversité et boussole.
+          </DialogPrimitive.Description>
+          <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold text-foreground">Le lieu exact de cette photo</h2>
+              {title && <p className="text-xs text-muted-foreground mt-0.5 truncate">{title}</p>}
+            </div>
+            <DialogPrimitive.Close className="rounded-md p-1 hover:bg-muted transition shrink-0">
+              <X className="w-4 h-4" />
+              <span className="sr-only">Fermer</span>
+            </DialogPrimitive.Close>
+          </div>
+
 
         {/* MAP */}
         <div className="relative h-[45vh] min-h-[300px] bg-muted">
@@ -311,8 +335,9 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
             </a>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };
 
