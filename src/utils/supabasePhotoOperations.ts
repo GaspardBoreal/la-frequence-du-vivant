@@ -231,12 +231,17 @@ export const savePhoto = async (
     
     updateProgress(60, 'processing');
 
-    // ÉTAPE 5: Préparation métadonnées
-    console.log('🔍 [savePhoto] ÉTAPE 5 - Préparation métadonnées');
+    // ÉTAPE 5: Extraction et normalisation des métadonnées (EXIF, GPS, date, etc.)
+    console.log('🔍 [savePhoto] ÉTAPE 5 - Extraction métadonnées EXIF normalisées');
     updateProgress(70, 'processing');
-    
-    const validatedMetadata = validateMetadata(photoData.metadata);
-    console.log('📋 [savePhoto] Métadonnées préparées:', validatedMetadata ? 'OK' : 'NULL');
+
+    const normalizedMetadata = await extractMediaMetadata(photoData.file);
+    console.log('📋 [savePhoto] Métadonnées normalisées:', {
+      status: normalizedMetadata.extraction_status,
+      has_gps: !!normalizedMetadata.gps,
+      has_date: !!normalizedMetadata.date_taken,
+    });
+    const validatedMetadata = normalizedMetadata as any;
     
     // ÉTAPE 6: Préparation données insertion
     console.log('🔍 [savePhoto] ÉTAPE 6 - Préparation insertion');
