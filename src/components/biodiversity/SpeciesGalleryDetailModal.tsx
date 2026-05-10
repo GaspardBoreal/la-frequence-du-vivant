@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -68,6 +70,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 }) => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
+  const isMobile = useIsMobile();
 
   // Fetch real-time photo data from iNaturalist when modal opens
   const { data: photoData, isLoading: photoLoading } = useSpeciesPhoto(
@@ -217,56 +220,177 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 
   return (
     <>
-      <Dialog open={isOpen && !showLightbox} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="bg-slate-900/98 backdrop-blur-xl border-white/10 text-white max-w-2xl p-0 overflow-hidden max-h-[92vh] overflow-y-auto">
+      <Sheet open={isOpen && !showLightbox} onOpenChange={(open) => !open && onClose()}>
+        <SheetContent
+          side={isMobile ? 'bottom' : 'right'}
+          className={
+            isMobile
+              ? 'bg-slate-900/98 backdrop-blur-xl border-white/10 text-white p-0 gap-0 h-[95vh] w-full !max-w-full rounded-t-2xl flex flex-col overflow-hidden'
+              : 'bg-slate-900/98 backdrop-blur-xl border-white/10 text-white p-0 gap-0 w-full sm:!max-w-[620px] h-full flex flex-col overflow-hidden'
+          }
+        >
           {/* Accessible title (hidden) */}
           <VisuallyHidden.Root asChild>
-            <DialogTitle>Détails de l'espèce {species.scientificName}</DialogTitle>
+            <SheetTitle>Détails de l'espèce {species.scientificName}</SheetTitle>
           </VisuallyHidden.Root>
 
-          {/* Hero Carousel — Référence iNat ↔ Photos marcheurs */}
-          <SpeciesPhotoCarousel
-            slides={gallerySlides}
-            isLoading={isLoading || marcheurPhotosLoading}
-            onPhotoClick={(i) => {
-              setCurrentPhotoIndex(i);
-              setShowLightbox(true);
-            }}
-            emptyIcon={<KingdomIcon className="w-16 h-16 mx-auto opacity-30" />}
-          />
+          {/* Mobile drag handle */}
+          {isMobile && (
+            <div className="flex justify-center pt-2 pb-1 shrink-0">
+              <div className="w-10 h-1.5 rounded-full bg-white/20" />
+            </div>
+          )}
 
-          {/* Content */}
-          <div className="p-5 space-y-5">
-            {/* Identity Section */}
-            <div className="space-y-2">
-              {/* French name - prominent */}
-              <h2 className="text-2xl font-semibold text-white leading-tight">
-                {frenchName}
-                {isEnglishFallback && (
-                  <span className="ml-2 text-xs text-white/40 font-normal">(nom anglais)</span>
-                )}
-              </h2>
-              
-              {/* Scientific name */}
-              <p className="text-sm text-white/50 italic">{species.scientificName}</p>
-              
-              {/* Badges row */}
-              <div className="flex items-center gap-2 flex-wrap pt-1">
-                <Badge variant="outline" className={`${kingdomInfo.color} flex items-center gap-1`}>
-                  <KingdomIcon className="w-3 h-3" />
-                  {kingdomInfo.label}
-                </Badge>
-                
-                <Badge variant="outline" className="bg-white/5 text-white/70 border-white/20">
-                  {species.count} observation{species.count > 1 ? 's' : ''}
-                  {hasMarches && ` sur ${totalMarchesCount} marche${totalMarchesCount > 1 ? 's' : ''}`}
-                  {hasObservers && ` · ${uniqueObserversCount} marcheur${uniqueObserversCount > 1 ? 's' : ''}`}
-                </Badge>
+          {/* Scrollable area */}
+          <div className="flex-1 overflow-y-auto overscroll-contain">
+            {/* Hero Carousel — Référence iNat ↔ Photos marcheurs */}
+            <SpeciesPhotoCarousel
+              slides={gallerySlides}
+              isLoading={isLoading || marcheurPhotosLoading}
+              onPhotoClick={(i) => {
+                setCurrentPhotoIndex(i);
+                setShowLightbox(true);
+              }}
+              emptyIcon={<KingdomIcon className="w-16 h-16 mx-auto opacity-30" />}
+            />
+
+            {/* Content */}
+            <div className="px-4 md:px-5 pt-4 pb-6 space-y-5">
+              {/* Identity Section */}
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold text-white leading-tight">
+                  {frenchName}
+                  {isEnglishFallback && (
+                    <span className="ml-2 text-xs text-white/40 font-normal">(nom anglais)</span>
+                  )}
+                </h2>
+                <p className="text-sm text-white/50 italic">{species.scientificName}</p>
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <Badge variant="outline" className={`${kingdomInfo.color} flex items-center gap-1`}>
+                    <KingdomIcon className="w-3 h-3" />
+                    {kingdomInfo.label}
+                  </Badge>
+                  <Badge variant="outline" className="bg-white/5 text-white/70 border-white/20">
+                    {species.count} observation{species.count > 1 ? 's' : ''}
+                    {hasMarches && ` sur ${totalMarchesCount} marche${totalMarchesCount > 1 ? 's' : ''}`}
+                    {hasObservers && ` · ${uniqueObserversCount} marcheur${uniqueObserversCount > 1 ? 's' : ''}`}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* CTA IA inline (desktop) */}
+              {canChat && !isMobile && (
+                <Button
+                  onClick={() => {
+                    const prefill = `Parle-moi de ${frenchName} (${species.scientificName}) observée ${species.count} fois sur cette exploration. Pourquoi est-elle intéressante ici, et que peut-on apprendre de sa présence ?`;
+                    window.dispatchEvent(
+                      new CustomEvent('community-chat:open', {
+                        detail: { prefill, species: species.scientificName },
+                      }),
+                    );
+                  }}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-white border-0 shadow-lg shadow-emerald-500/20 group h-11"
+                >
+                  <Sparkles className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
+                  Discuter de cette espèce avec l'IA
+                </Button>
+              )}
+
+              {/* Marches Section - with tabs */}
+              {(hasMarches || hasObservers || marchesLoading || observersLoading) && (
+                <div className="space-y-3" data-chat-card data-chat-title={`Observé — ${frenchName}`}>
+                  <div className="flex items-center gap-2 text-white/70">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-sm font-medium">Observé sur ces marches</span>
+                  </div>
+
+                  <Tabs defaultValue="list" className="w-full">
+                    <TabsList className="w-full bg-white/5 border border-white/10 grid grid-cols-3 h-10">
+                      <TabsTrigger value="list" className="data-[state=active]:bg-white/10 text-xs">
+                        <List className="w-3 h-3 mr-1.5" />
+                        Liste
+                      </TabsTrigger>
+                      <TabsTrigger value="map" className="data-[state=active]:bg-white/10 text-xs">
+                        <MapPin className="w-3 h-3 mr-1.5" />
+                        Carte
+                      </TabsTrigger>
+                      <TabsTrigger value="observers" className="data-[state=active]:bg-white/10 text-xs">
+                        <Users className="w-3 h-3 mr-1.5" />
+                        Observateurs
+                        {hasObservers && (
+                          <span className="ml-1 text-[10px] opacity-70">({uniqueObserversCount})</span>
+                        )}
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="list" className="mt-3">
+                      <SpeciesMarchesTab marches={speciesMarches} isLoading={marchesLoading} />
+                    </TabsContent>
+
+                    <TabsContent value="map" className="mt-3">
+                      <SpeciesMiniMap marches={speciesMarches} isLoading={marchesLoading} allEventMarches={allEventMarches} />
+                    </TabsContent>
+
+                    <TabsContent value="observers" className="mt-3">
+                      <SpeciesObserversTab observers={observers} isLoading={observersLoading} />
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              )}
+
+              {/* Audio Section */}
+              {(hasAudio || audioLoading) && (
+                <SpeciesAudioPlayer
+                  recordings={xenoCantoData?.recordings || []}
+                  numRecordings={xenoCantoData?.numRecordings || 0}
+                  scientificName={species.scientificName}
+                  isLoading={audioLoading}
+                />
+              )}
+
+              {/* External links */}
+              <div className="pt-2 border-t border-white/10">
+                <p className="text-xs text-white/40 mb-2">Rechercher sur :</p>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 min-w-[80px] bg-white/5 border-white/10 hover:bg-white/10 text-white/70 text-xs"
+                    onClick={() => window.open(gbifSearchUrl, '_blank')}
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    GBIF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 min-w-[80px] bg-white/5 border-white/10 hover:bg-white/10 text-white/70 text-xs"
+                    onClick={() => window.open(inaturalistSearchUrl, '_blank')}
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    iNaturalist
+                  </Button>
+                  {(hasAudio || kingdom.toLowerCase().includes('animal') || kingdom.toLowerCase().includes('aves')) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 min-w-[80px] bg-white/5 border-white/10 hover:bg-white/10 text-white/70 text-xs"
+                      onClick={() => window.open(xenoCantoSearchUrl, '_blank')}
+                    >
+                      <Music className="w-3 h-3 mr-1" />
+                      Xeno-Canto
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
+          </div>
 
-            {/* Bouton dialogue IA contextuel (admin / ambassadeur / sentinelle) */}
-            {canChat && (
+          {/* CTA IA sticky bottom (mobile) */}
+          {canChat && isMobile && (
+            <div
+              className="shrink-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] bg-gradient-to-t from-slate-900 via-slate-900/95 to-slate-900/0 border-t border-white/5"
+            >
               <Button
                 onClick={() => {
                   const prefill = `Parle-moi de ${frenchName} (${species.scientificName}) observée ${species.count} fois sur cette exploration. Pourquoi est-elle intéressante ici, et que peut-on apprendre de sa présence ?`;
@@ -276,103 +400,15 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                     }),
                   );
                 }}
-                className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-white border-0 shadow-lg shadow-emerald-500/20 group"
+                className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-white border-0 shadow-lg shadow-emerald-500/20 group h-12"
               >
                 <Sparkles className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
                 Discuter de cette espèce avec l'IA
               </Button>
-            )}
-
-            {/* Marches Section - with tabs */}
-            {(hasMarches || hasObservers || marchesLoading || observersLoading) && (
-              <div className="space-y-3" data-chat-card data-chat-title={`Observé — ${frenchName}`}>
-                <div className="flex items-center gap-2 text-white/70">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-sm font-medium">Observé sur ces marches</span>
-                </div>
-                
-                <Tabs defaultValue="list" className="w-full">
-                  <TabsList className="w-full bg-white/5 border border-white/10 grid grid-cols-3">
-                    <TabsTrigger value="list" className="data-[state=active]:bg-white/10 text-xs">
-                      <List className="w-3 h-3 mr-1.5" />
-                      Liste
-                    </TabsTrigger>
-                    <TabsTrigger value="map" className="data-[state=active]:bg-white/10 text-xs">
-                      <MapPin className="w-3 h-3 mr-1.5" />
-                      Carte
-                    </TabsTrigger>
-                    <TabsTrigger value="observers" className="data-[state=active]:bg-white/10 text-xs">
-                      <Users className="w-3 h-3 mr-1.5" />
-                      Observateurs
-                      {hasObservers && (
-                        <span className="ml-1 text-[10px] opacity-70">({uniqueObserversCount})</span>
-                      )}
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="list" className="mt-3">
-                    <SpeciesMarchesTab marches={speciesMarches} isLoading={marchesLoading} />
-                  </TabsContent>
-                  
-                  <TabsContent value="map" className="mt-3">
-                    <SpeciesMiniMap marches={speciesMarches} isLoading={marchesLoading} allEventMarches={allEventMarches} />
-                  </TabsContent>
-
-                  <TabsContent value="observers" className="mt-3">
-                    <SpeciesObserversTab observers={observers} isLoading={observersLoading} />
-                  </TabsContent>
-                </Tabs>
-              </div>
-            )}
-
-            {/* Audio Section */}
-            {(hasAudio || audioLoading) && (
-              <SpeciesAudioPlayer
-                recordings={xenoCantoData?.recordings || []}
-                numRecordings={xenoCantoData?.numRecordings || 0}
-                scientificName={species.scientificName}
-                isLoading={audioLoading}
-              />
-            )}
-
-            {/* External links */}
-            <div className="pt-2 border-t border-white/10">
-              <p className="text-xs text-white/40 mb-2">Rechercher sur :</p>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 min-w-[80px] bg-white/5 border-white/10 hover:bg-white/10 text-white/70 text-xs"
-                  onClick={() => window.open(gbifSearchUrl, '_blank')}
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  GBIF
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 min-w-[80px] bg-white/5 border-white/10 hover:bg-white/10 text-white/70 text-xs"
-                  onClick={() => window.open(inaturalistSearchUrl, '_blank')}
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  iNaturalist
-                </Button>
-                {(hasAudio || kingdom.toLowerCase().includes('animal') || kingdom.toLowerCase().includes('aves')) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 min-w-[80px] bg-white/5 border-white/10 hover:bg-white/10 text-white/70 text-xs"
-                    onClick={() => window.open(xenoCantoSearchUrl, '_blank')}
-                  >
-                    <Music className="w-3 h-3 mr-1" />
-                    Xeno-Canto
-                  </Button>
-                )}
-              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Lightbox - rendered in portal to avoid z-index conflicts */}
       {showLightbox && hasPhoto && createPortal(

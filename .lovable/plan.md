@@ -1,60 +1,60 @@
-## Diagnostic (data réelle de l'exploration)
+## Problème observé
 
-Sur l'exploration `20dd3be8…`, Laurence Karki a **5 observations** dans `marcheur_observations` (issues du backfill iNaturalist) :
-- Flavoparmelia caperata, Helichrysum, Lotus corniculatus, Pisaura mirabilis, Sphaeroderma rubidum.
+La fiche espèce s'ouvre dans un `Dialog` `max-w-2xl` centré sur fond opaque : sur desktop (1116px), elle apparaît comme une colonne étroite avec beaucoup de vide latéral, et sur mobile elle laisse des marges qui cassent l'immersion. La hero photo, le carrousel, les onglets et la liste se retrouvent dans une fenêtre qui ne respire pas.
 
-L'espèce que tu viens d'ouvrir (la **Consoude / Symphytum officinale** dans la capture) **n'est dans aucune de ses observations** → c'est pour ça qu'on ne voit que la référence iNat. Aucune photo marcheur n'existe pour cette espèce dans la base.
+## Direction UX/UI
 
-**Et pour les 5 espèces où Laurence a une photo**, second souci : son `photo_url` pointe vers `inaturalist-open-data.s3.amazonaws.com/photos/…` (URL iNat, héritée du backfill). Notre dédup actuelle (`if slides.some(s => s.url === url) return;`) supprime alors la slide "Référence" puisqu'on push d'abord la marcheur — résultat : on voit la photo, mais elle est étiquetée "Photo · Laurence" sans qu'on sache que c'est aussi la photo iNat. Visuellement on ne perçoit pas la "comparaison".
+Adopter un pattern **mobile-first immersif** :
 
-## Plan
+- **Mobile (≤ md)** : bottom sheet plein écran (Drawer Vaul), photo hero edge-to-edge, contenu scrollable, handle bar en haut, fermeture par swipe.
+- **Desktop (≥ md)** : side sheet ancré à droite (largeur ~ 560–640 px), pleine hauteur, ombre douce, photo hero plein cadre du panneau, contenu scrollable interne. Pas de "petite carte centrée" qui flotte.
 
-### 1. Élargir les sources "Photos terrain" (hook `useSpeciesMarcheurPhotos`)
+Avantages : surface utile maximale sur tous les écrans, gestes naturels mobile, lecture longue confortable desktop, photos qui respirent.
 
-Aujourd'hui : uniquement `marcheur_observations` filtré sur `exploration_marcheurs` (3 marcheurs éditoriaux max).
+## Changements
 
-À ajouter, fusionnés en un seul résultat trié par date desc :
-- **a. Snapshots iNat de l'événement** (`event_biodiversity_snapshots` ou équivalent) : toute observation citoyenne dans le périmètre, avec photo + nom de l'observateur iNat → badge **"Observation citoyenne · {observer}"** (teinte cyan, distincte du marcheur éditorial vert et de la référence taxon bleue).
-- **b. Médias `medias`** liés aux marches de l'exploration dont l'EXIF / tag pointe vers cette espèce (cas des photos uploadées par les marcheurs dans Convivialité avec un tag espèce).
+### 1. `SpeciesGalleryDetailModal.tsx`
+- Remplacer `Dialog`/`DialogContent` par un composant responsive :
+  - `useIsMobile()` → si mobile : `Drawer` (vaul, déjà présent dans le projet via shadcn) en bottom sheet `h-[95vh]`.
+  - Sinon : `Sheet` shadcn `side="right"` avec `w-full sm:max-w-[600px]` pleine hauteur.
+- Conteneur scroll unique : header sticky (nom + close), hero photo, puis contenu.
+- Padding latéral : `px-4 md:px-5`, top padding réduit (la photo touche les bords).
+- Titre accessible conservé via `VisuallyHidden`.
 
-### 2. Corriger la déduplication (composant `SpeciesPhotoCarousel`)
+### 2. `SpeciesPhotoCarousel.tsx`
+- Hero responsive : `aspect-[4/3] md:aspect-[16/10]` ; supprimer `max-h-[42vh]` pour laisser respirer dans le sheet plein écran.
+- Flèches nav : taille `w-10 h-10 md:w-11 md:h-11`, halo plus marqué.
+- Toggle segmenté + thumbnails : conserver, mais alignés et collés au bord du sheet (pas de gap latéral inutile).
+- Thumbnails : passer à `w-16 h-16` sur desktop, scroll horizontal lisse, snap.
+- Compteur 1/N et badges inchangés (déjà bons).
 
-Au lieu de **supprimer** un doublon d'URL, **fusionner** les métadonnées :
-- une slide unique avec **deux badges empilés** : `Référence · iNaturalist` + `Photo · Laurence Karki`
-- footer date + marche + lien Source iNat conservé
-- Évite la perception "je ne vois qu'une photo, où est l'autre ?"
+### 3. Header sticky léger
+- Petite barre flottante au-dessus de la hero (sur mobile, après scroll) avec nom français + bouton close, fond `bg-slate-900/80 backdrop-blur`.
 
-### 3. État vide explicite (UX)
+### 4. Onglets (Liste / Carte / Observateurs)
+- TabsList full width déjà OK ; ajuster taille touch target mobile (`h-10`).
+- Liste : afficher la date sous le nom de marche (déjà fait précédemment), vérifier line-height.
 
-Si aucune photo "terrain" trouvée pour l'espèce :
-- afficher sous le hero une **bandelette** discrète :
-  > *"Pas encore de photo prise par un marcheur sur cette espèce. Sois le premier à la documenter lors de ta prochaine marche."*
-- avec un CTA secondaire vers `/marches-du-vivant/contribuer` (si rôle marcheur).
+### 5. CTA "Discuter avec l'IA"
+- Devient sticky en bas sur mobile (`sticky bottom-0` dans le scroll container) avec dégradé + safe-area `pb-[env(safe-area-inset-bottom)]`. Sur desktop, reste inline sous le bloc identité.
 
-### 4. Toggle segmenté plus pédagogique
+## Détails techniques
 
-Renommer le toggle :
-- "Référence taxon" (bleu, photo officielle de l'espèce)
-- "Sur le terrain ({n})" (vert/cyan, photos prises dans le périmètre de l'exploration)
+- Réutiliser `@/components/ui/drawer` (Vaul) et `@/components/ui/sheet` déjà installés (vérifier rapidement avant d'éditer).
+- Hook `useIsMobile` déjà présent (`src/hooks/use-mobile.tsx`).
+- Pas de changement de logique data : `gallerySlides`, `useSpeciesMarcheurPhotos`, fusion par URL inchangés.
+- Lightbox (portal) inchangé.
+- Pas de nouveau token couleur ; rester sur l'esthétique sombre actuelle de la fiche.
 
-Et ajouter un compteur précis par source dans les pastilles.
+## Hors-scope
 
-### 5. QA / vérification
+- Refonte du contenu (sections audio, liens externes) : on garde l'ordre actuel.
+- Changement du carrousel data-side (sources, fusion) : déjà validé précédemment.
+- Refonte des autres modals biodiversité.
 
-Tester sur 3 cas :
-1. **Symphytum officinale** (aucune photo terrain) → état vide affiché.
-2. **Lotus corniculatus** (photo Laurence avec URL iNat) → slide unique avec **double badge** Référence + Marcheur.
-3. Une espèce avec photo `medias` (storage Supabase) **et** photo Laurence iNat → 2 slides distinctes, toggle visible.
+## QA
 
-## Fichiers concernés
-
-- `src/hooks/useSpeciesMarcheurPhotos.ts` — étendre aux snapshots iNat + médias liés.
-- `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` — fusion par URL au lieu de dédup, état vide.
-- `src/components/biodiversity/species-modal/SpeciesPhotoCarousel.tsx` — double badge, libellés du toggle, bandelette vide.
-- `mem://features/community/species-card-carousel-and-chat-logic.md` — documenter la fusion multi-sources.
-
-## Hors scope
-
-- Vue split-screen côte-à-côte référence/terrain (proposable plus tard).
-- Vote "ressemble / ne ressemble pas" sur la concordance.
-- Upload direct de photo depuis la fiche espèce.
+1. Mobile 375px : sheet plein écran, photo hero edge-to-edge, CTA IA accessible au pouce, swipe-to-close.
+2. Tablette 820px : side sheet 600px à droite, contenu lisible.
+3. Desktop 1116px (cas de la capture) : side sheet à droite, plus de "petite fenêtre flottante".
+4. Vérifier que les onglets Liste / Carte / Observateurs restent fonctionnels et que les flèches du carrousel ne sont jamais masquées.
