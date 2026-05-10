@@ -93,11 +93,12 @@ const SpeciesRow: React.FC<{ obs: DayObservation; isNew?: boolean; onClick?: () 
   );
 };
 
-const DayDetailDrawer: React.FC<Props> = ({ open, onClose, day, bucket, marchesById, onNavigateToMarche }) => {
+const DayDetailDrawer: React.FC<Props> = ({ open, onClose, day, bucket, marchesById, onNavigateToMarche, explorationId, allEventMarches }) => {
   const newSp = bucket ? Array.from(bucket.newSpecies.values()) : [];
   const reSp = bucket ? Array.from(bucket.reSpecies.values()) : [];
   const contributors = bucket ? Array.from(bucket.contributors.values()).sort((a, b) => b.count - a.count) : [];
   const marches = bucket ? Array.from(bucket.marcheIds) : [];
+  const [selectedSpecies, setSelectedSpecies] = useState<DayObservation | null>(null);
 
   return (
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
