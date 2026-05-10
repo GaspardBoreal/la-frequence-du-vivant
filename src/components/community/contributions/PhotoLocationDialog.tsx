@@ -166,8 +166,7 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
             scrollWheelZoom
             className="w-full h-full z-0"
           >
-            <TileLayer url={tile.url} attribution={tile.attr} maxZoom={tile.max} maxNativeZoom={19} />
-            {style === 'cadastre' && <CadastreOverlay />}
+            <DynamicTileLayer mapStyle={style} />
             <Recenter lat={latitude} lng={longitude} zoom={zoom} />
             <Marker position={[latitude, longitude]} icon={pulseIcon} />
             <Circle
@@ -177,24 +176,12 @@ const PhotoLocationDialog: React.FC<Props> = ({ open, onOpenChange, latitude, lo
             />
           </MapContainer>
 
-          {/* Style switcher */}
-          <div className="absolute top-3 left-3 z-[500] flex gap-1 p-1 rounded-lg bg-background/90 backdrop-blur border border-border shadow-md">
-            {(['plan', 'satellite', 'cadastre'] as MapStyle[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => setStyle(s)}
-                className={`px-2.5 py-1 text-[11px] rounded-md transition ${
-                  style === s ? 'bg-emerald-600 text-white' : 'text-foreground hover:bg-muted'
-                }`}
-              >
-                {s === 'plan' ? 'Plan' : s === 'satellite' ? 'Satellite' : 'Cadastre'}
-              </button>
-            ))}
-          </div>
+          {/* Style switcher — partagé avec l'onglet Carte */}
+          <MapStyleToggle mapStyle={style} onChange={setStyle} compact position="top-left" />
 
           {/* Zoom hint */}
-          <div className="absolute top-3 right-3 z-[500] px-2 py-1 rounded-md bg-background/90 backdrop-blur border border-border text-[10px] text-muted-foreground flex items-center gap-1">
-            <Layers className="w-3 h-3" /> zoom {zoom}
+          <div className="absolute top-3 right-3 z-[500] px-2 py-1 rounded-md bg-background/90 backdrop-blur border border-border text-[10px] text-muted-foreground">
+            zoom {zoom}
           </div>
         </div>
 
