@@ -100,7 +100,7 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
 
   if (isLoading) {
     return (
-      <div className="relative aspect-[16/10] max-h-[42vh] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="relative aspect-[4/3] md:aspect-[16/10] max-h-[55vh] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
         <Loader2 className="w-10 h-10 animate-spin text-white/40" />
       </div>
     );
@@ -108,7 +108,7 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
 
   if (slides.length === 0) {
     return (
-      <div className="relative aspect-[16/10] max-h-[42vh] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="relative aspect-[4/3] md:aspect-[16/10] max-h-[55vh] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center text-white/40 space-y-2">
           {emptyIcon}
           <p className="text-sm">Photo non disponible</p>
@@ -124,7 +124,7 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
   return (
     <div className="bg-slate-900">
       {/* Hero zone */}
-      <div className="relative aspect-[16/10] max-h-[42vh] bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
+      <div className="relative aspect-[4/3] md:aspect-[16/10] max-h-[55vh] bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
         <div className="overflow-hidden h-full" ref={emblaRef}>
           <div className="flex h-full">
             {slides.map((slide, i) => {
