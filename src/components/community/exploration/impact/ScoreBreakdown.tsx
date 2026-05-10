@@ -31,6 +31,7 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total, onCriterionSelect }
       color: 'hsl(150 70% 55%)',
     },
     {
+      key: 'voix',
       icon: '🎙',
       label: 'Voix singulière',
       value: breakdown.voix.value,
@@ -39,6 +40,7 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total, onCriterionSelect }
       color: 'hsl(280 60% 65%)',
     },
     {
+      key: 'pillars',
       icon: '🪶',
       label: 'Variété des gestes',
       value: breakdown.pillars.value,
@@ -47,6 +49,7 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total, onCriterionSelect }
       color: 'hsl(170 60% 60%)',
     },
     {
+      key: 'volume',
       icon: '📸',
       label: 'Volume',
       value: breakdown.volume.value,
@@ -55,6 +58,7 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total, onCriterionSelect }
       color: 'hsl(190 60% 60%)',
     },
     {
+      key: 'species',
       icon: '🦋',
       label: 'Diversité d\'espèces',
       value: breakdown.species.value,
@@ -63,6 +67,7 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total, onCriterionSelect }
       color: 'hsl(210 60% 65%)',
     },
     {
+      key: 'pratiques',
       icon: '🌾',
       label: 'Pratiques emblématiques',
       value: breakdown.pratiques.value,
@@ -73,6 +78,8 @@ const ScoreBreakdown: React.FC<Props> = ({ breakdown, total, onCriterionSelect }
       color: 'hsl(40 75% 60%)',
     },
   ];
+
+  const interactive = !!onCriterionSelect;
 
   return (
     <div className="w-full max-w-[320px] space-y-2">
