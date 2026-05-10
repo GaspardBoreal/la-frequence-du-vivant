@@ -43,10 +43,14 @@ const kingdomColor = (k?: string) => {
   }
 };
 
-const SpeciesRow: React.FC<{ obs: DayObservation; isNew?: boolean }> = ({ obs, isNew }) => {
+const SpeciesRow: React.FC<{ obs: DayObservation; isNew?: boolean; onClick?: () => void }> = ({ obs, isNew, onClick }) => {
   const Icon = kingdomIcon(obs.kingdom);
   return (
-    <div className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-muted/40 transition-colors">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-muted/40 transition-colors"
+    >
       {obs.photo ? (
         <img src={obs.photo} alt={obs.scientificName} className="w-10 h-10 rounded-lg object-cover bg-muted" loading="lazy" />
       ) : (
@@ -78,13 +82,14 @@ const SpeciesRow: React.FC<{ obs: DayObservation; isNew?: boolean }> = ({ obs, i
           href={obs.originalUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className="text-muted-foreground hover:text-foreground transition-colors"
           title="Voir sur iNaturalist"
         >
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
       )}
-    </div>
+    </button>
   );
 };
 
