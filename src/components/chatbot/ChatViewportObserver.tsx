@@ -32,6 +32,13 @@ interface DomSnapshot {
     subtitle?: string;
     badges?: string[];
   }>;
+  /** Contexte de l'écran (modal, tab actif…). */
+  context?: {
+    type?: string;
+    title?: string;
+    subtitle?: string;
+    activeTab?: string;
+  };
   /** Méta : nombre total détecté (avant troncature). */
   meta: {
     cardsTotal: number;
