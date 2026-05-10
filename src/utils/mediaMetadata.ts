@@ -14,8 +14,15 @@ export interface MediaGps {
   longitude: number;
   altitude?: number;
   accuracy?: number;
-  /** 'exif' (par défaut) ou 'manual' (drop GPS sur carte) */
-  source?: 'exif' | 'manual';
+  /**
+   * Provenance du GPS :
+   *  - 'exif' : extrait des métadonnées EXIF du fichier (le plus fiable)
+   *  - 'manual' : drop manuel sur la carte par l'utilisateur
+   *  - 'device_geolocation' : géolocalisation du navigateur au moment de l'upload
+   *    (filet de sécurité quand iOS strippe le GPS du fichier — la position est
+   *    celle du téléphone à l'upload, pas forcément celle de la prise de vue).
+   */
+  source?: 'exif' | 'manual' | 'device_geolocation';
 }
 
 export interface MediaMetadata {
