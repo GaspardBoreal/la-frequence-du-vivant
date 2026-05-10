@@ -232,7 +232,8 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
 
           <Separator />
 
-          <section>
+          <section className="space-y-3">
+            <ProfileSuggestionsList profileId={form.id} />
             <ScienceAccountsEditor profileId={form.id} />
           </section>
 
