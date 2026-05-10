@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, ExternalLink } from 'lucide-react';
+import { MapPin, ExternalLink, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { createSlug } from '@/utils/slugGenerator';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
