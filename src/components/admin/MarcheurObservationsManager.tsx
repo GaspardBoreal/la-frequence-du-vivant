@@ -24,6 +24,7 @@ import {
   Trash2,
   ListTree
 } from 'lucide-react';
+import InaturalistSyncCard from './InaturalistSyncCard';
 
 interface MarcheurObservationsManagerProps {
   marcheur: ExplorationMarcheur;
