@@ -70,6 +70,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 }) => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
+  const isMobile = useIsMobile();
 
   // Fetch real-time photo data from iNaturalist when modal opens
   const { data: photoData, isLoading: photoLoading } = useSpeciesPhoto(
