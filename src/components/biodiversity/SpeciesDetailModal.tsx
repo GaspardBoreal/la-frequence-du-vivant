@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
-import { LanguageToggle } from '../ui/language-toggle';
+
 import { 
   ExternalLink, 
   Calendar, 
@@ -67,16 +67,13 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold text-foreground">
-              {translationLoading ? (
-                <div className="h-6 bg-muted/50 rounded animate-pulse w-48" />
-              ) : (
-                displayName
-              )}
-            </DialogTitle>
-            <LanguageToggle size="sm" />
-          </div>
+          <DialogTitle className="text-lg font-semibold text-foreground">
+            {translationLoading ? (
+              <div className="h-6 bg-muted/50 rounded animate-pulse w-48" />
+            ) : (
+              displayName
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         {/* Layout principal - deux colonnes sur desktop, vertical sur mobile */}

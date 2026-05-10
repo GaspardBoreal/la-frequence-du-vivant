@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { LanguageToggle } from '@/components/ui/language-toggle';
+
 import { Search, Play, Pause, Volume2, User, MapPin, ExternalLink, Bird } from 'lucide-react';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { SpeciesXenoCantoModal } from '@/components/biodiversity/SpeciesXenoCantoModal';
@@ -127,16 +127,13 @@ export const SpeciesAudioModal: React.FC<SpeciesAudioModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <Bird className="h-5 w-5" />
-              Chants d'oiseaux - {apiSource === 'ebird' ? 'eBird' : 'iNaturalist'}
-              <Badge className={currentColors.badge}>
-                {filteredSpecies.length} espèces
-              </Badge>
-            </DialogTitle>
-            <LanguageToggle size="sm" />
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            <Bird className="h-5 w-5" />
+            Chants d'oiseaux - {apiSource === 'ebird' ? 'eBird' : 'iNaturalist'}
+            <Badge className={currentColors.badge}>
+              {filteredSpecies.length} espèces
+            </Badge>
+          </DialogTitle>
         </DialogHeader>
 
         {/* Statistiques */}

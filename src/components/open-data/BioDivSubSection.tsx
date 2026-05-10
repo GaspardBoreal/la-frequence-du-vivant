@@ -12,7 +12,7 @@ import { useBiodiversityData } from '../../hooks/useBiodiversityData';
 import { BiodiversityMetricGrid } from '../biodiversity/BiodiversityMetricGrid';
 import { BiodiversityMap } from '../biodiversity/BiodiversityMap';
 import SpeciesExplorer from '../biodiversity/SpeciesExplorer';
-import { LanguageToggle } from '@/components/ui/language-toggle';
+
 
 interface BioDivSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -185,15 +185,12 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
       {/* Radius slider */}
       <Card className="p-6">
         <div className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <Label className="text-sm font-medium">Rayon de recherche:</Label>
-              <Badge variant="outline" className="bg-primary/10 text-primary font-medium">
-                {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
-              </Badge>
-              {hasExpanded && <Badge variant="secondary" className="text-xs">Élargi</Badge>}
-            </div>
-            <LanguageToggle size="sm" />
+          <div className="flex items-center gap-4 flex-wrap">
+            <Label className="text-sm font-medium">Rayon de recherche:</Label>
+            <Badge variant="outline" className="bg-primary/10 text-primary font-medium">
+              {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
+            </Badge>
+            {hasExpanded && <Badge variant="secondary" className="text-xs">Élargi</Badge>}
           </div>
           <Slider
             value={[searchRadius]}
