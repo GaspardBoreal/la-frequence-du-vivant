@@ -180,83 +180,16 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
             <DialogTitle>Détails de l'espèce {species.scientificName}</DialogTitle>
           </VisuallyHidden.Root>
 
-          {/* Hero Image Section */}
-          <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-800 to-slate-900">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <Loader2 className="w-10 h-10 animate-spin text-white/40" />
-              </div>
-            ) : hasPhoto ? (
-              <>
-                <motion.img
-                  key={currentPhotoIndex}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  src={photos[currentPhotoIndex]}
-                  alt={frenchName}
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => setShowLightbox(true)}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                
-                {/* Navigation arrows */}
-                {photos.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevPhoto}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={nextPhoto}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
-
-                {/* Photo badges */}
-                <div className="absolute top-3 left-3 flex gap-2">
-                  {isMarcheurPhoto && (
-                    <Badge className="bg-amber-500/90 text-white text-xs">
-                      📸 Photo marcheur
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Photo counter */}
-                {photos.length > 1 && (
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {photos.slice(0, 5).map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentPhotoIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          index === currentPhotoIndex
-                            ? 'bg-white'
-                            : 'bg-white/40 hover:bg-white/60'
-                        }`}
-                      />
-                    ))}
-                    {photos.length > 5 && (
-                      <span className="text-xs text-white/60 ml-1">+{photos.length - 5}</span>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center text-white/40 space-y-2">
-                  <KingdomIcon className="w-16 h-16 mx-auto opacity-30" />
-                  <p className="text-sm">Photo non disponible</p>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Hero Carousel — Référence iNat ↔ Photos marcheurs */}
+          <SpeciesPhotoCarousel
+            slides={gallerySlides}
+            isLoading={isLoading || marcheurPhotosLoading}
+            onPhotoClick={(i) => {
+              setCurrentPhotoIndex(i);
+              setShowLightbox(true);
+            }}
+            emptyIcon={<KingdomIcon className="w-16 h-16 mx-auto opacity-30" />}
+          />
 
           {/* Content */}
           <div className="p-5 space-y-5">
