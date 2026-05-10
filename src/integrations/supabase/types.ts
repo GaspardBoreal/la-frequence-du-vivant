@@ -3171,6 +3171,51 @@ export type Database = {
           },
         ]
       }
+      marcheur_backfill_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          detail: Json | null
+          error: string | null
+          exploration_id: string | null
+          id: string
+          marche_event_id: string | null
+          marches_scanned: number | null
+          observations_inserted: number | null
+          source: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          detail?: Json | null
+          error?: string | null
+          exploration_id?: string | null
+          id?: string
+          marche_event_id?: string | null
+          marches_scanned?: number | null
+          observations_inserted?: number | null
+          source: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          detail?: Json | null
+          error?: string | null
+          exploration_id?: string | null
+          id?: string
+          marche_event_id?: string | null
+          marches_scanned?: number | null
+          observations_inserted?: number | null
+          source?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marcheur_medias: {
         Row: {
           attributed_marcheur_id: string | null
@@ -4442,6 +4487,10 @@ export type Database = {
         Args: { p_curation_id: string; p_marcheur_id: string }
         Returns: boolean
       }
+      ensure_exploration_marcheur: {
+        Args: { p_exploration_id: string; p_user_id: string }
+        Returns: string
+      }
       generate_community_affiliate_link: {
         Args: {
           _channel: string
@@ -4821,6 +4870,15 @@ export type Database = {
           p_owner_user_id: string
         }
         Returns: undefined
+      }
+      request_inaturalist_backfill: {
+        Args: {
+          p_exploration_id: string
+          p_marche_event_id: string
+          p_source: string
+          p_user_id: string
+        }
+        Returns: number
       }
       set_species_translation_manual: {
         Args: { _common_name_fr: string; _scientific_name: string }
