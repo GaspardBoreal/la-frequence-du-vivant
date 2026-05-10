@@ -216,7 +216,7 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({
                   side="top"
                   align="start"
                   sideOffset={8}
-                  className="w-[280px] bg-black/85 backdrop-blur-xl border-white/10 text-white p-4 rounded-xl shadow-2xl"
+                  className="z-[70] w-[280px] bg-black/85 backdrop-blur-xl border-white/10 text-white p-4 rounded-xl shadow-2xl"
                 >
                   <MediaMetadataPanel item={item} />
                 </PopoverContent>
