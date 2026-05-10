@@ -365,7 +365,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
             <motion.img
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
-              src={photos[currentPhotoIndex]}
+              src={lightboxPhotos[currentPhotoIndex]}
               alt={frenchName}
               className="max-w-[90vw] max-h-[90vh] object-contain"
               onClick={(e) => e.stopPropagation()}
