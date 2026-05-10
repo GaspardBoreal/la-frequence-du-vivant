@@ -259,10 +259,25 @@ function ArrowDecorators({ positions, color = '#10b981' }: { positions: [number,
 function FitBounds({ positions }: { positions: [number, number][] }) {
   const map = useMap();
   useEffect(() => {
-    if (positions.length > 0) {
-      const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+    if (positions.length === 0) return;
+    const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
+
+    // Diagonale en mètres pour adapter le maxZoom
+    const diag = bounds.getNorthWest().distanceTo(bounds.getSouthEast());
+
+    // Cas dégénéré : 1 seul point ou points confondus
+    if (positions.length === 1 || diag < 1) {
+      map.setView(positions[0], 17, { animate: true });
+      return;
     }
+
+    let maxZoom = 13;
+    if (diag < 150) maxZoom = 18;
+    else if (diag < 500) maxZoom = 17;
+    else if (diag < 2000) maxZoom = 16;
+    else if (diag < 10000) maxZoom = 14;
+
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom });
   }, [positions, map]);
   return null;
 }
