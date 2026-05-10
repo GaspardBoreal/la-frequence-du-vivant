@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { X, ChevronLeft, ChevronRight, Lock, Globe, User, Pencil } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Lock, Globe, User, Pencil, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
 import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
 import type { ReattributeSource } from '@/hooks/useReattributeMedia';
+import MediaMetadataPanel from './MediaMetadataPanel';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export interface LightboxItem {
   url: string;
