@@ -190,7 +190,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
 
   // ─── Fiche mode (default): full info ───
   return (
-    <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden group">
+    <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden group" {...chatDataAttrs}>
       {/* Preview zone */}
       {type === 'photo' && displayUrl && (
         <div className="aspect-video w-full overflow-hidden bg-black/20 cursor-pointer" onClick={onClick}>
