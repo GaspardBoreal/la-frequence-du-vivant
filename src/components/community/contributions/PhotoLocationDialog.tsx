@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Compass, Copy, ExternalLink, Layers, MapPin, Mountain, Sparkles, Wind } from 'lucide-react';
+import { Compass, Copy, ExternalLink, MapPin, Mountain as MountainIcon, Sparkles, Wind, X } from 'lucide-react';
 import { toast } from 'sonner';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { DynamicTileLayer, MapStyleToggle, type MapStyle } from '@/components/maps';
 
 interface Props {
   open: boolean;
@@ -37,40 +37,6 @@ const Recenter: React.FC<{ lat: number; lng: number; zoom: number }> = ({ lat, l
   useEffect(() => {
     map.setView([lat, lng], zoom, { animate: true });
   }, [lat, lng, zoom, map]);
-  return null;
-};
-
-type MapStyle = 'plan' | 'satellite' | 'cadastre';
-
-const TILES: Record<MapStyle, { url: string; attr: string; max: number }> = {
-  plan: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attr: '&copy; OpenStreetMap',
-    max: 19,
-  },
-  satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attr: 'Tiles &copy; Esri — World Imagery',
-    max: 19,
-  },
-  cadastre: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attr: '&copy; OpenStreetMap + Cadastre Etalab',
-    max: 19,
-  },
-};
-
-const CadastreOverlay: React.FC = () => {
-  const map = useMap();
-  useEffect(() => {
-    const layer = L.tileLayer('https://cadastre.data.gouv.fr/map/{z}/{x}/{y}.png', {
-      attribution: '&copy; Etalab — Cadastre',
-      opacity: 0.55,
-      maxZoom: 20,
-    });
-    layer.addTo(map);
-    return () => { map.removeLayer(layer); };
-  }, [map]);
   return null;
 };
 
