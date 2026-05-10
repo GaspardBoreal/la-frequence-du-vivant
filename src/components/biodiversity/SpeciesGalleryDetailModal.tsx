@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -6,20 +6,23 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
-import { 
-  ExternalLink, Leaf, Bird, Bug, HelpCircle, Loader2, 
-  MapPin, List, Music, ChevronLeft, ChevronRight, X, Users
+import {
+  ExternalLink, Leaf, Bird, Bug, HelpCircle,
+  MapPin, List, Music, ChevronLeft, ChevronRight, X, Users, Sparkles,
 } from 'lucide-react';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import { useSpeciesMarches } from '@/hooks/useSpeciesMarches';
 import { useSpeciesXenoCanto } from '@/hooks/useSpeciesXenoCanto';
 import { useSpeciesObservers } from '@/hooks/useSpeciesObservers';
+import { useSpeciesMarcheurPhotos } from '@/hooks/useSpeciesMarcheurPhotos';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
+import { useCanUseContextualChat } from '@/hooks/useCanUseContextualChat';
 import SpeciesMarchesTab from './species-modal/SpeciesMarchesTab';
 import SpeciesAudioPlayer from './species-modal/SpeciesAudioPlayer';
 import SpeciesMiniMap from './species-modal/SpeciesMiniMap';
 import SpeciesObserversTab from './species-modal/SpeciesObserversTab';
+import SpeciesPhotoCarousel, { type CarouselSlide } from './species-modal/SpeciesPhotoCarousel';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface SpeciesGalleryDetailModalProps {
