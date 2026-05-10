@@ -81,6 +81,22 @@ const SpeciesMarchesTab: React.FC<SpeciesMarchesTabProps> = ({ marches, isLoadin
                 {marche.marcheName}
               </p>
 
+              {/* Date d'observation */}
+              {marche.observationDate && (
+                <div className="flex items-center gap-1 text-[10px] text-white/55 mb-1">
+                  <Calendar className="w-3 h-3 text-sky-400/60" />
+                  <span>
+                    {(() => {
+                      try {
+                        return format(new Date(marche.observationDate), 'd MMM yyyy', { locale: fr });
+                      } catch {
+                        return marche.observationDate;
+                      }
+                    })()}
+                  </span>
+                </div>
+              )}
+
               {/* Observation count - bottom */}
               <div className="flex items-center gap-1 text-[10px] text-white/50">
                 <MapPin className="w-3 h-3 text-emerald-400/60" />
