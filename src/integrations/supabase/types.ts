@@ -4930,6 +4930,10 @@ export type Database = {
         Args: { new_orders: number[]; page_ids: string[] }
         Returns: undefined
       }
+      update_species_translation_manual: {
+        Args: { p_common_name_fr: string; p_scientific_name: string }
+        Returns: undefined
+      }
       validate_admin_email_access: { Args: never; Returns: boolean }
     }
     Enums: {
