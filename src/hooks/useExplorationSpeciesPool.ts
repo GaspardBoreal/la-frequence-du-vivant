@@ -81,7 +81,8 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
         });
       });
 
-      return Array.from(map.values()).sort((a, b) => b.count - a.count);
+      const merged = mergeGenusIntoSpecies(Array.from(map.values()));
+      return merged.sort((a, b) => b.count - a.count);
     },
     enabled: !!explorationId,
     staleTime: 5 * 60 * 1000,
