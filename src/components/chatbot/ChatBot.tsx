@@ -75,6 +75,7 @@ export function ChatBot({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
   const [interruptBanner, setInterruptBanner] = useState(false);
+  const [originContext, setOriginContext] = useState<{ speciesLabel?: string } | null>(null);
   const { messages, isLoading, wasStopped, send, stop, reset } = useChatStream(currentContext, edgeFunctionPath);
   const { exportPrint } = useChatExport(messages);
   const isMobile = useIsMobile();
@@ -176,8 +177,18 @@ export function ChatBot({
   // Listen for global "open chat" requests (e.g. "Discuter de cette espèce avec l'IA")
   useEffect(() => {
     const onOpenRequest = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { prefill?: string } | undefined;
+      const detail = (e as CustomEvent).detail as
+        | { prefill?: string; species?: string; speciesLabel?: string }
+        | undefined;
       setIsOpen(true);
+      // Force le mode plein écran : sur mobile, le panneau bas-droite est masqué
+      // par les Sheet/Modal de fiche espèce. En expanded (z-[80]), il passe au-dessus.
+      setIsExpanded(true);
+      if (detail?.speciesLabel || detail?.species) {
+        setOriginContext({ speciesLabel: detail.speciesLabel || detail.species });
+      } else {
+        setOriginContext(null);
+      }
       if (detail?.prefill) {
         setInput(detail.prefill);
         setTimeout(() => inputRef.current?.focus(), 350);
@@ -240,11 +251,11 @@ export function ChatBot({
   const toggleExpanded = () => setIsExpanded((prev) => !prev);
 
   const panelClasses = isExpanded
-    ? 'fixed inset-0 z-[60] flex items-center justify-center'
+    ? 'fixed inset-0 z-[80] flex items-center justify-center sm:p-4'
     : 'fixed bottom-6 right-6 z-50';
 
   const chatClasses = isExpanded
-    ? 'flex h-[90vh] w-[80vw] max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl transition-all duration-300'
+    ? 'flex h-full w-full sm:h-[90vh] sm:w-[80vw] sm:max-w-5xl flex-col overflow-hidden sm:rounded-2xl border border-border bg-background shadow-2xl transition-all duration-300'
     : 'flex h-[520px] w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl';
 
   return (
@@ -280,7 +291,7 @@ export function ChatBot({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[75] bg-black/40 backdrop-blur-sm"
             onClick={() => setIsExpanded(false)}
           />
         )}
@@ -302,6 +313,25 @@ export function ChatBot({
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className={chatClasses}
             >
+              {/* Chip "Revenir à …" — affiché quand le chat a été ouvert depuis une fiche */}
+              {originContext?.speciesLabel && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    setIsExpanded(false);
+                    setOriginContext(null);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-primary-foreground/90 bg-primary/90 hover:bg-primary border-b border-primary-foreground/10 transition-colors"
+                  title={`Revenir à la fiche ${originContext.speciesLabel}`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                  <span className="truncate">Revenir à <span className="italic">{originContext.speciesLabel}</span></span>
+                </button>
+              )}
+
               {/* Header — 2 zones intangibles : titre fluide / actions sanctuarisées */}
               <div className="flex items-center justify-between gap-2 border-b border-border bg-primary px-3 py-2.5 sm:px-4 sm:py-3">
                 {/* Zone titre — flex-1 min-w-0 pour laisser la place aux actions */}
@@ -394,6 +424,7 @@ export function ChatBot({
                     onClick={() => {
                       setIsOpen(false);
                       setIsExpanded(false);
+                      setOriginContext(null);
                     }}
                     aria-label="Fermer le chat"
                     className="h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"

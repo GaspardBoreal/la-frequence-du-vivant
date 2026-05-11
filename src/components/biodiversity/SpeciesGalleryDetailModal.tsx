@@ -214,6 +214,41 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 
   const lightboxPhotos = gallerySlides.map((s) => s.url);
 
+  // Prefill enrichi pour le chatbot — partagé desktop + mobile
+  const buildSpeciesChatPrefill = () => {
+    const topMarches = speciesMarches.slice(0, 3).map((m) => m.marcheName).filter(Boolean);
+    const lines = [
+      `Parle-moi de ${frenchName} (${species.scientificName}).`,
+      ``,
+      `Contexte observé sur cette exploration :`,
+      `- Règne : ${kingdomInfo.label}`,
+      `- ${species.count} observation${species.count > 1 ? 's' : ''}${hasMarches ? ` sur ${totalMarchesCount} marche${totalMarchesCount > 1 ? 's' : ''}` : ''}`,
+    ];
+    if (hasObservers) {
+      lines.push(`- ${uniqueObserversCount} marcheur${uniqueObserversCount > 1 ? 's' : ''} contributeur${uniqueObserversCount > 1 ? 's' : ''}`);
+    }
+    if (topMarches.length > 0) {
+      lines.push(`- Marches concernées : ${topMarches.join(', ')}${speciesMarches.length > topMarches.length ? '…' : ''}`);
+    }
+    lines.push(
+      ``,
+      `Pourquoi cette espèce est-elle intéressante ici, que nous apprend sa présence (rôle écologique, indicateur, saisonnalité, interactions), et quelles précautions ou attentions porter ?`,
+    );
+    return lines.join('\n');
+  };
+
+  const openSpeciesChat = () => {
+    window.dispatchEvent(
+      new CustomEvent('community-chat:open', {
+        detail: {
+          prefill: buildSpeciesChatPrefill(),
+          species: species.scientificName,
+          speciesLabel: frenchName,
+        },
+      }),
+    );
+  };
+
   const nextPhoto = () => setCurrentPhotoIndex((prev) => (prev + 1) % Math.max(lightboxPhotos.length, 1));
   const prevPhoto = () => setCurrentPhotoIndex((prev) => (prev - 1 + Math.max(lightboxPhotos.length, 1)) % Math.max(lightboxPhotos.length, 1));
   const hasPhoto = lightboxPhotos.length > 0;
@@ -281,14 +316,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
               {/* CTA IA inline (desktop) */}
               {canChat && !isMobile && (
                 <Button
-                  onClick={() => {
-                    const prefill = `Parle-moi de ${frenchName} (${species.scientificName}) observée ${species.count} fois sur cette exploration. Pourquoi est-elle intéressante ici, et que peut-on apprendre de sa présence ?`;
-                    window.dispatchEvent(
-                      new CustomEvent('community-chat:open', {
-                        detail: { prefill, species: species.scientificName },
-                      }),
-                    );
-                  }}
+                  onClick={openSpeciesChat}
                   className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-white border-0 shadow-lg shadow-emerald-500/20 group h-11"
                 >
                   <Sparkles className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
@@ -392,14 +420,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
               className="shrink-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] bg-gradient-to-t from-slate-900 via-slate-900/95 to-slate-900/0 border-t border-white/5"
             >
               <Button
-                onClick={() => {
-                  const prefill = `Parle-moi de ${frenchName} (${species.scientificName}) observée ${species.count} fois sur cette exploration. Pourquoi est-elle intéressante ici, et que peut-on apprendre de sa présence ?`;
-                  window.dispatchEvent(
-                    new CustomEvent('community-chat:open', {
-                      detail: { prefill, species: species.scientificName },
-                    }),
-                  );
-                }}
+                onClick={openSpeciesChat}
                 className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-white border-0 shadow-lg shadow-emerald-500/20 group h-12"
               >
                 <Sparkles className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
