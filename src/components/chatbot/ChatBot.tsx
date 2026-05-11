@@ -75,6 +75,7 @@ export function ChatBot({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
   const [interruptBanner, setInterruptBanner] = useState(false);
+  const [originContext, setOriginContext] = useState<{ speciesLabel?: string } | null>(null);
   const { messages, isLoading, wasStopped, send, stop, reset } = useChatStream(currentContext, edgeFunctionPath);
   const { exportPrint } = useChatExport(messages);
   const isMobile = useIsMobile();
