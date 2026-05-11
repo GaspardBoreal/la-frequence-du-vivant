@@ -251,11 +251,11 @@ export function ChatBot({
   const toggleExpanded = () => setIsExpanded((prev) => !prev);
 
   const panelClasses = isExpanded
-    ? 'fixed inset-0 z-[60] flex items-center justify-center'
+    ? 'fixed inset-0 z-[80] flex items-center justify-center sm:p-4'
     : 'fixed bottom-6 right-6 z-50';
 
   const chatClasses = isExpanded
-    ? 'flex h-[90vh] w-[80vw] max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl transition-all duration-300'
+    ? 'flex h-full w-full sm:h-[90vh] sm:w-[80vw] sm:max-w-5xl flex-col overflow-hidden sm:rounded-2xl border border-border bg-background shadow-2xl transition-all duration-300'
     : 'flex h-[520px] w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl';
 
   return (
