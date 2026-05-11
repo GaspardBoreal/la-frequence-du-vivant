@@ -1,72 +1,46 @@
 ## Diagnostic
 
-Sur `/exploration/:id`, la fiche espèce s'ouvre dans un `Sheet` (Radix) qui occupe tout l'écran sur mobile et **vit dans un Portal avec focus-trap à `z-50`**. Au clic sur "Discuter de cette espèce avec l'IA", l'event `community-chat:open` est bien dispatché et le `ChatBot` passe à `isOpen=true`. **Mais** :
+Quand on ouvre le chat depuis la fiche espèce, la fenêtre apparaît bien (z-index correct, prefill bien rempli) mais **aucun clic ne fonctionne** : ni le textarea, ni le bouton Envoyer, ni la croix, ni la chip "Revenir à…".
 
-- Le panneau ChatBot par défaut s'affiche en bas-droite (`fixed bottom-6 right-6 z-50`) → il est visuellement **caché derrière la SheetContent plein écran**.
-- Le focus-trap de la Sheet capture les interactions → impression que "rien ne se passe".
+**Cause racine** : la fiche espèce s'affiche dans un `Sheet` Radix (modal). Radix utilise `react-remove-scroll` qui pose `pointer-events: none` sur `<body>` pendant qu'un Sheet/Dialog modal est ouvert. Tout ce qui est rendu **hors** du SheetContent hérite donc de `pointer-events: none` — y compris notre `ChatBot` (rendu au niveau racine de l'app).
 
-Résultat : le chat s'ouvre mais l'utilisateur ne le voit pas et ne peut pas l'utiliser.
+Le z-index n'est pas le problème (le panel est bien à `z-[80]`, au-dessus du Sheet). C'est uniquement les **events pointeur** qui sont bloqués.
 
-## Solution retenue
+## Solution
 
-**Chat en overlay au-dessus de la fiche** (la fiche reste montée derrière), avec un prefill enrichi transmis via le texte du message (aucun changement backend).
+Ajouter explicitement `pointer-events-auto` sur les conteneurs flottants du ChatBot pour qu'ils ré-activent les clics dans leur sous-arbre, indépendamment du verrou posé par Radix sur `<body>`.
 
-### 1. Forcer le mode plein écran à l'ouverture par event
+## Modifications (1 seul fichier)
 
-Dans `src/components/chatbot/ChatBot.tsx`, listener `community-chat:open` :
-- `setIsOpen(true)` + **`setIsExpanded(true)` quand `isMobile`** (et même desktop pour cohérence) → le ChatBot rend déjà `fixed inset-0 z-[60]` quand expanded, ce qui passe au-dessus de la SheetContent (z-50).
-- Étendre le payload accepté : `{ prefill, species, autoSend? }` (autoSend pas activé pour l'instant — l'utilisateur valide).
+`src/components/chatbot/ChatBot.tsx`
 
-### 2. Élever le z-index du ChatBot expanded
+1. **Backdrop expanded** (ligne ~294) : ajouter `pointer-events-auto`
+   ```text
+   className="fixed inset-0 z-[75] bg-black/40 backdrop-blur-sm pointer-events-auto"
+   ```
 
-Passer le conteneur expanded de `z-[60]` à `z-[80]` (la Sheet et son overlay sont à 50, le Lightbox à 9999 reste au-dessus, ce qui est OK). Le backdrop chat passe à `z-[75]`.
+2. **Conteneur panneau** (`panelClasses`, ligne ~253-255) : ajouter `pointer-events-auto` dans les deux variants (expanded ET réduit), pour couvrir aussi le cas où le bouton flottant serait survolé par un autre Sheet.
+   ```text
+   isExpanded
+     ? 'fixed inset-0 z-[80] flex items-center justify-center sm:p-4 pointer-events-auto'
+     : 'fixed bottom-6 right-6 z-50 pointer-events-auto'
+   ```
 
-### 3. Bouton "Revenir à la fiche" dans le header du chat
+3. **Bouton flottant** (ligne ~270) : ajouter `pointer-events-auto` sur le wrapper `motion.div` pour qu'il reste cliquable si un Sheet modal est ouvert ailleurs.
 
-Quand le chat a été ouvert via `community-chat:open` avec un `species`, afficher dans le header du ChatBot un petit chip discret « ← Revenir à *Nom espèce* » qui ferme le chat (la Sheet espèce est toujours montée derrière → elle réapparaît instantanément, contexte préservé : onglet, scroll, photo).
+## QA à faire après implémentation
 
-Mémoriser dans un ref local du ChatBot le dernier `species` reçu via event ; reset à la fermeture.
-
-### 4. Prefill enrichi (recommandé, choix utilisateur)
-
-Dans `SpeciesGalleryDetailModal.tsx`, remplacer le prefill actuel (court) par un prefill structuré et lisible, construit à partir des données déjà calculées dans le composant :
-
-```
-Parle-moi de {frenchName} ({scientificName}).
-
-Contexte observé sur cette exploration :
-- Règne : {kingdomLabel} · Famille : {family ?? "—"}
-- {count} observation(s) sur {totalMarchesCount} marche(s)
-- {uniqueObserversCount} marcheur(s) contributeur(s)
-- Marches concernées : {top 3 marche names, …}
-- Catégorie écologique : {category ou "non classée"}
-
-Pourquoi cette espèce est-elle intéressante ici, que nous apprend sa présence (rôle écologique, indicateur, saisonnalité, interactions), et quelles précautions ou attentions porter ?
-```
-
-Appliqué aux **deux** boutons (desktop inline + mobile sticky) pour cohérence.
-
-### 5. Audit rapide UX
-
-- Le bouton ✕ existant du ChatBot ferme uniquement le chat, la Sheet espèce reste visible derrière → comportement attendu.
-- Vérifier qu'aucun `pointer-events:none` parasite ne bloque les clics dans le chat overlay (z-[80] sur conteneur + bouton X).
-- Vérifier sur 390×754 (iPhone 12/13) que le textarea reste accessible (safe-area déjà géré).
+- Mobile 390px : ouvrir une fiche espèce → "Discuter de cette espèce avec l'IA" → vérifier :
+  - le textarea est focusable et éditable
+  - le bouton Envoyer cliquable
+  - la chip "Revenir à *Cistus*" cliquable (referme le chat, garde la fiche)
+  - le backdrop cliquable (réduit le chat)
+  - la croix X ferme le chat et le chip
+- Desktop : même parcours, vérifier le bouton Maximize/Minimize.
+- Cas chat ouvert seul (sans fiche derrière) : aucun comportement régressé.
 
 ## Hors-scope
 
-- Pas de slice `visibleData` supplémentaire pour cette fiche (l'utilisateur a choisi prefill enrichi seul).
-- Pas de refonte du ChatBot global, ni du `chatPageContext`.
-- Pas de modification de `community-chat` edge function.
-- Pas de changement sur le bouton desktop tant qu'il fonctionne (mais on uniformise le prefill).
-
-## Détails techniques
-
-Fichiers touchés :
-- `src/components/chatbot/ChatBot.tsx` — listener event : forcer `isExpanded` à l'ouverture par event ; mémoriser `lastSpeciesContext` ; afficher chip « Revenir à … » dans le header ; remonter z-index du mode expanded à `z-[80]` (backdrop `z-[75]`).
-- `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` — extraire le prefill dans un helper `buildSpeciesChatPrefill()` et l'utiliser pour les deux CTA (desktop + mobile sticky).
-
-QA :
-1. Mobile 390px : ouvrir une fiche espèce, taper le CTA → le chat couvre l'écran, le prefill est dans l'input, focus posé.
-2. Cliquer ✕ ou « Revenir à *Espèce* » → la fiche espèce réapparaît, scroll/onglet préservés.
-3. Desktop : CTA inline ouvre toujours le ChatBot ; vérifier qu'il n'y a pas de régression.
-4. Vérifier qu'aucune autre source d'event `community-chat:open` ne casse (recherche dans le repo : seulement `SpeciesGalleryDetailModal.tsx`).
+- Pas de refonte du système d'overlay.
+- Pas de changement de la logique prefill / `community-chat:open`.
+- Pas de touche au Sheet de la fiche espèce.
