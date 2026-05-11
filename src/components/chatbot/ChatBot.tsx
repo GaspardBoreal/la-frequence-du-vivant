@@ -424,6 +424,7 @@ export function ChatBot({
                     onClick={() => {
                       setIsOpen(false);
                       setIsExpanded(false);
+                      setOriginContext(null);
                     }}
                     aria-label="Fermer le chat"
                     className="h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
