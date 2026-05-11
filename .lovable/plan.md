@@ -1,46 +1,69 @@
-## Diagnostic
+## Contexte
 
-Quand on ouvre le chat depuis la fiche espèce, la fenêtre apparaît bien (z-index correct, prefill bien rempli) mais **aucun clic ne fonctionne** : ni le textarea, ni le bouton Envoyer, ni la croix, ni la chip "Revenir à…".
+Sur la fiche espèce de **Arion vulgaris** (modal `SpeciesDetailModal`), trois soucis cohabitent :
 
-**Cause racine** : la fiche espèce s'affiche dans un `Sheet` Radix (modal). Radix utilise `react-remove-scroll` qui pose `pointer-events: none` sur `<body>` pendant qu'un Sheet/Dialog modal est ouvert. Tout ce qui est rendu **hors** du SheetContent hérite donc de `pointer-events: none` — y compris notre `ChatBot` (rendu au niveau racine de l'app).
+1. **Traduction FR douteuse** : la DB contient `Loche ibérique` (source `ai`, confidence `medium`) — Gemini a halluciné un nom peu courant. Le vrai nom français usuel est **Loche espagnole**. INPN est offline (cyberattaque MNHN), Wikipédia FR n'a pas matché → fallback IA non fiable.
+2. **Carte de droite** : affiche le `commonName` brut anglais (« Spanish Slug ») au lieu du nom FR du cache, alors que le titre du modal lui utilise bien la traduction. Incohérence + viole la règle Core « Jamais de `commonName` brut affiché ».
+3. **`Famille: 54582`** : `useSpeciesPhoto.ts` met `String(taxon.ancestor_ids[len-2])` (un ID iNat) dans le champ family. Ce n'est pas un nom de famille.
 
-Le z-index n'est pas le problème (le panel est bien à `z-[80]`, au-dessus du Sheet). C'est uniquement les **events pointeur** qui sont bloqués.
+## Objectif
 
-## Solution
+- Corriger immédiatement *Arion vulgaris* en DB.
+- Donner aux curateurs (admin / ambassadeur / sentinelle) un moyen **in-place** de corriger n'importe quelle traduction douteuse, depuis le badge `Traduction medium - ai`.
+- Aligner l'affichage : la carte droite et le titre utilisent le même nom FR ; la famille n'affiche plus un ID brut.
 
-Ajouter explicitement `pointer-events-auto` sur les conteneurs flottants du ChatBot pour qu'ils ré-activent les clics dans leur sous-arbre, indépendamment du verrou posé par Radix sur `<body>`.
+## Plan
 
-## Modifications (1 seul fichier)
+### 1. Migration data — Arion vulgaris (immédiat)
 
-`src/components/chatbot/ChatBot.tsx`
+Mettre à jour la ligne existante :
+- `common_name_fr` → `Loche espagnole`
+- `source` → `manual`
+- `confidence_level` → `high`
 
-1. **Backdrop expanded** (ligne ~294) : ajouter `pointer-events-auto`
-   ```text
-   className="fixed inset-0 z-[75] bg-black/40 backdrop-blur-sm pointer-events-auto"
-   ```
+### 2. Mini UI de curation in-place sur le badge `Traduction`
 
-2. **Conteneur panneau** (`panelClasses`, ligne ~253-255) : ajouter `pointer-events-auto` dans les deux variants (expanded ET réduit), pour couvrir aussi le cas où le bouton flottant serait survolé par un autre Sheet.
-   ```text
-   isExpanded
-     ? 'fixed inset-0 z-[80] flex items-center justify-center sm:p-4 pointer-events-auto'
-     : 'fixed bottom-6 right-6 z-50 pointer-events-auto'
-   ```
+**Composant** `SpeciesTranslationCuratorBadge.tsx` (nouveau, dans `src/components/biodiversity/`) :
+- Visible uniquement si `useCanCurateTranslations()` retourne `true` (admin / ambassadeur / sentinelle, même pattern que `useCanCurateAudio`).
+- Pour un non-curateur : badge informatif inchangé (`Traduction medium - ai`).
+- Pour un curateur : le badge devient un bouton, ouvre un **Popover** élégant avec :
+  - Affichage du nom scientifique (lecture seule)
+  - Input `Nom français` (pré-rempli avec la valeur actuelle)
+  - Petite note : « Source actuelle : ai · medium · proposé par l'IA »
+  - Boutons `Valider la traduction` (garde le nom, passe en `manual/high`) et `Enregistrer` (upsert avec source=`manual`, confidence=`high`)
+- Sur succès : invalide les query keys `species-translation` + `french-species-names`, toast confirmation, popover se ferme.
 
-3. **Bouton flottant** (ligne ~270) : ajouter `pointer-events-auto` sur le wrapper `motion.div` pour qu'il reste cliquable si un Sheet modal est ouvert ailleurs.
+**RPC dédiée** `update_species_translation_manual(scientific_name text, common_name text)` (SECURITY DEFINER) :
+- Vérifie côté serveur que l'appelant est admin OU `community_profiles.role IN ('ambassadeur','sentinelle')`.
+- Upsert dans `species_translations` avec `source='manual'`, `confidence_level='high'`.
+- Plus sûr qu'une policy UPDATE ouverte aux 3 rôles (les policies actuelles n'autorisent que `admin`).
 
-## QA à faire après implémentation
+### 3. Réparer l'affichage de la fiche espèce
 
-- Mobile 390px : ouvrir une fiche espèce → "Discuter de cette espèce avec l'IA" → vérifier :
-  - le textarea est focusable et éditable
-  - le bouton Envoyer cliquable
-  - la chip "Revenir à *Cistus*" cliquable (referme le chat, garde la fiche)
-  - le backdrop cliquable (réduit le chat)
-  - la croix X ferme le chat et le chip
-- Desktop : même parcours, vérifier le bouton Maximize/Minimize.
-- Cas chat ouvert seul (sans fiche derrière) : aucun comportement régressé.
+Dans `src/components/biodiversity/SpeciesDetailModal.tsx` (carte de droite, lignes ~170-190) :
+- Remplacer le bloc actuel par `<SpeciesName scientificName=… commonName=… size="md" showScientific />` (déjà fait pour le titre — appliquer la cohérence).
+- Garde uniquement `species.commonName` comme **fallback** dans `<SpeciesName />` ; le hook `useFrenchSpeciesNamesAuto` se charge du nom FR.
+- Remplacer le badge inline par le nouveau `<SpeciesTranslationCuratorBadge />`.
+- **Famille** : si `species.family` est purement numérique (regex `^\d+$`), masquer la ligne « Famille: … » (ne pas afficher d'ID brut). Si la valeur n'est pas numérique, l'afficher normalement. Solution durable : à terme, corriger `useSpeciesPhoto.ts` pour résoudre l'ID en nom (hors scope de cette correction UX, à signaler dans les notes).
 
-## Hors-scope
+### 4. QA
 
-- Pas de refonte du système d'overlay.
-- Pas de changement de la logique prefill / `community-chat:open`.
-- Pas de touche au Sheet de la fiche espèce.
+- Vérifier que *Arion vulgaris* affiche maintenant « Loche espagnole » dans le titre ET la carte droite.
+- Le badge n'apparaît plus si `source='manual' && confidence='high'` (déjà géré par la condition existante `translation.source !== 'fallback'` à élargir : `source !== 'manual'`).
+- Tester en tant qu'admin : popover s'ouvre, sauvegarde fonctionne, toast OK, refresh immédiat de la fiche.
+- Tester en tant qu'utilisateur lambda : badge non cliquable.
+- Tester sur mobile (390px) : popover bien positionné.
+
+## Détails techniques
+
+**Fichiers créés** :
+- `src/components/biodiversity/SpeciesTranslationCuratorBadge.tsx`
+- `src/hooks/useCanCurateTranslations.ts` (calque `useCanCurateAudio`)
+- Migration SQL : RPC `update_species_translation_manual` + UPDATE one-shot d'Arion vulgaris
+
+**Fichiers modifiés** :
+- `src/components/biodiversity/SpeciesDetailModal.tsx` — carte droite : `<SpeciesName />` + nouveau badge + masquage family numérique
+
+**Hors scope** (à traiter plus tard) :
+- Refactor `useSpeciesPhoto.ts` pour résoudre les `ancestor_ids` en noms taxonomiques.
+- Generaliser le badge à `SpeciesGalleryDetailModal.tsx` (même pattern, peut être fait dans un second temps).
