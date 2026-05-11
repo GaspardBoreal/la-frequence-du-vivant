@@ -169,23 +169,19 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
                   ) : (
                     <>
                       <SpeciesName scientificName={species.scientificName} commonName={species.commonName} size="md" showScientific />
-                      <p className="text-sm text-muted-foreground">Famille: {species.family}</p>
-                      
-                      {/* Indicateur de traduction */}
+                      {species.family && !/^\d+$/.test(String(species.family)) && (
+                        <p className="text-sm text-muted-foreground">Famille: {species.family}</p>
+                      )}
+
+                      {/* Indicateur de traduction (cliquable pour les curateurs) */}
                       {translation && translation.source !== 'fallback' && (
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${
-                              translation.confidence === 'high' 
-                                ? 'bg-green-50 text-green-700 border-green-200' 
-                                : translation.confidence === 'medium'
-                                ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                                : 'bg-gray-50 text-gray-700 border-gray-200'
-                            }`}
-                          >
-                            Traduction {translation.confidence} - {translation.source}
-                          </Badge>
+                          <SpeciesTranslationCuratorBadge
+                            scientificName={species.scientificName}
+                            currentCommonNameFr={translation.commonName}
+                            source={translation.source}
+                            confidence={translation.confidence}
+                          />
                         </div>
                       )}
                     </>
