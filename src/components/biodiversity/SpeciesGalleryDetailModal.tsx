@@ -214,6 +214,41 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 
   const lightboxPhotos = gallerySlides.map((s) => s.url);
 
+  // Prefill enrichi pour le chatbot — partagé desktop + mobile
+  const buildSpeciesChatPrefill = () => {
+    const topMarches = speciesMarches.slice(0, 3).map((m) => m.marcheName).filter(Boolean);
+    const lines = [
+      `Parle-moi de ${frenchName} (${species.scientificName}).`,
+      ``,
+      `Contexte observé sur cette exploration :`,
+      `- Règne : ${kingdomInfo.label}`,
+      `- ${species.count} observation${species.count > 1 ? 's' : ''}${hasMarches ? ` sur ${totalMarchesCount} marche${totalMarchesCount > 1 ? 's' : ''}` : ''}`,
+    ];
+    if (hasObservers) {
+      lines.push(`- ${uniqueObserversCount} marcheur${uniqueObserversCount > 1 ? 's' : ''} contributeur${uniqueObserversCount > 1 ? 's' : ''}`);
+    }
+    if (topMarches.length > 0) {
+      lines.push(`- Marches concernées : ${topMarches.join(', ')}${speciesMarches.length > topMarches.length ? '…' : ''}`);
+    }
+    lines.push(
+      ``,
+      `Pourquoi cette espèce est-elle intéressante ici, que nous apprend sa présence (rôle écologique, indicateur, saisonnalité, interactions), et quelles précautions ou attentions porter ?`,
+    );
+    return lines.join('\n');
+  };
+
+  const openSpeciesChat = () => {
+    window.dispatchEvent(
+      new CustomEvent('community-chat:open', {
+        detail: {
+          prefill: buildSpeciesChatPrefill(),
+          species: species.scientificName,
+          speciesLabel: frenchName,
+        },
+      }),
+    );
+  };
+
   const nextPhoto = () => setCurrentPhotoIndex((prev) => (prev + 1) % Math.max(lightboxPhotos.length, 1));
   const prevPhoto = () => setCurrentPhotoIndex((prev) => (prev - 1 + Math.max(lightboxPhotos.length, 1)) % Math.max(lightboxPhotos.length, 1));
   const hasPhoto = lightboxPhotos.length > 0;
