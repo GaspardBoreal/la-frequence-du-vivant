@@ -177,8 +177,18 @@ export function ChatBot({
   // Listen for global "open chat" requests (e.g. "Discuter de cette espèce avec l'IA")
   useEffect(() => {
     const onOpenRequest = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { prefill?: string } | undefined;
+      const detail = (e as CustomEvent).detail as
+        | { prefill?: string; species?: string; speciesLabel?: string }
+        | undefined;
       setIsOpen(true);
+      // Force le mode plein écran : sur mobile, le panneau bas-droite est masqué
+      // par les Sheet/Modal de fiche espèce. En expanded (z-[80]), il passe au-dessus.
+      setIsExpanded(true);
+      if (detail?.speciesLabel || detail?.species) {
+        setOriginContext({ speciesLabel: detail.speciesLabel || detail.species });
+      } else {
+        setOriginContext(null);
+      }
       if (detail?.prefill) {
         setInput(detail.prefill);
         setTimeout(() => inputRef.current?.focus(), 350);
