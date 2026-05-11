@@ -76,7 +76,19 @@ export function useSpeciesObservers(
         .in('marche_id', marcheIds);
       if (!snaps || snaps.length === 0) return [];
 
+      // Pool de tous les scientificName de l'exploration → utilisé pour décider
+      // si on peut absorber les attributions au rang « genre seul » dans la fiche.
+      const poolSci = new Set<string>();
+      snaps.forEach((snap: any) => {
+        const arr: any[] = Array.isArray(snap.species_data) ? snap.species_data : [];
+        arr.forEach((sp) => {
+          const s = (sp.scientificName || sp.scientific_name || '').toString().trim();
+          if (s) poolSci.add(s);
+        });
+      });
+      const mergedGenus = getMergedGenusFor(scientificName, Array.from(poolSci));
       const target = scientificName.toLowerCase().trim();
+      const targetGenus = mergedGenus ? mergedGenus.toLowerCase().trim() : null;
       const out: SpeciesObserver[] = [];
       const seen = new Set<string>();
 
@@ -84,7 +96,7 @@ export function useSpeciesObservers(
         const arr: any[] = Array.isArray(snap.species_data) ? snap.species_data : [];
         arr.forEach((sp) => {
           const sci = (sp.scientificName || sp.scientific_name || '').toString().toLowerCase().trim();
-          if (sci !== target) return;
+          if (sci !== target && sci !== targetGenus) return;
           const attribs: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
           const mi = marcheInfoMap.get(snap.marche_id);
           attribs.forEach((a, idx) => {
