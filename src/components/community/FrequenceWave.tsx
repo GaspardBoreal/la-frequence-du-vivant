@@ -142,11 +142,18 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
   });
 
   return (
-    <div className="relative rounded-2xl bg-emerald-50 border border-emerald-200 dark:bg-white/[0.12] dark:border-white/20 backdrop-blur-lg p-3 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/50 to-transparent dark:from-white/[0.05] dark:to-transparent" />
+    <div className="relative overflow-hidden rounded-3xl bg-emerald-600 dark:bg-emerald-900 p-6 md:p-8 shadow-xl shadow-emerald-900/20 dark:shadow-black/30">
+      {/* Conic ambient halo */}
+      <motion.div
+        aria-hidden
+        className="absolute -inset-[60%] opacity-20 pointer-events-none"
+        style={{ background: `conic-gradient(from 0deg, transparent 0deg, ${c2} 180deg, transparent 360deg)` }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 20, ease: 'linear', repeat: Infinity }}
+      />
 
-      {/* Wave background */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-[2px] h-12 px-3 opacity-20">
+      {/* Subtle wave at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-[2px] h-10 px-3 opacity-15 pointer-events-none">
         {heights.map((h, i) => (
           <motion.div
             key={i}
@@ -159,10 +166,54 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
         ))}
       </div>
 
-      {/* Title + tabs */}
-      <div className="relative flex items-center justify-between mb-1.5">
-        <span className="text-[10px] text-emerald-700 dark:text-white/60 font-medium tracking-wide uppercase">Ma Fréquence du jour</span>
-        <div className="flex gap-1">
+      <div className="relative z-10 flex flex-col gap-5">
+        {/* Eyebrow */}
+        <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-200 animate-pulse" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-100/70">
+            Ma Fréquence du jour
+          </span>
+        </div>
+
+        {/* Citation hero */}
+        <AnimatePresence mode="wait">
+          <motion.blockquote
+            key={`${activeTab}-${citation.texte}`}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="space-y-4"
+          >
+            <p
+              className="text-xl md:text-2xl italic leading-snug text-white"
+              style={{ fontFamily: "'Crimson Text', 'Libre Baskerville', serif" }}
+            >
+              « {citation.texte} »
+            </p>
+            <footer className="flex items-center justify-end gap-2 text-emerald-100/70 text-xs">
+              <span className="h-px w-8 bg-emerald-300/40" />
+              <span className="inline-flex items-center gap-1">
+                — {citation.auteur}
+                {citation.url && (
+                  <a
+                    href={citation.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-200/50 hover:text-emerald-100 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label="Vérifier la source"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </span>
+            </footer>
+          </motion.blockquote>
+        </AnimatePresence>
+
+        {/* Discreet category tabs */}
+        <div className="flex justify-end gap-1 pt-1">
           {TABS.map(({ key, icon: Icon, label }) => {
             const isActive = activeTab === key;
             const hasContent = byCategorie[key].length > 0;
@@ -171,54 +222,22 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
                 key={key}
                 onClick={() => setActiveTab(key)}
                 disabled={!hasContent && key !== activeTab}
-                className={`p-1 rounded-md transition-all ${
+                className={`p-1.5 rounded-md transition-all ${
                   isActive
-                    ? 'bg-emerald-200/60 dark:bg-white/20'
+                    ? 'bg-white/20 ring-1 ring-white/30'
                     : hasContent
-                      ? 'hover:bg-emerald-100/50 dark:hover:bg-white/10 opacity-50 hover:opacity-80'
+                      ? 'hover:bg-white/10 opacity-50 hover:opacity-90'
                       : 'opacity-20 cursor-not-allowed'
                 }`}
                 title={label}
+                aria-label={label}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-700 dark:text-white/90' : 'text-emerald-600 dark:text-white/50'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-emerald-100/70'}`} />
               </button>
             );
           })}
         </div>
       </div>
-
-      {/* Citation */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`${activeTab}-${citation.texte}`}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="relative text-left"
-        >
-          <p className="italic text-foreground text-xs leading-relaxed">
-            « {citation.texte} »
-          </p>
-          <div className="flex justify-end mt-1.5">
-            <span className="text-muted-foreground text-[10px] inline-flex items-center gap-1">
-              — {citation.auteur}
-              {citation.url && (
-                <a
-                  href={citation.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground/50 hover:text-foreground/60 transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label="Vérifier la source"
-                >
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              )}
-            </span>
-          </div>
-        </motion.div>
-      </AnimatePresence>
     </div>
   );
 };
