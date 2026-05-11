@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFrenchSpeciesNames } from './useFrenchSpeciesNames';
+import { mergeGenusIntoSpecies } from '@/utils/taxonomyMerge';
 
 export interface ExplorationSpecies {
   /** Stable key used as curation entity_id (scientific name preferred, fallback common name) */
@@ -80,7 +81,8 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
         });
       });
 
-      return Array.from(map.values()).sort((a, b) => b.count - a.count);
+      const merged = mergeGenusIntoSpecies(Array.from(map.values()));
+      return merged.sort((a, b) => b.count - a.count);
     },
     enabled: !!explorationId,
     staleTime: 5 * 60 * 1000,
