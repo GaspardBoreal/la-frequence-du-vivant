@@ -43,7 +43,7 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
         className="grid grid-cols-3 gap-3"
       >
         <button
-          onClick={() => onNavigate('marches')}
+          onClick={() => onNavigate('carnet')}
           className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.15] dark:border-white/15 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
         >
           <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-500/25 transition-colors">
