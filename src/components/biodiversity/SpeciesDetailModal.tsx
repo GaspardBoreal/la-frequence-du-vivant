@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
+import { SpeciesTranslationCuratorBadge } from './SpeciesTranslationCuratorBadge';
 
 interface SpeciesDetailModalProps {
   species: BiodiversitySpecies | null;
