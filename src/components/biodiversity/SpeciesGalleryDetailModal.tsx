@@ -420,14 +420,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
               className="shrink-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] bg-gradient-to-t from-slate-900 via-slate-900/95 to-slate-900/0 border-t border-white/5"
             >
               <Button
-                onClick={() => {
-                  const prefill = `Parle-moi de ${frenchName} (${species.scientificName}) observée ${species.count} fois sur cette exploration. Pourquoi est-elle intéressante ici, et que peut-on apprendre de sa présence ?`;
-                  window.dispatchEvent(
-                    new CustomEvent('community-chat:open', {
-                      detail: { prefill, species: species.scientificName },
-                    }),
-                  );
-                }}
+                onClick={openSpeciesChat}
                 className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-white border-0 shadow-lg shadow-emerald-500/20 group h-12"
               >
                 <Sparkles className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
