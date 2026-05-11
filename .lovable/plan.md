@@ -1,69 +1,49 @@
-## Contexte
-
-Sur la fiche espèce de **Arion vulgaris** (modal `SpeciesDetailModal`), trois soucis cohabitent :
-
-1. **Traduction FR douteuse** : la DB contient `Loche ibérique` (source `ai`, confidence `medium`) — Gemini a halluciné un nom peu courant. Le vrai nom français usuel est **Loche espagnole**. INPN est offline (cyberattaque MNHN), Wikipédia FR n'a pas matché → fallback IA non fiable.
-2. **Carte de droite** : affiche le `commonName` brut anglais (« Spanish Slug ») au lieu du nom FR du cache, alors que le titre du modal lui utilise bien la traduction. Incohérence + viole la règle Core « Jamais de `commonName` brut affiché ».
-3. **`Famille: 54582`** : `useSpeciesPhoto.ts` met `String(taxon.ancestor_ids[len-2])` (un ID iNat) dans le champ family. Ce n'est pas un nom de famille.
+# Hiérarchiser l'Accueil — Fréquence en héros, Progression en bandeau
 
 ## Objectif
 
-- Corriger immédiatement *Arion vulgaris* en DB.
-- Donner aux curateurs (admin / ambassadeur / sentinelle) un moyen **in-place** de corriger n'importe quelle traduction douteuse, depuis le badge `Traduction medium - ai`.
-- Aligner l'affichage : la carte droite et le titre utilisent le même nom FR ; la famille n'affiche plus un ID brut.
+Inverser le poids visuel : « Ma Fréquence du jour » devient le héros poétique (typographie serif large, ambiance lumineuse animée), « Votre rôle actuel » devient un bandeau compact (chip + barre fine + jalons en pastilles).
 
-## Plan
+Direction validée : **Éveil Forestier**. Périmètre limité aux deux composants de l'onglet Accueil — pas de changement de logique métier.
 
-### 1. Migration data — Arion vulgaris (immédiat)
+## Changements
 
-Mettre à jour la ligne existante :
-- `common_name_fr` → `Loche espagnole`
-- `source` → `manual`
-- `confidence_level` → `high`
+### 1. `FrequenceWave.tsx` → carte héros poétique
 
-### 2. Mini UI de curation in-place sur le badge `Traduction`
+- Conteneur : `rounded-3xl`, padding généreux (`p-6 md:p-8`), fond emerald profond (semantic tokens : `bg-primary/90` ou `bg-emerald-600 dark:bg-emerald-900`), `shadow-xl shadow-primary/10`.
+- Effet ambiant : halo conique animé (rotation lente 20s) en `opacity-20` derrière le contenu, plus le wave existant en discret arrière-plan.
+- Eyebrow : « MA FRÉQUENCE DU JOUR » en small-caps, tracking large, couleur emerald-100/70.
+- Citation : `text-2xl md:text-3xl` en **Playfair Display** (italique sur le 2e segment), couleur foreground claire sur fond sombre.
+- Auteur : ligne séparée avec petit séparateur `h-px w-8` + lien source discret.
+- Onglets catégorie (Géopoétique / Biodiversité / Bioacoustique) repositionnés en bas de carte, plus discrets (icônes seules, fond translucide).
+- Pulse dot animé à côté de l'eyebrow.
+- Charger Playfair Display une fois (via `index.html` `<link>` ou `@import` dans `index.css`).
 
-**Composant** `SpeciesTranslationCuratorBadge.tsx` (nouveau, dans `src/components/biodiversity/`) :
-- Visible uniquement si `useCanCurateTranslations()` retourne `true` (admin / ambassadeur / sentinelle, même pattern que `useCanCurateAudio`).
-- Pour un non-curateur : badge informatif inchangé (`Traduction medium - ai`).
-- Pour un curateur : le badge devient un bouton, ouvre un **Popover** élégant avec :
-  - Affichage du nom scientifique (lecture seule)
-  - Input `Nom français` (pré-rempli avec la valeur actuelle)
-  - Petite note : « Source actuelle : ai · medium · proposé par l'IA »
-  - Boutons `Valider la traduction` (garde le nom, passe en `manual/high`) et `Enregistrer` (upsert avec source=`manual`, confidence=`high`)
-- Sur succès : invalide les query keys `species-translation` + `french-species-names`, toast confirmation, popover se ferme.
+### 2. `ProgressionCard.tsx` → bandeau compact (~70px de hauteur)
 
-**RPC dédiée** `update_species_translation_manual(scientific_name text, common_name text)` (SECURITY DEFINER) :
-- Vérifie côté serveur que l'appelant est admin OU `community_profiles.role IN ('ambassadeur','sentinelle')`.
-- Upsert dans `species_translations` avec `source='manual'`, `confidence_level='high'`.
-- Plus sûr qu'une policy UPDATE ouverte aux 3 rôles (les policies actuelles n'autorisent que `admin`).
+- Suppression du gros nombre `marchesCount` (4xl), de la phrase descriptive italique, et de la timeline complète des 5 rôles avec icônes+labels.
+- Conserve : libellé « Rôle actuel », chip RoleBadge inline, % progression, barre fine `h-1`, jalons en pastilles.
+- Layout :
+  ```
+  [Rôle actuel: ●Marcheur  Niveau 4]              [65%]
+  ●━━━━━━━━━━●━━━━━━━━━━○━━━━━━━━━━○ → Éclaireur
+  ```
+- Padding `p-4`, `rounded-2xl`, semantic tokens (`bg-card`, `border-border`).
+- Au clic sur la carte → ouvre un Drawer/Sheet avec le détail complet (timeline 5 rôles, phrase d'encouragement, prérequis formation/certification) — réutiliser le contenu actuel à l'intérieur du drawer pour ne rien perdre.
 
-### 3. Réparer l'affichage de la fiche espèce
+### 3. Spacing parent
 
-Dans `src/components/biodiversity/SpeciesDetailModal.tsx` (carte de droite, lignes ~170-190) :
-- Remplacer le bloc actuel par `<SpeciesName scientificName=… commonName=… size="md" showScientific />` (déjà fait pour le titre — appliquer la cohérence).
-- Garde uniquement `species.commonName` comme **fallback** dans `<SpeciesName />` ; le hook `useFrenchSpeciesNamesAuto` se charge du nom FR.
-- Remplacer le badge inline par le nouveau `<SpeciesTranslationCuratorBadge />`.
-- **Famille** : si `species.family` est purement numérique (regex `^\d+$`), masquer la ligne « Famille: … » (ne pas afficher d'ID brut). Si la valeur n'est pas numérique, l'afficher normalement. Solution durable : à terme, corriger `useSpeciesPhoto.ts` pour résoudre l'ID en nom (hors scope de cette correction UX, à signaler dans les notes).
-
-### 4. QA
-
-- Vérifier que *Arion vulgaris* affiche maintenant « Loche espagnole » dans le titre ET la carte droite.
-- Le badge n'apparaît plus si `source='manual' && confidence='high'` (déjà géré par la condition existante `translation.source !== 'fallback'` à élargir : `source !== 'manual'`).
-- Tester en tant qu'admin : popover s'ouvre, sauvegarde fonctionne, toast OK, refresh immédiat de la fiche.
-- Tester en tant qu'utilisateur lambda : badge non cliquable.
-- Tester sur mobile (390px) : popover bien positionné.
+- `AccueilTab.tsx` : passer `space-y-5` → `space-y-4` pour resserrer.
 
 ## Détails techniques
 
-**Fichiers créés** :
-- `src/components/biodiversity/SpeciesTranslationCuratorBadge.tsx`
-- `src/hooks/useCanCurateTranslations.ts` (calque `useCanCurateAudio`)
-- Migration SQL : RPC `update_species_translation_manual` + UPDATE one-shot d'Arion vulgaris
+- Tokens : utiliser `bg-primary`, `text-primary-foreground`, `border-border`, `bg-card`. Pas de couleurs HEX en clair dans les composants.
+- Animations : Framer Motion (déjà importé) pour le halo conique (`animate={{ rotate: 360 }}` infini) et l'apparition.
+- Le drawer de détail rôle : utiliser `@/components/ui/sheet` (déjà dans shadcn). Trigger = click sur le bandeau compact entier.
+- Aucun changement de props publique : `FrequenceWave` et `ProgressionCard` gardent leur signature.
+- Aucun changement DB / RPC / hook.
 
-**Fichiers modifiés** :
-- `src/components/biodiversity/SpeciesDetailModal.tsx` — carte droite : `<SpeciesName />` + nouveau badge + masquage family numérique
+## Hors périmètre
 
-**Hors scope** (à traiter plus tard) :
-- Refactor `useSpeciesPhoto.ts` pour résoudre les `ancestor_ids` en noms taxonomiques.
-- Generaliser le badge à `SpeciesGalleryDetailModal.tsx` (même pattern, peut être fait dans un second temps).
+- Pas de modification de la barre d'onglets, du header, ni de la grille de quick actions (Mes marches / Zones×4 / Quiz éveil).
+- Pas de modification du contenu des citations ni de la logique de sélection journalière.
