@@ -251,8 +251,8 @@ export function ChatBot({
   const toggleExpanded = () => setIsExpanded((prev) => !prev);
 
   const panelClasses = isExpanded
-    ? 'fixed inset-0 z-[80] flex items-center justify-center sm:p-4'
-    : 'fixed bottom-6 right-6 z-50';
+    ? 'fixed inset-0 z-[80] flex items-center justify-center sm:p-4 pointer-events-auto'
+    : 'fixed bottom-6 right-6 z-50 pointer-events-auto';
 
   const chatClasses = isExpanded
     ? 'flex h-full w-full sm:h-[90vh] sm:w-[80vw] sm:max-w-5xl flex-col overflow-hidden sm:rounded-2xl border border-border bg-background shadow-2xl transition-all duration-300'
@@ -267,7 +267,7 @@ export function ChatBot({
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 right-6 z-50"
+            className="fixed bottom-6 right-6 z-50 pointer-events-auto"
           >
             <Button
               onClick={() => setIsOpen(true)}
@@ -291,7 +291,7 @@ export function ChatBot({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[75] bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[75] bg-black/40 backdrop-blur-sm pointer-events-auto"
             onClick={() => setIsExpanded(false)}
           />
         )}
