@@ -10,6 +10,15 @@
     "patrimoniale": "Espèce protégée par arrêté national/régional OU classée Liste Rouge UICN France ≥ NT (Quasi menacée)"
   },
   "species": {
+    "Symphytum × uplandicum": {
+      "primary": "auxiliaire",
+      "secondary": ["bioindicatrice"],
+      "notes": "Consoude de Russie, hybride S. officinale × S. asperum. Engrais vert, mellifère, accumulatrice de potasse. NON listée EEE (ni règlement UE 1143/2014, ni arrêté français)."
+    },
+    "Symphytum": {
+      "primary": "auxiliaire",
+      "notes": "Genre Consoude — fallback genre (mellifère, engrais vert)."
+    },
     "Carabus": {
       "primary": "auxiliaire",
       "secondary": ["indigene"],

@@ -155,13 +155,20 @@ export const useUpsertCuration = () => {
         if (error) throw error;
         return data;
       } else {
+        // Defensive: never persist composite alias keys (e.g. "Sci | Sci | Common | 2")
+        // as entity_id for species. Always store the canonical scientific name only.
+        const rawEntityId = payload.entity_id ?? null;
+        const safeEntityId =
+          rawEntityId && payload.entity_type === 'species' && rawEntityId.includes(' | ')
+            ? rawEntityId.split(' | ')[0].trim()
+            : rawEntityId;
         const { data, error } = await supabase
           .from('exploration_curations')
           .insert({
             exploration_id: payload.exploration_id,
             sense: payload.sense,
             entity_type: payload.entity_type,
-            entity_id: payload.entity_id ?? null,
+            entity_id: safeEntityId,
             category: payload.category ?? null,
             title: payload.title ?? null,
             description: payload.description ?? null,

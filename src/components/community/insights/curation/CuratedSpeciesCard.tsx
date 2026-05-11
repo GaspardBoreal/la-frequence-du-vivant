@@ -158,7 +158,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
               explorationId={explorationId}
               sense="oeil"
               entityType="species"
-              entityId={species.key}
+              entityId={species.scientificName || species.key}
               existing={curation}
               category={curation?.category}
             />

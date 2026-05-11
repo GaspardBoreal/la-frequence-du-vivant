@@ -36,7 +36,13 @@ export function useMarcheurSensibleSpecies(
   const curationByName = useMemo(() => {
     const map = new Map<string, SpeciesCategory | string | null>();
     (curations || []).forEach((c: any) => {
-      if (c?.entity_id && c?.category) map.set(c.entity_id, c.category);
+      if (!c?.entity_id || !c?.category) return;
+      // Tolerate legacy composite alias keys "Sci | Sci | Common | n" by indexing
+      // on the canonical scientific name (1st segment) so curation always wins.
+      const canonical = String(c.entity_id).includes(' | ')
+        ? String(c.entity_id).split(' | ')[0].trim()
+        : c.entity_id;
+      map.set(canonical, c.category);
     });
     return map;
   }, [curations]);

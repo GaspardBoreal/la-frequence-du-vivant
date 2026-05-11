@@ -723,7 +723,7 @@ const SpeciesGrid: React.FC<{
                       exploration_id: explorationId,
                       sense: 'oeil',
                       entity_type: 'species',
-                      entity_id: species.key,
+                      entity_id: species.scientificName || species.key,
                       category: cat,
                     });
                   }}
