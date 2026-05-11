@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getMergedGenusFor } from '@/utils/taxonomyMerge';
 
 export type ObserverSource = 'inaturalist' | 'gbif' | 'ebird' | 'other';
 
