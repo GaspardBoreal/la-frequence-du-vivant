@@ -1,52 +1,112 @@
-## Diagnostic
+## 1. Analyse du fichier KML `Marche_Vincent.kml`
 
-Sur l'exploration **DEVIAT** (`20dd3be8…`), il s'agit bien de **deux observations iNaturalist distinctes** du même observateur (Gaspard Boréal), probablement de la même plante :
+Le fichier contient **7 Placemarks** (points GPS) qui représentent chacun **un habitat / une parcelle distincte** sur un même site, situé en **Normandie (Orne)**, autour de la commune de **Tinchebray-Bocage / Saint-Quentin-les-Chardonnets** (lat ≈ 48.825°N, lon ≈ -0.014°E).
 
-| Obs iNat | Date | Lat / Lon | Identification | Affichage actuel |
-|---|---|---|---|---|
-| [345237977](https://www.inaturalist.org/observations/345237977) | 2026-03-22 | 45.41412, 0.00908 | `Symphytum × uplandicum` (espèce hybride) | « Consoude de Russie » |
-| [360520743](https://www.inaturalist.org/observations/360520743) | 2026-05-11 | 45.41405, 0.00921 | `Symphytum` (genre seul) | « Consoude » |
+### Inventaire des 7 parcelles
 
-Les deux points sont à **~10 m** l'un de l'autre, même chemin (Route de Brossac), même observateur. La 2e observation est volontairement laissée au rang de **genre** sur iNat (l'observateur n'a pas tranché l'espèce). Notre pool d'espèces (`useExplorationSpeciesPool`) déduplique strictement par `scientificName`, donc il les garde séparées — ce qui est **techniquement correct mais visuellement trompeur** : un genre et une espèce de ce genre apparaissent comme deux entrées.
 
-Ce n'est pas un bug GPS — c'est un défaut de **fusion taxonomique** : une observation au rang « genre » devrait être absorbée par une observation au rang « espèce » du **même genre**, dans le **même périmètre** d'exploration.
+| #   | Habitat (description KML) | Latitude | Longitude |
+| --- | ------------------------- | -------- | --------- |
+| 1   | Ripisylve                 | 48.82799 | -0.01393  |
+| 2   | Lisière forêt / champ     | 48.82405 | -0.01187  |
+| 3   | Champ ouvert              | 48.82644 | -0.00928  |
+| 4   | Lande sèche               | 48.82434 | -0.01680  |
+| 5   | Prairie humide            | 48.82570 | -0.01679  |
+| 6   | Potager sol vivant        | 48.82631 | -0.01742  |
+| 7   | Forêt                     | 48.82519 | -0.01592  |
 
-## Plan : fusion taxonomique genre ↔ espèce
 
-### 1. Nouveau utilitaire `src/utils/taxonomyMerge.ts`
+### Caractéristiques géographiques
 
-Fonction `mergeGenusIntoSpecies(species: RawSpecies[]): RawSpecies[]` :
+- **Centroïde** : 48.8257°N, -0.0146°E
+- **Emprise** : ~600 m (Est-Ouest) × ~430 m (Nord-Sud), soit environ **35 hectares**
+- **Diversité d'habitats remarquable** : 7 milieux écologiquement très contrastés (zone humide, sèche, forestière, agricole, ripicole, potagère) sur un mouchoir de poche → terrain pédagogique et scientifique exceptionnel pour un protocole "Marches du Vivant".
 
-- Pour chaque entrée, extraire le **genre** = premier mot du `scientificName` (ex. `Symphytum × uplandicum` → `Symphytum`, `Symphytum` → `Symphytum`).
-- Identifier les entrées « genre seul » : `scientificName` = un seul mot capitalisé.
-- Pour chaque entrée « genre seul », chercher si **une ou plusieurs entrées « espèce »** partagent le même genre dans le pool.
-  - Si **exactement une espèce** du genre existe → fusionner : on garde l'entrée espèce (plus précise), on cumule `count`, on conserve l'image existante si l'espèce n'en a pas, et on rattache les `marcheIds` couverts.
-  - Si **plusieurs espèces** du même genre coexistent → on **n'absorbe pas** (ambigu) : la consoude « genre » resterait un signal légitime « non identifiée plus finement ».
-  - Si **aucune espèce** du genre → garder l'entrée genre telle quelle.
+### Particularités techniques du KML
 
-### 2. Brancher la fusion dans `useExplorationSpeciesPool.ts`
+- Pas de tracé (LineString) — uniquement des points.
+- Pas de date ni d'horodatage.
+- Chaque Placemark embarque une icône PNG en base64 (identique pour tous, donc pas porteuse d'information).
+- Le champ `description` porte le **nom d'habitat** → c'est lui qui doit servir de nom de marche.
 
-Avant l'enrichissement français (`frMap`), passer `Array.from(map.values())` dans `mergeGenusIntoSpecies(...)`.
+---
 
-### 3. Appliquer la même fusion côté `useSpeciesObservers` / fiche espèce
+## 2. Recommandation : nombre de marches à créer
 
-Quand on ouvre la fiche `Symphytum × uplandicum`, on doit voir **les deux observations** (la 345237977 ET la 360520743), pas seulement celle au rang espèce. Étendre `useSpeciesObservers` :
+**→ 7 marches, une par parcelle/habitat.**
 
-- Si `scientificName` est binomial (ex. `Symphytum × uplandicum`), inclure aussi les attributions dont le `scientificName` snapshot vaut **uniquement le genre** (`Symphytum`), à condition qu'aucune autre espèce du même genre ne soit présente dans l'exploration. La même règle que la fusion garantit la cohérence.
+Justification :
 
-### 4. Petit indicateur visuel sur la fiche (optionnel mais utile)
+- Chaque point KML représente un **micro-écosystème distinct** identifié par Vincent lui-même (il a pris le soin de les nommer un par un).
+- C'est cohérent avec le protocole existant des Marches du Vivant : une marche = un habitat = un relevé biodiversité ciblé (rayon de collecte iNaturalist par défaut 500 m, parfaitement adapté à la taille des parcelles).
+- Cela permet ensuite de comparer les **fréquences du vivant** entre habitats (ripisylve vs lande sèche vs potager sol vivant…) — exactement le type de récit fort pour un président de Ver de Terre Production.
+- La diversité d'habitats sera visualisée comme un **gradient écologique** dans l'exploration agrégatrice.
 
-Sur la modale espèce, ajouter une mention discrète sous le nom :
-*« 1 observation rattachée au rang du genre »* lorsqu'une fusion a eu lieu — pour ne rien cacher de la donnée source iNat.
+Alternative plus légère (non recommandée) : 1 seule marche centroïde — perdrait toute la richesse du découpage par habitat fait par Vincent.
 
-## Hors-scope
+---
 
-- Pas de modification du schéma Supabase ni des snapshots stockés (la fusion est calculée à la volée côté client).
-- Pas de fusion sur la base de proximité GPS seule : on s'appuie uniquement sur la **hiérarchie taxonomique** (genre/espèce), beaucoup plus sûre et déterministe.
-- Pas de changement aux compteurs Fréquence (ils sont calculés ailleurs et déjà dédupliqués via les alias).
+## 3. Plan d'exécution
 
-## Détails techniques
+### Étape 1 — Créer l'événement
 
-- `scientificName` au rang genre = pas d'espace ou suffixe `sp.` / `spp.` (à gérer aussi).
-- Le `×` (hybride) doit être traité comme un caractère normal du nom binomial — déjà OK avec un simple split sur espace.
-- La fusion s'applique **par exploration**, pas globalement, pour rester contextuelle.
+- **Table** : `marche_events` (via formulaire admin existant `MarcheEventsAdmin`)
+- **Nom** : Laboratoire à Ciel Ouvert : Biodiversité & Sols Vivants
+- **Type d'événement** : `agroecologique` (cohérent avec le profil Ver de Terre Production)
+- **Date** : 1205/2026
+- **Localisation** : Tinchebray-Bocage (61) — lat 4/8.8257, lon -0.0146
+- **Organisateur** : La Fréquence du Vivant
+
+### Étape 2 — Créer l'exploration
+
+- **Table** : `explorations`
+- **Nom** : Laboratoire à Ciel Ouvert : Biodiversité & Sols Vivants
+- **Description courte** : "7 habitats contrastés sur 35 ha — diagnostic biodiversité d'une mosaïque agroécologique avec Vincent Levavasseur (Ver de Terre Production)."
+- **Coordonnées centroïdes** : 48.8257°N, -0.0146°E
+- **Rattachement** : associée à l'événement créé en étape 1 (champ `event_id` ou table de liaison selon schéma actuel — à vérifier sur `MarchesDuVivantExplorationMarcheur` / `useExplorationMarches`).
+- **Statut initial** : `draft` (publication ON/OFF respectée selon mémoire `progressive-publishing-system-logic`).
+
+### Étape 3 — Créer les 7 marches (une par parcelle)
+
+Pour chaque Placemark KML, créer une ligne dans `marches` avec :
+
+
+| Champ                    | Valeur                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `nom_marche`             | `V. Levavasseur — <habitat>` (ex. "V. Levavasseur — Ripisylve")                 |
+| `ville`                  | `Tinchebray-Bocage`                                                             |
+| `region`                 | `Normandie`                                                                     |
+| `departement`            | `Orne`                                                                          |
+| `latitude` / `longitude` | coordonnées exactes du point KML                                                |
+| `theme_principal`        | `agroecologique`                                                                |
+| `sous_themes`            | `[<habitat>]` (Ripisylve, Lande sèche, etc.)                                    |
+| `tags`                   | `["agroécologie", "Ver de Terre Production", "Vincent Levavasseur", <habitat>]` |
+| `descriptif_court`       | `Habitat : <description KML> — parcelle de la Marche V. Levavasseur`            |
+| `organisateur_id`        | id de l'organisateur Ver de Terre Production                                    |
+| Rattachement exploration | via la table de liaison `exploration_marches` (selon schéma)                    |
+
+
+### Étape 4 — Rattacher Vincent comme marcheur
+
+- Création/identification du profil marcheur "Vincent Levavasseur".
+- Trigger existant `participation-validation-trigger` + `marcheur-inaturalist-backfill-logic` se chargeront d'attacher automatiquement ses futures observations iNaturalist aux 7 marches dès qu'il sera enregistré participant.
+
+---
+
+## 4. Détails techniques (pour exécution future)
+
+- **Insertion** : 1 INSERT `marche_events` + 1 INSERT `explorations` + 7 INSERT `marches` + 7 INSERT `exploration_marches` (table de liaison).
+- **Source des données** : parser KML côté script Node (pas besoin d'UI dédiée pour cet import ponctuel) → générer un SQL `INSERT` via `supabase--migration` n'est PAS adapté (data, pas schéma) → utiliser `psql` en mode INSERT direct ou l'UI admin existante.
+- **Validation GPS** : les 7 points sont contigus (max 600 m d'écart) → ils tomberont tous dans le même rayon de 5 km → la **fusion taxonomique** récemment introduite (`taxonomyMerge.ts`) restera pertinente au niveau exploration agrégée.
+- **Hors scope** : pas de modification de schéma DB, pas de nouveau composant UI, pas de migration.
+
+---
+
+## 5. Validation attendue avant exécution
+
+Avant de lancer la création réelle (étapes 1→3), confirmer avec toi :
+
+1. **Date de l'événement** : 12/05/2026
+2. **Commune exacte** : Tinchebray-Bocage (61) confirmée 
+3. **Organisateur** : créer "Ver de Terre Production" comme nouvelle entrée
+4. **OK pour 7 marches** (une par habitat)
