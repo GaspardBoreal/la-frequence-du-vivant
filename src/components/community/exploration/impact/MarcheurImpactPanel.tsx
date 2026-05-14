@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Bird, Flower2, TreePine, Leaf } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import ImpactTeaserCard from './ImpactTeaserCard';
 import ImpactStoriesViewer from './ImpactStoriesViewer';
 import { useMarcheurSensibleSpecies } from '@/hooks/useMarcheurSensibleSpecies';
