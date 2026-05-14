@@ -34,7 +34,7 @@ const TABS: Array<{ key: TabKey; label: string; icon: typeof Layers }> = [
 
 const STORAGE_KEY = 'bio-indices-mode';
 
-export const TaxonsIndicesPanel: React.FC<Props> = ({ species }) => {
+export const TaxonsIndicesPanel: React.FC<Props> = ({ species, explorationId }) => {
   const [active, setActive] = useState<TabKey>('richness');
   const [mode, setMode] = useState<CountMode>(() => {
     if (typeof window === 'undefined') return 'individuals';
