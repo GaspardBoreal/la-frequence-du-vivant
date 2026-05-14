@@ -14,6 +14,9 @@ export interface AttributionLike {
   source?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  exactLatitude?: number | null;
+  exactLongitude?: number | null;
+  [key: string]: any;
 }
 
 export interface IndividualCountResult {
@@ -27,6 +30,21 @@ export interface IndividualCountResult {
 }
 
 const EARTH_R = 6371000; // meters
+
+/**
+ * Returns normalized GPS coords from an attribution.
+ * iNaturalist snapshots use `exactLatitude`/`exactLongitude`, some other
+ * sources use `latitude`/`longitude`. Accept both.
+ */
+export function getLatLng(a: AttributionLike | null | undefined): { lat: number; lng: number } | null {
+  if (!a) return null;
+  const lat = typeof a.latitude === 'number' ? a.latitude : a.exactLatitude;
+  const lng = typeof a.longitude === 'number' ? a.longitude : a.exactLongitude;
+  if (typeof lat === 'number' && typeof lng === 'number' && Number.isFinite(lat) && Number.isFinite(lng)) {
+    return { lat, lng };
+  }
+  return null;
+}
 
 function haversine(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -50,37 +68,32 @@ export function countIndividuals(
     return { totalObservations: 0, individuals: 0, clusters: [] };
   }
 
-  const withGps = list.filter(
-    (a) =>
-      typeof a.latitude === 'number' &&
-      typeof a.longitude === 'number' &&
-      Number.isFinite(a.latitude) &&
-      Number.isFinite(a.longitude),
-  );
+  const withGps = list
+    .map((a) => ({ a, ll: getLatLng(a) }))
+    .filter((x) => x.ll !== null) as Array<{ a: AttributionLike; ll: { lat: number; lng: number } }>;
   const noGps = list.length - withGps.length;
 
   // Sort by lat for greedy clustering
-  const sorted = [...withGps].sort((a, b) => (a.latitude! - b.latitude!));
+  const sorted = [...withGps].sort((a, b) => a.ll.lat - b.ll.lat);
   const clusters: IndividualCountResult['clusters'] = [];
 
-  for (const obs of sorted) {
+  for (const { a: obs, ll } of sorted) {
     let merged = false;
     for (const c of clusters) {
       if (!c.centroid) continue;
-      const d = haversine(c.centroid.lat, c.centroid.lng, obs.latitude!, obs.longitude!);
+      const d = haversine(c.centroid.lat, c.centroid.lng, ll.lat, ll.lng);
       if (d < radius) {
         c.attributions.push(obs);
         c.count += 1;
-        // Update centroid (running mean)
-        c.centroid.lat = (c.centroid.lat * (c.count - 1) + obs.latitude!) / c.count;
-        c.centroid.lng = (c.centroid.lng * (c.count - 1) + obs.longitude!) / c.count;
+        c.centroid.lat = (c.centroid.lat * (c.count - 1) + ll.lat) / c.count;
+        c.centroid.lng = (c.centroid.lng * (c.count - 1) + ll.lng) / c.count;
         merged = true;
         break;
       }
     }
     if (!merged) {
       clusters.push({
-        centroid: { lat: obs.latitude!, lng: obs.longitude! },
+        centroid: { lat: ll.lat, lng: ll.lng },
         count: 1,
         attributions: [obs],
       });
