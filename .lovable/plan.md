@@ -1,59 +1,58 @@
-# Plan
+# Plan — Cron quotidien de re-synchro iNaturalist marcheurs
 
 ## Objectif
-Relancer le backfill iNaturalist pour l’événement `DEVIAT / Jardin Monde du 11.03.26 à aujourd'hui`, puis identifier précisément pourquoi l’orchidée visible dans la Fréquence n’a pas été rattachée au carnet marcheur de Laurence.
+Mettre en place une re-synchro automatique quotidienne pour que toute nouvelle observation iNaturalist d'un marcheur (ex: l'orchidée de Laurence) soit rattachée à son carnet sans intervention manuelle.
 
-## Ce que j’ai déjà confirmé
-- Laurence Karki a bien une participation sur cet événement.
-- Laurence a bien un compte iNaturalist lié : `laurencekarki`.
-- Un backfill manuel a déjà réussi le `10/05` sur cette exploration : `20` insertions sur `4` marches.
-- L’événement DEVIAT appartient à l’exploration `20dd3be8-e594-492c-998a-5c4d009a5094`.
-- Le trigger automatique n’a vraisemblablement pas joué pour Laurence au moment de sa participation, car sa participation a été créée avant l’installation du trigger de backfill.
+## Architecture
 
-## Exécution proposée
-1. **Relancer la fonction ciblée pour Laurence sur cet événement**
-   - Appeler `backfill-marcheur-inaturalist` avec :
-     - `user_id = 0c9a3fbe-20d0-4989-bde9-24678768e85f`
-     - `exploration_id = 20dd3be8-e594-492c-998a-5c4d009a5094`
-     - `marche_event_id = f6095e8d-44a8-4156-951f-dd604b821603`
-     - `source = manual_event_recheck`
-   - C’est sûr côté données : la fonction fait un `upsert` idempotent sur `(marcheur_id, marche_id, species_scientific_name)`.
+```text
+┌─ pg_cron (03:30 Europe/Paris, daily)
+│    └─ select cron.schedule(...)
+│         └─ HTTP POST → backfill-marcheur-inaturalist-batch (edge function)
+│              └─ pour chaque (user_id, exploration_id) éligible :
+│                   POST → backfill-marcheur-inaturalist (existant, idempotent)
+└─ table marcheur_backfill_log : trace de chaque run
+```
 
-2. **Lire le log de ce run immédiatement après**
-   - Vérifier :
-     - `inat_login`
-     - `marches_scanned`
-     - `candidates`
-     - `observations_inserted`
-     - éventuelle `error`
-   - Cela dira si la fonction voit bien des observations iNaturalist brutes pour Laurence aujourd’hui.
+## Critères d'éligibilité scannés par le batch
+Pour chaque `community_profile` ayant un compte iNaturalist lié, on relance le backfill sur **chaque exploration** où ce marcheur a au moins une participation. C'est exactement le périmètre couvert par les triggers existants.
 
-3. **Comparer le backfill avec les snapshots qui comptent déjà l’orchidée**
-   - Contrôler les marches DEVIAT où `Anacamptis pyramidalis` apparaît déjà dans `biodiversity_snapshots`.
-   - Comparer ces données au périmètre réel utilisé par le backfill, qui repose uniquement sur :
-     - le `user_login` iNaturalist,
-     - les coordonnées des `exploration_marches`,
-     - un rayon fixe de `500 m`.
+```sql
+SELECT DISTINCT mp.user_id, me.exploration_id
+FROM marche_participations mp
+JOIN marche_events me ON me.id = mp.marche_event_id
+JOIN community_profiles cp ON cp.user_id = mp.user_id
+JOIN community_profile_science_accounts csa
+  ON csa.profile_id = cp.id AND csa.network = 'inaturalist'
+WHERE me.exploration_id IS NOT NULL;
+```
 
-4. **Isoler la cause exacte du non-match**
-   - Je m’attends à confirmer l’une de ces causes :
-     - **cause A — pas de relance après la nouvelle observation** : le backfill a tourné le 10/05, mais l’orchidée du 14/05 est plus récente ;
-     - **cause B — écart de pipeline** : l’orchidée est visible dans les snapshots via attribution/fusion, mais pas récupérable par le backfill basé sur `user_login` iNaturalist ;
-     - **cause C — écart géographique** : l’observation est hors du rayon de 500 m autour des marches GPS de l’exploration ;
-     - **cause D — périmètre exploration vs événement** : la fonction scanne les marches de l’exploration, pas une logique enrichie par parcelle/section de l’événement.
+## Étapes d'implémentation
 
-## Si le diagnostic confirme le bug
-Je proposerai ensuite une correction minimale et robuste, sans élargir le scope inutilement :
-- soit **ajouter une relance manuelle par événement**,
-- soit **ajouter un fallback depuis les attributions de snapshot** quand iNaturalist `user_login` ne suffit pas,
-- soit **adapter le périmètre GPS** si la parcelle 362 n’est pas couverte par les marches actuelles.
+1. **Migration SQL** :
+   - Activer `pg_cron` et `pg_net` (idempotent).
+   - Planifier `daily-marcheur-inat-backfill` à `30 1 * * *` UTC (= 03:30 Paris en heure d'été, 02:30 en heure d'hiver — créneau creux).
+   - Le job appelle l'edge function batch via `net.http_post`.
 
-## Détail technique
-- Fonction concernée : `supabase/functions/backfill-marcheur-inaturalist/index.ts`
-- Limites actuelles observées :
-  - scan par `user_login` iNaturalist uniquement ;
-  - rayon fixe `0.5 km` ;
-  - scan des `exploration_marches` plutôt qu’un périmètre événement enrichi ;
-  - aucune lecture des attributions déjà présentes dans `biodiversity_snapshots` pour compléter `marcheur_observations`.
+2. **Nouvelle edge function** `backfill-marcheur-inat-batch` :
+   - Service-role only (validée par header partagé `X-Cron-Secret`).
+   - Lit la liste éligible.
+   - Pour chaque couple `(user_id, exploration_id)` : invoke `backfill-marcheur-inaturalist` avec `source = 'cron_daily'`.
+   - Throttling simple : pause 250 ms entre appels, limite 200 couples par run (pour rester sous 60 s d'edge timeout). Si dépassé, le run du lendemain prendra le relais (déjà idempotent côté insert).
+   - Insère un résumé dans `marcheur_backfill_log` (source `cron_daily_summary`).
 
-Si tu valides, j’exécute la relance ciblée puis je te donne la cause exacte du non-match sur cet événement.
+3. **Secret** : `CRON_SHARED_SECRET` (généré côté Lovable, utilisé par le cron SQL et vérifié par la fonction batch).
+
+## Sécurité
+- La fonction batch refuse toute requête sans `X-Cron-Secret` valide.
+- Pas d'exposition côté front.
+- Le service_role n'est utilisé que côté edge.
+
+## Observabilité
+- Visible dans le dashboard admin via le `marcheur_backfill_log` existant (source `cron_daily` et `cron_daily_summary`).
+- L'orchidée de Laurence apparaîtra dès le premier run quotidien — et reste dispo manuellement via le bouton existant côté admin si besoin immédiat.
+
+## Hors scope (volontairement)
+- Pas de bouton UI dédié (option 2).
+- Pas de hook front (option 3).
+- Pas de modification de la fonction `backfill-marcheur-inaturalist` existante (déjà idempotente).
