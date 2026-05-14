@@ -4978,6 +4978,7 @@ export type Database = {
           ville: string
         }[]
       }
+      trigger_backfill_marcheur_inat_batch: { Args: never; Returns: number }
       update_exploration_page:
         | {
             Args: {
