@@ -173,6 +173,8 @@ Deno.serve(async (req) => {
         observation_date: r.observation_date,
         photo_url: r.photo_url,
         inaturalist_observation_id: r.inat_id,
+        latitude: r.latitude,
+        longitude: r.longitude,
         notes: 'iNaturalist backfill',
       }));
       const { error: insErr, count } = await admin
