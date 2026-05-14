@@ -1124,6 +1124,7 @@ const MarcheurCard: React.FC<{
   aliases?: string[];
 }> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, sensibleNames, uncuratedSpeciesNames, localSpeciesCount, onForceOpen, aliases }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
+  const { data: inatProfile } = useMarcheurInatProfile(aliases, explorationMarcheIds);
 
   const openImpact = () => {
     setActiveSubTab('impact');
