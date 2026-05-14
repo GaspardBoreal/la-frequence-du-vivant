@@ -62,6 +62,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const [hasAudioFilter, setHasAudioFilter] = useState<'all' | 'with-audio' | 'without-audio'>('all');
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+  const [tagFilter, setTagFilter] = useState<TagFilterState>({ labels: [], mode: 'or' });
   const [viewMode, setViewMode] = useState<'list' | 'immersion'>(() => {
     return (localStorage.getItem('species-explorer-view') as 'list' | 'immersion') || 'list';
   });
