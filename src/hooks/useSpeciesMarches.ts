@@ -132,29 +132,41 @@ export const useSpeciesMarches = (
       // 3. Search in marcheur_observations for this species
       const { data: marcheurObs } = await supabase
         .from('marcheur_observations')
-        .select('marche_id, observation_date')
+        .select('marche_id, observation_date, latitude, longitude, inaturalist_observation_id')
         .in('marche_id', marcheIds)
         .ilike('species_scientific_name', scientificName);
 
       if (marcheurObs) {
         marcheurObs.forEach((obs: any) => {
           const info = marcheInfoMap.get(obs.marche_id);
-          if (info) {
-            const existing = marcheMap.get(obs.marche_id);
-            if (existing) {
-              existing.observationCount += 1;
-            } else {
-              marcheMap.set(obs.marche_id, {
-                marcheId: obs.marche_id,
-                marcheName: info.name,
-                ville: info.ville,
-                order: info.order,
-                observationCount: 1,
-                latitude: info.lat,
-                longitude: info.lng,
-                observationDate: obs.observation_date,
-              });
+          if (!info) return;
+          const point: SpeciesObservationPoint | null =
+            typeof obs.latitude === 'number' && typeof obs.longitude === 'number'
+              ? {
+                  latitude: obs.latitude,
+                  longitude: obs.longitude,
+                  inaturalistId: obs.inaturalist_observation_id ?? null,
+                  observationDate: obs.observation_date ?? null,
+                }
+              : null;
+          const existing = marcheMap.get(obs.marche_id);
+          if (existing) {
+            existing.observationCount += 1;
+            if (point) {
+              existing.observationPoints = [...(existing.observationPoints || []), point];
             }
+          } else {
+            marcheMap.set(obs.marche_id, {
+              marcheId: obs.marche_id,
+              marcheName: info.name,
+              ville: info.ville,
+              order: info.order,
+              observationCount: 1,
+              latitude: info.lat,
+              longitude: info.lng,
+              observationDate: obs.observation_date,
+              observationPoints: point ? [point] : undefined,
+            });
           }
         });
       }
