@@ -1866,8 +1866,8 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
               />
             );
           })}
-          {citizenContributors && citizenContributors.length > 0 && (
-            <CitizenContributorsAggregateRow contributors={citizenContributors} />
+          {citizenContributors && citizenContributors.contributors.length > 0 && (
+            <CitizenContributorsAggregateRow contributors={citizenContributors.contributors} totalUniqueSpecies={citizenContributors.totalUniqueSpecies} />
           )}
         </div>
       )}
