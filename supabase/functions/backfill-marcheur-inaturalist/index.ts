@@ -96,13 +96,21 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // 4. For each marche, scan iNat
+    // 4. For each marche, scan iNat — dédoublonnage par obs.id iNat (pas par espèce !)
     let totalInserted = 0;
-    const allInserts: Array<{ marche_id: string; species_scientific_name: string; observation_date: string | null; photo_url: string | null }> = [];
+    type Candidate = {
+      inat_id: number;
+      marche_id: string;
+      distance_km: number;
+      species_scientific_name: string;
+      observation_date: string | null;
+      photo_url: string | null;
+    };
+    // Map: inat_id -> meilleur candidat (marche la plus proche)
+    const bestByObs = new Map<number, Candidate>();
 
     for (const m of marcheList) {
       let page = 1;
-      const seen = new Set<string>();
       while (page <= MAX_PAGES) {
         const url = new URL('https://api.inaturalist.org/v1/observations');
         url.searchParams.set('user_login', inatLogin);
@@ -120,33 +128,39 @@ Deno.serve(async (req) => {
         if (!results.length) break;
 
         for (const obs of results) {
+          const inatId: number | undefined = obs?.id;
+          if (!inatId) continue;
           const sciName: string | undefined =
             obs?.taxon?.name || obs?.species_guess || undefined;
           if (!sciName) continue;
-          // Sanity Haversine filter
           const lat = obs?.geojson?.coordinates?.[1] ?? obs?.location?.split(',')?.[0];
           const lng = obs?.geojson?.coordinates?.[0] ?? obs?.location?.split(',')?.[1];
           const oLat = typeof lat === 'string' ? parseFloat(lat) : lat;
           const oLng = typeof lng === 'string' ? parseFloat(lng) : lng;
           if (!Number.isFinite(oLat) || !Number.isFinite(oLng)) continue;
-          if (haversineKm(m.latitude, m.longitude, oLat, oLng) > RADIUS_KM) continue;
+          const dist = haversineKm(m.latitude, m.longitude, oLat, oLng);
+          if (dist > RADIUS_KM) continue;
 
-          if (seen.has(sciName)) continue;
-          seen.add(sciName);
-
-          allInserts.push({
-            marche_id: m.id,
-            species_scientific_name: sciName,
-            observation_date: obs?.observed_on || null,
-            photo_url: obs?.photos?.[0]?.url?.replace('square', 'medium') || null,
-          });
+          const existing = bestByObs.get(inatId);
+          if (!existing || dist < existing.distance_km) {
+            bestByObs.set(inatId, {
+              inat_id: inatId,
+              marche_id: m.id,
+              distance_km: dist,
+              species_scientific_name: sciName,
+              observation_date: obs?.observed_on || null,
+              photo_url: obs?.photos?.[0]?.url?.replace('square', 'medium') || null,
+            });
+          }
         }
         if (results.length < PER_PAGE) break;
         page += 1;
       }
     }
 
-    // 5. Insert (idempotent via unique triplet)
+    const allInserts = Array.from(bestByObs.values());
+
+    // 5. Insert (idempotent via unique partial index sur (marcheur_id, inaturalist_observation_id))
     if (allInserts.length) {
       const rows = allInserts.map((r) => ({
         marcheur_id: crewId,
@@ -154,11 +168,12 @@ Deno.serve(async (req) => {
         species_scientific_name: r.species_scientific_name,
         observation_date: r.observation_date,
         photo_url: r.photo_url,
+        inaturalist_observation_id: r.inat_id,
         notes: 'iNaturalist backfill',
       }));
       const { error: insErr, count } = await admin
         .from('marcheur_observations')
-        .upsert(rows, { onConflict: 'marcheur_id,marche_id,species_scientific_name', ignoreDuplicates: true, count: 'exact' });
+        .upsert(rows, { onConflict: 'marcheur_id,inaturalist_observation_id', ignoreDuplicates: true, count: 'exact' });
       if (insErr) throw insErr;
       totalInserted = count ?? rows.length;
     }
