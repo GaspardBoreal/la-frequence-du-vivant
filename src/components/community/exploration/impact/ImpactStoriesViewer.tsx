@@ -184,6 +184,9 @@ const ImpactStoriesViewer: React.FC<ImpactStoriesViewerProps> = ({
               {currentKey === 'familles' && (
                 <StoryFamilles marcheur={marcheur} taxonomicFamilies={taxonomicFamilies} />
               )}
+              {currentKey === 'tags' && (
+                <StoryMyTags tags={myTags || []} />
+              )}
               {currentKey === 'detections' && (
                 <StoryDetections sensible={sensible} />
               )}
