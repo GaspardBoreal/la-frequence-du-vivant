@@ -225,6 +225,31 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       });
     };
 
+    // Compute the most recent real observation date from attributions.
+    // Falls back to snapshot_date only if no parsable attribution date exists.
+    const computeLastSeen = (attrs: any[], fallback: string): string => {
+      let maxTs = -Infinity;
+      let maxIso = '';
+      (attrs || []).forEach((a) => {
+        const d = a?.date;
+        if (!d) return;
+        const ts = new Date(d).getTime();
+        if (!Number.isFinite(ts)) return;
+        if (ts > maxTs) {
+          maxTs = ts;
+          maxIso = typeof d === 'string' ? d : new Date(d).toISOString();
+        }
+      });
+      return maxIso || fallback || '';
+    };
+
+    const maxIsoDate = (a: string, b: string): string => {
+      const ta = a ? new Date(a).getTime() : -Infinity;
+      const tb = b ? new Date(b).getTime() : -Infinity;
+      if (!Number.isFinite(ta) && !Number.isFinite(tb)) return a || b || '';
+      return tb > ta ? b : a;
+    };
+
     snapshots.forEach(snap => {
       const speciesData = snap.species_data as any[] | null;
       if (!speciesData || !Array.isArray(speciesData)) return;
@@ -232,6 +257,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         const key = sp.scientificName || sp.commonName || sp.id;
         if (!key) return;
         const spAttributions = Array.isArray(sp.attributions) ? sp.attributions : [];
+        const computedLastSeen = computeLastSeen(spAttributions, snap.snapshot_date || '');
         const existing = speciesMap.get(key);
         if (existing) {
           existing.observations += sp.observations || 1;
@@ -240,6 +266,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             ...(existing.attributions || []),
             ...spAttributions,
           ]);
+          // Keep the most recent observation date across snapshots
+          existing.lastSeen = maxIsoDate(existing.lastSeen, computedLastSeen);
         } else {
           const kingdom = sp.kingdom === 'Animalia' ? 'Animalia'
             : sp.kingdom === 'Plantae' ? 'Plantae'
@@ -252,7 +280,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             kingdom: kingdom as BiodiversitySpecies['kingdom'],
             family: sp.family?.toString() || '',
             observations: sp.observations || 1,
-            lastSeen: snap.snapshot_date || '',
+            lastSeen: computedLastSeen,
             source: (sp.source as BiodiversitySpecies['source']) || 'inaturalist',
             attributions: dedupeAttributions(spAttributions),
           });
