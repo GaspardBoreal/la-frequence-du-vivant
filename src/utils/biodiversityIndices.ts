@@ -45,6 +45,8 @@ export interface RawSpecies {
   taxonRank?: string | null;
   attributions?: AttributionLike[] | null;
   observations?: number | null;
+  photos?: string[] | null;
+  photoData?: { url?: string; attribution?: string; photographer?: string; license?: string } | null;
 }
 
 const isSpeciesLevel = (sp: RawSpecies): boolean => {
