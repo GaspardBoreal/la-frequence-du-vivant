@@ -1,46 +1,98 @@
-# Fix : champs GPS iNaturalist non reconnus
+## Objectif
 
-## Cause racine
+Mutualiser la carte du menu **Carte** (`ExplorationCarteTab`) et celle du **drawer Espèce** (`SpeciesGpsDrawer`) dans un composant partagé `<RichMap>`. Toute amélioration future (nouveau style, nouvelle couche, nouveau contrôle) profite automatiquement aux deux écrans.
 
-Dans `biodiversity_snapshots.species_data[].attributions[]`, les coordonnées sont stockées sous **`exactLatitude` / `exactLongitude`** (cf. `BiodiversityObservation` dans `src/types/biodiversity.ts`).
+## Diagnostic
 
-Or :
-- `src/utils/speciesIndividualCount.ts` lit `a.latitude` / `a.longitude`
-- `SpeciesGpsDrawer.tsx` filtre sur `a.latitude` / `a.longitude`
-- `BiodiversitySimulator.tsx` (état `hasGps`) idem
+`ExplorationCarteTab.tsx` (1519 lignes) mélange aujourd'hui :
+- la **carte générique** (tile layer, zoom, fit bounds, géoloc, style toggle, cadastre, météo) → réutilisable
+- la **logique métier marche** (steps numérotés, polyline, waypoints, create-marche, proximité, panel distances) → spécifique
 
-Conséquence :
-- Drawer "Orchidée pyramidale" : 0 cluster GPS, message "Aucune coordonnée GPS" alors que les 2 attributions ont bien des coords.
-- Onglet **Richesse → Individus GPS** : tous les attributs tombent dans le `noGps` fallback → l'indice "individus" finit à `attributions.length` (= comptage observations brutes), donc le mode "Individus GPS" produit la même valeur que "Observations brutes" sans qu'on s'en rende compte.
+Le drawer Espèce a réimplémenté un mini `MapContainer` from scratch → duplication, divergence garantie à terme.
 
-## Fix
+## Architecture cible
 
-### 1. Normaliser au niveau du helper (source unique de vérité)
+```text
+src/components/maps/
+├── RichMap.tsx              ← NOUVEAU shell réutilisable
+├── DynamicTileLayer.tsx     (existe)
+├── MapStyleToggle.tsx       (existe)
+├── controls/
+│   ├── ZoomControls.tsx     ← extrait
+│   ├── GeolocateControl.tsx ← extrait (bouton + UserLocationMarker + tracking)
+│   └── FitBounds.tsx        ← extrait
+└── layers/
+    ├── CadastreLayer.tsx    (déjà autonome, on le réexpose)
+    ├── WeatherStationsLayer.tsx ← déplacé depuis exploration/
+    └── MarcheRouteLayer.tsx ← NOUVEAU : polyline + steps numérotés (extrait d'ExplorationCarteTab)
+```
 
-`src/utils/speciesIndividualCount.ts` :
-- Étendre `AttributionLike` avec `exactLatitude?` / `exactLongitude?`
-- Ajouter une petite fonction `getLatLng(a)` qui renvoie `{lat, lng} | null` en testant d'abord `latitude/longitude`, puis `exactLatitude/exactLongitude`
-- Utiliser `getLatLng` dans le filtre, le tri et la boucle de clustering
-- Exporter `getLatLng` pour réutilisation
+### API du composant `<RichMap>`
 
-### 2. Réutiliser le helper dans le drawer et le simulateur
+```tsx
+<RichMap
+  center={[lat, lng]}
+  bounds={positions}                  // déclenche fitBounds
+  initialStyle="osm"                  // 'osm' | 'satellite' | 'cadastre'
+  controls={{
+    zoom: true,
+    style: true,
+    geolocate: true,
+    cadastre: true,
+    weather: false,                   // togglé par menu
+  }}
+  marcheRoute={{ steps, color }}      // optionnel — affiche tracé en fond
+  height="60vh"
+  className="rounded-2xl"
+>
+  {/* slot enfants : markers métier (espèce, photo, observation…) */}
+  {attributions.map(a => <SpeciesMarker key={a.id} {...a} />)}
+</RichMap>
+```
 
-`src/components/community/synthese/indices/SpeciesGpsDrawer.tsx` :
-- Importer `getLatLng`
-- Remplacer le filtre `gpsAttrs` par `getLatLng(a) !== null`
-- Construire les marqueurs depuis `getLatLng` (les `clusters` retournés par `countIndividuals` sont déjà bons grâce au fix #1)
+Slots/props clés :
+- `children` = markers/popups métier (le drawer y met ses pulsing markers d'observations iNat)
+- `marcheRoute` = propriété optionnelle pour afficher le tracé d'une marche en arrière-plan (utilisé par le drawer pour situer les obs sur le parcours)
+- `controls` = drapeaux d'activation des contrôles (zoom, géoloc, style, cadastre, météo)
+- `onMapReady?(map)` = échappatoire pour cas exotiques
 
-`src/components/community/synthese/indices/BiodiversitySimulator.tsx` :
-- `hasGps` utilise `getLatLng`
+### Ce qui RESTE dans `ExplorationCarteTab`
 
-## Vérification
+Tout ce qui est spécifique marche : waypoints, create-marche, proximité, panel distances, photo-GPS-drop. `ExplorationCarteTab` devient un consommateur de `<RichMap>` avec ses propres enfants/overlays métier. Pas de régression fonctionnelle.
 
-Après fix, sur l'orchidée pyramidale :
-- Carte : 2 marqueurs émeraude (45.4138, 0.0094) et (45.4140, 0.0089) → distance ≈ 40 m → 2 clusters distincts
-- KPI "Individus GPS" : 2
-- Richesse "Individus GPS" : valeur < observations brutes pour les espèces réellement re-photographiées au même endroit
+## Étapes
 
-## Hors périmètre
+1. **Extraire les briques** depuis `ExplorationCarteTab.tsx` vers `src/components/maps/` :
+   - `FitBounds`, `ZoomControls`, `UserLocationMarker` + bouton `GeolocateControl` (regroupés)
+   - Déplacer `WeatherStationsLayer` (actuellement dans `exploration/`) vers `maps/layers/`
+   - Créer `MarcheRouteLayer` à partir de la polyline + `createNumberedIcon` + `ArrowDecorators`
 
-- Pas de migration DB (les données sont correctes, c'est le code qui lit le mauvais champ)
-- Pas de modif des autres onglets (Simpson/Shannon/Piélou consomment les abondances déjà calculées via le helper)
+2. **Créer `RichMap.tsx`** : MapContainer + DynamicTileLayer + branchement conditionnel des contrôles selon props, gestion de l'état `mapStyle` interne, slot `children`.
+
+3. **Migrer `SpeciesGpsDrawer`** pour consommer `<RichMap>` :
+   - supprimer son `MapContainer` local
+   - garder uniquement les markers pulsants émeraude + popups (passés en `children`)
+   - activer `controls.style/geolocate/cadastre/weather`
+   - passer `marcheRoute={{ steps: marcheSteps }}` (récupérés via le prop existant `marches` ou un nouveau prop, à brancher depuis `BiodiversitySimulator`/`TaxonsIndicesPanel`)
+
+4. **Migrer `ExplorationCarteTab`** pour consommer `<RichMap>` :
+   - remplacer son `MapContainer` par `<RichMap>` configuré avec tous les contrôles
+   - garder ses overlays spécifiques (waypoints, create-marche, panel distances) en `children` ou en wrapper
+   - vérifier que le tracé marche s'affiche bien via `marcheRoute` plutôt qu'en JSX inline (ou garder en JSX si trop intriqué — décision au moment du refactor)
+
+5. **QA visuelle** :
+   - onglet Carte : zoom, géoloc, toggle style, cadastre, météo, waypoints, create-marche → tout fonctionne comme avant
+   - drawer Espèce (Orchidée pyramidale) : 2 markers émeraude visibles, tracé marche en fond, toggle style fonctionne, géoloc OK, popups iNat OK
+
+## Détails techniques
+
+- **Pas de changement de schéma DB.** Pur refactor frontend.
+- **Pas de changement de logique métier** (countIndividuals, getLatLng, fusion iNat/marcheur restent identiques).
+- **Compatibilité** : `MapStyleToggle` et `DynamicTileLayer` déjà autonomes — on s'appuie dessus.
+- **Risque principal** : régression sur `ExplorationCarteTab` (gros fichier intriqué). Mitigation : refactor incrémental, on garde le fichier qui orchestre, on extrait juste les briques génériques et on injecte via `<RichMap>` ; les overlays spécifiques restent en place.
+- **Mémoire projet** : à l'issue, créer une mémoire `mem://technical/maps/rich-map-shared-component` pour documenter la convention "toute nouvelle fonctionnalité carte va dans `<RichMap>`, pas dans un consommateur".
+
+## Hors-scope
+
+- Pas de redesign visuel. La parité visuelle est l'objectif.
+- Pas de migration des autres mini-cartes du projet (`InteractiveStationMap`, `GpsMapView`, `PhotoLocationDialog`…) dans cette PR. Elles pourront migrer dans un second temps une fois `<RichMap>` éprouvé.
