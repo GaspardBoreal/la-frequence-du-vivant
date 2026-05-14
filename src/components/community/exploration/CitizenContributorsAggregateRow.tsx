@@ -84,8 +84,6 @@ const CitizenContributorsAggregateRow: React.FC<Props> = ({ contributors, totalU
 
   if (!contributors || contributors.length === 0) return null;
 
-  const totalObs = contributors.reduce((sum, c) => sum + c.obsCount, 0);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -106,7 +104,7 @@ const CitizenContributorsAggregateRow: React.FC<Props> = ({ contributors, totalU
             +{contributors.length} contributeur{contributors.length > 1 ? 's' : ''} citoyen{contributors.length > 1 ? 's' : ''} iNaturalist
           </p>
           <p className="text-[10px] text-muted-foreground">
-            {totalObs} observation{totalObs > 1 ? 's' : ''} rattachées à cette exploration
+            {totalUniqueSpecies} espèce{totalUniqueSpecies > 1 ? 's' : ''} observée{totalUniqueSpecies > 1 ? 's' : ''} par d'autres contributeurs citoyens
           </p>
         </div>
         <ChevronDown
