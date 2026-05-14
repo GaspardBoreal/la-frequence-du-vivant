@@ -79,8 +79,17 @@ export const RichMap: React.FC<RichMapProps> = ({
   className = '',
   children,
   scrollWheelZoom = true,
+  onMarcheVisibilityChange,
 }) => {
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
+  const [markersVisible, setMarkersVisible] = useState<boolean>(
+    marcheRoute?.renderMarkers !== false,
+  );
+
+  const handleMarkersToggle = (v: boolean) => {
+    setMarkersVisible(v);
+    onMarcheVisibilityChange?.(v);
+  };
 
   const cadastrePoints = useMemo(() => {
     if (!marcheRoute) return [];
