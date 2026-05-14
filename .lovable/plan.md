@@ -1,57 +1,92 @@
+## Objectif
 
-# Inciter le marcheur à découvrir ses 3 fréquences du jour
+Sur l'onglet **Marcheurs**, faire apparaître les contributeurs citoyens iNaturalist (présents dans `biodiversity_snapshots` mais non rattachés à un marcheur LMDV) — sans diluer la mise en avant des marcheurs officiels.
 
-## Problème
-Aujourd'hui, les 3 catégories (Géopoétique · Biodiversité · Bioacoustique) sont reléguées en bas à droite sous forme de 3 petites icônes ternes. Un nouveau marcheur ne sait pas qu'il y a 3 contenus à découvrir, ni comment naviguer entre eux. Le geste « suivant/précédent » n'est ni suggéré ni récompensé.
+Cas test : exploration `5a384afb-…` → 3 contributeurs iNat détectés (Estella Bignon · 19 espèces, Dorian Beliarde · 1, marcduvilla · 1).
 
-## Intention design
-Transformer la carte « Ma Fréquence du jour » en un **triptyque révélé progressivement** : le marcheur sent qu'il y a 3 facettes, il est tenté de les feuilleter, et chaque transition est belle.
+## Principe retenu
 
-## Proposition (uniquement frontend, fichier `FrequenceWave.tsx`)
+- Les marcheurs LMDV (Gaspard Boréal, Vincent Levavasseur) restent visuellement dominants en haut de liste, inchangés.
+- En dessous de la liste, **une seule ligne d'agrégat** repliée par défaut :
+  > « +3 contributeurs citoyens iNaturalist · 21 observations »
+- Au clic, dépliage en mini-vignettes minimalistes (avatar iNat, nom, nb d'espèces, lien discret).
+- Enrichissement des marcheurs LMDV existants : si leur profil iNat est connu (via `community_profile_science_accounts` ou par alias matching → première URL d'observation), un petit lien `↗ iNaturalist` est ajouté discrètement dans leur en-tête.
 
-### 1. Eyebrow enrichi — signaler qu'il y a 3 facettes
-Au lieu de `● MA FRÉQUENCE DU JOUR`, afficher :
+## UX détaillée
+
+### Ligne d'agrégat (collapsée)
 ```
-●  MA FRÉQUENCE DU JOUR     ·     1 / 3  Géopoétique
+🌿 +3 contributeurs citoyens iNaturalist · 21 observations    ▾
 ```
-Le compteur `1/3` est la promesse implicite : « il y en a deux autres ».
+- Style : carte sobre `bg-muted/30` + bord `emerald-500/15`, hauteur 44px, sous la dernière vignette marcheur.
+- Hover : très léger glow emerald.
 
-### 2. Flèches `←  →` élégantes encadrant la citation
-Deux chevrons fins (Lucide `ChevronLeft` / `ChevronRight`) positionnés verticalement centrés, en dehors du bloc citation sur desktop, en bas sur mobile. Au repos : opacité 40 %, fines (stroke 1.5). Au hover : opacité 100 %, halo doux émeraude, micro-translation de 2px dans le sens de la navigation.
-
-Sur mobile : swipe gauche/droite (drag framer-motion) en plus des flèches.
-
-### 3. Indicateur de progression — 3 traits horizontaux
-Sous la citation, remplacer les 3 icônes empilées à droite par **3 traits fins centrés** (pattern Apple / Stories Instagram) :
+### Vignettes iNat (dépliées)
+Chaque ligne, hauteur ~56px :
 ```
-━━━━  ────  ────
+[avatar iNat] Estella Bignon  @estellabignon         19 espèces · 112 obs   ↗
 ```
-- trait actif : plein, gradient émeraude→cyan, label catégorie visible dessous
-- traits inactifs : 30 % opacité, label estompé
-- clic sur un trait = saut direct (accessibilité préservée)
+- Avatar = `icon_url` retourné par l'edge function `resolve-inaturalist-user` (cache 1h, déjà existante).
+- Handle `@login` en gris fin si résolu.
+- Compteurs : nb d'espèces uniques + nb total d'attributions.
+- Bouton/Lien `↗` : ouvre `https://www.inaturalist.org/people/{login}` (ou `firstUrl` en fallback) dans un nouvel onglet, `rel="noopener noreferrer"`.
+- Pas de score Sentinelle, pas de sous-onglets, pas de drag-and-drop.
 
-### 4. Pulse d'invitation au premier affichage (onboarding silencieux)
-Si `localStorage` n'a pas la clé `freq_discovered_all` :
-- Pulse doux toutes les 4s sur la flèche `→` (scale 1 → 1.08 → 1, halo émeraude)
-- Petite légende fugace **« Faites défiler vos 3 fréquences »** sous les indicateurs, opacité 60 %, qui disparaît dès le premier clic/swipe
-- Une fois les 3 facettes vues, on stocke `freq_discovered_all = true` → la pulsation et la légende disparaissent à jamais
+### Enrichissement vignettes LMDV
+- Sur l'en-tête de chaque carte marcheur, si on récupère un `inat_login` (via `science_accounts` ou résolution par alias), ajouter discrètement à droite du nom :
+  ```
+  ↗ iNaturalist
+  ```
+  texte 10px, `text-muted-foreground hover:text-emerald-500`, lien vers `/people/{login}`.
+- Aucune modification si pas de profil iNat connu.
 
-### 5. Auto-rotation très lente (optionnelle, désactivée si interaction)
-Toutes les 12 s, rotation automatique vers la facette suivante avec la même `AnimatePresence` (fade + petit y). S'arrête définitivement dès que le marcheur clique/swipe (respect de l'attention).
+## Implémentation technique
 
-### 6. Transitions
-- Crossfade + glissement horizontal léger (entrée +20px, sortie −20px) selon le sens de navigation
-- Le gradient conique en arrière-plan change subtilement de teinte selon la catégorie active (vert forêt, vert eau, ambre acoustique) — ancrage sensoriel de chaque fréquence
+Tout en frontend, **aucun changement DB**, aucun nouveau hook lourd.
 
-## Détails techniques
-Modifications confinées à `src/components/community/FrequenceWave.tsx` :
-- Remplacer `setActiveTab(key)` direct par `goTo(index)` / `next()` / `prev()` avec mémorisation du sens (`direction: 1 | -1`) pour orienter l'animation
-- Ajouter `motion.div` wrapper avec `drag="x"` + `dragConstraints` pour le swipe mobile
-- Ajouter `useEffect` d'auto-rotation avec `clearInterval` au premier user-event
-- Ajouter `localStorage` flag `freq_discovered_all` mis à `true` quand `Set<Categorie>` visités atteint 3
-- Aucune modification DB, aucun nouveau hook, aucun impact sur les autres tabs
+### 1. Nouveau hook `useExplorationCitizenContributors(explorationId, knownAliases)`
+Dans `src/hooks/useExplorationCitizenContributors.ts` :
+- Query `biodiversity_snapshots.species_data` pour les marches de l'exploration (déjà fait dans `useExplorationParticipants`, on peut factoriser ou laisser une 2e query React-Query ; staleTime 5 min).
+- Agrège `attributions[]` par `(observerName, source)` :
+  - `species_count` (set des `scientificName`)
+  - `obs_count`
+  - `firstUrl` (1re `originalUrl`)
+- Filtre out tout `observerName` dont `normalizeAlias(...)` est déjà dans `knownAliases` (= alias de tous les marcheurs LMDV de l'event, fournis par `useMarcheursAliasesMap`).
+- Retourne uniquement la source `inaturalist` (les autres sources ne sont pas demandées ici).
+- Trié par `species_count desc`.
+
+### 2. Nouveau composant `CitizenContributorsAggregateRow`
+Dans `src/components/community/exploration/CitizenContributorsAggregateRow.tsx` :
+- Props : `contributors: CitizenContributor[]`.
+- État local `expanded: boolean` (default false).
+- Rendu collapsé : ligne d'agrégat (count + total observations).
+- Rendu déplié : `AnimatePresence` (height/opacity) → liste de `CitizenContributorRow`.
+- Si `contributors.length === 0` → ne rien rendre.
+
+### 3. Nouveau composant `CitizenContributorRow`
+- Props : `{ observerName, login?, iconUrl?, speciesCount, obsCount, profileUrl }`.
+- Lance lazy `useQuery(['inat-profile', firstUrl])` via `supabase.functions.invoke('resolve-inaturalist-user')` — réutilise la query existante (même `queryKey` shape que `CitizenPlatformsCard`) → cache partagé.
+- `target="_blank" rel="noopener noreferrer"` sur le lien.
+- Avatar fallback : initiales si `iconUrl` absent.
+
+### 4. Intégration dans `MarcheursTab.tsx`
+- Calculer `knownAliases: Set<string>` à partir de `aliasesByMarcheurId` (déjà chargé).
+- Appeler `useExplorationCitizenContributors(explorationId, knownAliases)`.
+- Insérer `<CitizenContributorsAggregateRow contributors={...} />` après le dernier `MarcheurCard` de la liste (juste avant le bouton « Inviter »).
+
+### 5. Mini-enrichissement vignettes LMDV
+- Dans le rendu de l'en-tête d'une carte marcheur : récupérer `aliasesByMarcheurId[m.id]` et lancer `resolve-inaturalist-user` avec la 1re URL iNat trouvée parmi les obs « inat » de ce marcheur (déjà disponibles via `m.speciesObserved.find(s => s.origin === 'inat')`).
+- Si on obtient un `login`, afficher `↗ iNaturalist` (icône Lucide `ExternalLink` + texte 10px) à côté du nom.
+- Sinon : ne rien afficher.
 
 ## Hors-scope
-- Pas de changement du contenu des citations
-- Pas de changement de la logique de sélection « du jour »
-- Pas de modification de `ProgressionCard` ni des quick actions
+
+- Pas de modif DB ni d'edge function.
+- Pas de score Sentinelle pour les contributeurs iNat (seraient injustes vs marcheurs LMDV).
+- Pas d'invitation automatique (« devenez marcheur LMDV ») — peut être ajoutée dans un 2e temps.
+- Les sources eBird/GBIF ne sont pas surfacées dans cet agrégat (aucune donnée pour cet event).
+
+## Fichiers touchés
+
+- **Créés** : `src/hooks/useExplorationCitizenContributors.ts`, `src/components/community/exploration/CitizenContributorsAggregateRow.tsx`
+- **Modifiés** : `src/components/community/exploration/MarcheursTab.tsx` (insertion + lien iNat dans en-tête vignette LMDV)
