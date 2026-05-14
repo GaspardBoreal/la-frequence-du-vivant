@@ -56,6 +56,7 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
   explorationId,
 }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [marcheStepsVisible, setMarcheStepsVisible] = React.useState(false);
 
   // Fetch lightweight marche positions for the background route trace
   const { data: marcheRouteSteps = [] } = useQuery({
