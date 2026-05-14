@@ -282,7 +282,10 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground text-center">
             Marqueurs émeraude pulsants — observations groupées (≤ 8 m).
-            {marcheRouteSteps.length > 0 && ' Tracé de la marche en arrière-plan.'}
+            {marcheRouteSteps.length > 0 &&
+              (marcheStepsVisible
+                ? ' Tracé et étapes de la marche affichés.'
+                : ' Tracé de la marche en arrière-plan.')}
           </p>
         </div>
 
