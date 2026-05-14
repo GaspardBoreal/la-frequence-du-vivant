@@ -152,6 +152,43 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
         {adjustedPoints.map((marche) => {
           const isObserved = observedMarcheIds.has(marche.marcheId);
           const obsCount = observedMarcheMap.get(marche.marcheId) || 0;
+
+          // Si on a les GPS exacts des observations marcheur sur cette marche,
+          // on affiche un marqueur par observation au lieu d'un marqueur unique
+          // au centre de la marche (évite les superpositions sur marches voisines).
+          const realPoints = marches.find((m) => m.marcheId === marche.marcheId)?.observationPoints;
+          if (isObserved && realPoints && realPoints.length > 0) {
+            return realPoints.map((pt, idx) => (
+              <CircleMarker
+                key={`${marche.marcheId}-pt-${idx}`}
+                center={[pt.latitude, pt.longitude]}
+                radius={6}
+                pathOptions={{
+                  color: '#10b981',
+                  fillColor: '#10b981',
+                  fillOpacity: 0.85,
+                  weight: 3,
+                }}
+              >
+                <Tooltip
+                  direction="auto"
+                  offset={[0, -10]}
+                  className="!bg-slate-800 !border-white/20 !text-white !text-xs !px-2 !py-1 !rounded-md"
+                >
+                  <span className="font-medium">#{marche.order}</span> {marche.marcheName}
+                  <br />
+                  <span className="text-emerald-400">1 observation</span>
+                  {pt.observationDate && (
+                    <>
+                      <br />
+                      <span className="text-white/60">{pt.observationDate}</span>
+                    </>
+                  )}
+                </Tooltip>
+              </CircleMarker>
+            ));
+          }
+
           return (
             <CircleMarker
               key={marche.marcheId}
@@ -164,8 +201,8 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
                 weight: isObserved ? 3 : 1,
               }}
             >
-              <Tooltip 
-                direction="auto" 
+              <Tooltip
+                direction="auto"
                 offset={[0, -10]}
                 className="!bg-slate-800 !border-white/20 !text-white !text-xs !px-2 !py-1 !rounded-md"
               >
