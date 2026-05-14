@@ -105,6 +105,8 @@ Deno.serve(async (req) => {
       species_scientific_name: string;
       observation_date: string | null;
       photo_url: string | null;
+      latitude: number;
+      longitude: number;
     };
     // Map: inat_id -> meilleur candidat (marche la plus proche)
     const bestByObs = new Map<number, Candidate>();
