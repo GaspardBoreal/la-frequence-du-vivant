@@ -20,7 +20,7 @@ import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
 
-type SubTab = 'synthese' | 'taxons' | 'temoignages' | 'textes' | 'analyse';
+type SubTab = 'synthese' | 'taxons' | 'indicateurs' | 'temoignages' | 'textes' | 'analyse';
 
 
 interface EventBiodiversityTabProps {
