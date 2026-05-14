@@ -609,7 +609,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               </div>
             )}
             <SpeciesGrid
-              items={applyCategoryFilter(pinnedSpecies.filter(matchesSearch).map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
+              items={applyTagFilter(applyCategoryFilter(pinnedSpecies.filter(matchesSearch).map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))))}
+              tagsByScientific={tagsByScientific}
               isCurator={isCurator}
               explorationId={explorationId}
               emptyMessage={
