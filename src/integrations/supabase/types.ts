@@ -3305,6 +3305,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          inaturalist_observation_id: number | null
           marche_id: string
           marcheur_id: string
           notes: string | null
@@ -3315,6 +3316,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          inaturalist_observation_id?: number | null
           marche_id: string
           marcheur_id: string
           notes?: string | null
@@ -3325,6 +3327,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          inaturalist_observation_id?: number | null
           marche_id?: string
           marcheur_id?: string
           notes?: string | null
