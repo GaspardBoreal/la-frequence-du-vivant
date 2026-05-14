@@ -12,6 +12,7 @@ import SpeciesGpsDrawer from './SpeciesGpsDrawer';
 interface Props {
   initialAbundance: SpeciesAbundance[];
   species?: RawSpecies[];
+  explorationId?: string;
 }
 
 interface SimSpecies {
