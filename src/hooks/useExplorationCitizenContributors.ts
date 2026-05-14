@@ -17,6 +17,11 @@ export interface CitizenContributor {
  *
  * Currently filters to source = 'inaturalist' (eBird/GBIF not surfaced here).
  */
+export interface CitizenContributorsResult {
+  contributors: CitizenContributor[];
+  totalUniqueSpecies: number;
+}
+
 export function useExplorationCitizenContributors(
   explorationId: string | undefined,
   knownAliases: Set<string> | undefined,
@@ -25,8 +30,8 @@ export function useExplorationCitizenContributors(
 
   return useQuery({
     queryKey: ['exploration-citizen-contributors', explorationId, knownKey],
-    queryFn: async (): Promise<CitizenContributor[]> => {
-      if (!explorationId) return [];
+    queryFn: async (): Promise<CitizenContributorsResult> => {
+      if (!explorationId) return { contributors: [], totalUniqueSpecies: 0 };
 
       const { data: emRows } = await supabase
         .from('exploration_marches')
