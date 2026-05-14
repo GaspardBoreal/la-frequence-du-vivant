@@ -1,50 +1,75 @@
-# Cron quotidien — Backfill iNaturalist marcheurs
+# Correction du backfill iNat — multi-observations par espèce
 
-## Objectif
-Chaque nuit, ré-attacher automatiquement les nouvelles observations iNaturalist de tous les marcheurs ayant un compte iNat lié, sur l'ensemble de leurs participations validées.
+## Bug identifié
 
-## Ce qui sera créé
+Dans `supabase/functions/backfill-marcheur-inaturalist/index.ts`, lignes **134-135** :
 
-### 1. Edge function `backfill-marcheur-inat-batch`
-- **Auth** : refuse toute requête sans header `X-Cron-Secret` valide (comparé à `Deno.env.get('CRON_SHARED_SECRET')`).
-- **Logique** :
-  1. Lit avec service role les couples `(user_id, exploration_id)` éligibles : `marche_participations` (statut validé) jointes à `community_profile_science_accounts` où `network = 'inaturalist'`.
-  2. Pour chaque couple, invoque la fonction existante `backfill-marcheur-inaturalist` avec `source: 'cron_daily'` (idempotente, ne dédoublonne pas les obs déjà rattachées).
-  3. Throttle : pause 250 ms entre chaque appel, plafond 200 couples/run pour rester sous le timeout edge.
-  4. Insère un résumé final dans `marcheur_backfill_log` (`source = 'cron_daily_summary'`, totaux : couples traités, obs ajoutées, erreurs).
-- **Aucune modification** de la fonction existante `backfill-marcheur-inaturalist`.
+```ts
+if (seen.has(sciName)) continue;
+seen.add(sciName);
+```
 
-### 2. Job `pg_cron`
-- Planning : `30 1 * * *` UTC → 03:30 Paris en été, 02:30 en hiver (heure creuse).
-- Action : `net.http_post` vers `…/functions/v1/backfill-marcheur-inat-batch` avec :
-  - `apikey` : anon key
-  - `X-Cron-Secret` : valeur de `CRON_SHARED_SECRET` (lue via `vault.decrypted_secrets` ou injectée dans la requête SQL)
-- Extensions `pg_cron` et `pg_net` déjà actives sur le projet (vérifié).
+→ Le `Set` est indexé sur le **nom scientifique seul**. Pour chaque marche, dès qu'une *Anacamptis pyramidalis* est rencontrée, **toutes les autres observations de la même espèce sont ignorées**. C'est pourquoi seule 1 des 3 observations iNat de Laurence Karki sur DEVIAT a été récupérée (puis dupliquée 4× via le rayon 500 m sur 4 marches voisines).
 
-### 3. Stockage du secret côté SQL
-Le secret `CRON_SHARED_SECRET` est déjà ajouté côté edge functions. Pour que le cron SQL puisse l'envoyer dans le header, on l'enregistre aussi dans `vault.create_secret(...)` sous le nom `cron_shared_secret`, puis le cron le lit via `vault.decrypted_secrets`.
+Aggravation : la clé d'unicité de l'upsert (ligne 161) est `(marcheur_id, marche_id, species_scientific_name)` → **structurellement, le schéma ne peut stocker qu'1 obs par espèce par marche**, donc même en corrigeant le filtre Set, l'upsert écraserait.
 
-## Hors scope
-- Aucun bouton ni hook front.
-- Pas de changement dans la fonction `backfill-marcheur-inaturalist`.
-- Pas de modification des triggers de participation existants.
+## Plan en 2 étapes
+
+### Étape 1 — Schema + dédoublonnage par observation iNat
+
+**1.a Migration DB**
+- Ajouter `inaturalist_observation_id BIGINT` à `marcheur_observations` (nullable).
+- Index unique partiel : `UNIQUE (marcheur_id, inaturalist_observation_id) WHERE inaturalist_observation_id IS NOT NULL`.
+  → garantit l'idempotence du backfill (même obs iNat ne sera jamais ré-insérée pour le même marcheur, même si elle tombe dans le rayon de plusieurs marches).
+- L'ancienne contrainte `(marcheur_id, marche_id, species_scientific_name)` est conservée si elle existe pour les obs manuelles (sans `inaturalist_observation_id`), ou allégée si elle bloque. Je vérifierai sa présence avant migration.
+
+**1.b Edge function `backfill-marcheur-inaturalist`**
+- Remplacer le `Set<sciName>` par `Set<inaturalist_observation_id>` → on dédoublonne par identifiant iNat unique, pas par espèce.
+- Stocker `obs.id` dans le nouveau champ `inaturalist_observation_id`.
+- Changer `onConflict` de l'upsert vers `'marcheur_id,inaturalist_observation_id'`.
+- **Choix d'attribution multi-marches** : pour éviter la duplication actuelle (1 obs iNat → 4 lignes attachées à 4 marches), attacher chaque observation iNat à **la marche la plus proche** parmi celles dont le rayon couvre l'observation. Implémentation : on accumule d'abord toutes les obs candidates (clé = `obs.id`) avec leur distance à chaque marche, puis on ne garde que la marche minimale par obs. Résultat : 1 obs iNat = 1 ligne BDD (au lieu de 4).
+
+### Étape 2 — Relance du backfill sur l'exploration concernée
+
+- Purge des lignes "iNaturalist backfill" de l'exploration `20dd3be8-…-Jardin Monde` pour repartir propre (uniquement `notes = 'iNaturalist backfill'`, on touche pas aux contributions manuelles).
+- Appel manuel de l'edge function `backfill-marcheur-inaturalist` pour le couple `(user_id = 4fc3cf86-…, exploration_id = 20dd3be8-…)`.
+- Vérification SQL : on doit voir **3 lignes** *Anacamptis pyramidalis* (IDs iNat `361406617`, `361435682`, `361436414`), chacune attachée à la marche la plus proche, GPS reportable côté UI.
 
 ## Détails techniques
 
-**Fichiers / objets touchés**
-- `supabase/functions/backfill-marcheur-inat-batch/index.ts` (nouveau)
-- Migration SQL : insertion dans `vault` + `cron.schedule('backfill-marcheur-inat-daily', …)`
-- Aucune modification du schéma de tables existant.
+**Migration SQL (étape 1.a)** :
+```sql
+ALTER TABLE public.marcheur_observations
+  ADD COLUMN IF NOT EXISTS inaturalist_observation_id BIGINT;
 
-**Critères d'éligibilité d'un couple `(user_id, exploration_id)`**
+CREATE UNIQUE INDEX IF NOT EXISTS marcheur_observations_marcheur_inat_uniq
+  ON public.marcheur_observations (marcheur_id, inaturalist_observation_id)
+  WHERE inaturalist_observation_id IS NOT NULL;
 ```
-marche_participations p
-  JOIN community_profile_science_accounts s
-    ON s.user_id = p.user_id AND s.network = 'inaturalist'
-WHERE p.statut IN ('validee', 'confirmee')   -- à confirmer avec les valeurs réelles
-```
-~12 couples actuellement éligibles (compté précédemment).
 
-**Observabilité**
-- Logs edge function visibles dans le dashboard Supabase.
-- Table `marcheur_backfill_log` filtrable par `source = 'cron_daily'` ou `'cron_daily_summary'`.
+**Diff edge function (étape 1.b)** : voir lignes 122-143 et 159-161 ; le bloc devient :
+```ts
+// dédoublonner par obs.id iNat (pas par espèce)
+const inatId = obs?.id;
+if (!inatId || seen.has(inatId)) continue;
+seen.add(inatId);
+allInserts.push({
+  marche_id: m.id,
+  distance_km: haversineKm(...),
+  inaturalist_observation_id: inatId,
+  species_scientific_name: sciName,
+  observation_date: obs?.observed_on || null,
+  photo_url: obs?.photos?.[0]?.url?.replace('square', 'medium') || null,
+});
+```
+Puis post-traitement : `Map<inatId, bestRow>` qui garde la `distance_km` minimale.
+
+**Étape 2** : utilise `supabase.functions.invoke('backfill-marcheur-inaturalist', { body: { user_id, exploration_id, source: 'manual_repair' } })` via curl, ou la RPC admin existante `trigger_backfill_marcheur_inat_batch()`.
+
+## Impact
+
+- **Aucune régression UI** : `SpeciesGalleryDetailModal` continuera à dédoublonner par `photo_url` côté front (donc une obs avec 2 photos reste correcte).
+- **Backward compat** : les anciennes lignes sans `inaturalist_observation_id` ne sont pas touchées.
+- **Effet visible** : sur l'orchidée pyramidale du jour, on passera de 1 photo unique (dupliquée 4×) à **3 photos distinctes** dans le carrousel.
+
+Confirme et je lance la migration puis la correction edge + relance.
