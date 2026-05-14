@@ -1,12 +1,15 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { Marker, Popup } from 'react-leaflet';
+import { useQuery } from '@tanstack/react-query';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Calendar, MapPin, User, ExternalLink, Sparkles, Camera, Users } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { SpeciesName } from '@/components/species/SpeciesName';
 import { countIndividuals, getLatLng, type AttributionLike } from '@/utils/speciesIndividualCount';
+import { RichMap, type MarcheRouteStep } from '@/components/maps';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   open: boolean;
@@ -15,21 +18,9 @@ interface Props {
   commonName: string;
   attributions: AttributionLike[];
   photos?: string[];
+  /** When provided, draws the marche route in the background of the map */
+  explorationId?: string;
 }
-
-const FitBounds: React.FC<{ points: Array<[number, number]> }> = ({ points }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (!points.length) return;
-    if (points.length === 1) {
-      map.setView(points[0], 16, { animate: true });
-    } else {
-      const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17, animate: true });
-    }
-  }, [map, points]);
-  return null;
-};
 
 const buildPulseIcon = (count: number) => {
   const size = Math.min(48, 18 + count * 4);
@@ -62,8 +53,34 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
   commonName,
   attributions,
   photos = [],
+  explorationId,
 }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Fetch lightweight marche positions for the background route trace
+  const { data: marcheRouteSteps = [] } = useQuery({
+    queryKey: ['drawer-marche-positions', explorationId],
+    enabled: !!explorationId && open,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async (): Promise<MarcheRouteStep[]> => {
+      const { data, error } = await supabase
+        .from('exploration_marches')
+        .select('ordre, marche:marches(id, latitude, longitude, nom_marche, ville)')
+        .eq('exploration_id', explorationId!)
+        .order('ordre', { ascending: true });
+      if (error || !data) return [];
+      return data
+        .map((em: any) => em.marche)
+        .filter((m: any) => m && m.latitude != null && m.longitude != null)
+        .map((m: any, i: number) => ({
+          id: m.id,
+          latitude: Number(m.latitude),
+          longitude: Number(m.longitude),
+          label: m.nom_marche || m.ville || `Étape ${i + 1}`,
+          ordre: i,
+        }));
+    },
+  });
 
   const gpsAttrs = useMemo(
     () => (attributions || []).filter((a) => getLatLng(a) !== null),
@@ -79,6 +96,13 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
     () => clusters.filter((c) => c.centroid).map((c) => [c.centroid!.lat, c.centroid!.lng]),
     [clusters],
   );
+
+  // Bounds = union of species observation points + marche route (so user sees both contexts)
+  const bounds = useMemo<Array<[number, number]>>(() => {
+    const all: Array<[number, number]> = [...points];
+    marcheRouteSteps.forEach((s) => all.push([s.latitude, s.longitude]));
+    return all;
+  }, [points, marcheRouteSteps]);
 
   const sortedAttrs = useMemo(
     () =>
@@ -179,22 +203,27 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
           ))}
         </div>
 
-        {/* Carte */}
+        {/* Carte (RichMap partagé avec l'onglet Carte) */}
         <div className="px-5 mt-5">
-          <div className="relative rounded-2xl overflow-hidden border border-border h-72 sm:h-80 bg-muted">
+          <div className="relative rounded-2xl overflow-hidden border border-border h-72 sm:h-96 bg-muted">
             {points.length > 0 ? (
-              <MapContainer
+              <RichMap
                 center={points[0]}
                 zoom={15}
-                scrollWheelZoom
-                className="w-full h-full"
-                style={{ background: 'hsl(var(--muted))' }}
+                bounds={bounds}
+                initialStyle="geopoetic"
+                controls={{ zoom: true, style: true, geolocate: true, cadastre: true, weather: true }}
+                marcheRoute={
+                  marcheRouteSteps.length > 0
+                    ? {
+                        steps: marcheRouteSteps,
+                        renderMarkers: true,
+                        opacity: 0.55, // route en arrière-plan
+                      }
+                    : undefined
+                }
+                height="100%"
               >
-                <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                  attribution='&copy; OpenStreetMap &copy; CARTO'
-                />
-                <FitBounds points={points} />
                 {clusters.map((c, idx) => {
                   if (!c.centroid) return null;
                   const sample = c.attributions[0];
@@ -235,7 +264,7 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
                     </Marker>
                   );
                 })}
-              </MapContainer>
+              </RichMap>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-center text-sm text-muted-foreground p-6">
                 Aucune coordonnée GPS disponible pour cette espèce.
@@ -243,7 +272,8 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
             )}
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground text-center">
-            Marqueurs pulsants — la taille reflète le nombre d'observations groupées (≤ 8 m).
+            Marqueurs émeraude pulsants — observations groupées (≤ 8 m).
+            {marcheRouteSteps.length > 0 && ' Tracé de la marche en arrière-plan.'}
           </p>
         </div>
 
