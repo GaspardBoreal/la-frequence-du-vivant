@@ -731,6 +731,7 @@ const SpeciesGrid: React.FC<{
   showAiBadges?: boolean;
   upsert: ReturnType<typeof useUpsertCuration>;
   translationMap: Map<string, SpeciesTranslation>;
+  tagsByScientific?: Map<string, MarcheurSpeciesTag[]>;
   onSpeciesClick: (species: CuratedSpeciesItem, displayName: string, photos: string[]) => void;
   onOpenEvidence?: (curation: ExplorationCuration, displayName: string) => void;
 }> = ({
@@ -741,6 +742,7 @@ const SpeciesGrid: React.FC<{
   showAiBadges,
   upsert,
   translationMap,
+  tagsByScientific,
   onSpeciesClick,
   onOpenEvidence,
 }) => {
@@ -759,37 +761,49 @@ const SpeciesGrid: React.FC<{
         const translation = species.scientificName
           ? translationMap.get(species.scientificName)
           : undefined;
+        const speciesTags = species.scientificName && tagsByScientific
+          ? (tagsByScientific.get(normSci(species.scientificName)) || [])
+          : [];
 
         return (
-          <CuratedSpeciesCard
-            key={species.key}
-            species={species}
-            curation={curation}
-            isCurator={isCurator}
-            explorationId={explorationId}
-            translation={translation}
-            showAiBadges={showAiBadges}
-            onClick={onSpeciesClick}
-            onOpenEvidence={onOpenEvidence}
-            footer={
-              isPinned && curation ? (
-                <CategoryControl
-                  isCurator={isCurator}
-                  curation={curation}
-                  onSetCategory={async cat => {
-                    await upsert.mutateAsync({
-                      id: curation.id,
-                      exploration_id: explorationId,
-                      sense: 'oeil',
-                      entity_type: 'species',
-                      entity_id: species.scientificName || species.key,
-                      category: cat,
-                    });
-                  }}
-                />
-              ) : null
-            }
-          />
+          <div key={species.key} className="relative">
+            {species.scientificName && (
+              <MarcheurSpeciesTagDots
+                scientificName={species.scientificName}
+                marcheId={null}
+                tags={speciesTags}
+                overlay
+              />
+            )}
+            <CuratedSpeciesCard
+              species={species}
+              curation={curation}
+              isCurator={isCurator}
+              explorationId={explorationId}
+              translation={translation}
+              showAiBadges={showAiBadges}
+              onClick={onSpeciesClick}
+              onOpenEvidence={onOpenEvidence}
+              footer={
+                isPinned && curation ? (
+                  <CategoryControl
+                    isCurator={isCurator}
+                    curation={curation}
+                    onSetCategory={async cat => {
+                      await upsert.mutateAsync({
+                        id: curation.id,
+                        exploration_id: explorationId,
+                        sense: 'oeil',
+                        entity_type: 'species',
+                        entity_id: species.scientificName || species.key,
+                        category: cat,
+                      });
+                    }}
+                  />
+                ) : null
+              }
+            />
+          </div>
         );
       })}
     </div>
