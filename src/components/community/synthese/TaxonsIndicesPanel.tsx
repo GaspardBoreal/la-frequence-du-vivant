@@ -19,6 +19,7 @@ import BiodiversitySimulator from './indices/BiodiversitySimulator';
 
 interface Props {
   species: RawSpecies[];
+  explorationId?: string;
 }
 
 type TabKey = 'richness' | 'simpson' | 'shannon' | 'pielou' | 'simulator';
