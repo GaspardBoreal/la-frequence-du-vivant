@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { computeIndices, type SpeciesAbundance, type RawSpecies } from '@/utils/biodiversityIndices';
 import { SpeciesName } from '@/components/species/SpeciesName';
-import type { AttributionLike } from '@/utils/speciesIndividualCount';
+import { getLatLng, type AttributionLike } from '@/utils/speciesIndividualCount';
 import SpeciesGpsDrawer from './SpeciesGpsDrawer';
 
 interface Props {
@@ -166,9 +166,7 @@ export const BiodiversitySimulator: React.FC<Props> = ({ initialAbundance, speci
 
       <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-2 max-h-[640px] overflow-y-auto">
         {simSpecies.map((sp) => {
-          const hasGps = sp.attributions.some(
-            (a: any) => Number.isFinite(a?.latitude) && Number.isFinite(a?.longitude),
-          );
+          const hasGps = sp.attributions.some((a) => getLatLng(a) !== null);
           return (
             <div
               key={sp.id}

@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import { Calendar, MapPin, User, ExternalLink, Sparkles, Camera, Users } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { SpeciesName } from '@/components/species/SpeciesName';
-import { countIndividuals, type AttributionLike } from '@/utils/speciesIndividualCount';
+import { countIndividuals, getLatLng, type AttributionLike } from '@/utils/speciesIndividualCount';
 
 interface Props {
   open: boolean;
@@ -66,14 +66,7 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const gpsAttrs = useMemo(
-    () =>
-      (attributions || []).filter(
-        (a) =>
-          typeof (a as any).latitude === 'number' &&
-          typeof (a as any).longitude === 'number' &&
-          Number.isFinite((a as any).latitude) &&
-          Number.isFinite((a as any).longitude),
-      ),
+    () => (attributions || []).filter((a) => getLatLng(a) !== null),
     [attributions],
   );
 
