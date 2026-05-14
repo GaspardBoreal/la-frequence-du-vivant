@@ -66,6 +66,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [hasUserPickedView, setHasUserPickedView] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<TagFilterState>({ labels: [], mode: 'and' });
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState<{
     name: string;
