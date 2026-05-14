@@ -213,13 +213,21 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
                 zoom={15}
                 bounds={bounds}
                 initialStyle="geopoetic"
-                controls={{ zoom: true, style: true, geolocate: true, cadastre: true, weather: true }}
+                controls={{
+                  zoom: true,
+                  style: true,
+                  geolocate: true,
+                  cadastre: true,
+                  weather: true,
+                  marcheRouteVisibility: true,
+                }}
+                onMarcheVisibilityChange={setMarcheStepsVisible}
                 marcheRoute={
                   marcheRouteSteps.length > 0
                     ? {
                         steps: marcheRouteSteps,
-                        renderMarkers: true,
-                        opacity: 0.55, // route en arrière-plan
+                        renderMarkers: false, // étapes masquées par défaut — révélables via le toggle
+                        opacity: 0.55,
                       }
                     : undefined
                 }
