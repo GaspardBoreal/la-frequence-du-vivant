@@ -25,6 +25,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { chatPageContext, useChatTabSnapshot } from '@/hooks/useChatPageContext';
+import {
+  useMarcheurSpeciesTags,
+  indexTagsBySpecies,
+  type MarcheurSpeciesTag,
+} from '@/hooks/useMarcheurSpeciesTags';
+import MarcheurSpeciesTagDots from '@/components/community/tags/MarcheurSpeciesTagDots';
+import MarcheurTagsFilterBar, {
+  matchesTagFilter,
+  type TagFilterState,
+} from '@/components/community/tags/MarcheurTagsFilterBar';
+
+const normSci = (s?: string | null) =>
+  (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
 interface Props {
   explorationId: string;
