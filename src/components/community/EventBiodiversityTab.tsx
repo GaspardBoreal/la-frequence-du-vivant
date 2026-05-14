@@ -18,6 +18,7 @@ import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
+import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
 
 type SubTab = 'synthese' | 'taxons' | 'temoignages' | 'textes' | 'analyse';
 
