@@ -453,6 +453,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               allEventMarches={allEventMarchesData}
               eventParticipants={eventParticipants}
             />
+            <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} />
           </motion.div>
         )}
 
