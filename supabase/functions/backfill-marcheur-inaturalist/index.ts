@@ -105,6 +105,8 @@ Deno.serve(async (req) => {
       species_scientific_name: string;
       observation_date: string | null;
       photo_url: string | null;
+      latitude: number;
+      longitude: number;
     };
     // Map: inat_id -> meilleur candidat (marche la plus proche)
     const bestByObs = new Map<number, Candidate>();
@@ -150,6 +152,8 @@ Deno.serve(async (req) => {
               species_scientific_name: sciName,
               observation_date: obs?.observed_on || null,
               photo_url: obs?.photos?.[0]?.url?.replace('square', 'medium') || null,
+              latitude: oLat,
+              longitude: oLng,
             });
           }
         }
@@ -169,11 +173,13 @@ Deno.serve(async (req) => {
         observation_date: r.observation_date,
         photo_url: r.photo_url,
         inaturalist_observation_id: r.inat_id,
+        latitude: r.latitude,
+        longitude: r.longitude,
         notes: 'iNaturalist backfill',
       }));
       const { error: insErr, count } = await admin
         .from('marcheur_observations')
-        .upsert(rows, { onConflict: 'marcheur_id,inaturalist_observation_id', ignoreDuplicates: true, count: 'exact' });
+        .upsert(rows, { onConflict: 'marcheur_id,inaturalist_observation_id', ignoreDuplicates: false, count: 'exact' });
       if (insErr) throw insErr;
       totalInserted = count ?? rows.length;
     }
