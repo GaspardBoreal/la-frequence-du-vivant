@@ -3306,6 +3306,8 @@ export type Database = {
           created_at: string | null
           id: string
           inaturalist_observation_id: number | null
+          latitude: number | null
+          longitude: number | null
           marche_id: string
           marcheur_id: string
           notes: string | null
@@ -3317,6 +3319,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           inaturalist_observation_id?: number | null
+          latitude?: number | null
+          longitude?: number | null
           marche_id: string
           marcheur_id: string
           notes?: string | null
@@ -3328,6 +3332,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           inaturalist_observation_id?: number | null
+          latitude?: number | null
+          longitude?: number | null
           marche_id?: string
           marcheur_id?: string
           notes?: string | null
