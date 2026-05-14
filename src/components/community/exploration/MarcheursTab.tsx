@@ -1121,7 +1121,8 @@ const MarcheurCard: React.FC<{
   uncuratedSpeciesNames?: string[];
   localSpeciesCount?: number;
   onForceOpen: () => void;
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, sensibleNames, uncuratedSpeciesNames, localSpeciesCount, onForceOpen }) => {
+  aliases?: string[];
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, sensibleNames, uncuratedSpeciesNames, localSpeciesCount, onForceOpen, aliases }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
 
   const openImpact = () => {
