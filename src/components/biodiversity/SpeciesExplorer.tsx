@@ -148,6 +148,14 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     [translations]
   );
 
+  // Marcheur tags (private to current user)
+  const allScientificNames = useMemo(
+    () => species.map((s) => s.scientificName).filter(Boolean),
+    [species]
+  );
+  const { data: marcheurTags } = useMarcheurSpeciesTags(allScientificNames);
+  const tagsBySpecies = useMemo(() => indexTagsBySpecies(marcheurTags), [marcheurTags]);
+
   // Filtered species
   const filteredSpecies = useMemo(() => {
     let filtered = species;
@@ -194,8 +202,16 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       });
     }
 
+    // Filter by marcheur tags
+    if (tagFilter.labels.length > 0) {
+      filtered = filtered.filter((s) => {
+        const labels = (tagsBySpecies.get(normalizeTagKey(s.scientificName)) || []).map((t) => t.label);
+        return matchesTagFilter(labels, tagFilter);
+      });
+    }
+
     return filtered.sort((a, b) => b.observations - a.observations);
-  }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm, translationMap]);
+  }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm, translationMap, tagFilter, tagsBySpecies]);
 
   const gridCols = compact
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
@@ -203,14 +219,23 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
 
   const renderSpeciesGrid = (list: BiodiversitySpecies[]) => (
     <div className={`grid gap-3 ${gridCols}`}>
-      {list.map((sp, i) => (
-        <EnhancedSpeciesCard
-          key={`${sp.id}-${i}`}
-          species={sp}
-          onSpeciesClick={setSelectedSpecies}
-          translation={translationMap.get(sp.scientificName)}
-        />
-      ))}
+      {list.map((sp, i) => {
+        const spTags = tagsBySpecies.get(normalizeTagKey(sp.scientificName)) || [];
+        return (
+          <div key={`${sp.id}-${i}`} className="relative">
+            <EnhancedSpeciesCard
+              species={sp}
+              onSpeciesClick={setSelectedSpecies}
+              translation={translationMap.get(sp.scientificName)}
+            />
+            <MarcheurSpeciesTagDots
+              scientificName={sp.scientificName}
+              tags={spTags}
+              overlay
+            />
+          </div>
+        );
+      })}
       {list.length === 0 && (
         <div className="col-span-full text-center py-8 text-muted-foreground text-sm">
           Aucune espèce ne correspond aux filtres sélectionnés
