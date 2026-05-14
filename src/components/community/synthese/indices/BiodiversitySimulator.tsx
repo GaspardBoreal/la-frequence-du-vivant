@@ -220,6 +220,7 @@ export const BiodiversitySimulator: React.FC<Props> = ({ initialAbundance, speci
           commonName={drawerSp.commonName}
           attributions={drawerSp.attributions}
           photos={drawerSp.photos}
+          explorationId={explorationId}
         />
       )}
     </div>
