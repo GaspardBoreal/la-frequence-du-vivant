@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Bird, Flower2, TreePine, Leaf } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import ImpactTeaserCard from './ImpactTeaserCard';
 import ImpactStoriesViewer from './ImpactStoriesViewer';
 import { useMarcheurSensibleSpecies } from '@/hooks/useMarcheurSensibleSpecies';
@@ -29,6 +30,8 @@ const MarcheurImpactPanel: React.FC<Props> = ({
   const explorationMarcheIds = rawIds || [];
   const totalMarchesCount = rawCount || 0;
   const [storiesOpen, setStoriesOpen] = useState(false);
+  const { user } = useAuth();
+  const isSelf = !!user?.id && !!marcheur.userId && user.id === marcheur.userId;
 
   // Snapshot data for pioneer count + taxonomy fallback
   const { data: snapshotsData } = useQuery({
@@ -135,6 +138,7 @@ const MarcheurImpactPanel: React.FC<Props> = ({
         sentinelleBreakdown={sentinelle.breakdown}
         sentinelleNextTip={sentinelle.nextTip}
         hasTemoignage={hasTemoignage}
+        isSelf={isSelf}
       />
     </>
   );

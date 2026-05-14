@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Share2, Lock, Sparkles, MapPin, Leaf, Bird, Flower2, TreePine, ShieldAlert } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Share2, Lock, Sparkles, MapPin, Leaf, Bird, Flower2, TreePine, ShieldAlert, Tag } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import EmpreinteVivante from './EmpreinteVivante';
@@ -11,6 +11,7 @@ import type { SensibleBuckets } from '@/lib/speciesClassification';
 import type { BadgesResult } from '@/hooks/useMarcheurBadges';
 import type { SentinelleBreakdown, SentinelleNextTip } from '@/lib/sentinelleIndex';
 import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
+import { useMyMarcheurTagsOverview, getTagColor, type MyTagOverviewEntry } from '@/hooks/useMarcheurSpeciesTags';
 
 const STORY_DURATION = 6000; // ms
 
@@ -27,18 +28,28 @@ export interface ImpactStoriesViewerProps {
   sentinelleBreakdown: SentinelleBreakdown;
   sentinelleNextTip: SentinelleNextTip;
   hasTemoignage: boolean;
+  /** True when the viewer is the marcheur (privacy-gated stories like personal tags). */
+  isSelf?: boolean;
 }
-
-const STORY_KEYS = ['empreinte', 'sentinelle', 'familles', 'detections', 'badges', 'palier'] as const;
 
 const ImpactStoriesViewer: React.FC<ImpactStoriesViewerProps> = ({
   open, onOpenChange, marcheur, sensible, badgesResult,
   pioneerCount, taxonomicFamilies, sentinelleScore, sentinelleLabel,
-  sentinelleBreakdown, sentinelleNextTip, hasTemoignage,
+  sentinelleBreakdown, sentinelleNextTip, hasTemoignage, isSelf = false,
 }) => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  const { data: myTags } = useMyMarcheurTagsOverview();
+  const includeTagsStory = !!isSelf && (myTags?.length || 0) > 0;
+
+  const STORY_KEYS = useMemo(() => {
+    const base: string[] = ['empreinte', 'sentinelle', 'familles'];
+    if (includeTagsStory) base.push('tags');
+    base.push('detections', 'badges', 'palier');
+    return base;
+  }, [includeTagsStory]);
 
   // Reset on open
   useEffect(() => { if (open) { setIndex(0); setProgress(0); } }, [open]);
@@ -172,6 +183,9 @@ const ImpactStoriesViewer: React.FC<ImpactStoriesViewerProps> = ({
               )}
               {currentKey === 'familles' && (
                 <StoryFamilles marcheur={marcheur} taxonomicFamilies={taxonomicFamilies} />
+              )}
+              {currentKey === 'tags' && (
+                <StoryMyTags tags={myTags || []} />
               )}
               {currentKey === 'detections' && (
                 <StoryDetections sensible={sensible} />
@@ -476,6 +490,76 @@ const StoryPalier: React.FC<{ nextBadge: BadgesResult['nextBadge']; marcheur: Ma
       >
         <Share2 className="w-4 h-4 mr-2" /> Partager mon empreinte
       </Button>
+    </div>
+  );
+};
+
+const StoryMyTags: React.FC<{ tags: MyTagOverviewEntry[] }> = ({ tags }) => {
+  const top = tags.slice(0, 6);
+  const totalSpecies = useMemo(() => {
+    const set = new Set<string>();
+    tags.forEach((t) => t.species.forEach((s) => set.add(s.scientific_name.toLowerCase())));
+    return set.size;
+  }, [tags]);
+  const maxCount = Math.max(...top.map((t) => t.speciesCount), 1);
+
+  return (
+    <div className="flex flex-col items-center text-center text-white">
+      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-emerald-300/80 mb-2">
+        <Tag className="w-3 h-3" /> Mon regard
+        <span className="inline-flex items-center gap-1 normal-case tracking-normal text-[10px] text-white/50">
+          · <Lock className="w-2.5 h-2.5" /> privé
+        </span>
+      </div>
+      <h2 className="text-xl font-light mb-1">
+        <span className="font-bold text-emerald-200">{tags.length}</span> tag{tags.length > 1 ? 's' : ''} ·
+        <span className="font-bold text-emerald-200"> {totalSpecies}</span> espèce{totalSpecies > 1 ? 's' : ''}
+      </h2>
+      <p className="text-xs text-white/60 mb-6 italic max-w-[280px]">
+        {tags.length < 3
+          ? 'Votre vocabulaire commence à se former.'
+          : 'Votre grille de lecture du vivant, façonnée par vos rencontres.'}
+      </p>
+
+      <div className="relative w-full max-w-[300px] flex flex-wrap justify-center items-center gap-3 py-2">
+        {top.map((t, i) => {
+          const ratio = 0.55 + (t.speciesCount / maxCount) * 0.45;
+          const size = Math.round(58 + ratio * 42);
+          const color = getTagColor(t.color_hash);
+          return (
+            <motion.div
+              key={t.key}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1, y: [0, -4, 0] }}
+              transition={{
+                opacity: { delay: 0.1 + i * 0.1, duration: 0.4 },
+                scale: { delay: 0.1 + i * 0.1, type: 'spring', stiffness: 180 },
+                y: { delay: 0.6 + i * 0.2, duration: 3 + i * 0.3, repeat: Infinity, ease: 'easeInOut' },
+              }}
+              className="rounded-full flex flex-col items-center justify-center text-center px-2 border border-white/20 backdrop-blur-sm"
+              style={{
+                width: size,
+                height: size,
+                background: `radial-gradient(circle at 30% 30%, ${color}cc, ${color}66)`,
+                boxShadow: `0 0 22px ${color}55`,
+              }}
+            >
+              <span className="text-[10px] font-semibold text-white leading-tight line-clamp-2 px-1">
+                {t.label}
+              </span>
+              <span className="text-[10px] font-bold text-white/90 tabular-nums mt-0.5">
+                {t.speciesCount}
+              </span>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {tags.length > 6 && (
+        <p className="text-[10px] text-white/40 mt-4">
+          + {tags.length - 6} autre{tags.length - 6 > 1 ? 's' : ''} dans votre carnet
+        </p>
+      )}
     </div>
   );
 };

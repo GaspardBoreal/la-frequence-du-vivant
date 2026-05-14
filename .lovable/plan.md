@@ -1,69 +1,83 @@
-## Contexte
+## Objectif
 
-Le système Tags-Marcheurs est par espèce (scientific_name + marche_id facultatif). Après inspection des trois vues :
+Donner aux marcheurs une visibilité d'ensemble sur **leurs tags privés** :
 
-- **`OeilCuration.tsx`** — affiche des cartes espèces (`CuratedSpeciesCard` via `SpeciesGrid`). Cible **directement compatible** avec les pastilles + barre de filtre.
-- **`MainCuration.tsx`** — pratiques emblématiques (titre + texte riche + médias + marcheurs liés). **Pas d'espèce** → le système actuel ne s'applique pas.
-- **`OreilleCuration.tsx`** — playlist audio (récits, ambiances, chants). **Pas d'espèce** → idem.
+1. Une **section "Mes tags"** dans le Carnet vivant — vue panoramique cliquable.
+2. Une **story Impact dédiée** — célébration intime de leur grille de lecture du vivant (visible uniquement par eux-mêmes).
 
-Donc l'intégration concrète ne porte que sur **L'Œil**. Pour Main/Oreille, je documente ce qui serait nécessaire si tu veux étendre le système.
+## 1. Carnet vivant — section "Mes tags"
 
-## 1. OeilCuration — intégration des Tags-Marcheurs
+### Emplacement
+Dans `src/components/community/CarnetVivant.tsx`, **au-dessus** de la timeline saisonnière, dans un bloc repliable (par défaut replié si > 6 tags, déplié sinon) — cohérent avec la sobriété informationnelle.
 
-### Pastilles sur chaque carte espèce
-Dans `SpeciesGrid` (lignes 696-737 de `OeilCuration.tsx`), wrapper chaque `CuratedSpeciesCard` avec `MarcheurSpeciesTagDots` :
+### Contenu
+- Titre `Mes tags` + icône `Tag` + chip privé.
+- Pour chaque tag (trié par fréquence d'usage desc) : pastille colorée + label + compteur d'espèces distinctes.
+- Click sur un tag → `Drawer` (existant) listant les espèces taggées, chacune cliquable pour ouvrir `SpeciesGalleryDetailModal`.
+- État vide pédagogique : « Vous n'avez encore créé aucun tag. Ouvrez n'importe quelle fiche espèce dans Apprendre → L'Œil pour commencer votre vocabulaire personnel. »
 
-```tsx
-<MarcheurSpeciesTagDots
-  scientificName={species.scientificName}
-  marcheId={null}  // exploration multi-marches → tags globaux uniquement
-  tags={tagsByScientific.get(species.scientificName?.toLowerCase()) ?? []}
->
-  <CuratedSpeciesCard ... />
-</MarcheurSpeciesTagDots>
+### Données
+Nouveau hook `useMyMarcheurTagsOverview()` dans `src/hooks/useMarcheurSpeciesTags.ts` :
+
+```ts
+export function useMyMarcheurTagsOverview() {
+  return useQuery({
+    queryKey: ['my-marcheur-tags-overview'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marcheur_species_tags')
+        .select('id, label, color_hash, scientific_name, marche_id, created_at')
+        .order('created_at', { ascending: false });
+      // Group côté client par label_normalized
+      // → [{ label, color_hash, total: n, speciesCount: distinct(scientific_name), species: [{scientific_name, marche_id, taggedAt}] }]
+    },
+  });
+}
 ```
 
-Note importante sur le scope : une exploration agrège plusieurs marches. Comme une espèce peut venir de marches différentes, on n'a pas un `marche_id` unique pertinent ici. Deux options :
+RLS existant garantit que seul le user voit ses tags. Aucune migration nécessaire.
 
-- **A (recommandé, simple)** : forcer `marche_id = null` → seuls les tags **globaux par espèce** sont utilisables/visibles. Comportement clair et prévisible pour l'utilisateur.
-- **B (plus puissant)** : pour chaque espèce, déterminer la liste des `marche_id` concernés (depuis le pool/curations) et passer un tableau au popover, qui propose alors le scope par marche correspondant. Plus complexe côté UI, à garder pour plus tard si besoin.
+## 2. Story Impact dédiée — "Mon regard sur le vivant"
 
-→ J'implémente l'option **A** par défaut.
+### Conditionnelle
+Story incluse **uniquement** si la prop `isSelf` (à propager depuis `MarcheurImpactPanel`) est vraie — un autre utilisateur n'a pas le droit de voir mes tags.
 
-### Barre de filtre `MarcheurTagsFilterBar`
-Insérer la barre **sous les chips de catégories** (après ligne 507), visible uniquement si l'utilisateur a au moins un tag sur les espèces du pool. Logique d'application :
+Détection `isSelf` : comparer `marcheur.userId` avec `supabase.auth.getUser().id` (déjà disponible via `useCurrentUser`/contexte ; sinon ajouter prop côté `MarcheursTab`).
 
-- Récupérer en batch les tags pour toutes les espèces du `pool` via `useMarcheurSpeciesTags({ scientificNames: pool.map(s => s.scientificName) })` (déjà en place, à hooker une seule fois en haut du composant).
-- Construire `tagsByScientific: Map<sciNameLower, Tag[]>`.
-- Étendre `applyCategoryFilter` (ou créer `applyTagFilter`) pour filtrer ensuite par tags selon le mode ET/OU/SAUF.
-- Étendre `categoryCounts` pour rester cohérent avec la liste filtrée.
-- Inclure les filtres tags dans le snapshot `chatPageContext`/`useChatTabSnapshot` pour que l'IA voie l'écran filtré (cf. mémoire `chatbot-screen-awareness-architecture`).
+### Position dans `STORY_KEYS`
+Insérée après `familles`, avant `detections` :
 
-### Onglets concernés
-Le filtrage et les pastilles s'appliquent à **Sélection finale**, **Suggestions IA**, **À réviser**, **Pool/Observées**. Pas de tags sur l'onglet **Terrain** (espèces manuelles sans `scientific_name` garanti — vérifier ; si présent, on l'inclut aussi).
+```ts
+const STORY_KEYS = ['empreinte', 'sentinelle', 'familles', ...(isSelf ? ['tags'] : []), 'detections', 'badges', 'palier'] as const;
+```
 
-## 2. MainCuration & OreilleCuration — non applicable en l'état
+### Contenu visuel (`StoryMyTags`)
+- Eyebrow : `Mon regard · privé`
+- Titre : `{labels.length} tags · {speciesCount} espèces que vous avez su nommer`
+- Bulles flottantes (3-5 plus utilisées) — taille proportionnelle au compteur, couleur du tag, animation `motion` (entrée stagger + flotting).
+- Si `<3` tags : variant pédagogique : « Votre vocabulaire commence à se former. »
+- Si `0` tag : story sautée (on retire `'tags'` de `STORY_KEYS`).
 
-Les "pratiques" (Main) et les pistes audio (Oreille) ne sont pas indexées par espèce. Le système Tags-Marcheurs actuel (`marcheur_species_tags.scientific_name NOT NULL`) ne peut donc pas s'y greffer tel quel.
+### Données
+Réutilise `useMyMarcheurTagsOverview()`. Hook appelé dans `MarcheurImpactPanel` quand `isSelf`.
 
-Si tu veux des tags privés sur ces objets, il faudra une décision produit avant tout code :
+## Fichiers touchés
 
-- Étendre la table en `marcheur_curation_tags(curation_id, label, color_hash, ...)` — tags privés par curation `main`/`oreille`.
-- Ou créer une seconde table générique `marcheur_object_tags(object_type, object_id, ...)`.
-- Ou simplement réutiliser le champ `category`/`secondary_categories` existant côté curation (mais ce n'est pas privé).
-
-Je ne touche **pas** à Main/Oreille dans ce lot. Je remonte la question avant d'aller plus loin.
+- `src/hooks/useMarcheurSpeciesTags.ts` — ajout `useMyMarcheurTagsOverview`.
+- `src/components/community/tags/MyTagsOverview.tsx` (nouveau) — section Carnet (collapse + grid + drawer espèces).
+- `src/components/community/CarnetVivant.tsx` — insertion `<MyTagsOverview userId={userId} />` au-dessus de la timeline.
+- `src/components/community/exploration/impact/ImpactStoriesViewer.tsx` — nouvelle story `StoryMyTags` + `STORY_KEYS` conditionnel sur prop `isSelf`.
+- `src/components/community/exploration/impact/MarcheurImpactPanel.tsx` — calcul `isSelf` (via `supabase.auth.getUser()`), passage de la prop, fetch `useMyMarcheurTagsOverview()` quand `isSelf`.
 
 ## Détails techniques
 
-- **Fichier édité** : `src/components/community/insights/curation/OeilCuration.tsx`
-- Hook utilisé : `useMarcheurSpeciesTags` (déjà créé) — appel batch en haut du composant avec `pool.map(s => s.scientificName).filter(Boolean)`.
-- Composants utilisés : `MarcheurSpeciesTagDots`, `MarcheurTagsFilterBar` (déjà créés).
-- État local nouveau : `tagFilter: { mode: 'AND'|'OR'|'NOT', tagIds: string[] }`.
-- Snapshot chat : ajouter `oeilTagFilter` aux `filters` publiés.
-- Pas de migration BDD, pas de changement de RPC.
+- Pas de migration BDD ; pas de nouvelle RPC.
+- Couleurs via `getTagColor(color_hash)` déjà exporté.
+- `SpeciesGalleryDetailModal` réutilisable depuis le Drawer (signature actuelle : `name`, `scientificName`, `count`, `kingdom`).
+- Privé = badge cadenas visible (cohérent avec `MarcheurSpeciesTagDots`).
+- Mobile-first : la story doit tenir en `<= 740px` de hauteur, scroll vertical autorisé comme `StorySentinelle`.
 
-## Questions ouvertes
+## Hors scope
 
-1. Pour Main/Oreille, veux-tu que je propose une migration séparée (table `marcheur_curation_tags`) après cette intégration ?
-2. Pour L'Œil : option A (tags globaux uniquement) confirmée, ou tu préfères qu'on attaque l'option B (scope par marche) maintenant ?
+- Édition / suppression des tags depuis le Carnet (déjà disponible sur les fiches espèce — éviter la duplication).
+- Partage public d'un tag (les tags restent strictement privés ; cf. mémoire sécurité).

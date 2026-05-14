@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { queryClient } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
+import MyTagsOverview from '@/components/community/tags/MyTagsOverview';
 interface Participation {
   id: string;
   marche_event_id: string;
@@ -276,6 +277,8 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
         </h2>
         <span className="text-muted-foreground text-xs">({participations.length})</span>
       </div>
+
+      <MyTagsOverview />
 
       {participations.length === 0 ? (
         <div className="bg-card border-border dark:bg-white/5 rounded-xl border dark:border-white/10 p-5 text-center">
