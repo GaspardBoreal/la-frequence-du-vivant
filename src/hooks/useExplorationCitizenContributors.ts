@@ -38,7 +38,7 @@ export function useExplorationCitizenContributors(
         .select('marche_id')
         .eq('exploration_id', explorationId);
       const marcheIds = (emRows || []).map((r: any) => r.marche_id).filter(Boolean);
-      if (!marcheIds.length) return [];
+      if (!marcheIds.length) return { contributors: [], totalUniqueSpecies: 0 };
 
       const { data: snapshots } = await supabase
         .from('biodiversity_snapshots')
@@ -53,6 +53,7 @@ export function useExplorationCitizenContributors(
         firstUrl: string | null;
       };
       const byKey = new Map<string, Acc>();
+      const allSpecies = new Set<string>();
 
       for (const snap of snapshots || []) {
         const arr = (snap as any).species_data;
@@ -79,13 +80,16 @@ export function useExplorationCitizenContributors(
               byKey.set(key, acc);
             }
             acc.obs += 1;
-            if (sp?.scientificName) acc.species.add(sp.scientificName);
+            if (sp?.scientificName) {
+              acc.species.add(sp.scientificName);
+              allSpecies.add(sp.scientificName);
+            }
             if (!acc.firstUrl && a?.originalUrl) acc.firstUrl = a.originalUrl;
           }
         }
       }
 
-      return Array.from(byKey.values())
+      const contributors = Array.from(byKey.values())
         .map((a) => ({
           observerName: a.observerName,
           source: a.source as CitizenContributor['source'],
@@ -94,6 +98,8 @@ export function useExplorationCitizenContributors(
           firstUrl: a.firstUrl,
         }))
         .sort((a, b) => b.speciesCount - a.speciesCount || b.obsCount - a.obsCount);
+
+      return { contributors, totalUniqueSpecies: allSpecies.size };
     },
     enabled: !!explorationId && !!knownAliases,
     staleTime: 5 * 60 * 1000,
