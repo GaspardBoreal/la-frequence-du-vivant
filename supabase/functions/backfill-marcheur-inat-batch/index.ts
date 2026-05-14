@@ -139,9 +139,12 @@ Deno.serve(async (req) => {
 
   await admin.from('marcheur_backfill_log').insert({
     user_id: '00000000-0000-0000-0000-000000000000',
-    exploration_id: '00000000-0000-0000-0000-000000000000',
+    exploration_id: null,
     source: 'cron_daily_summary',
     status: errors > 0 ? 'partial' : 'ok',
+    observations_inserted: totalAdded,
+    marches_scanned: couples.length,
+    detail: summary as any,
     error: errors > 0 ? JSON.stringify(errorSamples) : null,
     completed_at: new Date().toISOString(),
   });
