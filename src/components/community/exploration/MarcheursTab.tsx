@@ -50,6 +50,7 @@ import { CSS } from '@dnd-kit/utilities';
 import MarcheurImpactPanel from './impact/MarcheurImpactPanel';
 import CitizenContributorsAggregateRow from './CitizenContributorsAggregateRow';
 import { useExplorationCitizenContributors } from '@/hooks/useExplorationCitizenContributors';
+import { useMarcheurInatProfile } from '@/hooks/useMarcheurInatProfile';
 
 interface MarcheursTabProps {
   explorationId?: string;
