@@ -144,8 +144,8 @@ export const RichMap: React.FC<RichMapProps> = ({
             polylinePositions={marcheRoute.polylinePositions}
             isLoop={marcheRoute.isLoop}
             mapStyle={mapStyle}
-            renderMarkers={marcheRoute.renderMarkers !== false}
-            opacity={marcheRoute.opacity ?? 1}
+            renderMarkers={markersVisible}
+            opacity={markersVisible ? (marcheRoute.opacity ?? 1) : Math.min(marcheRoute.opacity ?? 1, 0.45)}
           />
         )}
 
