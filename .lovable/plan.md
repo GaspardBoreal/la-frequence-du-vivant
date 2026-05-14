@@ -1,112 +1,57 @@
-## 1. Analyse du fichier KML `Marche_Vincent.kml`
 
-Le fichier contient **7 Placemarks** (points GPS) qui représentent chacun **un habitat / une parcelle distincte** sur un même site, situé en **Normandie (Orne)**, autour de la commune de **Tinchebray-Bocage / Saint-Quentin-les-Chardonnets** (lat ≈ 48.825°N, lon ≈ -0.014°E).
+# Inciter le marcheur à découvrir ses 3 fréquences du jour
 
-### Inventaire des 7 parcelles
+## Problème
+Aujourd'hui, les 3 catégories (Géopoétique · Biodiversité · Bioacoustique) sont reléguées en bas à droite sous forme de 3 petites icônes ternes. Un nouveau marcheur ne sait pas qu'il y a 3 contenus à découvrir, ni comment naviguer entre eux. Le geste « suivant/précédent » n'est ni suggéré ni récompensé.
 
+## Intention design
+Transformer la carte « Ma Fréquence du jour » en un **triptyque révélé progressivement** : le marcheur sent qu'il y a 3 facettes, il est tenté de les feuilleter, et chaque transition est belle.
 
-| #   | Habitat (description KML) | Latitude | Longitude |
-| --- | ------------------------- | -------- | --------- |
-| 1   | Ripisylve                 | 48.82799 | -0.01393  |
-| 2   | Lisière forêt / champ     | 48.82405 | -0.01187  |
-| 3   | Champ ouvert              | 48.82644 | -0.00928  |
-| 4   | Lande sèche               | 48.82434 | -0.01680  |
-| 5   | Prairie humide            | 48.82570 | -0.01679  |
-| 6   | Potager sol vivant        | 48.82631 | -0.01742  |
-| 7   | Forêt                     | 48.82519 | -0.01592  |
+## Proposition (uniquement frontend, fichier `FrequenceWave.tsx`)
 
+### 1. Eyebrow enrichi — signaler qu'il y a 3 facettes
+Au lieu de `● MA FRÉQUENCE DU JOUR`, afficher :
+```
+●  MA FRÉQUENCE DU JOUR     ·     1 / 3  Géopoétique
+```
+Le compteur `1/3` est la promesse implicite : « il y en a deux autres ».
 
-### Caractéristiques géographiques
+### 2. Flèches `←  →` élégantes encadrant la citation
+Deux chevrons fins (Lucide `ChevronLeft` / `ChevronRight`) positionnés verticalement centrés, en dehors du bloc citation sur desktop, en bas sur mobile. Au repos : opacité 40 %, fines (stroke 1.5). Au hover : opacité 100 %, halo doux émeraude, micro-translation de 2px dans le sens de la navigation.
 
-- **Centroïde** : 48.8257°N, -0.0146°E
-- **Emprise** : ~600 m (Est-Ouest) × ~430 m (Nord-Sud), soit environ **35 hectares**
-- **Diversité d'habitats remarquable** : 7 milieux écologiquement très contrastés (zone humide, sèche, forestière, agricole, ripicole, potagère) sur un mouchoir de poche → terrain pédagogique et scientifique exceptionnel pour un protocole "Marches du Vivant".
+Sur mobile : swipe gauche/droite (drag framer-motion) en plus des flèches.
 
-### Particularités techniques du KML
+### 3. Indicateur de progression — 3 traits horizontaux
+Sous la citation, remplacer les 3 icônes empilées à droite par **3 traits fins centrés** (pattern Apple / Stories Instagram) :
+```
+━━━━  ────  ────
+```
+- trait actif : plein, gradient émeraude→cyan, label catégorie visible dessous
+- traits inactifs : 30 % opacité, label estompé
+- clic sur un trait = saut direct (accessibilité préservée)
 
-- Pas de tracé (LineString) — uniquement des points.
-- Pas de date ni d'horodatage.
-- Chaque Placemark embarque une icône PNG en base64 (identique pour tous, donc pas porteuse d'information).
-- Le champ `description` porte le **nom d'habitat** → c'est lui qui doit servir de nom de marche.
+### 4. Pulse d'invitation au premier affichage (onboarding silencieux)
+Si `localStorage` n'a pas la clé `freq_discovered_all` :
+- Pulse doux toutes les 4s sur la flèche `→` (scale 1 → 1.08 → 1, halo émeraude)
+- Petite légende fugace **« Faites défiler vos 3 fréquences »** sous les indicateurs, opacité 60 %, qui disparaît dès le premier clic/swipe
+- Une fois les 3 facettes vues, on stocke `freq_discovered_all = true` → la pulsation et la légende disparaissent à jamais
 
----
+### 5. Auto-rotation très lente (optionnelle, désactivée si interaction)
+Toutes les 12 s, rotation automatique vers la facette suivante avec la même `AnimatePresence` (fade + petit y). S'arrête définitivement dès que le marcheur clique/swipe (respect de l'attention).
 
-## 2. Recommandation : nombre de marches à créer
+### 6. Transitions
+- Crossfade + glissement horizontal léger (entrée +20px, sortie −20px) selon le sens de navigation
+- Le gradient conique en arrière-plan change subtilement de teinte selon la catégorie active (vert forêt, vert eau, ambre acoustique) — ancrage sensoriel de chaque fréquence
 
-**→ 7 marches, une par parcelle/habitat.**
+## Détails techniques
+Modifications confinées à `src/components/community/FrequenceWave.tsx` :
+- Remplacer `setActiveTab(key)` direct par `goTo(index)` / `next()` / `prev()` avec mémorisation du sens (`direction: 1 | -1`) pour orienter l'animation
+- Ajouter `motion.div` wrapper avec `drag="x"` + `dragConstraints` pour le swipe mobile
+- Ajouter `useEffect` d'auto-rotation avec `clearInterval` au premier user-event
+- Ajouter `localStorage` flag `freq_discovered_all` mis à `true` quand `Set<Categorie>` visités atteint 3
+- Aucune modification DB, aucun nouveau hook, aucun impact sur les autres tabs
 
-Justification :
-
-- Chaque point KML représente un **micro-écosystème distinct** identifié par Vincent lui-même (il a pris le soin de les nommer un par un).
-- C'est cohérent avec le protocole existant des Marches du Vivant : une marche = un habitat = un relevé biodiversité ciblé (rayon de collecte iNaturalist par défaut 500 m, parfaitement adapté à la taille des parcelles).
-- Cela permet ensuite de comparer les **fréquences du vivant** entre habitats (ripisylve vs lande sèche vs potager sol vivant…) — exactement le type de récit fort pour un président de Ver de Terre Production.
-- La diversité d'habitats sera visualisée comme un **gradient écologique** dans l'exploration agrégatrice.
-
-Alternative plus légère (non recommandée) : 1 seule marche centroïde — perdrait toute la richesse du découpage par habitat fait par Vincent.
-
----
-
-## 3. Plan d'exécution
-
-### Étape 1 — Créer l'événement
-
-- **Table** : `marche_events` (via formulaire admin existant `MarcheEventsAdmin`)
-- **Nom** : Laboratoire à Ciel Ouvert : Biodiversité & Sols Vivants
-- **Type d'événement** : `agroecologique` (cohérent avec le profil Ver de Terre Production)
-- **Date** : 1205/2026
-- **Localisation** : Tinchebray-Bocage (61) — lat 4/8.8257, lon -0.0146
-- **Organisateur** : La Fréquence du Vivant
-
-### Étape 2 — Créer l'exploration
-
-- **Table** : `explorations`
-- **Nom** : Laboratoire à Ciel Ouvert : Biodiversité & Sols Vivants
-- **Description courte** : "7 habitats contrastés sur 35 ha — diagnostic biodiversité d'une mosaïque agroécologique avec Vincent Levavasseur (Ver de Terre Production)."
-- **Coordonnées centroïdes** : 48.8257°N, -0.0146°E
-- **Rattachement** : associée à l'événement créé en étape 1 (champ `event_id` ou table de liaison selon schéma actuel — à vérifier sur `MarchesDuVivantExplorationMarcheur` / `useExplorationMarches`).
-- **Statut initial** : `draft` (publication ON/OFF respectée selon mémoire `progressive-publishing-system-logic`).
-
-### Étape 3 — Créer les 7 marches (une par parcelle)
-
-Pour chaque Placemark KML, créer une ligne dans `marches` avec :
-
-
-| Champ                    | Valeur                                                                          |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| `nom_marche`             | `V. Levavasseur — <habitat>` (ex. "V. Levavasseur — Ripisylve")                 |
-| `ville`                  | `Tinchebray-Bocage`                                                             |
-| `region`                 | `Normandie`                                                                     |
-| `departement`            | `Orne`                                                                          |
-| `latitude` / `longitude` | coordonnées exactes du point KML                                                |
-| `theme_principal`        | `agroecologique`                                                                |
-| `sous_themes`            | `[<habitat>]` (Ripisylve, Lande sèche, etc.)                                    |
-| `tags`                   | `["agroécologie", "Ver de Terre Production", "Vincent Levavasseur", <habitat>]` |
-| `descriptif_court`       | `Habitat : <description KML> — parcelle de la Marche V. Levavasseur`            |
-| `organisateur_id`        | id de l'organisateur Ver de Terre Production                                    |
-| Rattachement exploration | via la table de liaison `exploration_marches` (selon schéma)                    |
-
-
-### Étape 4 — Rattacher Vincent comme marcheur
-
-- Création/identification du profil marcheur "Vincent Levavasseur".
-- Trigger existant `participation-validation-trigger` + `marcheur-inaturalist-backfill-logic` se chargeront d'attacher automatiquement ses futures observations iNaturalist aux 7 marches dès qu'il sera enregistré participant.
-
----
-
-## 4. Détails techniques (pour exécution future)
-
-- **Insertion** : 1 INSERT `marche_events` + 1 INSERT `explorations` + 7 INSERT `marches` + 7 INSERT `exploration_marches` (table de liaison).
-- **Source des données** : parser KML côté script Node (pas besoin d'UI dédiée pour cet import ponctuel) → générer un SQL `INSERT` via `supabase--migration` n'est PAS adapté (data, pas schéma) → utiliser `psql` en mode INSERT direct ou l'UI admin existante.
-- **Validation GPS** : les 7 points sont contigus (max 600 m d'écart) → ils tomberont tous dans le même rayon de 5 km → la **fusion taxonomique** récemment introduite (`taxonomyMerge.ts`) restera pertinente au niveau exploration agrégée.
-- **Hors scope** : pas de modification de schéma DB, pas de nouveau composant UI, pas de migration.
-
----
-
-## 5. Validation attendue avant exécution
-
-Avant de lancer la création réelle (étapes 1→3), confirmer avec toi :
-
-1. **Date de l'événement** : 12/05/2026
-2. **Commune exacte** : Tinchebray-Bocage (61) confirmée 
-3. **Organisateur** : créer "Ver de Terre Production" comme nouvelle entrée
-4. **OK pour 7 marches** (une par habitat)
+## Hors-scope
+- Pas de changement du contenu des citations
+- Pas de changement de la logique de sélection « du jour »
+- Pas de modification de `ProgressionCard` ni des quick actions

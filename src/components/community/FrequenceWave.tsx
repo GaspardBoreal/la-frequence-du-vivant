@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExternalLink, BookOpen, TreePine, Headphones } from 'lucide-react';
+import { ExternalLink, BookOpen, TreePine, Headphones, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
@@ -47,11 +47,13 @@ const FALLBACK_CITATIONS: Record<Categorie, Citation> = {
   },
 };
 
-const TABS: { key: Categorie; icon: React.ElementType; label: string }[] = [
-  { key: 'geopoetique', icon: BookOpen, label: 'Géopoétique' },
-  { key: 'biodiversite', icon: TreePine, label: 'Biodiversité' },
-  { key: 'bioacoustique', icon: Headphones, label: 'Bioacoustique' },
+const TABS: { key: Categorie; icon: React.ElementType; label: string; tint: string }[] = [
+  { key: 'geopoetique', icon: BookOpen, label: 'Géopoétique', tint: '#34d399' },
+  { key: 'biodiversite', icon: TreePine, label: 'Biodiversité', tint: '#2dd4bf' },
+  { key: 'bioacoustique', icon: Headphones, label: 'Bioacoustique', tint: '#fbbf24' },
 ];
+
+const DISCOVERED_KEY = 'freq_discovered_all_v1';
 
 function getDayOfYear(): number {
   const now = new Date();
@@ -76,9 +78,18 @@ interface FrequenceWaveProps {
 }
 
 const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) => {
-  const [c1, c2] = ROLE_GRADIENT[role];
-  const [activeTab, setActiveTab] = useState<Categorie>('geopoetique');
+  const [, c2] = ROLE_GRADIENT[role];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const [visited, setVisited] = useState<Set<Categorie>>(new Set(['geopoetique']));
+  const [discovered, setDiscovered] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(DISCOVERED_KEY) === '1';
+  });
+  const [interacted, setInteracted] = useState(false);
   const incrementedRef = useRef<Set<string>>(new Set());
+
+  const activeTab = TABS[activeIndex].key;
 
   const { data: allCitations = [] } = useQuery({
     queryKey: ['frequence-citations-public'],
@@ -94,7 +105,6 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
     staleTime: 1000 * 60 * 60,
   });
 
-  // Group by categorie
   const byCategorie: Record<Categorie, Citation[]> = {
     geopoetique: allCitations.filter(c => c.categorie === 'geopoetique'),
     biodiversite: allCitations.filter(c => c.categorie === 'biodiversite'),
@@ -102,10 +112,50 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
   };
 
   const catOffsets: Record<Categorie, number> = { geopoetique: 0, biodiversite: 137, bioacoustique: 271 };
-
   const citation = getCitationDuJour(byCategorie[activeTab], catOffsets[activeTab]) || FALLBACK_CITATIONS[activeTab];
 
-  // Increment counters once per session/day per citation
+  const goTo = useCallback((idx: number, dir?: 1 | -1) => {
+    const target = (idx + TABS.length) % TABS.length;
+    setDirection(dir ?? (target > activeIndex ? 1 : -1));
+    setActiveIndex(target);
+    setInteracted(true);
+    setVisited(prev => {
+      const next = new Set(prev);
+      next.add(TABS[target].key);
+      if (next.size === TABS.length && !discovered) {
+        localStorage.setItem(DISCOVERED_KEY, '1');
+        setDiscovered(true);
+      }
+      return next;
+    });
+  }, [activeIndex, discovered]);
+
+  const next = useCallback(() => goTo(activeIndex + 1, 1), [activeIndex, goTo]);
+  const prev = useCallback(() => goTo(activeIndex - 1, -1), [activeIndex, goTo]);
+
+  // Auto-rotation lente, stoppée à la première interaction
+  useEffect(() => {
+    if (interacted || discovered) return;
+    const id = setInterval(() => {
+      setDirection(1);
+      setActiveIndex(i => {
+        const nextIdx = (i + 1) % TABS.length;
+        setVisited(prev => {
+          const n = new Set(prev);
+          n.add(TABS[nextIdx].key);
+          if (n.size === TABS.length) {
+            localStorage.setItem(DISCOVERED_KEY, '1');
+            setDiscovered(true);
+          }
+          return n;
+        });
+        return nextIdx;
+      });
+    }, 12000);
+    return () => clearInterval(id);
+  }, [interacted, discovered]);
+
+  // Compteurs de vue
   useEffect(() => {
     if (!citation.id || incrementedRef.current.has(citation.id)) return;
     incrementedRef.current.add(citation.id);
@@ -116,20 +166,16 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
 
     if (!sessionStorage.getItem(sessionKey)) {
       sessionStorage.setItem(sessionKey, '1');
-      supabase
-        .from('frequence_citations')
+      supabase.from('frequence_citations')
         .update({ viewed_count: citation.viewed_count + 1 })
-        .eq('id', citation.id)
-        .then(() => {});
+        .eq('id', citation.id).then(() => {});
     }
 
     if (!localStorage.getItem(shownKey)) {
       localStorage.setItem(shownKey, '1');
-      supabase
-        .from('frequence_citations')
+      supabase.from('frequence_citations')
         .update({ shown_count: citation.shown_count + 1 })
-        .eq('id', citation.id)
-        .then(() => {});
+        .eq('id', citation.id).then(() => {});
     }
   }, [citation.id, citation.viewed_count, citation.shown_count]);
 
@@ -141,24 +187,27 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
     return Math.max(0.15, Math.min(1, base + noise));
   });
 
+  const activeTint = TABS[activeIndex].tint;
+  const showHint = !discovered;
+
   return (
     <div className="relative overflow-hidden rounded-3xl bg-emerald-600 dark:bg-emerald-900 p-6 md:p-8 shadow-xl shadow-emerald-900/20 dark:shadow-black/30">
-      {/* Conic ambient halo */}
+      {/* Conic ambient halo — teinte selon catégorie */}
       <motion.div
         aria-hidden
         className="absolute -inset-[60%] opacity-20 pointer-events-none"
-        style={{ background: `conic-gradient(from 0deg, transparent 0deg, ${c2} 180deg, transparent 360deg)` }}
         animate={{ rotate: 360 }}
         transition={{ duration: 20, ease: 'linear', repeat: Infinity }}
+        style={{ background: `conic-gradient(from 0deg, transparent 0deg, ${activeTint} 180deg, transparent 360deg)` }}
       />
 
-      {/* Subtle wave at bottom */}
+      {/* Wave bottom */}
       <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-[2px] h-10 px-3 opacity-15 pointer-events-none">
         {heights.map((h, i) => (
           <motion.div
             key={i}
             className="flex-1 rounded-full origin-bottom"
-            style={{ background: `linear-gradient(to top, ${c1}, ${c2})` }}
+            style={{ background: `linear-gradient(to top, ${activeTint}, ${c2})` }}
             initial={{ scaleY: 0 }}
             animate={{ scaleY: [h * 0.6, h, h * 0.75, h * 0.9, h * 0.6] }}
             transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, ease: 'easeInOut', delay: i * 0.07 }}
@@ -167,75 +216,145 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
       </div>
 
       <div className="relative z-10 flex flex-col gap-5">
-        {/* Eyebrow */}
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-200 animate-pulse" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-100/70">
-            Ma Fréquence du jour
-          </span>
+        {/* Eyebrow + compteur 1/3 */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-200 animate-pulse" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-100/70">
+              Ma Fréquence du jour
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-100/80">
+            <span className="tabular-nums opacity-70">{activeIndex + 1} / {TABS.length}</span>
+            <span className="opacity-30">·</span>
+            <span style={{ color: activeTint }}>{TABS[activeIndex].label}</span>
+          </div>
         </div>
 
-        {/* Citation hero */}
-        <AnimatePresence mode="wait">
-          <motion.blockquote
-            key={`${activeTab}-${citation.texte}`}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="space-y-4"
+        {/* Citation + flèches */}
+        <div className="relative">
+          {/* Flèche prev */}
+          <button
+            onClick={prev}
+            aria-label="Fréquence précédente"
+            className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 items-center justify-center w-9 h-9 rounded-full text-emerald-100/40 hover:text-white hover:bg-white/10 hover:-translate-x-3 transition-all duration-300 z-20"
           >
-            <p
-              className="text-xl md:text-2xl italic leading-snug text-white"
-              style={{ fontFamily: "'Crimson Text', 'Libre Baskerville', serif" }}
-            >
-              « {citation.texte} »
-            </p>
-            <footer className="flex items-center justify-end gap-2 text-emerald-100/70 text-xs">
-              <span className="h-px w-8 bg-emerald-300/40" />
-              <span className="inline-flex items-center gap-1">
-                — {citation.auteur}
-                {citation.url && (
-                  <a
-                    href={citation.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-emerald-200/50 hover:text-emerald-100 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label="Vérifier la source"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-              </span>
-            </footer>
-          </motion.blockquote>
-        </AnimatePresence>
+            <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
+          </button>
 
-        {/* Discreet category tabs */}
-        <div className="flex justify-end gap-1 pt-1">
-          {TABS.map(({ key, icon: Icon, label }) => {
-            const isActive = activeTab === key;
-            const hasContent = byCategorie[key].length > 0;
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                disabled={!hasContent && key !== activeTab}
-                className={`p-1.5 rounded-md transition-all ${
-                  isActive
-                    ? 'bg-white/20 ring-1 ring-white/30'
-                    : hasContent
-                      ? 'hover:bg-white/10 opacity-50 hover:opacity-90'
-                      : 'opacity-20 cursor-not-allowed'
-                }`}
-                title={label}
-                aria-label={label}
+          {/* Flèche next + pulse onboarding */}
+          <motion.button
+            onClick={next}
+            aria-label="Fréquence suivante"
+            className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 items-center justify-center w-9 h-9 rounded-full text-emerald-100/40 hover:text-white hover:bg-white/10 hover:translate-x-3 transition-all duration-300 z-20"
+            animate={showHint ? { scale: [1, 1.12, 1], boxShadow: [
+              '0 0 0 0 rgba(110,231,183,0)',
+              '0 0 0 8px rgba(110,231,183,0.18)',
+              '0 0 0 0 rgba(110,231,183,0)',
+            ] } : {}}
+            transition={showHint ? { duration: 2.4, repeat: Infinity, ease: 'easeInOut' } : {}}
+          >
+            <ChevronRight className="w-5 h-5" strokeWidth={1.5} />
+          </motion.button>
+
+          {/* Zone draggable mobile */}
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(_, info) => {
+              if (info.offset.x < -50) next();
+              else if (info.offset.x > 50) prev();
+            }}
+            className="md:px-10 cursor-grab active:cursor-grabbing"
+          >
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.blockquote
+                key={`${activeTab}-${citation.texte}`}
+                custom={direction}
+                initial={{ opacity: 0, x: direction * 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -24 }}
+                transition={{ duration: 0.45, ease: 'easeOut' }}
+                className="space-y-4"
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-emerald-100/70'}`} />
-              </button>
-            );
-          })}
+                <p
+                  className="text-xl md:text-2xl italic leading-snug text-white"
+                  style={{ fontFamily: "'Crimson Text', 'Libre Baskerville', serif" }}
+                >
+                  « {citation.texte} »
+                </p>
+                <footer className="flex items-center justify-end gap-2 text-emerald-100/70 text-xs">
+                  <span className="h-px w-8 bg-emerald-300/40" />
+                  <span className="inline-flex items-center gap-1">
+                    — {citation.auteur}
+                    {citation.url && (
+                      <a
+                        href={citation.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-200/50 hover:text-emerald-100 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Vérifier la source"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </span>
+                </footer>
+              </motion.blockquote>
+            </AnimatePresence>
+          </motion.div>
+        </div>
+
+        {/* Indicateur progression : 3 traits style stories */}
+        <div className="flex flex-col items-center gap-2 pt-1">
+          <div className="flex items-center justify-center gap-2 w-full max-w-xs">
+            {TABS.map(({ key, icon: Icon, label, tint }, idx) => {
+              const isActive = idx === activeIndex;
+              const wasVisited = visited.has(key);
+              return (
+                <button
+                  key={key}
+                  onClick={() => goTo(idx)}
+                  aria-label={label}
+                  className="group flex-1 flex flex-col items-center gap-1.5 py-1"
+                >
+                  <div className="relative w-full h-[3px] rounded-full bg-white/15 overflow-hidden">
+                    <motion.div
+                      className="absolute inset-y-0 left-0 rounded-full"
+                      style={{ background: isActive
+                        ? `linear-gradient(to right, ${tint}, #ffffff)`
+                        : wasVisited ? tint : 'transparent' }}
+                      initial={false}
+                      animate={{ width: isActive ? '100%' : wasVisited ? '100%' : '0%', opacity: isActive ? 1 : wasVisited ? 0.5 : 0 }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <div className={`flex items-center gap-1 transition-opacity ${isActive ? 'opacity-100' : 'opacity-40 group-hover:opacity-70'}`}>
+                    <Icon className="w-3 h-3 text-white" strokeWidth={1.8} />
+                    <span className="text-[10px] uppercase tracking-wider text-white hidden sm:inline">{label}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Légende d'invitation, disparaît une fois découvert */}
+          <AnimatePresence>
+            {showHint && (
+              <motion.p
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 0.7, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.4 }}
+                className="text-[10px] tracking-wide text-emerald-100/70 italic"
+              >
+                <span className="md:hidden">← glissez pour découvrir vos 3 fréquences →</span>
+                <span className="hidden md:inline">Faites défiler vos 3 fréquences du jour</span>
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
