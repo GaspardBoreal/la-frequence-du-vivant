@@ -66,7 +66,7 @@ const ContributorRow: React.FC<{ c: CitizenContributor }> = ({ c }) => {
           )}
         </p>
         <p className="text-[10px] text-muted-foreground">
-          {c.speciesCount} espèce{c.speciesCount > 1 ? 's' : ''} · {c.obsCount} obs
+          {c.speciesCount} espèce{c.speciesCount > 1 ? 's' : ''}
         </p>
       </div>
       <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-emerald-500 transition-colors flex-shrink-0" />
@@ -76,14 +76,13 @@ const ContributorRow: React.FC<{ c: CitizenContributor }> = ({ c }) => {
 
 interface Props {
   contributors: CitizenContributor[];
+  totalUniqueSpecies: number;
 }
 
-const CitizenContributorsAggregateRow: React.FC<Props> = ({ contributors }) => {
+const CitizenContributorsAggregateRow: React.FC<Props> = ({ contributors, totalUniqueSpecies }) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!contributors || contributors.length === 0) return null;
-
-  const totalObs = contributors.reduce((sum, c) => sum + c.obsCount, 0);
 
   return (
     <motion.div
@@ -105,7 +104,7 @@ const CitizenContributorsAggregateRow: React.FC<Props> = ({ contributors }) => {
             +{contributors.length} contributeur{contributors.length > 1 ? 's' : ''} citoyen{contributors.length > 1 ? 's' : ''} iNaturalist
           </p>
           <p className="text-[10px] text-muted-foreground">
-            {totalObs} observation{totalObs > 1 ? 's' : ''} rattachées à cette exploration
+            {totalUniqueSpecies} espèce{totalUniqueSpecies > 1 ? 's' : ''} observée{totalUniqueSpecies > 1 ? 's' : ''} par d'autres contributeurs citoyens
           </p>
         </div>
         <ChevronDown
