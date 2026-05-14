@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
       }));
       const { error: insErr, count } = await admin
         .from('marcheur_observations')
-        .upsert(rows, { onConflict: 'marcheur_id,inaturalist_observation_id', ignoreDuplicates: true, count: 'exact' });
+        .upsert(rows, { onConflict: 'marcheur_id,inaturalist_observation_id', ignoreDuplicates: false, count: 'exact' });
       if (insErr) throw insErr;
       totalInserted = count ?? rows.length;
     }
