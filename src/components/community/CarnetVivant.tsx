@@ -278,6 +278,8 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
         <span className="text-muted-foreground text-xs">({participations.length})</span>
       </div>
 
+      <MyTagsOverview />
+
       {participations.length === 0 ? (
         <div className="bg-card border-border dark:bg-white/5 rounded-xl border dark:border-white/10 p-5 text-center">
           <p className="text-muted-foreground text-xs">Vos marches vécues apparaîtront ici</p>
