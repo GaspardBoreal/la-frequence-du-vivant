@@ -230,26 +230,29 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     return { total: speciesMap.size, birds, plants, fungi, others, marchesCount: snapshots.length };
   }, [snapshots]);
 
-  // Transform species_data into BiodiversitySpecies[] for SpeciesExplorer
+  // Transform species_data into BiodiversitySpecies[] for SpeciesExplorer.
+  // Fusionne snapshots iNat + marcheur_observations (avec leurs GPS exacts)
+  // pour que le simulateur et la carte voient la donnée la plus complète.
   const allSpeciesAsBiodiversity = useMemo((): BiodiversitySpecies[] => {
-    if (!snapshots?.length) return [];
+    if (!snapshots?.length && !marcheurObs?.length) return [];
     const speciesMap = new Map<string, BiodiversitySpecies>();
 
-    // Helper to deduplicate attributions by observerName+source
+    // Dedupe par originalUrl (= URL iNat) si dispo, sinon par observerName+source+date.
+    // Évite de compter deux fois une même observation iNat présente à la fois
+    // dans biodiversity_snapshots et dans marcheur_observations.
     const dedupeAttributions = (attrs: any[]): any[] => {
       const seen = new Set<string>();
       return attrs.filter(a => {
+        const url = (a.originalUrl || '').toString().trim();
         const name = (a.observerName || '').trim();
-        if (!name) return false;
-        const key = `${name}|${a.source || ''}`;
+        if (!name && !url) return false;
+        const key = url || `${name}|${a.source || ''}|${a.date || ''}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       });
     };
 
-    // Compute the most recent real observation date from attributions.
-    // Falls back to snapshot_date only if no parsable attribution date exists.
     const computeLastSeen = (attrs: any[], fallback: string): string => {
       let maxTs = -Infinity;
       let maxIso = '';
@@ -273,7 +276,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       return tb > ta ? b : a;
     };
 
-    snapshots.forEach(snap => {
+    // 1. Snapshots iNat
+    (snapshots || []).forEach(snap => {
       const speciesData = snap.species_data as any[] | null;
       if (!speciesData || !Array.isArray(speciesData)) return;
       speciesData.forEach((sp: any) => {
@@ -284,12 +288,10 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         const existing = speciesMap.get(key);
         if (existing) {
           existing.observations += sp.observations || 1;
-          // Merge and deduplicate attributions
           existing.attributions = dedupeAttributions([
             ...(existing.attributions || []),
             ...spAttributions,
           ]);
-          // Keep the most recent observation date across snapshots
           existing.lastSeen = maxIsoDate(existing.lastSeen, computedLastSeen);
         } else {
           const kingdom = sp.kingdom === 'Animalia' ? 'Animalia'
@@ -310,8 +312,50 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         }
       });
     });
+
+    // 2. marcheur_observations — chaque ligne = 1 attribution (avec GPS exact iNat)
+    (marcheurObs || []).forEach((o: any) => {
+      const key = o.species_scientific_name;
+      if (!key) return;
+      const crew = o.exploration_marcheurs;
+      const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim() || 'Marcheur';
+      const inatId = o.inaturalist_observation_id;
+      const attribution = {
+        observerName,
+        source: inatId ? 'inaturalist' : 'marcheur',
+        date: o.observation_date,
+        exactLatitude: typeof o.latitude === 'number' ? o.latitude : null,
+        exactLongitude: typeof o.longitude === 'number' ? o.longitude : null,
+        originalUrl: inatId ? `https://www.inaturalist.org/observations/${inatId}` : undefined,
+        observerInstitution: inatId ? 'iNaturalist Community' : 'Marcheur',
+      };
+      const existing = speciesMap.get(key);
+      const lastSeen = o.observation_date || '';
+      if (existing) {
+        const merged = dedupeAttributions([...(existing.attributions || []), attribution]);
+        // N'incrémenter que si l'attribution n'était pas déjà déduplicquée
+        if (merged.length > (existing.attributions?.length || 0)) {
+          existing.observations += 1;
+          existing.attributions = merged;
+        }
+        existing.lastSeen = maxIsoDate(existing.lastSeen, lastSeen);
+      } else {
+        speciesMap.set(key, {
+          id: key,
+          scientificName: key,
+          commonName: key,
+          kingdom: 'Other' as BiodiversitySpecies['kingdom'],
+          family: '',
+          observations: 1,
+          lastSeen,
+          source: 'inaturalist',
+          attributions: [attribution],
+        });
+      }
+    });
+
     return Array.from(speciesMap.values()).sort((a, b) => b.observations - a.observations);
-  }, [snapshots]);
+  }, [snapshots, marcheurObs]);
 
   // Resolve French names once at the source, before passing to SpeciesExplorer.
   // Mirrors the strategy used by useExplorationSpeciesPool / Bioacoustique view.
