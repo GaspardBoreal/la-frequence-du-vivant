@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Circle, CircleMarker, Pane } from 'react-leaflet';
+import { MapContainer, Polyline, Marker, Popup, useMap, Circle, CircleMarker, Pane } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -11,7 +11,19 @@ import { PhotoGpsButton, PhotoGpsMarker, usePhotoGpsDrop } from './PhotoGpsDropT
 import CreateMarcheDrawer from './CreateMarcheDrawer';
 import { canCreateMarche, computeMarcheDefaults } from './createMarcheUtils';
 import CadastreLayer from '@/components/cadastre/CadastreLayer';
-import { DynamicTileLayer, MapStyleToggle, POLYLINE_COLORS, ARROW_COLORS, type MapStyle } from '@/components/maps';
+import {
+  DynamicTileLayer,
+  MapStyleToggle,
+  POLYLINE_COLORS,
+  ARROW_COLORS,
+  type MapStyle,
+  FitBounds,
+  ZoomControls,
+  GeolocateButton,
+  UserLocationMarker,
+  ArrowDecorators,
+  createNumberedIcon,
+} from '@/components/maps';
 import GpsEditOverlay from '@/components/cadastre/GpsEditOverlay';
 import { useCanCurateAudio } from '@/hooks/useCanCurateAudio';
 import {
@@ -68,234 +80,9 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Custom numbered marker icon
-function createNumberedIcon(num: number, isActive: boolean, contribCount: number, uniformSize = false): L.DivIcon {
-  const size = uniformSize ? 32 : Math.min(40, 28 + Math.floor(contribCount / 3) * 2);
-  const pulseClass = isActive ? 'animate-pulse' : '';
-  return L.divIcon({
-    className: 'custom-numbered-marker',
-    html: `
-      <div class="${pulseClass}" style="
-        width: ${size}px; height: ${size}px;
-        background: linear-gradient(135deg, #10b981, #059669);
-        border: 2.5px solid ${isActive ? '#fbbf24' : 'rgba(255,255,255,0.85)'};
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        color: white; font-weight: 700; font-size: ${size > 32 ? 14 : 12}px;
-        box-shadow: 0 2px 8px rgba(16,185,129,0.45)${isActive ? ', 0 0 0 4px rgba(251,191,36,0.3)' : ''};
-        position: relative;
-      ">
-        ${num}
-      </div>
-    `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2 - 4],
-  });
-}
-
-// Arrow decorator for polyline direction
-function ArrowDecorators({ positions, color = '#10b981' }: { positions: [number, number][]; color?: string }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (positions.length < 2) return;
-    
-    const arrows: L.Marker[] = [];
-    
-    for (let i = 0; i < positions.length - 1; i++) {
-      const [lat1, lng1] = positions[i];
-      const [lat2, lng2] = positions[i + 1];
-      const midLat = (lat1 + lat2) / 2;
-      const midLng = (lng1 + lng2) / 2;
-      const angle = (Math.atan2(lat2 - lat1, lng2 - lng1) * 180) / Math.PI;
-      
-      const arrowIcon = L.divIcon({
-        className: 'arrow-decorator',
-        html: `<div style="
-          transform: rotate(${90 - angle}deg);
-          color: ${color};
-          font-size: 16px;
-          opacity: 0.7;
-          text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        ">▲</div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-      });
-      
-      const marker = L.marker([midLat, midLng], { icon: arrowIcon, interactive: false });
-      marker.addTo(map);
-      arrows.push(marker);
-    }
-    
-    return () => {
-      arrows.forEach(a => map.removeLayer(a));
-    };
-  }, [positions, map, color]);
-  
-  return null;
-}
-
-// Auto-fit map to bounds
-function FitBounds({ positions }: { positions: [number, number][] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (positions.length === 0) return;
-    const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
-
-    // Diagonale en mètres pour adapter le maxZoom
-    const diag = bounds.getNorthWest().distanceTo(bounds.getSouthEast());
-
-    // Cas dégénéré : 1 seul point ou points confondus
-    if (positions.length === 1 || diag < 1) {
-      map.setView(positions[0], 17, { animate: true });
-      return;
-    }
-
-    let maxZoom = 13;
-    if (diag < 150) maxZoom = 18;
-    else if (diag < 500) maxZoom = 17;
-    else if (diag < 2000) maxZoom = 16;
-    else if (diag < 10000) maxZoom = 14;
-
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom });
-  }, [positions, map]);
-  return null;
-}
-
-// Custom zoom controls
-function ZoomControls({ mapStyle }: { mapStyle?: MapStyle }) {
-  const map = useMap();
-  const isCadastre = mapStyle === 'cadastre';
-  const btnClass = isCadastre
-    ? 'w-10 h-10 rounded-xl bg-emerald-900/85 backdrop-blur-md border border-emerald-700/60 text-white flex items-center justify-center hover:bg-emerald-800/90 hover:border-emerald-500/70 transition-all duration-200 active:scale-95 shadow-lg shadow-black/30'
-    : 'w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all duration-200 active:scale-95';
-  return (
-    <div className="absolute bottom-20 right-4 z-[1000] flex flex-col gap-1.5">
-      <button onClick={() => map.zoomIn()} className={btnClass} aria-label="Zoomer">
-        <Plus className="w-4 h-4" />
-      </button>
-      <button onClick={() => map.zoomOut()} className={btnClass} aria-label="Dézoomer">
-        <Minus className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
-// GPS blue dot marker — accepts accuracy for dynamic radius
-function UserLocationMarker({ position, accuracy, nearestPosition }: { position: [number, number]; accuracy?: number; nearestPosition?: [number, number] }) {
-  const map = useMap();
-
-  useEffect(() => {
-    map.setView(position, Math.max(map.getZoom(), 13), { animate: true });
-  }, [position, map]);
-
-  const gpsDotIcon = L.divIcon({
-    className: 'user-gps-marker',
-    html: `
-      <div style="position:relative;width:20px;height:20px;">
-        <div style="position:absolute;inset:-6px;border-radius:50%;background:rgba(56,189,248,0.15);animation:gps-pulse 2s ease-out infinite;"></div>
-        <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#0ea5e9);border:3px solid white;box-shadow:0 2px 8px rgba(56,189,248,0.5);"></div>
-      </div>
-    `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-  });
-
-  const radius = accuracy && accuracy > 10 ? accuracy : 100;
-
-  return (
-    <>
-      <Circle
-        center={position}
-        radius={radius}
-        pathOptions={{ color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.08, weight: 1, opacity: 0.3 }}
-      />
-      <Marker position={position} icon={gpsDotIcon} />
-      {nearestPosition && (
-        <Polyline
-          positions={[position, nearestPosition]}
-          pathOptions={{ color: '#38bdf8', weight: 2, opacity: 0.5, dashArray: '6, 8' }}
-        />
-      )}
-    </>
-  );
-}
-
-// Geolocate button with tracking ring
-function GeolocateButton({
-  active,
-  loading,
-  isTracking,
-  onClick,
-  onLongPress,
-}: { active: boolean; loading: boolean; isTracking: boolean; onClick: () => void; onLongPress: () => void }) {
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didLongPress = useRef(false);
-  const lastTapTime = useRef<number>(0);
-  const doubleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handlePointerDown = () => {
-    didLongPress.current = false;
-    longPressTimer.current = setTimeout(() => {
-      didLongPress.current = true;
-      onLongPress();
-    }, 600);
-  };
-
-  const handlePointerUp = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    if (didLongPress.current) return;
-
-    const now = Date.now();
-    if (now - lastTapTime.current < 400) {
-      // Double tap detected
-      if (doubleTapTimer.current) clearTimeout(doubleTapTimer.current);
-      lastTapTime.current = 0;
-      onLongPress();
-    } else {
-      lastTapTime.current = now;
-      doubleTapTimer.current = setTimeout(() => {
-        onClick();
-        lastTapTime.current = 0;
-      }, 400);
-    }
-  };
-
-  const handlePointerLeave = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-  };
-
-  return (
-    <div className="absolute bottom-20 right-[4.5rem] z-[1000]">
-      <button
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
-        className={`
-          relative w-10 h-10 rounded-xl backdrop-blur-md border flex items-center justify-center transition-all duration-200 active:scale-95
-          ${isTracking
-            ? 'bg-sky-500/30 border-sky-400/50 text-sky-200 shadow-md shadow-sky-500/30'
-            : active
-              ? 'bg-sky-500/20 border-sky-400/40 text-sky-300 shadow-sm shadow-sky-500/20'
-              : 'bg-white/10 border-white/20 text-white hover:bg-sky-500/15 hover:border-sky-400/30'
-          }
-        `}
-        aria-label={isTracking ? 'Arrêter le suivi' : 'Me localiser'}
-      >
-        {/* Tracking ring animation */}
-        {isTracking && (
-          <span className="absolute inset-[-4px] rounded-2xl border-2 border-sky-400/60 animate-ping pointer-events-none" />
-        )}
-        {loading ? (
-          <div className="w-4 h-4 border-2 border-sky-300/30 border-t-sky-300 rounded-full animate-spin" />
-        ) : (
-          <Crosshair className={`w-4 h-4 ${isTracking ? 'animate-pulse' : ''}`} />
-        )}
-      </button>
-    </div>
-  );
-}
+// createNumberedIcon, ArrowDecorators, FitBounds, ZoomControls,
+// UserLocationMarker and GeolocateButton are now imported from @/components/maps
+// so any improvement profite à la fois à l'onglet Carte et au drawer Espèce.
 
 // Compact proximity banner for tracking mode
 function ProximityBanner({

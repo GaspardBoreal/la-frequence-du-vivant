@@ -12,6 +12,7 @@ import SpeciesGpsDrawer from './SpeciesGpsDrawer';
 interface Props {
   initialAbundance: SpeciesAbundance[];
   species?: RawSpecies[];
+  explorationId?: string;
 }
 
 interface SimSpecies {
@@ -60,7 +61,7 @@ const HBar: React.FC<{ label: string; value: number; max?: number; tone: string 
   );
 };
 
-export const BiodiversitySimulator: React.FC<Props> = ({ initialAbundance, species = [] }) => {
+export const BiodiversitySimulator: React.FC<Props> = ({ initialAbundance, species = [], explorationId }) => {
   const seed = useMemo<SimSpecies[]>(() => {
     const top = initialAbundance.slice(0, TOP_N);
     const byName = new Map<string, RawSpecies>();
@@ -219,6 +220,7 @@ export const BiodiversitySimulator: React.FC<Props> = ({ initialAbundance, speci
           commonName={drawerSp.commonName}
           attributions={drawerSp.attributions}
           photos={drawerSp.photos}
+          explorationId={explorationId}
         />
       )}
     </div>

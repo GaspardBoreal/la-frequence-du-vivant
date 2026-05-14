@@ -19,6 +19,7 @@ import BiodiversitySimulator from './indices/BiodiversitySimulator';
 
 interface Props {
   species: RawSpecies[];
+  explorationId?: string;
 }
 
 type TabKey = 'richness' | 'simpson' | 'shannon' | 'pielou' | 'simulator';
@@ -33,7 +34,7 @@ const TABS: Array<{ key: TabKey; label: string; icon: typeof Layers }> = [
 
 const STORAGE_KEY = 'bio-indices-mode';
 
-export const TaxonsIndicesPanel: React.FC<Props> = ({ species }) => {
+export const TaxonsIndicesPanel: React.FC<Props> = ({ species, explorationId }) => {
   const [active, setActive] = useState<TabKey>('richness');
   const [mode, setMode] = useState<CountMode>(() => {
     if (typeof window === 'undefined') return 'individuals';
@@ -164,7 +165,7 @@ export const TaxonsIndicesPanel: React.FC<Props> = ({ species }) => {
           {active === 'simpson' && <SimpsonTab indices={indices} abundance={abundance} />}
           {active === 'shannon' && <ShannonTab indices={indices} abundance={abundance} />}
           {active === 'pielou' && <PielouTab indices={indices} abundance={abundance} />}
-          {active === 'simulator' && <BiodiversitySimulator initialAbundance={abundance} species={species} />}
+          {active === 'simulator' && <BiodiversitySimulator initialAbundance={abundance} species={species} explorationId={explorationId} />}
         </motion.div>
       </AnimatePresence>
     </section>
