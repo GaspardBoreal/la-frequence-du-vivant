@@ -3349,6 +3349,45 @@ export type Database = {
           },
         ]
       }
+      marcheur_species_tags: {
+        Row: {
+          color_hash: number
+          created_at: string
+          id: string
+          label: string
+          label_normalized: string
+          marche_id: string | null
+          scientific_name: string
+          scientific_name_normalized: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color_hash?: number
+          created_at?: string
+          id?: string
+          label: string
+          label_normalized?: string
+          marche_id?: string | null
+          scientific_name: string
+          scientific_name_normalized?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color_hash?: number
+          created_at?: string
+          id?: string
+          label?: string
+          label_normalized?: string
+          marche_id?: string | null
+          scientific_name?: string
+          scientific_name_normalized?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marcheur_textes: {
         Row: {
           attributed_marcheur_id: string | null
@@ -4410,6 +4449,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_marcheur_species_tags: {
+        Args: {
+          _label_query?: string
+          _limit?: number
+          _marche_id?: string
+          _user_id?: string
+        }
+        Returns: {
+          color_hash: number
+          created_at: string
+          id: string
+          label: string
+          marche_id: string
+          scientific_name: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       admin_operation_wrapper: {
         Args: { operation_type: string }
         Returns: boolean
@@ -4483,6 +4540,10 @@ export type Database = {
         Returns: undefined
       }
       delete_exploration_page: { Args: { page_id: string }; Returns: undefined }
+      delete_marcheur_species_tag: {
+        Args: { _tag_id: string }
+        Returns: boolean
+      }
       detach_pratique_from_marcheur: {
         Args: { p_curation_id: string; p_marcheur_id: string }
         Returns: boolean
@@ -4718,6 +4779,17 @@ export type Database = {
         }[]
       }
       get_my_admin_email_only: { Args: never; Returns: string }
+      get_my_marcheur_tags_for_species: {
+        Args: { _marche_ids?: string[]; _scientific_names: string[] }
+        Returns: {
+          color_hash: number
+          created_at: string
+          id: string
+          label: string
+          marche_id: string
+          scientific_name: string
+        }[]
+      }
       get_public_marcheur_carnet: { Args: { p_slug: string }; Returns: Json }
       get_public_shared_contribution: {
         Args: { p_id: string; p_type: string }
@@ -4933,6 +5005,15 @@ export type Database = {
       update_species_translation_manual: {
         Args: { p_common_name_fr: string; p_scientific_name: string }
         Returns: undefined
+      }
+      upsert_marcheur_species_tag: {
+        Args: {
+          _color_hash?: number
+          _label: string
+          _marche_id?: string
+          _scientific_name: string
+        }
+        Returns: string
       }
       validate_admin_email_access: { Args: never; Returns: boolean }
     }

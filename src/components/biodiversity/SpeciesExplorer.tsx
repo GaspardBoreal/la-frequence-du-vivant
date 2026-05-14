@@ -12,6 +12,13 @@ import SpeciesDetailModal from './SpeciesDetailModal';
 import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
+import {
+  useMarcheurSpeciesTags,
+  indexTagsBySpecies,
+  normalizeTagKey,
+} from '@/hooks/useMarcheurSpeciesTags';
+import MarcheurSpeciesTagDots from '@/components/community/tags/MarcheurSpeciesTagDots';
+import MarcheurTagsFilterBar, { matchesTagFilter, type TagFilterState } from '@/components/community/tags/MarcheurTagsFilterBar';
 
 // Utility to identify birds
 const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
@@ -55,6 +62,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const [hasAudioFilter, setHasAudioFilter] = useState<'all' | 'with-audio' | 'without-audio'>('all');
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+  const [tagFilter, setTagFilter] = useState<TagFilterState>({ labels: [], mode: 'or' });
   const [viewMode, setViewMode] = useState<'list' | 'immersion'>(() => {
     return (localStorage.getItem('species-explorer-view') as 'list' | 'immersion') || 'list';
   });
@@ -140,6 +148,14 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     [translations]
   );
 
+  // Marcheur tags (private to current user)
+  const allScientificNames = useMemo(
+    () => species.map((s) => s.scientificName).filter(Boolean),
+    [species]
+  );
+  const { data: marcheurTags } = useMarcheurSpeciesTags(allScientificNames);
+  const tagsBySpecies = useMemo(() => indexTagsBySpecies(marcheurTags), [marcheurTags]);
+
   // Filtered species
   const filteredSpecies = useMemo(() => {
     let filtered = species;
@@ -186,8 +202,16 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       });
     }
 
+    // Filter by marcheur tags
+    if (tagFilter.labels.length > 0) {
+      filtered = filtered.filter((s) => {
+        const labels = (tagsBySpecies.get(normalizeTagKey(s.scientificName)) || []).map((t) => t.label);
+        return matchesTagFilter(labels, tagFilter);
+      });
+    }
+
     return filtered.sort((a, b) => b.observations - a.observations);
-  }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm, translationMap]);
+  }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm, translationMap, tagFilter, tagsBySpecies]);
 
   const gridCols = compact
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
@@ -195,14 +219,23 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
 
   const renderSpeciesGrid = (list: BiodiversitySpecies[]) => (
     <div className={`grid gap-3 ${gridCols}`}>
-      {list.map((sp, i) => (
-        <EnhancedSpeciesCard
-          key={`${sp.id}-${i}`}
-          species={sp}
-          onSpeciesClick={setSelectedSpecies}
-          translation={translationMap.get(sp.scientificName)}
-        />
-      ))}
+      {list.map((sp, i) => {
+        const spTags = tagsBySpecies.get(normalizeTagKey(sp.scientificName)) || [];
+        return (
+          <div key={`${sp.id}-${i}`} className="relative">
+            <EnhancedSpeciesCard
+              species={sp}
+              onSpeciesClick={setSelectedSpecies}
+              translation={translationMap.get(sp.scientificName)}
+            />
+            <MarcheurSpeciesTagDots
+              scientificName={sp.scientificName}
+              tags={spTags}
+              overlay
+            />
+          </div>
+        );
+      })}
       {list.length === 0 && (
         <div className="col-span-full text-center py-8 text-muted-foreground text-sm">
           Aucune espèce ne correspond aux filtres sélectionnés
@@ -259,6 +292,9 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
               </span>
             </div>
           )}
+
+          {/* Marcheur tags filter (private) */}
+          <MarcheurTagsFilterBar state={tagFilter} onChange={setTagFilter} />
 
           {/* Filter dropdowns */}
           <div className={`grid gap-3 ${compact ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
