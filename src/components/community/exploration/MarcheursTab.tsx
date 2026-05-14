@@ -48,6 +48,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import MarcheurImpactPanel from './impact/MarcheurImpactPanel';
+import CitizenContributorsAggregateRow from './CitizenContributorsAggregateRow';
+import { useExplorationCitizenContributors } from '@/hooks/useExplorationCitizenContributors';
 
 interface MarcheursTabProps {
   explorationId?: string;
