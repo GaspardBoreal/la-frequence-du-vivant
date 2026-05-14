@@ -152,6 +152,8 @@ Deno.serve(async (req) => {
               species_scientific_name: sciName,
               observation_date: obs?.observed_on || null,
               photo_url: obs?.photos?.[0]?.url?.replace('square', 'medium') || null,
+              latitude: oLat,
+              longitude: oLng,
             });
           }
         }
