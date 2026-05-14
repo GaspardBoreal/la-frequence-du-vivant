@@ -66,7 +66,7 @@ const ContributorRow: React.FC<{ c: CitizenContributor }> = ({ c }) => {
           )}
         </p>
         <p className="text-[10px] text-muted-foreground">
-          {c.speciesCount} espèce{c.speciesCount > 1 ? 's' : ''} · {c.obsCount} obs
+          {c.speciesCount} espèce{c.speciesCount > 1 ? 's' : ''}
         </p>
       </div>
       <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-emerald-500 transition-colors flex-shrink-0" />
@@ -76,9 +76,10 @@ const ContributorRow: React.FC<{ c: CitizenContributor }> = ({ c }) => {
 
 interface Props {
   contributors: CitizenContributor[];
+  totalUniqueSpecies: number;
 }
 
-const CitizenContributorsAggregateRow: React.FC<Props> = ({ contributors }) => {
+const CitizenContributorsAggregateRow: React.FC<Props> = ({ contributors, totalUniqueSpecies }) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!contributors || contributors.length === 0) return null;
