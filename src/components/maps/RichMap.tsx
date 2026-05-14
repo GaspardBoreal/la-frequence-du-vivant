@@ -8,6 +8,7 @@ import { FitBounds } from './controls/FitBounds';
 import { ZoomControls } from './controls/ZoomControls';
 import { GeolocateControl } from './controls/GeolocateControl';
 import { MarcheRouteLayer, type MarcheRouteStep } from './layers/MarcheRouteLayer';
+import MarcheRouteToggle from './controls/MarcheRouteToggle';
 import CadastreLayer from '@/components/cadastre/CadastreLayer';
 import WeatherStationsLayer from '@/components/community/exploration/WeatherStationsLayer';
 
@@ -17,6 +18,8 @@ export interface RichMapControls {
   geolocate?: boolean;
   cadastre?: boolean;
   weather?: boolean;
+  /** When true and `marcheRoute` is set, renders a toggle to show/hide numbered steps */
+  marcheRouteVisibility?: boolean;
 }
 
 export interface RichMapMarcheRoute {
