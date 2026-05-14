@@ -41,6 +41,16 @@ const ImpactStoriesViewer: React.FC<ImpactStoriesViewerProps> = ({
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  const { data: myTags } = useMyMarcheurTagsOverview();
+  const includeTagsStory = !!isSelf && (myTags?.length || 0) > 0;
+
+  const STORY_KEYS = useMemo(() => {
+    const base: string[] = ['empreinte', 'sentinelle', 'familles'];
+    if (includeTagsStory) base.push('tags');
+    base.push('detections', 'badges', 'palier');
+    return base;
+  }, [includeTagsStory]);
+
   // Reset on open
   useEffect(() => { if (open) { setIndex(0); setProgress(0); } }, [open]);
 
