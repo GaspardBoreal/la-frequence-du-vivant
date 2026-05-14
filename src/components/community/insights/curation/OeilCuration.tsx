@@ -322,8 +322,13 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     if (categoryFilter && view !== 'terrain') {
       source = source.filter(x => matchesCategory(x.curation, categoryFilter));
     }
+    if (tagFilter.labels.length > 0 && view !== 'terrain') {
+      source = source.filter(x =>
+        matchesTagFilter(getSpeciesTags(x.species.scientificName).map(t => t.label), tagFilter),
+      );
+    }
     return source;
-  }, [view, categoryFilter, search, pinnedSpecies, aiSuggestions, filteredPool, reviewItems, curationByKey]);
+  }, [view, categoryFilter, search, tagFilter, pinnedSpecies, aiSuggestions, filteredPool, reviewItems, curationByKey, tagsByScientific]);
 
   // Publie les filtres dans pageState (lus directement par l'edge function)
   useEffect(() => {
