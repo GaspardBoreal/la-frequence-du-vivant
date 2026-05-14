@@ -1181,8 +1181,21 @@ const MarcheurCard: React.FC<{
         </Avatar>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate">
-            {marcheur.prenom} {marcheur.nom}
+          <p className="text-sm font-semibold text-foreground truncate flex items-center gap-1.5">
+            <span className="truncate">{marcheur.prenom} {marcheur.nom}</span>
+            {inatProfile?.login && (
+              <a
+                href={inatProfile.profile_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-0.5 text-[10px] font-normal text-muted-foreground hover:text-emerald-500 transition-colors flex-shrink-0"
+                title={`Profil iNaturalist : @${inatProfile.login}`}
+              >
+                <ExternalLink className="w-2.5 h-2.5" />
+                <span>iNat</span>
+              </a>
+            )}
           </p>
           <p className="text-[10px] text-muted-foreground capitalize">
             {marcheur.source === 'crew' ? marcheur.role.replace('_', ' ') : marcheur.role.replace(/_/g, ' ')}
