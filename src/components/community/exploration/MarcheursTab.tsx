@@ -1448,6 +1448,18 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   // Batch alias map (nom + logins iNat/GBIF/eBird) for all marcheurs
   const { data: aliasesByMarcheurId } = useMarcheursAliasesMap(marcheurs);
 
+  // Aggregate set of all known LMDV walker aliases — used to exclude them
+  // from the citizen-contributors aggregate row below the list.
+  const knownAliases = useMemo(() => {
+    const set = new Set<string>();
+    aliasesByMarcheurId?.forEach((aliases) => {
+      aliases.forEach((a) => set.add(a));
+    });
+    return set;
+  }, [aliasesByMarcheurId]);
+
+  const { data: citizenContributors } = useExplorationCitizenContributors(explorationId, knownAliases);
+
   // Authoritative editorial curations from L'œil — single query for all marcheurs
   const { data: curationsData } = useQuery({
     queryKey: ['exploration-curations-species-categories', explorationId],
