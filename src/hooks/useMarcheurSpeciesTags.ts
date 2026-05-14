@@ -143,3 +143,56 @@ export function useMarcheurTagSuggestions(limit = 8) {
 }
 
 export { norm as normalizeTagKey };
+
+export interface MyTagOverviewEntry {
+  key: string;
+  label: string;
+  color_hash: number;
+  total: number;
+  speciesCount: number;
+  species: { scientific_name: string; marche_id: string | null; tagged_at: string }[];
+}
+
+/**
+ * Aggregated overview of ALL tags created by the current user.
+ * RLS already restricts the table to the connected user's rows.
+ */
+export function useMyMarcheurTagsOverview() {
+  return useQuery({
+    queryKey: ['my-marcheur-tags-overview'],
+    queryFn: async (): Promise<MyTagOverviewEntry[]> => {
+      const { data, error } = await supabase
+        .from('marcheur_species_tags')
+        .select('id, label, color_hash, scientific_name, marche_id, created_at')
+        .order('created_at', { ascending: false })
+        .limit(2000);
+      if (error) throw error;
+      const groups = new Map<string, MyTagOverviewEntry>();
+      (data || []).forEach((row: any) => {
+        const k = norm(row.label);
+        const existing = groups.get(k);
+        const sp = { scientific_name: row.scientific_name, marche_id: row.marche_id, tagged_at: row.created_at };
+        if (existing) {
+          existing.total++;
+          existing.species.push(sp);
+        } else {
+          groups.set(k, {
+            key: k,
+            label: row.label,
+            color_hash: row.color_hash,
+            total: 1,
+            speciesCount: 0,
+            species: [sp],
+          });
+        }
+      });
+      const list = Array.from(groups.values()).map((g) => {
+        g.speciesCount = new Set(g.species.map((s) => norm(s.scientific_name))).size;
+        return g;
+      });
+      list.sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
+      return list;
+    },
+    staleTime: 60_000,
+  });
+}
