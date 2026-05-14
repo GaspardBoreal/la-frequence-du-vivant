@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Share2, Lock, Sparkles, MapPin, Leaf, Bird, Flower2, TreePine, ShieldAlert } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Share2, Lock, Sparkles, MapPin, Leaf, Bird, Flower2, TreePine, ShieldAlert, Tag } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import EmpreinteVivante from './EmpreinteVivante';
@@ -11,6 +11,7 @@ import type { SensibleBuckets } from '@/lib/speciesClassification';
 import type { BadgesResult } from '@/hooks/useMarcheurBadges';
 import type { SentinelleBreakdown, SentinelleNextTip } from '@/lib/sentinelleIndex';
 import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
+import { useMyMarcheurTagsOverview, getTagColor, type MyTagOverviewEntry } from '@/hooks/useMarcheurSpeciesTags';
 
 const STORY_DURATION = 6000; // ms
 
