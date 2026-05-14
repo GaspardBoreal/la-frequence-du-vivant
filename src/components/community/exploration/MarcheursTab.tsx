@@ -1862,6 +1862,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 uncuratedSpeciesNames={metrics.uncuratedSpeciesNames}
                 localSpeciesCount={metrics.localSpeciesCount}
                 highlightBuckets={activeBuckets}
+                aliases={aliasesByMarcheurId?.get(m.id)}
               />
             );
           })}
