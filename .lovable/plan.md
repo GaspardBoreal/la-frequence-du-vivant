@@ -1,113 +1,69 @@
-# Tags-Marcheurs sur Espèces — Plan d'implémentation
+## Contexte
 
-## Vision UX (wahouhh & sobre)
+Le système Tags-Marcheurs est par espèce (scientific_name + marche_id facultatif). Après inspection des trois vues :
 
-Chaque marcheur dispose de son **carnet de tags privé** — petits mots-clés libres qu'il colle sur les espèces qu'il rencontre. Invisibles aux autres marcheurs, consultables uniquement par lui (et l'admin via back-office).
+- **`OeilCuration.tsx`** — affiche des cartes espèces (`CuratedSpeciesCard` via `SpeciesGrid`). Cible **directement compatible** avec les pastilles + barre de filtre.
+- **`MainCuration.tsx`** — pratiques emblématiques (titre + texte riche + médias + marcheurs liés). **Pas d'espèce** → le système actuel ne s'applique pas.
+- **`OreilleCuration.tsx`** — playlist audio (récits, ambiances, chants). **Pas d'espèce** → idem.
 
-**Métaphore visuelle** : Pastilles colorées discrètes en coin de vignette espèce. Au repos : 1 à 3 dots colorés (12px). Au survol/tap : déploiement en chips lisibles avec animation `motion` douce (spring, scale 0→1, stagger 40ms). Couleurs auto-assignées par hash du label (palette Forêt/Papier cohérente : `#0D6B58`, `#C9A84C`, `#E85D3A`, `#5A8A5C`, `#A78BFA`, `#67E8F9`) — zéro friction de création.
+Donc l'intégration concrète ne porte que sur **L'Œil**. Pour Main/Oreille, je documente ce qui serait nécessaire si tu veux étendre le système.
 
-**Signature poétique** : la création d'un tag déclenche un micro-rituel (fade + glow vert 600ms) — cohérent avec le Ritual Reveal existant.
+## 1. OeilCuration — intégration des Tags-Marcheurs
 
-## Modèle de données
+### Pastilles sur chaque carte espèce
+Dans `SpeciesGrid` (lignes 696-737 de `OeilCuration.tsx`), wrapper chaque `CuratedSpeciesCard` avec `MarcheurSpeciesTagDots` :
 
-Deux niveaux comme demandé : **tag global espèce** (suit l'espèce partout dans mon espace) ET **tag observation-spécifique** (esp×marche).
-
-```text
-marcheur_species_tags
-├─ id (uuid)
-├─ user_id (uuid, FK auth.users)         ← propriétaire, RLS strict
-├─ scientific_name (text, normalisé NFD) ← clé esp. (cohérent avec Identity matching)
-├─ marche_id (uuid, nullable)            ← NULL = tag global ; rempli = tag observation
-├─ label (text, max 40 char, trim)
-├─ label_normalized (text, généré)       ← pour dédup et suggestions
-├─ color_hash (smallint)                 ← index palette 0-5, dérivé du label
-├─ created_at, updated_at
-└─ UNIQUE (user_id, scientific_name, COALESCE(marche_id,'00000000…'), label_normalized)
+```tsx
+<MarcheurSpeciesTagDots
+  scientificName={species.scientificName}
+  marcheId={null}  // exploration multi-marches → tags globaux uniquement
+  tags={tagsByScientific.get(species.scientificName?.toLowerCase()) ?? []}
+>
+  <CuratedSpeciesCard ... />
+</MarcheurSpeciesTagDots>
 ```
 
-**RLS** :
-- SELECT/INSERT/UPDATE/DELETE : `auth.uid() = user_id`
-- Admins : via `has_role(auth.uid(),'admin')` SELECT only
-- Aucune policy publique.
+Note importante sur le scope : une exploration agrège plusieurs marches. Comme une espèce peut venir de marches différentes, on n'a pas un `marche_id` unique pertinent ici. Deux options :
 
-**RPC `SECURITY DEFINER`** :
-- `get_my_tags_for_species(scientific_names text[], marche_ids uuid[])` → renvoie map indexée pour chargement batch écran.
-- `upsert_marcheur_tag(...)` / `delete_marcheur_tag(id)` — validation longueur, normalisation NFD, dédup.
-- `admin_list_marcheur_tags(user_id, filters)` — admin only.
+- **A (recommandé, simple)** : forcer `marche_id = null` → seuls les tags **globaux par espèce** sont utilisables/visibles. Comportement clair et prévisible pour l'utilisateur.
+- **B (plus puissant)** : pour chaque espèce, déterminer la liste des `marche_id` concernés (depuis le pool/curations) et passer un tableau au popover, qui propose alors le scope par marche correspondant. Plus complexe côté UI, à garder pour plus tard si besoin.
 
-## Écrans concernés & intégration
+→ J'implémente l'option **A** par défaut.
 
-| Écran | Fichier | Intégration |
-|---|---|---|
-| Marches → Voir | `MarcheDetail*` (espèces vues) | Pastilles sur cards espèce + filtre |
-| Marches → Vivant | `EventBiodiversityTab` | Pastilles + barre filtres en haut |
-| Apprendre L'œil/Main/Oreille | `insights/curation/CeQueNousAvonsVu` & co | Pastilles sur grille |
-| Synthèse → Taxons observés | `MarcheursTab` zone taxons | Pastilles + filtre intégré |
+### Barre de filtre `MarcheurTagsFilterBar`
+Insérer la barre **sous les chips de catégories** (après ligne 507), visible uniquement si l'utilisateur a au moins un tag sur les espèces du pool. Logique d'application :
 
-## Composants partagés à créer
+- Récupérer en batch les tags pour toutes les espèces du `pool` via `useMarcheurSpeciesTags({ scientificNames: pool.map(s => s.scientificName) })` (déjà en place, à hooker une seule fois en haut du composant).
+- Construire `tagsByScientific: Map<sciNameLower, Tag[]>`.
+- Étendre `applyCategoryFilter` (ou créer `applyTagFilter`) pour filtrer ensuite par tags selon le mode ET/OU/SAUF.
+- Étendre `categoryCounts` pour rester cohérent avec la liste filtrée.
+- Inclure les filtres tags dans le snapshot `chatPageContext`/`useChatTabSnapshot` pour que l'IA voie l'écran filtré (cf. mémoire `chatbot-screen-awareness-architecture`).
 
-```text
-src/components/community/tags/
-├─ MarcheurTagDots.tsx         ← 1-3 pastilles + "+N", clic ouvre popover
-├─ MarcheurTagPopover.tsx      ← Liste tags, input ajout (Enter), suppr (×), suggestions
-├─ MarcheurTagsFilterBar.tsx   ← Multi-select avec modes ET/OU/SAUF (Toggle group)
-├─ MarcheurTagChip.tsx         ← Chip atomique réutilisable
-└─ AdminMarcheurTagsTable.tsx  ← Back-office (DataTable)
+### Onglets concernés
+Le filtrage et les pastilles s'appliquent à **Sélection finale**, **Suggestions IA**, **À réviser**, **Pool/Observées**. Pas de tags sur l'onglet **Terrain** (espèces manuelles sans `scientific_name` garanti — vérifier ; si présent, on l'inclut aussi).
 
-src/hooks/
-├─ useMarcheurTags.ts          ← Query batch par scope (espèces visibles)
-├─ useMarcheurTagsMutations.ts ← upsert/delete avec optimistic update
-├─ useMarcheurTagsFilter.ts    ← État filtre + logique AND/OR/NOT
-└─ useMarcheurTagSuggestions.ts ← Top tags récurrents du marcheur
-```
+## 2. MainCuration & OreilleCuration — non applicable en l'état
 
-## UX détaillée par interaction
+Les "pratiques" (Main) et les pistes audio (Oreille) ne sont pas indexées par espèce. Le système Tags-Marcheurs actuel (`marcheur_species_tags.scientific_name NOT NULL`) ne peut donc pas s'y greffer tel quel.
 
-**Création** : sur n'importe quelle vignette espèce, icône `+` discrète apparaît au hover. Clic → input inline avec autocomplete depuis ses propres tags récents (suggestions intelligentes). Enter valide, Esc annule. Création optimistic, rollback toast en cas d'erreur.
+Si tu veux des tags privés sur ces objets, il faudra une décision produit avant tout code :
 
-**Choix portée** : dans le popover, toggle "Cette observation" / "Toujours pour cette espèce" (défaut = global, plus utile au quotidien).
+- Étendre la table en `marcheur_curation_tags(curation_id, label, color_hash, ...)` — tags privés par curation `main`/`oreille`.
+- Ou créer une seconde table générique `marcheur_object_tags(object_type, object_id, ...)`.
+- Ou simplement réutiliser le champ `category`/`secondary_categories` existant côté curation (mais ce n'est pas privé).
 
-**Filtre** : barre persistante en haut de chaque écran espèces, format chips actives + bouton "+". Modes : `ET` (toutes), `OU` (au moins une), `SAUF` (exclusion). État conservé via URL (`?tags=oiseau-rare,jardin&mode=or`).
+Je ne touche **pas** à Main/Oreille dans ce lot. Je remonte la question avant d'aller plus loin.
 
-**Suggestions intelligentes** :
-- Top 5 tags récurrents du marcheur, affichés au focus de l'input
-- "Tags similaires" : si tagué "à revoir" sur 3 oiseaux, suggérer le même sur les autres oiseaux non tagués (signal léger, dot pulsant)
+## Détails techniques
 
-**Carnet & Stories** : nouvelle section "Mes tags" dans Carnet vivant (timeline) — nuage cliquable + compteurs. Une story Impact dédiée "Mon vocabulaire du vivant" (les 5 tags les + utilisés + espèces associées).
+- **Fichier édité** : `src/components/community/insights/curation/OeilCuration.tsx`
+- Hook utilisé : `useMarcheurSpeciesTags` (déjà créé) — appel batch en haut du composant avec `pool.map(s => s.scientificName).filter(Boolean)`.
+- Composants utilisés : `MarcheurSpeciesTagDots`, `MarcheurTagsFilterBar` (déjà créés).
+- État local nouveau : `tagFilter: { mode: 'AND'|'OR'|'NOT', tagIds: string[] }`.
+- Snapshot chat : ajouter `oeilTagFilter` aux `filters` publiés.
+- Pas de migration BDD, pas de changement de RPC.
 
-## Back-office Admin
+## Questions ouvertes
 
-Nouvelle entrée dans `AdminOutilsHub` → "Tags marcheurs" :
-- Table : marcheur · espèce · tag · marche (si scoped) · date
-- Filtres : par marcheur, par tag, par exploration
-- Lecture seule (modération via suppression seulement si abus signalé)
-- Export CSV
-
-## Sécurité & confidentialité
-
-- Tags **jamais** retournés dans aucun endpoint public ou autre marcheur (RLS strict + RPC dédiées)
-- Validation Zod côté client + contraintes SQL (longueur 40, label trim non vide)
-- Mention claire dans le popover : "🔒 Visible uniquement par toi"
-
-## Performance
-
-- Préchargement batch : un seul query `get_my_tags_for_species(scientific_names[])` par écran, mappé dans React Query (cache 60s, invalidation à la mutation)
-- Optimistic updates pour zéro latence perçue
-- Index SQL : `(user_id, scientific_name)`, `(user_id, marche_id)`, GIN sur `label_normalized` pour suggestions
-
-## Plan de livraison (séquentiel)
-
-1. **Migration SQL** : table + RLS + 3 RPC + indexes
-2. **Hooks** : `useMarcheurTags`, mutations, filter, suggestions
-3. **Composants partagés** : Dots, Popover, FilterBar, Chip
-4. **Intégration écran 1** : Synthèse → Taxons observés (référence)
-5. **Intégration écrans 2-5** : Marches→Voir, Marches→Vivant, Apprendre×3 (réutilisation)
-6. **Back-office admin** : table + export
-7. **Bonus Carnet & Stories** : nuage de tags + story dédiée
-
-## Hors scope
-
-- Partage social des tags (100% privés)
-- Tags structurés en catégories
-- Couleurs choisies manuellement (auto via hash)
-- Emoji/icônes (texte libre uniquement)
+1. Pour Main/Oreille, veux-tu que je propose une migration séparée (table `marcheur_curation_tags`) après cette intégration ?
+2. Pour L'Œil : option A (tags globaux uniquement) confirmée, ou tu préfères qu'on attaque l'option B (scope par marche) maintenant ?

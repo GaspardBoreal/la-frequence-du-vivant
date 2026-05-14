@@ -25,6 +25,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { chatPageContext, useChatTabSnapshot } from '@/hooks/useChatPageContext';
+import {
+  useMarcheurSpeciesTags,
+  indexTagsBySpecies,
+  type MarcheurSpeciesTag,
+} from '@/hooks/useMarcheurSpeciesTags';
+import MarcheurSpeciesTagDots from '@/components/community/tags/MarcheurSpeciesTagDots';
+import MarcheurTagsFilterBar, {
+  matchesTagFilter,
+  type TagFilterState,
+} from '@/components/community/tags/MarcheurTagsFilterBar';
+
+const normSci = (s?: string | null) =>
+  (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
 interface Props {
   explorationId: string;
@@ -53,6 +66,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [hasUserPickedView, setHasUserPickedView] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<TagFilterState>({ labels: [], mode: 'and' });
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState<{
     name: string;
@@ -97,6 +111,38 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const applyCategoryFilter = <T extends { curation?: ExplorationCuration }>(items: T[]): T[] => {
     if (!categoryFilter) return items;
     return items.filter(x => matchesCategory(x.curation, categoryFilter));
+  };
+
+  // ─── Tags-Marcheurs (privés, par espèce) ───
+  const allSciNames = useMemo(
+    () => pool.map(s => s.scientificName).filter(Boolean) as string[],
+    [pool],
+  );
+  const { data: rawTags = [] } = useMarcheurSpeciesTags(allSciNames);
+  // Scope = global only (exploration multi-marches)
+  const tagsByScientific = useMemo(
+    () => indexTagsBySpecies(rawTags as MarcheurSpeciesTag[], null),
+    [rawTags],
+  );
+  const getSpeciesTags = (sci?: string | null): MarcheurSpeciesTag[] =>
+    tagsByScientific.get(normSci(sci)) || [];
+
+  const applyTagFilter = <T extends { species: { scientificName: string | null } }>(
+    items: T[],
+  ): T[] => {
+    if (tagFilter.labels.length === 0) return items;
+    return items.filter(x =>
+      matchesTagFilter(getSpeciesTags(x.species.scientificName).map(t => t.label), tagFilter),
+    );
+  };
+  // For the pinned/pool grids that use raw species items
+  const applyTagFilterToSpecies = <T extends { scientificName: string | null }>(
+    items: T[],
+  ): T[] => {
+    if (tagFilter.labels.length === 0) return items;
+    return items.filter(s =>
+      matchesTagFilter(getSpeciesTags(s.scientificName).map(t => t.label), tagFilter),
+    );
   };
 
   // Wrap setView so that switching tab clears the category filter — avoids
@@ -276,8 +322,13 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     if (categoryFilter && view !== 'terrain') {
       source = source.filter(x => matchesCategory(x.curation, categoryFilter));
     }
+    if (tagFilter.labels.length > 0 && view !== 'terrain') {
+      source = source.filter(x =>
+        matchesTagFilter(getSpeciesTags(x.species.scientificName).map(t => t.label), tagFilter),
+      );
+    }
     return source;
-  }, [view, categoryFilter, search, pinnedSpecies, aiSuggestions, filteredPool, reviewItems, curationByKey]);
+  }, [view, categoryFilter, search, tagFilter, pinnedSpecies, aiSuggestions, filteredPool, reviewItems, curationByKey, tagsByScientific]);
 
   // Publie les filtres dans pageState (lus directement par l'edge function)
   useEffect(() => {
@@ -286,10 +337,13 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         oeilView: view,
         oeilCategory: categoryFilter || undefined,
         oeilSearch: search.trim() || undefined,
+        oeilTagFilter: tagFilter.labels.length > 0
+          ? { mode: tagFilter.mode, labels: tagFilter.labels }
+          : undefined,
         oeilVisibleCount: visibleSpecies.length,
       },
     });
-  }, [view, categoryFilter, search, visibleSpecies.length]);
+  }, [view, categoryFilter, search, tagFilter, visibleSpecies.length]);
 
   // Publie la liste précise des espèces visibles (max 30, payload léger)
   useChatTabSnapshot(
@@ -506,6 +560,15 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           </div>
         )}
 
+        {/* Filtre par tags-marcheurs (privés) */}
+        {(pool.length > 0) && (view !== 'terrain') && (
+          <MarcheurTagsFilterBar
+            state={tagFilter}
+            onChange={setTagFilter}
+            className="px-1"
+          />
+        )}
+
         {/* Empty pool */}
         {pool.length === 0 && manual.length === 0 && (
           <div className="rounded-xl border border-border bg-card p-6 text-center">
@@ -554,7 +617,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               </div>
             )}
             <SpeciesGrid
-              items={applyCategoryFilter(pinnedSpecies.filter(matchesSearch).map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
+              items={applyTagFilter(applyCategoryFilter(pinnedSpecies.filter(matchesSearch).map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))))}
+              tagsByScientific={tagsByScientific}
               isCurator={isCurator}
               explorationId={explorationId}
               emptyMessage={
@@ -573,7 +637,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Suggestions IA */}
         {view === 'suggestions' && (
           <SpeciesGrid
-            items={applyCategoryFilter(aiSuggestions).filter(x => matchesSearch(x.species))}
+            items={applyTagFilter(applyCategoryFilter(aiSuggestions).filter(x => matchesSearch(x.species)))}
+            tagsByScientific={tagsByScientific}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage="Aucune suggestion IA. Lance l’analyse pour en obtenir."
@@ -587,7 +652,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Pool */}
         {view === 'pool' && (
           <SpeciesGrid
-            items={applyCategoryFilter(filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
+            items={applyTagFilter(applyCategoryFilter(filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))))}
+            tagsByScientific={tagsByScientific}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage="Aucune espèce dans le pool."
@@ -613,7 +679,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               </div>
             )}
             <SpeciesGrid
-              items={applyCategoryFilter(reviewItems.filter(x => matchesSearch(x.species)))}
+              items={applyTagFilter(applyCategoryFilter(reviewItems.filter(x => matchesSearch(x.species))))}
+              tagsByScientific={tagsByScientific}
               isCurator={isCurator}
               explorationId={explorationId}
               emptyMessage="Aucune classification en attente — bravo, tout est à jour !"
@@ -672,6 +739,7 @@ const SpeciesGrid: React.FC<{
   showAiBadges?: boolean;
   upsert: ReturnType<typeof useUpsertCuration>;
   translationMap: Map<string, SpeciesTranslation>;
+  tagsByScientific?: Map<string, MarcheurSpeciesTag[]>;
   onSpeciesClick: (species: CuratedSpeciesItem, displayName: string, photos: string[]) => void;
   onOpenEvidence?: (curation: ExplorationCuration, displayName: string) => void;
 }> = ({
@@ -682,6 +750,7 @@ const SpeciesGrid: React.FC<{
   showAiBadges,
   upsert,
   translationMap,
+  tagsByScientific,
   onSpeciesClick,
   onOpenEvidence,
 }) => {
@@ -700,37 +769,49 @@ const SpeciesGrid: React.FC<{
         const translation = species.scientificName
           ? translationMap.get(species.scientificName)
           : undefined;
+        const speciesTags = species.scientificName && tagsByScientific
+          ? (tagsByScientific.get(normSci(species.scientificName)) || [])
+          : [];
 
         return (
-          <CuratedSpeciesCard
-            key={species.key}
-            species={species}
-            curation={curation}
-            isCurator={isCurator}
-            explorationId={explorationId}
-            translation={translation}
-            showAiBadges={showAiBadges}
-            onClick={onSpeciesClick}
-            onOpenEvidence={onOpenEvidence}
-            footer={
-              isPinned && curation ? (
-                <CategoryControl
-                  isCurator={isCurator}
-                  curation={curation}
-                  onSetCategory={async cat => {
-                    await upsert.mutateAsync({
-                      id: curation.id,
-                      exploration_id: explorationId,
-                      sense: 'oeil',
-                      entity_type: 'species',
-                      entity_id: species.scientificName || species.key,
-                      category: cat,
-                    });
-                  }}
-                />
-              ) : null
-            }
-          />
+          <div key={species.key} className="relative">
+            {species.scientificName && (
+              <MarcheurSpeciesTagDots
+                scientificName={species.scientificName}
+                marcheId={null}
+                tags={speciesTags}
+                overlay
+              />
+            )}
+            <CuratedSpeciesCard
+              species={species}
+              curation={curation}
+              isCurator={isCurator}
+              explorationId={explorationId}
+              translation={translation}
+              showAiBadges={showAiBadges}
+              onClick={onSpeciesClick}
+              onOpenEvidence={onOpenEvidence}
+              footer={
+                isPinned && curation ? (
+                  <CategoryControl
+                    isCurator={isCurator}
+                    curation={curation}
+                    onSetCategory={async cat => {
+                      await upsert.mutateAsync({
+                        id: curation.id,
+                        exploration_id: explorationId,
+                        sense: 'oeil',
+                        entity_type: 'species',
+                        entity_id: species.scientificName || species.key,
+                        category: cat,
+                      });
+                    }}
+                  />
+                ) : null
+              }
+            />
+          </div>
         );
       })}
     </div>
