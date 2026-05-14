@@ -113,6 +113,38 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     return items.filter(x => matchesCategory(x.curation, categoryFilter));
   };
 
+  // ─── Tags-Marcheurs (privés, par espèce) ───
+  const allSciNames = useMemo(
+    () => pool.map(s => s.scientificName).filter(Boolean) as string[],
+    [pool],
+  );
+  const { data: rawTags = [] } = useMarcheurSpeciesTags(allSciNames);
+  // Scope = global only (exploration multi-marches)
+  const tagsByScientific = useMemo(
+    () => indexTagsBySpecies(rawTags as MarcheurSpeciesTag[], null),
+    [rawTags],
+  );
+  const getSpeciesTags = (sci?: string | null): MarcheurSpeciesTag[] =>
+    tagsByScientific.get(normSci(sci)) || [];
+
+  const applyTagFilter = <T extends { species: { scientificName: string | null } }>(
+    items: T[],
+  ): T[] => {
+    if (tagFilter.labels.length === 0) return items;
+    return items.filter(x =>
+      matchesTagFilter(getSpeciesTags(x.species.scientificName).map(t => t.label), tagFilter),
+    );
+  };
+  // For the pinned/pool grids that use raw species items
+  const applyTagFilterToSpecies = <T extends { scientificName: string | null }>(
+    items: T[],
+  ): T[] => {
+    if (tagFilter.labels.length === 0) return items;
+    return items.filter(s =>
+      matchesTagFilter(getSpeciesTags(s.scientificName).map(t => t.label), tagFilter),
+    );
+  };
+
   // Wrap setView so that switching tab clears the category filter — avoids
   // hiding the entire grid when the active category has no items in the new tab.
   const handleViewChange = (next: View) => {
