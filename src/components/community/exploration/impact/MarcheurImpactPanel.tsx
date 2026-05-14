@@ -30,6 +30,8 @@ const MarcheurImpactPanel: React.FC<Props> = ({
   const explorationMarcheIds = rawIds || [];
   const totalMarchesCount = rawCount || 0;
   const [storiesOpen, setStoriesOpen] = useState(false);
+  const { user } = useAuth();
+  const isSelf = !!user?.id && !!marcheur.userId && user.id === marcheur.userId;
 
   // Snapshot data for pioneer count + taxonomy fallback
   const { data: snapshotsData } = useQuery({
