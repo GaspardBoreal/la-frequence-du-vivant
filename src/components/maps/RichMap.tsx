@@ -168,6 +168,9 @@ export const RichMap: React.FC<RichMapProps> = ({
       </MapContainer>
 
       {controls.style && <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />}
+      {controls.marcheRouteVisibility && marcheRoute && marcheRoute.steps.length > 0 && (
+        <MarcheRouteToggle visible={markersVisible} onToggle={handleMarkersToggle} />
+      )}
     </div>
   );
 };
