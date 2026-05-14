@@ -54,6 +54,8 @@ export interface RichMapProps {
   children?: React.ReactNode;
   /** scroll wheel zoom (default true) */
   scrollWheelZoom?: boolean;
+  /** Notified when the user toggles marche step markers visibility (only when controls.marcheRouteVisibility is on) */
+  onMarcheVisibilityChange?: (visible: boolean) => void;
 }
 
 /**
