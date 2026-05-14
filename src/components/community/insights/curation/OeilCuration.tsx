@@ -629,7 +629,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Suggestions IA */}
         {view === 'suggestions' && (
           <SpeciesGrid
-            items={applyCategoryFilter(aiSuggestions).filter(x => matchesSearch(x.species))}
+            items={applyTagFilter(applyCategoryFilter(aiSuggestions).filter(x => matchesSearch(x.species)))}
+            tagsByScientific={tagsByScientific}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage="Aucune suggestion IA. Lance l’analyse pour en obtenir."
@@ -643,7 +644,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         {/* Vue Pool */}
         {view === 'pool' && (
           <SpeciesGrid
-            items={applyCategoryFilter(filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) })))}
+            items={applyTagFilter(applyCategoryFilter(filteredPool.map(s => ({ species: s, curation: curationByKey.get(s.key.toLowerCase()) }))))}
+            tagsByScientific={tagsByScientific}
             isCurator={isCurator}
             explorationId={explorationId}
             emptyMessage="Aucune espèce dans le pool."
@@ -669,7 +671,8 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               </div>
             )}
             <SpeciesGrid
-              items={applyCategoryFilter(reviewItems.filter(x => matchesSearch(x.species)))}
+              items={applyTagFilter(applyCategoryFilter(reviewItems.filter(x => matchesSearch(x.species))))}
+              tagsByScientific={tagsByScientific}
               isCurator={isCurator}
               explorationId={explorationId}
               emptyMessage="Aucune classification en attente — bravo, tout est à jour !"
