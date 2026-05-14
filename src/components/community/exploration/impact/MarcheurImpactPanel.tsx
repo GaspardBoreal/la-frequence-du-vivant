@@ -138,6 +138,7 @@ const MarcheurImpactPanel: React.FC<Props> = ({
         sentinelleBreakdown={sentinelle.breakdown}
         sentinelleNextTip={sentinelle.nextTip}
         hasTemoignage={hasTemoignage}
+        isSelf={isSelf}
       />
     </>
   );
