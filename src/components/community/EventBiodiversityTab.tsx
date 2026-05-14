@@ -320,7 +320,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       const crew = o.exploration_marcheurs;
       const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim() || 'Marcheur';
       const inatId = o.inaturalist_observation_id;
-      const attribution = {
+      const attribution: any = {
         observerName,
         source: inatId ? 'inaturalist' : 'marcheur',
         date: o.observation_date,
