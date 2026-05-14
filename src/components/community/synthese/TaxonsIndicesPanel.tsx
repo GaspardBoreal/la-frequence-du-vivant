@@ -165,7 +165,7 @@ export const TaxonsIndicesPanel: React.FC<Props> = ({ species, explorationId }) 
           {active === 'simpson' && <SimpsonTab indices={indices} abundance={abundance} />}
           {active === 'shannon' && <ShannonTab indices={indices} abundance={abundance} />}
           {active === 'pielou' && <PielouTab indices={indices} abundance={abundance} />}
-          {active === 'simulator' && <BiodiversitySimulator initialAbundance={abundance} species={species} />}
+          {active === 'simulator' && <BiodiversitySimulator initialAbundance={abundance} species={species} explorationId={explorationId} />}
         </motion.div>
       </AnimatePresence>
     </section>
