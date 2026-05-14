@@ -8,6 +8,7 @@ import { FitBounds } from './controls/FitBounds';
 import { ZoomControls } from './controls/ZoomControls';
 import { GeolocateControl } from './controls/GeolocateControl';
 import { MarcheRouteLayer, type MarcheRouteStep } from './layers/MarcheRouteLayer';
+import MarcheRouteToggle from './controls/MarcheRouteToggle';
 import CadastreLayer from '@/components/cadastre/CadastreLayer';
 import WeatherStationsLayer from '@/components/community/exploration/WeatherStationsLayer';
 
@@ -17,6 +18,8 @@ export interface RichMapControls {
   geolocate?: boolean;
   cadastre?: boolean;
   weather?: boolean;
+  /** When true and `marcheRoute` is set, renders a toggle to show/hide numbered steps */
+  marcheRouteVisibility?: boolean;
 }
 
 export interface RichMapMarcheRoute {
@@ -51,6 +54,8 @@ export interface RichMapProps {
   children?: React.ReactNode;
   /** scroll wheel zoom (default true) */
   scrollWheelZoom?: boolean;
+  /** Notified when the user toggles marche step markers visibility (only when controls.marcheRouteVisibility is on) */
+  onMarcheVisibilityChange?: (visible: boolean) => void;
 }
 
 /**
@@ -74,8 +79,17 @@ export const RichMap: React.FC<RichMapProps> = ({
   className = '',
   children,
   scrollWheelZoom = true,
+  onMarcheVisibilityChange,
 }) => {
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
+  const [markersVisible, setMarkersVisible] = useState<boolean>(
+    marcheRoute?.renderMarkers !== false,
+  );
+
+  const handleMarkersToggle = (v: boolean) => {
+    setMarkersVisible(v);
+    onMarcheVisibilityChange?.(v);
+  };
 
   const cadastrePoints = useMemo(() => {
     if (!marcheRoute) return [];
@@ -130,8 +144,8 @@ export const RichMap: React.FC<RichMapProps> = ({
             polylinePositions={marcheRoute.polylinePositions}
             isLoop={marcheRoute.isLoop}
             mapStyle={mapStyle}
-            renderMarkers={marcheRoute.renderMarkers !== false}
-            opacity={marcheRoute.opacity ?? 1}
+            renderMarkers={markersVisible}
+            opacity={markersVisible ? (marcheRoute.opacity ?? 1) : Math.min(marcheRoute.opacity ?? 1, 0.45)}
           />
         )}
 
@@ -154,6 +168,9 @@ export const RichMap: React.FC<RichMapProps> = ({
       </MapContainer>
 
       {controls.style && <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />}
+      {controls.marcheRouteVisibility && marcheRoute && marcheRoute.steps.length > 0 && (
+        <MarcheRouteToggle visible={markersVisible} onToggle={handleMarkersToggle} />
+      )}
     </div>
   );
 };

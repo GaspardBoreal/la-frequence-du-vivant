@@ -56,6 +56,7 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
   explorationId,
 }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [marcheStepsVisible, setMarcheStepsVisible] = React.useState(false);
 
   // Fetch lightweight marche positions for the background route trace
   const { data: marcheRouteSteps = [] } = useQuery({
@@ -212,13 +213,21 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
                 zoom={15}
                 bounds={bounds}
                 initialStyle="geopoetic"
-                controls={{ zoom: true, style: true, geolocate: true, cadastre: true, weather: true }}
+                controls={{
+                  zoom: true,
+                  style: true,
+                  geolocate: true,
+                  cadastre: true,
+                  weather: true,
+                  marcheRouteVisibility: true,
+                }}
+                onMarcheVisibilityChange={setMarcheStepsVisible}
                 marcheRoute={
                   marcheRouteSteps.length > 0
                     ? {
                         steps: marcheRouteSteps,
-                        renderMarkers: true,
-                        opacity: 0.55, // route en arrière-plan
+                        renderMarkers: false, // étapes masquées par défaut — révélables via le toggle
+                        opacity: 0.55,
                       }
                     : undefined
                 }
@@ -273,7 +282,10 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground text-center">
             Marqueurs émeraude pulsants — observations groupées (≤ 8 m).
-            {marcheRouteSteps.length > 0 && ' Tracé de la marche en arrière-plan.'}
+            {marcheRouteSteps.length > 0 &&
+              (marcheStepsVisible
+                ? ' Tracé et étapes de la marche affichés.'
+                : ' Tracé de la marche en arrière-plan.')}
           </p>
         </div>
 

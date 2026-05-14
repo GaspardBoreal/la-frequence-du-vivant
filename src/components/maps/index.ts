@@ -14,6 +14,7 @@ export {
   GeolocateButton,
   UserLocationMarker,
 } from './controls/GeolocateControl';
+export { default as MarcheRouteToggle } from './controls/MarcheRouteToggle';
 
 // Layers
 export {
