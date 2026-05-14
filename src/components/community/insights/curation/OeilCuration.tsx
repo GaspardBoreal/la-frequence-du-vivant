@@ -552,6 +552,15 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           </div>
         )}
 
+        {/* Filtre par tags-marcheurs (privés) */}
+        {(pool.length > 0) && (view !== 'terrain') && (
+          <MarcheurTagsFilterBar
+            state={tagFilter}
+            onChange={setTagFilter}
+            className="px-1"
+          />
+        )}
+
         {/* Empty pool */}
         {pool.length === 0 && manual.length === 0 && (
           <div className="rounded-xl border border-border bg-card p-6 text-center">
