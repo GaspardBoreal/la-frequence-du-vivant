@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { queryClient } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
+import MyTagsOverview from '@/components/community/tags/MyTagsOverview';
 interface Participation {
   id: string;
   marche_event_id: string;
