@@ -1,83 +1,33 @@
-## Objectif
+# Fix : dates incohérentes dans Synthèse → Taxons
 
-Donner aux marcheurs une visibilité d'ensemble sur **leurs tags privés** :
+## Diagnostic
 
-1. Une **section "Mes tags"** dans le Carnet vivant — vue panoramique cliquable.
-2. Une **story Impact dédiée** — célébration intime de leur grille de lecture du vivant (visible uniquement par eux-mêmes).
-
-## 1. Carnet vivant — section "Mes tags"
-
-### Emplacement
-Dans `src/components/community/CarnetVivant.tsx`, **au-dessus** de la timeline saisonnière, dans un bloc repliable (par défaut replié si > 6 tags, déplié sinon) — cohérent avec la sobriété informationnelle.
-
-### Contenu
-- Titre `Mes tags` + icône `Tag` + chip privé.
-- Pour chaque tag (trié par fréquence d'usage desc) : pastille colorée + label + compteur d'espèces distinctes.
-- Click sur un tag → `Drawer` (existant) listant les espèces taggées, chacune cliquable pour ouvrir `SpeciesGalleryDetailModal`.
-- État vide pédagogique : « Vous n'avez encore créé aucun tag. Ouvrez n'importe quelle fiche espèce dans Apprendre → L'Œil pour commencer votre vocabulaire personnel. »
-
-### Données
-Nouveau hook `useMyMarcheurTagsOverview()` dans `src/hooks/useMarcheurSpeciesTags.ts` :
+Dans `EventBiodiversityTab.tsx`, la transformation `allSpeciesAsBiodiversity` qui alimente `SpeciesExplorer` (cartes Taxons) attribue à chaque espèce :
 
 ```ts
-export function useMyMarcheurTagsOverview() {
-  return useQuery({
-    queryKey: ['my-marcheur-tags-overview'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('marcheur_species_tags')
-        .select('id, label, color_hash, scientific_name, marche_id, created_at')
-        .order('created_at', { ascending: false });
-      // Group côté client par label_normalized
-      // → [{ label, color_hash, total: n, speciesCount: distinct(scientific_name), species: [{scientific_name, marche_id, taggedAt}] }]
-    },
-  });
-}
+lastSeen: snap.snapshot_date || ''
 ```
 
-RLS existant garantit que seul le user voit ses tags. Aucune migration nécessaire.
+`snapshot_date` est la **date à laquelle le snapshot a été généré/synchronisé** côté backend, pas la date réelle de la dernière observation terrain. C'est pour cela que **toutes les 4 espèces affichent 14/05/2026** (jour du dernier sync) au lieu de leur vraie dernière date d'observation visible dans la fiche (modal "Sur le terrain", carrousel + onglet Liste).
 
-## 2. Story Impact dédiée — "Mon regard sur le vivant"
+De plus, lors du merge entre snapshots, `lastSeen` n'est **jamais mis à jour** : on garde la valeur du premier snapshot rencontré.
 
-### Conditionnelle
-Story incluse **uniquement** si la prop `isSelf` (à propager depuis `MarcheurImpactPanel`) est vraie — un autre utilisateur n'a pas le droit de voir mes tags.
+Cela viole la règle Core mémoire : *"Prioritize observationDate"*.
 
-Détection `isSelf` : comparer `marcheur.userId` avec `supabase.auth.getUser().id` (déjà disponible via `useCurrentUser`/contexte ; sinon ajouter prop côté `MarcheursTab`).
+## Correctif
 
-### Position dans `STORY_KEYS`
-Insérée après `familles`, avant `detections` :
+Dans `src/components/community/EventBiodiversityTab.tsx`, fonction `allSpeciesAsBiodiversity` :
 
-```ts
-const STORY_KEYS = ['empreinte', 'sentinelle', 'familles', ...(isSelf ? ['tags'] : []), 'detections', 'badges', 'palier'] as const;
-```
+1. Helper `computeLastSeen(attrs)` qui retourne le `max(attr.date)` parmi les attributions valides (date ISO parsable). Fallback sur `snap.snapshot_date` uniquement si aucune date d'observation exploitable.
+2. À la création d'une espèce dans la map : `lastSeen = computeLastSeen(spAttributions) ?? snap.snapshot_date`.
+3. Au merge avec une espèce existante : `existing.lastSeen = max(existing.lastSeen, computeLastSeen(newAttrs))`.
 
-### Contenu visuel (`StoryMyTags`)
-- Eyebrow : `Mon regard · privé`
-- Titre : `{labels.length} tags · {speciesCount} espèces que vous avez su nommer`
-- Bulles flottantes (3-5 plus utilisées) — taille proportionnelle au compteur, couleur du tag, animation `motion` (entrée stagger + flotting).
-- Si `<3` tags : variant pédagogique : « Votre vocabulaire commence à se former. »
-- Si `0` tag : story sautée (on retire `'tags'` de `STORY_KEYS`).
+Aucun changement côté `SpeciesExplorer`, `EnhancedSpeciesCard`, hooks, RPC, ou base de données. Aucun impact sur la fiche espèce (qui lit déjà la vraie date depuis ses propres sources).
 
-### Données
-Réutilise `useMyMarcheurTagsOverview()`. Hook appelé dans `MarcheurImpactPanel` quand `isSelf`.
+## Fichier modifié
 
-## Fichiers touchés
+- `src/components/community/EventBiodiversityTab.tsx` (lignes ~210-263)
 
-- `src/hooks/useMarcheurSpeciesTags.ts` — ajout `useMyMarcheurTagsOverview`.
-- `src/components/community/tags/MyTagsOverview.tsx` (nouveau) — section Carnet (collapse + grid + drawer espèces).
-- `src/components/community/CarnetVivant.tsx` — insertion `<MyTagsOverview userId={userId} />` au-dessus de la timeline.
-- `src/components/community/exploration/impact/ImpactStoriesViewer.tsx` — nouvelle story `StoryMyTags` + `STORY_KEYS` conditionnel sur prop `isSelf`.
-- `src/components/community/exploration/impact/MarcheurImpactPanel.tsx` — calcul `isSelf` (via `supabase.auth.getUser()`), passage de la prop, fetch `useMyMarcheurTagsOverview()` quand `isSelf`.
+## Vérification
 
-## Détails techniques
-
-- Pas de migration BDD ; pas de nouvelle RPC.
-- Couleurs via `getTagColor(color_hash)` déjà exporté.
-- `SpeciesGalleryDetailModal` réutilisable depuis le Drawer (signature actuelle : `name`, `scientificName`, `count`, `kingdom`).
-- Privé = badge cadenas visible (cohérent avec `MarcheurSpeciesTagDots`).
-- Mobile-first : la story doit tenir en `<= 740px` de hauteur, scroll vertical autorisé comme `StorySentinelle`.
-
-## Hors scope
-
-- Édition / suppression des tags depuis le Carnet (déjà disponible sur les fiches espèce — éviter la duplication).
-- Partage public d'un tag (les tags restent strictement privés ; cf. mémoire sécurité).
+Après correctif, ouvrir Synthèse → Taxons : chaque carte doit afficher la date la plus récente trouvée dans ses attributions (donc différente d'une espèce à l'autre quand les observations diffèrent), cohérente avec la fiche espèce.
