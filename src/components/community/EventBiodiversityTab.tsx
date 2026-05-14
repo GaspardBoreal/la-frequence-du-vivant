@@ -454,6 +454,12 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               allEventMarches={allEventMarchesData}
               eventParticipants={eventParticipants}
             />
+          </motion.div>
+        )}
+
+        {/* INDICATEURS — Lecture écologique du peuplement */}
+        {activeSubTab === 'indicateurs' && (
+          <motion.div key="indicateurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} />
           </motion.div>
         )}
