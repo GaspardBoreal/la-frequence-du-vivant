@@ -1,0 +1,336 @@
+import React, { useEffect, useMemo, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { Calendar, MapPin, User, ExternalLink, Sparkles, Camera, Users } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { SpeciesName } from '@/components/species/SpeciesName';
+import { countIndividuals, type AttributionLike } from '@/utils/speciesIndividualCount';
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  scientificName: string;
+  commonName: string;
+  attributions: AttributionLike[];
+  photos?: string[];
+}
+
+const FitBounds: React.FC<{ points: Array<[number, number]> }> = ({ points }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!points.length) return;
+    if (points.length === 1) {
+      map.setView(points[0], 16, { animate: true });
+    } else {
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17, animate: true });
+    }
+  }, [map, points]);
+  return null;
+};
+
+const buildPulseIcon = (count: number) => {
+  const size = Math.min(48, 18 + count * 4);
+  return L.divIcon({
+    className: 'species-gps-marker',
+    html: `
+      <div style="position:relative;width:${size}px;height:${size}px;">
+        <span style="position:absolute;inset:0;border-radius:9999px;background:rgba(16,185,129,0.35);animation:pingHalo 1.8s cubic-bezier(0,0,0.2,1) infinite;"></span>
+        <span style="position:absolute;inset:25%;border-radius:9999px;background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 0 0 2px rgba(255,255,255,0.9),0 4px 12px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:700;font-family:system-ui;">${count > 1 ? count : ''}</span>
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+};
+
+const formatDate = (d?: string | null) => {
+  if (!d) return '—';
+  try {
+    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch {
+    return d;
+  }
+};
+
+export const SpeciesGpsDrawer: React.FC<Props> = ({
+  open,
+  onOpenChange,
+  scientificName,
+  commonName,
+  attributions,
+  photos = [],
+}) => {
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const gpsAttrs = useMemo(
+    () =>
+      (attributions || []).filter(
+        (a) =>
+          typeof (a as any).latitude === 'number' &&
+          typeof (a as any).longitude === 'number' &&
+          Number.isFinite((a as any).latitude) &&
+          Number.isFinite((a as any).longitude),
+      ),
+    [attributions],
+  );
+
+  const clusters = useMemo(
+    () => countIndividuals(gpsAttrs, { clusterRadiusMeters: 8 }).clusters,
+    [gpsAttrs],
+  );
+
+  const points = useMemo<Array<[number, number]>>(
+    () => clusters.filter((c) => c.centroid).map((c) => [c.centroid!.lat, c.centroid!.lng]),
+    [clusters],
+  );
+
+  const sortedAttrs = useMemo(
+    () =>
+      [...(attributions || [])].sort((a, b) => {
+        const da = a.date ? new Date(a.date).getTime() : 0;
+        const db = b.date ? new Date(b.date).getTime() : 0;
+        return da - db;
+      }),
+    [attributions],
+  );
+
+  const observers = useMemo(() => {
+    const set = new Set<string>();
+    (attributions || []).forEach((a) => {
+      if (a.observerName) set.add(a.observerName);
+    });
+    return set.size;
+  }, [attributions]);
+
+  const period = useMemo(() => {
+    const dates = sortedAttrs.map((a) => a.date).filter(Boolean) as string[];
+    if (!dates.length) return '—';
+    const first = formatDate(dates[0]);
+    const last = formatDate(dates[dates.length - 1]);
+    return first === last ? first : `${first} → ${last}`;
+  }, [sortedAttrs]);
+
+  const cover = photos[0];
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-3xl p-0 overflow-y-auto bg-gradient-to-b from-background via-background to-emerald-950/10"
+      >
+        <style>{`
+          @keyframes pingHalo {
+            0% { transform: scale(0.7); opacity: 0.9; }
+            80%,100% { transform: scale(1.6); opacity: 0; }
+          }
+          .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
+          }
+          .leaflet-popup-tip { background: hsl(var(--card)); }
+        `}</style>
+
+        {/* Header avec photo cover floutée */}
+        <div className="relative h-40 sm:h-48 overflow-hidden">
+          {cover ? (
+            <>
+              <img
+                src={cover}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 via-background/60 to-background" />
+            </>
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-transparent" />
+          )}
+          <SheetHeader className="relative z-10 p-5 pb-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span className="text-[11px] uppercase tracking-widest text-emerald-300/90 font-semibold">
+                Empreinte GPS iNaturalist
+              </span>
+            </div>
+            <SheetTitle className="text-left">
+              <SpeciesName scientificName={scientificName} commonName={commonName} size="lg" />
+            </SheetTitle>
+          </SheetHeader>
+        </div>
+
+        {/* KPI strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-5 -mt-2">
+          {[
+            { icon: Camera, label: 'Observations', value: String(attributions?.length || 0) },
+            { icon: MapPin, label: 'Individus GPS', value: String(clusters.length) },
+            { icon: Users, label: 'Observateurs', value: String(observers) },
+            { icon: Calendar, label: 'Période', value: period, small: true },
+          ].map((k) => (
+            <motion.div
+              key={k.label}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="rounded-xl border border-border bg-card/80 backdrop-blur px-3 py-2"
+            >
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <k.icon className="w-3 h-3" /> {k.label}
+              </div>
+              <p className={`font-semibold tabular-nums ${k.small ? 'text-xs' : 'text-base'}`}>
+                {k.value}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Carte */}
+        <div className="px-5 mt-5">
+          <div className="relative rounded-2xl overflow-hidden border border-border h-72 sm:h-80 bg-muted">
+            {points.length > 0 ? (
+              <MapContainer
+                center={points[0]}
+                zoom={15}
+                scrollWheelZoom
+                className="w-full h-full"
+                style={{ background: 'hsl(var(--muted))' }}
+              >
+                <TileLayer
+                  url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                  attribution='&copy; OpenStreetMap &copy; CARTO'
+                />
+                <FitBounds points={points} />
+                {clusters.map((c, idx) => {
+                  if (!c.centroid) return null;
+                  const sample = c.attributions[0];
+                  return (
+                    <Marker
+                      key={idx}
+                      position={[c.centroid.lat, c.centroid.lng]}
+                      icon={buildPulseIcon(c.count)}
+                    >
+                      <Popup>
+                        <div className="text-xs space-y-1 min-w-[180px]">
+                          <p className="font-semibold flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-emerald-500" />
+                            {c.count} observation{c.count > 1 ? 's' : ''}
+                          </p>
+                          {sample.date && (
+                            <p className="flex items-center gap-1 text-muted-foreground">
+                              <Calendar className="w-3 h-3" /> {formatDate(sample.date)}
+                            </p>
+                          )}
+                          {sample.observerName && (
+                            <p className="flex items-center gap-1 text-muted-foreground">
+                              <User className="w-3 h-3" /> {sample.observerName}
+                            </p>
+                          )}
+                          {(sample as any).originalUrl && (
+                            <a
+                              href={(sample as any).originalUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-emerald-500 hover:underline"
+                            >
+                              Voir sur iNaturalist <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+              </MapContainer>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-center text-sm text-muted-foreground p-6">
+                Aucune coordonnée GPS disponible pour cette espèce.
+              </div>
+            )}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground text-center">
+            Marqueurs pulsants — la taille reflète le nombre d'observations groupées (≤ 8 m).
+          </p>
+        </div>
+
+        {/* Carrousel photos */}
+        {photos.length > 0 && (
+          <div className="px-5 mt-5">
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+              <Camera className="w-3.5 h-3.5" /> Galerie photos
+            </h3>
+            <div
+              ref={carouselRef}
+              className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-thin"
+            >
+              {photos.map((p, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.04 }}
+                  className="relative shrink-0 w-44 h-44 rounded-xl overflow-hidden border border-border snap-start group"
+                >
+                  <img
+                    src={p}
+                    alt=""
+                    className="w-full h-full object-cover transition-transform duration-[6s] group-hover:scale-110"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                    <span className="text-[10px] text-white/90">Photo {i + 1}/{photos.length}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Timeline */}
+        {sortedAttrs.length > 0 && (
+          <div className="px-5 mt-5 mb-8">
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" /> Chronologie
+            </h3>
+            <div className="relative">
+              <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+              <div className="flex gap-4 overflow-x-auto pb-3 pt-2">
+                {sortedAttrs.map((a, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.02 }}
+                    className="relative shrink-0 group"
+                  >
+                    <div className="flex flex-col items-center gap-1.5 w-24">
+                      <div className="text-[10px] text-muted-foreground text-center leading-tight">
+                        {formatDate(a.date)}
+                      </div>
+                      <div className="w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 group-hover:scale-125 transition" />
+                      <div className="text-[10px] text-center text-foreground/80 leading-tight truncate w-full">
+                        {a.observerName || '—'}
+                      </div>
+                      {(a as any).originalUrl && (
+                        <a
+                          href={(a as any).originalUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] text-emerald-500 hover:underline"
+                        >
+                          iNat ↗
+                        </a>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+export default SpeciesGpsDrawer;
