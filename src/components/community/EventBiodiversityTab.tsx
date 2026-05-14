@@ -20,7 +20,7 @@ import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
 
-type SubTab = 'synthese' | 'taxons' | 'temoignages' | 'textes' | 'analyse';
+type SubTab = 'synthese' | 'taxons' | 'indicateurs' | 'temoignages' | 'textes' | 'analyse';
 
 
 interface EventBiodiversityTabProps {
@@ -383,6 +383,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const subTabs: { key: SubTab; label: string }[] = [
     { key: 'synthese', label: 'Synthèse' },
     { key: 'taxons', label: 'Taxons observés' },
+    { key: 'indicateurs', label: 'Indicateurs' },
     { key: 'temoignages', label: 'Témoignages' },
     ...(eventType === 'eco_poetique' ? [{ key: 'textes' as SubTab, label: 'Textes écrits' }] : []),
     { key: 'analyse', label: 'Analyse IA' },
@@ -453,6 +454,12 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               allEventMarches={allEventMarchesData}
               eventParticipants={eventParticipants}
             />
+          </motion.div>
+        )}
+
+        {/* INDICATEURS — Lecture écologique du peuplement */}
+        {activeSubTab === 'indicateurs' && (
+          <motion.div key="indicateurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} />
           </motion.div>
         )}
