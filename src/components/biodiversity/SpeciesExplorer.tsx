@@ -293,6 +293,9 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
             </div>
           )}
 
+          {/* Marcheur tags filter (private) */}
+          <MarcheurTagsFilterBar state={tagFilter} onChange={setTagFilter} />
+
           {/* Filter dropdowns */}
           <div className={`grid gap-3 ${compact ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
             <Select value={selectedCategory} onValueChange={v => setSelectedCategory(v)}>
