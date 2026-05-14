@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface SpeciesObservationPoint {
+  latitude: number;
+  longitude: number;
+  inaturalistId?: number | null;
+  observationDate?: string | null;
+}
+
 export interface SpeciesMarcheData {
   marcheId: string;
   marcheName: string;
@@ -10,6 +17,12 @@ export interface SpeciesMarcheData {
   latitude?: number;
   longitude?: number;
   observationDate?: string;
+  /**
+   * Points GPS exacts des observations marcheur (issues d'iNaturalist) pour
+   * cette espèce sur cette marche. Permet à la carte d'afficher la vraie
+   * position de chaque individu (au lieu du centre de la marche).
+   */
+  observationPoints?: SpeciesObservationPoint[];
 }
 
 /**
