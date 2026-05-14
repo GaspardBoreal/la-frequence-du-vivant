@@ -12,6 +12,13 @@ import SpeciesDetailModal from './SpeciesDetailModal';
 import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
+import {
+  useMarcheurSpeciesTags,
+  indexTagsBySpecies,
+  normalizeTagKey,
+} from '@/hooks/useMarcheurSpeciesTags';
+import MarcheurSpeciesTagDots from '@/components/community/tags/MarcheurSpeciesTagDots';
+import MarcheurTagsFilterBar, { matchesTagFilter, type TagFilterState } from '@/components/community/tags/MarcheurTagsFilterBar';
 
 // Utility to identify birds
 const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
