@@ -1,58 +1,50 @@
-# Plan — Cron quotidien de re-synchro iNaturalist marcheurs
+# Cron quotidien — Backfill iNaturalist marcheurs
 
 ## Objectif
-Mettre en place une re-synchro automatique quotidienne pour que toute nouvelle observation iNaturalist d'un marcheur (ex: l'orchidée de Laurence) soit rattachée à son carnet sans intervention manuelle.
+Chaque nuit, ré-attacher automatiquement les nouvelles observations iNaturalist de tous les marcheurs ayant un compte iNat lié, sur l'ensemble de leurs participations validées.
 
-## Architecture
+## Ce qui sera créé
 
-```text
-┌─ pg_cron (03:30 Europe/Paris, daily)
-│    └─ select cron.schedule(...)
-│         └─ HTTP POST → backfill-marcheur-inaturalist-batch (edge function)
-│              └─ pour chaque (user_id, exploration_id) éligible :
-│                   POST → backfill-marcheur-inaturalist (existant, idempotent)
-└─ table marcheur_backfill_log : trace de chaque run
+### 1. Edge function `backfill-marcheur-inat-batch`
+- **Auth** : refuse toute requête sans header `X-Cron-Secret` valide (comparé à `Deno.env.get('CRON_SHARED_SECRET')`).
+- **Logique** :
+  1. Lit avec service role les couples `(user_id, exploration_id)` éligibles : `marche_participations` (statut validé) jointes à `community_profile_science_accounts` où `network = 'inaturalist'`.
+  2. Pour chaque couple, invoque la fonction existante `backfill-marcheur-inaturalist` avec `source: 'cron_daily'` (idempotente, ne dédoublonne pas les obs déjà rattachées).
+  3. Throttle : pause 250 ms entre chaque appel, plafond 200 couples/run pour rester sous le timeout edge.
+  4. Insère un résumé final dans `marcheur_backfill_log` (`source = 'cron_daily_summary'`, totaux : couples traités, obs ajoutées, erreurs).
+- **Aucune modification** de la fonction existante `backfill-marcheur-inaturalist`.
+
+### 2. Job `pg_cron`
+- Planning : `30 1 * * *` UTC → 03:30 Paris en été, 02:30 en hiver (heure creuse).
+- Action : `net.http_post` vers `…/functions/v1/backfill-marcheur-inat-batch` avec :
+  - `apikey` : anon key
+  - `X-Cron-Secret` : valeur de `CRON_SHARED_SECRET` (lue via `vault.decrypted_secrets` ou injectée dans la requête SQL)
+- Extensions `pg_cron` et `pg_net` déjà actives sur le projet (vérifié).
+
+### 3. Stockage du secret côté SQL
+Le secret `CRON_SHARED_SECRET` est déjà ajouté côté edge functions. Pour que le cron SQL puisse l'envoyer dans le header, on l'enregistre aussi dans `vault.create_secret(...)` sous le nom `cron_shared_secret`, puis le cron le lit via `vault.decrypted_secrets`.
+
+## Hors scope
+- Aucun bouton ni hook front.
+- Pas de changement dans la fonction `backfill-marcheur-inaturalist`.
+- Pas de modification des triggers de participation existants.
+
+## Détails techniques
+
+**Fichiers / objets touchés**
+- `supabase/functions/backfill-marcheur-inat-batch/index.ts` (nouveau)
+- Migration SQL : insertion dans `vault` + `cron.schedule('backfill-marcheur-inat-daily', …)`
+- Aucune modification du schéma de tables existant.
+
+**Critères d'éligibilité d'un couple `(user_id, exploration_id)`**
 ```
-
-## Critères d'éligibilité scannés par le batch
-Pour chaque `community_profile` ayant un compte iNaturalist lié, on relance le backfill sur **chaque exploration** où ce marcheur a au moins une participation. C'est exactement le périmètre couvert par les triggers existants.
-
-```sql
-SELECT DISTINCT mp.user_id, me.exploration_id
-FROM marche_participations mp
-JOIN marche_events me ON me.id = mp.marche_event_id
-JOIN community_profiles cp ON cp.user_id = mp.user_id
-JOIN community_profile_science_accounts csa
-  ON csa.profile_id = cp.id AND csa.network = 'inaturalist'
-WHERE me.exploration_id IS NOT NULL;
+marche_participations p
+  JOIN community_profile_science_accounts s
+    ON s.user_id = p.user_id AND s.network = 'inaturalist'
+WHERE p.statut IN ('validee', 'confirmee')   -- à confirmer avec les valeurs réelles
 ```
+~12 couples actuellement éligibles (compté précédemment).
 
-## Étapes d'implémentation
-
-1. **Migration SQL** :
-   - Activer `pg_cron` et `pg_net` (idempotent).
-   - Planifier `daily-marcheur-inat-backfill` à `30 1 * * *` UTC (= 03:30 Paris en heure d'été, 02:30 en heure d'hiver — créneau creux).
-   - Le job appelle l'edge function batch via `net.http_post`.
-
-2. **Nouvelle edge function** `backfill-marcheur-inat-batch` :
-   - Service-role only (validée par header partagé `X-Cron-Secret`).
-   - Lit la liste éligible.
-   - Pour chaque couple `(user_id, exploration_id)` : invoke `backfill-marcheur-inaturalist` avec `source = 'cron_daily'`.
-   - Throttling simple : pause 250 ms entre appels, limite 200 couples par run (pour rester sous 60 s d'edge timeout). Si dépassé, le run du lendemain prendra le relais (déjà idempotent côté insert).
-   - Insère un résumé dans `marcheur_backfill_log` (source `cron_daily_summary`).
-
-3. **Secret** : `CRON_SHARED_SECRET` (généré côté Lovable, utilisé par le cron SQL et vérifié par la fonction batch).
-
-## Sécurité
-- La fonction batch refuse toute requête sans `X-Cron-Secret` valide.
-- Pas d'exposition côté front.
-- Le service_role n'est utilisé que côté edge.
-
-## Observabilité
-- Visible dans le dashboard admin via le `marcheur_backfill_log` existant (source `cron_daily` et `cron_daily_summary`).
-- L'orchidée de Laurence apparaîtra dès le premier run quotidien — et reste dispo manuellement via le bouton existant côté admin si besoin immédiat.
-
-## Hors scope (volontairement)
-- Pas de bouton UI dédié (option 2).
-- Pas de hook front (option 3).
-- Pas de modification de la fonction `backfill-marcheur-inaturalist` existante (déjà idempotente).
+**Observabilité**
+- Logs edge function visibles dans le dashboard Supabase.
+- Table `marcheur_backfill_log` filtrable par `source = 'cron_daily'` ou `'cron_daily_summary'`.
