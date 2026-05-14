@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Circle, CircleMarker, Pane } from 'react-leaflet';
+import { MapContainer, Polyline, Marker, Popup, useMap, Circle, CircleMarker, Pane } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -11,7 +11,19 @@ import { PhotoGpsButton, PhotoGpsMarker, usePhotoGpsDrop } from './PhotoGpsDropT
 import CreateMarcheDrawer from './CreateMarcheDrawer';
 import { canCreateMarche, computeMarcheDefaults } from './createMarcheUtils';
 import CadastreLayer from '@/components/cadastre/CadastreLayer';
-import { DynamicTileLayer, MapStyleToggle, POLYLINE_COLORS, ARROW_COLORS, type MapStyle } from '@/components/maps';
+import {
+  DynamicTileLayer,
+  MapStyleToggle,
+  POLYLINE_COLORS,
+  ARROW_COLORS,
+  type MapStyle,
+  FitBounds,
+  ZoomControls,
+  GeolocateButton,
+  UserLocationMarker,
+  ArrowDecorators,
+  createNumberedIcon,
+} from '@/components/maps';
 import GpsEditOverlay from '@/components/cadastre/GpsEditOverlay';
 import { useCanCurateAudio } from '@/hooks/useCanCurateAudio';
 import {
