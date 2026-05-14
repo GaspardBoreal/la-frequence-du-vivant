@@ -18,6 +18,7 @@ import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
+import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
 
 type SubTab = 'synthese' | 'taxons' | 'temoignages' | 'textes' | 'analyse';
 
@@ -452,6 +453,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               allEventMarches={allEventMarchesData}
               eventParticipants={eventParticipants}
             />
+            <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} />
           </motion.div>
         )}
 
