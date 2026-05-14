@@ -332,10 +332,13 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         oeilView: view,
         oeilCategory: categoryFilter || undefined,
         oeilSearch: search.trim() || undefined,
+        oeilTagFilter: tagFilter.labels.length > 0
+          ? { mode: tagFilter.mode, labels: tagFilter.labels }
+          : undefined,
         oeilVisibleCount: visibleSpecies.length,
       },
     });
-  }, [view, categoryFilter, search, visibleSpecies.length]);
+  }, [view, categoryFilter, search, tagFilter, visibleSpecies.length]);
 
   // Publie la liste précise des espèces visibles (max 30, payload léger)
   useChatTabSnapshot(
