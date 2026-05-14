@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.marcheur_observations_unique_triplet;
