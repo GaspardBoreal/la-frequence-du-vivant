@@ -1,75 +1,67 @@
-# Correction du backfill iNat — multi-observations par espèce
+# Géolocalisation réelle + comptage cohérent des observations iNat
 
-## Bug identifié
+## Diagnostic confirmé
 
-Dans `supabase/functions/backfill-marcheur-inaturalist/index.ts`, lignes **134-135** :
+### 1. Carte : 2 points au lieu de 3
+`useSpeciesMarches` renvoie `marche.latitude/longitude` (centre de la marche). Les marches **DEVIAT C 863** et **DEVIAT C 865** ont quasi-identiques `lng = 0.008856` (à 30 m) → leurs marqueurs se confondent. Or les 3 vraies orchidées sont espacées de ~120 m : il faut afficher la **GPS réelle iNat** de chaque observation, pas le centre de la marche.
 
-```ts
-if (seen.has(sciName)) continue;
-seen.add(sciName);
-```
+### 2. Simulateur : "2" au lieu de 3+
+`SimulateurBiodiversite` lit uniquement `biodiversity_snapshots.species_data[].observations`. Le snapshot date d'avant les 3 obs laurence + 15 Gaspard de ce jour → il sous-compte. **Ne lit pas `marcheur_observations`**.
 
-→ Le `Set` est indexé sur le **nom scientifique seul**. Pour chaque marche, dès qu'une *Anacamptis pyramidalis* est rencontrée, **toutes les autres observations de la même espèce sont ignorées**. C'est pourquoi seule 1 des 3 observations iNat de Laurence Karki sur DEVIAT a été récupérée (puis dupliquée 4× via le rayon 500 m sur 4 marches voisines).
+### 3. Compteur fiche : "4 obs / 2 marcheurs"
+Cohérent côté UI (3 marcheur_observations + 1 photo Gaspard agrégée du snapshot), mais **Gaspard a 15+ obs pyramidalis** dans les snapshots iNat — son backfill n'a jamais tourné. Le cron quotidien le fera demain. Aucune action immédiate ici.
 
-Aggravation : la clé d'unicité de l'upsert (ligne 161) est `(marcheur_id, marche_id, species_scientific_name)` → **structurellement, le schéma ne peut stocker qu'1 obs par espèce par marche**, donc même en corrigeant le filtre Set, l'upsert écraserait.
+---
 
 ## Plan en 2 étapes
 
-### Étape 1 — Schema + dédoublonnage par observation iNat
+### Étape 1 — Persister le GPS réel iNat sur `marcheur_observations`
 
 **1.a Migration DB**
-- Ajouter `inaturalist_observation_id BIGINT` à `marcheur_observations` (nullable).
-- Index unique partiel : `UNIQUE (marcheur_id, inaturalist_observation_id) WHERE inaturalist_observation_id IS NOT NULL`.
-  → garantit l'idempotence du backfill (même obs iNat ne sera jamais ré-insérée pour le même marcheur, même si elle tombe dans le rayon de plusieurs marches).
-- L'ancienne contrainte `(marcheur_id, marche_id, species_scientific_name)` est conservée si elle existe pour les obs manuelles (sans `inaturalist_observation_id`), ou allégée si elle bloque. Je vérifierai sa présence avant migration.
-
-**1.b Edge function `backfill-marcheur-inaturalist`**
-- Remplacer le `Set<sciName>` par `Set<inaturalist_observation_id>` → on dédoublonne par identifiant iNat unique, pas par espèce.
-- Stocker `obs.id` dans le nouveau champ `inaturalist_observation_id`.
-- Changer `onConflict` de l'upsert vers `'marcheur_id,inaturalist_observation_id'`.
-- **Choix d'attribution multi-marches** : pour éviter la duplication actuelle (1 obs iNat → 4 lignes attachées à 4 marches), attacher chaque observation iNat à **la marche la plus proche** parmi celles dont le rayon couvre l'observation. Implémentation : on accumule d'abord toutes les obs candidates (clé = `obs.id`) avec leur distance à chaque marche, puis on ne garde que la marche minimale par obs. Résultat : 1 obs iNat = 1 ligne BDD (au lieu de 4).
-
-### Étape 2 — Relance du backfill sur l'exploration concernée
-
-- Purge des lignes "iNaturalist backfill" de l'exploration `20dd3be8-…-Jardin Monde` pour repartir propre (uniquement `notes = 'iNaturalist backfill'`, on touche pas aux contributions manuelles).
-- Appel manuel de l'edge function `backfill-marcheur-inaturalist` pour le couple `(user_id = 4fc3cf86-…, exploration_id = 20dd3be8-…)`.
-- Vérification SQL : on doit voir **3 lignes** *Anacamptis pyramidalis* (IDs iNat `361406617`, `361435682`, `361436414`), chacune attachée à la marche la plus proche, GPS reportable côté UI.
-
-## Détails techniques
-
-**Migration SQL (étape 1.a)** :
 ```sql
 ALTER TABLE public.marcheur_observations
-  ADD COLUMN IF NOT EXISTS inaturalist_observation_id BIGINT;
-
-CREATE UNIQUE INDEX IF NOT EXISTS marcheur_observations_marcheur_inat_uniq
-  ON public.marcheur_observations (marcheur_id, inaturalist_observation_id)
-  WHERE inaturalist_observation_id IS NOT NULL;
+  ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 ```
 
-**Diff edge function (étape 1.b)** : voir lignes 122-143 et 159-161 ; le bloc devient :
-```ts
-// dédoublonner par obs.id iNat (pas par espèce)
-const inatId = obs?.id;
-if (!inatId || seen.has(inatId)) continue;
-seen.add(inatId);
-allInserts.push({
-  marche_id: m.id,
-  distance_km: haversineKm(...),
-  inaturalist_observation_id: inatId,
-  species_scientific_name: sciName,
-  observation_date: obs?.observed_on || null,
-  photo_url: obs?.photos?.[0]?.url?.replace('square', 'medium') || null,
-});
+**1.b Edge function `backfill-marcheur-inaturalist`**
+Stocker `oLat`/`oLng` (déjà calculés ligne 137-138) dans les nouvelles colonnes.
+
+**1.c Backfill rétroactif sur les 12 lignes déjà insérées**
+RPC SQL ponctuelle qui ré-appelle iNat API pour chaque `inaturalist_observation_id` non null sans GPS, et remplit `latitude`/`longitude`. Ou plus simple : relancer la fonction edge sur cette exploration après le déploiement (idempotent via la contrainte unique).
+
+### Étape 2 — Afficher le GPS réel sur la carte + corriger le simulateur
+
+**2.a `useSpeciesMarches`**
+Quand une `marcheur_observations` a un `latitude`/`longitude` propre, retourner **une ligne par observation** (pas une par marche), avec ses GPS réels au lieu du centre de la marche. Le `marcheId` reste pour le contexte. Résultat : 3 marqueurs distincts pour pyramidalis dans cette exploration.
+
+**2.b Simulateur**
+Localiser le composant simulateur (probablement dans `src/components/community/exploration/synthese/` ou similaire). Étendre son hook source pour fusionner :
+- `biodiversity_snapshots.species_data[]` (existant)
+- `marcheur_observations` groupées par `species_scientific_name` (compte distinct par `inaturalist_observation_id` ou par `id` de la ligne)
+
+Le total "Total individus" et la valeur par espèce intègrent alors les 3 obs laurence (et les 15 Gaspard une fois son backfill exécuté).
+
+---
+
+## Vérification post-déploiement
+
+```sql
+SELECT inaturalist_observation_id, latitude, longitude
+FROM marcheur_observations
+WHERE species_scientific_name = 'Anacamptis pyramidalis'
+  AND marcheur_id = '4fc3cf86-6602-4530-a255-3a6ccdd7eda4';
 ```
-Puis post-traitement : `Map<inatId, bestRow>` qui garde la `distance_km` minimale.
+Attendu : 3 lignes avec GPS distincts (lng ≈ 0.00829 / 0.00893 / 0.00938).
 
-**Étape 2** : utilise `supabase.functions.invoke('backfill-marcheur-inaturalist', { body: { user_id, exploration_id, source: 'manual_repair' } })` via curl, ou la RPC admin existante `trigger_backfill_marcheur_inat_batch()`.
+Côté UI : carte affiche 3 marqueurs séparés ; simulateur passe de 2 à 3 (puis ≥18 quand Gaspard est backfillé demain).
 
-## Impact
+---
 
-- **Aucune régression UI** : `SpeciesGalleryDetailModal` continuera à dédoublonner par `photo_url` côté front (donc une obs avec 2 photos reste correcte).
-- **Backward compat** : les anciennes lignes sans `inaturalist_observation_id` ne sont pas touchées.
-- **Effet visible** : sur l'orchidée pyramidale du jour, on passera de 1 photo unique (dupliquée 4×) à **3 photos distinctes** dans le carrousel.
+## Notes
 
-Confirme et je lance la migration puis la correction edge + relance.
+- Pas de changement RLS nécessaire (colonnes ajoutées sur table existante).
+- Pas de régression : `latitude`/`longitude` nullables, fallback sur `marche.lat/lng` côté UI si null.
+- Le compteur "4 obs / 2 marcheurs" se résoudra de lui-même demain matin via le cron 03:30 (Gaspard sera backfillé), pas besoin d'action maintenant.
+
+Confirme et je lance.
