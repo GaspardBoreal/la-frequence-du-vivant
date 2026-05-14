@@ -159,7 +159,29 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     },
     enabled: !!marcheIds?.length,
   });
-  // Fetch all event marches with coordinates for the mini-map
+
+  // Fetch marcheur observations (incl. iNat backfill) for these marches.
+  // Source de vérité complémentaire des snapshots : permet d'intégrer dans
+  // le simulateur et la carte les observations rattachées aux marcheurs avec
+  // leurs GPS exacts iNaturalist.
+  const { data: marcheurObs } = useQuery({
+    queryKey: ['event-marcheur-observations', marcheIds],
+    queryFn: async () => {
+      if (!marcheIds?.length) return [];
+      const { data } = await supabase
+        .from('marcheur_observations')
+        .select(`
+          id, marche_id, marcheur_id, species_scientific_name,
+          observation_date, photo_url, inaturalist_observation_id,
+          latitude, longitude,
+          exploration_marcheurs!inner(prenom, nom)
+        `)
+        .in('marche_id', marcheIds)
+        .not('species_scientific_name', 'is', null);
+      return data || [];
+    },
+    enabled: !!marcheIds?.length,
+  });
   const { data: allEventMarchesData } = useQuery({
     queryKey: ['event-all-marches', explorationId],
     queryFn: async (): Promise<SpeciesMarcheData[]> => {
