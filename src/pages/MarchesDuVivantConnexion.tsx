@@ -111,6 +111,12 @@ const MarchesDuVivantConnexion = () => {
     try {
       await signIn(email, password);
       toast.success('Bienvenue parmi les marcheurs ! 🌿');
+      const consumed = await consumeInvitationIfAny();
+      if (consumed?.success && consumed.event_id) {
+        toast.success('Vous êtes rattaché·e à l\'événement comme Lecteur invité 📖');
+        navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
+        return;
+      }
       navigate('/marches-du-vivant/mon-espace');
     } catch (error: any) {
       toast.error(error.message || 'Erreur de connexion');
@@ -140,6 +146,22 @@ const MarchesDuVivantConnexion = () => {
 
       if (affiliateToken) {
         clearStoredAffiliateToken();
+      }
+
+      // If invitation present and user is now signed in (auto-login), consume immediately
+      if (invitationToken) {
+        // Try to sign in to consume the invitation right away
+        try {
+          await signIn(email, password);
+          const consumed = await consumeInvitationIfAny();
+          if (consumed?.success && consumed.event_id) {
+            toast.success('Inscription réussie ! Vous découvrez l\'événement comme Lecteur invité 📖');
+            navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
+            return;
+          }
+        } catch {
+          // confirmation requise — l'utilisateur consommera après confirmation email
+        }
       }
 
       toast.success('Inscription réussie ! Vérifiez vos emails pour confirmer votre compte 📬');
