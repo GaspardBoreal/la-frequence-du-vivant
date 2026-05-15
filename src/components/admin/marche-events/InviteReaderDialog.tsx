@@ -60,7 +60,12 @@ export const InviteReaderDialog: React.FC<InviteReaderDialogProps> = ({
   };
 
   // Search existing profiles
-  const { data: searchResults = [], isFetching: searching } = useQuery({
+  const {
+    data: searchResults = [],
+    isFetching: searching,
+    isError: searchFailed,
+    error: searchError,
+  } = useQuery({
     queryKey: ['invite-search', eventId, debouncedSearch],
     queryFn: async () => {
       if (!eventId || debouncedSearch.trim().length < 2) return [] as ProfileResult[];
@@ -206,7 +211,14 @@ export const InviteReaderDialog: React.FC<InviteReaderDialogProps> = ({
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />Recherche…
                     </p>
                   )}
-                  {debouncedSearch.trim().length >= 2 && !searching && searchResults.length === 0 && (
+                  {debouncedSearch.trim().length >= 2 && !searching && searchFailed && (
+                    <p className="p-4 text-sm text-destructive text-center">
+                      {searchError instanceof Error && searchError.message === 'forbidden'
+                        ? "Vous n'avez pas les droits nécessaires pour rechercher un marcheur."
+                        : "La recherche des marcheurs a échoué. Réessayez dans un instant."}
+                    </p>
+                  )}
+                  {debouncedSearch.trim().length >= 2 && !searching && !searchFailed && searchResults.length === 0 && (
                     <p className="p-4 text-sm text-muted-foreground text-center">
                       Aucun marcheur disponible (déjà invité, participant ou inexistant).
                     </p>
