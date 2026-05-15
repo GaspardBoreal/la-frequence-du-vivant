@@ -416,11 +416,48 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
                 index={i}
                 registeringId={registeringId}
                 onRegister={handleRegister}
+                inviterPrenom={registeredFromInvitation?.get(event.id) ?? null}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Section 1bis — Invitations personnelles en attente */}
+      <AnimatePresence>
+        {pendingInvitations.length > 0 && (
+          <motion.div
+            key="invited-section"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="space-y-3"
+          >
+            <div>
+              <h2 className="text-base font-semibold text-foreground mb-0.5 flex items-center gap-2">
+                <MailOpen className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+                Vous êtes invité·e
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
+                  {pendingInvitations.length}
+                </span>
+              </h2>
+              <p className="text-muted-foreground text-[11px]">
+                Des sentiers vous attendent — acceptez pour rejoindre la marche
+              </p>
+            </div>
+            <div className="space-y-3">
+              {pendingInvitations.map((inv, i) => (
+                <InvitedEventCard
+                  key={inv.invitation_row_id}
+                  userId={userId}
+                  invitation={inv}
+                  index={i}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Section 2 — Sentiers à explorer */}
       <div className="space-y-3">
