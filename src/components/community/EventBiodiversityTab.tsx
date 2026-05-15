@@ -497,6 +497,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               <AnimatedStat value={stats.fungi} label="Champignons" icon={Leaf} color={categoryConfig.fungi.color} bgColor={categoryConfig.fungi.bgColor} delay={300} />
               <AnimatedStat value={stats.others} label="Autre" icon={Bug} color={categoryConfig.others.color} bgColor={categoryConfig.others.bgColor} delay={400} />
             </div>
+            <TrophicChainPanel species={allSpeciesWithFrNames as any} />
           </motion.div>
         )}
 
@@ -529,7 +530,6 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {activeSubTab === 'indicateurs' && (
           <motion.div key="indicateurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} explorationId={explorationId} />
-            <TrophicChainPanel species={allSpeciesWithFrNames as any} />
           </motion.div>
         )}
 
