@@ -41,13 +41,15 @@ const STATUS_META: Record<InvitedReader['status'], { label: string; className: s
 const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTitle }) => {
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ['event-invited-readers', eventId],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('list_event_invited_readers', { _event_id: eventId });
       if (error) throw error;
       return (data || []) as InvitedReader[];
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const promote = useMutation({

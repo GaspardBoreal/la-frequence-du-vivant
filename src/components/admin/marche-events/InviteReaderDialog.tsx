@@ -114,7 +114,7 @@ export const InviteReaderDialog: React.FC<InviteReaderDialogProps> = ({
       if (error) throw error;
       return data as { success: boolean; already_reader?: boolean; already_participant?: boolean };
     },
-    onSuccess: (data, userId) => {
+    onSuccess: async (data, userId) => {
       const profile = searchResults.find(p => p.user_id === userId);
       const name = profile ? `${profile.prenom ?? ''} ${profile.nom ?? ''}`.trim() : 'Le marcheur';
       if (data.already_participant) {
@@ -123,7 +123,17 @@ export const InviteReaderDialog: React.FC<InviteReaderDialogProps> = ({
         toast.info(`${name} est déjà Lecteur invité.`);
       } else {
         toast.success(`${name} ajouté comme Lecteur invité.`);
-        if (invalidateKey) queryClient.invalidateQueries({ queryKey: invalidateKey });
+        // Refetch explicite pour garantir la mise à jour immédiate de la liste
+        if (invalidateKey) {
+          await queryClient.invalidateQueries({ queryKey: invalidateKey, refetchType: 'all' });
+          await queryClient.refetchQueries({ queryKey: invalidateKey, type: 'all' });
+        }
+        if (eventId) {
+          queryClient.invalidateQueries({ queryKey: ['marche-participations', eventId] });
+          queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+        }
+        // Invalide aussi la recherche pour exclure l'utilisateur ajouté
+        queryClient.invalidateQueries({ queryKey: ['invite-search', eventId] });
         setSearch(''); setSelectedUserId(null);
         setOpen(false); reset();
       }

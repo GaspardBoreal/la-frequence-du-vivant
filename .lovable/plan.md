@@ -1,38 +1,32 @@
-## Problème identifié
-Vincent Levavasseur existe bien en base :
-- dans `auth.users`
-- dans `public.community_profiles`
+## Objectif
+Faire en sorte que lorsqu’un admin ajoute un marcheur existant comme Lecteur invité, la liste “Lecteurs invités” se mette à jour immédiatement et reflète correctement l’état backend.
 
-La recherche ne renvoie rien parce que la fonction SQL appelée par la modale **plante avant de répondre**.
-
-## Cause exacte
-La RPC `public.search_community_profiles_for_invite` contient :
-- `public.has_role(auth.uid(), 'admin')`
-
-Or, dans cette base, la fonction `public.has_role(uuid, ...)` **n’existe pas**. Le projet utilise ailleurs :
-- `public.check_is_admin_user(auth.uid())`
-
-Résultat : l’appel RPC échoue côté base, et la modale affiche à tort “Aucun marcheur disponible” au lieu d’indiquer l’erreur réelle.
+## Constats
+- L’ajout de Vincent fonctionne bien côté modale : il apparaît dans la recherche et le clic “Ajouter” part bien.
+- La liste sous l’onglet “Lecteurs invités” ne se met pas à jour dynamiquement après cet ajout.
+- Le cache React Query global est configuré avec un `staleTime` de 5 minutes, donc un simple retour visuel peut rester figé si l’invalidation n’entraîne pas un refetch visible.
+- La page détail d’événement monte `InvitedReadersTab` dans un onglet Radix ; il faut donc sécuriser le refetch côté composant liste, pas seulement compter sur la fermeture de la modale.
 
 ## Plan de correction
-1. **Corriger les deux RPC d’invitation**
-   - remplacer `public.has_role(...)` par `public.check_is_admin_user(auth.uid())` dans :
-     - `search_community_profiles_for_invite`
-     - `add_existing_reader_to_event`
-   - conserver la logique de filtrage actuelle (déjà invité / déjà participant validé / recherche multi-mots)
+1. **Fiabiliser le refetch après ajout d’un lecteur existant**
+   - Dans `InviteReaderDialog`, après succès de `add_existing_reader_to_event`, ne pas seulement invalider la query : déclencher aussi un refetch explicite de `['event-invited-readers', eventId]`.
+   - Garder la fermeture de la modale seulement après confirmation que le rafraîchissement a bien été demandé.
 
-2. **Rendre l’erreur visible dans la modale**
-   - ne plus afficher un faux état vide quand la RPC échoue
-   - afficher un message d’erreur explicite si la recherche backend échoue
+2. **Renforcer la robustesse de `InvitedReadersTab`**
+   - Ajouter la gestion explicite de l’état `error` pour `list_event_invited_readers` afin d’éviter un faux état vide si la relecture backend échoue.
+   - Exposer un état de rechargement/refetch plus clair pour que l’UI reflète un rafraîchissement en cours après ajout.
 
-3. **Valider le cas Vincent**
-   - retester la recherche avec `Vincent` et `Vincent Levavasseur`
-   - vérifier qu’il apparaît bien tant qu’il n’est ni invité ni participant validé à cet événement
+3. **Synchroniser les vues liées à l’événement**
+   - Invalider/refetch aussi les queries connexes de l’événement si nécessaire (participants / compteurs) pour éviter les écarts entre onglets.
+   - Vérifier que la suppression de Vincent des résultats de recherche après ajout est cohérente avec la liste rechargée.
 
-## Détail technique
-- La fonction actuellement déployée en base est bien la version “multi-mots”, mais son garde admin est cassé.
-- La requête de test sur `search_community_profiles_for_invite('f6095e8d-44a8-4156-951f-dd604b821603', 'Vincent')` échoue avec :
-  - `function public.has_role(uuid, unknown) does not exist`
-- Vincent est présent avec l’utilisateur `4bd02b8a-ef51-48ca-9e9c-f4661e5af6be`.
+4. **Validation du cas Vincent**
+   - Rejouer le cas exact : chercher Vincent, cliquer “Ajouter”, vérifier qu’il apparaît immédiatement dans “Lecteurs invités” sans rechargement manuel.
+   - Vérifier qu’aucun message “Aucun Lecteur invité” ne persiste après ajout réussi.
 
-Si vous validez, j’applique la migration SQL puis le correctif UI.
+## Détails techniques
+- Fichiers visés :
+  - `src/components/admin/marche-events/InviteReaderDialog.tsx`
+  - `src/components/admin/marche-events/InvitedReadersTab.tsx`
+- Approche : correction frontend uniquement, sans nouvelle migration SQL à ce stade.
+- Cause la plus probable : invalidation de cache insuffisante dans un contexte où la query reste en cache frais et où la vue n’exprime pas correctement l’état de refetch.
