@@ -31,6 +31,7 @@ interface Participation {
 interface CarnetVivantProps {
   userId: string;
   participations: Participation[];
+  silentInvitations?: InvitedEventRow[];
 }
 
 type SeasonKey = string; // e.g. "Printemps 2026"
