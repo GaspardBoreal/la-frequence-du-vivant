@@ -326,6 +326,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         date: o.observation_date,
         exactLatitude: typeof o.latitude === 'number' ? o.latitude : null,
         exactLongitude: typeof o.longitude === 'number' ? o.longitude : null,
+        photoUrl: o.photo_url || undefined,
         originalUrl: inatId ? `https://www.inaturalist.org/observations/${inatId}` : undefined,
         observerInstitution: inatId ? 'iNaturalist Community' : 'Marcheur',
       };
