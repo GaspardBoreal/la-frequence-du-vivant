@@ -108,7 +108,8 @@ export const TrophicChainPanel: React.FC<Props> = ({ species }) => {
           transition={{ duration: 0.25 }}
         >
           {active === 'constellation' && <ConstellationTab chain={chain} />}
-          {active !== 'constellation' && (
+          {active === 'spirale' && <SpiraleTab chain={chain} />}
+          {active === 'reseau' && (
             <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
               Cette direction visuelle arrive bientôt.
             </div>
