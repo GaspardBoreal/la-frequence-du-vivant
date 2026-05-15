@@ -41,6 +41,8 @@ const STATUS_META: Record<InvitedReader['status'], { label: string; className: s
 
 const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTitle }) => {
   const queryClient = useQueryClient();
+  const { user, isAdmin, isLoading: authLoading } = useAuth();
+  const authReady = !authLoading && !!user && isAdmin;
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ['event-invited-readers', eventId],
@@ -49,6 +51,7 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
       if (error) throw error;
       return (data || []) as InvitedReader[];
     },
+    enabled: !!eventId && authReady,
     staleTime: 0,
     refetchOnMount: 'always',
   });
