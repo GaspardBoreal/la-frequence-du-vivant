@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useTrophicChain, type TrophicSpeciesInput } from '@/hooks/useTrophicChain';
 import { TROPHIC_LEVELS, DECOMPOSER_META } from '@/lib/trophicClassification';
 import { ConstellationTab } from './trophic/ConstellationTab';
+import { SpiraleTab } from './trophic/SpiraleTab';
 
 interface Props {
   species: TrophicSpeciesInput[];
@@ -14,7 +15,7 @@ type TabKey = 'constellation' | 'spirale' | 'reseau';
 
 const TABS: Array<{ key: TabKey; label: string; icon: typeof Sparkles; ready: boolean }> = [
   { key: 'constellation', label: 'Constellation', icon: Sparkles, ready: true },
-  { key: 'spirale', label: 'Spirale du Vivant', icon: GitBranch, ready: false },
+  { key: 'spirale', label: 'Spirale du Vivant', icon: GitBranch, ready: true },
   { key: 'reseau', label: 'Réseau Vivant', icon: Network, ready: false },
 ];
 
