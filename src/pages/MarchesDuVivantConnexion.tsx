@@ -58,19 +58,52 @@ const MarchesDuVivantConnexion = () => {
   const [intimite, setIntimite] = useState('');
   const [engagement, setEngagement] = useState(false);
 
+  // Invitation Lecteur invité
+  const [invitationToken, setInvitationToken] = useState<string | null>(null);
+  const [invitationInfo, setInvitationInfo] = useState<{
+    valid: boolean;
+    reason?: string;
+    invited_email?: string;
+    invited_prenom?: string;
+    event_id?: string | null;
+    event_title?: string | null;
+    inviter_prenom?: string | null;
+  } | null>(null);
+
   useEffect(() => {
     const affiliateToken = searchParams.get('affiliate');
-    if (!affiliateToken) return;
+    if (affiliateToken) {
+      storeAffiliateToken(affiliateToken);
+      setMode('register');
+      supabase.rpc('record_community_affiliate_event', {
+        _share_token: affiliateToken,
+        _event_type: 'signup_started',
+        _metadata: { source: 'connexion_page' },
+        _referred_user_id: null,
+      }).then(() => {});
+    }
 
-    storeAffiliateToken(affiliateToken);
-    setMode('register');
-    supabase.rpc('record_community_affiliate_event', {
-      _share_token: affiliateToken,
-      _event_type: 'signup_started',
-      _metadata: { source: 'connexion_page' },
-      _referred_user_id: null,
-    }).then(() => {});
+    const token = searchParams.get('invitation');
+    if (token) {
+      setInvitationToken(token);
+      setMode('register');
+      supabase.rpc('peek_event_invitation', { _token: token }).then(({ data }: any) => {
+        if (data) {
+          setInvitationInfo(data);
+          if (data.valid) {
+            setEmail(data.invited_email || '');
+            setPrenom(data.invited_prenom || '');
+          }
+        }
+      });
+    }
   }, [searchParams]);
+
+  const consumeInvitationIfAny = async () => {
+    if (!invitationToken) return null;
+    const { data } = await supabase.rpc('consume_event_invitation', { _token: invitationToken });
+    return data as { success: boolean; event_id?: string; error?: string } | null;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +111,12 @@ const MarchesDuVivantConnexion = () => {
     try {
       await signIn(email, password);
       toast.success('Bienvenue parmi les marcheurs ! 🌿');
+      const consumed = await consumeInvitationIfAny();
+      if (consumed?.success && consumed.event_id) {
+        toast.success('Vous êtes rattaché·e à l\'événement comme Lecteur invité 📖');
+        navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
+        return;
+      }
       navigate('/marches-du-vivant/mon-espace');
     } catch (error: any) {
       toast.error(error.message || 'Erreur de connexion');
@@ -107,6 +146,22 @@ const MarchesDuVivantConnexion = () => {
 
       if (affiliateToken) {
         clearStoredAffiliateToken();
+      }
+
+      // If invitation present and user is now signed in (auto-login), consume immediately
+      if (invitationToken) {
+        // Try to sign in to consume the invitation right away
+        try {
+          await signIn(email, password);
+          const consumed = await consumeInvitationIfAny();
+          if (consumed?.success && consumed.event_id) {
+            toast.success('Inscription réussie ! Vous découvrez l\'événement comme Lecteur invité 📖');
+            navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
+            return;
+          }
+        } catch {
+          // confirmation requise — l'utilisateur consommera après confirmation email
+        }
       }
 
       toast.success('Inscription réussie ! Vérifiez vos emails pour confirmer votre compte 📬');
@@ -186,6 +241,34 @@ const MarchesDuVivantConnexion = () => {
                 {mode === 'forgot' && 'Nous vous enverrons un lien de réinitialisation'}
               </p>
             </div>
+
+            {/* Bandeau invitation Lecteur invité */}
+            {invitationInfo && (
+              <div className={`mb-4 rounded-xl border p-4 backdrop-blur-md ${
+                invitationInfo.valid
+                  ? 'bg-emerald-500/15 border-emerald-300/30 text-emerald-50'
+                  : 'bg-amber-500/15 border-amber-300/30 text-amber-50'
+              }`}>
+                {invitationInfo.valid ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">
+                      📖 {invitationInfo.inviter_prenom || 'Un marcheur'} vous invite à découvrir
+                      {invitationInfo.event_title ? ` « ${invitationInfo.event_title} »` : ' un événement'}
+                    </p>
+                    <p className="text-xs opacity-80">
+                      Créez votre compte ou connectez-vous : vous serez automatiquement rattaché·e
+                      comme <strong>Lecteur invité</strong> (lecture seule).
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm">
+                    {invitationInfo.reason === 'expired' && '⏳ Cette invitation a expiré.'}
+                    {invitationInfo.reason === 'already_consumed' && '✅ Cette invitation a déjà été utilisée.'}
+                    {invitationInfo.reason === 'invalid_token' && '⚠️ Lien d\'invitation invalide.'}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Card */}
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6 shadow-2xl">

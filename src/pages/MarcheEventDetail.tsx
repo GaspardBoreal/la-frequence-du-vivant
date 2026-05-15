@@ -23,6 +23,8 @@ import EventBiodiversityTab from '@/components/community/EventBiodiversityTab';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import LivingPathOverview from '@/components/admin/LivingPathOverview';
 import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
+import InvitedReadersTab from '@/components/admin/marche-events/InvitedReadersTab';
+import { BookOpen } from 'lucide-react';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -503,126 +505,141 @@ const MarcheEventDetail: React.FC = () => {
           </Card>
         )}
 
-        {/* Participants — edit mode only */}
+        {/* Participants & Lecteurs invités — edit mode only */}
         {!isNew && (
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Participants ({participations?.length || 0})
-              </h2>
-              <Button variant="outline" size="sm" onClick={() => setShowAddParticipant(!showAddParticipant)}>
-                <Plus className="h-3.5 w-3.5 mr-1" />Ajouter un participant
-              </Button>
-            </div>
+            <Tabs defaultValue="participants" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="participants" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  Participants ({participations?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger value="lecteurs" className="gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Lecteurs invités
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Add participant panel */}
-            {showAddParticipant && (
-              <Card className="p-4 mb-4 border-dashed border-primary/30 bg-primary/5">
-                <p className="text-xs text-muted-foreground mb-2">
-                  Recherchez un profil communautaire pour l'associer rétroactivement à cet événement.
-                </p>
-                <Input
-                  placeholder="Chercher par nom ou prénom..."
-                  value={participantSearch}
-                  onChange={e => setParticipantSearch(e.target.value)}
-                  className="mb-2"
-                />
-                {availableProfiles.length > 0 ? (
-                  <div className="max-h-40 overflow-y-auto space-y-1">
-                    {availableProfiles.map(profile => (
-                      <button
-                        key={profile.user_id}
-                        onClick={() => addParticipant.mutate(profile.user_id, {
-                          onSuccess: () => {
-                            queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
-                            queryClient.invalidateQueries({ queryKey: ['participant-profiles'] });
-                            queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
-                            setShowAddParticipant(false);
-                            setParticipantSearch('');
-                            toast.success('Participant ajouté avec succès');
-                          },
-                          onError: (error: any) => {
-                            if (error?.message?.includes('unique') || error?.message?.includes('duplicate')) {
-                              toast.error('Ce participant est déjà inscrit à cet événement');
-                            } else {
-                              toast.error("Erreur lors de l'ajout du participant");
-                            }
-                          },
-                        })}
-                        disabled={addParticipant.isPending}
-                        className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
-                      >
-                        <span>{profile.prenom} {profile.nom}</span>
-                        <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    {participantSearch ? 'Aucun profil trouvé.' : 'Tous les profils sont déjà inscrits.'}
-                  </p>
+              <TabsContent value="participants" className="mt-0">
+                <div className="flex items-center justify-end mb-4">
+                  <Button variant="outline" size="sm" onClick={() => setShowAddParticipant(!showAddParticipant)}>
+                    <Plus className="h-3.5 w-3.5 mr-1" />Ajouter un participant
+                  </Button>
+                </div>
+
+                {/* Add participant panel */}
+                {showAddParticipant && (
+                  <Card className="p-4 mb-4 border-dashed border-primary/30 bg-primary/5">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Recherchez un profil communautaire pour l'associer rétroactivement à cet événement.
+                    </p>
+                    <Input
+                      placeholder="Chercher par nom ou prénom..."
+                      value={participantSearch}
+                      onChange={e => setParticipantSearch(e.target.value)}
+                      className="mb-2"
+                    />
+                    {availableProfiles.length > 0 ? (
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {availableProfiles.map(profile => (
+                          <button
+                            key={profile.user_id}
+                            onClick={() => addParticipant.mutate(profile.user_id, {
+                              onSuccess: () => {
+                                queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
+                                queryClient.invalidateQueries({ queryKey: ['participant-profiles'] });
+                                queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+                                setShowAddParticipant(false);
+                                setParticipantSearch('');
+                                toast.success('Participant ajouté avec succès');
+                              },
+                              onError: (error: any) => {
+                                if (error?.message?.includes('unique') || error?.message?.includes('duplicate')) {
+                                  toast.error('Ce participant est déjà inscrit à cet événement');
+                                } else {
+                                  toast.error("Erreur lors de l'ajout du participant");
+                                }
+                              },
+                            })}
+                            disabled={addParticipant.isPending}
+                            className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
+                          >
+                            <span>{profile.prenom} {profile.nom}</span>
+                            <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {participantSearch ? 'Aucun profil trouvé.' : 'Tous les profils sont déjà inscrits.'}
+                      </p>
+                    )}
+                  </Card>
                 )}
-              </Card>
-            )}
 
-            {participations && participations.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                     <TableHead>Nom</TableHead>
-                     <TableHead>Rôle</TableHead>
-                     <TableHead>Âge</TableHead>
-                     <TableHead>Validé le</TableHead>
-                     <TableHead>Méthode</TableHead>
-                     <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {participations.map((p: any) => {
-                    const profile = getParticipantProfile(p.user_id) as any;
-                    let age: number | null = null;
-                    if (profile?.date_naissance) {
-                      const dob = new Date(profile.date_naissance);
-                      if (!isNaN(dob.getTime())) {
-                        const now = new Date();
-                        let a = now.getFullYear() - dob.getFullYear();
-                        const m = now.getMonth() - dob.getMonth();
-                        if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) a--;
-                        if (a >= 0 && a < 130) age = a;
-                      }
-                    }
-                    return (
-                      <TableRow key={p.id}>
-                        <TableCell>{profile?.prenom} {profile?.nom}</TableCell>
-                        <TableCell className="capitalize">{profile?.role?.replace(/_/g, ' ') || '—'}</TableCell>
-                        <TableCell className="tabular-nums">{age !== null ? `${age} ans` : '—'}</TableCell>
-                        <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
-                        <TableCell>
-                           {p.validation_method === 'admin_retroactif' ? (
-                             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
-                               rétroactif
-                             </span>
-                           ) : (
-                             p.validation_method || '—'
-                           )}
-                         </TableCell>
-                         <TableCell>
-                           <button
-                             onClick={() => setDeletingParticipation({ id: p.id, name: `${profile?.prenom || ''} ${profile?.nom || ''}`.trim() || 'ce participant' })}
-                             className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                           >
-                             <Trash2 className="h-3.5 w-3.5" />
-                           </button>
-                         </TableCell>
-                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-sm text-muted-foreground">Aucun participant validé pour le moment.</p>
-            )}
+                {participations && participations.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                         <TableHead>Nom</TableHead>
+                         <TableHead>Rôle</TableHead>
+                         <TableHead>Âge</TableHead>
+                         <TableHead>Validé le</TableHead>
+                         <TableHead>Méthode</TableHead>
+                         <TableHead className="w-10"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {participations.map((p: any) => {
+                        const profile = getParticipantProfile(p.user_id) as any;
+                        let age: number | null = null;
+                        if (profile?.date_naissance) {
+                          const dob = new Date(profile.date_naissance);
+                          if (!isNaN(dob.getTime())) {
+                            const now = new Date();
+                            let a = now.getFullYear() - dob.getFullYear();
+                            const m = now.getMonth() - dob.getMonth();
+                            if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) a--;
+                            if (a >= 0 && a < 130) age = a;
+                          }
+                        }
+                        return (
+                          <TableRow key={p.id}>
+                            <TableCell>{profile?.prenom} {profile?.nom}</TableCell>
+                            <TableCell className="capitalize">{profile?.role?.replace(/_/g, ' ') || '—'}</TableCell>
+                            <TableCell className="tabular-nums">{age !== null ? `${age} ans` : '—'}</TableCell>
+                            <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
+                            <TableCell>
+                               {p.validation_method === 'admin_retroactif' ? (
+                                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+                                   rétroactif
+                                 </span>
+                               ) : (
+                                 p.validation_method || '—'
+                               )}
+                             </TableCell>
+                             <TableCell>
+                               <button
+                                 onClick={() => setDeletingParticipation({ id: p.id, name: `${profile?.prenom || ''} ${profile?.nom || ''}`.trim() || 'ce participant' })}
+                                 className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                               >
+                                 <Trash2 className="h-3.5 w-3.5" />
+                               </button>
+                             </TableCell>
+                           </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Aucun participant validé pour le moment.</p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="lecteurs" className="mt-0">
+                <InvitedReadersTab eventId={id!} eventTitle={event?.title} />
+              </TabsContent>
+            </Tabs>
           </Card>
         )}
 
