@@ -119,6 +119,9 @@ const ExplorationMarcheurPage: React.FC = () => {
 
   const effectiveExplorationId = explorationId || resolvedExplorationId;
 
+  // Background refresh of biodiversity snapshots if older than 2h
+  const { isSyncing: isSnapshotSyncing } = useSnapshotsResyncOnView(effectiveExplorationId);
+
   // Track page view on mount
   useEffect(() => {
     if (effectiveExplorationId && userId) {
