@@ -10,6 +10,7 @@ import { SpeciesName } from '@/components/species/SpeciesName';
 import { countIndividuals, getLatLng, type AttributionLike } from '@/utils/speciesIndividualCount';
 import { RichMap, type MarcheRouteStep } from '@/components/maps';
 import { supabase } from '@/integrations/supabase/client';
+import { useSpeciesMarcheurPhotos, type MarcheurSpeciesPhoto } from '@/hooks/useSpeciesMarcheurPhotos';
 
 interface Props {
   open: boolean;
