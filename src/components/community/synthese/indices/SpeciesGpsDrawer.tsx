@@ -134,6 +134,32 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
 
   const cover = photos[0];
 
+  // Source unique de vérité — le même hook que le modal Taxons
+  const { data: fieldPhotos = [] } = useSpeciesMarcheurPhotos(scientificName, explorationId);
+
+  const photosByDateObserver = useMemo(() => {
+    const map = new Map<string, MarcheurSpeciesPhoto[]>();
+    fieldPhotos.forEach((p) => {
+      const dateKey = p.observationDate ? p.observationDate.slice(0, 10) : '';
+      const obsKey = (p.observerName || '').toLowerCase().trim();
+      const k = `${dateKey}|${obsKey}`;
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(p);
+    });
+    return map;
+  }, [fieldPhotos]);
+
+  const photosByDate = useMemo(() => {
+    const map = new Map<string, MarcheurSpeciesPhoto[]>();
+    fieldPhotos.forEach((p) => {
+      const k = p.observationDate ? p.observationDate.slice(0, 10) : '';
+      if (!k) return;
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(p);
+    });
+    return map;
+  }, [fieldPhotos]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
