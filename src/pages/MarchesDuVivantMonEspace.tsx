@@ -204,10 +204,12 @@ const MarchesDuVivantMonEspace = () => {
             registeredEventIds={registeredEventIds}
             pastEvents={pastEvents}
             pastParticipantCounts={pastParticipantCounts}
+            invitedEvents={invitedEvents}
+            registeredFromInvitation={registeredFromInvitation}
           />
         );
       case 'carnet':
-        return <CarnetTab userId={user.id} participations={participations} />;
+        return <CarnetTab userId={user.id} participations={participations} silentInvitations={silentInvitations} />;
       case 'outils':
         return <OutilsTab role={role} userId={user.id} />;
       case 'territoire':
