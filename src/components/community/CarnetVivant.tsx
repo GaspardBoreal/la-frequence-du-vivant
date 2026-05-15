@@ -187,7 +187,7 @@ const MarcheCard: React.FC<{
   );
 };
 
-const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) => {
+const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations, silentInvitations = [] }) => {
   const navigate = useNavigate();
   const [expandedSeasons, setExpandedSeasons] = useState<Set<string>>(new Set());
   const [unregisterTarget, setUnregisterTarget] = useState<string | null>(null);
