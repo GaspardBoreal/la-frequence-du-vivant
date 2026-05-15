@@ -19,6 +19,7 @@ import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
+import TrophicChainPanel from './synthese/TrophicChainPanel';
 
 type SubTab = 'synthese' | 'taxons' | 'indicateurs' | 'temoignages' | 'textes' | 'analyse';
 
@@ -528,6 +529,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {activeSubTab === 'indicateurs' && (
           <motion.div key="indicateurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} explorationId={explorationId} />
+            <TrophicChainPanel species={allSpeciesWithFrNames as any} />
           </motion.div>
         )}
 
