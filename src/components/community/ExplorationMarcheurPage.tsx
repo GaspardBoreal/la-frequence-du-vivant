@@ -20,6 +20,8 @@ import EventBiodiversityTab from './EventBiodiversityTab';
 import ApprendreTab from './insights/ApprendreTab';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import ChatViewportObserver from '@/components/chatbot/ChatViewportObserver';
+import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
+import { Loader2 } from 'lucide-react';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
