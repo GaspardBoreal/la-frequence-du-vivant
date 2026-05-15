@@ -22,6 +22,7 @@ const TABS: Array<{ key: TabKey; label: string; icon: typeof Sparkles; ready: bo
 
 export const TrophicChainPanel: React.FC<Props> = ({ species }) => {
   const [active, setActive] = useState<TabKey>('constellation');
+  const [open, setOpen] = useState(false);
   const chain = useTrophicChain(species);
 
   const balanceTone =
