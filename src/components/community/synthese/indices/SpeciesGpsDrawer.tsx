@@ -4,8 +4,8 @@ import { Marker, Popup } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Calendar, MapPin, User, ExternalLink, Sparkles, Camera, Users } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Calendar, MapPin, User, ExternalLink, Sparkles, Camera, Users, X } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { SpeciesName } from '@/components/species/SpeciesName';
 import { countIndividuals, getLatLng, type AttributionLike } from '@/utils/speciesIndividualCount';
 import { RichMap, type MarcheRouteStep } from '@/components/maps';
@@ -137,7 +137,7 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-3xl p-0 overflow-y-auto bg-gradient-to-b from-background via-background to-emerald-950/10"
+        className="w-full sm:max-w-3xl p-0 overflow-y-auto bg-gradient-to-b from-background via-background to-emerald-950/10 [&>button]:hidden"
       >
         <style>{`
           @keyframes pingHalo {
@@ -151,6 +151,14 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
           }
           .leaflet-popup-tip { background: hsl(var(--card)); }
         `}</style>
+
+        {/* Bouton de fermeture — encadré discret, toujours au-dessus de la carte */}
+        <SheetClose
+          aria-label="Fermer"
+          className="absolute right-4 top-4 z-[60] inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-background/70 backdrop-blur-md text-foreground/80 shadow-sm ring-offset-background transition hover:border-emerald-400/40 hover:bg-background/90 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-400/40 focus:ring-offset-2"
+        >
+          <X className="h-4 w-4" />
+        </SheetClose>
 
         {/* Header avec photo cover floutée */}
         <div className="relative h-40 sm:h-48 overflow-hidden">
