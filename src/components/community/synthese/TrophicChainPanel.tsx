@@ -6,6 +6,7 @@ import { useTrophicChain, type TrophicSpeciesInput } from '@/hooks/useTrophicCha
 import { TROPHIC_LEVELS, DECOMPOSER_META } from '@/lib/trophicClassification';
 import { ConstellationTab } from './trophic/ConstellationTab';
 import { SpiraleTab } from './trophic/SpiraleTab';
+import { ReseauTab } from './trophic/ReseauTab';
 
 interface Props {
   species: TrophicSpeciesInput[];
@@ -16,7 +17,7 @@ type TabKey = 'constellation' | 'spirale' | 'reseau';
 const TABS: Array<{ key: TabKey; label: string; icon: typeof Sparkles; ready: boolean }> = [
   { key: 'constellation', label: 'Constellation', icon: Sparkles, ready: true },
   { key: 'spirale', label: 'Spirale du Vivant', icon: GitBranch, ready: true },
-  { key: 'reseau', label: 'Réseau Vivant', icon: Network, ready: false },
+  { key: 'reseau', label: 'Réseau Vivant', icon: Network, ready: true },
 ];
 
 export const TrophicChainPanel: React.FC<Props> = ({ species }) => {
@@ -109,11 +110,7 @@ export const TrophicChainPanel: React.FC<Props> = ({ species }) => {
         >
           {active === 'constellation' && <ConstellationTab chain={chain} />}
           {active === 'spirale' && <SpiraleTab chain={chain} />}
-          {active === 'reseau' && (
-            <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              Cette direction visuelle arrive bientôt.
-            </div>
-          )}
+          {active === 'reseau' && <ReseauTab chain={chain} />}
         </motion.div>
       </AnimatePresence>
 
