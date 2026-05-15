@@ -530,7 +530,6 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {activeSubTab === 'indicateurs' && (
           <motion.div key="indicateurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} explorationId={explorationId} />
-            <TrophicChainPanel species={allSpeciesWithFrNames as any} />
           </motion.div>
         )}
 
