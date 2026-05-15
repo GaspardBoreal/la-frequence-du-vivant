@@ -60,6 +60,8 @@ interface MarchesTabProps {
   registeredEventIds: Set<string>;
   pastEvents?: PastEvent[];
   pastParticipantCounts?: Record<string, number>;
+  invitedEvents?: InvitedEventRow[];
+  registeredFromInvitation?: Map<string, string | null>;
 }
 
 const getCountdown = (dateStr: string) => {
