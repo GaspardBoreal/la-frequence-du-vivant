@@ -152,6 +152,14 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
           .leaflet-popup-tip { background: hsl(var(--card)); }
         `}</style>
 
+        {/* Bouton de fermeture — encadré discret, toujours au-dessus de la carte */}
+        <SheetClose
+          aria-label="Fermer"
+          className="absolute right-4 top-4 z-[60] inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-background/70 backdrop-blur-md text-foreground/80 shadow-sm ring-offset-background transition hover:border-emerald-400/40 hover:bg-background/90 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-400/40 focus:ring-offset-2"
+        >
+          <X className="h-4 w-4" />
+        </SheetClose>
+
         {/* Header avec photo cover floutée */}
         <div className="relative h-40 sm:h-48 overflow-hidden">
           {cover ? (
