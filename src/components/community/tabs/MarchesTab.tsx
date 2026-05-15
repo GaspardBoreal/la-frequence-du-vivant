@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar, ChevronDown } from 'lucide-react';
+import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar, ChevronDown, MailOpen, Mail } from 'lucide-react';
 import PastEventExpandedView from './PastEventExpandedView';
+import InvitedEventCard from '@/components/community/marches/InvitedEventCard';
+import type { InvitedEventRow } from '@/hooks/useCommunityInvitedEvents';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { format, differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
