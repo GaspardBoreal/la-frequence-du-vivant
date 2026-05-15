@@ -242,6 +242,34 @@ const MarchesDuVivantConnexion = () => {
               </p>
             </div>
 
+            {/* Bandeau invitation Lecteur invité */}
+            {invitationInfo && (
+              <div className={`mb-4 rounded-xl border p-4 backdrop-blur-md ${
+                invitationInfo.valid
+                  ? 'bg-emerald-500/15 border-emerald-300/30 text-emerald-50'
+                  : 'bg-amber-500/15 border-amber-300/30 text-amber-50'
+              }`}>
+                {invitationInfo.valid ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">
+                      📖 {invitationInfo.inviter_prenom || 'Un marcheur'} vous invite à découvrir
+                      {invitationInfo.event_title ? ` « ${invitationInfo.event_title} »` : ' un événement'}
+                    </p>
+                    <p className="text-xs opacity-80">
+                      Créez votre compte ou connectez-vous : vous serez automatiquement rattaché·e
+                      comme <strong>Lecteur invité</strong> (lecture seule).
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm">
+                    {invitationInfo.reason === 'expired' && '⏳ Cette invitation a expiré.'}
+                    {invitationInfo.reason === 'already_consumed' && '✅ Cette invitation a déjà été utilisée.'}
+                    {invitationInfo.reason === 'invalid_token' && '⚠️ Lien d\'invitation invalide.'}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Card */}
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6 shadow-2xl">
               {/* Tabs */}
