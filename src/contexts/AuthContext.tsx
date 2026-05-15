@@ -30,67 +30,69 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>(initialAuthState);
-  const activeSessionKeyRef = useRef<string | null>(null);
-  const processingSessionKeyRef = useRef<string | null>(null);
-  const processedSessionKeyRef = useRef<string | null>(null);
+  // Track which user.id we have already validated and admin-checked.
+  const validatedUserIdRef = useRef<string | null>(null);
+  const processingTokenRef = useRef<string | null>(null);
+  const initialResolvedRef = useRef<boolean>(false);
 
   const setSignedOutState = useCallback(() => {
-    activeSessionKeyRef.current = null;
-    processingSessionKeyRef.current = null;
-    processedSessionKeyRef.current = null;
+    validatedUserIdRef.current = null;
+    processingTokenRef.current = null;
+    initialResolvedRef.current = true;
     setAuthState({ user: null, session: null, isLoading: false, isAdmin: false, isAdminChecked: true });
   }, []);
 
-  const checkAdminStatus = useCallback(async (sessionKey: string) => {
+  const checkAdminStatus = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase.rpc('is_admin_user');
 
-      if (activeSessionKeyRef.current !== sessionKey) return;
+      // Bail if the validated user has changed since.
+      if (validatedUserIdRef.current !== userId) return;
 
       if (error) {
         console.error('Error checking admin status:', error);
         setAuthState((prev) => ({ ...prev, isAdmin: false, isAdminChecked: true }));
+        initialResolvedRef.current = true;
         return;
       }
 
       setAuthState((prev) => ({ ...prev, isAdmin: !!data, isAdminChecked: true }));
+      initialResolvedRef.current = true;
     } catch (error) {
-      if (activeSessionKeyRef.current !== sessionKey) return;
+      if (validatedUserIdRef.current !== userId) return;
       console.error('Error checking admin status:', error);
       setAuthState((prev) => ({ ...prev, isAdmin: false, isAdminChecked: true }));
+      initialResolvedRef.current = true;
     }
   }, []);
 
-  const validateAndSetUser = useCallback(async (session: Session | null) => {
+  const handleSession = useCallback(async (session: Session | null) => {
     if (!session?.user) {
       setSignedOutState();
       return;
     }
 
-    const sessionKey = session.access_token;
-    if (
-      processingSessionKeyRef.current === sessionKey ||
-      (processedSessionKeyRef.current === sessionKey && activeSessionKeyRef.current === sessionKey)
-    ) {
+    const sessionToken = session.access_token;
+    const sessionUserId = session.user.id;
+
+    // Same user as before → just update the session reference, no flicker.
+    if (validatedUserIdRef.current === sessionUserId) {
+      setAuthState((prev) => ({ ...prev, session, user: session.user }));
       return;
     }
 
-    activeSessionKeyRef.current = sessionKey;
-    processingSessionKeyRef.current = sessionKey;
+    // Avoid concurrent validations on the same token.
+    if (processingTokenRef.current === sessionToken) return;
+    processingTokenRef.current = sessionToken;
 
-    setAuthState((prev) => ({
-      ...prev,
-      session,
-      isLoading: true,
-      isAdmin: false,
-      isAdminChecked: false,
-    }));
+    // First-ever resolution → show loading. Otherwise keep current UI stable.
+    if (!initialResolvedRef.current) {
+      setAuthState((prev) => ({ ...prev, isLoading: true }));
+    }
 
     const { data: { user: validatedUser }, error } = await supabase.auth.getUser();
 
-    if (activeSessionKeyRef.current !== sessionKey) return;
-
-    processingSessionKeyRef.current = null;
+    processingTokenRef.current = null;
 
     if (error || !validatedUser) {
       console.warn('Session expired or invalid, signing out:', error?.message);
@@ -99,7 +101,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    processedSessionKeyRef.current = sessionKey;
+    validatedUserIdRef.current = validatedUser.id;
+
     setAuthState({
       user: validatedUser,
       session,
@@ -108,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAdminChecked: false,
     });
 
-    void checkAdminStatus(sessionKey);
+    void checkAdminStatus(validatedUser.id);
   }, [checkAdminStatus, setSignedOutState]);
 
   useEffect(() => {
@@ -117,16 +120,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSignedOutState();
         return;
       }
-
-      void validateAndSetUser(session);
+      void handleSession(session);
     });
 
     void supabase.auth.getSession().then(({ data: { session } }) => {
-      void validateAndSetUser(session);
+      void handleSession(session);
     });
 
     return () => subscription.unsubscribe();
-  }, [setSignedOutState, validateAndSetUser]);
+  }, [setSignedOutState, handleSession]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });

@@ -1,45 +1,54 @@
+# Plan : navigation admin sans clignotement
+
 ## Diagnostic
 
-Laurent Tripied est bien enregistré en base pour l’événement `efe36e8c-75cd-4bd7-9dd8-bccf7d3c9a69` ("Laboratoire à Ciel Ouvert : Biodiversité & Sols Vivants"). Comme Vincent auparavant, **l’ajout fonctionne**. Le blocage est donc **strictement côté lecture UI**.
+L'écran de login d'admin apparaît brièvement à deux moments :
 
-Le RPC `list_event_invited_readers` est correct et renvoie les lignes attendues, mais il dépend de `auth.uid()` + `check_is_admin_user(auth.uid())`. Dès que la session admin côté navigateur est transitoire, absente, ou pas encore stabilisée, il renvoie `forbidden`, ce que l’onglet traduit par "Impossible de charger les Lecteurs invités".
+1. **Au chargement initial de `/access-admin-gb2025`** — `AdminAuth` affiche le spinner (`isLoading=true`), puis dès que la session est restaurée `isLoading` passe à `false` mais le check admin (`is_admin_user` RPC) n'a pas encore résolu. Pendant ce micro-délai, la condition `!user || !isAdmin` est vraie → l'écran de login flashe avant que `isAdmin=true` arrive.
 
-Le refactor `AuthProvider` a réduit les courses, mais il reste un point fragile : l’onglet **dépend encore directement d’un RPC admin protégé dans le navigateur**, donc le moindre flottement de session continue à casser l’affichage. C’est pour cela que le bug réapparaît sur d’autres événements même quand les données sont bien présentes.
+2. **Au clic sur "Événements"** — chaque route admin a son propre `<AdminAuth>` qui démonte / remonte. Si entretemps Supabase a émis un événement (`TOKEN_REFRESHED`, `INITIAL_SESSION` avec un nouveau `access_token`, ou la console montre déjà des "Invalid Refresh Token"), `validateAndSetUser` repart à zéro : il remet `isLoading=true`, `isAdmin=false`, `isAdminChecked=false`. Pendant la re-validation et le RPC admin, `AdminAuth` retombe sur la branche `!user || !isAdmin` → flash login.
 
-## Ce que je vais corriger
+Cause racine : `AdminAuth` utilise une condition trop permissive (`!user || !isAdmin`) sans attendre `isAdminChecked`, et `AuthContext` réinitialise tout son état dès qu'un nouvel `access_token` arrive même si l'utilisateur reste identique.
 
-### 1. Rendre la lecture des Lecteurs invités indépendante des micro-états auth du client
-- Créer une **Edge Function dédiée** (par ex. `event-invited-readers-list`) qui :
-  - valide le JWT côté serveur,
-  - vérifie le rôle admin côté serveur,
-  - appelle la liste des lecteurs invités avec privilèges serveur,
-  - renvoie les lecteurs de façon stable.
-- L’onglet `InvitedReadersTab` utilisera cette function au lieu d’appeler directement le RPC depuis le navigateur.
+## Objectif
 
-### 2. Garder les protections de sécurité intactes
-- Aucune ouverture RLS publique.
-- La vérification admin reste obligatoire, mais **entièrement côté serveur** pour éviter les faux `forbidden` transitoires côté client.
-- Le RPC SQL existant pourra rester comme couche de sécurité interne, ou être remplacé si la fonction Edge centralise déjà le contrôle.
+Rendre la navigation admin strictement déterministe : aucun écran transitoire autre que le spinner tant que l'état d'auth n'est pas confirmé, et aucune réinitialisation visible quand le token est rafraîchi pour le même utilisateur.
 
-### 3. Fiabiliser l’UX de l’onglet
-- Conserver le retry automatique + le bouton "Réessayer".
-- Afficher un vrai état de chargement tant que la session n’est pas prête.
-- Après ajout d’un lecteur, invalider proprement la requête de liste pour faire apparaître immédiatement la personne ajoutée.
+## Étapes
 
-## Validation
+### 1. `src/contexts/AuthContext.tsx` — état stable au refresh
 
-Je validerai sur les trois cas concrets déjà signalés :
-- `DEVIAT / Jardin Monde du 11.03.26 à aujourd'hui`
-- `DEVIAT Le Réveil de la Terre "Marcher sur un sol qui respire"`
-- `Laboratoire à Ciel Ouvert : Biodiversité & Sols Vivants`
+- Indexer la dédup par `user.id` (et pas seulement `access_token`). Si le `user.id` validé est identique au précédent, on **met à jour la session sans toucher** à `isLoading`, `isAdmin`, `isAdminChecked`.
+- Ajouter un drapeau `initialAuthResolved` interne. Tant qu'il est `false`, `isLoading=true`. Une fois la première résolution faite (session + check admin), `isLoading` ne repasse plus à `true` pour les rafraîchissements suivants.
+- Sur `TOKEN_REFRESHED`, ne pas re-déclencher `is_admin_user` si `user.id` inchangé (évite le flash et économise un RPC).
+- Sur `SIGNED_OUT` réel uniquement, remettre l'état à zéro.
 
-Résultat attendu : Vincent et Laurent apparaissent immédiatement dans l’onglet **Lecteurs invités**, sans message d’erreur.
+### 2. `src/components/AdminAuth.tsx` — gating strict
 
-## Détails techniques
+Remplacer la condition d'affichage par :
 
-Fichiers pressentis :
-- `supabase/functions/event-invited-readers-list/index.ts` (nouveau)
-- `src/components/admin/marche-events/InvitedReadersTab.tsx`
-- éventuellement `src/components/admin/marche-events/InviteReaderDialog.tsx` pour l’invalidation finale
+```text
+- if (isLoading || (user && !isAdminChecked)) → spinner
+- else if (!user || !isAdmin)                 → écran login
+- else                                         → children
+```
 
-Aucune modification de données existantes n’est nécessaire. Le problème est un problème de **canal de lecture admin côté client**, pas de base.
+Ainsi le formulaire de login ne s'affiche jamais pendant qu'on attend la confirmation du rôle admin.
+
+### 3. `src/pages/AdminLogin.tsx` — même garde
+
+Aligner sur la même logique : `isLoading || (user && !isAdminChecked)` → spinner ; ne rediriger vers `/admin` que lorsque `isAdminChecked && isAdmin`.
+
+### 4. Vérification
+
+- Recharger `/access-admin-gb2025` à froid : on doit voir uniquement le spinner puis le contenu admin.
+- Naviguer Index → `/access-admin-gb2025` → "Événements" → un événement → retour : aucun flash de l'écran de login à aucun moment.
+- Inspecter la console : plus de cycle `is_admin_user` redondant sur chaque navigation.
+
+## Fichiers touchés
+
+- `src/contexts/AuthContext.tsx` (logique de dédup et conservation d'`isAdmin` au refresh)
+- `src/components/AdminAuth.tsx` (gating spinner vs login)
+- `src/pages/AdminLogin.tsx` (gating cohérent)
+
+Aucun changement SQL, aucune nouvelle edge function.
