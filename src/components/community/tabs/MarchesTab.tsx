@@ -85,7 +85,8 @@ const EventCard: React.FC<{
   index: number;
   registeringId: string | null;
   onRegister: (id: string) => void;
-}> = ({ event, isRegistered, index, registeringId, onRegister }) => {
+  inviterPrenom?: string | null;
+}> = ({ event, isRegistered, index, registeringId, onRegister, inviterPrenom }) => {
   const typeMeta = getMarcheEventTypeMeta(event.event_type);
   const descText = event.description ? stripHtml(event.description) : null;
 
