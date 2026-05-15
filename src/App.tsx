@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClient } from './lib/queryClient';
 import { AudioProvider } from './contexts/AudioContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AdminAuth from './components/AdminAuth';
@@ -86,10 +87,11 @@ import { CommunityChatBotMount } from './components/chatbot/CommunityChatBotMoun
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-      <LanguageProvider>
-        <AudioProvider>
-          <BrowserRouter>
+      <AuthProvider>
+        <ThemeProvider>
+        <LanguageProvider>
+          <AudioProvider>
+            <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
@@ -293,10 +295,11 @@ function App() {
           <AdminChatBotMount />
           <CommunityChatBotMount />
           <Toaster position="top-right" />
-          </BrowserRouter>
-        </AudioProvider>
-      </LanguageProvider>
-      </ThemeProvider>
+            </BrowserRouter>
+          </AudioProvider>
+        </LanguageProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

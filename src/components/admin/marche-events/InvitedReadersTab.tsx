@@ -41,10 +41,10 @@ const STATUS_META: Record<InvitedReader['status'], { label: string; className: s
 
 const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTitle }) => {
   const queryClient = useQueryClient();
-  const { user, isAdmin, isAdminChecked, isLoading: authLoading } = useAuth() as any;
+  const { user, isAdmin, isAdminChecked, isLoading: authLoading } = useAuth();
   const authReady = !authLoading && isAdminChecked && !!user && isAdmin;
 
-  const { data, isLoading, isFetching, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['event-invited-readers', eventId],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('list_event_invited_readers', { _event_id: eventId });
@@ -54,7 +54,8 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
     enabled: !!eventId && authReady,
     staleTime: 0,
     refetchOnMount: 'always',
-    retry: 1,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 4000),
   });
 
   const promote = useMutation({
@@ -100,6 +101,11 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
               ? "Vous n'avez pas les droits nécessaires."
               : 'Réessayez dans un instant.'}
           </p>
+          <div className="mt-4">
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Réessayer
+            </Button>
+          </div>
         </Card>
       ) : rows.length === 0 ? (
         <Card className="p-8 text-center border-dashed">

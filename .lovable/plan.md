@@ -1,32 +1,46 @@
-## Ce qui se passe
-- Vincent Levavasseur est bien enregistré en base pour l’événement actuel `f6095e8d-44a8-4156-951f-dd604b821603` (« DEVIAT / Jardin Monde du 11.03.26 à aujourd'hui »).
-- Donc l’ajout fonctionne.
-- Le problème est sur le rechargement de la liste : le RPC `list_event_invited_readers(...)` peut repartir dans un état auth/admin transitoire et répondre `forbidden`, ce qui affiche le faux message « Impossible de charger les Lecteurs invités ».
-- J’ai aussi confirmé qu’un diagnostic précédent regardait un autre événement (`df85910e-82da-4ef7-98d2-d4c827d1d0ec`) ; ce n’est plus le cas ici.
+## Diagnostic
+
+Vincent Levavasseur **est bien dans la base** pour l'événement `df85910e` (DEVIAT Le Réveil de la Terre), inséré à 07:04. Le RPC `list_event_invited_readers` le retourne correctement. Les logs auth montrent **5+ appels concurrents à `/auth/v1/user`** par chargement de page : c'est la signature de plusieurs instances `useAuth()` qui font chacune leur propre `getSession` + `getUser` + `is_admin_user` en parallèle.
+
+Conséquence pour `InvitedReadersTab` :
+- Chaque `useAuth()` a son **propre `useState`** → race conditions entre instances.
+- `is_admin_user` peut transitoirement échouer (ou retourner `false`) pendant la course → `enabled` reste à false, ou bien la query part puis retombe en erreur.
+- `retry: 1` ne suffit pas : après une erreur transitoire on tombe sur le message "Impossible de charger… Réessayez dans un instant" et l'utilisateur reste bloqué.
+
+C'est un problème **transverse** : il touchera aussi `useCanUseContextualChat`, `MarcheursTab`, `AdminAuth`, etc. dès qu'on ajoutera des composants admin sensibles.
 
 ## Plan
-1. Stabiliser le rechargement de la liste des Lecteurs
-   - Supprimer le refetch forcé déclenché juste après l’ajout dans `InviteReaderDialog`.
-   - Garder une invalidation simple du cache pour laisser `InvitedReadersTab` refetcher seulement quand sa garde auth/admin est réellement prête.
 
-2. Durcir `InvitedReadersTab`
-   - Empêcher tout affichage d’erreur tant que la session/admin n’est pas complètement résolue.
-   - Ne montrer l’état d’erreur que pour une vraie erreur après auth stabilisée.
-   - Conserver l’actualisation immédiate visuelle de la liste une fois l’invalidation terminée.
+### 1. Transformer `useAuth` en singleton via Context (cœur du fix)
+- Créer `src/contexts/AuthContext.tsx` qui :
+  - Expose le **même provider** englobant déjà l'app (à monter dans `main.tsx` ou `App.tsx`, juste sous `QueryClientProvider`).
+  - Contient **une seule** instance de la logique actuelle (`getSession`, `onAuthStateChange`, `validateAndSetUser`, `checkAdminStatus`).
+  - Expose `user, session, isLoading, isAdmin, isAdminChecked, signIn, signUp, signOut, resetPassword`.
+- Réécrire `src/hooks/useAuth.ts` en un simple `useContext(AuthContext)` (avec garde si provider absent).
+- Aucun changement d'API publique → les 13 fichiers consommateurs continuent de fonctionner sans édition.
 
-3. Fiabiliser la source d’état admin
-   - Vérifier et ajuster `useAuth` pour éviter les états intermédiaires où `isLoading` passe à `false` avant que `isAdmin` soit confirmé.
-   - Si nécessaire, séparer clairement « session chargée » et « statut admin vérifié » pour que les composants RPC admin attendent le bon signal.
+Effets immédiats :
+- 1 seul appel `getUser` + 1 seul appel `is_admin_user` par session.
+- `isAdminChecked` passe à `true` une seule fois pour toute l'arbre → fin des courses.
 
-4. Validation ciblée
-   - Rejouer le cas exact de l’événement DEVIAT / Jardin Monde.
-   - Vérifier les 2 cas attendus :
-     - Vincent apparaît immédiatement dans la liste.
-     - Aucun message « Impossible de charger les Lecteurs invités » n’apparaît après ajout ou au rechargement de l’onglet.
+### 2. Durcir `InvitedReadersTab` (ceinture + bretelles)
+- Garder `authReady = !authLoading && isAdminChecked && !!user && isAdmin`.
+- Passer `retry: 3` avec `retryDelay: attempt => Math.min(500 * 2**attempt, 4000)` pour absorber un transitoire RPC.
+- Ajouter un **bouton "Réessayer"** dans la carte d'erreur qui appelle `refetch()` (au lieu de laisser l'utilisateur recharger toute la page).
+- Après ajout d'un Lecteur via `InviteReaderDialog`, conserver le simple `invalidateQueries` (déjà en place).
+
+### 3. Validation
+- Recharger l'écran de l'événement `df85910e` et vérifier que Vincent apparaît dans l'onglet Lecteurs.
+- Vérifier que l'événement `f6095e8d` (Jardin Monde) liste aussi Vincent.
+- Vérifier que l'ajout d'un nouveau Lecteur sur un 3e événement met à jour la liste sans message d'erreur.
+- Vérifier dans le réseau qu'il n'y a plus que **1 seul** appel `/user` et **1 seul** appel `is_admin_user` au chargement.
 
 ## Détails techniques
-- Fichiers visés :
-  - `src/components/admin/marche-events/InviteReaderDialog.tsx`
-  - `src/components/admin/marche-events/InvitedReadersTab.tsx`
-  - potentiellement `src/hooks/useAuth.ts`
-- Aucun changement SQL ne semble nécessaire à ce stade : la donnée est bien écrite, c’est le flux frontend/auth qui est instable.
+
+Fichiers touchés :
+- **Créé** : `src/contexts/AuthContext.tsx` (provider + context)
+- **Réécrit** : `src/hooks/useAuth.ts` (devient un wrapper `useContext`)
+- **Édité** : `src/main.tsx` ou `src/App.tsx` (monter `<AuthProvider>`)
+- **Édité** : `src/components/admin/marche-events/InvitedReadersTab.tsx` (retry agressif + bouton Réessayer)
+
+Aucune migration SQL nécessaire — la base et les RPC sont OK.
