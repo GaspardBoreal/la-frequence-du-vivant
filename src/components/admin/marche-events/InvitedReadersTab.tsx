@@ -44,7 +44,7 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
   const { user, isAdmin, isAdminChecked, isLoading: authLoading } = useAuth();
   const authReady = !authLoading && isAdminChecked && !!user && isAdmin;
 
-  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['event-invited-readers', eventId],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('list_event_invited_readers', { _event_id: eventId });
