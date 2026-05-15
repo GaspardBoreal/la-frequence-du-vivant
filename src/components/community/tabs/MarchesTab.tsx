@@ -342,6 +342,7 @@ const PastEventsMap: React.FC<{ events: PastEvent[]; participantCounts: Record<s
 const MarchesTab: React.FC<MarchesTabProps> = ({
   userId, upcomingEvents, participations, registeredEventIds,
   pastEvents = [], pastParticipantCounts = {},
+  invitedEvents = [], registeredFromInvitation,
 }) => {
   const [registeringId, setRegisteringId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -358,6 +359,7 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
       } else {
         toast.success('Inscription confirmée ! 🌿 À bientôt sur les sentiers');
         queryClient.invalidateQueries({ queryKey: ['community-participations'] });
+        queryClient.invalidateQueries({ queryKey: ['community-invited-events'] });
       }
     } catch (e: any) {
       toast.error(e.message || "Erreur lors de l'inscription");
@@ -366,12 +368,23 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
     }
   };
 
+  // Invitations en attente : invité, pas encore inscrit, à venir
+  const todayMs = useMemo(() => new Date().setHours(0, 0, 0, 0), []);
+  const pendingInvitations = useMemo(
+    () => invitedEvents
+      .filter(i => !registeredEventIds.has(i.event_id))
+      .filter(i => new Date(i.event.date_marche).getTime() >= todayMs)
+      .sort((a, b) => new Date(a.event.date_marche).getTime() - new Date(b.event.date_marche).getTime()),
+    [invitedEvents, registeredEventIds, todayMs]
+  );
+  const pendingInvitedIds = useMemo(() => new Set(pendingInvitations.map(i => i.event_id)), [pendingInvitations]);
+
   const myEvents = upcomingEvents
     .filter(e => registeredEventIds.has(e.id))
     .sort((a, b) => new Date(a.date_marche).getTime() - new Date(b.date_marche).getTime());
 
   const discoverEvents = upcomingEvents
-    .filter(e => !registeredEventIds.has(e.id))
+    .filter(e => !registeredEventIds.has(e.id) && !pendingInvitedIds.has(e.id))
     .sort((a, b) => new Date(a.date_marche).getTime() - new Date(b.date_marche).getTime());
 
   return (
