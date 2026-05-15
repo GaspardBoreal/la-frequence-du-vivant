@@ -19,6 +19,7 @@ import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
+import TrophicChainPanel from './synthese/TrophicChainPanel';
 
 type SubTab = 'synthese' | 'taxons' | 'indicateurs' | 'temoignages' | 'textes' | 'analyse';
 
