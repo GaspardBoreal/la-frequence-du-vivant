@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Info, Sparkles, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import {
   TROPHIC_LEVELS,
   DECOMPOSER_META,
@@ -9,7 +9,7 @@ import {
   type TrophicGroup,
 } from '@/lib/trophicClassification';
 import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
-import { SpeciesName } from '@/components/species/SpeciesName';
+import { DefaultPanel, LevelPanel, SelectedStarPanel } from './_panels';
 
 interface Props {
   chain: TrophicChainResult;
