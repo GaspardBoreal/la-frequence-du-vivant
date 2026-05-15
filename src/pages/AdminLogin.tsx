@@ -5,10 +5,10 @@ import { useAdminInitialization } from '@/hooks/useAdminInitialization';
 import AdminAuth from '@/components/AdminAuth';
 
 const AdminLogin: React.FC = () => {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isAdminChecked, isLoading } = useAuth();
   const { isInitialized, isLoading: initLoading } = useAdminInitialization();
 
-  if (isLoading || initLoading) {
+  if (isLoading || initLoading || (user && !isAdminChecked)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>

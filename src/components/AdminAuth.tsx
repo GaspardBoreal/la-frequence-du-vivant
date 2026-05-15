@@ -12,7 +12,7 @@ interface AdminAuthProps {
 }
 
 const AdminAuth: React.FC<AdminAuthProps> = ({ children }) => {
-  const { user, isLoading, isAdmin, signIn, signOut, resetPassword } = useAuth();
+  const { user, isLoading, isAdmin, isAdminChecked, signIn, signOut, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -46,7 +46,9 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ children }) => {
     await signOut();
   };
 
-  if (isLoading) {
+  // Show spinner while: initial auth loading, OR a user exists but admin status not yet confirmed.
+  // This prevents the login form from briefly flashing during route changes / token refresh.
+  if (isLoading || (user && !isAdminChecked)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
