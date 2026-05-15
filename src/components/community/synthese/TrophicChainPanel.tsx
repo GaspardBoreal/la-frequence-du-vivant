@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Network, Sparkles, GitBranch, Info } from 'lucide-react';
+import { Network, Sparkles, GitBranch, Info, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useTrophicChain, type TrophicSpeciesInput } from '@/hooks/useTrophicChain';
 import { TROPHIC_LEVELS, DECOMPOSER_META } from '@/lib/trophicClassification';
