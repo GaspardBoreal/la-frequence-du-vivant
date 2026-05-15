@@ -243,39 +243,126 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
               >
                 {clusters.map((c, idx) => {
                   if (!c.centroid) return null;
-                  const sample = c.attributions[0];
+                  // Photos disponibles dans ce cluster (issues des marcheur_observations)
+                  const clusterPhotos = c.attributions
+                    .map((a) => ({
+                      url: (a as any).photoUrl as string | undefined,
+                      href: (a as any).originalUrl as string | undefined,
+                      date: a.date,
+                      observer: a.observerName,
+                    }))
+                    .filter((p) => !!p.url) as Array<{ url: string; href?: string; date?: string | null; observer?: string | null }>;
+                  // Fallback : si aucune photo attribuée, on tape dans le pool global de l'espèce
+                  const fallbackPhoto = clusterPhotos.length === 0 ? photos[0] : undefined;
+                  // Métadonnées agrégées (date la plus récente, observateurs uniques)
+                  const sortedDates = c.attributions
+                    .map((a) => a.date)
+                    .filter(Boolean)
+                    .sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime());
+                  const latestDate = sortedDates[0];
+                  const observersSet = new Set(
+                    c.attributions.map((a) => a.observerName).filter(Boolean) as string[],
+                  );
+                  const observersLabel =
+                    observersSet.size === 1
+                      ? Array.from(observersSet)[0]
+                      : `${observersSet.size} observateurs`;
+                  const firstInatLink = c.attributions.find((a) => (a as any).originalUrl) as any;
                   return (
                     <Marker
                       key={idx}
                       position={[c.centroid.lat, c.centroid.lng]}
                       icon={buildPulseIcon(c.count)}
                     >
-                      <Popup>
-                        <div className="text-xs space-y-1 min-w-[180px]">
-                          <p className="font-semibold flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-emerald-500" />
-                            {c.count} observation{c.count > 1 ? 's' : ''}
-                          </p>
-                          {sample.date && (
-                            <p className="flex items-center gap-1 text-muted-foreground">
-                              <Calendar className="w-3 h-3" /> {formatDate(sample.date)}
+                      <Popup maxWidth={320} minWidth={240}>
+                        <div className="space-y-2 min-w-[220px] max-w-[300px]">
+                          {/* Bandeau photos */}
+                          {clusterPhotos.length > 0 ? (
+                            clusterPhotos.length === 1 ? (
+                              <a
+                                href={clusterPhotos[0].href || clusterPhotos[0].url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="block relative rounded-lg overflow-hidden border border-emerald-500/20 group"
+                              >
+                                <img
+                                  src={clusterPhotos[0].url}
+                                  alt=""
+                                  className="w-full h-36 object-cover transition-transform duration-700 group-hover:scale-105"
+                                  loading="lazy"
+                                />
+                                <div className="absolute inset-x-0 bottom-0 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent">
+                                  <span className="text-[10px] text-white/90 flex items-center gap-1">
+                                    <Camera className="w-2.5 h-2.5" /> Photo du marcheur
+                                  </span>
+                                </div>
+                              </a>
+                            ) : (
+                              <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 snap-x">
+                                {clusterPhotos.map((p, i) => (
+                                  <a
+                                    key={i}
+                                    href={p.href || p.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="relative shrink-0 w-20 h-20 rounded-md overflow-hidden border border-emerald-500/20 snap-start group"
+                                  >
+                                    <img
+                                      src={p.url}
+                                      alt=""
+                                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                      loading="lazy"
+                                    />
+                                  </a>
+                                ))}
+                              </div>
+                            )
+                          ) : fallbackPhoto ? (
+                            <div className="relative rounded-lg overflow-hidden border border-border/50">
+                              <img
+                                src={fallbackPhoto}
+                                alt=""
+                                className="w-full h-32 object-cover opacity-80"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-x-0 bottom-0 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent">
+                                <span className="text-[10px] text-white/80">Photo générique de l'espèce</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="h-16 rounded-md border border-dashed border-border/60 flex items-center justify-center text-[10px] text-muted-foreground gap-1">
+                              <Camera className="w-3 h-3" /> Pas de photo disponible
+                            </div>
+                          )}
+
+                          {/* Métadonnées */}
+                          <div className="space-y-1 text-xs">
+                            <p className="font-semibold flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-emerald-500" />
+                              {c.count} observation{c.count > 1 ? 's' : ''}
                             </p>
-                          )}
-                          {sample.observerName && (
-                            <p className="flex items-center gap-1 text-muted-foreground">
-                              <User className="w-3 h-3" /> {sample.observerName}
-                            </p>
-                          )}
-                          {(sample as any).originalUrl && (
-                            <a
-                              href={(sample as any).originalUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-emerald-500 hover:underline"
-                            >
-                              Voir sur iNaturalist <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
+                            {latestDate && (
+                              <p className="flex items-center gap-1 text-muted-foreground">
+                                <Calendar className="w-3 h-3" /> {formatDate(latestDate)}
+                              </p>
+                            )}
+                            {observersSet.size > 0 && (
+                              <p className="flex items-center gap-1 text-muted-foreground truncate">
+                                <User className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{observersLabel}</span>
+                              </p>
+                            )}
+                            {firstInatLink?.originalUrl && (
+                              <a
+                                href={firstInatLink.originalUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-emerald-500 hover:underline pt-0.5"
+                              >
+                                Voir sur iNaturalist <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </Popup>
                     </Marker>
