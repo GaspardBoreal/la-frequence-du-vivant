@@ -167,6 +167,19 @@ const MarchesDuVivantMonEspace = () => {
   const registeredEventIds = new Set(participations.map(p => p.marche_event_id));
   const pendingCount = participations.filter(p => !p.validated_at).length;
 
+  // Mémo dérivés depuis les invitations
+  const todayMs = new Date().setHours(0, 0, 0, 0);
+  const registeredFromInvitation = new Map<string, string | null>();
+  const silentInvitations: typeof invitedEvents = [];
+  for (const inv of invitedEvents) {
+    if (registeredEventIds.has(inv.event_id)) {
+      // l'utilisateur a accepté l'invitation (manuellement ou via promotion)
+      registeredFromInvitation.set(inv.event_id, inv.invited_by_prenom);
+    } else if (new Date(inv.event.date_marche).getTime() < todayMs) {
+      silentInvitations.push(inv);
+    }
+  }
+
   const renderTab = () => {
     switch (activeTab) {
       case 'accueil':
