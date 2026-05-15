@@ -137,7 +137,7 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-3xl p-0 overflow-y-auto bg-gradient-to-b from-background via-background to-emerald-950/10"
+        className="w-full sm:max-w-3xl p-0 overflow-y-auto bg-gradient-to-b from-background via-background to-emerald-950/10 [&>button]:hidden"
       >
         <style>{`
           @keyframes pingHalo {
