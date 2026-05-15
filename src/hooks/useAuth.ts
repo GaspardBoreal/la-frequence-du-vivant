@@ -8,6 +8,7 @@ interface AuthState {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isAdminChecked: boolean;
 }
 
 export const useAuth = () => {
@@ -15,7 +16,8 @@ export const useAuth = () => {
     user: null,
     session: null,
     isLoading: true,
-    isAdmin: false
+    isAdmin: false,
+    isAdminChecked: false,
   });
 
   useEffect(() => {
