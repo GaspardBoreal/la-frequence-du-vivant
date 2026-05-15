@@ -140,6 +140,13 @@ const EventCard: React.FC<{
           </div>
         )}
 
+        {isRegistered && inviterPrenom && (
+          <div className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200">
+            <Mail className="h-3 w-3" />
+            Sur invitation de {inviterPrenom}
+          </div>
+        )}
+
         {isRegistered ? (
           <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs bg-emerald-100 dark:bg-emerald-500/10 rounded-full px-2.5 py-1 w-fit">
             <CheckCircle2 className="w-3.5 h-3.5" />
