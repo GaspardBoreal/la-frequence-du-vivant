@@ -4553,6 +4553,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_existing_reader_to_event: {
+        Args: { _event_id: string; _user_id: string }
+        Returns: Json
+      }
       admin_list_marcheur_species_tags: {
         Args: {
           _label_query?: string
@@ -5079,6 +5083,16 @@ export type Database = {
           p_user_id: string
         }
         Returns: number
+      }
+      search_community_profiles_for_invite: {
+        Args: { _event_id: string; _search: string }
+        Returns: {
+          avatar_url: string
+          email: string
+          nom: string
+          prenom: string
+          user_id: string
+        }[]
       }
       set_species_translation_manual: {
         Args: { _common_name_fr: string; _scientific_name: string }
