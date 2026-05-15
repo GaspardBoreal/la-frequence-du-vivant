@@ -559,7 +559,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             </div>
             <h3 className="text-foreground text-sm font-semibold mb-1">Analyse écologique IA</h3>
             <p className="text-muted-foreground text-xs max-w-xs leading-relaxed">
-              L'intelligence artificielle analysera bientôt la richesse écologique de cet événement : indices de diversité, espèces remarquables, corridors biologiques et recommandations.
+              Lorsque vous aurez atteint les 100 espèces identifiées, l'intelligence artificielle des Marches du Vivant analysera alors la richesse écologique de ce territoire : indices de diversité, espèces remarquables, corridors biologiques, chaîne trophique ... et recommandations pour développer la biodiversité locale.
             </p>
             <div className="mt-4 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
               <span className="text-violet-600 dark:text-violet-400 text-[10px] font-medium">Bientôt disponible</span>
