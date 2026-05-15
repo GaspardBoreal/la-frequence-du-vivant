@@ -1,111 +1,90 @@
 ## Objectif
 
-Dans le drawer "Éditer la fiche marcheur" (/admin/community), ajouter une section permettant de consulter **tous les événements** sur lesquels l'utilisateur est :
-- **Participant** (table `marche_participations`)
-- **Invité** (table `event_invited_readers`, source `manuel` ou `invitation`)
+Aujourd'hui, Vincent (et tout marcheur) voit deux blocs : « Mes aventures à venir » (inscrit) et « Sentiers à explorer » (tout le reste). Les **invitations personnelles** (table `event_invited_readers`) sont totalement invisibles côté marcheur. Il faut révéler ce 3ᵉ état avec une UX qui donne envie, en jouant sur la **différence de chaleur** entre « invité personnellement » et « ouvert à tous ».
 
-## Proposition UX/UI
+## Trois états canoniques
 
-Une nouvelle section "**Événements**" insérée après "Relation au vivant" dans le `MarcheurEditSheet`, structurée en :
+| État | Source | Statut visuel | Action principale |
+|---|---|---|---|
+| **Inscrit** ✅ | `marche_participations` | vert émeraude, pastille pleine, badge « Vous êtes attendu » | Préparer la marche |
+| **Invité personnellement** ✉️ | `event_invited_readers` (sans participation) | ambre/doré, halo doux, ruban « Invitation personnelle » | Accepter l'invitation |
+| **À découvrir** 🧭 | public, ni inscrit ni invité | neutre/sobre, pastille creuse | S'inscrire à cette aventure |
 
-### 1. Bandeau récapitulatif (compact, lisible d'un coup d'œil)
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│  ÉVÉNEMENTS                                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
-│  │ 12           │  │ 4            │  │ 2            │   │
-│  │ Participant  │  │ Invité       │  │ À venir      │   │
-│  └──────────────┘  └──────────────┘  └──────────────┘   │
-└─────────────────────────────────────────────────────────┘
-```
-
-Trois petites cartes (style cohérent avec le reste du drawer, glassmorphism dark) : compteurs Participant / Invité / À venir.
-
-### 2. Onglets segmentés "Tous · Participant · Invité"
-
-Sous le bandeau, un sélecteur segmenté (Tabs shadcn) avec un badge compteur sur chaque onglet.
-
-### 3. Liste timeline chronologique (la plus récente en haut)
-
-Chaque ligne = un événement, format dense mais lisible :
+## Onglet « Marches » — réorganisation en 3 sections
 
 ```text
-┌────────────────────────────────────────────────────────┐
-│ ●  12 mai 2026 · à venir          [Participant]        │
-│    Laboratoire à Ciel Ouvert : Biodiversité & Sols…    │
-│    📍 Bordeaux  ·  Exploration Dordogne                │
-│                                              [Ouvrir →]│
-├────────────────────────────────────────────────────────┤
-│ ○  03 mars 2026 · passé           [Invité · manuel]    │
-│    Marche éco-poétique à Libourne                      │
-│    📍 Libourne  ·  Invité par Sophie M.                │
-│                                              [Ouvrir →]│
-└────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────┐
+│ ✨ Mes aventures à venir                           │  ← inscrit
+│   [carte verte · "Inscrit" · contre-J / lieu]      │
+├────────────────────────────────────────────────────┤
+│ ✉️ Vous êtes invité·e          (NOUVEAU)           │  ← invité non-inscrit
+│   [carte ambre · "Invitation personnelle" · qui    │
+│    vous invite + petit mot · CTA Accepter]         │
+├────────────────────────────────────────────────────┤
+│ 🧭 Sentiers à explorer                             │  ← public
+│   [carte sobre · CTA S'inscrire]                   │
+├────────────────────────────────────────────────────┤
+│ 👣 Empreintes passées                              │  ← inchangé
+└────────────────────────────────────────────────────┘
 ```
 
-Codes visuels :
-- **Pastille pleine ●** = Participant validé · **pastille vide ○** = Invité (lecture seule)
-- **Badge couleur** : Participant (emerald), Invité (amber)
-- **État temporel** discret : "à venir" / "aujourd'hui" / "passé" (texte muted)
-- Ligne secondaire : lieu + exploration (ou nom de l'inviteur pour les invitations)
-- Bouton **[Ouvrir →]** : navigue vers `/admin/marche-events?event=<id>` dans un nouvel onglet (pas de fermeture du drawer)
+### Section nouvelle « Vous êtes invité·e » — détails wahouhh
 
-### 4. États vides et erreurs
+- **Carte ambrée** avec un léger halo `shadow-[0_0_24px_-8px_hsl(var(--amber)/0.4)]` et bordure dégradée.
+- **Ruban d'angle** : « Invitation personnelle » (icône `MailOpen`).
+- **Ligne d'accroche** : *« Camille vous a invité·e à cheminer sur ce sentier »* (prénom de l'inviteur récupéré côté hook).
+- **Compteur narratif** : « Réponse attendue avant le 30 juin · J-12 » (calculé sur `date_marche`).
+- **Double CTA** :
+  - 🌿 *Accepter et m'inscrire* (primary) — promeut l'invitation en participation.
+  - 🤔 *Plus tard* (ghost) — laisse l'invitation visible.
+- **Micro-animation** au mount : fade-in + lift, plus un *shimmer* doré subtil qui passe une fois sur le ruban.
+- **Empty state** : section masquée s'il n'y a aucune invitation (pas de bruit visuel).
 
-- Vide : "Cette personne n'est inscrite à aucun événement pour le moment."
-- Loading : 3 skeleton rows.
-- Erreur : message + bouton retry.
+### Section « Mes aventures à venir » — léger enrichissement
+
+- Si l'inscription **provient d'une invitation acceptée** (`promoted_to_participant_at` non null), afficher un mini chip discret « ✉️ Sur invitation de Camille » sous la date — preuve sociale chaleureuse, sans dupliquer la carte.
+
+### Section « Sentiers à explorer »
+
+- Inchangée visuellement, mais **les invités sont retirés** de cette liste (sinon double affichage).
+
+## Onglet « Carnet » — rappel temporel des invitations
+
+Le Carnet est l'espace mémoire. Y intégrer une **frise filtrable** des marches par relation :
+
+- En tête du Carnet : 3 micro-onglets segmentés *Toutes · Vécues · Invitations restées en silence*.
+- **« Invitations restées en silence »** = invitations passées non honorées (date_marche < today, pas de participation). Ton délicat, non culpabilisant : *« Ces sentiers vous attendaient. Ils repasseront. »* — laisse une trace douce et permet à l'admin/ambassadeur de mesurer l'engagement implicite.
+- Pour chaque entrée : pastille couleur (vert vécu / ambre invité / gris public) cohérente avec l'onglet Marches.
+
+## Données — un seul nouveau hook
+
+Créer `useCommunityInvitedEvents(userId)` qui interroge `event_invited_readers` avec join `marche_events` + nom de l'inviteur (via `event_invitations.invited_by_user_id` → `community_profiles.prenom`, ou `added_by_user_id`).
+Renvoie `{ event, invitedByPrenom, inviteSource, invitationId, isPromoted, isPast }[]`.
+
+`MarchesDuVivantMonEspace` dérive ensuite :
+- `invitedUpcoming` = invités non promus, date ≥ today
+- `invitedPast` = invités non promus, date < today  (pour Carnet)
+- `registeredFromInvitation` = `Map<eventId, prenom>` pour décorer la section Inscrit
+
+## Action « Accepter et m'inscrire »
+
+Réutiliser le flow existant `marche_participations.insert(...)`. Au succès, le trigger côté DB met déjà `promoted_to_participant_at`. Côté front : `invalidateQueries` sur `community-participations` + `community-invited-events`. La carte ambre disparaît avec une transition `AnimatePresence` et **réapparaît dans « Mes aventures à venir »** avec un highlight d'1,5 s — l'utilisateur voit le passage de l'invitation à l'inscription.
 
 ## Détails techniques
 
-### Données
+- **Fichiers à créer** :
+  - `src/hooks/useCommunityInvitedEvents.ts`
+  - `src/components/community/marches/InvitedEventCard.tsx`
+- **Fichiers à modifier** :
+  - `src/components/community/tabs/MarchesTab.tsx` (nouvelle section + filtre des invités hors « Sentiers à explorer » + chip « sur invitation » dans Inscrit)
+  - `src/components/community/tabs/CarnetTab.tsx` + `CarnetVivant` (segmented filter + section silencieuse)
+  - `src/pages/MarchesDuVivantMonEspace.tsx` (brancher le hook, passer `invitedUpcoming` et `registeredFromInvitation` à `MarchesTab`)
+- **Aucun changement SQL** : tables `event_invited_readers`, `event_invitations`, `marche_participations` suffisent. RLS existante autorise déjà la lecture par le user invité (à confirmer au moment de l'implémentation, sinon RPC `SECURITY DEFINER` minimaliste).
+- **Design tokens** : utiliser `--accent` (ambre) déjà défini, ne pas hardcoder de couleurs. Halo via `shadow` sémantique et `bg-gradient-to-br from-amber-500/10 to-amber-300/5`.
+- **Responsive** : section invitation pleine largeur sur mobile, max 1 carte par ligne ; sur desktop, conserve la même colonne unique pour rester narratif.
 
-Une seule edge function `community-marcheur-events-list` (admin-only, JWT + `is_admin_user` check, pattern identique à `event-invited-readers-list`) qui retourne, pour un `user_id` donné :
+## Ce qui n'est PAS dans le scope
 
-```ts
-type MarcheurEventRow = {
-  event_id: string;
-  title: string;
-  date_marche: string;          // ISO
-  lieu: string | null;
-  exploration_name: string | null;
-  relation: 'participant' | 'invite';
-  invite_source?: 'manuel' | 'invitation';   // si relation = 'invite'
-  invited_by_prenom?: string | null;          // si relation = 'invite'
-  validated_at?: string | null;               // si relation = 'participant'
-  promoted_to_participant_at?: string | null; // si invité promu
-};
-```
-
-L'edge function fait :
-1. `marche_participations` filtré par `user_id` → join `marche_events` (+ explorations).
-2. `event_invited_readers` filtré par `user_id` → join `marche_events` + résolution inviteur via `event_invitations.invited_by_user_id` ou `added_by_user_id`.
-3. Fusion + tri par `date_marche desc`. Déduplication : si une personne a été invitée puis promue Participant, on ne garde que la ligne Participant (mais on indique "promu invité" en tag discret).
-
-### Composants
-
-- `src/components/admin/community/MarcheurEventsSection.tsx` — section complète (cartes stats + tabs + liste).
-- `src/components/admin/community/MarcheurEventRow.tsx` — ligne d'événement réutilisable.
-- `src/hooks/useMarcheurEvents.ts` — `useQuery(['marcheur-events', userId])`, `enabled: !!userId && open`.
-- Edge function : `supabase/functions/community-marcheur-events-list/index.ts`.
-
-### Intégration dans MarcheurEditSheet
-
-Ajout d'une nouvelle section dans le `SheetContent` après "Relation au vivant", avant les boutons d'action. Le contenu est lazy : la query ne se lance que quand `open === true` et qu'on a un `profile.user_id`. Pas de refetch sur édition du formulaire (cache 60s).
-
-### Sécurité
-
-- Edge function exige header `Authorization` + valide `is_admin_user(auth.uid())` (RPC existante).
-- Si non admin → 403 `forbidden`.
-- Aucune donnée PII supplémentaire renvoyée que celles déjà accessibles à l'admin.
-
-## Fichiers touchés
-
-- **Créer** : `supabase/functions/community-marcheur-events-list/index.ts`
-- **Créer** : `src/hooks/useMarcheurEvents.ts`
-- **Créer** : `src/components/admin/community/MarcheurEventsSection.tsx`
-- **Créer** : `src/components/admin/community/MarcheurEventRow.tsx`
-- **Éditer** : `src/components/admin/community/MarcheurEditSheet.tsx` (insertion de la section)
-
-Aucune migration SQL nécessaire — toutes les tables (`marche_participations`, `event_invited_readers`, `event_invitations`, `marche_events`, `explorations`, `community_profiles`) existent déjà.
+- Pas de notification mail/push (le déclenchement d'invitation est admin-only et reste côté admin).
+- Pas de modification du back-office admin (déjà traité dans le drawer Marcheur).
+- Pas de système de réponse « Je décline » — l'invitation reste simplement non-acceptée jusqu'à la date.
