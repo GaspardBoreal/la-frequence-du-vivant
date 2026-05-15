@@ -41,8 +41,8 @@ const STATUS_META: Record<InvitedReader['status'], { label: string; className: s
 
 const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTitle }) => {
   const queryClient = useQueryClient();
-  const { user, isAdmin, isLoading: authLoading } = useAuth();
-  const authReady = !authLoading && !!user && isAdmin;
+  const { user, isAdmin, isAdminChecked, isLoading: authLoading } = useAuth() as any;
+  const authReady = !authLoading && isAdminChecked && !!user && isAdmin;
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ['event-invited-readers', eventId],
@@ -54,6 +54,7 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
     enabled: !!eventId && authReady,
     staleTime: 0,
     refetchOnMount: 'always',
+    retry: 1,
   });
 
   const promote = useMutation({

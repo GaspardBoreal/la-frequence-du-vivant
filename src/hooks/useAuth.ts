@@ -8,6 +8,7 @@ interface AuthState {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isAdminChecked: boolean;
 }
 
 export const useAuth = () => {
@@ -15,14 +16,15 @@ export const useAuth = () => {
     user: null,
     session: null,
     isLoading: true,
-    isAdmin: false
+    isAdmin: false,
+    isAdminChecked: false,
   });
 
   useEffect(() => {
     // Validate session server-side to avoid stale/ghost sessions
     const validateAndSetUser = async (session: Session | null) => {
       if (!session?.user) {
-        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false });
+        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false, isAdminChecked: true });
         return;
       }
 
@@ -31,7 +33,7 @@ export const useAuth = () => {
       
       if (error || !validatedUser) {
         console.warn('Session expired or invalid, signing out:', error?.message);
-        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false });
+        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false, isAdminChecked: true });
         // Clean up stale local storage
         await supabase.auth.signOut();
         return;
@@ -52,7 +54,7 @@ export const useAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_OUT') {
-          setAuthState({ user: null, session: null, isLoading: false, isAdmin: false });
+          setAuthState({ user: null, session: null, isLoading: false, isAdmin: false, isAdminChecked: true });
           return;
         }
         // Fire and forget to avoid blocking the callback
@@ -71,17 +73,17 @@ export const useAuth = () => {
   const checkAdminStatus = async (userId: string) => {
     try {
       const { data, error } = await supabase.rpc('is_admin_user');
-      
+
       if (error) {
         console.error('Error checking admin status:', error);
-        setAuthState(prev => ({ ...prev, isAdmin: false }));
+        setAuthState(prev => ({ ...prev, isAdmin: false, isAdminChecked: true }));
         return;
       }
 
-      setAuthState(prev => ({ ...prev, isAdmin: !!data }));
+      setAuthState(prev => ({ ...prev, isAdmin: !!data, isAdminChecked: true }));
     } catch (error) {
       console.error('Error checking admin status:', error);
-      setAuthState(prev => ({ ...prev, isAdmin: false }));
+      setAuthState(prev => ({ ...prev, isAdmin: false, isAdminChecked: true }));
     }
   };
 

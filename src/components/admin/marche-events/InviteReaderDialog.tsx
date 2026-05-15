@@ -123,10 +123,9 @@ export const InviteReaderDialog: React.FC<InviteReaderDialogProps> = ({
         toast.info(`${name} est déjà Lecteur invité.`);
       } else {
         toast.success(`${name} ajouté comme Lecteur invité.`);
-        // Refetch explicite pour garantir la mise à jour immédiate de la liste
+        // Invalidation simple : InvitedReadersTab refetchera quand sa garde auth/admin sera prête
         if (invalidateKey) {
-          await queryClient.invalidateQueries({ queryKey: invalidateKey, refetchType: 'all' });
-          await queryClient.refetchQueries({ queryKey: invalidateKey, type: 'all' });
+          await queryClient.invalidateQueries({ queryKey: invalidateKey });
         }
         if (eventId) {
           queryClient.invalidateQueries({ queryKey: ['marche-participations', eventId] });
