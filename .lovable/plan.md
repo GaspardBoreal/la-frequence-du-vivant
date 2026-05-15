@@ -1,93 +1,56 @@
+## Contexte
 
-# Lecteur invité — Plan d'implémentation
+Aujourd'hui, `InviteReaderDialog` ne sait que créer une invitation par email (nouveau compte). Pour un utilisateur déjà inscrit dans `community_profiles`, il n'y a pas de chemin direct : il faudrait lui envoyer un lien token, qu'il consommerait alors qu'il est déjà connecté — friction inutile.
 
-## Vision
+## Objectif
 
-Un marcheur (ou un admin) émet une invitation depuis un événement. Le destinataire reçoit un email avec un **token d'invitation** (30 j, usage unique). À l'inscription, son compte est créé en rôle `marcheur_en_devenir` avec un nouveau **statut `invité`**, et il est rattaché à l'événement source comme **Lecteur invité** (lecture seule). L'admin peut, depuis la fiche événement, le promouvoir en Participant.
+Permettre à l'admin, depuis le même dialogue, de **rattacher directement un marcheur existant** comme « Lecteur invité » d'un événement, sans passer par un token email.
 
----
+## UX proposée
 
-## Étape 1 — Modèle de données
-
-Nouvelles tables / colonnes :
-
-- `event_invitations`
-  - `id`, `event_id` (fk marche_events), `invited_by_user_id`, `invited_email` (lower), `invited_prenom`,
-  - `token` (uuid unique), `expires_at` (default now()+30d), `consumed_at`, `consumed_by_user_id`,
-  - `created_at`.
-- `event_invited_readers` (rattachement effectif après inscription, ou ajout manuel)
-  - `id`, `event_id`, `user_id`, `invitation_id` nullable, `created_at`, `promoted_to_participant_at` nullable.
-  - Unique (`event_id`, `user_id`).
-- `community_profiles.statut` (nouvelle colonne text) — valeurs : `invité`, `marcheur` (défaut). Indépendante du `role` (qui reste `marcheur_en_devenir`).
-
-RLS :
-- `event_invitations` : insert pour marcheur authentifié + admin ; select restreint au créateur ou admin ; UPDATE consumed_at via RPC `consume_event_invitation(token)` SECURITY DEFINER.
-- `event_invited_readers` : select admin + le user concerné + RPC dédiée pour la fiche événement ; insert via RPC consume + admin.
-- Politique de **lecture étendue pour Lecteur invité** : modifier les RLS existantes (marche_events, marches, marcheur_observations, event_testimonies, medias liés, profils participants) pour autoriser SELECT si `EXISTS (event_invited_readers WHERE user_id = auth.uid() AND event_id = X)`. Aucun INSERT/UPDATE/DELETE ajouté pour ce rôle.
-
-Helper SQL : `is_invited_reader(_event_id uuid, _user_id uuid) returns boolean SECURITY DEFINER`.
-
-## Étape 2 — Edge functions
-
-- `event-invitation-create` : auth requis (marcheur/admin), payload `{ event_id?, invited_email, invited_prenom }` → crée row + envoie email transactionnel (via `send-transactional-email`, template `event-reader-invitation`) avec lien `https://app/invitation?token=…`.
-- `event-invitation-consume` : appelé après signup OAuth/email, payload `{ token }` → valide expiration/non-consommé, crée `event_invited_readers`, met `community_profiles.statut='invité'` si pas déjà.
-- `event-invited-reader-promote` (admin) : passe le user en participant via `marche_event_participations` insert + `statut='marcheur'`.
-
-## Étape 3 — UI invitation côté marcheur
-
-Réutiliser le bouton actuel "Inviter un marcheur" (MarcheursTab + admin) :
-- Modal simplifiée : prénom, email, (optionnel) sélection de l'événement source si plusieurs (préselectionné = contexte courant).
-- Submit → `event-invitation-create`. Confirmation discrète + lien copiable.
-
-## Étape 4 — Page publique `/invitation`
-
-- Lecture du `token` en query.
-- Si user non connecté → écran "Vous êtes invité à découvrir l'événement X" + formulaire `prénom + email + mot de passe` (signup) ou bouton "Se connecter".
-- Après auth réussie → appelle `event-invitation-consume`, redirige vers la fiche événement en mode lecture invité.
-- Token invalide/expiré → message clair + CTA contact.
-
-## Étape 5 — Sous-onglets dans `MarcheEventDetail`
-
-Ajouter un Tabs interne au bloc Participants actuel :
+Dans `InviteReaderDialog`, ajouter en haut un toggle à 2 modes :
 
 ```text
-[ Participants (12) ] [ Lecteurs invités (3) ]
+( • ) Marcheur existant     ( ) Nouvelle personne (email)
 ```
 
-Onglet **Lecteurs invités** :
-- Tableau colonnes : Prénom · Nom · Email · Date d'inscription · Statut (Invité / Inscrit) · Source (invitation / ajout manuel) · Invité par · Actions (Promouvoir en Participant, Retirer).
-- Bouton **Ajouter manuellement** : modal prénom+email, checkbox "Envoyer l'email d'invitation".
-- Bouton **Inviter** (réutilise étape 3 pré-rempli avec event courant).
-- Liste alimentée par jointure `event_invited_readers` + `event_invitations` non consommées.
+- **Mode "Marcheur existant"** : un champ de recherche (combobox) qui filtre `community_profiles` par prénom/nom/email. Sélection → bouton « Ajouter comme Lecteur ». Pas d'email envoyé (ou option à cocher pour notifier).
+- **Mode "Nouvelle personne"** : formulaire actuel inchangé (prénom + email + envoi email).
 
-## Étape 6 — Filtres et exclusions
+## Étapes
 
-- `CommunityProfilesAdmin` : ajout d'un filtre statut multi-select `Invité` / `Ayant fait une marche` (basé sur `community_profiles.statut` + EXISTS participations validées).
-- Onglet **Profils** : exclure `statut='invité' AND aucune participation validée` des KPIs et graphes existants (filtre WHERE dans `useCommunityImpactAggregates` + agrégats serveur).
+### 1. Backend — RPC `add_existing_reader_to_event`
+Nouvelle fonction SECURITY DEFINER, admin-only :
+- Input : `_event_id`, `_user_id`
+- Vérifie que l'appelant est admin
+- Vérifie que `_user_id` n'est pas déjà participant validé (sinon retour `already_participant`)
+- Insère dans `event_invited_readers` (ON CONFLICT DO NOTHING) avec `invitation_id = NULL`, `added_by_user_id = auth.uid()`
+- Met `community_profiles.statut = 'invite'` si pas de participation validée
+- Retour JSONB `{ success, already_reader, already_participant }`
 
-## Étape 7 — Permissions runtime
+### 2. Backend — RPC `search_community_profiles_for_invite`
+Admin-only, retourne max 20 profils (id, user_id, prenom, nom, email, avatar_url) filtrés par texte (`ILIKE` sur prenom/nom + email via jointure `auth.users` côté SECURITY DEFINER), excluant ceux déjà readers ou participants de l'événement passé en paramètre.
 
-- Hook `useIsInvitedReaderForEvent(eventId)`.
-- Dans la fiche événement et marches associées, masquer tous les CTA de contribution (upload, témoignage, édition) si invited reader.
-- Bandeau discret "Vous consultez en tant que Lecteur invité — promotion possible auprès de l'organisateur".
+### 3. Edge function — optionnelle
+Pas nécessaire : tout passe par RPC. Pas d'email envoyé par défaut dans ce mode.
 
-## Étape 8 — Promotion par l'admin
+### 4. Frontend — `InviteReaderDialog.tsx`
+- Ajouter un `Tabs` ou `RadioGroup` en haut : "Marcheur existant" / "Nouvelle personne"
+- Mode existant : `Command` (cmdk) avec debounce sur la recherche, appelle `search_community_profiles_for_invite`, affiche avatar + nom + email
+- Bouton « Ajouter comme Lecteur » → appelle `add_existing_reader_to_event`
+- Toast de succès + invalidation de la liste (`invalidateKey`)
+- Gestion des cas : déjà reader (info), déjà participant (warning + propose d'ouvrir l'onglet Participants)
 
-- Action ligne "Promouvoir" → `event-invited-reader-promote` → suppression de `event_invited_readers`, insertion `marche_event_participations` (statut validé), `community_profiles.statut='marcheur'`. Toast + invalidation queries.
-
-## Étape 9 — QA
-
-- Création invitation depuis admin & depuis marcheur.
-- Inscription via lien : token valide, expiré, déjà consommé, email déjà compte existant (alors → seulement rattachement).
-- Lecture des données événement : un Lecteur invité voit synthèse, marches, profils, témoignages ; ne voit aucun CTA d'écriture.
-- Filtres & KPIs : statut Invité visible, indicateurs Profils inchangés.
-- Promotion : statut bascule, fiche bascule sous Participants.
-
----
+### 5. Frontend — `InvitedReadersTab.tsx`
+Aucune modif structurelle : la liste se rafraîchira via `invalidateKey`. Afficher distinctement les readers ajoutés manuellement (badge « Ajouté manuellement » quand `invitation_id IS NULL`).
 
 ## Détails techniques
 
-- Réutilise l'infra `email_domain--scaffold_transactional_email` (template `event-reader-invitation` avec props `{ inviterName, eventTitle?, inviteUrl }`).
-- Table `community_profiles` : `statut` colonne nullable; backfill `statut='marcheur'` pour profils ayant ≥1 participation validée.
-- Pas de breaking change sur URLs publiques.
-- Tous les changements RLS via RPC `is_invited_reader` pour éviter récursion.
+- La table `event_invited_readers` a déjà `invitation_id` nullable et `added_by_user_id` → schéma compatible, **aucune migration de table** n'est nécessaire.
+- Pour la recherche par email, la RPC SECURITY DEFINER lit `auth.users.email` (jointure sur `user_id`) — c'est sûr car la fonction vérifie le rôle admin avant.
+- Limiter la recherche à 20 résultats et exiger au moins 2 caractères pour éviter de scanner toute la table.
+
+## Hors scope
+
+- Notification email au marcheur existant (peut être ajoutée en v2 via un toggle "Prévenir par email").
+- Sélection multiple (pour ajouter plusieurs marcheurs en bloc) — à voir si besoin remonte.
