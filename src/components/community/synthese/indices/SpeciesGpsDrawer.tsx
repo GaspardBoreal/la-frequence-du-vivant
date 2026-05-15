@@ -10,6 +10,7 @@ import { SpeciesName } from '@/components/species/SpeciesName';
 import { countIndividuals, getLatLng, type AttributionLike } from '@/utils/speciesIndividualCount';
 import { RichMap, type MarcheRouteStep } from '@/components/maps';
 import { supabase } from '@/integrations/supabase/client';
+import { useSpeciesMarcheurPhotos, type MarcheurSpeciesPhoto } from '@/hooks/useSpeciesMarcheurPhotos';
 
 interface Props {
   open: boolean;
@@ -133,6 +134,32 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
 
   const cover = photos[0];
 
+  // Source unique de vérité — le même hook que le modal Taxons
+  const { data: fieldPhotos = [] } = useSpeciesMarcheurPhotos(scientificName, explorationId);
+
+  const photosByDateObserver = useMemo(() => {
+    const map = new Map<string, MarcheurSpeciesPhoto[]>();
+    fieldPhotos.forEach((p) => {
+      const dateKey = p.observationDate ? p.observationDate.slice(0, 10) : '';
+      const obsKey = (p.observerName || '').toLowerCase().trim();
+      const k = `${dateKey}|${obsKey}`;
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(p);
+    });
+    return map;
+  }, [fieldPhotos]);
+
+  const photosByDate = useMemo(() => {
+    const map = new Map<string, MarcheurSpeciesPhoto[]>();
+    fieldPhotos.forEach((p) => {
+      const k = p.observationDate ? p.observationDate.slice(0, 10) : '';
+      if (!k) return;
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(p);
+    });
+    return map;
+  }, [fieldPhotos]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -144,10 +171,12 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
             0% { transform: scale(0.7); opacity: 0.9; }
             80%,100% { transform: scale(1.6); opacity: 0; }
           }
+          .leaflet-popup { z-index: 1000 !important; }
           .leaflet-popup-content-wrapper {
             border-radius: 12px;
             background: hsl(var(--card));
             color: hsl(var(--foreground));
+            box-shadow: 0 12px 32px rgba(0,0,0,0.35);
           }
           .leaflet-popup-tip { background: hsl(var(--card)); }
         `}</style>
@@ -243,18 +272,49 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
               >
                 {clusters.map((c, idx) => {
                   if (!c.centroid) return null;
-                  // Photos disponibles dans ce cluster (issues des marcheur_observations)
-                  const clusterPhotos = c.attributions
-                    .map((a) => ({
-                      url: (a as any).photoUrl as string | undefined,
-                      href: (a as any).originalUrl as string | undefined,
-                      date: a.date,
-                      observer: a.observerName,
-                    }))
-                    .filter((p) => !!p.url) as Array<{ url: string; href?: string; date?: string | null; observer?: string | null }>;
-                  // Fallback : si aucune photo attribuée, on tape dans le pool global de l'espèce
-                  const fallbackPhoto = clusterPhotos.length === 0 ? photos[0] : undefined;
-                  // Métadonnées agrégées (date la plus récente, observateurs uniques)
+
+                  // 1. Photos appariées via le hook unifié (même source que Taxons)
+                  //    Match prioritaire date+observateur, fallback date seule
+                  const matched: MarcheurSpeciesPhoto[] = [];
+                  const seen = new Set<string>();
+                  c.attributions.forEach((a) => {
+                    const dateKey = a.date ? a.date.slice(0, 10) : '';
+                    const obsKey = (a.observerName || '').toLowerCase().trim();
+                    const exact = photosByDateObserver.get(`${dateKey}|${obsKey}`) || [];
+                    exact.forEach((p) => {
+                      if (!seen.has(p.url)) { seen.add(p.url); matched.push(p); }
+                    });
+                  });
+                  // Fallback : photos partageant juste la date
+                  if (matched.length === 0) {
+                    c.attributions.forEach((a) => {
+                      const dateKey = a.date ? a.date.slice(0, 10) : '';
+                      const byDate = photosByDate.get(dateKey) || [];
+                      byDate.forEach((p) => {
+                        if (!seen.has(p.url)) { seen.add(p.url); matched.push(p); }
+                      });
+                    });
+                  }
+                  // Fallback ultime : photo attachée directement à l'attribution (chemin marcheur legacy)
+                  if (matched.length === 0) {
+                    c.attributions.forEach((a) => {
+                      const url = (a as any).photoUrl as string | undefined;
+                      if (url && !seen.has(url)) {
+                        seen.add(url);
+                        matched.push({
+                          id: `legacy-${url.slice(-20)}`,
+                          url,
+                          source: 'marcheur',
+                          observerName: a.observerName || 'Marcheur',
+                          observationDate: a.date || undefined,
+                          originalUrl: (a as any).originalUrl,
+                        });
+                      }
+                    });
+                  }
+                  const fallbackPhoto = matched.length === 0 ? photos[0] : undefined;
+
+                  // Métadonnées agrégées
                   const sortedDates = c.attributions
                     .map((a) => a.date)
                     .filter(Boolean)
@@ -268,44 +328,64 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
                       ? Array.from(observersSet)[0]
                       : `${observersSet.size} observateurs`;
                   const firstInatLink = c.attributions.find((a) => (a as any).originalUrl) as any;
+
+                  const sourceBadge = (src: 'marcheur' | 'citizen', name?: string) => (
+                    <span
+                      className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-semibold backdrop-blur-md ${
+                        src === 'marcheur'
+                          ? 'bg-emerald-500/85 text-white'
+                          : 'bg-cyan-500/85 text-white'
+                      }`}
+                    >
+                      {src === 'marcheur' ? '📷 Marcheur' : '🔭 Citoyen'}
+                      {name ? ` · ${name.split(' ')[0]}` : ''}
+                    </span>
+                  );
+
+                  const visible = matched.slice(0, 4);
+                  const extra = matched.length - visible.length;
+
                   return (
                     <Marker
                       key={idx}
                       position={[c.centroid.lat, c.centroid.lng]}
                       icon={buildPulseIcon(c.count)}
                     >
-                      <Popup maxWidth={320} minWidth={240}>
-                        <div className="space-y-2 min-w-[220px] max-w-[300px]">
+                      <Popup
+                        maxWidth={320}
+                        minWidth={260}
+                        autoPan
+                        autoPanPaddingTopLeft={[12, 80] as any}
+                        autoPanPaddingBottomRight={[12, 60] as any}
+                        keepInView
+                      >
+                        <div className="space-y-2 min-w-[240px] max-w-[300px]">
                           {/* Bandeau photos */}
-                          {clusterPhotos.length > 0 ? (
-                            clusterPhotos.length === 1 ? (
+                          {matched.length > 0 ? (
+                            matched.length === 1 ? (
                               <a
-                                href={clusterPhotos[0].href || clusterPhotos[0].url}
+                                href={matched[0].originalUrl || matched[0].url}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="block relative rounded-lg overflow-hidden border border-emerald-500/20 group"
                               >
                                 <img
-                                  src={clusterPhotos[0].url}
+                                  src={matched[0].url}
                                   alt=""
                                   className="w-full h-36 object-cover transition-transform duration-700 group-hover:scale-105"
                                   loading="lazy"
                                 />
-                                <div className="absolute inset-x-0 bottom-0 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent">
-                                  <span className="text-[10px] text-white/90 flex items-center gap-1">
-                                    <Camera className="w-2.5 h-2.5" /> Photo du marcheur
-                                  </span>
-                                </div>
+                                {sourceBadge(matched[0].source, matched[0].observerName)}
                               </a>
                             ) : (
-                              <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 snap-x">
-                                {clusterPhotos.map((p, i) => (
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {visible.map((p, i) => (
                                   <a
-                                    key={i}
-                                    href={p.href || p.url}
+                                    key={p.id}
+                                    href={p.originalUrl || p.url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="relative shrink-0 w-20 h-20 rounded-md overflow-hidden border border-emerald-500/20 snap-start group"
+                                    className="relative aspect-square rounded-md overflow-hidden border border-emerald-500/20 group"
                                   >
                                     <img
                                       src={p.url}
@@ -313,6 +393,12 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
                                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                       loading="lazy"
                                     />
+                                    {sourceBadge(p.source, p.observerName)}
+                                    {i === visible.length - 1 && extra > 0 && (
+                                      <div className="absolute inset-0 bg-black/55 flex items-center justify-center text-white text-sm font-semibold">
+                                        +{extra}
+                                      </div>
+                                    )}
                                   </a>
                                 ))}
                               </div>
