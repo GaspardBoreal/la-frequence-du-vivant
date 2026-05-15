@@ -313,6 +313,12 @@ const ExplorationMarcheurPage: React.FC = () => {
                     {marcheEvent.lieu}
                   </span>
                 )}
+                {isSnapshotSyncing && (
+                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Mise à jour des observations…
+                  </span>
+                )}
               </div>
             </div>
           </div>
