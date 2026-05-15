@@ -88,6 +88,14 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Chargement…</p>
+      ) : isError ? (
+        <Card className="p-6 text-center border-dashed border-destructive/40">
+          <p className="text-sm text-destructive">
+            Impossible de charger les Lecteurs invités. {(error as Error)?.message === 'forbidden'
+              ? "Vous n'avez pas les droits nécessaires."
+              : 'Réessayez dans un instant.'}
+          </p>
+        </Card>
       ) : rows.length === 0 ? (
         <Card className="p-8 text-center border-dashed">
           <BookOpen className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
