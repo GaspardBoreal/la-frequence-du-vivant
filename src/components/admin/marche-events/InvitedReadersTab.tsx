@@ -41,15 +41,18 @@ const STATUS_META: Record<InvitedReader['status'], { label: string; className: s
 
 const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTitle }) => {
   const queryClient = useQueryClient();
-  const { user, isAdmin, isAdminChecked, isLoading: authLoading } = useAuth();
-  const authReady = !authLoading && isAdminChecked && !!user && isAdmin;
+  const { user, isLoading: authLoading } = useAuth();
+  const authReady = !authLoading && !!user;
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['event-invited-readers', eventId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('list_event_invited_readers', { _event_id: eventId });
+      const { data, error } = await supabase.functions.invoke('event-invited-readers-list', {
+        body: { event_id: eventId },
+      });
       if (error) throw error;
-      return (data || []) as InvitedReader[];
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return (((data as any)?.readers) || []) as InvitedReader[];
     },
     enabled: !!eventId && authReady,
     staleTime: 0,
