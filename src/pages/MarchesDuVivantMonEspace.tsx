@@ -27,6 +27,7 @@ const MarchesDuVivantMonEspace = () => {
   const { user, profile, loading, signOut, createProfile, refreshProfile } = useCommunityAuth();
   const { data: participations = [] } = useCommunityParticipations(user?.id);
   const [creatingProfile, setCreatingProfile] = useState(false);
+  const { data: invitedEvents = [] } = useCommunityInvitedEvents(user?.id);
   const initialTab = (searchParams.get('tab') as TabKey) || 'accueil';
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const isMobile = useIsMobile();
