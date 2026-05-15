@@ -24,7 +24,7 @@ export const useAuth = () => {
     // Validate session server-side to avoid stale/ghost sessions
     const validateAndSetUser = async (session: Session | null) => {
       if (!session?.user) {
-        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false });
+        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false, isAdminChecked: true });
         return;
       }
 
@@ -33,7 +33,7 @@ export const useAuth = () => {
       
       if (error || !validatedUser) {
         console.warn('Session expired or invalid, signing out:', error?.message);
-        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false });
+        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false, isAdminChecked: true });
         // Clean up stale local storage
         await supabase.auth.signOut();
         return;
@@ -54,7 +54,7 @@ export const useAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_OUT') {
-          setAuthState({ user: null, session: null, isLoading: false, isAdmin: false });
+          setAuthState({ user: null, session: null, isLoading: false, isAdmin: false, isAdminChecked: true });
           return;
         }
         // Fire and forget to avoid blocking the callback
