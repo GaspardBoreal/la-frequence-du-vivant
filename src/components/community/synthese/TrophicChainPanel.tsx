@@ -110,11 +110,7 @@ export const TrophicChainPanel: React.FC<Props> = ({ species }) => {
         >
           {active === 'constellation' && <ConstellationTab chain={chain} />}
           {active === 'spirale' && <SpiraleTab chain={chain} />}
-          {active === 'reseau' && (
-            <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              Cette direction visuelle arrive bientôt.
-            </div>
-          )}
+          {active === 'reseau' && <ReseauTab chain={chain} />}
         </motion.div>
       </AnimatePresence>
 
