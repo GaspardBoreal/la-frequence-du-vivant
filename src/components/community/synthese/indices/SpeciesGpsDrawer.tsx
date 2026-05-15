@@ -145,10 +145,12 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
             0% { transform: scale(0.7); opacity: 0.9; }
             80%,100% { transform: scale(1.6); opacity: 0; }
           }
+          .leaflet-popup { z-index: 1000 !important; }
           .leaflet-popup-content-wrapper {
             border-radius: 12px;
             background: hsl(var(--card));
             color: hsl(var(--foreground));
+            box-shadow: 0 12px 32px rgba(0,0,0,0.35);
           }
           .leaflet-popup-tip { background: hsl(var(--card)); }
         `}</style>
