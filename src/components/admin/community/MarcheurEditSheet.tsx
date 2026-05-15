@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CSP_OPTIONS, GENDER_OPTIONS } from '@/lib/communityProfileTaxonomy';
 import ScienceAccountsEditor from './ScienceAccountsEditor';
 import ProfileSuggestionsList from './ProfileSuggestionsList';
+import MarcheurEventsSection from './MarcheurEventsSection';
 
 export interface EditableProfile {
   id: string;
@@ -201,6 +202,11 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
               <Textarea rows={3} value={form.motivation ?? ''} onChange={e => update('motivation', e.target.value)} />
             </div>
           </section>
+
+          <Separator />
+
+          {/* Événements (participant + invité) */}
+          <MarcheurEventsSection userId={form.user_id} enabled={open} />
 
           <Separator />
 
