@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useCommunityParticipations, CommunityRoleKey } from '@/hooks/useCommunityProfile';
+import { useCommunityInvitedEvents } from '@/hooks/useCommunityInvitedEvents';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
