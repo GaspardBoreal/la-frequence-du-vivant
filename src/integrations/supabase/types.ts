@@ -330,6 +330,7 @@ export type Database = {
           prenom: string
           role: Database["public"]["Enums"]["community_role"]
           slug: string | null
+          statut: string
           superpouvoir_sensoriel: string | null
           telephone: string | null
           updated_at: string
@@ -354,6 +355,7 @@ export type Database = {
           prenom: string
           role?: Database["public"]["Enums"]["community_role"]
           slug?: string | null
+          statut?: string
           superpouvoir_sensoriel?: string | null
           telephone?: string | null
           updated_at?: string
@@ -378,6 +380,7 @@ export type Database = {
           prenom?: string
           role?: Database["public"]["Enums"]["community_role"]
           slug?: string | null
+          statut?: string
           superpouvoir_sensoriel?: string | null
           telephone?: string | null
           updated_at?: string
@@ -1121,6 +1124,98 @@ export type Database = {
             columns: ["exploration_id"]
             isOneToOne: false
             referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_invitations: {
+        Row: {
+          consumed_at: string | null
+          consumed_by_user_id: string | null
+          created_at: string
+          event_id: string | null
+          expires_at: string
+          id: string
+          invited_by_user_id: string
+          invited_email: string
+          invited_prenom: string
+          token: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          consumed_by_user_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          expires_at?: string
+          id?: string
+          invited_by_user_id: string
+          invited_email: string
+          invited_prenom: string
+          token?: string
+        }
+        Update: {
+          consumed_at?: string | null
+          consumed_by_user_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          expires_at?: string
+          id?: string
+          invited_by_user_id?: string
+          invited_email?: string
+          invited_prenom?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_invitations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_invited_readers: {
+        Row: {
+          added_by_user_id: string | null
+          created_at: string
+          event_id: string
+          id: string
+          invitation_id: string | null
+          promoted_to_participant_at: string | null
+          user_id: string
+        }
+        Insert: {
+          added_by_user_id?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          invitation_id?: string | null
+          promoted_to_participant_at?: string | null
+          user_id: string
+        }
+        Update: {
+          added_by_user_id?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          invitation_id?: string | null
+          promoted_to_participant_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_invited_readers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invited_readers_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "event_invitations"
             referencedColumns: ["id"]
           },
         ]
@@ -4529,6 +4624,7 @@ export type Database = {
       check_is_admin_user: { Args: { check_user_id: string }; Returns: boolean }
       check_system_initialization_safe: { Args: never; Returns: boolean }
       confirm_admin_email: { Args: { target_email: string }; Returns: boolean }
+      consume_event_invitation: { Args: { _token: string }; Returns: Json }
       create_admin_user: {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
@@ -4885,7 +4981,29 @@ export type Database = {
         Returns: boolean
       }
       is_exploration_curator: { Args: { _user_id: string }; Returns: boolean }
+      is_invited_reader: {
+        Args: { _event_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_system_initialized: { Args: never; Returns: boolean }
+      list_event_invited_readers: {
+        Args: { _event_id: string }
+        Returns: {
+          added_by_user_id: string
+          created_at: string
+          email: string
+          event_id: string
+          id: string
+          invitation_id: string
+          invited_by_prenom: string
+          nom: string
+          prenom: string
+          promoted_to_participant_at: string
+          source: string
+          status: string
+          user_id: string
+        }[]
+      }
       match_documents: {
         Args: { filter?: Json; match_count?: number; query_embedding: string }
         Returns: {
@@ -4907,6 +5025,7 @@ export type Database = {
           rec_opus_id: string
         }[]
       }
+      peek_event_invitation: { Args: { _token: string }; Returns: Json }
       reattribute_media:
         | {
             Args: { _marcheur_id: string; _media_id: string; _source: string }
