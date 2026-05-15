@@ -352,12 +352,11 @@ export const SpeciesGpsDrawer: React.FC<Props> = ({
                       icon={buildPulseIcon(c.count)}
                     >
                       <Popup
-                        maxWidth={320}
-                        minWidth={260}
-                        autoPan
-                        autoPanPaddingTopLeft={[12, 80] as any}
-                        autoPanPaddingBottomRight={[12, 60] as any}
-                        keepInView
+                        maxWidth={300}
+                        minWidth={240}
+                        autoPan={false}
+                        keepInView={false}
+                        closeButton
                       >
                         <div className="space-y-2 min-w-[240px] max-w-[300px]">
                           {/* Bandeau photos */}
