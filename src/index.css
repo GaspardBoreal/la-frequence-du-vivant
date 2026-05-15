@@ -121,6 +121,16 @@
     --tech-openhardware-bg: 200 85% 95%;
     --tech-generic: 270 60% 55%;
     --tech-generic-bg: 270 60% 95%;
+
+    /* Niveaux trophiques (dark) */
+    --trophic-l1: 142 70% 55%;
+    --trophic-l2: 42 95% 65%;
+    --trophic-l3: 14 85% 65%;
+    --trophic-l4: 270 70% 70%;
+    --trophic-l5: 42 90% 60%;
+    --trophic-decomposer: 28 40% 65%;
+    --trophic-bg: 140 35% 6%;
+    --trophic-bg-edge: 140 40% 14%;
   }
 }
 
