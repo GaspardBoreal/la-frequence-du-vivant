@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useCommunityParticipations, CommunityRoleKey } from '@/hooks/useCommunityProfile';
+import { useCommunityInvitedEvents } from '@/hooks/useCommunityInvitedEvents';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -26,6 +27,7 @@ const MarchesDuVivantMonEspace = () => {
   const { user, profile, loading, signOut, createProfile, refreshProfile } = useCommunityAuth();
   const { data: participations = [] } = useCommunityParticipations(user?.id);
   const [creatingProfile, setCreatingProfile] = useState(false);
+  const { data: invitedEvents = [] } = useCommunityInvitedEvents(user?.id);
   const initialTab = (searchParams.get('tab') as TabKey) || 'accueil';
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const isMobile = useIsMobile();
@@ -166,6 +168,19 @@ const MarchesDuVivantMonEspace = () => {
   const registeredEventIds = new Set(participations.map(p => p.marche_event_id));
   const pendingCount = participations.filter(p => !p.validated_at).length;
 
+  // Mémo dérivés depuis les invitations
+  const todayMs = new Date().setHours(0, 0, 0, 0);
+  const registeredFromInvitation = new Map<string, string | null>();
+  const silentInvitations: typeof invitedEvents = [];
+  for (const inv of invitedEvents) {
+    if (registeredEventIds.has(inv.event_id)) {
+      // l'utilisateur a accepté l'invitation (manuellement ou via promotion)
+      registeredFromInvitation.set(inv.event_id, inv.invited_by_prenom);
+    } else if (new Date(inv.event.date_marche).getTime() < todayMs) {
+      silentInvitations.push(inv);
+    }
+  }
+
   const renderTab = () => {
     switch (activeTab) {
       case 'accueil':
@@ -189,10 +204,12 @@ const MarchesDuVivantMonEspace = () => {
             registeredEventIds={registeredEventIds}
             pastEvents={pastEvents}
             pastParticipantCounts={pastParticipantCounts}
+            invitedEvents={invitedEvents}
+            registeredFromInvitation={registeredFromInvitation}
           />
         );
       case 'carnet':
-        return <CarnetTab userId={user.id} participations={participations} />;
+        return <CarnetTab userId={user.id} participations={participations} silentInvitations={silentInvitations} />;
       case 'outils':
         return <OutilsTab role={role} userId={user.id} />;
       case 'territoire':

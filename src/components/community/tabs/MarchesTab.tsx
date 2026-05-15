@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar, ChevronDown } from 'lucide-react';
+import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar, ChevronDown, MailOpen, Mail } from 'lucide-react';
 import PastEventExpandedView from './PastEventExpandedView';
+import InvitedEventCard from '@/components/community/marches/InvitedEventCard';
+import type { InvitedEventRow } from '@/hooks/useCommunityInvitedEvents';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { format, differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
@@ -58,6 +60,8 @@ interface MarchesTabProps {
   registeredEventIds: Set<string>;
   pastEvents?: PastEvent[];
   pastParticipantCounts?: Record<string, number>;
+  invitedEvents?: InvitedEventRow[];
+  registeredFromInvitation?: Map<string, string | null>;
 }
 
 const getCountdown = (dateStr: string) => {
@@ -81,7 +85,8 @@ const EventCard: React.FC<{
   index: number;
   registeringId: string | null;
   onRegister: (id: string) => void;
-}> = ({ event, isRegistered, index, registeringId, onRegister }) => {
+  inviterPrenom?: string | null;
+}> = ({ event, isRegistered, index, registeringId, onRegister, inviterPrenom }) => {
   const typeMeta = getMarcheEventTypeMeta(event.event_type);
   const descText = event.description ? stripHtml(event.description) : null;
 
@@ -132,6 +137,13 @@ const EventCard: React.FC<{
               <typeMeta.icon className="w-3 h-3" />
               {typeMeta.label}
             </span>
+          </div>
+        )}
+
+        {isRegistered && inviterPrenom && (
+          <div className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200">
+            <Mail className="h-3 w-3" />
+            Sur invitation de {inviterPrenom}
           </div>
         )}
 
@@ -330,6 +342,7 @@ const PastEventsMap: React.FC<{ events: PastEvent[]; participantCounts: Record<s
 const MarchesTab: React.FC<MarchesTabProps> = ({
   userId, upcomingEvents, participations, registeredEventIds,
   pastEvents = [], pastParticipantCounts = {},
+  invitedEvents = [], registeredFromInvitation,
 }) => {
   const [registeringId, setRegisteringId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -346,6 +359,7 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
       } else {
         toast.success('Inscription confirmée ! 🌿 À bientôt sur les sentiers');
         queryClient.invalidateQueries({ queryKey: ['community-participations'] });
+        queryClient.invalidateQueries({ queryKey: ['community-invited-events'] });
       }
     } catch (e: any) {
       toast.error(e.message || "Erreur lors de l'inscription");
@@ -354,12 +368,23 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
     }
   };
 
+  // Invitations en attente : invité, pas encore inscrit, à venir
+  const todayMs = useMemo(() => new Date().setHours(0, 0, 0, 0), []);
+  const pendingInvitations = useMemo(
+    () => invitedEvents
+      .filter(i => !registeredEventIds.has(i.event_id))
+      .filter(i => new Date(i.event.date_marche).getTime() >= todayMs)
+      .sort((a, b) => new Date(a.event.date_marche).getTime() - new Date(b.event.date_marche).getTime()),
+    [invitedEvents, registeredEventIds, todayMs]
+  );
+  const pendingInvitedIds = useMemo(() => new Set(pendingInvitations.map(i => i.event_id)), [pendingInvitations]);
+
   const myEvents = upcomingEvents
     .filter(e => registeredEventIds.has(e.id))
     .sort((a, b) => new Date(a.date_marche).getTime() - new Date(b.date_marche).getTime());
 
   const discoverEvents = upcomingEvents
-    .filter(e => !registeredEventIds.has(e.id))
+    .filter(e => !registeredEventIds.has(e.id) && !pendingInvitedIds.has(e.id))
     .sort((a, b) => new Date(a.date_marche).getTime() - new Date(b.date_marche).getTime());
 
   return (
@@ -391,11 +416,48 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
                 index={i}
                 registeringId={registeringId}
                 onRegister={handleRegister}
+                inviterPrenom={registeredFromInvitation?.get(event.id) ?? null}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Section 1bis — Invitations personnelles en attente */}
+      <AnimatePresence>
+        {pendingInvitations.length > 0 && (
+          <motion.div
+            key="invited-section"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="space-y-3"
+          >
+            <div>
+              <h2 className="text-base font-semibold text-foreground mb-0.5 flex items-center gap-2">
+                <MailOpen className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+                Vous êtes invité·e
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
+                  {pendingInvitations.length}
+                </span>
+              </h2>
+              <p className="text-muted-foreground text-[11px]">
+                Des sentiers vous attendent — acceptez pour rejoindre la marche
+              </p>
+            </div>
+            <div className="space-y-3">
+              {pendingInvitations.map((inv, i) => (
+                <InvitedEventCard
+                  key={inv.invitation_row_id}
+                  userId={userId}
+                  invitation={inv}
+                  index={i}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Section 2 — Sentiers à explorer */}
       <div className="space-y-3">
