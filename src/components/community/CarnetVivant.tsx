@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, MapPin, Camera, Music, PenLine, Leaf, ChevronDown, ChevronUp, UserMinus } from 'lucide-react';
+import { Book, MapPin, Camera, Music, PenLine, Leaf, ChevronDown, ChevronUp, UserMinus, MailOpen } from 'lucide-react';
+import type { InvitedEventRow } from '@/hooks/useCommunityInvitedEvents';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
