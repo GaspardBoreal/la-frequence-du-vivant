@@ -16,6 +16,8 @@ export interface AttributionLike {
   longitude?: number | null;
   exactLatitude?: number | null;
   exactLongitude?: number | null;
+  photoUrl?: string | null;
+  originalUrl?: string | null;
   [key: string]: any;
 }
 
