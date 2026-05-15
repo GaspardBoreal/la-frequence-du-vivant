@@ -58,19 +58,52 @@ const MarchesDuVivantConnexion = () => {
   const [intimite, setIntimite] = useState('');
   const [engagement, setEngagement] = useState(false);
 
+  // Invitation Lecteur invité
+  const [invitationToken, setInvitationToken] = useState<string | null>(null);
+  const [invitationInfo, setInvitationInfo] = useState<{
+    valid: boolean;
+    reason?: string;
+    invited_email?: string;
+    invited_prenom?: string;
+    event_id?: string | null;
+    event_title?: string | null;
+    inviter_prenom?: string | null;
+  } | null>(null);
+
   useEffect(() => {
     const affiliateToken = searchParams.get('affiliate');
-    if (!affiliateToken) return;
+    if (affiliateToken) {
+      storeAffiliateToken(affiliateToken);
+      setMode('register');
+      supabase.rpc('record_community_affiliate_event', {
+        _share_token: affiliateToken,
+        _event_type: 'signup_started',
+        _metadata: { source: 'connexion_page' },
+        _referred_user_id: null,
+      }).then(() => {});
+    }
 
-    storeAffiliateToken(affiliateToken);
-    setMode('register');
-    supabase.rpc('record_community_affiliate_event', {
-      _share_token: affiliateToken,
-      _event_type: 'signup_started',
-      _metadata: { source: 'connexion_page' },
-      _referred_user_id: null,
-    }).then(() => {});
+    const token = searchParams.get('invitation');
+    if (token) {
+      setInvitationToken(token);
+      setMode('register');
+      supabase.rpc('peek_event_invitation', { _token: token }).then(({ data }: any) => {
+        if (data) {
+          setInvitationInfo(data);
+          if (data.valid) {
+            setEmail(data.invited_email || '');
+            setPrenom(data.invited_prenom || '');
+          }
+        }
+      });
+    }
   }, [searchParams]);
+
+  const consumeInvitationIfAny = async () => {
+    if (!invitationToken) return null;
+    const { data } = await supabase.rpc('consume_event_invitation', { _token: invitationToken });
+    return data as { success: boolean; event_id?: string; error?: string } | null;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
