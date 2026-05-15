@@ -90,7 +90,7 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
         />
       </div>
 
-      {isLoading ? (
+      {!authReady || isLoading ? (
         <p className="text-sm text-muted-foreground">Chargement…</p>
       ) : isError ? (
         <Card className="p-6 text-center border-dashed border-destructive/40">
