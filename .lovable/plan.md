@@ -1,62 +1,70 @@
-## Spirale du Vivant — direction visuelle #2
+## Diagnostic
 
-Une seconde lecture de la chaîne trophique, complémentaire à la Constellation. Là où la Constellation déploie les niveaux en orbites concentriques (vue "cosmique"), la Spirale enroule l'écosystème en un **flux d'énergie continu** : la photosynthèse au cœur, l'apex au bord externe, les décomposeurs en contre-spirale qui ramènent la matière vers le centre. Une métaphore directe du **cycle vivant** (énergie qui monte, matière qui redescend).
+J'ai vérifié les 3 sources qui affichent un compteur d'espèces pour l'exploration `DEVIAT / Jardin Monde` (id `20dd3be8…`) — les 3 chiffres viennent de **3 hooks différents** qui dédupliquent **différemment**, et tous lisent une table `biodiversity_snapshots` qui **n'a pas été resynchronisée depuis hier**.
 
-### Concept visuel
+### 1. Pourquoi 60 / 64 / 60 ?
+
+| Vue | Hook | Source | Déduplication | Résultat |
+|---|---|---|---|---|
+| Carnet (capture 1) | `useMarcheCollectedData` | `biodiversity_snapshots.species_data` uniquement | clé = `scientificName` | **60** |
+| Carte (capture 2) | `useExplorationBiodiversitySummary` | snapshots **+** `marcheur_observations` | clé = `commonName \|\| scientificName`, ajoute les obs marcheurs absentes des snapshots | **64** |
+| Pouls du vivant (capture 3) | `useBiodiversityEvolution` | snapshots uniquement | clé = `scientificName` | **60** |
+
+Les **+4** de la Carte = 4 espèces saisies par des marcheurs (table `marcheur_observations` — 94 lignes pour cette exploration) qui ne sont pas (encore) dans les snapshots iNat.
+
+### 2. Pourquoi les saisies iNat de ce matin (chêne, vigne) sont invisibles ?
+
+Requête sur `biodiversity_snapshots` pour les 4 marches de l'exploration :
 
 ```text
-                  ╭───── L5 apex (bord)
-              ╭───┤
-          ╭───┤   ╰── L4
-       ╭──┤   ╰──── L3
-       │  ╰──────── L2
-       │ ◉  ←  L1 cœur (Soleil/photosynthèse)
-       │  ╰╮
-        ╲  ╲   ← contre-spirale décomposeurs
-         ╲──╲    (matière qui redescend)
+marche_id                              total_species   created_at
+bf50566d-77d6-4776-a0aa-c62965d74a81   59              2026-05-14 17:55
+4095a154-737b-4238-a454-8a06e6f3807e   51              2026-05-14 13:32
+f94e5c2f-305d-4b37-8ce3-7687c0195cd0   51              2026-05-14 09:55
+67890ed0-1279-43f5-b971-714360897e9d   51              2026-05-14 09:55
 ```
 
-- **Spirale principale (logarithmique)** : du centre vers l'extérieur, traverse L1 → L2 → L3 → L4 → L5. Chaque niveau occupe un secteur d'angle proportionnel au nombre d'espèces (avec un minimum visible si vide → segment fantôme pointillé).
-- **Espèces** = pastilles colorées posées le long de l'arc de leur niveau, taille = log(abondance).
-- **Flux d'énergie** : un dégradé animé (or → vert → bleu) glisse en boucle douce le long de la spirale (≈8 s loop) — direction sortante = énergie qui monte la pyramide.
-- **Contre-spirale décomposeurs** : une seconde spirale plus discrète, en sens inverse, depuis l'apex vers le cœur — symbolise la décomposition qui referme le cycle. Pastilles décomposeurs posées dessus.
-- **Niveaux manquants** : segment pointillé + chip "⚠ L4 absent" sur le tracé → la spirale est *visiblement cassée* à cet endroit (puissant pédagogiquement).
+Les snapshots datent **d'hier**. Le cron `collect-event-biodiversity` tourne 1×/jour ; il n'y a **pas** de re-sync au montage de la page exploration. Donc tant que le cron n'est pas repassé, les nouvelles obs iNat (< 15 min) ne sont visibles nulle part — c'est attendu côté code, mais c'est un vrai trou UX.
 
-### Interactions
+## Plan de correction
 
-- **Hover espèce** → tooltip (nom, niveau).
-- **Clic espèce** → focus : la spirale s'estompe, seul le segment du niveau de l'espèce reste vif, et des arcs fins relient l'espèce à 4-6 proies probables (réutilise `probablePreyGroups`). Side panel = même `SelectedStarPanel` que Constellation (réutilisé tel quel).
-- **Clic sur un secteur de niveau** (zone vide entre pastilles) → focus niveau, side panel = `LevelPanel`.
-- **Side panel par défaut** : narratif "Suivez le fil de l'énergie" + compteurs par niveau (réutilise `DefaultPanel`).
-- **Bouton "Réinitialiser"** identique à la Constellation.
+### A. Unifier les 3 compteurs (cohérence stricte)
 
-### Détails techniques
+Source de vérité unique = `useExplorationBiodiversitySummary` (déjà fusionne snapshots + `marcheur_observations`, conforme à la mémoire `score-citizen-observations-fusion-logic`).
 
-- **Nouveau fichier** : `src/components/community/synthese/trophic/SpiraleTab.tsx`
-  - Props identiques à `ConstellationTab` : `{ chain: TrophicChainResult }`.
-  - Génère le path SVG de la spirale logarithmique : `r(θ) = a · e^(b·θ)` paramétré pour traverser les rayons de chaque niveau (réutilise `RADII` mental — ici on en fait une fonction du tour θ).
-  - Place chaque espèce : pour chaque niveau, on calcule la portion d'angle qui correspond au tour de spirale dans ce niveau, on distribue les espèces uniformément dessus, puis on évalue (x, y) = polaire(θ, r(θ)).
-  - Décomposeurs : seconde spirale `r(θ) = a · e^(-b·θ)` partant de l'extérieur, opacité 0.55, dasharray fin.
-  - Animation flux : `<motion.circle>` qui suit la spirale via `offsetPath` CSS (fallback : 3 pastilles SVG animées en `animateMotion` le long du path).
-  - Tooltip + side panel : composants `SelectedStarPanel` / `LevelPanel` / `DefaultPanel` extraits de `ConstellationTab` ou — plus simple — réimportés en exportant ces 3 composants depuis `ConstellationTab.tsx` (un petit refacto local).
+1. **Carnet** (`useMarcheCollectedData`) : remplacer le calcul local de `species_count` par un appel à la même fusion (snapshots + `marcheur_observations` dédupliqués par `scientificName` lowercased), pour qu'un événement remonte le **même total** que la Carte.
+2. **Pouls du vivant** (`useBiodiversityEvolution`) : injecter aussi les `marcheur_observations` dans les buckets journaliers (date = `observation_date`), pour que la courbe atteigne le même total et reflète les saisies marcheurs.
+3. Harmoniser la **clé de dedup** sur `scientificName.toLowerCase()` partout (le `commonName || scientificName` actuel de la Carte introduit des doublons quand le même taxon est tantôt avec, tantôt sans nom commun).
 
-- **Refacto léger** dans `ConstellationTab.tsx` : ajouter `export` aux 3 sous-composants `DefaultPanel`, `LevelPanel`, `SelectedStarPanel` pour qu'ils soient réutilisables par la Spirale (sinon on les déplace dans `trophic/_panels.tsx`). Préférence : extraction dans `src/components/community/synthese/trophic/_panels.tsx` pour ne pas créer de dépendance inversée.
+### B. Rafraîchir les snapshots à la volée (freshness iNat)
 
-- **Branchement** dans `TrophicChainPanel.tsx` :
-  - Marquer `'spirale'` comme `ready: true`.
-  - Importer `SpiraleTab` et l'afficher quand `active === 'spirale'`.
+Au montage de `ExplorationDetail` (ou dès l'ouverture de l'onglet Carte / Synthèse), déclencher en arrière-plan `collect-event-biodiversity` si le snapshot le plus récent de l'exploration a **plus de 2 h** :
 
-- **Tokens CSS** : aucun nouveau token nécessaire. Réutilise `--trophic-l1..l5`, `--trophic-decomposer`, `--trophic-bg`, `--trophic-bg-edge`, `--accent`.
+- Lire `max(created_at)` sur les snapshots des marches de l'exploration.
+- Si `> 2h` → `supabase.functions.invoke('collect-event-biodiversity', { body: { explorationId } })` en fire-and-forget.
+- Au retour : invalider les query keys `['exploration-biodiversity-summary', explorationId]`, `['marche-collected-data', …]` et `['biodiversity-snapshots-evolution', …]` pour que les 3 vues se mettent à jour.
+- Afficher un petit indicateur discret « Mise à jour des observations… » pendant la resync (pas de blocage).
 
-### Hors scope
+Conforme à la mémoire `snapshot-sync-on-view-logic` (qui prévoit déjà ce pattern mais n'est manifestement pas câblé sur cette page).
 
-- L'onglet "Réseau Vivant" reste placeholder (sera la 3e direction).
-- Pas de changement à `useTrophicChain` ni `trophicClassification.ts`.
-- Pas de changement de mise en page extérieure.
+### C. (option) Bouton manuel « Rafraîchir »
 
-### Fichiers touchés
+Petit bouton 🔄 à côté du compteur de la Carte qui force le `collect-event-biodiversity` immédiatement, pour les cas où l'utilisateur vient de saisir et veut voir le résultat tout de suite.
 
-- **Créé** : `src/components/community/synthese/trophic/SpiraleTab.tsx`
-- **Créé** : `src/components/community/synthese/trophic/_panels.tsx` (extraction des 3 panneaux pédagogiques)
-- **Édité** : `src/components/community/synthese/trophic/ConstellationTab.tsx` (importe les panneaux depuis `_panels`)
-- **Édité** : `src/components/community/synthese/TrophicChainPanel.tsx` (active l'onglet, importe `SpiraleTab`)
+## Détails techniques
+
+- **Fichiers à modifier** :
+  - `src/hooks/useMarcheCollectedData.ts` → fusionner `marcheur_observations` dans le calcul `species_count`.
+  - `src/hooks/useBiodiversityEvolution.ts` → accepter un 2ᵉ paramètre `marcheurObservations[]` et créer des `DayObservation` à partir de `observation_date`.
+  - `src/components/community/CarnetVivant.tsx` → passer les `marcheur_observations` (déjà chargées ailleurs ou via un nouveau hook léger).
+  - `src/pages/ExplorationDetail.tsx` (ou `ExplorationLayout`) → ajouter le hook `useEffect` de resync + invalidations React Query.
+  - Optionnel : nouveau composant `RefreshSnapshotsButton`.
+
+- **Pas de migration DB** — uniquement du code front + appel d'une edge function existante.
+
+- **Risque** : la resync coûte 1 appel iNat par marche ; le throttle est déjà géré dans l'edge function `collect-event-biodiversity` (le cron quotidien l'utilise). On limite quand même via la garde « > 2h ».
+
+## Ce que ça donne après
+
+- Carnet, Carte et Pouls du vivant affichent **tous le même chiffre** (≥ 64 actuellement, +2 dès que la resync ramène le chêne et la vigne d'iNat).
+- À chaque ouverture de l'exploration, les obs iNat de moins de 2 h apparaissent automatiquement sans attendre le cron du lendemain.

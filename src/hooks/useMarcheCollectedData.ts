@@ -71,24 +71,37 @@ export const useMarcheCollectedData = (userId: string, marcheEventIds: string[])
               .in('marche_id', allMarcheIds);
 
             if (snapshots) {
+              // Fetch marcheur observations for these marches (validated sightings)
+              // to merge them into the species count, matching the Carte's logic.
+              const { data: marcheurObs } = await supabase
+                .from('marcheur_observations')
+                .select('marche_id, species_scientific_name')
+                .in('marche_id', allMarcheIds);
+
               // Calculate deduplicated species count per exploration
               const explorationSpeciesCounts: Record<string, number> = {};
-              
+
               for (const explorationId of explorationIds) {
                 const relatedMarcheIds = explorationMarches
                   .filter(em => em.exploration_id === explorationId)
                   .map(em => em.marche_id);
-                
-                const uniqueSpecies = new Map<string, boolean>();
+
+                const uniqueSpecies = new Set<string>();
                 for (const snapshot of snapshots) {
                   if (!relatedMarcheIds.includes(snapshot.marche_id)) continue;
                   const speciesData = snapshot.species_data as any[];
                   if (Array.isArray(speciesData)) {
                     for (const sp of speciesData) {
-                      const name = sp.scientificName || sp.scientific_name;
-                      if (name) uniqueSpecies.set(name, true);
+                      const name = (sp.scientificName || sp.scientific_name || '').toString().trim().toLowerCase();
+                      if (name) uniqueSpecies.add(name);
                     }
                   }
+                }
+                // Merge marcheur observations (case-insensitive scientificName)
+                for (const obs of marcheurObs || []) {
+                  if (!relatedMarcheIds.includes(obs.marche_id)) continue;
+                  const name = (obs.species_scientific_name || '').toString().trim().toLowerCase();
+                  if (name) uniqueSpecies.add(name);
                 }
                 explorationSpeciesCounts[explorationId] = uniqueSpecies.size;
               }

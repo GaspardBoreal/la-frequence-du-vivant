@@ -20,6 +20,8 @@ import EventBiodiversityTab from './EventBiodiversityTab';
 import ApprendreTab from './insights/ApprendreTab';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import ChatViewportObserver from '@/components/chatbot/ChatViewportObserver';
+import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
+import { Loader2 } from 'lucide-react';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -116,6 +118,9 @@ const ExplorationMarcheurPage: React.FC = () => {
   });
 
   const effectiveExplorationId = explorationId || resolvedExplorationId;
+
+  // Background refresh of biodiversity snapshots if older than 2h
+  const { isSyncing: isSnapshotSyncing } = useSnapshotsResyncOnView(effectiveExplorationId);
 
   // Track page view on mount
   useEffect(() => {
@@ -306,6 +311,12 @@ const ExplorationMarcheurPage: React.FC = () => {
                   <span className="flex items-center gap-0.5">
                     <MapPin className="w-3 h-3" />
                     {marcheEvent.lieu}
+                  </span>
+                )}
+                {isSnapshotSyncing && (
+                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Mise à jour des observations…
                   </span>
                 )}
               </div>
