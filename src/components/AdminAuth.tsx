@@ -12,7 +12,7 @@ interface AdminAuthProps {
 }
 
 const AdminAuth: React.FC<AdminAuthProps> = ({ children }) => {
-  const { user, isLoading, isAdmin, signIn, signOut, resetPassword } = useAuth();
+  const { user, isLoading, isAdmin, isAdminChecked, signIn, signOut, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
