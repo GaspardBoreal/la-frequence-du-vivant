@@ -1,46 +1,45 @@
 ## Diagnostic
 
-Vincent Levavasseur **est bien dans la base** pour l'événement `df85910e` (DEVIAT Le Réveil de la Terre), inséré à 07:04. Le RPC `list_event_invited_readers` le retourne correctement. Les logs auth montrent **5+ appels concurrents à `/auth/v1/user`** par chargement de page : c'est la signature de plusieurs instances `useAuth()` qui font chacune leur propre `getSession` + `getUser` + `is_admin_user` en parallèle.
+Laurent Tripied est bien enregistré en base pour l’événement `efe36e8c-75cd-4bd7-9dd8-bccf7d3c9a69` ("Laboratoire à Ciel Ouvert : Biodiversité & Sols Vivants"). Comme Vincent auparavant, **l’ajout fonctionne**. Le blocage est donc **strictement côté lecture UI**.
 
-Conséquence pour `InvitedReadersTab` :
-- Chaque `useAuth()` a son **propre `useState`** → race conditions entre instances.
-- `is_admin_user` peut transitoirement échouer (ou retourner `false`) pendant la course → `enabled` reste à false, ou bien la query part puis retombe en erreur.
-- `retry: 1` ne suffit pas : après une erreur transitoire on tombe sur le message "Impossible de charger… Réessayez dans un instant" et l'utilisateur reste bloqué.
+Le RPC `list_event_invited_readers` est correct et renvoie les lignes attendues, mais il dépend de `auth.uid()` + `check_is_admin_user(auth.uid())`. Dès que la session admin côté navigateur est transitoire, absente, ou pas encore stabilisée, il renvoie `forbidden`, ce que l’onglet traduit par "Impossible de charger les Lecteurs invités".
 
-C'est un problème **transverse** : il touchera aussi `useCanUseContextualChat`, `MarcheursTab`, `AdminAuth`, etc. dès qu'on ajoutera des composants admin sensibles.
+Le refactor `AuthProvider` a réduit les courses, mais il reste un point fragile : l’onglet **dépend encore directement d’un RPC admin protégé dans le navigateur**, donc le moindre flottement de session continue à casser l’affichage. C’est pour cela que le bug réapparaît sur d’autres événements même quand les données sont bien présentes.
 
-## Plan
+## Ce que je vais corriger
 
-### 1. Transformer `useAuth` en singleton via Context (cœur du fix)
-- Créer `src/contexts/AuthContext.tsx` qui :
-  - Expose le **même provider** englobant déjà l'app (à monter dans `main.tsx` ou `App.tsx`, juste sous `QueryClientProvider`).
-  - Contient **une seule** instance de la logique actuelle (`getSession`, `onAuthStateChange`, `validateAndSetUser`, `checkAdminStatus`).
-  - Expose `user, session, isLoading, isAdmin, isAdminChecked, signIn, signUp, signOut, resetPassword`.
-- Réécrire `src/hooks/useAuth.ts` en un simple `useContext(AuthContext)` (avec garde si provider absent).
-- Aucun changement d'API publique → les 13 fichiers consommateurs continuent de fonctionner sans édition.
+### 1. Rendre la lecture des Lecteurs invités indépendante des micro-états auth du client
+- Créer une **Edge Function dédiée** (par ex. `event-invited-readers-list`) qui :
+  - valide le JWT côté serveur,
+  - vérifie le rôle admin côté serveur,
+  - appelle la liste des lecteurs invités avec privilèges serveur,
+  - renvoie les lecteurs de façon stable.
+- L’onglet `InvitedReadersTab` utilisera cette function au lieu d’appeler directement le RPC depuis le navigateur.
 
-Effets immédiats :
-- 1 seul appel `getUser` + 1 seul appel `is_admin_user` par session.
-- `isAdminChecked` passe à `true` une seule fois pour toute l'arbre → fin des courses.
+### 2. Garder les protections de sécurité intactes
+- Aucune ouverture RLS publique.
+- La vérification admin reste obligatoire, mais **entièrement côté serveur** pour éviter les faux `forbidden` transitoires côté client.
+- Le RPC SQL existant pourra rester comme couche de sécurité interne, ou être remplacé si la fonction Edge centralise déjà le contrôle.
 
-### 2. Durcir `InvitedReadersTab` (ceinture + bretelles)
-- Garder `authReady = !authLoading && isAdminChecked && !!user && isAdmin`.
-- Passer `retry: 3` avec `retryDelay: attempt => Math.min(500 * 2**attempt, 4000)` pour absorber un transitoire RPC.
-- Ajouter un **bouton "Réessayer"** dans la carte d'erreur qui appelle `refetch()` (au lieu de laisser l'utilisateur recharger toute la page).
-- Après ajout d'un Lecteur via `InviteReaderDialog`, conserver le simple `invalidateQueries` (déjà en place).
+### 3. Fiabiliser l’UX de l’onglet
+- Conserver le retry automatique + le bouton "Réessayer".
+- Afficher un vrai état de chargement tant que la session n’est pas prête.
+- Après ajout d’un lecteur, invalider proprement la requête de liste pour faire apparaître immédiatement la personne ajoutée.
 
-### 3. Validation
-- Recharger l'écran de l'événement `df85910e` et vérifier que Vincent apparaît dans l'onglet Lecteurs.
-- Vérifier que l'événement `f6095e8d` (Jardin Monde) liste aussi Vincent.
-- Vérifier que l'ajout d'un nouveau Lecteur sur un 3e événement met à jour la liste sans message d'erreur.
-- Vérifier dans le réseau qu'il n'y a plus que **1 seul** appel `/user` et **1 seul** appel `is_admin_user` au chargement.
+## Validation
+
+Je validerai sur les trois cas concrets déjà signalés :
+- `DEVIAT / Jardin Monde du 11.03.26 à aujourd'hui`
+- `DEVIAT Le Réveil de la Terre "Marcher sur un sol qui respire"`
+- `Laboratoire à Ciel Ouvert : Biodiversité & Sols Vivants`
+
+Résultat attendu : Vincent et Laurent apparaissent immédiatement dans l’onglet **Lecteurs invités**, sans message d’erreur.
 
 ## Détails techniques
 
-Fichiers touchés :
-- **Créé** : `src/contexts/AuthContext.tsx` (provider + context)
-- **Réécrit** : `src/hooks/useAuth.ts` (devient un wrapper `useContext`)
-- **Édité** : `src/main.tsx` ou `src/App.tsx` (monter `<AuthProvider>`)
-- **Édité** : `src/components/admin/marche-events/InvitedReadersTab.tsx` (retry agressif + bouton Réessayer)
+Fichiers pressentis :
+- `supabase/functions/event-invited-readers-list/index.ts` (nouveau)
+- `src/components/admin/marche-events/InvitedReadersTab.tsx`
+- éventuellement `src/components/admin/marche-events/InviteReaderDialog.tsx` pour l’invalidation finale
 
-Aucune migration SQL nécessaire — la base et les RPC sont OK.
+Aucune modification de données existantes n’est nécessaire. Le problème est un problème de **canal de lecture admin côté client**, pas de base.
