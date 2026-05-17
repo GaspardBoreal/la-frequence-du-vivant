@@ -63,19 +63,53 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                 )}
                 onClick={() => navigate(`/admin/marche-events/${event.id}`)}
               >
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span
-                    className={cn(
-                      'text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full',
-                      past ? 'bg-muted text-muted-foreground' : 'bg-emerald-500/15 text-emerald-400'
-                    )}
-                  >
-                    {past ? 'Passée' : 'À venir'}
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                    <CalendarDays className="h-3.5 w-3.5" />
-                    {format(new Date(event.date_marche), 'PPP à HH:mm', { locale: fr })}
-                  </span>
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <span
+                      className={cn(
+                        'text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full',
+                        past ? 'bg-muted text-muted-foreground' : 'bg-emerald-500/15 text-emerald-400'
+                      )}
+                    >
+                      {past ? 'Passée' : 'À venir'}
+                    </span>
+                    <span className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      {format(new Date(event.date_marche), 'PPP à HH:mm', { locale: fr })}
+                    </span>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 -mt-1 -mr-1 shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Actions"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem onClick={() => navigate(`/admin/marche-events/${event.id}`)}>
+                        <Eye className="h-4 w-4 mr-2" />Voir
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/admin/marche-events/${event.id}`)}>
+                        <Pencil className="h-4 w-4 mr-2" />Éditer
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setDuplicateSource({
+                            id: event.id,
+                            title: event.title,
+                            date_marche: event.date_marche,
+                          })
+                        }
+                      >
+                        <Copy className="h-4 w-4 mr-2" />Dupliquer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1">{event.title}</h3>
                 <div className="flex flex-wrap gap-2 text-xs">
