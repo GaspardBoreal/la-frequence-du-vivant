@@ -133,6 +133,11 @@ Deno.serve(async (req) => {
           .eq('id', logId);
       }
 
+      // Résolution du rayon : override marche → défaut exploration → 500 m
+      const radiusM: number =
+        (marche as any)?.radius_m ?? explorationDefaultRadiusM ?? 500;
+      const radiusKm = radiusM / 1000;
+
       try {
         // Call biodiversity-data with retries
         let biodiversityData = null;
@@ -142,7 +147,7 @@ Deno.serve(async (req) => {
               body: {
                 latitude: parseFloat(String(marche.latitude)),
                 longitude: parseFloat(String(marche.longitude)),
-                radius: 0.5,
+                radius: radiusKm,
                 mode: 'batch',
               }
             });
@@ -174,7 +179,7 @@ Deno.serve(async (req) => {
             marche_id: em.marche_id,
             latitude: parseFloat(String(marche.latitude)),
             longitude: parseFloat(String(marche.longitude)),
-            radius_meters: 500,
+            radius_meters: radiusM,
             total_species: totalSpecies,
             birds_count: birdsCount,
             plants_count: plantsCount,
