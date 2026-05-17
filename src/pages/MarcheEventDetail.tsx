@@ -280,14 +280,27 @@ const MarcheEventDetail: React.FC = () => {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <Link to="/admin/marche-events">
             <Button variant="outline"><ArrowLeft className="h-4 w-4 mr-2" />Retour</Button>
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-2xl font-bold text-foreground flex-1 min-w-0 truncate">
             {isNew ? 'Nouvel événement' : event?.title || 'Événement'}
           </h1>
+          {!isNew && event && (
+            <Button variant="outline" size="sm" onClick={() => setDuplicateOpen(true)}>
+              <Copy className="h-4 w-4 mr-2" />Dupliquer
+            </Button>
+          )}
         </div>
+
+        {!isNew && event && (
+          <DuplicateEventDialog
+            open={duplicateOpen}
+            onOpenChange={setDuplicateOpen}
+            source={{ id: event.id, title: event.title, date_marche: event.date_marche }}
+          />
+        )}
 
         <Tabs defaultValue="informations" className="w-full">
           {!isNew && (
