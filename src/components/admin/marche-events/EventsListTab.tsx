@@ -152,6 +152,12 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
+
+      <DuplicateEventDialog
+        open={!!duplicateSource}
+        onOpenChange={(o) => !o && setDuplicateSource(null)}
+        source={duplicateSource}
+      />
     </div>
   );
 };
