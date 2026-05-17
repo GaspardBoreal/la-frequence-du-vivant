@@ -535,9 +535,29 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
     staleTime: 60_000,
   });
 
+  type KingdomKey = 'all' | 'Animalia' | 'Plantae' | 'Fungi' | 'other';
+  const [kingdomFilter, setKingdomFilter] = useState<KingdomKey>('all');
+
   const all = items || [];
-  const filtered = onlyOwn ? all.filter(s => s.hasOwnPhoto) : all;
   const ownCount = all.filter(s => s.hasOwnPhoto).length;
+
+  const normalizeKingdom = (k: string): KingdomKey => {
+    if (k === 'Animalia' || k === 'Plantae' || k === 'Fungi') return k;
+    return 'other';
+  };
+
+  const kingdomCounts = useMemo(() => {
+    const c = { all: all.length, Animalia: 0, Plantae: 0, Fungi: 0, other: 0 };
+    all.forEach(s => { c[normalizeKingdom(s.kingdom)] += 1; });
+    return c;
+  }, [all]);
+
+  const filteredByKingdom = useMemo(() => {
+    if (kingdomFilter === 'all') return all;
+    return all.filter(s => normalizeKingdom(s.kingdom) === kingdomFilter);
+  }, [all, kingdomFilter]);
+
+  const filtered = onlyOwn ? filteredByKingdom.filter(s => s.hasOwnPhoto) : filteredByKingdom;
 
   const speciesForTranslation = filtered.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }));
   const { data: frNamesMap } = useFrenchSpeciesNamesAuto(speciesForTranslation);
@@ -557,33 +577,133 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
     return src;
   };
 
-  // Sort: hasOwnPhoto first, then number of own photos desc, then date
-  const sorted = useMemo(() => {
-    const items = [...filtered];
-    items.sort((a, b) => {
-      if (a.hasOwnPhoto !== b.hasOwnPhoto) return a.hasOwnPhoto ? -1 : 1;
+  // Sort within a list
+  const sortList = (list: ContribSpeciesItem[]) => {
+    const arr = [...list];
+    arr.sort((a, b) => {
       if (a.ownPhotos.length !== b.ownPhotos.length) return b.ownPhotos.length - a.ownPhotos.length;
       const ad = a.lastDate ? new Date(a.lastDate).getTime() : 0;
       const bd = b.lastDate ? new Date(b.lastDate).getTime() : 0;
       const diff = bd - ad;
       return sort === 'desc' ? diff : -diff;
     });
-    return items;
-  }, [filtered, sort]);
+    return arr;
+  };
 
-  // Bento span pattern (desktop). Mobile = uniform squares.
-  const spanFor = (index: number, hasOwn: boolean): string => {
-    if (!hasOwn) return '';
-    if (index === 0) return 'sm:col-span-2 sm:row-span-2';
-    if (index === 3) return 'sm:col-span-2';
-    if (index === 7) return 'sm:col-span-2';
+  const ownList = useMemo(() => sortList(filtered.filter(s => s.hasOwnPhoto)), [filtered, sort]);
+  const inatList = useMemo(() => sortList(filtered.filter(s => !s.hasOwnPhoto)), [filtered, sort]);
+
+  // Bento spans
+  const ownSpanFor = (i: number) => {
+    if (i === 0) return 'sm:col-span-2 sm:row-span-2';
+    if (i === 3 || i === 6) return 'sm:col-span-2';
     return '';
   };
+
+  // ---- Tile renderer (shared)
+  const renderTile = (obs: ContribSpeciesItem, i: number, variant: 'own' | 'inat', span: string) => {
+    const frenchName = frNamesMap?.get(obs.scientificName)?.commonNameFr || null;
+    const primaryName = frenchName || obs.commonName || obs.scientificName;
+    const kingdomInfo = getKingdomInfo(obs.kingdom);
+    const KingdomIcon = kingdomInfo.icon;
+    const dateStr = obs.lastDate ? format(new Date(obs.lastDate), 'd MMM', { locale: fr }) : '';
+    const photo = obs.primaryPhoto;
+    const isLarge = span.includes('row-span-2');
+    const handleClick = (e: React.MouseEvent) => {
+      if (variant === 'own' && photo) {
+        e.preventDefault();
+        setLightbox({ url: photo, label: primaryName });
+      }
+    };
+
+    return (
+      <motion.a
+        key={`${variant}-${obs.scientificName}-${i}`}
+        href={obs.originalUrl || '#'}
+        target={obs.originalUrl ? '_blank' : undefined}
+        rel="noopener noreferrer"
+        onClick={handleClick}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: Math.min(i * 0.03, 0.4), duration: 0.25 }}
+        className={`group relative overflow-hidden rounded-2xl bg-muted/40 dark:bg-white/[0.03] transition-all hover:shadow-lg ${
+          variant === 'own'
+            ? 'ring-2 ring-emerald-500/60 hover:ring-emerald-400/80 hover:shadow-emerald-500/20'
+            : 'border border-border/40 hover:border-emerald-500/30 hover:shadow-emerald-500/10 opacity-90 hover:opacity-100'
+        } ${span}`}
+      >
+        {photo ? (
+          <>
+            <img
+              src={photo}
+              alt={primaryName}
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
+          </>
+        ) : (
+          <div className={`absolute inset-0 ${kingdomInfo.bgColor} flex items-center justify-center`}>
+            <KingdomIcon className={`w-10 h-10 ${kingdomInfo.color} opacity-40`} />
+          </div>
+        )}
+
+        {/* Top-left: kingdom pill */}
+        <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10">
+          <KingdomIcon className={`w-3 h-3 ${kingdomInfo.color}`} />
+          <span className="text-[9px] font-medium text-white uppercase tracking-wider">
+            {kingdomInfo.label}
+          </span>
+        </div>
+
+        {/* Top-right: source/date chip */}
+        {variant === 'own' ? (
+          dateStr && (
+            <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-500/90 backdrop-blur-sm flex items-center gap-1">
+              <Camera className="w-2.5 h-2.5 text-white" />
+              <span className="text-[9px] font-semibold text-white">{dateStr}</span>
+            </div>
+          )
+        ) : null}
+
+        {/* Bottom: name */}
+        <div className="absolute bottom-0 left-0 right-0 p-2.5 text-left">
+          <p className={`font-semibold text-white truncate drop-shadow ${isLarge ? 'text-sm' : 'text-xs'}`}>
+            {primaryName}
+          </p>
+          {frenchName && frenchName !== obs.scientificName && (
+            <p className="text-[10px] text-white/70 italic truncate">{obs.scientificName}</p>
+          )}
+          {variant === 'inat' && dateStr && (
+            <p className="text-[9px] text-white/60 mt-0.5">{dateStr}</p>
+          )}
+        </div>
+
+        {variant === 'own' && obs.ownPhotos.length > 1 && (
+          <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm flex items-center gap-0.5">
+            <Image className="w-2.5 h-2.5 text-white/90" />
+            <span className="text-[9px] text-white/90 font-medium">×{obs.ownPhotos.length}</span>
+          </div>
+        )}
+      </motion.a>
+    );
+  };
+
+  // Kingdom chip definitions
+  const kingdomChips: Array<{ key: KingdomKey; label: string; icon: any; color: string }> = [
+    { key: 'all', label: 'Tout', icon: Sparkles, color: 'text-emerald-500' },
+    { key: 'Animalia', label: 'Faune', icon: Bird, color: 'text-sky-500' },
+    { key: 'Plantae', label: 'Flore', icon: Flower2, color: 'text-green-500' },
+    { key: 'Fungi', label: 'Champignons', icon: TreePine, color: 'text-amber-600' },
+    { key: 'other', label: 'Autres', icon: Leaf, color: 'text-emerald-500' },
+  ];
 
   if (isLoading) {
     return (
       <div className="px-3 pt-3 pb-3">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[120px] sm:auto-rows-[140px] gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[120px] sm:auto-rows-[160px] gap-2">
           {[...Array(6)].map((_, i) => (
             <div
               key={i}
@@ -595,13 +715,11 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
     );
   }
 
-  if (sorted.length === 0) {
+  if (all.length === 0) {
     return (
       <div className="px-3 py-6 text-center">
         <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
-        <p className="text-xs text-muted-foreground italic">
-          {onlyOwn ? 'Aucune photo personnelle pour le moment' : 'Aucune espèce identifiée pour le moment'}
-        </p>
+        <p className="text-xs text-muted-foreground italic">Aucune espèce identifiée pour le moment</p>
         <p className="text-[10px] text-muted-foreground/60 mt-1">
           Identifiez les espèces via l'onglet Vivant 🌿
         </p>
@@ -609,12 +727,17 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
     );
   }
 
+  const totalVisible = filtered.length;
+  const showOwnSection = ownList.length > 0;
+  const showInatSection = !onlyOwn && inatList.length > 0;
+
   return (
-    <div className="px-3 pt-3 pb-3 space-y-3">
+    <div className="px-3 pt-3 pb-3 space-y-4">
+      {/* Header: counter + main toggles */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
           <Leaf className="w-3.5 h-3.5 text-emerald-500" />
-          <span className="text-foreground">{sorted.length}</span> espèce{sorted.length > 1 ? 's' : ''} identifiée{sorted.length > 1 ? 's' : ''}
+          <span className="text-foreground">{totalVisible}</span> espèce{totalVisible > 1 ? 's' : ''}
           {ownCount > 0 && (
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">
               · {ownCount} avec photo perso
@@ -625,110 +748,100 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
           {ownCount > 0 && (
             <button
               onClick={() => setOnlyOwn(o => !o)}
-              className={`text-[10px] px-2 py-1 rounded-full transition-colors ${
+              aria-pressed={onlyOwn}
+              className={`text-[11px] px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
                 onlyOwn
-                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/40'
-                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/50 font-semibold'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted ring-1 ring-transparent'
               }`}
             >
-              <Camera className="w-3 h-3 inline mr-1" />
-              Mes photos
+              <Camera className="w-3 h-3" />
+              Mes photos ({ownCount})
             </button>
           )}
           <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[120px] sm:auto-rows-[140px] gap-2">
-        {sorted.map((obs, i) => {
-          const frenchName = frNamesMap?.get(obs.scientificName)?.commonNameFr || null;
-          const primaryName = frenchName || obs.commonName || obs.scientificName;
-          const kingdomInfo = getKingdomInfo(obs.kingdom);
-          const KingdomIcon = kingdomInfo.icon;
-          const dateStr = obs.lastDate ? format(new Date(obs.lastDate), 'd MMM', { locale: fr }) : '';
-          const span = spanFor(i, obs.hasOwnPhoto);
-          const photo = obs.primaryPhoto;
-          const handleClick = (e: React.MouseEvent) => {
-            if (obs.hasOwnPhoto && photo) {
-              e.preventDefault();
-              setLightbox({ url: photo, label: primaryName });
-            }
-          };
-
+      {/* Kingdom chips */}
+      <div className="flex items-center gap-1.5 flex-wrap" role="tablist" aria-label="Filtrer par règne">
+        {kingdomChips.map(chip => {
+          const count = kingdomCounts[chip.key];
+          if (chip.key !== 'all' && count === 0) return null;
+          const Icon = chip.icon;
+          const active = kingdomFilter === chip.key;
           return (
-            <motion.a
-              key={`${obs.scientificName}-${i}`}
-              href={obs.originalUrl || '#'}
-              target={obs.originalUrl ? '_blank' : undefined}
-              rel="noopener noreferrer"
-              onClick={handleClick}
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: Math.min(i * 0.03, 0.4), duration: 0.25 }}
-              className={`group relative overflow-hidden rounded-2xl bg-muted/40 dark:bg-white/[0.03] border border-border/50 hover:border-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/10 ${span}`}
+            <button
+              key={chip.key}
+              role="tab"
+              aria-pressed={active}
+              onClick={() => setKingdomFilter(chip.key)}
+              className={`text-[11px] px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
+                active
+                  ? 'bg-emerald-500/15 ring-1 ring-emerald-500/40 text-foreground font-semibold'
+                  : 'bg-muted/40 hover:bg-muted/70 text-muted-foreground ring-1 ring-transparent'
+              }`}
             >
-              {photo ? (
-                <>
-                  <img
-                    src={photo}
-                    alt={primaryName}
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
-                </>
-              ) : (
-                <div className={`absolute inset-0 ${kingdomInfo.bgColor} flex items-center justify-center`}>
-                  <KingdomIcon className={`w-10 h-10 ${kingdomInfo.color} opacity-40`} />
-                </div>
-              )}
-
-              {/* Top-left: kingdom pill */}
-              <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10">
-                <KingdomIcon className={`w-3 h-3 ${kingdomInfo.color}`} />
-                <span className="text-[9px] font-medium text-white uppercase tracking-wider">
-                  {kingdomInfo.label}
-                </span>
-              </div>
-
-              {/* Top-right: source badge */}
-              <div className="absolute top-2 right-2">
-                {obs.hasOwnPhoto ? (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/90 backdrop-blur-sm">
-                    <Camera className="w-2.5 h-2.5 text-white" />
-                    <span className="text-[9px] font-semibold text-white">Marcheur</span>
-                  </div>
-                ) : (
-                  <div className="px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10">
-                    <span className="text-[9px] font-medium text-white/80">{sourceLabel(obs.source)}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom: name + date */}
-              <div className="absolute bottom-0 left-0 right-0 p-2.5 text-left">
-                <p className={`font-semibold text-white truncate drop-shadow ${span.includes('col-span-2') && span.includes('row-span-2') ? 'text-sm' : 'text-xs'}`}>
-                  {primaryName}
-                </p>
-                {frenchName && frenchName !== obs.scientificName && (
-                  <p className="text-[10px] text-white/70 italic truncate">{obs.scientificName}</p>
-                )}
-                {dateStr && (
-                  <p className="text-[9px] text-white/60 mt-0.5">{dateStr}</p>
-                )}
-              </div>
-
-              {obs.ownPhotos.length > 1 && (
-                <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-full bg-black/50 backdrop-blur-sm">
-                  <span className="text-[9px] text-white/90">+{obs.ownPhotos.length - 1}</span>
-                </div>
-              )}
-            </motion.a>
+              <Icon className={`w-3 h-3 ${active ? chip.color : ''}`} />
+              {chip.label}
+              <span className="text-[10px] opacity-70">({count})</span>
+            </button>
           );
         })}
       </div>
+
+      {totalVisible === 0 && (
+        <div className="px-3 py-6 text-center">
+          <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground italic">Aucune espèce dans cette sélection</p>
+          <button
+            onClick={() => { setKingdomFilter('all'); setOnlyOwn(false); }}
+            className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline mt-2"
+          >
+            Réinitialiser les filtres
+          </button>
+        </div>
+      )}
+
+      {/* SECTION 1 — Mes captures (large bento) */}
+      {showOwnSection && (
+        <section className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Camera className="w-3.5 h-3.5 text-emerald-500" />
+            <h3 className="text-xs font-semibold text-foreground">
+              Vos {ownList.length} capture{ownList.length > 1 ? 's' : ''} personnelle{ownList.length > 1 ? 's' : ''}
+            </h3>
+            <div className="flex-1 h-px bg-gradient-to-r from-emerald-500/30 to-transparent" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[140px] sm:auto-rows-[180px] gap-2">
+            {ownList.map((obs, i) => renderTile(obs, i, 'own', ownSpanFor(i)))}
+          </div>
+        </section>
+      )}
+
+      {/* Empty-own hint when we have only iNat data */}
+      {!showOwnSection && !onlyOwn && ownCount === 0 && showInatSection && (
+        <div className="rounded-xl bg-muted/30 border border-dashed border-border/60 px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-2">
+          <Camera className="w-3.5 h-3.5 text-emerald-500/70 shrink-0" />
+          <span>Aucune photo perso encore. Uploadez vos clichés depuis l'onglet <strong className="text-foreground">Observations</strong>.</span>
+        </div>
+      )}
+
+      {/* SECTION 2 — Repérées dans le périmètre (iNat) */}
+      {showInatSection && (
+        <section className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Users className="w-3.5 h-3.5 text-muted-foreground" />
+            <h3 className="text-xs font-semibold text-muted-foreground">
+              {inatList.length} repérée{inatList.length > 1 ? 's' : ''} dans le périmètre
+            </h3>
+            <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[110px] sm:auto-rows-[130px] gap-2">
+            {inatList.map((obs, i) => renderTile(obs, i, 'inat', ''))}
+          </div>
+        </section>
+      )}
 
       {lightbox && (
         <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
