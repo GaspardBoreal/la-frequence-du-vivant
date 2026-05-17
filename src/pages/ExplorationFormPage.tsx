@@ -1,13 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
 import ExplorationForm from '@/components/admin/ExplorationForm';
 import DecorativeParticles from '@/components/DecorativeParticles';
-import { Palette, Sparkles } from 'lucide-react';
+import { Palette, Sparkles, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import DuplicateExplorationDialog from '@/components/admin/DuplicateExplorationDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const ExplorationFormPage = () => {
   const { id } = useParams<{ id?: string }>();
   const isEdit = !!id;
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [explorationName, setExplorationName] = useState<string>('');
+
+  useEffect(() => {
+    if (!id) return;
+    supabase
+      .from('explorations')
+      .select('name')
+      .eq('id', id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name) setExplorationName(data.name);
+      });
+  }, [id]);
 
   return (
     <>
