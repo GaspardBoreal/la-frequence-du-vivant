@@ -38,9 +38,17 @@ Deno.serve(async (req) => {
     console.log(`🌿 [collect-event-biodiversity] Starting for exploration: ${explorationId}`);
 
     // Rate limiting: check if snapshots exist for this exploration < 24h
+    const { data: explorationRow } = await serviceClient
+      .from('explorations')
+      .select('default_radius_m')
+      .eq('id', explorationId)
+      .maybeSingle();
+    const explorationDefaultRadiusM: number | null =
+      (explorationRow as any)?.default_radius_m ?? null;
+
     const { data: explorationMarches } = await serviceClient
       .from('exploration_marches')
-      .select('marche_id, ordre, marches (id, nom_marche, ville, latitude, longitude)')
+      .select('marche_id, ordre, marches (id, nom_marche, ville, latitude, longitude, radius_m)')
       .eq('exploration_id', explorationId)
       .in('publication_status', ['published', 'published_public'])
       .order('ordre');
@@ -125,6 +133,11 @@ Deno.serve(async (req) => {
           .eq('id', logId);
       }
 
+      // Résolution du rayon : override marche → défaut exploration → 500 m
+      const radiusM: number =
+        (marche as any)?.radius_m ?? explorationDefaultRadiusM ?? 500;
+      const radiusKm = radiusM / 1000;
+
       try {
         // Call biodiversity-data with retries
         let biodiversityData = null;
@@ -134,7 +147,7 @@ Deno.serve(async (req) => {
               body: {
                 latitude: parseFloat(String(marche.latitude)),
                 longitude: parseFloat(String(marche.longitude)),
-                radius: 0.5,
+                radius: radiusKm,
                 mode: 'batch',
               }
             });
@@ -166,7 +179,7 @@ Deno.serve(async (req) => {
             marche_id: em.marche_id,
             latitude: parseFloat(String(marche.latitude)),
             longitude: parseFloat(String(marche.longitude)),
-            radius_meters: 500,
+            radius_meters: radiusM,
             total_species: totalSpecies,
             birds_count: birdsCount,
             plants_count: plantsCount,

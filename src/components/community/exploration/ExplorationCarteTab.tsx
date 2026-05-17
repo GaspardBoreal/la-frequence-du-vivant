@@ -296,6 +296,26 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const createWaypoint = useCreateWaypoint();
   const [isCreatingWaypoint, setIsCreatingWaypoint] = useState(false);
   const { layers: mapLayers, toggleLayer: toggleMapLayer, setWeatherStationsMode, setWeatherStationsRadius, activeCount: mapLayersActiveCount } = useMapLayers(explorationId);
+
+  // Per-marche radius (override) + exploration default → résolution cascade.
+  const { data: marcheRadii } = useQuery({
+    queryKey: ['exploration-marche-radii', explorationId, marches.map(m => m.id).join(',')],
+    queryFn: async () => {
+      const ids = marches.map(m => m.id).filter(Boolean);
+      if (ids.length === 0) return new Map<string, number | null>();
+      const { data } = await supabase.from('marches').select('id, radius_m').in('id', ids);
+      const m = new Map<string, number | null>();
+      (data || []).forEach((row: any) => m.set(row.id, row.radius_m));
+      return m;
+    },
+    enabled: marches.length > 0,
+    staleTime: 60_000,
+  });
+  const explorationDefaultRadiusM = (explorationData as any)?.default_radius_m ?? null;
+  const resolveMarcheRadiusM = useCallback((marcheId: string): number => {
+    const override = marcheRadii?.get(marcheId);
+    return override ?? explorationDefaultRadiusM ?? 500;
+  }, [marcheRadii, explorationDefaultRadiusM]);
   const hideMarcheMarkers = mapLayers.weatherStations === 'on_only';
   const [pendingWaypoint, setPendingWaypoint] = useState<{
     lat: number;
@@ -820,6 +840,28 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               canEdit={userCanCreate}
               segmentLabel={segLabel}
               pickModeOnClick={pickMode ? handlePickEndpoint : undefined}
+            />
+          );
+        })}
+
+        {/* Radius circles per marche (resolved: marche.radius_m → exploration.default_radius_m → 500m) */}
+        {!hideMarcheMarkers && geoMarches.map((marche) => {
+          const radiusM = resolveMarcheRadiusM(marche.id);
+          const isOverride = (marcheRadii?.get(marche.id) ?? null) != null;
+          return (
+            <Circle
+              key={`radius-${marche.id}`}
+              center={[marche.latitude!, marche.longitude!]}
+              radius={radiusM}
+              pathOptions={{
+                color: isOverride ? '#10b981' : '#64748b',
+                weight: 1,
+                opacity: 0.55,
+                fillColor: isOverride ? '#10b981' : '#94a3b8',
+                fillOpacity: 0.08,
+                dashArray: isOverride ? undefined : '4 4',
+              }}
+              interactive={false}
             />
           );
         })}

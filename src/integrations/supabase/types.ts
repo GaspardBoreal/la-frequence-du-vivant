@@ -2011,6 +2011,7 @@ export type Database = {
         Row: {
           cover_image_url: string | null
           created_at: string
+          default_radius_m: number | null
           description: string | null
           exploration_type:
             | Database["public"]["Enums"]["exploration_type"]
@@ -2029,6 +2030,7 @@ export type Database = {
         Insert: {
           cover_image_url?: string | null
           created_at?: string
+          default_radius_m?: number | null
           description?: string | null
           exploration_type?:
             | Database["public"]["Enums"]["exploration_type"]
@@ -2047,6 +2049,7 @@ export type Database = {
         Update: {
           cover_image_url?: string | null
           created_at?: string
+          default_radius_m?: number | null
           description?: string | null
           exploration_type?:
             | Database["public"]["Enums"]["exploration_type"]
@@ -3099,6 +3102,7 @@ export type Database = {
           longitude: number | null
           nom_marche: string | null
           organisateur_id: string | null
+          radius_m: number | null
           region: string | null
           sous_themes: string[] | null
           temperature: number | null
@@ -3121,6 +3125,7 @@ export type Database = {
           longitude?: number | null
           nom_marche?: string | null
           organisateur_id?: string | null
+          radius_m?: number | null
           region?: string | null
           sous_themes?: string[] | null
           temperature?: number | null
@@ -3143,6 +3148,7 @@ export type Database = {
           longitude?: number | null
           nom_marche?: string | null
           organisateur_id?: string | null
+          radius_m?: number | null
           region?: string | null
           sous_themes?: string[] | null
           temperature?: number | null

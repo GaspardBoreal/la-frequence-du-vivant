@@ -451,7 +451,13 @@ const ExplorationMarcheurPage: React.FC = () => {
                         <LireTab userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />
                       )}
                       {activeSensoryTab === 'vivant' && (
-                        <VivantTab marcheId={activeMarcheId || ''} userId={userId} marcheSlug={activeMarcheSlug} />
+                        <VivantTab
+                          marcheId={activeMarcheId || ''}
+                          userId={userId}
+                          marcheSlug={activeMarcheSlug}
+                          explorationId={effectiveExplorationId || undefined}
+                          userRole={isAdmin ? 'admin' : userLevel}
+                        />
                       )}
                     </>
                   )}

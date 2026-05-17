@@ -964,29 +964,57 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
 
 
 // ─── Vivant (3 couches) ───
-export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
+export const VivantTab: React.FC<{
+  marcheId: string;
+  userId: string;
+  marcheSlug?: string;
+  explorationId?: string;
+  userRole?: string;
+}> = ({ marcheId, userId, marcheSlug, explorationId, userRole }) => {
   const queryClient = useQueryClient();
   const hasSyncedRef = useRef<string | null>(null);
+
+  const canEdit = userRole === 'ambassadeur' || userRole === 'sentinelle' || userRole === 'admin';
+
+  // Fetch radius context (marche + exploration default)
+  const { data: radiusCtx } = useQuery({
+    queryKey: ['marche-radius-ctx', marcheId, explorationId],
+    queryFn: async () => {
+      const [marcheRes, exploRes] = await Promise.all([
+        supabase.from('marches').select('id, radius_m, latitude, longitude').eq('id', marcheId).maybeSingle(),
+        explorationId
+          ? supabase.from('explorations').select('default_radius_m').eq('id', explorationId).maybeSingle()
+          : Promise.resolve({ data: null } as any),
+      ]);
+      return {
+        marcheRadiusM: (marcheRes.data as any)?.radius_m ?? null,
+        explorationDefaultM: (exploRes?.data as any)?.default_radius_m ?? null,
+        latitude: (marcheRes.data as any)?.latitude ?? null,
+        longitude: (marcheRes.data as any)?.longitude ?? null,
+      };
+    },
+    enabled: !!marcheId,
+  });
+
+  const resolvedKm = (
+    radiusCtx?.marcheRadiusM ?? radiusCtx?.explorationDefaultM ?? 500
+  ) / 1000;
+  const isOverride = radiusCtx?.marcheRadiusM != null;
+
   const [radius, setRadius] = useState(0.5);
+  useEffect(() => {
+    setRadius(resolvedKm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedKm]);
 
   // Reset sync when radius changes
   useEffect(() => {
     hasSyncedRef.current = null;
   }, [radius]);
 
-  // Fetch lat/lng for this marche
-  const { data: coords } = useQuery({
-    queryKey: ['marche-coords', marcheId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('marches')
-        .select('latitude, longitude')
-        .eq('id', marcheId)
-        .single();
-      return data;
-    },
-    enabled: !!marcheId,
-  });
+  const coords = radiusCtx
+    ? { latitude: radiusCtx.latitude, longitude: radiusCtx.longitude }
+    : null;
 
   // Use the same hook as the web bioacoustic pages
   const { data: biodiversityData, isLoading } = useBiodiversityData({
@@ -1004,7 +1032,6 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
 
     const syncSnapshot = async () => {
       try {
-        console.log(`🔄 Syncing biodiversity snapshot for marche ${marcheId}...`);
         const { error } = await supabase.functions.invoke('sync-biodiversity-snapshot', {
           body: {
             marcheId,
@@ -1016,11 +1043,8 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
           },
         });
         if (!error) {
-          console.log(`✅ Snapshot synced for marche ${marcheId}`);
           queryClient.invalidateQueries({ queryKey: ['event-biodiversity-snapshots'] });
           queryClient.invalidateQueries({ queryKey: ['biodiversity-snapshots'] });
-        } else {
-          console.warn('⚠️ Snapshot sync failed:', error);
         }
       } catch (err) {
         console.warn('⚠️ Snapshot sync error (non-blocking):', err);
@@ -1032,6 +1056,27 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
 
   const explorerLink = marcheSlug ? `/bioacoustique/${marcheSlug}` : null;
 
+  const saveAsMarcheOverride = async () => {
+    const radiusM = Math.round(radius * 1000);
+    const { error } = await supabase.from('marches').update({ radius_m: radiusM }).eq('id', marcheId);
+    if (error) toast.error('Échec enregistrement');
+    else {
+      toast.success(`Rayon de cette marche : ${radiusM} m`);
+      queryClient.invalidateQueries({ queryKey: ['marche-radius-ctx', marcheId] });
+      queryClient.invalidateQueries({ queryKey: ['exploration-all-marches'] });
+      queryClient.invalidateQueries({ queryKey: ['event-all-marches'] });
+    }
+  };
+
+  const clearMarcheOverride = async () => {
+    const { error } = await supabase.from('marches').update({ radius_m: null }).eq('id', marcheId);
+    if (error) toast.error('Échec');
+    else {
+      toast.success("Retour au défaut de l'exploration");
+      queryClient.invalidateQueries({ queryKey: ['marche-radius-ctx', marcheId] });
+    }
+  };
+
   if (isLoading && !biodiversityData) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -1039,6 +1084,9 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
       </div>
     );
   }
+
+  const persistedKm = (radiusCtx?.marcheRadiusM ?? radiusCtx?.explorationDefaultM ?? 500) / 1000;
+  const isDirty = Math.abs(radius - persistedKm) > 1e-6;
 
   return (
     <div className="space-y-4">
@@ -1048,7 +1096,34 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
           <ExternalLink className="w-3 h-3" />Explorer sur le territoire
         </a>
       )}
-      <RadiusSelector value={radius} onChange={setRadius} loading={isLoading} />
+      <div className="space-y-2">
+        <RadiusSelector value={radius} onChange={setRadius} loading={isLoading} readOnly={!canEdit} />
+        {canEdit && (
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="text-muted-foreground">
+              {isOverride
+                ? <>Rayon <em>personnalisé</em> pour cette marche</>
+                : <>Hérite du défaut exploration ({Math.round(persistedKm * 1000)} m)</>}
+            </span>
+            {isDirty && (
+              <button
+                onClick={saveAsMarcheOverride}
+                className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30 transition-colors"
+              >
+                Définir comme rayon de cette marche
+              </button>
+            )}
+            {isOverride && (
+              <button
+                onClick={clearMarcheOverride}
+                className="px-2.5 py-1 rounded-full bg-background/40 border border-border/40 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Revenir au défaut
+              </button>
+            )}
+          </div>
+        )}
+      </div>
       {(!biodiversityData?.species || biodiversityData.species.length === 0) ? (
         <EmptyState message="Aucune donnée biodiversité disponible pour ce rayon" />
       ) : (
