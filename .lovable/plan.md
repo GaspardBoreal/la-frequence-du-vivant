@@ -1,70 +1,82 @@
-## Diagnostic
+## Objectif
 
-J'ai vérifié les 3 sources qui affichent un compteur d'espèces pour l'exploration `DEVIAT / Jardin Monde` (id `20dd3be8…`) — les 3 chiffres viennent de **3 hooks différents** qui dédupliquent **différemment**, et tous lisent une table `biodiversity_snapshots` qui **n'a pas été resynchronisée depuis hier**.
+Ajouter une action « Dupliquer » sur les événements de marche, sûre, prévisible et alignée au design system.
 
-### 1. Pourquoi 60 / 64 / 60 ?
+## Périmètre copié (whitelist explicite)
 
-| Vue | Hook | Source | Déduplication | Résultat |
-|---|---|---|---|---|
-| Carnet (capture 1) | `useMarcheCollectedData` | `biodiversity_snapshots.species_data` uniquement | clé = `scientificName` | **60** |
-| Carte (capture 2) | `useExplorationBiodiversitySummary` | snapshots **+** `marcheur_observations` | clé = `commonName \|\| scientificName`, ajoute les obs marcheurs absentes des snapshots | **64** |
-| Pouls du vivant (capture 3) | `useBiodiversityEvolution` | snapshots uniquement | clé = `scientificName` | **60** |
+Champs de `marche_events` recopiés :
+- `title` (suffixé), `description`, `event_type`
+- `lieu`, `latitude`, `longitude`
+- `max_participants`
+- `exploration_id`
 
-Les **+4** de la Carte = 4 espèces saisies par des marcheurs (table `marcheur_observations` — 94 lignes pour cette exploration) qui ne sont pas (encore) dans les snapshots iNat.
+Champs **régénérés / réinitialisés** :
+- `id` → nouveau `gen_random_uuid()`
+- `qr_code` → nouveau hex (default DB)
+- `date_marche` → choisi dans le mini-dialog
+- `created_by` → admin courant
+- `created_at` / `updated_at` → `now()`
 
-### 2. Pourquoi les saisies iNat de ce matin (chêne, vigne) sont invisibles ?
+**Jamais copié** (RGPD / intégrité) : participations, médias marcheurs, observations, témoignages, snapshots biodiversité, logs d'activité, audios, textes, backfill iNat.
 
-Requête sur `biodiversity_snapshots` pour les 4 marches de l'exploration :
+Note technique : `marche_events` n'a actuellement **pas** de champ `slug`, `is_published`, ni de table de liaison `marche_event ↔ organisateurs`. La case « exploration & organisateurs » se traduit donc uniquement par la recopie de `exploration_id` (les organisateurs sont rattachés aux `marches`, pas aux events).
+
+Pour les **marches rattachées** : il n'existe pas de FK directe `marches.marche_event_id`. Les marches sont liées via `exploration_id`. Aucune marche ne sera donc recréée par défaut — un évènement dupliqué pointera vers la même exploration et héritera de ses marches existantes. (À confirmer : voir « Question ouverte » ci-dessous.)
+
+## UX
+
+### 1. Mini-dialog « Dupliquer cet événement »
+Composant `DuplicateEventDialog.tsx` (shadcn `Dialog`), déclenché depuis 2 points d'entrée :
+
+- **Liste** (`EventsListTab`) : ajout d'un menu kebab `⋮` (`DropdownMenu`) en haut-droite de chaque carte, avec actions « Voir », « Éditer », « Dupliquer ». `stopPropagation` pour ne pas déclencher la navigation de la carte.
+- **Détail / édition** (`ExplorationMarchesAdmin` ou formulaire d'événement) : bouton secondaire « Dupliquer » dans le header, à côté de « Éditer ».
+
+Contenu du dialog :
+- Input `Titre de la copie` (défaut : `"{title} (copie)"`)
+- DatePicker shadcn + sélecteur heure (défaut : `date_marche + 7 jours`, même heure)
+- Texte d'aide listant ce qui sera **et ne sera pas** copié
+- Boutons `Annuler` / `Dupliquer` (loading state)
+
+### 2. Après confirmation
+- Insert en base
+- Toast succès : « Événement dupliqué »
+- Invalidate React Query : `marche-events-paginated`, `marche-events-stats`, `marche-events-all`
+- Redirection : `/admin/marche-events/{newId}` (page d'édition) pour ajustement immédiat
+
+### 3. Gestion d'erreur
+- Validation Zod côté client (titre non vide, date future ou non, longueur)
+- Catch Supabase → toast `destructive` avec message lisible
+
+## Implémentation technique
 
 ```text
-marche_id                              total_species   created_at
-bf50566d-77d6-4776-a0aa-c62965d74a81   59              2026-05-14 17:55
-4095a154-737b-4238-a454-8a06e6f3807e   51              2026-05-14 13:32
-f94e5c2f-305d-4b37-8ce3-7687c0195cd0   51              2026-05-14 09:55
-67890ed0-1279-43f5-b971-714360897e9d   51              2026-05-14 09:55
+src/
+├─ hooks/useDuplicateMarcheEvent.ts         # mutation react-query
+├─ components/admin/marche-events/
+│   ├─ DuplicateEventDialog.tsx              # dialog réutilisable
+│   └─ EventsListTab.tsx                     # + menu kebab
+└─ pages/MarcheEventsAdmin.tsx               # contrôle dialog state (déjà routé)
 ```
 
-Les snapshots datent **d'hier**. Le cron `collect-event-biodiversity` tourne 1×/jour ; il n'y a **pas** de re-sync au montage de la page exploration. Donc tant que le cron n'est pas repassé, les nouvelles obs iNat (< 15 min) ne sont visibles nulle part — c'est attendu côté code, mais c'est un vrai trou UX.
+`useDuplicateMarcheEvent` :
+```ts
+async ({ sourceId, title, dateMarche }) => {
+  // 1. SELECT * source
+  // 2. Whitelist + override title/date_marche/created_by
+  // 3. INSERT (DB régénère id + qr_code)
+  // 4. Retour newId
+}
+```
 
-## Plan de correction
+Pas de migration SQL nécessaire — les RLS d'`INSERT` admin sur `marche_events` existent déjà (vérifier `check_is_admin_user`).
 
-### A. Unifier les 3 compteurs (cohérence stricte)
+## Design system
 
-Source de vérité unique = `useExplorationBiodiversitySummary` (déjà fusionne snapshots + `marcheur_observations`, conforme à la mémoire `score-citizen-observations-fusion-logic`).
+- Dialog : composants shadcn (`Dialog`, `Input`, `Popover`+`Calendar` avec `pointer-events-auto`, `Button`)
+- Aucune couleur hardcodée — `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`
+- Icône `Copy` (lucide) pour les CTA
+- Toast via `sonner` (déjà installé)
 
-1. **Carnet** (`useMarcheCollectedData`) : remplacer le calcul local de `species_count` par un appel à la même fusion (snapshots + `marcheur_observations` dédupliqués par `scientificName` lowercased), pour qu'un événement remonte le **même total** que la Carte.
-2. **Pouls du vivant** (`useBiodiversityEvolution`) : injecter aussi les `marcheur_observations` dans les buckets journaliers (date = `observation_date`), pour que la courbe atteigne le même total et reflète les saisies marcheurs.
-3. Harmoniser la **clé de dedup** sur `scientificName.toLowerCase()` partout (le `commonName || scientificName` actuel de la Carte introduit des doublons quand le même taxon est tantôt avec, tantôt sans nom commun).
+## Question ouverte (1 dernière clarification)
 
-### B. Rafraîchir les snapshots à la volée (freshness iNat)
-
-Au montage de `ExplorationDetail` (ou dès l'ouverture de l'onglet Carte / Synthèse), déclencher en arrière-plan `collect-event-biodiversity` si le snapshot le plus récent de l'exploration a **plus de 2 h** :
-
-- Lire `max(created_at)` sur les snapshots des marches de l'exploration.
-- Si `> 2h` → `supabase.functions.invoke('collect-event-biodiversity', { body: { explorationId } })` en fire-and-forget.
-- Au retour : invalider les query keys `['exploration-biodiversity-summary', explorationId]`, `['marche-collected-data', …]` et `['biodiversity-snapshots-evolution', …]` pour que les 3 vues se mettent à jour.
-- Afficher un petit indicateur discret « Mise à jour des observations… » pendant la resync (pas de blocage).
-
-Conforme à la mémoire `snapshot-sync-on-view-logic` (qui prévoit déjà ce pattern mais n'est manifestement pas câblé sur cette page).
-
-### C. (option) Bouton manuel « Rafraîchir »
-
-Petit bouton 🔄 à côté du compteur de la Carte qui force le `collect-event-biodiversity` immédiatement, pour les cas où l'utilisateur vient de saisir et veut voir le résultat tout de suite.
-
-## Détails techniques
-
-- **Fichiers à modifier** :
-  - `src/hooks/useMarcheCollectedData.ts` → fusionner `marcheur_observations` dans le calcul `species_count`.
-  - `src/hooks/useBiodiversityEvolution.ts` → accepter un 2ᵉ paramètre `marcheurObservations[]` et créer des `DayObservation` à partir de `observation_date`.
-  - `src/components/community/CarnetVivant.tsx` → passer les `marcheur_observations` (déjà chargées ailleurs ou via un nouveau hook léger).
-  - `src/pages/ExplorationDetail.tsx` (ou `ExplorationLayout`) → ajouter le hook `useEffect` de resync + invalidations React Query.
-  - Optionnel : nouveau composant `RefreshSnapshotsButton`.
-
-- **Pas de migration DB** — uniquement du code front + appel d'une edge function existante.
-
-- **Risque** : la resync coûte 1 appel iNat par marche ; le throttle est déjà géré dans l'edge function `collect-event-biodiversity` (le cron quotidien l'utilise). On limite quand même via la garde « > 2h ».
-
-## Ce que ça donne après
-
-- Carnet, Carte et Pouls du vivant affichent **tous le même chiffre** (≥ 64 actuellement, +2 dès que la resync ramène le chêne et la vigne d'iNat).
-- À chaque ouverture de l'exploration, les obs iNat de moins de 2 h apparaissent automatiquement sans attendre le cron du lendemain.
+L'option « Marches rattachées (sans participants ni médias) » que vous avez cochée : voulez-vous que je **crée aussi de nouvelles marches** dans l'exploration cible (copies des marches liées à la date source), ou est-ce que pointer simplement vers la même `exploration_id` suffit ? Étant donné qu'il n'y a pas de FK `marches → marche_events`, dupliquer des marches signifierait les **dupliquer dans l'exploration** (et elles apparaîtraient pour tous les autres events de cette exploration), ce qui est probablement indésirable. Je recommande donc de **ne pas dupliquer les marches** et de garder le lien via `exploration_id` uniquement. Confirmez-vous ?
