@@ -1,98 +1,90 @@
-## Diagnostic
+## Cause racine
 
-La mosaïque actuelle (lignes 612-640 de `MarcheursTab.tsx`) souffre de trois manques :
+Le champ `marcheur_observations.photo_url` n'est **pas** rempli par les uploads du marcheur. Il est rempli par l'edge function `backfill-marcheur-inaturalist` (ligne 154) à partir de l'API iNaturalist :
 
-1. **Photos perso noyées** — elles sont juste triées en tête, sans hiérarchie visuelle forte. Quand le marcheur a 3 photos perso sur 40 espèces, on voit surtout des miniatures iNat dès le 2ᵉ écran. Le toggle "Mes photos" existe mais est secondaire (petite pastille à droite).
-2. **Pas de filtres règne** — impossible d'isoler la Faune, la Flore, les Champignons. Pourtant le `kingdom` est déjà disponible dans chaque `ContribSpeciesItem`.
-3. **Pas de mise en récit** — toutes les tuiles ont la même valeur visuelle, on ne ressent pas "ce que CE marcheur a vu de ses yeux".
-
-## Améliorations proposées
-
-### A. Vue par défaut : "Mes photos" en premier
-
-Réorganiser la sous-onglet en **deux sections empilées** :
-
-```
-┌─ Section 1 — "Mes captures" (si ownCount > 0) ──────────┐
-│  Titre : "📷 Vos {N} captures personnelles"            │
-│  Bento généreux : 1ʳᵉ tuile 2x2, photos plus grandes   │
-│  Tuiles : grandes (180px desktop), ratio variable      │
-│  Carousel léger si plusieurs photos par espèce         │
-└─────────────────────────────────────────────────────────┘
-
-┌─ Section 2 — "Repérées dans le périmètre" (iNat) ──────┐
-│  Titre : "{N} espèces vues par la communauté"          │
-│  Bento compact : tuiles 120px uniformes                │
-│  Visuellement plus discret (saturation -10%, ring fin) │
-└─────────────────────────────────────────────────────────┘
+```ts
+photo_url: obs?.photos?.[0]?.url?.replace('square', 'medium') || null
 ```
 
-Si `ownCount === 0` → on n'affiche que la section iNat (comme aujourd'hui).
-Si `onlyOwn === true` → seule la section "Mes captures" est visible.
+→ La photo "perso" affichée par la mosaïque actuelle est en réalité **la miniature iNaturalist hébergée chez iNat** (`static.inaturalist.org` ou `inaturalist-open-data.s3.amazonaws.com`). Le bento les marque `hasOwnPhoto = true` simplement parce que `photo_url` est non-null, d'où le badge emerald "Marcheur" trompeur sur une image iNat.
 
-**Effet** : le marcheur voit IMMÉDIATEMENT ses propres photos en grand, valorisées. Les photos iNat passent en "contexte du périmètre".
+Les **vraies** photos uploadées par le marcheur vivent dans :
+- `marcheur_medias.url_fichier` (uploads Mon Espace > Observations) — stockage Supabase
+- éventuellement `marcheur_medias.external_url`
 
-### B. Filtres par règne (chips horizontales)
+Ces médias n'ont aucun lien direct vers une espèce. Cependant, l'edge de collecte/curation injecte parfois leurs URLs dans `biodiversity_snapshots.species_data[].photos[]` (cf. `SpeciesGalleryDetailModal.tsx` ligne 164 : *"Photos locales storage (médias marcheurs sans entrée marcheur_observations)"*) — on peut donc les détecter par leur host.
 
-Ajouter un rang de chips sous le header :
+## Correctif
 
-```
-[ Tout (42) ]  [ 🐦 Faune (18) ]  [ 🌿 Flore (22) ]  [ 🍄 Fungi (2) ]
-```
+### 1. Distinguer une photo "perso" par son host
 
-- Calculé depuis `all` (avant filtre `onlyOwn`) pour montrer les totaux réels.
-- État local `kingdomFilter: 'all' | 'Animalia' | 'Plantae' | 'Fungi' | 'other'`.
-- Chip actif : `bg-emerald-500/15 ring-1 ring-emerald-500/40 text-foreground`.
-- Chip inactif : `bg-muted/40 hover:bg-muted/60 text-muted-foreground`.
-- Icône + label + count entre parenthèses, taille `text-[11px]`.
-- Compatible avec `onlyOwn` : les filtres se combinent (ex. "Faune" + "Mes photos").
-- Si un règne a 0 espèce → chip masquée (pas grisée, on évite le bruit).
+Ajouter un helper local :
 
-### C. Header repensé
-
-Remplacer la ligne actuelle par 2 rangs :
-
-```
-Rang 1 : Counter + toggles principaux
-   "🌿 42 espèces"  [📷 Mes photos (3) ●] [⇅ Tri]
-
-Rang 2 : Chips règne
-   [Tout] [🐦 Faune] [🌿 Flore] [🍄 Fungi]
+```ts
+const isOwnPhotoUrl = (url: string | null | undefined): boolean => {
+  if (!url) return false;
+  const u = url.toLowerCase();
+  // Supabase storage = vraie photo perso uploadée
+  if (u.includes('.supabase.co/storage/') || u.includes('.supabase.in/storage/')) return true;
+  // Tout host iNaturalist = miniature iNat backfillée, PAS perso
+  if (u.includes('inaturalist.org') || u.includes('inaturalist-open-data')) return false;
+  // Par défaut on considère non-perso pour rester sobre
+  return false;
+};
 ```
 
-Le toggle "Mes photos" devient un **switch visible** (pas une mini-pastille) avec compteur intégré, désactivé si `ownCount === 0`.
+### 2. Reclasser dans la query `marcheur-contributions-bento`
 
-### D. Tuile "Mes captures" enrichie
+Pour chaque ligne `marcheur_observations` :
+- Si `isOwnPhotoUrl(photo_url)` → toujours `hasOwnPhoto = true`, `ownPhotos.push(photo_url)`, `primaryPhoto = photo_url`, `source = 'marcheur'`.
+- Sinon (URL iNat ou null) → on enregistre l'espèce mais on **n'incrémente pas** `ownPhotos`, on laisse `hasOwnPhoto = false` et `primaryPhoto = null` à ce stade. La photo iNat sera ré-affectée correctement à `primaryPhoto` plus tard dans le bloc d'enrichissement iNat (qui pose `source = 'inaturalist'`).
 
-Pour les tuiles de la section 1 (photos perso) :
-- Badge "📷 Marcheur" remplacé par un **liseré emerald** plus subtil (ring-2 emerald-500/60 permanent, pas seulement au hover) — la photo elle-même est le badge.
-- Indicateur "×N photos" en bas-droite si `ownPhotos.length > 1` (préfigure carousel V2).
-- Date plus visible : "📅 12 nov." en chip semi-transparent.
-- Au clic : lightbox déjà en place — ajouter navigation flèches si `ownPhotos.length > 1`.
+### 3. Récupérer en plus les photos `marcheur_medias` (storage)
 
-Tuiles iNat (section 2) restent comme aujourd'hui mais sans le badge "iNat" en haut-droite (info redondante avec la section), gagnant en sobriété.
+Nouvelle sous-requête (en parallèle de la requête actuelle) :
 
-### E. État vide différencié
+```ts
+supabase
+  .from('marcheur_medias')
+  .select('url_fichier, external_url, marche_event_id')
+  .eq('is_public', true)
+  .eq('type_media', 'photo')
+  .or(`user_id.eq.${userId},attributed_marcheur_id.eq.${crewId}`)
+  .in('marche_event_id', explorationEventIds)
+```
 
-- `ownCount === 0` + section iNat non vide → bannière discrète au-dessus : *"Aucune photo perso encore. Uploadez vos clichés via l'onglet Observations ↑"* (CTA léger).
-- Filtre règne vide → message contextuel : *"Aucune espèce de Faune identifiée"* + bouton "Voir tout".
+Construire un `Set<string>` des URLs de stockage du marcheur (`ownMediaUrls`).
+
+Puis, dans le bloc d'enrichissement iNat (snapshots), pour chaque `sp.photos[]` :
+- Si l'URL est dans `ownMediaUrls` → c'est une photo perso liée à cette espèce. Promouvoir l'entrée : `hasOwnPhoto = true`, `primaryPhoto = url`, `source = 'marcheur'`, `ownPhotos.push(url)`.
+
+Ainsi on capte les uploads marcheur même quand seul le snapshot fait le lien espèce↔photo.
+
+### 4. Aucune modification du badge/UI
+
+Le composant `renderTile` reste tel quel : il s'appuie sur `variant === 'own'` (déduit de `hasOwnPhoto`) — qui maintenant correspond strictement à une URL Supabase storage. Conséquence visible :
+- La section **"Vos captures personnelles"** ne contiendra plus que de vraies photos uploadées par le marcheur (souvent moins nombreuses, parfois zéro).
+- Les espèces backfillées depuis iNat (avec photo iNat) atterriront dans **"Repérées dans le périmètre"**, sans liseré emerald.
+- Le hint *"Aucune photo perso encore. Uploadez vos clichés depuis l'onglet Observations."* déjà en place s'affichera correctement.
 
 ## Robustesse
 
-- **Performance** : le filtre `kingdomFilter` est purement client-side sur `items` déjà en mémoire — aucun re-fetch.
-- **Memoization** : `kingdomCounts` calculé via `useMemo` sur `all`, recalcul seulement si `items` change.
-- **Accessibilité** : chips sont des `<button role="tab" aria-pressed>`, navigation clavier supportée.
-- **Persistance** : `kingdomFilter` et `onlyOwn` restent locaux au composant (pas de URL state) — cohérent avec `sort`.
-- **Fallback kingdom** : valeurs hors `Animalia/Plantae/Fungi` regroupées sous "Autres" si présentes, sinon ignorées.
-- **Aucun changement de schéma** ni de hook backend : tout est purement UI sur les données déjà chargées par la query `marcheur-contributions-bento`.
+- **Pas de migration DB** : pure logique frontend.
+- **Pas de re-fetch supplémentaire coûteux** : un seul `select` léger sur `marcheur_medias` (déjà indexé par `user_id`/`attributed_marcheur_id`).
+- **Garde-fou** : si `userId` et `crewId` sont tous deux nuls, on saute la requête `marcheur_medias` (cas observateur tiers consultant une fiche).
+- **Idempotent** : `ownMediaUrls` est un Set → pas de doublon. La promotion d'une entrée iNat existante ne crée pas de doublon dans `byKey`.
+- **Compatibilité** : la mémoire *"Score iNat fusion"* (Fréquence) n'est pas impactée — ce changement ne touche que l'affichage du sous-onglet Contributions.
 
-## Fichiers touchés
+## Fichier touché
 
-- **Édité** : `src/components/community/exploration/MarcheursTab.tsx`
-  - Composant `ContributionsSubTab` (lignes 431-790 environ) : ajouter state `kingdomFilter`, calculer `kingdomCounts`, rendre les chips, scinder le rendu en deux blocs `<BentoSection variant="own" />` / `<BentoSection variant="inat" />`, factoriser la tuile en sous-composant local `ContribTile`.
+- `src/components/community/exploration/MarcheursTab.tsx` (composant `ContributionsSubTab` ~ lignes 431-540) :
+  - Ajouter `isOwnPhotoUrl`.
+  - Réécrire la boucle `marcheur_observations` pour ne marquer `hasOwnPhoto` que si l'URL est Supabase.
+  - Ajouter le fetch `marcheur_medias` → `ownMediaUrls`.
+  - Étendre la boucle d'enrichissement iNat pour promouvoir les URLs présentes dans `ownMediaUrls`.
 
 ## Hors scope
 
-- Carousel multi-photos par espèce (préparation seulement via l'indicateur "×N").
-- Filtres par catégorie écologique (bioindicateur/EEE/etc.) — pourrait venir en V3.
-- Drag-and-drop de réordonnancement (déjà géré ailleurs).
+- Ne pas changer l'edge function `backfill-marcheur-inaturalist` (l'iNat URL reste utile pour la fiche espèce et la galerie globale).
+- Ne pas modifier `useSpeciesMarcheurPhotos` (utilisée par la modale espèce — comportement actuel correct car les deux sources sont rendues côte à côte).
+- Pas de carrousel multi-photos perso (V2).
