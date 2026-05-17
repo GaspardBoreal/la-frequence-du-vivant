@@ -414,110 +414,183 @@ const SortableObservationTile: React.FC<{ photo: any; index: number }> = ({ phot
 const normalizeStr = (str: string) =>
   str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
 
-// --- Contributions sub-tab: species from biodiversity snapshots ---
+// --- Contributions sub-tab: BENTO mosaic of taxons identified by the marcheur ---
+// Priority: photos uploaded by the marcheur (marcheur_observations) > iNat photos (snapshots).
+interface ContribSpeciesItem {
+  scientificName: string;
+  commonName: string;
+  kingdom: string;
+  primaryPhoto: string | null;
+  hasOwnPhoto: boolean;
+  ownPhotos: string[];
+  lastDate: string;
+  source: string; // 'marcheur' or iNat/eBird/gbif source label
+  originalUrl: string | null;
+}
+
 const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId?: string; explorationMarcheIds: string[]; resolvedUserId: string | null }> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId }) => {
-  const [sort, setSort] = useState<'desc' | 'asc'>('asc');
+  const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+  const [onlyOwn, setOnlyOwn] = useState(false);
+  const [lightbox, setLightbox] = useState<{ url: string; label: string } | null>(null);
   const { data: aliases } = useMarcheurAliases(resolvedUserId, marcheur.prenom, marcheur.nom);
   const aliasesKey = (aliases || []).slice().sort().join('|');
+  const crewId = marcheur.crewId || (marcheur.source === 'crew' ? marcheur.id : null);
 
-  const { data: speciesFromSnapshots, isLoading } = useQuery({
-    queryKey: ['marcheur-contributions-species', explorationId, aliasesKey],
-    queryFn: async () => {
-      if (!explorationMarcheIds.length || !aliases || !aliases.length) return [];
-      const aliasSet = new Set(aliases);
-      const { data } = await supabase
-        .from('biodiversity_snapshots')
-        .select('species_data')
-        .in('marche_id', explorationMarcheIds);
-      if (!data) return [];
+  const { data: items, isLoading } = useQuery({
+    queryKey: ['marcheur-contributions-bento', explorationId, aliasesKey, crewId],
+    queryFn: async (): Promise<ContribSpeciesItem[]> => {
+      if (!explorationMarcheIds.length) return [];
+      const byKey = new Map<string, ContribSpeciesItem>();
 
-      const results: Array<{
-        scientificName: string;
-        commonName: string;
-        kingdom: string;
-        photoUrl: string | null;
-        date: string;
-        source: string;
-        originalUrl: string | null;
-      }> = [];
-
-      for (const snapshot of data) {
-        const speciesArr = snapshot.species_data as any[];
-        if (!Array.isArray(speciesArr)) continue;
-        for (const sp of speciesArr) {
-          const attributions = sp.attributions as any[];
-          if (!Array.isArray(attributions)) continue;
-          for (const attr of attributions) {
-            const observerNorm = normalizeAlias(attr.observerName || '');
-            if (aliasSet.has(observerNorm)) {
-              const photoUrl = sp.photoData?.url || (Array.isArray(sp.photos) && sp.photos.length > 0 ? sp.photos[0] : null);
-              results.push({
-                scientificName: sp.scientificName || '',
-                commonName: sp.commonName || '',
-                kingdom: sp.kingdom || '',
-                photoUrl,
-                date: attr.date || '',
-                source: attr.source || '',
-                originalUrl: attr.originalUrl || null,
-              });
+      // 1) Photos personnelles du marcheur (marcheur_observations)
+      if (crewId) {
+        const { data: ownObs } = await supabase
+          .from('marcheur_observations')
+          .select('species_scientific_name, species_common_name, kingdom, photo_url, observation_date, marche_id')
+          .eq('marcheur_id', crewId)
+          .in('marche_id', explorationMarcheIds);
+        (ownObs || []).forEach((o: any) => {
+          const sci = (o.species_scientific_name || '').trim();
+          if (!sci) return;
+          const key = sci.toLowerCase();
+          const existing = byKey.get(key);
+          if (existing) {
+            if (o.photo_url) existing.ownPhotos.push(o.photo_url);
+            if (o.observation_date && (!existing.lastDate || new Date(o.observation_date) > new Date(existing.lastDate))) {
+              existing.lastDate = o.observation_date;
             }
+            if (!existing.primaryPhoto && o.photo_url) {
+              existing.primaryPhoto = o.photo_url;
+              existing.hasOwnPhoto = true;
+              existing.source = 'marcheur';
+            }
+          } else {
+            byKey.set(key, {
+              scientificName: sci,
+              commonName: o.species_common_name || '',
+              kingdom: o.kingdom || '',
+              primaryPhoto: o.photo_url || null,
+              hasOwnPhoto: !!o.photo_url,
+              ownPhotos: o.photo_url ? [o.photo_url] : [],
+              lastDate: o.observation_date || '',
+              source: o.photo_url ? 'marcheur' : '',
+              originalUrl: null,
+            });
           }
-        }
+        });
       }
 
-      // Deduplicate by scientificName+date+source to avoid exact duplicates across snapshots
-      const seen = new Set<string>();
-      return results.filter(r => {
-        const key = `${r.scientificName}|${r.date}|${r.source}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      // 2) Fallback iNat (snapshots) via alias matching
+      if (aliases && aliases.length) {
+        const aliasSet = new Set(aliases);
+        const { data } = await supabase
+          .from('biodiversity_snapshots')
+          .select('species_data')
+          .in('marche_id', explorationMarcheIds);
+        (data || []).forEach((snap: any) => {
+          const arr = snap.species_data as any[];
+          if (!Array.isArray(arr)) return;
+          arr.forEach((sp) => {
+            const attributions = sp.attributions as any[];
+            if (!Array.isArray(attributions)) return;
+            const sci = (sp.scientificName || '').trim();
+            if (!sci) return;
+            const key = sci.toLowerCase();
+            attributions.forEach((attr: any) => {
+              const observerNorm = normalizeAlias(attr.observerName || '');
+              if (!aliasSet.has(observerNorm)) return;
+              const inatPhoto = sp.photoData?.url || (Array.isArray(sp.photos) && sp.photos.length > 0 ? sp.photos[0] : null);
+              const existing = byKey.get(key);
+              if (existing) {
+                // Enrich missing fields, never override own photo
+                if (!existing.primaryPhoto && inatPhoto) existing.primaryPhoto = inatPhoto;
+                if (!existing.kingdom && sp.kingdom) existing.kingdom = sp.kingdom;
+                if (!existing.commonName && sp.commonName) existing.commonName = sp.commonName;
+                if (!existing.originalUrl && attr.originalUrl) existing.originalUrl = attr.originalUrl;
+                if (!existing.source) existing.source = attr.source || 'inaturalist';
+                if (attr.date && (!existing.lastDate || new Date(attr.date) > new Date(existing.lastDate))) {
+                  existing.lastDate = attr.date;
+                }
+              } else {
+                byKey.set(key, {
+                  scientificName: sci,
+                  commonName: sp.commonName || '',
+                  kingdom: sp.kingdom || '',
+                  primaryPhoto: inatPhoto,
+                  hasOwnPhoto: false,
+                  ownPhotos: [],
+                  lastDate: attr.date || '',
+                  source: attr.source || 'inaturalist',
+                  originalUrl: attr.originalUrl || null,
+                });
+              }
+            });
+          });
+        });
+      }
+
+      return Array.from(byKey.values());
     },
-    enabled: !!explorationId && explorationMarcheIds.length > 0 && !!aliases?.length,
+    enabled: !!explorationId && explorationMarcheIds.length > 0,
     staleTime: 60_000,
   });
 
-  const species = speciesFromSnapshots || [];
-  const speciesForTranslation = species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }));
+  const all = items || [];
+  const filtered = onlyOwn ? all.filter(s => s.hasOwnPhoto) : all;
+  const ownCount = all.filter(s => s.hasOwnPhoto).length;
+
+  const speciesForTranslation = filtered.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }));
   const { data: frNamesMap } = useFrenchSpeciesNamesAuto(speciesForTranslation);
 
   const getKingdomInfo = (kingdom: string) => {
-    if (kingdom === 'Animalia') return { icon: Bird, color: 'text-sky-500', bgColor: 'bg-sky-500/10', label: 'Faune' };
-    if (kingdom === 'Plantae') return { icon: Flower2, color: 'text-green-500', bgColor: 'bg-green-500/10', label: 'Flore' };
-    if (kingdom === 'Fungi') return { icon: TreePine, color: 'text-amber-600', bgColor: 'bg-amber-500/10', label: 'Champignon' };
-    return { icon: Leaf, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', label: 'Vivant' };
+    if (kingdom === 'Animalia') return { icon: Bird, color: 'text-sky-500', bgColor: 'bg-sky-500/15', label: 'Faune' };
+    if (kingdom === 'Plantae') return { icon: Flower2, color: 'text-green-500', bgColor: 'bg-green-500/15', label: 'Flore' };
+    if (kingdom === 'Fungi') return { icon: TreePine, color: 'text-amber-600', bgColor: 'bg-amber-500/15', label: 'Champignon' };
+    return { icon: Leaf, color: 'text-emerald-500', bgColor: 'bg-emerald-500/15', label: 'Vivant' };
   };
 
   const sourceLabel = (src: string) => {
+    if (src === 'marcheur') return 'Marcheur';
     if (src === 'inaturalist') return 'iNat';
     if (src === 'ebird') return 'eBird';
     if (src === 'gbif') return 'GBIF';
     return src;
   };
 
+  // Sort: hasOwnPhoto first, then number of own photos desc, then date
   const sorted = useMemo(() => {
-    const items = [...species];
+    const items = [...filtered];
     items.sort((a, b) => {
-      const diff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (a.hasOwnPhoto !== b.hasOwnPhoto) return a.hasOwnPhoto ? -1 : 1;
+      if (a.ownPhotos.length !== b.ownPhotos.length) return b.ownPhotos.length - a.ownPhotos.length;
+      const ad = a.lastDate ? new Date(a.lastDate).getTime() : 0;
+      const bd = b.lastDate ? new Date(b.lastDate).getTime() : 0;
+      const diff = bd - ad;
       return sort === 'desc' ? diff : -diff;
     });
     return items;
-  }, [species, sort]);
+  }, [filtered, sort]);
+
+  // Bento span pattern (desktop). Mobile = uniform squares.
+  const spanFor = (index: number, hasOwn: boolean): string => {
+    if (!hasOwn) return '';
+    if (index === 0) return 'sm:col-span-2 sm:row-span-2';
+    if (index === 3) return 'sm:col-span-2';
+    if (index === 7) return 'sm:col-span-2';
+    return '';
+  };
 
   if (isLoading) {
     return (
-      <div className="px-3 pt-3 pb-3 space-y-2">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40 animate-pulse">
-            <div className="w-11 h-11 rounded-xl bg-muted" />
-            <div className="flex-1 space-y-1.5">
-              <div className="h-2.5 bg-muted rounded w-16" />
-              <div className="h-3 bg-muted rounded w-32" />
-              <div className="h-2.5 bg-muted rounded w-24" />
-            </div>
-          </div>
-        ))}
+      <div className="px-3 pt-3 pb-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[120px] sm:auto-rows-[140px] gap-2">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className={`rounded-2xl bg-muted/40 animate-pulse ${i === 0 ? 'sm:col-span-2 sm:row-span-2' : ''}`}
+            />
+          ))}
+        </div>
       </div>
     );
   }
@@ -527,7 +600,7 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
       <div className="px-3 py-6 text-center">
         <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
         <p className="text-xs text-muted-foreground italic">
-          Aucune espèce identifiée pour le moment
+          {onlyOwn ? 'Aucune photo personnelle pour le moment' : 'Aucune espèce identifiée pour le moment'}
         </p>
         <p className="text-[10px] text-muted-foreground/60 mt-1">
           Identifiez les espèces via l'onglet Vivant 🌿
@@ -538,78 +611,143 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
 
   return (
     <div className="px-3 pt-3 pb-3 space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
           <Leaf className="w-3.5 h-3.5 text-emerald-500" />
           <span className="text-foreground">{sorted.length}</span> espèce{sorted.length > 1 ? 's' : ''} identifiée{sorted.length > 1 ? 's' : ''}
+          {ownCount > 0 && (
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">
+              · {ownCount} avec photo perso
+            </span>
+          )}
         </p>
-        <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
+        <div className="flex items-center gap-1.5">
+          {ownCount > 0 && (
+            <button
+              onClick={() => setOnlyOwn(o => !o)}
+              className={`text-[10px] px-2 py-1 rounded-full transition-colors ${
+                onlyOwn
+                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/40'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <Camera className="w-3 h-3 inline mr-1" />
+              Mes photos
+            </button>
+          )}
+          <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
+        </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[120px] sm:auto-rows-[140px] gap-2">
         {sorted.map((obs, i) => {
           const frenchName = frNamesMap?.get(obs.scientificName)?.commonNameFr || null;
-          const primaryName = frenchName || obs.scientificName;
+          const primaryName = frenchName || obs.commonName || obs.scientificName;
           const kingdomInfo = getKingdomInfo(obs.kingdom);
           const KingdomIcon = kingdomInfo.icon;
-          const dateStr = obs.date
-            ? format(new Date(obs.date), 'd MMM', { locale: fr })
-            : '';
+          const dateStr = obs.lastDate ? format(new Date(obs.lastDate), 'd MMM', { locale: fr }) : '';
+          const span = spanFor(i, obs.hasOwnPhoto);
+          const photo = obs.primaryPhoto;
+          const handleClick = (e: React.MouseEvent) => {
+            if (obs.hasOwnPhoto && photo) {
+              e.preventDefault();
+              setLightbox({ url: photo, label: primaryName });
+            }
+          };
 
           return (
             <motion.a
               key={`${obs.scientificName}-${i}`}
-              href={obs.originalUrl || undefined}
-              target="_blank"
+              href={obs.originalUrl || '#'}
+              target={obs.originalUrl ? '_blank' : undefined}
               rel="noopener noreferrer"
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.04, duration: 0.25 }}
-              className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40 dark:bg-white/[0.03] border border-border/50 hover:border-emerald-500/20 transition-colors block"
+              onClick={handleClick}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: Math.min(i * 0.03, 0.4), duration: 0.25 }}
+              className={`group relative overflow-hidden rounded-2xl bg-muted/40 dark:bg-white/[0.03] border border-border/50 hover:border-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/10 ${span}`}
             >
-              {obs.photoUrl ? (
-                <img
-                  src={obs.photoUrl}
-                  alt={obs.scientificName}
-                  className="w-11 h-11 rounded-xl object-cover ring-1 ring-emerald-500/20 flex-shrink-0"
-                  loading="lazy"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
+              {photo ? (
+                <>
+                  <img
+                    src={photo}
+                    alt={primaryName}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
+                </>
               ) : (
-                <div className={`w-11 h-11 rounded-xl ${kingdomInfo.bgColor} flex items-center justify-center flex-shrink-0`}>
-                  <KingdomIcon className={`w-5 h-5 ${kingdomInfo.color}/60`} />
+                <div className={`absolute inset-0 ${kingdomInfo.bgColor} flex items-center justify-center`}>
+                  <KingdomIcon className={`w-10 h-10 ${kingdomInfo.color} opacity-40`} />
                 </div>
               )}
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <KingdomIcon className={`w-3 h-3 flex-shrink-0 ${kingdomInfo.color}`} />
-                  <span className={`text-[9px] font-medium ${kingdomInfo.color} uppercase tracking-wider`}>
-                    {kingdomInfo.label}
-                  </span>
-                </div>
-                <p className="text-xs font-semibold text-foreground truncate mt-0.5">
-                  {primaryName}
-                </p>
-                {frenchName && frenchName !== obs.scientificName && (
-                  <p className="text-[10px] text-muted-foreground truncate italic">
-                    {obs.scientificName}
-                  </p>
+              {/* Top-left: kingdom pill */}
+              <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10">
+                <KingdomIcon className={`w-3 h-3 ${kingdomInfo.color}`} />
+                <span className="text-[9px] font-medium text-white uppercase tracking-wider">
+                  {kingdomInfo.label}
+                </span>
+              </div>
+
+              {/* Top-right: source badge */}
+              <div className="absolute top-2 right-2">
+                {obs.hasOwnPhoto ? (
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/90 backdrop-blur-sm">
+                    <Camera className="w-2.5 h-2.5 text-white" />
+                    <span className="text-[9px] font-semibold text-white">Marcheur</span>
+                  </div>
+                ) : (
+                  <div className="px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10">
+                    <span className="text-[9px] font-medium text-white/80">{sourceLabel(obs.source)}</span>
+                  </div>
                 )}
               </div>
 
-              <div className="text-right flex-shrink-0">
-                {dateStr && (
-                  <p className="text-[10px] text-muted-foreground/70">{dateStr}</p>
+              {/* Bottom: name + date */}
+              <div className="absolute bottom-0 left-0 right-0 p-2.5 text-left">
+                <p className={`font-semibold text-white truncate drop-shadow ${span.includes('col-span-2') && span.includes('row-span-2') ? 'text-sm' : 'text-xs'}`}>
+                  {primaryName}
+                </p>
+                {frenchName && frenchName !== obs.scientificName && (
+                  <p className="text-[10px] text-white/70 italic truncate">{obs.scientificName}</p>
                 )}
-                {obs.source && (
-                  <p className="text-[9px] text-muted-foreground/50">{sourceLabel(obs.source)}</p>
+                {dateStr && (
+                  <p className="text-[9px] text-white/60 mt-0.5">{dateStr}</p>
                 )}
               </div>
+
+              {obs.ownPhotos.length > 1 && (
+                <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-full bg-black/50 backdrop-blur-sm">
+                  <span className="text-[9px] text-white/90">+{obs.ownPhotos.length - 1}</span>
+                </div>
+              )}
             </motion.a>
           );
         })}
       </div>
+
+      {lightbox && (
+        <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+          <DialogContent className="max-w-4xl p-0 bg-black border-none overflow-hidden">
+            <DialogHeader className="sr-only">
+              <DialogTitle>{lightbox.label}</DialogTitle>
+              <DialogDescription>Photo plein écran</DialogDescription>
+            </DialogHeader>
+            <img
+              src={lightbox.url}
+              alt={lightbox.label}
+              className="w-full max-h-[85vh] object-contain"
+            />
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+              <p className="text-white text-sm font-semibold">{lightbox.label}</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
