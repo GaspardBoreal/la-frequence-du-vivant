@@ -36,6 +36,9 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
   const { data: counts } = useParticipationCountsForEvents(rows.map((r) => r.id));
+  const [duplicateSource, setDuplicateSource] = useState<
+    { id: string; title: string; date_marche: string } | null
+  >(null);
 
   return (
     <div>
