@@ -215,7 +215,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             🪞 Dupliquer
           </Button>
 
-
+          <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button 
                 variant="ghost" 
