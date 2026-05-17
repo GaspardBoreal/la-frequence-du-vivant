@@ -42,6 +42,7 @@ const MarcheEventDetail: React.FC = () => {
   const [participantSearch, setParticipantSearch] = useState('');
   const [deletingParticipation, setDeletingParticipation] = useState<{id: string, name: string} | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
 
   // Fetch event data (edit mode)
   const { data: event, isLoading } = useQuery({
