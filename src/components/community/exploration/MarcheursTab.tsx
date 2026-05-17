@@ -436,13 +436,46 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
   const aliasesKey = (aliases || []).slice().sort().join('|');
   const crewId = marcheur.crewId || (marcheur.source === 'crew' ? marcheur.id : null);
 
+  // Helper: une URL est "vraie photo perso" UNIQUEMENT si hébergée sur le storage Supabase.
+  // Les URLs iNaturalist (static.inaturalist.org / inaturalist-open-data) sont des miniatures backfillées,
+  // pas des uploads du marcheur.
+  const isOwnPhotoUrl = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    const u = url.toLowerCase();
+    if (u.includes('inaturalist.org') || u.includes('inaturalist-open-data')) return false;
+    if (u.includes('.supabase.co/storage/') || u.includes('.supabase.in/storage/')) return true;
+    if (u.includes('/storage/v1/object/')) return true;
+    return false;
+  };
+
   const { data: items, isLoading } = useQuery({
-    queryKey: ['marcheur-contributions-bento', explorationId, aliasesKey, crewId],
+    queryKey: ['marcheur-contributions-bento', explorationId, aliasesKey, crewId, resolvedUserId],
     queryFn: async (): Promise<ContribSpeciesItem[]> => {
       if (!explorationMarcheIds.length) return [];
       const byKey = new Map<string, ContribSpeciesItem>();
 
-      // 1) Photos personnelles du marcheur (marcheur_observations)
+      // 0) Pool des URLs perso (Supabase storage) uploadées par le marcheur via marcheur_medias
+      const ownMediaUrls = new Set<string>();
+      if (crewId || resolvedUserId) {
+        const orParts: string[] = [];
+        if (resolvedUserId) orParts.push(`user_id.eq.${resolvedUserId}`);
+        if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
+        const { data: medias } = await supabase
+          .from('marcheur_medias')
+          .select('url_fichier, external_url, marche_id')
+          .eq('is_public', true)
+          .eq('type_media', 'photo')
+          .or(orParts.join(','));
+        (medias || []).forEach((m: any) => {
+          // On garde toutes les URLs perso (même hors marches scope) car certaines lignes ont marche_id null
+          if (m.url_fichier && isOwnPhotoUrl(m.url_fichier)) ownMediaUrls.add(m.url_fichier);
+          if (m.external_url && isOwnPhotoUrl(m.external_url)) ownMediaUrls.add(m.external_url);
+        });
+      }
+
+      // 1) Espèces identifiées par le marcheur (marcheur_observations).
+      //    photo_url est rempli par le backfill iNat → NE PAS le traiter comme une photo perso
+      //    sauf si l'URL est sur le storage Supabase.
       if (crewId) {
         const { data: ownObs } = await supabase
           .from('marcheur_observations')
@@ -453,34 +486,37 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
           const sci = (o.species_scientific_name || '').trim();
           if (!sci) return;
           const key = sci.toLowerCase();
+          const isOwn = isOwnPhotoUrl(o.photo_url);
           const existing = byKey.get(key);
           if (existing) {
-            if (o.photo_url) existing.ownPhotos.push(o.photo_url);
+            if (isOwn && o.photo_url) {
+              existing.ownPhotos.push(o.photo_url);
+              if (!existing.hasOwnPhoto) {
+                existing.primaryPhoto = o.photo_url;
+                existing.hasOwnPhoto = true;
+                existing.source = 'marcheur';
+              }
+            }
             if (o.observation_date && (!existing.lastDate || new Date(o.observation_date) > new Date(existing.lastDate))) {
               existing.lastDate = o.observation_date;
-            }
-            if (!existing.primaryPhoto && o.photo_url) {
-              existing.primaryPhoto = o.photo_url;
-              existing.hasOwnPhoto = true;
-              existing.source = 'marcheur';
             }
           } else {
             byKey.set(key, {
               scientificName: sci,
               commonName: o.species_common_name || '',
               kingdom: o.kingdom || '',
-              primaryPhoto: o.photo_url || null,
-              hasOwnPhoto: !!o.photo_url,
-              ownPhotos: o.photo_url ? [o.photo_url] : [],
+              primaryPhoto: isOwn ? o.photo_url : null,
+              hasOwnPhoto: isOwn,
+              ownPhotos: isOwn ? [o.photo_url] : [],
               lastDate: o.observation_date || '',
-              source: o.photo_url ? 'marcheur' : '',
+              source: isOwn ? 'marcheur' : '',
               originalUrl: null,
             });
           }
         });
       }
 
-      // 2) Fallback iNat (snapshots) via alias matching
+      // 2) Enrichissement iNat (snapshots) via alias matching + détection des URLs perso dans species_data.photos[]
       if (aliases && aliases.length) {
         const aliasSet = new Set(aliases);
         const { data } = await supabase
@@ -496,13 +532,22 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
             const sci = (sp.scientificName || '').trim();
             if (!sci) return;
             const key = sci.toLowerCase();
+            // Cherche une éventuelle photo perso dans sp.photos[] pour cette espèce
+            const photosArr: string[] = Array.isArray(sp.photos) ? sp.photos : [];
+            const matchedOwn = photosArr.find((u) => u && ownMediaUrls.has(u)) || null;
             attributions.forEach((attr: any) => {
               const observerNorm = normalizeAlias(attr.observerName || '');
               if (!aliasSet.has(observerNorm)) return;
-              const inatPhoto = sp.photoData?.url || (Array.isArray(sp.photos) && sp.photos.length > 0 ? sp.photos[0] : null);
+              const inatPhoto = sp.photoData?.url || (photosArr.length > 0 ? photosArr[0] : null);
               const existing = byKey.get(key);
               if (existing) {
-                // Enrich missing fields, never override own photo
+                // Promotion si on trouve une photo perso liée à cette espèce dans le snapshot
+                if (matchedOwn && !existing.hasOwnPhoto) {
+                  existing.primaryPhoto = matchedOwn;
+                  existing.hasOwnPhoto = true;
+                  existing.source = 'marcheur';
+                  if (!existing.ownPhotos.includes(matchedOwn)) existing.ownPhotos.push(matchedOwn);
+                }
                 if (!existing.primaryPhoto && inatPhoto) existing.primaryPhoto = inatPhoto;
                 if (!existing.kingdom && sp.kingdom) existing.kingdom = sp.kingdom;
                 if (!existing.commonName && sp.commonName) existing.commonName = sp.commonName;
@@ -512,15 +557,16 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
                   existing.lastDate = attr.date;
                 }
               } else {
+                const useOwn = !!matchedOwn;
                 byKey.set(key, {
                   scientificName: sci,
                   commonName: sp.commonName || '',
                   kingdom: sp.kingdom || '',
-                  primaryPhoto: inatPhoto,
-                  hasOwnPhoto: false,
-                  ownPhotos: [],
+                  primaryPhoto: useOwn ? matchedOwn : inatPhoto,
+                  hasOwnPhoto: useOwn,
+                  ownPhotos: useOwn ? [matchedOwn] : [],
                   lastDate: attr.date || '',
-                  source: attr.source || 'inaturalist',
+                  source: useOwn ? 'marcheur' : (attr.source || 'inaturalist'),
                   originalUrl: attr.originalUrl || null,
                 });
               }
