@@ -1,13 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
 import ExplorationForm from '@/components/admin/ExplorationForm';
 import DecorativeParticles from '@/components/DecorativeParticles';
-import { Palette, Sparkles } from 'lucide-react';
+import { Palette, Sparkles, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import DuplicateExplorationDialog from '@/components/admin/DuplicateExplorationDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const ExplorationFormPage = () => {
   const { id } = useParams<{ id?: string }>();
   const isEdit = !!id;
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [explorationName, setExplorationName] = useState<string>('');
+
+  useEffect(() => {
+    if (!id) return;
+    supabase
+      .from('explorations')
+      .select('name')
+      .eq('id', id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name) setExplorationName(data.name);
+      });
+  }, [id]);
 
   return (
     <>
@@ -46,10 +63,31 @@ const ExplorationFormPage = () => {
             
             {/* Ligne décorative animée */}
             <div className="mt-8 w-24 h-0.5 bg-gradient-to-r from-gaspard-gold to-gaspard-cream mx-auto rounded-full opacity-60"></div>
+
+            {isEdit && id && (
+              <div className="mt-6 flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setDuplicateOpen(true)}
+                  className="rounded-full bg-background/20 border-gaspard-cream/30 text-gaspard-cream hover:bg-background/30 hover:text-gaspard-cream"
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Dupliquer cette exploration
+                </Button>
+              </div>
+            )}
           </header>
 
           <ExplorationForm explorationId={id} />
         </div>
+
+        {isEdit && id && (
+          <DuplicateExplorationDialog
+            source={{ id, name: explorationName || 'Exploration' }}
+            open={duplicateOpen}
+            onOpenChange={setDuplicateOpen}
+          />
+        )}
         
         {/* Texture de fond subtile */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none">

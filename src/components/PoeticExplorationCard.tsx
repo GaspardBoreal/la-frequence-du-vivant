@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Eye, Edit, Settings, Trash2, Sparkles, Footprints, Database } from 'lucide-react';
+import { Eye, Edit, Settings, Trash2, Sparkles, Footprints, Database, Copy } from 'lucide-react';
+import DuplicateExplorationDialog from '@/components/admin/DuplicateExplorationDialog';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +30,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
   
   // Récupérer le nombre de marches associées
   const { data: marchesCount = 0 } = useExplorationMarchesCount(exploration.id);
@@ -201,7 +203,18 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             <Edit className="h-4 w-4 mr-2" />
             🗿 Sculpter
           </Button>
-          
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full bg-secondary/30 text-secondary-foreground border border-secondary/50 hover:bg-secondary/60 hover:scale-110 hover:shadow-xl hover:shadow-secondary/40 transition-all duration-500 transform hover:-translate-y-1"
+            title="Dupliquer cette exploration"
+            onClick={(e) => { e.stopPropagation(); setDuplicateOpen(true); }}
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            🪞 Dupliquer
+          </Button>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button 
@@ -257,6 +270,12 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           </svg>
         </div>
       </div>
+
+      <DuplicateExplorationDialog
+        source={{ id: exploration.id, name: exploration.name }}
+        open={duplicateOpen}
+        onOpenChange={setDuplicateOpen}
+      />
     </div>
   );
 };

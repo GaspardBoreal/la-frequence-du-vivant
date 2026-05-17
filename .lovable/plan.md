@@ -1,82 +1,113 @@
 ## Objectif
 
-Ajouter une action « Dupliquer » sur les événements de marche, sûre, prévisible et alignée au design system.
+Action « Dupliquer » sur `/admin/explorations` qui clone une exploration **sans toucher aux marches elles-mêmes** : on recrée uniquement la coquille éditoriale (exploration + pages + liens vers les marches existantes).
 
-## Périmètre copié (whitelist explicite)
+## Périmètre exact
 
-Champs de `marche_events` recopiés :
-- `title` (suffixé), `description`, `event_type`
-- `lieu`, `latitude`, `longitude`
-- `max_participants`
-- `exploration_id`
+### Tables copiées
 
-Champs **régénérés / réinitialisés** :
-- `id` → nouveau `gen_random_uuid()`
-- `qr_code` → nouveau hex (default DB)
-- `date_marche` → choisi dans le mini-dialog
-- `created_by` → admin courant
-- `created_at` / `updated_at` → `now()`
+**`explorations`** (1 ligne) — whitelist :
+- `name` → saisi dans le dialog
+- `slug` → recalculé depuis le nouveau `name` (avec suffixe `-2`, `-3`… si collision)
+- `description`, `exploration_type`, `cover_image_url`, `is_loop`, `language`
+- `meta_title`, `meta_description`, `meta_keywords`
+- `published` → **forcé à `false`** (sécurité publication)
+- `id`, `created_at`, `updated_at` → defaults DB
 
-**Jamais copié** (RGPD / intégrité) : participations, médias marcheurs, observations, témoignages, snapshots biodiversité, logs d'activité, audios, textes, backfill iNat.
+**`exploration_pages`** (N lignes) — copie 1:1 avec nouvel `exploration_id` :
+- `type`, `ordre`, `nom`, `description`, `config` (JSON copié tel quel)
 
-Note technique : `marche_events` n'a actuellement **pas** de champ `slug`, `is_published`, ni de table de liaison `marche_event ↔ organisateurs`. La case « exploration & organisateurs » se traduit donc uniquement par la recopie de `exploration_id` (les organisateurs sont rattachés aux `marches`, pas aux events).
+**`exploration_marches`** (N lignes) — table de liaison, copie 1:1 avec nouvel `exploration_id` :
+- `marche_id` → **identique** (pointe vers la même marche globale)
+- `ordre` → conservé
+- `publication_status` → **forcé à `draft`** (chaque marche doit être republiée manuellement dans la copie)
+- `partie_id` → **forcé à `null`** (les parties ne sont pas copiées dans cette V1, voir ci-dessous)
 
-Pour les **marches rattachées** : il n'existe pas de FK directe `marches.marche_event_id`. Les marches sont liées via `exploration_id`. Aucune marche ne sera donc recréée par défaut — un évènement dupliqué pointera vers la même exploration et héritera de ses marches existantes. (À confirmer : voir « Question ouverte » ci-dessous.)
+### Tables **NON** copiées
+
+- `marches` (jamais dupliquées — réutilisées telles quelles via `exploration_marches.marche_id`)
+- `marche_textes`, `marche_audio`, médias, observations, snapshots biodiversité (attachés aux marches, donc partagés naturellement avec la copie)
+- `exploration_parties` (mouvements littéraires) → non copiées en V1. Conséquence : les marches de la copie apparaissent dans la liste, mais sans regroupement en mouvements. L'admin peut les recréer ensuite via le gestionnaire de parties existant.
+- `exploration_marcheurs`, `exploration_waypoints`, `marche_events`, logs, témoignages, curations, audios de l'exploration — jamais copiés.
 
 ## UX
 
-### 1. Mini-dialog « Dupliquer cet événement »
-Composant `DuplicateEventDialog.tsx` (shadcn `Dialog`), déclenché depuis 2 points d'entrée :
+### Mini-dialog « Dupliquer cette exploration »
 
-- **Liste** (`EventsListTab`) : ajout d'un menu kebab `⋮` (`DropdownMenu`) en haut-droite de chaque carte, avec actions « Voir », « Éditer », « Dupliquer ». `stopPropagation` pour ne pas déclencher la navigation de la carte.
-- **Détail / édition** (`ExplorationMarchesAdmin` ou formulaire d'événement) : bouton secondaire « Dupliquer » dans le header, à côté de « Éditer ».
-
-Contenu du dialog :
-- Input `Titre de la copie` (défaut : `"{title} (copie)"`)
-- DatePicker shadcn + sélecteur heure (défaut : `date_marche + 7 jours`, même heure)
-- Texte d'aide listant ce qui sera **et ne sera pas** copié
+Composant `DuplicateExplorationDialog.tsx` (shadcn `Dialog`) avec :
+- Input **Titre de la copie** (défaut : `"{name} (copie)"`)
+- Bloc d'information listant ce qui est copié / non copié :
+  - Copié : infos de base, pages, liste des marches (en `draft`)
+  - Non copié : mouvements littéraires, statut publié (forcé OFF), médias éditoriaux de l'exploration
 - Boutons `Annuler` / `Dupliquer` (loading state)
 
-### 2. Après confirmation
-- Insert en base
-- Toast succès : « Événement dupliqué »
-- Invalidate React Query : `marche-events-paginated`, `marche-events-stats`, `marche-events-all`
-- Redirection : `/admin/marche-events/{newId}` (page d'édition) pour ajustement immédiat
+### Points d'entrée
 
-### 3. Gestion d'erreur
-- Validation Zod côté client (titre non vide, date future ou non, longueur)
-- Catch Supabase → toast `destructive` avec message lisible
+1. **Menu kebab `⋮`** sur chaque `PoeticExplorationCard` dans `/admin/explorations`
+   - `DropdownMenu` shadcn avec actions « Ouvrir », « Éditer », « Dupliquer »
+   - `stopPropagation` pour ne pas déclencher la navigation de la carte
+2. **Bouton « Dupliquer »** dans le header de `ExplorationFormPage` à côté des actions existantes
+
+### Après confirmation
+
+1. Insert atomique des 3 tables (voir « Implémentation » — ordre : exploration → pages → liens marches)
+2. Toast succès : « Exploration dupliquée »
+3. Invalidate React Query : `['admin-explorations']`, `['explorations']`, `['exploration-pages']`, `['exploration-marches']`
+4. Redirection vers `/admin/explorations/{newId}` (page d'édition) pour ajustement immédiat
+
+### Gestion d'erreur
+
+- Validation Zod : titre non vide (min 2, max 200)
+- En cas d'échec après insertion partielle (ex. pages OK mais liens marches KO) → suppression cascade de la nouvelle exploration pour ne pas laisser de coquille corrompue
+- Toast `destructive` avec message lisible
 
 ## Implémentation technique
 
 ```text
 src/
-├─ hooks/useDuplicateMarcheEvent.ts         # mutation react-query
-├─ components/admin/marche-events/
-│   ├─ DuplicateEventDialog.tsx              # dialog réutilisable
-│   └─ EventsListTab.tsx                     # + menu kebab
-└─ pages/MarcheEventsAdmin.tsx               # contrôle dialog state (déjà routé)
+├─ hooks/useDuplicateExploration.ts          # mutation react-query
+├─ components/admin/
+│   ├─ DuplicateExplorationDialog.tsx        # dialog réutilisable
+│   └─ ExplorationActionsMenu.tsx            # kebab menu (réutilisable)
+├─ pages/ExplorationsAdmin.tsx               # ajout kebab sur card + state dialog
+└─ pages/ExplorationFormPage.tsx             # ajout bouton header + state dialog
 ```
 
-`useDuplicateMarcheEvent` :
+### `useDuplicateExploration` (séquentiel, fail-safe)
+
 ```ts
-async ({ sourceId, title, dateMarche }) => {
-  // 1. SELECT * source
-  // 2. Whitelist + override title/date_marche/created_by
-  // 3. INSERT (DB régénère id + qr_code)
-  // 4. Retour newId
+async ({ sourceId, newName }) => {
+  // 1. SELECT source exploration
+  // 2. Calcul slug unique (boucle suffix -2, -3… via SELECT exists)
+  // 3. INSERT new exploration (published=false) → newId
+  try {
+    // 4. SELECT exploration_pages WHERE exploration_id = sourceId
+    // 5. INSERT pages avec exploration_id = newId
+    // 6. SELECT exploration_marches WHERE exploration_id = sourceId
+    // 7. INSERT liens avec exploration_id = newId, publication_status='draft', partie_id=null
+    return newId;
+  } catch (e) {
+    // rollback : DELETE FROM explorations WHERE id = newId (CASCADE supprime pages + liens)
+    throw e;
+  }
 }
 ```
 
-Pas de migration SQL nécessaire — les RLS d'`INSERT` admin sur `marche_events` existent déjà (vérifier `check_is_admin_user`).
+### Slug
+
+Réutilise `createSlug()` de `src/utils/slugGenerator.ts` à partir du nouveau `name`, puis vérifie l'unicité (`SELECT id FROM explorations WHERE slug = ?`) et incrémente `-2`, `-3`… en cas de collision.
+
+### RLS
+
+Aucune migration nécessaire — les policies INSERT admin existent déjà sur `explorations`, `exploration_pages`, `exploration_marches` (utilisées par la création standard et le gestionnaire de mouvements).
 
 ## Design system
 
-- Dialog : composants shadcn (`Dialog`, `Input`, `Popover`+`Calendar` avec `pointer-events-auto`, `Button`)
-- Aucune couleur hardcodée — `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`
+- `Dialog`, `Input`, `Button`, `DropdownMenu`, `Alert` shadcn
 - Icône `Copy` (lucide) pour les CTA
-- Toast via `sonner` (déjà installé)
+- Tokens sémantiques uniquement (`bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `gaspard-*` pour rester cohérent avec l'atelier poétique existant)
+- Toast `sonner`
 
-## Question ouverte (1 dernière clarification)
+## Question ouverte
 
-L'option « Marches rattachées (sans participants ni médias) » que vous avez cochée : voulez-vous que je **crée aussi de nouvelles marches** dans l'exploration cible (copies des marches liées à la date source), ou est-ce que pointer simplement vers la même `exploration_id` suffit ? Étant donné qu'il n'y a pas de FK `marches → marche_events`, dupliquer des marches signifierait les **dupliquer dans l'exploration** (et elles apparaîtraient pour tous les autres events de cette exploration), ce qui est probablement indésirable. Je recommande donc de **ne pas dupliquer les marches** et de garder le lien via `exploration_id` uniquement. Confirmez-vous ?
+Les **mouvements littéraires** (`exploration_parties`) ne sont pas copiés dans cette V1 (les marches arrivent dans la copie sans regroupement). Confirmes-tu, ou veux-tu que je les copie aussi avec re-mapping des `partie_id` dans `exploration_marches` ? Je peux l'ajouter rapidement.
