@@ -270,6 +270,12 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           </svg>
         </div>
       </div>
+
+      <DuplicateExplorationDialog
+        source={{ id: exploration.id, name: exploration.name }}
+        open={duplicateOpen}
+        onOpenChange={setDuplicateOpen}
+      />
     </div>
   );
 };
