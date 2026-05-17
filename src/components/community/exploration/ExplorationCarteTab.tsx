@@ -844,6 +844,28 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           );
         })}
 
+        {/* Radius circles per marche (resolved: marche.radius_m → exploration.default_radius_m → 500m) */}
+        {!hideMarcheMarkers && geoMarches.map((marche) => {
+          const radiusM = resolveMarcheRadiusM(marche.id);
+          const isOverride = (marcheRadii?.get(marche.id) ?? null) != null;
+          return (
+            <Circle
+              key={`radius-${marche.id}`}
+              center={[marche.latitude!, marche.longitude!]}
+              radius={radiusM}
+              pathOptions={{
+                color: isOverride ? '#10b981' : '#64748b',
+                weight: 1,
+                opacity: 0.55,
+                fillColor: isOverride ? '#10b981' : '#94a3b8',
+                fillOpacity: 0.08,
+                dashArray: isOverride ? undefined : '4 4',
+              }}
+              interactive={false}
+            />
+          );
+        })}
+
         {/* Numbered markers with progressive reveal — pane dédié sous le popup cadastre */}
         <Pane name="marche-steps" style={{ zIndex: 590 }} />
         {!hideMarcheMarkers && geoMarches.map((marche, index) => {
