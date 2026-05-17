@@ -203,8 +203,19 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             <Edit className="h-4 w-4 mr-2" />
             🗿 Sculpter
           </Button>
-          
-          <AlertDialog>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full bg-secondary/30 text-secondary-foreground border border-secondary/50 hover:bg-secondary/60 hover:scale-110 hover:shadow-xl hover:shadow-secondary/40 transition-all duration-500 transform hover:-translate-y-1"
+            title="Dupliquer cette exploration"
+            onClick={(e) => { e.stopPropagation(); setDuplicateOpen(true); }}
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            🪞 Dupliquer
+          </Button>
+
+
             <AlertDialogTrigger asChild>
               <Button 
                 variant="ghost" 
