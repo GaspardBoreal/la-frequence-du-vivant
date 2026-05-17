@@ -30,6 +30,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
   
   // Récupérer le nombre de marches associées
   const { data: marchesCount = 0 } = useExplorationMarchesCount(exploration.id);
