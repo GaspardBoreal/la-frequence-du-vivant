@@ -72,6 +72,12 @@ const RadiusSelector: React.FC<RadiusSelectorProps> = ({ value, onChange, loadin
       <p className="text-[10px] text-muted-foreground/60">
         Zone couverte : {area} km²
       </p>
+      {value < 0.05 && (
+        <p className="text-[10px] text-amber-300/80 flex items-start gap-1 leading-snug">
+          <AlertTriangle className="w-3 h-3 mt-px flex-shrink-0" />
+          <span>Précision GPS limite — certaines observations réellement sur la zone peuvent être exclues.</span>
+        </p>
+      )}
     </div>
   );
 };
