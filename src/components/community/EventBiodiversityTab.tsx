@@ -207,30 +207,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     enabled: !!explorationId,
   });
 
-  // Aggregate stats
-  const stats = useMemo(() => {
-    if (!snapshots?.length) return { total: 0, birds: 0, plants: 0, fungi: 0, others: 0, marchesCount: 0 };
-    // Compute from species_data (source of truth) instead of summary columns
-    const speciesMap = new Map<string, string>();
-    snapshots.forEach(snap => {
-      const sd = snap.species_data as any[] | null;
-      if (!sd || !Array.isArray(sd)) return;
-      sd.forEach((sp: any) => {
-        const key = sp.scientificName || sp.commonName || sp.id;
-        if (key && !speciesMap.has(key)) {
-          speciesMap.set(key, sp.kingdom || 'Other');
-        }
-      });
-    });
-    let birds = 0, plants = 0, fungi = 0, others = 0;
-    speciesMap.forEach(kingdom => {
-      if (kingdom === 'Animalia') birds++;
-      else if (kingdom === 'Plantae') plants++;
-      else if (kingdom === 'Fungi') fungi++;
-      else others++;
-    });
-    return { total: speciesMap.size, birds, plants, fungi, others, marchesCount: snapshots.length };
-  }, [snapshots]);
+  // Marches count (from snapshots, source of analysis units)
+  const marchesCount = snapshots?.length || 0;
 
   // Transform species_data into BiodiversitySpecies[] for SpeciesExplorer.
   // Fusionne snapshots iNat + marcheur_observations (avec leurs GPS exacts)
