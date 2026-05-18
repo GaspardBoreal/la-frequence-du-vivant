@@ -170,13 +170,16 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     queryKey: ['event-marcheur-observations', marcheIds],
     queryFn: async () => {
       if (!marcheIds?.length) return [];
+      // ⚠️ Pas de !inner : on doit aussi récupérer les obs iNat backfill
+      // dont le marcheur n'a pas (encore) de ligne exploration_marcheurs.
+      // Sinon le pool fusionné perd 8 espèces vs la Carte.
       const { data } = await supabase
         .from('marcheur_observations')
         .select(`
           id, marche_id, marcheur_id, species_scientific_name,
           observation_date, photo_url, inaturalist_observation_id,
           latitude, longitude,
-          exploration_marcheurs!inner(prenom, nom)
+          exploration_marcheurs(prenom, nom)
         `)
         .in('marche_id', marcheIds)
         .not('species_scientific_name', 'is', null);
@@ -216,6 +219,11 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const allSpeciesAsBiodiversity = useMemo((): BiodiversitySpecies[] => {
     if (!snapshots?.length && !marcheurObs?.length) return [];
     const speciesMap = new Map<string, BiodiversitySpecies>();
+
+    // Normalisation NFD + lowercase pour aligner snapshots et marcheur_observations
+    // (même stratégie que useExplorationBiodiversitySummary côté Carte).
+    const normKey = (s: string | null | undefined) =>
+      (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 
     // Dedupe par originalUrl (= URL iNat) si dispo, sinon par observerName+source+date.
     // Évite de compter deux fois une même observation iNat présente à la fois
@@ -261,7 +269,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       const speciesData = snap.species_data as any[] | null;
       if (!speciesData || !Array.isArray(speciesData)) return;
       speciesData.forEach((sp: any) => {
-        const key = sp.scientificName || sp.commonName || sp.id;
+        const key = normKey(sp.scientificName || sp.commonName || sp.id);
         if (!key) return;
         const spAttributions = Array.isArray(sp.attributions) ? sp.attributions : [];
         const computedLastSeen = computeLastSeen(spAttributions, snap.snapshot_date || '');
@@ -295,10 +303,11 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
 
     // 2. marcheur_observations — chaque ligne = 1 attribution (avec GPS exact iNat)
     (marcheurObs || []).forEach((o: any) => {
-      const key = o.species_scientific_name;
+      const sciName = o.species_scientific_name;
+      const key = normKey(sciName);
       if (!key) return;
       const crew = o.exploration_marcheurs;
-      const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim() || 'Marcheur';
+      const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim() || 'Contributeur iNaturalist';
       const inatId = o.inaturalist_observation_id;
       const attribution: any = {
         observerName,
@@ -323,8 +332,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       } else {
         speciesMap.set(key, {
           id: key,
-          scientificName: key,
-          commonName: key,
+          scientificName: sciName,
+          commonName: sciName,
           kingdom: 'Other' as BiodiversitySpecies['kingdom'],
           family: '',
           observations: 1,

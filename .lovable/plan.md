@@ -1,54 +1,101 @@
-# Unification du compteur d'espèces
 
-## Problème constaté
+# Pourquoi 73 persiste alors que la Carte affiche 81
 
-Sur la même exploration, 4 valeurs différentes s'affichent :
+Mon précédent changement (faire dériver `stats.total` de `allSpeciesAsBiodiversity`) est en place, mais **le pool fusionné lui-même vaut 73**, pas 81. Deux causes :
 
-| Écran | Valeur | Pourquoi |
-|---|---|---|
-| Carte (bandeau bas) | **81** | Union snapshots iNat + `marcheur_observations`, dédup par `scientificName` |
-| Synthèse (cards) | **73** | Snapshots iNat **uniquement** — ignore les observations marcheurs |
-| Pouls du vivant (header courbe) | **73** | Snapshots iNat **uniquement** |
-| Pouls du vivant (filtre "Toutes") | **81** | Union snapshots + marcheurs (cohérent avec Carte) |
-| Indicateurs → Richesse spécifique | **56** | Sous-ensemble : uniquement les taxons au rang `species` strict |
-| Indicateurs → individus | **80** | Compte d'**individus** fusionnés GPS ≤8m, pas d'espèces |
+## Cause #1 (bloquante) — Jointure `!inner` trop stricte
 
-**Référence à conserver = 81** (union complète, dédup stricte par nom scientifique normalisé). C'est la seule valeur qui reflète la réalité de l'exploration (iNat + contributions marcheurs).
+Dans `src/components/community/EventBiodiversityTab.tsx` l.179 :
 
-## Plan
+```ts
+exploration_marcheurs!inner(prenom, nom)
+```
 
-### 1. Créer un hook unique `useUnifiedExplorationSpeciesPool`
+Filtre toutes les `marcheur_observations` non rattachées à une ligne `exploration_marcheurs` (backfill iNat, marcheurs supprimés, etc.). Ce sont précisément les ~8 espèces qui font la différence 73 → 81.
 
-Source de vérité unique réutilisant la logique de fusion existante de `EventBiodiversityTab.allSpeciesAsBiodiversity` (snapshots ∪ marcheur_observations, dédup NFD+lowercase sur `scientificName`).
+La Carte (`useExplorationBiodiversitySummary` l.163-166) lit `marcheur_observations` **sans aucune jointure** → voit tout → 81.
 
-Retourne :
-- `totalSpecies` (= 81)
-- `byKingdom` : `{ fauna, flora, fungi, other }`
-- `speciesLevelOnly` (= 56, pour indices écologiques)
-- `totalIndividuals` (= 80, pour fusion GPS)
+## Cause #2 (risque futur) — Dédup sensible à la casse
 
-### 2. Remplacer les sources divergentes
+Snapshots : clé = `sp.scientificName` (casse préservée).
+Marcheur obs : clé = `o.species_scientific_name`.
 
-- **`EventBiodiversityTab.tsx`** (cards Synthèse, L211-233) → utiliser `pool.totalSpecies` + `pool.byKingdom` au lieu de calculer depuis snapshots seuls.
-- **`BiodiversityEvolutionChart.tsx`** (header "73 espèces découvertes") → afficher `pool.totalSpecies`. Le graphe d'évolution garde sa courbe basée sur snapshots datés, mais le **total final affiché** sera aligné à 81.
-- **Carte** + **filtre Pouls** : déjà à 81, aucun changement.
+Si jamais la casse diffère, mêmes espèces comptées deux fois. La Carte gère déjà via `toLowerCase()`.
 
-### 3. Clarifier l'onglet Indicateurs (RichnessTab)
+---
 
-Pour lever la confusion 56 vs 81 :
-- Titre : "**56 espèces** identifiées au rang d'espèce (sur 81 taxons observés)"
-- Sous-texte individus : "**80 individus** géolocalisés distincts (fusion GPS ≤8m)"
+# Plan
 
-Aucun changement de calcul — uniquement la présentation pour montrer que 56 et 80 sont des **sous-mesures** de 81, jamais en compétition avec.
+## 1. `EventBiodiversityTab.tsx` — Requête `marcheurObs`
 
-## Détails techniques
+Remplacer la jointure inner par un left join + fallback nom :
 
-- Pas de migration SQL, pas de changement RLS.
-- Pas de modification de `useExplorationBiodiversitySummary` (Carte) ni du calcul des indices.
-- Logique de dédup réutilisée telle quelle (NFD + lowercase + trim).
-- Hook placé dans `src/hooks/community/exploration/`.
+```ts
+const { data: marcheurObs } = useQuery({
+  queryKey: ['event-marcheur-observations', marcheIds],
+  queryFn: async () => {
+    if (!marcheIds?.length) return [];
+    const { data } = await supabase
+      .from('marcheur_observations')
+      .select(`
+        id, marche_id, marcheur_id, species_scientific_name,
+        observation_date, photo_url, inaturalist_observation_id,
+        latitude, longitude,
+        exploration_marcheurs(prenom, nom)
+      `)  // ⚠️ pas de !inner
+      .in('marche_id', marcheIds)
+      .not('species_scientific_name', 'is', null);
+    return data || [];
+  },
+  enabled: !!marcheIds?.length,
+});
+```
+
+Et dans la boucle l.297 :
+
+```ts
+const crew = o.exploration_marcheurs;
+const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim()
+  || 'Contributeur iNaturalist';
+```
+
+## 2. Dédup case-insensitive du `speciesMap`
+
+Helper normalisé partagé en haut du `useMemo` :
+
+```ts
+const normKey = (s: string | null | undefined) =>
+  (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+```
+
+- Snapshots l.264 : `const key = normKey(sp.scientificName || sp.commonName || sp.id);`
+- marcheurObs l.298 : `const key = normKey(o.species_scientific_name);`
+
+Aligne la dédup sur la stratégie de la Carte → garantit que 73 + obs marcheurs = exactement 81 (pas 81+doublons).
+
+## 3. Vérification
+
+Après edit, recharger l'écran Synthèse :
+
+- Cards : **81 / Faune+Flore+Champi+Autre = 81**.
+- Pouls header (onglet Taxons observés) : **81 espèces découvertes** (déjà câblé via `overrideTotalSpecies={stats.total}`).
+- Indicateurs (Richesse spécifique) : **56 sur 81 taxons observés** (déjà câblé via `totalSpeciesAllRanks={stats.total}`).
+- Carte (bas) : 81 (inchangé).
+
+## Hors-scope (volontairement)
+
+- Aucune modif SQL / RLS.
+- Aucune modif des indices écologiques (56 individus-species-level, 80 individus GPS) : ce sont des sous-mesures, clarifiées par la mention "sur 81 taxons observés" déjà en place dans `RichnessTab`.
+- Aucune modif de `useExplorationBiodiversitySummary` (Carte) ni de `BiodiversityEvolutionChart` (courbe) : la courbe garde sa série datée snapshots, seul le total affiché en header est forcé à 81.
 
 ## Résultat attendu
 
-Carte = Synthèse = Pouls header = Pouls filtre = **81 espèces**.
-Indicateurs explique clairement que 56 et 80 sont des lectures écologiques restreintes.
+| Écran | Avant | Après |
+|---|---|---|
+| Carte bandeau bas | 81 | 81 |
+| Synthèse cards | **73** | **81** |
+| Pouls header | **73** | **81** |
+| Pouls filtre "Toutes" | 81 | 81 |
+| Indicateurs Richesse | 56 (sans contexte) | 56 sur **81** taxons observés |
+
+Une seule source de vérité, alignée sur la Carte.
