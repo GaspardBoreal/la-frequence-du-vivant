@@ -170,13 +170,16 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     queryKey: ['event-marcheur-observations', marcheIds],
     queryFn: async () => {
       if (!marcheIds?.length) return [];
+      // ⚠️ Pas de !inner : on doit aussi récupérer les obs iNat backfill
+      // dont le marcheur n'a pas (encore) de ligne exploration_marcheurs.
+      // Sinon le pool fusionné perd 8 espèces vs la Carte.
       const { data } = await supabase
         .from('marcheur_observations')
         .select(`
           id, marche_id, marcheur_id, species_scientific_name,
           observation_date, photo_url, inaturalist_observation_id,
           latitude, longitude,
-          exploration_marcheurs!inner(prenom, nom)
+          exploration_marcheurs(prenom, nom)
         `)
         .in('marche_id', marcheIds)
         .not('species_scientific_name', 'is', null);
