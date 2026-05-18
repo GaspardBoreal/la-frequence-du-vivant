@@ -20,6 +20,8 @@ import BiodiversitySimulator from './indices/BiodiversitySimulator';
 interface Props {
   species: RawSpecies[];
   explorationId?: string;
+  /** Total species across all ranks (unified pool, e.g. 81). Displayed alongside species-level richness. */
+  totalSpeciesAllRanks?: number;
 }
 
 type TabKey = 'richness' | 'simpson' | 'shannon' | 'pielou' | 'simulator';
