@@ -355,6 +355,19 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
   }, [allSpeciesAsBiodiversity, frNamesMap]);
 
+  // Unified stats — derived from the union pool (snapshots ∪ marcheur_observations).
+  // Single source of truth: Carte, Synthèse, Pouls header all show this value.
+  const stats = useMemo(() => {
+    let birds = 0, plants = 0, fungi = 0, others = 0;
+    allSpeciesAsBiodiversity.forEach(sp => {
+      if (sp.kingdom === 'Animalia') birds++;
+      else if (sp.kingdom === 'Plantae') plants++;
+      else if (sp.kingdom === 'Fungi') fungi++;
+      else others++;
+    });
+    return { total: allSpeciesAsBiodiversity.length, birds, plants, fungi, others, marchesCount };
+  }, [allSpeciesAsBiodiversity, marchesCount]);
+
   // Empty state
   if (!isLoading && (!snapshots?.length)) {
     return (
