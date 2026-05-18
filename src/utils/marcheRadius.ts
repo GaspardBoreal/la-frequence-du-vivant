@@ -38,7 +38,7 @@ export function resolveRadiusKm(
 export const kmToMeters = (km: number) => Math.round(km * 1000);
 export const metersToKm = (m: number) => m / 1000;
 
-export const RADIUS_BOUNDS_M = { min: 50, max: 50_000 } as const;
+export const RADIUS_BOUNDS_M = { min: 15, max: 50_000 } as const;
 
 export function isRadiusOverride(
   marche?: MarcheRadiusInput | null,
