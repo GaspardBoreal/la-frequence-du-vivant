@@ -303,10 +303,11 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
 
     // 2. marcheur_observations — chaque ligne = 1 attribution (avec GPS exact iNat)
     (marcheurObs || []).forEach((o: any) => {
-      const key = o.species_scientific_name;
+      const sciName = o.species_scientific_name;
+      const key = normKey(sciName);
       if (!key) return;
       const crew = o.exploration_marcheurs;
-      const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim() || 'Marcheur';
+      const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim() || 'Contributeur iNaturalist';
       const inatId = o.inaturalist_observation_id;
       const attribution: any = {
         observerName,
