@@ -220,6 +220,11 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     if (!snapshots?.length && !marcheurObs?.length) return [];
     const speciesMap = new Map<string, BiodiversitySpecies>();
 
+    // Normalisation NFD + lowercase pour aligner snapshots et marcheur_observations
+    // (même stratégie que useExplorationBiodiversitySummary côté Carte).
+    const normKey = (s: string | null | undefined) =>
+      (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+
     // Dedupe par originalUrl (= URL iNat) si dispo, sinon par observerName+source+date.
     // Évite de compter deux fois une même observation iNat présente à la fois
     // dans biodiversity_snapshots et dans marcheur_observations.
