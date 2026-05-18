@@ -162,6 +162,7 @@ export const TaxonsIndicesPanel: React.FC<Props> = ({ species, explorationId, to
               totalIndividuals={totalIndividuals}
               countMode={mode}
               kingdomCounts={kingdomCounts}
+              totalSpeciesAllRanks={totalSpeciesAllRanks}
             />
           )}
           {active === 'simpson' && <SimpsonTab indices={indices} abundance={abundance} />}
