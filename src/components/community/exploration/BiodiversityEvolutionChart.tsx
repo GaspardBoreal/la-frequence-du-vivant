@@ -26,6 +26,8 @@ interface Props {
   onNavigateToMarche?: (marcheId: string) => void;
   explorationId?: string;
   allEventMarches?: SpeciesMarcheData[];
+  /** Override the species total in the header to align with the unified pool (snapshots ∪ marcheur_observations). */
+  overrideTotalSpecies?: number;
 }
 
 const periodLabels: { key: EvolutionPeriod; label: string }[] = [
