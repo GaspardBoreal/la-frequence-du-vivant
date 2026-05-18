@@ -269,7 +269,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       const speciesData = snap.species_data as any[] | null;
       if (!speciesData || !Array.isArray(speciesData)) return;
       speciesData.forEach((sp: any) => {
-        const key = sp.scientificName || sp.commonName || sp.id;
+        const key = normKey(sp.scientificName || sp.commonName || sp.id);
         if (!key) return;
         const spAttributions = Array.isArray(sp.attributions) ? sp.attributions : [];
         const computedLastSeen = computeLastSeen(spAttributions, snap.snapshot_date || '');
