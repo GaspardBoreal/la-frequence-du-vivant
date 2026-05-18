@@ -1,7 +1,9 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, AlertTriangle } from 'lucide-react';
 
 export const RADIUS_OPTIONS = [
+  { value: 0.015, label: '15m', expert: true },
+  { value: 0.025, label: '25m', expert: true },
   { value: 0.05, label: '50m' },
   { value: 0.15, label: '150m' },
   { value: 0.25, label: '250m' },
@@ -12,6 +14,7 @@ export const RADIUS_OPTIONS = [
 ];
 
 const getColor = (r: number) => {
+  if (r < 0.05) return { bg: 'bg-amber-500/20', border: 'border-amber-400/40', text: 'text-amber-300', ring: 'ring-amber-400/30' };
   if (r < 0.5) return { bg: 'bg-sky-500/20', border: 'border-sky-400/40', text: 'text-sky-300', ring: 'ring-sky-400/30' };
   if (r === 0.5) return { bg: 'bg-emerald-500/20', border: 'border-emerald-400/40', text: 'text-emerald-300', ring: 'ring-emerald-400/30' };
   return { bg: 'bg-amber-500/20', border: 'border-amber-400/40', text: 'text-amber-300', ring: 'ring-amber-400/30' };
@@ -69,6 +72,12 @@ const RadiusSelector: React.FC<RadiusSelectorProps> = ({ value, onChange, loadin
       <p className="text-[10px] text-muted-foreground/60">
         Zone couverte : {area} km²
       </p>
+      {value < 0.05 && (
+        <p className="text-[10px] text-amber-300/80 flex items-start gap-1 leading-snug">
+          <AlertTriangle className="w-3 h-3 mt-px flex-shrink-0" />
+          <span>Précision GPS limite — certaines observations réellement sur la zone peuvent être exclues.</span>
+        </p>
+      )}
     </div>
   );
 };

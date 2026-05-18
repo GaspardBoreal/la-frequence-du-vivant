@@ -1,101 +1,48 @@
+# Faisabilité d'un rayon d'observation très petit (5 / 10 / 15 m)
 
-# Pourquoi 73 persiste alors que la Carte affiche 81
+Réponse courte : **techniquement non recommandé en dessous de ~25 m**, et **15 m est le plancher raisonnable** à proposer dans l'UI — uniquement comme "zoom expert" assumé, jamais comme valeur par défaut.
 
-Mon précédent changement (faire dériver `stats.total` de `allSpeciesAsBiodiversity`) est en place, mais **le pool fusionné lui-même vaut 73**, pas 81. Deux causes :
+## 1. Ce qui borne réellement la précision
 
-## Cause #1 (bloquante) — Jointure `!inner` trop stricte
+### a) Observations iNaturalist (API)
+- Champ `positional_accuracy` typiquement renvoyé entre **5 et 50 m** en plein air, **20–100 m** sous canopée / en ville.
+- Champ `geoprivacy` / `coordinates_obscured` : pour les espèces sensibles, iNat **floute volontairement** les coordonnées sur un carré d'environ **0,2°** (~20 km). Ces points sont mathématiquement inutilisables à <500 m — ils tomberont systématiquement hors d'un cercle de 5–15 m, même quand l'observation a réellement eu lieu sur la parcelle.
+- L'app **n'exploite pas aujourd'hui** `positional_accuracy` ni `coordinates_obscured` (`rg` ne les trouve nulle part dans `supabase/functions` ni `src`). Donc on ne sait pas distinguer un point précis à 5 m d'un point flouté à 20 km : à 10 m de rayon, on jetterait du vrai et on garderait du faux sans le savoir.
 
-Dans `src/components/community/EventBiodiversityTab.tsx` l.179 :
+### b) Photos smartphone (EXIF)
+- GPS smartphone moderne ciel ouvert : **3–8 m** (bon cas), **10–30 m** courant, **>50 m** en zone dense / intérieur.
+- Mémoire projet `ios-gps-stripping-known-issue` : sur iOS, l'upload via `<input file>` **strippe le GPS**. Beaucoup de photos n'ont aucune coordonnée — celles qui en ont passent par `geolocation` device (précision typique 10–50 m).
+- À 5 ou 10 m, **la moitié des photos d'une même placette tomberont dehors** alors qu'elles ont été prises à 2 m de l'observateur.
 
-```ts
-exploration_marcheurs!inner(prenom, nom)
-```
+### c) Cadastre LEXICON
+- LEXICON renvoie la parcelle cadastrale du point. Une parcelle de potager/jardin fait typiquement **100 à 2 000 m²**, soit un rayon équivalent de **6 à 25 m**.
+- Donc un rayon "parcelle" cohérent avec LEXICON commence vers **15–25 m**, pas en dessous.
 
-Filtre toutes les `marcheur_observations` non rattachées à une ligne `exploration_marcheurs` (backfill iNat, marcheurs supprimés, etc.). Ce sont précisément les ~8 espèces qui font la différence 73 → 81.
+## 2. Conclusion par valeur
 
-La Carte (`useExplorationBiodiversitySummary` l.163-166) lit `marcheur_observations` **sans aucune jointure** → voit tout → 81.
+| Rayon | Faisabilité | Commentaire |
+|------|-------------|-------------|
+| **5 m**  | Non | Sous le bruit GPS de tous les capteurs. Faux négatifs massifs. |
+| **10 m** | Non recommandé | Possible uniquement si on filtre sur `positional_accuracy ≤ 10` et qu'on **exclut** les points obscurcis — ce que l'app ne fait pas encore. |
+| **15 m** | Acceptable comme **plancher expert** | Couvre une placette / un carré de potager. À condition d'afficher un avertissement "précision GPS limite". |
+| **25–50 m** | Recommandé pour le cas Point POTAGER | Aligné avec la précision réelle d'un EXIF smartphone et avec une petite parcelle cadastrale. |
 
-## Cause #2 (risque futur) — Dédup sensible à la casse
+## 3. Plan proposé (UI + filtrage)
 
-Snapshots : clé = `sp.scientificName` (casse préservée).
-Marcheur obs : clé = `o.species_scientific_name`.
+1. **Étendre `RADIUS_OPTIONS`** (`src/components/biodiversity/RadiusSelector.tsx`) avec `15 m` et `25 m` en tête de liste, gardés visuellement distincts (badge "expert" / couleur ambre) pour signaler la limite de précision.
+2. **Baisser `RADIUS_BOUNDS_M.min`** de 50 → 15 dans `src/utils/marcheRadius.ts` (le `clamp` de `useUpdateRadius` suivra automatiquement).
+3. **Sous le sélecteur**, quand `radiusM < 50`, afficher un micro-message :  
+   *"Précision GPS limite — certaines observations réellement sur la zone peuvent être exclues."*
+4. **(Optionnel mais recommandé) Filtrage côté edge function `biodiversity-data`** :
+   - Récupérer `positional_accuracy` et `coordinates_obscured` depuis iNat.
+   - Quand `radius_m ≤ 50` : exclure les observations `coordinates_obscured = true` et celles dont `positional_accuracy > radius_m × 2`.
+   - Sans ce filtre, les petits rayons restent affichables mais structurellement bruités.
 
-Si jamais la casse diffère, mêmes espèces comptées deux fois. La Carte gère déjà via `toLowerCase()`.
+Pas de 5 m ni 10 m exposés dans l'UI : ce serait promettre une précision que ni iNat ni le smartphone ne peuvent tenir.
 
----
+## Détails techniques
 
-# Plan
-
-## 1. `EventBiodiversityTab.tsx` — Requête `marcheurObs`
-
-Remplacer la jointure inner par un left join + fallback nom :
-
-```ts
-const { data: marcheurObs } = useQuery({
-  queryKey: ['event-marcheur-observations', marcheIds],
-  queryFn: async () => {
-    if (!marcheIds?.length) return [];
-    const { data } = await supabase
-      .from('marcheur_observations')
-      .select(`
-        id, marche_id, marcheur_id, species_scientific_name,
-        observation_date, photo_url, inaturalist_observation_id,
-        latitude, longitude,
-        exploration_marcheurs(prenom, nom)
-      `)  // ⚠️ pas de !inner
-      .in('marche_id', marcheIds)
-      .not('species_scientific_name', 'is', null);
-    return data || [];
-  },
-  enabled: !!marcheIds?.length,
-});
-```
-
-Et dans la boucle l.297 :
-
-```ts
-const crew = o.exploration_marcheurs;
-const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim()
-  || 'Contributeur iNaturalist';
-```
-
-## 2. Dédup case-insensitive du `speciesMap`
-
-Helper normalisé partagé en haut du `useMemo` :
-
-```ts
-const normKey = (s: string | null | undefined) =>
-  (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
-```
-
-- Snapshots l.264 : `const key = normKey(sp.scientificName || sp.commonName || sp.id);`
-- marcheurObs l.298 : `const key = normKey(o.species_scientific_name);`
-
-Aligne la dédup sur la stratégie de la Carte → garantit que 73 + obs marcheurs = exactement 81 (pas 81+doublons).
-
-## 3. Vérification
-
-Après edit, recharger l'écran Synthèse :
-
-- Cards : **81 / Faune+Flore+Champi+Autre = 81**.
-- Pouls header (onglet Taxons observés) : **81 espèces découvertes** (déjà câblé via `overrideTotalSpecies={stats.total}`).
-- Indicateurs (Richesse spécifique) : **56 sur 81 taxons observés** (déjà câblé via `totalSpeciesAllRanks={stats.total}`).
-- Carte (bas) : 81 (inchangé).
-
-## Hors-scope (volontairement)
-
-- Aucune modif SQL / RLS.
-- Aucune modif des indices écologiques (56 individus-species-level, 80 individus GPS) : ce sont des sous-mesures, clarifiées par la mention "sur 81 taxons observés" déjà en place dans `RichnessTab`.
-- Aucune modif de `useExplorationBiodiversitySummary` (Carte) ni de `BiodiversityEvolutionChart` (courbe) : la courbe garde sa série datée snapshots, seul le total affiché en header est forcé à 81.
-
-## Résultat attendu
-
-| Écran | Avant | Après |
-|---|---|---|
-| Carte bandeau bas | 81 | 81 |
-| Synthèse cards | **73** | **81** |
-| Pouls header | **73** | **81** |
-| Pouls filtre "Toutes" | 81 | 81 |
-| Indicateurs Richesse | 56 (sans contexte) | 56 sur **81** taxons observés |
-
-Une seule source de vérité, alignée sur la Carte.
+- Fichiers concernés : `src/components/biodiversity/RadiusSelector.tsx`, `src/utils/marcheRadius.ts`, éventuellement `supabase/functions/biodiversity-data/index.ts` pour le filtrage qualité.
+- Le `RADIUS_BOUNDS_M.max` reste à 50 000 m, inchangé.
+- Aucun changement de schéma BDD nécessaire (la colonne `radius_m` est déjà un entier en mètres).
+- Le filtre qualité iNat est purement additif et n'altère pas les calculs `S` / `individus` existants — il réduit juste le bruit géographique aux petits rayons.
