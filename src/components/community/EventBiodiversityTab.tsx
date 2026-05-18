@@ -332,8 +332,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       } else {
         speciesMap.set(key, {
           id: key,
-          scientificName: key,
-          commonName: key,
+          scientificName: sciName,
+          commonName: sciName,
           kingdom: 'Other' as BiodiversitySpecies['kingdom'],
           family: '',
           observations: 1,
