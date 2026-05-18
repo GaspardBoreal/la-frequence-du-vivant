@@ -20,6 +20,8 @@ import BiodiversitySimulator from './indices/BiodiversitySimulator';
 interface Props {
   species: RawSpecies[];
   explorationId?: string;
+  /** Total species across all ranks (unified pool, e.g. 81). Displayed alongside species-level richness. */
+  totalSpeciesAllRanks?: number;
 }
 
 type TabKey = 'richness' | 'simpson' | 'shannon' | 'pielou' | 'simulator';
@@ -34,7 +36,7 @@ const TABS: Array<{ key: TabKey; label: string; icon: typeof Layers }> = [
 
 const STORAGE_KEY = 'bio-indices-mode';
 
-export const TaxonsIndicesPanel: React.FC<Props> = ({ species, explorationId }) => {
+export const TaxonsIndicesPanel: React.FC<Props> = ({ species, explorationId, totalSpeciesAllRanks }) => {
   const [active, setActive] = useState<TabKey>('richness');
   const [mode, setMode] = useState<CountMode>(() => {
     if (typeof window === 'undefined') return 'individuals';
@@ -160,6 +162,7 @@ export const TaxonsIndicesPanel: React.FC<Props> = ({ species, explorationId }) 
               totalIndividuals={totalIndividuals}
               countMode={mode}
               kingdomCounts={kingdomCounts}
+              totalSpeciesAllRanks={totalSpeciesAllRanks}
             />
           )}
           {active === 'simpson' && <SimpsonTab indices={indices} abundance={abundance} />}

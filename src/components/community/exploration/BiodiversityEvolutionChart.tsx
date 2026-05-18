@@ -26,6 +26,8 @@ interface Props {
   onNavigateToMarche?: (marcheId: string) => void;
   explorationId?: string;
   allEventMarches?: SpeciesMarcheData[];
+  /** Override the species total in the header to align with the unified pool (snapshots ∪ marcheur_observations). */
+  overrideTotalSpecies?: number;
 }
 
 const periodLabels: { key: EvolutionPeriod; label: string }[] = [
@@ -52,7 +54,7 @@ const formatTickShort = (iso: string) => {
   }
 };
 
-const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, onNavigateToMarche, explorationId, allEventMarches }) => {
+const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, onNavigateToMarche, explorationId, allEventMarches, overrideTotalSpecies }) => {
   const [metric, setMetric] = useState<EvolutionMetric>('species');
   const [period, setPeriod] = useState<EvolutionPeriod>('all');
   const [dateSource, setDateSource] = useState<DateSource>('observation');
@@ -64,8 +66,9 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, o
     period,
   });
 
-  const headerCount = metric === 'species' ? totalSpecies : totalObservations;
-  const headerLabel = metric === 'species' ? (totalSpecies > 1 ? 'espèces découvertes' : 'espèce découverte') : (totalObservations > 1 ? 'observations enregistrées' : 'observation enregistrée');
+  const displayedSpecies = typeof overrideTotalSpecies === 'number' ? overrideTotalSpecies : totalSpecies;
+  const headerCount = metric === 'species' ? displayedSpecies : totalObservations;
+  const headerLabel = metric === 'species' ? (displayedSpecies > 1 ? 'espèces découvertes' : 'espèce découverte') : (totalObservations > 1 ? 'observations enregistrées' : 'observation enregistrée');
 
   const handleClick = (state: any) => {
     const payload = state?.activePayload?.[0]?.payload;

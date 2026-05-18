@@ -11,6 +11,8 @@ interface Props {
   totalIndividuals: number;
   countMode: 'individuals' | 'observations';
   kingdomCounts: { plants: number; animals: number; fungi: number; others: number };
+  /** Total taxons observed across all ranks (e.g. 81). Shown to clarify that S is a sub-measure. */
+  totalSpeciesAllRanks?: number;
 }
 
 const KingdomBadge: React.FC<{ icon: typeof TreePine; value: number; label: string; color: string }> = ({
@@ -27,10 +29,11 @@ const KingdomBadge: React.FC<{ icon: typeof TreePine; value: number; label: stri
 };
 
 export const RichnessTab: React.FC<Props> = ({
-  indices, totalObservations, totalIndividuals, countMode, kingdomCounts,
+  indices, totalObservations, totalIndividuals, countMode, kingdomCounts, totalSpeciesAllRanks,
 }) => {
   const animatedS = useAnimatedCounter(indices.S, 1200, 100);
   const animatedN = useAnimatedCounter(countMode === 'individuals' ? totalIndividuals : totalObservations, 1200, 200);
+  const showAllRanksHint = typeof totalSpeciesAllRanks === 'number' && totalSpeciesAllRanks > indices.S;
   return (
     <div className="space-y-6">
       <motion.div
@@ -40,7 +43,12 @@ export const RichnessTab: React.FC<Props> = ({
       >
         <Layers className="w-7 h-7 mx-auto mb-2 text-emerald-500" />
         <p className="text-5xl font-bold tabular-nums tracking-tight">{animatedS}</p>
-        <p className="text-sm text-muted-foreground mt-1">espèces species-level distinctes</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          espèces species-level distinctes
+          {showAllRanksHint && (
+            <> {' '}<span className="text-foreground/70">sur <strong className="text-foreground">{totalSpeciesAllRanks}</strong> taxons observés</span></>
+          )}
+        </p>
         <p className="text-xs text-muted-foreground mt-3">
           Vous avez croisé <strong className="text-foreground">{animatedN}</strong>{' '}
           {countMode === 'individuals' ? 'individus distincts' : 'observations'} sur le territoire.

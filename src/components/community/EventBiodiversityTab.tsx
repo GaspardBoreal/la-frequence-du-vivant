@@ -207,30 +207,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     enabled: !!explorationId,
   });
 
-  // Aggregate stats
-  const stats = useMemo(() => {
-    if (!snapshots?.length) return { total: 0, birds: 0, plants: 0, fungi: 0, others: 0, marchesCount: 0 };
-    // Compute from species_data (source of truth) instead of summary columns
-    const speciesMap = new Map<string, string>();
-    snapshots.forEach(snap => {
-      const sd = snap.species_data as any[] | null;
-      if (!sd || !Array.isArray(sd)) return;
-      sd.forEach((sp: any) => {
-        const key = sp.scientificName || sp.commonName || sp.id;
-        if (key && !speciesMap.has(key)) {
-          speciesMap.set(key, sp.kingdom || 'Other');
-        }
-      });
-    });
-    let birds = 0, plants = 0, fungi = 0, others = 0;
-    speciesMap.forEach(kingdom => {
-      if (kingdom === 'Animalia') birds++;
-      else if (kingdom === 'Plantae') plants++;
-      else if (kingdom === 'Fungi') fungi++;
-      else others++;
-    });
-    return { total: speciesMap.size, birds, plants, fungi, others, marchesCount: snapshots.length };
-  }, [snapshots]);
+  // Marches count (from snapshots, source of analysis units)
+  const marchesCount = snapshots?.length || 0;
 
   // Transform species_data into BiodiversitySpecies[] for SpeciesExplorer.
   // Fusionne snapshots iNat + marcheur_observations (avec leurs GPS exacts)
@@ -377,6 +355,19 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
   }, [allSpeciesAsBiodiversity, frNamesMap]);
 
+  // Unified stats — derived from the union pool (snapshots ∪ marcheur_observations).
+  // Single source of truth: Carte, Synthèse, Pouls header all show this value.
+  const stats = useMemo(() => {
+    let birds = 0, plants = 0, fungi = 0, others = 0;
+    allSpeciesAsBiodiversity.forEach(sp => {
+      if (sp.kingdom === 'Animalia') birds++;
+      else if (sp.kingdom === 'Plantae') plants++;
+      else if (sp.kingdom === 'Fungi') fungi++;
+      else others++;
+    });
+    return { total: allSpeciesAsBiodiversity.length, birds, plants, fungi, others, marchesCount };
+  }, [allSpeciesAsBiodiversity, marchesCount]);
+
   // Empty state
   if (!isLoading && (!snapshots?.length)) {
     return (
@@ -505,6 +496,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
           <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <BiodiversityEvolutionChart
               snapshots={snapshots}
+              overrideTotalSpecies={stats.total}
               marchesById={new Map(
                 (allEventMarchesData || []).map(m => [
                   m.marcheId,
@@ -528,7 +520,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {/* INDICATEURS — Lecture écologique du peuplement */}
         {activeSubTab === 'indicateurs' && (
           <motion.div key="indicateurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} explorationId={explorationId} />
+            <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} explorationId={explorationId} totalSpeciesAllRanks={stats.total} />
           </motion.div>
         )}
 
