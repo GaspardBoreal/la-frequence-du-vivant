@@ -57,7 +57,7 @@ function layoutLevel(stars: TrophicStar[], group: TrophicGroup, decomposerTilt =
   });
 }
 
-export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorationId }) => {
+export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorationId, highlightScientificName, compact }) => {
   const [hovered, setHovered] = useState<PositionedStar | null>(null);
   const [selected, setSelected] = useState<PositionedStar | null>(null);
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
@@ -89,6 +89,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
   }, [selected, positioned]);
 
   const isStarMuted = (s: PositionedStar) => {
+    if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
     if (selected) {
       if (s.scientificName === selected.scientificName) return false;
