@@ -162,12 +162,38 @@ export interface ClassifyInput {
   scientificName?: string | null;
   family?: string | null;
   kingdom?: string | null;
+  /** iNaturalist iconic_taxon_name : Aves, Insecta, Arachnida, Mammalia, Reptilia,
+   *  Amphibia, Mollusca, Actinopterygii, Plantae, Fungi, Protozoa, Chromista… */
+  iconicTaxon?: string | null;
 }
+
+/** iconic_taxon → fallback trophic group (when KB + family fail). */
+const ICONIC_RULES: Record<string, TrophicGroup> = {
+  Plantae: 'L1',
+  Fungi: 'DECOMPOSER',
+  Protozoa: 'L1',
+  Chromista: 'L1',
+  // Animalia subdivisions
+  Insecta: 'L2',        // dominant pollinisateurs + herbivores
+  Arachnida: 'L3',      // prédateurs invertébrés
+  Mollusca: 'DECOMPOSER', // escargots, limaces (détritivores/herbivores → orbit décomposeurs)
+  Amphibia: 'L3',
+  Reptilia: 'L4',
+  Aves: 'L3',           // par défaut passereaux insectivores (les rapaces sont en KB)
+  Mammalia: 'L2',       // par défaut herbivores (carnivores en KB/famille)
+  Actinopterygii: 'L4', // poissons
+};
+
+/** A family field that is empty, a numeric ID, or "Unknown" is unusable. */
+const isUsableFamily = (f: string): boolean =>
+  !!f && f !== 'Unknown' && !/^\d+$/.test(f);
 
 export function classifyTrophic(sp: ClassifyInput): TrophicAssignment {
   const sn = (sp.scientificName || '').trim();
-  const family = (sp.family || '').trim();
+  const familyRaw = (sp.family || '').trim();
+  const family = isUsableFamily(familyRaw) ? familyRaw : '';
   const kingdom = (sp.kingdom || '').trim();
+  const iconic = (sp.iconicTaxon || '').trim();
 
   // 1. KB lookup (exact match, then genus)
   if (sn && SPECIES_KB[sn]) {
@@ -178,12 +204,17 @@ export function classifyTrophic(sp: ClassifyInput): TrophicAssignment {
     return { group: SPECIES_KB[genus], source: 'kb', rationale: `Genre ${genus} curé` };
   }
 
-  // 2. Family-based heuristic
+  // 2. Family-based heuristic (only if family is a real name, not an iNat numeric ID)
   if (family && FAMILY_RULES[family]) {
     return { group: FAMILY_RULES[family], source: 'heuristic', rationale: `Famille ${family}` };
   }
 
-  // 3. Kingdom fallback
+  // 3. iconic_taxon fallback (iNaturalist) — bien plus discriminant que kingdom seul
+  if (iconic && ICONIC_RULES[iconic]) {
+    return { group: ICONIC_RULES[iconic], source: 'heuristic', rationale: `Groupe ${iconic}` };
+  }
+
+  // 4. Kingdom fallback
   if (kingdom === 'Plantae') {
     return { group: 'L1', source: 'heuristic', rationale: 'Règne Plantae → producteur' };
   }
@@ -193,14 +224,19 @@ export function classifyTrophic(sp: ClassifyInput): TrophicAssignment {
   if (kingdom === 'Chromista' || kingdom === 'Protozoa') {
     return { group: 'L1', source: 'heuristic', rationale: `${kingdom} → producteur primaire` };
   }
+  if (kingdom === 'Animalia') {
+    // Fallback prudent : herbivores/pollinisateurs dominent en biomasse observable
+    return { group: 'L2', source: 'heuristic', rationale: 'Règne Animalia (groupe inconnu) → conso primaire par défaut' };
+  }
 
-  // 4. Scientific name patterns (lichens etc.)
+  // 5. Scientific name patterns (lichens etc.)
   if (/lichen|cladonia|usnea|parmelia|xanthoria/i.test(sn)) {
     return { group: 'L1', source: 'heuristic', rationale: 'Lichen → producteur primaire' };
   }
 
   return { group: 'UNCLASSIFIED', source: 'heuristic' };
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Level metadata for UI                                              */
