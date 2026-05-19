@@ -1,92 +1,40 @@
-# Cohérence du comptage d'espèces — Synthèse ↔ Chatbot
+# Plan — Boutons Export & Nouvelle conversation visibles dans le header du ChatBot
 
-## Diagnostic
+## Contexte
 
-Sur l'exploration `DEVIAT / Jardin Monde`, vérifié en base :
+Les deux fonctionnalités existent déjà dans `src/components/chatbot/ChatBot.tsx` (lignes 392–405) mais sont enfouies dans le dropdown `⋮ MoreVertical`. Un seul composant `ChatBot` est utilisé partout (Admin via `AdminChatBotMount`, Communauté via `CommunityChatBotMount`), donc le changement profite aux deux contextes en une seule modification.
 
-| Source | Comptage | Vu par |
-|---|---|---|
-| `biodiversity_snapshots` seuls | **84** | Chatbot (via RPC `get_admin_entity_context`) |
-| `marcheur_observations` (dont 8 exclusives) | 75 | — |
-| **Union snapshots ∪ marcheur** | **92** | Onglet Synthèse |
+## Changements
 
-Le chatbot ignore les 8 espèces apportées uniquement par les marcheurs.
+**Fichier unique modifié : `src/components/chatbot/ChatBot.tsx`** (header zone actions, lignes ~367–435)
 
-## Cause racine
+1. **Sortir « Exporter » du dropdown** vers un bouton icône `Download` direct, placé juste avant `⋮`.
+   - `disabled` si `messages.length === 0 || isLoading`
+   - `onClick`: `isMobile ? setDrawerOpen(true) : exportPrint()` (comportement actuel inchangé → impression PDF navigateur sur desktop, drawer Copier/Partager sur mobile)
+   - `aria-label` + `title` : « Exporter la conversation »
 
-Deux sources de vérité divergentes :
-- **Front Synthèse** (`EventBiodiversityTab.tsx` l.367-378) fusionne snapshots + `marcheur_observations` — stratégie correcte, alignée avec la mémoire core *"Fréquence iNat fusion"*.
-- **RPC `get_admin_entity_context`** (branches `marche_event` et `exploration`) ne lit que `biodiversity_snapshots`.
+2. **Sortir « Nouvelle conversation » du dropdown** vers un bouton icône `RotateCcw` direct, placé juste avant le bouton Export.
+   - `disabled` si `messages.length === 0`
+   - `onClick`: `handleReset()` (reset immédiat, pas de confirmation)
+   - `aria-label` + `title` : « Nouvelle conversation »
 
-## Plan
+3. **Simplifier le dropdown `⋮`** : il ne contient plus que « Lecture vocale auto » (action secondaire de préférence). Si `ttsSupported === false`, on peut entièrement supprimer le dropdown pour alléger le header.
 
-### 1. Migration SQL — corriger le RPC (source backend unique)
+## Ordre final des boutons header (de gauche à droite)
 
-Remplacer la CTE `species_unique` dans les deux branches (`marche_event` et `exploration`) par un **UNION dédoublonné par `lower(scientific_name)`** :
+`[RotateCcw] [Download] [⋮ vocal si supporté] [Maximize2/Minimize2 desktop] [X]`
 
-```sql
-WITH marche_ids AS (
-  SELECT marche_id FROM exploration_marches WHERE exploration_id = <ctx>
-),
-snap_species AS (
-  SELECT lower(coalesce(sp->>'scientificName', sp->>'commonName')) AS key,
-         sp->>'kingdom' AS kingdom
-  FROM biodiversity_snapshots bs
-  CROSS JOIN LATERAL jsonb_array_elements(coalesce(bs.species_data,'[]'::jsonb)) sp
-  WHERE bs.marche_id IN (SELECT marche_id FROM marche_ids)
-    AND coalesce(sp->>'scientificName', sp->>'commonName') <> ''
-),
-mo_species AS (
-  SELECT lower(species_scientific_name) AS key, NULL::text AS kingdom
-  FROM marcheur_observations
-  WHERE marche_id IN (SELECT marche_id FROM marche_ids)
-    AND species_scientific_name IS NOT NULL
-    AND species_scientific_name <> ''
-),
-species_unique AS (
-  SELECT DISTINCT ON (key) key, kingdom
-  FROM (
-    SELECT key, kingdom FROM snap_species
-    UNION ALL
-    SELECT key, kingdom FROM mo_species
-  ) u
-  WHERE key IS NOT NULL
-  ORDER BY key, (kingdom IS NULL) ASC  -- privilégie l'entrée qui a un kingdom
-)
-```
+## Détails techniques
 
-Le tri `(kingdom IS NULL) ASC` garantit qu'une espèce présente à la fois côté snapshots et marcheurs garde son `kingdom` iNat (Faune/Flore correctement ventilée). Les 8 espèces "marcheur-only" sans kingdom retomberont dans `others`.
+- Conserver le style existant : `variant="ghost" size="icon" h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10`
+- Sur mobile, garder l'écart `gap-0.5` et la classe `shrink-0` du conteneur d'actions — ces 2 nouvelles icônes ajoutent ~72px mais le header est déjà conçu avec `flex-1 min-w-0` côté titre qui tronque proprement.
+- Aucun changement sur `useChatExport`, `ChatExportDrawer`, `chatConfig`, mounts Admin/Community, ni sur l'edge function.
+- Aucun changement de comportement métier : les actions appellent les mêmes handlers (`exportPrint`, `setDrawerOpen`, `handleReset`).
 
-Appliquer aux branches `marche_event` (l.60-80) et `exploration` (l.135-155). Ajouter aussi un champ `marcheur_only_count` pour traçabilité.
+## Vérifications post-implémentation
 
-### 2. Snapshot UI — `useChatTabSnapshot('synthese.stats', …)`
-
-Dans `EventBiodiversityTab.tsx`, publier le slice exact affiché à l'écran (juste après le calcul de `stats`) :
-
-```ts
-useChatTabSnapshot('synthese.stats', {
-  total: stats.total,
-  faune: stats.birds,
-  flore: stats.plants,
-  champignons: stats.fungi,
-  autres: stats.others,
-  marches_count: marchesCount,
-  source: 'snapshots ∪ marcheur_observations',
-});
-```
-
-Bénéfice : conformément aux règles déjà en place dans `community-chat/index.ts` (l.163), `visibleData` prime sur les agrégats globaux → le chatbot dira toujours **exactement** ce que l'utilisateur voit, même si un filtre catégorie est actif plus tard.
-
-### 3. Vérification
-
-- Recharger l'écran Synthèse de DEVIAT/Jardin Monde, demander au chatbot « combien d'espèces ? » → doit répondre **92** et pouvoir détailler 31 Faune / 51 Flore / 2 Champignons / 8 Autres.
-- Tester sur un événement n'ayant que des snapshots (pas d'obs marcheur) → comptage inchangé.
-
-## Fichiers touchés
-
-- `supabase/migrations/<ts>_align_chatbot_species_count.sql` (nouveau) — remplace `get_admin_entity_context`
-- `src/components/community/EventBiodiversityTab.tsx` — ajout du `useChatTabSnapshot('synthese.stats', …)`
-
-## Note mémoire
-
-À l'issue, ajouter une mémoire `mem://technical/biodiversity/chatbot-species-count-alignment` rappelant que le RPC doit toujours rester aligné sur la stratégie "snapshots ∪ marcheur_observations" pour ne pas réintroduire la divergence.
+- Header reste lisible sur mobile 375px (badge `Admin` + 4–5 icônes + titre tronqué)
+- Boutons grisés tant que `messages.length === 0`
+- Export desktop ouvre toujours la fenêtre d'impression
+- Export mobile ouvre toujours `ChatExportDrawer`
+- Reset vide bien la conversation et arrête voix/écoute
