@@ -121,12 +121,14 @@ export const SelectedStarPanel: React.FC<{
   star: TrophicStar;
   chain: TrophicChainResult;
   onLevelClick: (g: TrophicGroup) => void;
-}> = ({ star, chain, onLevelClick }) => {
+  onClose: () => void;
+}> = ({ star, chain, onLevelClick, onClose }) => {
   const meta = getLevelMeta(star.group);
   if (!meta) return null;
   const preyGroups = probablePreyGroups(star.group);
   return (
     <>
+      <PanelHeader onClose={onClose} />
       <div className="flex items-start gap-3">
         {star.photoUrl && (
           <img src={star.photoUrl} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
