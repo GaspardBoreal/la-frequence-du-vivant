@@ -136,9 +136,9 @@ export const TrophicChainPanel: React.FC<Props> = ({ species, explorationId }) =
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.25 }}
                 >
-                  {active === 'constellation' && <ConstellationTab chain={chain} />}
-                  {active === 'spirale' && <SpiraleTab chain={chain} />}
-                  {active === 'reseau' && <ReseauTab chain={chain} />}
+                  {active === 'constellation' && <ConstellationTab chain={chain} speciesPool={speciesPool} explorationId={explorationId} />}
+                  {active === 'spirale' && <SpiraleTab chain={chain} speciesPool={speciesPool} explorationId={explorationId} />}
+                  {active === 'reseau' && <ReseauTab chain={chain} speciesPool={speciesPool} explorationId={explorationId} />}
                 </motion.div>
               </AnimatePresence>
 
