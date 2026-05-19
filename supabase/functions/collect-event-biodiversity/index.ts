@@ -184,30 +184,92 @@ Deno.serve(async (req) => {
         const othersCount = totalSpecies - birdsCount - plantsCount - fungiCount;
 
         // ── Archivage + garde-fou anti-régression ──────────────────────
-        // 1. Lire l'ancien snapshot actif pour calculer le delta
         const { data: prevSnap } = await serviceClient
           .from('biodiversity_snapshots')
           .select('*')
           .eq('marche_id', em.marche_id)
-          .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
         const normName = (s: any) =>
           (s?.scientificName || s?.scientific_name || '').toString().trim().toLowerCase();
-        const prevSpecies: any[] = Array.isArray(prevSnap?.species_data) ? prevSnap!.species_data as any[] : [];
-        const prevSet = new Set(prevSpecies.map(normName).filter(Boolean));
+        const prevArr: any[] = Array.isArray(prevSnap?.species_data) ? prevSnap!.species_data as any[] : [];
+        const prevSet = new Set(prevArr.map(normName).filter(Boolean));
         const newSet = new Set((speciesData as any[]).map(normName).filter(Boolean));
         const added = [...newSet].filter(x => !prevSet.has(x));
         const removed = [...prevSet].filter(x => !newSet.has(x));
         const prevTotal = prevSnap?.total_species ?? prevSet.size;
         const regressionPct = prevTotal > 0 ? Math.max(0, (prevTotal - totalSpecies) / prevTotal) : 0;
-        const REGRESSION_THRESHOLD = 0.15; // 15 %
-        const shouldQuarantine = prevSnap && regressionPct > REGRESSION_THRESHOLD;
+        const shouldQuarantine = !!prevSnap && regressionPct > 0.15;
 
-        // 2. Insérer le nouveau snapshot (active OU quarantine)
-        const { data: newSnap, error: insertError } = await serviceClient
+        const delta = {
+          added,
+          removed,
+          added_count: added.length,
+          removed_count: removed.length,
+          prev_total: prevTotal,
+          new_total: totalSpecies,
+          regression_pct: regressionPct,
+        };
+
+        if (shouldQuarantine) {
+          // On n'écrase pas : on archive le rejet et on garde l'ancien snapshot actif
+          await serviceClient.from('biodiversity_snapshots_history').insert({
+            original_snapshot_id: null,
+            marche_id: em.marche_id,
+            latitude: parseFloat(String(marche.latitude)),
+            longitude: parseFloat(String(marche.longitude)),
+            snapshot_date: new Date().toISOString().split('T')[0],
+            radius_meters: radiusM,
+            total_species: totalSpecies,
+            birds_count: birdsCount,
+            plants_count: plantsCount,
+            fungi_count: fungiCount,
+            others_count: othersCount,
+            recent_observations: summary.recentObservations || 0,
+            species_data: speciesData,
+            methodology: biodiversityData.methodology || {},
+            original_created_at: new Date().toISOString(),
+            delta_species: delta,
+            archive_reason: `quarantine-rejected: regression ${Math.round(regressionPct * 100)}% (kept previous active)`,
+          });
+          console.warn(`⚠️  ${marcheName}: QUARANTINE (${prevTotal}→${totalSpecies}, -${Math.round(regressionPct*100)}%) — previous kept`);
+          totalProcessed++;
+          continue;
+        }
+
+        // Cas normal : archiver l'ancien puis le supprimer
+        if (prevSnap) {
+          await serviceClient.from('biodiversity_snapshots_history').insert({
+            original_snapshot_id: prevSnap.id,
+            marche_id: prevSnap.marche_id,
+            latitude: prevSnap.latitude,
+            longitude: prevSnap.longitude,
+            snapshot_date: prevSnap.snapshot_date,
+            radius_meters: prevSnap.radius_meters,
+            total_species: prevSnap.total_species,
+            birds_count: prevSnap.birds_count,
+            plants_count: prevSnap.plants_count,
+            fungi_count: prevSnap.fungi_count,
+            others_count: prevSnap.others_count,
+            recent_observations: prevSnap.recent_observations,
+            species_data: prevSnap.species_data,
+            sources_data: prevSnap.sources_data,
+            methodology: prevSnap.methodology,
+            biodiversity_index: prevSnap.biodiversity_index,
+            species_richness: prevSnap.species_richness,
+            original_created_at: prevSnap.created_at,
+            delta_species: delta,
+            archive_reason: 'replaced',
+          });
+          await serviceClient
+            .from('biodiversity_snapshots')
+            .delete()
+            .eq('id', prevSnap.id);
+        }
+
+        const { error: insertError } = await serviceClient
           .from('biodiversity_snapshots')
           .insert({
             marche_id: em.marche_id,
@@ -224,11 +286,7 @@ Deno.serve(async (req) => {
             sources_data: biodiversityData.methodology || {},
             methodology: biodiversityData.methodology || {},
             snapshot_date: new Date().toISOString().split('T')[0],
-            status: shouldQuarantine ? 'quarantine' : 'active',
-            regression_pct: regressionPct,
-          })
-          .select('id')
-          .single();
+          });
 
         if (insertError) {
           console.error(`❌ Insert failed for ${marcheName}:`, insertError);
@@ -236,61 +294,7 @@ Deno.serve(async (req) => {
         } else {
           totalProcessed++;
           totalSpeciesCollected += totalSpecies;
-
-          // 3. Archiver l'ancien snapshot SAUF si on quarantine (on garde l'ancien actif)
-          if (prevSnap) {
-            const reason = shouldQuarantine
-              ? `quarantine: regression ${Math.round(regressionPct * 100)}% (kept previous active)`
-              : 'replaced';
-            const delta = {
-              added,
-              removed,
-              added_count: added.length,
-              removed_count: removed.length,
-              prev_total: prevTotal,
-              new_total: totalSpecies,
-              regression_pct: regressionPct,
-            };
-            await serviceClient.from('biodiversity_snapshots_history').insert({
-              original_snapshot_id: prevSnap.id,
-              marche_id: prevSnap.marche_id,
-              latitude: prevSnap.latitude,
-              longitude: prevSnap.longitude,
-              snapshot_date: prevSnap.snapshot_date,
-              radius_meters: prevSnap.radius_meters,
-              total_species: prevSnap.total_species,
-              birds_count: prevSnap.birds_count,
-              plants_count: prevSnap.plants_count,
-              fungi_count: prevSnap.fungi_count,
-              others_count: prevSnap.others_count,
-              recent_observations: prevSnap.recent_observations,
-              species_data: prevSnap.species_data,
-              sources_data: prevSnap.sources_data,
-              methodology: prevSnap.methodology,
-              biodiversity_index: prevSnap.biodiversity_index,
-              species_richness: prevSnap.species_richness,
-              original_created_at: prevSnap.created_at,
-              replaced_by_snapshot_id: newSnap?.id ?? null,
-              delta_species: delta,
-              archive_reason: reason,
-            });
-
-            // Si pas de quarantine : on retire le statut actif de l'ancien
-            // (on garde la ligne en base pour ne pas casser d'éventuelles FK,
-            // mais on la passe en 'replaced' pour ne pas la lire deux fois)
-            if (!shouldQuarantine) {
-              await serviceClient
-                .from('biodiversity_snapshots')
-                .update({ status: 'replaced' })
-                .eq('id', prevSnap.id);
-            }
-          }
-
-          if (shouldQuarantine) {
-            console.warn(`⚠️  ${marcheName}: quarantine snapshot (${prevTotal}→${totalSpecies}, -${Math.round(regressionPct*100)}%)`);
-          } else {
-            console.log(`✅ ${marcheName}: ${totalSpecies} species (+${added.length}/-${removed.length})`);
-          }
+          console.log(`✅ ${marcheName}: ${totalSpecies} species (+${added.length}/-${removed.length})`);
         }
       } catch (err) {
         console.error(`❌ Error processing ${marcheName}:`, err);
