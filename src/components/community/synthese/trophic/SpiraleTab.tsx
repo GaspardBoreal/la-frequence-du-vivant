@@ -9,10 +9,12 @@ import {
   type TrophicGroup,
 } from '@/lib/trophicClassification';
 import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
-import { DefaultPanel, LevelPanel, SelectedStarPanel } from './_panels';
+import { DefaultPanel, LevelPanel, SelectedStarPanel, type TrophicSpeciesPoolEntry } from './_panels';
 
 interface Props {
   chain: TrophicChainResult;
+  speciesPool?: TrophicSpeciesPoolEntry[];
+  explorationId?: string;
 }
 
 const SIZE = 720;
@@ -129,7 +131,7 @@ function placeDecomposers(stars: TrophicStar[]): PositionedStar[] {
   });
 }
 
-export const SpiraleTab: React.FC<Props> = ({ chain }) => {
+export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId }) => {
   const [hovered, setHovered] = useState<PositionedStar | null>(null);
   const [selected, setSelected] = useState<PositionedStar | null>(null);
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
@@ -393,9 +395,9 @@ export const SpiraleTab: React.FC<Props> = ({ chain }) => {
       {/* Side panel — pédagogique */}
       <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
         {selected ? (
-          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} />
+          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
         ) : focusGroup ? (
-          <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} />
+          <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
         ) : (
           <DefaultPanel
             chain={chain}
