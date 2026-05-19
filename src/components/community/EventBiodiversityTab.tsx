@@ -484,10 +484,9 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             <p className="text-xs text-muted-foreground mb-3">
               {stats.marchesCount} étape{stats.marchesCount > 1 ? 's' : ''} analysée{stats.marchesCount > 1 ? 's' : ''}
             </p>
-            <ExplorationDefaultRadiusBlock
+            <ExplorationRadiusSummary
               explorationId={explorationId}
               userRole={userProfile?.role}
-              fallbackSnapshotRadiusM={snapshots?.[0]?.radius_meters}
             />
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <AnimatedStat value={stats.total} label="Espèces totales" icon={Layers} color={categoryConfig.all.color} bgColor={categoryConfig.all.bgColor} delay={0} />
