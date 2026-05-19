@@ -1,80 +1,73 @@
-# Plan de correction
+# Chaîne trophique — 92 espèces, 0% curé, 39 non classées
 
-## Diagnostic
-Le `87` affiché dans le chatbot n’est pas un bug de rendu : c’est une conséquence directe de la règle `mergeGenusIntoSpecies()` appliquée dans `useExplorationSpeciesPool`.
+## Diagnostic (racine du bug)
 
-Pour l’exploration `20dd3be8-e594-492c-998a-5c4d009a5094` :
-- union canonique `biodiversity_snapshots ∪ marcheur_observations` = `92` espèces/taxons distincts
-- fusions taxonomiques appliquées ensuite = `5`
-- total post-fusion utilisé par le chatbot = `87`
+J'ai inspecté `species_data` des snapshots de cette exploration :
 
-Les 5 fusions détectées sont :
-- `Aesculus` -> `Aesculus hippocastanum`
-- `Arion` -> `Arion vulgaris`
-- `Corylus` -> `Corylus avellana`
-- `Quercus` -> `Quercus robur`
-- `Rubus` -> `Rubus idaeus`
-
-Le problème est donc architectural :
-- le chiffre affiché dans `Liste des espèces (...)` utilise une liste déjà “compressée”
-- alors que partout ailleurs la référence métier attendue est le total canonique `92`
-
-## Correction proposée
-
-### 1. Séparer clairement les deux notions dans `useExplorationSpeciesPool`
-Faire retourner le hook avec deux niveaux explicites :
-- `rawSpecies`: union canonique non fusionnée, utilisée pour le comptage métier et les pièces jointes “liste complète”
-- `mergedSpecies`: version fusionnée, utilisée uniquement là où l’on veut réduire les doublons visuels
-- `rawCount` et `mergedCount`
-
-Objectif : ne plus faire dépendre le compteur métier d’une optimisation de présentation.
-
-### 2. Aligner le chatbot sur le total canonique
-Dans `CommunityChatBotMount` :
-- utiliser `rawCount` pour le libellé du menu `Liste des espèces (92)`
-- attacher par défaut la liste canonique complète au chatbot quand l’utilisateur la demande explicitement
-- conserver le format compact actuel pour rester frugal
-
-Comme le cap est déjà `200`, envoyer `92` entrées compactes reste acceptable et cohérent avec l’intention utilisateur.
-
-### 3. Garder la fusion taxonomique seulement là où elle est voulue
-Ne plus appliquer `mergeGenusIntoSpecies` comme comportement implicite “global”.
-La fusion doit devenir une vue optionnelle d’affichage, pas la source unique.
-
-Concrètement :
-- chatbot / export / comptages globaux : source canonique non fusionnée
-- vues de confort visuel si nécessaire : source fusionnée
-
-### 4. Ajouter une garde de cohérence
-Ajouter une petite couche défensive pour éviter ce type d’écart à l’avenir :
-- nommer explicitement les compteurs (`rawCount`, `mergedCount`) au lieu de réutiliser `speciesPool.length`
-- éviter toute ambiguïté dans les labels UI
-- si une fusion est appliquée, elle ne doit jamais modifier le total métier affiché sans intention explicite
-
-## Validation prévue
-Après implémentation, vérifier :
-- le dropdown affiche bien `Liste des espèces (92)` sur cette exploration
-- la pièce jointe envoyée au chatbot contient bien les 92 taxons attendus
-- les autres vues qui utilisent volontairement la fusion continuent à fonctionner sans régression
-- plus aucun écart entre le chatbot et la source canonique `snapshots ∪ marcheur_observations`
-
-## Détails techniques
-Fichiers à modifier ensuite :
-- `src/hooks/useExplorationSpeciesPool.ts`
-- `src/components/chatbot/CommunityChatBotMount.tsx`
-- éventuellement les consommateurs qui veulent explicitement la version fusionnée
-
-Approche recommandée :
-```text
-source canonique (92)
-  -> rawSpecies/rawCount
-  -> mergedSpecies/mergedCount (optionnel, pour affichage seulement)
-
-chatbot label + attachment
-  -> rawCount + rawSpecies
-
-UI de confort visuel
-  -> mergedSpecies
+```
+sci=Corylus avellana   family="49155"     kingdom=Plantae
+sci=Trichodes alvearius family="373395"   kingdom=Animalia
 ```
 
-Cette correction est minimale, robuste, et remet le chatbot en cohérence stricte avec le référentiel métier attendu.
+**Le champ `family` stocké est l'ID taxon iNaturalist (entier), pas le nom de famille.** Le classificateur (`FAMILY_RULES`) attend `"Betulaceae"`, reçoit `"49155"` → **0 famille matchée**. Du coup :
+- Plantae → L1 via fallback kingdom ✅
+- Fungi → DECOMPOSER ✅
+- **Animalia → UNCLASSIFIED** (aucun fallback kingdom, et family inutilisable) → c'est l'origine des 39 non classées
+- `curatedRatio` = `kb hits / total`, et notre KB inline ne contient que ~30 espèces emblématiques rarement présentes → **0%**
+
+Les observations `marcheur_observations` arrivent aussi sans family ni kingdom (`kingdom='Other'`) → UNCLASSIFIED garantie.
+
+## Stratégie « frugalité + efficacité »
+
+Trois leviers, du plus rapide au plus structurel, **sans appel API supplémentaire à chaque vue** :
+
+### Levier 1 — Classificateur enrichi (gain immédiat, 0 € de backend)
+
+Étendre `src/lib/trophicClassification.ts` pour exploiter **ce qu'on a déjà** :
+
+- Accepter un nouveau champ optionnel `iconicTaxon` (Aves, Insecta, Arachnida, Mammalia, Reptilia, Amphibia, Mollusca, Fungi, Plantae…) et ajouter des règles fallback robustes : Aves→L3, Insecta→L2, Arachnida→L3, Reptilia→L4, Amphibia→L3, Mammalia→L2 (sauf famille connue prédateur).
+- Détection « famille = entier numérique » → ignorer ce champ et passer aux fallbacks au lieu de renvoyer UNCLASSIFIED.
+- Élargir `SPECIES_KB` avec ~60 espèces issues du top observations du projet (export rapide depuis snapshots) pour faire monter le ratio curé > 25 % sans surcharger le fichier.
+
+À lui seul ce levier ramène les 39 UNCLASSIFIED à ~5–8.
+
+### Levier 2 — Résolveur taxon ID → famille (one-shot + cache)
+
+Créer une edge function **`resolve-inat-taxa`** + une table cache `inat_taxa_cache` (`taxon_id` PK, `family_name`, `iconic_taxon`, `rank`, `cached_at`) :
+
+- Endpoint iNat `GET /v1/taxa?id=X,Y,Z` accepte **30 IDs par requête**, gratuit, sans clé.
+- La fonction lit tous les `family` numériques distincts encore inconnus du cache, les batch-résout, et met à jour `inat_taxa_cache`.
+- Un **second edge function `backfill-snapshots-taxonomy`** (one-shot, déclenché 1× par l'admin) parcourt `biodiversity_snapshots`, joint avec le cache, et réécrit chaque `species_data[i].family` (string ID → nom de famille) + ajoute `iconicTaxon`. Pour ~10k snapshots du projet, traitement < 2 min en quelques pages.
+
+### Levier 3 — Normalisation à l'ingestion (durable, zéro coût récurrent)
+
+Modifier la edge function qui alimente déjà `biodiversity_snapshots` depuis iNat (probablement `collect-biodiversity` / `sync-marche-biodiversity` selon la mémoire « Snapshot sync ») pour, **au moment de l'écriture** :
+
+- Extraire de la réponse iNat les champs `taxon.iconic_taxon_name` (gratuit, déjà dans la payload) et la résolution famille via `taxon.ancestors[]` (idem, déjà payload — aucun appel supplémentaire).
+- Stocker `family` = nom et `iconicTaxon` = string dans chaque entrée de `species_data`.
+
+À partir de ce moment, **toute nouvelle donnée iNat arrive déjà propre**, le cache `inat_taxa_cache` ne grossit plus, et le backfill du Levier 2 ne se reprouve jamais.
+
+### Bonus créatif — « Sentinelles auto-curées »
+
+Vue admin légère (`unclassified_species_admin`) qui liste les espèces observées ≥ 3× toujours en UNCLASSIFIED après tous les fallbacks. Un clic → ajout au `SPECIES_KB` JSON. Le ratio curé monte organiquement avec l'usage.
+
+## Plan d'implémentation (ordre)
+
+1. **Levier 1** — patch `trophicClassification.ts` (iconicTaxon, détection ID numérique, KB élargie). Effet immédiat dès le prochain render, déjà visible sur l'exploration actuelle dès que les snapshots auront `iconicTaxon` (Levier 3) — **mais on profite déjà tout de suite des règles kingdom Animalia → L2/L3 par défaut**.
+2. **Levier 3** — patch edge function de sync iNat pour écrire `family` (nom) + `iconicTaxon` à l'ingestion. Toute nouvelle obs propre.
+3. **Levier 2** — migration table `inat_taxa_cache` + edge functions `resolve-inat-taxa` & `backfill-snapshots-taxonomy`. Lancer le backfill une fois → 92/92 espèces classées correctement sur l'historique.
+4. **Bonus** — vue admin `unclassified_species_admin` (5 min, optionnel).
+
+## Détails techniques
+
+- Cache `inat_taxa_cache` : `taxon_id BIGINT PK`, `name TEXT`, `rank TEXT`, `family_name TEXT`, `iconic_taxon TEXT`, `cached_at TIMESTAMPTZ`. RLS : lecture publique, écriture service_role uniquement.
+- L'ID famille iNat se résout via `ancestors[]` filtrés sur `rank='family'`. Si l'espèce est elle-même au rang famille (cas `Cercis`, `Peonies`), `family_name` = name de l'espèce.
+- Edge function `backfill-snapshots-taxonomy` itère par batch de 100 snapshots, met à jour `species_data` via `jsonb_set` en SQL côté serveur pour éviter de retransférer la payload.
+- `curatedRatio` reste calculé sur `source==='kb'` exact — Levier 1 le fait monter naturellement via KB élargi.
+
+## Garde-fous
+
+- Aucun rate-limit iNat dépassé : 1 req/sec, 30 IDs/req, cache permanent. Sur ~500 familles distinctes typiques d'un projet → ~17 requêtes au total, une seule fois.
+- Pas de breaking change UI : `TrophicChainPanel` reçoit la même prop, seules les classifications s'affinent.
+- Mémoire `Snapshot sync on view` respectée : le travail reste côté edge function, jamais bloquant pour l'utilisateur.
