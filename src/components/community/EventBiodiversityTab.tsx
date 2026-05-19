@@ -16,6 +16,7 @@ import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
 import BiodiversityEvolutionChart from './exploration/BiodiversityEvolutionChart';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
+import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
@@ -376,6 +377,18 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
     return { total: allSpeciesAsBiodiversity.length, birds, plants, fungi, others, marchesCount };
   }, [allSpeciesAsBiodiversity, marchesCount]);
+
+  // Publie le snapshot exact affiché à l'écran pour que le chatbot voie la même
+  // chose que l'utilisateur (priorité absolue sur les agrégats globaux du RPC).
+  useChatTabSnapshot('synthese.stats', {
+    total: stats.total,
+    faune: stats.birds,
+    flore: stats.plants,
+    champignons: stats.fungi,
+    autres: stats.others,
+    marches_count: marchesCount,
+    source: 'snapshots ∪ marcheur_observations',
+  });
 
   // Empty state
   if (!isLoading && (!snapshots?.length)) {
