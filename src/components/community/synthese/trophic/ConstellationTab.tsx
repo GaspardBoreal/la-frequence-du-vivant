@@ -15,6 +15,10 @@ interface Props {
   chain: TrophicChainResult;
   speciesPool?: TrophicSpeciesPoolEntry[];
   explorationId?: string;
+  /** When set, mute every star except this one and add a pulsing halo. */
+  highlightScientificName?: string;
+  /** Compact mode: only render the SVG (no side panel, no overlays). */
+  compact?: boolean;
 }
 
 const SIZE = 720;
@@ -53,7 +57,7 @@ function layoutLevel(stars: TrophicStar[], group: TrophicGroup, decomposerTilt =
   });
 }
 
-export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorationId }) => {
+export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorationId, highlightScientificName, compact }) => {
   const [hovered, setHovered] = useState<PositionedStar | null>(null);
   const [selected, setSelected] = useState<PositionedStar | null>(null);
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
@@ -85,6 +89,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
   }, [selected, positioned]);
 
   const isStarMuted = (s: PositionedStar) => {
+    if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
     if (selected) {
       if (s.scientificName === selected.scientificName) return false;
@@ -93,6 +98,72 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
     }
     return false;
   };
+
+  if (compact) {
+    return (
+      <div
+        className="relative rounded-2xl overflow-hidden border border-border"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
+        }}
+      >
+        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto block pointer-events-none">
+          {TROPHIC_LEVELS.map((l) => (
+            <circle
+              key={l.group}
+              cx={CENTER}
+              cy={CENTER}
+              r={RADII[l.group]}
+              fill="none"
+              stroke={`hsl(var(${l.token}) / 0.18)`}
+              strokeWidth={chain.counts[l.group] === 0 ? 0.5 : 1}
+              strokeDasharray={chain.counts[l.group] === 0 ? '4 6' : undefined}
+            />
+          ))}
+          <ellipse
+            cx={CENTER}
+            cy={CENTER}
+            rx={RADII.DECOMPOSER}
+            ry={RADII.DECOMPOSER * 0.92}
+            fill="none"
+            stroke={`hsl(var(${DECOMPOSER_META.token}) / 0.25)`}
+            strokeDasharray="2 4"
+            transform={`rotate(15 ${CENTER} ${CENTER})`}
+          />
+          {allStars.map((s, i) => {
+            const meta = getLevelMeta(s.group);
+            if (!meta) return null;
+            const muted = isStarMuted(s);
+            const isHighlighted = highlightScientificName === s.scientificName;
+            return (
+              <motion.g
+                key={`${s.scientificName}-${i}`}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: muted ? 0.12 : 1, scale: 1 }}
+                transition={{ delay: i * 0.004, duration: 0.4 }}
+              >
+                {isHighlighted && (
+                  <>
+                    <motion.circle
+                      cx={s.x} cy={s.y}
+                      r={s.r * 5}
+                      fill={`hsl(var(${meta.token}) / 0.18)`}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.7, 0, 0.7] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <circle cx={s.x} cy={s.y} r={s.r * 3.2} fill={`hsl(var(${meta.token}) / 0.4)`} />
+                  </>
+                )}
+                <circle cx={s.x} cy={s.y} r={s.r * (isHighlighted ? 3 : 2)} fill={`hsl(var(${meta.token}) / ${isHighlighted ? 0.4 : 0.18})`} />
+                <circle cx={s.x} cy={s.y} r={isHighlighted ? s.r * 1.6 : s.r} fill={`hsl(var(${meta.token}))`} stroke={isHighlighted ? `hsl(var(${meta.token}))` : 'transparent'} strokeWidth={isHighlighted ? 1.4 : 0} />
+              </motion.g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
@@ -171,34 +242,48 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             if (!meta) return null;
             const muted = isStarMuted(s);
             const isSelected = selected?.scientificName === s.scientificName;
+            const isHighlighted = highlightScientificName === s.scientificName;
             return (
               <motion.g
                 key={`${s.scientificName}-${i}`}
                 initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: muted ? 0.18 : 1, scale: 1 }}
+                animate={{ opacity: muted ? 0.12 : 1, scale: 1 }}
                 transition={{ delay: i * 0.005, duration: 0.4 }}
                 onMouseEnter={() => setHovered(s)}
                 onMouseLeave={() => setHovered(null)}
                 onClick={() => setSelected(isSelected ? null : s)}
                 style={{ cursor: 'pointer' }}
               >
+                {/* spotlight pulse for the highlighted species */}
+                {isHighlighted && (
+                  <>
+                    <motion.circle
+                      cx={s.x} cy={s.y}
+                      r={s.r * 5}
+                      fill={`hsl(var(${meta.token}) / 0.18)`}
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <circle cx={s.x} cy={s.y} r={s.r * 3.2} fill={`hsl(var(${meta.token}) / 0.35)`} />
+                  </>
+                )}
                 {/* halo */}
                 <circle
                   cx={s.x}
                   cy={s.y}
-                  r={s.r * (isSelected ? 3 : 2)}
-                  fill={`hsl(var(${meta.token}) / ${isSelected ? 0.35 : 0.18})`}
+                  r={s.r * (isSelected || isHighlighted ? 3 : 2)}
+                  fill={`hsl(var(${meta.token}) / ${isSelected || isHighlighted ? 0.4 : 0.18})`}
                 />
                 <circle
                   cx={s.x}
                   cy={s.y}
-                  r={s.r}
+                  r={isHighlighted ? s.r * 1.6 : s.r}
                   fill={`hsl(var(${meta.token}))`}
-                  stroke={s.source === 'kb' ? `hsl(var(${meta.token}))` : 'transparent'}
-                  strokeWidth={s.source === 'kb' ? 0.8 : 0}
+                  stroke={s.source === 'kb' || isHighlighted ? `hsl(var(${meta.token}))` : 'transparent'}
+                  strokeWidth={isHighlighted ? 1.4 : s.source === 'kb' ? 0.8 : 0}
                 />
                 {/* hollow ring for heuristic */}
-                {s.source === 'heuristic' && (
+                {s.source === 'heuristic' && !isHighlighted && (
                   <circle
                     cx={s.x}
                     cy={s.y}

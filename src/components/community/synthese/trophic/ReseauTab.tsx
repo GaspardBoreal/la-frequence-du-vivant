@@ -15,6 +15,8 @@ interface Props {
   chain: TrophicChainResult;
   speciesPool?: TrophicSpeciesPoolEntry[];
   explorationId?: string;
+  highlightScientificName?: string;
+  compact?: boolean;
 }
 
 const W = 720;
@@ -71,7 +73,7 @@ function placeDecomposers(stars: TrophicStar[], xCol: number): PositionedNode[] 
   });
 }
 
-export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId }) => {
+export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, highlightScientificName, compact }) => {
   const [hovered, setHovered] = useState<PositionedNode | null>(null);
   const [selected, setSelected] = useState<PositionedNode | null>(null);
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
@@ -136,6 +138,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId }
   }, [selected, positioned]);
 
   const isMuted = (n: PositionedNode) => {
+    if (highlightScientificName) return n.scientificName !== highlightScientificName;
     if (focusGroup) return n.group !== focusGroup;
     if (selected) {
       if (n.scientificName === selected.scientificName) return false;
@@ -152,7 +155,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
+    <div className={compact ? '' : 'grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4'}>
       <div
         className="relative rounded-2xl overflow-hidden border border-border"
         style={{
@@ -277,30 +280,42 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId }
             if (!meta) return null;
             const muted = isMuted(n);
             const isSelected = selected?.scientificName === n.scientificName;
+            const isHighlighted = highlightScientificName === n.scientificName;
             return (
               <motion.g
                 key={`${n.scientificName}-${i}`}
                 initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: muted ? 0.18 : 1, scale: 1 }}
+                animate={{ opacity: muted ? 0.12 : 1, scale: 1 }}
                 transition={{ delay: i * 0.005, duration: 0.4 }}
                 onMouseEnter={() => setHovered(n)}
                 onMouseLeave={() => setHovered(null)}
                 onClick={() => setSelected(isSelected ? null : n)}
                 style={{ cursor: 'pointer' }}
               >
+                {isHighlighted && (
+                  <>
+                    <motion.circle
+                      cx={n.x} cy={n.y} r={n.r * 5}
+                      fill={`hsl(var(${meta.token}) / 0.18)`}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.7, 0, 0.7] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <circle cx={n.x} cy={n.y} r={n.r * 3.2} fill={`hsl(var(${meta.token}) / 0.4)`} />
+                  </>
+                )}
                 <circle
                   cx={n.x} cy={n.y}
-                  r={n.r * (isSelected ? 3 : 2)}
-                  fill={`hsl(var(${meta.token}) / ${isSelected ? 0.35 : 0.18})`}
+                  r={n.r * (isSelected || isHighlighted ? 3 : 2)}
+                  fill={`hsl(var(${meta.token}) / ${isSelected || isHighlighted ? 0.4 : 0.18})`}
                 />
                 <circle
                   cx={n.x} cy={n.y}
-                  r={n.r}
+                  r={isHighlighted ? n.r * 1.6 : n.r}
                   fill={`hsl(var(${meta.token}))`}
-                  stroke={n.source === 'kb' ? `hsl(var(${meta.token}))` : 'transparent'}
-                  strokeWidth={n.source === 'kb' ? 0.8 : 0}
+                  stroke={n.source === 'kb' || isHighlighted ? `hsl(var(${meta.token}))` : 'transparent'}
+                  strokeWidth={isHighlighted ? 1.4 : n.source === 'kb' ? 0.8 : 0}
                 />
-                {n.source === 'heuristic' && (
+                {n.source === 'heuristic' && !isHighlighted && (
                   <circle
                     cx={n.x} cy={n.y} r={n.r + 1.2}
                     fill="none"
@@ -333,8 +348,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId }
           })()}
         </svg>
 
-        {/* Empty levels chips */}
-        {chain.balance.missingLevels.length > 0 && (
+        {!compact && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {chain.balance.missingLevels.map((g) => {
               const m = getLevelMeta(g);
@@ -350,7 +364,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId }
           </div>
         )}
 
-        {(selected || focusGroup) && (
+        {!compact && (selected || focusGroup) && (
           <button
             onClick={() => { setSelected(null); setFocusGroup(null); }}
             className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border hover:bg-background"
@@ -359,24 +373,28 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId }
           </button>
         )}
 
-        <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[180px] leading-snug">
-          Réseau trophique : chaque courbe = un lien probable prédateur → proie.
-        </div>
+        {!compact && (
+          <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[180px] leading-snug">
+            Réseau trophique : chaque courbe = un lien probable prédateur → proie.
+          </div>
+        )}
       </div>
 
-      <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
-        {selected ? (
-          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
-        ) : focusGroup ? (
-          <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
-        ) : (
-          <DefaultPanel
-            chain={chain}
-            onLevelClick={setFocusGroup}
-            intro="Le tissu vivant déplié : 5 strates horizontales du sol à l'apex, traversées de liens prédateur→proie, et une colonne de décomposeurs qui referme le cycle à droite."
-          />
-        )}
-      </aside>
+      {!compact && (
+        <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
+          {selected ? (
+            <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
+          ) : focusGroup ? (
+            <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
+          ) : (
+            <DefaultPanel
+              chain={chain}
+              onLevelClick={setFocusGroup}
+              intro="Le tissu vivant déplié : 5 strates horizontales du sol à l'apex, traversées de liens prédateur→proie, et une colonne de décomposeurs qui referme le cycle à droite."
+            />
+          )}
+        </aside>
+      )}
     </div>
   );
 };

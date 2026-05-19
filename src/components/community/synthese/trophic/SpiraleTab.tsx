@@ -15,6 +15,8 @@ interface Props {
   chain: TrophicChainResult;
   speciesPool?: TrophicSpeciesPoolEntry[];
   explorationId?: string;
+  highlightScientificName?: string;
+  compact?: boolean;
 }
 
 const SIZE = 720;
@@ -131,7 +133,7 @@ function placeDecomposers(stars: TrophicStar[]): PositionedStar[] {
   });
 }
 
-export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId }) => {
+export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId, highlightScientificName, compact }) => {
   const [hovered, setHovered] = useState<PositionedStar | null>(null);
   const [selected, setSelected] = useState<PositionedStar | null>(null);
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
@@ -165,6 +167,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId 
   }, [selected, positioned]);
 
   const isStarMuted = (s: PositionedStar) => {
+    if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
     if (selected) {
       if (s.scientificName === selected.scientificName) return false;
@@ -179,7 +182,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId 
   const counterPath = useMemo(() => counterSpiralPath(160), []);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
+    <div className={compact ? '' : 'grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4'}>
       <div
         className="relative rounded-2xl overflow-hidden border border-border"
         style={{
@@ -264,32 +267,44 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId 
             if (!meta) return null;
             const muted = isStarMuted(s);
             const isSelected = selected?.scientificName === s.scientificName;
+            const isHighlighted = highlightScientificName === s.scientificName;
             return (
               <motion.g
                 key={`${s.scientificName}-${i}`}
                 initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: muted ? 0.18 : 1, scale: 1 }}
+                animate={{ opacity: muted ? 0.12 : 1, scale: 1 }}
                 transition={{ delay: i * 0.005, duration: 0.4 }}
                 onMouseEnter={() => setHovered(s)}
                 onMouseLeave={() => setHovered(null)}
                 onClick={() => setSelected(isSelected ? null : s)}
                 style={{ cursor: 'pointer' }}
               >
+                {isHighlighted && (
+                  <>
+                    <motion.circle
+                      cx={s.x} cy={s.y} r={s.r * 5}
+                      fill={`hsl(var(${meta.token}) / 0.18)`}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.7, 0, 0.7] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <circle cx={s.x} cy={s.y} r={s.r * 3.2} fill={`hsl(var(${meta.token}) / 0.4)`} />
+                  </>
+                )}
                 <circle
                   cx={s.x}
                   cy={s.y}
-                  r={s.r * (isSelected ? 3 : 2)}
-                  fill={`hsl(var(${meta.token}) / ${isSelected ? 0.35 : 0.18})`}
+                  r={s.r * (isSelected || isHighlighted ? 3 : 2)}
+                  fill={`hsl(var(${meta.token}) / ${isSelected || isHighlighted ? 0.4 : 0.18})`}
                 />
                 <circle
                   cx={s.x}
                   cy={s.y}
-                  r={s.r}
+                  r={isHighlighted ? s.r * 1.6 : s.r}
                   fill={`hsl(var(${meta.token}))`}
-                  stroke={s.source === 'kb' ? `hsl(var(${meta.token}))` : 'transparent'}
-                  strokeWidth={s.source === 'kb' ? 0.8 : 0}
+                  stroke={s.source === 'kb' || isHighlighted ? `hsl(var(${meta.token}))` : 'transparent'}
+                  strokeWidth={isHighlighted ? 1.4 : s.source === 'kb' ? 0.8 : 0}
                 />
-                {s.source === 'heuristic' && (
+                {s.source === 'heuristic' && !isHighlighted && (
                   <circle
                     cx={s.x}
                     cy={s.y}
@@ -359,8 +374,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId 
           </text>
         </svg>
 
-        {/* Empty levels alert chips */}
-        {chain.balance.missingLevels.length > 0 && (
+        {!compact && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {chain.balance.missingLevels.map((g) => {
               const m = getLevelMeta(g);
@@ -376,7 +390,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId 
           </div>
         )}
 
-        {(selected || focusGroup) && (
+        {!compact && (selected || focusGroup) && (
           <button
             onClick={() => { setSelected(null); setFocusGroup(null); }}
             className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border hover:bg-background"
@@ -385,27 +399,29 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId 
           </button>
         )}
 
-        {/* Legend bottom-left: spiral direction */}
-        <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[160px] leading-snug">
-          ↻ énergie qui monte<br />
-          ↺ matière qui retombe (décomposeurs)
-        </div>
+        {!compact && (
+          <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[160px] leading-snug">
+            ↻ énergie qui monte<br />
+            ↺ matière qui retombe (décomposeurs)
+          </div>
+        )}
       </div>
 
-      {/* Side panel — pédagogique */}
-      <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
-        {selected ? (
-          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
-        ) : focusGroup ? (
-          <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
-        ) : (
-          <DefaultPanel
-            chain={chain}
-            onLevelClick={setFocusGroup}
-            intro="Suivez le fil de l'énergie : du Soleil au cœur jusqu'aux prédateurs en bord de spirale, puis la contre-spirale des décomposeurs qui referme le cycle."
-          />
-        )}
-      </aside>
+      {!compact && (
+        <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
+          {selected ? (
+            <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
+          ) : focusGroup ? (
+            <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
+          ) : (
+            <DefaultPanel
+              chain={chain}
+              onLevelClick={setFocusGroup}
+              intro="Suivez le fil de l'énergie : du Soleil au cœur jusqu'aux prédateurs en bord de spirale, puis la contre-spirale des décomposeurs qui referme le cycle."
+            />
+          )}
+        </aside>
+      )}
     </div>
   );
 };

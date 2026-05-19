@@ -26,6 +26,8 @@ import SpeciesMiniMap from './species-modal/SpeciesMiniMap';
 import SpeciesObserversTab from './species-modal/SpeciesObserversTab';
 import SpeciesPhotoCarousel, { type CarouselSlide } from './species-modal/SpeciesPhotoCarousel';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
+import SpeciesTrophicPosition from './species-modal/SpeciesTrophicPosition';
+import type { BiodiversitySpecies } from '@/types/biodiversity';
 
 interface SpeciesGalleryDetailModalProps {
   species: {
@@ -37,6 +39,8 @@ interface SpeciesGalleryDetailModalProps {
   } | null;
   explorationId?: string;
   allEventMarches?: SpeciesMarcheData[];
+  /** Full pool used to compute the trophic chain for the "Sa place" widget */
+  trophicPool?: BiodiversitySpecies[];
   isOpen: boolean;
   onClose: () => void;
 }
@@ -65,6 +69,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   species,
   explorationId,
   allEventMarches,
+  trophicPool,
   isOpen,
   onClose,
 }) => {
@@ -312,6 +317,16 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                   </Badge>
                 </div>
               </div>
+
+              {/* Place in the trophic chain — 3 interactive mini-views */}
+              {trophicPool && trophicPool.length > 0 && species && (
+                <SpeciesTrophicPosition
+                  scientificName={species.scientificName}
+                  commonName={frenchName}
+                  speciesPool={trophicPool as any}
+                />
+              )}
+
 
               {/* CTA IA inline (desktop) */}
               {canChat && !isMobile && (
