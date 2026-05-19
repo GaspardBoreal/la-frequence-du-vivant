@@ -71,7 +71,6 @@ Deno.serve(async (req) => {
       .from('biodiversity_snapshots')
       .select('*')
       .eq('marche_id', marcheId)
-      .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -88,40 +87,44 @@ Deno.serve(async (req) => {
     const regressionPct = prevTotal > 0 ? Math.max(0, (prevTotal - newTotal) / prevTotal) : 0;
     const shouldQuarantine = !!prevSnap && regressionPct > 0.15;
 
-    // Insert new snapshot
-    const { data: inserted, error: insertError } = await serviceClient
-      .from('biodiversity_snapshots')
-      .insert({
+    const delta = {
+      added,
+      removed,
+      added_count: added.length,
+      removed_count: removed.length,
+      prev_total: prevTotal,
+      new_total: newTotal,
+      regression_pct: regressionPct,
+    };
+
+    // QUARANTINE : on n'écrase pas, on archive le rejet
+    if (shouldQuarantine) {
+      await serviceClient.from('biodiversity_snapshots_history').insert({
+        original_snapshot_id: null,
         marche_id: marcheId,
         latitude,
         longitude,
         snapshot_date: today,
         radius_meters: 500,
         total_species: newTotal,
-        birds_count: summary.birds || 0,
-        plants_count: summary.plants || 0,
-        fungi_count: summary.fungi || 0,
-        others_count: summary.others || 0,
-        recent_observations: summary.recentObservations || 0,
         species_data: speciesData,
         methodology: methodology || null,
-        biodiversity_index: newTotal > 0 ? Math.min(newTotal / 50, 1) : null,
-        species_richness: newTotal,
-        status: shouldQuarantine ? 'quarantine' : 'active',
-        regression_pct: regressionPct,
-      })
-      .select('id')
-      .single();
-
-    if (insertError) {
-      console.error('[sync-biodiversity-snapshot] Insert error:', insertError);
-      return new Response(JSON.stringify({ error: 'Failed to sync snapshot', detail: insertError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        original_created_at: new Date().toISOString(),
+        replaced_by_snapshot_id: null,
+        delta_species: delta,
+        archive_reason: `quarantine-rejected: regression ${Math.round(regressionPct * 100)}% (kept previous active)`,
       });
+      console.warn(`[sync-biodiversity-snapshot] ⚠️ quarantine ${marcheId} (${prevTotal}→${newTotal}, -${Math.round(regressionPct*100)}%) — previous kept`);
+      return new Response(JSON.stringify({
+        success: true,
+        snapshot_date: prevSnap?.snapshot_date ?? today,
+        total_species: prevTotal,
+        quarantined: true,
+        regression_pct: regressionPct,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Archive previous snapshot in history (always — never delete)
+    // CAS NORMAL : archiver l'ancien puis le supprimer + insérer le nouveau
     if (prevSnap) {
       await serviceClient.from('biodiversity_snapshots_history').insert({
         original_snapshot_id: prevSnap.id,
@@ -142,32 +145,44 @@ Deno.serve(async (req) => {
         biodiversity_index: prevSnap.biodiversity_index,
         species_richness: prevSnap.species_richness,
         original_created_at: prevSnap.created_at,
-        replaced_by_snapshot_id: inserted?.id ?? null,
-        delta_species: {
-          added,
-          removed,
-          added_count: added.length,
-          removed_count: removed.length,
-          prev_total: prevTotal,
-          new_total: newTotal,
-          regression_pct: regressionPct,
-        },
-        archive_reason: shouldQuarantine
-          ? `quarantine: regression ${Math.round(regressionPct * 100)}% (kept previous active)`
-          : 'replaced',
+        delta_species: delta,
+        archive_reason: 'replaced',
       });
-
-      // If quarantine: keep previous active, mark new one as quarantine (done above).
-      // Otherwise: demote previous to 'replaced' (never DELETE).
-      if (!shouldQuarantine) {
-        await serviceClient
-          .from('biodiversity_snapshots')
-          .update({ status: 'replaced' })
-          .eq('id', prevSnap.id);
-      }
+      await serviceClient
+        .from('biodiversity_snapshots')
+        .delete()
+        .eq('id', prevSnap.id);
     }
 
-    console.log(`[sync-biodiversity-snapshot] ✅ marche ${marcheId}: ${newTotal} species, +${added.length}/-${removed.length}${shouldQuarantine ? ' (QUARANTINE)' : ''}`);
+    const { error: insertError } = await serviceClient
+      .from('biodiversity_snapshots')
+      .insert({
+        marche_id: marcheId,
+        latitude,
+        longitude,
+        snapshot_date: today,
+        radius_meters: 500,
+        total_species: newTotal,
+        birds_count: summary.birds || 0,
+        plants_count: summary.plants || 0,
+        fungi_count: summary.fungi || 0,
+        others_count: summary.others || 0,
+        recent_observations: summary.recentObservations || 0,
+        species_data: speciesData,
+        methodology: methodology || null,
+        biodiversity_index: newTotal > 0 ? Math.min(newTotal / 50, 1) : null,
+        species_richness: newTotal,
+      });
+
+    if (insertError) {
+      console.error('[sync-biodiversity-snapshot] Insert error:', insertError);
+      return new Response(JSON.stringify({ error: 'Failed to sync snapshot', detail: insertError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`[sync-biodiversity-snapshot] ✅ marche ${marcheId}: ${newTotal} species (+${added.length}/-${removed.length})`);
 
     return new Response(JSON.stringify({ 
       success: true, 
