@@ -541,8 +541,8 @@ export function ChatBot({
                       className="hidden"
                     />
 
-                    {(attachedDoc || isExtracting || docError) && (
-                      <div className="mb-2 px-1">
+                    {(attachedDoc || isExtracting || docError || speciesPoolAttached) && (
+                      <div className="mb-2 px-1 flex flex-wrap gap-1.5">
                         {isExtracting && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <div className="flex gap-1">
@@ -562,6 +562,21 @@ export function ChatBot({
                               onClick={removeDocument}
                               className="ml-1 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
                               title="Retirer le document"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                        {speciesPoolAttached && speciesPoolAvailable && (
+                          <div className="inline-flex items-center gap-1.5 rounded-lg bg-secondary/15 px-2.5 py-1.5 text-xs text-secondary-foreground border border-secondary/30">
+                            <Leaf className="h-3.5 w-3.5 shrink-0 text-secondary" />
+                            <span className="truncate max-w-[240px]">
+                              🌿 {speciesPoolAvailable.label} attachée
+                            </span>
+                            <button
+                              onClick={detachSpeciesPool}
+                              className="ml-1 rounded-full p-0.5 hover:bg-secondary/25 transition-colors"
+                              title="Retirer la liste des espèces"
                             >
                               <X className="h-3 w-3" />
                             </button>
