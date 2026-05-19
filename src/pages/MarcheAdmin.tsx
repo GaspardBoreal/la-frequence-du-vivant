@@ -223,6 +223,7 @@ const MarcheAdmin = () => {
 
             <TabsContent value="data" className="space-y-4">
               <DataCollectionPanel marches={filteredMarches} />
+              <BiodiversityHistoryTimeline marches={filteredMarches} />
             </TabsContent>
 
             <TabsContent value="export" className="space-y-4">
