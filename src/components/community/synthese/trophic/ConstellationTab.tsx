@@ -176,34 +176,48 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             if (!meta) return null;
             const muted = isStarMuted(s);
             const isSelected = selected?.scientificName === s.scientificName;
+            const isHighlighted = highlightScientificName === s.scientificName;
             return (
               <motion.g
                 key={`${s.scientificName}-${i}`}
                 initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: muted ? 0.18 : 1, scale: 1 }}
+                animate={{ opacity: muted ? 0.12 : 1, scale: 1 }}
                 transition={{ delay: i * 0.005, duration: 0.4 }}
                 onMouseEnter={() => setHovered(s)}
                 onMouseLeave={() => setHovered(null)}
                 onClick={() => setSelected(isSelected ? null : s)}
                 style={{ cursor: 'pointer' }}
               >
+                {/* spotlight pulse for the highlighted species */}
+                {isHighlighted && (
+                  <>
+                    <motion.circle
+                      cx={s.x} cy={s.y}
+                      r={s.r * 5}
+                      fill={`hsl(var(${meta.token}) / 0.18)`}
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <circle cx={s.x} cy={s.y} r={s.r * 3.2} fill={`hsl(var(${meta.token}) / 0.35)`} />
+                  </>
+                )}
                 {/* halo */}
                 <circle
                   cx={s.x}
                   cy={s.y}
-                  r={s.r * (isSelected ? 3 : 2)}
-                  fill={`hsl(var(${meta.token}) / ${isSelected ? 0.35 : 0.18})`}
+                  r={s.r * (isSelected || isHighlighted ? 3 : 2)}
+                  fill={`hsl(var(${meta.token}) / ${isSelected || isHighlighted ? 0.4 : 0.18})`}
                 />
                 <circle
                   cx={s.x}
                   cy={s.y}
-                  r={s.r}
+                  r={isHighlighted ? s.r * 1.6 : s.r}
                   fill={`hsl(var(${meta.token}))`}
-                  stroke={s.source === 'kb' ? `hsl(var(${meta.token}))` : 'transparent'}
-                  strokeWidth={s.source === 'kb' ? 0.8 : 0}
+                  stroke={s.source === 'kb' || isHighlighted ? `hsl(var(${meta.token}))` : 'transparent'}
+                  strokeWidth={isHighlighted ? 1.4 : s.source === 'kb' ? 0.8 : 0}
                 />
                 {/* hollow ring for heuristic */}
-                {s.source === 'heuristic' && (
+                {s.source === 'heuristic' && !isHighlighted && (
                   <circle
                     cx={s.x}
                     cy={s.y}
