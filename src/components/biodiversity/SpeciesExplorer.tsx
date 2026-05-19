@@ -473,6 +473,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
           } : null}
           explorationId={explorationId}
           allEventMarches={allEventMarches}
+          trophicPool={trophicPool ?? species}
           isOpen={!!selectedSpecies}
           onClose={() => setSelectedSpecies(null)}
         />
