@@ -69,6 +69,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   species,
   explorationId,
   allEventMarches,
+  trophicPool,
   isOpen,
   onClose,
 }) => {
