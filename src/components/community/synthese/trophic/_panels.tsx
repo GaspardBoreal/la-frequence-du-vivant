@@ -1,5 +1,23 @@
 import React from 'react';
-import { Info, Sparkles } from 'lucide-react';
+import { Info, Sparkles, ChevronLeft, X } from 'lucide-react';
+
+const PanelHeader: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+  <div className="flex items-center justify-between -mt-1 pb-2 mb-1 border-b border-border/50">
+    <button
+      onClick={onClose}
+      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition px-1.5 py-1 rounded-md hover:bg-muted/60"
+    >
+      <ChevronLeft className="w-3.5 h-3.5" /> Vue d'ensemble
+    </button>
+    <button
+      onClick={onClose}
+      aria-label="Fermer"
+      className="w-6 h-6 inline-flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition"
+    >
+      <X className="w-3 h-3" />
+    </button>
+  </div>
+);
 import {
   TROPHIC_LEVELS,
   DECOMPOSER_META,
