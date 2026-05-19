@@ -155,7 +155,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
+    <div className={compact ? '' : 'grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4'}>
       <div
         className="relative rounded-2xl overflow-hidden border border-border"
         style={{
