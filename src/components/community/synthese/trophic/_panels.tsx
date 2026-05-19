@@ -1,5 +1,24 @@
-import React from 'react';
-import { Info, Sparkles, ChevronLeft, X } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Info, Sparkles, ChevronLeft, X, Eye } from 'lucide-react';
+import {
+  TROPHIC_LEVELS,
+  DECOMPOSER_META,
+  getLevelMeta,
+  probablePreyGroups,
+  type TrophicGroup,
+} from '@/lib/trophicClassification';
+import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
+import { SpeciesName } from '@/components/species/SpeciesName';
+import type { AttributionLike } from '@/utils/speciesIndividualCount';
+import SpeciesPetalRow from './SpeciesPetalRow';
+import SpeciesGpsDrawer from '../indices/SpeciesGpsDrawer';
+
+export interface TrophicSpeciesPoolEntry {
+  scientificName: string;
+  commonName?: string | null;
+  photos?: string[] | null;
+  attributions?: AttributionLike[] | null;
+}
 
 const PanelHeader: React.FC<{ onClose: () => void }> = ({ onClose }) => (
   <div className="flex items-center justify-between -mt-1 pb-2 mb-1 border-b border-border/50">
@@ -18,15 +37,23 @@ const PanelHeader: React.FC<{ onClose: () => void }> = ({ onClose }) => (
     </button>
   </div>
 );
-import {
-  TROPHIC_LEVELS,
-  DECOMPOSER_META,
-  getLevelMeta,
-  probablePreyGroups,
-  type TrophicGroup,
-} from '@/lib/trophicClassification';
-import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
-import { SpeciesName } from '@/components/species/SpeciesName';
+
+interface DrawerSp {
+  scientificName: string;
+  commonName: string;
+  attributions: AttributionLike[];
+  photos: string[];
+}
+
+function usePoolLookup(pool?: TrophicSpeciesPoolEntry[]) {
+  return useMemo(() => {
+    const map = new Map<string, TrophicSpeciesPoolEntry>();
+    (pool || []).forEach((p) => {
+      if (p?.scientificName) map.set(p.scientificName, p);
+    });
+    return map;
+  }, [pool]);
+}
 
 export const DefaultPanel: React.FC<{
   chain: TrophicChainResult;
@@ -78,10 +105,29 @@ export const DefaultPanel: React.FC<{
   </>
 );
 
-export const LevelPanel: React.FC<{ group: TrophicGroup; chain: TrophicChainResult; onClose: () => void }> = ({ group, chain, onClose }) => {
+export const LevelPanel: React.FC<{
+  group: TrophicGroup;
+  chain: TrophicChainResult;
+  onClose: () => void;
+  speciesPool?: TrophicSpeciesPoolEntry[];
+  explorationId?: string;
+}> = ({ group, chain, onClose, speciesPool, explorationId }) => {
   const meta = getLevelMeta(group);
+  const lookup = usePoolLookup(speciesPool);
+  const [drawerSp, setDrawerSp] = useState<DrawerSp | null>(null);
   if (!meta) return null;
   const stars = chain.byGroup[group];
+
+  const openDrawerFor = (s: TrophicStar) => {
+    const entry = lookup.get(s.scientificName);
+    setDrawerSp({
+      scientificName: s.scientificName,
+      commonName: s.commonName || s.scientificName,
+      attributions: (entry?.attributions || []) as AttributionLike[],
+      photos: (entry?.photos || []).filter(Boolean) as string[],
+    });
+  };
+
   return (
     <>
       <PanelHeader onClose={onClose} />
@@ -100,19 +146,37 @@ export const LevelPanel: React.FC<{ group: TrophicGroup; chain: TrophicChainResu
             Aucune espèce détectée à ce niveau — un signal écologique fort à surveiller.
           </p>
         ) : (
-          <ul className="space-y-1 max-h-72 overflow-y-auto">
-            {stars.slice(0, 50).map((s) => (
-              <li key={s.scientificName} className="text-xs text-foreground flex items-baseline gap-2">
-                <span
-                  className="w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0"
-                  style={{ backgroundColor: `hsl(var(${meta.token}))` }}
-                />
-                <SpeciesName scientificName={s.scientificName} commonName={s.commonName} size="sm" />
-              </li>
-            ))}
+          <ul className="space-y-1.5 max-h-[28rem] overflow-y-auto pr-1 -mr-1">
+            {stars.slice(0, 50).map((s) => {
+              const entry = lookup.get(s.scientificName);
+              return (
+                <li key={s.scientificName}>
+                  <SpeciesPetalRow
+                    scientificName={s.scientificName}
+                    commonName={s.commonName}
+                    colorToken={meta.token}
+                    photos={(entry?.photos || []).filter(Boolean) as string[]}
+                    attributions={(entry?.attributions || []) as AttributionLike[]}
+                    onOpen={() => openDrawerFor(s)}
+                  />
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
+
+      {drawerSp && (
+        <SpeciesGpsDrawer
+          open={!!drawerSp}
+          onOpenChange={(o) => !o && setDrawerSp(null)}
+          scientificName={drawerSp.scientificName}
+          commonName={drawerSp.commonName}
+          attributions={drawerSp.attributions}
+          photos={drawerSp.photos}
+          explorationId={explorationId}
+        />
+      )}
     </>
   );
 };
@@ -122,10 +186,19 @@ export const SelectedStarPanel: React.FC<{
   chain: TrophicChainResult;
   onLevelClick: (g: TrophicGroup) => void;
   onClose: () => void;
-}> = ({ star, chain, onLevelClick, onClose }) => {
+  speciesPool?: TrophicSpeciesPoolEntry[];
+  explorationId?: string;
+}> = ({ star, chain, onLevelClick, onClose, speciesPool, explorationId }) => {
   const meta = getLevelMeta(star.group);
+  const lookup = usePoolLookup(speciesPool);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   if (!meta) return null;
   const preyGroups = probablePreyGroups(star.group);
+  const entry = lookup.get(star.scientificName);
+  const photos = (entry?.photos || []).filter(Boolean) as string[];
+  const attributions = (entry?.attributions || []) as AttributionLike[];
+  const canOpen = (photos.length + attributions.length) > 0;
+
   return (
     <>
       <PanelHeader onClose={onClose} />
@@ -144,6 +217,18 @@ export const SelectedStarPanel: React.FC<{
           </p>
         </div>
       </div>
+
+      {canOpen && (
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          Ouvrir la fiche immersive
+        </button>
+      )}
+
       <p className="text-xs text-muted-foreground leading-relaxed pt-2 border-t border-border">{meta.description}</p>
       {preyGroups.length > 0 && (
         <div>
@@ -165,6 +250,18 @@ export const SelectedStarPanel: React.FC<{
             })}
           </div>
         </div>
+      )}
+
+      {canOpen && (
+        <SpeciesGpsDrawer
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          scientificName={star.scientificName}
+          commonName={star.commonName || star.scientificName}
+          attributions={attributions}
+          photos={photos}
+          explorationId={explorationId}
+        />
       )}
     </>
   );
