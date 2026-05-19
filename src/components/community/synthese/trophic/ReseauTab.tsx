@@ -348,8 +348,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           })()}
         </svg>
 
-        {/* Empty levels chips */}
-        {chain.balance.missingLevels.length > 0 && (
+        {!compact && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {chain.balance.missingLevels.map((g) => {
               const m = getLevelMeta(g);
@@ -365,7 +364,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           </div>
         )}
 
-        {(selected || focusGroup) && (
+        {!compact && (selected || focusGroup) && (
           <button
             onClick={() => { setSelected(null); setFocusGroup(null); }}
             className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border hover:bg-background"
@@ -374,23 +373,28 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           </button>
         )}
 
-        <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[180px] leading-snug">
-          Réseau trophique : chaque courbe = un lien probable prédateur → proie.
-        </div>
+        {!compact && (
+          <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[180px] leading-snug">
+            Réseau trophique : chaque courbe = un lien probable prédateur → proie.
+          </div>
+        )}
       </div>
 
-      <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
-        {selected ? (
-          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
-        ) : focusGroup ? (
-          <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
-        ) : (
-          <DefaultPanel
-            chain={chain}
-            onLevelClick={setFocusGroup}
-            intro="Le tissu vivant déplié : 5 strates horizontales du sol à l'apex, traversées de liens prédateur→proie, et une colonne de décomposeurs qui referme le cycle à droite."
-          />
-        )}
+      {!compact && (
+        <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
+          {selected ? (
+            <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
+          ) : focusGroup ? (
+            <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
+          ) : (
+            <DefaultPanel
+              chain={chain}
+              onLevelClick={setFocusGroup}
+              intro="Le tissu vivant déplié : 5 strates horizontales du sol à l'apex, traversées de liens prédateur→proie, et une colonne de décomposeurs qui referme le cycle à droite."
+            />
+          )}
+        </aside>
+      )}
       </aside>
     </div>
   );
