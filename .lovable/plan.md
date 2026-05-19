@@ -1,71 +1,44 @@
-# Pièce jointe « Liste des espèces » — frugal & efficace
+# Fix : 80 vs 92 espèces dans le pool attachable
 
-## Problème observé
+## Diagnostic
 
-Quand l'utilisateur demande au Compagnon « quelles espèces indigènes manquent ? », l'IA refuse car `visibleData['screen.dom'].visibleCards` est vide : le chatbot est en overlay, les cartes d'espèces ne sont pas dans le viewport. Pourtant les 92 espèces existent côté serveur (RPC `get_admin_entity_context`) — mais sans détail nominatif, juste les compteurs.
+| Source | Compte affiché | D'où vient le chiffre |
+|---|---|---|
+| Entête de la fiche (« 92 espèces ») | **92** | RPC `get_admin_entity_context` côté serveur, qui **fusionne** `biodiversity_snapshots.species_data` ∪ `marcheur_observations` (mémoire *Chatbot species count alignment*). |
+| Pool attachable au chat (« 80 ») | **80** | `useExplorationSpeciesPool` ne lit **que** `biodiversity_snapshots.species_data`. Les 12 espèces observées exclusivement par des marcheurs (citizen) sont absentes. |
 
-## Idée frugale : la pièce jointe « contextuelle »
+C'est exactement la même asymétrie déjà corrigée pour le compteur de la Fréquence (`score-citizen-observations-fusion-logic`) et pour le RPC chatbot. Le hook `useExplorationSpeciesPool` est resté en arrière.
 
-Plutôt que de pousser systématiquement la liste complète à chaque message (coûteux en tokens), on réutilise **le bouton 📎 paperclip déjà présent** dans le composer pour offrir un nouveau choix : **« Joindre une donnée du site »**.
+## Fix proposé : aligner `useExplorationSpeciesPool` sur la fusion canonique
 
-Quand l'utilisateur clique → menu compact avec une seule option pertinente sur cette page :
-- 🌿 **Liste complète des espèces (92)** — ~6 Ko compressés
+Modifier **uniquement** `src/hooks/useExplorationSpeciesPool.ts` pour mirrorer la logique de `useExplorationBiodiversitySummary` (lignes 160-220) :
 
-Une vignette de pièce jointe s'affiche au-dessus du composer (comme un PDF), reste attachée tant que l'utilisateur ne la retire pas, et est envoyée dans `pageState.visibleData['exploration.species.full']` **uniquement sur les tours où elle est attachée**. L'IA voit alors la liste nominative et peut raisonner dessus.
+1. Après le chargement des `biodiversity_snapshots`, lancer une 2ᵉ requête :
+   ```ts
+   supabase.from('marcheur_observations')
+     .select('species_scientific_name, photo_url')
+     .in('marche_id', marcheIds);
+   ```
+2. Pour chaque observation :
+   - Matcher case-insensitive sur `scientificName` dans le `map` existant → `count += 1`, et prepend `photo_url` si absent (priorité photo marcheur).
+   - Sinon créer une nouvelle entrée `{ scientificName, count: 1, imageUrl: photo_url, group: null, commonName: null }`.
+3. Le `mergeGenusIntoSpecies` et l'enrichissement FR (`useFrenchSpeciesNames`) restent inchangés en aval.
 
-## Pourquoi c'est frugal
+## Pourquoi c'est le bon endroit
 
-| Aspect | Coût |
-|---|---|
-| Déclenchement | Explicite (clic utilisateur), jamais auto |
-| Payload | Liste minimale : `{ name, scientificName, group, count }` × 92 ≈ 5-7 Ko |
-| Durée | L'attachement reste tant que l'utilisateur ne le retire pas (clic « × » sur la vignette) → permet plusieurs questions sur la même liste sans recharger |
-| Réutilisation | 0 nouveau composant lourd : on étend le menu paperclip et on ajoute une slice `visibleData` |
-| DB | 0 requête supplémentaire : on lit `useExplorationSpeciesPool` déjà monté par la page parente |
-
-## Pourquoi c'est efficace
-
-- L'IA reçoit la liste **nominative** → elle peut répondre « espèces indigènes attendues mais absentes » de façon argumentée, tout en respectant la règle d'intégrité (les noms qu'elle cite comme *présents* sont dans la liste ; ceux qu'elle suggère comme *absents* sont raisonnés à partir de cette liste réelle).
-- Vignette persistante = transparence (l'utilisateur voit exactement ce que l'IA voit).
-- Pattern UX déjà connu (PDF joint) → 0 apprentissage.
-
-## Plan d'implémentation
-
-### 1. Source de données — `src/components/chatbot/CommunityChatBotMount.tsx`
-- Importer `useExplorationSpeciesPool(explorationId)` (déjà existant).
-- Exposer la liste via le store : `chatPageContext.setAvailableAttachments({ speciesPool: [...] })` (nouveau champ optionnel dans le store, non envoyé tant que non attaché).
-- Format compact : `[{ n: displayName, s: scientificName, g: group, c: count }]`.
-
-### 2. Store — `src/hooks/useChatPageContext.ts`
-- Ajouter `availableAttachments?: { speciesPool?: CompactSpecies[] }` à `ChatPageState`.
-- Helper `attachSpeciesPool()` / `detachSpeciesPool()` qui pose/retire `visibleData['exploration.species.full']`.
-
-### 3. UI composer — `src/components/chatbot/ChatBot.tsx`
-- Transformer le bouton 📎 actuel en `DropdownMenu` (au lieu d'ouvrir directement le file picker) **uniquement si `availableAttachments?.speciesPool` est non vide** ; sinon comportement actuel inchangé.
-- Items :
-  - « 📄 Joindre un document » → comportement actuel (`openFilePicker`)
-  - « 🌿 Liste des espèces (N) » → `attachSpeciesPool()`
-- Au-dessus du composer, afficher une vignette compacte quand la slice est attachée :
-  ```
-  🌿 Liste des espèces (92) attachée à cette conversation   [×]
-  ```
-- Le [×] appelle `detachSpeciesPool()`.
-
-### 4. Edge function — `supabase/functions/community-chat/index.ts`
-Aucune modification de code nécessaire : la slice arrive dans `pageState.visibleData['exploration.species.full']` et est déjà sérialisée dans le bloc « DONNÉES RÉELLEMENT AFFICHÉES À L'ÉCRAN ». On ajoute juste **une ligne dans le system prompt** pour préciser que cette slice nominative autorise des raisonnements comparatifs (« espèces typiques de Charente non présentes dans cette liste »).
-
-### 5. Variante admin — `AdminChatBotMount.tsx`
-Même branchement (admin entity = exploration ou marche). Pour une `marche_event`, alimenter depuis les snapshots de cette marche.
+- **Source unique de vérité côté client** : tous les composants UI qui affichent une liste d'espèces (galerie biodiversité, drawer espèce, et maintenant pool chat) passeront par la même fusion → cohérence garantie avec « 92 ».
+- **Pas de nouveau RPC** : on réutilise une requête déjà faite ailleurs, 0 surface DB nouvelle.
+- **Frugalité préservée** : la liste compactée reste plafonnée à 200 dans `CommunityChatBotMount`. Le pool passera de 80 à ~92 items → +0.7 Ko.
+- **Effet secondaire bonus** : le menu 📎 affichera désormais le bon décompte (« 🌿 Liste des espèces (92) »), ce qui *est* la même que le « 92 » de l'écran — l'utilisateur ne verra plus deux chiffres divergents.
 
 ## Détails techniques
 
-- **Pas de re-fetch** : `useExplorationSpeciesPool` est déjà monté par `ExplorationMarcheurPage` ; on s'y abonne via le mount.
-- **Limite** : si > 200 espèces, tronquer à 200 + flag `truncated: true` (déjà géré dans les autres slices).
-- **Persistance** : l'attachement vit dans le store React, donc disparaît à un reload ou un changement d'exploration — comportement souhaité.
-- **Reset conversation** : `handleReset()` doit aussi appeler `detachSpeciesPool()` pour partir propre.
+- `marcheur_observations.species_scientific_name` est déjà la clé canonique (snake_case côté DB) ; pas de normalisation NFD nécessaire ici car le matching est sur le binôme latin (case-insensitive), conforme aux autres hooks.
+- Quand une espèce marcheur est nouvelle (absente des snapshots), on n'a pas de `group`/`commonName` — `useFrenchSpeciesNames` tentera la résolution FR via le nom scientifique ; sinon `displayName` fallback sur le nom latin. C'est déjà le comportement de `useExplorationBiodiversitySummary`.
+- `queryKey` du `useQuery` passe à `['exploration-species-pool-raw', explorationId, 'with-marcheur-obs']` pour invalider l'ancien cache.
 
 ## Hors scope
 
-- Pas de nouvelle table, pas de migration.
-- Pas de modification du Drawer d'export ni des deux boutons header récemment ajoutés.
-- Pas d'auto-attachement basé sur l'intent (gardé pour une v2 si pertinent).
+- Pas de modification du composant chat ni du store : ils consomment déjà la sortie enrichie.
+- Pas de migration DB.
+- Pas de retouche de `useExplorationBiodiversitySummary` (déjà correct).

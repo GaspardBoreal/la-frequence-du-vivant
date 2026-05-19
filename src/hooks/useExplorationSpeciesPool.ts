@@ -36,7 +36,7 @@ interface RawExplorationSpecies {
  */
 export const useExplorationSpeciesPool = (explorationId: string | null | undefined) => {
   const rawQuery = useQuery({
-    queryKey: ['exploration-species-pool-raw', explorationId],
+    queryKey: ['exploration-species-pool-raw', explorationId, 'with-marcheur-obs'],
     queryFn: async (): Promise<RawExplorationSpecies[]> => {
       if (!explorationId) return [];
 
@@ -53,6 +53,7 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
         .select('species_data')
         .in('marche_id', marcheIds);
       if (snapsErr) throw snapsErr;
+
 
       const map = new Map<string, RawExplorationSpecies>();
       (snaps || []).forEach((s: any) => {
@@ -79,6 +80,46 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
             });
           }
         });
+      });
+
+      // ── Fusion citoyenne : marcheur_observations ∪ snapshots ─────────────
+      // Aligne le pool sur la même logique que useExplorationBiodiversitySummary
+      // et le RPC chatbot (get_admin_entity_context) → cohérence stricte du
+      // décompte affiché ailleurs sur la fiche.
+      const { data: marcheurObs } = await supabase
+        .from('marcheur_observations')
+        .select('species_scientific_name, photo_url')
+        .in('marche_id', marcheIds);
+
+      (marcheurObs || []).forEach((obs: any) => {
+        const sci = (obs.species_scientific_name || '').toString().trim();
+        if (!sci) return;
+        const key = sci.toLowerCase();
+
+        // Match case-insensitive sur les entrées existantes (snapshots)
+        let found: RawExplorationSpecies | undefined;
+        for (const entry of map.values()) {
+          if ((entry.scientificName || '').toLowerCase() === key) {
+            found = entry;
+            break;
+          }
+        }
+
+        if (found) {
+          found.count += 1;
+          if (obs.photo_url && !found.imageUrl) {
+            found.imageUrl = obs.photo_url;
+          }
+        } else {
+          map.set(key, {
+            key: sci,
+            scientificName: sci,
+            commonName: null,
+            group: null,
+            count: 1,
+            imageUrl: obs.photo_url || null,
+          });
+        }
       });
 
       const merged = mergeGenusIntoSpecies(Array.from(map.values()));
