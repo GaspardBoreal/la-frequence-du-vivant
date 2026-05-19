@@ -15,6 +15,10 @@ interface Props {
   chain: TrophicChainResult;
   speciesPool?: TrophicSpeciesPoolEntry[];
   explorationId?: string;
+  /** When set, mute every star except this one and add a pulsing halo. */
+  highlightScientificName?: string;
+  /** Compact mode: only render the SVG (no side panel, no overlays). */
+  compact?: boolean;
 }
 
 const SIZE = 720;
