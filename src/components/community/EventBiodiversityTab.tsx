@@ -16,6 +16,7 @@ import TextesEcritsSubTab from './exploration/TextesEcritsSubTab';
 import BiodiversityEvolutionChart from './exploration/BiodiversityEvolutionChart';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
+import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
