@@ -138,6 +138,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
   }, [selected, positioned]);
 
   const isMuted = (n: PositionedNode) => {
+    if (highlightScientificName) return n.scientificName !== highlightScientificName;
     if (focusGroup) return n.group !== focusGroup;
     if (selected) {
       if (n.scientificName === selected.scientificName) return false;
