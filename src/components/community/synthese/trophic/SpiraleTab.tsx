@@ -167,6 +167,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
   }, [selected, positioned]);
 
   const isStarMuted = (s: PositionedStar) => {
+    if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
     if (selected) {
       if (s.scientificName === selected.scientificName) return false;
