@@ -53,7 +53,7 @@ function layoutLevel(stars: TrophicStar[], group: TrophicGroup, decomposerTilt =
   });
 }
 
-export const ConstellationTab: React.FC<Props> = ({ chain }) => {
+export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorationId }) => {
   const [hovered, setHovered] = useState<PositionedStar | null>(null);
   const [selected, setSelected] = useState<PositionedStar | null>(null);
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
