@@ -97,3 +97,6 @@ verify_jwt = false
 
 [functions.backfill-marcheur-inat-batch]
 verify_jwt = false
+
+[functions.backfill-snapshots-taxonomy]
+verify_jwt = false
