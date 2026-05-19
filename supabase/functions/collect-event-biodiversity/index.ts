@@ -28,14 +28,14 @@ Deno.serve(async (req) => {
       return forbiddenResponse('Accès réservé aux Ambassadeurs et Sentinelles');
     }
 
-    const { explorationId } = await req.json();
+    const { explorationId, force, marcheIds: requestedMarcheIds } = await req.json();
     if (!explorationId) {
       return new Response(JSON.stringify({ error: 'explorationId required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log(`🌿 [collect-event-biodiversity] Starting for exploration: ${explorationId}`);
+    console.log(`🌿 [collect-event-biodiversity] Starting for exploration: ${explorationId} (force=${!!force}, subset=${Array.isArray(requestedMarcheIds) ? requestedMarcheIds.length : 'all'})`);
 
     // Rate limiting: check if snapshots exist for this exploration < 24h
     const { data: explorationRow } = await serviceClient
@@ -46,12 +46,18 @@ Deno.serve(async (req) => {
     const explorationDefaultRadiusM: number | null =
       (explorationRow as any)?.default_radius_m ?? null;
 
-    const { data: explorationMarches } = await serviceClient
+    let explorationMarchesQuery = serviceClient
       .from('exploration_marches')
       .select('marche_id, ordre, marches (id, nom_marche, ville, latitude, longitude, radius_m)')
       .eq('exploration_id', explorationId)
       .in('publication_status', ['published', 'published_public'])
       .order('ordre');
+
+    if (Array.isArray(requestedMarcheIds) && requestedMarcheIds.length > 0) {
+      explorationMarchesQuery = explorationMarchesQuery.in('marche_id', requestedMarcheIds);
+    }
+
+    const { data: explorationMarches } = await explorationMarchesQuery;
 
     if (!explorationMarches?.length) {
       return new Response(JSON.stringify({ error: 'No marches found for this exploration' }), {
@@ -62,14 +68,18 @@ Deno.serve(async (req) => {
     const marcheIds = explorationMarches.map((em: any) => em.marche_id);
 
     // Check rate limiting: any snapshot < 24h for these marches?
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: recentSnapshots } = await serviceClient
-      .from('biodiversity_snapshots')
-      .select('id, marche_id')
-      .in('marche_id', marcheIds)
-      .gte('created_at', twentyFourHoursAgo);
+    // Bypassed when `force=true` (e.g. user changed a radius and wants immediate recompute).
+    const recentMarcheIds = new Set<string>();
+    if (!force) {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentSnapshots } = await serviceClient
+        .from('biodiversity_snapshots')
+        .select('id, marche_id')
+        .in('marche_id', marcheIds)
+        .gte('created_at', twentyFourHoursAgo);
+      (recentSnapshots || []).forEach((s: any) => recentMarcheIds.add(s.marche_id));
+    }
 
-    const recentMarcheIds = new Set((recentSnapshots || []).map((s: any) => s.marche_id));
     const marchesToProcess = explorationMarches.filter(
       (em: any) => !recentMarcheIds.has(em.marche_id) && em.marches?.latitude && em.marches?.longitude
     );
