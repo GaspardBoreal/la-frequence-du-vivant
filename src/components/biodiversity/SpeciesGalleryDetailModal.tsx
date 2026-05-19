@@ -318,6 +318,16 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                 </div>
               </div>
 
+              {/* Place in the trophic chain — 3 interactive mini-views */}
+              {trophicPool && trophicPool.length > 0 && species && (
+                <SpeciesTrophicPosition
+                  scientificName={species.scientificName}
+                  commonName={frenchName}
+                  speciesPool={trophicPool as any}
+                />
+              )}
+
+
               {/* CTA IA inline (desktop) */}
               {canChat && !isMobile && (
                 <Button
