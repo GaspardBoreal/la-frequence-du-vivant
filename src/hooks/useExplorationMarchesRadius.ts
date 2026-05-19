@@ -43,7 +43,7 @@ export function useExplorationMarchesRadius(explorationId?: string | null) {
           .maybeSingle(),
         supabase
           .from('exploration_marches')
-          .select('ordre, marche_id, marches (id, nom_marche, ville, date_marche, radius_m)')
+          .select('ordre, marche_id, marches (id, nom_marche, ville, date, radius_m)')
           .eq('exploration_id', explorationId)
           .in('publication_status', ['published', 'published_public'])
           .order('ordre'),
