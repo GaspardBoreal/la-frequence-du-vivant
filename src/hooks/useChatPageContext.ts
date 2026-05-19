@@ -92,8 +92,21 @@ const store = {
     else next[key] = value;
     setState({ entity: state.entity, pageState: { ...state.pageState, visibleData: next } });
   },
+  /** Publie / remplace l'inventaire d'attachements disponibles pour cette page. */
+  setAvailableAttachments: (next: AvailableAttachments | null) => {
+    setState({
+      entity: state.entity,
+      pageState: {
+        ...state.pageState,
+        availableAttachments: next ?? undefined,
+      },
+    });
+  },
   clear: () => setState({ entity: null, pageState: {} }),
 };
+
+/** Clé de slice utilisée quand l'utilisateur attache la liste complète des espèces. */
+export const SPECIES_POOL_SLICE_KEY = 'exploration.species.full';
 
 export function useChatPageContextStore<T>(selector: (s: State & {
   setContext: typeof store.setContext;
