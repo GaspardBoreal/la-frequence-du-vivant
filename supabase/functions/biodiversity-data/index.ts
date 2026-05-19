@@ -79,6 +79,8 @@ interface BiodiversitySpecies {
   scientificName: string;
   commonName: string;
   family: string;
+  /** iNaturalist iconic_taxon_name — fallback robuste pour la chaîne trophique */
+  iconicTaxon?: string;
   kingdom: 'Plantae' | 'Animalia' | 'Fungi' | 'Other';
   observations: number;
   lastSeen: string;
