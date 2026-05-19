@@ -21,10 +21,13 @@ const TABS: Array<{ key: TabKey; label: string; icon: typeof Sparkles; ready: bo
   { key: 'reseau', label: 'Réseau Vivant', icon: Network, ready: true },
 ];
 
-export const TrophicChainPanel: React.FC<Props> = ({ species }) => {
+export const TrophicChainPanel: React.FC<Props> = ({ species, explorationId }) => {
   const [active, setActive] = useState<TabKey>('constellation');
   const [open, setOpen] = useState(false);
   const chain = useTrophicChain(species);
+  // The same species array carries `photos` + `attributions` (BiodiversitySpecies).
+  // We forward it as the pool so panels can hydrate SpeciesGpsDrawer without refetch.
+  const speciesPool = species as any[];
 
   const balanceTone =
     chain.balance.tone === 'solid'
