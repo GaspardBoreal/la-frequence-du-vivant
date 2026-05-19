@@ -38,7 +38,8 @@ import { ChatSuggestions } from './ChatSuggestions';
 import { useChatExport } from './useChatExport';
 import { ChatExportDrawer } from './ChatExportDrawer';
 import { chatConfig, type ChatContext } from './chatConfig';
-import { chatPageContext, useChatPageContextStore, type ChatEntity } from '@/hooks/useChatPageContext';
+import { chatPageContext, useChatPageContextStore, SPECIES_POOL_SLICE_KEY, type ChatEntity } from '@/hooks/useChatPageContext';
+import { Leaf } from 'lucide-react';
 
 interface ChatBotProps {
   currentContext?: ChatContext;
