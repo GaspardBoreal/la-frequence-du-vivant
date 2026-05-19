@@ -10,6 +10,7 @@ import { ReseauTab } from './trophic/ReseauTab';
 
 interface Props {
   species: TrophicSpeciesInput[];
+  explorationId?: string;
 }
 
 type TabKey = 'constellation' | 'spirale' | 'reseau';
