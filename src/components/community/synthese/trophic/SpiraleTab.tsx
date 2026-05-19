@@ -133,7 +133,7 @@ function placeDecomposers(stars: TrophicStar[]): PositionedStar[] {
   });
 }
 
-export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId }) => {
+export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId, highlightScientificName, compact }) => {
   const [hovered, setHovered] = useState<PositionedStar | null>(null);
   const [selected, setSelected] = useState<PositionedStar | null>(null);
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
