@@ -44,6 +44,8 @@ interface SpeciesExplorerProps {
   allEventMarches?: SpeciesMarcheData[];
   /** Community/crew participants to merge into the contributor filter */
   eventParticipants?: EventParticipant[];
+  /** Full species pool (incl. family/iconicTaxon) for trophic classification in the species detail modal */
+  trophicPool?: BiodiversitySpecies[];
 }
 
 const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
@@ -55,6 +57,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   explorationId,
   allEventMarches,
   eventParticipants = [],
+  trophicPool,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
