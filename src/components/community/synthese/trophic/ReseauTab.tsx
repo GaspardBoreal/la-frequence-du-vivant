@@ -73,7 +73,7 @@ function placeDecomposers(stars: TrophicStar[], xCol: number): PositionedNode[] 
   });
 }
 
-export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId }) => {
+export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, highlightScientificName, compact }) => {
   const [hovered, setHovered] = useState<PositionedNode | null>(null);
   const [selected, setSelected] = useState<PositionedNode | null>(null);
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
