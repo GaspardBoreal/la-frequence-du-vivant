@@ -15,6 +15,8 @@ interface Props {
   chain: TrophicChainResult;
   speciesPool?: TrophicSpeciesPoolEntry[];
   explorationId?: string;
+  highlightScientificName?: string;
+  compact?: boolean;
 }
 
 const SIZE = 720;
