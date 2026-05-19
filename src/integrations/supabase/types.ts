@@ -2385,6 +2385,33 @@ export type Database = {
           },
         ]
       }
+      inat_taxa_cache: {
+        Row: {
+          cached_at: string
+          family_name: string | null
+          iconic_taxon: string | null
+          name: string | null
+          rank: string | null
+          taxon_id: number
+        }
+        Insert: {
+          cached_at?: string
+          family_name?: string | null
+          iconic_taxon?: string | null
+          name?: string | null
+          rank?: string | null
+          taxon_id: number
+        }
+        Update: {
+          cached_at?: string
+          family_name?: string | null
+          iconic_taxon?: string | null
+          name?: string | null
+          rank?: string | null
+          taxon_id?: number
+        }
+        Relationships: []
+      }
       insight_cards: {
         Row: {
           active: boolean
