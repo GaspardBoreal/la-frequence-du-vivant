@@ -67,6 +67,39 @@ export function useUpdateMarcheRadius() {
 }
 
 /**
+ * Met à jour le rayon de plusieurs marches d'un coup (action « appliquer à toutes »).
+ * `radiusM = null` retire les overrides : les marches reprennent le défaut exploration.
+ */
+export function useBulkUpdateMarchesRadius() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      marcheIds,
+      radiusM,
+    }: { marcheIds: string[]; radiusM: number | null }) => {
+      if (!marcheIds.length) return { count: 0, value: null };
+      const value = radiusM == null ? null : clamp(radiusM);
+      const { error } = await supabase
+        .from('marches')
+        .update({ radius_m: value })
+        .in('id', marcheIds);
+      if (error) throw error;
+      return { count: marcheIds.length, value };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['exploration-marches-radius'] });
+      qc.invalidateQueries({ queryKey: ['marche-radius'] });
+      qc.invalidateQueries({ queryKey: ['exploration-all-marches'] });
+      qc.invalidateQueries({ queryKey: ['event-all-marches'] });
+    },
+    onError: (err: any) => {
+      console.error(err);
+      toast.error("Impossible d'appliquer le rayon en lot");
+    },
+  });
+}
+
+/**
  * Hook léger pour lire le rayon résolu d'une marche.
  * Renvoie marche.radius_m et exploration.default_radius_m bruts en plus du résolu.
  */
