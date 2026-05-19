@@ -9,10 +9,12 @@ import {
   type TrophicGroup,
 } from '@/lib/trophicClassification';
 import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
-import { DefaultPanel, LevelPanel, SelectedStarPanel } from './_panels';
+import { DefaultPanel, LevelPanel, SelectedStarPanel, type TrophicSpeciesPoolEntry } from './_panels';
 
 interface Props {
   chain: TrophicChainResult;
+  speciesPool?: TrophicSpeciesPoolEntry[];
+  explorationId?: string;
 }
 
 const SIZE = 720;
