@@ -2,9 +2,13 @@ import { useLocation, matchPath } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { ChatBot } from './ChatBot';
 import type { ChatContext } from './chatConfig';
-import type { ChatEntity } from '@/hooks/useChatPageContext';
+import { chatPageContext, type ChatEntity, type CompactSpecies } from '@/hooks/useChatPageContext';
 import { useCanUseContextualChat } from '@/hooks/useCanUseContextualChat';
+import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import { supabase } from '@/integrations/supabase/client';
+
+/** Max d'espèces poussées dans le contexte IA lorsqu'attachées (frugalité). */
+const SPECIES_POOL_CAP = 200;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
