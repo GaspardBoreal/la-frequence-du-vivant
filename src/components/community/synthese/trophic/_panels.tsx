@@ -78,12 +78,13 @@ export const DefaultPanel: React.FC<{
   </>
 );
 
-export const LevelPanel: React.FC<{ group: TrophicGroup; chain: TrophicChainResult }> = ({ group, chain }) => {
+export const LevelPanel: React.FC<{ group: TrophicGroup; chain: TrophicChainResult; onClose: () => void }> = ({ group, chain, onClose }) => {
   const meta = getLevelMeta(group);
   if (!meta) return null;
   const stars = chain.byGroup[group];
   return (
     <>
+      <PanelHeader onClose={onClose} />
       <div className="flex items-center gap-2">
         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(var(${meta.token}))` }} />
         <h3 className="text-sm font-semibold text-foreground">{meta.label}</h3>
