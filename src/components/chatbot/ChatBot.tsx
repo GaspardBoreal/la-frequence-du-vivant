@@ -235,11 +235,30 @@ export function ChatBot({
     setVoiceMode(!voiceMode);
   };
 
+  // ── Pièce jointe contextuelle : pool d'espèces (frugal, à la demande) ──
+  const availableAttachments = focalState?.availableAttachments;
+  const speciesPoolAvailable = availableAttachments?.speciesPool;
+  const speciesPoolAttached = !!(focalState?.visibleData as any)?.[SPECIES_POOL_SLICE_KEY];
+
+  const attachSpeciesPool = useCallback(() => {
+    if (!speciesPoolAvailable) return;
+    chatPageContext.setVisibleSlice(SPECIES_POOL_SLICE_KEY, {
+      label: speciesPoolAvailable.label,
+      truncated: speciesPoolAvailable.truncated ?? false,
+      species: speciesPoolAvailable.items,
+    });
+  }, [speciesPoolAvailable]);
+
+  const detachSpeciesPool = useCallback(() => {
+    chatPageContext.setVisibleSlice(SPECIES_POOL_SLICE_KEY, undefined);
+  }, []);
+
   const handleReset = () => {
     stopSpeaking();
     stopListening();
     setInput('');
     removeDocument();
+    detachSpeciesPool();
     reset();
     setInterruptBanner(false);
   };
