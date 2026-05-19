@@ -67,7 +67,17 @@ const store = {
     return () => listeners.delete(l);
   },
   setContext: (entity: ChatEntity | null, pageState: ChatPageState = {}) => {
-    setState({ entity, pageState });
+    // Préserve `availableAttachments` posé par le mount du chatbot : il vit
+    // au niveau du composant Chat, pas de la page courante. Sans ça, chaque
+    // changement d'onglet/filtre écraserait l'option "Liste des espèces" du 📎.
+    setState({
+      entity,
+      pageState: {
+        ...pageState,
+        availableAttachments:
+          pageState.availableAttachments ?? state.pageState.availableAttachments,
+      },
+    });
   },
   setPageState: (pageState: ChatPageState) => {
     setState({
@@ -102,7 +112,13 @@ const store = {
       },
     });
   },
-  clear: () => setState({ entity: null, pageState: {} }),
+  clear: () =>
+    setState({
+      entity: null,
+      // Ne pas wiper les attachements disponibles : ils sont liés au mount du
+      // chatbot (pool d'espèces), pas au cycle de vie de la page.
+      pageState: { availableAttachments: state.pageState.availableAttachments },
+    }),
 };
 
 /** Clé de slice utilisée quand l'utilisateur attache la liste complète des espèces. */
