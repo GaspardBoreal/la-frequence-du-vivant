@@ -18,7 +18,7 @@ import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
-import ExplorationDefaultRadiusBlock from './exploration/ExplorationDefaultRadiusBlock';
+import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
 import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
 import TrophicChainPanel from './synthese/TrophicChainPanel';
 
