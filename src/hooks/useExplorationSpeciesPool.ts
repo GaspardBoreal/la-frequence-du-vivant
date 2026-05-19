@@ -36,7 +36,7 @@ interface RawExplorationSpecies {
  */
 export const useExplorationSpeciesPool = (explorationId: string | null | undefined) => {
   const rawQuery = useQuery({
-    queryKey: ['exploration-species-pool-raw', explorationId],
+    queryKey: ['exploration-species-pool-raw', explorationId, 'with-marcheur-obs'],
     queryFn: async (): Promise<RawExplorationSpecies[]> => {
       if (!explorationId) return [];
 
@@ -53,6 +53,7 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
         .select('species_data')
         .in('marche_id', marcheIds);
       if (snapsErr) throw snapsErr;
+
 
       const map = new Map<string, RawExplorationSpecies>();
       (snaps || []).forEach((s: any) => {
