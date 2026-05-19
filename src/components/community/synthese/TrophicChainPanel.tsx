@@ -49,7 +49,7 @@ export const TrophicChainPanel: React.FC<Props> = ({ species }) => {
               Chaîne trophique
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed max-w-2xl">
-              Une lecture poétique du tissu vivant : qui mange qui, qui pollinise, qui recycle.
+              Une lecture du tissu vivant : qui mange qui, qui pollinise, qui recycle.
               Les espèces collectées sont placées en orbite autour de leur niveau écologique.
             </p>
           </div>
