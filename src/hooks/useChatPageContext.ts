@@ -112,7 +112,13 @@ const store = {
       },
     });
   },
-  clear: () => setState({ entity: null, pageState: {} }),
+  clear: () =>
+    setState({
+      entity: null,
+      // Ne pas wiper les attachements disponibles : ils sont liés au mount du
+      // chatbot (pool d'espèces), pas au cycle de vie de la page.
+      pageState: { availableAttachments: state.pageState.availableAttachments },
+    }),
 };
 
 /** Clé de slice utilisée quand l'utilisateur attache la liste complète des espèces. */
