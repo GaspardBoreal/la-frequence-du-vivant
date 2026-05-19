@@ -64,6 +64,9 @@ export interface BiodiversitySpecies {
   commonName: string;
   family: string;
   kingdom: 'Plantae' | 'Animalia' | 'Fungi' | 'Other';
+  /** iNaturalist iconic_taxon_name (Aves, Insecta, Mammalia, …) — enrichit la
+   *  classification trophique quand `family` est manquante ou numérique. */
+  iconicTaxon?: string;
   observations: number;
   lastSeen: string;
   photos?: string[];
