@@ -79,6 +79,8 @@ interface BiodiversitySpecies {
   scientificName: string;
   commonName: string;
   family: string;
+  /** iNaturalist iconic_taxon_name — fallback robuste pour la chaîne trophique */
+  iconicTaxon?: string;
   kingdom: 'Plantae' | 'Animalia' | 'Fungi' | 'Other';
   observations: number;
   lastSeen: string;
@@ -306,6 +308,7 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       scientificName: item.taxon?.name || 'Unknown',
       commonName: item.taxon?.preferred_common_name || item.taxon?.name || 'Unknown',
       family: item.taxon?.ancestry?.split('/').slice(-2, -1)[0] || 'Unknown',
+      iconicTaxon: item.taxon?.iconic_taxon_name || undefined,
       kingdom: mapKingdom(item.taxon, item.taxon?.name, item.taxon?.iconic_taxon_name),
       observations: 1,
       lastSeen: item.observed_on || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],

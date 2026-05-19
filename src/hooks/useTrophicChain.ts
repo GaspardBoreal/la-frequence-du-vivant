@@ -11,6 +11,7 @@ export interface TrophicSpeciesInput {
   commonName?: string | null;
   family?: string | null;
   kingdom?: string | null;
+  iconicTaxon?: string | null;
   observations?: number | null;
   photos?: string[] | null;
   photoData?: { url?: string } | null;

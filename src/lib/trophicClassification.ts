@@ -24,38 +24,99 @@ const SPECIES_KB: Record<string, TrophicGroup> = {
   // L5 — prédateurs supérieurs
   'Buteo buteo': 'L5',
   'Accipiter nisus': 'L5',
+  'Accipiter gentilis': 'L5',
   'Falco tinnunculus': 'L5',
+  'Falco peregrinus': 'L5',
   'Milvus milvus': 'L5',
   'Milvus migrans': 'L5',
+  'Circaetus gallicus': 'L5',
+  'Circus aeruginosus': 'L5',
+  'Pernis apivorus': 'L5',
   'Tyto alba': 'L5',
   'Strix aluco': 'L5',
+  'Athene noctua': 'L5',
+  'Asio otus': 'L5',
   'Vulpes vulpes': 'L5',
   'Martes martes': 'L5',
+  'Martes foina': 'L5',
   'Mustela putorius': 'L5',
-  // L4 — conso tertiaires
+  'Meles meles': 'L5',
+  'Lutra lutra': 'L5',
+  'Genetta genetta': 'L5',
+  // L4 — conso tertiaires (piscivores, reptiles, gros insectivores)
   'Ardea cinerea': 'L4',
+  'Ardea alba': 'L4',
   'Egretta garzetta': 'L4',
+  'Alcedo atthis': 'L4',
+  'Phalacrocorax carbo': 'L4',
+  'Ciconia ciconia': 'L4',
   'Natrix natrix': 'L4',
+  'Natrix maura': 'L4',
+  'Vipera aspis': 'L4',
+  'Hierophis viridiflavus': 'L4',
   'Lacerta bilineata': 'L4',
+  'Timon lepidus': 'L4',
   'Podarcis muralis': 'L4',
-  // L3 — conso secondaires
+  'Anguis fragilis': 'L4',
+  // L3 — conso secondaires (insectivores moyens, batraciens, araignées, coccinelles)
   'Erinaceus europaeus': 'L3',
+  'Talpa europaea': 'L3',
+  'Sorex araneus': 'L3',
   'Parus major': 'L3',
   'Cyanistes caeruleus': 'L3',
+  'Periparus ater': 'L3',
   'Hirundo rustica': 'L3',
+  'Delichon urbicum': 'L3',
+  'Apus apus': 'L3',
+  'Sylvia atricapilla': 'L3',
+  'Troglodytes troglodytes': 'L3',
+  'Turdus merula': 'L3',
+  'Turdus philomelos': 'L3',
+  'Erithacus rubecula': 'L3',
+  'Phoenicurus ochruros': 'L3',
+  'Motacilla alba': 'L3',
+  'Picus viridis': 'L3',
+  'Dendrocopos major': 'L3',
+  'Sitta europaea': 'L3',
+  'Certhia brachydactyla': 'L3',
   'Bufo bufo': 'L3',
+  'Bufo spinosus': 'L3',
   'Rana temporaria': 'L3',
-  // L2 — conso primaires
+  'Pelophylax kl. esculentus': 'L3',
+  'Salamandra salamandra': 'L3',
+  'Triturus marmoratus': 'L3',
+  'Coccinella septempunctata': 'L3',
+  'Harmonia axyridis': 'L3',
+  // L2 — conso primaires (herbivores, pollinisateurs, granivores)
   'Apis mellifera': 'L2',
   'Bombus terrestris': 'L2',
+  'Bombus pascuorum': 'L2',
+  'Bombus lapidarius': 'L2',
+  'Xylocopa violacea': 'L2',
   'Pieris rapae': 'L2',
+  'Pieris brassicae': 'L2',
   'Vanessa atalanta': 'L2',
+  'Vanessa cardui': 'L2',
+  'Aglais io': 'L2',
+  'Aglais urticae': 'L2',
+  'Polyommatus icarus': 'L2',
+  'Maniola jurtina': 'L2',
+  'Gonepteryx rhamni': 'L2',
   'Oryctolagus cuniculus': 'L2',
   'Lepus europaeus': 'L2',
   'Capreolus capreolus': 'L2',
+  'Cervus elaphus': 'L2',
+  'Sus scrofa': 'L2',
+  'Sciurus vulgaris': 'L2',
+  'Apodemus sylvaticus': 'L2',
   // Decomposers
   'Lumbricus terrestris': 'DECOMPOSER',
+  'Eisenia fetida': 'DECOMPOSER',
+  'Armadillidium vulgare': 'DECOMPOSER',
+  'Porcellio scaber': 'DECOMPOSER',
+  'Glomeris marginata': 'DECOMPOSER',
 };
+
 
 /* ------------------------------------------------------------------ */
 /* Heuristics by family / kingdom                                     */
@@ -101,12 +162,38 @@ export interface ClassifyInput {
   scientificName?: string | null;
   family?: string | null;
   kingdom?: string | null;
+  /** iNaturalist iconic_taxon_name : Aves, Insecta, Arachnida, Mammalia, Reptilia,
+   *  Amphibia, Mollusca, Actinopterygii, Plantae, Fungi, Protozoa, Chromista… */
+  iconicTaxon?: string | null;
 }
+
+/** iconic_taxon → fallback trophic group (when KB + family fail). */
+const ICONIC_RULES: Record<string, TrophicGroup> = {
+  Plantae: 'L1',
+  Fungi: 'DECOMPOSER',
+  Protozoa: 'L1',
+  Chromista: 'L1',
+  // Animalia subdivisions
+  Insecta: 'L2',        // dominant pollinisateurs + herbivores
+  Arachnida: 'L3',      // prédateurs invertébrés
+  Mollusca: 'DECOMPOSER', // escargots, limaces (détritivores/herbivores → orbit décomposeurs)
+  Amphibia: 'L3',
+  Reptilia: 'L4',
+  Aves: 'L3',           // par défaut passereaux insectivores (les rapaces sont en KB)
+  Mammalia: 'L2',       // par défaut herbivores (carnivores en KB/famille)
+  Actinopterygii: 'L4', // poissons
+};
+
+/** A family field that is empty, a numeric ID, or "Unknown" is unusable. */
+const isUsableFamily = (f: string): boolean =>
+  !!f && f !== 'Unknown' && !/^\d+$/.test(f);
 
 export function classifyTrophic(sp: ClassifyInput): TrophicAssignment {
   const sn = (sp.scientificName || '').trim();
-  const family = (sp.family || '').trim();
+  const familyRaw = (sp.family || '').trim();
+  const family = isUsableFamily(familyRaw) ? familyRaw : '';
   const kingdom = (sp.kingdom || '').trim();
+  const iconic = (sp.iconicTaxon || '').trim();
 
   // 1. KB lookup (exact match, then genus)
   if (sn && SPECIES_KB[sn]) {
@@ -117,12 +204,17 @@ export function classifyTrophic(sp: ClassifyInput): TrophicAssignment {
     return { group: SPECIES_KB[genus], source: 'kb', rationale: `Genre ${genus} curé` };
   }
 
-  // 2. Family-based heuristic
+  // 2. Family-based heuristic (only if family is a real name, not an iNat numeric ID)
   if (family && FAMILY_RULES[family]) {
     return { group: FAMILY_RULES[family], source: 'heuristic', rationale: `Famille ${family}` };
   }
 
-  // 3. Kingdom fallback
+  // 3. iconic_taxon fallback (iNaturalist) — bien plus discriminant que kingdom seul
+  if (iconic && ICONIC_RULES[iconic]) {
+    return { group: ICONIC_RULES[iconic], source: 'heuristic', rationale: `Groupe ${iconic}` };
+  }
+
+  // 4. Kingdom fallback
   if (kingdom === 'Plantae') {
     return { group: 'L1', source: 'heuristic', rationale: 'Règne Plantae → producteur' };
   }
@@ -132,14 +224,19 @@ export function classifyTrophic(sp: ClassifyInput): TrophicAssignment {
   if (kingdom === 'Chromista' || kingdom === 'Protozoa') {
     return { group: 'L1', source: 'heuristic', rationale: `${kingdom} → producteur primaire` };
   }
+  if (kingdom === 'Animalia') {
+    // Fallback prudent : herbivores/pollinisateurs dominent en biomasse observable
+    return { group: 'L2', source: 'heuristic', rationale: 'Règne Animalia (groupe inconnu) → conso primaire par défaut' };
+  }
 
-  // 4. Scientific name patterns (lichens etc.)
+  // 5. Scientific name patterns (lichens etc.)
   if (/lichen|cladonia|usnea|parmelia|xanthoria/i.test(sn)) {
     return { group: 'L1', source: 'heuristic', rationale: 'Lichen → producteur primaire' };
   }
 
   return { group: 'UNCLASSIFIED', source: 'heuristic' };
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Level metadata for UI                                              */
