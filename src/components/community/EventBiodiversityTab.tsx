@@ -293,6 +293,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             commonName: sp.commonName || sp.scientificName || '',
             kingdom: kingdom as BiodiversitySpecies['kingdom'],
             family: sp.family?.toString() || '',
+            iconicTaxon: sp.iconicTaxon || sp.iconic_taxon_name || undefined,
             observations: sp.observations || 1,
             lastSeen: computedLastSeen,
             source: (sp.source as BiodiversitySpecies['source']) || 'inaturalist',
