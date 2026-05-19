@@ -374,8 +374,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
           </text>
         </svg>
 
-        {/* Empty levels alert chips */}
-        {chain.balance.missingLevels.length > 0 && (
+        {!compact && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {chain.balance.missingLevels.map((g) => {
               const m = getLevelMeta(g);
@@ -391,7 +390,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
           </div>
         )}
 
-        {(selected || focusGroup) && (
+        {!compact && (selected || focusGroup) && (
           <button
             onClick={() => { setSelected(null); setFocusGroup(null); }}
             className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border hover:bg-background"
@@ -400,27 +399,29 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
           </button>
         )}
 
-        {/* Legend bottom-left: spiral direction */}
-        <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[160px] leading-snug">
-          ↻ énergie qui monte<br />
-          ↺ matière qui retombe (décomposeurs)
-        </div>
+        {!compact && (
+          <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[160px] leading-snug">
+            ↻ énergie qui monte<br />
+            ↺ matière qui retombe (décomposeurs)
+          </div>
+        )}
       </div>
 
-      {/* Side panel — pédagogique */}
-      <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
-        {selected ? (
-          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
-        ) : focusGroup ? (
-          <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
-        ) : (
-          <DefaultPanel
-            chain={chain}
-            onLevelClick={setFocusGroup}
-            intro="Suivez le fil de l'énergie : du Soleil au cœur jusqu'aux prédateurs en bord de spirale, puis la contre-spirale des décomposeurs qui referme le cycle."
-          />
-        )}
-      </aside>
+      {!compact && (
+        <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
+          {selected ? (
+            <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
+          ) : focusGroup ? (
+            <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
+          ) : (
+            <DefaultPanel
+              chain={chain}
+              onLevelClick={setFocusGroup}
+              intro="Suivez le fil de l'énergie : du Soleil au cœur jusqu'aux prédateurs en bord de spirale, puis la contre-spirale des décomposeurs qui referme le cycle."
+            />
+          )}
+        </aside>
+      )}
     </div>
   );
 };
