@@ -144,11 +144,20 @@ Deno.serve(async (req) => {
 
         if (famId !== null) {
           const cached = cacheMap.get(famId);
-          if (cached?.family_name) {
-            out.family = cached.family_name;
-            if (!out.iconicTaxon && cached.iconic_taxon) out.iconicTaxon = cached.iconic_taxon;
-            dirty = true;
-            enrichedSpecies++;
+          if (cached) {
+            // Le `family` iNat dans ancestry n'est PAS toujours du rang family
+            // (peut être subfamily, order, subgenus…). On écrit family_name
+            // quand il existe, sinon on conserve l'ID numérique mais on ajoute
+            // au moins iconicTaxon — qui suffit à la classification trophique.
+            if (cached.family_name && cached.family_name !== sp.family) {
+              out.family = cached.family_name;
+              dirty = true;
+              enrichedSpecies++;
+            }
+            if (!out.iconicTaxon && cached.iconic_taxon) {
+              out.iconicTaxon = cached.iconic_taxon;
+              dirty = true;
+            }
           }
         }
         // si on a un taxonId direct mais pas d'iconicTaxon, on enrichit aussi
