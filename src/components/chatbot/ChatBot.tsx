@@ -38,7 +38,8 @@ import { ChatSuggestions } from './ChatSuggestions';
 import { useChatExport } from './useChatExport';
 import { ChatExportDrawer } from './ChatExportDrawer';
 import { chatConfig, type ChatContext } from './chatConfig';
-import { chatPageContext, useChatPageContextStore, type ChatEntity } from '@/hooks/useChatPageContext';
+import { chatPageContext, useChatPageContextStore, SPECIES_POOL_SLICE_KEY, type ChatEntity } from '@/hooks/useChatPageContext';
+import { Leaf } from 'lucide-react';
 
 interface ChatBotProps {
   currentContext?: ChatContext;
@@ -234,11 +235,30 @@ export function ChatBot({
     setVoiceMode(!voiceMode);
   };
 
+  // ── Pièce jointe contextuelle : pool d'espèces (frugal, à la demande) ──
+  const availableAttachments = focalState?.availableAttachments;
+  const speciesPoolAvailable = availableAttachments?.speciesPool;
+  const speciesPoolAttached = !!(focalState?.visibleData as any)?.[SPECIES_POOL_SLICE_KEY];
+
+  const attachSpeciesPool = useCallback(() => {
+    if (!speciesPoolAvailable) return;
+    chatPageContext.setVisibleSlice(SPECIES_POOL_SLICE_KEY, {
+      label: speciesPoolAvailable.label,
+      truncated: speciesPoolAvailable.truncated ?? false,
+      species: speciesPoolAvailable.items,
+    });
+  }, [speciesPoolAvailable]);
+
+  const detachSpeciesPool = useCallback(() => {
+    chatPageContext.setVisibleSlice(SPECIES_POOL_SLICE_KEY, undefined);
+  }, []);
+
   const handleReset = () => {
     stopSpeaking();
     stopListening();
     setInput('');
     removeDocument();
+    detachSpeciesPool();
     reset();
     setInterruptBanner(false);
   };
@@ -521,8 +541,8 @@ export function ChatBot({
                       className="hidden"
                     />
 
-                    {(attachedDoc || isExtracting || docError) && (
-                      <div className="mb-2 px-1">
+                    {(attachedDoc || isExtracting || docError || speciesPoolAttached) && (
+                      <div className="mb-2 px-1 flex flex-wrap gap-1.5">
                         {isExtracting && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <div className="flex gap-1">
@@ -542,6 +562,21 @@ export function ChatBot({
                               onClick={removeDocument}
                               className="ml-1 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
                               title="Retirer le document"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                        {speciesPoolAttached && speciesPoolAvailable && (
+                          <div className="inline-flex items-center gap-1.5 rounded-lg bg-secondary/15 px-2.5 py-1.5 text-xs text-secondary-foreground border border-secondary/30">
+                            <Leaf className="h-3.5 w-3.5 shrink-0 text-secondary" />
+                            <span className="truncate max-w-[240px]">
+                              🌿 {speciesPoolAvailable.label} attachée
+                            </span>
+                            <button
+                              onClick={detachSpeciesPool}
+                              className="ml-1 rounded-full p-0.5 hover:bg-secondary/25 transition-colors"
+                              title="Retirer la liste des espèces"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -573,16 +608,51 @@ export function ChatBot({
 
                     <div className="flex items-center gap-2">
                       {!isLoading && (
-                        <Button
-                          onClick={openFilePicker}
-                          size="icon"
-                          variant="outline"
-                          disabled={isExtracting}
-                          className="h-10 w-10 shrink-0 rounded-xl"
-                          title="Joindre un document (PDF, TXT, CSV, MD)"
-                        >
-                          <Paperclip className="h-4 w-4" />
-                        </Button>
+                        speciesPoolAvailable ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                disabled={isExtracting}
+                                className="h-10 w-10 shrink-0 rounded-xl"
+                                title="Joindre…"
+                                aria-label="Joindre une pièce ou une donnée"
+                              >
+                                <Paperclip className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-64">
+                              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                                Joindre à la conversation
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openFilePicker(); }}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                <span className="flex-1">Un document (PDF, TXT, CSV, MD)</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={(e) => { e.preventDefault(); attachSpeciesPool(); }}
+                                disabled={speciesPoolAttached}
+                              >
+                                <Leaf className="h-4 w-4 mr-2 text-secondary" />
+                                <span className="flex-1">🌿 {speciesPoolAvailable.label}</span>
+                                {speciesPoolAttached && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <Button
+                            onClick={openFilePicker}
+                            size="icon"
+                            variant="outline"
+                            disabled={isExtracting}
+                            className="h-10 w-10 shrink-0 rounded-xl"
+                            title="Joindre un document (PDF, TXT, CSV, MD)"
+                          >
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
+                        )
                       )}
                       <input
                         ref={inputRef}

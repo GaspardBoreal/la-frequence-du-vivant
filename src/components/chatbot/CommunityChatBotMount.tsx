@@ -2,9 +2,13 @@ import { useLocation, matchPath } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { ChatBot } from './ChatBot';
 import type { ChatContext } from './chatConfig';
-import type { ChatEntity } from '@/hooks/useChatPageContext';
+import { chatPageContext, type ChatEntity, type CompactSpecies } from '@/hooks/useChatPageContext';
 import { useCanUseContextualChat } from '@/hooks/useCanUseContextualChat';
+import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import { supabase } from '@/integrations/supabase/client';
+
+/** Max d'espèces poussées dans le contexte IA lorsqu'attachées (frugalité). */
+const SPECIES_POOL_CAP = 200;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -111,6 +115,35 @@ function CommunityChatBotInner() {
     if (marcheEventId) return { type: 'marche_event', id: marcheEventId };
     return null;
   }, [directExplorationId, explorationId, marcheEventId]);
+
+  // ── Pool d'espèces attachable (frugal : non envoyé tant que non attaché) ──
+  const explorationIdForPool =
+    urlEntity?.type === 'exploration' ? urlEntity.id : null;
+  const { data: speciesPool } = useExplorationSpeciesPool(explorationIdForPool);
+
+  useEffect(() => {
+    if (!explorationIdForPool || !speciesPool || speciesPool.length === 0) {
+      chatPageContext.setAvailableAttachments(null);
+      return;
+    }
+    const truncated = speciesPool.length > SPECIES_POOL_CAP;
+    const items: CompactSpecies[] = speciesPool.slice(0, SPECIES_POOL_CAP).map((sp) => ({
+      n: sp.displayName,
+      s: sp.scientificName ?? null,
+      g: sp.group ?? null,
+      c: sp.count,
+    }));
+    chatPageContext.setAvailableAttachments({
+      speciesPool: {
+        label: `Liste des espèces (${speciesPool.length}${truncated ? `, ${SPECIES_POOL_CAP} envoyées` : ''})`,
+        items,
+        truncated,
+      },
+    });
+    return () => {
+      chatPageContext.setAvailableAttachments(null);
+    };
+  }, [explorationIdForPool, speciesPool]);
 
   const roleBadge =
     role === 'admin' ? 'Admin' : role === 'ambassadeur' ? 'Ambassadeur' : role === 'sentinelle' ? 'Sentinelle' : null;
