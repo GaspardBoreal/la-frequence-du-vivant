@@ -1,73 +1,52 @@
-# Chaîne trophique — 92 espèces, 0% curé, 39 non classées
+## Problème
 
-## Diagnostic (racine du bug)
+Dans la Chaîne trophique → Constellation, cliquer sur un niveau (ex. « Producteurs primaires ») dans le panneau de droite remplace le contenu par `LevelPanel`, mais ce panneau **n'a aucun moyen de retour**. Le seul bouton « Réinitialiser » est en haut à droite du SVG de gauche — éloigné du regard, peu lisible, et invisible sur mobile (le panneau passe sous la constellation). Idem pour `SelectedStarPanel` (clic sur une étoile).
 
-J'ai inspecté `species_data` des snapshots de cette exploration :
+## Solution UX — un en-tête de panneau cohérent
 
+Ajouter un **en-tête sticky** en haut des panneaux contextuels (`LevelPanel` et `SelectedStarPanel`) avec :
+
+- À gauche : bouton ghost discret `← Vue d'ensemble` (ChevronLeft + label court)
+- À droite : icône `X` (close) en cercle sur fond `bg-muted/40`, taille 24px, hover `bg-muted`
+
+Les deux actions appellent le même `onClose` qui remet `selected=null` et `focusGroup=null`. Le panneau revient à `DefaultPanel`.
+
+### Pourquoi c'est efficace
+
+- **Loi de proximité** : l'action « fermer » est au même endroit que ce qu'on ferme. Plus besoin de chercher « Réinitialiser » à l'autre bout de l'écran.
+- **Deux affordances** : la flèche textuelle (explicite, accessible) + le X (rapide, universel) couvrent débutants et power users.
+- **Cohérence mobile** : sur petit écran le panneau est sous le SVG → le bouton flottant « Réinitialiser » était hors écran. L'en-tête sticky reste toujours visible.
+- **Sobriété informationnelle** : pas de nouveau composant, pas d'overlay, juste un header `flex justify-between` de 32px de haut.
+
+### Bonus visuel
+
+- Dans `DefaultPanel`, mettre en évidence le dernier niveau visité (anneau coloré autour de la pastille) — non bloquant, peut être livré plus tard.
+- Le bouton flottant « Réinitialiser » sur le SVG reste (utile quand on a juste un `focusGroup` via clic sur un anneau, sans avoir ouvert le panneau).
+
+## Changements techniques
+
+Fichier : `src/components/community/synthese/trophic/_panels.tsx`
+
+1. `LevelPanel` : ajouter prop `onClose: () => void`. Insérer en première position :
+```tsx
+<div className="flex items-center justify-between -mt-1 -mx-1 pb-2 border-b border-border/50">
+  <button onClick={onClose} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition px-1.5 py-1 rounded-md hover:bg-muted/60">
+    <ChevronLeft className="w-3.5 h-3.5" /> Vue d'ensemble
+  </button>
+  <button onClick={onClose} aria-label="Fermer" className="w-6 h-6 inline-flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition">
+    <X className="w-3 h-3" />
+  </button>
+</div>
 ```
-sci=Corylus avellana   family="49155"     kingdom=Plantae
-sci=Trichodes alvearius family="373395"   kingdom=Animalia
-```
+2. `SelectedStarPanel` : même en-tête, même prop `onClose`.
 
-**Le champ `family` stocké est l'ID taxon iNaturalist (entier), pas le nom de famille.** Le classificateur (`FAMILY_RULES`) attend `"Betulaceae"`, reçoit `"49155"` → **0 famille matchée**. Du coup :
-- Plantae → L1 via fallback kingdom ✅
-- Fungi → DECOMPOSER ✅
-- **Animalia → UNCLASSIFIED** (aucun fallback kingdom, et family inutilisable) → c'est l'origine des 39 non classées
-- `curatedRatio` = `kb hits / total`, et notre KB inline ne contient que ~30 espèces emblématiques rarement présentes → **0%**
+Fichier : `src/components/community/synthese/trophic/ConstellationTab.tsx`
 
-Les observations `marcheur_observations` arrivent aussi sans family ni kingdom (`kingdom='Other'`) → UNCLASSIFIED garantie.
+- Passer `onClose={() => { setSelected(null); setFocusGroup(null); }}` aux deux panneaux.
+- Aucun changement de logique métier, aucun changement de layout du SVG.
 
-## Stratégie « frugalité + efficacité »
+## Hors scope
 
-Trois leviers, du plus rapide au plus structurel, **sans appel API supplémentaire à chaque vue** :
-
-### Levier 1 — Classificateur enrichi (gain immédiat, 0 € de backend)
-
-Étendre `src/lib/trophicClassification.ts` pour exploiter **ce qu'on a déjà** :
-
-- Accepter un nouveau champ optionnel `iconicTaxon` (Aves, Insecta, Arachnida, Mammalia, Reptilia, Amphibia, Mollusca, Fungi, Plantae…) et ajouter des règles fallback robustes : Aves→L3, Insecta→L2, Arachnida→L3, Reptilia→L4, Amphibia→L3, Mammalia→L2 (sauf famille connue prédateur).
-- Détection « famille = entier numérique » → ignorer ce champ et passer aux fallbacks au lieu de renvoyer UNCLASSIFIED.
-- Élargir `SPECIES_KB` avec ~60 espèces issues du top observations du projet (export rapide depuis snapshots) pour faire monter le ratio curé > 25 % sans surcharger le fichier.
-
-À lui seul ce levier ramène les 39 UNCLASSIFIED à ~5–8.
-
-### Levier 2 — Résolveur taxon ID → famille (one-shot + cache)
-
-Créer une edge function **`resolve-inat-taxa`** + une table cache `inat_taxa_cache` (`taxon_id` PK, `family_name`, `iconic_taxon`, `rank`, `cached_at`) :
-
-- Endpoint iNat `GET /v1/taxa?id=X,Y,Z` accepte **30 IDs par requête**, gratuit, sans clé.
-- La fonction lit tous les `family` numériques distincts encore inconnus du cache, les batch-résout, et met à jour `inat_taxa_cache`.
-- Un **second edge function `backfill-snapshots-taxonomy`** (one-shot, déclenché 1× par l'admin) parcourt `biodiversity_snapshots`, joint avec le cache, et réécrit chaque `species_data[i].family` (string ID → nom de famille) + ajoute `iconicTaxon`. Pour ~10k snapshots du projet, traitement < 2 min en quelques pages.
-
-### Levier 3 — Normalisation à l'ingestion (durable, zéro coût récurrent)
-
-Modifier la edge function qui alimente déjà `biodiversity_snapshots` depuis iNat (probablement `collect-biodiversity` / `sync-marche-biodiversity` selon la mémoire « Snapshot sync ») pour, **au moment de l'écriture** :
-
-- Extraire de la réponse iNat les champs `taxon.iconic_taxon_name` (gratuit, déjà dans la payload) et la résolution famille via `taxon.ancestors[]` (idem, déjà payload — aucun appel supplémentaire).
-- Stocker `family` = nom et `iconicTaxon` = string dans chaque entrée de `species_data`.
-
-À partir de ce moment, **toute nouvelle donnée iNat arrive déjà propre**, le cache `inat_taxa_cache` ne grossit plus, et le backfill du Levier 2 ne se reprouve jamais.
-
-### Bonus créatif — « Sentinelles auto-curées »
-
-Vue admin légère (`unclassified_species_admin`) qui liste les espèces observées ≥ 3× toujours en UNCLASSIFIED après tous les fallbacks. Un clic → ajout au `SPECIES_KB` JSON. Le ratio curé monte organiquement avec l'usage.
-
-## Plan d'implémentation (ordre)
-
-1. **Levier 1** — patch `trophicClassification.ts` (iconicTaxon, détection ID numérique, KB élargie). Effet immédiat dès le prochain render, déjà visible sur l'exploration actuelle dès que les snapshots auront `iconicTaxon` (Levier 3) — **mais on profite déjà tout de suite des règles kingdom Animalia → L2/L3 par défaut**.
-2. **Levier 3** — patch edge function de sync iNat pour écrire `family` (nom) + `iconicTaxon` à l'ingestion. Toute nouvelle obs propre.
-3. **Levier 2** — migration table `inat_taxa_cache` + edge functions `resolve-inat-taxa` & `backfill-snapshots-taxonomy`. Lancer le backfill une fois → 92/92 espèces classées correctement sur l'historique.
-4. **Bonus** — vue admin `unclassified_species_admin` (5 min, optionnel).
-
-## Détails techniques
-
-- Cache `inat_taxa_cache` : `taxon_id BIGINT PK`, `name TEXT`, `rank TEXT`, `family_name TEXT`, `iconic_taxon TEXT`, `cached_at TIMESTAMPTZ`. RLS : lecture publique, écriture service_role uniquement.
-- L'ID famille iNat se résout via `ancestors[]` filtrés sur `rank='family'`. Si l'espèce est elle-même au rang famille (cas `Cercis`, `Peonies`), `family_name` = name de l'espèce.
-- Edge function `backfill-snapshots-taxonomy` itère par batch de 100 snapshots, met à jour `species_data` via `jsonb_set` en SQL côté serveur pour éviter de retransférer la payload.
-- `curatedRatio` reste calculé sur `source==='kb'` exact — Levier 1 le fait monter naturellement via KB élargi.
-
-## Garde-fous
-
-- Aucun rate-limit iNat dépassé : 1 req/sec, 30 IDs/req, cache permanent. Sur ~500 familles distinctes typiques d'un projet → ~17 requêtes au total, une seule fois.
-- Pas de breaking change UI : `TrophicChainPanel` reçoit la même prop, seules les classifications s'affinent.
-- Mémoire `Snapshot sync on view` respectée : le travail reste côté edge function, jamais bloquant pour l'utilisateur.
+- Refonte du panneau (drawer, modale) — disproportionné.
+- Modifications des onglets « Spirale du Vivant » / « Réseau Vivant ».
+- Logique de classification trophique (déjà traitée).

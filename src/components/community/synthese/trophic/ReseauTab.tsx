@@ -364,9 +364,9 @@ export const ReseauTab: React.FC<Props> = ({ chain }) => {
 
       <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
         {selected ? (
-          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} />
+          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} />
         ) : focusGroup ? (
-          <LevelPanel group={focusGroup} chain={chain} />
+          <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} />
         ) : (
           <DefaultPanel
             chain={chain}
