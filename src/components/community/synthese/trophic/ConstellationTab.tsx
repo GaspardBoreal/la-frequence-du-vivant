@@ -263,9 +263,9 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
       {/* Side panel — pédagogique */}
       <aside className="rounded-2xl border border-border bg-card p-4 space-y-3 max-h-[720px] overflow-y-auto">
         {selected ? (
-          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} />
+          <SelectedStarPanel star={selected} chain={chain} onLevelClick={setFocusGroup} onClose={() => { setSelected(null); setFocusGroup(null); }} speciesPool={speciesPool} explorationId={explorationId} />
         ) : focusGroup ? (
-          <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} />
+          <LevelPanel group={focusGroup} chain={chain} onClose={() => setFocusGroup(null)} speciesPool={speciesPool} explorationId={explorationId} />
         ) : (
           <DefaultPanel chain={chain} onLevelClick={setFocusGroup} />
         )}
