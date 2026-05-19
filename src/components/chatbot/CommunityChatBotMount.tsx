@@ -116,6 +116,35 @@ function CommunityChatBotInner() {
     return null;
   }, [directExplorationId, explorationId, marcheEventId]);
 
+  // ── Pool d'espèces attachable (frugal : non envoyé tant que non attaché) ──
+  const explorationIdForPool =
+    urlEntity?.type === 'exploration' ? urlEntity.id : null;
+  const { data: speciesPool } = useExplorationSpeciesPool(explorationIdForPool);
+
+  useEffect(() => {
+    if (!explorationIdForPool || !speciesPool || speciesPool.length === 0) {
+      chatPageContext.setAvailableAttachments(null);
+      return;
+    }
+    const truncated = speciesPool.length > SPECIES_POOL_CAP;
+    const items: CompactSpecies[] = speciesPool.slice(0, SPECIES_POOL_CAP).map((sp) => ({
+      n: sp.displayName,
+      s: sp.scientificName ?? null,
+      g: sp.group ?? null,
+      c: sp.count,
+    }));
+    chatPageContext.setAvailableAttachments({
+      speciesPool: {
+        label: `Liste des espèces (${speciesPool.length}${truncated ? `, ${SPECIES_POOL_CAP} envoyées` : ''})`,
+        items,
+        truncated,
+      },
+    });
+    return () => {
+      chatPageContext.setAvailableAttachments(null);
+    };
+  }, [explorationIdForPool, speciesPool]);
+
   const roleBadge =
     role === 'admin' ? 'Admin' : role === 'ambassadeur' ? 'Ambassadeur' : role === 'sentinelle' ? 'Sentinelle' : null;
 
