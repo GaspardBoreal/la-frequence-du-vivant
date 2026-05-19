@@ -280,30 +280,42 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
             if (!meta) return null;
             const muted = isMuted(n);
             const isSelected = selected?.scientificName === n.scientificName;
+            const isHighlighted = highlightScientificName === n.scientificName;
             return (
               <motion.g
                 key={`${n.scientificName}-${i}`}
                 initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: muted ? 0.18 : 1, scale: 1 }}
+                animate={{ opacity: muted ? 0.12 : 1, scale: 1 }}
                 transition={{ delay: i * 0.005, duration: 0.4 }}
                 onMouseEnter={() => setHovered(n)}
                 onMouseLeave={() => setHovered(null)}
                 onClick={() => setSelected(isSelected ? null : n)}
                 style={{ cursor: 'pointer' }}
               >
+                {isHighlighted && (
+                  <>
+                    <motion.circle
+                      cx={n.x} cy={n.y} r={n.r * 5}
+                      fill={`hsl(var(${meta.token}) / 0.18)`}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.7, 0, 0.7] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <circle cx={n.x} cy={n.y} r={n.r * 3.2} fill={`hsl(var(${meta.token}) / 0.4)`} />
+                  </>
+                )}
                 <circle
                   cx={n.x} cy={n.y}
-                  r={n.r * (isSelected ? 3 : 2)}
-                  fill={`hsl(var(${meta.token}) / ${isSelected ? 0.35 : 0.18})`}
+                  r={n.r * (isSelected || isHighlighted ? 3 : 2)}
+                  fill={`hsl(var(${meta.token}) / ${isSelected || isHighlighted ? 0.4 : 0.18})`}
                 />
                 <circle
                   cx={n.x} cy={n.y}
-                  r={n.r}
+                  r={isHighlighted ? n.r * 1.6 : n.r}
                   fill={`hsl(var(${meta.token}))`}
-                  stroke={n.source === 'kb' ? `hsl(var(${meta.token}))` : 'transparent'}
-                  strokeWidth={n.source === 'kb' ? 0.8 : 0}
+                  stroke={n.source === 'kb' || isHighlighted ? `hsl(var(${meta.token}))` : 'transparent'}
+                  strokeWidth={isHighlighted ? 1.4 : n.source === 'kb' ? 0.8 : 0}
                 />
-                {n.source === 'heuristic' && (
+                {n.source === 'heuristic' && !isHighlighted && (
                   <circle
                     cx={n.x} cy={n.y} r={n.r + 1.2}
                     fill="none"
