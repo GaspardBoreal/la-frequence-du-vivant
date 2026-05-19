@@ -608,16 +608,51 @@ export function ChatBot({
 
                     <div className="flex items-center gap-2">
                       {!isLoading && (
-                        <Button
-                          onClick={openFilePicker}
-                          size="icon"
-                          variant="outline"
-                          disabled={isExtracting}
-                          className="h-10 w-10 shrink-0 rounded-xl"
-                          title="Joindre un document (PDF, TXT, CSV, MD)"
-                        >
-                          <Paperclip className="h-4 w-4" />
-                        </Button>
+                        speciesPoolAvailable ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                disabled={isExtracting}
+                                className="h-10 w-10 shrink-0 rounded-xl"
+                                title="Joindre…"
+                                aria-label="Joindre une pièce ou une donnée"
+                              >
+                                <Paperclip className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-64">
+                              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                                Joindre à la conversation
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openFilePicker(); }}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                <span className="flex-1">Un document (PDF, TXT, CSV, MD)</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={(e) => { e.preventDefault(); attachSpeciesPool(); }}
+                                disabled={speciesPoolAttached}
+                              >
+                                <Leaf className="h-4 w-4 mr-2 text-secondary" />
+                                <span className="flex-1">🌿 {speciesPoolAvailable.label}</span>
+                                {speciesPoolAttached && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <Button
+                            onClick={openFilePicker}
+                            size="icon"
+                            variant="outline"
+                            disabled={isExtracting}
+                            className="h-10 w-10 shrink-0 rounded-xl"
+                            title="Joindre un document (PDF, TXT, CSV, MD)"
+                          >
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
+                        )
                       )}
                       <input
                         ref={inputRef}
