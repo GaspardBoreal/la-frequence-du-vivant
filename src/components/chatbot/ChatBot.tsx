@@ -365,46 +365,55 @@ export function ChatBot({
 
                 {/* Zone actions — shrink-0, toujours visible */}
                 <div className="flex items-center gap-0.5 shrink-0">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Plus d'actions"
-                        className="h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
-                        title="Plus d'actions"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-60">
-                      <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-                        {chatConfig.contextLabels[currentContext]}
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {ttsSupported && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleReset}
+                    disabled={messages.length === 0}
+                    aria-label="Nouvelle conversation"
+                    title="Nouvelle conversation"
+                    className="h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 disabled:opacity-40"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => (isMobile ? setDrawerOpen(true) : exportPrint())}
+                    disabled={messages.length === 0 || isLoading}
+                    aria-label="Exporter la conversation"
+                    title="Exporter la conversation"
+                    className="h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 disabled:opacity-40"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  {ttsSupported && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Plus d'actions"
+                          className="h-9 w-9 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                          title="Plus d'actions"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-60">
+                        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                          {chatConfig.contextLabels[currentContext]}
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onSelect={(e) => { e.preventDefault(); toggleVoiceMode(); }}>
                           {voiceMode ? <Volume2 className="h-4 w-4 mr-2" /> : <VolumeX className="h-4 w-4 mr-2" />}
                           <span className="flex-1">Lecture vocale auto</span>
                           {voiceMode && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
                         </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem
-                        disabled={messages.length === 0 || isLoading}
-                        onSelect={() => (isMobile ? setDrawerOpen(true) : exportPrint())}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Exporter la conversation
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={messages.length === 0}
-                        onSelect={handleReset}
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Nouvelle conversation
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+
 
                   {!isMobile && (
                     <Button
