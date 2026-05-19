@@ -395,7 +395,6 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           )}
         </aside>
       )}
-      </aside>
     </div>
   );
 };
