@@ -99,6 +99,72 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
     return false;
   };
 
+  if (compact) {
+    return (
+      <div
+        className="relative rounded-2xl overflow-hidden border border-border"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
+        }}
+      >
+        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto block pointer-events-none">
+          {TROPHIC_LEVELS.map((l) => (
+            <circle
+              key={l.group}
+              cx={CENTER}
+              cy={CENTER}
+              r={RADII[l.group]}
+              fill="none"
+              stroke={`hsl(var(${l.token}) / 0.18)`}
+              strokeWidth={chain.counts[l.group] === 0 ? 0.5 : 1}
+              strokeDasharray={chain.counts[l.group] === 0 ? '4 6' : undefined}
+            />
+          ))}
+          <ellipse
+            cx={CENTER}
+            cy={CENTER}
+            rx={RADII.DECOMPOSER}
+            ry={RADII.DECOMPOSER * 0.92}
+            fill="none"
+            stroke={`hsl(var(${DECOMPOSER_META.token}) / 0.25)`}
+            strokeDasharray="2 4"
+            transform={`rotate(15 ${CENTER} ${CENTER})`}
+          />
+          {allStars.map((s, i) => {
+            const meta = getLevelMeta(s.group);
+            if (!meta) return null;
+            const muted = isStarMuted(s);
+            const isHighlighted = highlightScientificName === s.scientificName;
+            return (
+              <motion.g
+                key={`${s.scientificName}-${i}`}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: muted ? 0.12 : 1, scale: 1 }}
+                transition={{ delay: i * 0.004, duration: 0.4 }}
+              >
+                {isHighlighted && (
+                  <>
+                    <motion.circle
+                      cx={s.x} cy={s.y}
+                      r={s.r * 5}
+                      fill={`hsl(var(${meta.token}) / 0.18)`}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.7, 0, 0.7] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <circle cx={s.x} cy={s.y} r={s.r * 3.2} fill={`hsl(var(${meta.token}) / 0.4)`} />
+                  </>
+                )}
+                <circle cx={s.x} cy={s.y} r={s.r * (isHighlighted ? 3 : 2)} fill={`hsl(var(${meta.token}) / ${isHighlighted ? 0.4 : 0.18})`} />
+                <circle cx={s.x} cy={s.y} r={isHighlighted ? s.r * 1.6 : s.r} fill={`hsl(var(${meta.token}))`} stroke={isHighlighted ? `hsl(var(${meta.token}))` : 'transparent'} strokeWidth={isHighlighted ? 1.4 : 0} />
+              </motion.g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
       {/* Constellation SVG */}
