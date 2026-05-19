@@ -61,7 +61,7 @@ export function useExplorationMarchesRadius(explorationId?: string | null) {
             ordre: r.ordre ?? 0,
             nom: r.marches?.nom_marche || r.marches?.ville || 'Marche',
             ville: r.marches?.ville || null,
-            date: r.marches?.date_marche || null,
+            date: r.marches?.date || null,
             radius_m: radius,
             resolvedRadiusM: radius ?? fallback,
             isOverride: radius != null,
