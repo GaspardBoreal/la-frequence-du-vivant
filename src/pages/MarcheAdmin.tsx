@@ -9,6 +9,7 @@ import { useIsMobile } from '../hooks/use-mobile';
 import MarcheList from '../components/admin/MarcheList';
 import MarcheForm from '../components/admin/MarcheForm';
 import DataCollectionPanel from '../components/admin/DataCollectionPanel';
+import BiodiversityHistoryTimeline from '../components/admin/BiodiversityHistoryTimeline';
 import AdminFilters from '../components/admin/AdminFilters';
 import DataInsightsPromoBanner from '../components/DataInsightsPromoBanner';
 import PhotoGalleryAdmin from '../components/admin/PhotoGalleryAdmin';
@@ -222,6 +223,7 @@ const MarcheAdmin = () => {
 
             <TabsContent value="data" className="space-y-4">
               <DataCollectionPanel marches={filteredMarches} />
+              <BiodiversityHistoryTimeline marches={filteredMarches} />
             </TabsContent>
 
             <TabsContent value="export" className="space-y-4">

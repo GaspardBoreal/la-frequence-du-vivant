@@ -109,10 +109,12 @@ export type Database = {
           plants_count: number
           radius_meters: number
           recent_observations: number
+          regression_pct: number | null
           snapshot_date: string
           sources_data: Json | null
           species_data: Json | null
           species_richness: number | null
+          status: string
           total_species: number
           updated_at: string
         }
@@ -130,10 +132,12 @@ export type Database = {
           plants_count?: number
           radius_meters?: number
           recent_observations?: number
+          regression_pct?: number | null
           snapshot_date?: string
           sources_data?: Json | null
           species_data?: Json | null
           species_richness?: number | null
+          status?: string
           total_species?: number
           updated_at?: string
         }
@@ -151,12 +155,92 @@ export type Database = {
           plants_count?: number
           radius_meters?: number
           recent_observations?: number
+          regression_pct?: number | null
           snapshot_date?: string
           sources_data?: Json | null
           species_data?: Json | null
           species_richness?: number | null
+          status?: string
           total_species?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      biodiversity_snapshots_history: {
+        Row: {
+          archive_reason: string | null
+          archived_at: string
+          biodiversity_index: number | null
+          birds_count: number | null
+          delta_species: Json | null
+          fungi_count: number | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          marche_id: string
+          methodology: Json | null
+          original_created_at: string | null
+          original_snapshot_id: string | null
+          others_count: number | null
+          plants_count: number | null
+          radius_meters: number | null
+          recent_observations: number | null
+          replaced_by_snapshot_id: string | null
+          snapshot_date: string | null
+          sources_data: Json | null
+          species_data: Json | null
+          species_richness: number | null
+          total_species: number | null
+        }
+        Insert: {
+          archive_reason?: string | null
+          archived_at?: string
+          biodiversity_index?: number | null
+          birds_count?: number | null
+          delta_species?: Json | null
+          fungi_count?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          marche_id: string
+          methodology?: Json | null
+          original_created_at?: string | null
+          original_snapshot_id?: string | null
+          others_count?: number | null
+          plants_count?: number | null
+          radius_meters?: number | null
+          recent_observations?: number | null
+          replaced_by_snapshot_id?: string | null
+          snapshot_date?: string | null
+          sources_data?: Json | null
+          species_data?: Json | null
+          species_richness?: number | null
+          total_species?: number | null
+        }
+        Update: {
+          archive_reason?: string | null
+          archived_at?: string
+          biodiversity_index?: number | null
+          birds_count?: number | null
+          delta_species?: Json | null
+          fungi_count?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          marche_id?: string
+          methodology?: Json | null
+          original_created_at?: string | null
+          original_snapshot_id?: string | null
+          others_count?: number | null
+          plants_count?: number | null
+          radius_meters?: number | null
+          recent_observations?: number | null
+          replaced_by_snapshot_id?: string | null
+          snapshot_date?: string | null
+          sources_data?: Json | null
+          species_data?: Json | null
+          species_richness?: number | null
+          total_species?: number | null
         }
         Relationships: []
       }
