@@ -5,6 +5,28 @@ export interface ChatEntity {
   id: string;
 }
 
+/** Espèce compacte pour attachement frugal au chat (~50 octets/espèce). */
+export interface CompactSpecies {
+  /** Nom affiché (FR si dispo, sinon vernaculaire, sinon latin) */
+  n: string;
+  /** Nom scientifique */
+  s?: string | null;
+  /** Groupe taxonomique (Flore, Faune…) */
+  g?: string | null;
+  /** Nombre d'observations agrégées */
+  c?: number;
+}
+
+export interface AvailableAttachments {
+  /** Pool d'espèces de l'entité courante, prêt à être attaché à la conversation à la demande. */
+  speciesPool?: {
+    label: string;
+    items: CompactSpecies[];
+    /** Vrai si la liste a été tronquée (limite frugalité). */
+    truncated?: boolean;
+  };
+}
+
 export interface ChatPageState {
   /** Libellé humain de la fiche (ex: "Marche du Vivant à DEVIAT, 14 mars 2026") */
   label?: string;
@@ -18,6 +40,11 @@ export interface ChatPageState {
    * Permet à l'IA de répondre "ce que tu vois" sans re-fetcher côté serveur.
    */
   visibleData?: Record<string, unknown>;
+  /**
+   * Données disponibles à l'attachement explicite par l'utilisateur via le composer
+   * (bouton 📎). N'est PAS envoyée à l'IA tant qu'elle n'est pas attachée.
+   */
+  availableAttachments?: AvailableAttachments;
 }
 
 interface State {
