@@ -124,7 +124,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto block">
+        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={selected ? { x: selected.x, y: selected.y } : null}>
           {TROPHIC_LEVELS.map((l) => (
             <circle
               key={l.group}
