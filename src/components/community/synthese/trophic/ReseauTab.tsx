@@ -173,8 +173,8 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
   }, [selected, positioned, bandY]);
 
   /** "Qui me recycle" — arcs latéraux vers la colonne décomposeurs */
-  const recyclerEdges = useMemo(() => {
-    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number; ghost?: boolean }>;
+  const recyclerEdges = useMemo<Array<{ x1: number; y1: number; x2: number; y2: number; ghost?: boolean }>>(() => {
+    if (!selected) return [];
     if (selected.group === 'DECOMPOSER') return [];
     const pool = positioned.DECOMPOSER;
     if (pool.length === 0) {
