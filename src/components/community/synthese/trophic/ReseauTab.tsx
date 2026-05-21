@@ -449,7 +449,46 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           })()}
         </svg>
 
-        {!compact && chain.balance.missingLevels.length > 0 && (
+        {!compact && selected && (
+          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center gap-2">
+            <div className="text-[11px] px-2.5 py-1.5 rounded-full bg-background/85 backdrop-blur border border-border text-foreground/90 leading-tight">
+              <span className="font-semibold">{selected.commonName || selected.scientificName}</span>
+              <span className="text-muted-foreground"> · {beamCounts.eat + beamCounts.eaten + beamCounts.recycle} liens probables</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveBeam(activeBeam === 'eaten' ? null : 'eaten')}
+              className={`text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-full border backdrop-blur transition-colors ${
+                activeBeam === 'eaten' ? 'bg-foreground text-background border-foreground' : 'bg-background/80 border-border hover:bg-background'
+              }`}
+              title="Espèces qui mangent cette espèce"
+            >
+              <ArrowUp className="w-3 h-3" /> {beamCounts.eaten} mangeurs
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveBeam(activeBeam === 'eat' ? null : 'eat')}
+              className={`text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-full border backdrop-blur transition-colors ${
+                activeBeam === 'eat' ? 'bg-foreground text-background border-foreground' : 'bg-background/80 border-border hover:bg-background'
+              }`}
+              title="Espèces dont cette espèce se nourrit"
+            >
+              <ArrowDown className="w-3 h-3" /> {beamCounts.eat} proies
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveBeam(activeBeam === 'recycle' ? null : 'recycle')}
+              className={`text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-full border backdrop-blur transition-colors ${
+                activeBeam === 'recycle' ? 'bg-foreground text-background border-foreground' : 'bg-background/80 border-border hover:bg-background'
+              }`}
+              title="Décomposeurs qui recyclent cette espèce"
+            >
+              <RefreshCcw className="w-3 h-3" /> {beamCounts.recycle} recycleurs
+            </button>
+          </div>
+        )}
+
+        {!compact && !selected && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {chain.balance.missingLevels.map((g) => {
               const m = getLevelMeta(g);
@@ -467,16 +506,16 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
 
         {!compact && (selected || focusGroup) && (
           <button
-            onClick={() => { setSelected(null); setFocusGroup(null); }}
+            onClick={() => { setSelected(null); setFocusGroup(null); setActiveBeam(null); }}
             className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border hover:bg-background"
           >
             <X className="w-3 h-3" /> Réinitialiser
           </button>
         )}
 
-        {!compact && (
-          <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[180px] leading-snug">
-            Réseau trophique : chaque courbe = un lien probable prédateur → proie.
+        {!compact && !selected && (
+          <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[200px] leading-snug">
+            Cliquez une espèce pour révéler ses liens : mangeurs ↑, proies ↓, recycleurs ⟲.
           </div>
         )}
       </div>
