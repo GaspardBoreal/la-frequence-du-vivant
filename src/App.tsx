@@ -73,6 +73,7 @@ import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
 import MarchesDuVivantValiderPresence from './pages/MarchesDuVivantValiderPresence';
 import MarcheEventsAdmin from './pages/MarcheEventsAdmin';
 import MarcheEventDetail from './pages/MarcheEventDetail';
+import PublicEventPage from './pages/PublicEventPage';
 import CommunityProfilesAdmin from './pages/CommunityProfilesAdmin';
 import OrganisateursAdmin from './pages/OrganisateursAdmin';
 import MarchesDuVivantExplorationMarcheur from './pages/MarchesDuVivantExplorationMarcheur';
