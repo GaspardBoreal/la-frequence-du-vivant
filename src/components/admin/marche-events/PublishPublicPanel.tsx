@@ -114,6 +114,8 @@ const PublishPublicPanel: React.FC<Props> = ({ eventId, isPublic, publicSlug }) 
                   <Share2 className="h-3 w-3" /> Email
                 </a>
               </div>
+
+              <PublicEventMetricsPanel eventId={eventId} />
             </div>
           )}
         </div>
