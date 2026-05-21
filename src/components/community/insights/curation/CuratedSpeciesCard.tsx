@@ -134,7 +134,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
 
         {isCurator && (
           <div
-            className="absolute top-2 right-2 flex flex-col items-end gap-2.5 pointer-events-auto opacity-60 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 focus-within:opacity-100 focus-within:translate-x-0 transition-all duration-300 ease-out"
+            className="absolute top-2 left-2 flex flex-row items-center gap-1.5 pointer-events-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {species.scientificName && (
@@ -149,22 +149,20 @@ const CuratedSpeciesCard: React.FC<Props> = ({
                     <UserPlus className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="left">
+                <TooltipContent side="bottom">
                   <p className="text-xs">Attribuer à un marcheur</p>
                 </TooltipContent>
               </Tooltip>
             )}
-            <div className="-mr-1">
-              <PinToggle
-                explorationId={explorationId}
-                sense="oeil"
-                entityType="species"
-                entityId={species.scientificName || species.key}
-                existing={curation}
-                category={curation?.category}
-                size="md"
-              />
-            </div>
+            <PinToggle
+              explorationId={explorationId}
+              sense="oeil"
+              entityType="species"
+              entityId={species.scientificName || species.key}
+              existing={curation}
+              category={curation?.category}
+              size="md"
+            />
           </div>
         )}
 
@@ -176,7 +174,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div
-                className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-amber-500/95 text-white text-[10px] font-semibold backdrop-blur-sm flex items-center gap-1 cursor-help"
+                className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-amber-500/95 text-white text-[10px] font-semibold backdrop-blur-sm flex items-center gap-1 cursor-help"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (curation && onOpenEvidence) onOpenEvidence(curation, displayName);
@@ -196,7 +194,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div
-                className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-amber-500/95 text-white text-[10px] font-semibold backdrop-blur-sm flex items-center gap-0.5 cursor-help"
+                className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-amber-500/95 text-white text-[10px] font-semibold backdrop-blur-sm flex items-center gap-0.5 cursor-help"
                 onClick={(e) => e.stopPropagation()}
               >
                 {Array.from({ length: stars }).map((_, i) => (

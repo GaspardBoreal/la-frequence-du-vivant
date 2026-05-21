@@ -1,41 +1,32 @@
-## Contexte
+## Réorganisation des 3 actions sur la vignette Œil
 
-Sur les vignettes **Apprendre › Ce que nous avons vu › L'Œil**, les actions du curateur (en haut-droite de l'image) sont collées : `UserPlus` (attribuer à un marcheur), `Pin` (épingler), et selon l'état un 3ᵉ marqueur (étoiles IA / "à réviser"). Visuellement les deux pastilles se touchent (`gap-1`, `p-1.5`) et concurrencent le sujet photographique.
+### Cibles
+- **Haut-gauche** : icône verte « Attribuer à un marcheur » (`UserPlus`) + icône orange « Épingler / Retirer de la sélection » (`Pin`), côte à côte, gap discret.
+- **Haut-droite** : pastille tags-marcheurs (inchangée de position) + ajout d'un tooltip au survol « Mes tags ».
+- **Bas-droite** : badge ambre « à réviser » ou étoiles IA (déplacé pour libérer le haut-gauche).
+- **Bas-gauche** : pill « N obs. » (inchangée).
 
-Fichier concerné : `src/components/community/insights/curation/CuratedSpeciesCard.tsx` (lignes 135-166 pour le cluster d'actions).
+### Fichiers
 
-## Proposition — "Constellation flottante"
+1. **`src/components/community/insights/curation/CuratedSpeciesCard.tsx`**
+   - Cluster actions curateur passé de `top-2 right-2 flex-col` → `top-2 left-2 flex-row items-center gap-1.5`.
+   - Bouton `Attribuer` conserve son style verre dépoli, accent vert sur hover (`hover:bg-primary hover:text-primary-foreground`) — déjà en place.
+   - `PinToggle` reste tel quel (orange ambre actif), juste à droite, espacement `gap-1.5`.
+   - Tooltip `Attribuer` repositionné `side="bottom"` (la gauche est désormais hors carte).
+   - Badge « à réviser » et étoiles IA déplacés de `top-1.5 left-1.5` → `bottom-1.5 right-1.5`. Tooltip `side="top"` conservé.
 
-Une seule direction, sobre et inspirante, qui sépare clairement les 3 fonctions sans alourdir la carte :
+2. **`src/components/community/tags/MarcheurSpeciesTagDots.tsx`**
+   - Envelopper le `trigger` dans un `<Tooltip>` (`@/components/ui/tooltip`) avec `TooltipContent side="left"` → texte « Mes tags ».
+   - Ne pas toucher au comportement Popover ni à la position `overlay top-1.5 right-1.5`.
 
-1. **Disposition en arc vertical** plutôt qu'en rangée serrée :
-   - `Attribuer` en haut-droite,
-   - `Épingler` légèrement en dessous, décalé vers l'intérieur,
-   - badge IA / "à réviser" reste en haut-gauche (déjà séparé).
-   - Espacement `gap-2.5` minimum, chaque bouton dans son propre halo.
+### Hors-scope
+- Pas de changement de logique (attribution, épinglage, tags, scoring IA).
+- Pas de touche aux autres usages de `CuratedSpeciesCard` hors visuel.
+- Pas de modification de `PinToggle` ni du Popover des tags.
 
-2. **Pastilles "verre dépoli"** unifiées :
-   - Fond `bg-background/40 backdrop-blur-md`, bord `border-white/20`, ombre douce.
-   - Taille `h-8 w-8` (au lieu de `p-1.5` mélangé), icône `w-4 h-4` centrée.
-   - Couleur d'état : neutre au repos, accent ambre seulement quand actif (pin posé).
-
-3. **Apparition au survol** sur desktop, **persistante en tactile** :
-   - Au repos, opacité `0.55` ; au `group-hover` ou focus, opacité `1` + léger `translate-x-0` depuis `translate-x-1`.
-   - Transition `duration-300 ease-out`, donne une respiration "constellation qui s'allume".
-
-4. **Tooltips déjà en place** conservés, mais positionnés `side="left"` pour ne pas masquer la photo voisine.
-
-5. **Zone de sécurité** : les actions sont regroupées dans un conteneur `top-2 right-2` avec `pointer-events-auto`, le reste de l'image reste cliquable pour ouvrir le détail.
-
-## Hors-scope
-
-- Pas de changement de logique (attribution, pin, IA inchangés).
-- Pas de modification de `PinToggle` ni du dialog d'attribution — seules les classes du wrapper et le style des deux boutons sont ajustés.
-- Pas de toucher aux vignettes hors Œil.
-
-## Vérification
-
-Recharger `/marches-du-vivant/mon-espace/exploration/.../` › Apprendre › L'Œil :
-- En survol d'une vignette, les 3 marqueurs s'éclairent en constellation, bien séparés.
-- En tactile, les actions restent visibles mais discrètes.
-- L'épinglage actif conserve l'accent ambre lisible.
+### Vérification
+Recharger Apprendre › L'Œil :
+- Coin haut-gauche : `Attribuer` (vert au hover) puis `Épingler` (orange si actif), bien séparés.
+- Coin haut-droite : la pastille tags ouvre un tooltip « Mes tags » au survol avant clic.
+- Coin bas-droite : badge « à réviser » ou étoiles, lisible sans concurrencer les actions.
+- Aucun chevauchement avec la pill « N obs. » en bas-gauche.
