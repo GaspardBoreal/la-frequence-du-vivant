@@ -26,17 +26,29 @@ interface RawExplorationSpecies {
   imageUrl: string | null;
 }
 
+const normName = (s: string | null | undefined): string =>
+  (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const toMediumInat = (url: string): string =>
+  url ? url.replace('/square.', '/medium.').replace('/square.jpg', '/medium.jpg') : url;
+
 /**
  * Aggregates all species observed across the marche_events of an exploration,
  * deduplicated by scientific name (case-insensitive).
  *
- * Each species is enriched with `displayName` / `commonNameFr` so all
- * downstream consumers (cards, modals, exports) get the French name resolved
- * once at the source — same strategy as the Bioacoustique view.
+ * Priorité photo vignette (cohérent avec useSpeciesMarcheurPhotos) :
+ *  1. Upload direct marcheur (marcheur_observations.photo_url) — plus récent
+ *  2. Photo iNat dont observerName matche un marcheur éditorial — plus récente
+ *  3. 1re photo du snapshot (vraie observation dans le rayon de l'event)
+ *  4. null → fallback iNat live côté composant
  */
 export const useExplorationSpeciesPool = (explorationId: string | null | undefined) => {
   const rawQuery = useQuery({
-    queryKey: ['exploration-species-pool-raw', explorationId, 'with-marcheur-obs'],
+    queryKey: ['exploration-species-pool-raw', explorationId, 'v3-field-photo-priority'],
     queryFn: async (): Promise<RawExplorationSpecies[]> => {
       if (!explorationId) return [];
 
@@ -50,25 +62,48 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
 
       const { data: snaps, error: snapsErr } = await supabase
         .from('biodiversity_snapshots')
-        .select('species_data')
+        .select('marche_id, snapshot_date, species_data')
         .in('marche_id', marcheIds);
       if (snapsErr) throw snapsErr;
 
+      // Garder seulement le snapshot le plus récent par marche
+      // (parité avec useSpeciesMarcheurPhotos).
+      const latestByMarche = new Map<string, any>();
+      (snaps || []).forEach((s: any) => {
+        const ex = latestByMarche.get(s.marche_id);
+        if (!ex || new Date(s.snapshot_date) > new Date(ex.snapshot_date)) {
+          latestByMarche.set(s.marche_id, s);
+        }
+      });
+
+      // Marcheurs éditoriaux de l'exploration → noms normalisés (NFD)
+      const { data: crew } = await supabase
+        .from('exploration_marcheurs')
+        .select('prenom, nom')
+        .eq('exploration_id', explorationId);
+      const crewNameSet = new Set<string>();
+      (crew || []).forEach((c: any) => {
+        const full = normName(`${c.prenom || ''} ${c.nom || ''}`);
+        if (full) crewNameSet.add(full);
+      });
+
+      // Index : photos sourcées du snapshot
+      const viaMarcheurInat = new Map<string, { url: string; date: string }>();
+      const fromSnapshot = new Map<string, string>();
 
       const map = new Map<string, RawExplorationSpecies>();
-      (snaps || []).forEach((s: any) => {
+
+      Array.from(latestByMarche.values()).forEach((s: any) => {
         const arr: any[] = Array.isArray(s.species_data) ? s.species_data : [];
         arr.forEach(sp => {
           const sci = (sp.scientificName || sp.scientific_name || '').toString().trim();
           const com = (sp.commonName || sp.common_name || sp.vernacularName || '').toString().trim();
           const key = (sci || com).toLowerCase();
           if (!key) return;
+
           const existing = map.get(key);
           if (existing) {
             existing.count += 1;
-            if (!existing.imageUrl && (sp.imageUrl || sp.image_url)) {
-              existing.imageUrl = sp.imageUrl || sp.image_url;
-            }
           } else {
             map.set(key, {
               key: sci || com,
@@ -76,32 +111,53 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
               commonName: com || null,
               group: sp.group || sp.kingdom || sp.taxonGroup || null,
               count: 1,
-              imageUrl: sp.imageUrl || sp.image_url || null,
+              imageUrl: null, // résolu en fin de pipeline
             });
+          }
+
+          // Collecte photos snapshot + attributions
+          const photos: string[] = Array.isArray(sp.photos) ? sp.photos : [];
+          const attrs: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+
+          // 1re photo snapshot (toujours dans le rayon)
+          if (photos[0] && !fromSnapshot.has(key)) {
+            fromSnapshot.set(key, toMediumInat(photos[0]));
+          }
+
+          // Match observerName ↔ marcheur éditorial
+          photos.forEach((rawUrl, i) => {
+            if (!rawUrl) return;
+            const attr = attrs[i];
+            const observer = normName(attr?.observerName);
+            if (observer && crewNameSet.has(observer)) {
+              const d = attr?.date || s.snapshot_date || '';
+              const ex = viaMarcheurInat.get(key);
+              if (!ex || d > ex.date) {
+                viaMarcheurInat.set(key, { url: toMediumInat(rawUrl), date: d });
+              }
+            }
+          });
+
+          // Fallback : imageUrl explicite dans species_data si pas de photos[]
+          if (!photos[0] && !fromSnapshot.has(key) && (sp.imageUrl || sp.image_url)) {
+            fromSnapshot.set(key, sp.imageUrl || sp.image_url);
           }
         });
       });
 
-      // ── Fusion citoyenne : marcheur_observations ∪ snapshots ─────────────
-      // Aligne le pool sur la même logique que useExplorationBiodiversitySummary
-      // et le RPC chatbot (get_admin_entity_context) → cohérence stricte du
-      // décompte affiché ailleurs sur la fiche.
+      // ── Marcheur observations (upload direct) ───────────────────────────
       const { data: marcheurObs } = await supabase
         .from('marcheur_observations')
         .select('species_scientific_name, photo_url, observation_date')
         .in('marche_id', marcheIds);
 
-      // Indexer la photo marcheur la PLUS RÉCENTE par espèce (sci lower).
-      // Règle métier : la photo terrain prime toujours sur l'image iNat du
-      // snapshot ; à défaut on garde l'image iNat ; à défaut, fallback live.
-      const latestPhotoBySci = new Map<string, { url: string; date: string }>();
+      const directMarcheur = new Map<string, { url: string; date: string }>();
 
       (marcheurObs || []).forEach((obs: any) => {
         const sci = (obs.species_scientific_name || '').toString().trim();
         if (!sci) return;
         const key = sci.toLowerCase();
 
-        // Mise à jour du compteur + création d'entrée si nécessaire
         let found: RawExplorationSpecies | undefined;
         for (const entry of map.values()) {
           if ((entry.scientificName || '').toLowerCase() === key) {
@@ -118,36 +174,32 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
             commonName: null,
             group: null,
             count: 1,
-            imageUrl: null, // sera renseigné juste après si photo marcheur
+            imageUrl: null,
           });
         }
 
-        // Indexer la photo terrain la plus récente
         if (obs.photo_url) {
           const d = obs.observation_date || '';
-          const ex = latestPhotoBySci.get(key);
+          const ex = directMarcheur.get(key);
           if (!ex || d > ex.date) {
-            latestPhotoBySci.set(key, { url: obs.photo_url, date: d });
+            directMarcheur.set(key, { url: obs.photo_url, date: d });
           }
         }
       });
 
-      // Override : la photo marcheur la plus récente prime sur l'image iNat
+      // ── Résolution finale de imageUrl selon les 4 priorités ────────────
       for (const entry of map.values()) {
         const k = (entry.scientificName || '').toLowerCase();
-        const fieldPhoto = latestPhotoBySci.get(k);
-        if (fieldPhoto) {
-          entry.imageUrl = fieldPhoto.url;
-        }
+        const p1 = directMarcheur.get(k);
+        if (p1) { entry.imageUrl = p1.url; continue; }
+        const p2 = viaMarcheurInat.get(k);
+        if (p2) { entry.imageUrl = p2.url; continue; }
+        const p3 = fromSnapshot.get(k);
+        if (p3) { entry.imageUrl = p3; continue; }
+        entry.imageUrl = null;
       }
 
-      // ⚠️ Pas de fusion taxonomique ici : la liste doit refléter strictement
-      // l'union canonique `snapshots ∪ marcheur_observations` pour rester
-      // cohérente avec le RPC chatbot, la Synthèse et l'onglet Biodiversité
-      // (sinon le compteur affiché diverge du référentiel métier).
       return Array.from(map.values()).sort((a, b) => b.count - a.count);
-
-
     },
     enabled: !!explorationId,
     staleTime: 5 * 60 * 1000,
