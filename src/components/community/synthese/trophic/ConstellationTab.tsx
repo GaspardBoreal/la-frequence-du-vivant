@@ -1,15 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import {
   TROPHIC_LEVELS,
   DECOMPOSER_META,
   getLevelMeta,
-  probablePreyGroups,
   type TrophicGroup,
 } from '@/lib/trophicClassification';
 import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
 import { DefaultPanel, LevelPanel, SelectedStarPanel, type TrophicSpeciesPoolEntry } from './_panels';
+import { useTrophicBeams } from './useTrophicBeams';
+import { TrophicBeamOverlay, type Beam } from './TrophicBeamOverlay';
 
 interface Props {
   chain: TrophicChainResult;
