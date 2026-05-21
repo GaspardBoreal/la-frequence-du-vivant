@@ -248,22 +248,15 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             </text>
           ))}
 
-          {/* edges (only when selected) */}
-          <AnimatePresence>
-            {selectedEdges.map((e, i) => (
-              <motion.line
-                key={`edge-${i}`}
-                x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
-                stroke="hsl(var(--accent))"
-                strokeWidth={1.2}
-                strokeDasharray="3 4"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 0.65 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-              />
-            ))}
-          </AnimatePresence>
+          <TrophicBeamEdges
+            show={!!selected}
+            activeBeam={activeBeam}
+            preyEdges={preyEdges}
+            predatorEdges={predatorEdges}
+            recyclerEdges={recyclerEdges}
+            curved={false}
+          />
+
 
           {/* stars */}
           {allStars.map((s, i) => {
