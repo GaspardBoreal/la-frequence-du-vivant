@@ -90,6 +90,15 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
     [positioned],
   );
 
+  // Effective selection = user click ?? incoming highlight (focal species from modal)
+  const highlightedStar = useMemo<PositionedStar | null>(
+    () => highlightScientificName
+      ? allStars.find((s) => s.scientificName === highlightScientificName) ?? null
+      : null,
+    [highlightScientificName, allStars],
+  );
+  const effectiveSelected = selected ?? highlightedStar;
+
   // Ghost target = top of the ring (angle -π/2) for empty levels
   const ghostTargetFor = useCallback(
     (g: TrophicGroup) => ({ x: CENTER, y: CENTER - RADII[g] }),
@@ -101,16 +110,15 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
   );
 
   const { preyEdges, predatorEdges, recyclerEdges, beamCounts, connectedNames } = useTrophicBeams(
-    selected,
+    effectiveSelected,
     positioned,
     ghostTargetFor,
     decomposerGhost,
   );
 
   const isStarMuted = (s: PositionedStar) => {
-    if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
-    if (selected) return !connectedNames.has(s.scientificName);
+    if (effectiveSelected) return !connectedNames.has(s.scientificName);
     return false;
   };
 
