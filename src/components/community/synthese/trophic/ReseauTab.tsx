@@ -5,6 +5,7 @@ import {
   TROPHIC_LEVELS,
   DECOMPOSER_META,
   getLevelMeta,
+  probablePreyGroups,
   type TrophicGroup,
 } from '@/lib/trophicClassification';
 import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
