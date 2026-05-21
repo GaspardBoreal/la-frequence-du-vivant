@@ -190,7 +190,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
               </motion.g>
             );
           })}
-        </svg>
+        </ZoomableSvgStage>
       </div>
     );
   }
