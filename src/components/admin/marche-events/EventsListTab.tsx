@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy } from 'lucide-react';
+import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink } from 'lucide-react';
 import DuplicateEventDialog from './DuplicateEventDialog';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -21,6 +21,9 @@ import {
   useParticipationCountsForEvents,
   type EventsFilters,
 } from '@/hooks/useMarcheEventsQuery';
+import { useEventsPublicVisibility, buildPublicEventUrl } from '@/hooks/usePublicEvent';
+
+type PublicFilter = 'all' | 'public' | 'private';
 
 interface Props {
   filters: EventsFilters;
@@ -33,12 +36,22 @@ interface Props {
 const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange, onPageSizeChange }) => {
   const navigate = useNavigate();
   const { data, isLoading, isFetching } = useMarcheEventsPaginated({ ...filters, page, pageSize });
-  const rows = data?.rows ?? [];
+  const allRows = data?.rows ?? [];
   const total = data?.total ?? 0;
-  const { data: counts } = useParticipationCountsForEvents(rows.map((r) => r.id));
+  const { data: counts } = useParticipationCountsForEvents(allRows.map((r) => r.id));
+  const { data: visibility } = useEventsPublicVisibility(allRows.map((r) => r.id));
+  const [publicFilter, setPublicFilter] = useState<PublicFilter>('all');
+  const rows = useMemo(() => {
+    if (publicFilter === 'all') return allRows;
+    return allRows.filter((r) => {
+      const isPub = !!visibility?.[r.id]?.is_public;
+      return publicFilter === 'public' ? isPub : !isPub;
+    });
+  }, [allRows, publicFilter, visibility]);
   const [duplicateSource, setDuplicateSource] = useState<
     { id: string; title: string; date_marche: string } | null
   >(null);
+
 
   return (
     <div>
