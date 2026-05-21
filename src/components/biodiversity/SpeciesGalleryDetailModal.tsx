@@ -265,17 +265,10 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
           side={isMobile ? 'bottom' : 'right'}
           className={
             isMobile
-              ? 'bg-slate-900/98 backdrop-blur-xl border-white/10 text-white p-0 gap-0 h-[95vh] w-full !max-w-full rounded-t-2xl flex flex-col overflow-hidden'
-              : 'bg-slate-900/98 backdrop-blur-xl border-white/10 text-white p-0 gap-0 w-full sm:!max-w-[620px] h-full flex flex-col overflow-hidden'
+              ? 'bg-slate-900/98 backdrop-blur-xl border-white/10 text-white p-0 gap-0 h-[95vh] w-full !max-w-full rounded-t-2xl flex flex-col overflow-hidden [&>button]:top-3 [&>button]:right-3 [&>button]:z-20 [&>button]:h-10 [&>button]:w-10 [&>button]:rounded-full [&>button]:border [&>button]:border-white/15 [&>button]:bg-black/55 [&>button]:text-white [&>button]:opacity-100 [&>button]:shadow-lg [&>button]:backdrop-blur-md hover:[&>button]:bg-black/70 focus-visible:[&>button]:ring-2 focus-visible:[&>button]:ring-white/40 [&>button_svg]:h-4.5 [&>button_svg]:w-4.5 [&>button_svg]:text-white'
+              : 'bg-slate-900/98 backdrop-blur-xl border-white/10 text-white p-0 gap-0 w-full sm:!max-w-[620px] h-full flex flex-col overflow-hidden [&>button]:top-3 [&>button]:right-3 [&>button]:z-20 [&>button]:h-10 [&>button]:w-10 [&>button]:rounded-full [&>button]:border [&>button]:border-white/15 [&>button]:bg-black/55 [&>button]:text-white [&>button]:opacity-100 [&>button]:shadow-lg [&>button]:backdrop-blur-md hover:[&>button]:bg-black/70 focus-visible:[&>button]:ring-2 focus-visible:[&>button]:ring-white/40 [&>button_svg]:h-4.5 [&>button_svg]:w-4.5 [&>button_svg]:text-white'
           }
         >
-          {/* Halo discret derrière la croix de fermeture — élargit la cible visuelle et tactile */}
-          <div
-            aria-hidden="true"
-            className="absolute top-1 right-1 w-10 h-10 rounded-full bg-black/45 ring-1 ring-white/15 backdrop-blur-md shadow-md pointer-events-none z-0"
-          />
-
-
           {/* Accessible title (hidden) */}
           <VisuallyHidden.Root asChild>
             <SheetTitle>Détails de l'espèce {species.scientificName}</SheetTitle>
