@@ -222,7 +222,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
             'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={selected ? { x: selected.x, y: selected.y } : null}>
+        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={effectiveSelected ? { x: effectiveSelected.x, y: effectiveSelected.y } : null}>
           <defs>
             <radialGradient id="spirale-core" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="hsl(var(--trophic-l1))" stopOpacity="0.55" />
@@ -277,7 +277,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
           ))}
 
           <TrophicBeamEdges
-            show={!!selected}
+            show={!!effectiveSelected}
             activeBeam={activeBeam}
             preyEdges={preyEdges}
             predatorEdges={predatorEdges}
@@ -291,7 +291,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
             const meta = getLevelMeta(s.group);
             if (!meta) return null;
             const muted = isStarMuted(s);
-            const isSelected = selected?.scientificName === s.scientificName;
+            const isSelected = effectiveSelected?.scientificName === s.scientificName;
             const isHighlighted = highlightScientificName === s.scientificName;
             return (
               <motion.g
@@ -399,9 +399,9 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
           </text>
         </ZoomableSvgStage>
 
-        {!compact && selected && (
+        {!compact && effectiveSelected && (
           <TrophicBeamOverlay
-            selected={selected}
+            selected={effectiveSelected}
             counts={beamCounts}
             activeBeam={activeBeam}
             onToggleBeam={(b) => setActiveBeam(activeBeam === b ? null : b)}
