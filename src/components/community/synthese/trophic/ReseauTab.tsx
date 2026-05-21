@@ -17,6 +17,7 @@ interface Props {
   explorationId?: string;
   highlightScientificName?: string;
   compact?: boolean;
+  onSpeciesSelect?: (star: TrophicStar | null) => void;
 }
 
 const W = 720;
