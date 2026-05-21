@@ -1,69 +1,83 @@
-# Diagnostic — où sont passées les 5 espèces ?
+# Vue « Place trophique » plein écran — refonte
 
-## Ce que disent les données
+## Objectif
+Remplacer le `Sheet` bottom 92vh par un vrai modal plein écran centré, ajouter une sidebar droite rétractable pour accueillir les futures fonctionnalités (détails espèce, qui mange / mangé par, chatbot), et harmoniser le clic Constellation avec Spirale/Réseau.
 
-Exploration `20dd3be8…` (5 marches). Comptage **aujourd'hui** :
+## Périmètre fichier
+- `src/components/biodiversity/species-modal/SpeciesTrophicPosition.tsx` — refonte du bloc « Fullscreen overlay »
+- 3 nouveaux composants dans `src/components/biodiversity/species-modal/trophic-fullscreen/`
+  - `TrophicFullscreenModal.tsx` — shell modal (Dialog) + layout
+  - `TrophicSidebar.tsx` — sidebar droite rétractable avec onglets
+  - `TrophicSpeciesDetailPanel.tsx` — fiche de l'espèce sélectionnée (placeholder extensible)
 
-| Source | Espèces uniques |
-|---|---|
-| Snapshots iNat (∪ des 5 marches) | **77** |
-| Observations marcheurs | **75** |
-| **Union (= ce que l'UI affiche)** | **89** |
+## Architecture cible
 
-Tu te souviens de **94** → il manque **5 espèces**.
+```text
++----------------------------------------------------------+
+| Header : PLACE TROPHIQUE — Étourneau sansonnet [L3] [X] |
++--------------------------------------------+-------------+
+|  Tabs : Constellation | Spirale | Réseau   | ▶ (toggle) |
++--------------------------------------------+-------------+
+|                                            |  Sidebar    |
+|         Canvas trophique                   |  (320 px)   |
+|         (vue active, plein espace)         |  Onglets :  |
+|                                            |  • Détails  |
+|                                            |  • Mange    |
+|                                            |  • Mangé par|
+|                                            |  • Chat     |
++--------------------------------------------+-------------+
+```
 
-## Ce qui s'est passé
+- Sidebar rétractable via bouton flèche, état persistant en `useState` (par défaut ouverte sur ≥1280 px, fermée en dessous).
+- Canvas occupe `flex-1`, sidebar `w-[320px]` quand ouverte, `w-0` (ou bouton flottant) quand fermée — transition `300ms`.
+- Au-dessous de `md`, la sidebar bascule en drawer bas (Sheet) pour préserver l'espace canvas mobile.
 
-1. **Les snapshots ont été ré-écrasés aujourd'hui** entre 15:14 et 15:15 (4 marches sur 5). La 5ᵉ marche (`f94e5c2f…`) date du 19/05 07:30 — elle n'a **pas** été resynchronisée dans la même passe → désynchro partielle.
-2. La fonction `sync-biodiversity-snapshot` fait un **`DELETE` + `INSERT`** brut (lignes 69-94) : aucune version conservée. **L'ancien snapshot à 94 espèces est définitivement perdu**, on ne peut pas lister nominalement les 5 disparues.
-3. Pourquoi iNat renvoie moins d'espèces qu'avant : l'API iNaturalist est volatile (changement de rayon effectif, repli d'observations sous une espèce parente après identification communautaire, observations passées en "captive/cultivated", `quality_grade` recalculé, pagination tronquée si timeout). Une simple résync peut faire fluctuer le total de ±5 à ±15 espèces sur une zone moyenne.
-4. Aucune ligne dans `data_collection_logs` pour la passe du 19/05 15:14 → la resync a transité par `snapshot-sync-on-view` (déclenchement implicite à la visite) **sans logging**, donc invisible côté admin.
+## 1. Modal plein écran
+- Remplacer `Sheet side="bottom" h-[92vh]` par un `Dialog` (shadcn) avec `DialogContent` custom :
+  - `fixed inset-0 w-screen h-screen max-w-none rounded-none p-0`
+  - Fond `bg-background/98 backdrop-blur-xl`
+  - Animation entrée : `animate-scale-in` + `animate-fade-in` (combiné `enter`)
+- Conserver `VisuallyHidden` `DialogTitle` pour l'accessibilité.
+- Fermeture : croix actuelle (déjà bien stylée) en haut à droite + touche Échap (gérée par Dialog).
 
-## Conclusion : 2 causes structurelles
+## 2. Clic espèce Constellation (drawer espèce)
+Aujourd'hui les 3 vues utilisent un `selected` interne qui affiche un panneau **sous** le canvas — invisible quand le canvas remplit l'écran.
 
-- **A. Pas d'historisation** des snapshots → toute régression iNat est silencieuse et irréversible.
-- **B. Resync "on-view" non journalisée + non atomique** sur les 5 marches → on peut avoir un état mixte (4 marches v2 + 1 marche v1).
+Solution :
+- Ajouter une prop optionnelle `onSpeciesSelect?: (s) => void` aux 3 tabs (`ConstellationTab`, `SpiraleTab`, `ReseauTab`).
+- Dans le modal plein écran, intercepter la sélection et la pousser dans la sidebar (onglet **Détails** activé automatiquement, focus visuel sur l'espèce).
+- Conserver le comportement actuel (panneau interne) quand `onSpeciesSelect` n'est pas fourni → aucune régression dans la vue compacte.
+- Effet visuel commun aux 3 vues : halo pulsant sur l'espèce sélectionnée (déjà présent pour `highlightScientificName`, on étend au `selected`).
 
----
+## 3. Sidebar — contenu initial
+Onglets (Tabs shadcn) :
+1. **Détails** — fiche compacte (nom, niveau trophique chip, rationale, mini-carrousel photo si dispo). Réutilise `<SpeciesName />` et tokens trophiques.
+2. **Mange** — placeholder « Bientôt » + liste dérivée de `probablePreyGroups` (déjà dans `trophicClassification.ts`) filtrée sur `speciesPool`.
+3. **Mangé par** — symétrique : espèces du pool dont la proie probable inclut l'espèce.
+4. **Chat** — placeholder avec bouton « Ouvrir le chat » qui dispatche le `CustomEvent` existant (cf. mémoire `species-card-carousel-and-chat-logic`) avec contexte trophique.
 
-# Plan de remédiation
+Le panneau « Pourquoi ce niveau ? » (actuellement en bas du scroll) migre dans l'onglet **Détails**.
 
-## 1. Historiser les snapshots (cœur du fix)
+## 4. Effets visuels (niveau 3 — équilibré)
+- Transition d'ouverture : fade + scale 0.96 → 1 (250 ms)
+- Bascule entre vues : `AnimatePresence` existant, conservé
+- Sidebar : slide-in-right / slide-out-right au toggle
+- Halo pulsant sur l'espèce sélectionnée dans Constellation (existant pour highlight, étendu)
+- Pas de particules ni parallax — on reste dans la Sobriété Informationnelle
 
-Ajouter `biodiversity_snapshots_history` (même schéma + `archived_at`, `replaced_by_snapshot_id`, `delta_species jsonb`). Modifier `sync-biodiversity-snapshot` :
-- avant `DELETE`, lire l'ancien snapshot, l'archiver dans la table d'historique
-- calculer `delta_species` = `{ added: [...], removed: [...] }` (diff par `scientificName` normalisé)
-- conserver les N=20 dernières versions par marche (purge soft)
+## 5. Responsive
+- ≥1280 px : sidebar ouverte par défaut
+- 768–1279 px : sidebar fermée par défaut, bouton flottant pour l'ouvrir
+- <768 px : sidebar en Sheet bottom (l'expérience mobile reste 1 vue à la fois)
 
-Bénéfice : à tout moment on peut répondre "quelles espèces ont disparu entre le 17/05 et le 19/05 ?".
+## Détails techniques
+- État `selectedSpecies` remonte de tab → modal (lift state up via prop `onSpeciesSelect`).
+- État `sidebarOpen` local au modal, initialisé via `useMediaQuery('(min-width: 1280px)')` (hook simple inline).
+- Aucun changement de logique trophique (`useTrophicChain`, `trophicClassification.ts`) — uniquement présentation.
+- Composants nouveaux pèsent ~120 lignes chacun, on évite de gonfler `SpeciesTrophicPosition.tsx`.
+- Z-index : modal `z-50`, sidebar interne au modal (pas de conflit).
 
-## 2. Garde-fou anti-régression
-
-Dans la même edge function, si `nouveau_total < ancien_total * 0.85` (perte > 15 %) :
-- **ne pas écraser** ; insérer le nouveau snapshot avec flag `status='quarantine'`
-- l'UI continue de servir l'ancien snapshot `status='active'`
-- créer une entrée dans `data_collection_logs` avec `status='quarantine'` + `summary_stats.regression_pct` pour qu'un admin valide manuellement
-
-## 3. Journaliser la resync "on-view"
-
-`snapshot-sync-on-view` doit écrire dans `data_collection_logs` (mode `on-view`) → traçabilité complète.
-
-## 4. Atomicité par exploration
-
-Quand la resync est déclenchée pour une exploration, la lancer en **batch sur les 5 marches** au lieu d'une à une au fil des vues, pour éviter l'état mixte observé (4 marches v2 + 1 marche v1).
-
-## 5. Outil admin "Diff biodiversité"
-
-Petit panneau dans la fiche exploration admin : timeline des versions de snapshots avec, pour chaque resync, la liste `+espèces ajoutées` / `-espèces retirées` (lue depuis `delta_species`). Cela répond directement à "quelles espèces ont disparu ?" la prochaine fois.
-
-## Hors scope
-
-- Pas de modification de la logique de comptage (union snapshots ∪ marcheur_observations reste la référence).
-- Pas de retraitement rétroactif : les 5 espèces du 17/05 sont perdues (aucune trace en base). On peut tenter une recollecte iNat ciblée, mais elle ne rendra que ce qu'iNat veut bien servir aujourd'hui.
-
-## Fichiers touchés
-
-- migration : `biodiversity_snapshots_history` + index sur `(marche_id, archived_at desc)`
-- edge function : `supabase/functions/sync-biodiversity-snapshot/index.ts` (archivage + garde-fou)
-- edge function : `supabase/functions/snapshot-sync-on-view` (logging + batch exploration)
-- UI admin : nouveau composant `BiodiversityHistoryTimeline.tsx` dans la fiche exploration
+## Hors-scope (itérations suivantes)
+- Implémentation réelle du chatbot trophique (placeholder cliquable pour démarrer)
+- Données enrichies « régime alimentaire » au-delà de `probablePreyGroups` (nécessiterait une KB séparée)
+- Persistance de la préférence sidebar ouverte/fermée (localStorage)
