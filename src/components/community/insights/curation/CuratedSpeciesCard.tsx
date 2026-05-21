@@ -134,7 +134,7 @@ const CuratedSpeciesCard: React.FC<Props> = ({
 
         {isCurator && (
           <div
-            className="absolute top-1.5 right-1.5 flex items-center gap-1"
+            className="absolute top-2 right-2 flex flex-col items-end gap-2.5 pointer-events-auto opacity-60 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 focus-within:opacity-100 focus-within:translate-x-0 transition-all duration-300 ease-out"
             onClick={(e) => e.stopPropagation()}
           >
             {species.scientificName && (
@@ -143,10 +143,10 @@ const CuratedSpeciesCard: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setAttributeOpen(true); }}
-                    className="p-1.5 rounded-md bg-background/90 hover:bg-primary hover:text-primary-foreground border border-border shadow-sm transition"
+                    className="h-8 w-8 flex items-center justify-center rounded-full bg-background/40 backdrop-blur-md border border-white/20 text-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:border-primary/40 transition"
                     aria-label="Attribuer à un marcheur"
                   >
-                    <UserPlus className="w-3.5 h-3.5" />
+                    <UserPlus className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -154,14 +154,17 @@ const CuratedSpeciesCard: React.FC<Props> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-            <PinToggle
-              explorationId={explorationId}
-              sense="oeil"
-              entityType="species"
-              entityId={species.scientificName || species.key}
-              existing={curation}
-              category={curation?.category}
-            />
+            <div className="-mr-1">
+              <PinToggle
+                explorationId={explorationId}
+                sense="oeil"
+                entityType="species"
+                entityId={species.scientificName || species.key}
+                existing={curation}
+                category={curation?.category}
+                size="md"
+              />
+            </div>
           </div>
         )}
 
