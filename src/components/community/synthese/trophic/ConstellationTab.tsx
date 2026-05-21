@@ -339,7 +339,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
               </g>
             );
           })()}
-        </svg>
+        </ZoomableSvgStage>
 
         {selected && (
           <TrophicBeamOverlay
