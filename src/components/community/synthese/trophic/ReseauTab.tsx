@@ -398,43 +398,14 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
         </svg>
 
         {!compact && selected && (
-          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center gap-2">
-            <div className="text-[11px] px-2.5 py-1.5 rounded-full bg-background/85 backdrop-blur border border-border text-foreground/90 leading-tight">
-              <span className="font-semibold">{selected.commonName || selected.scientificName}</span>
-              <span className="text-muted-foreground"> · {beamCounts.eat + beamCounts.eaten + beamCounts.recycle} liens probables</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setActiveBeam(activeBeam === 'eaten' ? null : 'eaten')}
-              className={`text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-full border backdrop-blur transition-colors ${
-                activeBeam === 'eaten' ? 'bg-foreground text-background border-foreground' : 'bg-background/80 border-border hover:bg-background'
-              }`}
-              title="Espèces qui mangent cette espèce"
-            >
-              <ArrowUp className="w-3 h-3" /> {beamCounts.eaten} mangeurs
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveBeam(activeBeam === 'eat' ? null : 'eat')}
-              className={`text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-full border backdrop-blur transition-colors ${
-                activeBeam === 'eat' ? 'bg-foreground text-background border-foreground' : 'bg-background/80 border-border hover:bg-background'
-              }`}
-              title="Espèces dont cette espèce se nourrit"
-            >
-              <ArrowDown className="w-3 h-3" /> {beamCounts.eat} proies
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveBeam(activeBeam === 'recycle' ? null : 'recycle')}
-              className={`text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-full border backdrop-blur transition-colors ${
-                activeBeam === 'recycle' ? 'bg-foreground text-background border-foreground' : 'bg-background/80 border-border hover:bg-background'
-              }`}
-              title="Décomposeurs qui recyclent cette espèce"
-            >
-              <RefreshCcw className="w-3 h-3" /> {beamCounts.recycle} recycleurs
-            </button>
-          </div>
+          <TrophicBeamOverlay
+            selected={selected}
+            counts={beamCounts}
+            activeBeam={activeBeam}
+            onToggleBeam={(b) => setActiveBeam(activeBeam === b ? null : b)}
+          />
         )}
+
 
         {!compact && !selected && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
