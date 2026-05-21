@@ -135,7 +135,7 @@ export const SpeciesTrophicPosition: React.FC<Props> = ({ scientificName, common
       <Sheet open={expanded} onOpenChange={setExpanded}>
         <SheetContent
           side="bottom"
-          className="h-[92vh] p-0 overflow-hidden bg-background border-white/10"
+          className="h-[92vh] p-0 overflow-hidden bg-background border-white/10 [&>button.absolute]:hidden"
         >
           <VisuallyHidden.Root>
             <SheetTitle>Position trophique de {commonName || scientificName}</SheetTitle>
