@@ -1,101 +1,25 @@
-# Zoom dynamique sur les vues Réseau · Constellation · Spirale
+## Problème
 
-## Objectif
+Dans Synthèse → Taxons observés, quand on clique sur une espèce, la vue zoome automatiquement dessus. Or les contrôles `+ / % / − / Agrandir` sont empilés verticalement au centre-droit (`top-1/2 -translate-y-1/2 right-2`) et viennent recouvrir l'espèce zoomée — exactement ce que montre la copie d'écran (le `+ 100%` masque la zone centrale droite).
 
-Permettre au marcheur de **zoomer (+ / −), de se déplacer (pan) et de réinitialiser** la vue sur chacune des trois visualisations trophiques, sans perdre la lisibilité des informations (labels, halos, arcs, overlays).
+## Solution
 
-## Principe directeur — un seul moteur de zoom mutualisé
+Séparer le bloc unique en **deux groupes**, ancrés en haut, hors de la zone d'intérêt :
 
-Les trois vues partagent déjà la même structure : un `<svg viewBox="0 0 W H">` rendu dans un conteneur responsive. On centralise donc la logique zoom/pan dans **un seul composant réutilisable**, plutôt que de la dupliquer trois fois.
+- **Haut-gauche** (`top-2 left-2`) : bouton **Agrandir / Vue d'ensemble** (`Maximize2`) + indicateur **%** cliquable (reset). Visible uniquement quand `zoom > 1.05`, sinon discret/absent pour ne pas polluer la vue par défaut.
+- **Haut-droite** (`top-2 right-2`) : contrôles **+ / −** (zoom avant / arrière), groupés horizontalement.
 
-```text
-┌──────────────────────────────────────────────────┐
-│  ZoomableSvgStage (wrapper)                      │
-│  ┌────────────────────────────────────────────┐  │
-│  │  <svg viewBox={dynamicViewBox}>            │  │
-│  │     … contenu existant inchangé …          │  │
-│  │  </svg>                                    │  │
-│  └────────────────────────────────────────────┘  │
-│  ┌─ overlay flottant bas-droite ─┐                │
-│  │  [ − ] [ 100% ] [ + ] [ ⟲ ]   │                │
-│  └───────────────────────────────┘                │
-└──────────────────────────────────────────────────┘
-```
+Style conservé : `bg-background/80 backdrop-blur rounded-full border border-border shadow-sm z-10`, mêmes icônes, mêmes handlers (`setZoomAt`, `reset`), mêmes états disabled.
 
-## UX — comment ça se vit
+## Fichier impacté
 
-- **Boutons +/−** en bas-droite (au-dessus du `TrophicBeamOverlay`), style cohérent (glassmorphism, tokens sémantiques). Paliers : 1× → 1.5× → 2× → 3× → 4× (max), min 1×.
-- **Indicateur central** affichant le facteur courant (ex. `150%`), cliquable pour reset.
-- **Bouton reset** (icône `Maximize2`) qui rétablit viewBox + selection focus.
-- **Molette souris** (desktop) : zoom centré sur le curseur (`wheel` + `preventDefault`).
-- **Pinch tactile** (mobile/tablette) : 2 doigts → zoom centré sur le milieu du pinch.
-- **Drag pour panner** quand `zoom > 1` (curseur `grab` / `grabbing`). En `zoom = 1`, le drag est désactivé pour ne pas gêner la sélection d'espèces (clic).
-- **Double-clic / double-tap** sur une étoile : zoom 2× centré sur elle (bonus, optionnel).
-- **Focus automatique** : quand une espèce est sélectionnée et que `zoom > 1`, la vue se recentre doucement sur le nœud (animation viewBox 400 ms).
+Un seul fichier, purement présentation :
 
-### Préservation de l'information
-
-- **Labels & halos restent lisibles** : on applique un facteur inverse aux éléments textuels (`fontSize`, `strokeWidth`) via une variable CSS `--zoom` pour qu'ils ne grossissent pas démesurément. Les arcs et étoiles, eux, grossissent normalement (c'est le but).
-- **Overlay et chips de filtre** (mangeurs/proies/recycleurs) restent **hors zoom**, ancrés au conteneur — ils ne bougent jamais.
-- **Ghost arcs** et tooltips conservent leur sémantique ; les tooltips Radix se positionnent toujours correctement car le wrapper ne casse pas le flux DOM.
-
-## Architecture technique
-
-### Nouveau fichier : `src/components/community/synthese/trophic/ZoomableSvgStage.tsx`
-
-Composant générique :
-
-```ts
-interface Props {
-  width: number;            // W ou SIZE original
-  height: number;
-  children: ReactNode;      // tout le contenu <svg>
-  className?: string;
-  selectedFocus?: { x: number; y: number } | null; // recentrage auto
-  minZoom?: number;         // défaut 1
-  maxZoom?: number;         // défaut 4
-}
-```
-
-Internes :
-- `useState` pour `{ zoom, cx, cy }` (centre du viewBox).
-- `viewBox` calculé : `cx - W/(2z)  cy - H/(2z)  W/z  H/z`, clampé aux bornes pour empêcher de sortir de la scène.
-- Handlers : `onWheel`, `onPointerDown/Move/Up` (pan), `onTouchStart/Move` (pinch via `TouchEvent.touches`).
-- Expose une **CSS var `--zoom`** sur le conteneur pour les compensations de texte/stroke.
-- Animation viewBox via `framer-motion` (`animate` sur un objet, ou `motion.svg` avec `animate` sur attributs).
-
-### Modifications minimales dans les trois Tabs
-
-Dans `ReseauTab.tsx`, `ConstellationTab.tsx`, `SpiraleTab.tsx` :
-
-1. Remplacer `<svg viewBox={...} className="w-full h-auto block">…</svg>` par
-   ```tsx
-   <ZoomableSvgStage width={W} height={H} selectedFocus={selectedPos}>
-     {/* contenu SVG existant inchangé */}
-   </ZoomableSvgStage>
-   ```
-2. Calculer `selectedPos` à partir du nœud sélectionné (les coordonnées sont déjà disponibles dans chaque vue : `nodePositions.get(selected.id)` ou équivalent).
-3. **Aucune autre logique métier ne change** : beams, overlays, sélection, ghost arcs, halo pulsant restent identiques.
-
-### Compensation des labels (1 ligne CSS par texte concerné)
-
-Sur les `<text>` et `<circle>` de label/halo, ajouter par exemple :
-```tsx
-style={{ fontSize: `calc(11px / var(--zoom, 1))` }}
-```
-Appliqué uniquement aux 2–3 sélecteurs de texte/stroke existants par vue.
-
-## Hors-scope
-
-- Pas de mini-map.
-- Pas de changement des données, du classifier, ni de la logique de beams.
-- Pas de zoom sur l'overlay UI ni sur les chips.
-- Pas de persistance du niveau de zoom entre sessions.
+- `src/components/community/synthese/trophic/ZoomableSvgStage.tsx` — remplacer le bloc `<div className="absolute top-1/2 -translate-y-1/2 right-2 ...">` par deux blocs `absolute` positionnés en haut-gauche et haut-droite. Aucune logique de zoom/pan/pinch/wheel modifiée.
 
 ## Vérification
 
-1. Onglet Synthèse → Réseau : cliquer `+` plusieurs fois → les arcs et étoiles grossissent, les labels restent lisibles, le drag fonctionne, l'overlay reste fixe.
-2. Idem Constellation et Spirale : zoom identique, comportement homogène.
-3. Sélectionner une espèce zoomée → la vue se recentre doucement sur elle.
-4. Molette + pinch testés desktop/mobile.
-5. Reset (`⟲`) revient à 100 % et viewBox d'origine.
+Sur les trois vues (Réseau, Constellation, Spirale) :
+- Au repos : seuls `+` et `−` visibles en haut-droite, rien en haut-gauche (l'indicateur % + Agrandir n'apparaissent qu'une fois zoomé).
+- Après clic sur une espèce + zoom : l'espèce reste centrée et **aucun contrôle ne la recouvre**.
+- Le bouton `%` reste cliquable pour reset, `Agrandir` ramène à 100%.
