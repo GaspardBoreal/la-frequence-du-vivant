@@ -1,90 +1,181 @@
-## Diagnostic
+# Publication publique des événements — lecture seule
 
-Dans `TrophicFullscreenModal`, l'état `selected` est stocké au niveau du modal et propagé aux trois onglets via deux props :
-- `highlightScientificName` (sert au halo + au `effectiveSelected`)
-- `onSpeciesSelect` (callback qui remonte la sélection)
+Transformer chaque marche autorisée en vitrine publique partageable : URL canonique, médias, biodiversité, témoignages, marcheurs (pseudonymisés), métriques + CTA viraux.
 
-Mais cette ligne (`TrophicFullscreenModal.tsx` L87) **écrase** le highlight dès qu'une sélection existe :
+---
 
-```ts
-highlightScientificName: selected ? undefined : scientificName,
+## 1. Modèle de données
+
+Ajouts sur `public.marche_events` :
+
+- `is_public boolean NOT NULL DEFAULT false` — toggle admin
+- `public_slug text UNIQUE` — slug SEO (généré via `unaccent` à la première activation, ex : `marche-bergerac-2026-05-21`)
+- `published_at timestamptz` — horodatage de la première mise en ligne
+- `published_by uuid` — admin qui a publié
+
+Nouvelle table `public.event_public_views` (analytics) :
+
+- `event_id`, `viewed_at timestamptz default now()`
+- `session_id text` (cookie anonyme, hash) → unicité visiteur
+- `referrer text`, `utm_source/medium/campaign text`
+- `country text` (depuis header), `user_agent_family text`
+- Index `(event_id, viewed_at)`
+
+RPC sécurisées `SECURITY DEFINER` (jamais d'accès table directe pour le public) :
+
+- `get_public_event(_slug text)` → infos événement + organisateurs
+- `get_public_event_marcheurs(_slug)` → prénom + initiale + avatar + rôle (jamais email/téléphone/nom complet)
+- `get_public_event_biodiversity(_slug)` → snapshots + observations marcheurs fusionnés
+- `get_public_event_media(_slug)` → convivialité, témoignages publiés, audio, textes
+- `get_public_event_counters(_slug)` → vues, visiteurs uniques (J/7j/total)
+- `log_public_event_view(_slug, _session, _referrer, _utm...)` → insertion analytics
+
+RLS : `is_public = true` requis pour toutes les RPC publiques. Aucune policy SELECT directe ouverte sur `marche_events`.
+
+---
+
+## 2. Routes & URLs
+
+```text
+/marches/:slug                  → page publique canonique (SEO)
+/m/:eventId                     → redirect 301 vers /marches/:slug (compat QR codes)
 ```
 
-Conséquence du parcours utilisateur :
+Layout dédié `PublicEventLayout` (mobile-first, thème Papier Crème, glassmorphism léger). Onglets internes :
 
-1. Synthèse → clic « Marronnier d'Inde » → modal ouvert avec `scientificName = Aesculus hippocastanum`, `selected = null`.
-2. Onglet **Constellation** : `highlightScientificName` est défini → l'arbre est isolé, l'overlay « Voir les liaisons » fonctionne grâce au `effectiveSelected` interne.
-3. Clic sur l'icône liaisons → l'onglet appelle `onSpeciesSelect(star)` → `selected` devient le marronnier dans le modal → `highlightScientificName` devient `undefined`.
-4. Bascule vers **Spirale** ou **Réseau** : ces onglets sont remontés à neuf (chacun a son propre `useState selected`), reçoivent `highlightScientificName = undefined` ET `selected` interne = `null`. Plus aucun nœud focal → aucun faisceau trophique calculé → vue « plate ».
+1. **Récit** — hero (titre, date, lieu, organisateurs), photo de couverture, description
+2. **Marcheurs** — grille avatars pseudonymisés + compteur rôles
+3. **Vivant** — carte des observations + grille espèces (réutilise `RichMap` + `SpeciesName`)
+4. **Convivialité** — mur photo + témoignages + audio
+5. **Empreinte** — fréquence collective + indicateurs clés
 
-C'est donc un défaut d'orchestration entre le parent (modal) et les enfants (tabs), pas un bug de rendu.
+Pas d'authentification requise. Tous les composants existants sont réutilisés en mode `readOnly`.
 
-## Solution proposée — Source de vérité unique au niveau du modal
+---
 
-Élégante, design, robuste : la **sélection courante** devient une donnée pilotée par le parent. Les onglets restent purement présentationnels pour le focus trophique, sans dupliquer l'état entre montages.
+## 3. Contrôle admin
 
-### Changements
+Dans `MarcheEventDetail` (header) :
 
-**1. `TrophicFullscreenModal.tsx`** — toujours transmettre le nom scientifique focal :
+- Switch **« Publier publiquement »** (Papier Crème, halo doré quand ON)
+- Quand ON : panneau dépliant avec URL canonique, bouton Copier, QR code téléchargeable, mini-aperçu OG
+- Bouton **« Voir la page publique »** (ouvre dans nouvel onglet)
 
-```ts
-const focusSn = selected?.scientificName ?? scientificName;
+Dans `EventsListTab` :
 
-const common = {
-  chain,
-  speciesPool,
-  highlightScientificName: focusSn,   // jamais undefined
-  compact: true as const,
-  onSpeciesSelect: (s: TrophicStar | null) => setSelected(s),
-};
-```
+- Nouveau filtre **Visibilité publique** : `Tous` (défaut) / `Publics` / `Privés`
+- Badge `🌍 Public` à côté du titre quand `is_public = true`
+- Colonne compteur de vues (sparkline 7j)
 
-Bonus UX : si l'utilisateur clique deux fois sur un autre nœud puis revient sur le marronnier, `selected` reflète la dernière sélection ; sinon on retombe sur l'espèce d'entrée. Aucune désynchronisation possible entre onglets.
+---
 
-**2. Les trois onglets (`ConstellationTab`, `SpiraleTab`, `ReseauTab`)** — ajout d'une dérivation symétrique déjà esquissée dans le plan précédent, mais cette fois fiable car `highlightScientificName` n'est plus blanchi :
+## 4. SEO & partage social
 
-```ts
-const highlightedStar = useMemo(
-  () => highlightScientificName
-    ? allStars.find(s => s.scientificName === highlightScientificName) ?? null
-    : null,
-  [highlightScientificName, allStars],
-);
-const effectiveSelected = selected ?? highlightedStar;
-```
+- `react-helmet-async` par route `/marches/:slug` : title, description, canonical, og:image, JSON-LD `Event` (date, location, organizer)
+- Image Open Graph dynamique : edge function `og-event-image` (1200×630) avec titre + lieu + date + visuel de couverture
+- Bouton **Partager** flottant : WhatsApp, Facebook, X, LinkedIn, Email, Copier le lien (avec UTM auto `utm_source=share&utm_medium={canal}`)
+- Ajout au `sitemap.xml` généré (script `predev/prebuild`) de tous les événements `is_public = true`
 
-Brancher `effectiveSelected` sur :
-- `useTrophicBeams(effectiveSelected, …)` → faisceaux mangeurs / proies / recycleurs calculés
-- `<TrophicBeamEdges show={!!effectiveSelected} … />` → arcs animés visibles dans **les trois vues**
-- `<TrophicBeamOverlay selected={effectiveSelected} …>` (mode non-compact uniquement) → chips compteurs filtrants
-- `selectedFocus` du `ZoomableSvgStage` → recentrage doux automatique
-- `isStarMuted` / halo `isSelected` → focal isolé partout
+---
 
-Le `selected` interne reste utile pour le toggle local (re-clic = désélection locale), mais ne casse plus la continuité inter-onglets puisque le parent garde la mémoire.
+## 5. Analytics & boucle virale
 
-**3. Réinitialisation cohérente** : le bouton « Réinitialiser » d'un onglet appelle `onSpeciesSelect(null)` (déjà câblé via `setSelected(null)` côté local), ce qui retire le `selected` du modal et fait retomber automatiquement sur `scientificName` d'origine. Comportement attendu et lisible.
+**Tracking** (côté client, sur mount de la page publique) :
 
-### Pourquoi c'est robuste
+- Cookie anonyme `mdv_session` (UUID, 30j)
+- 1 appel `log_public_event_view` au mount avec referrer + UTM parsés
+- Heartbeat toutes les 30s pour mesurer le temps passé (optionnel, phase 2)
 
-- **Une seule source de vérité** pour la sélection (le modal). Les onglets ne dupliquent que le toggle local.
-- **Aucun `useEffect` de synchronisation** entre parent et enfants → pas de boucle, pas de course.
-- **Rétro-compatible** : `compact={false}` (vue Synthèse standard hors modal) garde son comportement, `highlightScientificName` n'étant simplement pas fourni dans ce contexte.
-- **Continuité visuelle** : zoom focal, halo, faisceaux et overlay sont tous alignés sur `effectiveSelected`, donc la bascule d'onglet préserve à la fois le centrage **et** les liaisons.
+**Affichage public** (preuve sociale) :
 
-### Fichiers impactés
+- En haut de page : `🌱 1 247 personnes ont découvert cette marche`
+- Compteur live-ish (rafraîchi toutes les 60s)
 
-- `src/components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenModal.tsx` (1 ligne)
-- `src/components/community/synthese/trophic/ConstellationTab.tsx`
-- `src/components/community/synthese/trophic/SpiraleTab.tsx`
-- `src/components/community/synthese/trophic/ReseauTab.tsx`
+**Dashboard admin** — nouvel onglet **« Rayonnement »** dans `MarcheEventDetail` :
 
-Aucun changement de schéma, d'API edge, ni de logique métier.
+- KPIs : vues totales, visiteurs uniques, temps moyen, top referrers, répartition canaux de partage
+- Graphique 30 jours (réutilise `activity-chart-time-series-logic` en Paris-local-time)
+- Top 5 marches publiques (vue cross-events)
 
-### Vérification après build
+**Bouton viral marcheur** (dans `mon-espace`) :
 
-Parcours simulé sur `/exploration/.../Synthèse` :
-1. Clic Marronnier → modal s'ouvre, Constellation : marronnier halo + faisceaux visibles dès l'arrivée.
-2. Clic Spirale → marronnier conserve halo, faisceaux orange/jaune/vert visibles le long de la spirale.
-3. Clic Réseau → idem, arcs entre la rangée L1 et les autres rangées rendus.
-4. Sélection d'une autre espèce dans n'importe quel onglet → faisceaux se redessinent et persistent au changement d'onglet.
-5. Bouton « Réinitialiser » → retour propre sur l'espèce d'entrée du modal.
+- Quand la marche du marcheur devient publique : notification + bouton **« Partager ma marche »** dans `MarchesTab`
+- Compteur personnel : `🌟 Ma marche a inspiré X visiteurs`
+- Bonus Fréquence : +5 par partage tracké (UTM avec son slug marcheur)
+
+---
+
+## 6. CTAs de conversion
+
+Footer de chaque page publique (sticky en mobile) :
+
+- **« Rejoindre la prochaine marche »** → `/marches-du-vivant` (liste filtrée à venir)
+- **« Organiser ma marche »** → `/marches-du-vivant/organiser`
+- Lien discret **« Propulsé par La Fréquence du Vivant »**
+
+---
+
+## 7. Sécurité & RGPD
+
+- Toggle admin uniquement (vérif `has_role(auth.uid(), 'admin')`)
+- Marcheurs pseudonymisés systématiquement côté RPC (jamais d'email/téléphone exposé)
+- Aucun média marqué privé n'est exposé (filtre `visibility = 'public'` sur convivialité/témoignages)
+- Bannière discrète en pied de page : « Données partagées avec l'accord des participants »
+- Phase 2 (non bloquant) : consentement explicite par marcheur via opt-out depuis son espace
+
+---
+
+## 8. Découpage de livraison
+
+**Lot 1 — Fondations (publication + URL)**
+
+- Migration : colonnes `is_public/public_slug/published_at/published_by`, génération slug, RPC `get_public_event*`
+- Page `/marches/:slug` (récit + marcheurs + vivant + convivialité)
+- Toggle admin + filtre liste + badge
+
+**Lot 2 — Viralité**
+
+- Boutons partage + UTM
+- Open Graph dynamique (edge function image) + JSON-LD `Event`
+- Sitemap auto
+
+**Lot 3 — Analytics**
+
+- Table `event_public_views` + RPC log
+- Onglet « Rayonnement » admin + compteur public preuve sociale
+- Bouton partage marcheur + bonus Fréquence
+
+**Lot 4 (optionnel)**
+
+- Heartbeat temps passé, opt-out marcheur, QR code téléchargeable enrichi
+
+---
+
+## 9. Fichiers principaux à créer / modifier
+
+Création :
+
+- `supabase/migrations/<ts>_public_events.sql`
+- `supabase/functions/og-event-image/index.ts`
+- `src/pages/PublicEventPage.tsx` + sous-composants `src/components/public-event/*`
+- `src/hooks/usePublicEvent.ts`, `usePublicEventTracking.ts`
+- `src/components/admin/marche-events/PublishPublicPanel.tsx`
+- `src/components/admin/marche-events/RayonnementTab.tsx`
+
+Modification :
+
+- `src/App.tsx` (routes `/marches/:slug` + redirect `/m/:id`)
+- `src/components/admin/marche-events/EventsListTab.tsx` (filtre + badge)
+- `src/pages/MarcheEventDetail.tsx` (panneau publication + onglet Rayonnement)
+- `src/components/community/tabs/MarchesTab.tsx` (bouton partage marcheur)
+- `scripts/generate-sitemap.ts` (entrées dynamiques)
+- `mem://index.md` + nouvelle mémoire `features/public-event-publication-logic`
+
+---
+
+## Questions de cadrage restantes
+
+1. **Slug** : auto-généré à l'activation
+2. **Image de couverture** : Champ dédié à uploader par l'admin
+3. **Période d'expiration** : la page reste publique indéfiniment
+4. **Bonus Fréquence partage** : +5 par share unique (par session/canal)
