@@ -390,7 +390,16 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
           </text>
         </svg>
 
-        {!compact && chain.balance.missingLevels.length > 0 && (
+        {!compact && selected && (
+          <TrophicBeamOverlay
+            selected={selected}
+            counts={beamCounts}
+            activeBeam={activeBeam}
+            onToggleBeam={(b) => setActiveBeam(activeBeam === b ? null : b)}
+          />
+        )}
+
+        {!compact && !selected && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {chain.balance.missingLevels.map((g) => {
               const m = getLevelMeta(g);
@@ -408,12 +417,13 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
 
         {!compact && (selected || focusGroup) && (
           <button
-            onClick={() => { setSelected(null); setFocusGroup(null); }}
+            onClick={() => { setSelected(null); setFocusGroup(null); setActiveBeam(null); }}
             className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border hover:bg-background"
           >
             <X className="w-3 h-3" /> Réinitialiser
           </button>
         )}
+
 
         {!compact && (
           <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[160px] leading-snug">
