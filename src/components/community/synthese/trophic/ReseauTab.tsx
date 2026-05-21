@@ -121,8 +121,6 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
     if (selected) return [];
     const edges: Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup }> = [];
     const cap = 80;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { probablePreyGroups } = require('@/lib/trophicClassification') as typeof import('@/lib/trophicClassification');
     (['L5', 'L4', 'L3', 'L2'] as TrophicGroup[]).forEach((pred) => {
       const preds = positioned[pred];
       const preyGroups = probablePreyGroups(pred);
