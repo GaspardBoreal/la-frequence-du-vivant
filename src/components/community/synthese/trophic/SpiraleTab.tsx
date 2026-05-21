@@ -389,7 +389,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
           >
             ☼ photosynthèse
           </text>
-        </svg>
+        </ZoomableSvgStage>
 
         {!compact && selected && (
           <TrophicBeamOverlay
