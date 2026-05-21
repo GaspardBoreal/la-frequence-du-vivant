@@ -144,6 +144,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
     onSpeciesSelect?.(s);
   };
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
+  const [activeBeam, setActiveBeam] = useState<Beam>(null);
 
   const segments = useMemo(() => buildSegments(chain.counts), [chain.counts]);
 
@@ -166,23 +167,38 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
     [positioned],
   );
 
-  const selectedEdges = useMemo(() => {
-    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number }>;
-    const preyGroups = probablePreyGroups(selected.group);
-    const preyStars = preyGroups.flatMap((g) => positioned[g]).slice(0, 8);
-    return preyStars.map((p) => ({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y }));
-  }, [selected, positioned]);
+  // Ghost target = midpoint of the segment for empty levels
+  const ghostTargetFor = useCallback(
+    (g: TrophicGroup) => {
+      const seg = segments.find((s) => s.group === g);
+      if (!seg) return { x: CENTER, y: CENTER };
+      const p = spiralPoint((seg.tStart + seg.tEnd) / 2);
+      return { x: p.x, y: p.y };
+    },
+    [segments],
+  );
+  // Decomposer ghost: outer point on the counter-spiral
+  const decomposerGhost = useMemo(() => {
+    const t = T_MAX * 0.7;
+    const r = R0 * Math.exp(B * t) * 0.78;
+    const angle = -Math.PI / 2 - t * 0.85;
+    return { x: CENTER + Math.cos(angle) * r, y: CENTER + Math.sin(angle) * r };
+  }, []);
+
+  const { preyEdges, predatorEdges, recyclerEdges, beamCounts, connectedNames } = useTrophicBeams(
+    selected,
+    positioned,
+    ghostTargetFor,
+    decomposerGhost,
+  );
 
   const isStarMuted = (s: PositionedStar) => {
     if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
-    if (selected) {
-      if (s.scientificName === selected.scientificName) return false;
-      const prey = probablePreyGroups(selected.group);
-      return !prey.includes(s.group);
-    }
+    if (selected) return !connectedNames.has(s.scientificName);
     return false;
   };
+
 
   // Position the moving "energy" particle along the main spiral
   const spiralFullPath = useMemo(() => spiralPath(0, T_MAX, 240), []);
