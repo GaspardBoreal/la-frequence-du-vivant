@@ -332,3 +332,19 @@ export function probablePreyGroups(predator: TrophicGroup): TrophicGroup[] {
       return [];
   }
 }
+
+/** Symétrique : qui mange cette espèce ? */
+export function probablePredatorGroups(prey: TrophicGroup): TrophicGroup[] {
+  switch (prey) {
+    case 'L1':
+      return ['L2'];
+    case 'L2':
+      return ['L3', 'L4', 'L5'];
+    case 'L3':
+      return ['L4', 'L5'];
+    case 'L4':
+      return ['L5'];
+    default:
+      return [];
+  }
+}

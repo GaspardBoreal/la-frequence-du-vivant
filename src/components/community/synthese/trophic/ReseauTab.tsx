@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, ArrowUp, ArrowDown, RefreshCcw } from 'lucide-react';
 import {
   TROPHIC_LEVELS,
   DECOMPOSER_META,
   getLevelMeta,
   probablePreyGroups,
+  probablePredatorGroups,
   type TrophicGroup,
 } from '@/lib/trophicClassification';
 import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
@@ -82,6 +83,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
     onSpeciesSelect?.(s);
   };
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
+  const [activeBeam, setActiveBeam] = useState<'eat' | 'eaten' | 'recycle' | null>(null);
 
   // Y positions for each band
   const bandY = useMemo(() => {
@@ -134,22 +136,79 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
     return edges.slice(0, cap);
   }, [positioned, selected]);
 
-  /** Selected node edges */
-  const selectedEdges = useMemo(() => {
+  const EDGE_CAP = 24;
+
+  /** "Qui je mange" — arcs descendants vers les proies */
+  const preyEdges = useMemo(() => {
+    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }>;
+    const groups = probablePreyGroups(selected.group);
+    const out: Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }> = [];
+    groups.forEach((g) => {
+      const pool = positioned[g];
+      if (pool.length === 0) {
+        const yTarget = bandY[g as Exclude<TrophicGroup, 'DECOMPOSER' | 'UNCLASSIFIED'>];
+        out.push({ x1: selected.x, y1: selected.y, x2: W / 2, y2: yTarget, group: g, ghost: true });
+      } else {
+        pool.forEach((p) => out.push({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y, group: g }));
+      }
+    });
+    return out.slice(0, EDGE_CAP + groups.length);
+  }, [selected, positioned, bandY]);
+
+  /** "Qui me mange" — arcs ascendants vers les mangeurs */
+  const predatorEdges = useMemo(() => {
+    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }>;
+    const groups = probablePredatorGroups(selected.group);
+    const out: Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }> = [];
+    groups.forEach((g) => {
+      const pool = positioned[g];
+      if (pool.length === 0) {
+        const yTarget = bandY[g as Exclude<TrophicGroup, 'DECOMPOSER' | 'UNCLASSIFIED'>];
+        out.push({ x1: selected.x, y1: selected.y, x2: W / 2, y2: yTarget, group: g, ghost: true });
+      } else {
+        pool.forEach((p) => out.push({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y, group: g }));
+      }
+    });
+    return out.slice(0, EDGE_CAP + groups.length);
+  }, [selected, positioned, bandY]);
+
+  /** "Qui me recycle" — arcs latéraux vers la colonne décomposeurs */
+  const recyclerEdges = useMemo<Array<{ x1: number; y1: number; x2: number; y2: number; ghost?: boolean }>>(() => {
     if (!selected) return [];
-    const preyGroups = probablePreyGroups(selected.group);
-    const preyNodes = preyGroups.flatMap((g) => positioned[g]).slice(0, 10);
-    return preyNodes.map((p) => ({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y }));
+    if (selected.group === 'DECOMPOSER') return [];
+    const pool = positioned.DECOMPOSER;
+    if (pool.length === 0) {
+      return [{ x1: selected.x, y1: selected.y, x2: decomposerX, y2: H / 2, ghost: true }];
+    }
+    return pool.slice(0, EDGE_CAP).map((p) => ({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y }));
+  }, [selected, positioned, decomposerX]);
+
+  /** Counts pour overlay (incluant les fantômes pour l'aspect inspirant) */
+  const beamCounts = useMemo(() => {
+    if (!selected) return { eat: 0, eaten: 0, recycle: 0 };
+    const preyG = probablePreyGroups(selected.group);
+    const predG = probablePredatorGroups(selected.group);
+    const eat = preyG.reduce((acc, g) => acc + Math.max(1, positioned[g].length), 0);
+    const eaten = predG.reduce((acc, g) => acc + Math.max(1, positioned[g].length), 0);
+    const recycle = selected.group === 'DECOMPOSER' ? 0 : Math.max(1, positioned.DECOMPOSER.length);
+    return { eat, eaten, recycle };
+  }, [selected, positioned]);
+
+  /** Nœuds connectés au sélectionné (pour la mise en valeur) */
+  const connectedNames = useMemo(() => {
+    if (!selected) return new Set<string>();
+    const set = new Set<string>([selected.scientificName]);
+    [...probablePreyGroups(selected.group), ...probablePredatorGroups(selected.group)].forEach((g) => {
+      positioned[g].forEach((n) => set.add(n.scientificName));
+    });
+    positioned.DECOMPOSER.forEach((n) => set.add(n.scientificName));
+    return set;
   }, [selected, positioned]);
 
   const isMuted = (n: PositionedNode) => {
     if (highlightScientificName) return n.scientificName !== highlightScientificName;
     if (focusGroup) return n.group !== focusGroup;
-    if (selected) {
-      if (n.scientificName === selected.scientificName) return false;
-      const prey = probablePreyGroups(selected.group);
-      return !prey.includes(n.group);
-    }
+    if (selected) return !connectedNames.has(n.scientificName);
     return false;
   };
 
@@ -261,23 +320,60 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
             </g>
           )}
 
-          {/* Selected edges (highlight) */}
+          {/* Faisceaux du nœud sélectionné — bidirectionnels */}
           <AnimatePresence>
-            {selectedEdges.map((e, i) => (
+            {selected && (!activeBeam || activeBeam === 'eaten') && predatorEdges.map((e, i) => {
+              const meta = getLevelMeta(e.group);
+              const color = meta ? `hsl(var(${meta.token}))` : 'hsl(var(--accent))';
+              return (
+                <motion.path
+                  key={`pred-${i}`}
+                  d={curve(e.x1, e.y1, e.x2, e.y2)}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={e.ghost ? 0.9 : 1.4}
+                  strokeDasharray={e.ghost ? '2 6' : undefined}
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: e.ghost ? 0.28 : 0.78 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ delay: i * 0.03, duration: 0.7, ease: 'easeOut' }}
+                />
+              );
+            })}
+            {selected && (!activeBeam || activeBeam === 'eat') && preyEdges.map((e, i) => {
+              const meta = getLevelMeta(e.group);
+              const color = meta ? `hsl(var(${meta.token}))` : 'hsl(var(--accent))';
+              return (
+                <motion.path
+                  key={`prey-${i}`}
+                  d={curve(e.x1, e.y1, e.x2, e.y2)}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={e.ghost ? 0.9 : 1.4}
+                  strokeDasharray={e.ghost ? '2 6' : '4 4'}
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: e.ghost ? 0.28 : 0.78 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ delay: i * 0.03, duration: 0.7, ease: 'easeOut' }}
+                />
+              );
+            })}
+            {selected && (!activeBeam || activeBeam === 'recycle') && recyclerEdges.map((e, i) => (
               <motion.path
-                key={`sel-${i}`}
+                key={`rec-${i}`}
                 d={curve(e.x1, e.y1, e.x2, e.y2)}
                 fill="none"
-                stroke="hsl(var(--accent))"
-                strokeWidth={1.4}
-                strokeDasharray="4 4"
+                stroke={`hsl(var(${DECOMPOSER_META.token}))`}
+                strokeWidth={e.ghost ? 0.9 : 1.2}
+                strokeDasharray={e.ghost ? '2 6' : '3 5'}
                 initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 0.75 }}
+                animate={{ pathLength: 1, opacity: e.ghost ? 0.28 : 0.65 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ delay: i * 0.04 + 0.1, duration: 0.7, ease: 'easeOut' }}
               />
             ))}
           </AnimatePresence>
+
 
           {/* Nodes */}
           {allNodes.map((n, i) => {
@@ -297,7 +393,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
                 onClick={() => setSelected(isSelected ? null : n)}
                 style={{ cursor: 'pointer' }}
               >
-                {isHighlighted && (
+                {(isHighlighted || isSelected) && (
                   <>
                     <motion.circle
                       cx={n.x} cy={n.y} r={n.r * 5}
@@ -353,7 +449,46 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           })()}
         </svg>
 
-        {!compact && chain.balance.missingLevels.length > 0 && (
+        {!compact && selected && (
+          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center gap-2">
+            <div className="text-[11px] px-2.5 py-1.5 rounded-full bg-background/85 backdrop-blur border border-border text-foreground/90 leading-tight">
+              <span className="font-semibold">{selected.commonName || selected.scientificName}</span>
+              <span className="text-muted-foreground"> · {beamCounts.eat + beamCounts.eaten + beamCounts.recycle} liens probables</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveBeam(activeBeam === 'eaten' ? null : 'eaten')}
+              className={`text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-full border backdrop-blur transition-colors ${
+                activeBeam === 'eaten' ? 'bg-foreground text-background border-foreground' : 'bg-background/80 border-border hover:bg-background'
+              }`}
+              title="Espèces qui mangent cette espèce"
+            >
+              <ArrowUp className="w-3 h-3" /> {beamCounts.eaten} mangeurs
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveBeam(activeBeam === 'eat' ? null : 'eat')}
+              className={`text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-full border backdrop-blur transition-colors ${
+                activeBeam === 'eat' ? 'bg-foreground text-background border-foreground' : 'bg-background/80 border-border hover:bg-background'
+              }`}
+              title="Espèces dont cette espèce se nourrit"
+            >
+              <ArrowDown className="w-3 h-3" /> {beamCounts.eat} proies
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveBeam(activeBeam === 'recycle' ? null : 'recycle')}
+              className={`text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded-full border backdrop-blur transition-colors ${
+                activeBeam === 'recycle' ? 'bg-foreground text-background border-foreground' : 'bg-background/80 border-border hover:bg-background'
+              }`}
+              title="Décomposeurs qui recyclent cette espèce"
+            >
+              <RefreshCcw className="w-3 h-3" /> {beamCounts.recycle} recycleurs
+            </button>
+          </div>
+        )}
+
+        {!compact && !selected && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {chain.balance.missingLevels.map((g) => {
               const m = getLevelMeta(g);
@@ -371,16 +506,16 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
 
         {!compact && (selected || focusGroup) && (
           <button
-            onClick={() => { setSelected(null); setFocusGroup(null); }}
+            onClick={() => { setSelected(null); setFocusGroup(null); setActiveBeam(null); }}
             className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border hover:bg-background"
           >
             <X className="w-3 h-3" /> Réinitialiser
           </button>
         )}
 
-        {!compact && (
-          <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[180px] leading-snug">
-            Réseau trophique : chaque courbe = un lien probable prédateur → proie.
+        {!compact && !selected && (
+          <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[200px] leading-snug">
+            Cliquez une espèce pour révéler ses liens : mangeurs ↑, proies ↓, recycleurs ⟲.
           </div>
         )}
       </div>
