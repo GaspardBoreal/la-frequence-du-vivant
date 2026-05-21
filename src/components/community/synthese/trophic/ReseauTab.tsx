@@ -17,6 +17,7 @@ interface Props {
   explorationId?: string;
   highlightScientificName?: string;
   compact?: boolean;
+  onSpeciesSelect?: (star: TrophicStar | null) => void;
 }
 
 const W = 720;
@@ -73,9 +74,13 @@ function placeDecomposers(stars: TrophicStar[], xCol: number): PositionedNode[] 
   });
 }
 
-export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, highlightScientificName, compact }) => {
+export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, highlightScientificName, compact, onSpeciesSelect }) => {
   const [hovered, setHovered] = useState<PositionedNode | null>(null);
-  const [selected, setSelected] = useState<PositionedNode | null>(null);
+  const [selected, setSelectedState] = useState<PositionedNode | null>(null);
+  const setSelected = (s: PositionedNode | null) => {
+    setSelectedState(s);
+    onSpeciesSelect?.(s);
+  };
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
 
   // Y positions for each band
