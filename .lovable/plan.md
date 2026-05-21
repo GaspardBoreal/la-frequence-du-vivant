@@ -1,72 +1,89 @@
-# Brancher le ChatBot global sur la modale trophique
+## Problème
 
-## Diagnostic
+Dans l'onglet **Apprendre → L'Œil**, sur 6 vignettes papillons, 5 affichent la photo terrain prise par les marcheurs et **Azurés (Polyommatus)** affiche la photo iNaturalist. La sélection est aléatoire selon que le snapshot iNat porte ou non une `imageUrl` pour cette espèce.
 
-Le bouton « Ouvrir le chat » dispatche aujourd'hui l'événement `open-species-chatbot`, mais le `ChatBot` global n'écoute **que** `community-chat:open`. Résultat : rien ne se passe. De plus, aucun contexte (chaîne trophique, pool d'espèces) n'est transmis, donc même branché, le chat répondrait dans le vide.
+## Cause racine
 
-## Objectifs
+Fichier : `src/hooks/useExplorationSpeciesPool.ts`
 
-1. Cliquer sur « Ouvrir le chat » ouvre **le ChatBot global** (avec ses fonctions Imprimer, Rafraîchir, Voix, Pièce jointe, etc.) par-dessus la modale trophique.
-2. Le ChatBot reçoit en contexte : l'espèce focus + sa chaîne trophique + le pool complet des espèces de l'événement.
-3. La sidebar « Chat » propose **3 suggestions cliquables** au lieu d'un seul bouton, chacune lançant le ChatBot avec un prefill différent.
-4. Comportement cohérent : l'overlay du ChatBot expanded (`z-[80]`) passe au-dessus de la modale trophique (`z-50`).
+L'agrégation se fait en deux passes :
 
-## Changements
-
-### 1. `src/components/chatbot/ChatBot.tsx`
-
-Étendre le listener `community-chat:open` pour accepter un payload contexte trophique et auto-attacher le pool d'espèces :
-
-- Nouveau champ optionnel `detail.trophic` : `{ scientificName, commonName, group, prey: [...], predators: [...] }`.
-- Nouveau champ optionnel `detail.autoAttachSpeciesPool: boolean` — si `true`, appeler `attachSpeciesPool()` après ouverture (réutilise le slice `SPECIES_POOL_SLICE_KEY` existant).
-- Le contexte trophique est poussé via `chatPageContext.setVisibleSlice('trophic-focus', {...})` pour que l'edge function l'inclue dans le system prompt (convention identique au slice species pool existant).
-
-### 2. `src/components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenModal.tsx`
-
-Remplacer `handleOpenChat` qui dispatche `open-species-chatbot` par un helper qui dispatche `community-chat:open` avec le bon payload :
+1. **Snapshots iNat d'abord** (lignes 59-83) — `imageUrl` est rempli avec l'image iNat dès qu'elle existe dans `species_data[].imageUrl`.
+2. **Marcheur observations ensuite** (lignes 89-123) — la photo marcheur n'écrase l'image **que si `imageUrl` est vide** :
 
 ```ts
-const openChatWith = (prefill: string) => {
-  window.dispatchEvent(new CustomEvent('community-chat:open', {
-    detail: {
-      prefill,
-      species: star.scientificName,
-      speciesLabel: star.commonName || star.scientificName,
-      trophic: {
-        scientificName: star.scientificName,
-        commonName: star.commonName,
-        group: star.group,
-        prey: preyPredators.prey.map(s => ({ sn: s.scientificName, cn: s.commonName, g: s.group })),
-        predators: preyPredators.pred.map(s => ({ sn: s.scientificName, cn: s.commonName, g: s.group })),
-      },
-      autoAttachSpeciesPool: true,
-    },
-  }));
-};
+if (obs.photo_url && !found.imageUrl) {
+  found.imageUrl = obs.photo_url;
+}
 ```
 
-Remplacer le contenu de l'onglet « Chat » de la sidebar par **3 cartes suggestions** générées dynamiquement à partir de `star` + `meta` + `preyPredators` :
+→ Dès qu'iNat fournit une image (cas fréquent au niveau genre comme *Polyommatus*), la photo marcheur est ignorée. C'est une violation silencieuse de la règle métier « toujours la photo d'origine du terrain en premier ».
 
-1. **Rôle écologique** — « Quel est le rôle de [espèce] dans cet écosystème et que nous apprend sa présence ? »
-2. **Qui la mange / qu'elle mange** — « Avec quelles espèces de cet événement [espèce] interagit-elle trophiquement, et comment ? »
-3. **Comparaison dans le pool** — « Compare [espèce] aux autres [niveau trophique] observés sur cet événement : indicateurs, fragilités, dynamiques. »
+## Règle cible retenue
 
-Chaque carte cliquable appelle `openChatWith(prefill)`. Bouton secondaire « Discuter librement » sans prefill.
+**Marcheur récent > Marcheur ancien > iNat (snapshot) > Placeholder**
 
-Le ChatBot global s'ouvrant en mode expanded (`z-[80]`) recouvre naturellement la modale trophique (`z-50`) — la sidebar reste accessible en arrière-plan quand le marcheur ferme le chat.
+S'il existe au moins une `marcheur_observations.photo_url` pour l'espèce, on affiche la **plus récente** (`observation_date` desc). iNat ne sert que de fallback.
 
-### 3. Edge function chatbot (suivi)
+## Modifications
 
-L'edge function qui consomme `visibleData` doit reconnaître le slice `trophic-focus` et l'injecter dans le system prompt (1 phrase descriptive + liste compacte proies/prédateurs). À identifier dans `supabase/functions/community-chat/` (ou équivalent) — petit ajout, pas de refonte.
+### 1. `src/hooks/useExplorationSpeciesPool.ts` (correctif principal)
+
+- Étendre le `select` sur `marcheur_observations` pour inclure `observation_date`.
+- **Inverser la priorité** : pour chaque espèce, collecter toutes les `photo_url` marcheur, garder la plus récente, et **écraser** `imageUrl` issue du snapshot iNat avec cette photo terrain.
+- Comportement nouveau :
+  - 1+ photo marcheur → `imageUrl` = photo marcheur la plus récente (toujours).
+  - 0 photo marcheur mais image iNat dans le snapshot → `imageUrl` = image iNat.
+  - Aucune des deux → `imageUrl = null`, le fallback `useSpeciesPhoto` (iNat live) prend la main côté composant.
+
+### 2. Audit des autres lieux d'affichage
+
+- `src/components/community/insights/curation/CuratedSpeciesCard.tsx` : consomme `species.imageUrl` du pool → correctif automatiquement propagé.
+- `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` : carrousel déjà géré par `useSpeciesMarcheurPhotos` (marcheur prioritaire à date égale, déjà conforme).
+- `src/components/biodiversity/SpeciesCardWithPhoto.tsx` : utilisé hors exploration, pas de source marcheur disponible → on laisse `useSpeciesPhoto` (iNat). Aucune action.
+- Vues Synthèse / Trophique (`ConstellationTab`, `SpiraleTab`, `ReseauTab`) : consomment le même `pool` enrichi → correctif propagé automatiquement.
+- Modale fiche espèce (trophic fullscreen) : reçoit déjà ses photos via le pool ou `useSpeciesMarcheurPhotos` → conforme.
+
+Aucune autre modification nécessaire.
+
+## Détails techniques
+
+```ts
+// useExplorationSpeciesPool — pseudo-code
+const { data: marcheurObs } = await supabase
+  .from('marcheur_observations')
+  .select('species_scientific_name, photo_url, observation_date')
+  .in('marche_id', marcheIds)
+  .not('photo_url', 'is', null);
+
+// Index : sci.toLowerCase() → photo la plus récente
+const latestPhotoBySci = new Map<string, { url: string; date: string }>();
+(marcheurObs || []).forEach(o => {
+  const key = (o.species_scientific_name || '').trim().toLowerCase();
+  if (!key || !o.photo_url) return;
+  const ex = latestPhotoBySci.get(key);
+  const d = o.observation_date || '';
+  if (!ex || d > ex.date) latestPhotoBySci.set(key, { url: o.photo_url, date: d });
+});
+
+// 2e passe : écraser imageUrl avec la photo marcheur la plus récente
+for (const entry of map.values()) {
+  const k = (entry.scientificName || '').toLowerCase();
+  const fieldPhoto = latestPhotoBySci.get(k);
+  if (fieldPhoto) entry.imageUrl = fieldPhoto.url; // override iNat
+}
+// + créer les entries manquantes pour les espèces vues uniquement par marcheurs (logique actuelle conservée pour comptage)
+```
 
 ## Hors-scope
 
-- Pas de modification de l'edge function au-delà de la prise en compte du nouveau slice.
-- Pas de refonte visuelle du ChatBot lui-même.
-- Pas de persistance spécifique de cette conversation.
+- Pas de changement sur le carrousel détaillé (déjà conforme via `useSpeciesMarcheurPhotos`).
+- Pas de mécanisme de « photo de couverture curée manuellement » (option 3 écartée).
+- Pas de modification visuelle de la carte.
 
 ## Vérification
 
-1. Ouvrir la modale trophique, cliquer chaque suggestion → ChatBot s'ouvre en plein écran avec prefill, badge « Pièce jointe : Liste des espèces » visible.
-2. Envoyer la question → la réponse mentionne des espèces du pool (preuve que le contexte est passé).
-3. Fermer le chat → on retombe sur la modale trophique avec la sidebar Chat intacte.
+1. Recharger Apprendre → L'Œil sur Deviat (`/exploration/20dd3be8…`), filtre tag « papillon ».
+2. Les 6 vignettes (dont Azurés) doivent montrer une photo marcheur (badge visuel terrain reconnaissable, pas le fond carré iNat).
+3. Espèces sans aucune photo marcheur : doivent toujours afficher l'image iNat (fallback OK).
+4. Vérifier Synthèse / vues trophiques : mêmes images marcheur priorisées (cohérence).

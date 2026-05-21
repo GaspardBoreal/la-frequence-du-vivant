@@ -88,15 +88,20 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
       // décompte affiché ailleurs sur la fiche.
       const { data: marcheurObs } = await supabase
         .from('marcheur_observations')
-        .select('species_scientific_name, photo_url')
+        .select('species_scientific_name, photo_url, observation_date')
         .in('marche_id', marcheIds);
+
+      // Indexer la photo marcheur la PLUS RÉCENTE par espèce (sci lower).
+      // Règle métier : la photo terrain prime toujours sur l'image iNat du
+      // snapshot ; à défaut on garde l'image iNat ; à défaut, fallback live.
+      const latestPhotoBySci = new Map<string, { url: string; date: string }>();
 
       (marcheurObs || []).forEach((obs: any) => {
         const sci = (obs.species_scientific_name || '').toString().trim();
         if (!sci) return;
         const key = sci.toLowerCase();
 
-        // Match case-insensitive sur les entrées existantes (snapshots)
+        // Mise à jour du compteur + création d'entrée si nécessaire
         let found: RawExplorationSpecies | undefined;
         for (const entry of map.values()) {
           if ((entry.scientificName || '').toLowerCase() === key) {
@@ -104,12 +109,8 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
             break;
           }
         }
-
         if (found) {
           found.count += 1;
-          if (obs.photo_url && !found.imageUrl) {
-            found.imageUrl = obs.photo_url;
-          }
         } else {
           map.set(key, {
             key: sci,
@@ -117,16 +118,35 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
             commonName: null,
             group: null,
             count: 1,
-            imageUrl: obs.photo_url || null,
+            imageUrl: null, // sera renseigné juste après si photo marcheur
           });
         }
+
+        // Indexer la photo terrain la plus récente
+        if (obs.photo_url) {
+          const d = obs.observation_date || '';
+          const ex = latestPhotoBySci.get(key);
+          if (!ex || d > ex.date) {
+            latestPhotoBySci.set(key, { url: obs.photo_url, date: d });
+          }
+        }
       });
+
+      // Override : la photo marcheur la plus récente prime sur l'image iNat
+      for (const entry of map.values()) {
+        const k = (entry.scientificName || '').toLowerCase();
+        const fieldPhoto = latestPhotoBySci.get(k);
+        if (fieldPhoto) {
+          entry.imageUrl = fieldPhoto.url;
+        }
+      }
 
       // ⚠️ Pas de fusion taxonomique ici : la liste doit refléter strictement
       // l'union canonique `snapshots ∪ marcheur_observations` pour rester
       // cohérente avec le RPC chatbot, la Synthèse et l'onglet Biodiversité
       // (sinon le compteur affiché diverge du référentiel métier).
       return Array.from(map.values()).sort((a, b) => b.count - a.count);
+
 
     },
     enabled: !!explorationId,
