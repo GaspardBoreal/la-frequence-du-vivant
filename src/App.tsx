@@ -97,6 +97,7 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
+            <Route path="/m/:slug" element={<PublicEventPage />} />
             
             {/* Nouvelles routes bioacoustiques */}
             <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />
