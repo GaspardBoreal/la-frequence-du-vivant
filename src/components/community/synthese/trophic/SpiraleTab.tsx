@@ -295,7 +295,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
                 onClick={() => setSelected(isSelected ? null : s)}
                 style={{ cursor: 'pointer' }}
               >
-                {isHighlighted && (
+                {(isHighlighted || isSelected) && (
                   <>
                     <motion.circle
                       cx={s.x} cy={s.y} r={s.r * 5}
