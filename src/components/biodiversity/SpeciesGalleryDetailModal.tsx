@@ -272,8 +272,9 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
           {/* Halo discret derrière la croix de fermeture — élargit la cible visuelle et tactile */}
           <div
             aria-hidden="true"
-            className="absolute top-1 right-1 w-10 h-10 rounded-full bg-black/45 ring-1 ring-white/15 backdrop-blur-md shadow-md pointer-events-none z-10"
+            className="absolute top-1 right-1 w-10 h-10 rounded-full bg-black/45 ring-1 ring-white/15 backdrop-blur-md shadow-md pointer-events-none z-0"
           />
+
 
           {/* Accessible title (hidden) */}
           <VisuallyHidden.Root asChild>
