@@ -268,59 +268,15 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
             </g>
           )}
 
-          {/* Faisceaux du nœud sélectionné — bidirectionnels */}
-          <AnimatePresence>
-            {selected && (!activeBeam || activeBeam === 'eaten') && predatorEdges.map((e, i) => {
-              const meta = getLevelMeta(e.group);
-              const color = meta ? `hsl(var(${meta.token}))` : 'hsl(var(--accent))';
-              return (
-                <motion.path
-                  key={`pred-${i}`}
-                  d={curve(e.x1, e.y1, e.x2, e.y2)}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth={e.ghost ? 0.9 : 1.4}
-                  strokeDasharray={e.ghost ? '2 6' : undefined}
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ pathLength: 1, opacity: e.ghost ? 0.28 : 0.78 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ delay: i * 0.03, duration: 0.7, ease: 'easeOut' }}
-                />
-              );
-            })}
-            {selected && (!activeBeam || activeBeam === 'eat') && preyEdges.map((e, i) => {
-              const meta = getLevelMeta(e.group);
-              const color = meta ? `hsl(var(${meta.token}))` : 'hsl(var(--accent))';
-              return (
-                <motion.path
-                  key={`prey-${i}`}
-                  d={curve(e.x1, e.y1, e.x2, e.y2)}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth={e.ghost ? 0.9 : 1.4}
-                  strokeDasharray={e.ghost ? '2 6' : '4 4'}
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ pathLength: 1, opacity: e.ghost ? 0.28 : 0.78 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ delay: i * 0.03, duration: 0.7, ease: 'easeOut' }}
-                />
-              );
-            })}
-            {selected && (!activeBeam || activeBeam === 'recycle') && recyclerEdges.map((e, i) => (
-              <motion.path
-                key={`rec-${i}`}
-                d={curve(e.x1, e.y1, e.x2, e.y2)}
-                fill="none"
-                stroke={`hsl(var(${DECOMPOSER_META.token}))`}
-                strokeWidth={e.ghost ? 0.9 : 1.2}
-                strokeDasharray={e.ghost ? '2 6' : '3 5'}
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: e.ghost ? 0.28 : 0.65 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: i * 0.04 + 0.1, duration: 0.7, ease: 'easeOut' }}
-              />
-            ))}
-          </AnimatePresence>
+          <TrophicBeamEdges
+            show={!!selected}
+            activeBeam={activeBeam}
+            preyEdges={preyEdges}
+            predatorEdges={predatorEdges}
+            recyclerEdges={recyclerEdges}
+            curved
+          />
+
 
 
           {/* Nodes */}
