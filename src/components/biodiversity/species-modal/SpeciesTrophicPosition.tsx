@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, GitBranch, Network, Maximize2, X } from 'lucide-react';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import { Sparkles, GitBranch, Network, Maximize2 } from 'lucide-react';
 import { useTrophicChain, type TrophicSpeciesInput } from '@/hooks/useTrophicChain';
 import { getLevelMeta } from '@/lib/trophicClassification';
 import { ConstellationTab } from '@/components/community/synthese/trophic/ConstellationTab';
 import { SpiraleTab } from '@/components/community/synthese/trophic/SpiraleTab';
 import { ReseauTab } from '@/components/community/synthese/trophic/ReseauTab';
+import { TrophicFullscreenModal, type TrophicViewKey } from './trophic-fullscreen/TrophicFullscreenModal';
 
 interface Props {
   scientificName: string;
