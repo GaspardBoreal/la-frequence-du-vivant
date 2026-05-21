@@ -83,6 +83,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
     onSpeciesSelect?.(s);
   };
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
+  const [activeBeam, setActiveBeam] = useState<'eat' | 'eaten' | 'recycle' | null>(null);
 
   // Y positions for each band
   const bandY = useMemo(() => {
