@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy } from 'lucide-react';
+import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink } from 'lucide-react';
 import DuplicateEventDialog from './DuplicateEventDialog';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -21,6 +21,9 @@ import {
   useParticipationCountsForEvents,
   type EventsFilters,
 } from '@/hooks/useMarcheEventsQuery';
+import { useEventsPublicVisibility, buildPublicEventUrl } from '@/hooks/usePublicEvent';
+
+type PublicFilter = 'all' | 'public' | 'private';
 
 interface Props {
   filters: EventsFilters;
@@ -33,15 +36,43 @@ interface Props {
 const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange, onPageSizeChange }) => {
   const navigate = useNavigate();
   const { data, isLoading, isFetching } = useMarcheEventsPaginated({ ...filters, page, pageSize });
-  const rows = data?.rows ?? [];
+  const allRows = data?.rows ?? [];
   const total = data?.total ?? 0;
-  const { data: counts } = useParticipationCountsForEvents(rows.map((r) => r.id));
+  const { data: counts } = useParticipationCountsForEvents(allRows.map((r) => r.id));
+  const { data: visibility } = useEventsPublicVisibility(allRows.map((r) => r.id));
+  const [publicFilter, setPublicFilter] = useState<PublicFilter>('all');
+  const rows = useMemo(() => {
+    if (publicFilter === 'all') return allRows;
+    return allRows.filter((r) => {
+      const isPub = !!visibility?.[r.id]?.is_public;
+      return publicFilter === 'public' ? isPub : !isPub;
+    });
+  }, [allRows, publicFilter, visibility]);
   const [duplicateSource, setDuplicateSource] = useState<
     { id: string; title: string; date_marche: string } | null
   >(null);
 
+
   return (
     <div>
+      {/* Filtre visibilité publique */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+          <Globe2 className="h-3.5 w-3.5" /> Visibilité publique :
+        </span>
+        {(['all', 'public', 'private'] as PublicFilter[]).map((v) => (
+          <Button
+            key={v}
+            size="sm"
+            variant={publicFilter === v ? 'default' : 'outline'}
+            className="h-7 px-2.5 text-xs rounded-full"
+            onClick={() => setPublicFilter(v)}
+          >
+            {v === 'all' ? 'Tous' : v === 'public' ? 'Publics' : 'Privés'}
+          </Button>
+        ))}
+      </div>
+
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -77,6 +108,11 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                       <CalendarDays className="h-3.5 w-3.5" />
                       {format(new Date(event.date_marche), 'PPP à HH:mm', { locale: fr })}
                     </span>
+                    {visibility?.[event.id]?.is_public && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                        <Globe2 className="h-3 w-3" /> Public
+                      </span>
+                    )}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -108,6 +144,13 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                       >
                         <Copy className="h-4 w-4 mr-2" />Dupliquer
                       </DropdownMenuItem>
+                      {visibility?.[event.id]?.is_public && visibility[event.id].public_slug && (
+                        <DropdownMenuItem
+                          onClick={() => window.open(buildPublicEventUrl(visibility[event.id].public_slug!), '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />Voir la page publique
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

@@ -73,6 +73,7 @@ import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
 import MarchesDuVivantValiderPresence from './pages/MarchesDuVivantValiderPresence';
 import MarcheEventsAdmin from './pages/MarcheEventsAdmin';
 import MarcheEventDetail from './pages/MarcheEventDetail';
+import PublicEventPage from './pages/PublicEventPage';
 import CommunityProfilesAdmin from './pages/CommunityProfilesAdmin';
 import OrganisateursAdmin from './pages/OrganisateursAdmin';
 import MarchesDuVivantExplorationMarcheur from './pages/MarchesDuVivantExplorationMarcheur';
@@ -96,6 +97,7 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
+            <Route path="/m/:slug" element={<PublicEventPage />} />
             
             {/* Nouvelles routes bioacoustiques */}
             <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />

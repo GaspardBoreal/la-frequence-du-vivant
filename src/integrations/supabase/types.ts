@@ -1304,6 +1304,56 @@ export type Database = {
           },
         ]
       }
+      event_public_views: {
+        Row: {
+          country: string | null
+          event_id: string
+          id: string
+          marcheur_slug: string | null
+          referrer: string | null
+          session_id: string | null
+          user_agent_family: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          viewed_at: string
+        }
+        Insert: {
+          country?: string | null
+          event_id: string
+          id?: string
+          marcheur_slug?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent_family?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          country?: string | null
+          event_id?: string
+          id?: string
+          marcheur_slug?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent_family?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_public_views_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_testimonies: {
         Row: {
           author_name: string
@@ -2842,6 +2892,7 @@ export type Database = {
       }
       marche_events: {
         Row: {
+          cover_image_url: string | null
           created_at: string
           created_by: string | null
           date_marche: string
@@ -2849,15 +2900,20 @@ export type Database = {
           event_type: string
           exploration_id: string | null
           id: string
+          is_public: boolean
           latitude: number | null
           lieu: string | null
           longitude: number | null
           max_participants: number | null
+          public_slug: string | null
+          published_at: string | null
+          published_by: string | null
           qr_code: string
           title: string
           updated_at: string
         }
         Insert: {
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
           date_marche: string
@@ -2865,15 +2921,20 @@ export type Database = {
           event_type?: string
           exploration_id?: string | null
           id?: string
+          is_public?: boolean
           latitude?: number | null
           lieu?: string | null
           longitude?: number | null
           max_participants?: number | null
+          public_slug?: string | null
+          published_at?: string | null
+          published_by?: string | null
           qr_code?: string
           title: string
           updated_at?: string
         }
         Update: {
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
           date_marche?: string
@@ -2881,10 +2942,14 @@ export type Database = {
           event_type?: string
           exploration_id?: string | null
           id?: string
+          is_public?: boolean
           latitude?: number | null
           lieu?: string | null
           longitude?: number | null
           max_participants?: number | null
+          public_slug?: string | null
+          published_at?: string | null
+          published_by?: string | null
           qr_code?: string
           title?: string
           updated_at?: string
@@ -4794,6 +4859,10 @@ export type Database = {
         Args: { p_nom: string; p_prenom: string }
         Returns: string
       }
+      generate_event_public_slug: {
+        Args: { _date: string; _title: string }
+        Returns: string
+      }
       get_activity_connections_chart: {
         Args: { p_period?: string }
         Returns: {
@@ -4921,6 +4990,7 @@ export type Database = {
         }[]
       }
       get_event_public_textes: { Args: { p_event_id: string }; Returns: Json }
+      get_event_rayonnement: { Args: { _event_id: string }; Returns: Json }
       get_exploration_marches_by_status: {
         Args: {
           exploration_id_param: string
@@ -5016,6 +5086,8 @@ export type Database = {
           scientific_name: string
         }[]
       }
+      get_public_event: { Args: { _slug: string }; Returns: Json }
+      get_public_event_counters: { Args: { _slug: string }; Returns: Json }
       get_public_marcheur_carnet: { Args: { p_slug: string }; Returns: Json }
       get_public_shared_contribution: {
         Args: { p_id: string; p_type: string }
@@ -5124,6 +5196,19 @@ export type Database = {
           status: string
           user_id: string
         }[]
+      }
+      log_public_event_view: {
+        Args: {
+          _marcheur_slug?: string
+          _referrer?: string
+          _session_id: string
+          _slug: string
+          _user_agent_family?: string
+          _utm_campaign?: string
+          _utm_medium?: string
+          _utm_source?: string
+        }
+        Returns: undefined
       }
       match_documents: {
         Args: { filter?: Json; match_count?: number; query_embedding: string }
@@ -5236,6 +5321,10 @@ export type Database = {
           species_count: number
           ville: string
         }[]
+      }
+      toggle_event_public: {
+        Args: { _event_id: string; _is_public: boolean }
+        Returns: Json
       }
       trigger_backfill_marcheur_inat_batch: { Args: never; Returns: number }
       update_exploration_page:

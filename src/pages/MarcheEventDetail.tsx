@@ -26,6 +26,7 @@ import LivingPathOverview from '@/components/admin/LivingPathOverview';
 import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import InvitedReadersTab from '@/components/admin/marche-events/InvitedReadersTab';
 import { BookOpen } from 'lucide-react';
+import PublishPublicPanel from '@/components/admin/marche-events/PublishPublicPanel';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -321,6 +322,15 @@ const MarcheEventDetail: React.FC = () => {
             </TabsList>
           )}
           <TabsContent value="informations" className="space-y-6 mt-4">
+
+        {!isNew && event && (
+          <PublishPublicPanel
+            eventId={event.id}
+            isPublic={!!(event as any).is_public}
+            publicSlug={(event as any).public_slug ?? null}
+          />
+        )}
+
 
         {/* Form */}
         <Card className="p-6">
