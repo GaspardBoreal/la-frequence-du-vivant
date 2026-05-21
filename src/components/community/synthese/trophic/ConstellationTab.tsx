@@ -12,6 +12,7 @@ import { DefaultPanel, LevelPanel, SelectedStarPanel, type TrophicSpeciesPoolEnt
 import { useTrophicBeams } from './useTrophicBeams';
 import { TrophicBeamOverlay, type Beam } from './TrophicBeamOverlay';
 import { TrophicBeamEdges } from './TrophicBeamEdges';
+import { ZoomableSvgStage } from './ZoomableSvgStage';
 
 interface Props {
   chain: TrophicChainResult;
