@@ -81,10 +81,14 @@ export const TrophicFullscreenModal: React.FC<Props> = ({
   const meta = star ? getLevelMeta(star.group) : null;
 
   const renderView = (key: TrophicViewKey) => {
+    // Always pass the focal species name (selected ?? entry-point) so that
+    // each tab can derive an `effectiveSelected` and keep the trophic beams
+    // visible across tab switches.
+    const focusSn = selected?.scientificName ?? scientificName;
     const common = {
       chain,
       speciesPool,
-      highlightScientificName: selected ? undefined : scientificName,
+      highlightScientificName: focusSn,
       compact: true as const,
       onSpeciesSelect: (s: TrophicStar | null) => setSelected(s),
     };
