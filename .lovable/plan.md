@@ -1,83 +1,72 @@
-# Vue « Place trophique » plein écran — refonte
+# Brancher le ChatBot global sur la modale trophique
 
-## Objectif
-Remplacer le `Sheet` bottom 92vh par un vrai modal plein écran centré, ajouter une sidebar droite rétractable pour accueillir les futures fonctionnalités (détails espèce, qui mange / mangé par, chatbot), et harmoniser le clic Constellation avec Spirale/Réseau.
+## Diagnostic
 
-## Périmètre fichier
-- `src/components/biodiversity/species-modal/SpeciesTrophicPosition.tsx` — refonte du bloc « Fullscreen overlay »
-- 3 nouveaux composants dans `src/components/biodiversity/species-modal/trophic-fullscreen/`
-  - `TrophicFullscreenModal.tsx` — shell modal (Dialog) + layout
-  - `TrophicSidebar.tsx` — sidebar droite rétractable avec onglets
-  - `TrophicSpeciesDetailPanel.tsx` — fiche de l'espèce sélectionnée (placeholder extensible)
+Le bouton « Ouvrir le chat » dispatche aujourd'hui l'événement `open-species-chatbot`, mais le `ChatBot` global n'écoute **que** `community-chat:open`. Résultat : rien ne se passe. De plus, aucun contexte (chaîne trophique, pool d'espèces) n'est transmis, donc même branché, le chat répondrait dans le vide.
 
-## Architecture cible
+## Objectifs
 
-```text
-+----------------------------------------------------------+
-| Header : PLACE TROPHIQUE — Étourneau sansonnet [L3] [X] |
-+--------------------------------------------+-------------+
-|  Tabs : Constellation | Spirale | Réseau   | ▶ (toggle) |
-+--------------------------------------------+-------------+
-|                                            |  Sidebar    |
-|         Canvas trophique                   |  (320 px)   |
-|         (vue active, plein espace)         |  Onglets :  |
-|                                            |  • Détails  |
-|                                            |  • Mange    |
-|                                            |  • Mangé par|
-|                                            |  • Chat     |
-+--------------------------------------------+-------------+
+1. Cliquer sur « Ouvrir le chat » ouvre **le ChatBot global** (avec ses fonctions Imprimer, Rafraîchir, Voix, Pièce jointe, etc.) par-dessus la modale trophique.
+2. Le ChatBot reçoit en contexte : l'espèce focus + sa chaîne trophique + le pool complet des espèces de l'événement.
+3. La sidebar « Chat » propose **3 suggestions cliquables** au lieu d'un seul bouton, chacune lançant le ChatBot avec un prefill différent.
+4. Comportement cohérent : l'overlay du ChatBot expanded (`z-[80]`) passe au-dessus de la modale trophique (`z-50`).
+
+## Changements
+
+### 1. `src/components/chatbot/ChatBot.tsx`
+
+Étendre le listener `community-chat:open` pour accepter un payload contexte trophique et auto-attacher le pool d'espèces :
+
+- Nouveau champ optionnel `detail.trophic` : `{ scientificName, commonName, group, prey: [...], predators: [...] }`.
+- Nouveau champ optionnel `detail.autoAttachSpeciesPool: boolean` — si `true`, appeler `attachSpeciesPool()` après ouverture (réutilise le slice `SPECIES_POOL_SLICE_KEY` existant).
+- Le contexte trophique est poussé via `chatPageContext.setVisibleSlice('trophic-focus', {...})` pour que l'edge function l'inclue dans le system prompt (convention identique au slice species pool existant).
+
+### 2. `src/components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenModal.tsx`
+
+Remplacer `handleOpenChat` qui dispatche `open-species-chatbot` par un helper qui dispatche `community-chat:open` avec le bon payload :
+
+```ts
+const openChatWith = (prefill: string) => {
+  window.dispatchEvent(new CustomEvent('community-chat:open', {
+    detail: {
+      prefill,
+      species: star.scientificName,
+      speciesLabel: star.commonName || star.scientificName,
+      trophic: {
+        scientificName: star.scientificName,
+        commonName: star.commonName,
+        group: star.group,
+        prey: preyPredators.prey.map(s => ({ sn: s.scientificName, cn: s.commonName, g: s.group })),
+        predators: preyPredators.pred.map(s => ({ sn: s.scientificName, cn: s.commonName, g: s.group })),
+      },
+      autoAttachSpeciesPool: true,
+    },
+  }));
+};
 ```
 
-- Sidebar rétractable via bouton flèche, état persistant en `useState` (par défaut ouverte sur ≥1280 px, fermée en dessous).
-- Canvas occupe `flex-1`, sidebar `w-[320px]` quand ouverte, `w-0` (ou bouton flottant) quand fermée — transition `300ms`.
-- Au-dessous de `md`, la sidebar bascule en drawer bas (Sheet) pour préserver l'espace canvas mobile.
+Remplacer le contenu de l'onglet « Chat » de la sidebar par **3 cartes suggestions** générées dynamiquement à partir de `star` + `meta` + `preyPredators` :
 
-## 1. Modal plein écran
-- Remplacer `Sheet side="bottom" h-[92vh]` par un `Dialog` (shadcn) avec `DialogContent` custom :
-  - `fixed inset-0 w-screen h-screen max-w-none rounded-none p-0`
-  - Fond `bg-background/98 backdrop-blur-xl`
-  - Animation entrée : `animate-scale-in` + `animate-fade-in` (combiné `enter`)
-- Conserver `VisuallyHidden` `DialogTitle` pour l'accessibilité.
-- Fermeture : croix actuelle (déjà bien stylée) en haut à droite + touche Échap (gérée par Dialog).
+1. **Rôle écologique** — « Quel est le rôle de [espèce] dans cet écosystème et que nous apprend sa présence ? »
+2. **Qui la mange / qu'elle mange** — « Avec quelles espèces de cet événement [espèce] interagit-elle trophiquement, et comment ? »
+3. **Comparaison dans le pool** — « Compare [espèce] aux autres [niveau trophique] observés sur cet événement : indicateurs, fragilités, dynamiques. »
 
-## 2. Clic espèce Constellation (drawer espèce)
-Aujourd'hui les 3 vues utilisent un `selected` interne qui affiche un panneau **sous** le canvas — invisible quand le canvas remplit l'écran.
+Chaque carte cliquable appelle `openChatWith(prefill)`. Bouton secondaire « Discuter librement » sans prefill.
 
-Solution :
-- Ajouter une prop optionnelle `onSpeciesSelect?: (s) => void` aux 3 tabs (`ConstellationTab`, `SpiraleTab`, `ReseauTab`).
-- Dans le modal plein écran, intercepter la sélection et la pousser dans la sidebar (onglet **Détails** activé automatiquement, focus visuel sur l'espèce).
-- Conserver le comportement actuel (panneau interne) quand `onSpeciesSelect` n'est pas fourni → aucune régression dans la vue compacte.
-- Effet visuel commun aux 3 vues : halo pulsant sur l'espèce sélectionnée (déjà présent pour `highlightScientificName`, on étend au `selected`).
+Le ChatBot global s'ouvrant en mode expanded (`z-[80]`) recouvre naturellement la modale trophique (`z-50`) — la sidebar reste accessible en arrière-plan quand le marcheur ferme le chat.
 
-## 3. Sidebar — contenu initial
-Onglets (Tabs shadcn) :
-1. **Détails** — fiche compacte (nom, niveau trophique chip, rationale, mini-carrousel photo si dispo). Réutilise `<SpeciesName />` et tokens trophiques.
-2. **Mange** — placeholder « Bientôt » + liste dérivée de `probablePreyGroups` (déjà dans `trophicClassification.ts`) filtrée sur `speciesPool`.
-3. **Mangé par** — symétrique : espèces du pool dont la proie probable inclut l'espèce.
-4. **Chat** — placeholder avec bouton « Ouvrir le chat » qui dispatche le `CustomEvent` existant (cf. mémoire `species-card-carousel-and-chat-logic`) avec contexte trophique.
+### 3. Edge function chatbot (suivi)
 
-Le panneau « Pourquoi ce niveau ? » (actuellement en bas du scroll) migre dans l'onglet **Détails**.
+L'edge function qui consomme `visibleData` doit reconnaître le slice `trophic-focus` et l'injecter dans le system prompt (1 phrase descriptive + liste compacte proies/prédateurs). À identifier dans `supabase/functions/community-chat/` (ou équivalent) — petit ajout, pas de refonte.
 
-## 4. Effets visuels (niveau 3 — équilibré)
-- Transition d'ouverture : fade + scale 0.96 → 1 (250 ms)
-- Bascule entre vues : `AnimatePresence` existant, conservé
-- Sidebar : slide-in-right / slide-out-right au toggle
-- Halo pulsant sur l'espèce sélectionnée dans Constellation (existant pour highlight, étendu)
-- Pas de particules ni parallax — on reste dans la Sobriété Informationnelle
+## Hors-scope
 
-## 5. Responsive
-- ≥1280 px : sidebar ouverte par défaut
-- 768–1279 px : sidebar fermée par défaut, bouton flottant pour l'ouvrir
-- <768 px : sidebar en Sheet bottom (l'expérience mobile reste 1 vue à la fois)
+- Pas de modification de l'edge function au-delà de la prise en compte du nouveau slice.
+- Pas de refonte visuelle du ChatBot lui-même.
+- Pas de persistance spécifique de cette conversation.
 
-## Détails techniques
-- État `selectedSpecies` remonte de tab → modal (lift state up via prop `onSpeciesSelect`).
-- État `sidebarOpen` local au modal, initialisé via `useMediaQuery('(min-width: 1280px)')` (hook simple inline).
-- Aucun changement de logique trophique (`useTrophicChain`, `trophicClassification.ts`) — uniquement présentation.
-- Composants nouveaux pèsent ~120 lignes chacun, on évite de gonfler `SpeciesTrophicPosition.tsx`.
-- Z-index : modal `z-50`, sidebar interne au modal (pas de conflit).
+## Vérification
 
-## Hors-scope (itérations suivantes)
-- Implémentation réelle du chatbot trophique (placeholder cliquable pour démarrer)
-- Données enrichies « régime alimentaire » au-delà de `probablePreyGroups` (nécessiterait une KB séparée)
-- Persistance de la préférence sidebar ouverte/fermée (localStorage)
+1. Ouvrir la modale trophique, cliquer chaque suggestion → ChatBot s'ouvre en plein écran avec prefill, badge « Pièce jointe : Liste des espèces » visible.
+2. Envoyer la question → la réponse mentionne des espèces du pool (preuve que le contexte est passé).
+3. Fermer le chat → on retombe sur la modale trophique avec la sidebar Chat intacte.
