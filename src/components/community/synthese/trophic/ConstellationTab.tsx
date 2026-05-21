@@ -19,6 +19,8 @@ interface Props {
   highlightScientificName?: string;
   /** Compact mode: only render the SVG (no side panel, no overlays). */
   compact?: boolean;
+  /** Optional callback fired when a star is clicked. Receives the star or null when deselected. */
+  onSpeciesSelect?: (star: TrophicStar | null) => void;
 }
 
 const SIZE = 720;
