@@ -432,6 +432,9 @@ const MonEspaceSettings: React.FC<MonEspaceSettingsProps> = ({
             </div>
           </div>
 
+          {/* Visibilité publique */}
+          {!editing && <PublicEventConsentToggle userId={profile.user_id} />}
+
           {/* Actions */}
           <div className="space-y-2 pt-2">
             {editing ? (
