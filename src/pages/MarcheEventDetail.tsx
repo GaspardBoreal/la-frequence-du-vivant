@@ -26,6 +26,7 @@ import LivingPathOverview from '@/components/admin/LivingPathOverview';
 import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import InvitedReadersTab from '@/components/admin/marche-events/InvitedReadersTab';
 import { BookOpen } from 'lucide-react';
+import PublishPublicPanel from '@/components/admin/marche-events/PublishPublicPanel';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
