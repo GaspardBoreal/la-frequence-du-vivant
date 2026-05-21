@@ -185,7 +185,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
             'radial-gradient(ellipse at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <ZoomableSvgStage width={W} height={H} selectedFocus={selected ? { x: selected.x, y: selected.y } : null}>
+        <ZoomableSvgStage width={W} height={H} selectedFocus={effectiveSelected ? { x: effectiveSelected.x, y: effectiveSelected.y } : null}>
           {/* Band guides */}
           {BAND_ORDER.map((g) => {
             const meta = getLevelMeta(g);
@@ -242,7 +242,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           )}
 
           {/* Ambient predator-prey web (faint) */}
-          {!selected && !focusGroup && ambientEdges.map((e, i) => {
+          {!effectiveSelected && !focusGroup && ambientEdges.map((e, i) => {
             const meta = getLevelMeta(e.group);
             if (!meta) return null;
             return (
@@ -257,7 +257,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           })}
 
           {/* Decomposer "return" flows: faint curves from each band toward decomposer column */}
-          {!selected && !focusGroup && positioned.DECOMPOSER.length > 0 && (
+          {!effectiveSelected && !focusGroup && positioned.DECOMPOSER.length > 0 && (
             <g opacity={0.35}>
               {(['L1', 'L2', 'L3', 'L4', 'L5'] as TrophicGroup[]).map((g) => {
                 const band = positioned[g];
@@ -279,7 +279,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           )}
 
           <TrophicBeamEdges
-            show={!!selected}
+            show={!!effectiveSelected}
             activeBeam={activeBeam}
             preyEdges={preyEdges}
             predatorEdges={predatorEdges}
@@ -294,7 +294,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
             const meta = getLevelMeta(n.group);
             if (!meta) return null;
             const muted = isMuted(n);
-            const isSelected = selected?.scientificName === n.scientificName;
+            const isSelected = effectiveSelected?.scientificName === n.scientificName;
             const isHighlighted = highlightScientificName === n.scientificName;
             return (
               <motion.g
@@ -363,9 +363,9 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
           })()}
         </ZoomableSvgStage>
 
-        {!compact && selected && (
+        {!compact && effectiveSelected && (
           <TrophicBeamOverlay
-            selected={selected}
+            selected={effectiveSelected}
             counts={beamCounts}
             activeBeam={activeBeam}
             onToggleBeam={(b) => setActiveBeam(activeBeam === b ? null : b)}
