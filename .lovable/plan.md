@@ -1,181 +1,108 @@
-# Publication publique des événements — lecture seule
 
-Transformer chaque marche autorisée en vitrine publique partageable : URL canonique, médias, biodiversité, témoignages, marcheurs (pseudonymisés), métriques + CTA viraux.
+# Refonte de la page publique d'événement `/m/:slug`
 
----
+## Constat de départ
 
-## 1. Modèle de données
+L'infrastructure existe déjà et fonctionne :
 
-Ajouts sur `public.marche_events` :
+- Table `marche_events` avec `is_public`, `public_slug`, `published_at`
+- Toggle admin (`PublishPublicPanel`) → URL `/m/:slug`
+- Filtre **Tous / Publics / Privés** dans la liste admin
+- RPC `get_public_event`, `get_public_event_counters`, `log_public_event_view` (analytics anonymes par session + UTM + referrer)
+- Page `PublicEventPage.tsx` minimaliste (hero, métadonnées, partage 5 canaux, JSON-LD Event)
 
-- `is_public boolean NOT NULL DEFAULT false` — toggle admin
-- `public_slug text UNIQUE` — slug SEO (généré via `unaccent` à la première activation, ex : `marche-bergerac-2026-05-21`)
-- `published_at timestamptz` — horodatage de la première mise en ligne
-- `published_by uuid` — admin qui a publié
+Ce qui manque pour en faire un **levier de viralité** : richesse des données exposées (biodiversité, marcheurs, médias), refonte visuelle immersive, garantie PII, SEO/sitemap, métriques publiques de social-proof.
 
-Nouvelle table `public.event_public_views` (analytics) :
+## Direction visuelle (à confirmer après le plan)
 
-- `event_id`, `viewed_at timestamptz default now()`
-- `session_id text` (cookie anonyme, hash) → unicité visiteur
-- `referrer text`, `utm_source/medium/campaign text`
-- `country text` (depuis header), `user_agent_family text`
-- Index `(event_id, viewed_at)`
+Avant d'écrire la nouvelle page, je passerai par le rituel « 3 directions de design » (palette/typo/layout figés sur Papier Crème + Forêt Émeraude, 3 compositions distinctes du hero + sections) → vous choisissez. Cette étape se déclenche juste après l'approbation du plan.
 
-RPC sécurisées `SECURITY DEFINER` (jamais d'accès table directe pour le public) :
-
-- `get_public_event(_slug text)` → infos événement + organisateurs
-- `get_public_event_marcheurs(_slug)` → prénom + initiale + avatar + rôle (jamais email/téléphone/nom complet)
-- `get_public_event_biodiversity(_slug)` → snapshots + observations marcheurs fusionnés
-- `get_public_event_media(_slug)` → convivialité, témoignages publiés, audio, textes
-- `get_public_event_counters(_slug)` → vues, visiteurs uniques (J/7j/total)
-- `log_public_event_view(_slug, _session, _referrer, _utm...)` → insertion analytics
-
-RLS : `is_public = true` requis pour toutes les RPC publiques. Aucune policy SELECT directe ouverte sur `marche_events`.
-
----
-
-## 2. Routes & URLs
+## Architecture cible
 
 ```text
-/marches/:slug                  → page publique canonique (SEO)
-/m/:eventId                     → redirect 301 vers /marches/:slug (compat QR codes)
+/m/:slug  (PublicEventPage refondue)
+├── <Hero>                    cover, titre, date, lieu approx, badges sociaux
+├── <SocialProofBar>          X marcheurs · Y espèces · Z observations · vues
+├── <BiodiversitySection>     liste espèces (SpeciesName), carte (RichMap, GPS arrondi), mini-synthèse trophique
+├── <MarcheursSection>        prénom + initiale + photo opt-in, témoignages publics
+├── <MediasSection>           galerie photos publiques, Impact Story résumée
+├── <ShareSection>            WhatsApp/X/FB/LinkedIn/email/copy + QR code + OG image
+├── <CTASection>              « Rejoindre la prochaine marche » + newsletter + Kit Partage affilié
+└── <Footer>                  mentions, lien retour /marches-du-vivant
 ```
 
-Layout dédié `PublicEventLayout` (mobile-first, thème Papier Crème, glassmorphism léger). Onglets internes :
+## Étape 1 — Backend : RPC publiques enrichies (migration SQL)
 
-1. **Récit** — hero (titre, date, lieu, organisateurs), photo de couverture, description
-2. **Marcheurs** — grille avatars pseudonymisés + compteur rôles
-3. **Vivant** — carte des observations + grille espèces (réutilise `RichMap` + `SpeciesName`)
-4. **Convivialité** — mur photo + témoignages + audio
-5. **Empreinte** — fréquence collective + indicateurs clés
+Étendre les 3 RPC existantes (toutes `SECURITY DEFINER`, search_path = public, **PII filtrées au niveau SQL**) :
 
-Pas d'authentification requise. Tous les composants existants sont réutilisés en mode `readOnly`.
+1. **`get_public_event(_slug)`** → ajouter `event_type`, `cover_image_url`, organisateurs (nom + rôle, sans email), **GPS arrondi à 3 décimales** (~110m).
+2. **`get_public_event_biodiversity(_slug)`** → nouvelle : retourne `species[]` (scientific_name, vernacular_fr, iconic_taxon, photo, observations_count) + `observations_geo[]` (lat/lng arrondis, taxon) + `trophic_summary` (producteurs/consommateurs/décomposeurs).
+3. **`get_public_event_marcheurs(_slug)`** → nouvelle : retourne uniquement les marcheurs avec `public_consent = true` (prénom + initiale, photo de profil, lien profil public existant `/marcheurs/:slug`).
+4. **`get_public_event_testimonies(_slug)`** → nouvelle : témoignages `is_public = true`, signés prénom + initiale.
+5. **`get_public_event_medias(_slug)`** → nouvelle : médias `is_public = true` (jamais d'EXIF GPS).
+6. **`get_public_event_counters(_slug)`** → ajouter `marcheurs_count`, `species_count`, `observations_count` (pour social proof).
+7. **`log_public_event_view`** déjà OK → ajouter un type `event = 'share' | 'cta_click'` pour tracer aussi les partages et clics CTA.
 
----
+Nouveau champ table `profiles` : `public_event_consent BOOLEAN DEFAULT false` (opt-in pour apparaître nommément sur les pages publiques d'événements).
 
-## 3. Contrôle admin
+Nouveau champ table `marche_events` : `cover_image_url` (s'il n'existe pas déjà), pour Open Graph.
 
-Dans `MarcheEventDetail` (header) :
+## Étape 2 — Frontend : refonte de `PublicEventPage.tsx`
 
-- Switch **« Publier publiquement »** (Papier Crème, halo doré quand ON)
-- Quand ON : panneau dépliant avec URL canonique, bouton Copier, QR code téléchargeable, mini-aperçu OG
-- Bouton **« Voir la page publique »** (ouvre dans nouvel onglet)
+- Reconstruire la page avec la direction visuelle choisie
+- Réutiliser `<SpeciesName>`, `<RichMap>`, primitives `src/components/maps/` (cohérence avec Mon Espace)
+- `<Helmet>` enrichi : JSON-LD `Event` complet + balise `og:image` pointant vers la cover
+- Boutons partage WhatsApp/X/FB/LinkedIn/email/copy **déjà présents** → ajouter QR code (lib `qrcode.react`) téléchargeable
+- CTA « Rejoindre une marche » → lien vers `/marches-du-vivant` avec UTM `?utm_source=public_event&utm_campaign={slug}`
+- Tracking : appel `log_public_event_view` au mount, `log_public_event_share` au clic partage, `log_public_event_cta` au clic CTA
 
-Dans `EventsListTab` :
+## Étape 3 — Admin : panneau enrichi (`PublishPublicPanel`)
 
-- Nouveau filtre **Visibilité publique** : `Tous` (défaut) / `Publics` / `Privés`
-- Badge `🌍 Public` à côté du titre quand `is_public = true`
-- Colonne compteur de vues (sparkline 7j)
+- Aperçu en iframe de la page publique
+- QR code téléchargeable
+- Mini-dashboard métriques : vues totales / visiteurs uniques / vues 7 jours / partages par canal / sources (UTM/referrer top 5)
+- Bouton « Copier le snippet WhatsApp » (texte + lien préformaté)
+- Garde-fou : si `cover_image_url` absent, prompt admin avant publication
 
----
+## Étape 4 — Confidentialité (PII)
 
-## 4. SEO & partage social
+- Aucune adresse email/téléphone ne quitte les RPC publiques (sélection explicite des colonnes)
+- GPS arrondis à 3 décimales (~110m) côté SQL — résolution suffisante pour la carte sans révéler une parcelle privée
+- Marcheurs : opt-in `public_event_consent` sinon `Marcheur anonyme` (compte mais pas affiché nommément)
+- Témoignages/médias : uniquement `is_public = true`
 
-- `react-helmet-async` par route `/marches/:slug` : title, description, canonical, og:image, JSON-LD `Event` (date, location, organizer)
-- Image Open Graph dynamique : edge function `og-event-image` (1200×630) avec titre + lieu + date + visuel de couverture
-- Bouton **Partager** flottant : WhatsApp, Facebook, X, LinkedIn, Email, Copier le lien (avec UTM auto `utm_source=share&utm_medium={canal}`)
-- Ajout au `sitemap.xml` généré (script `predev/prebuild`) de tous les événements `is_public = true`
+## Étape 5 — SEO & découvrabilité
 
----
+- Sitemap dynamique : nouvelle Edge Function `public-events-sitemap` qui sert `/sitemap-events.xml` listant tous les `is_public = true`
+- Référencer ce sitemap dans `public/robots.txt`
+- JSON-LD `Event` complet avec `attendeeCount`, `image`, `location.geo`
+- `<link rel="canonical">` → `https://la-frequence-du-vivant.com/m/:slug`
 
-## 5. Analytics & boucle virale
+## Étape 6 — Analytics admin
 
-**Tracking** (côté client, sur mount de la page publique) :
+- Réutiliser le tracking existant (`log_public_event_view`) + nouveaux événements `share`/`cta_click`
+- Vue admin agrégée dans le dashboard Communauté : top événements publics par vues/partages/conversions CTA, sources de trafic
 
-- Cookie anonyme `mdv_session` (UUID, 30j)
-- 1 appel `log_public_event_view` au mount avec referrer + UTM parsés
-- Heartbeat toutes les 30s pour mesurer le temps passé (optionnel, phase 2)
+## Fichiers impactés
 
-**Affichage public** (preuve sociale) :
+**Création**
+- Migration SQL : 5 nouvelles RPC + 2 nouvelles colonnes
+- `supabase/functions/public-events-sitemap/index.ts`
+- Composants : `PublicHero.tsx`, `PublicBiodiversitySection.tsx`, `PublicMarcheursSection.tsx`, `PublicMediasSection.tsx`, `PublicShareSection.tsx`, `PublicCTASection.tsx`, `PublicEventMetricsPanel.tsx` (admin)
 
-- En haut de page : `🌱 1 247 personnes ont découvert cette marche`
-- Compteur live-ish (rafraîchi toutes les 60s)
+**Modification**
+- `src/pages/PublicEventPage.tsx` (refonte complète)
+- `src/hooks/usePublicEvent.ts` (nouveaux hooks)
+- `src/components/admin/marche-events/PublishPublicPanel.tsx` (aperçu + métriques + QR)
+- `public/robots.txt` (sitemap-events)
 
-**Dashboard admin** — nouvel onglet **« Rayonnement »** dans `MarcheEventDetail` :
+**Aucune rupture** : URLs `/m/:slug` existantes restent valides (contrainte mémorisée).
 
-- KPIs : vues totales, visiteurs uniques, temps moyen, top referrers, répartition canaux de partage
-- Graphique 30 jours (réutilise `activity-chart-time-series-logic` en Paris-local-time)
-- Top 5 marches publiques (vue cross-events)
+## Questions restantes (non bloquantes — défauts proposés)
 
-**Bouton viral marcheur** (dans `mon-espace`) :
+1. **Opt-in marcheur** : par défaut `false`, prompt poétique dans Édition Profil pour le passer à `true`. OK ?
+2. **Photos publiques** : critère `is_public = true` sur `marcheur_medias` suffit, ou ajouter un second flag `featured_on_event_page` ?
+3. **QR code** : ajouter `qrcode.react` (~5kb) ou générer côté serveur ?
+4. **Sitemap** : limiter aux événements publics passés OU inclure aussi les futurs ?
 
-- Quand la marche du marcheur devient publique : notification + bouton **« Partager ma marche »** dans `MarchesTab`
-- Compteur personnel : `🌟 Ma marche a inspiré X visiteurs`
-- Bonus Fréquence : +5 par partage tracké (UTM avec son slug marcheur)
-
----
-
-## 6. CTAs de conversion
-
-Footer de chaque page publique (sticky en mobile) :
-
-- **« Rejoindre la prochaine marche »** → `/marches-du-vivant` (liste filtrée à venir)
-- **« Organiser ma marche »** → `/marches-du-vivant/organiser`
-- Lien discret **« Propulsé par La Fréquence du Vivant »**
-
----
-
-## 7. Sécurité & RGPD
-
-- Toggle admin uniquement (vérif `has_role(auth.uid(), 'admin')`)
-- Marcheurs pseudonymisés systématiquement côté RPC (jamais d'email/téléphone exposé)
-- Aucun média marqué privé n'est exposé (filtre `visibility = 'public'` sur convivialité/témoignages)
-- Bannière discrète en pied de page : « Données partagées avec l'accord des participants »
-- Phase 2 (non bloquant) : consentement explicite par marcheur via opt-out depuis son espace
-
----
-
-## 8. Découpage de livraison
-
-**Lot 1 — Fondations (publication + URL)**
-
-- Migration : colonnes `is_public/public_slug/published_at/published_by`, génération slug, RPC `get_public_event*`
-- Page `/marches/:slug` (récit + marcheurs + vivant + convivialité)
-- Toggle admin + filtre liste + badge
-
-**Lot 2 — Viralité**
-
-- Boutons partage + UTM
-- Open Graph dynamique (edge function image) + JSON-LD `Event`
-- Sitemap auto
-
-**Lot 3 — Analytics**
-
-- Table `event_public_views` + RPC log
-- Onglet « Rayonnement » admin + compteur public preuve sociale
-- Bouton partage marcheur + bonus Fréquence
-
-**Lot 4 (optionnel)**
-
-- Heartbeat temps passé, opt-out marcheur, QR code téléchargeable enrichi
-
----
-
-## 9. Fichiers principaux à créer / modifier
-
-Création :
-
-- `supabase/migrations/<ts>_public_events.sql`
-- `supabase/functions/og-event-image/index.ts`
-- `src/pages/PublicEventPage.tsx` + sous-composants `src/components/public-event/*`
-- `src/hooks/usePublicEvent.ts`, `usePublicEventTracking.ts`
-- `src/components/admin/marche-events/PublishPublicPanel.tsx`
-- `src/components/admin/marche-events/RayonnementTab.tsx`
-
-Modification :
-
-- `src/App.tsx` (routes `/marches/:slug` + redirect `/m/:id`)
-- `src/components/admin/marche-events/EventsListTab.tsx` (filtre + badge)
-- `src/pages/MarcheEventDetail.tsx` (panneau publication + onglet Rayonnement)
-- `src/components/community/tabs/MarchesTab.tsx` (bouton partage marcheur)
-- `scripts/generate-sitemap.ts` (entrées dynamiques)
-- `mem://index.md` + nouvelle mémoire `features/public-event-publication-logic`
-
----
-
-## Questions de cadrage restantes
-
-1. **Slug** : auto-généré à l'activation
-2. **Image de couverture** : Champ dédié à uploader par l'admin
-3. **Période d'expiration** : la page reste publique indéfiniment
-4. **Bonus Fréquence partage** : +5 par share unique (par session/canal)
+Je peux démarrer dès approbation par l'étape de directions de design pour le hero + sections.
