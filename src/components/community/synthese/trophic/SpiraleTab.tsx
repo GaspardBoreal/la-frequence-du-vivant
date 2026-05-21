@@ -1,15 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import {
   TROPHIC_LEVELS,
   DECOMPOSER_META,
   getLevelMeta,
-  probablePreyGroups,
   type TrophicGroup,
 } from '@/lib/trophicClassification';
 import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
 import { DefaultPanel, LevelPanel, SelectedStarPanel, type TrophicSpeciesPoolEntry } from './_panels';
+import { useTrophicBeams } from './useTrophicBeams';
+import { TrophicBeamOverlay, type Beam } from './TrophicBeamOverlay';
+import { TrophicBeamEdges } from './TrophicBeamEdges';
 
 interface Props {
   chain: TrophicChainResult;
@@ -142,6 +144,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
     onSpeciesSelect?.(s);
   };
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
+  const [activeBeam, setActiveBeam] = useState<Beam>(null);
 
   const segments = useMemo(() => buildSegments(chain.counts), [chain.counts]);
 
@@ -164,23 +167,38 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
     [positioned],
   );
 
-  const selectedEdges = useMemo(() => {
-    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number }>;
-    const preyGroups = probablePreyGroups(selected.group);
-    const preyStars = preyGroups.flatMap((g) => positioned[g]).slice(0, 8);
-    return preyStars.map((p) => ({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y }));
-  }, [selected, positioned]);
+  // Ghost target = midpoint of the segment for empty levels
+  const ghostTargetFor = useCallback(
+    (g: TrophicGroup) => {
+      const seg = segments.find((s) => s.group === g);
+      if (!seg) return { x: CENTER, y: CENTER };
+      const p = spiralPoint((seg.tStart + seg.tEnd) / 2);
+      return { x: p.x, y: p.y };
+    },
+    [segments],
+  );
+  // Decomposer ghost: outer point on the counter-spiral
+  const decomposerGhost = useMemo(() => {
+    const t = T_MAX * 0.7;
+    const r = R0 * Math.exp(B * t) * 0.78;
+    const angle = -Math.PI / 2 - t * 0.85;
+    return { x: CENTER + Math.cos(angle) * r, y: CENTER + Math.sin(angle) * r };
+  }, []);
+
+  const { preyEdges, predatorEdges, recyclerEdges, beamCounts, connectedNames } = useTrophicBeams(
+    selected,
+    positioned,
+    ghostTargetFor,
+    decomposerGhost,
+  );
 
   const isStarMuted = (s: PositionedStar) => {
     if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
-    if (selected) {
-      if (s.scientificName === selected.scientificName) return false;
-      const prey = probablePreyGroups(selected.group);
-      return !prey.includes(s.group);
-    }
+    if (selected) return !connectedNames.has(s.scientificName);
     return false;
   };
+
 
   // Position the moving "energy" particle along the main spiral
   const spiralFullPath = useMemo(() => spiralPath(0, T_MAX, 240), []);
@@ -249,22 +267,15 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
             </circle>
           ))}
 
-          {/* Edges (only when selected) */}
-          <AnimatePresence>
-            {selectedEdges.map((e, i) => (
-              <motion.line
-                key={`edge-${i}`}
-                x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
-                stroke="hsl(var(--accent))"
-                strokeWidth={1.2}
-                strokeDasharray="3 4"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 0.65 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-              />
-            ))}
-          </AnimatePresence>
+          <TrophicBeamEdges
+            show={!!selected}
+            activeBeam={activeBeam}
+            preyEdges={preyEdges}
+            predatorEdges={predatorEdges}
+            recyclerEdges={recyclerEdges}
+            curved={false}
+          />
+
 
           {/* Stars */}
           {allStars.map((s, i) => {
@@ -284,7 +295,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
                 onClick={() => setSelected(isSelected ? null : s)}
                 style={{ cursor: 'pointer' }}
               >
-                {isHighlighted && (
+                {(isHighlighted || isSelected) && (
                   <>
                     <motion.circle
                       cx={s.x} cy={s.y} r={s.r * 5}
@@ -379,7 +390,16 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
           </text>
         </svg>
 
-        {!compact && chain.balance.missingLevels.length > 0 && (
+        {!compact && selected && (
+          <TrophicBeamOverlay
+            selected={selected}
+            counts={beamCounts}
+            activeBeam={activeBeam}
+            onToggleBeam={(b) => setActiveBeam(activeBeam === b ? null : b)}
+          />
+        )}
+
+        {!compact && !selected && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {chain.balance.missingLevels.map((g) => {
               const m = getLevelMeta(g);
@@ -397,12 +417,13 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
 
         {!compact && (selected || focusGroup) && (
           <button
-            onClick={() => { setSelected(null); setFocusGroup(null); }}
+            onClick={() => { setSelected(null); setFocusGroup(null); setActiveBeam(null); }}
             className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border hover:bg-background"
           >
             <X className="w-3 h-3" /> Réinitialiser
           </button>
         )}
+
 
         {!compact && (
           <div className="absolute top-3 left-3 text-[10px] text-muted-foreground bg-background/70 backdrop-blur px-2 py-1 rounded-md border border-border max-w-[160px] leading-snug">

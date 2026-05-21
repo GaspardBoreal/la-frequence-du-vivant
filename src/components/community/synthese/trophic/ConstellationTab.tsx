@@ -1,15 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import {
   TROPHIC_LEVELS,
   DECOMPOSER_META,
   getLevelMeta,
-  probablePreyGroups,
   type TrophicGroup,
 } from '@/lib/trophicClassification';
 import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
 import { DefaultPanel, LevelPanel, SelectedStarPanel, type TrophicSpeciesPoolEntry } from './_panels';
+import { useTrophicBeams } from './useTrophicBeams';
+import { TrophicBeamOverlay, type Beam } from './TrophicBeamOverlay';
+import { TrophicBeamEdges } from './TrophicBeamEdges';
 
 interface Props {
   chain: TrophicChainResult;
@@ -67,6 +69,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
     onSpeciesSelect?.(s);
   };
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
+  const [activeBeam, setActiveBeam] = useState<Beam>(null);
 
   const positioned = useMemo(() => {
     const map: Record<TrophicGroup, PositionedStar[]> = {
@@ -86,24 +89,30 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
     [positioned],
   );
 
-  // Compute predator->prey edges. To stay legible: only render edges for selected star.
-  const selectedEdges = useMemo(() => {
-    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number }>;
-    const preyGroups = probablePreyGroups(selected.group);
-    const preyStars = preyGroups.flatMap((g) => positioned[g]).slice(0, 8);
-    return preyStars.map((p) => ({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y }));
-  }, [selected, positioned]);
+  // Ghost target = top of the ring (angle -π/2) for empty levels
+  const ghostTargetFor = useCallback(
+    (g: TrophicGroup) => ({ x: CENTER, y: CENTER - RADII[g] }),
+    [],
+  );
+  const decomposerGhost = useMemo(
+    () => ({ x: CENTER + RADII.DECOMPOSER, y: CENTER }),
+    [],
+  );
+
+  const { preyEdges, predatorEdges, recyclerEdges, beamCounts, connectedNames } = useTrophicBeams(
+    selected,
+    positioned,
+    ghostTargetFor,
+    decomposerGhost,
+  );
 
   const isStarMuted = (s: PositionedStar) => {
     if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
-    if (selected) {
-      if (s.scientificName === selected.scientificName) return false;
-      const prey = probablePreyGroups(selected.group);
-      return !prey.includes(s.group);
-    }
+    if (selected) return !connectedNames.has(s.scientificName);
     return false;
   };
+
 
   if (compact) {
     return (
@@ -138,22 +147,15 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             transform={`rotate(15 ${CENTER} ${CENTER})`}
           />
 
-          {/* edges (only when selected) */}
-          <AnimatePresence>
-            {selectedEdges.map((e, i) => (
-              <motion.line
-                key={`edge-${i}`}
-                x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
-                stroke="hsl(var(--accent))"
-                strokeWidth={1.2}
-                strokeDasharray="3 4"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 0.65 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-              />
-            ))}
-          </AnimatePresence>
+          <TrophicBeamEdges
+            show={!!selected}
+            activeBeam={activeBeam}
+            preyEdges={preyEdges}
+            predatorEdges={predatorEdges}
+            recyclerEdges={recyclerEdges}
+            curved={false}
+          />
+
 
           {allStars.map((s, i) => {
             const meta = getLevelMeta(s.group);
@@ -246,22 +248,15 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             </text>
           ))}
 
-          {/* edges (only when selected) */}
-          <AnimatePresence>
-            {selectedEdges.map((e, i) => (
-              <motion.line
-                key={`edge-${i}`}
-                x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
-                stroke="hsl(var(--accent))"
-                strokeWidth={1.2}
-                strokeDasharray="3 4"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 0.65 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-              />
-            ))}
-          </AnimatePresence>
+          <TrophicBeamEdges
+            show={!!selected}
+            activeBeam={activeBeam}
+            preyEdges={preyEdges}
+            predatorEdges={predatorEdges}
+            recyclerEdges={recyclerEdges}
+            curved={false}
+          />
+
 
           {/* stars */}
           {allStars.map((s, i) => {
@@ -282,7 +277,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
                 style={{ cursor: 'pointer' }}
               >
                 {/* spotlight pulse for the highlighted species */}
-                {isHighlighted && (
+                {(isHighlighted || isSelected) && (
                   <>
                     <motion.circle
                       cx={s.x} cy={s.y}
@@ -345,8 +340,16 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
           })()}
         </svg>
 
-        {/* Empty levels alert chips */}
-        {chain.balance.missingLevels.length > 0 && (
+        {selected && (
+          <TrophicBeamOverlay
+            selected={selected}
+            counts={beamCounts}
+            activeBeam={activeBeam}
+            onToggleBeam={(b) => setActiveBeam(activeBeam === b ? null : b)}
+          />
+        )}
+
+        {!selected && chain.balance.missingLevels.length > 0 && (
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
             {chain.balance.missingLevels.map((g) => {
               const m = getLevelMeta(g);
@@ -364,12 +367,13 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
 
         {(selected || focusGroup) && (
           <button
-            onClick={() => { setSelected(null); setFocusGroup(null); }}
+            onClick={() => { setSelected(null); setFocusGroup(null); setActiveBeam(null); }}
             className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border hover:bg-background"
           >
             <X className="w-3 h-3" /> Réinitialiser
           </button>
         )}
+
       </div>
 
       {/* Side panel — pédagogique */}
