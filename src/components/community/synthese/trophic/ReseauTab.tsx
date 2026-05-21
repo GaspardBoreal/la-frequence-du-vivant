@@ -393,7 +393,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
                 onClick={() => setSelected(isSelected ? null : n)}
                 style={{ cursor: 'pointer' }}
               >
-                {isHighlighted && (
+                {(isHighlighted || isSelected) && (
                   <>
                     <motion.circle
                       cx={n.x} cy={n.y} r={n.r * 5}
