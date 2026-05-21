@@ -269,6 +269,12 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
               : 'bg-slate-900/98 backdrop-blur-xl border-white/10 text-white p-0 gap-0 w-full sm:!max-w-[620px] h-full flex flex-col overflow-hidden'
           }
         >
+          {/* Halo discret derrière la croix de fermeture — élargit la cible visuelle et tactile */}
+          <div
+            aria-hidden="true"
+            className="absolute top-1 right-1 w-10 h-10 rounded-full bg-black/45 ring-1 ring-white/15 backdrop-blur-md shadow-md pointer-events-none z-10"
+          />
+
           {/* Accessible title (hidden) */}
           <VisuallyHidden.Root asChild>
             <SheetTitle>Détails de l'espèce {species.scientificName}</SheetTitle>

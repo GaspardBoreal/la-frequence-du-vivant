@@ -224,9 +224,9 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
           </>
         )}
 
-        {/* Compteur 1/N */}
+        {/* Compteur 1/N — centré en haut pour éviter la collision avec la croix de fermeture */}
         {isMultiple && (
-          <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-black/65 backdrop-blur text-[11px] text-white/90 font-medium tabular-nums">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-black/60 ring-1 ring-white/15 backdrop-blur-md text-[11px] text-white/90 font-medium tabular-nums shadow-sm pointer-events-none">
             {selected + 1} / {slides.length}
           </div>
         )}
