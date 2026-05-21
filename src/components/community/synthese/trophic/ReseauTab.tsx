@@ -136,22 +136,79 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
     return edges.slice(0, cap);
   }, [positioned, selected]);
 
-  /** Selected node edges */
-  const selectedEdges = useMemo(() => {
-    if (!selected) return [];
-    const preyGroups = probablePreyGroups(selected.group);
-    const preyNodes = preyGroups.flatMap((g) => positioned[g]).slice(0, 10);
-    return preyNodes.map((p) => ({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y }));
+  const EDGE_CAP = 24;
+
+  /** "Qui je mange" — arcs descendants vers les proies */
+  const preyEdges = useMemo(() => {
+    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }>;
+    const groups = probablePreyGroups(selected.group);
+    const out: Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }> = [];
+    groups.forEach((g) => {
+      const pool = positioned[g];
+      if (pool.length === 0) {
+        const yTarget = bandY[g as Exclude<TrophicGroup, 'DECOMPOSER' | 'UNCLASSIFIED'>];
+        out.push({ x1: selected.x, y1: selected.y, x2: W / 2, y2: yTarget, group: g, ghost: true });
+      } else {
+        pool.forEach((p) => out.push({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y, group: g }));
+      }
+    });
+    return out.slice(0, EDGE_CAP + groups.length);
+  }, [selected, positioned, bandY]);
+
+  /** "Qui me mange" — arcs ascendants vers les mangeurs */
+  const predatorEdges = useMemo(() => {
+    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }>;
+    const groups = probablePredatorGroups(selected.group);
+    const out: Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }> = [];
+    groups.forEach((g) => {
+      const pool = positioned[g];
+      if (pool.length === 0) {
+        const yTarget = bandY[g as Exclude<TrophicGroup, 'DECOMPOSER' | 'UNCLASSIFIED'>];
+        out.push({ x1: selected.x, y1: selected.y, x2: W / 2, y2: yTarget, group: g, ghost: true });
+      } else {
+        pool.forEach((p) => out.push({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y, group: g }));
+      }
+    });
+    return out.slice(0, EDGE_CAP + groups.length);
+  }, [selected, positioned, bandY]);
+
+  /** "Qui me recycle" — arcs latéraux vers la colonne décomposeurs */
+  const recyclerEdges = useMemo(() => {
+    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number; ghost?: boolean }>;
+    if (selected.group === 'DECOMPOSER') return [];
+    const pool = positioned.DECOMPOSER;
+    if (pool.length === 0) {
+      return [{ x1: selected.x, y1: selected.y, x2: decomposerX, y2: H / 2, ghost: true }];
+    }
+    return pool.slice(0, EDGE_CAP).map((p) => ({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y }));
+  }, [selected, positioned, decomposerX]);
+
+  /** Counts pour overlay (incluant les fantômes pour l'aspect inspirant) */
+  const beamCounts = useMemo(() => {
+    if (!selected) return { eat: 0, eaten: 0, recycle: 0 };
+    const preyG = probablePreyGroups(selected.group);
+    const predG = probablePredatorGroups(selected.group);
+    const eat = preyG.reduce((acc, g) => acc + Math.max(1, positioned[g].length), 0);
+    const eaten = predG.reduce((acc, g) => acc + Math.max(1, positioned[g].length), 0);
+    const recycle = selected.group === 'DECOMPOSER' ? 0 : Math.max(1, positioned.DECOMPOSER.length);
+    return { eat, eaten, recycle };
+  }, [selected, positioned]);
+
+  /** Nœuds connectés au sélectionné (pour la mise en valeur) */
+  const connectedNames = useMemo(() => {
+    if (!selected) return new Set<string>();
+    const set = new Set<string>([selected.scientificName]);
+    [...probablePreyGroups(selected.group), ...probablePredatorGroups(selected.group)].forEach((g) => {
+      positioned[g].forEach((n) => set.add(n.scientificName));
+    });
+    positioned.DECOMPOSER.forEach((n) => set.add(n.scientificName));
+    return set;
   }, [selected, positioned]);
 
   const isMuted = (n: PositionedNode) => {
     if (highlightScientificName) return n.scientificName !== highlightScientificName;
     if (focusGroup) return n.group !== focusGroup;
-    if (selected) {
-      if (n.scientificName === selected.scientificName) return false;
-      const prey = probablePreyGroups(selected.group);
-      return !prey.includes(n.group);
-    }
+    if (selected) return !connectedNames.has(n.scientificName);
     return false;
   };
 
