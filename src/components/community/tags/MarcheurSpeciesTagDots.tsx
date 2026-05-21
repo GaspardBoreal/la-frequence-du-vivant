@@ -102,7 +102,14 @@ const MarcheurSpeciesTagDots: React.FC<Props> = ({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="left">
+          <p className="text-xs">Mes tags</p>
+        </TooltipContent>
+      </Tooltip>
       <PopoverContent
         className="w-72 p-3 z-50"
         align="start"
