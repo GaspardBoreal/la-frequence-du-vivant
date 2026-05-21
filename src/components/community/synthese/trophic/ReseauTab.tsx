@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, ArrowUp, ArrowDown, RefreshCcw } from 'lucide-react';
 import {
   TROPHIC_LEVELS,
   DECOMPOSER_META,
   getLevelMeta,
   probablePreyGroups,
+  probablePredatorGroups,
   type TrophicGroup,
 } from '@/lib/trophicClassification';
 import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
