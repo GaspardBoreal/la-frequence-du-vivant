@@ -11,6 +11,7 @@ import type { TrophicChainResult, TrophicStar } from '@/hooks/useTrophicChain';
 import { DefaultPanel, LevelPanel, SelectedStarPanel, type TrophicSpeciesPoolEntry } from './_panels';
 import { useTrophicBeams } from './useTrophicBeams';
 import { TrophicBeamOverlay, type Beam } from './TrophicBeamOverlay';
+import { TrophicBeamEdges } from './TrophicBeamEdges';
 
 interface Props {
   chain: TrophicChainResult;
