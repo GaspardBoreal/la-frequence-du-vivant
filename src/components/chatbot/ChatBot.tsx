@@ -179,7 +179,20 @@ export function ChatBot({
   useEffect(() => {
     const onOpenRequest = (e: Event) => {
       const detail = (e as CustomEvent).detail as
-        | { prefill?: string; species?: string; speciesLabel?: string }
+        | {
+            prefill?: string;
+            species?: string;
+            speciesLabel?: string;
+            trophic?: {
+              scientificName: string;
+              commonName?: string | null;
+              group: string;
+              levelLabel?: string;
+              prey?: Array<{ sn: string; cn?: string | null; g: string }>;
+              predators?: Array<{ sn: string; cn?: string | null; g: string }>;
+            };
+            autoAttachSpeciesPool?: boolean;
+          }
         | undefined;
       setIsOpen(true);
       // Force le mode plein écran : sur mobile, le panneau bas-droite est masqué
@@ -189,6 +202,31 @@ export function ChatBot({
         setOriginContext({ speciesLabel: detail.speciesLabel || detail.species });
       } else {
         setOriginContext(null);
+      }
+      // Slice trophique : injecté côté edge function pour enrichir le system prompt
+      if (detail?.trophic) {
+        chatPageContext.setVisibleSlice('exploration.trophic.focus', {
+          label: `Place trophique de ${detail.trophic.commonName || detail.trophic.scientificName}`,
+          species: {
+            scientificName: detail.trophic.scientificName,
+            commonName: detail.trophic.commonName ?? null,
+            group: detail.trophic.group,
+            levelLabel: detail.trophic.levelLabel ?? null,
+          },
+          prey: detail.trophic.prey ?? [],
+          predators: detail.trophic.predators ?? [],
+        });
+      }
+      // Pièce jointe automatique du pool d'espèces de l'événement
+      if (detail?.autoAttachSpeciesPool) {
+        const pool = chatPageContext.getState().pageState?.availableAttachments?.speciesPool;
+        if (pool) {
+          chatPageContext.setVisibleSlice(SPECIES_POOL_SLICE_KEY, {
+            label: pool.label,
+            truncated: pool.truncated ?? false,
+            species: pool.items,
+          });
+        }
       }
       if (detail?.prefill) {
         setInput(detail.prefill);
