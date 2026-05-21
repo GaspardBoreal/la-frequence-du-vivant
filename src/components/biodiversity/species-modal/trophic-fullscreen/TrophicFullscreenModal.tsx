@@ -102,14 +102,31 @@ export const TrophicFullscreenModal: React.FC<Props> = ({
     return { prey, pred };
   }, [star, chain.stars]);
 
-  const handleOpenChat = () => {
+  const openChatWith = (prefill: string) => {
     if (typeof window === 'undefined' || !star) return;
     window.dispatchEvent(
-      new CustomEvent('open-species-chatbot', {
+      new CustomEvent('community-chat:open', {
         detail: {
-          scientificName: star.scientificName,
-          commonName: star.commonName,
-          trophicGroup: star.group,
+          prefill,
+          species: star.scientificName,
+          speciesLabel: star.commonName || star.scientificName,
+          trophic: {
+            scientificName: star.scientificName,
+            commonName: star.commonName,
+            group: star.group,
+            levelLabel: meta?.label ?? null,
+            prey: preyPredators.prey.map((s) => ({
+              sn: s.scientificName,
+              cn: s.commonName ?? null,
+              g: s.group,
+            })),
+            predators: preyPredators.pred.map((s) => ({
+              sn: s.scientificName,
+              cn: s.commonName ?? null,
+              g: s.group,
+            })),
+          },
+          autoAttachSpeciesPool: true,
         },
       }),
     );
