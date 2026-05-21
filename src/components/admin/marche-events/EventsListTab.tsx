@@ -108,6 +108,11 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                       <CalendarDays className="h-3.5 w-3.5" />
                       {format(new Date(event.date_marche), 'PPP à HH:mm', { locale: fr })}
                     </span>
+                    {visibility?.[event.id]?.is_public && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                        <Globe2 className="h-3 w-3" /> Public
+                      </span>
+                    )}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
