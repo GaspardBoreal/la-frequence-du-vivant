@@ -333,20 +333,72 @@ export const TrophicFullscreenModal: React.FC<Props> = ({
 
                       {sidebarTab === 'chat' && (
                         <div className="space-y-3">
-                          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Compagnon</div>
+                          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                            Compagnon du Vivant
+                          </div>
                           <p className="text-sm text-foreground leading-relaxed">
-                            Posez une question sur la place de <span className="font-medium">{star?.commonName || star?.scientificName || 'cette espèce'}</span> dans la chaîne trophique.
+                            Explore{' '}
+                            <span className="font-medium">
+                              {star?.commonName || star?.scientificName || 'cette espèce'}
+                            </span>{' '}
+                            avec l'IA. Le contexte trophique et toutes les espèces de l'événement sont
+                            joints automatiquement.
                           </p>
+                          {star ? (
+                            <ul className="space-y-2">
+                              {[
+                                {
+                                  title: 'Rôle écologique',
+                                  hint: 'Indicateur, fonction, saisonnalité',
+                                  prompt: `Quel est le rôle écologique de ${star.commonName || star.scientificName}${meta ? ` (${meta.label})` : ''} dans cet écosystème ? Que nous apprend sa présence : indicateur de quoi, fonctions clés, saisonnalité, fragilités ?`,
+                                },
+                                {
+                                  title: 'Qui la mange, qu’elle mange',
+                                  hint: 'Interactions trophiques réelles du pool',
+                                  prompt: `Parmi les espèces observées sur cet événement, avec lesquelles ${star.commonName || star.scientificName} interagit-elle trophiquement ? Détaille les proies probables, les prédateurs, et la nature des liens.`,
+                                },
+                                {
+                                  title: `Comparaison ${meta ? meta.shortLabel : 'du niveau'}`,
+                                  hint: 'Mise en perspective dans le pool',
+                                  prompt: `Compare ${star.commonName || star.scientificName} aux autres ${meta?.label.toLowerCase() ?? 'espèces du même niveau'} observés sur cet événement : ressemblances, différences, indicateurs respectifs, ce que leur cohabitation révèle.`,
+                                },
+                              ].map((s) => (
+                                <li key={s.title}>
+                                  <button
+                                    type="button"
+                                    onClick={() => openChatWith(s.prompt)}
+                                    className="w-full text-left p-3 rounded-xl border border-border bg-background/60 hover:bg-muted/60 hover:border-primary/40 transition group"
+                                  >
+                                    <div className="flex items-start gap-2">
+                                      <MessageCircle className="w-4 h-4 mt-0.5 text-primary flex-shrink-0 group-hover:scale-110 transition" />
+                                      <div className="min-w-0">
+                                        <div className="text-sm font-medium text-foreground leading-tight">
+                                          {s.title}
+                                        </div>
+                                        <div className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                                          {s.hint}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-xs text-muted-foreground italic">
+                              Sélectionnez une espèce pour démarrer une conversation contextualisée.
+                            </p>
+                          )}
                           <button
                             type="button"
-                            onClick={handleOpenChat}
-                            className="w-full inline-flex items-center justify-center gap-2 h-10 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+                            onClick={() => openChatWith('')}
+                            disabled={!star}
+                            className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-full bg-muted/60 hover:bg-muted text-foreground text-xs font-medium transition disabled:opacity-50"
                           >
-                            <MessageCircle className="w-4 h-4" />
-                            Ouvrir le chat
+                            Discuter librement
                           </button>
-                          <p className="text-[11px] text-muted-foreground leading-relaxed">
-                            Le compagnon recevra automatiquement le contexte trophique (niveau, proies probables, prédateurs).
+                          <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
+                            📎 Liste des espèces de l'événement attachée automatiquement.
                           </p>
                         </div>
                       )}
