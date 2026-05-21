@@ -120,11 +120,12 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
     if (selected) return [];
     const edges: Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup }> = [];
     const cap = 80;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { probablePreyGroups } = require('@/lib/trophicClassification') as typeof import('@/lib/trophicClassification');
     (['L5', 'L4', 'L3', 'L2'] as TrophicGroup[]).forEach((pred) => {
       const preds = positioned[pred];
       const preyGroups = probablePreyGroups(pred);
       preds.forEach((p, idx) => {
-        // 2 prey links per predator max (deterministic pick)
         preyGroups.slice(0, 2).forEach((pg) => {
           const pool = positioned[pg];
           if (pool.length === 0) return;
@@ -136,74 +137,21 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
     return edges.slice(0, cap);
   }, [positioned, selected]);
 
-  const EDGE_CAP = 24;
+  const ghostTargetFor = useCallback(
+    (g: TrophicGroup) => ({
+      x: W / 2,
+      y: bandY[g as Exclude<TrophicGroup, 'DECOMPOSER' | 'UNCLASSIFIED'>] ?? H / 2,
+    }),
+    [bandY],
+  );
+  const decomposerGhost = useMemo(() => ({ x: decomposerX, y: H / 2 }), [decomposerX]);
 
-  /** "Qui je mange" — arcs descendants vers les proies */
-  const preyEdges = useMemo(() => {
-    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }>;
-    const groups = probablePreyGroups(selected.group);
-    const out: Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }> = [];
-    groups.forEach((g) => {
-      const pool = positioned[g];
-      if (pool.length === 0) {
-        const yTarget = bandY[g as Exclude<TrophicGroup, 'DECOMPOSER' | 'UNCLASSIFIED'>];
-        out.push({ x1: selected.x, y1: selected.y, x2: W / 2, y2: yTarget, group: g, ghost: true });
-      } else {
-        pool.forEach((p) => out.push({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y, group: g }));
-      }
-    });
-    return out.slice(0, EDGE_CAP + groups.length);
-  }, [selected, positioned, bandY]);
-
-  /** "Qui me mange" — arcs ascendants vers les mangeurs */
-  const predatorEdges = useMemo(() => {
-    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }>;
-    const groups = probablePredatorGroups(selected.group);
-    const out: Array<{ x1: number; y1: number; x2: number; y2: number; group: TrophicGroup; ghost?: boolean }> = [];
-    groups.forEach((g) => {
-      const pool = positioned[g];
-      if (pool.length === 0) {
-        const yTarget = bandY[g as Exclude<TrophicGroup, 'DECOMPOSER' | 'UNCLASSIFIED'>];
-        out.push({ x1: selected.x, y1: selected.y, x2: W / 2, y2: yTarget, group: g, ghost: true });
-      } else {
-        pool.forEach((p) => out.push({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y, group: g }));
-      }
-    });
-    return out.slice(0, EDGE_CAP + groups.length);
-  }, [selected, positioned, bandY]);
-
-  /** "Qui me recycle" — arcs latéraux vers la colonne décomposeurs */
-  const recyclerEdges = useMemo<Array<{ x1: number; y1: number; x2: number; y2: number; ghost?: boolean }>>(() => {
-    if (!selected) return [];
-    if (selected.group === 'DECOMPOSER') return [];
-    const pool = positioned.DECOMPOSER;
-    if (pool.length === 0) {
-      return [{ x1: selected.x, y1: selected.y, x2: decomposerX, y2: H / 2, ghost: true }];
-    }
-    return pool.slice(0, EDGE_CAP).map((p) => ({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y }));
-  }, [selected, positioned, decomposerX]);
-
-  /** Counts pour overlay (incluant les fantômes pour l'aspect inspirant) */
-  const beamCounts = useMemo(() => {
-    if (!selected) return { eat: 0, eaten: 0, recycle: 0 };
-    const preyG = probablePreyGroups(selected.group);
-    const predG = probablePredatorGroups(selected.group);
-    const eat = preyG.reduce((acc, g) => acc + Math.max(1, positioned[g].length), 0);
-    const eaten = predG.reduce((acc, g) => acc + Math.max(1, positioned[g].length), 0);
-    const recycle = selected.group === 'DECOMPOSER' ? 0 : Math.max(1, positioned.DECOMPOSER.length);
-    return { eat, eaten, recycle };
-  }, [selected, positioned]);
-
-  /** Nœuds connectés au sélectionné (pour la mise en valeur) */
-  const connectedNames = useMemo(() => {
-    if (!selected) return new Set<string>();
-    const set = new Set<string>([selected.scientificName]);
-    [...probablePreyGroups(selected.group), ...probablePredatorGroups(selected.group)].forEach((g) => {
-      positioned[g].forEach((n) => set.add(n.scientificName));
-    });
-    positioned.DECOMPOSER.forEach((n) => set.add(n.scientificName));
-    return set;
-  }, [selected, positioned]);
+  const { preyEdges, predatorEdges, recyclerEdges, beamCounts, connectedNames } = useTrophicBeams(
+    selected,
+    positioned,
+    ghostTargetFor,
+    decomposerGhost,
+  );
 
   const isMuted = (n: PositionedNode) => {
     if (highlightScientificName) return n.scientificName !== highlightScientificName;
@@ -211,6 +159,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
     if (selected) return !connectedNames.has(n.scientificName);
     return false;
   };
+
 
   /** Curved bezier path between two points (mostly vertical curve) */
   const curve = (x1: number, y1: number, x2: number, y2: number) => {
