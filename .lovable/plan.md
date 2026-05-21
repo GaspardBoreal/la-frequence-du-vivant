@@ -1,89 +1,58 @@
 ## Problème
 
-Dans l'onglet **Apprendre → L'Œil**, sur 6 vignettes papillons, 5 affichent la photo terrain prise par les marcheurs et **Azurés (Polyommatus)** affiche la photo iNaturalist. La sélection est aléatoire selon que le snapshot iNat porte ou non une `imageUrl` pour cette espèce.
+**Trichodes alvearius** (Coléoptère mangeur d'abeilles) affiche une photo iNat aléatoire (fetch live) au lieu d'une des 2 photos terrain prises par Gaspard Boréal (marcheur éditorial) et stockées dans le snapshot iNat de l'event.
 
 ## Cause racine
 
-Fichier : `src/hooks/useExplorationSpeciesPool.ts`
+Dans `useExplorationSpeciesPool.ts`, la règle actuelle ne couvre pas le cas où :
+- Aucune `marcheur_observations` directe pour l'espèce
+- Mais des `species_data[].photos[]` existent dans le snapshot, dont certaines avec `attributions[].observerName` = marcheur éditorial de l'event
 
-L'agrégation se fait en deux passes :
+Résultat : `imageUrl = null` → `CuratedSpeciesCard` fallback sur `useSpeciesPhoto` qui appelle iNat live (photo aléatoire hors périmètre).
 
-1. **Snapshots iNat d'abord** (lignes 59-83) — `imageUrl` est rempli avec l'image iNat dès qu'elle existe dans `species_data[].imageUrl`.
-2. **Marcheur observations ensuite** (lignes 89-123) — la photo marcheur n'écrase l'image **que si `imageUrl` est vide** :
+## Règle complète à appliquer
 
-```ts
-if (obs.photo_url && !found.imageUrl) {
-  found.imageUrl = obs.photo_url;
-}
-```
+**Priorité photo vignette** (4 niveaux) :
 
-→ Dès qu'iNat fournit une image (cas fréquent au niveau genre comme *Polyommatus*), la photo marcheur est ignorée. C'est une violation silencieuse de la règle métier « toujours la photo d'origine du terrain en premier ».
+1. **Upload direct marcheur** — `marcheur_observations.photo_url` la plus récente (déjà implémenté)
+2. **Photo iNat postée par un marcheur éditorial** — `species_data.photos[i]` dont `attributions[i].observerName` (NFD normalisé) matche un nom de marcheur de l'exploration, la plus récente
+3. **Première photo du snapshot** — `species_data.photos[0]` (toujours une observation réelle dans le rayon de l'event)
+4. **iNat live** — fallback `useSpeciesPhoto` uniquement si le snapshot n'a aucune photo
 
-## Règle cible retenue
+Toutes les URLs iNat sont normalisées en `/medium.jpg` (vs `/square.jpg`) pour une vignette nette.
 
-**Marcheur récent > Marcheur ancien > iNat (snapshot) > Placeholder**
+## Modification
 
-S'il existe au moins une `marcheur_observations.photo_url` pour l'espèce, on affiche la **plus récente** (`observation_date` desc). iNat ne sert que de fallback.
+### `src/hooks/useExplorationSpeciesPool.ts`
 
-## Modifications
+1. Étendre la requête `biodiversity_snapshots` pour récupérer aussi `species_data` complet (déjà fait) **et garder seulement le snapshot le plus récent par marche** (parité avec `useSpeciesMarcheurPhotos`).
+2. Ajouter une requête `exploration_marcheurs` (prénom + nom) → construire un Set des noms normalisés (NFD, lower, trim).
+3. Pendant la passe snapshots, pour chaque espèce, parcourir `photos[]` + `attributions[]` :
+   - Si une attribution matche un marcheur éditorial → mémoriser cette photo comme **"field photo via iNat"** avec sa date.
+   - Sinon, mémoriser la 1re photo du snapshot comme **fallback "snapshot photo"**.
+4. Lors du calcul final de `imageUrl` :
+   - Priorité 1 : `marcheur_observations.photo_url` la plus récente (déjà fait)
+   - Priorité 2 : meilleure "field photo via iNat" (la plus récente)
+   - Priorité 3 : meilleure "snapshot photo"
+   - Priorité 4 : laisser `null` → composant fallback sur iNat live
+5. Toutes les URLs iNat issues du snapshot → normalisées via `.replace('/square.', '/medium.')`.
 
-### 1. `src/hooks/useExplorationSpeciesPool.ts` (correctif principal)
-
-- Étendre le `select` sur `marcheur_observations` pour inclure `observation_date`.
-- **Inverser la priorité** : pour chaque espèce, collecter toutes les `photo_url` marcheur, garder la plus récente, et **écraser** `imageUrl` issue du snapshot iNat avec cette photo terrain.
-- Comportement nouveau :
-  - 1+ photo marcheur → `imageUrl` = photo marcheur la plus récente (toujours).
-  - 0 photo marcheur mais image iNat dans le snapshot → `imageUrl` = image iNat.
-  - Aucune des deux → `imageUrl = null`, le fallback `useSpeciesPhoto` (iNat live) prend la main côté composant.
-
-### 2. Audit des autres lieux d'affichage
-
-- `src/components/community/insights/curation/CuratedSpeciesCard.tsx` : consomme `species.imageUrl` du pool → correctif automatiquement propagé.
-- `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` : carrousel déjà géré par `useSpeciesMarcheurPhotos` (marcheur prioritaire à date égale, déjà conforme).
-- `src/components/biodiversity/SpeciesCardWithPhoto.tsx` : utilisé hors exploration, pas de source marcheur disponible → on laisse `useSpeciesPhoto` (iNat). Aucune action.
-- Vues Synthèse / Trophique (`ConstellationTab`, `SpiraleTab`, `ReseauTab`) : consomment le même `pool` enrichi → correctif propagé automatiquement.
-- Modale fiche espèce (trophic fullscreen) : reçoit déjà ses photos via le pool ou `useSpeciesMarcheurPhotos` → conforme.
-
-Aucune autre modification nécessaire.
-
-## Détails techniques
+### Normalisation NFD (réutiliser la même logique que ailleurs)
 
 ```ts
-// useExplorationSpeciesPool — pseudo-code
-const { data: marcheurObs } = await supabase
-  .from('marcheur_observations')
-  .select('species_scientific_name, photo_url, observation_date')
-  .in('marche_id', marcheIds)
-  .not('photo_url', 'is', null);
-
-// Index : sci.toLowerCase() → photo la plus récente
-const latestPhotoBySci = new Map<string, { url: string; date: string }>();
-(marcheurObs || []).forEach(o => {
-  const key = (o.species_scientific_name || '').trim().toLowerCase();
-  if (!key || !o.photo_url) return;
-  const ex = latestPhotoBySci.get(key);
-  const d = o.observation_date || '';
-  if (!ex || d > ex.date) latestPhotoBySci.set(key, { url: o.photo_url, date: d });
-});
-
-// 2e passe : écraser imageUrl avec la photo marcheur la plus récente
-for (const entry of map.values()) {
-  const k = (entry.scientificName || '').toLowerCase();
-  const fieldPhoto = latestPhotoBySci.get(k);
-  if (fieldPhoto) entry.imageUrl = fieldPhoto.url; // override iNat
-}
-// + créer les entries manquantes pour les espèces vues uniquement par marcheurs (logique actuelle conservée pour comptage)
+const normName = (s: string) =>
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 ```
 
 ## Hors-scope
 
-- Pas de changement sur le carrousel détaillé (déjà conforme via `useSpeciesMarcheurPhotos`).
-- Pas de mécanisme de « photo de couverture curée manuellement » (option 3 écartée).
-- Pas de modification visuelle de la carte.
+- Pas de changement visuel sur la carte.
+- Pas de modification du carrousel détaillé (déjà conforme via `useSpeciesMarcheurPhotos`).
+- Pas de fix sur les autres consommateurs : tous lisent `species.imageUrl` du pool → correctif propagé automatiquement.
 
 ## Vérification
 
-1. Recharger Apprendre → L'Œil sur Deviat (`/exploration/20dd3be8…`), filtre tag « papillon ».
-2. Les 6 vignettes (dont Azurés) doivent montrer une photo marcheur (badge visuel terrain reconnaissable, pas le fond carré iNat).
-3. Espèces sans aucune photo marcheur : doivent toujours afficher l'image iNat (fallback OK).
-4. Vérifier Synthèse / vues trophiques : mêmes images marcheur priorisées (cohérence).
+1. Recharger Apprendre → L'Œil sur Deviat.
+2. **Trichodes alvearius** : doit afficher l'une des 2 photos `inaturalist-open-data.s3.amazonaws.com/photos/662558593/medium.jpg` ou `662208790/medium.jpg` (postées par Gaspard Boréal).
+3. **Azurés / Polyommatus** et papillons précédents : doivent toujours montrer la photo marcheur (régression nulle).
+4. Une espèce sans aucune photo (ni marcheur, ni snapshot) : doit toujours fallback sur iNat live.
