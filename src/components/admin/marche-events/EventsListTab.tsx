@@ -73,6 +73,7 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
         ))}
       </div>
 
+      {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <Card key={i} className="p-4 animate-pulse h-28" />
