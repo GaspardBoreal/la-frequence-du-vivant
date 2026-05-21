@@ -277,7 +277,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
                 style={{ cursor: 'pointer' }}
               >
                 {/* spotlight pulse for the highlighted species */}
-                {isHighlighted && (
+                {(isHighlighted || isSelected) && (
                   <>
                     <motion.circle
                       cx={s.x} cy={s.y}
