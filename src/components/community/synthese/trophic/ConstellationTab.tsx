@@ -114,7 +114,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto block pointer-events-none">
+        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto block">
           {TROPHIC_LEVELS.map((l) => (
             <circle
               key={l.group}
@@ -137,10 +137,29 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             strokeDasharray="2 4"
             transform={`rotate(15 ${CENTER} ${CENTER})`}
           />
+
+          {/* edges (only when selected) */}
+          <AnimatePresence>
+            {selectedEdges.map((e, i) => (
+              <motion.line
+                key={`edge-${i}`}
+                x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+                stroke="hsl(var(--accent))"
+                strokeWidth={1.2}
+                strokeDasharray="3 4"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 0.65 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+              />
+            ))}
+          </AnimatePresence>
+
           {allStars.map((s, i) => {
             const meta = getLevelMeta(s.group);
             if (!meta) return null;
             const muted = isStarMuted(s);
+            const isSelected = selected?.scientificName === s.scientificName;
             const isHighlighted = highlightScientificName === s.scientificName;
             return (
               <motion.g
@@ -148,8 +167,10 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: muted ? 0.12 : 1, scale: 1 }}
                 transition={{ delay: i * 0.004, duration: 0.4 }}
+                onClick={() => setSelected(isSelected ? null : s)}
+                style={{ cursor: 'pointer' }}
               >
-                {isHighlighted && (
+                {(isHighlighted || isSelected) && (
                   <>
                     <motion.circle
                       cx={s.x} cy={s.y}
@@ -161,8 +182,8 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
                     <circle cx={s.x} cy={s.y} r={s.r * 3.2} fill={`hsl(var(${meta.token}) / 0.4)`} />
                   </>
                 )}
-                <circle cx={s.x} cy={s.y} r={s.r * (isHighlighted ? 3 : 2)} fill={`hsl(var(${meta.token}) / ${isHighlighted ? 0.4 : 0.18})`} />
-                <circle cx={s.x} cy={s.y} r={isHighlighted ? s.r * 1.6 : s.r} fill={`hsl(var(${meta.token}))`} stroke={isHighlighted ? `hsl(var(${meta.token}))` : 'transparent'} strokeWidth={isHighlighted ? 1.4 : 0} />
+                <circle cx={s.x} cy={s.y} r={s.r * (isHighlighted || isSelected ? 3 : 2)} fill={`hsl(var(${meta.token}) / ${isHighlighted || isSelected ? 0.4 : 0.18})`} />
+                <circle cx={s.x} cy={s.y} r={isHighlighted || isSelected ? s.r * 1.6 : s.r} fill={`hsl(var(${meta.token}))`} stroke={isHighlighted || isSelected ? `hsl(var(${meta.token}))` : 'transparent'} strokeWidth={isHighlighted || isSelected ? 1.4 : 0} />
               </motion.g>
             );
           })}
