@@ -353,7 +353,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
               </g>
             );
           })()}
-        </svg>
+        </ZoomableSvgStage>
 
         {!compact && selected && (
           <TrophicBeamOverlay
