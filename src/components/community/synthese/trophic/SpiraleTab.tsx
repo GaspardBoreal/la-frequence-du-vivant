@@ -168,6 +168,15 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
     [positioned],
   );
 
+  // Effective selection = user click ?? incoming highlight (focal species from modal)
+  const highlightedStar = useMemo<PositionedStar | null>(
+    () => highlightScientificName
+      ? allStars.find((s) => s.scientificName === highlightScientificName) ?? null
+      : null,
+    [highlightScientificName, allStars],
+  );
+  const effectiveSelected = selected ?? highlightedStar;
+
   // Ghost target = midpoint of the segment for empty levels
   const ghostTargetFor = useCallback(
     (g: TrophicGroup) => {
@@ -187,16 +196,15 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
   }, []);
 
   const { preyEdges, predatorEdges, recyclerEdges, beamCounts, connectedNames } = useTrophicBeams(
-    selected,
+    effectiveSelected,
     positioned,
     ghostTargetFor,
     decomposerGhost,
   );
 
   const isStarMuted = (s: PositionedStar) => {
-    if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
-    if (selected) return !connectedNames.has(s.scientificName);
+    if (effectiveSelected) return !connectedNames.has(s.scientificName);
     return false;
   };
 
