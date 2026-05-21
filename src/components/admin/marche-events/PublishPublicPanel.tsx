@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Globe2, Copy, ExternalLink, Share2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useToggleEventPublic, buildPublicEventUrl } from '@/hooks/usePublicEvent';
+import PublicEventMetricsPanel from './PublicEventMetricsPanel';
 import { cn } from '@/lib/utils';
 
 interface Props {
