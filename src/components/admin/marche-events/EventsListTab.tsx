@@ -55,7 +55,24 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
 
   return (
     <div>
-      {isLoading ? (
+      {/* Filtre visibilité publique */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+          <Globe2 className="h-3.5 w-3.5" /> Visibilité publique :
+        </span>
+        {(['all', 'public', 'private'] as PublicFilter[]).map((v) => (
+          <Button
+            key={v}
+            size="sm"
+            variant={publicFilter === v ? 'default' : 'outline'}
+            className="h-7 px-2.5 text-xs rounded-full"
+            onClick={() => setPublicFilter(v)}
+          >
+            {v === 'all' ? 'Tous' : v === 'public' ? 'Publics' : 'Privés'}
+          </Button>
+        ))}
+      </div>
+
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <Card key={i} className="p-4 animate-pulse h-28" />
