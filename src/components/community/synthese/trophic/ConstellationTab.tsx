@@ -12,6 +12,7 @@ import { DefaultPanel, LevelPanel, SelectedStarPanel, type TrophicSpeciesPoolEnt
 import { useTrophicBeams } from './useTrophicBeams';
 import { TrophicBeamOverlay, type Beam } from './TrophicBeamOverlay';
 import { TrophicBeamEdges } from './TrophicBeamEdges';
+import { ZoomableSvgStage } from './ZoomableSvgStage';
 
 interface Props {
   chain: TrophicChainResult;
@@ -123,7 +124,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto block">
+        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={selected ? { x: selected.x, y: selected.y } : null}>
           {TROPHIC_LEVELS.map((l) => (
             <circle
               key={l.group}
@@ -189,7 +190,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
               </motion.g>
             );
           })}
-        </svg>
+        </ZoomableSvgStage>
       </div>
     );
   }
@@ -204,7 +205,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto block">
+        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={selected ? { x: selected.x, y: selected.y } : null}>
           {/* concentric rings */}
           {TROPHIC_LEVELS.map((l) => (
             <circle
@@ -338,7 +339,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
               </g>
             );
           })()}
-        </svg>
+        </ZoomableSvgStage>
 
         {selected && (
           <TrophicBeamOverlay

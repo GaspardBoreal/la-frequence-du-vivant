@@ -13,6 +13,7 @@ import { DefaultPanel, LevelPanel, SelectedStarPanel, type TrophicSpeciesPoolEnt
 import { useTrophicBeams } from './useTrophicBeams';
 import { TrophicBeamOverlay, type Beam } from './TrophicBeamOverlay';
 import { TrophicBeamEdges } from './TrophicBeamEdges';
+import { ZoomableSvgStage } from './ZoomableSvgStage';
 
 interface Props {
   chain: TrophicChainResult;
@@ -176,7 +177,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
             'radial-gradient(ellipse at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block">
+        <ZoomableSvgStage width={W} height={H} selectedFocus={selected ? { x: selected.x, y: selected.y } : null}>
           {/* Band guides */}
           {BAND_ORDER.map((g) => {
             const meta = getLevelMeta(g);
@@ -352,7 +353,7 @@ export const ReseauTab: React.FC<Props> = ({ chain, speciesPool, explorationId, 
               </g>
             );
           })()}
-        </svg>
+        </ZoomableSvgStage>
 
         {!compact && selected && (
           <TrophicBeamOverlay
