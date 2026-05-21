@@ -214,7 +214,7 @@ export const SpiraleTab: React.FC<Props> = ({ chain, speciesPool, explorationId,
             'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto block">
+        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={selected ? { x: selected.x, y: selected.y } : null}>
           <defs>
             <radialGradient id="spirale-core" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="hsl(var(--trophic-l1))" stopOpacity="0.55" />
