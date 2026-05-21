@@ -323,6 +323,15 @@ const MarcheEventDetail: React.FC = () => {
           )}
           <TabsContent value="informations" className="space-y-6 mt-4">
 
+        {!isNew && event && (
+          <PublishPublicPanel
+            eventId={event.id}
+            isPublic={!!(event as any).is_public}
+            publicSlug={(event as any).public_slug ?? null}
+          />
+        )}
+
+
         {/* Form */}
         <Card className="p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">Informations</h2>
