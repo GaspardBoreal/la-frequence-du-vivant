@@ -144,6 +144,13 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                       >
                         <Copy className="h-4 w-4 mr-2" />Dupliquer
                       </DropdownMenuItem>
+                      {visibility?.[event.id]?.is_public && visibility[event.id].public_slug && (
+                        <DropdownMenuItem
+                          onClick={() => window.open(buildPublicEventUrl(visibility[event.id].public_slug!), '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />Voir la page publique
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
