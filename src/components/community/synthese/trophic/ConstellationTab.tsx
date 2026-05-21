@@ -68,6 +68,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
     onSpeciesSelect?.(s);
   };
   const [focusGroup, setFocusGroup] = useState<TrophicGroup | null>(null);
+  const [activeBeam, setActiveBeam] = useState<Beam>(null);
 
   const positioned = useMemo(() => {
     const map: Record<TrophicGroup, PositionedStar[]> = {
@@ -87,24 +88,30 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
     [positioned],
   );
 
-  // Compute predator->prey edges. To stay legible: only render edges for selected star.
-  const selectedEdges = useMemo(() => {
-    if (!selected) return [] as Array<{ x1: number; y1: number; x2: number; y2: number }>;
-    const preyGroups = probablePreyGroups(selected.group);
-    const preyStars = preyGroups.flatMap((g) => positioned[g]).slice(0, 8);
-    return preyStars.map((p) => ({ x1: selected.x, y1: selected.y, x2: p.x, y2: p.y }));
-  }, [selected, positioned]);
+  // Ghost target = top of the ring (angle -π/2) for empty levels
+  const ghostTargetFor = useCallback(
+    (g: TrophicGroup) => ({ x: CENTER, y: CENTER - RADII[g] }),
+    [],
+  );
+  const decomposerGhost = useMemo(
+    () => ({ x: CENTER + RADII.DECOMPOSER, y: CENTER }),
+    [],
+  );
+
+  const { preyEdges, predatorEdges, recyclerEdges, beamCounts, connectedNames } = useTrophicBeams(
+    selected,
+    positioned,
+    ghostTargetFor,
+    decomposerGhost,
+  );
 
   const isStarMuted = (s: PositionedStar) => {
     if (highlightScientificName) return s.scientificName !== highlightScientificName;
     if (focusGroup) return s.group !== focusGroup;
-    if (selected) {
-      if (s.scientificName === selected.scientificName) return false;
-      const prey = probablePreyGroups(selected.group);
-      return !prey.includes(s.group);
-    }
+    if (selected) return !connectedNames.has(s.scientificName);
     return false;
   };
+
 
   if (compact) {
     return (
