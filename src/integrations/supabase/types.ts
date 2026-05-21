@@ -412,6 +412,7 @@ export type Database = {
           niveau_intimite_vivant: string | null
           nom: string
           prenom: string
+          public_event_consent: boolean
           role: Database["public"]["Enums"]["community_role"]
           slug: string | null
           statut: string
@@ -437,6 +438,7 @@ export type Database = {
           niveau_intimite_vivant?: string | null
           nom: string
           prenom: string
+          public_event_consent?: boolean
           role?: Database["public"]["Enums"]["community_role"]
           slug?: string | null
           statut?: string
@@ -462,6 +464,7 @@ export type Database = {
           niveau_intimite_vivant?: string | null
           nom?: string
           prenom?: string
+          public_event_consent?: boolean
           role?: Database["public"]["Enums"]["community_role"]
           slug?: string | null
           statut?: string
@@ -1308,6 +1311,8 @@ export type Database = {
         Row: {
           country: string | null
           event_id: string
+          event_meta: Json | null
+          event_type: string
           id: string
           marcheur_slug: string | null
           referrer: string | null
@@ -1321,6 +1326,8 @@ export type Database = {
         Insert: {
           country?: string | null
           event_id: string
+          event_meta?: Json | null
+          event_type?: string
           id?: string
           marcheur_slug?: string | null
           referrer?: string | null
@@ -1334,6 +1341,8 @@ export type Database = {
         Update: {
           country?: string | null
           event_id?: string
+          event_meta?: Json | null
+          event_type?: string
           id?: string
           marcheur_slug?: string | null
           referrer?: string | null
@@ -5087,7 +5096,11 @@ export type Database = {
         }[]
       }
       get_public_event: { Args: { _slug: string }; Returns: Json }
+      get_public_event_biodiversity: { Args: { _slug: string }; Returns: Json }
       get_public_event_counters: { Args: { _slug: string }; Returns: Json }
+      get_public_event_marcheurs: { Args: { _slug: string }; Returns: Json }
+      get_public_event_medias: { Args: { _slug: string }; Returns: Json }
+      get_public_event_testimonies: { Args: { _slug: string }; Returns: Json }
       get_public_marcheur_carnet: { Args: { p_slug: string }; Returns: Json }
       get_public_shared_contribution: {
         Args: { p_id: string; p_type: string }
@@ -5197,6 +5210,21 @@ export type Database = {
           user_id: string
         }[]
       }
+      log_public_event_event: {
+        Args: {
+          _event_type: string
+          _marcheur_slug?: string
+          _meta?: Json
+          _referrer?: string
+          _session_id: string
+          _slug: string
+          _user_agent_family?: string
+          _utm_campaign?: string
+          _utm_medium?: string
+          _utm_source?: string
+        }
+        Returns: undefined
+      }
       log_public_event_view: {
         Args: {
           _marcheur_slug?: string
@@ -5286,6 +5314,7 @@ export type Database = {
         }
         Returns: number
       }
+      round_coord: { Args: { _v: number }; Returns: number }
       search_community_profiles_for_invite: {
         Args: { _event_id: string; _search: string }
         Returns: {

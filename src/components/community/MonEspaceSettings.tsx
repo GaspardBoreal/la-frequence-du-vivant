@@ -10,6 +10,7 @@ import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CSP_OPTIONS, GENDER_OPTIONS, cspLabel, genderLabel } from '@/lib/communityProfileTaxonomy';
+import PublicEventConsentToggle from './PublicEventConsentToggle';
 
 interface CommunityProfile {
   id: string;
@@ -431,6 +432,9 @@ const MonEspaceSettings: React.FC<MonEspaceSettingsProps> = ({
               )}
             </div>
           </div>
+
+          {/* Visibilité publique */}
+          {!editing && <PublicEventConsentToggle userId={profile.user_id} />}
 
           {/* Actions */}
           <div className="space-y-2 pt-2">

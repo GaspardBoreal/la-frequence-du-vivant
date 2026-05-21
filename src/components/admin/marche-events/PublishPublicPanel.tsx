@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Globe2, Copy, ExternalLink, Share2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useToggleEventPublic, buildPublicEventUrl } from '@/hooks/usePublicEvent';
+import PublicEventMetricsPanel from './PublicEventMetricsPanel';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -114,6 +115,8 @@ const PublishPublicPanel: React.FC<Props> = ({ eventId, isPublic, publicSlug }) 
                   <Share2 className="h-3 w-3" /> Email
                 </a>
               </div>
+
+              <PublicEventMetricsPanel eventId={eventId} />
             </div>
           )}
         </div>
