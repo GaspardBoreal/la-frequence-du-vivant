@@ -132,7 +132,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={selected ? { x: selected.x, y: selected.y } : null}>
+        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={effectiveSelected ? { x: effectiveSelected.x, y: effectiveSelected.y } : null}>
           {TROPHIC_LEVELS.map((l) => (
             <circle
               key={l.group}
@@ -157,7 +157,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
           />
 
           <TrophicBeamEdges
-            show={!!selected}
+            show={!!effectiveSelected}
             activeBeam={activeBeam}
             preyEdges={preyEdges}
             predatorEdges={predatorEdges}
@@ -170,7 +170,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             const meta = getLevelMeta(s.group);
             if (!meta) return null;
             const muted = isStarMuted(s);
-            const isSelected = selected?.scientificName === s.scientificName;
+            const isSelected = effectiveSelected?.scientificName === s.scientificName;
             const isHighlighted = highlightScientificName === s.scientificName;
             return (
               <motion.g
@@ -213,7 +213,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             'radial-gradient(circle at 50% 50%, hsl(var(--trophic-bg)) 0%, hsl(var(--trophic-bg-edge)) 100%)',
         }}
       >
-        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={selected ? { x: selected.x, y: selected.y } : null}>
+        <ZoomableSvgStage width={SIZE} height={SIZE} selectedFocus={effectiveSelected ? { x: effectiveSelected.x, y: effectiveSelected.y } : null}>
           {/* concentric rings */}
           {TROPHIC_LEVELS.map((l) => (
             <circle
@@ -258,7 +258,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
           ))}
 
           <TrophicBeamEdges
-            show={!!selected}
+            show={!!effectiveSelected}
             activeBeam={activeBeam}
             preyEdges={preyEdges}
             predatorEdges={predatorEdges}
@@ -272,7 +272,7 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
             const meta = getLevelMeta(s.group);
             if (!meta) return null;
             const muted = isStarMuted(s);
-            const isSelected = selected?.scientificName === s.scientificName;
+            const isSelected = effectiveSelected?.scientificName === s.scientificName;
             const isHighlighted = highlightScientificName === s.scientificName;
             return (
               <motion.g
@@ -349,9 +349,9 @@ export const ConstellationTab: React.FC<Props> = ({ chain, speciesPool, explorat
           })()}
         </ZoomableSvgStage>
 
-        {selected && (
+        {effectiveSelected && (
           <TrophicBeamOverlay
-            selected={selected}
+            selected={effectiveSelected}
             counts={beamCounts}
             activeBeam={activeBeam}
             onToggleBeam={(b) => setActiveBeam(activeBeam === b ? null : b)}
