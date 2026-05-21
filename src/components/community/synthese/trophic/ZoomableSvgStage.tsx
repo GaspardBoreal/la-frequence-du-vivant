@@ -191,27 +191,32 @@ export const ZoomableSvgStage: React.FC<Props> = ({
         {children}
       </svg>
 
-      {/* Vertical zoom controls — right edge, vertically centered to avoid collisions */}
-      <div className="absolute top-1/2 -translate-y-1/2 right-2 flex flex-col items-center gap-1 bg-background/80 backdrop-blur rounded-full border border-border p-1 shadow-sm z-10">
-        <button
-          type="button"
-          onClick={() => setZoomAt(zoom * 1.4)}
-          disabled={zoom >= maxZoom - 0.01}
-          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted disabled:opacity-30 transition"
-          aria-label="Zoom avant"
-          title="Zoom avant (molette)"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={reset}
-          className="text-[9px] font-medium tabular-nums text-muted-foreground hover:text-foreground px-1 leading-none"
-          aria-label="Réinitialiser le zoom"
-          title="Cliquer pour réinitialiser"
-        >
-          {Math.round(zoom * 100)}%
-        </button>
+      {/* Haut-gauche : Vue d'ensemble + indicateur % (visibles seulement si zoomé) */}
+      {zoom > 1.05 && (
+        <div className="absolute top-2 left-2 flex items-center gap-1 bg-background/80 backdrop-blur rounded-full border border-border p-1 shadow-sm z-10">
+          <button
+            type="button"
+            onClick={reset}
+            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition"
+            aria-label="Vue d'ensemble"
+            title="Vue d'ensemble"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={reset}
+            className="text-[10px] font-medium tabular-nums text-muted-foreground hover:text-foreground px-1.5 leading-none"
+            aria-label="Réinitialiser le zoom"
+            title="Cliquer pour réinitialiser"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+        </div>
+      )}
+
+      {/* Haut-droite : zoom + / − */}
+      <div className="absolute top-2 right-2 flex items-center gap-1 bg-background/80 backdrop-blur rounded-full border border-border p-1 shadow-sm z-10">
         <button
           type="button"
           onClick={() => setZoomAt(zoom / 1.4)}
@@ -222,17 +227,16 @@ export const ZoomableSvgStage: React.FC<Props> = ({
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
-        {zoom > 1.05 && (
-          <button
-            type="button"
-            onClick={reset}
-            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition mt-0.5 border-t border-border pt-1"
-            aria-label="Vue d'ensemble"
-            title="Vue d'ensemble"
-          >
-            <Maximize2 className="w-3 h-3" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setZoomAt(zoom * 1.4)}
+          disabled={zoom >= maxZoom - 0.01}
+          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted disabled:opacity-30 transition"
+          aria-label="Zoom avant"
+          title="Zoom avant (molette)"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );
