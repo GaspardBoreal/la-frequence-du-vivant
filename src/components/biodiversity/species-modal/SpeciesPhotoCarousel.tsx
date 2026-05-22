@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight, ExternalLink, Camera, Sparkles, Loader2, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useSpeciesPhotoMode } from '@/contexts/SpeciesPhotoModeContext';
 
 export type CarouselSlideSource = 'inat' | 'marcheur' | 'gbif' | 'citizen' | 'other';
 
@@ -74,6 +75,9 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
 }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' });
   const [selected, setSelected] = useState(0);
+  const [flash, setFlash] = useState(false);
+  const { mode, setMode, hasFieldPhotos } = useSpeciesPhotoMode();
+  const didInitRef = useRef(false);
 
   useEffect(() => {
     if (!emblaApi) return;
@@ -98,6 +102,40 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
     };
   }, [slides]);
 
+  // Sync initial slide to global mode (Photos marcheurs ↔ iNaturalist)
+  useEffect(() => {
+    if (!emblaApi || slides.length === 0) return;
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+    const targetIdx =
+      mode === 'marcheur' && firstFieldIdx >= 0
+        ? firstFieldIdx
+        : firstRefIdx >= 0
+          ? firstRefIdx
+          : 0;
+    if (targetIdx !== emblaApi.selectedScrollSnap()) {
+      emblaApi.scrollTo(targetIdx, true);
+    }
+  }, [emblaApi, slides.length, mode, firstFieldIdx, firstRefIdx]);
+
+  // Reagit aux changements de mode global après le 1er rendu (wahuhh flash)
+  useEffect(() => {
+    if (!emblaApi || !didInitRef.current || slides.length === 0) return;
+    const targetIdx =
+      mode === 'marcheur' && firstFieldIdx >= 0
+        ? firstFieldIdx
+        : firstRefIdx >= 0
+          ? firstRefIdx
+          : 0;
+    if (targetIdx !== emblaApi.selectedScrollSnap()) {
+      setFlash(true);
+      emblaApi.scrollTo(targetIdx);
+      const t = setTimeout(() => setFlash(false), 320);
+      return () => clearTimeout(t);
+    }
+  }, [mode, emblaApi, firstFieldIdx, firstRefIdx, slides.length]);
+
+
   if (isLoading) {
     return (
       <div className="relative aspect-[4/3] md:aspect-[16/10] max-h-[55vh] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
@@ -117,9 +155,7 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
     );
   }
 
-  const current = slides[selected];
   const isMultiple = slides.length > 1;
-  const currentIsField = isFieldSource(current.source) || !!current.alsoReference;
 
   return (
     <div className="bg-slate-900">
@@ -230,35 +266,49 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
             {selected + 1} / {slides.length}
           </div>
         )}
+
+        {/* Flash overlay au switch de mode global (wahuhh) */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none bg-white"
+          initial={false}
+          animate={{ opacity: flash ? 0.18 : 0 }}
+          transition={{ duration: 0.32, ease: 'easeOut' }}
+        />
       </div>
 
-      {/* Toggle segmenté Référence ↔ Sur le terrain */}
-      {hasBoth && (
+      {/* Toggle segmenté Référence ↔ Sur le terrain — bind au mode global */}
+      {hasBoth && hasFieldPhotos && (
         <div className="px-3 pt-3 flex justify-center">
           <div className="inline-flex p-1 rounded-full bg-white/5 border border-white/10">
             <button
               type="button"
-              onClick={() => emblaApi?.scrollTo(firstRefIdx)}
+              onClick={() => {
+                setMode('inaturalist');
+                emblaApi?.scrollTo(firstRefIdx);
+              }}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                isRefSource(current.source) && !current.alsoReference
+                mode === 'inaturalist'
                   ? 'bg-sky-500/90 text-white shadow'
                   : 'text-white/60 hover:text-white/90'
               }`}
             >
               <Sparkles className="w-3 h-3" />
-              Référence taxon
+              iNaturalist
             </button>
             <button
               type="button"
-              onClick={() => emblaApi?.scrollTo(firstFieldIdx)}
+              onClick={() => {
+                setMode('marcheur');
+                emblaApi?.scrollTo(firstFieldIdx);
+              }}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                currentIsField
+                mode === 'marcheur'
                   ? 'bg-emerald-500/90 text-white shadow'
                   : 'text-white/60 hover:text-white/90'
               }`}
             >
               <Camera className="w-3 h-3" />
-              Sur le terrain ({fieldCount})
+              Marcheurs ({fieldCount})
             </button>
           </div>
         </div>

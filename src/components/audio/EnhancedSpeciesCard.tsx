@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Play, Pause, Volume2, Music, Camera, Eye } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Play, Pause, Volume2, Music, Camera, Eye, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { MiniSpectrogramPreview } from './MiniSpectrogramPreview';
 import { SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import { SpeciesName } from '@/components/species/SpeciesName';
+import { useSpeciesPhotoMode } from '@/contexts/SpeciesPhotoModeContext';
 
 interface EnhancedSpeciesCardProps {
   species: BiodiversitySpecies;
@@ -32,11 +34,25 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
   );
   
   // Build effective photo: use provided photoData, or fall back to fetched
-  const effectivePhoto = species.photoData && species.photoData.source !== 'placeholder'
+  const inatPhoto = species.photoData && species.photoData.source !== 'placeholder'
     ? species.photoData
     : fetchedPhotoData 
       ? { url: fetchedPhotoData.photos[0], source: 'inaturalist' as const, attribution: '' }
       : null;
+
+  // Global toggle Photos marcheurs ↔ iNaturalist (no-op hors provider)
+  const { mode, getPreferredPhoto } = useSpeciesPhotoMode();
+  const preferred = getPreferredPhoto(species.scientificName, inatPhoto?.url);
+  const effectivePhoto = preferred
+    ? { url: preferred.url, source: preferred.source === 'inat' ? 'inaturalist' as const : preferred.source, attribution: '' }
+    : inatPhoto;
+  const isFieldPhoto = preferred?.source === 'marcheur' || preferred?.source === 'citizen';
+  const isFieldFallback = preferred?.isFallback === true;
+
+  // Reset image error when the photo URL changes (toggle marcheur ↔ inat)
+  useEffect(() => {
+    setImageError(false);
+  }, [effectivePhoto?.url]);
 
   // Use the prop translation directly — auto-fill is handled centrally
   // by useFrenchSpeciesNamesAuto via the parent batch hook.
@@ -94,7 +110,13 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
     >
       <div className="flex items-center space-x-3">
         {/* Image/Spectrogram Container */}
-        <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+        <div
+          className={`relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 transition-all duration-300 ${
+            isFieldPhoto ? 'ring-1 ring-emerald-400/50' : ''
+          } ${
+            isFieldFallback ? 'ring-1 ring-dashed ring-amber-300/60' : ''
+          }`}
+        >
           {showSpectrogram && hasAudio ? (
             <MiniSpectrogramPreview 
               recording={species.xenoCantoRecordings![0]}
@@ -103,29 +125,57 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
           ) : (
             <>
               {effectivePhoto && !imageError ? (
-                <img
-                  src={effectivePhoto.url}
-                  alt={translation?.commonName || species.commonName}
-                  className="w-full h-full object-cover"
-                  onError={() => setImageError(true)}
-                />
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.img
+                    key={effectivePhoto.url}
+                    src={effectivePhoto.url}
+                    alt={translation?.commonName || species.commonName}
+                    className="w-full h-full object-cover absolute inset-0"
+                    initial={{ opacity: 0, scale: 1.04 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.35, ease: 'easeOut' }}
+                    onError={() => setImageError(true)}
+                  />
+                </AnimatePresence>
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                   <Camera className="h-6 w-6 text-primary/40" />
                 </div>
               )}
-              
-              {/* Photo attribution overlay */}
+
+              {/* Source badge bottom-right — discret, pleinement visible au hover */}
               {effectivePhoto && !imageError && hasPhoto && (
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-end opacity-0 group-hover:opacity-100">
-                  <div className="text-xs text-white p-1 bg-black/50 w-full">
-                    {effectivePhoto.source === 'inaturalist' ? 'iNat' : 
-                     effectivePhoto.source === 'flickr' ? 'Flickr' : 'Photo'}
-                  </div>
+                <div className="absolute bottom-0.5 right-0.5 z-10 pointer-events-none">
+                  <span
+                    className={`flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] font-semibold backdrop-blur shadow ${
+                      isFieldFallback
+                        ? 'bg-amber-500/85 text-white'
+                        : isFieldPhoto
+                          ? 'bg-emerald-500/90 text-white'
+                          : 'bg-sky-500/85 text-white'
+                    }`}
+                    title={
+                      isFieldFallback
+                        ? 'Pas encore de photo marcheur — affiche iNaturalist'
+                        : isFieldPhoto
+                          ? `Photo marcheur${preferred?.observerName ? ' · ' + preferred.observerName : ''}`
+                          : 'Photo iNaturalist'
+                    }
+                  >
+                    {isFieldFallback ? (
+                      <Camera className="h-2 w-2" />
+                    ) : isFieldPhoto ? (
+                      <Camera className="h-2 w-2" />
+                    ) : (
+                      <Sparkles className="h-2 w-2" />
+                    )}
+                  </span>
                 </div>
               )}
             </>
           )}
+
 
           {/* Audio Quality Badge */}
           {hasAudio && (

@@ -1,99 +1,116 @@
-# Plan — Fiche espèce unifiée (étape 1) + préparation étape 2
 
-## Constat — 3 vues, 3 comportements
+## Objectif
 
-| # | Point d'entrée | Composant rendu | Trophic widget | Données marche/observateurs | Carrousel terrain + iNat |
-|---|---|---|---|---|---|
-| 1 | Synthèse → Taxons → carte espèce | `SpeciesGalleryDetailModal` (`trophicPool` fourni par `SpeciesExplorer`) | ✅ | ✅ (explorationId) | ✅ |
-| 2 | Synthèse → Pouls du vivant → point → espèce du jour | `SpeciesGalleryDetailModal` ouvert par `DayDetailDrawer` **sans `trophicPool`** | ❌ | ✅ partiel (explorationId mais `count=1`) | ✅ |
-| 3 | Marches → onglet Vivant → espèce | `SpeciesExplorer compact` (sans `explorationId`) → branche `else` → ancien `SpeciesDetailModal` | ❌ | ❌ | ❌ |
+Permettre, dans les **3 vues factorisées** (Synthèse → Taxons, Pouls du vivant → jour, Marches → Vivant), de basculer **toutes les vignettes espèces** (grille + fiche détail) entre :
 
-Fichiers en cause :
-- `src/components/community/exploration/DayDetailDrawer.tsx` (l. 226–238) — ne passe pas `trophicPool` ni le `count` réel.
-- `src/components/community/MarcheDetailModal.tsx` (l. 1130) — appelle `SpeciesExplorer` sans `explorationId` ni `trophicPool`.
-- `src/components/biodiversity/SpeciesExplorer.tsx` (l. 480–486) — branche `else` qui ouvre l'ancien `SpeciesDetailModal`.
-- `src/components/biodiversity/SpeciesDetailModal.tsx` — composant legacy à retirer.
+- **Photos marcheurs** (terrain — défaut quand au moins une existe dans l'exploration)
+- **Photos iNaturalist** (référence taxonomique)
 
-## Étape 1 — Standardiser sur `SpeciesGalleryDetailModal` (cible unique)
+Le toggle doit être **élégant**, animé, et propager son état partout sans flicker.
 
-Objectif : une seule fiche, même contenu visible quel que soit le point d'entrée, contenu graduellement adapté au contexte (exploration, marche, jour).
+---
 
-### 1.1 Rendre la fiche auto‑suffisante pour le widget trophique
+## Architecture (1 source de vérité)
 
-Dans `SpeciesGalleryDetailModal` : si `trophicPool` n'est pas fourni mais qu'un `explorationId` l'est, **résoudre le pool en interne** via `useExplorationSpeciesPool(explorationId)` (hook déjà existant utilisé par Synthèse). Le widget « Sa place dans la chaîne » devient ainsi disponible partout dès qu'on connaît l'exploration.
+### 1. Nouveau hook `useExplorationFieldPhotos(explorationId)`
 
-Fallback : si `explorationId` absent (cas vue 3), tenter le pool fourni par le parent (nouveau prop `species` ou `speciesPool`). Sinon, masquer proprement le bloc (déjà le cas).
+Charge **en un seul appel** toutes les photos terrain (marcheur + citoyen) de l'exploration, indexées par `scientificName` normalisé.
 
-### 1.2 Corriger la vue 2 (Pouls du vivant)
-
-`DayDetailDrawer` :
-- Passer `count = selectedSpecies.observations` (et non `1`) si la propriété est disponible côté `DayDetail`. Sinon laisser `1` (jour précis).
-- Le `trophicPool` sera résolu automatiquement grâce à 1.1 (rien à passer ici), mais on peut aussi le propager si déjà chargé par le parent pour éviter une 2e requête.
-
-### 1.3 Corriger la vue 3 (Marches → Vivant)
-
-`MarcheDetailModal` :
-- Passer `explorationId={exploration.id}` et `allEventMarches` à `<SpeciesExplorer>` (déjà dispo dans ce scope ; sinon prop drilling depuis l'appelant).
-- Passer le `trophicPool` (= liste complète d'espèces du marché ou de l'événement) pour activer la chaîne trophique au niveau « marche ».
-
-`SpeciesExplorer` :
-- Supprimer la branche `else` qui rend `SpeciesDetailModal`. Toujours rendre `SpeciesGalleryDetailModal`. Quand `explorationId` est absent, la modale fonctionne en mode dégradé (pas d'onglets Carte/Observateurs propres à l'event, mais identité + carrousel + chain + chat OK).
-- Supprimer l'import et le fichier `SpeciesDetailModal.tsx` (dead code après suppression). Vérifier qu'il n'a aucune autre référence (déjà vérifié : 3 fichiers, tous neutralisés).
-
-### 1.4 Harmoniser le contrat d'entrée
-
-Aujourd'hui la modale reçoit un objet ad-hoc `{ name, scientificName, count, kingdom, photos? }`. Les trois appels divergent légèrement. On garde ce contrat (changement minimal) mais on documente clairement les champs requis vs optionnels en JSDoc + on ajoute un prop optionnel `speciesPool?: BiodiversitySpecies[]` pour le cas « hors exploration ».
-
-### 1.5 QA visuel
-
-Tester les 3 entrées sur l'URL en cours :
-- Synthèse → Taxon : aucune régression, widget toujours là.
-- Pouls du vivant → un point → une espèce : widget visible, badge "X observations sur Y marches".
-- Marches → Vivant → espèce : nouvelle modale moderne, carrousel + onglets Liste/Carte/Observateurs + widget trophique.
-
-## Étape 2 — Enrichissements (préparation seulement, pas d'implémentation dans ce plan)
-
-Architecture cible pour brancher les futurs ajouts sans casser l'étape 1 :
-
-```text
-SpeciesGalleryDetailModal (Sheet right/bottom)
-├── Header (identité, badges)
-├── Carrousel photos (terrain + iNat)            ─┐
-├── Place trophique (mini + fullscreen)          ─┤  étape 1 (OK après ce PR)
-├── CTA Chat IA                                  ─┤
-├── Onglets Liste / Carte / Observateurs         ─┘
-└── 🆕 Bouton « Vue plein écran »   ──────────►  SpeciesFullscreenView (étape 2)
-                                                  ├── Carte avancée (Mapbox/MapLibre)
-                                                  │    • points GPS exacts par observation
-                                                  │    • drag-to-reposition (RPC recalibrate)
-                                                  │    • clusters, filtres date, légendes
-                                                  ├── Galerie haute-déf + EXIF
-                                                  ├── Timeline observations
-                                                  ├── Bouton « Générer rapport PDF »
-                                                  │    └── edge function (jsPDF/pdfmake) :
-                                                  │        identité, chaîne trophique,
-                                                  │        carte statique, top observations,
-                                                  │        signatures + logo
-                                                  └── Bouton « Partager / Export CSV »
+Retourne :
+```ts
+{
+  byScientificName: Map<string, MarcheurSpeciesPhoto[]>;
+  hasAny: boolean;
+  isLoading: boolean;
+}
 ```
 
-Pré-requis posés par l'étape 1 : un point d'entrée unique, un contrat de props unique, le pool trophique résolvable depuis n'importe quel contexte. Ces 3 invariants débloquent toute l'étape 2 sans refactor supplémentaire.
+Réutilise la logique existante de `useSpeciesMarcheurPhotos` (mêmes requêtes `marcheur_observations` + `biodiversity_snapshots`) mais **sans filtre par espèce** → 1 query par exploration, cache 10 min.
 
-## Détails techniques
+### 2. Nouveau contexte `SpeciesPhotoModeContext`
 
-- Hook ajouté côté modale : `useExplorationSpeciesPool(explorationId)` (déjà existant — confirmé via `src/hooks/useExplorationSpeciesPool.ts`). Activé conditionnellement : `enabled: !trophicPool && !!explorationId`.
-- Suppression : `src/components/biodiversity/SpeciesDetailModal.tsx` + l'import dans `SpeciesExplorer`.
-- Aucune migration DB.
-- Aucun changement de design system (la fiche cible utilise déjà les tokens projet via `Sheet` + classes existantes).
+```ts
+type SpeciesPhotoMode = 'marcheur' | 'inaturalist';
 
-## Fichiers modifiés
+{
+  mode: SpeciesPhotoMode;
+  setMode: (m) => void;
+  fieldPhotos: Map<string, MarcheurSpeciesPhoto[]>;
+  hasFieldPhotos: boolean;
+  getPreferredPhoto: (scientificName, fallbackUrl?) => { url, source, observerName? };
+}
+```
 
-1. `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` — résolution interne du pool, JSDoc props, prop optionnel `speciesPool`.
-2. `src/components/community/exploration/DayDetailDrawer.tsx` — `count` correct, propagation `trophicPool` si dispo.
-3. `src/components/community/MarcheDetailModal.tsx` — passe `explorationId`, `allEventMarches`, `trophicPool` à `SpeciesExplorer`.
-4. `src/components/biodiversity/SpeciesExplorer.tsx` — toujours `SpeciesGalleryDetailModal`, suppression de la branche legacy.
-5. `src/components/biodiversity/SpeciesDetailModal.tsx` — **supprimé**.
+- **Default** : `marcheur` si `hasFieldPhotos`, sinon `inaturalist`.
+- **Persistance** : `localStorage` key `species-photo-mode:${explorationId}`.
+- **Fallback gracieux** : si mode = marcheur mais aucune photo terrain pour CETTE espèce → renvoie l'iNat avec un flag `isFallback: true` (UI ajoute un ring pointillé + tooltip "Pas encore de photo marcheur").
 
-## Hors scope (étape 2)
+Provider monté dans `SpeciesExplorer` (couvre les 3 vues car toutes passent par lui ou par le modal qu'il rend).
 
-Vue plein écran, repositionnement GPS, génération PDF, export CSV, partage social — listés ci-dessus pour cadrer l'architecture, **non implémentés** dans ce PR.
+### 3. UI du toggle — pill segmenté glass animé
+
+Placé **juste au-dessus de la grille** (dans `SpeciesExplorer`, après les filtres), masqué si `!hasFieldPhotos`.
+
+```text
+┌──────────────────────────────────────┐
+│ [📷 Marcheurs · 47]  [✨ iNaturalist] │ ← pill animée
+└──────────────────────────────────────┘
+```
+
+Détails visuels :
+- Conteneur `inline-flex p-1 rounded-full bg-white/5 border border-white/10 backdrop-blur`.
+- **Indicateur animé** : `motion.div` avec `layoutId="photo-mode-indicator"` qui glisse derrière l'option active (spring `stiffness:400, damping:30`).
+- Option active : texte blanc, fond `bg-emerald-500/90` (marcheur) ou `bg-sky-500/90` (iNat) — cohérent avec les couleurs du carousel détail.
+- Option inactive : `text-white/60 hover:text-white/90`.
+- Compteurs : nombre d'espèces dotées de photos terrain (à droite du label "Marcheurs").
+- Mobile (<640px) : icônes seules, label en `sr-only`.
+- Micro-interaction : au clic, **flash de halo radial** (`box-shadow` animé) qui se dissipe en 400ms.
+
+### 4. `SpeciesCardWithPhoto` — crossfade fluide
+
+- Consomme le contexte via `useSpeciesPhotoMode()`.
+- Photo affichée = `getPreferredPhoto(species.scientificName, species.photos?.[0])`.
+- `<AnimatePresence mode="wait">` avec `key={photoUrl}` → **crossfade 350ms** entre les deux sources (opacity + léger scale 1.02 → 1).
+- Petit **badge coin haut-droit** indiquant la source actuelle :
+  - `📷 Marcheur` (emerald) si source marcheur
+  - `✨ iNat` (sky) si source iNat
+  - `📷 Manque` (slate avec ring pointillé) si fallback iNat alors qu'on est en mode marcheur — clic = ouvre la fiche (incitation à documenter).
+- Hover sur la carte = preview du nom observateur si source marcheur (`"📷 Aurélie · 14/05/2026"`).
+
+### 5. `SpeciesGalleryDetailModal` + `SpeciesPhotoCarousel` — bascule synchronisée
+
+- Le carousel existant a déjà ses slides marcheur + iNat triées.
+- À l'ouverture du modal : si `mode === 'marcheur'` et `firstFieldIdx >= 0` → `emblaApi.scrollTo(firstFieldIdx, true)` (instantané) ; sinon `firstRefIdx`.
+- Le toggle segmenté **interne au carousel** (Référence ↔ Sur le terrain) écrit aussi dans le contexte → toggle global et carousel restent synchronisés (clic dans le modal change le mode global ; clic dans la pill globale change l'image affichée dans le modal).
+- Ajout d'une animation de **transition d'image plus marquée** au switch (slide horizontal + opacity au lieu du saut Embla brut) : on conserve Embla mais on déclenche un `motion.div` overlay très court qui blanchit (300ms) — sensation "wahuhh".
+
+### 6. Empty/loading state
+
+- Pendant `useExplorationFieldPhotos.isLoading` → toggle masqué (évite saut).
+- Si exploration sans aucune photo marcheur → pas de toggle, comportement actuel (iNat).
+- Si exploration avec photos marcheurs mais mode=marcheur et espèce sans photo terrain → fallback iNat + badge "Manque" subtil (cf §4).
+
+---
+
+## Fichiers à créer / modifier
+
+| Fichier | Action |
+|---|---|
+| `src/hooks/useExplorationFieldPhotos.ts` | **Créer** — batch loader |
+| `src/contexts/SpeciesPhotoModeContext.tsx` | **Créer** — provider + hook |
+| `src/components/biodiversity/SpeciesPhotoModeToggle.tsx` | **Créer** — pill animée |
+| `src/components/biodiversity/SpeciesExplorer.tsx` | Monter le provider, afficher le toggle, passer `explorationId` au provider |
+| `src/components/biodiversity/SpeciesCardWithPhoto.tsx` | Consommer le contexte, crossfade `AnimatePresence`, badge source |
+| `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` | Brancher l'ouverture initiale sur `mode` |
+| `src/components/biodiversity/species-modal/SpeciesPhotoCarousel.tsx` | Bind du toggle interne au contexte global |
+
+Aucune migration DB. Aucun changement de schéma. Aucun impact sur les autres vues (le provider est local à `SpeciesExplorer`, fallback inchangé hors de son scope).
+
+---
+
+## Garanties de factorisation
+
+- **1 contexte** = 3 vues alignées automatiquement.
+- **1 hook batch** = pas de N+1 réseau sur la grille.
+- **1 composant toggle** réutilisable (pourra plus tard être posé dans d'autres écrans).
+- Toute évolution future (ex. ajouter source GBIF, ajouter mode "Mixte") = modification dans le contexte uniquement.
