@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Play, Pause, Volume2, Music, Camera, Eye } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Play, Pause, Volume2, Music, Camera, Eye, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { MiniSpectrogramPreview } from './MiniSpectrogramPreview';
 import { SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import { SpeciesName } from '@/components/species/SpeciesName';
+import { useSpeciesPhotoMode } from '@/contexts/SpeciesPhotoModeContext';
 
 interface EnhancedSpeciesCardProps {
   species: BiodiversitySpecies;
@@ -32,11 +34,20 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
   );
   
   // Build effective photo: use provided photoData, or fall back to fetched
-  const effectivePhoto = species.photoData && species.photoData.source !== 'placeholder'
+  const inatPhoto = species.photoData && species.photoData.source !== 'placeholder'
     ? species.photoData
     : fetchedPhotoData 
       ? { url: fetchedPhotoData.photos[0], source: 'inaturalist' as const, attribution: '' }
       : null;
+
+  // Global toggle Photos marcheurs ↔ iNaturalist (no-op hors provider)
+  const { mode, getPreferredPhoto } = useSpeciesPhotoMode();
+  const preferred = getPreferredPhoto(species.scientificName, inatPhoto?.url);
+  const effectivePhoto = preferred
+    ? { url: preferred.url, source: preferred.source === 'inat' ? 'inaturalist' as const : preferred.source, attribution: '' }
+    : inatPhoto;
+  const isFieldPhoto = preferred?.source === 'marcheur' || preferred?.source === 'citizen';
+  const isFieldFallback = preferred?.isFallback === true;
 
   // Use the prop translation directly — auto-fill is handled centrally
   // by useFrenchSpeciesNamesAuto via the parent batch hook.
