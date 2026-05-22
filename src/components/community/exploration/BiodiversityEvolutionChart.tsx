@@ -259,6 +259,7 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 fill="url(#bioCumulFill)"
+                dot={{ r: 4, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
                 activeDot={{ r: 5, stroke: 'hsl(var(--background))', strokeWidth: 2, style: { cursor: 'pointer' } }}
               />
             </ComposedChart>
