@@ -648,5 +648,3 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, tone, onC
 };
 
 export default PublicEventPage;
-
-export default PublicEventPage;
