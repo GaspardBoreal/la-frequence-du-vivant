@@ -1,179 +1,105 @@
-# Page publique d'événement — compteurs robustes + indicateurs narratifs + redesign Wahouhhh
+## Diagnostic — réponse directe
 
-## 1. Diagnostic chiffré (cas DEVIAT 10 km — `df85910e…`)
+**Non, actuellement le contexte du chatbot ne contient AUCUNE information précise sur les marches** (ni nom, ni GPS, ni étapes, ni waypoints, ni traces).
 
-| Métrique | Affiché | Attendu | Cause racine |
-|---|---|---|---|
-| **Marcheurs** | 8 | **10** | RPC compte `marche_participations.validated_at IS NOT NULL` (=8). Or la vérité narrative est `exploration_marcheurs` (8 + 1 invité) **+** participations (11). Pas de notion d'« invité » exclus. |
-| **Espèces** | 0 | **116** | RPC interroge `biodiversity_snapshots WHERE marche_id = event_id`. Mais `marche_events.id` **n'est pas** un `marche_id`. Il faut résoudre via `exploration_marches` (15 marches → ~116 espèces dédupliquées). |
-| **Observations** | 0 | **~346** | Même bug. Calcul correct = Σ `observations_count` des `species_data` des derniers snapshots par marche, + `marcheur_observations` propres. |
-| **Découvreurs** | 1 | 1 ✓ | OK. `count(DISTINCT session_id)` sur `event_public_views`. Anonyme, dédupliqué par session navigateur. À conserver. |
-| **Pratiques emblématiques** | — | **5** | Indicateur manquant. Source : `curation_marcheurs` (curation `'main'` liée à l'exploration). |
-| **Paysages sonores** | — | **2** | Indicateur manquant. Source : `marcheur_medias` (ou table audio dédiée) filtrés `type_media IN ('audio','paysage_sonore')` et liés à l'exploration. |
+Vérification faite côté code et base :
 
-## 2. Principe directeur : une seule source de vérité
+1. **RPC `get_admin_entity_context(_type='marche_event' | 'exploration')`** — alimente le bloc « Fiche en cours de consultation » envoyé à Gemini. Elle retourne :
+   - `event`, `exploration`, compteurs (`exploration_marches_count`, `parties_count`)
+   - `participants`, `recent_participants`, `media_aggregates`
+   - `biodiversity` agrégée, `organisateurs`
+   - **JAMAIS la liste des marches** de l'exploration, **ni leurs `nom_marche`, `ville`, `latitude`, `longitude`, `distance_km`, `ordre`**, **ni les waypoints/étapes**.
 
-Une fonction SQL unique `get_public_event_stats(_slug)` qui :
-1. Résout l'événement → `exploration_id`.
-2. Charge la liste **canonique** des marches via `exploration_marches`.
-3. Pour chaque marche, retient **le dernier `biodiversity_snapshot`** (DISTINCT ON marche_id ORDER BY snapshot_date DESC).
-4. Applique des règles **documentées et identiques** côté admin et public.
-5. Renvoie `{ counters, methodology }` — le `methodology` expose les règles, pour transparence éditoriale.
+2. **Slice "Carte" via `data-chat-*`** — seul `BiodiversityEvolutionChart.tsx` publie un slice. La page Carte (`ExplorationLayout` / onglet Carte) **n'expose rien** : ni les 15 étapes visibles à l'écran, ni les 116 espèces, ni la zone géographique.
 
-## 3. Règles métier
+3. **Conséquence** — quand l'IA répond « cible les zones de replats… sur ton tracé de 10 km », elle improvise : elle n'a vu ni le tracé, ni les coordonnées, ni les étapes. Les associations espèces ↔ étapes (« près des Orchidées pyramidales ») sont également hallucinées car `marcheur_observations` / `species_data` ne sont pas géolocalisées par étape dans le contexte envoyé.
 
-### Marcheurs (10)
-```
-( exploration_marcheurs où is_guest = false )
-∪ ( marche_participations.user_id du même event )
-dedup : user_id puis lower(unaccent(prenom||nom))
-```
-- Ajout d'un flag `is_guest BOOLEAN DEFAULT false` sur `exploration_marcheurs`.
-- Backfill : `role = 'invité'` → `is_guest = true, role = 'marcheur'`.
+## Plan d'enrichissement du contexte chat
 
-### Espèces (116)
-```
-species = UNION des species_data (dernier snapshot par marche de l'exploration)
-        ∪ marcheur_observations.species_scientific_name des mêmes marches
-species_count = count(DISTINCT lower(scientific_name))
-```
+Objectif : permettre à l'IA de raisonner sur la géographie réelle de la marche (étapes numérotées, GPS, distances, biotopes par zone) sans exploser le payload.
 
-### Observations (~346)
-```
-Σ observations_count des species_data (par marche, dernier snapshot)
-+ count(marcheur_observations) non liées à un inaturalist_observation_id
-```
+### 1. Étendre `get_admin_entity_context` (marche_event + exploration)
 
-### Découvreurs (1)
-Inchangé : `count(DISTINCT session_id)` sur `event_public_views`.
+Ajouter une clé `marches` (liste compacte, ordonnée) :
 
-### Pratiques emblématiques (5) — **nouveau**
-```
-count(*) FROM curation_marcheurs cm
-JOIN exploration_marcheurs em ON em.id = cm.marcheur_id
-WHERE em.exploration_id = _exploration_id AND cm.is_main = true
-```
-Renvoie aussi un échantillon `{ id, titre, prenom, photo_url }[3..5]` pour alimenter la popup.
-
-### Paysages sonores (2) — **nouveau**
-```
-count(*) FROM marcheur_medias mm
-JOIN exploration_marcheurs em ON em.id = mm.marcheur_id
-WHERE em.exploration_id = _exploration_id
-  AND (mm.type_media = 'audio' OR mm.categorie = 'paysage_sonore')
-```
-Renvoie aussi `{ id, titre, duree_secondes, url, marcheur_prenom }[]` pour la popup audio.
-
-## 4. Photos dans l'ordre des marches
-
-La galerie de l'aperçu (cover + species grid) doit respecter l'ordre **narratif** de l'exploration :
-```
-ORDER BY exploration_marches.ordre ASC, marche.date_marche ASC
-```
-- `get_public_event_biodiversity` : ajouter un champ `marche_ordre` à chaque photo (`species_data`/`observations_geo`).
-- `PublicEventPage` : tri des `biodiversity.species` selon (a) `marche_ordre` minimal, puis (b) `observations_count` desc.
-- Cover image : si non définie, prendre la **première photo de la première marche** (ordre 1) au lieu d'un fallback aléatoire.
-
-## 5. Redesign Wahouhhh mobile-first
-
-Brief design (palette Forêt Émeraude + Papier Crème, glassmorphism — Core memory) :
-
-### Hero immersif
-- Cover plein écran 100vh sur mobile avec overlay gradient bas → haut (background → transparent).
-- Titre en `display-serif` grande échelle, échelonné via `clamp(2rem, 8vw, 4rem)`.
-- Sous-ligne « 11 avril 2026 · DEVIAT — Charente » en lettres espacées (tracking).
-- Pill « Lecture publique » + type d'événement en haut, en glass `backdrop-blur-xl bg-card/40 border border-primary/20`.
-- Scroll cue animé (chevron descendant Motion).
-
-### Strip d'indicateurs « Pulsations du vivant » (6 cartes)
-Sur mobile : carrousel horizontal snap-x (`overflow-x-auto snap-x snap-mandatory`).
-Sur ≥ md : grid 3×2 puis 6×1 en lg.
-
-| Carte | Icône | Valeur | Popup |
-|---|---|---|---|
-| Marcheurs | Users | 10 | Avatars cliquables (déjà existant, recentré) |
-| Espèces | Leaf | 116 | Drawer biodiversité (existant) |
-| Observations | Camera | 346 | Carte des observations |
-| Découvreurs | Eye | 1 | — (tooltip méthodologie) |
-| **Pratiques emblématiques** | Sparkles | 5 | **Popup élégante** (cf. §5.1) |
-| **Paysages sonores** | Waveform | 2 | **Popup audio élégante** (cf. §5.2) |
-
-Chaque carte :
-- `rounded-2xl` glass `bg-card/60 backdrop-blur-xl border border-primary/10`
-- micro-animation Motion : nombre qui s'incrémente au scroll (`useInView` + spring)
-- icône qui pulse en boucle douce (`animate-pulse-slow` custom)
-- ombre intérieure verte ténue sur hover
-
-### 5.1 Popup Pratiques emblématiques
-- Drawer mobile (full-height bottom sheet) / Dialog desktop centré.
-- Header : « 5 pratiques emblématiques de cette exploration » + ligne fine dorée.
-- Carrousel vertical de cartes pratique : photo plein cadre 4:5, titre serif, prénom marcheur, citation tronquée. Tap → /pratiques/:id (lien existant).
-- Background du modal : gradient émeraude profond + grain SVG.
-- Bouton « Découvrir toutes les pratiques » → /pratiques?exploration=...
-
-### 5.2 Popup Paysages sonores
-- Même squelette de drawer.
-- Liste de **lecteurs audio inline** (réutilise `AudioPlayer` existant) avec waveform animée pendant lecture.
-- Vignette ronde du marcheur, titre, durée, mini-carte de localisation.
-- Lecture automatique du premier au ouvrir (pause les autres). Respecte `useAudioPlayer` global (ne pas casser le player de fond).
-
-### Bandes narratives suivantes
-- Section « Le vivant observé » : photo grid masonry avec ratios variables (3-4-3 mobile), **dans l'ordre des marches** (§4).
-- Section « Paroles de marcheurs » (déjà présent) : passer en `embla-carousel` plein-bleed sur mobile, cartes plein écran avec fond image floutée du marcheur.
-- Section « Marcheurs » : avatars en mosaïque hexagonale serrée, halo doré sur les ambassadeurs.
-- CTA final : « Rejoindre une marche près de chez vous » en bouton émeraude pleine largeur, micro‑animation feuille qui tombe.
-
-### Détails Wahouhhh transversaux
-- Curseur custom desktop (point + halo).
-- Parallaxe douce sur la cover (Motion `useScroll` + `useTransform`).
-- Apparition staggered de toutes les sections (`whileInView`, 80ms stagger).
-- Police titre : Cormorant Garamond ou Instrument Serif (déjà disponible) — passage à `font-display` sur les H1/H2.
-- Respect strict des tokens HSL existants (jamais de `text-white`).
-
-## 6. Implémentation
-
-### 6.1 Migration SQL (une seule)
-- `ALTER TABLE exploration_marcheurs ADD COLUMN is_guest boolean NOT NULL DEFAULT false;`
-- Backfill `role='invité'`.
-- `CREATE OR REPLACE FUNCTION get_public_event_stats(_slug text) RETURNS jsonb SECURITY DEFINER` qui renvoie :
 ```json
-{
-  "marcheurs_count": 10,
-  "species_count": 116,
-  "observations_count": 346,
-  "unique_visitors": 1,
-  "pratiques_count": 5,
-  "paysages_sonores_count": 2,
-  "pratiques_sample": [ { "id": "...", "titre": "...", "prenom": "...", "photo_url": "..." } ],
-  "paysages_sample": [ { "id": "...", "titre": "...", "duree_secondes": 120, "url": "...", "prenom": "..." } ],
-  "methodology": { ... }
-}
+"marches": [
+  {
+    "ordre": 1,
+    "id": "...",
+    "nom": "Boucle de Bessac",
+    "ville": "Deviat",
+    "lat": 45.4523,
+    "lon": 0.0612,
+    "distance_km": 9.4,
+    "etapes_count": 15,
+    "biotopes": ["lisière de chênaie","fond de vallon humide"],
+    "species_top": ["Iris faux-acore","Orchidée pyramidale","Noisetier"]
+  }
+]
 ```
-- Évolution de `get_public_event_biodiversity` : ajout du champ `marche_ordre` par espèce/observation.
-- `get_public_event_counters` devient un alias de compat.
 
-### 6.2 Frontend
-- `usePublicEvent.ts` : nouveau hook `usePublicEventStats(slug)` typé sur le payload enrichi.
-- `PublicEventPage.tsx` : refonte Hero + strip 6 indicateurs + popups Pratiques/Paysages + tri photos par `marche_ordre`.
-- 2 nouveaux composants :
-  - `<PratiquesEmblematiquesDialog />` (Dialog shadcn + drawer mobile via `vaul`)
-  - `<PaysagesSonoresDialog />` (réutilise `AudioPlayer`)
-- `PublicEventMetricsPanel.tsx` (admin) : ajout d'une ligne « **Aperçu public** » montrant les 6 chiffres calculés en direct, **même avant** `is_public = true` → valide la cohérence avant publication.
-- Toggle « 👥 Inclure les invités » sur la fiche `exploration_marcheurs` (admin) → écrit `is_guest`.
+Et une clé `waypoints` compacte (échantillonnée, max ~20 points par marche) :
 
-### 6.3 Cache & fraîcheur
-- React Query `staleTime: 60s` (en place).
-- SQL `STABLE` ; jointures couvertes par l'index existant `(marche_id, snapshot_date DESC)`.
-
-## 7. QA / validation
-
-```sql
-select public.get_public_event_stats('deviat-marcher-sur-un-sol-qui-respire-10-km-2026-04-11');
--- attendu : marcheurs=10, species≈116, observations≈346, unique_visitors=1, pratiques=5, paysages=2
+```json
+"waypoints": [
+  { "marche_ordre": 1, "etape": 1, "lat": 45.451, "lon": 0.062, "label": "Départ - parking" },
+  { "marche_ordre": 1, "etape": 7, "lat": 45.456, "lon": 0.058, "label": "Replat humide" }
+]
 ```
-- Événement sans `exploration_id` → fallback gracieux : marcheurs depuis participations, autres = 0, sans crash.
-- Tests visuels : capture mobile 390×844 + desktop 1440 → comparer Hero, strip carrousel, popups Pratiques et Paysages, ordre des photos.
 
-## 8. Hors scope
-- Page « méthodologie » publique reprenant le JSON `methodology`.
-- Refonte de `/pratiques/:id` et `/paysages-sonores/:id` (les popups linkent vers ces routes existantes).
+Source SQL :
+- `exploration_marches` JOIN `marches` ORDER BY `ordre` → noms + GPS + distance
+- `marche_waypoints` (si la table existe — sinon `marches.parcours_geojson`) → étapes décimées si > 20
+- Top espèces par marche : `marcheur_observations` GROUP BY `marche_id` (LIMIT 5) + jointure occurrences snapshots
+
+Garde-fous payload :
+- max 15 marches/exploration listées en détail (les autres en compteur)
+- waypoints décimés (Douglas-Peucker simplifié ou pas constant)
+- pas de geojson brut — uniquement lat/lon arrondis à 4 décimales
+
+### 2. Publier un slice « Carte » côté frontend
+
+Dans la vue Carte de l'onglet (`ExplorationLayout` / composant carte marcheur) :
+
+```ts
+chatPageContext.setSlice('carte', {
+  label: 'Carte de l'exploration',
+  marches: [
+    { ordre, nom, ville, lat, lon, distance_km, etapes_visibles: 15 }
+  ],
+  etapes_affichees: [...],   // celles réellement à l'écran (zoom courant)
+  bbox: { north, south, east, west },
+  fond: 'geo' | 'sat' | 'relief' | 'cadastre'
+});
+```
+
+Avantage : quand l'utilisateur dit « regarde la carte ouverte devant moi », l'IA voit la même chose que lui (les 15 étapes, la zone, le fond).
+
+### 3. Update du super-prompt `community-chat`
+
+Ajouter dans les RÈGLES CONTEXTUELLES :
+
+> 7. Quand l'utilisateur évoque le tracé, les étapes, des lieux précis ou demande des conseils géographiques (« où poser mon micro », « où aller chercher »), utilise **EN PRIORITÉ** la clé `marches[]` et `waypoints[]` de la fiche, et la slice `carte` si présente. **N'invente jamais** un lieu, une étape, un replat ou un vallon qui n'apparaît pas dans ces données.
+
+### 4. Mémoire projet
+
+Créer `mem://features/community/chatbot-geographic-context` documentant que :
+- `get_admin_entity_context` expose `marches[]` + `waypoints[]` compacts
+- la Carte publie un slice `carte` via `chatPageContext`
+- l'IA doit s'appuyer dessus pour tout conseil spatial
+
+## Détails techniques
+
+**Fichiers à modifier :**
+- `supabase/migrations/<new>.sql` — `CREATE OR REPLACE FUNCTION public.get_admin_entity_context` (ajouter blocs `marches` + `waypoints` pour `marche_event` ET `exploration`)
+- `src/components/community/exploration/<MapTab>.tsx` (ou équivalent onglet Carte) — appeler `chatPageContext.setSlice('carte', …)` avec cleanup
+- `src/hooks/useChatPageContext.ts` — vérifier que `setSlice` existe (sinon l'ajouter, pattern identique à `setAvailableAttachments`)
+- `supabase/functions/community-chat/index.ts` — étendre le super-prompt (règle 7) + log du nombre de marches/waypoints injectés
+- `mem://features/community/chatbot-geographic-context` + index
+
+**Estimation payload supplémentaire :** ~3-6 KB pour une exploration de 10 marches × 20 waypoints décimés. Acceptable (Gemini 3 Flash gère >32K tokens de contexte).
+
+**Non inclus volontairement :**
+- géolocalisation espèce-par-espèce (nécessiterait un schéma `marcheur_observations.lat/lon` exploité — à traiter dans un plan dédié)
+- traces GPS complètes (trop volumineuses — on garde une décimation)
