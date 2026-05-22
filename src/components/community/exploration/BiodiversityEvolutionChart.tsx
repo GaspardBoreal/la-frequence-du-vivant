@@ -139,7 +139,7 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({
     if (payload?.date) setSelectedDay(payload.date);
   };
 
-  const hasEnough = series.length >= 2;
+  const hasEnough = series.length >= 1;
 
   return (
     <motion.div
