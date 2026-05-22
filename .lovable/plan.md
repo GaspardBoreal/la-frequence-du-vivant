@@ -1,106 +1,99 @@
-## Objectif
+# Plan — Fiche espèce unifiée (étape 1) + préparation étape 2
 
-Le filtre période (et son sélecteur de plage personnalisée) actuellement local au graphe **« Pouls du vivant »** doit piloter aussi :
-- la **liste des espèces** en dessous (cartes),
-- le **compteur global** (« 98 espèces trouvées », badge « Toutes (98) »),
-- les **compteurs des onglets** Faune / Flore / Champignons / Autres,
-- le **nombre d'observations affiché sur chaque fiche** espèce.
+## Constat — 3 vues, 3 comportements
 
-Le tout sur l'onglet *Synthèse → Taxons observés* (`EventBiodiversityTab` → sous-onglet `taxons`).
+| # | Point d'entrée | Composant rendu | Trophic widget | Données marche/observateurs | Carrousel terrain + iNat |
+|---|---|---|---|---|---|
+| 1 | Synthèse → Taxons → carte espèce | `SpeciesGalleryDetailModal` (`trophicPool` fourni par `SpeciesExplorer`) | ✅ | ✅ (explorationId) | ✅ |
+| 2 | Synthèse → Pouls du vivant → point → espèce du jour | `SpeciesGalleryDetailModal` ouvert par `DayDetailDrawer` **sans `trophicPool`** | ❌ | ✅ partiel (explorationId mais `count=1`) | ✅ |
+| 3 | Marches → onglet Vivant → espèce | `SpeciesExplorer compact` (sans `explorationId`) → branche `else` → ancien `SpeciesDetailModal` | ❌ | ❌ | ❌ |
 
-Les statistiques de l'onglet **Synthèse** (les 5 grands compteurs animés) restent inchangées : ce sont des totaux narratifs « depuis le début ».
+Fichiers en cause :
+- `src/components/community/exploration/DayDetailDrawer.tsx` (l. 226–238) — ne passe pas `trophicPool` ni le `count` réel.
+- `src/components/community/MarcheDetailModal.tsx` (l. 1130) — appelle `SpeciesExplorer` sans `explorationId` ni `trophicPool`.
+- `src/components/biodiversity/SpeciesExplorer.tsx` (l. 480–486) — branche `else` qui ouvre l'ancien `SpeciesDetailModal`.
+- `src/components/biodiversity/SpeciesDetailModal.tsx` — composant legacy à retirer.
 
----
+## Étape 1 — Standardiser sur `SpeciesGalleryDetailModal` (cible unique)
 
-## Architecture proposée
+Objectif : une seule fiche, même contenu visible quel que soit le point d'entrée, contenu graduellement adapté au contexte (exploration, marche, jour).
 
-### 1. Sortir l'état période du graphe et le faire vivre dans le parent
+### 1.1 Rendre la fiche auto‑suffisante pour le widget trophique
 
-Aujourd'hui : `period`, `customRange`, `dateSource` sont des `useState` internes à `BiodiversityEvolutionChart`.
+Dans `SpeciesGalleryDetailModal` : si `trophicPool` n'est pas fourni mais qu'un `explorationId` l'est, **résoudre le pool en interne** via `useExplorationSpeciesPool(explorationId)` (hook déjà existant utilisé par Synthèse). Le widget « Sa place dans la chaîne » devient ainsi disponible partout dès qu'on connaît l'exploration.
 
-Cible : ces états remontent dans `EventBiodiversityTab` (sous-onglet `taxons`) :
+Fallback : si `explorationId` absent (cas vue 3), tenter le pool fourni par le parent (nouveau prop `species` ou `speciesPool`). Sinon, masquer proprement le bloc (déjà le cas).
 
-```ts
-const [period, setPeriod] = useState<EvolutionPeriod>('all');
-const [customRange, setCustomRange] = useState<{from?: string; to?: string}>();
-const [dateSource, setDateSource] = useState<DateSource>('observation');
+### 1.2 Corriger la vue 2 (Pouls du vivant)
+
+`DayDetailDrawer` :
+- Passer `count = selectedSpecies.observations` (et non `1`) si la propriété est disponible côté `DayDetail`. Sinon laisser `1` (jour précis).
+- Le `trophicPool` sera résolu automatiquement grâce à 1.1 (rien à passer ici), mais on peut aussi le propager si déjà chargé par le parent pour éviter une 2e requête.
+
+### 1.3 Corriger la vue 3 (Marches → Vivant)
+
+`MarcheDetailModal` :
+- Passer `explorationId={exploration.id}` et `allEventMarches` à `<SpeciesExplorer>` (déjà dispo dans ce scope ; sinon prop drilling depuis l'appelant).
+- Passer le `trophicPool` (= liste complète d'espèces du marché ou de l'événement) pour activer la chaîne trophique au niveau « marche ».
+
+`SpeciesExplorer` :
+- Supprimer la branche `else` qui rend `SpeciesDetailModal`. Toujours rendre `SpeciesGalleryDetailModal`. Quand `explorationId` est absent, la modale fonctionne en mode dégradé (pas d'onglets Carte/Observateurs propres à l'event, mais identité + carrousel + chain + chat OK).
+- Supprimer l'import et le fichier `SpeciesDetailModal.tsx` (dead code après suppression). Vérifier qu'il n'a aucune autre référence (déjà vérifié : 3 fichiers, tous neutralisés).
+
+### 1.4 Harmoniser le contrat d'entrée
+
+Aujourd'hui la modale reçoit un objet ad-hoc `{ name, scientificName, count, kingdom, photos? }`. Les trois appels divergent légèrement. On garde ce contrat (changement minimal) mais on documente clairement les champs requis vs optionnels en JSDoc + on ajoute un prop optionnel `speciesPool?: BiodiversitySpecies[]` pour le cas « hors exploration ».
+
+### 1.5 QA visuel
+
+Tester les 3 entrées sur l'URL en cours :
+- Synthèse → Taxon : aucune régression, widget toujours là.
+- Pouls du vivant → un point → une espèce : widget visible, badge "X observations sur Y marches".
+- Marches → Vivant → espèce : nouvelle modale moderne, carrousel + onglets Liste/Carte/Observateurs + widget trophique.
+
+## Étape 2 — Enrichissements (préparation seulement, pas d'implémentation dans ce plan)
+
+Architecture cible pour brancher les futurs ajouts sans casser l'étape 1 :
+
+```text
+SpeciesGalleryDetailModal (Sheet right/bottom)
+├── Header (identité, badges)
+├── Carrousel photos (terrain + iNat)            ─┐
+├── Place trophique (mini + fullscreen)          ─┤  étape 1 (OK après ce PR)
+├── CTA Chat IA                                  ─┤
+├── Onglets Liste / Carte / Observateurs         ─┘
+└── 🆕 Bouton « Vue plein écran »   ──────────►  SpeciesFullscreenView (étape 2)
+                                                  ├── Carte avancée (Mapbox/MapLibre)
+                                                  │    • points GPS exacts par observation
+                                                  │    • drag-to-reposition (RPC recalibrate)
+                                                  │    • clusters, filtres date, légendes
+                                                  ├── Galerie haute-déf + EXIF
+                                                  ├── Timeline observations
+                                                  ├── Bouton « Générer rapport PDF »
+                                                  │    └── edge function (jsPDF/pdfmake) :
+                                                  │        identité, chaîne trophique,
+                                                  │        carte statique, top observations,
+                                                  │        signatures + logo
+                                                  └── Bouton « Partager / Export CSV »
 ```
 
-`BiodiversityEvolutionChart` devient contrôlé : il reçoit `period`, `customRange`, `dateSource`, `onPeriodChange`, `onCustomRangeChange`, `onDateSourceChange`. L'UI (Select + Popovers + toggle Date terrain/collecte) reste rendue à l'intérieur du graphe (zéro changement visuel).
+Pré-requis posés par l'étape 1 : un point d'entrée unique, un contrat de props unique, le pool trophique résolvable depuis n'importe quel contexte. Ces 3 invariants débloquent toute l'étape 2 sans refactor supplémentaire.
 
-L'état `metric` (Espèces / Observations) reste local au graphe : il ne concerne pas la liste.
+## Détails techniques
 
-### 2. Projeter chaque espèce à travers la période
+- Hook ajouté côté modale : `useExplorationSpeciesPool(explorationId)` (déjà existant — confirmé via `src/hooks/useExplorationSpeciesPool.ts`). Activé conditionnellement : `enabled: !trophicPool && !!explorationId`.
+- Suppression : `src/components/biodiversity/SpeciesDetailModal.tsx` + l'import dans `SpeciesExplorer`.
+- Aucune migration DB.
+- Aucun changement de design system (la fiche cible utilise déjà les tokens projet via `Sheet` + classes existantes).
 
-Nouveau hook utilitaire `useSpeciesFilteredByPeriod(species, { period, customRange, dateSource })` dans `src/hooks/`. Il :
+## Fichiers modifiés
 
-- résout `{ fromISO, toISO }` via la **même fonction `resolvePeriodRange`** que le hook d'évolution (à exporter depuis `useBiodiversityEvolution.ts` pour éviter toute dérive),
-- pour `period === 'all'` → renvoie `species` tel quel (passe-plat),
-- sinon, pour chaque `BiodiversitySpecies` :
-  - filtre `attributions[]` aux observations dont la date (`observationDate` si `dateSource === 'observation'`, sinon date de collecte du snapshot rattaché) est dans la plage,
-  - recalcule `observations = filteredAttributions.length`,
-  - **exclut** l'espèce si `observations === 0` après filtrage,
-  - renvoie un objet espèce immuable cloné `{ ...sp, attributions: filteredAttributions, observations: filteredAttributions.length }`.
+1. `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` — résolution interne du pool, JSDoc props, prop optionnel `speciesPool`.
+2. `src/components/community/exploration/DayDetailDrawer.tsx` — `count` correct, propagation `trophicPool` si dispo.
+3. `src/components/community/MarcheDetailModal.tsx` — passe `explorationId`, `allEventMarches`, `trophicPool` à `SpeciesExplorer`.
+4. `src/components/biodiversity/SpeciesExplorer.tsx` — toujours `SpeciesGalleryDetailModal`, suppression de la branche legacy.
+5. `src/components/biodiversity/SpeciesDetailModal.tsx` — **supprimé**.
 
-Mode collecte : si `dateSource === 'collection'`, on filtre sur la date du snapshot d'origine de chaque attribution (déjà disponible via `attr.source`/snapshot parent — sinon, fallback : on garde l'espèce uniquement si son snapshot parent est dans la plage, sans toucher aux attributions).
+## Hors scope (étape 2)
 
-### 3. Brancher la liste sur la liste filtrée
-
-Dans `EventBiodiversityTab` (sous-onglet `taxons`) :
-
-```tsx
-const speciesFiltered = useSpeciesFilteredByPeriod(allSpeciesWithFrNames, {
-  period, customRange, dateSource,
-});
-
-<BiodiversityEvolutionChart
-  snapshots={snapshots}
-  period={period} customRange={customRange} dateSource={dateSource}
-  onPeriodChange={setPeriod} onCustomRangeChange={setCustomRange} onDateSourceChange={setDateSource}
-  overrideTotalSpecies={speciesFiltered.length}
-  /* …reste inchangé */
-/>
-<SpeciesExplorer
-  species={speciesFiltered}
-  trophicPool={allSpeciesWithFrNames}   /* le pool trophique reste complet */
-  /* …reste inchangé */
-/>
-```
-
-`SpeciesExplorer` n'a **aucun changement à faire** : ses `categoryStats`, ses compteurs d'onglets, son badge « N espèces trouvées » et ses `EnhancedSpeciesCard` (qui lisent `species.observations` et `species.attributions`) se mettent à jour automatiquement.
-
-### 4. Cohérence du graphe avec la liste
-
-`overrideTotalSpecies` (badge « X / Y espèces » sur le graphe) passe de `stats.total` à `speciesFiltered.length` pour que graphe et liste affichent toujours le même total.
-
-Le `BiodiversityEvolutionChart` continue de calculer sa courbe cumulative via `useBiodiversityEvolution` (inchangé) — cohérence garantie car les deux pipelines partagent `resolvePeriodRange`.
-
-### 5. Snapshot chatbot
-
-`useChatTabSnapshot('taxons', …)` doit refléter la liste filtrée : on injecte `period`, `customRange`, `speciesFiltered.length` dans le slice « taxons » pour que l'IA voie le périmètre réel.
-
----
-
-## Fichiers touchés
-
-| Fichier | Action |
-|---|---|
-| `src/hooks/useBiodiversityEvolution.ts` | Exporter `resolvePeriodRange` |
-| `src/hooks/useSpeciesFilteredByPeriod.ts` | **Nouveau** hook de projection |
-| `src/components/community/exploration/BiodiversityEvolutionChart.tsx` | Rendre contrôlé (props `period/customRange/dateSource` + handlers), supprimer les `useState` correspondants |
-| `src/components/community/EventBiodiversityTab.tsx` | Lever les états, appeler le hook de projection, brancher `speciesFiltered` sur `<SpeciesExplorer>` + `overrideTotalSpecies` |
-| `src/components/biodiversity/SpeciesExplorer.tsx` | **Aucun changement** (purement piloté par la prop `species`) |
-
-## Hors scope
-
-- Onglet Synthèse (compteurs animés « depuis le début »).
-- Onglet Indicateurs, Témoignages, Textes, Analyse IA.
-- Tabs de niveau supérieur (Carte, Marches, …).
-- Pas de changement de schéma DB, pas d'edge function.
-
-## Vérifications visuelles à faire après build
-
-1. Sélectionner « 7 derniers jours » → le graphe se restreint, le badge passe à `N` et la liste se réduit aux espèces observées sur 7 j ; les compteurs Faune/Flore/Champignons/Autres et le nombre d'observations sur chaque fiche reflètent ce sous-ensemble.
-2. Sélectionner « Personnalisée » avec une plage très ancienne → liste vide cohérente.
-3. Revenir à « Tout l'historique » → exact même état qu'avant la refonte (non-régression).
-4. Basculer Date terrain ↔ Date collecte → la liste se recompose en cohérence avec le graphe.
+Vue plein écran, repositionnement GPS, génération PDF, export CSV, partage social — listés ci-dessus pour cadrer l'architecture, **non implémentés** dans ce PR.
