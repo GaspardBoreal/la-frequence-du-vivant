@@ -157,7 +157,6 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
 
   const current = slides[selected];
   const isMultiple = slides.length > 1;
-  const currentIsField = isFieldSource(current.source) || !!current.alsoReference;
 
   return (
     <div className="bg-slate-900">
