@@ -17,6 +17,8 @@ import BiodiversityEvolutionChart from './exploration/BiodiversityEvolutionChart
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
+import { useSpeciesFilteredByPeriod } from '@/hooks/useSpeciesFilteredByPeriod';
+import type { EvolutionPeriod, DateSource } from '@/hooks/useBiodiversityEvolution';
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
@@ -66,6 +68,9 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
 const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId, eventType, onNavigateToMarche }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('synthese');
   const [revealActive, setRevealActive] = useState(false);
+  const [taxonsPeriod, setTaxonsPeriod] = useState<EvolutionPeriod>('all');
+  const [taxonsCustomRange, setTaxonsCustomRange] = useState<{ from?: string; to?: string }>({});
+  const [taxonsDateSource, setTaxonsDateSource] = useState<DateSource>('observation');
 
   const collectionMutation = useTriggerBiodiversityCollection();
 
@@ -515,31 +520,22 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
 
         {/* TAXONS — via SpeciesExplorer unifié */}
         {activeSubTab === 'taxons' && (
-          <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <BiodiversityEvolutionChart
-              snapshots={snapshots}
-              overrideTotalSpecies={stats.total}
-              marchesById={new Map(
-                (allEventMarchesData || []).map(m => [
-                  m.marcheId,
-                  { name: m.marcheName, ville: m.ville, latitude: m.latitude, longitude: m.longitude },
-                ])
-              )}
-              onNavigateToMarche={onNavigateToMarche}
-              explorationId={explorationId}
-              allEventMarches={allEventMarchesData}
-            />
-            <SpeciesExplorer
-              species={allSpeciesWithFrNames}
-              compact
-              explorationId={explorationId}
-              allEventMarches={allEventMarchesData}
-              eventParticipants={eventParticipants}
-              trophicPool={allSpeciesWithFrNames}
-            />
-
-          </motion.div>
+          <TaxonsSubTab
+            snapshots={snapshots}
+            allSpeciesWithFrNames={allSpeciesWithFrNames}
+            allEventMarchesData={allEventMarchesData}
+            eventParticipants={eventParticipants}
+            explorationId={explorationId}
+            onNavigateToMarche={onNavigateToMarche}
+            period={taxonsPeriod}
+            customRange={taxonsCustomRange}
+            dateSource={taxonsDateSource}
+            onPeriodChange={setTaxonsPeriod}
+            onCustomRangeChange={setTaxonsCustomRange}
+            onDateSourceChange={setTaxonsDateSource}
+          />
         )}
+
 
         {/* INDICATEURS — Lecture écologique du peuplement */}
         {activeSubTab === 'indicateurs' && (
@@ -588,4 +584,63 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   );
 };
 
+interface TaxonsSubTabProps {
+  snapshots: any[] | undefined;
+  allSpeciesWithFrNames: BiodiversitySpecies[];
+  allEventMarchesData: SpeciesMarcheData[] | undefined;
+  eventParticipants: Array<{ name: string; source: 'community' | 'crew' }>;
+  explorationId?: string;
+  onNavigateToMarche?: (marcheId: string) => void;
+  period: EvolutionPeriod;
+  customRange: { from?: string; to?: string };
+  dateSource: DateSource;
+  onPeriodChange: (p: EvolutionPeriod) => void;
+  onCustomRangeChange: (r: { from?: string; to?: string }) => void;
+  onDateSourceChange: (s: DateSource) => void;
+}
+
+const TaxonsSubTab: React.FC<TaxonsSubTabProps> = ({
+  snapshots, allSpeciesWithFrNames, allEventMarchesData, eventParticipants,
+  explorationId, onNavigateToMarche,
+  period, customRange, dateSource,
+  onPeriodChange, onCustomRangeChange, onDateSourceChange,
+}) => {
+  const speciesFiltered = useSpeciesFilteredByPeriod(allSpeciesWithFrNames, {
+    period, customRange, dateSource,
+  });
+
+  return (
+    <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <BiodiversityEvolutionChart
+        snapshots={snapshots}
+        overrideTotalSpecies={speciesFiltered.length}
+        marchesById={new Map(
+          (allEventMarchesData || []).map(m => [
+            m.marcheId,
+            { name: m.marcheName, ville: m.ville, latitude: m.latitude, longitude: m.longitude },
+          ])
+        )}
+        onNavigateToMarche={onNavigateToMarche}
+        explorationId={explorationId}
+        allEventMarches={allEventMarchesData}
+        period={period}
+        onPeriodChange={onPeriodChange}
+        customRange={customRange}
+        onCustomRangeChange={onCustomRangeChange}
+        dateSource={dateSource}
+        onDateSourceChange={onDateSourceChange}
+      />
+      <SpeciesExplorer
+        species={speciesFiltered}
+        compact
+        explorationId={explorationId}
+        allEventMarches={allEventMarchesData}
+        eventParticipants={eventParticipants}
+        trophicPool={allSpeciesWithFrNames}
+      />
+    </motion.div>
+  );
+};
+
 export default EventBiodiversityTab;
+

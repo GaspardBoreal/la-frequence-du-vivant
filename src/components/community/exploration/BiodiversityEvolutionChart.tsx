@@ -45,6 +45,13 @@ interface Props {
   allEventMarches?: SpeciesMarcheData[];
   /** Override the species total in the header to align with the unified pool (snapshots ∪ marcheur_observations). */
   overrideTotalSpecies?: number;
+  /** Controlled period state — when provided, filters propagate to siblings (species list, counters). */
+  period?: EvolutionPeriod;
+  onPeriodChange?: (p: EvolutionPeriod) => void;
+  customRange?: { from?: string; to?: string };
+  onCustomRangeChange?: (r: { from?: string; to?: string }) => void;
+  dateSource?: DateSource;
+  onDateSourceChange?: (s: DateSource) => void;
 }
 
 const periodOptions: { key: EvolutionPeriod; label: string }[] = [
@@ -78,26 +85,50 @@ const formatTickShort = (iso: string) => {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const dateToISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromISOToDate = (s?: string): Date | undefined => {
+  if (!s) return undefined;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+};
 
 
-const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, onNavigateToMarche, explorationId, allEventMarches, overrideTotalSpecies }) => {
+const BiodiversityEvolutionChart: React.FC<Props> = ({
+  snapshots, marchesById, onNavigateToMarche, explorationId, allEventMarches, overrideTotalSpecies,
+  period: periodProp, onPeriodChange,
+  customRange: customRangeProp, onCustomRangeChange,
+  dateSource: dateSourceProp, onDateSourceChange,
+}) => {
   const [metric, setMetric] = useState<EvolutionMetric>('species');
-  const [period, setPeriod] = useState<EvolutionPeriod>('all');
-  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
-  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
-  const [dateSource, setDateSource] = useState<DateSource>('observation');
+  const [periodLocal, setPeriodLocal] = useState<EvolutionPeriod>('all');
+  const [customRangeLocal, setCustomRangeLocal] = useState<{ from?: string; to?: string }>({});
+  const [dateSourceLocal, setDateSourceLocal] = useState<DateSource>('observation');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  const customRange = period === 'custom'
-    ? { from: customFrom ? dateToISO(customFrom) : undefined, to: customTo ? dateToISO(customTo) : undefined }
-    : undefined;
+  const period = periodProp ?? periodLocal;
+  const customRange = customRangeProp ?? customRangeLocal;
+  const dateSource = dateSourceProp ?? dateSourceLocal;
+
+  const setPeriod = (p: EvolutionPeriod) => {
+    if (onPeriodChange) onPeriodChange(p); else setPeriodLocal(p);
+  };
+  const setCustomRange = (r: { from?: string; to?: string }) => {
+    if (onCustomRangeChange) onCustomRangeChange(r); else setCustomRangeLocal(r);
+  };
+  const setDateSource = (s: DateSource) => {
+    if (onDateSourceChange) onDateSourceChange(s); else setDateSourceLocal(s);
+  };
+
+  const customFrom = fromISOToDate(customRange?.from);
+  const customTo = fromISOToDate(customRange?.to);
 
   const { series, byDay, firstDate, totalSpecies, totalObservations } = useBiodiversityEvolution(snapshots, {
     dateSource,
     metric,
     period,
-    customRange,
+    customRange: period === 'custom' ? customRange : undefined,
   });
+
 
   const displayedSpecies = typeof overrideTotalSpecies === 'number' ? overrideTotalSpecies : totalSpecies;
   const headerCount = metric === 'species' ? displayedSpecies : totalObservations;
@@ -268,7 +299,7 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, o
                   <Calendar
                     mode="single"
                     selected={customFrom}
-                    onSelect={setCustomFrom}
+                    onSelect={(d) => setCustomRange({ from: d ? dateToISO(d) : undefined, to: customRange?.to })}
                     locale={fr}
                     initialFocus
                     className={cn('p-3 pointer-events-auto')}
@@ -291,7 +322,7 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, o
                   <Calendar
                     mode="single"
                     selected={customTo}
-                    onSelect={setCustomTo}
+                    onSelect={(d) => setCustomRange({ from: customRange?.from, to: d ? dateToISO(d) : undefined })}
                     locale={fr}
                     disabled={(d) => customFrom ? d < customFrom : false}
                     initialFocus
