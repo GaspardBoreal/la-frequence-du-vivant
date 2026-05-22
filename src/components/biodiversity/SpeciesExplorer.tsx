@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card } from '../ui/card';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
-import SpeciesDetailModal from './SpeciesDetailModal';
 import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
@@ -462,28 +461,20 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
         <TabsContent value="others">{renderSpeciesGrid(filteredSpecies.filter(s => s.kingdom !== 'Plantae' && s.kingdom !== 'Fungi' && s.kingdom !== 'Animalia'))}</TabsContent>
       </Tabs>
 
-      {explorationId ? (
-        <SpeciesGalleryDetailModal
-          species={selectedSpecies ? {
-            name: selectedSpecies.commonName,
-            scientificName: selectedSpecies.scientificName,
-            count: selectedSpecies.observations,
-            kingdom: selectedSpecies.kingdom,
-            photos: selectedSpecies.photoData ? [selectedSpecies.photoData.url] : undefined,
-          } : null}
-          explorationId={explorationId}
-          allEventMarches={allEventMarches}
-          trophicPool={trophicPool ?? species}
-          isOpen={!!selectedSpecies}
-          onClose={() => setSelectedSpecies(null)}
-        />
-      ) : (
-        <SpeciesDetailModal
-          species={selectedSpecies}
-          isOpen={!!selectedSpecies}
-          onClose={() => setSelectedSpecies(null)}
-        />
-      )}
+      <SpeciesGalleryDetailModal
+        species={selectedSpecies ? {
+          name: selectedSpecies.commonName,
+          scientificName: selectedSpecies.scientificName,
+          count: selectedSpecies.observations,
+          kingdom: selectedSpecies.kingdom,
+          photos: selectedSpecies.photoData ? [selectedSpecies.photoData.url] : undefined,
+        } : null}
+        explorationId={explorationId}
+        allEventMarches={allEventMarches}
+        trophicPool={trophicPool ?? species}
+        isOpen={!!selectedSpecies}
+        onClose={() => setSelectedSpecies(null)}
+      />
     </div>
   );
 };

@@ -28,8 +28,11 @@ import SpeciesPhotoCarousel, { type CarouselSlide } from './species-modal/Specie
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import SpeciesTrophicPosition from './species-modal/SpeciesTrophicPosition';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
+import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 
 interface SpeciesGalleryDetailModalProps {
+  /** Minimal identity used for hero + queries. `count` may be exact (Synthèse)
+   *  or a single-day count (Pouls du vivant) — both work. */
   species: {
     name: string;
     scientificName: string;
@@ -37,9 +40,12 @@ interface SpeciesGalleryDetailModalProps {
     kingdom: string;
     photos?: string[];
   } | null;
+  /** When present, enables marche/observer tabs and auto-resolves the trophic
+   *  pool if `trophicPool` is omitted. */
   explorationId?: string;
   allEventMarches?: SpeciesMarcheData[];
-  /** Full pool used to compute the trophic chain for the "Sa place" widget */
+  /** Full pool used to compute the trophic chain for the "Sa place" widget.
+   *  If omitted and `explorationId` is provided, the pool is resolved internally. */
   trophicPool?: BiodiversitySpecies[];
   isOpen: boolean;
   onClose: () => void;
@@ -113,6 +119,30 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   );
 
   const { canUse: canChat } = useCanUseContextualChat();
+
+  // Fallback trophic pool: when parent didn't pass one but we know the exploration,
+  // resolve it ourselves so the "Sa place dans la chaîne" widget renders in every
+  // entry point (Synthèse, Pouls du vivant, Marche → Vivant).
+  const { data: explorationPool = [] } = useExplorationSpeciesPool(
+    isOpen && !trophicPool && explorationId ? explorationId : undefined,
+  );
+  const resolvedTrophicPool = useMemo<BiodiversitySpecies[] | undefined>(() => {
+    if (trophicPool && trophicPool.length > 0) return trophicPool;
+    if (!explorationPool || explorationPool.length === 0) return undefined;
+    return explorationPool.map((sp) => ({
+      id: sp.key,
+      scientificName: sp.scientificName || sp.displayName,
+      commonName: sp.commonNameFr || sp.commonName || '',
+      family: '',
+      kingdom: (sp.group as any) || 'Other',
+      iconicTaxon: sp.group || undefined,
+      observations: sp.count,
+      lastSeen: '',
+      photos: sp.imageUrl ? [sp.imageUrl] : undefined,
+      source: 'inaturalist' as const,
+      attributions: [],
+    }));
+  }, [trophicPool, explorationPool]);
 
   // Snapshot pour le ChatBot (screen-awareness) — DOIT être appelé avant tout
   // early return pour préserver l'ordre des hooks entre les renders.
@@ -319,11 +349,11 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
               </div>
 
               {/* Place in the trophic chain — 3 interactive mini-views */}
-              {trophicPool && trophicPool.length > 0 && species && (
+              {resolvedTrophicPool && resolvedTrophicPool.length > 0 && species && (
                 <SpeciesTrophicPosition
                   scientificName={species.scientificName}
                   commonName={frenchName}
-                  speciesPool={trophicPool as any}
+                  speciesPool={resolvedTrophicPool as any}
                 />
               )}
 
