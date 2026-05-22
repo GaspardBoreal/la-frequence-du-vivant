@@ -216,6 +216,19 @@ export const usePublicEventBiodiversity = (slug: string | undefined) =>
     staleTime: 60_000,
   });
 
+export const usePublicEventStats = (slug: string | undefined) =>
+  useQuery({
+    queryKey: ['public-event-stats', slug],
+    queryFn: async (): Promise<PublicEventStats | null> => {
+      if (!slug) return null;
+      const { data, error } = await supabase.rpc('get_public_event_stats' as any, { _slug: slug });
+      if (error) throw error;
+      return (data as PublicEventStats) ?? null;
+    },
+    enabled: !!slug,
+    refetchInterval: 60_000,
+  });
+
 export const usePublicEventMarcheurs = (slug: string | undefined) =>
   useQuery({
     queryKey: ['public-event-marcheurs', slug],
