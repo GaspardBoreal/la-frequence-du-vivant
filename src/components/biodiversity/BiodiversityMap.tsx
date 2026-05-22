@@ -24,7 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Slider } from '../ui/slider';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { BiodiversityData, BiodiversitySpecies } from '@/types/biodiversity';
-import SpeciesDetailModal from './SpeciesDetailModal';
+import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import 'leaflet/dist/leaflet.css';
 
 interface MarcheLocation {
@@ -657,8 +657,14 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
         </Sheet>
         
         {/* Modal de détails d'espèce */}
-        <SpeciesDetailModal
-          species={selectedSpeciesForModal}
+        <SpeciesGalleryDetailModal
+          species={selectedSpeciesForModal ? {
+            name: selectedSpeciesForModal.commonName,
+            scientificName: selectedSpeciesForModal.scientificName,
+            count: selectedSpeciesForModal.observations,
+            kingdom: selectedSpeciesForModal.kingdom,
+            photos: selectedSpeciesForModal.photoData ? [selectedSpeciesForModal.photoData.url] : undefined,
+          } : null}
           isOpen={selectedSpeciesForModal !== null}
           onClose={() => setSelectedSpeciesForModal(null)}
         />
