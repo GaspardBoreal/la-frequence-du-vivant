@@ -139,7 +139,7 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({
     if (payload?.date) setSelectedDay(payload.date);
   };
 
-  const hasEnough = series.length >= 2;
+  const hasEnough = series.length >= 1;
 
   return (
     <motion.div
@@ -259,6 +259,7 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 fill="url(#bioCumulFill)"
+                dot={{ r: 4, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
                 activeDot={{ r: 5, stroke: 'hsl(var(--background))', strokeWidth: 2, style: { cursor: 'pointer' } }}
               />
             </ComposedChart>
