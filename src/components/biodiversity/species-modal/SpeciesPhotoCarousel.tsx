@@ -75,6 +75,9 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
 }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' });
   const [selected, setSelected] = useState(0);
+  const [flash, setFlash] = useState(false);
+  const { mode, setMode, hasFieldPhotos } = useSpeciesPhotoMode();
+  const didInitRef = useRef(false);
 
   useEffect(() => {
     if (!emblaApi) return;
@@ -98,6 +101,40 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
       hasField: fIdx >= 0,
     };
   }, [slides]);
+
+  // Sync initial slide to global mode (Photos marcheurs ↔ iNaturalist)
+  useEffect(() => {
+    if (!emblaApi || slides.length === 0) return;
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+    const targetIdx =
+      mode === 'marcheur' && firstFieldIdx >= 0
+        ? firstFieldIdx
+        : firstRefIdx >= 0
+          ? firstRefIdx
+          : 0;
+    if (targetIdx !== emblaApi.selectedScrollSnap()) {
+      emblaApi.scrollTo(targetIdx, true);
+    }
+  }, [emblaApi, slides.length, mode, firstFieldIdx, firstRefIdx]);
+
+  // Reagit aux changements de mode global après le 1er rendu (wahuhh flash)
+  useEffect(() => {
+    if (!emblaApi || !didInitRef.current || slides.length === 0) return;
+    const targetIdx =
+      mode === 'marcheur' && firstFieldIdx >= 0
+        ? firstFieldIdx
+        : firstRefIdx >= 0
+          ? firstRefIdx
+          : 0;
+    if (targetIdx !== emblaApi.selectedScrollSnap()) {
+      setFlash(true);
+      emblaApi.scrollTo(targetIdx);
+      const t = setTimeout(() => setFlash(false), 320);
+      return () => clearTimeout(t);
+    }
+  }, [mode, emblaApi, firstFieldIdx, firstRefIdx, slides.length]);
+
 
   if (isLoading) {
     return (
