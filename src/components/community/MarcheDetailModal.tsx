@@ -1130,7 +1130,10 @@ export const VivantTab: React.FC<{
         <SpeciesExplorer
           species={biodiversityData.species}
           compact
+          explorationId={explorationId}
+          trophicPool={biodiversityData.species}
         />
+
       )}
     </div>
   );
