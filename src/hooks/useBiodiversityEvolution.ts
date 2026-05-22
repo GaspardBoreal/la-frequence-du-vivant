@@ -67,13 +67,68 @@ interface UseEvolutionOpts {
   period: EvolutionPeriod;
 }
 
-const periodToDays: Record<EvolutionPeriod, number | null> = {
-  all: null,
-  '12m': 365,
-  '6m': 183,
-  '3m': 92,
-  '30d': 30,
-};
+interface UseEvolutionOpts {
+  dateSource: DateSource;
+  metric: EvolutionMetric;
+  period: EvolutionPeriod;
+  customRange?: CustomRange;
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+function resolvePeriodRange(
+  period: EvolutionPeriod,
+  customRange?: CustomRange,
+): { fromISO?: string; toISO?: string } {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (period) {
+    case 'all':
+      return {};
+    case 'today':
+      return { fromISO: toISO(today), toISO: toISO(today) };
+    case '7d': {
+      const from = new Date(today); from.setDate(from.getDate() - 6);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case '30d': {
+      const from = new Date(today); from.setDate(from.getDate() - 29);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case 'last_month': {
+      const from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const to = new Date(today.getFullYear(), today.getMonth(), 0);
+      return { fromISO: toISO(from), toISO: toISO(to) };
+    }
+    case 'last_quarter': {
+      const curQ = Math.floor(today.getMonth() / 3); // 0..3
+      const prevQStartMonth = (curQ - 1) * 3;
+      const year = prevQStartMonth < 0 ? today.getFullYear() - 1 : today.getFullYear();
+      const startMonth = (prevQStartMonth + 12) % 12;
+      const from = new Date(year, startMonth, 1);
+      const to = new Date(year, startMonth + 3, 0);
+      return { fromISO: toISO(from), toISO: toISO(to) };
+    }
+    case '6m': {
+      const from = new Date(today); from.setMonth(from.getMonth() - 6);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case 'year': {
+      const from = new Date(today.getFullYear(), 0, 1);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case '12m': {
+      const from = new Date(today); from.setFullYear(from.getFullYear() - 1);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case 'custom':
+      return { fromISO: customRange?.from, toISO: customRange?.to };
+    default:
+      return {};
+  }
+}
 
 const toDayISO = (d: string | Date | undefined | null): string | null => {
   if (!d) return null;
