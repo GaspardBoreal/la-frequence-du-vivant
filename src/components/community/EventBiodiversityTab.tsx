@@ -520,31 +520,22 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
 
         {/* TAXONS — via SpeciesExplorer unifié */}
         {activeSubTab === 'taxons' && (
-          <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <BiodiversityEvolutionChart
-              snapshots={snapshots}
-              overrideTotalSpecies={stats.total}
-              marchesById={new Map(
-                (allEventMarchesData || []).map(m => [
-                  m.marcheId,
-                  { name: m.marcheName, ville: m.ville, latitude: m.latitude, longitude: m.longitude },
-                ])
-              )}
-              onNavigateToMarche={onNavigateToMarche}
-              explorationId={explorationId}
-              allEventMarches={allEventMarchesData}
-            />
-            <SpeciesExplorer
-              species={allSpeciesWithFrNames}
-              compact
-              explorationId={explorationId}
-              allEventMarches={allEventMarchesData}
-              eventParticipants={eventParticipants}
-              trophicPool={allSpeciesWithFrNames}
-            />
-
-          </motion.div>
+          <TaxonsSubTab
+            snapshots={snapshots}
+            allSpeciesWithFrNames={allSpeciesWithFrNames}
+            allEventMarchesData={allEventMarchesData}
+            eventParticipants={eventParticipants}
+            explorationId={explorationId}
+            onNavigateToMarche={onNavigateToMarche}
+            period={taxonsPeriod}
+            customRange={taxonsCustomRange}
+            dateSource={taxonsDateSource}
+            onPeriodChange={setTaxonsPeriod}
+            onCustomRangeChange={setTaxonsCustomRange}
+            onDateSourceChange={setTaxonsDateSource}
+          />
         )}
+
 
         {/* INDICATEURS — Lecture écologique du peuplement */}
         {activeSubTab === 'indicateurs' && (
