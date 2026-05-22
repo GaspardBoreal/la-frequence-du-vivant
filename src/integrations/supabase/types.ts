@@ -1921,6 +1921,7 @@ export type Database = {
           created_at: string | null
           exploration_id: string
           id: string
+          is_guest: boolean
           is_principal: boolean | null
           nom: string
           ordre: number | null
@@ -1936,6 +1937,7 @@ export type Database = {
           created_at?: string | null
           exploration_id: string
           id?: string
+          is_guest?: boolean
           is_principal?: boolean | null
           nom: string
           ordre?: number | null
@@ -1951,6 +1953,7 @@ export type Database = {
           created_at?: string | null
           exploration_id?: string
           id?: string
+          is_guest?: boolean
           is_principal?: boolean | null
           nom?: string
           ordre?: number | null
@@ -3031,6 +3034,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_guest: boolean
           marche_event_id: string
           user_id: string
           validated_at: string | null
@@ -3039,6 +3043,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_guest?: boolean
           marche_event_id: string
           user_id: string
           validated_at?: string | null
@@ -3047,6 +3052,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_guest?: boolean
           marche_event_id?: string
           user_id?: string
           validated_at?: string | null
@@ -5100,6 +5106,7 @@ export type Database = {
       get_public_event_counters: { Args: { _slug: string }; Returns: Json }
       get_public_event_marcheurs: { Args: { _slug: string }; Returns: Json }
       get_public_event_medias: { Args: { _slug: string }; Returns: Json }
+      get_public_event_stats: { Args: { _slug: string }; Returns: Json }
       get_public_event_testimonies: { Args: { _slug: string }; Returns: Json }
       get_public_marcheur_carnet: { Args: { p_slug: string }; Returns: Json }
       get_public_shared_contribution: {
