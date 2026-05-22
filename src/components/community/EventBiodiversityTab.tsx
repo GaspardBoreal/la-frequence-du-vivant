@@ -17,6 +17,8 @@ import BiodiversityEvolutionChart from './exploration/BiodiversityEvolutionChart
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
+import { useSpeciesFilteredByPeriod } from '@/hooks/useSpeciesFilteredByPeriod';
+import type { EvolutionPeriod, DateSource } from '@/hooks/useBiodiversityEvolution';
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
