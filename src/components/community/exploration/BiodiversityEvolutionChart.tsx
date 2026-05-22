@@ -83,13 +83,20 @@ const dateToISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pa
 const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, onNavigateToMarche, explorationId, allEventMarches, overrideTotalSpecies }) => {
   const [metric, setMetric] = useState<EvolutionMetric>('species');
   const [period, setPeriod] = useState<EvolutionPeriod>('all');
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
   const [dateSource, setDateSource] = useState<DateSource>('observation');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const customRange = period === 'custom'
+    ? { from: customFrom ? dateToISO(customFrom) : undefined, to: customTo ? dateToISO(customTo) : undefined }
+    : undefined;
 
   const { series, byDay, firstDate, totalSpecies, totalObservations } = useBiodiversityEvolution(snapshots, {
     dateSource,
     metric,
     period,
+    customRange,
   });
 
   const displayedSpecies = typeof overrideTotalSpecies === 'number' ? overrideTotalSpecies : totalSpecies;
