@@ -3,7 +3,22 @@ import { useFrenchSpeciesNamesAuto } from './useFrenchSpeciesNamesAuto';
 
 export type DateSource = 'observation' | 'collection';
 export type EvolutionMetric = 'species' | 'observations';
-export type EvolutionPeriod = 'all' | '12m' | '6m' | '3m' | '30d';
+export type EvolutionPeriod =
+  | 'all'
+  | 'today'
+  | '7d'
+  | '30d'
+  | 'last_month'
+  | 'last_quarter'
+  | '6m'
+  | 'year'
+  | '12m'
+  | 'custom';
+
+export interface CustomRange {
+  from?: string; // YYYY-MM-DD
+  to?: string;   // YYYY-MM-DD
+}
 
 export interface DayObservation {
   scientificName: string;
