@@ -582,6 +582,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       </AnimatePresence>
     </div>
   );
+};
 
 interface TaxonsSubTabProps {
   snapshots: any[] | undefined;
