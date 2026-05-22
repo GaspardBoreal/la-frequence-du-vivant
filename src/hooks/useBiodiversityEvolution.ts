@@ -61,11 +61,6 @@ export interface EvolutionResult {
   totalObservations: number;
 }
 
-interface UseEvolutionOpts {
-  dateSource: DateSource;
-  metric: EvolutionMetric;
-  period: EvolutionPeriod;
-}
 
 interface UseEvolutionOpts {
   dateSource: DateSource;
