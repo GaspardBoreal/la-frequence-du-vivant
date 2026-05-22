@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Play, Pause, Volume2, Music, Camera, Eye, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
