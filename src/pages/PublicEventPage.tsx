@@ -1,11 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   Calendar, MapPin, Eye, Users, Share2, ArrowRight, Sparkles, Copy,
   Leaf, Bird, Trees, Globe2, Heart, ChevronRight, Camera, Quote, Mail,
+  Waves, ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,7 +20,7 @@ import { RichMap } from '@/components/maps';
 import { SpeciesName } from '@/components/species/SpeciesName';
 import {
   usePublicEvent,
-  usePublicEventCounters,
+  usePublicEventStats,
   usePublicEventBiodiversity,
   usePublicEventMarcheurs,
   usePublicEventTestimonies,
@@ -30,6 +32,8 @@ import {
 } from '@/hooks/usePublicEvent';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { cn } from '@/lib/utils';
+import PratiquesEmblematiquesDialog from '@/components/public-event/PratiquesEmblematiquesDialog';
+import PaysagesSonoresDialog from '@/components/public-event/PaysagesSonoresDialog';
 
 const SITE = 'https://la-frequence-du-vivant.com';
 
