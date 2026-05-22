@@ -268,35 +268,49 @@ const SpeciesPhotoCarousel: React.FC<SpeciesPhotoCarouselProps> = ({
             {selected + 1} / {slides.length}
           </div>
         )}
+
+        {/* Flash overlay au switch de mode global (wahuhh) */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none bg-white"
+          initial={false}
+          animate={{ opacity: flash ? 0.18 : 0 }}
+          transition={{ duration: 0.32, ease: 'easeOut' }}
+        />
       </div>
 
-      {/* Toggle segmenté Référence ↔ Sur le terrain */}
-      {hasBoth && (
+      {/* Toggle segmenté Référence ↔ Sur le terrain — bind au mode global */}
+      {hasBoth && hasFieldPhotos && (
         <div className="px-3 pt-3 flex justify-center">
           <div className="inline-flex p-1 rounded-full bg-white/5 border border-white/10">
             <button
               type="button"
-              onClick={() => emblaApi?.scrollTo(firstRefIdx)}
+              onClick={() => {
+                setMode('inaturalist');
+                emblaApi?.scrollTo(firstRefIdx);
+              }}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                isRefSource(current.source) && !current.alsoReference
+                mode === 'inaturalist'
                   ? 'bg-sky-500/90 text-white shadow'
                   : 'text-white/60 hover:text-white/90'
               }`}
             >
               <Sparkles className="w-3 h-3" />
-              Référence taxon
+              iNaturalist
             </button>
             <button
               type="button"
-              onClick={() => emblaApi?.scrollTo(firstFieldIdx)}
+              onClick={() => {
+                setMode('marcheur');
+                emblaApi?.scrollTo(firstFieldIdx);
+              }}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                currentIsField
+                mode === 'marcheur'
                   ? 'bg-emerald-500/90 text-white shadow'
                   : 'text-white/60 hover:text-white/90'
               }`}
             >
               <Camera className="w-3 h-3" />
-              Sur le terrain ({fieldCount})
+              Marcheurs ({fieldCount})
             </button>
           </div>
         </div>
