@@ -49,6 +49,11 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
   const isFieldPhoto = preferred?.source === 'marcheur' || preferred?.source === 'citizen';
   const isFieldFallback = preferred?.isFallback === true;
 
+  // Reset image error when the photo URL changes (toggle marcheur ↔ inat)
+  useEffect(() => {
+    setImageError(false);
+  }, [effectivePhoto?.url]);
+
   // Use the prop translation directly — auto-fill is handled centrally
   // by useFrenchSpeciesNamesAuto via the parent batch hook.
   const translation = propTranslation;
