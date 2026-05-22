@@ -311,9 +311,11 @@ RÈGLES IMPÉRATIVES :
         },
       }];
 
-      const userPrompt = `Voici ${needsAi.length} espèce(s) observée(s) en Dordogne (key | scientifique | commun | nb obs). Classe-les toutes en respectant les règles :\n\n${needsAi
-        .map(s => `${s.key} | ${s.scientificName || '?'} | ${s.commonName || '?'} | ${s.count}`)
-        .join('\n')}`;
+      const userPrompt = `Voici ${needsAi.length} espèce(s) observée(s) en Dordogne (key | scientifique | commun | nb obs). Classe-les toutes en respectant les règles.
+
+⚠️ IMPORTANT — Le champ "key" de ta réponse DOIT être copié EXACTEMENT depuis le 1er champ avant le " | " de chaque ligne ci-dessous, sans modification, sans recapitalisation, sans recopier les autres champs (ni " | ", ni scientifique, ni commun, ni nb).
+
+${needsAi.map(s => `${s.key} | ${s.scientificName || '?'} | ${s.commonName || '?'} | ${s.count}`).join('\n')}`;
 
       const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
@@ -349,11 +351,44 @@ RÈGLES IMPÉRATIVES :
       const args = JSON.parse(toolCall.function.arguments);
       const aiResults: any[] = args.species || [];
 
+      // ─── Remapping robuste IA → pool ─────────────────────────────────────
+      // Le modèle peut retourner soit la `key` brute, soit la ligne complète
+      // "Sci | Sci | Common | n", soit juste le scientificName recapitalisé.
+      // On indexe needsAi sur plusieurs clés normalisées pour matcher dans
+      // tous les cas et stocker `entity_id = sp.key` canonique.
+      const normalize = (s: string) => s.trim().toLowerCase();
+      const lookup = new Map<string, SpeciesInput>();
+      for (const sp of needsAi) {
+        lookup.set(normalize(sp.key), sp);
+        if (sp.scientificName) lookup.set(normalize(sp.scientificName), sp);
+        if (sp.commonName) lookup.set(normalize(sp.commonName), sp);
+      }
+
+      let matched = 0;
+      const unmatched: string[] = [];
+
       aiResults.forEach((r: any) => {
+        const rawKey = typeof r.key === 'string' ? r.key : '';
+        // Si l'IA a recopié toute la ligne, on prend le 1er segment
+        const firstSegment = rawKey.includes(' | ') ? rawKey.split(' | ')[0] : rawKey;
+        const candidates = [firstSegment, rawKey].map(normalize).filter(Boolean);
+
+        let sp: SpeciesInput | undefined;
+        for (const c of candidates) {
+          sp = lookup.get(c);
+          if (sp) break;
+        }
+
+        if (!sp) {
+          unmatched.push(rawKey.slice(0, 80));
+          return;
+        }
+        matched++;
+
         const evidence = Array.isArray(r.evidence) ? r.evidence : [];
         const confidence = typeof r.confidence === 'number' ? r.confidence : 0.5;
         classified.push({
-          key: r.key,
+          key: sp.key, // ← clé canonique du pool, JAMAIS la valeur retournée par l'IA
           primary: r.primary,
           secondary: Array.isArray(r.secondary) ? r.secondary : [],
           ai_score: r.ai_score || 50,
@@ -364,6 +399,11 @@ RÈGLES IMPÉRATIVES :
           needs_review: confidence < 0.6 || evidence.length === 0,
         });
       });
+
+      console.log(`[analyze] AI mapped: ${matched}/${needsAi.length}, unmatched: ${unmatched.length}`);
+      if (unmatched.length > 0) {
+        console.warn('[analyze] Unmatched AI keys:', unmatched.slice(0, 10));
+      }
     }
 
     // ─── INSERT en base ───
