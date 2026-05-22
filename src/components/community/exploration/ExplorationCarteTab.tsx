@@ -521,6 +521,46 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     return map;
   }, [bioSummary]);
 
+  // ── Slice "carte" pour le ChatBot contextuel ───────────────────────────────
+  // Publie l'état réel de la carte visible (marches, étapes, fond, bbox)
+  // pour que l'IA puisse raisonner sur la géographie sans halluciner.
+  const carteSnapshot = useMemo(() => {
+    if (geoMarches.length === 0) return null;
+    const lats = geoMarches.map(m => m.latitude!);
+    const lons = geoMarches.map(m => m.longitude!);
+    const round = (n: number) => Math.round(n * 1e5) / 1e5;
+    return {
+      label: explorationName ? `Carte — ${explorationName}` : 'Carte de l\'exploration',
+      fond: mapStyle,
+      is_loop: isLoop,
+      distance_oiseau_km: route.crowKm ? Math.round(route.crowKm * 10) / 10 : null,
+      distance_estimee_km: route.estimatedKm ? Math.round(route.estimatedKm * 10) / 10 : null,
+      bbox: {
+        north: round(Math.max(...lats)),
+        south: round(Math.min(...lats)),
+        east: round(Math.max(...lons)),
+        west: round(Math.min(...lons)),
+      },
+      marches: geoMarches.map(m => ({
+        ordre: m.ordre,
+        nom: m.nom_marche,
+        ville: m.ville,
+        lat: round(m.latitude!),
+        lon: round(m.longitude!),
+        especes_count: bioByMarche.get(m.id) ?? 0,
+      })),
+      etapes: waypoints.slice(0, 60).map((w: any) => ({
+        etape: w.ordre,
+        after_marche_id: w.after_marche_id,
+        lat: round(Number(w.latitude)),
+        lon: round(Number(w.longitude)),
+        label: w.label ?? null,
+      })),
+      etapes_total: waypoints.length,
+    };
+  }, [geoMarches, waypoints, mapStyle, isLoop, route.crowKm, route.estimatedKm, bioByMarche, explorationName]);
+  useChatTabSnapshot('carte', carteSnapshot);
+
   // Stop tracking helper
   const stopTracking = useCallback(() => {
     if (watchIdRef.current !== null) {
