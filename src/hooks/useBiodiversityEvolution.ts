@@ -72,7 +72,7 @@ interface UseEvolutionOpts {
 const pad = (n: number) => String(n).padStart(2, '0');
 const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-function resolvePeriodRange(
+export function resolvePeriodRange(
   period: EvolutionPeriod,
   customRange?: CustomRange,
 ): { fromISO?: string; toISO?: string } {
