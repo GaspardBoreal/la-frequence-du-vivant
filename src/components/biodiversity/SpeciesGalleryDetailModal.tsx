@@ -120,6 +120,30 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 
   const { canUse: canChat } = useCanUseContextualChat();
 
+  // Fallback trophic pool: when parent didn't pass one but we know the exploration,
+  // resolve it ourselves so the "Sa place dans la chaîne" widget renders in every
+  // entry point (Synthèse, Pouls du vivant, Marche → Vivant).
+  const { data: explorationPool = [] } = useExplorationSpeciesPool(
+    isOpen && !trophicPool && explorationId ? explorationId : undefined,
+  );
+  const resolvedTrophicPool = useMemo<BiodiversitySpecies[] | undefined>(() => {
+    if (trophicPool && trophicPool.length > 0) return trophicPool;
+    if (!explorationPool || explorationPool.length === 0) return undefined;
+    return explorationPool.map((sp) => ({
+      id: sp.key,
+      scientificName: sp.scientificName || sp.displayName,
+      commonName: sp.commonNameFr || sp.commonName || '',
+      family: '',
+      kingdom: (sp.group as any) || 'Other',
+      iconicTaxon: sp.group || undefined,
+      observations: sp.count,
+      lastSeen: '',
+      photos: sp.imageUrl ? [sp.imageUrl] : undefined,
+      source: 'inaturalist' as const,
+      attributions: [],
+    }));
+  }, [trophicPool, explorationPool]);
+
   // Snapshot pour le ChatBot (screen-awareness) — DOIT être appelé avant tout
   // early return pour préserver l'ordre des hooks entre les renders.
   const _uniqueObserversCount = new Set(observers.map((o) => o.observerName)).size;
