@@ -81,6 +81,7 @@ export interface PublicSpecies {
   photo_url: string | null;
   observations_count: number;
   has_walker_observation: boolean;
+  marche_ordre?: number | null;
 }
 
 export interface PublicObservationGeo {
@@ -88,6 +89,7 @@ export interface PublicObservationGeo {
   latitude: number;
   longitude: number;
   observation_date: string | null;
+  marche_ordre?: number | null;
 }
 
 export interface PublicTrophicSummary {
@@ -104,6 +106,41 @@ export interface PublicBiodiversity {
   trophic_summary: PublicTrophicSummary;
   biodiversity_index: number | null;
   snapshot_date: string | null;
+}
+
+export interface PublicPratiqueSample {
+  id: string;
+  titre: string | null;
+  category: string | null;
+  description: string | null;
+  prenom: string | null;
+  nom: string | null;
+  avatar_url: string | null;
+  photo_url: string | null;
+}
+
+export interface PublicPaysageSample {
+  id: string;
+  titre: string;
+  description: string | null;
+  url: string | null;
+  duree_secondes: number | null;
+  prenom: string | null;
+  nom: string | null;
+  avatar_url: string | null;
+}
+
+export interface PublicEventStats {
+  marcheurs_count: number;
+  species_count: number;
+  observations_count: number;
+  views_total: number;
+  unique_visitors: number;
+  pratiques_count: number;
+  paysages_sonores_count: number;
+  pratiques_sample: PublicPratiqueSample[];
+  paysages_sample: PublicPaysageSample[];
+  methodology: Record<string, string>;
 }
 
 export interface PublicMarcheur {
