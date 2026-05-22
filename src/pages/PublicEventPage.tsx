@@ -59,11 +59,18 @@ const PublicEventPage: React.FC = () => {
   useLogPublicEventView(slug);
 
   const { data: event, isLoading, error } = usePublicEvent(slug);
-  const { data: counters } = usePublicEventCounters(slug);
+  const { data: stats } = usePublicEventStats(slug);
   const { data: biodiversity } = usePublicEventBiodiversity(slug);
   const { data: marcheurs } = usePublicEventMarcheurs(slug);
   const { data: testimonies } = usePublicEventTestimonies(slug);
   const { data: medias } = usePublicEventMedias(slug);
+
+  const [pratiquesOpen, setPratiquesOpen] = useState(false);
+  const [paysagesOpen, setPaysagesOpen] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 500], [0, 120]);
+  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0.3]);
 
   const url = useMemo(() => (slug ? `${SITE}/m/${slug}` : ''), [slug]);
   const typeMeta = event ? getMarcheEventTypeMeta(event.event_type) : null;
