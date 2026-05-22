@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight, ExternalLink, Camera, Sparkles, Loader2, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useSpeciesPhotoMode } from '@/contexts/SpeciesPhotoModeContext';
 
 export type CarouselSlideSource = 'inat' | 'marcheur' | 'gbif' | 'citizen' | 'other';
 
