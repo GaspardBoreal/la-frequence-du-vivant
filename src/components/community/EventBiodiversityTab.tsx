@@ -582,6 +582,64 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       </AnimatePresence>
     </div>
   );
+
+interface TaxonsSubTabProps {
+  snapshots: any[] | undefined;
+  allSpeciesWithFrNames: BiodiversitySpecies[];
+  allEventMarchesData: SpeciesMarcheData[] | undefined;
+  eventParticipants: Array<{ name: string; source: 'community' | 'crew' }>;
+  explorationId?: string;
+  onNavigateToMarche?: (marcheId: string) => void;
+  period: EvolutionPeriod;
+  customRange: { from?: string; to?: string };
+  dateSource: DateSource;
+  onPeriodChange: (p: EvolutionPeriod) => void;
+  onCustomRangeChange: (r: { from?: string; to?: string }) => void;
+  onDateSourceChange: (s: DateSource) => void;
+}
+
+const TaxonsSubTab: React.FC<TaxonsSubTabProps> = ({
+  snapshots, allSpeciesWithFrNames, allEventMarchesData, eventParticipants,
+  explorationId, onNavigateToMarche,
+  period, customRange, dateSource,
+  onPeriodChange, onCustomRangeChange, onDateSourceChange,
+}) => {
+  const speciesFiltered = useSpeciesFilteredByPeriod(allSpeciesWithFrNames, {
+    period, customRange, dateSource,
+  });
+
+  return (
+    <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <BiodiversityEvolutionChart
+        snapshots={snapshots}
+        overrideTotalSpecies={speciesFiltered.length}
+        marchesById={new Map(
+          (allEventMarchesData || []).map(m => [
+            m.marcheId,
+            { name: m.marcheName, ville: m.ville, latitude: m.latitude, longitude: m.longitude },
+          ])
+        )}
+        onNavigateToMarche={onNavigateToMarche}
+        explorationId={explorationId}
+        allEventMarches={allEventMarchesData}
+        period={period}
+        onPeriodChange={onPeriodChange}
+        customRange={customRange}
+        onCustomRangeChange={onCustomRangeChange}
+        dateSource={dateSource}
+        onDateSourceChange={onDateSourceChange}
+      />
+      <SpeciesExplorer
+        species={speciesFiltered}
+        compact
+        explorationId={explorationId}
+        allEventMarches={allEventMarchesData}
+        eventParticipants={eventParticipants}
+        trophicPool={allSpeciesWithFrNames}
+      />
+    </motion.div>
+  );
 };
 
 export default EventBiodiversityTab;
+
