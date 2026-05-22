@@ -3,7 +3,22 @@ import { useFrenchSpeciesNamesAuto } from './useFrenchSpeciesNamesAuto';
 
 export type DateSource = 'observation' | 'collection';
 export type EvolutionMetric = 'species' | 'observations';
-export type EvolutionPeriod = 'all' | '12m' | '6m' | '3m' | '30d';
+export type EvolutionPeriod =
+  | 'all'
+  | 'today'
+  | '7d'
+  | '30d'
+  | 'last_month'
+  | 'last_quarter'
+  | '6m'
+  | 'year'
+  | '12m'
+  | 'custom';
+
+export interface CustomRange {
+  from?: string; // YYYY-MM-DD
+  to?: string;   // YYYY-MM-DD
+}
 
 export interface DayObservation {
   scientificName: string;
@@ -46,19 +61,69 @@ export interface EvolutionResult {
   totalObservations: number;
 }
 
+
 interface UseEvolutionOpts {
   dateSource: DateSource;
   metric: EvolutionMetric;
   period: EvolutionPeriod;
+  customRange?: CustomRange;
 }
 
-const periodToDays: Record<EvolutionPeriod, number | null> = {
-  all: null,
-  '12m': 365,
-  '6m': 183,
-  '3m': 92,
-  '30d': 30,
-};
+const pad = (n: number) => String(n).padStart(2, '0');
+const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+function resolvePeriodRange(
+  period: EvolutionPeriod,
+  customRange?: CustomRange,
+): { fromISO?: string; toISO?: string } {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (period) {
+    case 'all':
+      return {};
+    case 'today':
+      return { fromISO: toISO(today), toISO: toISO(today) };
+    case '7d': {
+      const from = new Date(today); from.setDate(from.getDate() - 6);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case '30d': {
+      const from = new Date(today); from.setDate(from.getDate() - 29);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case 'last_month': {
+      const from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const to = new Date(today.getFullYear(), today.getMonth(), 0);
+      return { fromISO: toISO(from), toISO: toISO(to) };
+    }
+    case 'last_quarter': {
+      const curQ = Math.floor(today.getMonth() / 3); // 0..3
+      const prevQStartMonth = (curQ - 1) * 3;
+      const year = prevQStartMonth < 0 ? today.getFullYear() - 1 : today.getFullYear();
+      const startMonth = (prevQStartMonth + 12) % 12;
+      const from = new Date(year, startMonth, 1);
+      const to = new Date(year, startMonth + 3, 0);
+      return { fromISO: toISO(from), toISO: toISO(to) };
+    }
+    case '6m': {
+      const from = new Date(today); from.setMonth(from.getMonth() - 6);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case 'year': {
+      const from = new Date(today.getFullYear(), 0, 1);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case '12m': {
+      const from = new Date(today); from.setFullYear(from.getFullYear() - 1);
+      return { fromISO: toISO(from), toISO: toISO(today) };
+    }
+    case 'custom':
+      return { fromISO: customRange?.from, toISO: customRange?.to };
+    default:
+      return {};
+  }
+}
 
 const toDayISO = (d: string | Date | undefined | null): string | null => {
   if (!d) return null;
@@ -222,15 +287,12 @@ export function useBiodiversityEvolution(
     const sortedDays = Array.from(byDay.keys()).sort();
     if (sortedDays.length === 0) return empty;
 
-    // Apply period filter
-    const cutoffDays = periodToDays[period];
+    // Apply period filter (calendar-aware)
+    const { fromISO, toISO: toISOEnd } = resolvePeriodRange(period, opts.customRange);
     let filteredDays = sortedDays;
-    if (cutoffDays != null) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - cutoffDays);
-      const cutoffISO = cutoff.toISOString().slice(0, 10);
-      filteredDays = sortedDays.filter(d => d >= cutoffISO);
-    }
+    if (fromISO) filteredDays = filteredDays.filter(d => d >= fromISO);
+    if (toISOEnd) filteredDays = filteredDays.filter(d => d <= toISOEnd);
+
 
     // Cumulative is computed across ALL history up to that day (absolute cumulative),
     // even for filtered period — narrative continuity.
@@ -266,5 +328,5 @@ export function useBiodiversityEvolution(
       totalSpecies: seenSpecies.size,
       totalObservations: totalObs,
     };
-  }, [snapshots, opts.dateSource, opts.metric, opts.period, frMap]);
+  }, [snapshots, opts.dateSource, opts.metric, opts.period, opts.customRange?.from, opts.customRange?.to, frMap]);
 }
