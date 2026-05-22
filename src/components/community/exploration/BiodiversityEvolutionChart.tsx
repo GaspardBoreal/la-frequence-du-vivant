@@ -299,7 +299,7 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({
                   <Calendar
                     mode="single"
                     selected={customFrom}
-                    onSelect={setCustomFrom}
+                    onSelect={(d) => setCustomRange({ from: d ? dateToISO(d) : undefined, to: customRange?.to })}
                     locale={fr}
                     initialFocus
                     className={cn('p-3 pointer-events-auto')}
