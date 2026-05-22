@@ -148,7 +148,7 @@ const PublicEventPage: React.FC = () => {
     url,
     ...(event.cover_image_url ? { image: event.cover_image_url } : {}),
     description,
-    ...(counters?.marcheurs_count ? { attendeeCount: counters.marcheurs_count } : {}),
+    ...(stats?.marcheurs_count ? { attendeeCount: stats.marcheurs_count } : {}),
   };
 
   const hasGeo = event.latitude != null && event.longitude != null;
