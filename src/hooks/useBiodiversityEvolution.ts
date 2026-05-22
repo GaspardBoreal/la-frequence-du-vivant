@@ -287,15 +287,12 @@ export function useBiodiversityEvolution(
     const sortedDays = Array.from(byDay.keys()).sort();
     if (sortedDays.length === 0) return empty;
 
-    // Apply period filter
-    const cutoffDays = periodToDays[period];
+    // Apply period filter (calendar-aware)
+    const { fromISO, toISO: toISOEnd } = resolvePeriodRange(period, opts.customRange);
     let filteredDays = sortedDays;
-    if (cutoffDays != null) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - cutoffDays);
-      const cutoffISO = cutoff.toISOString().slice(0, 10);
-      filteredDays = sortedDays.filter(d => d >= cutoffISO);
-    }
+    if (fromISO) filteredDays = filteredDays.filter(d => d >= fromISO);
+    if (toISOEnd) filteredDays = filteredDays.filter(d => d <= toISOEnd);
+
 
     // Cumulative is computed across ALL history up to that day (absolute cumulative),
     // even for filtered period — narrative continuity.
