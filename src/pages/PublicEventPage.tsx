@@ -169,60 +169,110 @@ const PublicEventPage: React.FC = () => {
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
-      {/* ───────── HERO ───────── */}
-      <header className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/10 via-background to-amber-500/5"
-          aria-hidden
-        />
-        {event.cover_image_url && (
+      {/* ───────── HERO IMMERSIF ───────── */}
+      <header ref={heroRef} className="relative overflow-hidden min-h-[92vh] sm:min-h-[80vh] flex flex-col">
+        {event.cover_image_url ? (
           <>
-            <img
+            <motion.img
               src={event.cover_image_url}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover opacity-30 -z-10"
               aria-hidden
+              style={{ y: heroY, opacity: heroOpacity }}
+              className="absolute inset-0 w-full h-[110%] object-cover -z-10"
             />
-            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-background via-background/70 to-background/20" aria-hidden />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/30 via-background/40 to-background" aria-hidden />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-background via-background/60 to-transparent" aria-hidden />
           </>
+        ) : (
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/15 via-background to-amber-500/10" aria-hidden />
         )}
-        <div className="max-w-5xl mx-auto px-4 py-12 sm:py-20">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
-            <Link to="/marches-du-vivant" className="hover:text-foreground">Les Marches du Vivant</Link>
-            <ChevronRight className="h-3 w-3" />
-            <span>Page publique</span>
-          </div>
-          <div className="flex flex-wrap gap-2 mb-4">
+
+        {/* Top bar */}
+        <div className="max-w-6xl w-full mx-auto px-4 pt-6 flex items-center justify-between gap-3">
+          <Link
+            to="/marches-du-vivant"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs backdrop-blur-xl bg-card/40 border border-primary/20 text-foreground/80 hover:text-foreground transition"
+          >
+            <ChevronRight className="h-3 w-3 rotate-180" />
+            Les Marches du Vivant
+          </Link>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest backdrop-blur-xl bg-card/40 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300">
+            <Eye className="h-3 w-3" /> Lecture publique
+          </span>
+        </div>
+
+        {/* Centerpiece */}
+        <div className="flex-1 max-w-6xl w-full mx-auto px-4 pb-12 flex flex-col justify-end">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="space-y-5"
+          >
             {typeMeta && (
-              <Badge variant="outline" className={cn('gap-1 rounded-full', typeMeta.badgeClassName)}>
+              <Badge variant="outline" className={cn('gap-1 rounded-full backdrop-blur-xl bg-card/50', typeMeta.badgeClassName)}>
                 <typeMeta.icon className="h-3 w-3" />
                 {typeMeta.shortLabel}
               </Badge>
             )}
-            <Badge variant="outline" className="gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
-              <Eye className="h-3 w-3" /> Lecture publique
-            </Badge>
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-bold text-foreground tracking-tight mb-4">{event.title}</h1>
-          <div className="flex flex-wrap gap-4 text-muted-foreground">
-            <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4" />{dateLabel}</span>
-            {event.lieu && <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{event.lieu}</span>}
-            {event.organisateur && (
-              <span className="flex items-center gap-1.5"><Heart className="h-4 w-4" />Organisé par {event.organisateur.nom}</span>
-            )}
-          </div>
+            <h1
+              className="font-display font-semibold text-foreground tracking-tight leading-[0.95] drop-shadow-sm"
+              style={{ fontSize: 'clamp(2.25rem, 8vw, 5rem)' }}
+            >
+              {event.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm sm:text-base text-foreground/80">
+              <span className="flex items-center gap-1.5 uppercase tracking-widest text-xs">
+                <Calendar className="h-4 w-4 text-primary" />{dateLabel}
+              </span>
+              {event.lieu && (
+                <span className="flex items-center gap-1.5 uppercase tracking-widest text-xs">
+                  <MapPin className="h-4 w-4 text-primary" />{event.lieu}
+                </span>
+              )}
+              {event.organisateur && (
+                <span className="flex items-center gap-1.5 text-xs italic">
+                  <Heart className="h-3.5 w-3.5 text-amber-500" />avec {event.organisateur.nom}
+                </span>
+              )}
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2, duration: 0.6 }}
+            className="mt-10 flex justify-center"
+          >
+            <ChevronDown className="h-6 w-6 text-foreground/40 animate-bounce" />
+          </motion.div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 pb-24 space-y-10">
-        {/* ───────── SOCIAL PROOF ───────── */}
-        {counters && (
-          <Card className="p-5 -mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 backdrop-blur bg-card/80 border-primary/10 shadow-sm">
-            <Stat label="Marcheurs" value={counters.marcheurs_count} icon={Users} tone="text-primary" />
-            <Stat label="Espèces observées" value={counters.species_count} icon={Leaf} tone="text-emerald-600 dark:text-emerald-400" />
-            <Stat label="Observations" value={counters.observations_count} icon={Camera} tone="text-amber-600 dark:text-amber-400" />
-            <Stat label="Découvreurs" value={counters.unique_visitors} icon={Eye} tone="text-muted-foreground" />
-          </Card>
+      <main className="max-w-6xl mx-auto px-4 pb-24 space-y-12">
+        {/* ───────── PULSATIONS DU VIVANT ───────── */}
+        {stats && (
+          <section aria-label="Pulsations du vivant" className="-mt-10 sm:-mt-14 relative z-10">
+            <div className="flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-3 overflow-x-auto snap-x snap-mandatory sm:overflow-visible pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+              <StatCard icon={Users} tone="text-primary" label="Marcheurs" value={stats.marcheurs_count} />
+              <StatCard icon={Leaf} tone="text-emerald-600 dark:text-emerald-400" label="Espèces" value={stats.species_count} />
+              <StatCard icon={Camera} tone="text-amber-600 dark:text-amber-400" label="Observations" value={stats.observations_count} />
+              <StatCard icon={Eye} tone="text-muted-foreground" label="Découvreurs" value={stats.unique_visitors} />
+              <StatCard
+                icon={Sparkles}
+                tone="text-amber-500"
+                label="Pratiques"
+                value={stats.pratiques_count}
+                onClick={stats.pratiques_count > 0 ? () => setPratiquesOpen(true) : undefined}
+              />
+              <StatCard
+                icon={Waves}
+                tone="text-emerald-500"
+                label="Paysages sonores"
+                value={stats.paysages_sonores_count}
+                onClick={stats.paysages_sonores_count > 0 ? () => setPaysagesOpen(true) : undefined}
+              />
+            </div>
+          </section>
         )}
 
         {/* ───────── DESCRIPTION ───────── */}
