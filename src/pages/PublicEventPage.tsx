@@ -588,20 +588,65 @@ const PublicEventPage: React.FC = () => {
           <Link to="/" className="text-primary hover:underline">La Fréquence du Vivant</Link>
         </div>
       </main>
+
+      {stats && (
+        <>
+          <PratiquesEmblematiquesDialog
+            open={pratiquesOpen}
+            onOpenChange={setPratiquesOpen}
+            pratiques={stats.pratiques_sample ?? []}
+            total={stats.pratiques_count}
+          />
+          <PaysagesSonoresDialog
+            open={paysagesOpen}
+            onOpenChange={setPaysagesOpen}
+            paysages={stats.paysages_sample ?? []}
+            total={stats.paysages_sonores_count}
+          />
+        </>
+      )}
     </div>
   );
 };
 
-const Stat: React.FC<{ label: string; value: number; icon: React.ElementType; tone: string }> = ({
-  label, value, icon: Icon, tone,
-}) => (
-  <div className="flex items-center gap-3">
-    <Icon className={cn('h-5 w-5', tone)} />
-    <div className="min-w-0">
-      <p className="text-xl font-bold text-foreground leading-none">{value.toLocaleString('fr-FR')}</p>
-      <p className="text-xs text-muted-foreground mt-1 truncate">{label}</p>
-    </div>
-  </div>
-);
+interface StatCardProps {
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  tone: string;
+  onClick?: () => void;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, tone, onClick }) => {
+  const inner = (
+    <>
+      <Icon className={cn('h-5 w-5 mb-2', tone)} />
+      <p className="text-2xl sm:text-3xl font-display font-semibold text-foreground leading-none">
+        {value.toLocaleString('fr-FR')}
+      </p>
+      <p className="text-[11px] uppercase tracking-widest text-muted-foreground mt-1.5">{label}</p>
+      {onClick && (
+        <span className="text-[10px] text-primary mt-1.5 inline-flex items-center gap-0.5">
+          Explorer <ChevronRight className="h-2.5 w-2.5" />
+        </span>
+      )}
+    </>
+  );
+  const baseClass = 'snap-center shrink-0 w-[44vw] max-w-[180px] sm:w-auto sm:max-w-none rounded-2xl backdrop-blur-xl bg-card/70 border border-primary/10 p-4 shadow-sm transition-all';
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(baseClass, 'hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 text-left cursor-pointer')}
+      >
+        {inner}
+      </button>
+    );
+  }
+  return <div className={baseClass}>{inner}</div>;
+};
+
+export default PublicEventPage;
 
 export default PublicEventPage;
