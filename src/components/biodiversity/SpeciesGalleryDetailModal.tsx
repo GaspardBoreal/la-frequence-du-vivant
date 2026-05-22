@@ -28,8 +28,11 @@ import SpeciesPhotoCarousel, { type CarouselSlide } from './species-modal/Specie
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import SpeciesTrophicPosition from './species-modal/SpeciesTrophicPosition';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
+import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 
 interface SpeciesGalleryDetailModalProps {
+  /** Minimal identity used for hero + queries. `count` may be exact (Synthèse)
+   *  or a single-day count (Pouls du vivant) — both work. */
   species: {
     name: string;
     scientificName: string;
@@ -37,9 +40,12 @@ interface SpeciesGalleryDetailModalProps {
     kingdom: string;
     photos?: string[];
   } | null;
+  /** When present, enables marche/observer tabs and auto-resolves the trophic
+   *  pool if `trophicPool` is omitted. */
   explorationId?: string;
   allEventMarches?: SpeciesMarcheData[];
-  /** Full pool used to compute the trophic chain for the "Sa place" widget */
+  /** Full pool used to compute the trophic chain for the "Sa place" widget.
+   *  If omitted and `explorationId` is provided, the pool is resolved internally. */
   trophicPool?: BiodiversitySpecies[];
   isOpen: boolean;
   onClose: () => void;
