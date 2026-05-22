@@ -1,116 +1,49 @@
+# Fix — Analyse IA "Ce que nous avons vu" ne retourne plus qu'une espèce
 
-## Objectif
+## Cause racine
 
-Permettre, dans les **3 vues factorisées** (Synthèse → Taxons, Pouls du vivant → jour, Marches → Vivant), de basculer **toutes les vignettes espèces** (grille + fiche détail) entre :
-
-- **Photos marcheurs** (terrain — défaut quand au moins une existe dans l'exploration)
-- **Photos iNaturalist** (référence taxonomique)
-
-Le toggle doit être **élégant**, animé, et propager son état partout sans flicker.
-
----
-
-## Architecture (1 source de vérité)
-
-### 1. Nouveau hook `useExplorationFieldPhotos(explorationId)`
-
-Charge **en un seul appel** toutes les photos terrain (marcheur + citoyen) de l'exploration, indexées par `scientificName` normalisé.
-
-Retourne :
-```ts
-{
-  byScientificName: Map<string, MarcheurSpeciesPhoto[]>;
-  hasAny: boolean;
-  isLoading: boolean;
-}
+L'edge function `analyze-exploration-species` envoie à l'IA un user prompt au format pipe-delimité :
 ```
-
-Réutilise la logique existante de `useSpeciesMarcheurPhotos` (mêmes requêtes `marcheur_observations` + `biodiversity_snapshots`) mais **sans filtre par espèce** → 1 query par exploration, cache 10 min.
-
-### 2. Nouveau contexte `SpeciesPhotoModeContext`
-
-```ts
-type SpeciesPhotoMode = 'marcheur' | 'inaturalist';
-
-{
-  mode: SpeciesPhotoMode;
-  setMode: (m) => void;
-  fieldPhotos: Map<string, MarcheurSpeciesPhoto[]>;
-  hasFieldPhotos: boolean;
-  getPreferredPhoto: (scientificName, fallbackUrl?) => { url, source, observerName? };
-}
+${s.key} | ${s.scientificName} | ${s.commonName} | ${s.count}
 ```
+Le modèle Gemini Flash copie **toute la ligne** comme valeur du champ `key` au lieu de ne reprendre que le premier segment. Conséquence : les 59 lignes IA insérées dans `exploration_curations` ont un `entity_id` composite (ex. `"Harmonia axyridis | Harmonia axyridis | Asian Lady Beetle | 10"`) qui ne matche plus le `scientificName` utilisé côté front. Seule la 1 entrée Knowledge Base s'affiche.
 
-- **Default** : `marcheur` si `hasFieldPhotos`, sinon `inaturalist`.
-- **Persistance** : `localStorage` key `species-photo-mode:${explorationId}`.
-- **Fallback gracieux** : si mode = marcheur mais aucune photo terrain pour CETTE espèce → renvoie l'iNat avec un flag `isFallback: true` (UI ajoute un ring pointillé + tooltip "Pas encore de photo marcheur").
+## Correctif (1 fichier)
 
-Provider monté dans `SpeciesExplorer` (couvre les 3 vues car toutes passent par lui ou par le modal qu'il rend).
+**`supabase/functions/analyze-exploration-species/index.ts`** — durcir le remapping IA → pool :
 
-### 3. UI du toggle — pill segmenté glass animé
+1. **Construire une lookup `Map<normalizedKey, SpeciesInput>`** sur `needsAi`, indexée à la fois sur :
+   - `sp.key` brut (lowercase)
+   - `sp.scientificName?.toLowerCase()`
+   - première portion avant ` | ` lowercased
+2. **Pour chaque résultat IA**, extraire la "vraie" key :
+   - prendre `r.key`, splitter sur ` | `, retenir le 1er segment, trim, lowercase
+   - chercher dans la lookup → récupérer le `sp` d'origine
+   - si introuvable, fallback : matcher par `scientificName` insensible à la casse parmi `needsAi`
+   - si toujours introuvable → ignorer la ligne (log warning) plutôt que polluer la base
+3. **Stocker `entity_id = sp.key`** (la key canonique d'origine, identique au format KB), pas la valeur renvoyée par l'IA.
+4. **Ajouter un log de contrôle** : `[analyze] AI mapped: X/${needsAi.length}, unmatched: Y` pour détecter toute future dérive du modèle.
+5. **Renforcer le system prompt** : reformuler la règle pour le champ `key` (ex. "key DOIT être copié EXACTEMENT depuis le 1er champ avant le ` | `, sans modification, sans recapitalisation, sans recopier les autres champs"). Garde-fou, pas la défense principale.
 
-Placé **juste au-dessus de la grille** (dans `SpeciesExplorer`, après les filtres), masqué si `!hasFieldPhotos`.
+## Nettoyage (optionnel mais recommandé)
 
-```text
-┌──────────────────────────────────────┐
-│ [📷 Marcheurs · 47]  [✨ iNaturalist] │ ← pill animée
-└──────────────────────────────────────┘
+Purger les lignes corrompues de la dernière analyse pour cette exploration afin que l'UI se recharge proprement :
+```sql
+DELETE FROM exploration_curations
+WHERE sense='oeil' AND entity_type='species' AND source='ai'
+  AND entity_id LIKE '% | %';
 ```
+À exécuter en migration one-shot OU à laisser l'utilisateur relancer "Relancer l'analyse IA" — la fonction supprime déjà toutes les lignes `source='ai'` avant de réinsérer (cf. ligne 370-375). Une simple relance après le fix suffit donc.
 
-Détails visuels :
-- Conteneur `inline-flex p-1 rounded-full bg-white/5 border border-white/10 backdrop-blur`.
-- **Indicateur animé** : `motion.div` avec `layoutId="photo-mode-indicator"` qui glisse derrière l'option active (spring `stiffness:400, damping:30`).
-- Option active : texte blanc, fond `bg-emerald-500/90` (marcheur) ou `bg-sky-500/90` (iNat) — cohérent avec les couleurs du carousel détail.
-- Option inactive : `text-white/60 hover:text-white/90`.
-- Compteurs : nombre d'espèces dotées de photos terrain (à droite du label "Marcheurs").
-- Mobile (<640px) : icônes seules, label en `sr-only`.
-- Micro-interaction : au clic, **flash de halo radial** (`box-shadow` animé) qui se dissipe en 400ms.
+## Validation
 
-### 4. `SpeciesCardWithPhoto` — crossfade fluide
+1. Cliquer "Relancer l'analyse IA" sur l'exploration `20dd3be8-…`.
+2. Vérifier les logs : `[analyze] AI mapped: 59/59, unmatched: 0`.
+3. Vérifier en base que `entity_id` ne contient plus jamais ` | `.
+4. Vérifier dans "Ce que nous avons vu" que les 6 catégories (indigène, auxiliaire, bioindicatrice, ravageur, eee, patrimoniale) se peuplent comme avant.
 
-- Consomme le contexte via `useSpeciesPhotoMode()`.
-- Photo affichée = `getPreferredPhoto(species.scientificName, species.photos?.[0])`.
-- `<AnimatePresence mode="wait">` avec `key={photoUrl}` → **crossfade 350ms** entre les deux sources (opacity + léger scale 1.02 → 1).
-- Petit **badge coin haut-droit** indiquant la source actuelle :
-  - `📷 Marcheur` (emerald) si source marcheur
-  - `✨ iNat` (sky) si source iNat
-  - `📷 Manque` (slate avec ring pointillé) si fallback iNat alors qu'on est en mode marcheur — clic = ouvre la fiche (incitation à documenter).
-- Hover sur la carte = preview du nom observateur si source marcheur (`"📷 Aurélie · 14/05/2026"`).
+## Hors scope
 
-### 5. `SpeciesGalleryDetailModal` + `SpeciesPhotoCarousel` — bascule synchronisée
-
-- Le carousel existant a déjà ses slides marcheur + iNat triées.
-- À l'ouverture du modal : si `mode === 'marcheur'` et `firstFieldIdx >= 0` → `emblaApi.scrollTo(firstFieldIdx, true)` (instantané) ; sinon `firstRefIdx`.
-- Le toggle segmenté **interne au carousel** (Référence ↔ Sur le terrain) écrit aussi dans le contexte → toggle global et carousel restent synchronisés (clic dans le modal change le mode global ; clic dans la pill globale change l'image affichée dans le modal).
-- Ajout d'une animation de **transition d'image plus marquée** au switch (slide horizontal + opacity au lieu du saut Embla brut) : on conserve Embla mais on déclenche un `motion.div` overlay très court qui blanchit (300ms) — sensation "wahuhh".
-
-### 6. Empty/loading state
-
-- Pendant `useExplorationFieldPhotos.isLoading` → toggle masqué (évite saut).
-- Si exploration sans aucune photo marcheur → pas de toggle, comportement actuel (iNat).
-- Si exploration avec photos marcheurs mais mode=marcheur et espèce sans photo terrain → fallback iNat + badge "Manque" subtil (cf §4).
-
----
-
-## Fichiers à créer / modifier
-
-| Fichier | Action |
-|---|---|
-| `src/hooks/useExplorationFieldPhotos.ts` | **Créer** — batch loader |
-| `src/contexts/SpeciesPhotoModeContext.tsx` | **Créer** — provider + hook |
-| `src/components/biodiversity/SpeciesPhotoModeToggle.tsx` | **Créer** — pill animée |
-| `src/components/biodiversity/SpeciesExplorer.tsx` | Monter le provider, afficher le toggle, passer `explorationId` au provider |
-| `src/components/biodiversity/SpeciesCardWithPhoto.tsx` | Consommer le contexte, crossfade `AnimatePresence`, badge source |
-| `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` | Brancher l'ouverture initiale sur `mode` |
-| `src/components/biodiversity/species-modal/SpeciesPhotoCarousel.tsx` | Bind du toggle interne au contexte global |
-
-Aucune migration DB. Aucun changement de schéma. Aucun impact sur les autres vues (le provider est local à `SpeciesExplorer`, fallback inchangé hors de son scope).
-
----
-
-## Garanties de factorisation
-
-- **1 contexte** = 3 vues alignées automatiquement.
-- **1 hook batch** = pas de N+1 réseau sur la grille.
-- **1 composant toggle** réutilisable (pourra plus tard être posé dans d'autres écrans).
-- Toute évolution future (ex. ajouter source GBIF, ajouter mode "Mixte") = modification dans le contexte uniquement.
+- Pas de changement de schéma DB.
+- Pas de changement front : le tolérant `useMarcheurSensibleSpecies` (split sur ` | `) reste en place comme filet de sécurité legacy.
+- Pas de modification de la Knowledge Base ni du modèle.
