@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -10,7 +10,9 @@ import {
   Tooltip,
 } from 'recharts';
 import { motion } from 'framer-motion';
-import { Activity, Info, Leaf, Eye } from 'lucide-react';
+import { Activity, Info, Leaf, Eye, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import {
   useBiodiversityEvolution,
   type EvolutionMetric,
@@ -19,6 +21,21 @@ import {
 } from '@/hooks/useBiodiversityEvolution';
 import DayDetailDrawer from './DayDetailDrawer';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 interface Props {
   snapshots: any[] | undefined;
@@ -30,12 +47,17 @@ interface Props {
   overrideTotalSpecies?: number;
 }
 
-const periodLabels: { key: EvolutionPeriod; label: string }[] = [
+const periodOptions: { key: EvolutionPeriod; label: string }[] = [
+  { key: 'today', label: "Aujourd'hui" },
+  { key: '7d', label: '7 derniers jours' },
+  { key: '30d', label: '30 derniers jours' },
+  { key: 'last_month', label: 'Mois dernier' },
+  { key: 'last_quarter', label: 'Trimestre dernier' },
+  { key: '6m', label: '6 derniers mois' },
+  { key: 'year', label: 'Année en cours' },
+  { key: '12m', label: '12 mois glissants' },
   { key: 'all', label: 'Tout' },
-  { key: '12m', label: '12 mois' },
-  { key: '6m', label: '6 mois' },
-  { key: '3m', label: '3 mois' },
-  { key: '30d', label: '30 jours' },
+  { key: 'custom', label: 'Période personnalisée…' },
 ];
 
 const formatDateFr = (iso: string) => {
@@ -53,6 +75,10 @@ const formatTickShort = (iso: string) => {
     return iso;
   }
 };
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const dateToISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
 
 const BiodiversityEvolutionChart: React.FC<Props> = ({ snapshots, marchesById, onNavigateToMarche, explorationId, allEventMarches, overrideTotalSpecies }) => {
   const [metric, setMetric] = useState<EvolutionMetric>('species');
