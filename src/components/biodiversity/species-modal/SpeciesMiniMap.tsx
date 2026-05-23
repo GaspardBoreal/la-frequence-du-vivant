@@ -158,35 +158,47 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
           // au centre de la marche (évite les superpositions sur marches voisines).
           const realPoints = marches.find((m) => m.marcheId === marche.marcheId)?.observationPoints;
           if (isObserved && realPoints && realPoints.length > 0) {
-            return realPoints.map((pt, idx) => (
-              <CircleMarker
-                key={`${marche.marcheId}-pt-${idx}`}
-                center={[pt.latitude, pt.longitude]}
-                radius={6}
-                pathOptions={{
-                  color: '#10b981',
-                  fillColor: '#10b981',
-                  fillOpacity: 0.85,
-                  weight: 3,
-                }}
-              >
-                <Tooltip
-                  direction="auto"
-                  offset={[0, -10]}
-                  className="!bg-slate-800 !border-white/20 !text-white !text-xs !px-2 !py-1 !rounded-md"
+            return realPoints.map((pt, idx) => {
+              const isMarcheur = pt.source === 'marcheur';
+              const color = isMarcheur ? '#10b981' : '#22d3ee';
+              return (
+                <CircleMarker
+                  key={`${marche.marcheId}-pt-${idx}`}
+                  center={[pt.latitude, pt.longitude]}
+                  radius={6}
+                  pathOptions={{
+                    color,
+                    fillColor: color,
+                    fillOpacity: 0.85,
+                    weight: 3,
+                  }}
                 >
-                  <span className="font-medium">#{marche.order}</span> {marche.marcheName}
-                  <br />
-                  <span className="text-emerald-400">1 observation</span>
-                  {pt.observationDate && (
-                    <>
-                      <br />
-                      <span className="text-white/60">{pt.observationDate}</span>
-                    </>
-                  )}
-                </Tooltip>
-              </CircleMarker>
-            ));
+                  <Tooltip
+                    direction="auto"
+                    offset={[0, -10]}
+                    className="!bg-slate-800 !border-white/20 !text-white !text-xs !px-2 !py-1 !rounded-md"
+                  >
+                    <span className="font-medium">#{marche.order}</span> {marche.marcheName}
+                    <br />
+                    <span style={{ color }}>
+                      {isMarcheur ? 'Photo marcheur' : 'Observation citoyenne'}
+                    </span>
+                    {pt.observerName && (
+                      <>
+                        <br />
+                        <span className="text-white/70">{pt.observerName}</span>
+                      </>
+                    )}
+                    {pt.observationDate && (
+                      <>
+                        <br />
+                        <span className="text-white/60">{pt.observationDate}</span>
+                      </>
+                    )}
+                  </Tooltip>
+                </CircleMarker>
+              );
+            });
           }
 
           return (
