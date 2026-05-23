@@ -5,6 +5,7 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban, Building2, Wrench } from 'lucide-react';
 import ApiHealthBanner from '@/components/api-mcp/ApiHealthBanner';
+import Footer from '@/components/Footer';
 
 const AdminAccess: React.FC = () => {
   return (
