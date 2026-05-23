@@ -1,62 +1,92 @@
-## Diagnostic — pourquoi le Marronnier (Aesculus hippocastanum) manque
 
-Trois causes cumulées dans le pipeline `classifyFunctions` (`src/lib/ecologicalFunctionsClassification.ts`) :
+## Objectif
 
-1. **Aucune règle de genre `Aesculus**` dans `GENUS_RULES` (et pas non plus dans la KB curée).
-2. **La famille est inutilisable telle qu'elle arrive d'iNaturalist** : la base stocke `family: "58321"` (ID taxonomique iNat = Sapindaceae) au lieu du nom. Le garde-fou `isUsableFamily` rejette donc tout, et la règle `Sapindaceae → ['arbre','mellifere']` qui existe pourtant ne se déclenche jamais.
-3. **Le hook ne passe même pas `family**` : dans `useEcologicalFunctions.ts` ligne 45, `family: null` est hardcodé. Donc, même si la famille était propre, elle ne descendrait pas au classifier.
+Permettre aux **ambassadeurs / sentinelles / admin** de corriger en 2 clics les tags écologiques (arbre, mellifère, vieil arbre, fixateur d'azote…) d'une espèce, depuis la vignette espèce du module **Découverte du vivant**. Et leur signaler clairement, dans le back-office, les espèces "à valider" (faible confiance ou auto-classifiées).
 
-Conséquence : seuls les genres listés explicitement (Quercus, Tilia, Fagus, Salix, etc.) sont reconnus comme "arbre". Tout le reste tombe dans le vide. Le même bug touchera **Platanus, Pinus, Cedrus, Liquidambar, Liriodendron, Betula, Juglans, Ulmus**… et 95 % des arbres ornementaux urbains de Dordogne et d'ailleurs.
+## 1. Où l'UI est posée — côté curateur
 
-## Stratégie — solution robuste pour cette marche ET toutes les suivantes
+**Emplacement principal :** dans le drawer espèce ouvert depuis le module **Analyse IA → Partons à la découverte du vivant** (composant `EcologicalJourneyCarousel`).
 
-L'idée : **utiliser la connaissance déjà présente dans `plantStrate.ts**` (qui sait que `Aesculus → arbre`) comme **source de vérité partagée** pour le tag `arbre`, et résoudre le mapping famille proprement.
+Sur chaque `SpeciesGridCard`, un petit bouton discret en haut-droite : icône crayon (`Pencil`), visible **uniquement** si l'utilisateur est curateur (`useIsCurator(explorationId)`).
 
-### 1. Pont strate → fonction écologique (fix structurel)
+Clic → ouverture d'un `Sheet` (bottom sur mobile, right sur desktop) intitulé **"Ajuster les tags écologiques"** avec :
 
-Dans `useEcologicalFunctions.ts`, après `classifyFunctions(...)` :
+- En-tête : photo + nom FR + nom scientifique
+- Bloc "Tags actuels (auto)" : les 12 fonctions affichées en chips, cliquables pour activer/désactiver
+- Chip = état tri-valeurs visuel :
+  - ✓ vert : "Confirmé" (curaté actif)
+  - − rouge clair : "Retiré" (curaté inactif)
+  - · neutre + halo : "Auto" (classifier, non touché)
+- Champ optionnel "Note du curateur" (1 ligne)
+- Toggle "Proposer pour la base globale" (réservé aux sentinelles/admin — création d'une note dans `species_curation_proposals` pour enrichir `species-knowledge-base.json` lors d'une prochaine release)
+- Boutons : Annuler · Enregistrer
 
-- appeler `resolveStrate({ scientificName })`
-- si la strate est `arbre` ou `arbuste` *et* que le règne/iconic vaut Plantae/Plants, **ajouter automatiquement** le tag `arbre` (et `haie_bocage` pour les arbustes ligneux courants comme Crataegus/Cornus/Viburnum).
-- garder la déduplication via Set.
+**Mobile-first** : sheet plein écran < md, animations Motion (déjà présentes ailleurs), gros boutons tactiles, haptic-feedback léger.
 
-Effet : **tout genre déjà cartographié en `GENUS_STRATE: 'arbre'` devient automatiquement un "Arbre"**, sans dupliquer la connaissance. Marronnier ✓, Platane ✓, Pin ✓, Cèdre ✓, Bouleau ✓…
+## 2. Signalement "il y a quelque chose à faire"
 
-### 2. Enrichir le pool avec une famille propre
+Trois niveaux d'indicateurs, du plus contextuel au plus global :
 
-Dans `useExplorationSpeciesPool.ts`, déjà-conserver `sp.family` quand c'est un **nom alphabétique** (pas un ID numérique). Le passer ensuite au classifier. Cela réactive les `FAMILY_RULES` existantes (Sapindaceae, Fagaceae, Rosaceae…) qui couvrent tous les arbres restants.
+**a) Sur la vignette espèce** — petit point orange pulsant en haut-gauche si `needs_review = true` OU si `classification_confidence < 0.6` OU si aucun tag n'a été attribué alors que l'espèce a > 3 observations. Tooltip : "À valider".
 
-### 3. Compléter `GENUS_RULES` côté éco-fonctions pour la robustesse défensive
+**b) Sur le bouton parcours** (carte "Arbres", "Mellifères"…) — badge `n à valider` discret en bas du card, uniquement visible pour les curateurs.
 
-Ajouter explicitement : `Aesculus, Platanus, Pinus, Cedrus, Abies, Picea, Betula, Juglans, Ulmus, Liquidambar, Liriodendron` avec au minimum `['arbre']`, plus `vieil_arbre` pour les longévifs (Aesculus, Platanus, Quercus, Tilia, Fagus, Castanea, Cedrus) — la mémoire projet "12 tags multi-étiquettes" inclut déjà `vieil_arbre`.
+**c) Hub curation dédié** : nouvelle page `/marches-du-vivant/mon-espace/exploration/:id/curation-vivant` accessible depuis :
+- l'onglet **Analyse IA**, header, bouton secondaire **"Curation vivant · n à valider"** (visible curateurs uniquement)
+- le menu Outils de mon-espace (catégorie Ambassadeur/Sentinelle)
 
-### 4. Override éditorial pérenne — `exploration_curations`
+Cette page liste, en une seule vue scrollable :
+- Espèces sans aucun tag (priorité haute)
+- Espèces avec confiance faible (< 0.6)
+- Espèces signalées `needs_review`
+- Espèces récemment éditées par d'autres curateurs (transparence)
 
-Le système de curation existe déjà (cf. `useExplorationCurations`). Exposer dans l'onglet **Découverte du vivant**, sur chaque vignette espèce, un petit menu "Ajuster les tags écologiques" pour un ambassadeur/sentinelle/admin :
+Chaque ligne = mini-card avec photo, nom, tags actuels, et bouton "Ajuster" qui ouvre le même Sheet qu'en (1).
 
-- coche/décoche les 12 fonctions
-- la curation l'emporte sur l'auto-classification
-- valable pour cette exploration uniquement (override local) **ou** marquable "à propager à la KB globale" (création d'une PR de mise à jour de `species-knowledge-base.json`)
+## 3. Logique métier
 
-Ainsi : pour les marches futures, la connaissance accumulée par les marcheurs **enrichit la base** au lieu de se perdre.
+- La curation est **stockée dans `exploration_curations`** avec :
+  - `entity_type = 'species'`
+  - `entity_id = scientific_name`
+  - `sense = 'oeil'` (sens utilisé pour le visuel/biodiversité)
+  - une nouvelle colonne **`functions text[]`** = liste des tags activés (override total : si présente, remplace l'auto-classification)
+  - `classification_source = 'curator'`, `classification_confidence = 1.0`, `needs_review = false`
+- `useEcologicalFunctions` lit d'abord les curations, applique les overrides, puis retombe sur l'auto-classification (cf. logique déjà en place pour le pont strate).
+- Permissions : RLS existant déjà adapté (ambassadeur/sentinelle participant à un évènement de l'exploration, + admin partout). L'écriture passe par `useUpsertCuration` déjà en place.
 
-## Périmètre du changement
+## 4. Notifications légères (optionnel mais recommandé)
+
+Dans le **hub admin/sentinelle** (`AdminOutilsHub` ou la page communauté), un compteur global "**n espèces à valider sur k explorations actives**" — agrégation côté Edge Function pour ne pas casser les perfs.
+
+Pas d'email/push pour rester sobre (cf. mémoire Sobriété Informationnelle).
+
+## Périmètre technique
 
 ```text
-src/hooks/useEcologicalFunctions.ts          modifié  (pont strate + family)
-src/hooks/useExplorationSpeciesPool.ts       modifié  (conserve family alpha)
-src/lib/ecologicalFunctionsClassification.ts modifié  (genres arbres manquants)
+DB migration                                  ALTER exploration_curations ADD functions text[]
+                                              + index partial sur needs_review/confidence
+src/hooks/useEcologicalFunctions.ts           lit + applique overrides curation
+src/hooks/useSpeciesCurationStatus.ts         NEW — agrège needs_review par exploration
+src/components/biodiversity/
+  EcologicalJourneyCarousel.tsx               + bouton crayon sur SpeciesGridCard
+  SpeciesEcoTagsEditor.tsx                    NEW — Sheet édition tags
+  SpeciesGridCard.tsx (extraction)            + dot "à valider" + bouton curateur
+src/components/community/analyse/
+  AnalyseIAStepper.tsx                        + bouton header "Curation vivant"
+src/pages/
+  ExplorationCurationVivant.tsx               NEW — hub liste à valider
+src/App.tsx (routes)                          + route /curation-vivant
 ```
 
-Étape 4 (UI curation tags) est plus large : à confirmer avant de l'inclure dans le même lot, ou à séparer dans un second plan.
+## Points hors-scope (à valider plus tard)
 
-## Détails techniques
+- Synchronisation curation → KB globale (table `species_curation_proposals` créée mais workflow de PR manuel)
+- Historique des éditions par curateur (audit trail) — non prioritaire
+- Édition multi-espèces en masse — V2 si besoin
 
-- Garde-fou `isUsableFamily` reste utile (filtre les IDs numériques iNat).
-- Dans le pont strate, ne **pas** ajouter `arbre` si `iconic`/`group` indique un règne non-plante (sécurité contre faux positifs sur des genres homonymes).
-- Pas de migration DB nécessaire pour les étapes 1-3.
-- Étape 4 ré-utilise la table `exploration_curations` déjà en place (colonne `functions` mentionnée dans la mémoire des fonctions écologiques).
+## Question rapide avant de coder
 
-## Question avant de coder
-
-inclue dans ce même lot l'**UI de curation des tags** (étape 4) — pour qu'un ambassadeur puisse corriger en 2 clics depuis la vignette espèce 
+Confirmes-tu ces 3 points :
+1. Bouton crayon sur **chaque vignette** dans le drawer du parcours (et non en haut du drawer) — OK ?
+2. La page hub `/curation-vivant` est créée même si on peut déjà tout faire depuis les vignettes — OK pour avoir une vue agrégée ?
+3. Le compteur global "n à valider" sur AdminOutilsHub — on l'ajoute dans ce lot ou plus tard ?
