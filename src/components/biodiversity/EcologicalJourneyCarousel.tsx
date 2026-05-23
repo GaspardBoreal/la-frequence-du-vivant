@@ -1,35 +1,62 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Pencil, AlertCircle, ListChecks } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useEcologicalFunctions, type SpeciesWithFunctions } from '@/hooks/useEcologicalFunctions';
+import { useIsCurator } from '@/hooks/useExplorationCurations';
 import { ECO_FUNCTIONS, ECO_FAMILIES, getEcoFunction, type EcoFunction } from '@/lib/ecologicalFunctions';
 import { STRATE_META, type PlantStrate } from '@/lib/plantStrate';
 import { SpeciesName } from '@/components/species/SpeciesName';
+import SpeciesEcoTagsEditor from './SpeciesEcoTagsEditor';
 
 interface Props {
   explorationId: string | null | undefined;
 }
 
-/**
- * Carrousel "Partons à la découverte des arbres / mellifères / fixateurs d'azote…"
- *
- * - Liste UNIQUEMENT les tags qui ont au moins 1 espèce observée sur l'expé
- * - Compteurs vivants, animés
- * - Clic → drawer plein écran avec la liste des espèces du tag
- *   (pour `mellifere` : 3 sections empilées Arbres / Arbustes / Herbacées)
- * - Recalculé à chaque invalidation du pool (nouvelles obs)
- */
-const SpeciesGridCard: React.FC<{ sp: SpeciesWithFunctions; emoji: string; idx: number }> = ({
-  sp,
-  emoji,
-  idx,
-}) => (
+const SpeciesGridCard: React.FC<{
+  sp: SpeciesWithFunctions;
+  emoji: string;
+  idx: number;
+  canCurate: boolean;
+  onEdit: (sp: SpeciesWithFunctions) => void;
+}> = ({ sp, emoji, idx, canCurate, onEdit }) => (
   <motion.li
     initial={{ opacity: 0, scale: 0.96 }}
     animate={{ opacity: 1, scale: 1 }}
     transition={{ delay: Math.min(idx * 0.015, 0.4) }}
-    className="rounded-xl overflow-hidden border border-border bg-card"
+    className="relative rounded-xl overflow-hidden border border-border bg-card group"
   >
+    {/* Dot "à valider" */}
+    {canCurate && sp.needsReview && (
+      <span
+        className="absolute top-1.5 left-1.5 z-10 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-background animate-pulse"
+        title="À valider"
+        aria-label="Espèce à valider"
+      />
+    )}
+    {/* Badge "curé" */}
+    {canCurate && sp.isCurated && (
+      <span
+        className="absolute top-1.5 left-1.5 z-10 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
+        title="Tags curés manuellement"
+        aria-label="Tags curés"
+      />
+    )}
+    {/* Bouton crayon curateur */}
+    {canCurate && (
+      <button
+        type="button"
+        onClick={e => {
+          e.stopPropagation();
+          onEdit(sp);
+        }}
+        className="absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full bg-background/90 backdrop-blur border border-border shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity hover:scale-110"
+        aria-label="Ajuster les tags écologiques"
+      >
+        <Pencil className="w-3.5 h-3.5 text-foreground" />
+      </button>
+    )}
+
     <div className="aspect-square bg-muted">
       {sp.imageUrl ? (
         <img
@@ -65,20 +92,28 @@ const SpeciesGridCard: React.FC<{ sp: SpeciesWithFunctions; emoji: string; idx: 
 );
 
 const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
-  const { buckets, counts, mellifereByStrate, isLoading } = useEcologicalFunctions(explorationId);
+  const { buckets, counts, mellifereByStrate, allSpecies, needsReviewCount, isLoading } =
+    useEcologicalFunctions(explorationId);
+  const { data: canCurate } = useIsCurator(explorationId);
   const [openTag, setOpenTag] = useState<EcoFunction | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [editingSpecies, setEditingSpecies] = useState<SpeciesWithFunctions | null>(null);
 
   const activeFunctions = useMemo(
     () => ECO_FUNCTIONS.filter(f => counts[f.value] > 0),
     [counts],
   );
 
-  if (isLoading || activeFunctions.length === 0) return null;
+  const speciesToReview = useMemo(
+    () => allSpecies.filter(s => s.needsReview).sort((a, b) => b.count - a.count),
+    [allSpecies],
+  );
+
+  if (isLoading || (activeFunctions.length === 0 && !canCurate)) return null;
 
   const openSpecies = openTag ? buckets[openTag] : [];
   const openMeta = openTag ? getEcoFunction(openTag) : null;
 
-  // Label dynamique : "arbres et plantes mellifères" si au moins 1 ligneux
   const mellifereLigneuxCount =
     mellifereByStrate.arbre.length + mellifereByStrate.arbuste.length;
   const mellifereLabel =
@@ -106,6 +141,30 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
           </span>
         </div>
 
+        {/* Bandeau curateur : espèces à valider */}
+        {canCurate && needsReviewCount > 0 && (
+          <motion.button
+            type="button"
+            onClick={() => setReviewOpen(true)}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full mb-4 flex items-center gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left hover:bg-amber-500/15 transition-colors"
+          >
+            <span className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-foreground">
+                {needsReviewCount} espèce{needsReviewCount > 1 ? 's' : ''} à valider
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                Aide la communauté en ajustant leurs tags écologiques · 2 clics par espèce
+              </div>
+            </div>
+            <ListChecks className="w-4 h-4 text-muted-foreground shrink-0" />
+          </motion.button>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {activeFunctions.map((f, i) => (
             <motion.button
@@ -120,11 +179,8 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
               className="group relative overflow-hidden rounded-3xl border border-border/60 bg-card text-left focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-sm hover:shadow-2xl transition-shadow"
               aria-label={`Partons à la découverte des ${counts[f.value]} ${labelFor(f)}`}
             >
-              {/* Gradient aura */}
               <div className={`absolute inset-0 bg-gradient-to-br ${f.gradient} opacity-90`} aria-hidden="true" />
-              {/* Radial glow */}
               <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/20 dark:bg-white/10 blur-3xl opacity-60 group-hover:opacity-90 transition-opacity" aria-hidden="true" />
-              {/* Shimmer on hover */}
               <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-out bg-gradient-to-r from-transparent via-white/25 to-transparent" aria-hidden="true" />
 
               <div className="relative p-5 sm:p-6">
@@ -173,7 +229,7 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
         </div>
       </section>
 
-
+      {/* Drawer parcours d'un tag */}
       <Sheet open={!!openTag} onOpenChange={o => !o && setOpenTag(null)}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
           {openMeta && (
@@ -195,7 +251,6 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
                 </SheetDescription>
               </SheetHeader>
 
-              {/* Drawer mellifère : 3 sections empilées par strate */}
               {openMeta.value === 'mellifere' ? (
                 <div className="mt-5 space-y-6">
                   {orderedStrates.map((strate, si) => {
@@ -231,6 +286,8 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
                                 sp={sp}
                                 emoji={meta.emoji}
                                 idx={idx}
+                                canCurate={!!canCurate}
+                                onEdit={setEditingSpecies}
                               />
                             ))}
                           </motion.ul>
@@ -252,6 +309,8 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
                         sp={sp}
                         emoji={openMeta.emoji}
                         idx={idx}
+                        canCurate={!!canCurate}
+                        onEdit={setEditingSpecies}
                       />
                     ))}
                   </motion.ul>
@@ -261,6 +320,59 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Drawer "Espèces à valider" — accessible curateurs */}
+      <Sheet open={reviewOpen} onOpenChange={setReviewOpen}>
+        <SheetContent side="bottom" className="max-h-[88vh] overflow-y-auto">
+          <SheetHeader className="text-left">
+            <div className="flex items-center gap-3 mb-1">
+              <span className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </span>
+              <div>
+                <SheetTitle className="text-lg">
+                  {speciesToReview.length} espèce{speciesToReview.length > 1 ? 's' : ''} à valider
+                </SheetTitle>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Curation des tags écologiques
+                </div>
+              </div>
+            </div>
+            <SheetDescription className="text-sm">
+              Ces espèces n'ont pas été automatiquement classées. Clique sur le crayon pour
+              leur attribuer les bons tags — ta contribution améliore les parcours pour tous.
+            </SheetDescription>
+          </SheetHeader>
+
+          <ul className="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {speciesToReview.map((sp, idx) => (
+              <SpeciesGridCard
+                key={sp.key}
+                sp={sp}
+                emoji="🌿"
+                idx={idx}
+                canCurate
+                onEdit={setEditingSpecies}
+              />
+            ))}
+          </ul>
+          {speciesToReview.length === 0 && (
+            <div className="mt-8 text-center text-sm text-muted-foreground py-8">
+              ✨ Toutes les espèces sont classées. Merci !
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Éditeur de tags */}
+      {explorationId && (
+        <SpeciesEcoTagsEditor
+          open={!!editingSpecies}
+          onOpenChange={o => !o && setEditingSpecies(null)}
+          explorationId={explorationId}
+          species={editingSpecies}
+        />
+      )}
     </>
   );
 };
