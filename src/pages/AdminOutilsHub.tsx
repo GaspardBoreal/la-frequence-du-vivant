@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network } from 'lucide-react';
 
 const OUTILS = [
   {
@@ -10,6 +10,13 @@ const OUTILS = [
     description: 'Citation journalière d\'auteurs engagés dans la biodiversité, bioacoustique, géopoétique.',
     icon: Sparkles,
     to: '/admin/outils/frequences',
+    active: true,
+  },
+  {
+    titre: 'API & MCP',
+    description: 'L\'écosystème vivant : 14 intégrations, métriques live, santé des flux.',
+    icon: Network,
+    to: '/admin/outils/api-mcp',
     active: true,
   },
   {
