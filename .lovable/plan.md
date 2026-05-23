@@ -1,94 +1,62 @@
-## Réorganisation de l'onglet "Analyse IA" — Stepper immersif mobile-first
+## Diagnostic — pourquoi le Marronnier (Aesculus hippocastanum) manque
 
-### Objectif
-Fusionner trois contenus dans **Analyse IA**, organisés en stepper plein écran swipable :
-1. **Partons à la découverte du vivant** (carrousel existant `EcologicalJourneyCarousel`)
-2. **Chaîne trophique** (`TrophicChainPanel` déplacé depuis Synthèse — NON modifié)
-3. **Indicateurs** (`TaxonsIndicesPanel` déplacé depuis l'onglet Indicateurs)
+Trois causes cumulées dans le pipeline `classifyFunctions` (`src/lib/ecologicalFunctionsClassification.ts`) :
 
-### Changements de structure
+1. **Aucune règle de genre `Aesculus**` dans `GENUS_RULES` (et pas non plus dans la KB curée).
+2. **La famille est inutilisable telle qu'elle arrive d'iNaturalist** : la base stocke `family: "58321"` (ID taxonomique iNat = Sapindaceae) au lieu du nom. Le garde-fou `isUsableFamily` rejette donc tout, et la règle `Sapindaceae → ['arbre','mellifere']` qui existe pourtant ne se déclenche jamais.
+3. **Le hook ne passe même pas `family**` : dans `useEcologicalFunctions.ts` ligne 45, `family: null` est hardcodé. Donc, même si la famille était propre, elle ne descendrait pas au classifier.
 
-**Barre principale des sous-onglets** (`EventBiodiversityTab.tsx`)
-- Retirer `Indicateurs` de `subTabs`
-- Retirer `TrophicChainPanel` du bloc Synthèse
-- Retirer la branche `activeSubTab === 'indicateurs'`
-- Retirer le teaser « Bientôt disponible » (bloc Sparkles)
-- L'onglet **Analyse IA** ne contient plus que `<AnalyseIAStepper />`
+Conséquence : seuls les genres listés explicitement (Quercus, Tilia, Fagus, Salix, etc.) sont reconnus comme "arbre". Tout le reste tombe dans le vide. Le même bug touchera **Platanus, Pinus, Cedrus, Liquidambar, Liriodendron, Betula, Juglans, Ulmus**… et 95 % des arbres ornementaux urbains de Dordogne et d'ailleurs.
 
-**Barre finale :** Synthèse · Taxons observés · Témoignages · (Textes écrits) · Analyse IA
+## Stratégie — solution robuste pour cette marche ET toutes les suivantes
 
-### Nouveau composant : `AnalyseIAStepper`
+L'idée : **utiliser la connaissance déjà présente dans `plantStrate.ts**` (qui sait que `Aesculus → arbre`) comme **source de vérité partagée** pour le tag `arbre`, et résoudre le mapping famille proprement.
 
-Fichier : `src/components/community/analyse/AnalyseIAStepper.tsx`
+### 1. Pont strate → fonction écologique (fix structurel)
 
-**Layout mobile-first immersif**
-- Container `relative` avec `min-h-[calc(100vh-14rem)]` plein écran utile
-- Snap horizontal natif : `flex overflow-x-auto snap-x snap-mandatory scroll-smooth` + `snap-center` sur chaque step
-- Chaque step : `w-full shrink-0` (mobile) / `w-full` (desktop, on garde le stepper même pattern, max-w container)
-- Swipe gestuel natif iOS/Android via overflow scroll + `touch-pan-x`
-- IntersectionObserver détecte le step visible → met à jour `activeStep`
+Dans `useEcologicalFunctions.ts`, après `classifyFunctions(...)` :
 
-**Header sticky (top)**
-- Pills compact des 3 modules avec emoji + label court, `sticky top-0 z-20 backdrop-blur-xl bg-background/70`
-- Click = `element.scrollIntoView({ behavior: 'smooth', inline: 'start' })`
-- Sous les pills : **barre de progression segmentée** (3 segments, l'actif s'illumine via `motion.div` width animée + gradient emerald→violet)
-- Compteur « Module 1 / 3 » en petit à droite
+- appeler `resolveStrate({ scientificName })`
+- si la strate est `arbre` ou `arbuste` *et* que le règne/iconic vaut Plantae/Plants, **ajouter automatiquement** le tag `arbre` (et `haie_bocage` pour les arbustes ligneux courants comme Crataegus/Cornus/Viburnum).
+- garder la déduplication via Set.
 
-**Chaque step**
-- Hero d'entrée : grande icône animée (`motion` float `y: [-4, 0]`), titre `text-2xl sm:text-3xl font-semibold`, sous-titre poétique, badge module
-- Gradient d'arrière-plan unique par module :
-  - Découverte : `from-emerald-500/10 via-amber-500/5 to-transparent`
-  - Trophique : `from-violet-500/10 via-cyan-500/5 to-transparent`
-  - Indicateurs : `from-sky-500/10 via-emerald-500/5 to-transparent`
-- Blob radial flou en fond (`absolute inset-0 -z-10 blur-3xl`)
-- Contenu du module rendu après le hero (les composants existants restent intacts)
-- Bouton « Module suivant → » en bas qui scroll au step suivant (sauf le 3e)
+Effet : **tout genre déjà cartographié en `GENUS_STRATE: 'arbre'` devient automatiquement un "Arbre"**, sans dupliquer la connaissance. Marronnier ✓, Platane ✓, Pin ✓, Cèdre ✓, Bouleau ✓…
 
-**Navigation desktop (≥sm)**
-- Mêmes pills sticky en haut
-- Flèches latérales `‹` `›` ancrées en `fixed` discrètes pour navigation clavier/souris
-- Support flèches clavier `ArrowLeft` / `ArrowRight`
+### 2. Enrichir le pool avec une famille propre
 
-**Animations clés** (Framer Motion)
-- Hero icône : `animate={{ y: [0, -6, 0] }}` infinite
-- Titre : `initial={{ y: 20, opacity: 0 }}` → `whileInView` avec stagger des enfants
-- Progress bar : `layoutId` partagé pour glisser entre segments
-- Transition de step : `AnimatePresence` n'est pas nécessaire (les 3 sont en DOM pour le snap-scroll), mais chaque hero a un `whileInView` pour rejouer l'entrée
+Dans `useExplorationSpeciesPool.ts`, déjà-conserver `sp.family` quand c'est un **nom alphabétique** (pas un ID numérique). Le passer ensuite au classifier. Cela réactive les `FAMILY_RULES` existantes (Sapindaceae, Fagaceae, Rosaceae…) qui couvrent tous les arbres restants.
 
-### Fichiers à créer / modifier
+### 3. Compléter `GENUS_RULES` côté éco-fonctions pour la robustesse défensive
 
-**Créer**
-- `src/components/community/analyse/AnalyseIAStepper.tsx`
-- `src/components/community/analyse/StepHero.tsx` (hero réutilisable : icône, gradient, titre, sous-titre)
-- `src/components/community/analyse/StepperProgress.tsx` (3 segments + pills)
+Ajouter explicitement : `Aesculus, Platanus, Pinus, Cedrus, Abies, Picea, Betula, Juglans, Ulmus, Liquidambar, Liriodendron` avec au minimum `['arbre']`, plus `vieil_arbre` pour les longévifs (Aesculus, Platanus, Quercus, Tilia, Fagus, Castanea, Cedrus) — la mémoire projet "12 tags multi-étiquettes" inclut déjà `vieil_arbre`.
 
-**Modifier**
-- `src/components/community/EventBiodiversityTab.tsx`
-  - Supprimer `'indicateurs'` de `SubTab` et de `subTabs`
-  - Supprimer `<TrophicChainPanel>` de la branche Synthèse
-  - Supprimer la branche `indicateurs`
-  - Remplacer le contenu de la branche `analyse` par `<AnalyseIAStepper species={allSpeciesWithFrNames} explorationId={explorationId} totalSpecies={stats.total} />`
-  - Conserver `EcologicalJourneyCarousel`, `TrophicChainPanel`, `TaxonsIndicesPanel` (imports déplacés)
+### 4. Override éditorial pérenne — `exploration_curations`
 
-### Garanties
-- **Zéro changement** sur `TrophicChainPanel`, `TaxonsIndicesPanel`, `EcologicalJourneyCarousel`
-- **Zéro changement** de logique métier / données / hooks
-- Responsive natif : snap horizontal sur mobile, même UX agréable sur desktop
-- Accessible : `role="tablist"`, `aria-selected`, focus visible, navigation clavier
+Le système de curation existe déjà (cf. `useExplorationCurations`). Exposer dans l'onglet **Découverte du vivant**, sur chaque vignette espèce, un petit menu "Ajuster les tags écologiques" pour un ambassadeur/sentinelle/admin :
 
-### Diagramme
+- coche/décoche les 12 fonctions
+- la curation l'emporte sur l'auto-classification
+- valable pour cette exploration uniquement (override local) **ou** marquable "à propager à la KB globale" (création d'une PR de mise à jour de `species-knowledge-base.json`)
+
+Ainsi : pour les marches futures, la connaissance accumulée par les marcheurs **enrichit la base** au lieu de se perdre.
+
+## Périmètre du changement
 
 ```text
-┌─────────────────────────────────────┐
-│ [🌿 Découverte] [🔗 Trophique] [📊 Indicateurs]   1/3 │ ← pills sticky
-│ ▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░ │ ← progress
-├─────────────────────────────────────┤
-│   gradient blob + hero icon         │
-│   "Partons à la découverte du..."   │
-│                                     │
-│   [EcologicalJourneyCarousel]       │
-│                                     │
-│   [ Module suivant → ]              │
-└─────────────────────────────────────┘
-  ← swipe →   ← swipe →   ← swipe →
+src/hooks/useEcologicalFunctions.ts          modifié  (pont strate + family)
+src/hooks/useExplorationSpeciesPool.ts       modifié  (conserve family alpha)
+src/lib/ecologicalFunctionsClassification.ts modifié  (genres arbres manquants)
 ```
+
+Étape 4 (UI curation tags) est plus large : à confirmer avant de l'inclure dans le même lot, ou à séparer dans un second plan.
+
+## Détails techniques
+
+- Garde-fou `isUsableFamily` reste utile (filtre les IDs numériques iNat).
+- Dans le pont strate, ne **pas** ajouter `arbre` si `iconic`/`group` indique un règne non-plante (sécurité contre faux positifs sur des genres homonymes).
+- Pas de migration DB nécessaire pour les étapes 1-3.
+- Étape 4 ré-utilise la table `exploration_curations` déjà en place (colonne `functions` mentionnée dans la mémoire des fonctions écologiques).
+
+## Question avant de coder
+
+inclue dans ce même lot l'**UI de curation des tags** (étape 4) — pour qu'un ambassadeur puisse corriger en 2 clics depuis la vignette espèce 
