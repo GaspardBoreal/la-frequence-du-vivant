@@ -17,7 +17,7 @@ const TrustBar: React.FC<TrustBarProps> = ({ showQualiopi = true, className = ''
     <div className={`py-8 ${className}`}>
       <div className="text-center mb-4">
         <span className="text-xs uppercase tracking-wider text-muted-foreground font-mono">
-          Partenaires & Certifications
+          Partenaires
         </span>
       </div>
       
