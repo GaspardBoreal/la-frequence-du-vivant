@@ -192,10 +192,9 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
               © 2025 - 2026 Gaspard Boréal - La Fréquence du Vivant
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="hover:text-[#4ade80] cursor-pointer">#BioacustiquePoétique</span>
-              <span className="hover:text-[#4ade80] cursor-pointer">#MondesHybrides</span>
+              <span className="hover:text-[#4ade80] cursor-pointer">#Biodiversité</span>
+              <span className="hover:text-[#4ade80] cursor-pointer">#Bioacustique</span>
               <span className="hover:text-[#4ade80] cursor-pointer">#TransitionAgroécologique</span>
-              <span className="hover:text-[#4ade80] cursor-pointer">#PoésieProspective</span>
             </div>
           </div>
         </div>
