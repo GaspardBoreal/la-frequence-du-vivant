@@ -1,38 +1,26 @@
-# Chatbot toujours au-dessus de toutes les vues
+# Fix : DropdownMenu du trombone invisible derrière le chatbot
 
-## Problème
+## Cause
 
-Le chatbot (`src/components/chatbot/ChatBot.tsx`) utilise `z-50` / `z-[75]` / `z-[80]`. Les contrôles Leaflet partagés (`src/components/maps/`, `ExplorationCarteTab`) montent jusqu'à `z-[1100]`. Conséquence : sur **toutes les vues cartographiques** (Carte exploration, drawer espèce, carte admin, pages publiques `/m/:slug`, outils GPS, zones blanches), les badges et contrôles passent devant le chatbot.
+Le passage du panneau chatbot à `z-[1200]` a placé le `DropdownMenuContent` (Radix Portal, z-50 par défaut) **sous** le panneau. Résultat : clic sur le trombone → menu rendu mais invisible/non cliquable. Les deux fonctionnalités (upload document + attach liste d'espèces) sont donc cassées sur toutes les vues où le pool d'espèces est disponible.
 
-## Correction (1 seul fichier)
+## Correction (1 fichier)
 
-Dans `src/components/chatbot/ChatBot.tsx`, remonter les 4 z-index au-dessus de toute couche Leaflet existante, en gardant la hiérarchie interne intacte :
+Dans `src/components/chatbot/ChatBot.tsx` ligne 663, ajouter une classe z-index au `DropdownMenuContent` pour qu'il passe au-dessus du panneau chatbot (`z-[1200]`) tout en restant sous les toasts :
 
-| Élément | Avant | Après |
-|---|---|---|
-| Bouton flottant (ligne 328) | `z-50` | `z-[1200]` |
-| Panneau bas-droite non-expanded (ligne 313) | `z-50` | `z-[1200]` |
-| Overlay expanded (ligne 352) | `z-[75]` | `z-[1190]` |
-| Panneau expanded plein écran (ligne 312) | `z-[80]` | `z-[1200]` |
+```tsx
+<DropdownMenuContent align="start" className="w-64 z-[1250]">
+```
 
-Aucune autre modification : la logique reste inchangée, c'est purement une élévation de stacking.
+## Vérification
 
-## Pourquoi ces valeurs
-
-- `1200 > 1100` (couche Leaflet la plus haute du projet) → chatbot toujours devant.
-- On garde `1190 < 1200` pour que l'overlay reste sous le panneau expanded.
-- On reste **sous** les `z-[9999]` des Toasts/Sonner pour que les notifications systèmes restent visibles au-dessus du chatbot.
-- Les Sheet/Dialog shadcn utilisent `z-50` → ils passeront désormais sous le chatbot (comportement déjà voulu : quand on ouvre le chat depuis une fiche espèce, il doit être devant — c'est d'ailleurs la raison du commentaire actuel ligne 198-199 du fichier).
-
-## Vérification (vues à inspecter après build)
-
-1. **Vue Carte exploration** (route actuelle) : ouvrir chatbot non-expanded, vérifier qu'il masque la barre « 5 étapes / 104 espèces » et le sélecteur Géo/Sat.
-2. **Drawer fiche espèce** (mini-map) : ouvrir le chat depuis la fiche → panneau expanded au-dessus de tout.
-3. **Carte admin** (`marches-map-tab`) : idem.
-4. **Page publique** `/m/:slug` avec carte : idem.
-5. **Vues sans carte** (Marcheurs, Synthèse, Apprendre) : aucun changement visible, le chatbot reste positionné comme avant.
+1. Ouvrir le chatbot sur la vue Carte exploration (speciesPool disponible).
+2. Cliquer le trombone → menu déroulant visible avec les 2 options.
+3. Cliquer « Un document » → sélecteur de fichier natif s'ouvre.
+4. Cliquer « 🌿 Liste des espèces » → badge attaché en haut de la zone input.
+5. Vérifier sur une vue sans pool (ex. fiche profil) : le trombone reste un bouton direct → sélecteur natif OK.
 
 ## Hors-scope
 
-- Pas de refactor du système de z-index global (pas demandé, et la hiérarchie Leaflet est intentionnellement haute pour ses propres besoins).
-- Pas de mémoire à mettre à jour : le changement est local et trivial.
+- Pas de modification des z-index du chatbot (le fix précédent reste valide).
+- Pas de refactor du système Portal Radix.
