@@ -287,10 +287,12 @@ async function buildPdf(
     const s = topSpecies[i];
     if (y < 60) break;
     top.drawText(`${i + 1}.`, { x: 50, y, size: 10, font, color: muted });
-    top.drawText(s.scientific_name.slice(0, 50), { x: 75, y, size: 11, font: bold, color: dark });
-    top.drawText(`${s.observation_count} obs · ${s.observer_count} observateur·rice·s`, {
-      x: 75, y: y - 14, size: 9, font, color: muted,
-    });
+    const title = (s.common_name_fr || s.scientific_name).slice(0, 50);
+    top.drawText(title, { x: 75, y, size: 11, font: bold, color: dark });
+    const subtitle = s.common_name_fr
+      ? `${s.scientific_name.slice(0, 50)} — ${s.observation_count} obs · ${s.observer_count} observateur·rice·s`
+      : `${s.observation_count} obs · ${s.observer_count} observateur·rice·s`;
+    top.drawText(subtitle, { x: 75, y: y - 14, size: 9, font, color: muted });
     y -= 32;
   }
 
