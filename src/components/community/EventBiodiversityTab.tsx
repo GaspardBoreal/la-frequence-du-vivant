@@ -22,12 +22,10 @@ import type { EvolutionPeriod, DateSource } from '@/hooks/useBiodiversityEvoluti
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
-import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
-import TrophicChainPanel from './synthese/TrophicChainPanel';
 import PackVivantButton from './PackVivantButton';
-import EcologicalJourneyCarousel from '@/components/biodiversity/EcologicalJourneyCarousel';
+import AnalyseIAStepper from './analyse/AnalyseIAStepper';
 
-type SubTab = 'synthese' | 'taxons' | 'indicateurs' | 'temoignages' | 'textes' | 'analyse';
+type SubTab = 'synthese' | 'taxons' | 'temoignages' | 'textes' | 'analyse';
 
 
 interface EventBiodiversityTabProps {
@@ -473,7 +471,6 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const subTabs: { key: SubTab; label: string }[] = [
     { key: 'synthese', label: 'Synthèse' },
     { key: 'taxons', label: 'Taxons observés' },
-    { key: 'indicateurs', label: 'Indicateurs' },
     { key: 'temoignages', label: 'Témoignages' },
     ...(eventType === 'eco_poetique' ? [{ key: 'textes' as SubTab, label: 'Textes écrits' }] : []),
     { key: 'analyse', label: 'Analyse IA' },
@@ -517,7 +514,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               <AnimatedStat value={stats.fungi} label="Champignons" icon={Leaf} color={categoryConfig.fungi.color} bgColor={categoryConfig.fungi.bgColor} delay={300} />
               <AnimatedStat value={stats.others} label="Autre" icon={Bug} color={categoryConfig.others.color} bgColor={categoryConfig.others.bgColor} delay={400} />
             </div>
-            <TrophicChainPanel species={allSpeciesWithFrNames as any} explorationId={explorationId} />
+            
 
             {explorationId && (
               <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent p-5">
@@ -560,13 +557,6 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         )}
 
 
-        {/* INDICATEURS — Lecture écologique du peuplement */}
-        {activeSubTab === 'indicateurs' && (
-          <motion.div key="indicateurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <TaxonsIndicesPanel species={allSpeciesWithFrNames as any} explorationId={explorationId} totalSpeciesAllRanks={stats.total} />
-          </motion.div>
-        )}
-
         {/* TÉMOIGNAGES */}
         {activeSubTab === 'temoignages' && (
           <motion.div key="temoignages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -581,29 +571,19 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
           </motion.div>
         )}
 
-        {/* ANALYSE IA */}
+        {/* ANALYSE IA — Stepper immersif (Découverte → Trophique → Indicateurs) */}
         {activeSubTab === 'analyse' && (
           <motion.div
             key="analyse"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="space-y-8"
           >
-            <EcologicalJourneyCarousel explorationId={explorationId} />
-
-            <div className="flex flex-col items-center justify-center py-10 text-center border-t border-border/50">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-emerald-500/5 border border-violet-500/15 flex items-center justify-center mb-4">
-                <Sparkles className="w-7 h-7 text-violet-400/60" />
-              </div>
-              <h3 className="text-foreground text-sm font-semibold mb-1">Analyse écologique IA</h3>
-              <p className="text-muted-foreground text-xs max-w-xs leading-relaxed">
-                Lorsque vous aurez atteint les 100 espèces identifiées, l'intelligence artificielle des Marches du Vivant analysera alors la richesse écologique de ce territoire : indices de diversité, espèces remarquables, corridors biologiques, chaîne trophique ... et recommandations pour développer la biodiversité locale.
-              </p>
-              <div className="mt-4 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
-                <span className="text-violet-600 dark:text-violet-400 text-[10px] font-medium">Bientôt disponible</span>
-              </div>
-            </div>
+            <AnalyseIAStepper
+              explorationId={explorationId}
+              species={allSpeciesWithFrNames}
+              totalSpecies={stats.total}
+            />
           </motion.div>
         )}
 
