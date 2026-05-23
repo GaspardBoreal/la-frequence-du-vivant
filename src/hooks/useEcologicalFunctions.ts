@@ -152,5 +152,5 @@ export function useEcologicalFunctions(
       needsReviewCount,
       isLoading,
     };
-  }, [pool, curations, isLoading]);
+  }, [pool, curations, kbMap, isLoading]);
 }
