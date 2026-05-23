@@ -160,9 +160,8 @@ const MarchesDuVivantAgriculture = () => {
               </h1>
 
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Le Chapitre 5 du référentiel RSO CUMA Nouvelle-Aquitaine — Respect du Vivant —
-                reste le plus grand chantier collectif. Les Marches du Vivant le transforment
-                en expérience concrète sur vos parcelles.
+                Les Marches du Vivant transforment le respect du Vivant en expérience
+                concrète sur vos parcelles.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
