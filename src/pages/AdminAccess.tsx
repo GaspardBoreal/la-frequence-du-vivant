@@ -215,6 +215,7 @@ const AdminAccess: React.FC = () => {
           <p>Page d'accès restreint - Gaspard Boréal © 2025 - 2026</p>
         </div>
       </div>
+      <Footer variant="marches" />
     </div>
   );
 };
