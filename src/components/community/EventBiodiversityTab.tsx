@@ -24,6 +24,7 @@ import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
 import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
 import TrophicChainPanel from './synthese/TrophicChainPanel';
+import PackVivantButton from './PackVivantButton';
 
 type SubTab = 'synthese' | 'taxons' | 'indicateurs' | 'temoignages' | 'textes' | 'analyse';
 
