@@ -155,7 +155,7 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
         
-        <FitBounds points={allPoints} />
+        <FitBounds points={boundsPoints} />
         <ZoomControls />
         
         {adjustedPoints.map((marche) => {
