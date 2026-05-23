@@ -99,7 +99,7 @@ const MarchesDuVivant = () => {
         {/* Split Screen - Choix de parcours */}
         <section className="py-16 px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Card Entreprises */}
               <Link to="/marches-du-vivant/entreprises" onClick={() => window.scrollTo(0, 0)}>
                 <motion.div
@@ -136,6 +136,47 @@ const MarchesDuVivant = () => {
                   
                   <div className="flex items-center gap-2 text-emerald-400 group-hover:text-emerald-300 transition-colors">
                     <span className="text-sm font-medium">Découvrir les formations</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </motion.div>
+              </Link>
+
+              {/* Card Agriculture & Coopératives */}
+              <Link to="/marches-du-vivant/entreprises" onClick={() => window.scrollTo(0, 0)}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  viewport={{ once: true }}
+                  whileHover={{ scale: 1.02 }}
+                  className="group bg-card/40 backdrop-blur-sm border border-border/30 hover:border-lime-500/50 rounded-2xl p-8 h-full transition-all duration-300"
+                >
+                  <div className="w-14 h-14 rounded-xl bg-lime-950/50 border border-lime-500/30 flex items-center justify-center mb-6">
+                    <Sprout className="w-7 h-7 text-lime-400" />
+                  </div>
+
+                  <h2 className="font-crimson text-2xl text-foreground mb-3">
+                    Pour les Acteurs Agricoles
+                  </h2>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="px-2 py-1 text-xs bg-lime-950/30 border border-lime-500/20 rounded-full text-lime-300">
+                      Coopératives & CUMA
+                    </span>
+                    <span className="px-2 py-1 text-xs bg-emerald-950/30 border border-emerald-500/20 rounded-full text-emerald-300">
+                      Agroécologie
+                    </span>
+                    <span className="px-2 py-1 text-xs bg-amber-950/30 border border-amber-500/20 rounded-full text-amber-300">
+                      Bio & Bocage
+                    </span>
+                  </div>
+
+                  <p className="text-muted-foreground text-sm mb-6">
+                    Coopératives, CUMA, chambres d'agriculture, exploitants : organisez une marche sur vos parcelles pour révéler les services rendus par la biodiversité — pollinisateurs, auxiliaires, sols vivants, réseau bocager — et valoriser vos pratiques.
+                  </p>
+
+                  <div className="flex items-center gap-2 text-lime-400 group-hover:text-lime-300 transition-colors">
+                    <span className="text-sm font-medium">Organiser une marche agricole</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </motion.div>
