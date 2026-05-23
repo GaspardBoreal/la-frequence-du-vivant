@@ -18,14 +18,13 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
           <div className="space-y-4">
             {isMarches ? (
               <Link
-                to="/marches-du-vivant"
+                to="/marches-du-vivant/association"
                 onClick={() => {
                   setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
                 }}
                 className="font-crimson text-white text-center sm:text-left block hover:text-[#4ade80] transition-colors"
               >
                 <div className="text-xl font-medium">L'association</div>
-                <div className="text-sm opacity-80">Les Marches du Vivant</div>
               </Link>
             ) : (
               <>
@@ -66,17 +65,27 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
             )}
           </div>
 
-          {/* Explorer les fréquences */}
+          {/* Explorer les Marches / fréquences */}
           <div className="space-y-4">
-            <a
-              href="/"
-              className="font-crimson text-xl text-white font-medium hover:text-[#4ade80] transition-colors block"
-            >
-              Explorer les fréquences
-            </a>
-            <div className="space-y-2">
-              {!isMarches && (
-                <>
+            {isMarches ? (
+              <Link
+                to="/marches-du-vivant"
+                onClick={() => {
+                  setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+                }}
+                className="font-crimson text-xl text-white font-medium hover:text-[#4ade80] transition-colors block"
+              >
+                Explorer les Marches
+              </Link>
+            ) : (
+              <>
+                <a
+                  href="/"
+                  className="font-crimson text-xl text-white font-medium hover:text-[#4ade80] transition-colors block"
+                >
+                  Explorer les fréquences
+                </a>
+                <div className="space-y-2">
                   <Link
                     to="/explorations-sensibles"
                     className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
@@ -91,45 +100,50 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
                     <MapPin size={16} />
                     <span>Marches Sensibles</span>
                   </a>
-                </>
-              )}
-              <Link
-                to="/marches-du-vivant"
-                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
-                onClick={() => {
-                  setTimeout(() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }, 100);
-                }}
-              >
-                <Leaf size={16} />
-                <span>Les Marches du Vivant</span>
-              </Link>
-              {!isMarches && (
-                <Link
-                  to="/bioacoustique-poetique"
-                  className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-                  onClick={() => {
-                    setTimeout(() => {
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }, 100);
-                  }}
-                >
-                  <BookOpen size={16} />
-                  <span>Bioacoustique Poétique</span>
-                </Link>
-              )}
-            </div>
+                  <Link
+                    to="/marches-du-vivant"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
+                    onClick={() => {
+                      setTimeout(() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }, 100);
+                    }}
+                  >
+                    <Leaf size={16} />
+                    <span>Les Marches du Vivant</span>
+                  </Link>
+                  <Link
+                    to="/bioacoustique-poetique"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
+                    onClick={() => {
+                      setTimeout(() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }, 100);
+                    }}
+                  >
+                    <BookOpen size={16} />
+                    <span>Bioacoustique Poétique</span>
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Ressources */}
+          {/* Ressources / Administration */}
           <div className="space-y-4">
-            <h3 className="font-crimson text-xl text-white font-medium">
-              {isMarches ? 'Ressources' : 'Ressources Académiques'}
-            </h3>
-            <div className="space-y-2">
-              {!isMarches && (
-                <>
+            {isMarches ? (
+              <Link
+                to="/access-admin-gb2025"
+                className="font-crimson text-xl text-white font-medium hover:text-[#4ade80] transition-colors block"
+              >
+                Administration
+              </Link>
+            ) : (
+              <>
+                <h3 className="font-crimson text-xl text-white font-medium">
+                  Ressources Académiques
+                </h3>
+                <div className="space-y-2">
                   <Link
                     to="/materiel-pedagogique"
                     className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
@@ -158,16 +172,16 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
                     <Mic size={16} />
                     <span>Contacter Gaspard Boréal</span>
                   </a>
-                </>
-              )}
-              <Link
-                to="/access-admin-gb2025"
-                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
-              >
-                <Settings size={16} />
-                <span>Administration</span>
-              </Link>
-            </div>
+                  <Link
+                    to="/access-admin-gb2025"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
+                  >
+                    <Settings size={16} />
+                    <span>Administration</span>
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
