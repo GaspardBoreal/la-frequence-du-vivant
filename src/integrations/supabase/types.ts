@@ -5006,6 +5006,10 @@ export type Database = {
       }
       get_event_public_textes: { Args: { p_event_id: string }; Returns: Json }
       get_event_rayonnement: { Args: { _event_id: string }; Returns: Json }
+      get_exploration_export_data: {
+        Args: { p_exploration_id: string; p_level?: string }
+        Returns: Json
+      }
       get_exploration_marches_by_status: {
         Args: {
           exploration_id_param: string
