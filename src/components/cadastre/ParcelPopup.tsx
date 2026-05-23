@@ -93,22 +93,42 @@ const ParcelPopup: React.FC<ParcelPopupProps> = ({ info, centroid }) => {
             )}
             {hasCoords && (
               <>
-                <div className="flex items-center gap-1.5 text-white/70 pt-0.5">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-white/70 pt-0.5">
                   <span>GPS&nbsp;:</span>
-                  <span className="font-mono text-white/85">{coordsStr}</span>
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    aria-label="Copier les coordonnées GPS"
-                    title={copied ? 'Copié !' : 'Copier les coordonnées'}
-                    className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-white/10 transition-colors"
-                  >
-                    {copied ? (
-                      <Check className="w-3 h-3 text-emerald-300 transition-all" />
-                    ) : (
-                      <Copy className="w-3 h-3 text-white/60 hover:text-white/90 transition-all" />
-                    )}
-                  </button>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="text-white/50">Lat</span>
+                    <span className="font-mono text-white/85">{latStr}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => copyValue('lat', latStr, e)}
+                      aria-label="Copier la latitude"
+                      title={copied === 'lat' ? 'Copié !' : 'Copier la latitude'}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-white/10 transition-colors"
+                    >
+                      {copied === 'lat' ? (
+                        <Check className="w-3 h-3 text-emerald-300 transition-all" />
+                      ) : (
+                        <Copy className="w-3 h-3 text-white/60 hover:text-white/90 transition-all" />
+                      )}
+                    </button>
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="text-white/50">Lng</span>
+                    <span className="font-mono text-white/85">{lngStr}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => copyValue('lng', lngStr, e)}
+                      aria-label="Copier la longitude"
+                      title={copied === 'lng' ? 'Copié !' : 'Copier la longitude'}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-white/10 transition-colors"
+                    >
+                      {copied === 'lng' ? (
+                        <Check className="w-3 h-3 text-emerald-300 transition-all" />
+                      ) : (
+                        <Copy className="w-3 h-3 text-white/60 hover:text-white/90 transition-all" />
+                      )}
+                    </button>
+                  </span>
                 </div>
                 <div className="text-white/70">
                   Découvrir sur&nbsp;:{' '}
