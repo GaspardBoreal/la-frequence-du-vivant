@@ -184,6 +184,7 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
             scientificName: sci,
             commonName: null,
             group: null,
+            family: null,
             count: 1,
             imageUrl: null,
           });
