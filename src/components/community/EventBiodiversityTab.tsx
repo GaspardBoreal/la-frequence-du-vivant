@@ -147,9 +147,14 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     enabled: !!explorationId,
   });
 
-  // Fetch biodiversity snapshots for these marches
+  // Fetch ALL biodiversity snapshots for these marches.
+  // Aligné avec la RPC unifiée `get_exploration_species_count` (Carnet/Carte):
+  // l'union de tous les snapshots ∪ marcheur_observations donne le comptage
+  // canonique. La dédup finale se fait par scientificName normalisé dans le
+  // builder de pool plus bas, donc lister tous les snapshots ne double-compte
+  // jamais une espèce.
   const { data: snapshots, isLoading } = useQuery({
-    queryKey: ['event-biodiversity-snapshots', marcheIds],
+    queryKey: ['event-biodiversity-snapshots-all', marcheIds],
     queryFn: async () => {
       if (!marcheIds?.length) return [];
       const { data } = await supabase
@@ -157,16 +162,11 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         .select('*')
         .in('marche_id', marcheIds)
         .order('snapshot_date', { ascending: false });
-      // Keep only most recent snapshot per marche
-      const seen = new Set<string>();
-      return (data || []).filter(s => {
-        if (seen.has(s.marche_id)) return false;
-        seen.add(s.marche_id);
-        return true;
-      });
+      return data || [];
     },
     enabled: !!marcheIds?.length,
   });
+
 
   // Fetch marcheur observations (incl. iNat backfill) for these marches.
   // Source de vérité complémentaire des snapshots : permet d'intégrer dans
