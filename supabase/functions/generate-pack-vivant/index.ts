@@ -397,9 +397,11 @@ Deno.serve(async (req) => {
       ));
     }
     if (effectiveLevel === 'organizer') {
-      // Organizer adds geospatial formats
+      // Organizer adds geospatial formats + Darwin Core Archive
       zip.file('observations.geojson', JSON.stringify(buildGeoJSON(observations), null, 2));
       zip.file('observations.kml', buildKML(observations, explorationName));
+      zip.file('darwin-core/occurrence.txt', buildDarwinCoreOccurrence(observations));
+      zip.file('darwin-core/meta.xml', buildDarwinCoreMeta());
     }
 
     const zipBytes = await zip.generateAsync({ type: 'uint8array' });
