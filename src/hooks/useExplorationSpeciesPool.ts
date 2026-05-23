@@ -13,6 +13,7 @@ export interface ExplorationSpecies {
   /** Best display name: FR translation > original commonName > scientificName */
   displayName: string;
   group: string | null;
+  family: string | null;
   count: number;
   imageUrl: string | null;
 }
@@ -22,6 +23,7 @@ interface RawExplorationSpecies {
   scientificName: string | null;
   commonName: string | null;
   group: string | null;
+  family: string | null;
   count: number;
   imageUrl: string | null;
 }
