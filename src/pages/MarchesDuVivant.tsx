@@ -344,7 +344,7 @@ const MarchesDuVivant = () => {
         <ScienceCounters className="border-t border-border/20" />
 
 
-        <Footer />
+        <Footer variant="marches" />
       </div>
     </>
   );
