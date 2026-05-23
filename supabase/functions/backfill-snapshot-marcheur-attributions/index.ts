@@ -159,22 +159,32 @@ async function processSnapshot(
 
   if (rows.length === 0) return { inserted: 0, skipped: 0, matched: 0 };
 
-  // Upsert sur (marcheur_id, marche_id, inaturalist_observation_id)
-  // On filtre d'abord ceux qui ont déjà un inat_id pour le upsert idempotent.
-  const withInat = rows.filter((r) => r.inaturalist_observation_id != null);
+  // Upsert sur (marcheur_id, inaturalist_observation_id) — contrainte existante.
+  // ignoreDuplicates = ON CONFLICT DO NOTHING : ne touche pas les notes/photos
+  // déjà saisies manuellement par les marcheurs.
+  // Dédup local (même obs apparaît dans plusieurs snapshots delta)
+  const seen = new Set<string>();
+  const withInat = rows.filter((r) => {
+    if (r.inaturalist_observation_id == null) return false;
+    const k = `${r.marcheur_id}|${r.inaturalist_observation_id}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
   if (withInat.length > 0) {
-    const { error, count } = await admin
+    const { error, data } = await admin
       .from('marcheur_observations')
       .upsert(withInat, {
-        onConflict: 'marcheur_id,marche_id,inaturalist_observation_id',
+        onConflict: 'marcheur_id,inaturalist_observation_id',
         ignoreDuplicates: true,
-        count: 'exact',
-      });
+      })
+      .select('id');
     if (error) {
       console.error('upsert with inat error:', error);
+      skipped += withInat.length;
     } else {
-      inserted += count ?? 0;
-      skipped += withInat.length - (count ?? 0);
+      inserted += data?.length ?? 0;
+      skipped += withInat.length - (data?.length ?? 0);
     }
   }
 
