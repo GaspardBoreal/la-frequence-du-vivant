@@ -45,6 +45,7 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const userRank = ROLE_RANK[role];
   const { trackActivity } = useActivityTracker();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (activeTool) {
@@ -87,7 +88,15 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
             <motion.button
               key={tool.id}
               whileTap={locked ? undefined : { scale: 0.97 }}
-              onClick={() => !locked && setActiveTool(tool.id)}
+              onClick={() => {
+                if (locked) return;
+                if (tool.externalRoute) {
+                  trackActivity(userId, 'tool_use', `outil:${tool.id}`);
+                  navigate(tool.externalRoute);
+                } else {
+                  setActiveTool(tool.id);
+                }
+              }}
               className={`relative flex flex-col items-center gap-2 p-5 rounded-2xl border text-center transition-all ${
                 locked
                   ? 'bg-gray-50 border-gray-200 dark:bg-white/[0.04] dark:border-white/5 opacity-40 cursor-not-allowed'
