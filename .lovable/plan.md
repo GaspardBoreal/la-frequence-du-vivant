@@ -1,83 +1,95 @@
+## Diagnostic confirmé
 
-# Unification du comptage d'espèces par exploration
+Sur Panorpa germanica (DEVIAT, marche `bf50566d`) :
+- 3 snapshots le 22/05 sur la marche ; **un seul** contient l'espèce
+- Le hook `useSpeciesMarches` ne garde que le snapshot le plus récent → tombe sur un sans Panorpa → "Aucune marche trouvée"
+- Le hook `useSpeciesMarcheurPhotos` fait pareil → carrousel terrain vide
+- Aucune ligne `marcheur_observations` n'existe : l'attribution iNat `observerName: "Gaspard Boréal"` (qui est pourtant un marcheur éditorial) n'a jamais été matérialisée → pas de GPS exact, badge "citoyen" au lieu de "marcheur"
 
-## Problème
+C'est **le même pattern de bug** que celui qu'on vient de corriger pour le compteur d'espèces (latest-only filter contre données snapshot delta).
 
-Trois vues d'une même exploration affichent trois sources de vérité différentes :
+## Solution (3 axes)
 
-- **Carnet** (104) : dédup `scientificName` lowercase, snapshots ∪ marcheur_observations
-- **Carte / Synthèse** (101) : dédup hybride `commonName || scientificName` (provoque collisions)
-- **Chatbot / Top species** : encore une autre RPC
+### Axe 1 — Fix hooks frontend (fusion all-snapshots)
 
-Aucune mise à jour automatique fiable lorsqu'un marcheur ajoute une observation ou qu'un snapshot iNat est resynchronisé.
+**`src/hooks/useSpeciesMarches.ts`**
+- Supprimer le filtre "latest snapshot per marche" (l.95-103)
+- Itérer sur **tous** les snapshots, dédupliquer par `(marche_id, inaturalist_observation_id || url_photo)`
+- Compter les observations distinctes par marche (pas la somme des `observations` du JSON)
+- Conserver `observationDate = max(snapshot_date)` par marche
+- Capturer aussi `exactLatitude/exactLongitude` des attributions → renseigner `observationPoints[]` même sans `marcheur_observations`
 
-## Solution
+**`src/hooks/useSpeciesMarcheurPhotos.ts`**
+- Même refactor : enlever `latestByMarche`, parcourir tous snapshots, dédup URL globale (`seenCitizenUrls`)
+- Conserver tri date desc
 
-Une **source de vérité unique côté DB** (RPC) + un **hook React wrapper** réutilisé partout, avec invalidation react-query ciblée + abonnement Realtime en filet de sécurité.
+### Axe 2 — Backfill iNat → marcheur_observations auto
 
-### 1. RPC SQL `get_exploration_species_count(exploration_id uuid)`
+**Nouvelle edge function `backfill-snapshot-marcheur-attributions`**
+- Input : `{ marche_id }` (ou `snapshot_id`)
+- Parcourt `snapshot.species_data[].attributions[]` filtré `source = 'inaturalist'`
+- Pour chaque attribution :
+  1. Cherche un alias dans `marcheur_inaturalist_aliases` (table existante via `useMarcheurAliases`) → priorité haute
+  2. Sinon, matche `observerName` contre `exploration_marcheurs.prenom + ' ' + nom` via la règle **NFD + lower + trim** (memory `identity-matching-logic`)
+  3. Si match : `upsert` dans `marcheur_observations` avec `ON CONFLICT (inaturalist_observation_id) DO NOTHING` :
+     - `marcheur_id`, `marche_id`, `species_scientific_name`, `latitude/longitude` (depuis `exactLatitude/Longitude`), `photo_url` (depuis `sp.photos[i]`), `observation_date`, `inaturalist_observation_id`
+- Idempotent (contrainte UNIQUE sur `inaturalist_observation_id` à ajouter si absente)
 
-`SECURITY DEFINER`, `STABLE`, retourne :
+**Déclenchement automatique** — trigger PG sur `biodiversity_snapshots` AFTER INSERT OR UPDATE :
+- `pg_notify` ou appel HTTP via `net.http_post` vers l'edge function (pattern déjà utilisé par d'autres triggers du projet)
+- Invalide les query keys `species-marches` / `species-field-photos` côté client via Realtime (déjà branché dans `useExplorationSpeciesCount`)
 
-```text
-{
-  total: int,
-  by_kingdom: { animalia, plantae, fungi, others },
-  by_source: { snapshots_only, marcheur_only, both },
-  species: jsonb  -- liste compacte [{ sci, kingdom, count, sources[] }]
-}
+**Migration SQL** :
+```sql
+-- Idempotence sur inaturalist_observation_id
+ALTER TABLE marcheur_observations
+  ADD CONSTRAINT marcheur_observations_inat_uniq
+  UNIQUE (inaturalist_observation_id) DEFERRABLE INITIALLY DEFERRED;
+
+-- Trigger qui appelle l'edge function
+CREATE OR REPLACE FUNCTION trigger_backfill_snapshot_attributions()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, extensions AS $$
+BEGIN
+  PERFORM net.http_post(
+    url := 'https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/backfill-snapshot-marcheur-attributions',
+    headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || current_setting('app.service_role_key', true)),
+    body := jsonb_build_object('snapshot_id', NEW.id, 'marche_id', NEW.marche_id)
+  );
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER snapshots_backfill_marcheurs
+AFTER INSERT OR UPDATE OF species_data ON biodiversity_snapshots
+FOR EACH ROW EXECUTE FUNCTION trigger_backfill_snapshot_attributions();
 ```
 
-Logique :
+**Backfill historique** — endpoint `?mode=full&exploration_id=...` qui rejoue sur tous les snapshots existants (pour rattraper Panorpa et le reste).
 
-- Lit `exploration_marches` → `marche_ids`
-- Snapshots : ne garde que le plus récent par `marche_id` (latéral `DISTINCT ON`), aplatit `species_data` via `jsonb_array_elements`
-- Marcheur : `marcheur_observations` filtrés sur les mêmes `marche_ids`
-- Clé canonique : `lower(unaccent(trim(scientific_name)))` (NFD côté SQL via extension `unaccent` déjà installée)
-- Union via `GROUP BY` sur la clé canonique
-- Royaume : prend la valeur non-`Unknown` rencontrée la première (snapshot prioritaire)
+### Axe 3 — Drawer carte : point GPS exact iNat
 
-### 2. Hook wrapper `useExplorationSpeciesCount(explorationId)`
+**`src/components/biodiversity/species-modal/SpeciesMiniMap.tsx`**
+- Quand `observationPoints[]` contient des points d'origine "iNat-attribution" (pas encore matérialisés en `marcheur_observations`), les afficher en **cercle cyan** (badge "Observation citoyenne")
+- Points marcheur (issus de `marcheur_observations`) → **cercle vert** (badge "Photo marcheur")
+- `FitBounds` étend ses bounds à ces nouveaux points
+- Tooltip : `observerName + date + lien iNat`
 
-- `queryKey: ['exploration-species-count', explorationId]`
-- `staleTime: 30s`, `gcTime: 5min`
-- Appelle `supabase.rpc('get_exploration_species_count', { p_exploration_id })`
-- Expose `{ total, byKingdom, bySource, species, isLoading }`
+**`src/hooks/useSpeciesMarches.ts`** retourne déjà `observationPoints` — il suffit d'ajouter un champ `source: 'marcheur' | 'citizen'` par point pour la coloration.
 
-### 3. Fraîcheur automatique (les deux mécanismes)
+## Validation
 
-**Invalidation react-query ciblée** dans toutes les mutations existantes :
-- `useReorderMarcheurObservations`, ajout/suppression d'observation marcheur, edge functions de resync iNat (via canal Realtime)
-- Helper `invalidateExplorationSpecies(qc, explorationId)`
+1. Sur le drawer Panorpa germanica (avant backfill async) : la marche "Route de Brossac" apparaît, le mini-map montre 1 point cyan à `45.4136, 0.0093`, le carrousel inclut la photo iNat avec badge "Observation citoyenne · Gaspard Boréal"
+2. Après que le backfill s'exécute (~5 s) : Realtime invalide les caches, le point devient vert "Photo marcheur · Gaspard Boréal", la photo bascule en badge marcheur, et apparaît dans le portfolio Gaspard + le Mur des marcheurs
+3. Compteur Carnet / Carte / Synthèse restent strictement alignés (la RPC `get_exploration_species_count` fusionne déjà snapshots + marcheur_observations)
+4. Idempotence : si on relance le backfill, 0 doublon (clé unique `inaturalist_observation_id`)
 
-**Abonnement Realtime** (montage du hook si activé via prop `realtime: true`) :
-- `channel('exploration-species-' + id)`
-- `.on('postgres_changes', { table: 'marcheur_observations', filter: 'marche_id=in.(...)' }, …)`
-- `.on('postgres_changes', { table: 'biodiversity_snapshots', filter: 'marche_id=in.(...)' }, …)`
-- Sur event → `queryClient.invalidateQueries(['exploration-species-count', id])`
-- Activé uniquement sur Carnet/Carte/Synthèse de la même exploration (pas sur listes)
+## Mémoires à mettre à jour
 
-### 4. Câblage des 3 vues
+- Étendre `marcheur-inaturalist-backfill-logic` avec le nouveau trigger sur `biodiversity_snapshots`
+- Nouvelle mémoire `species-drawer-all-snapshots-fusion-logic` : explique que les hooks drawer doivent suivre le même pattern "all snapshots" que la RPC unifiée, sinon dérive immédiate
 
-| Vue | Fichier | Remplacement |
-|---|---|---|
-| Carnet | `useMarcheCollectedData` | Supprimer le calcul species_count interne, lire depuis le nouveau hook (clé par exploration_id) |
-| Carte | `ExplorationCarteTab.tsx` | `bioSummary.totalSpecies` → `speciesCount.total` |
-| Synthèse | même | idem |
-| Chatbot | RPC `get_admin_entity_context` | À l'occasion : faire pointer le slice species vers la même RPC pour aligner |
+## Hors scope (explicite)
 
-`useExplorationBiodiversitySummary` continue d'exister pour `topSpecies`, `gradientData`, `allSpecies` (gallerie), mais **lit `total` depuis la nouvelle RPC** pour garantir cohérence avec les autres vues.
-
-### 5. Garde-fous
-
-- Test SQL : `SELECT (get_exploration_species_count('20dd3be8-…')).total;` doit valoir 104
-- Logging console côté hook : `[species-count] exploration=X total=Y source=rpc`
-- Memory update : nouvelle entrée `mem://technical/biodiversity/unified-species-count-rpc` documentant la RPC comme source unique
-
-## Détails techniques
-
-- **Migration** : 1 RPC `get_exploration_species_count` + GRANT EXECUTE TO authenticated, anon
-- **Pas de schema change** sur les tables existantes
-- **Realtime** : tables `marcheur_observations` et `biodiversity_snapshots` doivent être dans `supabase_realtime` publication (à vérifier, ajouter si absent)
-- **Coût** : 1 RPC remplace 3 requêtes parallèles côté Carte/Synthèse → gain perf
-- **Fichiers touchés** : ~6 (migration, nouveau hook, 3 vues, 1 memory)
+- Pas de refactor du libellé "marcheur" du badge `useSpeciesObservers` (déjà tracé dans le code comme intentionnel : observateurs citoyens)
+- Pas de changement de la RPC `get_exploration_species_count` (déjà correcte)
+- Pas de modification de la curation "L'Œil" (séparée)
