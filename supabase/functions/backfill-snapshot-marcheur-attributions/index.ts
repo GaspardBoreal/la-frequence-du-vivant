@@ -162,7 +162,15 @@ async function processSnapshot(
   // Upsert sur (marcheur_id, inaturalist_observation_id) — contrainte existante.
   // ignoreDuplicates = ON CONFLICT DO NOTHING : ne touche pas les notes/photos
   // déjà saisies manuellement par les marcheurs.
-  const withInat = rows.filter((r) => r.inaturalist_observation_id != null);
+  // Dédup local (même obs apparaît dans plusieurs snapshots delta)
+  const seen = new Set<string>();
+  const withInat = rows.filter((r) => {
+    if (r.inaturalist_observation_id == null) return false;
+    const k = `${r.marcheur_id}|${r.inaturalist_observation_id}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
   if (withInat.length > 0) {
     const { error, data } = await admin
       .from('marcheur_observations')
