@@ -1623,6 +1623,7 @@ export type Database = {
           entity_id: string | null
           entity_type: string
           exploration_id: string
+          functions: string[] | null
           id: string
           media_ids: string[] | null
           needs_review: boolean
@@ -1647,6 +1648,7 @@ export type Database = {
           entity_id?: string | null
           entity_type: string
           exploration_id: string
+          functions?: string[] | null
           id?: string
           media_ids?: string[] | null
           needs_review?: boolean
@@ -1671,6 +1673,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string
           exploration_id?: string
+          functions?: string[] | null
           id?: string
           media_ids?: string[] | null
           needs_review?: boolean
