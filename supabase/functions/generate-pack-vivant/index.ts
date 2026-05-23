@@ -68,7 +68,7 @@ function csvEscape(v: unknown): string {
 
 function buildObservationsCsv(obs: Observation[]): string {
   const headers = [
-    'observation_id', 'scientific_name', 'observation_date',
+    'observation_id', 'scientific_name', 'common_name_fr', 'observation_date',
     'latitude', 'longitude', 'source', 'observer',
     'photo_url', 'inaturalist_id', 'marche_id', 'notes', 'gps_missing',
   ];
@@ -76,7 +76,7 @@ function buildObservationsCsv(obs: Observation[]): string {
   for (const o of obs) {
     const gpsMissing = (o.latitude == null || o.longitude == null) ? 'true' : 'false';
     lines.push([
-      o.observation_id, o.scientific_name, o.observation_date,
+      o.observation_id, o.scientific_name, o.common_name_fr, o.observation_date,
       o.latitude, o.longitude, o.source, o.observer_name,
       o.photo_url, o.inaturalist_observation_id, o.marche_id, o.notes, gpsMissing,
     ].map(csvEscape).join(','));
@@ -86,14 +86,14 @@ function buildObservationsCsv(obs: Observation[]): string {
 
 function buildSpeciesCsv(species: SpeciesRow[]): string {
   const headers = [
-    'scientific_name', 'observation_count', 'observer_count',
+    'scientific_name', 'common_name_fr', 'observation_count', 'observer_count',
     'first_observation', 'last_observation',
     'centroid_lat', 'centroid_lng', 'sources',
   ];
   const lines = [headers.join(',')];
   for (const s of species) {
     lines.push([
-      s.scientific_name, s.observation_count, s.observer_count,
+      s.scientific_name, s.common_name_fr, s.observation_count, s.observer_count,
       s.first_observation, s.last_observation,
       s.centroid_lat, s.centroid_lng, (s.sources || []).join('|'),
     ].map(csvEscape).join(','));
@@ -111,6 +111,7 @@ function buildGeoJSON(obs: Observation[]) {
         geometry: { type: 'Point', coordinates: [Number(o.longitude), Number(o.latitude)] },
         properties: {
           scientific_name: o.scientific_name,
+          common_name_fr: o.common_name_fr,
           date: o.observation_date,
           source: o.source,
           observer: o.observer_name,
@@ -130,23 +131,67 @@ function xmlEscape(s: string): string {
 function buildKML(obs: Observation[], title: string): string {
   const placemarks = obs
     .filter((o) => o.latitude != null && o.longitude != null)
-    .map((o) => `
+    .map((o) => {
+      const label = o.common_name_fr || o.scientific_name;
+      const sciLine = o.common_name_fr ? `<i>${xmlEscape(o.scientific_name)}</i><br/>` : '';
+      return `
     <Placemark>
-      <name>${xmlEscape(o.scientific_name)}</name>
+      <name>${xmlEscape(label)}</name>
       <description><![CDATA[
+        ${sciLine}
         Date : ${o.observation_date || '—'}<br/>
         Source : ${o.source}<br/>
         Observateur : ${o.observer_name}<br/>
         ${o.photo_url ? `<img src="${o.photo_url}" width="240"/>` : ''}
       ]]></description>
       <Point><coordinates>${o.longitude},${o.latitude},0</coordinates></Point>
-    </Placemark>`).join('');
+    </Placemark>`;
+    }).join('');
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>${xmlEscape(title)}</name>${placemarks}
   </Document>
 </kml>`;
+}
+
+function buildDarwinCoreOccurrence(obs: Observation[]): string {
+  // Darwin Core occurrence.txt — TSV with vernacularName right after scientificName
+  const headers = [
+    'occurrenceID', 'scientificName', 'vernacularName', 'eventDate',
+    'decimalLatitude', 'decimalLongitude', 'basisOfRecord',
+    'recordedBy', 'associatedMedia', 'occurrenceRemarks',
+  ];
+  const lines = [headers.join('\t')];
+  for (const o of obs) {
+    const row = [
+      o.observation_id, o.scientific_name, o.common_name_fr ?? '', o.observation_date ?? '',
+      o.latitude ?? '', o.longitude ?? '', 'HumanObservation',
+      o.observer_name, o.photo_url ?? '', (o.notes ?? '').replace(/\t|\n/g, ' '),
+    ];
+    lines.push(row.map((v) => String(v ?? '')).join('\t'));
+  }
+  return lines.join('\n');
+}
+
+function buildDarwinCoreMeta(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<archive xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
+  <core encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy="" ignoreHeaderLines="1" rowType="http://rs.tdwg.org/dwc/terms/Occurrence">
+    <files><location>occurrence.txt</location></files>
+    <id index="0"/>
+    <field index="0" term="http://rs.tdwg.org/dwc/terms/occurrenceID"/>
+    <field index="1" term="http://rs.tdwg.org/dwc/terms/scientificName"/>
+    <field index="2" term="http://rs.tdwg.org/dwc/terms/vernacularName"/>
+    <field index="3" term="http://rs.tdwg.org/dwc/terms/eventDate"/>
+    <field index="4" term="http://rs.tdwg.org/dwc/terms/decimalLatitude"/>
+    <field index="5" term="http://rs.tdwg.org/dwc/terms/decimalLongitude"/>
+    <field index="6" term="http://rs.tdwg.org/dwc/terms/basisOfRecord"/>
+    <field index="7" term="http://rs.tdwg.org/dwc/terms/recordedBy"/>
+    <field index="8" term="http://rs.tdwg.org/dwc/terms/associatedMedia"/>
+    <field index="9" term="http://rs.tdwg.org/dwc/terms/occurrenceRemarks"/>
+  </core>
+</archive>`;
 }
 
 function buildXlsx(
