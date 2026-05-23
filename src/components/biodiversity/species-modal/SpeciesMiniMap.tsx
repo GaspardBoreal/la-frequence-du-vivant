@@ -65,20 +65,18 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
   }, [marches]);
 
   const allPoints = useMemo(() => {
-    // Inclure les points d'observation exacts (citoyens + marcheurs) pour cadrer
-    // précisément la carte sur la zone d'observation, même hors centroïdes.
-    const obsPts = marches.flatMap((m) =>
-      (m.observationPoints || []).map((pt) => ({
-        latitude: pt.latitude,
-        longitude: pt.longitude,
-        marcheId: m.marcheId,
-      })),
-    );
-    const basePts = allEventMarches?.length
-      ? allEventMarches.filter((m) => m.latitude && m.longitude)
-      : marches.filter((m) => m.latitude && m.longitude);
-    return [...basePts, ...obsPts];
+    if (!allEventMarches?.length) return marches.filter((m) => m.latitude && m.longitude);
+    return allEventMarches.filter((m) => m.latitude && m.longitude);
   }, [marches, allEventMarches]);
+
+  // Pour FitBounds : inclure les points GPS exacts d'observation pour
+  // recadrer précisément (peuvent sortir des centroïdes de marche).
+  const boundsPoints = useMemo(() => {
+    const obs = marches.flatMap((m) =>
+      (m.observationPoints || []).map((pt) => ({ latitude: pt.latitude, longitude: pt.longitude })),
+    );
+    return [...allPoints, ...obs];
+  }, [allPoints, marches]);
 
   // Apply micro-offset for markers sharing identical coordinates
   const adjustedPoints = useMemo(() => {
