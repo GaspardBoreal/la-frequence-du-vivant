@@ -479,7 +479,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
         onClose={() => setSelectedSpecies(null)}
       />
     </div>
-    </SpeciesPhotoModeProvider>
   );
 };
 
