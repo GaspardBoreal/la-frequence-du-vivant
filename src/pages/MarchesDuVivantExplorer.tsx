@@ -790,7 +790,7 @@ const MarchesDuVivantExplorer = () => {
         </section>
 
         <div className="footer-wrapper bg-[hsl(160,30%,12%)]">
-          <Footer />
+          <Footer variant="marches" />
         </div>
 
         {/* Chatbot Guide de Marche - visible uniquement après un scan */}
