@@ -100,3 +100,6 @@ verify_jwt = false
 
 [functions.backfill-snapshots-taxonomy]
 verify_jwt = false
+
+[functions.get-api-mcp-health]
+verify_jwt = false
