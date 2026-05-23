@@ -188,9 +188,7 @@ const ICONIC_RULES: Partial<Record<string, EcoFunction[]>> = {
   Insecta: ['refuge_faune'],
   Arachnida: ['refuge_faune'],
   Aves: ['refuge_faune'],
-  Amphibia: ['bio_indicateur' as EcoFunction, 'refuge_faune'].filter(
-    (f): f is EcoFunction => f !== ('bio_indicateur' as any),
-  ),
+  Amphibia: ['refuge_faune'],
   Reptilia: ['refuge_faune'],
 };
 
