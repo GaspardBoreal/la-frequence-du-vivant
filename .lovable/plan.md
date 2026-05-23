@@ -1,141 +1,35 @@
 
-# Page « API & MCP » — L'écosystème vivant de l'app
+## Objectif
 
-## 1. Vision
+Insérer une 4ème carte dédiée au monde agricole entre "Pour les Entreprises et Collectivités" et "Devenez Marcheur du Vivant", dans la grille du fichier `src/pages/MarchesDuVivant.tsx` (section lignes 100-224).
 
-Une page qui rend visible et compréhensible **toute la mécanique invisible** qui fait vivre l'application : chaque API externe, chaque edge function, chaque MCP devient une **carte-constellation** racontée comme un personnage de l'écosystème.
+## Adaptations visuelles
 
-Deux modes :
-- **Vitrine publique** `/api-mcp` — narration, transparence, SEO « voici notre stack vivante »
-- **Tableau de bord admin** `/admin/outils/api-mcp` — mêmes cartes + métriques live + santé + alertes
+- Grille : passer de `md:grid-cols-3` à `md:grid-cols-2 lg:grid-cols-4` pour accueillir 4 cartes harmonieusement sur desktop (1377px → 4 colonnes), 2 sur tablette, 1 sur mobile.
+- Conserver strictement le format des 3 cartes existantes : `bg-card/40 backdrop-blur-sm`, padding `p-8`, icône 14x14 dans pastille colorée, titre `font-crimson text-2xl`, tags pilules, paragraphe descriptif, CTA avec flèche.
 
-## 2. Points d'entrée
+## Nouvelle carte — Agriculture & Coopératives
 
-### Côté marcheur (OutilsTab)
-Nouveau bloc carte « **API & MCP — L'écosystème de l'app** » ajouté dans `TOOLS[]` de `src/components/community/tabs/OutilsTab.tsx`, icône `Network` (Lucide), accessible à tous les rôles. Clic → navigation vers `/api-mcp`.
+- **Palette** : vert tendre / lime (`lime-500` / `lime-400` / `lime-950`) pour évoquer agroécologie et bandes enherbées, distincte des autres (emerald RSE, cyan B2C, amber asso).
+- **Icône Lucide** : `Sprout` (pousse/agroécologie) — alternative `Wheat`.
+- **Titre** : "Pour les Acteurs Agricoles"
+- **Tags** (3) :
+  - `Coopératives & CUMA` (lime)
+  - `Agroécologie` (emerald)
+  - `Bio & Bocage` (orange-clair / amber doux)
+- **Description (≈2 lignes, ton pro & inspirant)** :
+  > "Coopératives, CUMA, chambres d'agriculture, exploitants : organisez une marche sur vos parcelles pour révéler les services rendus par la biodiversité — pollinisateurs, auxiliaires, sols vivants, réseau bocager — et valoriser vos pratiques."
+- **CTA** : "Organiser une marche agricole →" (lien `/marches-du-vivant/agriculture` — page dédiée à créer plus tard ; pour l'instant lien posé, page 404 acceptable côté plan, ou réutiliser temporairement `/marches-du-vivant/entreprises` — **à confirmer**).
 
-### Côté admin
-- Carte « API & MCP » ajoutée dans `src/pages/AdminOutilsHub.tsx` (active, route `/admin/outils/api-mcp`)
-- **Bandeau santé** réutilisable `<ApiHealthBanner />` injecté en haut du dashboard admin (`AdminAccess`) : visible uniquement si ≥ 1 API critique en alerte > 24h (rouge) ou warning (orange). Cliquable → page admin API & MCP.
+## Animation
 
-### Côté public
-- Lien discret dans le footer global / page « À propos » vers `/api-mcp`
+- `initial={{ opacity: 0, y: 20 }}` avec `transition={{ delay: 0.1 }}` pour s'intercaler entre l'entrée latérale gauche (Entreprises) et l'entrée verticale (Marcheur).
 
-## 3. Périmètre — les 14 cartes
+## Hors scope
 
-Regroupées en 4 familles, fond emerald constellation.
+- Pas de création de la page de destination `/marches-du-vivant/agriculture` dans cette itération (sauf demande).
+- Pas de modification du Hero, du SEO, ni des sections suivantes.
 
-**Biodiversité**
-1. iNaturalist — observations citoyennes naturalistes
-2. GBIF — taxonomie scientifique de référence
-3. Xeno-Canto — chants d'oiseaux
+## Question ouverte
 
-**Territoire & climat**
-4. Open-Meteo — météo & projections climatiques
-5. Sentinel Hub — imagerie satellite
-6. Cadastre / IGN — parcellaire et fonds carto
-7. Lexicon stations — réseau de stations météo locales
-
-**IA & génération**
-8. Lovable AI Gateway (Gemini) — classification éco-tags, chatbot, insights
-9. Transcription audio — descriptions vocales des marcheurs
-10. Génération d'images — visuels d'espèces et de marches
-
-**Infra & automation**
-11. Supabase Edge Functions — 35+ fonctions backend
-12. n8n — orchestration Dordonia & workflows
-13. Resend — emails CRM & invitations
-14. MCP connectors — concept + ceux en place + roadmap
-
-## 4. Structure d'une carte (vitrine)
-
-```text
-┌──────────────────────────────────────┐
-│ [icône constellation] iNaturalist    │
-│ « La mémoire vivante des observateurs»│
-│                                       │
-│ Une phrase simple, accessible aux 3   │
-│ audiences (1 ligne).                  │
-│                                       │
-│ ✨ 12 847 observations  · maj 2h     │
-│ 🌿 1 247 espèces enrichies dans l'app│
-│                                       │
-│ → Découvrir l'histoire                │
-└──────────────────────────────────────┘
-```
-
-Au clic → ouverture d'une **popup scrollytelling immersive plein écran** (Sheet / Dialog).
-
-## 5. Popup « Une journée dans la vie d'une donnée »
-
-Format storytelling 4 chapitres avec scroll progressif (Framer Motion `useScroll` + parallax) :
-
-1. **Naissance** — D'où vient la donnée ? (illustration IA hero : un naturaliste, un satellite, une oreille au bois…)
-2. **Voyage** — Constellation animée source → edge function → table Supabase → écran (SVG animé, lignes lumineuses)
-3. **Atterrissage** — Capture annotée live d'un écran de l'app où cette donnée se manifeste (« vous la verrez ici » + bouton « voir en vrai »)
-4. **Impact** — 1 exemple concret tiré de la base (« L'observation #12345 du Martin-pêcheur par Marie sur la Marche du 12 mai »)
-
-Niveaux de lecture progressifs : par défaut tout est simple ; un bouton « **🔬 Aller plus loin** » déplie un volet technique (endpoint, fréquence sync, quotas, schéma table).
-
-## 6. Visuels
-
-**Hybride** :
-- **12 illustrations hero IA générées une fois** via le tool `imagegen` (style constellation vivante : emerald deep #0D6B58 → mint #2DD4A8, points lumineux reliés, esthétique « cartographie nocturne du vivant »), stockées dans `src/assets/api-mcp/`
-- **Flux animés live** en SVG + Framer Motion (lignes qui pulsent, données qui voyagent) — composant réutilisable `<DataFlowConstellation />`
-
-## 7. Données live (Supabase)
-
-Nouvelle edge function **`get-api-mcp-health`** (publique, mode vitrine) et **`get-api-mcp-health-admin`** (JWT + rôle admin/sentinelle, mode dashboard enrichi).
-
-Métriques par API, agrégées en temps réel :
-- **Volume** : `COUNT` sur tables concernées (snapshots iNat, marcheur_observations, audio_transcriptions, ai_chat_logs…)
-- **Fraîcheur** : `MAX(updated_at)` ou dernier appel logué
-- **Impact concret** : phrase générée (« 1 247 espèces enrichies », « 89 chants écoutés »)
-- **Santé** : ratio succès/erreur edge function logs sur 24h → vert / orange / rouge
-
-Hook `useApiMcpHealth()` avec React Query (staleTime 5min, refetch on focus).
-
-## 8. Nouvelle table — `api_mcp_registry`
-
-Catalogue déclaratif des 14 APIs, source unique de vérité, éditable par admin via interface dédiée si besoin futur.
-
-Colonnes : `id`, `slug`, `family` (biodiv/territory/ai/infra), `name`, `tagline`, `simple_description`, `tech_description`, `hero_image_path`, `flow_steps` (jsonb), `metric_queries` (jsonb : { volume_query, freshness_query, impact_template }), `live_screen_path` (route app où on la voit), `external_doc_url`, `is_critical` (bool — déclenche bandeau admin si KO), `display_order`, `created_at`, `updated_at`.
-
-RLS : SELECT public, ALL admin.
-
-## 9. Routing & fichiers
-
-**Nouveaux fichiers**
-- `src/pages/ApiMcpPublic.tsx` — vitrine publique
-- `src/pages/AdminApiMcp.tsx` — version admin enrichie
-- `src/components/api-mcp/ApiCard.tsx` — carte constellation
-- `src/components/api-mcp/ApiStoryDrawer.tsx` — popup scrollytelling
-- `src/components/api-mcp/DataFlowConstellation.tsx` — SVG flux animé
-- `src/components/api-mcp/ApiHealthBanner.tsx` — bandeau admin
-- `src/components/api-mcp/ApiMetricChip.tsx` — chip métrique live
-- `src/hooks/useApiMcpRegistry.ts` — fetch catalogue
-- `src/hooks/useApiMcpHealth.ts` — fetch métriques live
-- `src/lib/apiMcpFamilies.ts` — config familles (couleurs, icônes)
-- `src/assets/api-mcp/*.jpg` — 14 hero IA
-- `supabase/functions/get-api-mcp-health/index.ts`
-- `supabase/functions/get-api-mcp-health-admin/index.ts`
-
-**Modifiés**
-- `src/components/community/tabs/OutilsTab.tsx` — ajout entrée
-- `src/pages/AdminOutilsHub.tsx` — activation carte
-- `src/App.tsx` — routes `/api-mcp` (public) et `/admin/outils/api-mcp`
-- `src/pages/AdminAccess.tsx` — injection `<ApiHealthBanner />`
-- `index.html` — meta SEO pour `/api-mcp`
-
-## 10. Migration DB (à approuver)
-
-- Table `api_mcp_registry` + RLS
-- Seed initial des 14 entrées
-- Index sur `display_order`, `slug`
-
-## 11. Hors-scope (proposé séparément si besoin)
-
-- Interface admin d'édition CRUD du registry (v1 : seed via migration)
-- Historique de santé long terme / graphiques timeseries
-- Génération des 14 hero IA premium (v1 : `fast` tier suffit, upgrade au cas par cas)
-- Notifications push/email aux admins (v1 : bandeau visuel uniquement)
+Le CTA doit-il pointer vers une future page `/marches-du-vivant/agriculture` (lien posé mais 404 temporaire) ou ancrer vers le formulaire de contact entreprises existant ?
