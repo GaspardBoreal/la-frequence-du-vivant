@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban, Building2, Wrench } from 'lucide-react';
+import ApiHealthBanner from '@/components/api-mcp/ApiHealthBanner';
 
 const AdminAccess: React.FC = () => {
   return (
@@ -17,6 +18,8 @@ const AdminAccess: React.FC = () => {
             </Button>
           </Link>
         </div>
+
+        <ApiHealthBanner />
 
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">

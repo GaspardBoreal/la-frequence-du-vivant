@@ -84,6 +84,8 @@ import PartagePublic from './pages/PartagePublic';
 import CarnetMarcheur from './pages/CarnetMarcheur';
 import { AdminChatBotMount } from './components/chatbot/AdminChatBotMount';
 import { CommunityChatBotMount } from './components/chatbot/CommunityChatBotMount';
+import ApiMcpPublic from './pages/ApiMcpPublic';
+import AdminApiMcp from './pages/AdminApiMcp';
 
 function App() {
   return (
@@ -263,6 +265,12 @@ function App() {
                 <AdminFrequences />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/api-mcp" element={
+              <AdminAuth>
+                <AdminApiMcp />
+              </AdminAuth>
+            } />
+            <Route path="/api-mcp" element={<ApiMcpPublic />} />
             <Route path="/admin" element={
               <AdminAuth>
                 <AdminAccess />

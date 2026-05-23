@@ -94,6 +94,66 @@ export type Database = {
         }
         Relationships: []
       }
+      api_mcp_registry: {
+        Row: {
+          created_at: string
+          display_order: number
+          external_doc_url: string | null
+          family: string
+          flow_steps: Json
+          hero_image_path: string | null
+          icon_name: string | null
+          id: string
+          is_critical: boolean
+          live_screen_path: string | null
+          metric_queries: Json
+          name: string
+          simple_description: string
+          slug: string
+          tagline: string
+          tech_description: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          external_doc_url?: string | null
+          family: string
+          flow_steps?: Json
+          hero_image_path?: string | null
+          icon_name?: string | null
+          id?: string
+          is_critical?: boolean
+          live_screen_path?: string | null
+          metric_queries?: Json
+          name: string
+          simple_description: string
+          slug: string
+          tagline: string
+          tech_description?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          external_doc_url?: string | null
+          family?: string
+          flow_steps?: Json
+          hero_image_path?: string | null
+          icon_name?: string | null
+          id?: string
+          is_critical?: boolean
+          live_screen_path?: string | null
+          metric_queries?: Json
+          name?: string
+          simple_description?: string
+          slug?: string
+          tagline?: string
+          tech_description?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       biodiversity_snapshots: {
         Row: {
           biodiversity_index: number | null
