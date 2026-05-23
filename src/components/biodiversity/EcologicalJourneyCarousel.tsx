@@ -126,8 +126,8 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
                         <div className="text-xs font-medium text-foreground line-clamp-1">
                           <SpeciesName
                             scientificName={sp.scientificName}
-                            commonName={sp.commonName}
-                            commonNameFr={sp.commonNameFr}
+                            commonName={sp.commonNameFr || sp.commonName}
+                            size="sm"
                           />
                         </div>
                         <div className="text-[10px] text-muted-foreground italic line-clamp-1">
