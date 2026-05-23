@@ -80,7 +80,7 @@ const MarchesDuVivant = () => {
               transition={{ delay: 0.2 }}
               className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 text-center"
             >
-              Science Participative, Team Building & Exploration Gamifiée
+              Biodiversité, Science Participative, Team Building & Exploration Gamifiée
             </motion.p>
 
             {/* Proposition de valeur */}
