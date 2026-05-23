@@ -200,6 +200,7 @@ function buildXlsx(
   const wb = XLSX.utils.book_new();
   const synth = XLSX.utils.json_to_sheet(species.map((s) => ({
     'Nom scientifique': s.scientific_name,
+    'Nom commun (FR)': s.common_name_fr ?? '',
     'Nb observations': s.observation_count,
     'Nb observateurs': s.observer_count,
     '1re observation': s.first_observation,
@@ -213,6 +214,7 @@ function buildXlsx(
   const observations = XLSX.utils.json_to_sheet(obs.map((o) => ({
     'ID': o.observation_id,
     'Nom scientifique': o.scientific_name,
+    'Nom commun (FR)': o.common_name_fr ?? '',
     'Date': o.observation_date,
     'Latitude': o.latitude,
     'Longitude': o.longitude,
