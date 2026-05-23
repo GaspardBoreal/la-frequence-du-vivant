@@ -15,7 +15,8 @@ const ParcelPopup: React.FC<ParcelPopupProps> = ({ info, centroid }) => {
     centroid?.lng ?? null,
   );
   const w = summarizeWeather(weather);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'lat' | 'lng' | null>(null);
+  const copyTimerRef = useRef<number | null>(null);
 
   const hasCoords =
     centroid &&
@@ -24,18 +25,17 @@ const ParcelPopup: React.FC<ParcelPopupProps> = ({ info, centroid }) => {
 
   const latStr = hasCoords ? centroid!.lat.toFixed(6) : '';
   const lngStr = hasCoords ? centroid!.lng.toFixed(6) : '';
-  const coordsStr = hasCoords ? `${latStr}, ${lngStr}` : '';
 
-  const handleCopy = async (e: React.MouseEvent) => {
+  const copyValue = async (kind: 'lat' | 'lng', value: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (!hasCoords) return;
+    if (!value) return;
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(coordsStr);
+        await navigator.clipboard.writeText(value);
       } else {
         const ta = document.createElement('textarea');
-        ta.value = coordsStr;
+        ta.value = value;
         ta.style.position = 'fixed';
         ta.style.opacity = '0';
         document.body.appendChild(ta);
@@ -43,8 +43,9 @@ const ParcelPopup: React.FC<ParcelPopupProps> = ({ info, centroid }) => {
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      setCopied(kind);
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = window.setTimeout(() => setCopied(null), 2000);
     } catch {
       /* ignore */
     }
