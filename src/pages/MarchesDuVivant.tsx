@@ -11,7 +11,7 @@ const MarchesDuVivant = () => {
   return (
     <>
       <Helmet>
-        <title>Les Marches du Vivant - Science Participative, Team Building & Exploration Gamifiée</title>
+        <title>Les Marches du Vivant - Biodiversité, Science Participative, Team Building & Exploration Gamifiée</title>
         <meta 
           name="description" 
           content="Science participative, formations Qualiopi, team building bioacoustique et exploration gamifiée en Nouvelle-Aquitaine. Entreprises, grand public et association. Reconnectez-vous au vivant." 
@@ -80,7 +80,7 @@ const MarchesDuVivant = () => {
               transition={{ delay: 0.2 }}
               className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 text-center"
             >
-              Science Participative, Team Building & Exploration Gamifiée
+              Biodiversité, Science Participative, Team Building & Exploration Gamifiée
             </motion.p>
 
             {/* Proposition de valeur */}
