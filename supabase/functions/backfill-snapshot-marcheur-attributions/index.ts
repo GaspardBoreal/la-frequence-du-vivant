@@ -159,22 +159,28 @@ async function processSnapshot(
 
   if (rows.length === 0) return { inserted: 0, skipped: 0, matched: 0 };
 
-  // Upsert sur (marcheur_id, marche_id, inaturalist_observation_id)
-  // On filtre d'abord ceux qui ont déjà un inat_id pour le upsert idempotent.
+  // Upsert sur (marcheur_id, inaturalist_observation_id) — la contrainte
+  // existante côté DB. ignoreDuplicates pour ne rien écraser des données
+  // saisies manuellement par les marcheurs (notes, photos custom, etc.).
   const withInat = rows.filter((r) => r.inaturalist_observation_id != null);
   if (withInat.length > 0) {
-    const { error, count } = await admin
-      .from('marcheur_observations')
-      .upsert(withInat, {
-        onConflict: 'marcheur_id,marche_id,inaturalist_observation_id',
-        ignoreDuplicates: true,
-        count: 'exact',
-      });
-    if (error) {
-      console.error('upsert with inat error:', error);
-    } else {
-      inserted += count ?? 0;
-      skipped += withInat.length - (count ?? 0);
+    // Insertion ligne par ligne pour ne pas perdre la batch entière sur un conflit.
+    for (const row of withInat) {
+      const { error, data } = await admin
+        .from('marcheur_observations')
+        .upsert(row, {
+          onConflict: 'marcheur_id,inaturalist_observation_id',
+          ignoreDuplicates: true,
+        })
+        .select('id');
+      if (error) {
+        console.error('upsert with inat error:', error, 'row:', row);
+        skipped++;
+      } else if (data && data.length > 0) {
+        inserted++;
+      } else {
+        skipped++;
+      }
     }
   }
 
