@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Popup } from 'react-leaflet';
-import { MapPin, Layers, CloudSun, Loader2 } from 'lucide-react';
+import { MapPin, Layers, CloudSun, Loader2, Copy, Check } from 'lucide-react';
 import { ParcelInfo } from './cadastreUtils';
 import { useParcelWeather, summarizeWeather } from './useParcelWeather';
 
@@ -15,6 +15,47 @@ const ParcelPopup: React.FC<ParcelPopupProps> = ({ info, centroid }) => {
     centroid?.lng ?? null,
   );
   const w = summarizeWeather(weather);
+  const [copied, setCopied] = useState(false);
+
+  const hasCoords =
+    centroid &&
+    Number.isFinite(centroid.lat) &&
+    Number.isFinite(centroid.lng);
+
+  const latStr = hasCoords ? centroid!.lat.toFixed(6) : '';
+  const lngStr = hasCoords ? centroid!.lng.toFixed(6) : '';
+  const coordsStr = hasCoords ? `${latStr}, ${lngStr}` : '';
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!hasCoords) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(coordsStr);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = coordsStr;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const mapsUrl = hasCoords
+    ? `https://www.google.com/maps?q=${latStr},${lngStr}`
+    : '#';
+  const earthUrl = hasCoords
+    ? `https://earth.google.com/web/@${latStr},${lngStr},150a,500d,35y,0h,45t,0r`
+    : '#';
 
   return (
     <Popup className="cadastre-parcel-popup" pane="cadastre-popup" maxWidth={300} minWidth={240} autoPan={true}>
@@ -48,6 +89,49 @@ const ParcelPopup: React.FC<ParcelPopupProps> = ({ info, centroid }) => {
                 Surface&nbsp;:{' '}
                 {info.surfaceHa ? `${info.surfaceHa.toFixed(4)} ha` : `${info.surfaceM2} m²`}
               </div>
+            )}
+            {hasCoords && (
+              <>
+                <div className="flex items-center gap-1.5 text-white/70 pt-0.5">
+                  <span>GPS&nbsp;:</span>
+                  <span className="font-mono text-white/85">{coordsStr}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    aria-label="Copier les coordonnées GPS"
+                    title={copied ? 'Copié !' : 'Copier les coordonnées'}
+                    className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-white/10 transition-colors"
+                  >
+                    {copied ? (
+                      <Check className="w-3 h-3 text-emerald-300 transition-all" />
+                    ) : (
+                      <Copy className="w-3 h-3 text-white/60 hover:text-white/90 transition-all" />
+                    )}
+                  </button>
+                </div>
+                <div className="text-white/70">
+                  Découvrir sur&nbsp;:{' '}
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-emerald-300 hover:text-emerald-200 underline-offset-2 hover:underline transition-colors"
+                  >
+                    Google Maps
+                  </a>
+                  <span className="text-white/40"> · </span>
+                  <a
+                    href={earthUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-emerald-300 hover:text-emerald-200 underline-offset-2 hover:underline transition-colors"
+                  >
+                    Google Earth
+                  </a>
+                </div>
+              </>
             )}
           </div>
         </section>
