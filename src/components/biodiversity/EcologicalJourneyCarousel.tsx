@@ -92,44 +92,87 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
   return (
     <>
       <section className="mb-4" data-chat-section="ecological-journeys">
-        <div className="flex items-baseline justify-between mb-2">
-          <h3 className="text-sm font-semibold text-foreground">
-            Partons à la découverte du vivant
-          </h3>
-          <span className="text-[11px] text-muted-foreground">
-            {activeFunctions.length} parcours actifs
+        <div className="flex items-end justify-between mb-4 gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 mb-1">
+              Storytelling vivant · recalculé en temps réel
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground leading-tight">
+              Partons à la découverte du vivant
+            </h3>
+          </div>
+          <span className="shrink-0 text-[11px] px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
+            {activeFunctions.length} parcours
           </span>
         </div>
 
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {activeFunctions.map((f, i) => (
             <motion.button
               key={f.value}
               type="button"
               onClick={() => setOpenTag(f.value)}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04, duration: 0.25 }}
-              whileHover={{ y: -2 }}
-              className={`shrink-0 snap-start w-[180px] rounded-2xl border border-border bg-gradient-to-br ${f.gradient} p-3.5 text-left transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/40`}
-              aria-label={`Partons à la découverte des ${labelFor(f)}`}
+              initial={{ opacity: 0, y: 14, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: i * 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -4, scale: 1.015 }}
+              whileTap={{ scale: 0.985 }}
+              className="group relative overflow-hidden rounded-3xl border border-border/60 bg-card text-left focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-sm hover:shadow-2xl transition-shadow"
+              aria-label={`Partons à la découverte des ${counts[f.value]} ${labelFor(f)}`}
             >
-              <div className="text-2xl leading-none mb-1.5" aria-hidden="true">
-                {f.emoji}
-              </div>
-              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-0.5">
-                Partons à la découverte
-              </div>
-              <div className="text-sm font-semibold text-foreground leading-tight">
-                des {counts[f.value]} {labelFor(f)}
-              </div>
-              <div className="mt-1.5 text-[11px] text-muted-foreground line-clamp-2">
-                {f.service}
+              {/* Gradient aura */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${f.gradient} opacity-90`} aria-hidden="true" />
+              {/* Radial glow */}
+              <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/20 dark:bg-white/10 blur-3xl opacity-60 group-hover:opacity-90 transition-opacity" aria-hidden="true" />
+              {/* Shimmer on hover */}
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-out bg-gradient-to-r from-transparent via-white/25 to-transparent" aria-hidden="true" />
+
+              <div className="relative p-5 sm:p-6">
+                <div className="flex items-start justify-between mb-3">
+                  <motion.div
+                    className="text-5xl leading-none drop-shadow-sm"
+                    aria-hidden="true"
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 3.6 + i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    {f.emoji}
+                  </motion.div>
+                  <div className="text-right">
+                    <motion.div
+                      key={counts[f.value]}
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 220, damping: 16 }}
+                      className="text-4xl sm:text-5xl font-bold text-foreground tabular-nums leading-none"
+                    >
+                      {counts[f.value]}
+                    </motion.div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
+                      observée{counts[f.value] > 1 ? 's' : ''}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/90 mb-1">
+                  Partons à la découverte
+                </div>
+                <div className="text-base sm:text-lg font-semibold text-foreground leading-snug mb-2">
+                  des {counts[f.value]} {labelFor(f)}
+                </div>
+                <div className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                  {f.service}
+                </div>
+
+                <div className="mt-4 flex items-center gap-1.5 text-[11px] font-medium text-foreground/80 group-hover:text-foreground transition-colors">
+                  <span>Explorer ce parcours</span>
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                </div>
               </div>
             </motion.button>
           ))}
         </div>
       </section>
+
 
       <Sheet open={!!openTag} onOpenChange={o => !o && setOpenTag(null)}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
