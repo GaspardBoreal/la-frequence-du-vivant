@@ -1,13 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Pencil, AlertCircle, ListChecks } from 'lucide-react';
+import { Pencil, AlertCircle, ListChecks, Sparkles, Loader2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 import { useEcologicalFunctions, type SpeciesWithFunctions } from '@/hooks/useEcologicalFunctions';
 import { useIsCurator } from '@/hooks/useExplorationCurations';
+import { useClassifySpeciesAI } from '@/hooks/useSpeciesEcoTagsKb';
 import { ECO_FUNCTIONS, ECO_FAMILIES, getEcoFunction, type EcoFunction } from '@/lib/ecologicalFunctions';
 import { STRATE_META, type PlantStrate } from '@/lib/plantStrate';
 import { SpeciesName } from '@/components/species/SpeciesName';
 import SpeciesEcoTagsEditor from './SpeciesEcoTagsEditor';
+
 
 interface Props {
   explorationId: string | null | undefined;
