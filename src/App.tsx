@@ -60,6 +60,7 @@ import PublicEpubDownload from './pages/PublicEpubDownload';
 import PublicLivreVivant from './pages/PublicLivreVivant';
 import MarchesDuVivant from './pages/MarchesDuVivant';
 import MarchesDuVivantEntreprises from './pages/MarchesDuVivantEntreprises';
+import MarchesDuVivantAgriculture from './pages/MarchesDuVivantAgriculture';
 import MarchesDuVivantPartenaires from './pages/MarchesDuVivantPartenaires';
 import MarchesDuVivantAssociation from './pages/MarchesDuVivantAssociation';
 import MarchesDuVivantExplorer from './pages/MarchesDuVivantExplorer';
