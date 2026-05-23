@@ -193,7 +193,7 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
               <span className="hover:text-[#4ade80] cursor-pointer">#Biodiversité</span>
-              <span className="hover:text-[#4ade80] cursor-pointer">#Bioacustique</span>
+              <span className="hover:text-[#4ade80] cursor-pointer">#Bioacoustique</span>
               <span className="hover:text-[#4ade80] cursor-pointer">#TransitionAgroécologique</span>
             </div>
           </div>
