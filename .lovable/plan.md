@@ -1,111 +1,94 @@
-## Objectif
+## Réorganisation de l'onglet "Analyse IA" — Stepper immersif mobile-first
 
-Transformer le tile actuel "🌼 des XX plantes mellifères" en un parcours fusionné **"🌼 Partons à la découverte des XX arbres et plantes mellifères"**, dont l'ouverture révèle 3 sous-parcours narratifs empilés (Arbres / Arbustes / Plantes herbacées), chacun avec son compteur, sa phrase de service écologique et la grille d'espèces correspondante. 100% recalculé à chaque nouvelle observation marcheur ou snapshot iNat — aucune saisie manuelle requise.
+### Objectif
+Fusionner trois contenus dans **Analyse IA**, organisés en stepper plein écran swipable :
+1. **Partons à la découverte du vivant** (carrousel existant `EcologicalJourneyCarousel`)
+2. **Chaîne trophique** (`TrophicChainPanel` déplacé depuis Synthèse — NON modifié)
+3. **Indicateurs** (`TaxonsIndicesPanel` déplacé depuis l'onglet Indicateurs)
 
-## Architecture
+### Changements de structure
 
-### 1. Nouvelle notion : `PlantStrate`
+**Barre principale des sous-onglets** (`EventBiodiversityTab.tsx`)
+- Retirer `Indicateurs` de `subTabs`
+- Retirer `TrophicChainPanel` du bloc Synthèse
+- Retirer la branche `activeSubTab === 'indicateurs'`
+- Retirer le teaser « Bientôt disponible » (bloc Sparkles)
+- L'onglet **Analyse IA** ne contient plus que `<AnalyseIAStepper />`
 
-Ajout d'une dimension orthogonale au tag `mellifere` : la **strate végétale** (`arbre` | `arbuste` | `herbacee`). Une espèce mellifère est classée dans exactement une strate.
+**Barre finale :** Synthèse · Taxons observés · Témoignages · (Textes écrits) · Analyse IA
 
-Source de vérité, dans l'ordre de priorité :
-1. **KB éditoriale** (`src/data/species-knowledge-base.json`) — champ optionnel `strate` par espèce ou genre (override de cas limites comme *Buddleja*, *Sambucus*, *Ficus carica*…)
-2. **Règles par genre** (table dédiée `GENUS_STRATE` dans le nouveau module)
-3. **Règles par famille** (`Salicaceae` → arbre par défaut, `Lamiaceae` → herbacée…)
-4. **Fallback** : `herbacee` si l'espèce est mellifère et qu'on n'a aucun indice arbre/arbuste
+### Nouveau composant : `AnalyseIAStepper`
 
-Pour la liste fournie par l'utilisateur :
-- **Arbres** : Corylus avellana, Prunus persica, Aesculus hippocastanum, Cercis siliquastrum, Prunus avium, Ficus carica
-- **Arbustes** : Salix integra, Sambucus nigra, Buddleja davidii, Prunus laurocerasus, Prunus spinosa, Weigela florida, Parthenocissus inserta
-- **Herbacées** : Anacamptis pyramidalis, Nigella damascena, Papaver rhoeas, Symphytum × uplandicum, Borago officinalis, Trifolium pratense, Lotus corniculatus, Taraxacum officinale, Centranthus ruber, Muscari, Primula veris, Salvia rosmarinus, Malva olbia
+Fichier : `src/components/community/analyse/AnalyseIAStepper.tsx`
 
-Particularités à coder en KB explicite :
-- *Prunus persica*, *Prunus avium* → **arbre** (alors que `Prunus` générique = arbuste de haie)
-- *Prunus laurocerasus*, *Prunus spinosa* → **arbuste**
-- *Salvia rosmarinus* → **arbuste** botaniquement, mais culturellement traité comme **herbacée aromatique** : on le classe **herbacée** pour rester fidèle à l'usage jardin (à confirmer)
-- *Ficus carica* → **arbre** (KB)
-- *Sambucus nigra* → **arbuste** (override de la règle Sambucus actuelle qui est neutre)
-- *Parthenocissus inserta* → **arbuste** (liane ligneuse, KB)
+**Layout mobile-first immersif**
+- Container `relative` avec `min-h-[calc(100vh-14rem)]` plein écran utile
+- Snap horizontal natif : `flex overflow-x-auto snap-x snap-mandatory scroll-smooth` + `snap-center` sur chaque step
+- Chaque step : `w-full shrink-0` (mobile) / `w-full` (desktop, on garde le stepper même pattern, max-w container)
+- Swipe gestuel natif iOS/Android via overflow scroll + `touch-pan-x`
+- IntersectionObserver détecte le step visible → met à jour `activeStep`
 
-### 2. Fusion du tile carrousel
+**Header sticky (top)**
+- Pills compact des 3 modules avec emoji + label court, `sticky top-0 z-20 backdrop-blur-xl bg-background/70`
+- Click = `element.scrollIntoView({ behavior: 'smooth', inline: 'start' })`
+- Sous les pills : **barre de progression segmentée** (3 segments, l'actif s'illumine via `motion.div` width animée + gradient emerald→violet)
+- Compteur « Module 1 / 3 » en petit à droite
 
-Le tag `mellifere` reste dans `ECO_FUNCTIONS` mais son `journeyLabel` devient dynamique côté UI : si le bucket contient au moins 1 arbre OU 1 arbuste, on affiche **"arbres et plantes mellifères"** ; sinon on garde **"plantes mellifères"**. Le compteur reste le total fusionné.
+**Chaque step**
+- Hero d'entrée : grande icône animée (`motion` float `y: [-4, 0]`), titre `text-2xl sm:text-3xl font-semibold`, sous-titre poétique, badge module
+- Gradient d'arrière-plan unique par module :
+  - Découverte : `from-emerald-500/10 via-amber-500/5 to-transparent`
+  - Trophique : `from-violet-500/10 via-cyan-500/5 to-transparent`
+  - Indicateurs : `from-sky-500/10 via-emerald-500/5 to-transparent`
+- Blob radial flou en fond (`absolute inset-0 -z-10 blur-3xl`)
+- Contenu du module rendu après le hero (les composants existants restent intacts)
+- Bouton « Module suivant → » en bas qui scroll au step suivant (sauf le 3e)
 
-Aucune nouvelle entrée tag n'est créée — on garde un seul tile, le drawer fait la séparation.
+**Navigation desktop (≥sm)**
+- Mêmes pills sticky en haut
+- Flèches latérales `‹` `›` ancrées en `fixed` discrètes pour navigation clavier/souris
+- Support flèches clavier `ArrowLeft` / `ArrowRight`
 
-### 3. Drawer à 3 sections empilées
+**Animations clés** (Framer Motion)
+- Hero icône : `animate={{ y: [0, -6, 0] }}` infinite
+- Titre : `initial={{ y: 20, opacity: 0 }}` → `whileInView` avec stagger des enfants
+- Progress bar : `layoutId` partagé pour glisser entre segments
+- Transition de step : `AnimatePresence` n'est pas nécessaire (les 3 sont en DOM pour le snap-scroll), mais chaque hero a un `whileInView` pour rejouer l'entrée
 
-Refonte du drawer mellifère uniquement (les autres tags conservent la grille simple actuelle). Pour chaque strate non vide :
+### Fichiers à créer / modifier
+
+**Créer**
+- `src/components/community/analyse/AnalyseIAStepper.tsx`
+- `src/components/community/analyse/StepHero.tsx` (hero réutilisable : icône, gradient, titre, sous-titre)
+- `src/components/community/analyse/StepperProgress.tsx` (3 segments + pills)
+
+**Modifier**
+- `src/components/community/EventBiodiversityTab.tsx`
+  - Supprimer `'indicateurs'` de `SubTab` et de `subTabs`
+  - Supprimer `<TrophicChainPanel>` de la branche Synthèse
+  - Supprimer la branche `indicateurs`
+  - Remplacer le contenu de la branche `analyse` par `<AnalyseIAStepper species={allSpeciesWithFrNames} explorationId={explorationId} totalSpecies={stats.total} />`
+  - Conserver `EcologicalJourneyCarousel`, `TrophicChainPanel`, `TaxonsIndicesPanel` (imports déplacés)
+
+### Garanties
+- **Zéro changement** sur `TrophicChainPanel`, `TaxonsIndicesPanel`, `EcologicalJourneyCarousel`
+- **Zéro changement** de logique métier / données / hooks
+- Responsive natif : snap horizontal sur mobile, même UX agréable sur desktop
+- Accessible : `role="tablist"`, `aria-selected`, focus visible, navigation clavier
+
+### Diagramme
 
 ```text
-┌─────────────────────────────────────────────┐
-│ 🌳 6 arbres mellifères                      │
-│ Floraisons précoces, ressources massives    │
-│ ┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐                    │
-│ └──┘└──┘└──┘└──┘└──┘└──┘                    │
-├─────────────────────────────────────────────┤
-│ 🌿 7 arbustes mellifères                    │
-│ Floraisons étalées en haie et lisière       │
-│ ┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐                │
-│ └──┘└──┘└──┘└──┘└──┘└──┘└──┘                │
-├─────────────────────────────────────────────┤
-│ 🌼 13 plantes mellifères                    │
-│ Nectar de proximité pour petits insectes    │
-│ … grille …                                  │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│ [🌿 Découverte] [🔗 Trophique] [📊 Indicateurs]   1/3 │ ← pills sticky
+│ ▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░ │ ← progress
+├─────────────────────────────────────┤
+│   gradient blob + hero icon         │
+│   "Partons à la découverte du..."   │
+│                                     │
+│   [EcologicalJourneyCarousel]       │
+│                                     │
+│   [ Module suivant → ]              │
+└─────────────────────────────────────┘
+  ← swipe →   ← swipe →   ← swipe →
 ```
-
-Apparition séquentielle des sections (Framer Motion stagger), grille espèces identique à l'actuelle (image + SpeciesName + scientifique).
-
-### 4. Recalcul dynamique
-
-Aucun changement nécessaire : le hook `useEcologicalFunctions` est déjà réactif aux invalidations de `useExplorationSpeciesPool`. On ajoute simplement un découpage par strate dans la valeur retournée :
-
-```ts
-buckets.mellifere // total (inchangé)
-mellifereByStrate: {
-  arbre: SpeciesWithFunctions[],
-  arbuste: SpeciesWithFunctions[],
-  herbacee: SpeciesWithFunctions[],
-}
-```
-
-## Détails techniques
-
-### Fichiers à créer
-
-- **`src/lib/plantStrate.ts`**
-  - Types `PlantStrate = 'arbre' | 'arbuste' | 'herbacee'`
-  - Tables `GENUS_STRATE`, `FAMILY_STRATE`
-  - Fonction `classifyStrate({ scientificName, family }): PlantStrate | null`
-  - Lecture optionnelle du champ `strate` de la KB
-
-- **Section narrative par strate** : objet `STRATE_META` (emoji, label pluriel, phrase service) localisé dans `plantStrate.ts`.
-
-### Fichiers à modifier
-
-- **`src/data/species-knowledge-base.json`**
-  - Ajout du champ optionnel `strate` sur ~10 entrées pour les overrides de la liste DEVIAT (Ficus carica, Sambucus nigra, Buddleja davidii, Prunus persica, Prunus avium, Prunus laurocerasus, Prunus spinosa, Salvia rosmarinus, Parthenocissus inserta, Weigela florida). On ne touche pas aux autres champs existants.
-
-- **`src/hooks/useEcologicalFunctions.ts`**
-  - Ajoute `mellifereByStrate` au retour, calculé par `classifyStrate` sur chaque espèce du bucket `mellifere`.
-
-- **`src/components/biodiversity/EcologicalJourneyCarousel.tsx`**
-  - Label du tile mellifère dynamique : `"des X arbres et plantes mellifères"` si `mellifereByStrate.arbre.length + mellifereByStrate.arbuste.length > 0`, sinon label actuel.
-  - Drawer : si `openTag === 'mellifere'`, rendre `<MellifereStrateDrawer />` (nouveau composant interne ou inline) à 3 sections empilées. Sinon, drawer actuel.
-
-### Aucune modification DB / migration
-
-Tout reste côté client. Le recalcul est gratuit (mémoïsé) et déclenché par React Query à chaque nouvelle obs.
-
-## Points de vigilance
-
-- **Pertinence des classifications** : la table `GENUS_STRATE` couvrira les genres récurrents (Quercus, Tilia, Salix, Acer, Prunus, Crataegus, Sambucus, Lavandula, Thymus, Trifolium…). Les cas où plusieurs espèces du même genre ont des strates différentes (*Prunus*, *Salix*) sont gérés par override KB au niveau espèce.
-- **SpeciesName** : toujours utilisé pour le rendu, donc noms français garantis et cohérents avec le reste de l'app.
-- **Pas de régression** : aucun autre tag du carrousel ni aucune autre vue n'est touché. Tests visuels sur l'expé DEVIAT pour vérifier les 6 / 7 / 13 attendus.
-
-## Hors scope (volontairement)
-
-- Pas de tile séparé "arbres tout court" — réservé à une éventuelle Phase B.
-- Pas d'override admin via `exploration_curations.strate` — option 2 du sondage non retenue.
-- Pas d'animation "constellation" ni jauge fertilité — reste planifié pour Phase B.
