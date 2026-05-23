@@ -18,7 +18,7 @@ import {
 } from '@/hooks/useMarcheurSpeciesTags';
 import MarcheurSpeciesTagDots from '@/components/community/tags/MarcheurSpeciesTagDots';
 import MarcheurTagsFilterBar, { matchesTagFilter, type TagFilterState } from '@/components/community/tags/MarcheurTagsFilterBar';
-import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
+
 import SpeciesPhotoModeToggle from './SpeciesPhotoModeToggle';
 
 // Utility to identify birds
