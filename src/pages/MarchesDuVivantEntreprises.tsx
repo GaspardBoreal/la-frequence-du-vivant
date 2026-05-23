@@ -260,7 +260,7 @@ const MarchesDuVivantEntreprises = () => {
           </div>
         </section>
 
-        <Footer />
+        <Footer variant="marches" />
       </div>
     </>
   );
