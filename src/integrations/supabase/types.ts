@@ -4431,6 +4431,39 @@ export type Database = {
           },
         ]
       }
+      species_eco_tags_kb: {
+        Row: {
+          confidence: number
+          created_at: string
+          last_validated_at: string
+          last_validated_by: string | null
+          scientific_name: string
+          source: string
+          tags: string[]
+          validations_count: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          last_validated_at?: string
+          last_validated_by?: string | null
+          scientific_name: string
+          source?: string
+          tags?: string[]
+          validations_count?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          last_validated_at?: string
+          last_validated_by?: string | null
+          scientific_name?: string
+          source?: string
+          tags?: string[]
+          validations_count?: number
+        }
+        Relationships: []
+      }
       species_translations: {
         Row: {
           alternative_names_fr: string[] | null
@@ -5200,6 +5233,7 @@ export type Database = {
             Returns: string
           }
       is_admin_user: { Args: never; Returns: boolean }
+      is_eco_curator: { Args: { _user_id: string }; Returns: boolean }
       is_event_curator: {
         Args: { _exploration_id: string; _user_id: string }
         Returns: boolean
@@ -5412,6 +5446,25 @@ export type Database = {
         Returns: string
       }
       validate_admin_email_access: { Args: never; Returns: boolean }
+      validate_species_eco_tags: {
+        Args: { _scientific_name: string; _source?: string; _tags: string[] }
+        Returns: {
+          confidence: number
+          created_at: string
+          last_validated_at: string
+          last_validated_by: string | null
+          scientific_name: string
+          source: string
+          tags: string[]
+          validations_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "species_eco_tags_kb"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       community_role:
