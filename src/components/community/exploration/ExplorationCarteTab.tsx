@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
+import { useExplorationSpeciesCount } from '@/hooks/useExplorationSpeciesCount';
 import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Crosshair, X, Star, Sparkles, Move } from 'lucide-react';
 import { PhotoGpsButton, PhotoGpsMarker, usePhotoGpsDrop } from './PhotoGpsDropTool';
 import CreateMarcheDrawer from './CreateMarcheDrawer';
@@ -422,6 +423,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
   // Biodiversity summary
   const { data: bioSummary } = useExplorationBiodiversitySummary(explorationId);
+  const { data: speciesCount } = useExplorationSpeciesCount(explorationId, { realtime: true });
+  const unifiedTotalSpecies = speciesCount?.total ?? bioSummary?.totalSpecies ?? 0;
 
   // Contribution stats per marche
   const marcheIds = useMemo(() => marches.map(m => m.id), [marches]);
@@ -1309,10 +1312,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                     )}
                   </button>
                 )}
-                {bioSummary && bioSummary.totalSpecies > 0 && (
+                {unifiedTotalSpecies > 0 && (
                   <div className="flex items-center gap-1">
                     <Leaf className="w-3 h-3 text-emerald-400" />
-                    <span className="text-emerald-300 font-medium">{bioSummary.totalSpecies} espèces</span>
+                    <span className="text-emerald-300 font-medium">{unifiedTotalSpecies} espèces</span>
                   </div>
                 )}
               </div>
