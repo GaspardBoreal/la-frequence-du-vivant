@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useExplorationSpeciesPool, type ExplorationSpecies } from './useExplorationSpeciesPool';
 import { classifyFunctions } from '@/lib/ecologicalFunctionsClassification';
 import { ECO_FUNCTIONS, type EcoFunction, computeFertilityScore } from '@/lib/ecologicalFunctions';
+import { resolveStrate, type PlantStrate } from '@/lib/plantStrate';
 
 export interface SpeciesWithFunctions extends ExplorationSpecies {
   functions: EcoFunction[];
@@ -10,6 +11,8 @@ export interface SpeciesWithFunctions extends ExplorationSpecies {
 export interface EcoFunctionsResult {
   buckets: Record<EcoFunction, SpeciesWithFunctions[]>;
   counts: Record<EcoFunction, number>;
+  /** Sous-découpage du bucket `mellifere` par strate végétale. */
+  mellifereByStrate: Record<PlantStrate, SpeciesWithFunctions[]>;
   fertilityScore: number;
   totalSpecies: number;
   isLoading: boolean;
@@ -51,9 +54,21 @@ export function useEcologicalFunctions(
       return acc;
     }, {} as Record<EcoFunction, number>);
 
+    // Découpage du bucket mellifère par strate
+    const mellifereByStrate: Record<PlantStrate, SpeciesWithFunctions[]> = {
+      arbre: [],
+      arbuste: [],
+      herbacee: [],
+    };
+    buckets.mellifere.forEach(sp => {
+      const strate = resolveStrate({ scientificName: sp.scientificName });
+      mellifereByStrate[strate].push(sp);
+    });
+
     return {
       buckets,
       counts,
+      mellifereByStrate,
       fertilityScore: computeFertilityScore(buckets),
       totalSpecies: pool?.length || 0,
       isLoading,
