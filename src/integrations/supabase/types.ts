@@ -5049,6 +5049,10 @@ export type Database = {
         Args: { p_exploration_id: string }
         Returns: Json
       }
+      get_exploration_species_count: {
+        Args: { p_exploration_id: string }
+        Returns: Json
+      }
       get_marche_events_dashboard_stats: {
         Args: { _search?: string; _status?: string; _type?: string }
         Returns: Json
