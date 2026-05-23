@@ -91,7 +91,7 @@ const MarchesDuVivant = () => {
               className="text-base text-muted-foreground/80 max-w-xl mx-auto mb-12 text-center"
             >
               La preuve par l'expérience : ne pas "parler" de biodiversité, 
-              mais la mesurer et l'écouter en temps réel.
+              mais l'observer, l'écouter, la mesurer en temps réel pour mieux la redévelopper
             </motion.p>
           </div>
         </section>
