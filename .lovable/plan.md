@@ -1,136 +1,111 @@
-# Découvertes interactives de la biodiversité — couches "services écologiques" + storytelling dynamique
+## Objectif
 
-## Constat actuel
+Transformer le tile actuel "🌼 des XX plantes mellifères" en un parcours fusionné **"🌼 Partons à la découverte des XX arbres et plantes mellifères"**, dont l'ouverture révèle 3 sous-parcours narratifs empilés (Arbres / Arbustes / Plantes herbacées), chacun avec son compteur, sa phrase de service écologique et la grille d'espèces correspondante. 100% recalculé à chaque nouvelle observation marcheur ou snapshot iNat — aucune saisie manuelle requise.
 
-Le projet a déjà 2 systèmes solides :
+## Architecture
 
-- **6 catégories de curation** (`indigene`, `bioindicatrice`, `auxiliaire`, `ravageur`, `eee`, `patrimoniale`) — `curationCategories.ts`
-- **5 niveaux trophiques + décomposeurs** (`L1…L5`, `DECOMPOSER`) — `trophicClassification.ts`
+### 1. Nouvelle notion : `PlantStrate`
 
-Ce qui **manque** pour ton objectif "remarquable pour la biodiversité, fertilité des sols, arbres/plantes mellifères" : ce sont des **fonctions écologiques** (services rendus), orthogonales aux catégories et aux niveaux trophiques. Une même espèce peut cumuler plusieurs fonctions (un tilleul = arbre + mellifère + ombrage + carbone).
+Ajout d'une dimension orthogonale au tag `mellifere` : la **strate végétale** (`arbre` | `arbuste` | `herbacee`). Une espèce mellifère est classée dans exactement une strate.
 
-## Proposition — Couche "Tags fonctionnels" (multi-étiquettes)
+Source de vérité, dans l'ordre de priorité :
+1. **KB éditoriale** (`src/data/species-knowledge-base.json`) — champ optionnel `strate` par espèce ou genre (override de cas limites comme *Buddleja*, *Sambucus*, *Ficus carica*…)
+2. **Règles par genre** (table dédiée `GENUS_STRATE` dans le nouveau module)
+3. **Règles par famille** (`Salicaceae` → arbre par défaut, `Lamiaceae` → herbacée…)
+4. **Fallback** : `herbacee` si l'espèce est mellifère et qu'on n'a aucun indice arbre/arbuste
 
-Référentiel de **12 tags écosystémiques** classés en 4 familles narratives, pour générer des parcours "Partons à la découverte de…".
+Pour la liste fournie par l'utilisateur :
+- **Arbres** : Corylus avellana, Prunus persica, Aesculus hippocastanum, Cercis siliquastrum, Prunus avium, Ficus carica
+- **Arbustes** : Salix integra, Sambucus nigra, Buddleja davidii, Prunus laurocerasus, Prunus spinosa, Weigela florida, Parthenocissus inserta
+- **Herbacées** : Anacamptis pyramidalis, Nigella damascena, Papaver rhoeas, Symphytum × uplandicum, Borago officinalis, Trifolium pratense, Lotus corniculatus, Taraxacum officinale, Centranthus ruber, Muscari, Primula veris, Salvia rosmarinus, Malva olbia
 
-### 🌳 Architecture vivante (structure du paysage)
+Particularités à coder en KB explicite :
+- *Prunus persica*, *Prunus avium* → **arbre** (alors que `Prunus` générique = arbuste de haie)
+- *Prunus laurocerasus*, *Prunus spinosa* → **arbuste**
+- *Salvia rosmarinus* → **arbuste** botaniquement, mais culturellement traité comme **herbacée aromatique** : on le classe **herbacée** pour rester fidèle à l'usage jardin (à confirmer)
+- *Ficus carica* → **arbre** (KB)
+- *Sambucus nigra* → **arbuste** (override de la règle Sambucus actuelle qui est neutre)
+- *Parthenocissus inserta* → **arbuste** (liane ligneuse, KB)
 
-- `arbre` — Arbres et arbustes >2 m (canopée, refuge, mémoire longue)
-- `haie_bocage` — Espèces du maillage bocager
-- `vieil_arbre` — Arbres remarquables / cavités (microhabitats)
+### 2. Fusion du tile carrousel
 
-### 🐝 Pollinisation & nourrissage
+Le tag `mellifere` reste dans `ECO_FUNCTIONS` mais son `journeyLabel` devient dynamique côté UI : si le bucket contient au moins 1 arbre OU 1 arbuste, on affiche **"arbres et plantes mellifères"** ; sinon on garde **"plantes mellifères"**. Le compteur reste le total fusionné.
 
-- `mellifere` — Plantes ressources pour abeilles/bourdons (Apidae + Syrphidae)
-- `pollinisateur` — Insectes pollinisateurs (déjà partiellement dans `auxiliaire`)
-- `nourricier_oiseaux` — Plantes à baies/graines pour avifaune
-- `plante_hote_papillons` — Plantes-hôtes pour chenilles
+Aucune nouvelle entrée tag n'est créée — on garde un seul tile, le drawer fait la séparation.
 
-### 🌱 Fertilité & sol vivant
+### 3. Drawer à 3 sections empilées
 
-- `fixateur_azote` — Légumineuses, aulnes, etc.
-- `ameliorant_sol` — Couvre-sol, racines profondes, mycorhizes
-- `decomposeur` — Recyclage matière (existe déjà comme niveau trophique)
+Refonte du drawer mellifère uniquement (les autres tags conservent la grille simple actuelle). Pour chaque strate non vide :
 
-### 💧 Régulation & résilience
-
-- `phytoremediation` — Dépolluantes (eau, sol)
-- `refuge_faune` — Espèces fournissant gîte (creux, ronciers, friches)
-
-> Multi-étiquettes : chaque espèce porte 0..N tags. Indépendant des catégories existantes (qui restent : indigène/EEE/patrimoniale…).
-
-## Comment c'est calculé (et **recalculé dynamiquement**)
-
-3 sources fusionnées, dans cet ordre de priorité :
-
-1. **KB enrichie** (`src/data/species-knowledge-base.json`) — ajout d'un champ `functions: string[]` par espèce/genre/famille. Curé à la main pour ~200 espèces canoniques.
-2. **Règles par famille/genre** (extension de `FAMILY_RULES`) — ex. `Fabaceae → fixateur_azote`, `Tilia/Salix/Robinia → mellifere`, `Rosaceae arbustifs → nourricier_oiseaux`.
-3. **Curation éditoriale** (`exploration_curations`, `sense='oeil'`) — un curateur peut ajouter/retirer un tag, qui prime.
-
-À chaque nouvelle observation (snapshot iNat, contribution marcheur), un hook React Query (`useEcologicalFunctions(explorationId)`) recalcule en mémoire les buckets — **aucune migration nécessaire**, c'est dérivé. Invalidation déjà gérée via les realtime existants (`marcheur_observations`, snapshots).
-
-## Expériences "hyperwahouhh" générées
-
-Chaque tag = un **parcours narratif autogénéré** sur la fiche d'une marche/exploration et sur la page publique `/m/:slug`.
-
-### 1. **Carrousel "Partons à la découverte de…"** (header de l'onglet Biodiversité)
-
-Pour chaque famille de tags active sur la marche, une vignette animée :
-
-> 🌳 "Partons à la découverte des **12 arbres remarquables**"
-> 🐝 "Partons à la découverte des **27 plantes mellifères**"
-> 🌱 "Partons à la découverte des **5 fixateurs d'azote**"
-
-Compteurs animés (`useAnimatedCounter` déjà présent), apparition au scroll, photo héros tirée d'une espèce représentative.
-
-### 2. **Constellation interactive par tag** (clic sur vignette)
-
-Drawer plein écran avec :
-
-- **Halo central** = nom du tag + définition + service rendu
-- **Orbites** = les espèces (taille = nb d'observations, couleur = catégorie de curation)
-- **Animation d'apparition** une à une, narration courte ("Le tilleul nourrit l'abeille noire qui pollinise le pommier…")
-- Au clic sur une espèce → ouvre la fiche espèce existante (déjà connectée via CustomEvent)
-
-### 3. **"Indice de fertilité du lieu"** (jauge dynamique)
-
-Score 0–100 calculé à la volée :
-
-```
-(fixateurs × 3 + décomposeurs × 2 + couvre_sol × 1 + mellifères × 1) / surface
+```text
+┌─────────────────────────────────────────────┐
+│ 🌳 6 arbres mellifères                      │
+│ Floraisons précoces, ressources massives    │
+│ ┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐                    │
+│ └──┘└──┘└──┘└──┘└──┘└──┘                    │
+├─────────────────────────────────────────────┤
+│ 🌿 7 arbustes mellifères                    │
+│ Floraisons étalées en haie et lisière       │
+│ ┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐                │
+│ └──┘└──┘└──┘└──┘└──┘└──┘└──┘                │
+├─────────────────────────────────────────────┤
+│ 🌼 13 plantes mellifères                    │
+│ Nectar de proximité pour petits insectes    │
+│ … grille …                                  │
+└─────────────────────────────────────────────┘
 ```
 
-Affiché en mode "fréquence", recalculé à chaque snapshot. Storytelling associé : "Ce lieu fertilise lui-même son sol grâce à 5 espèces."
+Apparition séquentielle des sections (Framer Motion stagger), grille espèces identique à l'actuelle (image + SpeciesName + scientifique).
 
-### 4. **Bande-annonce d'arrivée** (page publique `/m/:slug`, sobriété ON)
+### 4. Recalcul dynamique
 
-3 cartes plein écran swipables, générées dynamiquement selon les tags les plus présents :
+Aucun changement nécessaire : le hook `useEcologicalFunctions` est déjà réactif aux invalidations de `useExplorationSpeciesPool`. On ajoute simplement un découpage par strate dans la valeur retournée :
 
-- *"Ici, **34 espèces** nourrissent les pollinisateurs."*
-- *"**4 arbres** ont plus de 80 ans."*
-- *"Le sol abrite **6 décomposeurs** identifiés."*
-Animation type "Impact Stories" (modèle `marcheur-impact-stories-logic` déjà en mémoire).
+```ts
+buckets.mellifere // total (inchangé)
+mellifereByStrate: {
+  arbre: SpeciesWithFunctions[],
+  arbuste: SpeciesWithFunctions[],
+  herbacee: SpeciesWithFunctions[],
+}
+```
 
-### 5. **Recalcul en temps réel — feedback visuel**
-
-Quand une nouvelle obs entre :
-
-- Le compteur de la vignette concernée pulse (animation `pulse`)
-- Toast discret : *"+1 plante mellifère ✨ — Trifolium pratense"*
-- Le score de fertilité se réincrémente avec micro-animation
-
-## Plan technique
+## Détails techniques
 
 ### Fichiers à créer
 
-- `src/lib/ecologicalFunctions.ts` — référentiel des 12 tags + métadonnées (label, icône, gradient, narration template, formule de score si applicable)
-- `src/lib/ecologicalFunctionsClassification.ts` — `classifyFunctions(input): EcoFunction[]` (KB + famille + iconic)
-- `src/data/species-knowledge-base.json` — ajout champ `functions: string[]` (incrémental, démarre avec ~150 entrées canoniques)
-- `src/hooks/useEcologicalFunctions.ts` — fusion KB + curations + obs, retourne buckets `{tag → species[]}` + counts
-- `src/components/biodiversity/EcologicalJourneyCarousel.tsx` — carrousel "Partons à la découverte de…"
-- `src/components/biodiversity/EcologicalConstellationDrawer.tsx` — constellation interactive par tag
-- `src/components/biodiversity/FertilityIndexGauge.tsx` — jauge fertilité animée
-- `src/components/public/EcologicalStoryCards.tsx` — bande-annonce swipable page publique
+- **`src/lib/plantStrate.ts`**
+  - Types `PlantStrate = 'arbre' | 'arbuste' | 'herbacee'`
+  - Tables `GENUS_STRATE`, `FAMILY_STRATE`
+  - Fonction `classifyStrate({ scientificName, family }): PlantStrate | null`
+  - Lecture optionnelle du champ `strate` de la KB
 
-### Migration DB (optionnelle, phase 2)
+- **Section narrative par strate** : objet `STRATE_META` (emoji, label pluriel, phrase service) localisé dans `plantStrate.ts`.
 
-- Étendre `exploration_curations` pour stocker `functions: text[]` (à côté de `category`) — permet à un curateur d'ajouter/retirer un tag par espèce.
+### Fichiers à modifier
 
-### Pas de bouleversement
+- **`src/data/species-knowledge-base.json`**
+  - Ajout du champ optionnel `strate` sur ~10 entrées pour les overrides de la liste DEVIAT (Ficus carica, Sambucus nigra, Buddleja davidii, Prunus persica, Prunus avium, Prunus laurocerasus, Prunus spinosa, Salvia rosmarinus, Parthenocissus inserta, Weigela florida). On ne touche pas aux autres champs existants.
 
-- Aucune modification des catégories existantes ni des niveaux trophiques.
-- Couche **additive**, désactivable par section/marche si besoin.
-- Compatible avec sobriété informationnelle (carrousel = 1 ligne, sous-vues à la demande).
+- **`src/hooks/useEcologicalFunctions.ts`**
+  - Ajoute `mellifereByStrate` au retour, calculé par `classifyStrate` sur chaque espèce du bucket `mellifere`.
 
-## Phasage suggéré
+- **`src/components/biodiversity/EcologicalJourneyCarousel.tsx`**
+  - Label du tile mellifère dynamique : `"des X arbres et plantes mellifères"` si `mellifereByStrate.arbre.length + mellifereByStrate.arbuste.length > 0`, sinon label actuel.
+  - Drawer : si `openTag === 'mellifere'`, rendre `<MellifereStrateDrawer />` (nouveau composant interne ou inline) à 3 sections empilées. Sinon, drawer actuel.
 
-**Phase A — Socle (1 session)** : référentiel + classificateur + hook + carrousel sur fiche exploration (compteurs cliquables, drawer simple).
-**Phase B — Constellation + score** : drawer animé + jauge fertilité.
-**Phase C — Public storytelling** : cards swipables sur `/m/:slug` + animations realtime.
-**Phase D — Curation** : UI L'œil pour éditer les tags par espèce + migration DB.
+### Aucune modification DB / migration
 
-## Questions ouvertes avant de partir
+Tout reste côté client. Le recalcul est gratuit (mémoïsé) et déclenché par React Query à chaque nouvelle obs.
 
-1. **Périmètre des tags** : OK avec les 12 proposés
-2. **Formule "Indice de fertilité"** : tu valides l'approche pondérée simple + formule plus poussée (intégrant diversité Shannon, surface couverte, etc.) ?
-3. **Phase à attaquer en premier** : je propose Phase A pour avoir un premier rendu visible rapidement et itérer : OUI
+## Points de vigilance
+
+- **Pertinence des classifications** : la table `GENUS_STRATE` couvrira les genres récurrents (Quercus, Tilia, Salix, Acer, Prunus, Crataegus, Sambucus, Lavandula, Thymus, Trifolium…). Les cas où plusieurs espèces du même genre ont des strates différentes (*Prunus*, *Salix*) sont gérés par override KB au niveau espèce.
+- **SpeciesName** : toujours utilisé pour le rendu, donc noms français garantis et cohérents avec le reste de l'app.
+- **Pas de régression** : aucun autre tag du carrousel ni aucune autre vue n'est touché. Tests visuels sur l'expé DEVIAT pour vérifier les 6 / 7 / 13 attendus.
+
+## Hors scope (volontairement)
+
+- Pas de tile séparé "arbres tout court" — réservé à une éventuelle Phase B.
+- Pas d'override admin via `exploration_curations.strate` — option 2 du sondage non retenue.
+- Pas d'animation "constellation" ni jauge fertilité — reste planifié pour Phase B.
