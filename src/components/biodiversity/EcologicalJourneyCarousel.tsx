@@ -148,26 +148,62 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
 
         {/* Bandeau curateur : espèces à valider */}
         {canCurate && needsReviewCount > 0 && (
-          <motion.button
-            type="button"
-            onClick={() => setReviewOpen(true)}
+          <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full mb-4 flex items-center gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left hover:bg-amber-500/15 transition-colors"
+            className="w-full mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3"
           >
-            <span className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-foreground">
-                {needsReviewCount} espèce{needsReviewCount > 1 ? 's' : ''} à valider
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                Aide la communauté en ajustant leurs tags écologiques · 2 clics par espèce
+            <div className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-foreground">
+                  {needsReviewCount} espèce{needsReviewCount > 1 ? 's' : ''} à valider
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  L'IA peut pré-classer la plupart en quelques secondes — il te restera à confirmer les incertaines.
+                </div>
               </div>
             </div>
-            <ListChecks className="w-4 h-4 text-muted-foreground shrink-0" />
-          </motion.button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  const toSend = speciesToReview
+                    .filter(s => s.scientificName)
+                    .slice(0, 100)
+                    .map(s => ({
+                      scientific_name: s.scientificName!,
+                      common_name: s.commonNameFr || s.commonName,
+                      family: s.family,
+                      iconic_taxon: s.group,
+                    }));
+                  if (toSend.length > 0) classifyAI.mutate(toSend);
+                }}
+                disabled={classifyAI.isPending || speciesToReview.length === 0}
+                className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                {classifyAI.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5" />
+                )}
+                {classifyAI.isPending ? 'Analyse IA…' : `Lancer l'IA sur les ${Math.min(needsReviewCount, 100)} espèces`}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setReviewOpen(true)}
+                className="gap-1.5"
+              >
+                <ListChecks className="w-3.5 h-3.5" />
+                Valider manuellement
+              </Button>
+            </div>
+          </motion.div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
