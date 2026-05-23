@@ -509,7 +509,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               explorationId={explorationId}
               userRole={userProfile?.role}
             />
-            <EcologicalJourneyCarousel explorationId={explorationId} />
+
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <AnimatedStat value={stats.total} label="Espèces totales" icon={Layers} color={categoryConfig.all.color} bgColor={categoryConfig.all.bgColor} delay={0} />
               <AnimatedStat value={stats.birds} label="Faune" icon={Bird} color={categoryConfig.birds.color} bgColor={categoryConfig.birds.bgColor} delay={100} />
