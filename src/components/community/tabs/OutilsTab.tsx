@@ -23,15 +23,6 @@ interface ToolDef {
   icon: React.ElementType;
   minRole?: CommunityRoleKey;
   comingSoon?: boolean;
-}
-
-interface ToolDef {
-  id: string;
-  label: string;
-  description: string;
-  icon: React.ElementType;
-  minRole?: CommunityRoleKey;
-  comingSoon?: boolean;
   externalRoute?: string;
 }
 
