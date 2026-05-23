@@ -95,25 +95,18 @@ export function useSpeciesMarcheurPhotos(
         });
       }
 
-      // 3b. observations citoyennes iNat extraites des snapshots
+      // 3b. observations citoyennes iNat extraites de TOUS les snapshots
+      // (iNat livre des snapshots delta : ne pas filtrer "latest only" sinon
+      // certaines espèces disparaissent — bug identique au compteur unifié)
       const { data: snapshots } = await supabase
         .from('biodiversity_snapshots')
         .select('marche_id, species_data, snapshot_date')
         .in('marche_id', marcheIds);
 
-      // Garder seulement le snapshot le plus récent par marche
-      const latestByMarche = new Map<string, any>();
-      (snapshots || []).forEach((s: any) => {
-        const ex = latestByMarche.get(s.marche_id);
-        if (!ex || new Date(s.snapshot_date) > new Date(ex.snapshot_date)) {
-          latestByMarche.set(s.marche_id, s);
-        }
-      });
-
       const lowerSci = scientificName.toLowerCase();
       const seenCitizenUrls = new Set<string>();
 
-      Array.from(latestByMarche.values()).forEach((snap: any) => {
+      (snapshots || []).forEach((snap: any) => {
         const list = snap.species_data as any[] | null;
         if (!Array.isArray(list)) return;
         const matches = list.filter((sp) => sp?.scientificName?.toLowerCase() === lowerSci);
@@ -125,7 +118,6 @@ export function useSpeciesMarcheurPhotos(
           // Apparier photo[i] ↔ attribution[i] quand possible
           photos.forEach((rawUrl, i) => {
             if (!rawUrl) return;
-            // Améliorer la qualité : square → medium si possible
             const url = rawUrl.replace('/square.', '/medium.').replace('/square.jpg', '/medium.jpg');
             if (seenCitizenUrls.has(url)) return;
             seenCitizenUrls.add(url);
