@@ -1,56 +1,39 @@
-# Ajout du nom commun dans le Pack Vivant
+## Diagnostic
 
-## Objectif
+`SpeciesPhotoModeProvider` n'est monté qu'à l'intérieur de `SpeciesExplorer` (liste des espèces). Toutes les ouvertures de `SpeciesGalleryDetailModal` qui passent par CE composant héritent donc du Provider et démarrent en mode `marcheur` dès qu'il y a des photos terrain.
 
-Insérer une colonne **`nom_commun_fr`** juste après `nom_scientifique` dans **tous** les fichiers du Pack Vivant, pour que l'utilisateur lise immédiatement « Mésange charbonnière » à côté de « Parus major ».
+Les 3 autres entrées ouvrent le même modal mais **hors Provider** → `useSpeciesPhotoMode()` retombe sur le fallback no-op codé en dur à `mode: 'inaturalist'`. D'où l'incohérence :
 
-## Source du nom commun
+| Chemin | Ouvre via | Sous Provider ? | Mode initial |
+|---|---|---|---|
+| Synthèse → Pouls du vivant → jour → espèce | `DayDetailDrawer` | ❌ | iNat (KO) |
+| Synthèse → Liste espèces → jour → espèce | `SpeciesExplorer` | ✅ | Marcheur (OK) |
+| Marches → … → espèce | `SpeciesExplorer` | ✅ | Marcheur (OK) |
+| Apprendre → L'œil → espèce | `OeilCuration` | ❌ | iNat (KO) |
 
-Réutiliser la chaîne FR déjà en place dans l'app :
-1. `species_translations.common_name_fr` (table publique, RLS open) — source canonique
-2. Fallback : `common_name` stocké dans `marcheur_observations` ou `biodiversity_snapshots.species_data` (souvent EN)
-3. Fallback ultime : chaîne vide (jamais le nom scientifique répété)
+Autres call-sites du même modal qui souffrent du même bug latent : `BiodiversityMap`, `EmblematicSpeciesGallery`, `BiodiversityTestPanel`.
 
-Dans la RPC `get_exploration_export_data`, faire un `LEFT JOIN species_translations ON lower(scientific_name) = lower(st.scientific_name)` et exposer `common_name_fr` sur chaque ligne d'observation **et** sur chaque ligne d'espèce dédupliquée.
+## Correctif
 
-## Fichiers du Pack à mettre à jour
+**1. Hisser le Provider au niveau de la page exploration**
 
-| Fichier | Position de la colonne |
-|---|---|
-| `02_especes.xlsx` — onglet **Synthèse** | colonne B : `nom_commun_fr` (après A=`nom_scientifique`) |
-| `02_especes.xlsx` — onglet **Observations** | colonne C : `nom_commun_fr` (après B=`espèce_sci`) |
-| `03_observations.geojson` | properties : `scientific_name`, **`common_name_fr`**, puis le reste |
-| `04_observations.kml` | Placemark `<name>` = `nom_commun_fr || scientific_name` ; description enrichie |
-| `05_darwin-core/occurrence.txt` | colonne `vernacularName` (terme DwC standard) juste après `scientificName` |
-| `01_LISEZ-MOI.pdf` | Top espèces : afficher `nom_commun_fr` en gras + `scientific_name` en italique dessous |
-| `07_metadata.json` | rien à changer |
+Dans `src/components/community/ExplorationMarcheurPage.tsx`, envelopper le rendu par `<SpeciesPhotoModeProvider explorationId={explorationId}>`. Toutes les vues (Synthèse, Pouls du vivant, Liste espèces, Marches, Apprendre/L'œil, Carte) partagent alors **un seul** Provider — donc une seule préférence persistée et le même mode initial.
 
-## Changements techniques
+**2. Supprimer le Provider local dans `SpeciesExplorer`**
 
-### 1. Migration SQL (RPC `get_exploration_export_data`)
-- Ajouter `LEFT JOIN public.species_translations st USING (scientific_name)` (normalisation lowercase) dans les deux CTE (`obs_marcheur`, `obs_inat`)
-- Exposer `common_name_fr` dans chaque ligne du JSON retourné (`observations[]` et `species[]`)
-- Aucun changement de signature, aucun changement RLS
+Évite un double-Provider qui réinitialiserait le state localement. `SpeciesExplorer` reste consommateur (`useSpeciesPhotoMode`) sans monter son propre Provider.
 
-### 2. Edge function `generate-pack-vivant`
-- Lire `common_name_fr` sur chaque observation/espèce
-- Excel (xlsx) : insérer la colonne en position 2 dans les 2 onglets, en-tête `Nom commun (FR)`
-- GeoJSON : ajouter la propriété
-- KML : `<name>` = nom FR si présent, sinon scientifique ; description « *Parus major* »
-- DwC `occurrence.txt` : ajouter `vernacularName` à `meta.xml` et au TSV
-- PDF Top espèces : ligne `**Mésange charbonnière** — *Parus major*`
+**3. Aucun changement à `SpeciesPhotoCarousel`**
 
-### 3. UI
-- Aucun changement (`PackVivantButton` inchangé)
+La logique d'init existante (`mode === 'marcheur' && firstFieldIdx >= 0 → scrollTo(firstFieldIdx)`) est déjà bonne : une fois sous Provider, le carousel ouvre automatiquement sur la photo marcheur dès qu'elle existe.
 
-## Critères de validation
+**4. Vérification**
 
-- Ouvrir l'Excel → colonne B = noms FR lisibles pour 100% des espèces ayant une traduction
-- Ouvrir le KML dans Google Earth → punaises affichent le nom FR
-- Ouvrir le GeoJSON dans QGIS → label sur `common_name_fr`
-- PDF : page « Top espèces » montre bien les deux noms
-- DwC : `vernacularName` présent et conforme au standard
+- Rejouer les 4 chemins : tous doivent ouvrir sur la photo marcheur quand elle existe (Campanule à feuilles de pêcher).
+- Vérifier que le toggle global Photos marcheurs ↔ iNaturalist (déjà présent dans la barre Synthèse) reste cohérent entre vues.
+- Vérifier que le storage `species-photo-mode:<explorationId>` n'est écrit qu'une fois et partagé.
 
-## Hors scope
+## Fichiers modifiés
 
-- Pas d'auto-traduction à la volée dans l'edge function (on prend ce qui est déjà en cache `species_translations` ; les manquants resteront vides et seront comblés par les vues UI qui déclenchent `translate-species`)
+- `src/components/community/ExplorationMarcheurPage.tsx` — wrap avec `SpeciesPhotoModeProvider`
+- `src/components/biodiversity/SpeciesExplorer.tsx` — retirer le `<SpeciesPhotoModeProvider>` local

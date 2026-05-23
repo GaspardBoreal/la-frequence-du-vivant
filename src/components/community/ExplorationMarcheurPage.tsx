@@ -22,6 +22,7 @@ import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import ChatViewportObserver from '@/components/chatbot/ChatViewportObserver';
 import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
 import { Loader2 } from 'lucide-react';
+import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -287,6 +288,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   }
 
   return (
+    <SpeciesPhotoModeProvider explorationId={effectiveExplorationId || undefined}>
     <div className="min-h-screen bg-background" data-chat-viewport>
       <ChatViewportObserver />
       {/* Sticky Header */}
@@ -594,6 +596,7 @@ const ExplorationMarcheurPage: React.FC = () => {
         </AnimatePresence>
       </div>
     </div>
+    </SpeciesPhotoModeProvider>
   );
 };
 
