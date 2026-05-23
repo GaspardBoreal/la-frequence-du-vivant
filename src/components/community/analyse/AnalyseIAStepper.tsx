@@ -73,9 +73,12 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
 
   const goTo = useCallback((idx: number) => {
     const step = STEPS[idx];
-    if (!step) return;
+    const scroller = scrollerRef.current;
+    if (!step || !scroller) return;
     const el = stepRefs.current[step.key];
-    el?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+    if (!el) return;
+    // Horizontal-only scroll inside the scroller — never move the page vertically
+    scroller.scrollTo({ left: el.offsetLeft, behavior: 'smooth' });
   }, []);
 
   // Detect active step via IntersectionObserver
