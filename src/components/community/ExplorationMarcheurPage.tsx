@@ -595,6 +595,7 @@ const ExplorationMarcheurPage: React.FC = () => {
         </AnimatePresence>
       </div>
     </div>
+    </SpeciesPhotoModeProvider>
   );
 };
 
