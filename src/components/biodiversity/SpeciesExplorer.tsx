@@ -249,7 +249,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   );
 
   return (
-    <SpeciesPhotoModeProvider explorationId={explorationId}>
     <div
       className={`space-y-4 ${className}`}
       data-chat-section="species-explorer"
