@@ -37,17 +37,37 @@ export function useEcologicalFunctions(
     }, {} as Record<EcoFunction, SpeciesWithFunctions[]>);
 
     (pool || []).forEach(sp => {
-      const fns = classifyFunctions({
-        scientificName: sp.scientificName,
-        // group can be either kingdom or iconic — try both
-        kingdom: sp.group,
-        iconicTaxon: sp.group,
-        family: null,
-      });
-      if (fns.length === 0) return;
-      const enriched: SpeciesWithFunctions = { ...sp, functions: fns };
+      const fns = new Set(
+        classifyFunctions({
+          scientificName: sp.scientificName,
+          // group can be either kingdom or iconic — try both
+          kingdom: sp.group,
+          iconicTaxon: sp.group,
+          family: (sp as any).family ?? null,
+        }),
+      );
+
+      // Pont strate → fonction écologique :
+      // Si la strate du genre/espèce est "arbre" ou "arbuste", on tague
+      // automatiquement "arbre" (et "haie_bocage" pour les arbustes).
+      // Source de vérité partagée avec plantStrate.ts → couvre Marronnier,
+      // Platane, Pin, Cèdre, etc. sans dupliquer la connaissance.
+      const groupLc = (sp.group || '').toLowerCase();
+      const isNonPlant =
+        groupLc &&
+        !['plantae', 'plants', 'plant', 'fungi', ''].includes(groupLc) &&
+        ['animalia', 'mammalia', 'aves', 'insecta', 'arachnida', 'reptilia', 'amphibia', 'mollusca'].includes(groupLc);
+      if (sp.scientificName && !isNonPlant) {
+        const strate = resolveStrate({ scientificName: sp.scientificName });
+        if (strate === 'arbre') fns.add('arbre');
+        if (strate === 'arbuste') fns.add('haie_bocage');
+      }
+
+      if (fns.size === 0) return;
+      const enriched: SpeciesWithFunctions = { ...sp, functions: Array.from(fns) };
       fns.forEach(f => buckets[f].push(enriched));
     });
+
 
     const counts = ECO_FUNCTIONS.reduce((acc, f) => {
       acc[f.value] = buckets[f.value].length;

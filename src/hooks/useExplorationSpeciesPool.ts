@@ -13,6 +13,7 @@ export interface ExplorationSpecies {
   /** Best display name: FR translation > original commonName > scientificName */
   displayName: string;
   group: string | null;
+  family: string | null;
   count: number;
   imageUrl: string | null;
 }
@@ -22,6 +23,7 @@ interface RawExplorationSpecies {
   scientificName: string | null;
   commonName: string | null;
   group: string | null;
+  family: string | null;
   count: number;
   imageUrl: string | null;
 }
@@ -101,15 +103,24 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
           const key = (sci || com).toLowerCase();
           if (!key) return;
 
+          // family iNat = parfois un nom alphabétique propre, parfois un ID
+          // numérique de taxon (ex. "58321" = Sapindaceae). On ne garde que les
+          // noms exploitables — le classifier filtre déjà les IDs numériques
+          // mais autant économiser le coup.
+          const rawFamily = (sp.family || sp.familyName || '').toString().trim();
+          const family = rawFamily && !/^\d+$/.test(rawFamily) ? rawFamily : null;
+
           const existing = map.get(key);
           if (existing) {
             existing.count += 1;
+            if (!existing.family && family) existing.family = family;
           } else {
             map.set(key, {
               key: sci || com,
               scientificName: sci || null,
               commonName: com || null,
               group: sp.group || sp.kingdom || sp.taxonGroup || null,
+              family,
               count: 1,
               imageUrl: null, // résolu en fin de pipeline
             });
@@ -173,6 +184,7 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
             scientificName: sci,
             commonName: null,
             group: null,
+            family: null,
             count: 1,
             imageUrl: null,
           });
