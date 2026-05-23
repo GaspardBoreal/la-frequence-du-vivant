@@ -172,7 +172,7 @@ const MarchesDuVivant = () => {
                   </div>
 
                   <p className="text-muted-foreground text-sm mb-6">
-                    Coopératives, CUMA, chambres d'agriculture, exploitants : organisez une marche sur vos parcelles pour révéler les services rendus par la biodiversité — pollinisateurs, auxiliaires, sols vivants, réseau bocager — et valoriser vos pratiques.
+                    Organisez une marche sur vos parcelles pour révéler les services rendus par la biodiversité — pollinisateurs, auxiliaires, sols vivants, réseau bocager — et valoriser vos pratiques.
                   </p>
 
                   <div className="flex items-center gap-2 text-lime-400 group-hover:text-lime-300 transition-colors">
