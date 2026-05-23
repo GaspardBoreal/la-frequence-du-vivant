@@ -1312,10 +1312,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                     )}
                   </button>
                 )}
-                {bioSummary && bioSummary.totalSpecies > 0 && (
+                {unifiedTotalSpecies > 0 && (
                   <div className="flex items-center gap-1">
                     <Leaf className="w-3 h-3 text-emerald-400" />
-                    <span className="text-emerald-300 font-medium">{bioSummary.totalSpecies} espèces</span>
+                    <span className="text-emerald-300 font-medium">{unifiedTotalSpecies} espèces</span>
                   </div>
                 )}
               </div>
