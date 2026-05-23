@@ -1,92 +1,115 @@
+## Problème
 
-## Objectif
+77 espèces "à valider" sur une seule marche, c'est trop pour une curation 100% manuelle. Le seuil actuel (`autoFns.length === 0 && count >= 2`) déclenche dès qu'une espèce n'a aucun tag auto — typiquement les insectes, champignons, mollusques, et toute plante absente de notre base familles/strates.
 
-Permettre aux **ambassadeurs / sentinelles / admin** de corriger en 2 clics les tags écologiques (arbre, mellifère, vieil arbre, fixateur d'azote…) d'une espèce, depuis la vignette espèce du module **Découverte du vivant**. Et leur signaler clairement, dans le back-office, les espèces "à valider" (faible confiance ou auto-classifiées).
+La solution n'est pas de cacher le compteur, mais de **réduire drastiquement le nombre d'espèces qui arrivent sans tags** grâce à 3 niveaux d'automatisation, puis de **rendre la validation des restantes 5× plus rapide**.
 
-## 1. Où l'UI est posée — côté curateur
+---
 
-**Emplacement principal :** dans le drawer espèce ouvert depuis le module **Analyse IA → Partons à la découverte du vivant** (composant `EcologicalJourneyCarousel`).
+## Stratégie en 4 leviers
 
-Sur chaque `SpeciesGridCard`, un petit bouton discret en haut-droite : icône crayon (`Pencil`), visible **uniquement** si l'utilisateur est curateur (`useIsCurator(explorationId)`).
+### 1. Enrichir l'auto-classification (90 % du gain attendu)
 
-Clic → ouverture d'un `Sheet` (bottom sur mobile, right sur desktop) intitulé **"Ajuster les tags écologiques"** avec :
+Aujourd'hui `classifyFunctions` ne regarde que `family`. On ajoute :
 
-- En-tête : photo + nom FR + nom scientifique
-- Bloc "Tags actuels (auto)" : les 12 fonctions affichées en chips, cliquables pour activer/désactiver
-- Chip = état tri-valeurs visuel :
-  - ✓ vert : "Confirmé" (curaté actif)
-  - − rouge clair : "Retiré" (curaté inactif)
-  - · neutre + halo : "Auto" (classifier, non touché)
-- Champ optionnel "Note du curateur" (1 ligne)
-- Toggle "Proposer pour la base globale" (réservé aux sentinelles/admin — création d'une note dans `species_curation_proposals` pour enrichir `species-knowledge-base.json` lors d'une prochaine release)
-- Boutons : Annuler · Enregistrer
+- **iconic_taxon → tags par défaut** :
+  - `Insecta` + famille pollinisatrice (Apidae, Syrphidae, Lepidoptera…) ⇒ `pollinisateur`
+  - `Insecta` Coccinellidae, Carabidae, Chrysopidae ⇒ `auxiliaire_cultures`
+  - `Aves` granivores/insectivores ⇒ `regulation_ravageurs` / `disperseur_graines`
+  - `Fungi` ⇒ `decomposeur` + `mycorhizien` si famille connue
+  - `Mollusca`, `Annelida` ⇒ `decomposeur` / `bio_indicateur`
+- **GBIF taxonomy fallback** : pour toute espèce sans family connue, on appelle `useGbifTaxonSearch` (déjà existant) au moment du backfill pour récupérer family + ordre, puis re-classifier.
+- **Cache familles** : table `species_family_cache` (scientific_name → family, iconic_taxon, traits) alimentée une fois par espèce, partagée entre toutes les marches.
 
-**Mobile-first** : sheet plein écran < md, animations Motion (déjà présentes ailleurs), gros boutons tactiles, haptic-feedback léger.
+Effet attendu sur cette marche : **77 → ~15-20 espèces** réellement non classifiables (espèces rares, taxons incertains).
 
-## 2. Signalement "il y a quelque chose à faire"
+### 2. Classification IA en batch (les ~15 restantes)
 
-Trois niveaux d'indicateurs, du plus contextuel au plus global :
+Nouvelle edge function `classify-species-eco-tags` :
 
-**a) Sur la vignette espèce** — petit point orange pulsant en haut-gauche si `needs_review = true` OU si `classification_confidence < 0.6` OU si aucun tag n'a été attribué alors que l'espèce a > 3 observations. Tooltip : "À valider".
+- Entrée : liste de scientific_name + family + iconic_taxon + count
+- Appel **Lovable AI Gateway** (`google/gemini-3-flash-preview`) avec tool calling structuré → renvoie pour chaque espèce `{ tags: EcoFunction[], confidence: 0-1, reasoning: string }`
+- On stocke dans `exploration_curations` avec `classification_source='ai'` et `classification_confidence`
+- Si `confidence >= 0.75` ⇒ auto-validé (pas dans le compteur "à valider")
+- Si `0.4 ≤ confidence < 0.75` ⇒ pré-rempli mais affiché "Suggestion IA à confirmer" (1 clic pour valider)
+- Si `confidence < 0.4` ⇒ reste "à valider" manuel
 
-**b) Sur le bouton parcours** (carte "Arbres", "Mellifères"…) — badge `n à valider` discret en bas du card, uniquement visible pour les curateurs.
+Déclenchement : bouton **"Lancer l'IA sur les 77 espèces"** dans le bandeau curateur, + cron quotidien automatique sur toutes les explorations.
 
-**c) Hub curation dédié** : nouvelle page `/marches-du-vivant/mon-espace/exploration/:id/curation-vivant` accessible depuis :
-- l'onglet **Analyse IA**, header, bouton secondaire **"Curation vivant · n à valider"** (visible curateurs uniquement)
-- le menu Outils de mon-espace (catégorie Ambassadeur/Sentinelle)
+Effet attendu : **15 restantes → ~3-5 vraiment manuelles**.
 
-Cette page liste, en une seule vue scrollable :
-- Espèces sans aucun tag (priorité haute)
-- Espèces avec confiance faible (< 0.6)
-- Espèces signalées `needs_review`
-- Espèces récemment éditées par d'autres curateurs (transparence)
+### 3. Apprentissage cross-marches
 
-Chaque ligne = mini-card avec photo, nom, tags actuels, et bouton "Ajuster" qui ouvre le même Sheet qu'en (1).
+Quand un curateur valide les tags d'une espèce (ex. *Anacamptis pyramidalis* → `mellifere`, `bio_indicateur`), on propose d'enregistrer dans une **base globale** `species_eco_tags_kb` (scientific_name + tags + nb_validations + last_validator).
 
-## 3. Logique métier
+- Sur les marches futures, ces tags sont appliqués automatiquement avec `classification_source='knowledge_base'` (priorité max, jamais "à valider").
+- Une espèce validée 1 fois ne ressort plus jamais "à valider" nulle part.
 
-- La curation est **stockée dans `exploration_curations`** avec :
-  - `entity_type = 'species'`
-  - `entity_id = scientific_name`
-  - `sense = 'oeil'` (sens utilisé pour le visuel/biodiversité)
-  - une nouvelle colonne **`functions text[]`** = liste des tags activés (override total : si présente, remplace l'auto-classification)
-  - `classification_source = 'curator'`, `classification_confidence = 1.0`, `needs_review = false`
-- `useEcologicalFunctions` lit d'abord les curations, applique les overrides, puis retombe sur l'auto-classification (cf. logique déjà en place pour le pont strate).
-- Permissions : RLS existant déjà adapté (ambassadeur/sentinelle participant à un évènement de l'exploration, + admin partout). L'écriture passe par `useUpsertCuration` déjà en place.
+Effet sur le long terme : le compteur descend marche après marche.
 
-## 4. Notifications légères (optionnel mais recommandé)
+### 4. UX : validation 5× plus rapide pour les restantes
 
-Dans le **hub admin/sentinelle** (`AdminOutilsHub` ou la page communauté), un compteur global "**n espèces à valider sur k explorations actives**" — agrégation côté Edge Function pour ne pas casser les perfs.
+Dans le drawer "À valider" :
 
-Pas d'email/push pour rester sobre (cf. mémoire Sobriété Informationnelle).
+- **Mode "rapide"** : pas de Sheet par espèce — chips directement sur la vignette, tap = toggle, swipe = espèce suivante.
+- **Bulk apply** : sélection multiple + "Appliquer ces tags aux N espèces sélectionnées" (pratique pour les abeilles solitaires, papillons…).
+- **Suggestions contextuelles** : pour chaque espèce on affiche les 3 tags les plus probables en avant (basé sur l'IA + voisins taxonomiques déjà validés sur la marche).
+- **Skip** : "Pas sûr → laisser pour un autre curateur" sans coût cognitif.
 
-## Périmètre technique
+---
 
-```text
-DB migration                                  ALTER exploration_curations ADD functions text[]
-                                              + index partial sur needs_review/confidence
-src/hooks/useEcologicalFunctions.ts           lit + applique overrides curation
-src/hooks/useSpeciesCurationStatus.ts         NEW — agrège needs_review par exploration
-src/components/biodiversity/
-  EcologicalJourneyCarousel.tsx               + bouton crayon sur SpeciesGridCard
-  SpeciesEcoTagsEditor.tsx                    NEW — Sheet édition tags
-  SpeciesGridCard.tsx (extraction)            + dot "à valider" + bouton curateur
-src/components/community/analyse/
-  AnalyseIAStepper.tsx                        + bouton header "Curation vivant"
-src/pages/
-  ExplorationCurationVivant.tsx               NEW — hub liste à valider
-src/App.tsx (routes)                          + route /curation-vivant
+## Plan technique
+
+### Migration DB
+```sql
+create table public.species_eco_tags_kb (
+  scientific_name text primary key,
+  tags text[] not null,
+  confidence numeric default 1.0,
+  source text not null check (source in ('curator','ai','expert')),
+  validations_count int default 1,
+  last_validated_by uuid,
+  last_validated_at timestamptz default now()
+);
+create table public.species_family_cache (
+  scientific_name text primary key,
+  family text, iconic_taxon text, kingdom text,
+  traits jsonb default '{}'::jsonb,
+  fetched_at timestamptz default now()
+);
 ```
+RLS : lecture publique, écriture via SECURITY DEFINER RPC `validate_species_tags(name, tags[])` réservée curateurs.
 
-## Points hors-scope (à valider plus tard)
+### Edge functions
+- `classify-species-eco-tags` (POST batch, retourne suggestions IA)
+- `enrich-species-taxonomy` (cron quotidien : remplit `species_family_cache` via GBIF pour toute nouvelle espèce)
+- RPC `validate_species_tags` (écrit curation + KB en une transaction)
 
-- Synchronisation curation → KB globale (table `species_curation_proposals` créée mais workflow de PR manuel)
-- Historique des éditions par curateur (audit trail) — non prioritaire
-- Édition multi-espèces en masse — V2 si besoin
+### Frontend
+- `useEcologicalFunctions` : ajoute la priorité **KB > curation locale > IA confidence≥0.75 > auto-classif > needsReview**
+- `ClassifyAllAIButton` dans le bandeau curateur amber (visible si needsReview > 5)
+- `BulkValidationDrawer` : nouveau mode rapide chips inline + swipe + bulk apply
+- `useSpeciesKbSuggestions(scientificName)` : récupère suggestions cross-marches
 
-## Question rapide avant de coder
+### Lib
+- `ecologicalFunctionsClassification.ts` : étendre avec règles par iconic_taxon (insectes, oiseaux, champignons, mollusques)
+- Nouveau `lib/insectFamiliesEco.ts` : map familles d'insectes → tags
 
-Confirmes-tu ces 3 points :
-1. Bouton crayon sur **chaque vignette** dans le drawer du parcours (et non en haut du drawer) — OK ?
-2. La page hub `/curation-vivant` est créée même si on peut déjà tout faire depuis les vignettes — OK pour avoir une vue agrégée ?
-3. Le compteur global "n à valider" sur AdminOutilsHub — on l'ajoute dans ce lot ou plus tard ?
+---
+
+## Sortie utilisateur attendue
+
+Sur cette marche après mise en place :
+- **Bandeau au chargement** : "77 espèces non taguées → l'IA traite en arrière-plan… ✓ 62 classifiées automatiquement"
+- **Reste 15 espèces** avec suggestions IA pré-remplies → 1 clic chacune pour valider
+- **Reste ~3 espèces** vraiment incertaines → validation manuelle ou skip
+
+Temps de curation estimé : **45 min → 5 min** pour cette marche, et **encore moins** pour les marches suivantes grâce à la KB.
+
+---
+
+## Hors scope (à confirmer)
+
+- Workflow d'expert/scientifique (validation niveau "expert" qui override curateur)
+- Détection de conflits entre curateurs sur une même espèce KB
+- Interface admin pour gérer la KB globale (édition/suppression d'entrées)
