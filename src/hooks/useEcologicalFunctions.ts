@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useExplorationSpeciesPool, type ExplorationSpecies } from './useExplorationSpeciesPool';
 import { useExplorationCurations } from './useExplorationCurations';
+import { useSpeciesEcoTagsKb } from './useSpeciesEcoTagsKb';
 import { classifyFunctions } from '@/lib/ecologicalFunctionsClassification';
 import { ECO_FUNCTIONS, type EcoFunction, computeFertilityScore } from '@/lib/ecologicalFunctions';
 import { resolveStrate, type PlantStrate } from '@/lib/plantStrate';
@@ -9,11 +10,14 @@ export interface SpeciesWithFunctions extends ExplorationSpecies {
   functions: EcoFunction[];
   /** Tags issus de l'auto-classification (avant override curateur). */
   autoFunctions: EcoFunction[];
-  /** True si un curateur a explicitement édité les tags. */
+  /** True si un curateur local a explicitement édité les tags. */
   isCurated: boolean;
+  /** True si tags issus de la KB globale (validés sur autre marche). */
+  isFromKb: boolean;
   /** True si l'auto-classification est faible / vide ⇒ à valider. */
   needsReview: boolean;
 }
+
 
 export interface EcoFunctionsResult {
   buckets: Record<EcoFunction, SpeciesWithFunctions[]>;
