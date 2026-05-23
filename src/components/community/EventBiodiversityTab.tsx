@@ -24,6 +24,7 @@ import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
 import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
 import TrophicChainPanel from './synthese/TrophicChainPanel';
+import PackVivantButton from './PackVivantButton';
 
 type SubTab = 'synthese' | 'taxons' | 'indicateurs' | 'temoignages' | 'textes' | 'analyse';
 
@@ -515,6 +516,26 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               <AnimatedStat value={stats.others} label="Autre" icon={Bug} color={categoryConfig.others.color} bgColor={categoryConfig.others.bgColor} delay={400} />
             </div>
             <TrophicChainPanel species={allSpeciesWithFrNames as any} explorationId={explorationId} />
+
+            {explorationId && (
+              <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent p-5">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex-1 min-w-[220px]">
+                    <h3 className="text-sm font-semibold text-foreground mb-1">
+                      Pack Vivant — Téléchargez toutes les espèces
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Rapport illustré + classeur Excel + coordonnées GPS + cartographie (GeoJSON · KML).
+                      Prêt pour l'analyse, la documentation et le partage.
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <PackVivantButton explorationId={explorationId} level="walker" variant="default" size="sm" />
+                    <PackVivantButton explorationId={explorationId} level="organizer" variant="outline" size="sm" />
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
