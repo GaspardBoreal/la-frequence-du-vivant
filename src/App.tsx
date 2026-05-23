@@ -60,6 +60,7 @@ import PublicEpubDownload from './pages/PublicEpubDownload';
 import PublicLivreVivant from './pages/PublicLivreVivant';
 import MarchesDuVivant from './pages/MarchesDuVivant';
 import MarchesDuVivantEntreprises from './pages/MarchesDuVivantEntreprises';
+import MarchesDuVivantAgriculture from './pages/MarchesDuVivantAgriculture';
 import MarchesDuVivantPartenaires from './pages/MarchesDuVivantPartenaires';
 import MarchesDuVivantAssociation from './pages/MarchesDuVivantAssociation';
 import MarchesDuVivantExplorer from './pages/MarchesDuVivantExplorer';
@@ -111,6 +112,7 @@ function App() {
             {/* Routes Les Marches du Vivant */}
             <Route path="/marches-du-vivant" element={<MarchesDuVivant />} />
             <Route path="/marches-du-vivant/entreprises" element={<MarchesDuVivantEntreprises />} />
+            <Route path="/marches-du-vivant/agriculture" element={<MarchesDuVivantAgriculture />} />
             <Route path="/marches-du-vivant/partenaires" element={<MarchesDuVivantPartenaires />} />
             <Route path="/marches-du-vivant/association" element={<MarchesDuVivantAssociation />} />
             <Route path="/marches-du-vivant/explorer" element={<MarchesDuVivantExplorer />} />

@@ -142,7 +142,7 @@ const MarchesDuVivant = () => {
               </Link>
 
               {/* Card Agriculture & Coopératives */}
-              <Link to="/marches-du-vivant/entreprises" onClick={() => window.scrollTo(0, 0)}>
+              <Link to="/marches-du-vivant/agriculture" onClick={() => window.scrollTo(0, 0)}>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
