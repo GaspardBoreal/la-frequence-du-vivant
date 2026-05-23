@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Popup } from 'react-leaflet';
 import { MapPin, Layers, CloudSun, Loader2, Copy, Check } from 'lucide-react';
 import { ParcelInfo } from './cadastreUtils';
