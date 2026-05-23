@@ -1,49 +1,83 @@
-# Fix — Analyse IA "Ce que nous avons vu" ne retourne plus qu'une espèce
 
-## Cause racine
+# Unification du comptage d'espèces par exploration
 
-L'edge function `analyze-exploration-species` envoie à l'IA un user prompt au format pipe-delimité :
+## Problème
+
+Trois vues d'une même exploration affichent trois sources de vérité différentes :
+
+- **Carnet** (104) : dédup `scientificName` lowercase, snapshots ∪ marcheur_observations
+- **Carte / Synthèse** (101) : dédup hybride `commonName || scientificName` (provoque collisions)
+- **Chatbot / Top species** : encore une autre RPC
+
+Aucune mise à jour automatique fiable lorsqu'un marcheur ajoute une observation ou qu'un snapshot iNat est resynchronisé.
+
+## Solution
+
+Une **source de vérité unique côté DB** (RPC) + un **hook React wrapper** réutilisé partout, avec invalidation react-query ciblée + abonnement Realtime en filet de sécurité.
+
+### 1. RPC SQL `get_exploration_species_count(exploration_id uuid)`
+
+`SECURITY DEFINER`, `STABLE`, retourne :
+
+```text
+{
+  total: int,
+  by_kingdom: { animalia, plantae, fungi, others },
+  by_source: { snapshots_only, marcheur_only, both },
+  species: jsonb  -- liste compacte [{ sci, kingdom, count, sources[] }]
+}
 ```
-${s.key} | ${s.scientificName} | ${s.commonName} | ${s.count}
-```
-Le modèle Gemini Flash copie **toute la ligne** comme valeur du champ `key` au lieu de ne reprendre que le premier segment. Conséquence : les 59 lignes IA insérées dans `exploration_curations` ont un `entity_id` composite (ex. `"Harmonia axyridis | Harmonia axyridis | Asian Lady Beetle | 10"`) qui ne matche plus le `scientificName` utilisé côté front. Seule la 1 entrée Knowledge Base s'affiche.
 
-## Correctif (1 fichier)
+Logique :
 
-**`supabase/functions/analyze-exploration-species/index.ts`** — durcir le remapping IA → pool :
+- Lit `exploration_marches` → `marche_ids`
+- Snapshots : ne garde que le plus récent par `marche_id` (latéral `DISTINCT ON`), aplatit `species_data` via `jsonb_array_elements`
+- Marcheur : `marcheur_observations` filtrés sur les mêmes `marche_ids`
+- Clé canonique : `lower(unaccent(trim(scientific_name)))` (NFD côté SQL via extension `unaccent` déjà installée)
+- Union via `GROUP BY` sur la clé canonique
+- Royaume : prend la valeur non-`Unknown` rencontrée la première (snapshot prioritaire)
 
-1. **Construire une lookup `Map<normalizedKey, SpeciesInput>`** sur `needsAi`, indexée à la fois sur :
-   - `sp.key` brut (lowercase)
-   - `sp.scientificName?.toLowerCase()`
-   - première portion avant ` | ` lowercased
-2. **Pour chaque résultat IA**, extraire la "vraie" key :
-   - prendre `r.key`, splitter sur ` | `, retenir le 1er segment, trim, lowercase
-   - chercher dans la lookup → récupérer le `sp` d'origine
-   - si introuvable, fallback : matcher par `scientificName` insensible à la casse parmi `needsAi`
-   - si toujours introuvable → ignorer la ligne (log warning) plutôt que polluer la base
-3. **Stocker `entity_id = sp.key`** (la key canonique d'origine, identique au format KB), pas la valeur renvoyée par l'IA.
-4. **Ajouter un log de contrôle** : `[analyze] AI mapped: X/${needsAi.length}, unmatched: Y` pour détecter toute future dérive du modèle.
-5. **Renforcer le system prompt** : reformuler la règle pour le champ `key` (ex. "key DOIT être copié EXACTEMENT depuis le 1er champ avant le ` | `, sans modification, sans recapitalisation, sans recopier les autres champs"). Garde-fou, pas la défense principale.
+### 2. Hook wrapper `useExplorationSpeciesCount(explorationId)`
 
-## Nettoyage (optionnel mais recommandé)
+- `queryKey: ['exploration-species-count', explorationId]`
+- `staleTime: 30s`, `gcTime: 5min`
+- Appelle `supabase.rpc('get_exploration_species_count', { p_exploration_id })`
+- Expose `{ total, byKingdom, bySource, species, isLoading }`
 
-Purger les lignes corrompues de la dernière analyse pour cette exploration afin que l'UI se recharge proprement :
-```sql
-DELETE FROM exploration_curations
-WHERE sense='oeil' AND entity_type='species' AND source='ai'
-  AND entity_id LIKE '% | %';
-```
-À exécuter en migration one-shot OU à laisser l'utilisateur relancer "Relancer l'analyse IA" — la fonction supprime déjà toutes les lignes `source='ai'` avant de réinsérer (cf. ligne 370-375). Une simple relance après le fix suffit donc.
+### 3. Fraîcheur automatique (les deux mécanismes)
 
-## Validation
+**Invalidation react-query ciblée** dans toutes les mutations existantes :
+- `useReorderMarcheurObservations`, ajout/suppression d'observation marcheur, edge functions de resync iNat (via canal Realtime)
+- Helper `invalidateExplorationSpecies(qc, explorationId)`
 
-1. Cliquer "Relancer l'analyse IA" sur l'exploration `20dd3be8-…`.
-2. Vérifier les logs : `[analyze] AI mapped: 59/59, unmatched: 0`.
-3. Vérifier en base que `entity_id` ne contient plus jamais ` | `.
-4. Vérifier dans "Ce que nous avons vu" que les 6 catégories (indigène, auxiliaire, bioindicatrice, ravageur, eee, patrimoniale) se peuplent comme avant.
+**Abonnement Realtime** (montage du hook si activé via prop `realtime: true`) :
+- `channel('exploration-species-' + id)`
+- `.on('postgres_changes', { table: 'marcheur_observations', filter: 'marche_id=in.(...)' }, …)`
+- `.on('postgres_changes', { table: 'biodiversity_snapshots', filter: 'marche_id=in.(...)' }, …)`
+- Sur event → `queryClient.invalidateQueries(['exploration-species-count', id])`
+- Activé uniquement sur Carnet/Carte/Synthèse de la même exploration (pas sur listes)
 
-## Hors scope
+### 4. Câblage des 3 vues
 
-- Pas de changement de schéma DB.
-- Pas de changement front : le tolérant `useMarcheurSensibleSpecies` (split sur ` | `) reste en place comme filet de sécurité legacy.
-- Pas de modification de la Knowledge Base ni du modèle.
+| Vue | Fichier | Remplacement |
+|---|---|---|
+| Carnet | `useMarcheCollectedData` | Supprimer le calcul species_count interne, lire depuis le nouveau hook (clé par exploration_id) |
+| Carte | `ExplorationCarteTab.tsx` | `bioSummary.totalSpecies` → `speciesCount.total` |
+| Synthèse | même | idem |
+| Chatbot | RPC `get_admin_entity_context` | À l'occasion : faire pointer le slice species vers la même RPC pour aligner |
+
+`useExplorationBiodiversitySummary` continue d'exister pour `topSpecies`, `gradientData`, `allSpecies` (gallerie), mais **lit `total` depuis la nouvelle RPC** pour garantir cohérence avec les autres vues.
+
+### 5. Garde-fous
+
+- Test SQL : `SELECT (get_exploration_species_count('20dd3be8-…')).total;` doit valoir 104
+- Logging console côté hook : `[species-count] exploration=X total=Y source=rpc`
+- Memory update : nouvelle entrée `mem://technical/biodiversity/unified-species-count-rpc` documentant la RPC comme source unique
+
+## Détails techniques
+
+- **Migration** : 1 RPC `get_exploration_species_count` + GRANT EXECUTE TO authenticated, anon
+- **Pas de schema change** sur les tables existantes
+- **Realtime** : tables `marcheur_observations` et `biodiversity_snapshots` doivent être dans `supabase_realtime` publication (à vérifier, ajouter si absent)
+- **Coût** : 1 RPC remplace 3 requêtes parallèles côté Carte/Synthèse → gain perf
+- **Fichiers touchés** : ~6 (migration, nouveau hook, 3 vues, 1 memory)
