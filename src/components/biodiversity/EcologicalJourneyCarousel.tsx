@@ -98,9 +98,11 @@ const EcologicalJourneyCarousel: React.FC<Props> = ({ explorationId }) => {
   const { buckets, counts, mellifereByStrate, allSpecies, needsReviewCount, isLoading } =
     useEcologicalFunctions(explorationId);
   const { data: canCurate } = useIsCurator(explorationId);
+  const classifyAI = useClassifySpeciesAI();
   const [openTag, setOpenTag] = useState<EcoFunction | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [editingSpecies, setEditingSpecies] = useState<SpeciesWithFunctions | null>(null);
+
 
   const activeFunctions = useMemo(
     () => ECO_FUNCTIONS.filter(f => counts[f.value] > 0),
