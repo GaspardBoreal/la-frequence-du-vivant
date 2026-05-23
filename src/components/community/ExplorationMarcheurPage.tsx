@@ -287,6 +287,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   }
 
   return (
+    <SpeciesPhotoModeProvider explorationId={effectiveExplorationId || undefined}>
     <div className="min-h-screen bg-background" data-chat-viewport>
       <ChatViewportObserver />
       {/* Sticky Header */}
