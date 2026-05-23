@@ -423,6 +423,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
   // Biodiversity summary
   const { data: bioSummary } = useExplorationBiodiversitySummary(explorationId);
+  const { data: speciesCount } = useExplorationSpeciesCount(explorationId, { realtime: true });
+  const unifiedTotalSpecies = speciesCount?.total ?? bioSummary?.totalSpecies ?? 0;
 
   // Contribution stats per marche
   const marcheIds = useMemo(() => marches.map(m => m.id), [marches]);
