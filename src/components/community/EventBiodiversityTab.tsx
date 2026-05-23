@@ -509,7 +509,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               explorationId={explorationId}
               userRole={userProfile?.role}
             />
-            <EcologicalJourneyCarousel explorationId={explorationId} />
+
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <AnimatedStat value={stats.total} label="Espèces totales" icon={Layers} color={categoryConfig.all.color} bgColor={categoryConfig.all.bgColor} delay={0} />
               <AnimatedStat value={stats.birds} label="Faune" icon={Bird} color={categoryConfig.birds.color} bgColor={categoryConfig.birds.bgColor} delay={100} />
@@ -588,20 +588,25 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center py-16 text-center"
+            className="space-y-8"
           >
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-emerald-500/5 border border-violet-500/15 flex items-center justify-center mb-4">
-              <Sparkles className="w-7 h-7 text-violet-400/60" />
-            </div>
-            <h3 className="text-foreground text-sm font-semibold mb-1">Analyse écologique IA</h3>
-            <p className="text-muted-foreground text-xs max-w-xs leading-relaxed">
-              Lorsque vous aurez atteint les 100 espèces identifiées, l'intelligence artificielle des Marches du Vivant analysera alors la richesse écologique de ce territoire : indices de diversité, espèces remarquables, corridors biologiques, chaîne trophique ... et recommandations pour développer la biodiversité locale.
-            </p>
-            <div className="mt-4 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
-              <span className="text-violet-600 dark:text-violet-400 text-[10px] font-medium">Bientôt disponible</span>
+            <EcologicalJourneyCarousel explorationId={explorationId} />
+
+            <div className="flex flex-col items-center justify-center py-10 text-center border-t border-border/50">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-emerald-500/5 border border-violet-500/15 flex items-center justify-center mb-4">
+                <Sparkles className="w-7 h-7 text-violet-400/60" />
+              </div>
+              <h3 className="text-foreground text-sm font-semibold mb-1">Analyse écologique IA</h3>
+              <p className="text-muted-foreground text-xs max-w-xs leading-relaxed">
+                Lorsque vous aurez atteint les 100 espèces identifiées, l'intelligence artificielle des Marches du Vivant analysera alors la richesse écologique de ce territoire : indices de diversité, espèces remarquables, corridors biologiques, chaîne trophique ... et recommandations pour développer la biodiversité locale.
+              </p>
+              <div className="mt-4 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
+                <span className="text-violet-600 dark:text-violet-400 text-[10px] font-medium">Bientôt disponible</span>
+              </div>
             </div>
           </motion.div>
         )}
+
       </AnimatePresence>
     </div>
   );
