@@ -219,11 +219,16 @@ export function classifyFunctions(sp: ClassifyFnInput): EcoFunction[] {
     if (genus && GENUS_RULES[genus]) GENUS_RULES[genus].forEach(f => out.add(f));
   }
 
-  // 2. Famille
-  if (family && FAMILY_RULES[family]) FAMILY_RULES[family].forEach(f => out.add(f));
+  // 2. Famille (plantes + insectes + oiseaux + champignons)
+  if (family) {
+    if (FAMILY_RULES[family]) FAMILY_RULES[family].forEach(f => out.add(f));
+    if (INSECT_FAMILY_RULES[family]) INSECT_FAMILY_RULES[family].forEach(f => out.add(f));
+    if (BIRD_FAMILY_RULES[family]) BIRD_FAMILY_RULES[family].forEach(f => out.add(f));
+    if (FUNGI_FAMILY_RULES[family]) FUNGI_FAMILY_RULES[family].forEach(f => out.add(f));
+  }
 
-  // 3. Fallback iconic_taxon
-  if (out.size === 0 && iconic && ICONIC_RULES[iconic]) {
+  // 3. Fallback iconic_taxon (toujours appliqué pour donner au moins 1 tag aux groupes connus)
+  if (iconic && ICONIC_RULES[iconic]) {
     ICONIC_RULES[iconic]!.forEach(f => out.add(f));
   }
 
