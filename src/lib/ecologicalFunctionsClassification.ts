@@ -121,9 +121,75 @@ const GENUS_RULES: Record<string, EcoFunction[]> = {
   Eisenia: ['decomposeur', 'ameliorant_sol'],
 };
 
+/**
+ * Familles d'insectes / oiseaux / champignons → tags par défaut.
+ * Élargit considérablement la couverture auto (réduit les "à valider").
+ */
+const INSECT_FAMILY_RULES: Record<string, EcoFunction[]> = {
+  // Pollinisateurs
+  Vespidae: ['pollinisateur'],
+  Pieridae: ['pollinisateur'],
+  Nymphalidae: ['pollinisateur'],
+  Lycaenidae: ['pollinisateur'],
+  Papilionidae: ['pollinisateur'],
+  Hesperiidae: ['pollinisateur'],
+  Sphingidae: ['pollinisateur'],
+  // Auxiliaires / régulateurs de ravageurs
+  Coccinellidae: ['refuge_faune'],
+  Carabidae: ['refuge_faune'],
+  Chrysopidae: ['refuge_faune'],
+  Cantharidae: ['pollinisateur', 'refuge_faune'],
+  // Coléoptères floricoles
+  Cetoniidae: ['pollinisateur'],
+  Oedemeridae: ['pollinisateur'],
+  Cleridae: ['pollinisateur'],
+  Meloidae: ['pollinisateur'],
+  Mordellidae: ['pollinisateur'],
+  // Diptères butineurs
+  Tachinidae: ['pollinisateur', 'refuge_faune'],
+  // Décomposeurs
+  Scarabaeidae: ['decomposeur'],
+  Geotrupidae: ['decomposeur'],
+  Silphidae: ['decomposeur'],
+  Staphylinidae: ['decomposeur'],
+};
+
+const BIRD_FAMILY_RULES: Record<string, EcoFunction[]> = {
+  // Disperseurs de graines / régulateurs
+  Turdidae: ['refuge_faune'],
+  Sylviidae: ['refuge_faune'],
+  Paridae: ['refuge_faune'],
+  Fringillidae: ['refuge_faune'],
+  Emberizidae: ['refuge_faune'],
+  Sittidae: ['refuge_faune', 'vieil_arbre'],
+  Picidae: ['refuge_faune', 'vieil_arbre'],
+  Certhiidae: ['refuge_faune', 'vieil_arbre'],
+  Strigidae: ['refuge_faune'],
+  Accipitridae: ['refuge_faune'],
+  Hirundinidae: ['refuge_faune'],
+  Apodidae: ['refuge_faune'],
+};
+
+const FUNGI_FAMILY_RULES: Record<string, EcoFunction[]> = {
+  Russulaceae: ['decomposeur', 'ameliorant_sol'],
+  Boletaceae: ['decomposeur', 'ameliorant_sol'],
+  Amanitaceae: ['decomposeur', 'ameliorant_sol'],
+  Cortinariaceae: ['decomposeur', 'ameliorant_sol'],
+  Agaricaceae: ['decomposeur'],
+  Tricholomataceae: ['decomposeur'],
+  Polyporaceae: ['decomposeur', 'refuge_faune'],
+};
+
+/** Fallback iconic_taxon (kingdom/classe iNat) → tags génériques. */
 const ICONIC_RULES: Partial<Record<string, EcoFunction[]>> = {
   Fungi: ['decomposeur'],
   Mollusca: ['decomposeur'],
+  Annelida: ['decomposeur', 'ameliorant_sol'],
+  Insecta: ['refuge_faune'],
+  Arachnida: ['refuge_faune'],
+  Aves: ['refuge_faune'],
+  Amphibia: ['refuge_faune'],
+  Reptilia: ['refuge_faune'],
 };
 
 export interface ClassifyFnInput {
@@ -151,11 +217,16 @@ export function classifyFunctions(sp: ClassifyFnInput): EcoFunction[] {
     if (genus && GENUS_RULES[genus]) GENUS_RULES[genus].forEach(f => out.add(f));
   }
 
-  // 2. Famille
-  if (family && FAMILY_RULES[family]) FAMILY_RULES[family].forEach(f => out.add(f));
+  // 2. Famille (plantes + insectes + oiseaux + champignons)
+  if (family) {
+    if (FAMILY_RULES[family]) FAMILY_RULES[family].forEach(f => out.add(f));
+    if (INSECT_FAMILY_RULES[family]) INSECT_FAMILY_RULES[family].forEach(f => out.add(f));
+    if (BIRD_FAMILY_RULES[family]) BIRD_FAMILY_RULES[family].forEach(f => out.add(f));
+    if (FUNGI_FAMILY_RULES[family]) FUNGI_FAMILY_RULES[family].forEach(f => out.add(f));
+  }
 
-  // 3. Fallback iconic_taxon
-  if (out.size === 0 && iconic && ICONIC_RULES[iconic]) {
+  // 3. Fallback iconic_taxon (toujours appliqué pour donner au moins 1 tag aux groupes connus)
+  if (iconic && ICONIC_RULES[iconic]) {
     ICONIC_RULES[iconic]!.forEach(f => out.add(f));
   }
 

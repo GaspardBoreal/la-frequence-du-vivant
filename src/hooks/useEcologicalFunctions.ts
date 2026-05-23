@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useExplorationSpeciesPool, type ExplorationSpecies } from './useExplorationSpeciesPool';
 import { useExplorationCurations } from './useExplorationCurations';
+import { useSpeciesEcoTagsKb } from './useSpeciesEcoTagsKb';
 import { classifyFunctions } from '@/lib/ecologicalFunctionsClassification';
 import { ECO_FUNCTIONS, type EcoFunction, computeFertilityScore } from '@/lib/ecologicalFunctions';
 import { resolveStrate, type PlantStrate } from '@/lib/plantStrate';
@@ -9,11 +10,14 @@ export interface SpeciesWithFunctions extends ExplorationSpecies {
   functions: EcoFunction[];
   /** Tags issus de l'auto-classification (avant override curateur). */
   autoFunctions: EcoFunction[];
-  /** True si un curateur a explicitement édité les tags. */
+  /** True si un curateur local a explicitement édité les tags. */
   isCurated: boolean;
+  /** True si tags issus de la KB globale (validés sur autre marche). */
+  isFromKb: boolean;
   /** True si l'auto-classification est faible / vide ⇒ à valider. */
   needsReview: boolean;
 }
+
 
 export interface EcoFunctionsResult {
   buckets: Record<EcoFunction, SpeciesWithFunctions[]>;
@@ -60,6 +64,13 @@ export function useEcologicalFunctions(
   const { data: pool, isLoading } = useExplorationSpeciesPool(explorationId);
   const { data: curations } = useExplorationCurations(explorationId, 'oeil');
 
+  // KB globale cross-marches
+  const allNames = useMemo(
+    () => (pool || []).map(s => s.scientificName).filter((x): x is string => !!x),
+    [pool],
+  );
+  const { data: kbMap } = useSpeciesEcoTagsKb(allNames);
+
   return useMemo(() => {
     // Map scientificName -> curation override
     const overrideByName = new Map<string, { functions: EcoFunction[] | null; curationId: string }>();
@@ -82,12 +93,25 @@ export function useEcologicalFunctions(
 
     (pool || []).forEach(sp => {
       const autoFns = autoClassify(sp);
-      const override = sp.scientificName ? overrideByName.get(sp.scientificName.trim()) : undefined;
-      const finalFns = override ? (override.functions || []) : autoFns;
+      const name = sp.scientificName?.trim() || '';
+      const override = name ? overrideByName.get(name) : undefined;
+      const kbEntry = name ? kbMap?.get(name) : undefined;
 
-      // À valider : pas de curateur ET (aucun tag auto OU espèce végétale fréquente sans tag)
+      // Priorité : curation locale > KB globale (confidence >= 0.75) > auto-classif
+      let finalFns: EcoFunction[];
+      let isFromKb = false;
+      if (override) {
+        finalFns = override.functions || [];
+      } else if (kbEntry && kbEntry.confidence >= 0.75 && kbEntry.tags.length > 0) {
+        finalFns = kbEntry.tags;
+        isFromKb = true;
+      } else {
+        finalFns = autoFns;
+      }
+
       const isCurated = !!override;
-      const needsReview = !isCurated && autoFns.length === 0 && sp.count >= 2;
+      // À valider : aucune source (ni curation, ni KB fiable, ni auto) ET espèce fréquente
+      const needsReview = !isCurated && !isFromKb && autoFns.length === 0 && sp.count >= 2;
       if (needsReview) needsReviewCount += 1;
 
       const enriched: SpeciesWithFunctions = {
@@ -95,11 +119,13 @@ export function useEcologicalFunctions(
         functions: finalFns,
         autoFunctions: autoFns,
         isCurated,
+        isFromKb,
         needsReview,
       };
       allSpecies.push(enriched);
       finalFns.forEach(f => buckets[f].push(enriched));
     });
+
 
     const counts = ECO_FUNCTIONS.reduce((acc, f) => {
       acc[f.value] = buckets[f.value].length;
@@ -126,5 +152,5 @@ export function useEcologicalFunctions(
       needsReviewCount,
       isLoading,
     };
-  }, [pool, curations, isLoading]);
+  }, [pool, curations, kbMap, isLoading]);
 }
