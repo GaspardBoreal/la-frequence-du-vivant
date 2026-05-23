@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
-import { Radar, Brain, Volume2, Flower2, Compass, CloudSun, Lock } from 'lucide-react';
+import { Radar, Brain, Volume2, Flower2, Compass, CloudSun, Lock, Network } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import ZonesTab from './ZonesTab';
 import QuizTab from './QuizTab';
@@ -24,7 +25,18 @@ interface ToolDef {
   comingSoon?: boolean;
 }
 
+interface ToolDef {
+  id: string;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  minRole?: CommunityRoleKey;
+  comingSoon?: boolean;
+  externalRoute?: string;
+}
+
 const TOOLS: ToolDef[] = [
+  { id: 'apimcp', label: 'API & MCP', description: 'L\'écosystème vivant de l\'app', icon: Network, externalRoute: '/api-mcp' },
   { id: 'zones', label: 'Zones', description: 'Cartographie des zones de marche', icon: Radar },
   { id: 'quiz', label: 'Quiz', description: 'Testez vos connaissances', icon: Brain },
   { id: 'sons', label: 'Sons', description: 'Écoute bioacoustique', icon: Volume2, minRole: 'eclaireur' },
