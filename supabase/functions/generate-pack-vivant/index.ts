@@ -24,6 +24,7 @@ interface Observation {
   observation_id: string;
   sci_key: string;
   scientific_name: string;
+  common_name_fr: string | null;
   observation_date: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -38,6 +39,7 @@ interface Observation {
 interface SpeciesRow {
   sci_key: string;
   scientific_name: string;
+  common_name_fr: string | null;
   observation_count: number;
   observer_count: number;
   first_observation: string | null;
