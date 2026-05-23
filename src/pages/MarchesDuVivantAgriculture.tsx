@@ -384,7 +384,7 @@ const MarchesDuVivantAgriculture = () => {
           </div>
         </section>
 
-        <Footer />
+        <Footer variant="marches" />
       </div>
     </>
   );
