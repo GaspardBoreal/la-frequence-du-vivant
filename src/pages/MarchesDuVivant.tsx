@@ -265,7 +265,7 @@ const MarchesDuVivant = () => {
         </section>
 
         {/* Trust Bar */}
-        <TrustBar className="border-y border-border/20" />
+        <TrustBar showQualiopi={false} className="border-y border-border/20" />
 
         {/* Différenciateurs */}
         <section className="py-16 px-6">
