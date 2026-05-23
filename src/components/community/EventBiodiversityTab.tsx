@@ -22,12 +22,10 @@ import type { EvolutionPeriod, DateSource } from '@/hooks/useBiodiversityEvoluti
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
-import TaxonsIndicesPanel from './synthese/TaxonsIndicesPanel';
-import TrophicChainPanel from './synthese/TrophicChainPanel';
 import PackVivantButton from './PackVivantButton';
-import EcologicalJourneyCarousel from '@/components/biodiversity/EcologicalJourneyCarousel';
+import AnalyseIAStepper from './analyse/AnalyseIAStepper';
 
-type SubTab = 'synthese' | 'taxons' | 'indicateurs' | 'temoignages' | 'textes' | 'analyse';
+type SubTab = 'synthese' | 'taxons' | 'temoignages' | 'textes' | 'analyse';
 
 
 interface EventBiodiversityTabProps {
