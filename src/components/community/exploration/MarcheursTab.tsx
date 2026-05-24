@@ -479,17 +479,7 @@ const ContributionsSubTab: React.FC<{
     );
   }
 
-  if (allSpecies.length === 0) {
-    return (
-      <div className="px-3 py-6 text-center">
-        <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
-        <p className="text-xs text-muted-foreground italic">Aucune espèce identifiée pour le moment</p>
-        <p className="text-[10px] text-muted-foreground/60 mt-1">
-          Identifiez les espèces via l'onglet Vivant 🌿
-        </p>
-      </div>
-    );
-  }
+  const isEmpty = allSpecies.length === 0;
 
   return (
     <div className="px-3 pt-3 pb-3 space-y-3">
@@ -533,12 +523,23 @@ const ContributionsSubTab: React.FC<{
         </div>
       </div>
 
-      {/* Explorer factorisé : règnes, recherche, toggle photos marcheurs ↔ iNat, modal espèce, etc. */}
-      <SpeciesExplorer
-        species={speciesToShow}
-        compact
-        explorationId={explorationId}
-      />
+      {isEmpty ? (
+        <div className="px-3 py-6 text-center">
+          <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground italic">Aucune espèce identifiée pour le moment</p>
+          <p className="text-[10px] text-muted-foreground/60 mt-1">
+            {isCurator
+              ? 'Utilisez « Préparer upload iNat » pour envoyer les photos à identifier 🌿'
+              : 'Identifiez les espèces via l\'onglet Vivant 🌿'}
+          </p>
+        </div>
+      ) : (
+        <SpeciesExplorer
+          species={speciesToShow}
+          compact
+          explorationId={explorationId}
+        />
+      )}
 
       <InatUploadPrepDrawer
         open={inatDrawerOpen}
@@ -553,6 +554,7 @@ const ContributionsSubTab: React.FC<{
         identifiedPhotoUrls={identifiedPhotoUrls}
       />
     </div>
+
   );
 };
 
