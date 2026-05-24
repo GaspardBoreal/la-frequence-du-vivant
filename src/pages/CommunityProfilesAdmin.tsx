@@ -35,8 +35,27 @@ const CommunityProfilesAdmin: React.FC = () => {
   const [eventFilter, setEventFilter] = useState<string>('all');
   const [editing, setEditing] = useState<EditableProfile | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
 
   const openEditor = (p: EditableProfile) => { setEditing(p); setEditOpen(true); };
+
+  const runInatReconciliation = async () => {
+    setReconciling(true);
+    const t = toast.loading('Réconciliation des identités iNaturalist en cours...');
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-snapshot-observer-login', {
+        body: {},
+      });
+      if (error) throw error;
+      const patched = (data as any)?.attributionsPatched ?? 0;
+      const updated = (data as any)?.updated ?? 0;
+      toast.success(`Réconciliation terminée : ${patched} attributions enrichies sur ${updated} snapshots`, { id: t });
+    } catch (e: any) {
+      toast.error(`Échec : ${e?.message || 'erreur inconnue'}`, { id: t });
+    } finally {
+      setReconciling(false);
+    }
+  };
 
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['community-profiles-admin'],
