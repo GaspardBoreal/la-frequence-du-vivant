@@ -103,6 +103,34 @@ const PublicEventPage: React.FC = () => {
     window.location.href = href + (href.includes('?') ? '&' : '?') + `utm_source=public_event&utm_campaign=${slug}`;
   };
 
+  // === Scenography mode (early return) ===
+  if (sceno && sceno.scenography_code && !scenoBypassed) {
+    const title = sceno.scenography_title || sceno.title || 'Marche du vivant';
+    const description = (sceno.description || '').replace(/<[^>]+>/g, ' ').slice(0, 160);
+    const shareUrl = slug ? `${SITE}/m/${slug}` : SITE;
+    return (
+      <>
+        <Helmet>
+          <title>{title} — La Fréquence du Vivant</title>
+          <meta name="description" content={description} />
+          <link rel="canonical" href={shareUrl} />
+          <meta property="og:title" content={title} />
+          <meta property="og:description" content={description} />
+          <meta property="og:type" content="article" />
+          <meta property="og:url" content={shareUrl} />
+          {sceno.cover_image_url && <meta property="og:image" content={sceno.cover_image_url} />}
+          <meta name="twitter:card" content="summary_large_image" />
+        </Helmet>
+        <ScenographyRuntime
+          code={sceno.scenography_code}
+          data={scenoData ?? {}}
+          title={title}
+          onExit={() => setScenoBypassed(true)}
+        />
+      </>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background grid place-items-center">
