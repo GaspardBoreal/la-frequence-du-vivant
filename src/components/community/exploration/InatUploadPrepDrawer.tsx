@@ -60,7 +60,7 @@ const extFromUrl = (url: string): string => {
 const InatUploadPrepDrawer: React.FC<Props> = ({
   open, onOpenChange,
   marcheurPrenom, marcheurNom, marcheurSlug,
-  crewId, resolvedUserId, explorationId, explorationMarcheIds,
+  crewId, resolvedUserId, explorationId, explorationMarcheIds, explorationEventIds,
   identifiedPhotoUrls,
 }) => {
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
@@ -69,21 +69,21 @@ const InatUploadPrepDrawer: React.FC<Props> = ({
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   const { data: candidates = [], isLoading } = useMarcheurUnidentifiedPhotos({
-    crewId, resolvedUserId, explorationMarcheIds, identifiedPhotoUrls,
+    crewId, resolvedUserId, explorationMarcheIds, explorationEventIds, identifiedPhotoUrls,
     explorationId, enabled: open,
   });
 
   const { data: marches = [] } = useQuery({
-    queryKey: ['inat-prep-marches', explorationMarcheIds.slice().sort().join(',')],
+    queryKey: ['inat-prep-marches', explorationEventIds.slice().sort().join(',')],
     queryFn: async (): Promise<MarcheLite[]> => {
-      if (!explorationMarcheIds.length) return [];
+      if (!explorationEventIds.length) return [];
       const { data } = await supabase
         .from('marche_events')
         .select('id, title, date_marche, latitude, longitude')
-        .in('id', explorationMarcheIds);
+        .in('id', explorationEventIds);
       return (data || []) as MarcheLite[];
     },
-    enabled: open && explorationMarcheIds.length > 0,
+    enabled: open && explorationEventIds.length > 0,
     staleTime: 5 * 60_000,
   });
 
