@@ -135,6 +135,13 @@ const ScenographyRuntime: React.FC<Props> = ({
           Scénographie en erreur : {error}
         </div>
       )}
+      {showExit && onExit && !error &&
+        (!data?.species || data.species.length === 0) &&
+        (!data?.photos || data.photos.length === 0) && (
+        <div className="fixed bottom-3 left-3 right-3 z-50 max-w-lg mx-auto text-xs bg-amber-500/95 text-black px-3 py-2 rounded shadow">
+          Aperçu : aucune observation ni photo collectée pour cet évènement — la scénographie s'animera dès qu'il y aura des données.
+        </div>
+      )}
     </div>
   );
 };
