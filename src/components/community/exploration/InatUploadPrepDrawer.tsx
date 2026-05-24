@@ -19,6 +19,8 @@ interface Props {
   resolvedUserId: string | null;
   explorationId?: string;
   explorationMarcheIds: string[];
+  /** ids des `marche_events` de l'exploration (référentiel des medias) */
+  explorationEventIds: string[];
   /** URLs déjà rattachées à une espèce identifiée (à exclure). */
   identifiedPhotoUrls: Set<string>;
 }
