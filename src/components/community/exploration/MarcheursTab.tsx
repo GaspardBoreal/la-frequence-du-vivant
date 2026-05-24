@@ -52,6 +52,7 @@ import { useExplorationCitizenContributors } from '@/hooks/useExplorationCitizen
 import { useMarcheurInatProfile } from '@/hooks/useMarcheurInatProfile';
 import { useMarcheurAttributedSpecies } from '@/hooks/useMarcheurAttributedSpecies';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
+import InatUploadPrepDrawer from './InatUploadPrepDrawer';
 
 interface MarcheursTabProps {
   explorationId?: string;
