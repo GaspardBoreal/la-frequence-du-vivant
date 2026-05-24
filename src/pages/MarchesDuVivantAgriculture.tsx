@@ -18,13 +18,43 @@ import Footer from '@/components/Footer';
 import TrustBar from '@/components/marches-vivant/TrustBar';
 import ContactFormB2B from '@/components/marches-vivant/ContactFormB2B';
 import { Button } from '@/components/ui/button';
+import { useMarchesDuVivantStats } from '@/hooks/useMarchesDuVivantStats';
 
-const proofs = [
-  { value: '41,5 %', label: 'Score moyen Chapitre 5 « Respect du Vivant »', sub: '254 CUMA évaluées · Nouvelle-Aquitaine' },
-  { value: '1 / 254', label: 'Une seule CUMA à 100 % sur la Biodiversité', sub: 'Critère C5.3 du référentiel RSO' },
-  { value: '157', label: 'CUMA entre 20 et 40 % sur la biodiversité', sub: 'Le plus grand chantier collectif' },
-  { value: '+15 à +25 pts', label: 'Gain global possible si Ch.5 progresse de 5 pts', sub: 'Sur les 3 critères Respect du Vivant' },
-];
+const nf = new Intl.NumberFormat('fr-FR');
+
+const buildProofs = (
+  stats: { marches: number; regions: number; departements: number; especes: number; marcheurs: number } | undefined,
+  isLoading: boolean,
+) => {
+  const v = (n: number | undefined) => (isLoading || n == null ? '—' : nf.format(n));
+  return [
+    {
+      value: v(stats?.marches),
+      label: 'Marches du Vivant déjà organisées',
+      sub: 'Des exploitations et coopératives déjà engagées',
+    },
+    {
+      value: v(stats?.regions),
+      label: 'Régions françaises mobilisées',
+      sub: 'Un réseau national au plus près de vos territoires',
+    },
+    {
+      value: v(stats?.departements),
+      label: 'Départements traversés',
+      sub: 'Une couverture fine, adaptée à chaque bassin agricole',
+    },
+    {
+      value: v(stats?.especes),
+      label: 'Espèces vivantes identifiées sur le terrain',
+      sub: 'Inventaire opposable GBIF / iNaturalist · preuve de biodiversité réelle',
+    },
+    {
+      value: v(stats?.marcheurs),
+      label: 'Marcheurs-observateurs actifs',
+      sub: 'Agriculteurs, techniciens, élus, citoyens — une intelligence collective au service du vivant',
+    },
+  ];
+};
 
 const leviers = [
   {
