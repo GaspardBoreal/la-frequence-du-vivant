@@ -24,6 +24,8 @@ import { classifyTrophic, TROPHIC_LEVELS, DECOMPOSER_META, type TrophicGroup } f
 import SpeciesPhotoModeToggle from './SpeciesPhotoModeToggle';
 import { useSpeciesPhotoMode } from '@/contexts/SpeciesPhotoModeContext';
 import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
+import { citizenIdentityKey, citizenDisplayName } from '@/utils/citizenIdentity';
+import { normalizeAlias } from '@/hooks/useMarcheurAliases';
 
 // Utility to identify birds
 const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
