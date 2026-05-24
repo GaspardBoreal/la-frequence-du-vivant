@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, User, Bird, TreePine, Flower, Leaf, Database, MapPin, Grid3X3, LayoutList, Users } from 'lucide-react';
+import { Search, X, User, Bird, TreePine, Flower, Leaf, Database, MapPin, Grid3X3, LayoutList, Users, Layers, Check } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Card } from '../ui/card';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
@@ -18,6 +19,7 @@ import {
 } from '@/hooks/useMarcheurSpeciesTags';
 import MarcheurSpeciesTagDots from '@/components/community/tags/MarcheurSpeciesTagDots';
 import MarcheurTagsFilterBar, { matchesTagFilter, type TagFilterState } from '@/components/community/tags/MarcheurTagsFilterBar';
+import { classifyTrophic, TROPHIC_LEVELS, DECOMPOSER_META, type TrophicGroup } from '@/lib/trophicClassification';
 
 import SpeciesPhotoModeToggle from './SpeciesPhotoModeToggle';
 
