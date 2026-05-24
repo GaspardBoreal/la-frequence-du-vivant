@@ -3571,6 +3571,51 @@ export type Database = {
         }
         Relationships: []
       }
+      marcheur_media_gps_audit: {
+        Row: {
+          created_at: string
+          id: string
+          new_lat: number
+          new_lon: number
+          new_source: string
+          note: string | null
+          previous_lat: number | null
+          previous_lon: number | null
+          previous_source: string | null
+          repositioned_by: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_lat: number
+          new_lon: number
+          new_source?: string
+          note?: string | null
+          previous_lat?: number | null
+          previous_lon?: number | null
+          previous_source?: string | null
+          repositioned_by: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_lat?: number
+          new_lon?: number
+          new_source?: string
+          note?: string | null
+          previous_lat?: number | null
+          previous_lon?: number | null
+          previous_source?: string | null
+          repositioned_by?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       marcheur_medias: {
         Row: {
           attributed_marcheur_id: string | null
@@ -3659,6 +3704,7 @@ export type Database = {
       marcheur_observations: {
         Row: {
           created_at: string | null
+          gps_source: string | null
           id: string
           inaturalist_observation_id: number | null
           latitude: number | null
@@ -3672,6 +3718,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          gps_source?: string | null
           id?: string
           inaturalist_observation_id?: number | null
           latitude?: number | null
@@ -3685,6 +3732,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          gps_source?: string | null
           id?: string
           inaturalist_observation_id?: number | null
           latitude?: number | null
@@ -5299,6 +5347,7 @@ export type Database = {
         Returns: boolean
       }
       is_exploration_curator: { Args: { _user_id: string }; Returns: boolean }
+      is_gps_curator: { Args: { _user_id: string }; Returns: boolean }
       is_invited_reader: {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
@@ -5416,6 +5465,14 @@ export type Database = {
           p_owner_user_id: string
         }
         Returns: undefined
+      }
+      reposition_marcheur_media_gps: {
+        Args: { _lat: number; _lon: number; _media_id: string; _note?: string }
+        Returns: Json
+      }
+      reposition_marcheur_observation_gps: {
+        Args: { _lat: number; _lon: number; _note?: string; _obs_id: string }
+        Returns: Json
       }
       request_inaturalist_backfill: {
         Args: {

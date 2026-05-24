@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import JSZip from 'jszip';
-import { Upload, Download, MapPin, AlertTriangle, Loader2, X as XIcon, Check } from 'lucide-react';
+import { Upload, Download, MapPin, AlertTriangle, Loader2, X as XIcon, Check, Maximize2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useMarcheurUnidentifiedPhotos, type UnidentifiedPhotoCandidate } from '@/hooks/useMarcheurUnidentifiedPhotos';
+import InatUploadFullscreen from './InatUploadFullscreen';
 
 interface Props {
   open: boolean;
@@ -67,6 +68,7 @@ const InatUploadPrepDrawer: React.FC<Props> = ({
   const [useMarcheGpsFallback, setUseMarcheGpsFallback] = useState(true);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const { data: candidates = [], isLoading } = useMarcheurUnidentifiedPhotos({
     crewId, resolvedUserId, explorationMarcheIds, explorationEventIds, identifiedPhotoUrls,
@@ -219,15 +221,44 @@ const InatUploadPrepDrawer: React.FC<Props> = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader className="space-y-2">
-          <SheetTitle className="flex items-center gap-2">
-            <Upload className="w-4 h-4 text-emerald-500" />
-            Préparer upload iNaturalist
-          </SheetTitle>
+          <div className="flex items-start justify-between gap-2">
+            <SheetTitle className="flex items-center gap-2">
+              <Upload className="w-4 h-4 text-emerald-500" />
+              Préparer upload iNaturalist
+            </SheetTitle>
+            {candidates.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setFullscreen(true)}
+                className="text-xs h-7"
+              >
+                <Maximize2 className="w-3 h-3 mr-1" />
+                Plein écran
+              </Button>
+            )}
+          </div>
           <SheetDescription>
             Pack ZIP des photos perso de <strong>{marcheurPrenom} {marcheurNom}</strong> non encore identifiées,
             prêt à glisser sur iNaturalist.
           </SheetDescription>
         </SheetHeader>
+
+        <InatUploadFullscreen
+          open={fullscreen}
+          onOpenChange={setFullscreen}
+          marcheurPrenom={marcheurPrenom}
+          marcheurNom={marcheurNom}
+          marcheurSlug={marcheurSlug}
+          crewId={crewId}
+          resolvedUserId={resolvedUserId}
+          explorationId={explorationId}
+          explorationMarcheIds={explorationMarcheIds}
+          explorationEventIds={explorationEventIds}
+          identifiedPhotoUrls={identifiedPhotoUrls}
+        />
+
+
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
