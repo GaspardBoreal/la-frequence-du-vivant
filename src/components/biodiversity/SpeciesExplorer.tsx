@@ -79,72 +79,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     localStorage.setItem('species-explorer-view', mode);
   };
 
-  // Category stats
-  const categoryStats = useMemo(() => {
-    const stats = {
-      all: species.length,
-      faune: species.filter(s => s.kingdom === 'Animalia').length,
-      plants: species.filter(s => s.kingdom === 'Plantae').length,
-      fungi: species.filter(s => s.kingdom === 'Fungi').length,
-      others: 0,
-    };
-    stats.others = stats.all - stats.faune - stats.plants - stats.fungi;
-    return stats;
-  }, [species]);
-
-  // Contributors grouped by source (taxonomic)
-  const contributorsBySource = useMemo(() => {
-    const sourceGroups = {
-      eBird: new Map<string, number>(),
-      iNaturalist: new Map<string, number>(),
-      gbif: new Map<string, number>(),
-    };
-    species.forEach(sp => {
-      sp.attributions?.forEach(attr => {
-        const name = (attr.observerName || '').trim();
-        if (!name) return;
-        const key = sp.source === 'ebird' ? 'eBird' : sp.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
-        sourceGroups[key].set(name, (sourceGroups[key].get(name) || 0) + 1);
-      });
-    });
-    const toArray = (m: Map<string, number>, source: string) =>
-      Array.from(m.entries()).map(([name, count]) => ({ name, count, source })).sort((a, b) => b.count - a.count);
-    return {
-      eBird: toArray(sourceGroups.eBird, 'ebird'),
-      iNaturalist: toArray(sourceGroups.iNaturalist, 'inaturalist'),
-      gbif: toArray(sourceGroups.gbif, 'gbif'),
-    };
-  }, [species]);
-
-  // Deduplicated marcheurs from eventParticipants
-  const uniqueMarcheurs = useMemo(() => {
-    const seen = new Set<string>();
-    return eventParticipants.filter(p => {
-      const key = p.name.toLowerCase().trim();
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [eventParticipants]);
-
-  // Total unique contributors across all sources
-  const totalContributors = useMemo(() => {
-    const uniqueNames = new Set<string>();
-    // Marcheurs
-    uniqueMarcheurs.forEach(m => uniqueNames.add(m.name.toLowerCase().trim()));
-    // Taxonomic observers
-    [...contributorsBySource.eBird, ...contributorsBySource.iNaturalist, ...contributorsBySource.gbif]
-      .forEach(c => uniqueNames.add(c.name.toLowerCase().trim()));
-    return uniqueNames.size;
-  }, [contributorsBySource, uniqueMarcheurs]);
-
-  // Is the selected contributor a marcheur (community/crew)?
-  const isSelectedMarcheur = useMemo(() => {
-    if (selectedContributor === 'all') return false;
-    return uniqueMarcheurs.some(m => m.name === selectedContributor);
-  }, [selectedContributor, uniqueMarcheurs]);
-
-  // Batch translations
+  // Batch translations (déclaré tôt car utilisé par le filtre search)
   const speciesForTranslation = useMemo(() =>
     species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName })),
     [species]
@@ -172,12 +107,37 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     return m;
   }, [species]);
 
-  // Filtered species — *avant* application du filtre trophique (sert aux compteurs dynamiques)
-  const filteredBeforeTrophic = useMemo(() => {
-    let filtered = species;
+  // ============================================================
+  // PIPELINE DE FILTRAGE UNIFIÉ ("leave-one-out")
+  // ============================================================
+  // Une seule fonction applique tous les prédicats en pouvant en sauter un,
+  // permettant de calculer des compteurs dynamiques par dimension.
+  type FilterDim = 'category' | 'source' | 'audio' | 'search' | 'tags' | 'trophic' | 'contributor';
 
-    if (selectedCategory !== 'all' && selectedCategory !== 'map') {
-      filtered = filtered.filter(s => {
+  const applyFilters = React.useCallback((list: BiodiversitySpecies[], skip?: FilterDim) => {
+    let f = list;
+
+    if (skip !== 'search' && searchTerm) {
+      const term = searchTerm.toLowerCase();
+      f = f.filter(s => {
+        const fr = translationMap.get(s.scientificName)?.commonName || '';
+        return (
+          fr.toLowerCase().includes(term) ||
+          s.commonName.toLowerCase().includes(term) ||
+          s.scientificName.toLowerCase().includes(term)
+        );
+      });
+    }
+
+    if (skip !== 'tags' && tagFilter.labels.length > 0) {
+      f = f.filter((s) => {
+        const labels = (tagsBySpecies.get(normalizeTagKey(s.scientificName)) || []).map((t) => t.label);
+        return matchesTagFilter(labels, tagFilter);
+      });
+    }
+
+    if (skip !== 'category' && selectedCategory !== 'all' && selectedCategory !== 'map') {
+      f = f.filter(s => {
         switch (selectedCategory) {
           case 'faune': return s.kingdom === 'Animalia';
           case 'plants': return s.kingdom === 'Plantae';
@@ -188,64 +148,148 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       });
     }
 
-    if (selectedContributor !== 'all') {
-      filtered = filtered.filter(s =>
-        s.attributions?.some(a => (a.observerName || 'Anonyme') === selectedContributor)
-      );
+    if (skip !== 'source' && selectedSource !== 'all') {
+      f = f.filter(s => s.source === selectedSource);
     }
 
-    if (selectedSource !== 'all') {
-      filtered = filtered.filter(s => s.source === selectedSource);
-    }
-
-    if (hasAudioFilter !== 'all') {
-      filtered = filtered.filter(s => {
-        const has = s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0;
+    if (skip !== 'audio' && hasAudioFilter !== 'all') {
+      f = f.filter(s => {
+        const has = !!(s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0);
         return hasAudioFilter === 'with-audio' ? has : !has;
       });
     }
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(s => {
-        const fr = translationMap.get(s.scientificName)?.commonName || '';
-        return (
-          fr.toLowerCase().includes(term) ||
-          s.commonName.toLowerCase().includes(term) ||
-          s.scientificName.toLowerCase().includes(term)
-        );
-      });
+    if (skip !== 'contributor' && selectedContributor !== 'all') {
+      f = f.filter(s =>
+        s.attributions?.some(a => (a.observerName || 'Anonyme') === selectedContributor)
+      );
     }
 
-    if (tagFilter.labels.length > 0) {
-      filtered = filtered.filter((s) => {
-        const labels = (tagsBySpecies.get(normalizeTagKey(s.scientificName)) || []).map((t) => t.label);
-        return matchesTagFilter(labels, tagFilter);
-      });
+    if (skip !== 'trophic' && selectedTrophic.size > 0) {
+      f = f.filter((s) => selectedTrophic.has(trophicByName.get(s.scientificName) || 'UNCLASSIFIED'));
     }
 
-    return filtered.sort((a, b) => b.observations - a.observations);
-  }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm, translationMap, tagFilter, tagsBySpecies]);
+    return f;
+  }, [searchTerm, tagFilter, tagsBySpecies, selectedCategory, selectedSource, hasAudioFilter, selectedContributor, selectedTrophic, trophicByName, translationMap]);
 
-  // Compteurs trophiques dynamiques (recalculés à partir des autres filtres)
+  // Bases "leave-one-out" — chaque compteur reflète tous les filtres SAUF le sien
+  const baseForCategory    = useMemo(() => applyFilters(species, 'category'),    [applyFilters, species]);
+  const baseForSource      = useMemo(() => applyFilters(species, 'source'),      [applyFilters, species]);
+  const baseForAudio       = useMemo(() => applyFilters(species, 'audio'),       [applyFilters, species]);
+  const baseForTrophic     = useMemo(() => applyFilters(species, 'trophic'),     [applyFilters, species]);
+  const baseForContributor = useMemo(() => applyFilters(species, 'contributor'), [applyFilters, species]);
+
+  // Résultat final
+  const filteredSpecies = useMemo(
+    () => applyFilters(species).sort((a, b) => b.observations - a.observations),
+    [applyFilters, species]
+  );
+
+  // ============================================================
+  // COMPTEURS DYNAMIQUES
+  // ============================================================
+  const categoryStats = useMemo(() => {
+    const stats = {
+      all: baseForCategory.length,
+      faune: baseForCategory.filter(s => s.kingdom === 'Animalia').length,
+      plants: baseForCategory.filter(s => s.kingdom === 'Plantae').length,
+      fungi: baseForCategory.filter(s => s.kingdom === 'Fungi').length,
+      others: 0,
+    };
+    stats.others = stats.all - stats.faune - stats.plants - stats.fungi;
+    return stats;
+  }, [baseForCategory]);
+
+  const sourceCounts = useMemo(() => ({
+    all: baseForSource.length,
+    gbif: baseForSource.filter(s => s.source === 'gbif').length,
+    inaturalist: baseForSource.filter(s => s.source === 'inaturalist').length,
+    ebird: baseForSource.filter(s => s.source === 'ebird').length,
+  }), [baseForSource]);
+
+  const audioCounts = useMemo(() => {
+    let withAudio = 0;
+    baseForAudio.forEach(s => { if (s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0) withAudio++; });
+    return { all: baseForAudio.length, withAudio, withoutAudio: baseForAudio.length - withAudio };
+  }, [baseForAudio]);
+
   const trophicCounts = useMemo(() => {
     const counts: Record<TrophicGroup, number> = {
       L1: 0, L2: 0, L3: 0, L4: 0, L5: 0, DECOMPOSER: 0, UNCLASSIFIED: 0,
     };
-    filteredBeforeTrophic.forEach((s) => {
+    baseForTrophic.forEach((s) => {
       const g = trophicByName.get(s.scientificName) || 'UNCLASSIFIED';
       counts[g] += 1;
     });
     return counts;
-  }, [filteredBeforeTrophic, trophicByName]);
+  }, [baseForTrophic, trophicByName]);
 
-  // Application finale du filtre trophique
-  const filteredSpecies = useMemo(() => {
-    if (selectedTrophic.size === 0) return filteredBeforeTrophic;
-    return filteredBeforeTrophic.filter((s) =>
-      selectedTrophic.has(trophicByName.get(s.scientificName) || 'UNCLASSIFIED')
-    );
-  }, [filteredBeforeTrophic, selectedTrophic, trophicByName]);
+  // Contributors grouped by source (taxonomic) — dérivés de baseForContributor
+  const contributorsBySource = useMemo(() => {
+    const sourceGroups = {
+      eBird: new Map<string, number>(),
+      iNaturalist: new Map<string, number>(),
+      gbif: new Map<string, number>(),
+    };
+    baseForContributor.forEach(sp => {
+      sp.attributions?.forEach(attr => {
+        const name = (attr.observerName || '').trim();
+        if (!name) return;
+        const key = sp.source === 'ebird' ? 'eBird' : sp.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
+        sourceGroups[key].set(name, (sourceGroups[key].get(name) || 0) + 1);
+      });
+    });
+    const toArray = (m: Map<string, number>, source: string) =>
+      Array.from(m.entries()).map(([name, count]) => ({ name, count, source })).sort((a, b) => b.count - a.count);
+    return {
+      eBird: toArray(sourceGroups.eBird, 'ebird'),
+      iNaturalist: toArray(sourceGroups.iNaturalist, 'inaturalist'),
+      gbif: toArray(sourceGroups.gbif, 'gbif'),
+    };
+  }, [baseForContributor]);
+
+  // Marcheurs visibles : intersection avec baseForContributor (un marcheur disparaît
+  // si aucune de ses obs ne passe les autres filtres)
+  const uniqueMarcheurs = useMemo(() => {
+    const seen = new Set<string>();
+    const visibleNames = new Set<string>();
+    baseForContributor.forEach(sp => {
+      sp.attributions?.forEach(a => {
+        const n = (a.observerName || '').toLowerCase().trim();
+        if (n) visibleNames.add(n);
+      });
+    });
+    return eventParticipants.filter(p => {
+      const key = p.name.toLowerCase().trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return visibleNames.has(key);
+    });
+  }, [eventParticipants, baseForContributor]);
+
+  // Total unique contributors across all sources
+  const totalContributors = useMemo(() => {
+    const uniqueNames = new Set<string>();
+    uniqueMarcheurs.forEach(m => uniqueNames.add(m.name.toLowerCase().trim()));
+    [...contributorsBySource.eBird, ...contributorsBySource.iNaturalist, ...contributorsBySource.gbif]
+      .forEach(c => uniqueNames.add(c.name.toLowerCase().trim()));
+    return uniqueNames.size;
+  }, [contributorsBySource, uniqueMarcheurs]);
+
+  // Is the selected contributor a marcheur (community/crew)?
+  const isSelectedMarcheur = useMemo(() => {
+    if (selectedContributor === 'all') return false;
+    return uniqueMarcheurs.some(m => m.name === selectedContributor);
+  }, [selectedContributor, uniqueMarcheurs]);
+
+  // Auto-fallback : si l'onglet actif tombe à 0 alors qu'une autre catégorie est non-vide
+  useEffect(() => {
+    if (selectedCategory === 'all' || selectedCategory === 'map') return;
+    const key = selectedCategory as keyof typeof categoryStats;
+    if (categoryStats[key] === 0 && categoryStats.all > 0) {
+      setSelectedCategory('all');
+    }
+  }, [categoryStats, selectedCategory]);
 
   const toggleTrophic = (g: TrophicGroup) => {
     setSelectedTrophic((prev) => {
@@ -255,6 +299,8 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       return next;
     });
   };
+
+
 
   const trophicEntries: Array<{ group: TrophicGroup; label: string; shortLabel: string; token: string }> = [
     ...TROPHIC_LEVELS.map((l) => ({ group: l.group, label: l.label, shortLabel: l.shortLabel, token: l.token })),
