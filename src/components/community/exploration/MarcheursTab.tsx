@@ -23,8 +23,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useReorderMarcheurObservations } from '@/hooks/useReorderMarcheurObservations';
-import { useExplorationContributionsCounts, lookupContributions } from '@/hooks/useExplorationContributionsCounts';
-import { useMarcheurAliases, useMarcheursAliasesMap, normalizeAlias } from '@/hooks/useMarcheurAliases';
+import { useExplorationContributionsCounts } from '@/hooks/useExplorationContributionsCounts';
+import { useMarcheursAliasesMap, normalizeAlias } from '@/hooks/useMarcheurAliases';
 import MarcheurAudioPanel from '@/components/community/audio/MarcheurAudioPanel';
 import CitizenPlatformsCard from '@/components/community/exploration/impact/CitizenPlatformsCard';
 import PratiquesPorteesCard from '@/components/community/exploration/impact/PratiquesPorteesCard';
@@ -426,15 +426,15 @@ const ContributionsSubTab: React.FC<{
   explorationId?: string;
   explorationMarcheIds: string[];
   resolvedUserId: string | null;
-}> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId }) => {
+  aliases?: string[];
+}> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId, aliases = [] }) => {
   const [onlyOwn, setOnlyOwn] = useState(false);
-  const { data: aliases } = useMarcheurAliases(resolvedUserId, marcheur.prenom, marcheur.nom);
   const crewId = marcheur.crewId || (marcheur.source === 'crew' ? marcheur.id : null);
 
   const { data, isLoading } = useMarcheurAttributedSpecies({
     crewId,
     resolvedUserId,
-    aliases: aliases || [],
+    aliases,
     explorationMarcheIds,
     explorationId,
   });
@@ -1275,7 +1275,7 @@ const MarcheurCard: React.FC<{
 
               {activeSubTab === 'contributions' && (
                 <motion.div key="contribs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} resolvedUserId={resolvedUserId} />
+                  <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} resolvedUserId={resolvedUserId} aliases={aliases} />
                 </motion.div>
               )}
 
@@ -1753,7 +1753,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 explorationMarcheIds={explorationMarcheIds}
                 totalMarchesCount={explorationMarcheIds.length}
                 testimony={m.userId ? testimoniesByUser.get(m.userId) ?? null : null}
-                contributionsCount={lookupContributions(contribsByName, m.prenom, m.nom, aliasesByMarcheurId?.get(m.id))}
+                contributionsCount={m.stats.speciesCount || 0}
                 sentinelle={metrics.sentinelle}
                 marcheurBuckets={metrics.buckets}
                 sensibleNames={metrics.sensibleNames}
