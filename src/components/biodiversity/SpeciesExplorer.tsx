@@ -177,7 +177,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       // pour matcher TOUTES les variantes de casse/accents d'un même contributeur.
       const target = normalizeAlias(selectedContributor);
       f = f.filter(s =>
-        s.attributions?.some(a => citizenIdentityKey(a) === target || normalizeAlias(a.observerName || '') === target)
+        s.attributions?.some(a => resolveIdentity(a) === target || normalizeAlias(a.observerName || '') === target)
       );
     }
 
@@ -264,7 +264,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     };
     baseForContributor.forEach(sp => {
       sp.attributions?.forEach(attr => {
-        const key = citizenIdentityKey(attr);
+        const key = resolveIdentity(attr);
         const display = citizenDisplayName(attr);
         if (!key) return;
         const groupKey = sp.source === 'ebird' ? 'eBird' : sp.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
@@ -294,7 +294,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     const visibleKeys = new Set<string>();
     baseForContributor.forEach(sp => {
       sp.attributions?.forEach(a => {
-        const k = citizenIdentityKey(a);
+        const k = resolveIdentity(a);
         if (k) visibleKeys.add(k);
       });
     });
