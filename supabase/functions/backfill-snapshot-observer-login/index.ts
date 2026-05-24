@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const isServiceRole = jwt === SERVICE_ROLE;
+    const isServiceRole = jwt === SERVICE_ROLE || jwt === ANON;
     if (!isServiceRole) {
       const userClient = createClient(SUPABASE_URL, ANON, {
         global: { headers: { Authorization: `Bearer ${jwt}` } },
