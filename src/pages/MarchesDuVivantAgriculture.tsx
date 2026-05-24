@@ -129,10 +129,25 @@ const formats = [
   },
 ];
 
-const leaders = [
-  { nom: 'Anémone', detail: '50/50 pts sur la Biodiversité (C5.3)', highlight: 'Seule CUMA à 100 % sur 254' },
-  { nom: 'Couzeau', detail: '82,1 % sur le Chapitre 5 « Respect du Vivant »', highlight: 'Champion régional' },
-  { nom: 'CUMA DES LANDES', detail: 'Référence régionale agroforesterie & bocage', highlight: 'Démonstrateur territorial' },
+const leaders: { nom: string; highlight: string; detail: string; icon: LucideIcon }[] = [
+  {
+    nom: 'Vincent',
+    highlight: 'Mosaïque de 4 milieux vivants',
+    detail: 'Prairie humide · Potager sol vivant · Forêt · Lande sèche',
+    icon: Sprout,
+  },
+  {
+    nom: 'Jean-François',
+    highlight: 'Équilibres écologiques en action',
+    detail: 'Corridor écologique · Gestion des ravageurs · Partenariat apiculteurs',
+    icon: Bug,
+  },
+  {
+    nom: 'Gaspard',
+    highlight: 'Jardin en mouvement',
+    detail: 'Jardin en mouvement sur 4 000 m²',
+    icon: Flower2,
+  },
 ];
 
 const MarchesDuVivantAgriculture = () => {
