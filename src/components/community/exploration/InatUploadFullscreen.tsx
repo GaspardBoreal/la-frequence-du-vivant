@@ -105,11 +105,14 @@ const InatUploadFullscreen: React.FC<Props> = ({
   marcheurPrenom, marcheurNom,
   crewId, resolvedUserId, explorationId,
   explorationMarcheIds, explorationEventIds, identifiedPhotoUrls,
+  prefetch = false, onPrepProgress,
 }) => {
+  const active = open || prefetch;
+
   // Active pre-calc as soon as drawer mounts (open=true) — runs in background
   const { data: candidates = [], isLoading: candidatesLoading } = useMarcheurUnidentifiedPhotos({
     crewId, resolvedUserId, explorationMarcheIds, explorationEventIds,
-    identifiedPhotoUrls, explorationId, enabled: open,
+    identifiedPhotoUrls, explorationId, enabled: active,
   });
 
   const { data: isCurator = false } = useIsGpsCurator();
@@ -125,7 +128,7 @@ const InatUploadFullscreen: React.FC<Props> = ({
         .in('id', explorationEventIds);
       return (data || []) as MarcheLite[];
     },
-    enabled: open && explorationEventIds.length > 0,
+    enabled: active && explorationEventIds.length > 0,
     staleTime: 5 * 60_000,
   });
 
@@ -134,8 +137,13 @@ const InatUploadFullscreen: React.FC<Props> = ({
     marches,
     candidatesLoading,
     marchesLoading,
-    enabled: open,
+    enabled: active,
   });
+
+  useEffect(() => {
+    onPrepProgress?.({ ready: prep.ready, progress: prep.progress });
+  }, [prep.ready, prep.progress, onPrepProgress]);
+
 
   const [marchesMode, setMarchesMode] = useMarchesDisplayMode();
   const [filter, setFilter] = useState<GpsCat | 'all'>('all');
