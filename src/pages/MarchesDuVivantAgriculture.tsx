@@ -220,9 +220,9 @@ const MarchesDuVivantAgriculture = () => {
         <section className="py-12 px-6 border-y border-border/20 bg-card/20">
           <div className="max-w-6xl mx-auto">
             <p className="text-center text-xs uppercase tracking-wider text-muted-foreground mb-8 font-mono">
-              Constats — RSO CUMA Nouvelle-Aquitaine · 254 CUMA évaluées
+              Marches du Vivant — chiffres clés du réseau, en temps réel
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
               {proofs.map((p, i) => (
                 <motion.div
                   key={p.label}
@@ -232,7 +232,7 @@ const MarchesDuVivantAgriculture = () => {
                   viewport={{ once: true }}
                   className="text-center"
                 >
-                  <div className="font-crimson text-3xl md:text-4xl text-lime-400 mb-2">
+                  <div className={`font-crimson text-3xl md:text-4xl text-lime-400 mb-2 ${statsLoading ? 'animate-pulse' : ''}`}>
                     {p.value}
                   </div>
                   <div className="text-sm text-foreground/90 mb-1">{p.label}</div>
