@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeAlias } from '@/hooks/useMarcheurAliases';
+import { citizenIdentityKey, citizenDisplayName } from '@/utils/citizenIdentity';
 
 export interface CitizenContributor {
   observerName: string;
@@ -64,14 +64,15 @@ export function useExplorationCitizenContributors(
             const observerName = (a?.observerName || '').trim();
             const source = (a?.source || '').toLowerCase();
             if (!observerName || source !== 'inaturalist') continue;
-            const norm = normalizeAlias(observerName);
-            if (knownAliases && knownAliases.has(norm)) continue;
+            const canonical = citizenIdentityKey(a);
+            if (!canonical) continue;
+            if (knownAliases && knownAliases.has(canonical)) continue;
 
-            const key = `${source}|${norm}`;
+            const key = `${source}|${canonical}`;
             let acc = byKey.get(key);
             if (!acc) {
               acc = {
-                observerName,
+                observerName: citizenDisplayName(a),
                 source,
                 species: new Set(),
                 obs: 0,

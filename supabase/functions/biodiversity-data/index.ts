@@ -316,7 +316,14 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       source: 'inaturalist' as const,
       conservationStatus: item.taxon?.conservation_status?.status,
       attributions: [{
+        // Identité canonique iNat (immuable) + display name pour l'affichage.
+        // Voir mem://technical/community/identity-matching-logic.
         observerName: item.user?.name || item.user?.login || 'Anonyme',
+        observerLogin: item.user?.login || null,
+        observerId: item.user?.id ?? null,
+        observerProfileUrl: item.user?.login
+          ? `https://www.inaturalist.org/people/${item.user.login}`
+          : null,
         observerInstitution: 'iNaturalist Community',
         observationMethod: item.quality_grade === 'research' ? 'Observation validée' : 'Observation',
         originalUrl: `https://www.inaturalist.org/observations/${item.id}`,

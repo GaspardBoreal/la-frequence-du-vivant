@@ -24,6 +24,8 @@ import { classifyTrophic, TROPHIC_LEVELS, DECOMPOSER_META, type TrophicGroup } f
 import SpeciesPhotoModeToggle from './SpeciesPhotoModeToggle';
 import { useSpeciesPhotoMode } from '@/contexts/SpeciesPhotoModeContext';
 import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
+import { citizenIdentityKey, citizenDisplayName } from '@/utils/citizenIdentity';
+import { normalizeAlias } from '@/hooks/useMarcheurAliases';
 
 // Utility to identify birds
 const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
@@ -162,8 +164,11 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     }
 
     if (skip !== 'contributor' && selectedContributor !== 'all') {
+      // Comparaison sur l'identité canonique (login iNat ou alias normalisé)
+      // pour matcher TOUTES les variantes de casse/accents d'un même contributeur.
+      const target = normalizeAlias(selectedContributor);
       f = f.filter(s =>
-        s.attributions?.some(a => (a.observerName || 'Anonyme') === selectedContributor)
+        s.attributions?.some(a => citizenIdentityKey(a) === target || normalizeAlias(a.observerName || '') === target)
       );
     }
 
@@ -237,23 +242,35 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     return counts;
   }, [baseForTrophic, trophicByName]);
 
-  // Contributors grouped by source (taxonomic) — dérivés de baseForContributor
+  // Contributors grouped by source (taxonomic) — dérivés de baseForContributor.
+  // Dédoublonnage sur l'identité CANONIQUE (observerLogin iNat immuable, sinon
+  // alias normalisé). Évite les doublons casse/accents (ex. "Les marches du Vivant"
+  // vs "Les Marches du Vivant" qui sont le même compte iNat `les-marches-du-vivant`).
   const contributorsBySource = useMemo(() => {
+    type Bucket = { displayName: string; count: number };
     const sourceGroups = {
-      eBird: new Map<string, number>(),
-      iNaturalist: new Map<string, number>(),
-      gbif: new Map<string, number>(),
+      eBird: new Map<string, Bucket>(),
+      iNaturalist: new Map<string, Bucket>(),
+      gbif: new Map<string, Bucket>(),
     };
     baseForContributor.forEach(sp => {
       sp.attributions?.forEach(attr => {
-        const name = (attr.observerName || '').trim();
-        if (!name) return;
-        const key = sp.source === 'ebird' ? 'eBird' : sp.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
-        sourceGroups[key].set(name, (sourceGroups[key].get(name) || 0) + 1);
+        const key = citizenIdentityKey(attr);
+        const display = citizenDisplayName(attr);
+        if (!key) return;
+        const groupKey = sp.source === 'ebird' ? 'eBird' : sp.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
+        const existing = sourceGroups[groupKey].get(key);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          sourceGroups[groupKey].set(key, { displayName: display, count: 1 });
+        }
       });
     });
-    const toArray = (m: Map<string, number>, source: string) =>
-      Array.from(m.entries()).map(([name, count]) => ({ name, count, source })).sort((a, b) => b.count - a.count);
+    const toArray = (m: Map<string, Bucket>, source: string) =>
+      Array.from(m.entries())
+        .map(([key, b]) => ({ key, name: b.displayName, count: b.count, source }))
+        .sort((a, b) => b.count - a.count);
     return {
       eBird: toArray(sourceGroups.eBird, 'ebird'),
       iNaturalist: toArray(sourceGroups.iNaturalist, 'inaturalist'),
@@ -265,28 +282,28 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   // si aucune de ses obs ne passe les autres filtres)
   const uniqueMarcheurs = useMemo(() => {
     const seen = new Set<string>();
-    const visibleNames = new Set<string>();
+    const visibleKeys = new Set<string>();
     baseForContributor.forEach(sp => {
       sp.attributions?.forEach(a => {
-        const n = (a.observerName || '').toLowerCase().trim();
-        if (n) visibleNames.add(n);
+        const k = citizenIdentityKey(a);
+        if (k) visibleKeys.add(k);
       });
     });
     return eventParticipants.filter(p => {
-      const key = p.name.toLowerCase().trim();
+      const key = normalizeAlias(p.name);
       if (!key || seen.has(key)) return false;
       seen.add(key);
-      return visibleNames.has(key);
+      return visibleKeys.has(key);
     });
   }, [eventParticipants, baseForContributor]);
 
   // Total unique contributors across all sources
   const totalContributors = useMemo(() => {
-    const uniqueNames = new Set<string>();
-    uniqueMarcheurs.forEach(m => uniqueNames.add(m.name.toLowerCase().trim()));
+    const uniqueKeys = new Set<string>();
+    uniqueMarcheurs.forEach(m => uniqueKeys.add(normalizeAlias(m.name)));
     [...contributorsBySource.eBird, ...contributorsBySource.iNaturalist, ...contributorsBySource.gbif]
-      .forEach(c => uniqueNames.add(c.name.toLowerCase().trim()));
-    return uniqueNames.size;
+      .forEach(c => uniqueKeys.add(c.key));
+    return uniqueKeys.size;
   }, [contributorsBySource, uniqueMarcheurs]);
 
   // Is the selected contributor a marcheur (community/crew)?
