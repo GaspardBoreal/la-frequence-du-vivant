@@ -425,9 +425,10 @@ const ContributionsSubTab: React.FC<{
   marcheur: MarcheurWithStats;
   explorationId?: string;
   explorationMarcheIds: string[];
+  explorationEventIds: string[];
   resolvedUserId: string | null;
   aliases?: string[];
-}> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId, aliases = [] }) => {
+}> = ({ marcheur, explorationId, explorationMarcheIds, explorationEventIds, resolvedUserId, aliases = [] }) => {
   const [onlyOwn, setOnlyOwn] = useState(false);
   const [inatDrawerOpen, setInatDrawerOpen] = useState(false);
   const { data: isCurator } = useIsCurator(explorationId);
