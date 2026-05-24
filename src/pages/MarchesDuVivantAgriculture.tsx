@@ -189,7 +189,7 @@ const MarchesDuVivantAgriculture = () => {
                 <span className="text-lime-400">Acteurs Agricoles</span>
               </h1>
 
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-center">
                 Les Marches du Vivant transforment le respect du Vivant en expérience
                 concrète sur vos parcelles.
               </p>
