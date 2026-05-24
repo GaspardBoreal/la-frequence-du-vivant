@@ -69,6 +69,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
   const [tagFilter, setTagFilter] = useState<TagFilterState>({ labels: [], mode: 'or' });
+  const [selectedTrophic, setSelectedTrophic] = useState<Set<TrophicGroup>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'immersion'>(() => {
     return (localStorage.getItem('species-explorer-view') as 'list' | 'immersion') || 'list';
   });
