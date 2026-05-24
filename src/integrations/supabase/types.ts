@@ -2965,6 +2965,41 @@ export type Database = {
           },
         ]
       }
+      marche_event_scenography_versions: {
+        Row: {
+          author: string | null
+          code: string
+          created_at: string
+          event_id: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          author?: string | null
+          code: string
+          created_at?: string
+          event_id: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          author?: string | null
+          code?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_event_scenography_versions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marche_events: {
         Row: {
           cover_image_url: string | null
@@ -2984,6 +3019,11 @@ export type Database = {
           published_at: string | null
           published_by: string | null
           qr_code: string
+          scenography_code: string | null
+          scenography_enabled: boolean
+          scenography_title: string | null
+          scenography_updated_at: string | null
+          scenography_updated_by: string | null
           title: string
           updated_at: string
         }
@@ -3005,6 +3045,11 @@ export type Database = {
           published_at?: string | null
           published_by?: string | null
           qr_code?: string
+          scenography_code?: string | null
+          scenography_enabled?: boolean
+          scenography_title?: string | null
+          scenography_updated_at?: string | null
+          scenography_updated_by?: string | null
           title: string
           updated_at?: string
         }
@@ -3026,6 +3071,11 @@ export type Database = {
           published_at?: string | null
           published_by?: string | null
           qr_code?: string
+          scenography_code?: string | null
+          scenography_enabled?: boolean
+          scenography_title?: string | null
+          scenography_updated_at?: string | null
+          scenography_updated_by?: string | null
           title?: string
           updated_at?: string
         }
@@ -5150,6 +5200,18 @@ export type Database = {
       }
       get_event_public_textes: { Args: { p_event_id: string }; Returns: Json }
       get_event_rayonnement: { Args: { _event_id: string }; Returns: Json }
+      get_event_scenography: {
+        Args: { _slug: string }
+        Returns: {
+          cover_image_url: string
+          description: string
+          event_id: string
+          scenography_code: string
+          scenography_title: string
+          title: string
+        }[]
+      }
+      get_event_scenography_data: { Args: { _slug: string }; Returns: Json }
       get_exploration_export_data: {
         Args: { p_exploration_id: string; p_level?: string }
         Returns: Json
