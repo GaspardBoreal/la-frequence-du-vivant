@@ -287,7 +287,7 @@ const MarchesDuVivantAgriculture = () => {
             <p className="text-lg md:text-xl text-lime-300 font-medium">
               « Vos adhérents passent du référentiel papier à la mesure terrain :
               chaque marche produit une donnée biodiversité opposable, alignée avec
-              le Chapitre 5 du RSO CUMA. »
+              les exigences RSE / RSO »
             </p>
           </div>
         </section>
