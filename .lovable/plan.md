@@ -1,52 +1,78 @@
-## Diagnostic
+# Analyse critique de la proposition "Jardin Punk" — et plan d'adaptation
 
-L'aperçu affiche **0 espèces / 0 regards** parce que la RPC `get_event_scenography_data` (créée dans la migration initiale de la scénographie) interroge des colonnes qui **n'existent pas** dans le schéma réel :
+## Ce que la proposition a juste
 
-| Champ RPC | Réalité du schéma |
-|---|---|
-| `biodiversity_snapshots.event_id` | n'existe pas — la table est liée par `marche_id`, et les espèces sont **dans le JSONB `species_data`** (un snapshot agrège déjà toutes les espèces d'une marche) |
-| `marcheur_medias.event_id` / `media_url` / `media_type` / `caption` / `latitude` / `longitude` / `taken_at` | les vrais noms sont `marche_event_id`, `url_fichier`, `type_media`, `description`, et les coords/date sont dans `metadata` JSONB |
-| `event_testimonies.content` / `user_id→profiles.display_name` | la colonne s'appelle `quote`, l'auteur est déjà stocké en clair dans `author_name` |
+- **Approche itérative en 4 couches** (données → motion → 3D → son) : c'est la bonne méthode pour ne pas faire diverger l'IA, et elle colle à notre architecture modulaire.
+- **Framer Motion avant GSAP** : exact, c'est déjà ce que notre runtime charge en UMD (`framer-motion@11.11.17`).
+- **Isoler la 3D en arrière-plan z-négatif** : bon réflexe d'archi.
+- **Sonification liée au viewport** : pertinent pour la dimension bioacoustique du projet.
 
-Côté event lui-même : `date_marche`, `lieu`, `latitude`, `longitude` n'existent pas non plus directement sur `marche_events` (vérifié : `marche_events` n'a ni `lieu` ni coords — elles viennent de la marche parente via `exploration_id`).
+## Ce qui ne marchera pas tel quel dans notre contexte
 
-Résultat : la RPC retourne `{}`, le runtime reçoit `data = {}`, et le template DEVIAT affiche `data.species?.length ?? 0` → 0, idem photos → 0 regards.
+La proposition est écrite pour un projet React vierge créé par Lovable. Or notre scénographie tourne dans un **iframe sandboxé** (`ScenographyRuntime.tsx` + `scenographyRuntimeHtml.ts`) avec un runtime déjà figé. Trois problèmes durs :
 
-## Plan
+1. **React Three Fiber ne se charge pas en UMD/CDN.** R3F est conçu pour un bundler (réconciliateur custom, hooks, JSX `<mesh>`). Dans notre iframe, on ne peut pas faire `import` ni `npm add`. La seule voie réaliste pour la 3D : **Three.js pur en UMD** (`three.min.js`), monté dans un `useEffect` sur un `<canvas>` classique. On garde l'esprit "réseau mycélien", on perd la syntaxe déclarative R3F.
+2. **Le JSON de 120 espèces n'a pas à être "chargé"** : nos données sont déjà injectées via `postMessage` dans `window.__SCENO_DATA__` (espèces dédoublonnées + photos + waypoints + testimonies). L'étape 1 du prompt original est donc à réécrire en "consomme `data.species` et `data.photos`".
+3. **Web Audio + autoplay** : un iframe `sandbox="allow-scripts"` peut faire de l'audio, mais le navigateur bloque tant qu'il n'y a pas eu d'interaction utilisateur. Il faut un overlay "Entrer dans le jardin" qui débloque l'`AudioContext`, sinon silence garanti sur Chrome/Safari.
 
-### 1. Réécrire la RPC `get_event_scenography_data` (migration)
+## Autres angles morts à corriger
 
-Aligner sur le schéma réel et la même logique de fusion que le reste de l'app (memo `unified-species-count-rpc`) :
+- **Pas d'`AnimatePresence` mentionné** alors que c'est ce qui rend l'apparition/disparition fluide au scroll — à ajouter étape 2.
+- **"Rareté" dans le JSON** : notre modèle n'a pas de champ `rarete`. On peut le **dériver** : espèce vue par 1 seul marcheur OU `observations_count = 1` OU absente de `marcheur_observations` (uniquement iNat) = rare. À documenter dans le template.
+- **Performance** : 120 espèces × particules 3D + photos animées + audio = risque de jank mobile. Il faut **plafonner** (ex. 60 particules max, lazy-load photos via `IntersectionObserver`, `prefers-reduced-motion` respecté).
+- **Fallback données vides** : DEVIAT a actuellement 0 espèce remontée (bug RPC en cours de fix). Le template doit gérer gracieusement `species.length === 0` avec un état poétique au lieu d'un écran noir.
+- **Accessibilité** : bouton mute, respect `prefers-reduced-motion`, alt-text sur les photos. Aucun mot là-dessus dans la proposition.
 
-- **Event** : ne renvoyer que les colonnes existantes (`id`, `title`, `public_slug`, `event_type`, `cover_image_url`, `description`, `scenography_title`). Pour `lieu` / `date` / `latitude` / `longitude`, joindre la première marche de l'exploration parente.
-- **Espèces** : pour toutes les marches liées (`marches.exploration_id = event.exploration_id`), prendre le **dernier snapshot non quarantaine** de chaque marche, dé-imbriquer `species_data` (jsonb_array_elements) puis dédoublonner par `scientific_name` avec somme de `observations_count`. Fusionner avec `marcheur_observations` (espèces ajoutées manuellement par les marcheurs) sur les mêmes marches.
-- **Photos** : `marcheur_medias` où `marche_event_id = event.id` ET `type_media = 'photo'`, avec mapping `url ← url_fichier`, `caption ← description`, `latitude ← (metadata->>'latitude')::float`, idem longitude, `taken_at ← (metadata->>'taken_at')::timestamptz`, et `author ← profiles.display_name` via `attributed_marcheur_id` ou `user_id`.
-- **Waypoints** : inchangé (`exploration_waypoints` par `exploration_id`) — c'est la seule partie qui était correcte.
-- **Testimonies** : `event_testimonies` avec mapping `text ← quote`, `author ← author_name`, filtré sur `is_published = true` (sauf admin).
-- Conserver le gating `is_public AND (scenography_enabled OR is_admin_user())`.
+## Plan d'implémentation adapté (4 itérations, dans le template DEVIAT)
 
-### 2. Améliorer le runtime preview (frontend)
+Tout se passe dans `src/lib/scenography/deviatJardinMondeTemplate.ts` (code TSX stocké en BDD, transpilé Babel, exécuté dans l'iframe). On ne touche **pas** au runtime sauf pour charger Three.js UMD à l'étape 3.
 
-Dans `ScenographyRuntime.tsx`, quand on est en mode aperçu (`onExit` défini ⇒ contexte admin) et que `data.species` et `data.photos` sont vides, afficher un **bandeau d'info non bloquant** en bas :
-> "Aucune observation ni photo collectée pour cet évènement — la scénographie s'animera dès qu'il y aura des données."
+### Itération 1 — Socle données (template uniquement)
+- Consommer `data.species` et `data.photos` déjà injectés.
+- Dériver `isRare` : `(sp.observations_count ?? 0) <= 1 || !sp.has_marcheur_obs`.
+- Rendu de fallback poétique si `species.length === 0`.
+- Grille brute provisoire pour valider le binding.
 
-C'est de l'info pour l'éditeur (pas un blocage), la scénographie reste rendue normalement (le template DEVIAT a déjà des fallbacks visuels).
+### Itération 2 — Jardin Punk (Framer Motion)
+- Remplacer la grille par layout asymétrique : positions `x/y` dérivées d'un hash du `scientificName` (déterministe → stable entre renders).
+- Tailles variables (3 buckets : S/M/L selon `observations_count`).
+- `motion.div` + `whileInView` + `AnimatePresence` pour apparition au scroll.
+- Nom de l'espèce en surimpression au survol via `whileHover`.
+- Respect `useReducedMotion()`.
 
-### 3. Vérification
+### Itération 3 — Mycélium 3D (Three.js pur, pas R3F)
+- Ajouter `<script src="https://unpkg.com/three@0.160/build/three.min.js">` dans `scenographyRuntimeHtml.ts` (seule modification du runtime).
+- Dans le template : `<canvas>` en `fixed inset-0 -z-10`, monté via `useEffect`.
+- Une particule `Points` par espèce (max 60), positions sphériques aléatoires.
+- Lignes `LineSegments` entre particules à distance < seuil → effet réseau.
+- Rotation très lente (`requestAnimationFrame` + `prefers-reduced-motion` kill switch).
+- Couleur de particule via `hashColor(scientificName)` déjà exposé par notre runtime.
 
-- Appeler la RPC corrigée pour l'event DEVIAT (`f6095e8d…`) et vérifier qu'on récupère bien `species[]`, `photos[]`, `waypoints[]`, `testimonies[]`.
-- Recharger l'onglet **Scénographie** dans l'admin → l'aperçu doit afficher les vrais compteurs (ou le bandeau d'info si l'event n'a réellement aucune donnée).
+### Itération 4 — Souffle bioacoustique (Web Audio API)
+- Overlay d'entrée "Pénétrer dans le jardin" qui `resume()` l'`AudioContext`.
+- `IntersectionObserver` sur chaque carte espèce → `OscillatorNode` court (200ms, sinus, fréquence dérivée du hash du nom).
+- Espèces rares → harmonique mineure + reverb léger (`ConvolverNode` ou simple delay).
+- Bouton mute persistant en haut à droite.
 
-## Détails techniques
+## Sections techniques
 
-```text
-marche_events (id, exploration_id, …)
-   └─ exploration_id ──► marches (id, exploration_id, latitude, longitude, lieu, date_marche)
-                           └─ id ──► biodiversity_snapshots (marche_id, species_data jsonb, status)
-                           └─ id ──► marcheur_observations (marche_id, scientific_name, common_name)
-   └─ id ──► marcheur_medias (marche_event_id, type_media, url_fichier, metadata, attributed_marcheur_id)
-   └─ id ──► event_testimonies (event_id, quote, author_name, is_published)
-   └─ exploration_id ──► exploration_waypoints (exploration_id, …)
-```
+### Fichiers touchés
+- `src/lib/scenography/deviatJardinMondeTemplate.ts` — réécriture complète du TSX template (4 passes).
+- `src/components/scenography/scenographyRuntimeHtml.ts` — **uniquement** ajout du `<script>` Three.js UMD à l'étape 3.
+- `src/components/scenography/ScenographyRuntime.tsx` — **aucune** modification (le bandeau "données vides" est déjà en place).
+- Aucune migration SQL : le RPC corrigé précédemment suffira dès qu'il sera approuvé.
 
-Pas de changement côté `useScenography.ts`, `ScenographyEditor.tsx`, template DEVIAT — leur contrat (`ScenographyData`) est conservé, seules les sources sont remises au bon endroit.
+### Garde-fous
+- Plafond 60 particules 3D, lazy photos, `prefers-reduced-motion` à chaque étape.
+- Fallback texte si Three.js échoue à charger (try/catch autour du `new THREE.Scene()`).
+- Bouton mute + overlay audio obligatoires pour respect autoplay policies iOS/Safari.
+
+### Ce qu'on ne fait PAS
+- Pas de R3F (incompatible iframe sandbox sans bundler).
+- Pas de GSAP (Framer Motion suffit et est déjà chargé).
+- Pas de chargement de JSON externe (données déjà piped via postMessage).
+- Pas de refonte du système de scénographie : seul le template DEVIAT change.
+
+## Question avant de coder
+
+Souhaites-tu que je **fasse les 4 itérations d'un coup** dans un seul commit (rapide mais boîte noire si bug), ou **une itération à la fois** avec validation visuelle entre chaque (plus long mais conforme à l'esprit de la proposition originale) ?
