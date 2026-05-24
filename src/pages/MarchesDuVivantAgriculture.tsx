@@ -13,6 +13,9 @@ import {
   Network,
   Tractor,
   ArrowRight,
+  Bug,
+  Flower2,
+  type LucideIcon,
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 import TrustBar from '@/components/marches-vivant/TrustBar';
@@ -126,10 +129,25 @@ const formats = [
   },
 ];
 
-const leaders = [
-  { nom: 'Anémone', detail: '50/50 pts sur la Biodiversité (C5.3)', highlight: 'Seule CUMA à 100 % sur 254' },
-  { nom: 'Couzeau', detail: '82,1 % sur le Chapitre 5 « Respect du Vivant »', highlight: 'Champion régional' },
-  { nom: 'CUMA DES LANDES', detail: 'Référence régionale agroforesterie & bocage', highlight: 'Démonstrateur territorial' },
+const leaders: { nom: string; highlight: string; detail: string; icon: LucideIcon }[] = [
+  {
+    nom: 'Vincent',
+    highlight: 'Mosaïque de 4 milieux vivants',
+    detail: 'Prairie humide · Potager sol vivant · Forêt · Lande sèche',
+    icon: Sprout,
+  },
+  {
+    nom: 'Jean-François',
+    highlight: 'Équilibres écologiques en action',
+    detail: 'Corridor écologique · Gestion des ravageurs · Partenariat apiculteurs',
+    icon: Bug,
+  },
+  {
+    nom: 'Gaspard',
+    highlight: 'Jardin en mouvement',
+    detail: 'Jardin en mouvement sur 4 000 m²',
+    icon: Flower2,
+  },
 ];
 
 const MarchesDuVivantAgriculture = () => {
@@ -374,7 +392,7 @@ const MarchesDuVivantAgriculture = () => {
                   viewport={{ once: true }}
                   className="bg-card/40 backdrop-blur-sm border border-lime-500/20 rounded-2xl p-6 text-center"
                 >
-                  <Trophy className="w-8 h-8 text-lime-400 mx-auto mb-4" />
+                  <l.icon className="w-8 h-8 text-lime-400 mx-auto mb-4" />
                   <h3 className="font-crimson text-2xl text-foreground mb-2">{l.nom}</h3>
                   <div className="text-sm text-lime-300 mb-3">{l.highlight}</div>
                   <p className="text-sm text-muted-foreground">{l.detail}</p>
