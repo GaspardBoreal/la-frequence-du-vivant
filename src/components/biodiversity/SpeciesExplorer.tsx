@@ -163,8 +163,17 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const { data: marcheurTags } = useMarcheurSpeciesTags(allScientificNames);
   const tagsBySpecies = useMemo(() => indexTagsBySpecies(marcheurTags), [marcheurTags]);
 
-  // Filtered species
-  const filteredSpecies = useMemo(() => {
+  // Trophic group per species (memoized)
+  const trophicByName = useMemo(() => {
+    const m = new Map<string, TrophicGroup>();
+    species.forEach((s) => {
+      m.set(s.scientificName, classifyTrophic(s).group);
+    });
+    return m;
+  }, [species]);
+
+  // Filtered species — *avant* application du filtre trophique (sert aux compteurs dynamiques)
+  const filteredBeforeTrophic = useMemo(() => {
     let filtered = species;
 
     if (selectedCategory !== 'all' && selectedCategory !== 'map') {
@@ -179,7 +188,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       });
     }
 
-    // Filter by contributor (same logic for marcheurs and taxonomic observers)
     if (selectedContributor !== 'all') {
       filtered = filtered.filter(s =>
         s.attributions?.some(a => (a.observerName || 'Anonyme') === selectedContributor)
@@ -209,7 +217,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       });
     }
 
-    // Filter by marcheur tags
     if (tagFilter.labels.length > 0) {
       filtered = filtered.filter((s) => {
         const labels = (tagsBySpecies.get(normalizeTagKey(s.scientificName)) || []).map((t) => t.label);
@@ -219,6 +226,40 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
 
     return filtered.sort((a, b) => b.observations - a.observations);
   }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm, translationMap, tagFilter, tagsBySpecies]);
+
+  // Compteurs trophiques dynamiques (recalculés à partir des autres filtres)
+  const trophicCounts = useMemo(() => {
+    const counts: Record<TrophicGroup, number> = {
+      L1: 0, L2: 0, L3: 0, L4: 0, L5: 0, DECOMPOSER: 0, UNCLASSIFIED: 0,
+    };
+    filteredBeforeTrophic.forEach((s) => {
+      const g = trophicByName.get(s.scientificName) || 'UNCLASSIFIED';
+      counts[g] += 1;
+    });
+    return counts;
+  }, [filteredBeforeTrophic, trophicByName]);
+
+  // Application finale du filtre trophique
+  const filteredSpecies = useMemo(() => {
+    if (selectedTrophic.size === 0) return filteredBeforeTrophic;
+    return filteredBeforeTrophic.filter((s) =>
+      selectedTrophic.has(trophicByName.get(s.scientificName) || 'UNCLASSIFIED')
+    );
+  }, [filteredBeforeTrophic, selectedTrophic, trophicByName]);
+
+  const toggleTrophic = (g: TrophicGroup) => {
+    setSelectedTrophic((prev) => {
+      const next = new Set(prev);
+      if (next.has(g)) next.delete(g);
+      else next.add(g);
+      return next;
+    });
+  };
+
+  const trophicEntries: Array<{ group: TrophicGroup; label: string; shortLabel: string; token: string }> = [
+    ...TROPHIC_LEVELS.map((l) => ({ group: l.group, label: l.label, shortLabel: l.shortLabel, token: l.token })),
+    { group: DECOMPOSER_META.group, label: DECOMPOSER_META.label, shortLabel: DECOMPOSER_META.shortLabel, token: DECOMPOSER_META.token },
+  ];
 
   const gridCols = compact
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
