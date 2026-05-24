@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CSP_OPTIONS, GENDER_OPTIONS } from '@/lib/communityProfileTaxonomy';
-import ScienceAccountsEditor from './ScienceAccountsEditor';
+import ScienceAccountsEditor, { type ScienceAccountsEditorHandle } from './ScienceAccountsEditor';
 import ProfileSuggestionsList from './ProfileSuggestionsList';
 import MarcheurEventsSection from './MarcheurEventsSection';
 
@@ -54,8 +54,32 @@ interface Props {
 export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange }) => {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<EditableProfile | null>(profile);
+  const scienceRef = useRef<ScienceAccountsEditorHandle>(null);
 
   useEffect(() => { setForm(profile); }, [profile]);
+
+  const handleSave = async () => {
+    if (!form) return;
+    try {
+      await scienceRef.current?.flushPending();
+    } catch (e) {
+      toast.error('Impossible d\'enregistrer le compte science participative');
+      return;
+    }
+    mutation.mutate(form);
+  };
+
+  const handleOpenChange = async (next: boolean) => {
+    if (!next && scienceRef.current?.hasPending()) {
+      try {
+        await scienceRef.current.flushPending();
+      } catch {
+        toast.error('Compte science non enregistré');
+        return;
+      }
+    }
+    onOpenChange(next);
+  };
 
   const mutation = useMutation({
     mutationFn: async (payload: EditableProfile) => {
@@ -96,7 +120,7 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
     setForm(prev => (prev ? { ...prev, [key]: value } : prev));
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Éditer la fiche marcheur</SheetTitle>
@@ -240,15 +264,15 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
 
           <section className="space-y-3">
             <ProfileSuggestionsList profileId={form.id} />
-            <ScienceAccountsEditor profileId={form.id} />
+            <ScienceAccountsEditor ref={scienceRef} profileId={form.id} />
           </section>
 
           <div className="flex gap-2 pt-2 sticky bottom-0 bg-background py-3">
-            <Button onClick={() => mutation.mutate(form)} disabled={mutation.isPending} className="flex-1">
+            <Button onClick={handleSave} disabled={mutation.isPending} className="flex-1">
               <Save className="h-4 w-4 mr-2" />
               {mutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
             </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               <X className="h-4 w-4" />
             </Button>
           </div>

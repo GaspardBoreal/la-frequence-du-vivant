@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, ExternalLink, Sparkles, Save, X } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Sparkles, Save, X, AlertCircle } from 'lucide-react';
 import { NETWORK_META, NETWORK_ORDER, type ScienceNetwork } from '@/types/scienceAccounts';
 import { useProfileScienceAccounts, useUpsertScienceAccount, useDeleteScienceAccount } from '@/hooks/useScienceAccounts';
 import NetworkBadge from './NetworkBadge';
@@ -13,7 +13,12 @@ interface Props {
   profileId: string;
 }
 
-export const ScienceAccountsEditor: React.FC<Props> = ({ profileId }) => {
+export interface ScienceAccountsEditorHandle {
+  flushPending: () => Promise<void>;
+  hasPending: () => boolean;
+}
+
+export const ScienceAccountsEditor = forwardRef<ScienceAccountsEditorHandle, Props>(({ profileId }, ref) => {
   const { data: accounts = [], isLoading } = useProfileScienceAccounts(profileId);
   const upsert = useUpsertScienceAccount();
   const remove = useDeleteScienceAccount();
@@ -37,6 +42,23 @@ export const ScienceAccountsEditor: React.FC<Props> = ({ profileId }) => {
     });
     reset();
   };
+
+  useImperativeHandle(ref, () => ({
+    hasPending: () => adding && username.trim().length > 0,
+    flushPending: async () => {
+      if (adding && username.trim()) {
+        await upsert.mutateAsync({
+          profile_id: profileId,
+          network,
+          username,
+          profile_url: profileUrl || null,
+        });
+        reset();
+      }
+    },
+  }), [adding, username, network, profileUrl, profileId, upsert]);
+
+  const hasPendingDraft = adding && username.trim().length > 0;
 
   return (
     <div className="space-y-3">
@@ -131,6 +153,12 @@ export const ScienceAccountsEditor: React.FC<Props> = ({ profileId }) => {
               maxLength={500}
             />
           </div>
+          {hasPendingDraft && (
+            <p className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+              <AlertCircle className="h-3 w-3" />
+              Brouillon — sera enregistré avec la fiche, ou cliquez ci-dessous.
+            </p>
+          )}
           <div className="flex justify-end gap-1.5">
             <Button size="sm" variant="ghost" onClick={reset} className="h-7 text-xs">
               <X className="h-3 w-3 mr-1" /> Annuler
@@ -143,6 +171,8 @@ export const ScienceAccountsEditor: React.FC<Props> = ({ profileId }) => {
       )}
     </div>
   );
-};
+});
+
+ScienceAccountsEditor.displayName = 'ScienceAccountsEditor';
 
 export default ScienceAccountsEditor;
