@@ -55,6 +55,21 @@ export function useExplorationCitizenContributors(
       const byKey = new Map<string, Acc>();
       const allSpecies = new Set<string>();
 
+      // Pass A : collecter toutes les attributions iNat pour construire le resolver
+      const allInatAttrs: any[] = [];
+      for (const snap of snapshots || []) {
+        const arr = (snap as any).species_data;
+        if (!Array.isArray(arr)) continue;
+        for (const sp of arr) {
+          const attrs = Array.isArray(sp?.attributions) ? sp.attributions : [];
+          for (const a of attrs) {
+            if ((a?.source || '').toLowerCase() === 'inaturalist') allInatAttrs.push(a);
+          }
+        }
+      }
+      const resolve = buildCitizenIdentityResolver(allInatAttrs);
+
+      // Pass B : agrégation avec clé canonique réconciliée
       for (const snap of snapshots || []) {
         const arr = (snap as any).species_data;
         if (!Array.isArray(arr)) continue;
@@ -64,7 +79,7 @@ export function useExplorationCitizenContributors(
             const observerName = (a?.observerName || '').trim();
             const source = (a?.source || '').toLowerCase();
             if (!observerName || source !== 'inaturalist') continue;
-            const canonical = citizenIdentityKey(a);
+            const canonical = resolve(a);
             if (!canonical) continue;
             if (knownAliases && knownAliases.has(canonical)) continue;
 
