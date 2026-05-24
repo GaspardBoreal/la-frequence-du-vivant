@@ -111,6 +111,15 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     return m;
   }, [species]);
 
+  // Resolver d'identité citoyenne en 2 passes : réconcilie legacy (sans login)
+  // avec rows enrichies (avec login) du MÊME observateur. Construit sur le pool
+  // complet d'attributions, indépendamment des filtres actifs.
+  const resolveIdentity = useMemo(() => {
+    const all: any[] = [];
+    species.forEach(s => s.attributions?.forEach(a => all.push(a)));
+    return buildCitizenIdentityResolver(all);
+  }, [species]);
+
   // ============================================================
   // PIPELINE DE FILTRAGE UNIFIÉ ("leave-one-out")
   // ============================================================
