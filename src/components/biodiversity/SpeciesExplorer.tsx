@@ -187,6 +187,17 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     [applyFilters, species]
   );
 
+  // Compteurs dynamiques pour la pill Marcheurs ↔ iNaturalist
+  const { fieldPhotos } = useSpeciesPhotoMode();
+  const photoModeCounts = useMemo(() => {
+    let m = 0;
+    for (const sp of filteredSpecies) {
+      const arr = fieldPhotos.get(normalizeSpeciesKey(sp.scientificName));
+      if (arr && arr.length > 0) m++;
+    }
+    return { marcheur: m, inaturalist: filteredSpecies.length };
+  }, [filteredSpecies, fieldPhotos]);
+
   // ============================================================
   // COMPTEURS DYNAMIQUES
   // ============================================================
