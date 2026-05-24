@@ -23,8 +23,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useReorderMarcheurObservations } from '@/hooks/useReorderMarcheurObservations';
-import { useExplorationContributionsCounts } from '@/hooks/useExplorationContributionsCounts';
-import { useMarcheursAliasesMap, normalizeAlias } from '@/hooks/useMarcheurAliases';
+import { useMarcheursAliasesMap } from '@/hooks/useMarcheurAliases';
 import MarcheurAudioPanel from '@/components/community/audio/MarcheurAudioPanel';
 import CitizenPlatformsCard from '@/components/community/exploration/impact/CitizenPlatformsCard';
 import PratiquesPorteesCard from '@/components/community/exploration/impact/PratiquesPorteesCard';
@@ -1357,8 +1356,6 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     return m;
   }, [testimonies]);
 
-  // Single shared query: contribution counts per observer for the whole exploration
-  const { data: contribsByName } = useExplorationContributionsCounts(explorationId, explorationMarcheIds);
   // Batch alias map (nom + logins iNat/GBIF/eBird) for all marcheurs
   const { data: aliasesByMarcheurId } = useMarcheursAliasesMap(marcheurs);
 
