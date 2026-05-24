@@ -552,6 +552,7 @@ const ContributionsSubTab: React.FC<{
         resolvedUserId={resolvedUserId}
         explorationId={explorationId}
         explorationMarcheIds={explorationMarcheIds}
+        explorationEventIds={explorationEventIds}
         identifiedPhotoUrls={identifiedPhotoUrls}
       />
     </div>
