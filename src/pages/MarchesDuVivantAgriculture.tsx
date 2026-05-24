@@ -392,7 +392,7 @@ const MarchesDuVivantAgriculture = () => {
                   viewport={{ once: true }}
                   className="bg-card/40 backdrop-blur-sm border border-lime-500/20 rounded-2xl p-6 text-center"
                 >
-                  <Trophy className="w-8 h-8 text-lime-400 mx-auto mb-4" />
+                  <l.icon className="w-8 h-8 text-lime-400 mx-auto mb-4" />
                   <h3 className="font-crimson text-2xl text-foreground mb-2">{l.nom}</h3>
                   <div className="text-sm text-lime-300 mb-3">{l.highlight}</div>
                   <p className="text-sm text-muted-foreground">{l.detail}</p>
