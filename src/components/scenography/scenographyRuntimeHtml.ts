@@ -57,6 +57,7 @@ export function buildScenographyHtml(opts: { compiledCode: string; nonceTitle: s
 <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/framer-motion@11.11.17/dist/framer-motion.js"></script>
+<script crossorigin src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 
 <script>
   // === Receive data from parent via postMessage ===
