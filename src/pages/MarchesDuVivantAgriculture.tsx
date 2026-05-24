@@ -136,6 +136,9 @@ const leaders = [
 ];
 
 const MarchesDuVivantAgriculture = () => {
+  const { data: stats, isLoading: statsLoading } = useMarchesDuVivantStats();
+  const proofs = buildProofs(stats, statsLoading);
+
   const scrollToContact = () => {
     document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
   };
