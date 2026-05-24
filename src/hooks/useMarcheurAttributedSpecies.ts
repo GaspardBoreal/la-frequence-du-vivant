@@ -149,7 +149,8 @@ export function useMarcheurAttributedSpecies({
           const sci = (o.species_scientific_name || '').trim();
           if (!sci) return;
           const isOwn = isOwnPhotoUrl(o.photo_url);
-          const source = o.inaturalist_observation_id ? 'inaturalist' : 'marcheur';
+          const attributionSource: BiodiversityObservation['source'] = o.inaturalist_observation_id ? 'inaturalist' : 'gbif';
+          const speciesSource: BiodiversitySpecies['source'] = 'inaturalist';
           if (isOwn) ownUploadedSciNames.add(keyOf(sci));
           upsert(
             sci,
@@ -157,16 +158,16 @@ export function useMarcheurAttributedSpecies({
               commonName: '',
               kingdom: 'Other',
               lastSeen: o.observation_date || '',
-              source,
+              source: speciesSource,
               observations: 1,
               photos: o.photo_url ? [o.photo_url] : [],
               photoData: o.photo_url
-                ? { url: o.photo_url, source }
+                ? { url: o.photo_url, source: 'inaturalist' }
                 : undefined,
             },
             {
               date: o.observation_date || '',
-              source,
+              source: attributionSource,
             },
           );
         });
