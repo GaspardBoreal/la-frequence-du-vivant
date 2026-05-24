@@ -1,103 +1,63 @@
-## Constat
+## Diagnostic
 
-L'onglet **Marcheurs → Marcheurs → Contributions** affiche aujourd'hui par défaut les vignettes iNaturalist parce qu'il a son propre rendu bento (`ContributionsSubTab` dans `MarcheursTab.tsx`), totalement indépendant de l'écosystème factorisé `SpeciesPhotoModeContext` + `SpeciesExplorer` utilisé partout ailleurs (Vivant, L'Œil, Synthèse).
+**Symptôme** : pour « Les marches du vivant », Marcheurs→Marcheurs affiche **5 espèces** alors que Synthèse→Taxons observés en affiche **9** (même périmètre d'exploration, même contributeur sélectionné).
 
-Conséquence visible sur la capture d'écran : pour Laurence Karki (aucune photo perso uploadée), on ne voit que des miniatures iNat, sans la moindre possibilité de basculer vers les photos terrain d'autres marcheurs qui auraient pu photographier les mêmes espèces.
+**Cause racine** : deux stratégies de matching différentes sont utilisées pour identifier les attributions d'un même contributeur.
 
-## Stratégie : réutiliser `<SpeciesExplorer/>` filtré
+| Vue | Logique de match | Robuste aux variantes `observerName` ? |
+|---|---|---|
+| Synthèse (`SpeciesExplorer`) | `buildCitizenIdentityResolver(pool)` — Pass A indexe `normalizeAlias(name) → observerLogin`, Pass B réconcilie toute attribution via son `observerLogin` ou son alias. Match = `resolveIdentity(attr) === target` **OU** `normalizeAlias(observerName) === target`. | ✅ Oui : toutes les obs du compte iNat `les-marches-du-vivant` sont réconciliées même si `observerName` varie (casse, accent, abrégé, vide). |
+| Marcheurs (nouveau `useMarcheurAttributedSpecies`) | `normalizeAlias(attr.observerName) ∈ aliasSet` (aliasSet = nom/prénom + `community_profile_science_accounts.username`). | ❌ Non : une attribution avec `observerLogin = les-marches-du-vivant` mais `observerName` = variante non listée dans les aliases est **perdue**. D'où les 4 espèces manquantes. |
 
-Le contexte `SpeciesPhotoModeProvider` est déjà installé au niveau racine de `ExplorationMarcheurPage` → le toggle sera automatiquement **synchronisé** avec les trois autres vues, et bénéficiera de :
+**Risque systémique** : ce n'est pas spécifique à LMDV. Tout marcheur lié à un compte iNat dont au moins une obs a un `observerName` non strictement égal aux aliases connus subira la même sous-comptabilisation dans la tuile Contributions, dans `useExplorationCitizenContributors` (filtre `knownAliases`), et dans toute logique qui dérive d'un set d'alias brut.
 
-- défaut intelligent (`marcheur` si photos terrain existent, sinon `inaturalist`)
-- `getPreferredPhoto()` qui choisit la bonne photo par espèce
-- toggle UI `<SpeciesPhotoModeToggle/>` avec compteurs
-- filtres règnes, recherche, tags, classification trophique, modal espèce, lightbox
-- cohérence visuelle 100 % avec Vivant / L'Œil / Synthèse
+## Solution
 
-## Plan d'implémentation
+Source unique de vérité pour « est-ce que cette attribution iNat appartient au marcheur X ? » via `buildCitizenIdentityResolver`, partagée par toutes les vues.
 
-### 1. Nouveau hook `useMarcheurAttributedSpecies`
+### 1. Refactor `useMarcheurAttributedSpecies` (`src/hooks/useMarcheurAttributedSpecies.ts`)
 
-Fichier : `src/hooks/useMarcheurAttributedSpecies.ts`
+- Charger les snapshots une fois, **construire le resolver sur l'intégralité des attributions iNat** du pool (mêmes données que SpeciesExplorer).
+- Construire un set d'**identités canoniques du marcheur** :
+  - tous les `aliases` normalisés (existant)
+  - tous les `username` des `community_profile_science_accounts` (déjà couverts par aliases)
+  - **plus** : indexer dans le pool tout `observerLogin` dont une attribution a `normalizeAlias(observerName) ∈ aliasSet`. Ajouter ces logins canoniques au set.
+- Match d'une attribution : `resolveIdentity(attr) ∈ canonicalSet` **OU** `normalizeAlias(observerName) ∈ aliasSet`.
+- Conséquence : 100 % parité avec le filtre contributeur de `SpeciesExplorer`. Les 9 espèces apparaîtront dans Contributions comme dans Synthèse.
 
-Rôle : retourner la liste des espèces **attribuées au marcheur courant** dans le format `BiodiversitySpecies[]` attendu par `<SpeciesExplorer/>`.
+### 2. Aligner `useExplorationCitizenContributors`
 
-Sources fusionnées (logique existante extraite de `ContributionsSubTab`) :
+Même resolver est déjà utilisé. Vérifier que l'exclusion `knownAliases.has(canonical)` utilise bien la même définition de « canonical » (résultat du resolver, pas alias brut). Si écart, harmoniser. (Lecture seule, à confirmer ; le hook fait déjà `resolve(a)` puis `knownAliases.has(canonical)` — OK si `knownAliases` inclut aussi les logins canoniques. À étendre côté appelant si besoin.)
 
-1. `marcheur_observations` filtrées par `marcheur_id = crewId` ET `marche_id ∈ explorationMarcheIds`
-2. Attributions iNat issues de `biodiversity_snapshots.species_data[].attributions[]` dont `normalizeAlias(observerName) ∈ aliases` du marcheur
+### 3. Test de non-régression manuel
 
-Le hook expose aussi :
-
-- `ownUploadedSciNames: Set<string>` — espèces pour lesquelles **CE marcheur** a uploadé au moins une photo perso (URL Supabase storage). Permet de garder le filtre « Mes photos ».
-
-Photos par espèce : on ne stocke dans `BiodiversitySpecies.photoData.url` que la photo iNat de référence (fallback). C'est `SpeciesPhotoModeContext` (alimenté par `useExplorationFieldPhotos`) qui injecte la photo terrain au rendu via `getPreferredPhoto()` — donc aucune logique photo dupliquée ici.
-
-### 2. Refonte de `ContributionsSubTab`
-
-Remplacer tout le rendu bento par :
-
-```tsx
-<div className="px-3 pt-3 pb-3 space-y-3">
-  {/* Bandeau spécifique marcheur */}
-  <div className="flex items-center justify-between gap-2 flex-wrap">
-    <p className="text-xs text-muted-foreground">
-      <Leaf /> {species.length} espèce{s} identifiée{s}
-      {ownCount > 0 && <span> · {ownCount} avec photo perso</span>}
-    </p>
-    {ownCount > 0 && (
-      <button onClick={() => setOnlyOwn(!onlyOwn)} ...>
-        <Camera /> Mes photos ({ownCount})
-      </button>
-    )}
-  </div>
-
-  <SpeciesExplorer
-    species={onlyOwn ? speciesWithMyUpload : species}
-    compact
-    explorationId={explorationId}
-  />
-</div>
-```
-
-Comportements obtenus gratuitement via `SpeciesExplorer` :
-
-- Header de l'explorer contient déjà `<SpeciesPhotoModeToggle counts={...}/>` → bascule globale visible ici
-- Par défaut le mode passe à `marcheur` dès qu'il y a au moins une photo terrain dans l'exploration
-- Filtres règne, source, audio, contributeur, recherche, tags : tous opérationnels
-- Modal espèce, carrousel photos, navigation : identiques aux autres vues
-
-### 3. Code mort à retirer dans `MarcheursTab.tsx`
-
-- `ContribSpeciesItem`, `isOwnPhotoUrl`, l'énorme `useQuery` de `byKey`, `renderTile`, sections « Vos N captures personnelles » / « N repérées dans le périmètre », `ownSpanFor`, lightbox local
-
-→ remplacé par le hook + 30 lignes de JSX.
-
-### 4. Ce qui ne change pas
-
-- Page hôte `ExplorationMarcheurPage` : déjà sous `SpeciesPhotoModeProvider`, rien à toucher.
-- Les trois vues existantes (Vivant / L'Œil / Synthèse) : aucune modification.
-- Le filtre « Mes photos » reste spécifique à l'onglet du marcheur (conformément à la réponse choisie).
+Validation sur l'exploration courante (`20dd3be8…`), marcheur « Les marches du vivant » :
+- Onglet **Marcheurs → Marcheurs → Contributions** : doit afficher **9 espèces** (parité avec Synthèse).
+- Onglet **Synthèse → Taxons observés**, filtre contributeur « Les marches du vivant » : reste à 9.
+- Toggle global Photos marcheurs ↔ iNat : se reflète immédiatement dans Contributions.
+- Filtre local « Mes photos (N) » : N inchangé, basé sur uploads Supabase storage.
+- Tester un second marcheur avec compte iNat pour confirmer le pattern.
 
 ## Détails techniques
 
 ```text
-ExplorationMarcheurPage
-└─ SpeciesPhotoModeProvider (explorationId)  ← déjà en place
-   └─ MarcheursTab
-      └─ ContributionsSubTab  ← refonte
-         ├─ useMarcheurAttributedSpecies(marcheur, exploration)
-         │     → BiodiversitySpecies[] + ownUploadedSciNames
-         ├─ Filtre « Mes photos » (local)
-         └─ <SpeciesExplorer species=… compact explorationId=… />
-               └─ <SpeciesPhotoModeToggle/> en header (global)
+useMarcheurAttributedSpecies (refactored)
+├─ fetch snapshots × marcheIds (une fois)
+├─ buildCitizenIdentityResolver(allInatAttrs)     ← identique à SpeciesExplorer
+├─ canonicalKeys = Set<string>
+│   ├─ ∀ alias ∈ aliases                          → ajouter alias
+│   └─ ∀ attr du pool tel que normalizeAlias(attr.observerName) ∈ aliases
+│       et attr.observerLogin présent             → ajouter login
+├─ pour chaque snapshot/species/attribution :
+│   ├─ si resolveIdentity(attr) ∈ canonicalKeys
+│   │  OU normalizeAlias(attr.observerName) ∈ aliases
+│   │  → upsert species
+└─ + marcheur_observations directes (inchangé)
 ```
 
-Mémoire à mettre à jour : `mem://features/community/species-photo-mode-toggle-logic` pour ajouter la 4ᵉ vue factorisée.
+Aucun changement DB. Aucun changement UI. Pas de migration. Modif circonscrite à `src/hooks/useMarcheurAttributedSpecies.ts`.
 
-## Validation
+## Hors scope
 
-1. Ouvrir un marcheur sans photo perso (Laurence Karki) → onglet Contributions doit afficher les photos terrain des autres marcheurs par défaut (si présentes), sinon iNat ; le toggle global doit être visible et fonctionnel.
-2. Ouvrir un marcheur avec ses propres photos (Gaspard) → le toggle « Mes photos » filtre correctement.
-3. Basculer le toggle global depuis l'onglet Vivant → la bascule est reflétée immédiatement dans Contributions (même provider).
-4. Vérifier que les filtres règne, recherche, modal espèce fonctionnent dans Contributions exactement comme dans Vivant.
+- Backfill `observerLogin` sur snapshots legacy : déjà documenté (mem `snapshot-attribution-backfill-trigger`), non requis ici car le resolver compense à la lecture.
+- Sauvegarder une mémoire : `mem://technical/community/identity-matching-logic` couvre déjà le principe ; ajouter une note rappelant que **tous** les hooks qui filtrent par marcheur doivent passer par le resolver, pas par un alias-set brut.

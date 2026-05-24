@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeAlias } from '@/hooks/useMarcheurAliases';
+import { buildCitizenIdentityResolver } from '@/utils/citizenIdentity';
 import type { BiodiversitySpecies, BiodiversityObservation } from '@/types/biodiversity';
 
 interface Params {
