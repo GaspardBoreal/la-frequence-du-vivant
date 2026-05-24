@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList, Pencil, Sparkles } from 'lucide-react';
+import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList, Pencil, Sparkles, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -35,8 +35,27 @@ const CommunityProfilesAdmin: React.FC = () => {
   const [eventFilter, setEventFilter] = useState<string>('all');
   const [editing, setEditing] = useState<EditableProfile | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
 
   const openEditor = (p: EditableProfile) => { setEditing(p); setEditOpen(true); };
+
+  const runInatReconciliation = async () => {
+    setReconciling(true);
+    const t = toast.loading('Réconciliation des identités iNaturalist en cours...');
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-snapshot-observer-login', {
+        body: {},
+      });
+      if (error) throw error;
+      const patched = (data as any)?.attributionsPatched ?? 0;
+      const updated = (data as any)?.updated ?? 0;
+      toast.success(`Réconciliation terminée : ${patched} attributions enrichies sur ${updated} snapshots`, { id: t });
+    } catch (e: any) {
+      toast.error(`Échec : ${e?.message || 'erreur inconnue'}`, { id: t });
+    } finally {
+      setReconciling(false);
+    }
+  };
 
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['community-profiles-admin'],
@@ -179,6 +198,16 @@ const CommunityProfilesAdmin: React.FC = () => {
             <Button variant="outline"><ArrowLeft className="h-4 w-4 mr-2" />Retour</Button>
           </Link>
           <h1 className="text-2xl font-bold text-foreground flex-1">Communauté des Marcheurs</h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runInatReconciliation}
+            disabled={reconciling}
+            title="Enrichit les observations iNaturalist avec leur login immuable pour éviter les doublons d'identité"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${reconciling ? 'animate-spin' : ''}`} />
+            Réconcilier identités iNat
+          </Button>
           <NewMarcheurDialog />
         </div>
 
