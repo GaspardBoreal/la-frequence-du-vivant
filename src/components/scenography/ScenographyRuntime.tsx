@@ -50,12 +50,15 @@ const ScenographyRuntime: React.FC<Props> = ({
       `;
       // Rewrite "export default X" → "var Scenography_default = X;"
       const normalized = wrapped.replace(/export\s+default\s+/g, 'var Scenography_default = ');
+      // Auto-detect JSX (capitalised tag or closing tag). When absent we use
+      // the plain TS parser to avoid the `a < b` / JSX ambiguity which breaks
+      // expressions like `p < 0.8` in createElement-based templates.
+      const hasJsx = /<[A-Za-z][\s\S]*?>|<\/[A-Za-z]/.test(code);
       const out = Babel.transform(normalized, {
-        presets: [
-          ['react', { runtime: 'classic' }],
-          ['typescript', { allExtensions: true, isTSX: true }],
-        ],
-        filename: 'scenography.tsx',
+        presets: hasJsx
+          ? [['react', { runtime: 'classic' }], ['typescript', { allExtensions: true, isTSX: true }]]
+          : [['typescript', { allExtensions: true, isTSX: false }]],
+        filename: hasJsx ? 'scenography.tsx' : 'scenography.ts',
       });
       return { code: out.code ?? '', error: null as string | null };
     } catch (e: any) {
