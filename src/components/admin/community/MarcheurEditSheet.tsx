@@ -120,7 +120,7 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
     setForm(prev => (prev ? { ...prev, [key]: value } : prev));
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Éditer la fiche marcheur</SheetTitle>
