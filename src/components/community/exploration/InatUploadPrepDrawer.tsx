@@ -68,6 +68,7 @@ const InatUploadPrepDrawer: React.FC<Props> = ({
   const [useMarcheGpsFallback, setUseMarcheGpsFallback] = useState(true);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const { data: candidates = [], isLoading } = useMarcheurUnidentifiedPhotos({
     crewId, resolvedUserId, explorationMarcheIds, explorationEventIds, identifiedPhotoUrls,
