@@ -284,7 +284,7 @@ const MarchesDuVivantAgriculture = () => {
         {/* Argument massue */}
         <section className="py-8 px-6 bg-lime-950/20 border-y border-lime-500/20">
           <div className="max-w-4xl mx-auto text-center">
-            <p className="text-lg md:text-xl text-lime-300 font-medium">
+            <p className="text-lg md:text-xl text-lime-300 font-medium text-center">
               « Vos adhérents passent du référentiel papier à la mesure terrain :
               chaque marche produit une donnée biodiversité opposable, alignée avec
               les exigences RSE / RSO »
