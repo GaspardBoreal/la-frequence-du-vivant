@@ -54,8 +54,32 @@ interface Props {
 export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange }) => {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<EditableProfile | null>(profile);
+  const scienceRef = useRef<ScienceAccountsEditorHandle>(null);
 
   useEffect(() => { setForm(profile); }, [profile]);
+
+  const handleSave = async () => {
+    if (!form) return;
+    try {
+      await scienceRef.current?.flushPending();
+    } catch (e) {
+      toast.error('Impossible d\'enregistrer le compte science participative');
+      return;
+    }
+    mutation.mutate(form);
+  };
+
+  const handleOpenChange = async (next: boolean) => {
+    if (!next && scienceRef.current?.hasPending()) {
+      try {
+        await scienceRef.current.flushPending();
+      } catch {
+        toast.error('Compte science non enregistré');
+        return;
+      }
+    }
+    onOpenChange(next);
+  };
 
   const mutation = useMutation({
     mutationFn: async (payload: EditableProfile) => {
