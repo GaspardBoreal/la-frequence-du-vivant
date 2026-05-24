@@ -34,6 +34,8 @@ import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { cn } from '@/lib/utils';
 import PratiquesEmblematiquesDialog from '@/components/public-event/PratiquesEmblematiquesDialog';
 import PaysagesSonoresDialog from '@/components/public-event/PaysagesSonoresDialog';
+import { useEventScenography, useEventScenographyData } from '@/hooks/useScenography';
+import ScenographyRuntime from '@/components/scenography/ScenographyRuntime';
 
 const SITE = 'https://la-frequence-du-vivant.com';
 
@@ -57,6 +59,11 @@ const taxonColor = (taxon: string | null) => {
 const PublicEventPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   useLogPublicEventView(slug);
+
+  // Scenography short-circuit
+  const [scenoBypassed, setScenoBypassed] = useState(false);
+  const { data: sceno } = useEventScenography(slug);
+  const { data: scenoData } = useEventScenographyData(slug, !!sceno && !scenoBypassed);
 
   const { data: event, isLoading, error } = usePublicEvent(slug);
   const { data: stats } = usePublicEventStats(slug);
