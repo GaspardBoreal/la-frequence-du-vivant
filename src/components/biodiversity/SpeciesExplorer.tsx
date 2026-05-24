@@ -361,7 +361,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       {/* Filters */}
       <Card className="p-4">
         <div className="space-y-4">
-          <SpeciesPhotoModeToggle />
+          <SpeciesPhotoModeToggle counts={photoModeCounts} />
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
