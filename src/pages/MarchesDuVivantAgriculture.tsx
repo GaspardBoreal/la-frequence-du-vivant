@@ -221,20 +221,15 @@ const MarchesDuVivantAgriculture = () => {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
               {proofs.map((p, i) => (
-                <motion.div
+                <AnimatedStat
                   key={p.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  viewport={{ once: true }}
-                  className="text-center"
-                >
-                  <div className={`font-crimson text-3xl md:text-4xl text-lime-400 mb-2 ${statsLoading ? 'animate-pulse' : ''}`}>
-                    {p.value}
-                  </div>
-                  <div className="text-sm text-foreground/90 mb-1">{p.label}</div>
-                  <div className="text-xs text-muted-foreground">{p.sub}</div>
-                </motion.div>
+                  value={p.value}
+                  loading={statsLoading}
+                  duration={2200}
+                  label={p.label}
+                  sub={p.sub}
+                  index={i}
+                />
               ))}
             </div>
           </div>
