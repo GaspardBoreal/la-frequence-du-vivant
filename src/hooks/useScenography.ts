@@ -93,13 +93,21 @@ export interface SaveScenographyInput {
   title?: string | null;
 }
 
+const normalizeScenographyCode = (code: string | null) => {
+  if (!code) return code;
+  return code.replace(
+    /},\s*(sp\.common_name\s*\|\|\s*sp\.scientific_name)\),/g,
+    (_match, labelExpr) => `}, ${labelExpr});`
+  );
+};
+
 export const useSaveScenography = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ eventId, code, enabled, title }: SaveScenographyInput) => {
       const { data: u } = await supabase.auth.getUser();
       const update: Record<string, any> = {
-        scenography_code: code,
+        scenography_code: normalizeScenographyCode(code),
         scenography_updated_at: new Date().toISOString(),
         scenography_updated_by: u.user?.id ?? null,
       };

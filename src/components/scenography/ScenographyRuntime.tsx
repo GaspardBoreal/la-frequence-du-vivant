@@ -35,13 +35,18 @@ const ScenographyRuntime: React.FC<Props> = ({
   // Transpile TSX → JS once per code change
   const compiled = useMemo(() => {
     try {
+      const repairedCode = code.replace(
+        /},\s*(sp\.common_name\s*\|\|\s*sp\.scientific_name)\),/g,
+        (_match, labelExpr) => `}, ${labelExpr});`
+      );
+
       const wrapped = `
         (function(){
           const { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect, Fragment, createElement } = React;
           const { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring } = (window.Motion || window.motion || window["framer-motion"] || {});
           const { useScrollProgress, useMousePos, lerp, clamp, hashColor } = window.Scenography.helpers;
           const data = window.__SCENO_DATA__ || {};
-          ${code}
+          ${repairedCode}
           // Convention: the last expression OR an explicit Scenography.register(Component)
           if (typeof Scenography_default !== 'undefined') {
             window.Scenography.Component = Scenography_default;

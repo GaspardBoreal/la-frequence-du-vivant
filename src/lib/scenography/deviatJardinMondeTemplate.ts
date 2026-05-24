@@ -89,7 +89,7 @@ function ActEclosion({ photos, species }) {
         initial: { opacity: 0 },
         animate: { opacity: visible ? 1 : 0 },
         transition: { duration: 0.3 },
-      }, sp.common_name || sp.scientific_name),
+      }, sp.common_name || sp.scientific_name);
     }),
   );
 }
