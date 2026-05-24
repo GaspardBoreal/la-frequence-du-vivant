@@ -198,6 +198,16 @@ const CommunityProfilesAdmin: React.FC = () => {
             <Button variant="outline"><ArrowLeft className="h-4 w-4 mr-2" />Retour</Button>
           </Link>
           <h1 className="text-2xl font-bold text-foreground flex-1">Communauté des Marcheurs</h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runInatReconciliation}
+            disabled={reconciling}
+            title="Enrichit les observations iNaturalist avec leur login immuable pour éviter les doublons d'identité"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${reconciling ? 'animate-spin' : ''}`} />
+            Réconcilier identités iNat
+          </Button>
           <NewMarcheurDialog />
         </div>
 
