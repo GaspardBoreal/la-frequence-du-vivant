@@ -62,13 +62,6 @@ const leviers = [
     tag: 'Sensibilisation',
   },
   {
-    icon: Trees,
-    color: 'emerald',
-    title: 'Réglementation haies & bocage',
-    desc: 'Diagnostic du linéaire bocager + temps d\'information réglementaire sur la taille, l\'entretien, les dispositions PAC/BCAE.',
-    tag: 'Information',
-  },
-  {
     icon: Users,
     color: 'amber',
     title: 'Atelier collectif « Services de la biodiversité »',
@@ -81,6 +74,13 @@ const leviers = [
     title: 'Pratiques culturales alternatives',
     desc: 'Restitution comparée des pratiques disponibles : agroforesterie, bandes enherbées, couverts végétaux, matériel bas-intrants.',
     tag: 'Pratiques',
+  },
+  {
+    icon: Trees,
+    color: 'emerald',
+    title: 'Réglementation haies & bocage',
+    desc: 'Diagnostic du linéaire bocager + temps d\'information réglementaire sur la taille, l\'entretien, les dispositions PAC/BCAE.',
+    tag: 'Information',
   },
   {
     icon: Trophy,
