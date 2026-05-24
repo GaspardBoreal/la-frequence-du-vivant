@@ -264,15 +264,15 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
 
           <section className="space-y-3">
             <ProfileSuggestionsList profileId={form.id} />
-            <ScienceAccountsEditor profileId={form.id} />
+            <ScienceAccountsEditor ref={scienceRef} profileId={form.id} />
           </section>
 
           <div className="flex gap-2 pt-2 sticky bottom-0 bg-background py-3">
-            <Button onClick={() => mutation.mutate(form)} disabled={mutation.isPending} className="flex-1">
+            <Button onClick={handleSave} disabled={mutation.isPending} className="flex-1">
               <Save className="h-4 w-4 mr-2" />
               {mutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
             </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               <X className="h-4 w-4" />
             </Button>
           </div>
