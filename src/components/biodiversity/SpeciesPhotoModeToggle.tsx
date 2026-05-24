@@ -7,13 +7,23 @@ import { useSpeciesPhotoMode } from '@/contexts/SpeciesPhotoModeContext';
  * Pill segmentée animée Photos marcheurs ↔ iNaturalist.
  * Auto-masquée si aucune photo terrain n'existe sur l'exploration.
  */
-const SpeciesPhotoModeToggle: React.FC<{ className?: string }> = ({
+interface ToggleProps {
+  className?: string;
+  /** Compteurs contextualisés au sous-ensemble filtré (override du défaut global). */
+  counts?: { marcheur: number; inaturalist: number };
+}
+
+const SpeciesPhotoModeToggle: React.FC<ToggleProps> = ({
   className = '',
+  counts,
 }) => {
   const { mode, setMode, hasFieldPhotos, speciesWithFieldPhotos, isLoading } =
     useSpeciesPhotoMode();
 
   if (isLoading || !hasFieldPhotos) return null;
+
+  const marcheurCount = counts ? counts.marcheur : speciesWithFieldPhotos;
+  const inatCount = counts ? counts.inaturalist : undefined;
 
   const options: Array<{
     key: 'marcheur' | 'inaturalist';
@@ -23,6 +33,7 @@ const SpeciesPhotoModeToggle: React.FC<{ className?: string }> = ({
     activeBg: string;
     halo: string;
     count?: number;
+    dim?: boolean;
   }> = [
     {
       key: 'marcheur',
@@ -31,7 +42,8 @@ const SpeciesPhotoModeToggle: React.FC<{ className?: string }> = ({
       icon: <Camera className="w-3.5 h-3.5" />,
       activeBg: 'bg-emerald-500 text-white',
       halo: '0 0 0 0 hsl(152 76% 50% / 0.55)',
-      count: speciesWithFieldPhotos,
+      count: marcheurCount,
+      dim: counts ? marcheurCount === 0 : false,
     },
     {
       key: 'inaturalist',
@@ -40,6 +52,8 @@ const SpeciesPhotoModeToggle: React.FC<{ className?: string }> = ({
       icon: <Sparkles className="w-3.5 h-3.5" />,
       activeBg: 'bg-sky-500 text-white',
       halo: '0 0 0 0 hsl(199 89% 55% / 0.55)',
+      count: inatCount,
+      dim: counts ? inatCount === 0 : false,
     },
   ];
 
@@ -94,11 +108,11 @@ const SpeciesPhotoModeToggle: React.FC<{ className?: string }> = ({
               <span className="sm:hidden sr-only">{opt.short}</span>
               {typeof opt.count === 'number' && (
                 <span
-                  className={`ml-0.5 px-1.5 rounded-full text-[10px] tabular-nums ${
+                  className={`ml-0.5 px-1.5 rounded-full text-[10px] tabular-nums transition-opacity ${
                     isActive
                       ? 'bg-white/25 text-white'
                       : 'bg-white/10 text-white/80'
-                  }`}
+                  } ${opt.dim ? 'opacity-50' : ''}`}
                 >
                   {opt.count}
                 </span>

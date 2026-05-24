@@ -1,63 +1,53 @@
-# Compteurs dynamiques — Taxons observés
-
 ## Constat
 
-Dans `SpeciesExplorer.tsx`, seul le filtre trophique a des compteurs dynamiques (déjà branchés sur `filteredBeforeTrophic`). Les autres compteurs sont calculés à partir de `species` brut :
+Le pill `Marcheurs (113)` affiche `speciesWithFieldPhotos` venant de `SpeciesPhotoModeContext` — c'est la **taille totale** de la map `fieldPhotos.byScientificName` calculée une fois pour toute l'exploration. Aucun lien avec les filtres actifs du `SpeciesExplorer` (catégorie, sources, audio, recherche, tags, trophique, contributeur).
 
-- `categoryStats` (Toutes / Faune / Flore / Champignons / Autres) — onglets **et** dropdown Catégories
-- `contributorsBySource` + `totalContributors` (Marcheurs / eBird / iNat / GBIF)
-- (par cohérence) compteurs implicites des Sources et Audio dans leurs dropdowns
+D'où : sélectionner "Décomposeurs & recycleurs" filtre la grille à 5 espèces, mais le pill reste à 113 (= 113 espèces de l'exploration ont au moins une photo terrain, point).
 
-Résultat actuel : sélectionner "Consommateurs primaires" filtre bien les cartes (8 espèces) mais les onglets affichent toujours 115/.../... et le dropdown contributeurs montre 16.
+Côté iNat il n'y a même pas de compteur → asymétrie visuelle.
 
-## Principe : "leave-one-out"
+## Cause architecturale
 
-Chaque compteur d'un filtre F doit refléter ce qui resterait si on appliquait **tous les filtres actifs sauf F**. C'est le pattern déjà utilisé par `filteredBeforeTrophic` pour le filtre trophique.
+`SpeciesPhotoModeContext` est un provider global (au niveau `ExplorationLayout`), volontairement découplé des composants consommateurs. Il ne connaît pas la liste filtrée de `SpeciesExplorer`. C'est correct : le contexte doit rester la source de vérité "univers complet de l'exploration".
 
-On généralise avec **une fonction unique** `applyFilters(species, active, skip?)` qui applique les 6 filtres (`category`, `source`, `audio`, `search`, `tags`, `trophic`, `contributor`) en pouvant en sauter un.
+La responsabilité du **compteur contextuel** appartient donc au consommateur (`SpeciesExplorer`), qui sait quel sous-ensemble est affiché.
 
-```text
-            applyFilters(species, S)            → filteredSpecies (grille + onglet actif)
-applyFilters(species, S, skip:'category')       → base pour compteurs onglets/Catégories
-applyFilters(species, S, skip:'contributor')    → base pour compteurs contributeurs
-applyFilters(species, S, skip:'source')         → base pour compteurs Sources
-applyFilters(species, S, skip:'audio')          → base pour compteurs Audio
-applyFilters(species, S, skip:'trophic')        → base pour compteurs trophiques (remplace filteredBeforeTrophic)
-```
+## Solution — props de surcharge sur `SpeciesPhotoModeToggle`
 
-## Changements `SpeciesExplorer.tsx`
+1. **Ajouter deux props optionnelles** au composant :
+   ```ts
+   counts?: { marcheur: number; inaturalist: number };
+   total?: number;             // fallback si counts non fourni
+   ```
+   - Par défaut (props absentes) : comportement actuel = `speciesWithFieldPhotos` côté marcheur, pas de count iNat. Aucune régression sur les autres usages.
+   - Si `counts` fourni : on affiche les deux compteurs (Marcheurs + iNat) en mode tabular-nums, dynamiques.
 
-1. **Refactor du pipeline de filtrage** : extraire une fonction pure locale `applyFilters(list, opts, skip?)` qui applique chaque prédicat conditionnellement à `skip !== 'X'`. Supprime les blocs `if` dupliqués actuels.
+2. **Dans `SpeciesExplorer`**, calculer les deux compteurs à partir de `filteredSpecies` (résultat de `applyFilters`, déjà disponible) :
+   ```ts
+   const photoModeCounts = useMemo(() => {
+     let m = 0;
+     for (const sp of filteredSpecies) {
+       if (fieldPhotos.get(normalizeSpeciesKey(sp.scientificName))?.length) m++;
+     }
+     return { marcheur: m, inaturalist: filteredSpecies.length };
+   }, [filteredSpecies, fieldPhotos]);
+   ```
+   - `marcheur` = nb d'espèces filtrées **qui ont aussi une photo terrain** (= "ce que vous verriez réellement en mode Marcheurs sur la sélection courante").
+   - `inaturalist` = nb total d'espèces filtrées (en mode iNat, toutes ont au moins la photo de référence).
 
-2. **5 bases mémoïsées** (une par dimension de compteur) :
-   - `baseForCategory` = applyFilters(species, …, skip:'category')
-   - `baseForContributor` = applyFilters(species, …, skip:'contributor')
-   - `baseForSource` = applyFilters(species, …, skip:'source')
-   - `baseForAudio` = applyFilters(species, …, skip:'audio')
-   - `baseForTrophic` = applyFilters(species, …, skip:'trophic')  *(remplace `filteredBeforeTrophic`)*
-   - `filteredSpecies` = applyFilters(species, …) *(sans skip — résultat final)*
+3. **Passer les counts** : `<SpeciesPhotoModeToggle counts={photoModeCounts} />`.
 
-3. **Compteurs recalculés** :
-   - `categoryStats` ← dérivé de `baseForCategory` (impacte onglets `<Tabs>` + dropdown Catégories)
-   - `contributorsBySource` + `uniqueMarcheurs` + `totalContributors` ← dérivés de `baseForContributor`
-   - `sourceCounts` (nouveau, 3 valeurs) affichés dans le dropdown Sources : `GBIF (n) / iNat (n) / eBird (n)` à partir de `baseForSource`
-   - `audioCounts` (nouveau, 2 valeurs) dans le dropdown Audio : `Avec audio (n) / Sans audio (n)` à partir de `baseForAudio`
-   - `trophicCounts` ← dérivé de `baseForTrophic`
+4. **Pill iNat** affiche désormais aussi sa pastille de compteur (cohérence visuelle, attendu utilisateur dans la copie écran).
 
-4. **Désactivation visuelle** des options à 0 (déjà fait pour trophique : `disabled + opacity-40`) — étendue aux dropdowns Catégories / Sources / Audio / Contributeurs pour ne jamais proposer un cul-de-sac.
+5. **Cas zéro** (filtre vidant le mode actif) : si `counts.marcheur === 0` et `mode === 'marcheur'`, la pill reste cliquable mais sa pastille est en `opacity-50` — l'utilisateur comprend qu'il n'y a aucune photo terrain pour ce sous-ensemble, sans qu'on le force à basculer (pas de bascule automatique : on ne casse jamais la préférence utilisateur).
 
-5. **Onglet auto-fallback** : si l'utilisateur est sur l'onglet `faune` et qu'un filtre passe `categoryStats.faune` à 0 alors qu'une autre catégorie est non-vide, un `useEffect` repositionne `selectedCategory` sur `'all'` (évite l'écran "Aucune espèce…" piégeux).
+## Résultat attendu (exemple Décomposeurs)
 
-6. **Reset filtre fantôme** : si `selectedContributor` n'apparaît plus dans `baseForContributor` (car un autre filtre l'a évincé), on le laisse sélectionné mais on l'affiche désactivé en tête de liste (badge "0") — l'utilisateur voit pourquoi le résultat est vide et peut cliquer "Tous".
+- Filtre trophique = Décomposeurs (5 espèces).
+- Pill : `Marcheurs (X)` où X = nombre des 5 espèces ayant ≥ 1 photo terrain ; `iNaturalist (5)`.
+- Les compteurs se mettent à jour à chaque changement de filtre (catégorie, trophique, recherche, contributeur, etc.) — leave-one-out non nécessaire ici car les pills ne sont pas des filtres mais un sélecteur de **rendu** ; le compteur reflète donc le résultat final `filteredSpecies`.
 
-## Détails techniques
+## Hors scope
 
-- **Coût** : 6 passages de filtre sur `species` (≤ quelques centaines d'éléments) à chaque changement de filtre → négligeable. Pas besoin de mémoïser au-delà de `useMemo` par base.
-- **Ordre des prédicats** dans `applyFilters` : du plus discriminant au moins coûteux (search → tags → category → source → audio → contributor → trophic) pour minimiser les comparaisons.
-- **Source unique de vérité** : un seul tableau d'options actives `active = { category, source, audio, search, tags, trophic, contributor }` passé à `applyFilters` — toute future colonne s'ajoute en un point.
-- **Aucun changement** à `BiodiversityTimeline` (le graphe "Pouls du vivant" reste branché sur `species` total — c'est la légende historique, à confirmer si l'on veut aussi le filtrer).
-- **Hors scope** : `SpeciesGalleryDetailModal`, Carte tab (déjà branché sur `filteredSpecies` via `mapContent(filteredSpecies)`), localStorage persistence.
-
-## Question ouverte (1)
-
-Le graphe **Pouls du vivant** (115 espèces depuis le 1er mai) doit-il aussi refléter les filtres actifs (passerait à 8 points cumulés "Consommateurs primaires"), ou rester une vue panoramique stable de l'exploration ? Mon avis : **stable**, c'est la mémoire de l'exploration ; les filtres servent à explorer le pool, pas à réécrire l'historique. À confirmer.
+- Aucune modification du contexte global `SpeciesPhotoModeContext` (rétro-compatibilité totale pour les autres écrans).
+- Aucune modification de `BiodiversityTimeline`, modal espèce, autres pages.
