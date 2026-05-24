@@ -36,6 +36,9 @@ verify_jwt = false
 [functions.biodiversity-data]
 verify_jwt = false
 
+[functions.backfill-snapshot-observer-login]
+verify_jwt = false
+
 [functions.sentinel-hub]
 verify_jwt = false
 
