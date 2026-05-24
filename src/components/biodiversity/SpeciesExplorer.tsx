@@ -22,6 +22,8 @@ import MarcheurTagsFilterBar, { matchesTagFilter, type TagFilterState } from '@/
 import { classifyTrophic, TROPHIC_LEVELS, DECOMPOSER_META, type TrophicGroup } from '@/lib/trophicClassification';
 
 import SpeciesPhotoModeToggle from './SpeciesPhotoModeToggle';
+import { useSpeciesPhotoMode } from '@/contexts/SpeciesPhotoModeContext';
+import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
 
 // Utility to identify birds
 const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
