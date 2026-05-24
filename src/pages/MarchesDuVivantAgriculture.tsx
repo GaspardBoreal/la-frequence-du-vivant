@@ -304,7 +304,7 @@ const MarchesDuVivantAgriculture = () => {
               <h2 className="font-crimson text-3xl text-foreground mb-4">
                 3 formats pour 3 publics agricoles
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-center">
                 Chaque marche est calibrée pour la structure organisatrice et ses livrables attendus.
               </p>
             </motion.div>
