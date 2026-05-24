@@ -358,8 +358,8 @@ const MarchesDuVivantAgriculture = () => {
               <h2 className="font-crimson text-3xl text-foreground mb-4">
                 La preuve par l'exemple
               </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Les CUMA leaders identifiées par le référentiel RSO sont autant de
+              <p className="text-muted-foreground max-w-2xl mx-auto text-center">
+                Les leaders identifiées par le référentiel RSE / RSO sont autant de
                 démonstrateurs « vivant » pour vos visites de benchmark.
               </p>
             </motion.div>
