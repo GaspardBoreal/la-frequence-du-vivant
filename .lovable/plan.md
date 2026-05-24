@@ -1,89 +1,52 @@
-# Scénographies immersives par événement
+## Diagnostic
 
-Chaque marche peut désormais avoir sa propre page publique scénographiée, écrite en TSX, alimentée par ses données réelles (espèces, photos marcheurs, waypoints, témoignages). Le code est stocké en BDD et exécuté en sandbox iframe pour préserver la sécurité.
+L'aperçu affiche **0 espèces / 0 regards** parce que la RPC `get_event_scenography_data` (créée dans la migration initiale de la scénographie) interroge des colonnes qui **n'existent pas** dans le schéma réel :
 
-## 1. Base de données
+| Champ RPC | Réalité du schéma |
+|---|---|
+| `biodiversity_snapshots.event_id` | n'existe pas — la table est liée par `marche_id`, et les espèces sont **dans le JSONB `species_data`** (un snapshot agrège déjà toutes les espèces d'une marche) |
+| `marcheur_medias.event_id` / `media_url` / `media_type` / `caption` / `latitude` / `longitude` / `taken_at` | les vrais noms sont `marche_event_id`, `url_fichier`, `type_media`, `description`, et les coords/date sont dans `metadata` JSONB |
+| `event_testimonies.content` / `user_id→profiles.display_name` | la colonne s'appelle `quote`, l'auteur est déjà stocké en clair dans `author_name` |
 
-Migration sur `marche_events` :
+Côté event lui-même : `date_marche`, `lieu`, `latitude`, `longitude` n'existent pas non plus directement sur `marche_events` (vérifié : `marche_events` n'a ni `lieu` ni coords — elles viennent de la marche parente via `exploration_id`).
 
-- `scenography_code text` — code TSX complet de la scénographie
-- `scenography_enabled boolean default false` — toggle ON/OFF (si OFF → page /m/:slug classique)
-- `scenography_title text` — titre SEO/social override
-- `scenography_updated_at timestamptz` + `scenography_updated_by uuid`
+Résultat : la RPC retourne `{}`, le runtime reçoit `data = {}`, et le template DEVIAT affiche `data.species?.length ?? 0` → 0, idem photos → 0 regards.
 
-RLS : lecture publique quand `is_published = true AND scenography_enabled = true`. Écriture réservée admin/organisateur de l'event.
+## Plan
 
-## 2. Admin — Onglet « Scénographie »
+### 1. Réécrire la RPC `get_event_scenography_data` (migration)
 
-Nouvel onglet dans `/admin/marche-events/:id` :
+Aligner sur le schéma réel et la même logique de fusion que le reste de l'app (memo `unified-species-count-rpc`) :
 
-- **Éditeur Monaco** (TSX, autocomplétion, lint basique)
-- Panneau droit : **données disponibles** (variables injectées : `species[]`, `photos[]`, `waypoints[]`, `testimonies[]`, `texts[]`, `event`) avec types + exemples
-- **Snippets** : 4-5 actes prêts à coller (Hero, Éclosion, Dérive, Nuage final)
-- Toggle **« Activer la scénographie sur /m/:slug »**
-- Bouton **« Preview »** ouvre un drawer iframe avec rendu live
-- **Versioning léger** : table `scenography_versions` (id, event_id, code, created_at, author) → liste déroulante pour restaurer
+- **Event** : ne renvoyer que les colonnes existantes (`id`, `title`, `public_slug`, `event_type`, `cover_image_url`, `description`, `scenography_title`). Pour `lieu` / `date` / `latitude` / `longitude`, joindre la première marche de l'exploration parente.
+- **Espèces** : pour toutes les marches liées (`marches.exploration_id = event.exploration_id`), prendre le **dernier snapshot non quarantaine** de chaque marche, dé-imbriquer `species_data` (jsonb_array_elements) puis dédoublonner par `scientific_name` avec somme de `observations_count`. Fusionner avec `marcheur_observations` (espèces ajoutées manuellement par les marcheurs) sur les mêmes marches.
+- **Photos** : `marcheur_medias` où `marche_event_id = event.id` ET `type_media = 'photo'`, avec mapping `url ← url_fichier`, `caption ← description`, `latitude ← (metadata->>'latitude')::float`, idem longitude, `taken_at ← (metadata->>'taken_at')::timestamptz`, et `author ← profiles.display_name` via `attributed_marcheur_id` ou `user_id`.
+- **Waypoints** : inchangé (`exploration_waypoints` par `exploration_id`) — c'est la seule partie qui était correcte.
+- **Testimonies** : `event_testimonies` avec mapping `text ← quote`, `author ← author_name`, filtré sur `is_published = true` (sauf admin).
+- Conserver le gating `is_public AND (scenography_enabled OR is_admin_user())`.
 
-## 3. Runtime sandbox
+### 2. Améliorer le runtime preview (frontend)
 
-Composant `<ScenographyRuntime code={...} data={...} />` :
+Dans `ScenographyRuntime.tsx`, quand on est en mode aperçu (`onExit` défini ⇒ contexte admin) et que `data.species` et `data.photos` sont vides, afficher un **bandeau d'info non bloquant** en bas :
+> "Aucune observation ni photo collectée pour cet évènement — la scénographie s'animera dès qu'il y aura des données."
 
-- Iframe sandbox `sandbox="allow-scripts"` (pas `allow-same-origin` → isolation totale, pas d'accès au cookie session)
-- À l'intérieur : bundle figé exposant un **runtime restreint** : React 18, Framer Motion, hooks de base, Tailwind (CDN), helpers (`<SpeciesName/>`, `useScrollProgress`, `useMousePos`, `Audio` ambiant optionnel)
-- Code TSX transpilé via **`@babel/standalone`** (preset-react + preset-typescript), pas de eval direct
-- Whitelist d'imports : aucune. Tout ce qui est dispo est pré-injecté dans le scope global de l'iframe
-- Données passées via `postMessage` puis figées en `window.__SCENO_DATA__`
-- Hauteur de l'iframe = 100vh, scroll capté à l'intérieur
+C'est de l'info pour l'éditeur (pas un blocage), la scénographie reste rendue normalement (le template DEVIAT a déjà des fallbacks visuels).
 
-## 4. Données injectées (RPC unique)
+### 3. Vérification
 
-Nouvelle RPC `get_event_scenography_data(event_id uuid)` retourne en un seul appel :
-
-- `event` : titre, dates, slug, lat/lon centre, type
-- `species[]` : nom FR/latin, iconic_taxon, fréquence, photo iNat, observateurs
-- `photos[]` : url, auteur, date, gps, légende (marcheur_medias)
-- `waypoints[]` : trace GPS de la marche
-- `testimonies[]` : texte, auteur, date
-- `texts[]` : exploration_texts éco-poétiques liés à l'event
-
-Sécurité : la RPC est `SECURITY DEFINER`, filtre PII, ne retourne rien si `scenography_enabled = false` (sauf admin).
-
-## 5. Page publique `/m/:slug`
-
-Refacto léger du composant existant :
-
-```
-if (event.scenography_enabled && event.scenography_code) {
-  return <ScenographyRuntime code={event.scenography_code} data={...} />
-}
-return <EventPublicPageClassic event={event} />
-```
-
-SEO : si scénographie active, on rend en SSR fallback le titre + description + og:image (premiere photo marcheur) pour crawlers, sandbox iframe se charge ensuite côté client.
-
-## 6. Initialisation event DEVIAT / Jardin Monde
-
-Après build : je pré-remplis `scenography_code` pour l'event `f6095e8d-44a8-4156-951f-dd604b821603` avec une implémentation **CSS/SVG/Framer Motion** des 4 actes du brief (Sol → Éclosion punk → Dérive mycélienne → Nuage Jardin Monde), branchée sur ses vraies données. Le toggle reste OFF par défaut, vous l'activez après preview.
+- Appeler la RPC corrigée pour l'event DEVIAT (`f6095e8d…`) et vérifier qu'on récupère bien `species[]`, `photos[]`, `waypoints[]`, `testimonies[]`.
+- Recharger l'onglet **Scénographie** dans l'admin → l'aperçu doit afficher les vrais compteurs (ou le bandeau d'info si l'event n'a réellement aucune donnée).
 
 ## Détails techniques
 
-- **Pas de R3F** (votre choix CSS/SVG/Framer Motion) → bundle iframe ~120 Ko au lieu de 600 Ko, parfait mobile
-- **Réseau mycélien** : SVG `<path>` animés par Framer Motion entre coordonnées calculées
-- **Sonification** : Web Audio API minimaliste (oscillateurs), opt-in via bouton « Activer le son » (politique autoplay)
-- **Versioning** : garde les 20 dernières versions par event
-- **Coût Babel standalone** : ~250 Ko chargé uniquement sur la page scénographie, mis en cache
+```text
+marche_events (id, exploration_id, …)
+   └─ exploration_id ──► marches (id, exploration_id, latitude, longitude, lieu, date_marche)
+                           └─ id ──► biodiversity_snapshots (marche_id, species_data jsonb, status)
+                           └─ id ──► marcheur_observations (marche_id, scientific_name, common_name)
+   └─ id ──► marcheur_medias (marche_event_id, type_media, url_fichier, metadata, attributed_marcheur_id)
+   └─ id ──► event_testimonies (event_id, quote, author_name, is_published)
+   └─ exploration_id ──► exploration_waypoints (exploration_id, …)
+```
 
-## Hors scope
-
-- Pas d'éditeur visuel WYSIWYG (édition code direct)
-- Pas de React Three Fiber
-- Pas de bibliothèque de templates partagés entre events (chaque event est unique, c'est le point)
-- Pas de hot-reload preview ultra-rapide (refresh manuel du drawer preview)
-
-## Risques & mitigation
-
-- **XSS** : sandbox iframe sans `allow-same-origin` → impossible d'accéder à Supabase/cookies. Code sale = casse uniquement l'iframe.
-- **Code qui boucle** : `setTimeout` 30s côté parent → si iframe ne `postMessage('ready')`, affiche fallback classique
-- **Crash mobile** : bouton « Mode classique » toujours accessible en haut à droite de l'iframe
-
-Ordre d'implémentation : (1) migration BDD + RPC, (2) runtime sandbox + Babel, (3) éditeur admin, (4) intégration `/m/:slug`, (5) pré-remplissage event DEVIAT.
+Pas de changement côté `useScenography.ts`, `ScenographyEditor.tsx`, template DEVIAT — leur contrat (`ScenographyData`) est conservé, seules les sources sont remises au bon endroit.
