@@ -69,6 +69,7 @@ const InatUploadPrepDrawer: React.FC<Props> = ({
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [fsPrep, setFsPrep] = useState<{ ready: boolean; progress: number }>({ ready: false, progress: 0 });
 
   const { data: candidates = [], isLoading } = useMarcheurUnidentifiedPhotos({
     crewId, resolvedUserId, explorationMarcheIds, explorationEventIds, identifiedPhotoUrls,
@@ -231,10 +232,18 @@ const InatUploadPrepDrawer: React.FC<Props> = ({
                 size="sm"
                 variant="outline"
                 onClick={() => setFullscreen(true)}
-                className="text-xs h-7"
+                className="text-xs h-7 gap-1.5"
               >
-                <Maximize2 className="w-3 h-3 mr-1" />
+                <Maximize2 className="w-3 h-3" />
                 Plein écran
+                {!fsPrep.ready && (
+                  <span className="text-[10px] text-muted-foreground tabular-nums">
+                    {Math.round(fsPrep.progress * 100)}%
+                  </span>
+                )}
+                {fsPrep.ready && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                )}
               </Button>
             )}
           </div>
@@ -256,6 +265,8 @@ const InatUploadPrepDrawer: React.FC<Props> = ({
           explorationMarcheIds={explorationMarcheIds}
           explorationEventIds={explorationEventIds}
           identifiedPhotoUrls={identifiedPhotoUrls}
+          prefetch={open}
+          onPrepProgress={setFsPrep}
         />
 
 

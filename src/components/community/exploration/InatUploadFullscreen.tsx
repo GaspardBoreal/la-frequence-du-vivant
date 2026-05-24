@@ -1,24 +1,25 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Marker, Popup, useMapEvents } from 'react-leaflet';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CircleMarker, Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Move, ExternalLink, MapPin, Loader2, Crosshair } from 'lucide-react';
+import { X, Move, ExternalLink, MapPin, Crosshair } from 'lucide-react';
 import { RichMap } from '@/components/maps';
-import { useMarcheurUnidentifiedPhotos, type UnidentifiedPhotoCandidate } from '@/hooks/useMarcheurUnidentifiedPhotos';
+import { useMarcheurUnidentifiedPhotos } from '@/hooks/useMarcheurUnidentifiedPhotos';
 import { useRepositionMediaGps } from '@/hooks/useRepositionMediaGps';
 import { useIsGpsCurator } from '@/hooks/useIsGpsCurator';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { cn } from '@/lib/utils';
-
-interface MarcheLite {
-  id: string;
-  title: string;
-  date_marche: string | null;
-  latitude: number | null;
-  longitude: number | null;
-}
+import {
+  useFullscreenPreparation,
+  type MarcheLite,
+  type GpsCat,
+} from '@/hooks/useFullscreenPreparation';
+import InatFullscreenLoadingOverlay from './InatFullscreenLoadingOverlay';
+import InatFullscreenMarchesToggle, { useMarchesDisplayMode } from './InatFullscreenMarchesToggle';
 
 interface Props {
   open: boolean;
@@ -32,17 +33,11 @@ interface Props {
   explorationMarcheIds: string[];
   explorationEventIds: string[];
   identifiedPhotoUrls: Set<string>;
-}
-
-type GpsCat = 'exif' | 'marche' | 'none';
-
-interface ResolvedPhoto {
-  candidate: UnidentifiedPhotoCandidate;
-  marche?: MarcheLite;
-  lat: number | null;
-  lon: number | null;
-  cat: GpsCat;
-  isManual: boolean;
+  /** When true, runs the pre-calc pipeline in background even if `open` is false,
+   *  so opening fullscreen feels instantaneous. */
+  prefetch?: boolean;
+  /** Optional callback exposing prep progress (0..1, ready) for parent UI. */
+  onPrepProgress?: (p: { ready: boolean; progress: number }) => void;
 }
 
 const SNAP_METERS = 25;
@@ -88,21 +83,42 @@ const MapClickCatcher: React.FC<{ onClick: (latlng: L.LatLng) => void; active: b
   return null;
 };
 
+const AnimatedStat: React.FC<{ value: number; label: string; color: string; active: boolean; onClick: () => void; trigger: boolean }> =
+  ({ value, label, color, active, onClick, trigger }) => {
+    const animated = useAnimatedCounter(trigger ? value : 0, 900, 100);
+    return (
+      <button
+        onClick={onClick}
+        className={cn(
+          'px-3 py-1.5 rounded-lg border text-xs font-medium transition',
+          color,
+          active && 'ring-2 ring-offset-1 ring-offset-background ring-current',
+        )}
+      >
+        <span className="font-bold tabular-nums">{animated}</span> {label}
+      </button>
+    );
+  };
+
 const InatUploadFullscreen: React.FC<Props> = ({
   open, onOpenChange,
   marcheurPrenom, marcheurNom,
   crewId, resolvedUserId, explorationId,
   explorationMarcheIds, explorationEventIds, identifiedPhotoUrls,
+  prefetch = false, onPrepProgress,
 }) => {
-  const { data: candidates = [], isLoading } = useMarcheurUnidentifiedPhotos({
+  const active = open || prefetch;
+
+  // Active pre-calc as soon as drawer mounts (open=true) — runs in background
+  const { data: candidates = [], isLoading: candidatesLoading } = useMarcheurUnidentifiedPhotos({
     crewId, resolvedUserId, explorationMarcheIds, explorationEventIds,
-    identifiedPhotoUrls, explorationId, enabled: open,
+    identifiedPhotoUrls, explorationId, enabled: active,
   });
 
   const { data: isCurator = false } = useIsGpsCurator();
   const reposition = useRepositionMediaGps({ explorationId });
 
-  const { data: marches = [] } = useQuery({
+  const { data: marches = [], isLoading: marchesLoading } = useQuery({
     queryKey: ['inat-fs-marches', explorationEventIds.slice().sort().join(',')],
     queryFn: async (): Promise<MarcheLite[]> => {
       if (!explorationEventIds.length) return [];
@@ -112,62 +128,42 @@ const InatUploadFullscreen: React.FC<Props> = ({
         .in('id', explorationEventIds);
       return (data || []) as MarcheLite[];
     },
-    enabled: open && explorationEventIds.length > 0,
+    enabled: active && explorationEventIds.length > 0,
     staleTime: 5 * 60_000,
   });
 
-  const marcheById = useMemo(() => {
-    const m = new Map<string, MarcheLite>();
-    marches.forEach((x) => m.set(x.id, x));
-    return m;
-  }, [marches]);
+  const prep = useFullscreenPreparation({
+    candidates,
+    marches,
+    candidatesLoading,
+    marchesLoading,
+    enabled: active,
+  });
 
-  const resolved: ResolvedPhoto[] = useMemo(() => {
-    return candidates.map((c) => {
-      const marche = marcheById.get(c.marcheEventId);
-      let lat: number | null = c.gps?.latitude ?? null;
-      let lon: number | null = c.gps?.longitude ?? null;
-      let cat: GpsCat = 'none';
-      const isManual = c.gps?.source === 'manual';
-      if (lat !== null && lon !== null) {
-        cat = 'exif';
-      } else if (marche?.latitude && marche?.longitude) {
-        lat = marche.latitude;
-        lon = marche.longitude;
-        cat = 'marche';
-      }
-      return { candidate: c, marche, lat, lon, cat, isManual };
-    });
-  }, [candidates, marcheById]);
+  useEffect(() => {
+    onPrepProgress?.({ ready: prep.ready, progress: prep.progress });
+  }, [prep.ready, prep.progress, onPrepProgress]);
 
-  const stats = useMemo(() => {
-    let exif = 0, marche = 0, none = 0;
-    resolved.forEach((r) => {
-      if (r.cat === 'exif') exif++;
-      else if (r.cat === 'marche') marche++;
-      else none++;
-    });
-    return { exif, marche, none };
-  }, [resolved]);
 
+  const [marchesMode, setMarchesMode] = useMarchesDisplayMode();
   const [filter, setFilter] = useState<GpsCat | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placingId, setPlacingId] = useState<string | null>(null);
   const [zoomPhoto, setZoomPhoto] = useState<string | null>(null);
 
+  const enriched = prep.enriched;
+  const stats = prep.stats;
+  const revealed = enriched.slice(0, prep.revealedCount);
+
   const filtered = useMemo(
-    () => (filter === 'all' ? resolved : resolved.filter((r) => r.cat === filter)),
-    [resolved, filter],
+    () => (filter === 'all' ? revealed : revealed.filter((r) => r.cat === filter)),
+    [revealed, filter],
   );
 
-  const allWithGps = useMemo(
-    () => resolved.filter((r) => r.lat !== null && r.lon !== null),
-    [resolved],
-  );
-
-  const bounds = useMemo<Array<[number, number]>>(
-    () => allWithGps.map((r) => [r.lat!, r.lon!] as [number, number]),
-    [allWithGps],
+  // List shows all enriched once ready (no filter on revealedCount for the list)
+  const listItems = useMemo(
+    () => (filter === 'all' ? enriched : enriched.filter((r) => r.cat === filter)),
+    [enriched, filter],
   );
 
   const waypoints = useMemo<Array<[number, number]>>(() => {
@@ -194,6 +190,8 @@ const InatUploadFullscreen: React.FC<Props> = ({
 
   useEffect(() => { if (!open) { setPlacingId(null); setSelectedId(null); } }, [open]);
 
+  const overlayVisible = open && (!prep.ready || prep.progress < 0.999);
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -202,29 +200,36 @@ const InatUploadFullscreen: React.FC<Props> = ({
           onInteractOutside={(e) => e.preventDefault()}
         >
           {/* Bandeau haut */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/60 backdrop-blur">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/60 backdrop-blur flex-wrap">
             <h2 className="text-sm font-semibold text-foreground">
               Photos non identifiées — {marcheurPrenom} {marcheurNom}
             </h2>
 
             <div className="flex items-center gap-2 ml-2">
-              {([
-                { k: 'exif' as const, label: 'GPS EXIF', n: stats.exif, c: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' },
-                { k: 'marche' as const, label: 'GPS marche', n: stats.marche, c: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30' },
-                { k: 'none' as const, label: 'Sans GPS', n: stats.none, c: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30' },
-              ]).map((p) => (
-                <button
-                  key={p.k}
-                  onClick={() => setFilter(filter === p.k ? 'all' : p.k)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg border text-xs font-medium transition',
-                    p.c,
-                    filter === p.k && 'ring-2 ring-offset-1 ring-offset-background ring-current',
-                  )}
-                >
-                  <span className="font-bold">{p.n}</span> {p.label}
-                </button>
-              ))}
+              <AnimatedStat
+                value={stats.exif}
+                label="GPS EXIF"
+                color="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                active={filter === 'exif'}
+                onClick={() => setFilter(filter === 'exif' ? 'all' : 'exif')}
+                trigger={prep.ready}
+              />
+              <AnimatedStat
+                value={stats.marche}
+                label="GPS marche"
+                color="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                active={filter === 'marche'}
+                onClick={() => setFilter(filter === 'marche' ? 'all' : 'marche')}
+                trigger={prep.ready}
+              />
+              <AnimatedStat
+                value={stats.none}
+                label="Sans GPS"
+                color="bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+                active={filter === 'none'}
+                onClick={() => setFilter(filter === 'none' ? 'all' : 'none')}
+                trigger={prep.ready}
+              />
               {filter !== 'all' && (
                 <button onClick={() => setFilter('all')} className="text-xs text-muted-foreground underline">
                   Tout
@@ -233,6 +238,7 @@ const InatUploadFullscreen: React.FC<Props> = ({
             </div>
 
             <div className="ml-auto flex items-center gap-2">
+              <InatFullscreenMarchesToggle value={marchesMode} onChange={setMarchesMode} />
               {placingId && (
                 <span className="text-xs text-primary font-medium flex items-center gap-1 px-2 py-1 bg-primary/10 rounded">
                   <Crosshair className="w-3 h-3" /> Cliquez sur la carte pour placer
@@ -252,25 +258,47 @@ const InatUploadFullscreen: React.FC<Props> = ({
           <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_360px] overflow-hidden" style={{ height: 'calc(100vh - 53px)' }}>
             {/* Carte */}
             <div className="relative h-full bg-muted">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <RichMap
-                  bounds={bounds.length > 0 ? bounds : undefined}
-                  center={[45.0, 0.5]}
-                  zoom={11}
-                  controls={{ zoom: true, style: true, geolocate: true, cadastre: false }}
-                  className="h-full"
-                  height="100%"
-                >
-                  <MapClickCatcher
-                    active={!!placingId}
-                    onClick={(latlng) => placingId && handleReposition(placingId, latlng)}
-                  />
+              <RichMap
+                bounds={prep.bounds.length > 0 ? prep.bounds : undefined}
+                center={[45.0, 0.5]}
+                zoom={11}
+                controls={{ zoom: true, style: true, geolocate: true, cadastre: false }}
+                className="h-full"
+                height="100%"
+              >
+                <MapClickCatcher
+                  active={!!placingId}
+                  onClick={(latlng) => placingId && handleReposition(placingId, latlng)}
+                />
 
-                  {filtered.map((r) => {
+                {/* Marches overlay — toggle 3 niveaux */}
+                {marchesMode !== 'off' && marches.map((m) => {
+                  if (m.latitude == null || m.longitude == null) return null;
+                  return (
+                    <CircleMarker
+                      key={`marche-${m.id}`}
+                      center={[m.latitude, m.longitude]}
+                      radius={marchesMode === 'full' ? 8 : 6}
+                      pathOptions={{
+                        color: 'hsl(var(--primary))',
+                        weight: marchesMode === 'full' ? 2 : 1.5,
+                        opacity: marchesMode === 'full' ? 0.9 : 0.5,
+                        fillColor: 'hsl(var(--primary))',
+                        fillOpacity: marchesMode === 'full' ? 0.4 : 0.2,
+                      }}
+                    >
+                      {marchesMode === 'full' && (
+                        <Tooltip permanent direction="top" offset={[0, -10]} className="!bg-card !text-foreground !border-border !text-[10px]">
+                          {m.title}
+                        </Tooltip>
+                      )}
+                    </CircleMarker>
+                  );
+                })}
+
+                {/* Photo markers — cascade reveal */}
+                <AnimatePresence>
+                  {filtered.map((r, idx) => {
                     if (r.lat === null || r.lon === null) return null;
                     const sel = selectedId === r.candidate.id || placingId === r.candidate.id;
                     const color = colorFor(r.cat, r.isManual);
@@ -286,6 +314,19 @@ const InatUploadFullscreen: React.FC<Props> = ({
                             const m = e.target as L.Marker;
                             const ll = m.getLatLng();
                             handleReposition(r.candidate.id, ll);
+                          },
+                          add: (e) => {
+                            // Subtle scale-in on marker mount
+                            const el = (e.target as L.Marker).getElement();
+                            if (el) {
+                              el.style.opacity = '0';
+                              el.style.transform = (el.style.transform || '') + ' scale(0.3)';
+                              el.style.transition = 'opacity .25s ease, transform .35s cubic-bezier(.34,1.56,.64,1)';
+                              requestAnimationFrame(() => {
+                                el.style.opacity = '1';
+                                el.style.transform = (el.style.transform || '').replace(' scale(0.3)', '');
+                              });
+                            }
                           },
                         }}
                       >
@@ -330,8 +371,15 @@ const InatUploadFullscreen: React.FC<Props> = ({
                       </Marker>
                     );
                   })}
-                </RichMap>
-              )}
+                </AnimatePresence>
+              </RichMap>
+
+              {/* Loading overlay (step-by-step) */}
+              <InatFullscreenLoadingOverlay
+                visible={overlayVisible}
+                progress={prep.progress}
+                steps={prep.steps}
+              />
 
               {/* Légende */}
               <div className="absolute bottom-4 left-4 z-[400] bg-card/90 backdrop-blur border border-border rounded-lg p-2 text-[10px] space-y-1 shadow">
@@ -350,17 +398,20 @@ const InatUploadFullscreen: React.FC<Props> = ({
             {/* Liste droite */}
             <div className="border-l border-border bg-card/40 overflow-y-auto">
               <div className="sticky top-0 bg-card/95 backdrop-blur px-3 py-2 border-b border-border text-xs text-muted-foreground">
-                {filtered.length} photo{filtered.length > 1 ? 's' : ''}
+                {listItems.length} photo{listItems.length > 1 ? 's' : ''}
                 {filter !== 'all' && ` · filtre actif`}
               </div>
               <ul className="divide-y divide-border">
-                {filtered.map((r) => {
+                {listItems.map((r, idx) => {
                   const color = colorFor(r.cat, r.isManual);
                   const sel = selectedId === r.candidate.id;
                   const placing = placingId === r.candidate.id;
                   return (
-                    <li
+                    <motion.li
                       key={r.candidate.id}
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: Math.min(idx * 0.015, 0.4), duration: 0.25 }}
                       className={cn(
                         'flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/40 transition',
                         sel && 'bg-muted/60',
@@ -410,10 +461,10 @@ const InatUploadFullscreen: React.FC<Props> = ({
                           </button>
                         )}
                       </div>
-                    </li>
+                    </motion.li>
                   );
                 })}
-                {filtered.length === 0 && (
+                {listItems.length === 0 && prep.ready && (
                   <li className="p-6 text-center text-xs text-muted-foreground">
                     Aucune photo dans ce filtre.
                   </li>
