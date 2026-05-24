@@ -475,10 +475,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
               </PopoverContent>
             </Popover>
 
-            {/* placeholder to keep flow */}
-            <Select value="__noop" onValueChange={() => {}} disabled>
-              <SelectTrigger className="hidden"><SelectValue /></SelectTrigger>
-            </Select>
 
             {/* Unified contributor filter */}
             {totalContributors > 0 ? (
