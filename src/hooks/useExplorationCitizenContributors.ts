@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeAlias } from '@/hooks/useMarcheurAliases';
+import { citizenIdentityKey, citizenDisplayName } from '@/utils/citizenIdentity';
 
 export interface CitizenContributor {
   observerName: string;
