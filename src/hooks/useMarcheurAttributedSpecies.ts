@@ -137,33 +137,37 @@ export function useMarcheurAttributedSpecies({
 
       // 1) marcheur_observations directes
       if (crewId) {
-        const { data: ownObs } = await supabase
+        const { data: ownObs, error: ownObsError } = await supabase
           .from('marcheur_observations')
-          .select('species_scientific_name, species_common_name, kingdom, photo_url, observation_date')
+          .select('species_scientific_name, photo_url, observation_date, inaturalist_observation_id')
           .eq('marcheur_id', crewId)
           .in('marche_id', explorationMarcheIds);
+
+        if (ownObsError) throw ownObsError;
 
         (ownObs || []).forEach((o: any) => {
           const sci = (o.species_scientific_name || '').trim();
           if (!sci) return;
           const isOwn = isOwnPhotoUrl(o.photo_url);
+          const attributionSource: BiodiversityObservation['source'] = o.inaturalist_observation_id ? 'inaturalist' : 'gbif';
+          const speciesSource: BiodiversitySpecies['source'] = 'inaturalist';
           if (isOwn) ownUploadedSciNames.add(keyOf(sci));
           upsert(
             sci,
             {
-              commonName: o.species_common_name || '',
-              kingdom: normalizeKingdom(o.kingdom),
+              commonName: '',
+              kingdom: 'Other',
               lastSeen: o.observation_date || '',
-              source: 'inaturalist',
+              source: speciesSource,
               observations: 1,
               photos: o.photo_url ? [o.photo_url] : [],
               photoData: o.photo_url
-                ? { url: o.photo_url, source: isOwn ? 'inaturalist' : 'inaturalist' }
+                ? { url: o.photo_url, source: 'inaturalist' }
                 : undefined,
             },
             {
               date: o.observation_date || '',
-              source: 'inaturalist',
+              source: attributionSource,
             },
           );
         });
