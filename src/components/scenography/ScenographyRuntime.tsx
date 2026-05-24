@@ -35,13 +35,10 @@ const ScenographyRuntime: React.FC<Props> = ({
   // Transpile TSX → JS once per code change
   const compiled = useMemo(() => {
     try {
-      const repairedCode = code
-        // Backward-compat: first seeded DEVIAT template stored one species overlay
-        // line with a trailing comma instead of a semicolon, which breaks Babel.
-        .replace(
-          /},\s*(sp\.common_name\s*\|\|\s*sp\.scientific_name)\),/g,
-          '}, $1);'
-        );
+      const repairedCode = code.replace(
+        /},\s*(sp\.common_name\s*\|\|\s*sp\.scientific_name)\),/g,
+        (_match, labelExpr) => `}, ${labelExpr});`
+      );
 
       const wrapped = `
         (function(){
