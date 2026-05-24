@@ -1,5 +1,11 @@
 export interface BiodiversityObservation {
   observerName?: string;
+  /** iNat login (slug d'URL, immuable) — identité canonique pour dédoublonner. */
+  observerLogin?: string;
+  /** iNat numeric user.id — encore plus stable que login. */
+  observerId?: number;
+  /** URL profil iNat (préconstruit à l'ingestion). */
+  observerProfileUrl?: string;
   observerInstitution?: string;
   observationMethod?: string;
   originalUrl?: string;
