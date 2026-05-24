@@ -51,6 +51,8 @@ import MarcheurImpactPanel from './impact/MarcheurImpactPanel';
 import CitizenContributorsAggregateRow from './CitizenContributorsAggregateRow';
 import { useExplorationCitizenContributors } from '@/hooks/useExplorationCitizenContributors';
 import { useMarcheurInatProfile } from '@/hooks/useMarcheurInatProfile';
+import { useMarcheurAttributedSpecies } from '@/hooks/useMarcheurAttributedSpecies';
+import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 
 interface MarcheursTabProps {
   explorationId?: string;
@@ -414,354 +416,51 @@ const SortableObservationTile: React.FC<{ photo: any; index: number }> = ({ phot
 const normalizeStr = (str: string) =>
   str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
 
-// --- Contributions sub-tab: BENTO mosaic of taxons identified by the marcheur ---
-// Priority: photos uploaded by the marcheur (marcheur_observations) > iNat photos (snapshots).
-interface ContribSpeciesItem {
-  scientificName: string;
-  commonName: string;
-  kingdom: string;
-  primaryPhoto: string | null;
-  hasOwnPhoto: boolean;
-  ownPhotos: string[];
-  lastDate: string;
-  source: string; // 'marcheur' or iNat/eBird/gbif source label
-  originalUrl: string | null;
-}
-
-const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId?: string; explorationMarcheIds: string[]; resolvedUserId: string | null }> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId }) => {
-  const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+// --- Contributions sub-tab : réutilise <SpeciesExplorer/> factorisé ---
+// Les espèces affichées sont uniquement celles attribuées au marcheur courant
+// (observations directes + attributions iNat via alias). Le toggle global
+// Photos marcheurs ↔ iNaturalist (SpeciesPhotoModeContext) est partagé avec
+// les vues Vivant / L'Œil / Synthèse.
+const ContributionsSubTab: React.FC<{
+  marcheur: MarcheurWithStats;
+  explorationId?: string;
+  explorationMarcheIds: string[];
+  resolvedUserId: string | null;
+}> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId }) => {
   const [onlyOwn, setOnlyOwn] = useState(false);
-  const [lightbox, setLightbox] = useState<{ url: string; label: string } | null>(null);
   const { data: aliases } = useMarcheurAliases(resolvedUserId, marcheur.prenom, marcheur.nom);
-  const aliasesKey = (aliases || []).slice().sort().join('|');
   const crewId = marcheur.crewId || (marcheur.source === 'crew' ? marcheur.id : null);
 
-  // Helper: une URL est "vraie photo perso" UNIQUEMENT si hébergée sur le storage Supabase.
-  // Les URLs iNaturalist (static.inaturalist.org / inaturalist-open-data) sont des miniatures backfillées,
-  // pas des uploads du marcheur.
-  const isOwnPhotoUrl = (url: string | null | undefined): boolean => {
-    if (!url) return false;
-    const u = url.toLowerCase();
-    if (u.includes('inaturalist.org') || u.includes('inaturalist-open-data')) return false;
-    if (u.includes('.supabase.co/storage/') || u.includes('.supabase.in/storage/')) return true;
-    if (u.includes('/storage/v1/object/')) return true;
-    return false;
-  };
-
-  const { data: items, isLoading } = useQuery({
-    queryKey: ['marcheur-contributions-bento', explorationId, aliasesKey, crewId, resolvedUserId],
-    queryFn: async (): Promise<ContribSpeciesItem[]> => {
-      if (!explorationMarcheIds.length) return [];
-      const byKey = new Map<string, ContribSpeciesItem>();
-
-      // 0) Pool des URLs perso (Supabase storage) uploadées par le marcheur via marcheur_medias
-      const ownMediaUrls = new Set<string>();
-      if (crewId || resolvedUserId) {
-        const orParts: string[] = [];
-        if (resolvedUserId) orParts.push(`user_id.eq.${resolvedUserId}`);
-        if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
-        const { data: medias } = await supabase
-          .from('marcheur_medias')
-          .select('url_fichier, external_url, marche_id')
-          .eq('is_public', true)
-          .eq('type_media', 'photo')
-          .or(orParts.join(','));
-        (medias || []).forEach((m: any) => {
-          // On garde toutes les URLs perso (même hors marches scope) car certaines lignes ont marche_id null
-          if (m.url_fichier && isOwnPhotoUrl(m.url_fichier)) ownMediaUrls.add(m.url_fichier);
-          if (m.external_url && isOwnPhotoUrl(m.external_url)) ownMediaUrls.add(m.external_url);
-        });
-      }
-
-      // 1) Espèces identifiées par le marcheur (marcheur_observations).
-      //    photo_url est rempli par le backfill iNat → NE PAS le traiter comme une photo perso
-      //    sauf si l'URL est sur le storage Supabase.
-      if (crewId) {
-        const { data: ownObs } = await supabase
-          .from('marcheur_observations')
-          .select('species_scientific_name, species_common_name, kingdom, photo_url, observation_date, marche_id')
-          .eq('marcheur_id', crewId)
-          .in('marche_id', explorationMarcheIds);
-        (ownObs || []).forEach((o: any) => {
-          const sci = (o.species_scientific_name || '').trim();
-          if (!sci) return;
-          const key = sci.toLowerCase();
-          const isOwn = isOwnPhotoUrl(o.photo_url);
-          const existing = byKey.get(key);
-          if (existing) {
-            if (isOwn && o.photo_url) {
-              existing.ownPhotos.push(o.photo_url);
-              if (!existing.hasOwnPhoto) {
-                existing.primaryPhoto = o.photo_url;
-                existing.hasOwnPhoto = true;
-                existing.source = 'marcheur';
-              }
-            }
-            if (o.observation_date && (!existing.lastDate || new Date(o.observation_date) > new Date(existing.lastDate))) {
-              existing.lastDate = o.observation_date;
-            }
-          } else {
-            byKey.set(key, {
-              scientificName: sci,
-              commonName: o.species_common_name || '',
-              kingdom: o.kingdom || '',
-              primaryPhoto: isOwn ? o.photo_url : null,
-              hasOwnPhoto: isOwn,
-              ownPhotos: isOwn ? [o.photo_url] : [],
-              lastDate: o.observation_date || '',
-              source: isOwn ? 'marcheur' : '',
-              originalUrl: null,
-            });
-          }
-        });
-      }
-
-      // 2) Enrichissement iNat (snapshots) via alias matching + détection des URLs perso dans species_data.photos[]
-      if (aliases && aliases.length) {
-        const aliasSet = new Set(aliases);
-        const { data } = await supabase
-          .from('biodiversity_snapshots')
-          .select('species_data')
-          .in('marche_id', explorationMarcheIds);
-        (data || []).forEach((snap: any) => {
-          const arr = snap.species_data as any[];
-          if (!Array.isArray(arr)) return;
-          arr.forEach((sp) => {
-            const attributions = sp.attributions as any[];
-            if (!Array.isArray(attributions)) return;
-            const sci = (sp.scientificName || '').trim();
-            if (!sci) return;
-            const key = sci.toLowerCase();
-            // Cherche une éventuelle photo perso dans sp.photos[] pour cette espèce
-            const photosArr: string[] = Array.isArray(sp.photos) ? sp.photos : [];
-            const matchedOwn = photosArr.find((u) => u && ownMediaUrls.has(u)) || null;
-            attributions.forEach((attr: any) => {
-              const observerNorm = normalizeAlias(attr.observerName || '');
-              if (!aliasSet.has(observerNorm)) return;
-              const inatPhoto = sp.photoData?.url || (photosArr.length > 0 ? photosArr[0] : null);
-              const existing = byKey.get(key);
-              if (existing) {
-                // Promotion si on trouve une photo perso liée à cette espèce dans le snapshot
-                if (matchedOwn && !existing.hasOwnPhoto) {
-                  existing.primaryPhoto = matchedOwn;
-                  existing.hasOwnPhoto = true;
-                  existing.source = 'marcheur';
-                  if (!existing.ownPhotos.includes(matchedOwn)) existing.ownPhotos.push(matchedOwn);
-                }
-                if (!existing.primaryPhoto && inatPhoto) existing.primaryPhoto = inatPhoto;
-                if (!existing.kingdom && sp.kingdom) existing.kingdom = sp.kingdom;
-                if (!existing.commonName && sp.commonName) existing.commonName = sp.commonName;
-                if (!existing.originalUrl && attr.originalUrl) existing.originalUrl = attr.originalUrl;
-                if (!existing.source) existing.source = attr.source || 'inaturalist';
-                if (attr.date && (!existing.lastDate || new Date(attr.date) > new Date(existing.lastDate))) {
-                  existing.lastDate = attr.date;
-                }
-              } else {
-                const useOwn = !!matchedOwn;
-                byKey.set(key, {
-                  scientificName: sci,
-                  commonName: sp.commonName || '',
-                  kingdom: sp.kingdom || '',
-                  primaryPhoto: useOwn ? matchedOwn : inatPhoto,
-                  hasOwnPhoto: useOwn,
-                  ownPhotos: useOwn ? [matchedOwn] : [],
-                  lastDate: attr.date || '',
-                  source: useOwn ? 'marcheur' : (attr.source || 'inaturalist'),
-                  originalUrl: attr.originalUrl || null,
-                });
-              }
-            });
-          });
-        });
-      }
-
-      return Array.from(byKey.values());
-    },
-    enabled: !!explorationId && explorationMarcheIds.length > 0,
-    staleTime: 60_000,
+  const { data, isLoading } = useMarcheurAttributedSpecies({
+    crewId,
+    resolvedUserId,
+    aliases: aliases || [],
+    explorationMarcheIds,
+    explorationId,
   });
 
-  type KingdomKey = 'all' | 'Animalia' | 'Plantae' | 'Fungi' | 'other';
-  const [kingdomFilter, setKingdomFilter] = useState<KingdomKey>('all');
+  const allSpecies = data?.species || [];
+  const ownUploaded = data?.ownUploadedSciNames || new Set<string>();
+  const ownCount = ownUploaded.size;
 
-  const all = items || [];
-  const ownCount = all.filter(s => s.hasOwnPhoto).length;
-
-  const normalizeKingdom = (k: string): KingdomKey => {
-    if (k === 'Animalia' || k === 'Plantae' || k === 'Fungi') return k;
-    return 'other';
-  };
-
-  const kingdomCounts = useMemo(() => {
-    const c = { all: all.length, Animalia: 0, Plantae: 0, Fungi: 0, other: 0 };
-    all.forEach(s => { c[normalizeKingdom(s.kingdom)] += 1; });
-    return c;
-  }, [all]);
-
-  const filteredByKingdom = useMemo(() => {
-    if (kingdomFilter === 'all') return all;
-    return all.filter(s => normalizeKingdom(s.kingdom) === kingdomFilter);
-  }, [all, kingdomFilter]);
-
-  const filtered = onlyOwn ? filteredByKingdom.filter(s => s.hasOwnPhoto) : filteredByKingdom;
-
-  const speciesForTranslation = filtered.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }));
-  const { data: frNamesMap } = useFrenchSpeciesNamesAuto(speciesForTranslation);
-
-  const getKingdomInfo = (kingdom: string) => {
-    if (kingdom === 'Animalia') return { icon: Bird, color: 'text-sky-500', bgColor: 'bg-sky-500/15', label: 'Faune' };
-    if (kingdom === 'Plantae') return { icon: Flower2, color: 'text-green-500', bgColor: 'bg-green-500/15', label: 'Flore' };
-    if (kingdom === 'Fungi') return { icon: TreePine, color: 'text-amber-600', bgColor: 'bg-amber-500/15', label: 'Champignon' };
-    return { icon: Leaf, color: 'text-emerald-500', bgColor: 'bg-emerald-500/15', label: 'Vivant' };
-  };
-
-  const sourceLabel = (src: string) => {
-    if (src === 'marcheur') return 'Marcheur';
-    if (src === 'inaturalist') return 'iNat';
-    if (src === 'ebird') return 'eBird';
-    if (src === 'gbif') return 'GBIF';
-    return src;
-  };
-
-  // Sort within a list
-  const sortList = (list: ContribSpeciesItem[]) => {
-    const arr = [...list];
-    arr.sort((a, b) => {
-      if (a.ownPhotos.length !== b.ownPhotos.length) return b.ownPhotos.length - a.ownPhotos.length;
-      const ad = a.lastDate ? new Date(a.lastDate).getTime() : 0;
-      const bd = b.lastDate ? new Date(b.lastDate).getTime() : 0;
-      const diff = bd - ad;
-      return sort === 'desc' ? diff : -diff;
-    });
-    return arr;
-  };
-
-  const ownList = useMemo(() => sortList(filtered.filter(s => s.hasOwnPhoto)), [filtered, sort]);
-  const inatList = useMemo(() => sortList(filtered.filter(s => !s.hasOwnPhoto)), [filtered, sort]);
-
-  // Bento spans
-  const ownSpanFor = (i: number) => {
-    if (i === 0) return 'sm:col-span-2 sm:row-span-2';
-    if (i === 3 || i === 6) return 'sm:col-span-2';
-    return '';
-  };
-
-  // ---- Tile renderer (shared)
-  const renderTile = (obs: ContribSpeciesItem, i: number, variant: 'own' | 'inat', span: string) => {
-    const frenchName = frNamesMap?.get(obs.scientificName)?.commonNameFr || null;
-    const primaryName = frenchName || obs.commonName || obs.scientificName;
-    const kingdomInfo = getKingdomInfo(obs.kingdom);
-    const KingdomIcon = kingdomInfo.icon;
-    const dateStr = obs.lastDate ? format(new Date(obs.lastDate), 'd MMM', { locale: fr }) : '';
-    const photo = obs.primaryPhoto;
-    const isLarge = span.includes('row-span-2');
-    const handleClick = (e: React.MouseEvent) => {
-      if (variant === 'own' && photo) {
-        e.preventDefault();
-        setLightbox({ url: photo, label: primaryName });
-      }
-    };
-
-    return (
-      <motion.a
-        key={`${variant}-${obs.scientificName}-${i}`}
-        href={obs.originalUrl || '#'}
-        target={obs.originalUrl ? '_blank' : undefined}
-        rel="noopener noreferrer"
-        onClick={handleClick}
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: Math.min(i * 0.03, 0.4), duration: 0.25 }}
-        className={`group relative overflow-hidden rounded-2xl bg-muted/40 dark:bg-white/[0.03] transition-all hover:shadow-lg ${
-          variant === 'own'
-            ? 'ring-2 ring-emerald-500/60 hover:ring-emerald-400/80 hover:shadow-emerald-500/20'
-            : 'border border-border/40 hover:border-emerald-500/30 hover:shadow-emerald-500/10 opacity-90 hover:opacity-100'
-        } ${span}`}
-      >
-        {photo ? (
-          <>
-            <img
-              src={photo}
-              alt={primaryName}
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
-          </>
-        ) : (
-          <div className={`absolute inset-0 ${kingdomInfo.bgColor} flex items-center justify-center`}>
-            <KingdomIcon className={`w-10 h-10 ${kingdomInfo.color} opacity-40`} />
-          </div>
-        )}
-
-        {/* Top-left: kingdom pill */}
-        <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10">
-          <KingdomIcon className={`w-3 h-3 ${kingdomInfo.color}`} />
-          <span className="text-[9px] font-medium text-white uppercase tracking-wider">
-            {kingdomInfo.label}
-          </span>
-        </div>
-
-        {/* Top-right: source/date chip */}
-        {variant === 'own' ? (
-          dateStr && (
-            <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-500/90 backdrop-blur-sm flex items-center gap-1">
-              <Camera className="w-2.5 h-2.5 text-white" />
-              <span className="text-[9px] font-semibold text-white">{dateStr}</span>
-            </div>
-          )
-        ) : null}
-
-        {/* Bottom: name */}
-        <div className="absolute bottom-0 left-0 right-0 p-2.5 text-left">
-          <p className={`font-semibold text-white truncate drop-shadow ${isLarge ? 'text-sm' : 'text-xs'}`}>
-            {primaryName}
-          </p>
-          {frenchName && frenchName !== obs.scientificName && (
-            <p className="text-[10px] text-white/70 italic truncate">{obs.scientificName}</p>
-          )}
-          {variant === 'inat' && dateStr && (
-            <p className="text-[9px] text-white/60 mt-0.5">{dateStr}</p>
-          )}
-        </div>
-
-        {variant === 'own' && obs.ownPhotos.length > 1 && (
-          <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm flex items-center gap-0.5">
-            <Image className="w-2.5 h-2.5 text-white/90" />
-            <span className="text-[9px] text-white/90 font-medium">×{obs.ownPhotos.length}</span>
-          </div>
-        )}
-      </motion.a>
-    );
-  };
-
-  // Kingdom chip definitions
-  const kingdomChips: Array<{ key: KingdomKey; label: string; icon: any; color: string }> = [
-    { key: 'all', label: 'Tout', icon: Sparkles, color: 'text-emerald-500' },
-    { key: 'Animalia', label: 'Faune', icon: Bird, color: 'text-sky-500' },
-    { key: 'Plantae', label: 'Flore', icon: Flower2, color: 'text-green-500' },
-    { key: 'Fungi', label: 'Champignons', icon: TreePine, color: 'text-amber-600' },
-    { key: 'other', label: 'Autres', icon: Leaf, color: 'text-emerald-500' },
-  ];
+  const speciesToShow = useMemo(() => {
+    if (!onlyOwn) return allSpecies;
+    return allSpecies.filter((s) => ownUploaded.has(s.scientificName.trim().toLowerCase()));
+  }, [allSpecies, ownUploaded, onlyOwn]);
 
   if (isLoading) {
     return (
       <div className="px-3 pt-3 pb-3">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[120px] sm:auto-rows-[160px] gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className={`rounded-2xl bg-muted/40 animate-pulse ${i === 0 ? 'sm:col-span-2 sm:row-span-2' : ''}`}
-            />
+            <div key={i} className="aspect-square rounded-2xl bg-muted/40 animate-pulse" />
           ))}
         </div>
       </div>
     );
   }
 
-  if (all.length === 0) {
+  if (allSpecies.length === 0) {
     return (
       <div className="px-3 py-6 text-center">
         <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
@@ -773,140 +472,42 @@ const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats; explorationId
     );
   }
 
-  const totalVisible = filtered.length;
-  const showOwnSection = ownList.length > 0;
-  const showInatSection = !onlyOwn && inatList.length > 0;
-
   return (
-    <div className="px-3 pt-3 pb-3 space-y-4">
-      {/* Header: counter + main toggles */}
+    <div className="px-3 pt-3 pb-3 space-y-3">
+      {/* Bandeau spécifique marcheur : compteur + filtre « Mes photos » */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
           <Leaf className="w-3.5 h-3.5 text-emerald-500" />
-          <span className="text-foreground">{totalVisible}</span> espèce{totalVisible > 1 ? 's' : ''}
+          <span className="text-foreground">{allSpecies.length}</span> espèce
+          {allSpecies.length > 1 ? 's' : ''} identifiée{allSpecies.length > 1 ? 's' : ''}
           {ownCount > 0 && (
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">
               · {ownCount} avec photo perso
             </span>
           )}
         </p>
-        <div className="flex items-center gap-1.5">
-          {ownCount > 0 && (
-            <button
-              onClick={() => setOnlyOwn(o => !o)}
-              aria-pressed={onlyOwn}
-              className={`text-[11px] px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
-                onlyOwn
-                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/50 font-semibold'
-                  : 'bg-muted/50 text-muted-foreground hover:bg-muted ring-1 ring-transparent'
-              }`}
-            >
-              <Camera className="w-3 h-3" />
-              Mes photos ({ownCount})
-            </button>
-          )}
-          <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
-        </div>
-      </div>
-
-      {/* Kingdom chips */}
-      <div className="flex items-center gap-1.5 flex-wrap" role="tablist" aria-label="Filtrer par règne">
-        {kingdomChips.map(chip => {
-          const count = kingdomCounts[chip.key];
-          if (chip.key !== 'all' && count === 0) return null;
-          const Icon = chip.icon;
-          const active = kingdomFilter === chip.key;
-          return (
-            <button
-              key={chip.key}
-              role="tab"
-              aria-pressed={active}
-              onClick={() => setKingdomFilter(chip.key)}
-              className={`text-[11px] px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
-                active
-                  ? 'bg-emerald-500/15 ring-1 ring-emerald-500/40 text-foreground font-semibold'
-                  : 'bg-muted/40 hover:bg-muted/70 text-muted-foreground ring-1 ring-transparent'
-              }`}
-            >
-              <Icon className={`w-3 h-3 ${active ? chip.color : ''}`} />
-              {chip.label}
-              <span className="text-[10px] opacity-70">({count})</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {totalVisible === 0 && (
-        <div className="px-3 py-6 text-center">
-          <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
-          <p className="text-xs text-muted-foreground italic">Aucune espèce dans cette sélection</p>
+        {ownCount > 0 && (
           <button
-            onClick={() => { setKingdomFilter('all'); setOnlyOwn(false); }}
-            className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline mt-2"
+            onClick={() => setOnlyOwn((o) => !o)}
+            aria-pressed={onlyOwn}
+            className={`text-[11px] px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
+              onlyOwn
+                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/50 font-semibold'
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted ring-1 ring-transparent'
+            }`}
           >
-            Réinitialiser les filtres
+            <Camera className="w-3 h-3" />
+            Mes photos ({ownCount})
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* SECTION 1 — Mes captures (large bento) */}
-      {showOwnSection && (
-        <section className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Camera className="w-3.5 h-3.5 text-emerald-500" />
-            <h3 className="text-xs font-semibold text-foreground">
-              Vos {ownList.length} capture{ownList.length > 1 ? 's' : ''} personnelle{ownList.length > 1 ? 's' : ''}
-            </h3>
-            <div className="flex-1 h-px bg-gradient-to-r from-emerald-500/30 to-transparent" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[140px] sm:auto-rows-[180px] gap-2">
-            {ownList.map((obs, i) => renderTile(obs, i, 'own', ownSpanFor(i)))}
-          </div>
-        </section>
-      )}
-
-      {/* Empty-own hint when we have only iNat data */}
-      {!showOwnSection && !onlyOwn && ownCount === 0 && showInatSection && (
-        <div className="rounded-xl bg-muted/30 border border-dashed border-border/60 px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-2">
-          <Camera className="w-3.5 h-3.5 text-emerald-500/70 shrink-0" />
-          <span>Aucune photo perso encore. Uploadez vos clichés depuis l'onglet <strong className="text-foreground">Observations</strong>.</span>
-        </div>
-      )}
-
-      {/* SECTION 2 — Repérées dans le périmètre (iNat) */}
-      {showInatSection && (
-        <section className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Users className="w-3.5 h-3.5 text-muted-foreground" />
-            <h3 className="text-xs font-semibold text-muted-foreground">
-              {inatList.length} repérée{inatList.length > 1 ? 's' : ''} dans le périmètre
-            </h3>
-            <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-[110px] sm:auto-rows-[130px] gap-2">
-            {inatList.map((obs, i) => renderTile(obs, i, 'inat', ''))}
-          </div>
-        </section>
-      )}
-
-      {lightbox && (
-        <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
-          <DialogContent className="max-w-4xl p-0 bg-black border-none overflow-hidden">
-            <DialogHeader className="sr-only">
-              <DialogTitle>{lightbox.label}</DialogTitle>
-              <DialogDescription>Photo plein écran</DialogDescription>
-            </DialogHeader>
-            <img
-              src={lightbox.url}
-              alt={lightbox.label}
-              className="w-full max-h-[85vh] object-contain"
-            />
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-              <p className="text-white text-sm font-semibold">{lightbox.label}</p>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Explorer factorisé : règnes, recherche, toggle photos marcheurs ↔ iNat, modal espèce, etc. */}
+      <SpeciesExplorer
+        species={speciesToShow}
+        compact
+        explorationId={explorationId}
+      />
     </div>
   );
 };
