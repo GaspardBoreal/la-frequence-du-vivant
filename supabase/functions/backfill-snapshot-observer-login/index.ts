@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    // Admin auth: JWT must belong to an admin
+    // Admin auth: JWT belongs to an admin, OR service role bearer (sandbox runs)
     const authHeader = req.headers.get('Authorization') || '';
     const jwt = authHeader.replace('Bearer ', '');
     if (!jwt) {
@@ -86,23 +86,26 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const userClient = createClient(SUPABASE_URL, ANON, {
-      global: { headers: { Authorization: `Bearer ${jwt}` } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'Invalid session' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const isServiceRole = jwt === SERVICE_ROLE;
+    if (!isServiceRole) {
+      const userClient = createClient(SUPABASE_URL, ANON, {
+        global: { headers: { Authorization: `Bearer ${jwt}` } },
       });
-    }
-    const { data: isAdmin } = await userClient.rpc('has_role', {
-      _user_id: userData.user.id,
-      _role: 'admin',
-    });
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: 'Admin required' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ error: 'Invalid session' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: isAdmin } = await userClient.rpc('has_role', {
+        _user_id: userData.user.id,
+        _role: 'admin',
       });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: 'Admin required' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const body = await req.json().catch(() => ({}));
