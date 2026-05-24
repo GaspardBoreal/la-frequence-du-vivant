@@ -1,119 +1,107 @@
 ## Objectif
 
-Enrichir le drawer « Préparer upload iNat » d'un mode **plein écran** dédié au repositionnement GPS des photos, avec carte interactive (réutilisée de l'onglet Carte) et liste des candidats.
+Transformer l'ouverture du mode plein écran iNat (actuellement lente et silencieuse) en une expérience instantanée et cinématique : pré-calcul en arrière-plan dès l'ouverture du drawer, streaming progressif des marqueurs, indicateur d'étapes nommé + barre, et toggle 3 niveaux pour les marches.
 
-## Layout
+## 1. Pré-calcul background (gain perçu immédiat)
 
-**Drawer compact (actuel)** : inchangé, on ajoute juste un bouton `⛶ Plein écran` dans le header.
+Dès que le drawer iNat s'ouvre (avant même que l'utilisateur clique « Plein écran »), lancer en tâche de fond :
 
-**Mode plein écran** (Dialog plein viewport) :
+- Résolution des coordonnées GPS de chaque photo (EXIF → fallback waypoints marche → none)
+- Calcul du snap-25m vers les waypoints existants
+- Pré-chargement des miniatures (preload `<img>` invisibles, taille thumbnail)
+- Bounding box global pour l'auto-fit
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ [75 GPS EXIF] [6 GPS marche] [0 Sans GPS]   …actions   [X]   │
-├────────────────────────────────────┬─────────────────────────┤
-│                                    │  Liste photos candidates│
-│         <RichMap>                  │  ┌────┐ IMG_1234.jpg    │
-│   • markers couleur par source     │  │ 🖼 │ 📍 EXIF • 21/05 │
-│   • clic → popup vignette          │  └────┘ [⛶][✎ déplacer] │
-│   • drag (curators)                │  …                      │
-│   • route marche en fond           │                         │
-└────────────────────────────────────┴─────────────────────────┘
-```
+Stocké dans un hook `useFullscreenPreparation(photos)` retournant `{ ready, progress, steps, enrichedPhotos, bounds }`. Le bouton « Plein écran » affiche un mini-indicateur (`75%`) si pas encore prêt, et devient instantané quand `ready=true`.
 
-## Comportements de repositionnement (curators uniquement)
+## 2. Streaming progressif (si clic avant fin du pré-calcul)
 
-Les 3 modes combinés, avec barre d'aide contextuelle :
+Si l'utilisateur clique avant la fin, ouverture immédiate avec :
+- Overlay d'étapes par-dessus la carte (semi-transparent, n'empêche pas de voir le décor)
+- Marqueurs poussés par batch de 20 dans le state au fur et à mesure que la préparation avance
+- Liste de droite peuplée en parallèle (skeleton par item → contenu)
 
-1. **Drag du marker** sur la carte → relâche → modal de confirmation → save.
-2. **Sélection photo dans la liste** → curseur "+" sur la carte → clic = pose.
-3. **Snap aux waypoints/points existants** : lors d'un drag, si on s'approche (< 25 m) d'un waypoint de la marche, aimantation visuelle.
+## 3. Indicateur progressif « Étapes nommées + barre »
 
-Marqueurs colorés :
-- 🟢 EXIF (`metadata.gps.source = 'exif'`)
-- 🟡 GPS marche (fallback coords de la marche)
-- 🔴 Sans GPS (rendus dans une zone "à placer" hors carte, draggables vers la carte)
-- 🔵 Manuel (`source = 'manual'`) : indique un repositionnement déjà effectué
-
-Popup au clic : nom marche + date + vignette photo + bouton « Ouvrir en grand » (lightbox) + bouton « Déplacer » (active mode drag).
-
-## Données — sauvegarde GPS (les deux)
-
-### 1) Override dans `marcheur_medias.metadata` (JSONB)
-
-```json
-{
-  "gps": { "latitude": 45.12, "longitude": 0.7, "source": "manual" },
-  "gps_original": { "latitude": 45.10, "longitude": 0.6, "source": "exif" },
-  "gps_repositioned_at": "2026-05-24T…",
-  "gps_repositioned_by": "<user_id>"
-}
-```
-
-`gps_original` n'est écrit qu'au premier override (préserve l'EXIF d'origine).
-
-### 2) Table d'audit `marcheur_media_gps_audit`
+Carte centrale avec :
 
 ```text
-id, media_id, previous_lat, previous_lon, previous_source,
-new_lat, new_lon, new_source, repositioned_by, repositioned_at, note
+  ┌─────────────────────────────────┐
+  │   Préparation du plein écran    │
+  │   ▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░  68%       │
+  │                                 │
+  │   ✓ Photos chargées (81)        │
+  │   ✓ GPS EXIF extraits (75)      │
+  │   ⟳ Calcul fallback marches…    │
+  │   ○ Snap aux waypoints          │
+  │   ○ Génération marqueurs        │
+  └─────────────────────────────────┘
 ```
 
-RLS : INSERT par curators (`has_role` ambassadeur/sentinelle/admin), SELECT par curators + propriétaire du media.
+5 étapes avec icônes : `○` todo · `⟳` in-progress (spin) · `✓` done (vert anim scale-in). Barre globale = moyenne pondérée. Disparaît en fade-out 300ms quand prêt.
 
-### Pour `marcheur_observations` (source 'observation')
+## 4. Toggle marches — 3 niveaux
 
-Même pattern : on ajoute `gps_override` (point geojson ou 2 colonnes lat/lon) + audit row.
+Dans le bandeau haut, un segmented control compact à 3 segments :
 
-## Permissions
+```text
+  Marches:  [ Off ]  [ Tracés ]  [ Tracés + waypoints + labels ]
+```
 
-Repositionnement réservé aux curators (`ambassadeur` / `sentinelle` / `admin`) via `has_role`. Le drawer compact reste lecture seule.
+- **Off** : carte épurée, uniquement marqueurs photos
+- **Tracés** : polylines des marches en couleur atténuée (30% opacity)
+- **Tracés + waypoints + labels** : polylines pleines + waypoints numérotés + nom de marche au survol
 
-Vérifications :
-- **Front** : hook `useIsCurator` (existant via `useCurationMarcheurs`) → expose `canRepositionGps`. Boutons "Déplacer" cachés sinon.
-- **Back** : RPC SECURITY DEFINER `reposition_marcheur_media_gps(media_id, lat, lon, note)` qui vérifie le rôle, met à jour `metadata`, insère l'audit row. Idem `reposition_marcheur_observation_gps`.
+Préférence persistée dans `localStorage` (`inat-fs-marches-mode`).
 
-## Carte réutilisée
+## 5. Effets wahouh
 
-`<RichMap>` (`src/components/maps/RichMap.tsx`) avec :
-- `controls: { zoom: true, style: true, geolocate: true, cadastre: true }`
-- `marcheRoute` : trace de la marche sélectionnée (si une seule marche) ou de toutes les marches de l'exploration (vue d'ensemble)
-- `bounds` : auto-fit sur tous les candidats GPS
-- `children` : nos markers custom (avec `draggable` selon `canRepositionGps`) + popups
+- **Compteurs animés top banner** : les 3 chiffres (EXIF / Marche / Sans GPS) comptent de 0 → N avec easing (réutiliser `useAnimatedCounter` existant), 800ms, déclenchés quand `ready=true`
+- **Cascade marqueurs** : chaque marqueur apparaît avec `scale-in` (0.95 → 1) + léger ressort, stagger 15ms, ordonnés par marche puis date — utiliser `framer-motion` `AnimatePresence` + `initial/animate`
+- **Auto-fit cinématique** : une fois tous les marqueurs posés, `map.flyToBounds(bounds, { duration: 2, padding: [60,60] })` depuis une vue large
 
-Filtre rapide en haut de carte : `[Toutes marches ▾]` pour switcher entre vue exploration et focus marche.
+## 6. Bandeau supérieur — layout final
 
-## Indicateurs (bandeau haut)
+```text
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  ← Fermer    🟢 75 EXIF   🟡 6 Marche   🔴 0 Sans GPS    Marches: [Off|Tracés|+Waypoints]  │
+  └──────────────────────────────────────────────────────────────────────┘
+```
 
-Trois pastilles cliquables (filtrent la liste + carte) :
+Les 3 chips restent cliquables pour filtrer (comportement actuel conservé).
 
-- **N GPS EXIF** — `metadata.gps.source ∈ {exif, manual}`
-- **N GPS marche** — pas de gps EXIF, mais marche a des coords
-- **N Sans GPS** — ni EXIF ni coord marche
+## Détails techniques
 
-Calcul dérivé du hook existant `useMarcheurUnidentifiedPhotos` (déjà enrichi du `gps` + on joint coords de marche).
+**Fichiers modifiés/créés :**
+- `src/hooks/useFullscreenPreparation.ts` (nouveau) — orchestration pré-calcul avec progress callback, 5 étapes, AbortController
+- `src/components/community/exploration/InatUploadFullscreen.tsx` — refacto : consomme `useFullscreenPreparation`, ajoute overlay étapes, streaming batchs, toggle marches, cascade marqueurs, auto-fit cinématique
+- `src/components/community/exploration/InatFullscreenLoadingOverlay.tsx` (nouveau) — UI étapes + barre, semi-transparent
+- `src/components/community/exploration/InatFullscreenMarchesToggle.tsx` (nouveau) — segmented control 3 niveaux, persisté localStorage
+- `src/components/community/exploration/InatUploadPrepDrawer.tsx` — lance la préparation background dès le mount (passe le hook au parent ou via callback), affiche `%` sur le bouton si pas prêt
 
-## Fichiers à créer / modifier
+**Préparation par étape (poids) :**
+1. Photos chargées (5%) — `photos.length > 0`
+2. GPS EXIF lus depuis metadata (25%) — parallèle, déjà en mémoire
+3. Calcul GPS fallback marche (35%) — résolution waypoint centroid par `marche_event_id`
+4. Snap waypoints 25m (15%) — pour chaque photo avec GPS, test distance aux waypoints
+5. Génération marqueurs + preload thumbs (20%) — `Promise.all` sur `Image()` preload, max 6 en parallèle
 
-**Nouveaux :**
-- `src/components/community/exploration/InatUploadFullscreen.tsx` — Dialog plein écran, layout 2-colonnes
-- `src/components/community/exploration/InatGpsMap.tsx` — wrapper `<RichMap>` + markers draggables + popups
-- `src/components/community/exploration/InatPhotoList.tsx` — liste droite (vignettes, badges source, bouton déplacer)
-- `src/hooks/useRepositionMediaGps.ts` — mutation TanStack appelant les 2 RPC
-- `src/hooks/useIsExplorationCurator.ts` — petit hook qui combine `useAuth` + `has_role`
+**Marches toggle implementation :**
+- Mode `off` : ne pas rendre les `Polyline` ni waypoints sur RichMap (prop `showMarches=false`)
+- Mode `traces` : `<RichMap waypointsOpacity={0.3} hideWaypointMarkers />`
+- Mode `full` : `<RichMap />` standard (comportement actuel)
 
-**Modifiés :**
-- `src/components/community/exploration/InatUploadPrepDrawer.tsx` — ajout bouton "Plein écran" header, monte `<InatUploadFullscreen>`
-- `src/hooks/useMarcheurUnidentifiedPhotos.ts` — joindre coords de marche (lat/lon des `marche_events`) pour fallback "GPS marche", exposer un champ `gpsCategory: 'exif' | 'marche' | 'none'`
+**Animation marqueurs :**
+- `AnimatePresence` autour de la liste de markers
+- `motion.div initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: index * 0.015, type: 'spring', stiffness: 300 }}`
 
-## Migration DB
+**Auto-fit :**
+- Après `ready=true` et premier render, `setTimeout(200)` puis `mapRef.current?.flyToBounds(bounds, { duration: 2, easeLinearity: 0.25, padding: [60,60] })`
+- Désactivé si l'utilisateur a déjà interagi (pan/zoom) — listener `movestart`
 
-1. `CREATE TABLE marcheur_media_gps_audit (...)` + RLS
-2. `RPC reposition_marcheur_media_gps(_media_id uuid, _lat numeric, _lon numeric, _note text)` — SECURITY DEFINER, vérifie has_role curator
-3. `RPC reposition_marcheur_observation_gps(_obs_id uuid, _lat numeric, _lon numeric, _note text)` — idem (ajoute `latitude/longitude` columns sur `marcheur_observations` si absentes, ou utilise un champ JSONB existant)
+**Aucun changement DB** — tout est frontend.
 
-## Hors scope (pour plus tard)
+## Hors scope
 
-- Repositionnement multi-photos en lot
-- Réécriture EXIF du fichier source dans Storage (on garde l'override DB uniquement)
-- Visualisation de l'historique d'audit dans l'UI (la table sera là, l'UI viendra plus tard)
+- Modification de la logique de repositionnement GPS (déjà fonctionnelle)
+- Son ambient (écarté pour cette itération)
+- Sélection multi-marches (le 3-niveaux est plus simple et suffit)
