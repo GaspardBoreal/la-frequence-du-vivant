@@ -164,8 +164,11 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     }
 
     if (skip !== 'contributor' && selectedContributor !== 'all') {
+      // Comparaison sur l'identité canonique (login iNat ou alias normalisé)
+      // pour matcher TOUTES les variantes de casse/accents d'un même contributeur.
+      const target = normalizeAlias(selectedContributor);
       f = f.filter(s =>
-        s.attributions?.some(a => (a.observerName || 'Anonyme') === selectedContributor)
+        s.attributions?.some(a => citizenIdentityKey(a) === target || normalizeAlias(a.observerName || '') === target)
       );
     }
 
