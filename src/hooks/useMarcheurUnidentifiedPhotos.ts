@@ -39,8 +39,12 @@ interface Params {
   crewId: string | null;
   /** user_id résolu (auth.users) si rattaché */
   resolvedUserId: string | null;
-  /** ids des marches incluses dans l'exploration */
+  /** ids des marches (table legacy `marches`) incluses dans l'exploration —
+   *  utilisés pour `marcheur_observations.marche_id`. */
   explorationMarcheIds: string[];
+  /** ids des `marche_events` de l'exploration — utilisés pour
+   *  `marcheur_medias.marche_event_id` (référentiel distinct des marches). */
+  explorationEventIds: string[];
   /** Set d'URLs déjà identifiées (à exclure) — typiquement reconstruit
    *  depuis useMarcheurAttributedSpecies (toutes les `photos[]` du pool). */
   identifiedPhotoUrls: Set<string>;
@@ -61,12 +65,14 @@ export function useMarcheurUnidentifiedPhotos({
   crewId,
   resolvedUserId,
   explorationMarcheIds,
+  explorationEventIds,
   identifiedPhotoUrls,
   explorationId,
   enabled = true,
 }: Params) {
   const identifiedKey = Array.from(identifiedPhotoUrls).sort().join('|').slice(0, 200);
   const marcheIdsKey = explorationMarcheIds.slice().sort().join(',');
+  const eventIdsKey = explorationEventIds.slice().sort().join(',');
 
   return useQuery({
     queryKey: [
@@ -75,30 +81,31 @@ export function useMarcheurUnidentifiedPhotos({
       crewId,
       resolvedUserId,
       marcheIdsKey,
+      eventIdsKey,
       identifiedKey,
     ],
     enabled:
       enabled &&
       !!explorationId &&
-      explorationMarcheIds.length > 0 &&
+      (explorationMarcheIds.length > 0 || explorationEventIds.length > 0) &&
       (!!crewId || !!resolvedUserId),
     staleTime: 30_000,
     queryFn: async (): Promise<UnidentifiedPhotoCandidate[]> => {
       const out: UnidentifiedPhotoCandidate[] = [];
       const seenUrls = new Set<string>(identifiedPhotoUrls);
 
-      // 1) marcheur_medias photos perso
+      // 1) marcheur_medias photos perso — filtrées sur marche_events.id
       const orParts: string[] = [];
       if (resolvedUserId) orParts.push(`user_id.eq.${resolvedUserId}`);
       if (crewId) orParts.push(`attributed_marcheur_id.eq.${crewId}`);
 
-      if (orParts.length > 0) {
+      if (orParts.length > 0 && explorationEventIds.length > 0) {
         const { data: medias, error } = await supabase
           .from('marcheur_medias')
           .select('id, url_fichier, external_url, marche_event_id, marche_id, created_at, metadata')
           .eq('type_media', 'photo')
           .eq('is_public', true)
-          .in('marche_event_id', explorationMarcheIds)
+          .in('marche_event_id', explorationEventIds)
           .or(orParts.join(','));
 
         if (error) throw error;
