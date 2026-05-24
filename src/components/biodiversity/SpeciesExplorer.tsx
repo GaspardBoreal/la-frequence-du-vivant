@@ -377,6 +377,109 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
               </SelectContent>
             </Select>
 
+            {/* Trophic levels multi-select */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Niveaux trophiques${selectedTrophic.size > 0 ? ` (${selectedTrophic.size} sélectionné${selectedTrophic.size > 1 ? 's' : ''})` : ''}`}
+                  className="flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-input bg-background text-sm hover:bg-accent/50 transition-colors min-w-0"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Layers className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate">
+                      {selectedTrophic.size === 0
+                        ? 'Niveaux trophiques'
+                        : `Niveaux (${selectedTrophic.size})`}
+                    </span>
+                  </div>
+                  {selectedTrophic.size > 0 && (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {Array.from(selectedTrophic).slice(0, 5).map((g) => {
+                        const meta = trophicEntries.find((e) => e.group === g);
+                        if (!meta) return null;
+                        return (
+                          <span
+                            key={g}
+                            className="h-2 w-2 rounded-full ring-1 ring-background"
+                            style={{ background: `hsl(var(${meta.token}))` }}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-[280px] p-2">
+                <div className="flex items-center justify-between px-2 py-1.5">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Chaîne trophique
+                  </span>
+                  {selectedTrophic.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTrophic(new Set())}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Tout effacer
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-0.5">
+                  {trophicEntries.map((entry) => {
+                    const checked = selectedTrophic.has(entry.group);
+                    const count = trophicCounts[entry.group] ?? 0;
+                    const disabled = count === 0 && !checked;
+                    return (
+                      <button
+                        key={entry.group}
+                        type="button"
+                        role="option"
+                        aria-selected={checked}
+                        disabled={disabled}
+                        onClick={() => toggleTrophic(entry.group)}
+                        className={`w-full flex items-center gap-3 min-h-[44px] px-2 py-2 rounded-md text-left text-sm transition-all ${
+                          checked
+                            ? 'bg-accent/60 border border-border'
+                            : 'border border-transparent hover:bg-accent/40'
+                        } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <span
+                          className="h-3 w-3 rounded-full flex-shrink-0 ring-2 ring-background shadow-sm"
+                          style={{ background: `hsl(var(${entry.token}))` }}
+                        />
+                        <span
+                          className="text-[10px] font-mono font-semibold w-6 text-center px-1 py-0.5 rounded flex-shrink-0"
+                          style={{
+                            background: `hsl(var(${entry.token}) / 0.15)`,
+                            color: `hsl(var(${entry.token}))`,
+                          }}
+                        >
+                          {entry.shortLabel}
+                        </span>
+                        <span className="flex-1 truncate text-foreground">{entry.label}</span>
+                        <Badge variant="secondary" className="text-[10px] flex-shrink-0 tabular-nums">
+                          {count}
+                        </Badge>
+                        <span
+                          className={`h-4 w-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
+                            checked ? 'bg-primary border-primary' : 'border-input'
+                          }`}
+                        >
+                          {checked && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* placeholder to keep flow */}
+            <Select value="__noop" onValueChange={() => {}} disabled>
+              <SelectTrigger className="hidden"><SelectValue /></SelectTrigger>
+            </Select>
+
             {/* Unified contributor filter */}
             {totalContributors > 0 ? (
               <Select value={selectedContributor} onValueChange={(v: any) => setSelectedContributor(v)}>
