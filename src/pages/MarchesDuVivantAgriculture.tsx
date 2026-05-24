@@ -13,6 +13,9 @@ import {
   Network,
   Tractor,
   ArrowRight,
+  Bug,
+  Flower2,
+  type LucideIcon,
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 import TrustBar from '@/components/marches-vivant/TrustBar';
