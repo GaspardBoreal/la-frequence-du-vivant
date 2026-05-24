@@ -1,104 +1,77 @@
-## Diagnostic (analyse pro)
 
-### Ce que tu vois
-Dans le filtre "iNaturalist (5)" de la fiche événement, **un seul compte iNat** (`les-marches-du-vivant`) apparaît en **deux entités distinctes** :
-- `Les marches du Vivant` (4 obs)
-- `Les Marches du Vivant` (1 obs) — majuscule à "Marches"
+## Diagnostic
 
-### Cause racine (2 bugs cumulés)
+Confirmé en base pour cette exploration (5 marches, 11 snapshots) :
 
-**Bug #1 — On stocke un identifiant mutable**
-Dans `supabase/functions/biodiversity-data/index.ts` (ligne 319), le pipeline iNat fait :
-```ts
-observerName: item.user?.name || item.user?.login || 'Anonyme'
-```
-On stocke `user.name` (= **display name**, modifiable à volonté par l'utilisateur depuis son profil iNat), au lieu de `user.login` (= **slug d'URL, immuable**, ici `les-marches-du-vivant`).
-
-Conséquence : si le display name change ne serait-ce que d'une majuscule entre deux syncs (ou si tu le corriges plus tard), chaque variante crée un "fantôme" dans nos snapshots déjà figés. C'est exactement ce qui s'est passé sur tes 5 observations test.
-
-**Bug #2 — Le filtre UI dédoublonne sur la chaîne brute**
-Dans `src/components/biodiversity/SpeciesExplorer.tsx` (ligne 252), la clé du Map est `(attr.observerName || '').trim()` — donc sensible à la casse, aux accents, aux espaces. Pourtant `normalizeAlias()` existe déjà et est utilisé partout ailleurs (`useExplorationCitizenContributors`, `useMarcheurAliases`, etc.) pour précisément éviter ça.
-
-Résultat : `"Les marches du Vivant"` ≠ `"Les Marches du Vivant"` au sens du Map, alors qu'ils devraient être fusionnés.
-
----
-
-## Solution pro (sécurisée pour ce compte ET les prochains)
-
-Architecture en 3 couches : on remonte l'identité immuable, on dédoublonne partout, on migre l'existant.
-
-### 1. Backend — capturer l'identité iNat canonique
-
-**Fichier** : `supabase/functions/biodiversity-data/index.ts` (~ligne 319, attribution iNat)
-
-Enrichir l'attribution avec **3 champs stables** (au lieu d'un seul `observerName` ambigu) :
-```ts
-{
-  source: 'inaturalist',
-  observerLogin: item.user?.login || null,     // ← NOUVEAU : slug immuable (clé canonique)
-  observerId: item.user?.id ?? null,           // ← NOUVEAU : ID numérique iNat (encore plus stable)
-  observerName: item.user?.name || item.user?.login || 'Anonyme', // display, gardé pour affichage
-  observerProfileUrl: item.user?.login
-    ? `https://www.inaturalist.org/people/${item.user.login}` : null,
-  originalUrl: ...,
-}
-```
-→ On ne touche pas aux snapshots existants (rétro-compat), on ajoute juste des champs JSON optionnels.
-
-### 2. Frontend — dédoublonner sur l'identité canonique
-
-**Règle universelle** : la clé de groupement d'un contributeur iNat = `observerLogin` (si présent) sinon `normalizeAlias(observerName)` en fallback pour les snapshots historiques.
-
-Helper centralisé `src/utils/citizenIdentity.ts` :
-```ts
-export const inatIdentityKey = (a: Attribution) =>
-  a.observerLogin?.toLowerCase().trim() || normalizeAlias(a.observerName || '');
-
-export const inatDisplayName = (a: Attribution) =>
-  a.observerName?.trim() || a.observerLogin || 'Anonyme';
-```
-
-**Fichiers à corriger** (tous utilisent aujourd'hui `observerName` brut comme clé) :
-- `src/components/biodiversity/SpeciesExplorer.tsx` (le bug que tu vois — Map ligne 252 + Map `uniqueMarcheurs` ligne 271)
-- `src/hooks/useExplorationCitizenContributors.ts` (déjà OK via `normalizeAlias`, à upgrader vers `inatIdentityKey`)
-- `src/hooks/useMarcheurInatProfile.ts` (matching alias → URL)
-- `src/hooks/useSpeciesObservers.ts`, `useExplorationCitizenContributors`, `useSpeciesMarcheurPhotos` : passer au key canonique
-- Tous les autres fichiers de la liste `rg observerName` (~15 fichiers) : audit ciblé, on remplace les `.trim().toLowerCase()` ad-hoc par le helper
-
-### 3. Migration — réconcilier les snapshots existants
-
-Edge function ponctuelle `backfill-snapshot-observer-login` (one-shot, idempotente) :
-1. Lit tous les snapshots avec `source='inaturalist'` mais sans `observerLogin`.
-2. Pour chaque `originalUrl` iNat (`/observations/{id}`), appelle `https://api.inaturalist.org/v1/observations/{id}` (batch par 30 IDs, public, pas de JWT requis), récupère `user.login` + `user.id`.
-3. Patche les attributions du `species_data` JSON in-place.
-4. Cache en mémoire pour éviter de re-fetcher 2× le même obs.
-
-Pour tes 5 obs test, ça unifie immédiatement les deux "Les marches du Vivant" en un seul contributeur `les-marches-du-vivant`.
-
-### 4. Bonus sécurité (prochains comptes)
-
-- **`useMarcheurAliases`** : ajouter automatiquement le `login` iNat (pas que le display name) quand `community_profile_science_accounts.network='inaturalist'` est lié. Aujourd'hui ça marche déjà parce que tu colles `les-marches-du-vivant` dans le champ username, mais on documente la convention : **username iNat = login slug, pas display name**.
-- **`resolve-inaturalist-user` edge function** : déjà existante, on l'utilise pour valider qu'un username saisi correspond bien à un login iNat existant (UI : check vert dans le formulaire d'ajout de compte science).
-- **Memory `mem://technical/community/identity-matching-logic`** : mise à jour pour graver la règle "iNat identity = `user.login`, jamais `user.name`".
-
----
-
-## Section technique condensée
-
-| Étape | Fichier | Type |
+| Marche | Snapshots `with_login` | Snapshots `without_login` |
 |---|---|---|
-| 1 | `supabase/functions/biodiversity-data/index.ts` | enrich `observerLogin` + `observerId` |
-| 2 | `src/utils/citizenIdentity.ts` | helper `inatIdentityKey` |
-| 2 | `src/components/biodiversity/SpeciesExplorer.tsx` | switch Map keys |
-| 2 | ~6 hooks (`useExploration*`, `useSpecies*`) | switch Map keys |
-| 3 | `supabase/functions/backfill-snapshot-observer-login/index.ts` | one-shot backfill |
-| 4 | `src/hooks/useMarcheurAliases.ts` | doc + validation login |
-| 4 | `mem://technical/community/identity-matching-logic` | update règle |
+| `4095a154` | 3 (359 attrs) | 0 |
+| `f94e5c2f` | 2 (232 attrs) | 0 |
+| `bf50566d` | 3 attrs récents | **342 attrs legacy** |
+| `8b96ea79` | 3 attrs récents | **202 attrs legacy** |
+| `67890ed0` | 3 attrs récents | **135 attrs legacy** |
 
-### Hors-scope (non touché)
-- DB schéma : aucune migration, on enrichit du JSON existant
-- Auth / RLS : aucune
-- Pipeline OAuth iNat (les 4 secrets) : indépendant, ne bloque pas ce fix
+→ Le backfill précédent n'a touché que 2 marches (scope `marcheId`). Les 3 autres marches restent peuplées d'attributions iNat sans `observerLogin`.
 
-### Test de validation
-Après déploiement + backfill : sur la fiche événement `f6095e8d-…`, le filtre iNaturalist doit afficher **`les-marches-du-vivant (5)`** en une seule ligne, et plus jamais se dédoubler même si tu renommes le compte iNat demain.
+**Conséquence visible** : pour « Gaspard Boréal », on a en base :
+- 529 attributions avec `observerLogin = "gaspardboreal"` → clé canonique = `gaspardboreal`
+- 585 attributions sans login (legacy) → fallback `normalizeAlias("Gaspard Boréal")` ≈ `gaspard boreal`
+
+Les deux clés ne correspondent pas → **2 entrées dans le filtre** au lieu d'1. Idem pour `les-marches-du-vivant` vs `Les Marches du Vivant`.
+
+## Cause racine — deux bugs cumulés
+
+1. **Couverture incomplète** : le backfill n'a tourné que sur 2 marches. Les snapshots historiques des autres marches n'ont jamais reçu d'`observerLogin`.
+2. **Robustesse manquante du fallback** : `citizenIdentityKey()` retourne soit le login soit `normalizeAlias(name)`, mais ces deux clés ne sont **pas réconciliées entre elles**. Donc même après un backfill partiel, deux attributions du même observateur (l'une enrichie, l'autre pas) restent séparées.
+
+## Plan de correction
+
+### 1. Rendre `citizenIdentityKey` robuste (defense-in-depth)
+
+Le fallback ne doit plus produire une clé incompatible avec le login. On introduit une **résolution en 2 passes** au niveau de chaque agrégateur :
+
+- **Pass A** — scanner toutes les attributions et construire un **index local** `normalizeAlias(name) → observerLogin` à partir de toute attribution qui possède **les deux** champs.
+- **Pass B** — re-résoudre chaque attribution : si elle n'a pas de `observerLogin`, chercher `normalizeAlias(name)` dans l'index ; si trouvé, utiliser le login comme clé canonique. Sinon, garder `normalizeAlias(name)`.
+
+Ainsi, dès qu'**au moins une** attribution d'un observateur a été enrichie (par l'ingestion ou un backfill partiel), **toutes** les autres attributions du même observateur sont automatiquement reclassées sous la même identité — sans attendre un backfill complet.
+
+Fichiers impactés :
+- `src/utils/citizenIdentity.ts` — nouvelle fonction `buildCitizenIdentityResolver(attributions[])` qui retourne `(attr) => key`.
+- `src/components/biodiversity/SpeciesExplorer.tsx` — section `contributorsBySource` et `uniqueMarcheurs` utilisent le resolver.
+- `src/hooks/useExplorationCitizenContributors.ts` — pass A globale avant l'agrégation.
+- `src/hooks/useSpeciesObservers.ts` — même traitement.
+- `src/hooks/useSpeciesMarcheurPhotos.ts` et tout autre hook lisant `attributions` pour dédupliquer (à auditer rapidement avec `rg "observerName" src/hooks`).
+
+### 2. Backfill global (vrai nettoyage des données)
+
+Le backfill existant doit être relancé **sans scope `marcheId`** pour traiter tous les snapshots historiques.
+
+- Étendre légèrement le bouton « Réconcilier identités iNat » dans `/admin/community` avec un retour de stats clair (`scanned / updated / patched / fetched`), pour que tu voies la progression.
+- Option : ajouter un mode `dryRun` accessible via un sous-bouton « Simuler » pour estimer l'ampleur avant d'écrire.
+
+Une fois exécuté, les ~679 attributions legacy de cette exploration (bf50566d + 8b96ea79 + 67890ed0) seront enrichies en place et les fallbacks ne seront plus nécessaires pour ces snapshots — mais le filet de sécurité (point 1) reste utile pour les obs iNat supprimées/privées (qui ne reviendront jamais avec un login).
+
+### 3. Garde-fou ingestion (futur)
+
+Vérifier dans `supabase/functions/biodiversity-data/index.ts` que **chaque** branche écrivant une attribution iNat capture bien `user.login` + `user.id` (pas seulement la branche principale). Toute attribution iNat sans login devient une anomalie loguée côté edge.
+
+## Effet attendu
+
+Après ces 3 actions :
+- Le dropdown affichera **1 ligne par observateur réel**, même si la moitié de ses obs n'a pas été backfillée.
+- Le compteur `iNaturalist (6)` deviendra `iNaturalist (3 ou 4)` (Gaspard, laurencekarki, Chantal, LMDV).
+- Les futures fusions name↔login se feront automatiquement à l'agrégation, sans dépendance au cron de backfill.
+
+## Détails techniques
+
+```text
+ATTRIBUTIONS (raw)
+  ├─ {name:"Gaspard Boréal", login:"gaspardboreal"}   ←┐
+  ├─ {name:"Gaspard Boréal", login:null}                │
+  │                                                     │
+  └─ Pass A ─→ index: { normalizeAlias("Gaspard Boréal") : "gaspardboreal" }
+                                                        │
+  Pass B ─→ key("gaspardboreal") pour les DEUX  ────────┘
+```
+
+Pas de migration SQL. Pas de breaking change d'API. Tout est rétro-compatible.

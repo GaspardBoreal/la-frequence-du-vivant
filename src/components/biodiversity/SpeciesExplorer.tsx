@@ -24,7 +24,7 @@ import { classifyTrophic, TROPHIC_LEVELS, DECOMPOSER_META, type TrophicGroup } f
 import SpeciesPhotoModeToggle from './SpeciesPhotoModeToggle';
 import { useSpeciesPhotoMode } from '@/contexts/SpeciesPhotoModeContext';
 import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
-import { citizenIdentityKey, citizenDisplayName } from '@/utils/citizenIdentity';
+import { buildCitizenIdentityResolver, citizenDisplayName } from '@/utils/citizenIdentity';
 import { normalizeAlias } from '@/hooks/useMarcheurAliases';
 
 // Utility to identify birds
@@ -111,6 +111,15 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     return m;
   }, [species]);
 
+  // Resolver d'identité citoyenne en 2 passes : réconcilie legacy (sans login)
+  // avec rows enrichies (avec login) du MÊME observateur. Construit sur le pool
+  // complet d'attributions, indépendamment des filtres actifs.
+  const resolveIdentity = useMemo(() => {
+    const all: any[] = [];
+    species.forEach(s => s.attributions?.forEach(a => all.push(a)));
+    return buildCitizenIdentityResolver(all);
+  }, [species]);
+
   // ============================================================
   // PIPELINE DE FILTRAGE UNIFIÉ ("leave-one-out")
   // ============================================================
@@ -168,7 +177,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       // pour matcher TOUTES les variantes de casse/accents d'un même contributeur.
       const target = normalizeAlias(selectedContributor);
       f = f.filter(s =>
-        s.attributions?.some(a => citizenIdentityKey(a) === target || normalizeAlias(a.observerName || '') === target)
+        s.attributions?.some(a => resolveIdentity(a) === target || normalizeAlias(a.observerName || '') === target)
       );
     }
 
@@ -255,7 +264,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     };
     baseForContributor.forEach(sp => {
       sp.attributions?.forEach(attr => {
-        const key = citizenIdentityKey(attr);
+        const key = resolveIdentity(attr);
         const display = citizenDisplayName(attr);
         if (!key) return;
         const groupKey = sp.source === 'ebird' ? 'eBird' : sp.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
@@ -285,7 +294,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     const visibleKeys = new Set<string>();
     baseForContributor.forEach(sp => {
       sp.attributions?.forEach(a => {
-        const k = citizenIdentityKey(a);
+        const k = resolveIdentity(a);
         if (k) visibleKeys.add(k);
       });
     });
