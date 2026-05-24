@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, User, Bird, TreePine, Flower, Leaf, Database, MapPin, Grid3X3, LayoutList, Users, Layers, Check } from 'lucide-react';
 import { Input } from '../ui/input';

@@ -1,66 +1,63 @@
-## Objectif
+# Compteurs dynamiques — Taxons observés
 
-Ajouter à la barre de filtres de `SpeciesExplorer` (vue Carnet / Liste des espèces) un **5ᵉ filtre dropdown « Niveaux trophiques »**, multi-sélection, avec compteurs dynamiques recalculés selon les autres filtres actifs et badges colorés par niveau.
+## Constat
 
-## Périmètre
+Dans `SpeciesExplorer.tsx`, seul le filtre trophique a des compteurs dynamiques (déjà branchés sur `filteredBeforeTrophic`). Les autres compteurs sont calculés à partir de `species` brut :
 
-Un seul fichier modifié : `src/components/biodiversity/SpeciesExplorer.tsx`.
-Aucun changement de logique métier, pas de DB, pas d'edge function — pur frontend, exploite la classification déjà en place dans `src/lib/trophicClassification.ts` (KB + heuristiques famille + iconic_taxon).
+- `categoryStats` (Toutes / Faune / Flore / Champignons / Autres) — onglets **et** dropdown Catégories
+- `contributorsBySource` + `totalContributors` (Marcheurs / eBird / iNat / GBIF)
+- (par cohérence) compteurs implicites des Sources et Audio dans leurs dropdowns
 
-## UX / UI
+Résultat actuel : sélectionner "Consommateurs primaires" filtre bien les cartes (8 espèces) mais les onglets affichent toujours 115/.../... et le dropdown contributeurs montre 16.
 
-### Emplacement
-- Le `grid` actuel passe de **4 → 5 colonnes** sur desktop (`lg:grid-cols-5`), reste `grid-cols-2` mobile (le filtre trophique se place sur sa propre ligne pleine largeur en `col-span-2` mobile → meilleur tap target).
+## Principe : "leave-one-out"
 
-### Comportement
-- **Multi-sélection** : `Set<TrophicGroup>` dans le state. Click toggle.
-- **Compteurs dynamiques** : calculés à partir des espèces ayant déjà passé tous les *autres* filtres (recherche, source, audio, contributeur, tags, catégorie faune/flore). Le label trigger affiche le total filtré sélectionné (ex : « 2 niveaux · 42 espèces »).
-- **Pas de sélection = pas de filtrage** (équivalent « tous niveaux »).
+Chaque compteur d'un filtre F doit refléter ce qui resterait si on appliquait **tous les filtres actifs sauf F**. C'est le pattern déjà utilisé par `filteredBeforeTrophic` pour le filtre trophique.
 
-### Visuel (Badges code couleur)
-- Chaque niveau possède déjà un token `--trophic-l1`…`--trophic-l5` + `--trophic-decomposer` dans `index.css`.
-- Trigger du Select : icône pyramide + label compact « Niveaux (n) ».
-- Contenu : 6 lignes, chacune avec
-  - une **pastille colorée** (8px) du token du niveau,
-  - le code court (L1…L5 / ⟲),
-  - le libellé complet (Producteurs primaires…),
-  - le compteur dynamique entre parenthèses,
-  - une checkbox visuelle à droite (✓ si sélectionné).
-- Ligne « Tout effacer » en bas si au moins un niveau actif.
-- État sélectionné : fond `bg-{token}/10`, bord `border-{token}/30`.
-
-### Mobile-first
-- Le composant `Select` shadcn s'ouvre déjà en bottom-sheet adapté.
-- Lignes ≥ 44px de hauteur, padding généreux, pastilles bien visibles.
-- Le trigger garde un wording court (« Niveaux ») pour ne pas casser la grille à 2 colonnes.
-
-## Logique de filtrage
+On généralise avec **une fonction unique** `applyFilters(species, active, skip?)` qui applique les 6 filtres (`category`, `source`, `audio`, `search`, `tags`, `trophic`, `contributor`) en pouvant en sauter un.
 
 ```text
-1. Pré-classifier toutes les espèces (useMemo)
-   speciesWithGroup = species.map(s => ({ ...s, _group: classifyTrophic(s).group }))
-
-2. Compteurs trophiques dynamiques
-   Sur le pipeline existant filteredSpecies *sans* l'étape trophique :
-   counts[group] = filteredBeforeTrophic.filter(s => s._group === group).length
-
-3. Filtre final
-   if (selectedTrophic.size > 0)
-     filteredSpecies = filteredBeforeTrophic.filter(s => selectedTrophic.has(s._group))
+            applyFilters(species, S)            → filteredSpecies (grille + onglet actif)
+applyFilters(species, S, skip:'category')       → base pour compteurs onglets/Catégories
+applyFilters(species, S, skip:'contributor')    → base pour compteurs contributeurs
+applyFilters(species, S, skip:'source')         → base pour compteurs Sources
+applyFilters(species, S, skip:'audio')          → base pour compteurs Audio
+applyFilters(species, S, skip:'trophic')        → base pour compteurs trophiques (remplace filteredBeforeTrophic)
 ```
 
-`UNCLASSIFIED` n'apparaît pas dans le dropdown mais reste visible quand aucun filtre n'est actif (pas d'exclusion implicite).
+## Changements `SpeciesExplorer.tsx`
+
+1. **Refactor du pipeline de filtrage** : extraire une fonction pure locale `applyFilters(list, opts, skip?)` qui applique chaque prédicat conditionnellement à `skip !== 'X'`. Supprime les blocs `if` dupliqués actuels.
+
+2. **5 bases mémoïsées** (une par dimension de compteur) :
+   - `baseForCategory` = applyFilters(species, …, skip:'category')
+   - `baseForContributor` = applyFilters(species, …, skip:'contributor')
+   - `baseForSource` = applyFilters(species, …, skip:'source')
+   - `baseForAudio` = applyFilters(species, …, skip:'audio')
+   - `baseForTrophic` = applyFilters(species, …, skip:'trophic')  *(remplace `filteredBeforeTrophic`)*
+   - `filteredSpecies` = applyFilters(species, …) *(sans skip — résultat final)*
+
+3. **Compteurs recalculés** :
+   - `categoryStats` ← dérivé de `baseForCategory` (impacte onglets `<Tabs>` + dropdown Catégories)
+   - `contributorsBySource` + `uniqueMarcheurs` + `totalContributors` ← dérivés de `baseForContributor`
+   - `sourceCounts` (nouveau, 3 valeurs) affichés dans le dropdown Sources : `GBIF (n) / iNat (n) / eBird (n)` à partir de `baseForSource`
+   - `audioCounts` (nouveau, 2 valeurs) dans le dropdown Audio : `Avec audio (n) / Sans audio (n)` à partir de `baseForAudio`
+   - `trophicCounts` ← dérivé de `baseForTrophic`
+
+4. **Désactivation visuelle** des options à 0 (déjà fait pour trophique : `disabled + opacity-40`) — étendue aux dropdowns Catégories / Sources / Audio / Contributeurs pour ne jamais proposer un cul-de-sac.
+
+5. **Onglet auto-fallback** : si l'utilisateur est sur l'onglet `faune` et qu'un filtre passe `categoryStats.faune` à 0 alors qu'une autre catégorie est non-vide, un `useEffect` repositionne `selectedCategory` sur `'all'` (évite l'écran "Aucune espèce…" piégeux).
+
+6. **Reset filtre fantôme** : si `selectedContributor` n'apparaît plus dans `baseForContributor` (car un autre filtre l'a évincé), on le laisse sélectionné mais on l'affiche désactivé en tête de liste (badge "0") — l'utilisateur voit pourquoi le résultat est vide et peut cliquer "Tous".
 
 ## Détails techniques
 
-- **State** : `const [selectedTrophic, setSelectedTrophic] = useState<Set<TrophicGroup>>(new Set())`.
-- **Classification** : un seul `useMemo` qui mappe `species` → `{ species, group }[]`. Coût négligeable (≤ quelques centaines d'espèces).
-- **Reset** : intégrer `selectedTrophic.clear()` dans le bouton « Réinitialiser » existant s'il y en a un, sinon ajouter un petit chip « × » à côté du trigger quand au moins un niveau est sélectionné.
-- **Accessibilité** : chaque ligne `role="option" aria-selected`. Trigger annonce le nombre sélectionné via `aria-label`.
-- **Tokens couleur** : utiliser `style={{ background: 'hsl(var(--trophic-l1))' }}` pour les pastilles (les classes Tailwind dynamiques ne fonctionnent pas en JIT pour des tokens custom).
+- **Coût** : 6 passages de filtre sur `species` (≤ quelques centaines d'éléments) à chaque changement de filtre → négligeable. Pas besoin de mémoïser au-delà de `useMemo` par base.
+- **Ordre des prédicats** dans `applyFilters` : du plus discriminant au moins coûteux (search → tags → category → source → audio → contributor → trophic) pour minimiser les comparaisons.
+- **Source unique de vérité** : un seul tableau d'options actives `active = { category, source, audio, search, tags, trophic, contributor }` passé à `applyFilters` — toute future colonne s'ajoute en un point.
+- **Aucun changement** à `BiodiversityTimeline` (le graphe "Pouls du vivant" reste branché sur `species` total — c'est la légende historique, à confirmer si l'on veut aussi le filtrer).
+- **Hors scope** : `SpeciesGalleryDetailModal`, Carte tab (déjà branché sur `filteredSpecies` via `mapContent(filteredSpecies)`), localStorage persistence.
 
-## Hors périmètre
+## Question ouverte (1)
 
-- Pas de modification de `SpeciesGalleryDetailModal` (la classification y est déjà affichée via `useTrophicChain`).
-- Pas de persistance du filtre en localStorage (cohérent avec les autres filtres de la barre).
-- Pas de filtre trophique sur la Carte ni la Synthèse (uniquement la Liste, comme demandé sur la copie d'écran).
+Le graphe **Pouls du vivant** (115 espèces depuis le 1er mai) doit-il aussi refléter les filtres actifs (passerait à 8 points cumulés "Consommateurs primaires"), ou rester une vue panoramique stable de l'exploration ? Mon avis : **stable**, c'est la mémoire de l'exploration ; les filtres servent à explorer le pool, pas à réécrire l'historique. À confirmer.
