@@ -74,8 +74,8 @@ function ActSilence({ event }) {
       createElement('p', {
         className: 'mt-6 text-sm text-emerald-100/55 leading-relaxed',
       },
-        'Aucune observation, aucun regard n\\'a encore été déposé ici. ',
-        'Le sol est prêt. La scénographie s\\'ouvrira dès la première trace.',
+        "Aucune observation, aucun regard n'a encore été déposé ici. " +
+        "Le sol est prêt. La scénographie s'ouvrira dès la première trace.",
       ),
       createElement('p', { className: 'mt-10 text-[10px] uppercase tracking-[0.4em] text-emerald-100/30' }, '· silence fertile ·'),
     ),
