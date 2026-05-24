@@ -265,7 +265,7 @@ const MarchesDuVivantAgriculture = () => {
               <h2 className="font-crimson text-3xl text-foreground mb-4">
                 5 leviers que votre marche active
               </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-muted-foreground max-w-2xl mx-auto text-center">
                 Chaque enjeu identifié par le référentiel RSO devient une séquence concrète,
                 vécue par vos adhérents sur le terrain.
               </p>
@@ -291,7 +291,7 @@ const MarchesDuVivantAgriculture = () => {
                       {l.tag}
                     </span>
                     <h3 className="font-crimson text-xl text-foreground mb-2">{l.title}</h3>
-                    <p className="text-sm text-muted-foreground">{l.desc}</p>
+                    <p className="text-sm text-muted-foreground text-center">{l.desc}</p>
                   </motion.div>
                 );
               })}
@@ -395,7 +395,7 @@ const MarchesDuVivantAgriculture = () => {
                   <l.icon className="w-8 h-8 text-lime-400 mx-auto mb-4" />
                   <h3 className="font-crimson text-2xl text-foreground mb-2">{l.nom}</h3>
                   <div className="text-sm text-lime-300 mb-3">{l.highlight}</div>
-                  <p className="text-sm text-muted-foreground">{l.detail}</p>
+                  <p className="text-sm text-muted-foreground text-center">{l.detail}</p>
                 </motion.div>
               ))}
             </div>
