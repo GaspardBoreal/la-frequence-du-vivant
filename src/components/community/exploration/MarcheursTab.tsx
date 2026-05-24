@@ -425,9 +425,10 @@ const ContributionsSubTab: React.FC<{
   marcheur: MarcheurWithStats;
   explorationId?: string;
   explorationMarcheIds: string[];
+  explorationEventIds: string[];
   resolvedUserId: string | null;
   aliases?: string[];
-}> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId, aliases = [] }) => {
+}> = ({ marcheur, explorationId, explorationMarcheIds, explorationEventIds, resolvedUserId, aliases = [] }) => {
   const [onlyOwn, setOnlyOwn] = useState(false);
   const [inatDrawerOpen, setInatDrawerOpen] = useState(false);
   const { data: isCurator } = useIsCurator(explorationId);
@@ -551,6 +552,7 @@ const ContributionsSubTab: React.FC<{
         resolvedUserId={resolvedUserId}
         explorationId={explorationId}
         explorationMarcheIds={explorationMarcheIds}
+        explorationEventIds={explorationEventIds}
         identifiedPhotoUrls={identifiedPhotoUrls}
       />
     </div>
@@ -1321,7 +1323,7 @@ const MarcheurCard: React.FC<{
 
               {activeSubTab === 'contributions' && (
                 <motion.div key="contribs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} resolvedUserId={resolvedUserId} aliases={aliases} />
+                  <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} explorationEventIds={explorationEventIds} resolvedUserId={resolvedUserId} aliases={aliases} />
                 </motion.div>
               )}
 
