@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import JSZip from 'jszip';
-import { Upload, Download, MapPin, AlertTriangle, Loader2, X as XIcon, Check } from 'lucide-react';
+import { Upload, Download, MapPin, AlertTriangle, Loader2, X as XIcon, Check, Maximize2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useMarcheurUnidentifiedPhotos, type UnidentifiedPhotoCandidate } from '@/hooks/useMarcheurUnidentifiedPhotos';
+import InatUploadFullscreen from './InatUploadFullscreen';
 
 interface Props {
   open: boolean;
