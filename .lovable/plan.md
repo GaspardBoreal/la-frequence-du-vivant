@@ -1,77 +1,103 @@
+## Constat
 
-## Diagnostic
+L'onglet **Marcheurs → Marcheurs → Contributions** affiche aujourd'hui par défaut les vignettes iNaturalist parce qu'il a son propre rendu bento (`ContributionsSubTab` dans `MarcheursTab.tsx`), totalement indépendant de l'écosystème factorisé `SpeciesPhotoModeContext` + `SpeciesExplorer` utilisé partout ailleurs (Vivant, L'Œil, Synthèse).
 
-Confirmé en base pour cette exploration (5 marches, 11 snapshots) :
+Conséquence visible sur la capture d'écran : pour Laurence Karki (aucune photo perso uploadée), on ne voit que des miniatures iNat, sans la moindre possibilité de basculer vers les photos terrain d'autres marcheurs qui auraient pu photographier les mêmes espèces.
 
-| Marche | Snapshots `with_login` | Snapshots `without_login` |
-|---|---|---|
-| `4095a154` | 3 (359 attrs) | 0 |
-| `f94e5c2f` | 2 (232 attrs) | 0 |
-| `bf50566d` | 3 attrs récents | **342 attrs legacy** |
-| `8b96ea79` | 3 attrs récents | **202 attrs legacy** |
-| `67890ed0` | 3 attrs récents | **135 attrs legacy** |
+## Stratégie : réutiliser `<SpeciesExplorer/>` filtré
 
-→ Le backfill précédent n'a touché que 2 marches (scope `marcheId`). Les 3 autres marches restent peuplées d'attributions iNat sans `observerLogin`.
+Le contexte `SpeciesPhotoModeProvider` est déjà installé au niveau racine de `ExplorationMarcheurPage` → le toggle sera automatiquement **synchronisé** avec les trois autres vues, et bénéficiera de :
 
-**Conséquence visible** : pour « Gaspard Boréal », on a en base :
-- 529 attributions avec `observerLogin = "gaspardboreal"` → clé canonique = `gaspardboreal`
-- 585 attributions sans login (legacy) → fallback `normalizeAlias("Gaspard Boréal")` ≈ `gaspard boreal`
+- défaut intelligent (`marcheur` si photos terrain existent, sinon `inaturalist`)
+- `getPreferredPhoto()` qui choisit la bonne photo par espèce
+- toggle UI `<SpeciesPhotoModeToggle/>` avec compteurs
+- filtres règnes, recherche, tags, classification trophique, modal espèce, lightbox
+- cohérence visuelle 100 % avec Vivant / L'Œil / Synthèse
 
-Les deux clés ne correspondent pas → **2 entrées dans le filtre** au lieu d'1. Idem pour `les-marches-du-vivant` vs `Les Marches du Vivant`.
+## Plan d'implémentation
 
-## Cause racine — deux bugs cumulés
+### 1. Nouveau hook `useMarcheurAttributedSpecies`
 
-1. **Couverture incomplète** : le backfill n'a tourné que sur 2 marches. Les snapshots historiques des autres marches n'ont jamais reçu d'`observerLogin`.
-2. **Robustesse manquante du fallback** : `citizenIdentityKey()` retourne soit le login soit `normalizeAlias(name)`, mais ces deux clés ne sont **pas réconciliées entre elles**. Donc même après un backfill partiel, deux attributions du même observateur (l'une enrichie, l'autre pas) restent séparées.
+Fichier : `src/hooks/useMarcheurAttributedSpecies.ts`
 
-## Plan de correction
+Rôle : retourner la liste des espèces **attribuées au marcheur courant** dans le format `BiodiversitySpecies[]` attendu par `<SpeciesExplorer/>`.
 
-### 1. Rendre `citizenIdentityKey` robuste (defense-in-depth)
+Sources fusionnées (logique existante extraite de `ContributionsSubTab`) :
 
-Le fallback ne doit plus produire une clé incompatible avec le login. On introduit une **résolution en 2 passes** au niveau de chaque agrégateur :
+1. `marcheur_observations` filtrées par `marcheur_id = crewId` ET `marche_id ∈ explorationMarcheIds`
+2. Attributions iNat issues de `biodiversity_snapshots.species_data[].attributions[]` dont `normalizeAlias(observerName) ∈ aliases` du marcheur
 
-- **Pass A** — scanner toutes les attributions et construire un **index local** `normalizeAlias(name) → observerLogin` à partir de toute attribution qui possède **les deux** champs.
-- **Pass B** — re-résoudre chaque attribution : si elle n'a pas de `observerLogin`, chercher `normalizeAlias(name)` dans l'index ; si trouvé, utiliser le login comme clé canonique. Sinon, garder `normalizeAlias(name)`.
+Le hook expose aussi :
 
-Ainsi, dès qu'**au moins une** attribution d'un observateur a été enrichie (par l'ingestion ou un backfill partiel), **toutes** les autres attributions du même observateur sont automatiquement reclassées sous la même identité — sans attendre un backfill complet.
+- `ownUploadedSciNames: Set<string>` — espèces pour lesquelles **CE marcheur** a uploadé au moins une photo perso (URL Supabase storage). Permet de garder le filtre « Mes photos ».
 
-Fichiers impactés :
-- `src/utils/citizenIdentity.ts` — nouvelle fonction `buildCitizenIdentityResolver(attributions[])` qui retourne `(attr) => key`.
-- `src/components/biodiversity/SpeciesExplorer.tsx` — section `contributorsBySource` et `uniqueMarcheurs` utilisent le resolver.
-- `src/hooks/useExplorationCitizenContributors.ts` — pass A globale avant l'agrégation.
-- `src/hooks/useSpeciesObservers.ts` — même traitement.
-- `src/hooks/useSpeciesMarcheurPhotos.ts` et tout autre hook lisant `attributions` pour dédupliquer (à auditer rapidement avec `rg "observerName" src/hooks`).
+Photos par espèce : on ne stocke dans `BiodiversitySpecies.photoData.url` que la photo iNat de référence (fallback). C'est `SpeciesPhotoModeContext` (alimenté par `useExplorationFieldPhotos`) qui injecte la photo terrain au rendu via `getPreferredPhoto()` — donc aucune logique photo dupliquée ici.
 
-### 2. Backfill global (vrai nettoyage des données)
+### 2. Refonte de `ContributionsSubTab`
 
-Le backfill existant doit être relancé **sans scope `marcheId`** pour traiter tous les snapshots historiques.
+Remplacer tout le rendu bento par :
 
-- Étendre légèrement le bouton « Réconcilier identités iNat » dans `/admin/community` avec un retour de stats clair (`scanned / updated / patched / fetched`), pour que tu voies la progression.
-- Option : ajouter un mode `dryRun` accessible via un sous-bouton « Simuler » pour estimer l'ampleur avant d'écrire.
+```tsx
+<div className="px-3 pt-3 pb-3 space-y-3">
+  {/* Bandeau spécifique marcheur */}
+  <div className="flex items-center justify-between gap-2 flex-wrap">
+    <p className="text-xs text-muted-foreground">
+      <Leaf /> {species.length} espèce{s} identifiée{s}
+      {ownCount > 0 && <span> · {ownCount} avec photo perso</span>}
+    </p>
+    {ownCount > 0 && (
+      <button onClick={() => setOnlyOwn(!onlyOwn)} ...>
+        <Camera /> Mes photos ({ownCount})
+      </button>
+    )}
+  </div>
 
-Une fois exécuté, les ~679 attributions legacy de cette exploration (bf50566d + 8b96ea79 + 67890ed0) seront enrichies en place et les fallbacks ne seront plus nécessaires pour ces snapshots — mais le filet de sécurité (point 1) reste utile pour les obs iNat supprimées/privées (qui ne reviendront jamais avec un login).
+  <SpeciesExplorer
+    species={onlyOwn ? speciesWithMyUpload : species}
+    compact
+    explorationId={explorationId}
+  />
+</div>
+```
 
-### 3. Garde-fou ingestion (futur)
+Comportements obtenus gratuitement via `SpeciesExplorer` :
 
-Vérifier dans `supabase/functions/biodiversity-data/index.ts` que **chaque** branche écrivant une attribution iNat capture bien `user.login` + `user.id` (pas seulement la branche principale). Toute attribution iNat sans login devient une anomalie loguée côté edge.
+- Header de l'explorer contient déjà `<SpeciesPhotoModeToggle counts={...}/>` → bascule globale visible ici
+- Par défaut le mode passe à `marcheur` dès qu'il y a au moins une photo terrain dans l'exploration
+- Filtres règne, source, audio, contributeur, recherche, tags : tous opérationnels
+- Modal espèce, carrousel photos, navigation : identiques aux autres vues
 
-## Effet attendu
+### 3. Code mort à retirer dans `MarcheursTab.tsx`
 
-Après ces 3 actions :
-- Le dropdown affichera **1 ligne par observateur réel**, même si la moitié de ses obs n'a pas été backfillée.
-- Le compteur `iNaturalist (6)` deviendra `iNaturalist (3 ou 4)` (Gaspard, laurencekarki, Chantal, LMDV).
-- Les futures fusions name↔login se feront automatiquement à l'agrégation, sans dépendance au cron de backfill.
+- `ContribSpeciesItem`, `isOwnPhotoUrl`, l'énorme `useQuery` de `byKey`, `renderTile`, sections « Vos N captures personnelles » / « N repérées dans le périmètre », `ownSpanFor`, lightbox local
+
+→ remplacé par le hook + 30 lignes de JSX.
+
+### 4. Ce qui ne change pas
+
+- Page hôte `ExplorationMarcheurPage` : déjà sous `SpeciesPhotoModeProvider`, rien à toucher.
+- Les trois vues existantes (Vivant / L'Œil / Synthèse) : aucune modification.
+- Le filtre « Mes photos » reste spécifique à l'onglet du marcheur (conformément à la réponse choisie).
 
 ## Détails techniques
 
 ```text
-ATTRIBUTIONS (raw)
-  ├─ {name:"Gaspard Boréal", login:"gaspardboreal"}   ←┐
-  ├─ {name:"Gaspard Boréal", login:null}                │
-  │                                                     │
-  └─ Pass A ─→ index: { normalizeAlias("Gaspard Boréal") : "gaspardboreal" }
-                                                        │
-  Pass B ─→ key("gaspardboreal") pour les DEUX  ────────┘
+ExplorationMarcheurPage
+└─ SpeciesPhotoModeProvider (explorationId)  ← déjà en place
+   └─ MarcheursTab
+      └─ ContributionsSubTab  ← refonte
+         ├─ useMarcheurAttributedSpecies(marcheur, exploration)
+         │     → BiodiversitySpecies[] + ownUploadedSciNames
+         ├─ Filtre « Mes photos » (local)
+         └─ <SpeciesExplorer species=… compact explorationId=… />
+               └─ <SpeciesPhotoModeToggle/> en header (global)
 ```
 
-Pas de migration SQL. Pas de breaking change d'API. Tout est rétro-compatible.
+Mémoire à mettre à jour : `mem://features/community/species-photo-mode-toggle-logic` pour ajouter la 4ᵉ vue factorisée.
+
+## Validation
+
+1. Ouvrir un marcheur sans photo perso (Laurence Karki) → onglet Contributions doit afficher les photos terrain des autres marcheurs par défaut (si présentes), sinon iNat ; le toggle global doit être visible et fonctionnel.
+2. Ouvrir un marcheur avec ses propres photos (Gaspard) → le toggle « Mes photos » filtre correctement.
+3. Basculer le toggle global depuis l'onglet Vivant → la bascule est reflétée immédiatement dans Contributions (même provider).
+4. Vérifier que les filtres règne, recherche, modal espèce fonctionnent dans Contributions exactement comme dans Vivant.
