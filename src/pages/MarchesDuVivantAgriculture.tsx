@@ -346,7 +346,7 @@ const MarchesDuVivantAgriculture = () => {
                     <div className="text-xs text-lime-300 font-mono uppercase tracking-wide mb-4">
                       {f.duree}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">{f.desc}</p>
+                    <p className="text-sm text-muted-foreground text-center mb-4">{f.desc}</p>
                     <div className="mt-auto space-y-3 pt-4 border-t border-border/20">
                       <div>
                         <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Livrable</div>
