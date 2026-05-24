@@ -108,7 +108,7 @@ const formats = [
     title: 'Format Coopérative / CUMA',
     duree: '1 journée (7 h)',
     desc: 'Animation collective d\'adhérents sur une exploitation pilote. Marche d\'observation, atelier services écosystémiques, plan d\'action.',
-    livrable: 'Diagnostic Chapitre 5 RSO opposable + plan de progression sur 12 mois.',
+    livrable: 'Diagnostic RSE / RSO opposable + plan de progression sur 12 mois.',
     cible: 'Adhérents · administrateurs · animateurs',
   },
   {
