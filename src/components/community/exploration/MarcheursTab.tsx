@@ -52,6 +52,7 @@ import { useExplorationCitizenContributors } from '@/hooks/useExplorationCitizen
 import { useMarcheurInatProfile } from '@/hooks/useMarcheurInatProfile';
 import { useMarcheurAttributedSpecies } from '@/hooks/useMarcheurAttributedSpecies';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
+import InatUploadPrepDrawer from './InatUploadPrepDrawer';
 
 interface MarcheursTabProps {
   explorationId?: string;
@@ -428,6 +429,8 @@ const ContributionsSubTab: React.FC<{
   aliases?: string[];
 }> = ({ marcheur, explorationId, explorationMarcheIds, resolvedUserId, aliases = [] }) => {
   const [onlyOwn, setOnlyOwn] = useState(false);
+  const [inatDrawerOpen, setInatDrawerOpen] = useState(false);
+  const { data: isCurator } = useIsCurator(explorationId);
   const crewId = marcheur.crewId || (marcheur.source === 'crew' ? marcheur.id : null);
 
   const { data, isLoading } = useMarcheurAttributedSpecies({
@@ -441,6 +444,23 @@ const ContributionsSubTab: React.FC<{
   const allSpecies = data?.species || [];
   const ownUploaded = data?.ownUploadedSciNames || new Set<string>();
   const ownCount = ownUploaded.size;
+
+  // URLs déjà rattachées à une espèce identifiée (à exclure du pack iNat)
+  const identifiedPhotoUrls = useMemo(() => {
+    const s = new Set<string>();
+    allSpecies.forEach((sp) => (sp.photos || []).forEach((u) => u && s.add(u)));
+    return s;
+  }, [allSpecies]);
+
+  const marcheurSlug = useMemo(() => {
+    const base = `${marcheur.prenom || ''}-${marcheur.nom || ''}`.trim();
+    return base
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'marcheur';
+  }, [marcheur.prenom, marcheur.nom]);
 
   const speciesToShow = useMemo(() => {
     if (!onlyOwn) return allSpecies;
@@ -473,7 +493,7 @@ const ContributionsSubTab: React.FC<{
 
   return (
     <div className="px-3 pt-3 pb-3 space-y-3">
-      {/* Bandeau spécifique marcheur : compteur + filtre « Mes photos » */}
+      {/* Bandeau spécifique marcheur : compteur + filtre « Mes photos » + prep iNat */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
           <Leaf className="w-3.5 h-3.5 text-emerald-500" />
@@ -485,20 +505,32 @@ const ContributionsSubTab: React.FC<{
             </span>
           )}
         </p>
-        {ownCount > 0 && (
-          <button
-            onClick={() => setOnlyOwn((o) => !o)}
-            aria-pressed={onlyOwn}
-            className={`text-[11px] px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
-              onlyOwn
-                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/50 font-semibold'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted ring-1 ring-transparent'
-            }`}
-          >
-            <Camera className="w-3 h-3" />
-            Mes photos ({ownCount})
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {ownCount > 0 && (
+            <button
+              onClick={() => setOnlyOwn((o) => !o)}
+              aria-pressed={onlyOwn}
+              className={`text-[11px] px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
+                onlyOwn
+                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/50 font-semibold'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted ring-1 ring-transparent'
+              }`}
+            >
+              <Camera className="w-3 h-3" />
+              Mes photos ({ownCount})
+            </button>
+          )}
+          {isCurator && (
+            <button
+              onClick={() => setInatDrawerOpen(true)}
+              className="text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 bg-muted/50 hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-700 dark:hover:text-emerald-300 ring-1 ring-transparent hover:ring-emerald-500/30 transition-all"
+              title="Préparer un pack ZIP pour upload sur iNaturalist"
+            >
+              <Sparkles className="w-3 h-3" />
+              Préparer upload iNat
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Explorer factorisé : règnes, recherche, toggle photos marcheurs ↔ iNat, modal espèce, etc. */}
@@ -506,6 +538,19 @@ const ContributionsSubTab: React.FC<{
         species={speciesToShow}
         compact
         explorationId={explorationId}
+      />
+
+      <InatUploadPrepDrawer
+        open={inatDrawerOpen}
+        onOpenChange={setInatDrawerOpen}
+        marcheurPrenom={marcheur.prenom}
+        marcheurNom={marcheur.nom}
+        marcheurSlug={marcheurSlug}
+        crewId={crewId}
+        resolvedUserId={resolvedUserId}
+        explorationId={explorationId}
+        explorationMarcheIds={explorationMarcheIds}
+        identifiedPhotoUrls={identifiedPhotoUrls}
       />
     </div>
   );
