@@ -169,13 +169,40 @@ export function useMarcheurAttributedSpecies({
         });
       }
 
-      // 2) Snapshots iNat : attributions dont l'observerName ∈ alias
+      // 2) Snapshots iNat : matching robuste via resolver d'identité canonique.
+      //    Aligné avec SpeciesExplorer (Synthèse) pour parité stricte.
       if (aliases.length > 0) {
         const aliasSet = new Set(aliases);
         const { data: snaps } = await supabase
           .from('biodiversity_snapshots')
           .select('species_data')
           .in('marche_id', explorationMarcheIds);
+
+        // Pass 0 : collecter TOUTES les attributions iNat du pool pour
+        // construire le resolver (Pass A: alias->login) et identifier les
+        // logins canoniques appartenant au marcheur.
+        const allInatAttrs: any[] = [];
+        (snaps || []).forEach((snap: any) => {
+          const list = snap.species_data as any[];
+          if (!Array.isArray(list)) return;
+          list.forEach((sp: any) => {
+            const attrs: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+            attrs.forEach((a) => {
+              if ((a?.source || '').toLowerCase() === 'inaturalist') allInatAttrs.push(a);
+            });
+          });
+        });
+        const resolveIdentity = buildCitizenIdentityResolver(allInatAttrs);
+
+        // Canonical keys du marcheur = aliases ∪ logins iNat dont au moins
+        // une attribution a un observerName qui matche un alias.
+        const canonicalKeys = new Set<string>(aliasSet);
+        allInatAttrs.forEach((a) => {
+          const observerNorm = normalizeAlias(a?.observerName || '');
+          if (!observerNorm || !aliasSet.has(observerNorm)) return;
+          const login = (a?.observerLogin || '').toString().toLowerCase().trim();
+          if (login) canonicalKeys.add(login);
+        });
 
         (snaps || []).forEach((snap: any) => {
           const list = snap.species_data as any[];
@@ -192,7 +219,11 @@ export function useMarcheurAttributedSpecies({
 
             attrs.forEach((attr: any) => {
               const observerNorm = normalizeAlias(attr.observerName || '');
-              if (!aliasSet.has(observerNorm)) return;
+              const canonical = resolveIdentity(attr);
+              const matches =
+                (canonical && canonicalKeys.has(canonical)) ||
+                (observerNorm && aliasSet.has(observerNorm));
+              if (!matches) return;
 
               const inatPhoto = sp.photoData?.url || photosArr[0] || null;
 
