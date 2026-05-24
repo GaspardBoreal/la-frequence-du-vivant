@@ -1,79 +1,104 @@
-# Plan — Auth iNaturalist OAuth2 (auto-refresh) pour Computer Vision
+## Diagnostic (analyse pro)
 
-## Objectif
+### Ce que tu vois
+Dans le filtre "iNaturalist (5)" de la fiche événement, **un seul compte iNat** (`les-marches-du-vivant`) apparaît en **deux entités distinctes** :
+- `Les marches du Vivant` (4 obs)
+- `Les Marches du Vivant` (1 obs) — majuscule à "Marches"
 
-Mettre en place une authentification OAuth2 robuste auprès d'iNaturalist pour l'endpoint `/v1/computervision/score_image`, avec rafraîchissement automatique du token côté serveur. Aucune intervention manuelle, aucun token JWT 24h à renouveler à la main.
+### Cause racine (2 bugs cumulés)
 
-## Secrets à provisionner
+**Bug #1 — On stocke un identifiant mutable**
+Dans `supabase/functions/biodiversity-data/index.ts` (ligne 319), le pipeline iNat fait :
+```ts
+observerName: item.user?.name || item.user?.login || 'Anonyme'
+```
+On stocke `user.name` (= **display name**, modifiable à volonté par l'utilisateur depuis son profil iNat), au lieu de `user.login` (= **slug d'URL, immuable**, ici `les-marches-du-vivant`).
 
-4 secrets runtime (jamais exposés au frontend) :
+Conséquence : si le display name change ne serait-ce que d'une majuscule entre deux syncs (ou si tu le corriges plus tard), chaque variante crée un "fantôme" dans nos snapshots déjà figés. C'est exactement ce qui s'est passé sur tes 5 observations test.
 
-- `INAT_CLIENT_ID` — créé sur [https://www.inaturalist.org/oauth/applications/new](https://www.inaturalist.org/oauth/applications/new) (application type "Confidential")
-- `INAT_CLIENT_SECRET` — fourni par iNat à la création de l'application
-- `INAT_USERNAME` — identifiant du compte iNat dédié (recommandé : créer `marches-du-vivant` plutôt que réutiliser `gaspardboreal`)
-- `INAT_PASSWORD` — mot de passe du compte
+**Bug #2 — Le filtre UI dédoublonne sur la chaîne brute**
+Dans `src/components/biodiversity/SpeciesExplorer.tsx` (ligne 252), la clé du Map est `(attr.observerName || '').trim()` — donc sensible à la casse, aux accents, aux espaces. Pourtant `normalizeAlias()` existe déjà et est utilisé partout ailleurs (`useExplorationCitizenContributors`, `useMarcheurAliases`, etc.) pour précisément éviter ça.
 
-Ces 4 secrets servent au flow OAuth2 `password` grant (le seul que iNat expose pour obtenir un token Computer Vision sans interaction navigateur).
+Résultat : `"Les marches du Vivant"` ≠ `"Les Marches du Vivant"` au sens du Map, alors qu'ils devraient être fusionnés.
 
-## Architecture du token
+---
 
-Pipeline en 2 étages, encapsulé dans un helper Deno partagé `_shared/inaturalist-auth.ts` :
+## Solution pro (sécurisée pour ce compte ET les prochains)
 
-```text
-[Edge function] → getInatAccessToken()
-                        ↓
-              cache mémoire (TTL ~23h)
-                        ↓ (si expiré)
-   POST /oauth/token (grant=password)  → access_token
-                        ↓
-   POST /users/api_token (Bearer access_token) → JWT 24h
-                        ↓
-   cache + retourne JWT
+Architecture en 3 couches : on remonte l'identité immuable, on dédoublonne partout, on migre l'existant.
+
+### 1. Backend — capturer l'identité iNat canonique
+
+**Fichier** : `supabase/functions/biodiversity-data/index.ts` (~ligne 319, attribution iNat)
+
+Enrichir l'attribution avec **3 champs stables** (au lieu d'un seul `observerName` ambigu) :
+```ts
+{
+  source: 'inaturalist',
+  observerLogin: item.user?.login || null,     // ← NOUVEAU : slug immuable (clé canonique)
+  observerId: item.user?.id ?? null,           // ← NOUVEAU : ID numérique iNat (encore plus stable)
+  observerName: item.user?.name || item.user?.login || 'Anonyme', // display, gardé pour affichage
+  observerProfileUrl: item.user?.login
+    ? `https://www.inaturalist.org/people/${item.user.login}` : null,
+  originalUrl: ...,
+}
+```
+→ On ne touche pas aux snapshots existants (rétro-compat), on ajoute juste des champs JSON optionnels.
+
+### 2. Frontend — dédoublonner sur l'identité canonique
+
+**Règle universelle** : la clé de groupement d'un contributeur iNat = `observerLogin` (si présent) sinon `normalizeAlias(observerName)` en fallback pour les snapshots historiques.
+
+Helper centralisé `src/utils/citizenIdentity.ts` :
+```ts
+export const inatIdentityKey = (a: Attribution) =>
+  a.observerLogin?.toLowerCase().trim() || normalizeAlias(a.observerName || '');
+
+export const inatDisplayName = (a: Attribution) =>
+  a.observerName?.trim() || a.observerLogin || 'Anonyme';
 ```
 
-Deux tokens iNat distincts :
+**Fichiers à corriger** (tous utilisent aujourd'hui `observerName` brut comme clé) :
+- `src/components/biodiversity/SpeciesExplorer.tsx` (le bug que tu vois — Map ligne 252 + Map `uniqueMarcheurs` ligne 271)
+- `src/hooks/useExplorationCitizenContributors.ts` (déjà OK via `normalizeAlias`, à upgrader vers `inatIdentityKey`)
+- `src/hooks/useMarcheurInatProfile.ts` (matching alias → URL)
+- `src/hooks/useSpeciesObservers.ts`, `useExplorationCitizenContributors`, `useSpeciesMarcheurPhotos` : passer au key canonique
+- Tous les autres fichiers de la liste `rg observerName` (~15 fichiers) : audit ciblé, on remplace les `.trim().toLowerCase()` ad-hoc par le helper
 
-- **access_token OAuth** (long, ~ans) → sert uniquement à obtenir le JWT
-- **JWT API** (~24h) → header `Authorization: Bearer <jwt>` envoyé à `/v1/computervision/score_image`
+### 3. Migration — réconcilier les snapshots existants
 
-Le helper gère :
+Edge function ponctuelle `backfill-snapshot-observer-login` (one-shot, idempotente) :
+1. Lit tous les snapshots avec `source='inaturalist'` mais sans `observerLogin`.
+2. Pour chaque `originalUrl` iNat (`/observations/{id}`), appelle `https://api.inaturalist.org/v1/observations/{id}` (batch par 30 IDs, public, pas de JWT requis), récupère `user.login` + `user.id`.
+3. Patche les attributions du `species_data` JSON in-place.
+4. Cache en mémoire pour éviter de re-fetcher 2× le même obs.
 
-- cache mémoire intra-instance (évite de re-négocier à chaque photo d'un batch de 81)
-- refresh automatique à T-1h de l'expiration
-- retry une fois sur 401 (token invalidé côté iNat)
-- backoff sur 429 (rate limit)
+Pour tes 5 obs test, ça unifie immédiatement les deux "Les marches du Vivant" en un seul contributeur `les-marches-du-vivant`.
 
-## Code à créer
+### 4. Bonus sécurité (prochains comptes)
 
-1. `supabase/functions/_shared/inaturalist-auth.ts`
-  - `export async function getInatJwt(): Promise<string>`
-  - lit les 4 secrets via `Deno.env.get`
-  - gère cache + refresh + retry
-  - logs structurés (jamais le password ni le token complet — seulement préfixe)
-2. Consommation dans `recognize-marcheur-photos` (créé en Phase 1) :
-  ```ts
-   const jwt = await getInatJwt();
-   const res = await fetch('https://api.inaturalist.org/v1/computervision/score_image', {
-     method: 'POST',
-     headers: { Authorization: `Bearer ${jwt}` },
-     body: formData,
-   });
-  ```
-3. Edge function utilitaire `inat-auth-healthcheck` (optionnelle, admin-only) : ping le flow complet et retourne `{ ok, expires_at }` → bouton "Tester la connexion iNat" dans la fiche événement.
+- **`useMarcheurAliases`** : ajouter automatiquement le `login` iNat (pas que le display name) quand `community_profile_science_accounts.network='inaturalist'` est lié. Aujourd'hui ça marche déjà parce que tu colles `les-marches-du-vivant` dans le champ username, mais on documente la convention : **username iNat = login slug, pas display name**.
+- **`resolve-inaturalist-user` edge function** : déjà existante, on l'utilise pour valider qu'un username saisi correspond bien à un login iNat existant (UI : check vert dans le formulaire d'ajout de compte science).
+- **Memory `mem://technical/community/identity-matching-logic`** : mise à jour pour graver la règle "iNat identity = `user.login`, jamais `user.name`".
 
-## Sécurité
+---
 
-- Les 4 secrets restent côté edge functions uniquement (jamais dans le frontend, jamais dans la DB).
-- Le healthcheck est protégé par `has_role(auth.uid(), 'admin')`.
-- Logs masqués : `jwt.slice(0, 8) + '...'` jamais le token complet.
+## Section technique condensée
 
-## Étapes d'exécution (après approbation)
+| Étape | Fichier | Type |
+|---|---|---|
+| 1 | `supabase/functions/biodiversity-data/index.ts` | enrich `observerLogin` + `observerId` |
+| 2 | `src/utils/citizenIdentity.ts` | helper `inatIdentityKey` |
+| 2 | `src/components/biodiversity/SpeciesExplorer.tsx` | switch Map keys |
+| 2 | ~6 hooks (`useExploration*`, `useSpecies*`) | switch Map keys |
+| 3 | `supabase/functions/backfill-snapshot-observer-login/index.ts` | one-shot backfill |
+| 4 | `src/hooks/useMarcheurAliases.ts` | doc + validation login |
+| 4 | `mem://technical/community/identity-matching-logic` | update règle |
 
-1. `add_secret` pour les 4 noms → l'utilisateur saisit les valeurs dans le formulaire sécurisé Lovable.
-2. Création du helper `_shared/inaturalist-auth.ts`.
-3. Création de `inat-auth-healthcheck` + bouton "Tester" dans l'onglet Reconnaissance IA de la fiche événement.
-4. Branchement dans `recognize-marcheur-photos` (Phase 1 du plan principal).
+### Hors-scope (non touché)
+- DB schéma : aucune migration, on enrichit du JSON existant
+- Auth / RLS : aucune
+- Pipeline OAuth iNat (les 4 secrets) : indépendant, ne bloque pas ce fix
 
-## Question résiduelle
-
-**réutiliser `gaspardboreal**`
+### Test de validation
+Après déploiement + backfill : sur la fiche événement `f6095e8d-…`, le filtre iNaturalist doit afficher **`les-marches-du-vivant (5)`** en une seule ligne, et plus jamais se dédoubler même si tu renommes le compte iNat demain.
