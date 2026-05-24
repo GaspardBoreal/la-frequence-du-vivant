@@ -383,7 +383,7 @@ const MarchesDuVivantAgriculture = () => {
             </div>
 
             <p className="text-center text-xs text-muted-foreground mt-8 font-mono">
-              Source : tableau de bord RSO CUMA Nouvelle-Aquitaine — Chapitre 5 Respect du Vivant
+              Source : tableau de bord "Les Marches du Vivant"
             </p>
 
             <div className="text-center mt-8">
