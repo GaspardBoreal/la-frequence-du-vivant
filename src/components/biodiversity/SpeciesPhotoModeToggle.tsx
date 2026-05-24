@@ -108,11 +108,11 @@ const SpeciesPhotoModeToggle: React.FC<ToggleProps> = ({
               <span className="sm:hidden sr-only">{opt.short}</span>
               {typeof opt.count === 'number' && (
                 <span
-                  className={`ml-0.5 px-1.5 rounded-full text-[10px] tabular-nums ${
+                  className={`ml-0.5 px-1.5 rounded-full text-[10px] tabular-nums transition-opacity ${
                     isActive
                       ? 'bg-white/25 text-white'
                       : 'bg-white/10 text-white/80'
-                  }`}
+                  } ${opt.dim ? 'opacity-50' : ''}`}
                 >
                   {opt.count}
                 </span>
