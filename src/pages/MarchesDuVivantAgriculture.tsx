@@ -112,7 +112,7 @@ const formats = [
     icon: Network,
     title: 'Format Fédération / Chambre',
     duree: 'Programme régional',
-    desc: 'Plusieurs marches en réseau sur le territoire, animation inter-CUMA, mise en commun des données biodiversité.',
+    desc: 'Plusieurs marches en réseau sur le territoire, animation inter-organisation, mise en commun des données biodiversité.',
     livrable: 'Benchmark inter-territoires + restitution publique + base GBIF partagée.',
     cible: 'FRCUMA · Chambres d\'agriculture · GIEE',
   },
