@@ -407,21 +407,22 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
             <Select value={selectedSource} onValueChange={(v: any) => setSelectedSource(v)}>
               <SelectTrigger><SelectValue placeholder="Sources" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes sources</SelectItem>
-                <SelectItem value="gbif">GBIF</SelectItem>
-                <SelectItem value="inaturalist">iNaturalist</SelectItem>
-                <SelectItem value="ebird">eBird</SelectItem>
+                <SelectItem value="all">Toutes sources ({sourceCounts.all})</SelectItem>
+                <SelectItem value="gbif" disabled={sourceCounts.gbif === 0 && selectedSource !== 'gbif'}>GBIF ({sourceCounts.gbif})</SelectItem>
+                <SelectItem value="inaturalist" disabled={sourceCounts.inaturalist === 0 && selectedSource !== 'inaturalist'}>iNaturalist ({sourceCounts.inaturalist})</SelectItem>
+                <SelectItem value="ebird" disabled={sourceCounts.ebird === 0 && selectedSource !== 'ebird'}>eBird ({sourceCounts.ebird})</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={hasAudioFilter} onValueChange={(v: any) => setHasAudioFilter(v)}>
               <SelectTrigger><SelectValue placeholder="Audio" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Avec et sans audio</SelectItem>
-                <SelectItem value="with-audio">Avec audio</SelectItem>
-                <SelectItem value="without-audio">Sans audio</SelectItem>
+                <SelectItem value="all">Avec et sans audio ({audioCounts.all})</SelectItem>
+                <SelectItem value="with-audio" disabled={audioCounts.withAudio === 0 && hasAudioFilter !== 'with-audio'}>Avec audio ({audioCounts.withAudio})</SelectItem>
+                <SelectItem value="without-audio" disabled={audioCounts.withoutAudio === 0 && hasAudioFilter !== 'without-audio'}>Sans audio ({audioCounts.withoutAudio})</SelectItem>
               </SelectContent>
             </Select>
+
 
             {/* Trophic levels multi-select */}
             <Popover>
