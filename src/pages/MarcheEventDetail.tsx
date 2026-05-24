@@ -27,6 +27,7 @@ import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import InvitedReadersTab from '@/components/admin/marche-events/InvitedReadersTab';
 import { BookOpen } from 'lucide-react';
 import PublishPublicPanel from '@/components/admin/marche-events/PublishPublicPanel';
+import ScenographyEditor from '@/components/admin/scenography/ScenographyEditor';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -318,6 +319,10 @@ const MarcheEventDetail: React.FC = () => {
               <TabsTrigger value="profils" className="flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" />
                 Profils
+              </TabsTrigger>
+              <TabsTrigger value="scenographie" className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                Scénographie
               </TabsTrigger>
             </TabsList>
           )}
@@ -691,6 +696,9 @@ const MarcheEventDetail: React.FC = () => {
                   title="Profils des participant·e·s"
                   subtitle="Portrait collectif des marcheur·euse·s validé·e·s sur cet événement. Données privées, agrégats anonymisés."
                 />
+              </TabsContent>
+              <TabsContent value="scenographie" className="mt-4">
+                <ScenographyEditor eventId={id!} />
               </TabsContent>
             </>
           )}
