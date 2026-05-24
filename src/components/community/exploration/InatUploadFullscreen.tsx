@@ -33,6 +33,11 @@ interface Props {
   explorationMarcheIds: string[];
   explorationEventIds: string[];
   identifiedPhotoUrls: Set<string>;
+  /** When true, runs the pre-calc pipeline in background even if `open` is false,
+   *  so opening fullscreen feels instantaneous. */
+  prefetch?: boolean;
+  /** Optional callback exposing prep progress (0..1, ready) for parent UI. */
+  onPrepProgress?: (p: { ready: boolean; progress: number }) => void;
 }
 
 const SNAP_METERS = 25;
