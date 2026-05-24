@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, User, Bird, TreePine, Flower, Leaf, Database, MapPin, Grid3X3, LayoutList, Users } from 'lucide-react';
+import { Search, X, User, Bird, TreePine, Flower, Leaf, Database, MapPin, Grid3X3, LayoutList, Users, Layers, Check } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Card } from '../ui/card';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
@@ -18,6 +19,7 @@ import {
 } from '@/hooks/useMarcheurSpeciesTags';
 import MarcheurSpeciesTagDots from '@/components/community/tags/MarcheurSpeciesTagDots';
 import MarcheurTagsFilterBar, { matchesTagFilter, type TagFilterState } from '@/components/community/tags/MarcheurTagsFilterBar';
+import { classifyTrophic, TROPHIC_LEVELS, DECOMPOSER_META, type TrophicGroup } from '@/lib/trophicClassification';
 
 import SpeciesPhotoModeToggle from './SpeciesPhotoModeToggle';
 
@@ -67,6 +69,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
   const [tagFilter, setTagFilter] = useState<TagFilterState>({ labels: [], mode: 'or' });
+  const [selectedTrophic, setSelectedTrophic] = useState<Set<TrophicGroup>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'immersion'>(() => {
     return (localStorage.getItem('species-explorer-view') as 'list' | 'immersion') || 'list';
   });
@@ -160,8 +163,17 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const { data: marcheurTags } = useMarcheurSpeciesTags(allScientificNames);
   const tagsBySpecies = useMemo(() => indexTagsBySpecies(marcheurTags), [marcheurTags]);
 
-  // Filtered species
-  const filteredSpecies = useMemo(() => {
+  // Trophic group per species (memoized)
+  const trophicByName = useMemo(() => {
+    const m = new Map<string, TrophicGroup>();
+    species.forEach((s) => {
+      m.set(s.scientificName, classifyTrophic(s).group);
+    });
+    return m;
+  }, [species]);
+
+  // Filtered species — *avant* application du filtre trophique (sert aux compteurs dynamiques)
+  const filteredBeforeTrophic = useMemo(() => {
     let filtered = species;
 
     if (selectedCategory !== 'all' && selectedCategory !== 'map') {
@@ -176,7 +188,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       });
     }
 
-    // Filter by contributor (same logic for marcheurs and taxonomic observers)
     if (selectedContributor !== 'all') {
       filtered = filtered.filter(s =>
         s.attributions?.some(a => (a.observerName || 'Anonyme') === selectedContributor)
@@ -206,7 +217,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       });
     }
 
-    // Filter by marcheur tags
     if (tagFilter.labels.length > 0) {
       filtered = filtered.filter((s) => {
         const labels = (tagsBySpecies.get(normalizeTagKey(s.scientificName)) || []).map((t) => t.label);
@@ -216,6 +226,40 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
 
     return filtered.sort((a, b) => b.observations - a.observations);
   }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm, translationMap, tagFilter, tagsBySpecies]);
+
+  // Compteurs trophiques dynamiques (recalculés à partir des autres filtres)
+  const trophicCounts = useMemo(() => {
+    const counts: Record<TrophicGroup, number> = {
+      L1: 0, L2: 0, L3: 0, L4: 0, L5: 0, DECOMPOSER: 0, UNCLASSIFIED: 0,
+    };
+    filteredBeforeTrophic.forEach((s) => {
+      const g = trophicByName.get(s.scientificName) || 'UNCLASSIFIED';
+      counts[g] += 1;
+    });
+    return counts;
+  }, [filteredBeforeTrophic, trophicByName]);
+
+  // Application finale du filtre trophique
+  const filteredSpecies = useMemo(() => {
+    if (selectedTrophic.size === 0) return filteredBeforeTrophic;
+    return filteredBeforeTrophic.filter((s) =>
+      selectedTrophic.has(trophicByName.get(s.scientificName) || 'UNCLASSIFIED')
+    );
+  }, [filteredBeforeTrophic, selectedTrophic, trophicByName]);
+
+  const toggleTrophic = (g: TrophicGroup) => {
+    setSelectedTrophic((prev) => {
+      const next = new Set(prev);
+      if (next.has(g)) next.delete(g);
+      else next.add(g);
+      return next;
+    });
+  };
+
+  const trophicEntries: Array<{ group: TrophicGroup; label: string; shortLabel: string; token: string }> = [
+    ...TROPHIC_LEVELS.map((l) => ({ group: l.group, label: l.label, shortLabel: l.shortLabel, token: l.token })),
+    { group: DECOMPOSER_META.group, label: DECOMPOSER_META.label, shortLabel: DECOMPOSER_META.shortLabel, token: DECOMPOSER_META.token },
+  ];
 
   const gridCols = compact
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
@@ -302,7 +346,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
           <MarcheurTagsFilterBar state={tagFilter} onChange={setTagFilter} />
 
           {/* Filter dropdowns */}
-          <div className={`grid gap-3 ${compact ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
+          <div className={`grid gap-3 ${compact ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-5'}`}>
             <Select value={selectedCategory} onValueChange={v => setSelectedCategory(v)}>
               <SelectTrigger><SelectValue placeholder="Catégories" /></SelectTrigger>
               <SelectContent>
@@ -332,6 +376,105 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
                 <SelectItem value="without-audio">Sans audio</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Trophic levels multi-select */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Niveaux trophiques${selectedTrophic.size > 0 ? ` (${selectedTrophic.size} sélectionné${selectedTrophic.size > 1 ? 's' : ''})` : ''}`}
+                  className="flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-input bg-background text-sm hover:bg-accent/50 transition-colors min-w-0"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Layers className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate">
+                      {selectedTrophic.size === 0
+                        ? 'Niveaux trophiques'
+                        : `Niveaux (${selectedTrophic.size})`}
+                    </span>
+                  </div>
+                  {selectedTrophic.size > 0 && (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {Array.from(selectedTrophic).slice(0, 5).map((g) => {
+                        const meta = trophicEntries.find((e) => e.group === g);
+                        if (!meta) return null;
+                        return (
+                          <span
+                            key={g}
+                            className="h-2 w-2 rounded-full ring-1 ring-background"
+                            style={{ background: `hsl(var(${meta.token}))` }}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-[280px] p-2">
+                <div className="flex items-center justify-between px-2 py-1.5">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Chaîne trophique
+                  </span>
+                  {selectedTrophic.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTrophic(new Set())}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Tout effacer
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-0.5">
+                  {trophicEntries.map((entry) => {
+                    const checked = selectedTrophic.has(entry.group);
+                    const count = trophicCounts[entry.group] ?? 0;
+                    const disabled = count === 0 && !checked;
+                    return (
+                      <button
+                        key={entry.group}
+                        type="button"
+                        role="option"
+                        aria-selected={checked}
+                        disabled={disabled}
+                        onClick={() => toggleTrophic(entry.group)}
+                        className={`w-full flex items-center gap-3 min-h-[44px] px-2 py-2 rounded-md text-left text-sm transition-all ${
+                          checked
+                            ? 'bg-accent/60 border border-border'
+                            : 'border border-transparent hover:bg-accent/40'
+                        } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <span
+                          className="h-3 w-3 rounded-full flex-shrink-0 ring-2 ring-background shadow-sm"
+                          style={{ background: `hsl(var(${entry.token}))` }}
+                        />
+                        <span
+                          className="text-[10px] font-mono font-semibold w-6 text-center px-1 py-0.5 rounded flex-shrink-0"
+                          style={{
+                            background: `hsl(var(${entry.token}) / 0.15)`,
+                            color: `hsl(var(${entry.token}))`,
+                          }}
+                        >
+                          {entry.shortLabel}
+                        </span>
+                        <span className="flex-1 truncate text-foreground">{entry.label}</span>
+                        <Badge variant="secondary" className="text-[10px] flex-shrink-0 tabular-nums">
+                          {count}
+                        </Badge>
+                        <span
+                          className={`h-4 w-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
+                            checked ? 'bg-primary border-primary' : 'border-input'
+                          }`}
+                        >
+                          {checked && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+
 
             {/* Unified contributor filter */}
             {totalContributors > 0 ? (
