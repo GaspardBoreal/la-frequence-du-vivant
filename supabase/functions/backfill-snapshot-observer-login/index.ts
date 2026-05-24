@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    // Admin auth: JWT belongs to an admin, OR service role bearer (sandbox runs)
+    // Admin auth: JWT belongs to an admin, OR service role bearer (internal cron only)
     const authHeader = req.headers.get('Authorization') || '';
     const jwt = authHeader.replace('Bearer ', '');
     if (!jwt) {
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const isServiceRole = jwt === SERVICE_ROLE || jwt === ANON;
+    const isServiceRole = jwt === SERVICE_ROLE;
     if (!isServiceRole) {
       const userClient = createClient(SUPABASE_URL, ANON, {
         global: { headers: { Authorization: `Bearer ${jwt}` } },
