@@ -86,7 +86,7 @@ const leviers = [
     icon: Trophy,
     color: 'purple',
     title: 'Benchmark des leaders',
-    desc: 'Visites organisées chez les CUMA exemples — véritables démonstrateurs « vivant » pour les territoires.',
+    desc: 'Visites organisées dans des exploitations, domaines exemples — véritables démonstrateurs « vivant » pour les territoires.',
     tag: 'Visites',
   },
 ];
