@@ -19,42 +19,39 @@ import TrustBar from '@/components/marches-vivant/TrustBar';
 import ContactFormB2B from '@/components/marches-vivant/ContactFormB2B';
 import { Button } from '@/components/ui/button';
 import { useMarchesDuVivantStats } from '@/hooks/useMarchesDuVivantStats';
+import AnimatedStat from '@/components/marches-vivant/AnimatedStat';
 
-const nf = new Intl.NumberFormat('fr-FR');
+type ProofItem = { value: number; label: string; sub: string };
 
 const buildProofs = (
   stats: { marches: number; regions: number; departements: number; especes: number; marcheurs: number } | undefined,
-  isLoading: boolean,
-) => {
-  const v = (n: number | undefined) => (isLoading || n == null ? '—' : nf.format(n));
-  return [
-    {
-      value: v(stats?.marches),
-      label: 'Marches du Vivant déjà organisées',
-      sub: 'Des exploitations et coopératives déjà engagées',
-    },
-    {
-      value: v(stats?.regions),
-      label: 'Régions françaises mobilisées',
-      sub: 'Un réseau national au plus près de vos territoires',
-    },
-    {
-      value: v(stats?.departements),
-      label: 'Départements traversés',
-      sub: 'Une couverture fine, adaptée à chaque bassin agricole',
-    },
-    {
-      value: v(stats?.especes),
-      label: 'Espèces vivantes identifiées sur le terrain',
-      sub: 'Inventaire opposable GBIF / iNaturalist · preuve de biodiversité réelle',
-    },
-    {
-      value: v(stats?.marcheurs),
-      label: 'Marcheurs-observateurs actifs',
-      sub: 'Agriculteurs, techniciens, élus, citoyens — une intelligence collective au service du vivant',
-    },
-  ];
-};
+): ProofItem[] => [
+  {
+    value: stats?.marches ?? 0,
+    label: 'Marches du Vivant déjà organisées',
+    sub: 'Des exploitations et coopératives déjà engagées',
+  },
+  {
+    value: stats?.regions ?? 0,
+    label: 'Régions françaises mobilisées',
+    sub: 'Un réseau national au plus près de vos territoires',
+  },
+  {
+    value: stats?.departements ?? 0,
+    label: 'Départements traversés',
+    sub: 'Une couverture fine, adaptée à chaque bassin agricole',
+  },
+  {
+    value: stats?.especes ?? 0,
+    label: 'Espèces vivantes identifiées sur le terrain',
+    sub: 'Inventaire opposable GBIF / iNaturalist · preuve de biodiversité réelle',
+  },
+  {
+    value: stats?.marcheurs ?? 0,
+    label: 'Marcheurs-observateurs actifs',
+    sub: 'Agriculteurs, techniciens, élus, citoyens — une intelligence collective au service du vivant',
+  },
+];
 
 const leviers = [
   {
@@ -137,7 +134,7 @@ const leaders = [
 
 const MarchesDuVivantAgriculture = () => {
   const { data: stats, isLoading: statsLoading } = useMarchesDuVivantStats();
-  const proofs = buildProofs(stats, statsLoading);
+  const proofs = buildProofs(stats);
 
   const scrollToContact = () => {
     document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
@@ -224,20 +221,15 @@ const MarchesDuVivantAgriculture = () => {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
               {proofs.map((p, i) => (
-                <motion.div
+                <AnimatedStat
                   key={p.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  viewport={{ once: true }}
-                  className="text-center"
-                >
-                  <div className={`font-crimson text-3xl md:text-4xl text-lime-400 mb-2 ${statsLoading ? 'animate-pulse' : ''}`}>
-                    {p.value}
-                  </div>
-                  <div className="text-sm text-foreground/90 mb-1">{p.label}</div>
-                  <div className="text-xs text-muted-foreground">{p.sub}</div>
-                </motion.div>
+                  value={p.value}
+                  loading={statsLoading}
+                  duration={2200}
+                  label={p.label}
+                  sub={p.sub}
+                  index={i}
+                />
               ))}
             </div>
           </div>
