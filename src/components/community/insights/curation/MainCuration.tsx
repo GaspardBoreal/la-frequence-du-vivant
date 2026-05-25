@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Hand, Plus, Pencil, Trash2, Image as ImageIcon, Play, Mic, ArrowDownAZ, GripVertical, Check, Upload, Loader2, FolderOpen } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Hand, Plus, Pencil, Trash2, Image as ImageIcon, Play, Mic, ArrowDownAZ, GripVertical, Check, Upload, Loader2, FolderOpen, ChevronDown, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
+import { stripHtml } from '@/utils/textUtils';
 import {
   DndContext,
   PointerSensor,
