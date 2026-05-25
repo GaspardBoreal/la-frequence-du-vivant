@@ -88,6 +88,37 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [manualOrder, setManualOrder] = useState<ExplorationCuration[]>([]);
   const [savingOrder, setSavingOrder] = useState(false);
 
+  // Expanded state (accordion) — persisted in localStorage per exploration
+  const lsKey = `main-curation-expanded:${explorationId}`;
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(lsKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.ids) && Date.now() - (parsed.ts || 0) < 7 * 24 * 3600 * 1000) {
+          return new Set(parsed.ids);
+        }
+      }
+    } catch {}
+    return new Set();
+  });
+  const [hasHydratedDefault, setHasHydratedDefault] = useState(false);
+  const [readMoreIds, setReadMoreIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(lsKey, JSON.stringify({ ids: Array.from(expandedIds), ts: Date.now() }));
+    } catch {}
+  }, [expandedIds, lsKey]);
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   const mediaIndex = useMemo(() => buildMediaIndex(allMedia), [allMedia]);
 
   // Upload direct depuis appareil (smartphone / tablette / PC) — réutilise le mur Convivialité
