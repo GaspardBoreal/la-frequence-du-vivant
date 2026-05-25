@@ -1,83 +1,104 @@
-# Simplification du formulaire d'inscription /marches-du-vivant/connexion
+# Plan B révisé — Reconnaissance IA via Pl@ntNet (flore) + Gemini (faune)
 
-## Objectif
+## Pourquoi cette combinaison
 
-Remplacer le bloc « Un peu de poésie » (3 selects + motivation) par 2 questions orientées projet, ajouter un consentement RGPD obligatoire, et alléger l'identité (suppression date de naissance).
+| Règne | Provider | Justification |
+|---|---|---|
+| **Plantes** (🌿 ~70 % des photos attendues) | **Pl@ntNet** | Référence scientifique FR, entraîné sur flore EU, 500 req/jour gratuit, noms FR natifs |
+| **Faune / champignons / autres** | **Lovable AI (Gemini Vision)** | Pas d'API gratuite faune équivalente, Gemini sait dire « je ne sais pas » |
+| **Routing** | Gemini en pré-tri (« est-ce une plante ? ») | 1 appel léger → dispatch vers le bon expert |
 
----
+À terme (fin juillet 2026), on ajoute iNat comme 3ᵉ provider sans rien casser.
 
-## 1. Nouveau formulaire d'inscription (ordre)
+## Étape 0 — Secret Pl@ntNet (maintenant, 30 s)
 
-**Identité essentielle**
-- Email *
-- Mot de passe *
-- Prénom * / Nom *
-- Ville
-- Téléphone *(facultatif)*
-- ~~Date de naissance~~ → supprimée
+Je vais te demander d'ajouter le secret `PLANTNET_API_KEY` via le formulaire sécurisé Lovable. Ne colle jamais la clé dans le chat ; le formulaire est chiffré.
 
-**Vos intentions de marche** (nouveau bloc, remplace « Un peu de poésie »)
+Doc Pl@ntNet utilisée : `POST https://my-api.plantnet.org/v2/identify/{project}` avec `api-key` en query string, `images[]` + `organs[]` en multipart. Projet par défaut : `all` (couvre la flore mondiale). Pour la France métropolitaine on prendra `weurope` (West Europe) — meilleurs scores.
 
-> **Question 1 — Quels types de marches vous inspirent ?**
-> *(Plusieurs réponses possibles — au moins une.)*
-> 
-> Cases à cocher :
-> - 🌱 Agroécologique — sols, cultures, pratiques régénératives
-> - 🌿 Éco-touristique — paysages, patrimoine, découverte territoriale
-> - 🤝 Découverte de pratiques RSE / RSO
-> - 🏢 Team-building entreprise
-> - ✨ Autre  →  si coché, fait apparaître un champ texte « Précisez votre intention… »
-
-> **Question 2 — Que recherchez-vous en priorité lors de vos prochaines marches du vivant ?**
-> 
-> Textarea libre, placeholder : *« Reconnecter une équipe au vivant, mesurer notre impact local, prendre le temps d'observer, nourrir une démarche RSE… »*
-
-**Consentements** (bloc final, 2 cases)
-
-1. ☐ **(obligatoire)** « Je consens à ce que mes réponses contribuent, de manière anonymisée, à mesurer l'impact des Marches du Vivant et à accélérer les démarches de transition environnementale. » *(lien vers politique de confidentialité)*
-2. ☐ *(facultatif, signature d'âme)* « Je promets de lever les yeux de mon écran au moins une fois pendant la marche 🌿 »
-
-Bouton désactivé tant que (1) n'est pas coché ET qu'aucun type de marche n'est sélectionné.
-
----
-
-## 2. Migration base de données
-
-Nouvelles colonnes sur `community_profiles` :
+## Étape 1 — Schéma DB (1 migration)
 
 ```text
-types_marches_interets    text[]     NULL   -- ['agroecologique','eco_tourisme',...]
-autre_type_marche         text       NULL   -- précision si 'autre' coché
-recherche_prioritaire     text       NULL   -- réponse libre question 2
-consentement_analyse_at   timestamptz NULL  -- horodatage consentement RGPD
+marcheur_photo_ai_suggestions
+  id, media_id, rank (1..5), 
+  taxon_scientific_name, taxon_common_name_fr, kingdom,
+  confidence (0..1),
+  ai_provider ('plantnet' | 'gemini' | 'inat'),
+  raw_response jsonb,
+  created_at
+
+marcheur_medias
+  + ai_status enum ('pending' | 'processing' | 'auto_validated' 
+                    | 'pending_curation' | 'low_confidence' 
+                    | 'unidentifiable' | 'validated_by_human')
+  + ai_kingdom_hint text  (rempli par Gemini pré-tri)
+
+marche_events
+  + ai_recognition_config jsonb 
+    default { auto: 0.85, curation: 0.60, 
+              providers: { plant: 'plantnet', fauna: 'gemini' },
+              plantnet_project: 'weurope' }
 ```
 
-- Mise à jour de la RPC `create_community_profile` pour accepter ces 4 nouveaux paramètres (tous optionnels, défauts NULL → rétrocompatibilité préservée pour les anciens appels).
-- Aucun changement de RLS.
+RLS : lecture admin/ambassadeur, écriture service_role uniquement.
 
-## 3. Code à modifier
+## Étape 2 — Edge function `recognize-marcheur-photos`
 
-- **`src/pages/MarchesDuVivantConnexion.tsx`** :
-  - Retirer les constantes `KIGO_OPTIONS`, `SUPERPOUVOIR_OPTIONS`, `INTIMITE_OPTIONS` (et les states associés).
-  - Retirer le state `dateNaissance` et son champ.
-  - Ajouter states : `typesMarches: string[]`, `autreTypeMarche: string`, `recherchePrioritaire: string`, `consentementAnalyse: boolean` (`engagement` reste pour la case poétique facultative).
-  - Construire le nouveau bloc UI (checkboxes + textarea conditionnelle + textarea libre + 2 cases consentement) en cohérence avec la charte glassmorphism émeraude existante.
-  - Validation : bouton désactivé si `!consentementAnalyse || typesMarches.length === 0 || (typesMarches.includes('autre') && !autreTypeMarche.trim())`.
+Pipeline par photo :
 
-- **`src/hooks/useCommunityAuth.ts`** :
-  - Étendre `SignUpData` avec les 4 nouveaux champs.
-  - Passer ces champs à la RPC `create_community_profile` (qui aura les nouveaux paramètres).
-  - Retirer `kigo_accueil`, `superpouvoir_sensoriel`, `niveau_intimite_vivant`, `date_naissance` du flux signup (les colonnes existantes restent en DB, non touchées — on cesse simplement de les peupler à l'inscription).
+```text
+1. Charger photo + EXIF GPS depuis marcheur_medias.metadata
+2. [Pré-tri Gemini] 1 appel court : "Cette photo est-elle 
+   principalement (a) plante/fleur/arbre, (b) animal/insecte/oiseau, 
+   (c) champignon, (d) paysage/inidentifiable ?"
+   → stocké dans ai_kingdom_hint
+3. Routing :
+   ├─ (a) plante → Pl@ntNet /v2/identify/weurope
+   │     organs=['auto'], lat/lng en query
+   │     → top 5 results (score, species.scientificNameWithoutAuthor,
+   │        commonNames[fr])
+   │
+   ├─ (b)(c) → Gemini Vision structured output
+   │     prompt FR + schéma JSON strict (5 suggestions)
+   │
+   └─ (d) → ai_status='unidentifiable', skip
+4. Insertion des 5 suggestions dans marcheur_photo_ai_suggestions
+5. Routing par seuil sur top1 :
+   ≥ 0.85  → auto_validated → INSERT marcheur_observations 
+            (re-déclenche les snapshots existants)
+   0.60-85 → pending_curation
+   < 0.60  → low_confidence
+```
 
-- **Aucune modification** des écrans admin / MonEspace qui exposent encore les anciens champs (Kigo etc.) — ils restent éditables après inscription via `MonEspaceSettings`.
+Modes : `POST { eventId }` (batch) ou `POST { mediaId }` (relance unitaire). Auth admin via `has_role`.
 
-## 4. Hors-scope (à valider si besoin séparément)
+## Étape 3 — UI admin « Reconnaissance IA »
 
-- Affichage de ces nouvelles réponses dans l'admin `CommunityProfilesAdmin` / `MarcheurEditSheet` (utile pour segmentation B2B — peut être un follow-up).
-- Lien réel vers la politique de confidentialité (URL à fournir, sinon placeholder `#`).
+Nouvel onglet dans la fiche du `Laboratoire à Ciel Ouvert` :
 
----
+- **Header** : compteurs (81 total · X auto · Y à curer · Z faible · W non identifiables) + bouton « Lancer la reconnaissance »
+- **Réglages repliés** : sliders seuils, sélecteur provider plantes (`Pl@ntNet` actif, `iNaturalist (juillet)` grisé), projet Pl@ntNet (`weurope` / `all`)
+- **Progress bar** temps réel + ETA
+- **Drawer de curation** :
+  - Carrousel photos `pending_curation` triées par confiance descendante
+  - Header : nom de fichier, GPS sur mini-RichMap, date EXIF, badge provider
+  - 5 suggestions cliquables (vignette iNat/GBIF si dispo + nom FR + score)
+  - Actions : ✅ Valider top1 · 🔄 Choisir autre · ✏️ Saisir manuellement · ❌ Non identifiable
+  - La validation crée immédiatement `marcheur_observations` → snapshot refresh
 
-## Résumé livrable
+## Étape 4 — Validation sur les 81 photos de Vincent
 
-1 migration SQL (colonnes + RPC), 2 fichiers édités (`MarchesDuVivantConnexion.tsx`, `useCommunityAuth.ts`), zéro breaking change sur les inscriptions existantes.
+1. Migration + déploiement edge function
+2. Bouton « Lancer (81 photos) » → ~3-4 min (rate-limit Pl@ntNet courtois à 1 req/s)
+3. Vérification : taux auto ≈ 50-70 %, curation rapide du reste (15-20 min)
+4. Contrôle de cohérence : les espèces apparaissent dans la Synthèse + Carte de l'event
+
+## Quotas et coûts
+
+- **Pl@ntNet** : 500 identifs/jour gratuit → 81 photos = 16 % du quota, large marge
+- **Lovable AI Gemini** : pré-tri (~81 appels légers) + faune (~25 % des photos) ≈ négligeable
+- Si quota Pl@ntNet dépassé un jour : fallback automatique sur Gemini pour les plantes restantes
+
+## Question avant build
+
+OK pour : (a) j'ouvre maintenant le formulaire secret `PLANTNET_API_KEY` puis (b) j'enchaîne Étapes 1+2+3 d'un trait ?
