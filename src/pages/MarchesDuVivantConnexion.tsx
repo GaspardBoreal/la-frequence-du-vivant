@@ -20,7 +20,7 @@ const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
   { value: 'eco_touristique', label: '🌿 Éco-touristique', hint: 'paysages, patrimoine, découverte territoriale' },
   { value: 'rse_rso', label: '🤝 Pratiques RSE / RSO', hint: 'engagement social et environnemental d’entreprise' },
   { value: 'team_building', label: '🏢 Team-building entreprise', hint: 'cohésion d’équipe au contact du vivant' },
-  { value: 'autre', label: '✨ Autre', hint: 'précisez votre intention ci-dessous' },
+  { value: 'autre', label: '✨ Autre', hint: '' },
 ];
 
 const MarchesDuVivantConnexion = () => {
@@ -380,7 +380,7 @@ const MarchesDuVivantConnexion = () => {
                       <div className="space-y-4">
                         <div>
                           <Label className="text-emerald-100 text-sm">
-                            Quels types de marches vous inspirent ? <span className="text-emerald-300/60">(au moins un — plusieurs possibles)</span>
+                            Quels types de marches vous inspirent ? <span className="text-emerald-300/60">(au moins un choix, plusieurs possibles)</span>
                           </Label>
                           <div className="mt-2 space-y-2">
                             {TYPE_MARCHE_OPTIONS.map((opt) => {
@@ -407,7 +407,9 @@ const MarchesDuVivantConnexion = () => {
                                   />
                                   <span className="text-sm text-emerald-100 leading-tight">
                                     {opt.label}
-                                    <span className="block text-xs text-emerald-300/60 mt-0.5">{opt.hint}</span>
+                                    {opt.hint && (
+                                      <span className="block text-xs text-emerald-300/60 mt-0.5">{opt.hint}</span>
+                                    )}
                                   </span>
                                 </label>
                               );
@@ -416,13 +418,12 @@ const MarchesDuVivantConnexion = () => {
 
                           {typesMarches.includes('autre') && (
                             <div className="mt-3">
-                              <Label className="text-emerald-100 text-sm">Précisez votre intention</Label>
                               <Input
                                 value={autreTypeMarche}
                                 onChange={(e) => setAutreTypeMarche(e.target.value)}
                                 maxLength={150}
                                 placeholder="Ex. retraite contemplative, marche thérapeutique…"
-                                className="mt-1 bg-white/10 border-white/20 text-white placeholder:text-white/30"
+                                className="bg-white/10 border-white/20 text-white placeholder:text-white/30"
                               />
                             </div>
                           )}
