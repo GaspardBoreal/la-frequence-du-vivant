@@ -457,8 +457,10 @@ export type Database = {
       }
       community_profiles: {
         Row: {
+          autre_type_marche: string | null
           avatar_url: string | null
           certification_validee: boolean
+          consentement_analyse_at: string | null
           created_at: string
           csp: Database["public"]["Enums"]["profile_csp"] | null
           csp_precision: string | null
@@ -473,18 +475,22 @@ export type Database = {
           nom: string
           prenom: string
           public_event_consent: boolean
+          recherche_prioritaire: string | null
           role: Database["public"]["Enums"]["community_role"]
           slug: string | null
           statut: string
           superpouvoir_sensoriel: string | null
           telephone: string | null
+          types_marches_interets: string[] | null
           updated_at: string
           user_id: string
           ville: string | null
         }
         Insert: {
+          autre_type_marche?: string | null
           avatar_url?: string | null
           certification_validee?: boolean
+          consentement_analyse_at?: string | null
           created_at?: string
           csp?: Database["public"]["Enums"]["profile_csp"] | null
           csp_precision?: string | null
@@ -499,18 +505,22 @@ export type Database = {
           nom: string
           prenom: string
           public_event_consent?: boolean
+          recherche_prioritaire?: string | null
           role?: Database["public"]["Enums"]["community_role"]
           slug?: string | null
           statut?: string
           superpouvoir_sensoriel?: string | null
           telephone?: string | null
+          types_marches_interets?: string[] | null
           updated_at?: string
           user_id: string
           ville?: string | null
         }
         Update: {
+          autre_type_marche?: string | null
           avatar_url?: string | null
           certification_validee?: boolean
+          consentement_analyse_at?: string | null
           created_at?: string
           csp?: Database["public"]["Enums"]["profile_csp"] | null
           csp_precision?: string | null
@@ -525,11 +535,13 @@ export type Database = {
           nom?: string
           prenom?: string
           public_event_consent?: boolean
+          recherche_prioritaire?: string | null
           role?: Database["public"]["Enums"]["community_role"]
           slug?: string | null
           statut?: string
           superpouvoir_sensoriel?: string | null
           telephone?: string | null
+          types_marches_interets?: string[] | null
           updated_at?: string
           user_id?: string
           ville?: string | null
@@ -5024,21 +5036,41 @@ export type Database = {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
       }
-      create_community_profile: {
-        Args: {
-          _date_naissance?: string
-          _kigo_accueil?: string
-          _motivation?: string
-          _niveau_intimite_vivant?: string
-          _nom: string
-          _prenom: string
-          _superpouvoir_sensoriel?: string
-          _telephone?: string
-          _user_id: string
-          _ville?: string
-        }
-        Returns: undefined
-      }
+      create_community_profile:
+        | {
+            Args: {
+              _date_naissance?: string
+              _kigo_accueil?: string
+              _motivation?: string
+              _niveau_intimite_vivant?: string
+              _nom: string
+              _prenom: string
+              _superpouvoir_sensoriel?: string
+              _telephone?: string
+              _user_id: string
+              _ville?: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _autre_type_marche?: string
+              _consentement_analyse?: boolean
+              _date_naissance?: string
+              _kigo_accueil?: string
+              _motivation?: string
+              _niveau_intimite_vivant?: string
+              _nom: string
+              _prenom: string
+              _recherche_prioritaire?: string
+              _superpouvoir_sensoriel?: string
+              _telephone?: string
+              _types_marches_interets?: string[]
+              _user_id: string
+              _ville?: string
+            }
+            Returns: undefined
+          }
       delete_exploration_page: { Args: { page_id: string }; Returns: undefined }
       delete_marcheur_species_tag: {
         Args: { _tag_id: string }
