@@ -1,66 +1,83 @@
-# Fonction d'envoi d'email SMTP réutilisable
+# Simplification du formulaire d'inscription /marches-du-vivant/connexion
 
 ## Objectif
-Créer une edge function Supabase générique `send-smtp-email` utilisable depuis n'importe quelle partie de l'app (front via `supabase.functions.invoke`, ou autres edge functions via fetch interne) pour envoyer des emails via un serveur SMTP classique (OVH, Gmail, Infomaniak, etc.).
 
-## Secrets requis
-À ajouter via le tool `add_secret` avant déploiement :
-- `SMTP_HOST` (ex. `ssl0.ovh.net`)
-- `SMTP_PORT` (ex. `465` pour SSL, `587` pour STARTTLS)
-- `SMTP_USER` (login SMTP complet)
-- `SMTP_PASSWORD` (mot de passe SMTP)
-- `SMTP_FROM` (optionnel, expéditeur par défaut, ex. `"La Fréquence du Vivant <no-reply@…>"`)
+Remplacer le bloc « Un peu de poésie » (3 selects + motivation) par 2 questions orientées projet, ajouter un consentement RGPD obligatoire, et alléger l'identité (suppression date de naissance).
 
-## Edge function : `supabase/functions/send-smtp-email/index.ts`
+---
 
-**Librairie** : `denomailer` (`https://deno.land/x/denomailer`) — support SSL/STARTTLS, attachments, HTML+text, fiable en Deno.
+## 1. Nouveau formulaire d'inscription (ordre)
 
-**Configuration** : ajout dans `supabase/config.toml` avec `verify_jwt = true` (par défaut auth utilisateur requis pour empêcher abus / spam relay). Possibilité d'override avec un secret API key partagée si appel inter-functions sans JWT utilisateur.
+**Identité essentielle**
+- Email *
+- Mot de passe *
+- Prénom * / Nom *
+- Ville
+- Téléphone *(facultatif)*
+- ~~Date de naissance~~ → supprimée
 
-**Validation** (Zod) :
+**Vos intentions de marche** (nouveau bloc, remplace « Un peu de poésie »)
+
+> **Question 1 — Quels types de marches vous inspirent ?**
+> *(Plusieurs réponses possibles — au moins une.)*
+> 
+> Cases à cocher :
+> - 🌱 Agroécologique — sols, cultures, pratiques régénératives
+> - 🌿 Éco-touristique — paysages, patrimoine, découverte territoriale
+> - 🤝 Découverte de pratiques RSE / RSO
+> - 🏢 Team-building entreprise
+> - ✨ Autre  →  si coché, fait apparaître un champ texte « Précisez votre intention… »
+
+> **Question 2 — Que recherchez-vous en priorité lors de vos prochaines marches du vivant ?**
+> 
+> Textarea libre, placeholder : *« Reconnecter une équipe au vivant, mesurer notre impact local, prendre le temps d'observer, nourrir une démarche RSE… »*
+
+**Consentements** (bloc final, 2 cases)
+
+1. ☐ **(obligatoire)** « Je consens à ce que mes réponses contribuent, de manière anonymisée, à mesurer l'impact des Marches du Vivant et à accélérer les démarches de transition environnementale. » *(lien vers politique de confidentialité)*
+2. ☐ *(facultatif, signature d'âme)* « Je promets de lever les yeux de mon écran au moins une fois pendant la marche 🌿 »
+
+Bouton désactivé tant que (1) n'est pas coché ET qu'aucun type de marche n'est sélectionné.
+
+---
+
+## 2. Migration base de données
+
+Nouvelles colonnes sur `community_profiles` :
+
 ```text
-{
-  to: string | string[]        // requis, email(s) valides
-  subject: string              // requis, 1..200
-  html?: string                // optionnel
-  text?: string                // optionnel (au moins l'un des deux)
-  from?: string                // override SMTP_FROM
-  replyTo?: string
-  cc?: string | string[]
-  bcc?: string | string[]
-  attachments?: [{ filename, content (base64), contentType }]
-}
+types_marches_interets    text[]     NULL   -- ['agroecologique','eco_tourisme',...]
+autre_type_marche         text       NULL   -- précision si 'autre' coché
+recherche_prioritaire     text       NULL   -- réponse libre question 2
+consentement_analyse_at   timestamptz NULL  -- horodatage consentement RGPD
 ```
 
-**Logique** :
-1. CORS preflight
-2. Validate JWT (admin OR auth user — configurable, démarrer avec auth user requis)
-3. Parse + valider le body
-4. Construire `SMTPClient` avec TLS auto-détecté selon port (465 → implicit TLS, autres → STARTTLS)
-5. `client.send({ from, to, subject, html, content (text), cc, bcc, replyTo, attachments })`
-6. `client.close()`
-7. Retourner `{ success: true, messageId }` ou `{ error }` avec status approprié
-8. Logs `console.log` minimalistes (jamais le password)
+- Mise à jour de la RPC `create_community_profile` pour accepter ces 4 nouveaux paramètres (tous optionnels, défauts NULL → rétrocompatibilité préservée pour les anciens appels).
+- Aucun changement de RLS.
 
-## Utilisation côté front
-```text
-const { data, error } = await supabase.functions.invoke('send-smtp-email', {
-  body: { to, subject, html }
-});
-```
+## 3. Code à modifier
 
-## Utilisation depuis une autre edge function
-Soit via `supabase.functions.invoke` avec service role, soit `fetch` direct vers l'URL de la function avec header Authorization.
+- **`src/pages/MarchesDuVivantConnexion.tsx`** :
+  - Retirer les constantes `KIGO_OPTIONS`, `SUPERPOUVOIR_OPTIONS`, `INTIMITE_OPTIONS` (et les states associés).
+  - Retirer le state `dateNaissance` et son champ.
+  - Ajouter states : `typesMarches: string[]`, `autreTypeMarche: string`, `recherchePrioritaire: string`, `consentementAnalyse: boolean` (`engagement` reste pour la case poétique facultative).
+  - Construire le nouveau bloc UI (checkboxes + textarea conditionnelle + textarea libre + 2 cases consentement) en cohérence avec la charte glassmorphism émeraude existante.
+  - Validation : bouton désactivé si `!consentementAnalyse || typesMarches.length === 0 || (typesMarches.includes('autre') && !autreTypeMarche.trim())`.
 
-## Hors scope
-- Templates email (laisser au caller le HTML/texte)
-- File d'attente / retry (envoi synchrone simple ; à ajouter ultérieurement si besoin)
-- Tracking ouvertures / unsubscribe
-- Migration des envois existants (`admin-create-marcheur`, `event-invitation-create` continuent d'utiliser `auth.admin.inviteUserByEmail`)
+- **`src/hooks/useCommunityAuth.ts`** :
+  - Étendre `SignUpData` avec les 4 nouveaux champs.
+  - Passer ces champs à la RPC `create_community_profile` (qui aura les nouveaux paramètres).
+  - Retirer `kigo_accueil`, `superpouvoir_sensoriel`, `niveau_intimite_vivant`, `date_naissance` du flux signup (les colonnes existantes restent en DB, non touchées — on cesse simplement de les peupler à l'inscription).
 
-## Étapes d'exécution (après approbation)
-1. `add_secret` pour les 5 secrets SMTP
-2. Créer `supabase/functions/send-smtp-email/index.ts`
-3. Mettre à jour `supabase/config.toml` (entrée function)
-4. Déploiement automatique
-5. Test rapide via `curl_edge_functions` avec un email de test
+- **Aucune modification** des écrans admin / MonEspace qui exposent encore les anciens champs (Kigo etc.) — ils restent éditables après inscription via `MonEspaceSettings`.
+
+## 4. Hors-scope (à valider si besoin séparément)
+
+- Affichage de ces nouvelles réponses dans l'admin `CommunityProfilesAdmin` / `MarcheurEditSheet` (utile pour segmentation B2B — peut être un follow-up).
+- Lien réel vers la politique de confidentialité (URL à fournir, sinon placeholder `#`).
+
+---
+
+## Résumé livrable
+
+1 migration SQL (colonnes + RPC), 2 fichiers édités (`MarchesDuVivantConnexion.tsx`, `useCommunityAuth.ts`), zéro breaking change sur les inscriptions existantes.
