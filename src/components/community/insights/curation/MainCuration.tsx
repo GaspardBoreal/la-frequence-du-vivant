@@ -168,6 +168,36 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     if (reorderMode) setManualOrder(sortedEntries);
   }, [reorderMode]);
 
+  // Hydratation initiale : si rien dans localStorage et qu'on a des entries, ouvrir la première carte
+  useEffect(() => {
+    if (hasHydratedDefault || sortedEntries.length === 0) return;
+    setHasHydratedDefault(true);
+    if (expandedIds.size === 0) {
+      setExpandedIds(new Set([sortedEntries[0].id]));
+    }
+  }, [sortedEntries, hasHydratedDefault, expandedIds.size]);
+
+  const allOpen = sortedEntries.length > 0 && sortedEntries.every(e => expandedIds.has(e.id));
+  const toggleAll = () => {
+    setExpandedIds(allOpen ? new Set() : new Set(sortedEntries.map(e => e.id)));
+  };
+
+  // Optimisation URL Supabase Storage : ajoute width/quality si pertinent
+  const optimizeStorageUrl = (url: string, width = 400, quality = 60): string => {
+    if (!url || !url.includes('/storage/v1/object/')) return url;
+    try {
+      const u = new URL(url);
+      // bascule sur le render endpoint si supporté
+      u.pathname = u.pathname.replace('/object/public/', '/render/image/public/').replace('/object/sign/', '/render/image/sign/');
+      u.searchParams.set('width', String(width));
+      u.searchParams.set('quality', String(quality));
+      u.searchParams.set('resize', 'cover');
+      return u.toString();
+    } catch {
+      return url;
+    }
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
