@@ -107,16 +107,21 @@ const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) =>
                   <label className="text-xs text-muted-foreground mb-1 block">Tri</label>
                   <SortSelect value={filters.sort} onChange={(v) => onChange({ sort: v })} />
                 </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Partage nouveaux inscrits</label>
+                  <ShareSelect value={share} onChange={(v) => onChange({ share: v })} />
+                </div>
               </div>
             </SheetContent>
           </Sheet>
         </div>
 
         {/* Desktop: filtres en ligne */}
-        <div className="hidden lg:grid lg:grid-cols-3 gap-3">
+        <div className="hidden lg:grid lg:grid-cols-4 gap-3">
           <TypeSelect value={filters.type} onChange={(v) => onChange({ type: v })} />
           <StatusSelect value={filters.status} onChange={(v) => onChange({ status: v })} />
           <SortSelect value={filters.sort} onChange={(v) => onChange({ sort: v })} />
+          <ShareSelect value={share} onChange={(v) => onChange({ share: v })} />
         </div>
 
         {totalLabel && <p className="text-xs text-muted-foreground">{totalLabel}</p>}
