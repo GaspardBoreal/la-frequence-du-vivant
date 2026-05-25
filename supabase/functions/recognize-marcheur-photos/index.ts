@@ -83,9 +83,7 @@ async function geminiKingdomPretri(imageUrl: string): Promise<string> {
 // --- Pl@ntNet identify ---
 async function plantnetIdentify(
   imageUrl: string,
-  project: string,
-  lat: number | null,
-  lng: number | null
+  project: string
 ): Promise<Suggestion[]> {
   // Télécharger l'image
   const imgRes = await fetch(imageUrl);
@@ -96,10 +94,8 @@ async function plantnetIdentify(
   form.append("images", blob, "photo.jpg");
   form.append("organs", "auto");
 
-  let url = `https://my-api.plantnet.org/v2/identify/${project}?api-key=${PLANTNET_KEY}&include-related-images=false&no-reject=false&lang=fr`;
-  if (lat != null && lng != null) {
-    url += `&lat=${lat}&lon=${lng}`;
-  }
+  // Note: /v2/identify/{project} n'accepte PAS lat/lon en query (réservé à l'endpoint survey).
+  const url = `https://my-api.plantnet.org/v2/identify/${project}?api-key=${PLANTNET_KEY}&include-related-images=false&no-reject=false&lang=fr`;
 
   const res = await fetch(url, { method: "POST", body: form });
   if (!res.ok) {
@@ -246,7 +242,7 @@ async function processMedia(
 
   try {
     if (hint === "plante" && cfg.plant_provider === "plantnet" && PLANTNET_KEY) {
-      suggestions = await plantnetIdentify(imageUrl, cfg.plantnet_project, lat, lng);
+      suggestions = await plantnetIdentify(imageUrl, cfg.plantnet_project);
     } else {
       suggestions = await geminiIdentify(imageUrl, hint);
     }
