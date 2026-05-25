@@ -111,8 +111,9 @@ export default function AiCurationMapView({ eventId }: Props) {
     return medias.filter((m) => {
       if (!filters.statuses.has(m.ai_status)) return false;
       if (filters.kingdom !== 'all') {
-        const k = m.ai_kingdom_hint || 'inconnu';
-        if (filters.kingdom === 'inconnu' ? !!m.ai_kingdom_hint && KINGDOM_ICON[k] : k !== filters.kingdom) return false;
+        const k = m.ai_kingdom_hint;
+        const isKnown = k && KINGDOM_ICON[k];
+        if (filters.kingdom === 'inconnu' ? isKnown : k !== filters.kingdom) return false;
       }
       if (filters.marcheId !== 'all' && m.marche_id !== filters.marcheId) return false;
       if ((m.topConfidence ?? 0) * 100 < filters.minConfidence) return false;
