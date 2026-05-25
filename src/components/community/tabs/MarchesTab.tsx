@@ -373,9 +373,8 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
   const pendingInvitations = useMemo(
     () => invitedEvents
       .filter(i => !registeredEventIds.has(i.event_id))
-      .filter(i => new Date(i.event.date_marche).getTime() >= todayMs)
       .sort((a, b) => new Date(a.event.date_marche).getTime() - new Date(b.event.date_marche).getTime()),
-    [invitedEvents, registeredEventIds, todayMs]
+    [invitedEvents, registeredEventIds]
   );
   const pendingInvitedIds = useMemo(() => new Set(pendingInvitations.map(i => i.event_id)), [pendingInvitations]);
 
@@ -442,7 +441,7 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
                 </span>
               </h2>
               <p className="text-muted-foreground text-[11px]">
-                Des sentiers vous attendent — acceptez pour rejoindre la marche
+                Des sentiers vous attendent — acceptez pour découvrir la marche
               </p>
             </div>
             <div className="space-y-3">
