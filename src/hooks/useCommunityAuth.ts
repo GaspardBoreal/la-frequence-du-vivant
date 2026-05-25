@@ -35,6 +35,10 @@ interface SignUpData {
   kigo_accueil?: string;
   superpouvoir_sensoriel?: string;
   niveau_intimite_vivant?: string;
+  types_marches_interets?: string[];
+  autre_type_marche?: string;
+  recherche_prioritaire?: string;
+  consentement_analyse?: boolean;
   affiliateToken?: string;
 }
 
