@@ -335,37 +335,6 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations, sil
         </div>
       )}
 
-      {/* Invitations restées en silence — sentiers passés non honorés */}
-      {silentInvitations.length > 0 && (
-        <div className="mt-6 space-y-2">
-          <div className="flex items-center gap-2">
-            <MailOpen className="h-3.5 w-3.5 text-amber-600/70 dark:text-amber-300/70" />
-            <h3 className="text-[12px] font-medium text-foreground/80">Invitations restées en silence</h3>
-            <span className="text-[10px] text-muted-foreground">({silentInvitations.length})</span>
-          </div>
-          <p className="text-[10px] italic text-muted-foreground/80">
-            Ces sentiers vous attendaient. Ils repasseront.
-          </p>
-          <div className="space-y-1.5">
-            {silentInvitations.map(inv => (
-              <div
-                key={inv.invitation_row_id}
-                className="flex items-center gap-2 rounded-lg border border-amber-200/40 bg-amber-50/40 px-3 py-2 text-[11px] dark:border-amber-400/15 dark:bg-amber-500/5"
-              >
-                <span className="block h-1.5 w-1.5 flex-shrink-0 rounded-full border border-amber-500/60" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-foreground/90">{inv.event.title}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {format(new Date(inv.event.date_marche), 'dd MMM yyyy', { locale: fr })}
-                    {inv.event.lieu && ` · ${inv.event.lieu}`}
-                    {inv.invited_by_prenom && ` · invité par ${inv.invited_by_prenom}`}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <ConfirmDeleteDialog
         open={!!unregisterTarget}
