@@ -120,7 +120,7 @@ const InvitedEventCard: React.FC<Props> = ({ userId, invitation, index }) => {
             className="h-8 flex-1 gap-1 rounded-lg bg-amber-600 text-xs text-white hover:bg-amber-500 dark:bg-amber-500/90 dark:hover:bg-amber-400"
           >
             {accepting ? 'Acceptation…' : (
-              <>Accepter et m'inscrire <ChevronRight className="h-3.5 w-3.5" /></>
+              <>Accepter l'invitation <ChevronRight className="h-3.5 w-3.5" /></>
             )}
           </Button>
         </div>
