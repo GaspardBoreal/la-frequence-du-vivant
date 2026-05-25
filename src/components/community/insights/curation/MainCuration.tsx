@@ -299,19 +299,39 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-        Chargement…
+      <div className="space-y-3" aria-busy="true" aria-label="Chargement des pratiques">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="grid grid-cols-3 gap-0.5">
+              {[0, 1, 2].map((j) => (
+                <div key={j} className="aspect-square relative overflow-hidden bg-emerald-950/10 dark:bg-emerald-950/40">
+                  <div
+                    className="absolute inset-0 animate-pulse"
+                    style={{
+                      background: 'linear-gradient(135deg, transparent 30%, hsl(150 30% 50% / 0.18) 50%, transparent 70%)',
+                      animationDelay: `${(i * 3 + j) * 0.1}s`,
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="p-3 space-y-2">
+              <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
+              <div className="h-2 w-3/4 rounded bg-muted/70 animate-pulse" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
-  const renderThumb = (item: MediaItem, sizeClass: string) => (
+  const renderThumb = (item: MediaItem, sizeClass: string, opts: { eager?: boolean; width?: number } = {}) => (
     <div className={`relative bg-muted ${sizeClass}`}>
       {item.type === 'video' ? (
         <>
           <video
             src={`${item.url}#t=0.1`}
-            preload="metadata"
+            preload="none"
             muted
             playsInline
             className="w-full h-full object-cover"
@@ -331,7 +351,18 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
           </span>
         </div>
       ) : (
-        <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+        <img
+          src={optimizeStorageUrl(item.url, opts.width || 400, 60)}
+          alt=""
+          className="w-full h-full object-cover"
+          loading={opts.eager ? 'eager' : 'lazy'}
+          decoding="async"
+          {...(opts.eager ? { fetchpriority: 'high' as any } : { fetchpriority: 'low' as any })}
+          onError={(e) => {
+            const img = e.currentTarget;
+            if (img.src !== item.url) img.src = item.url;
+          }}
+        />
       )}
     </div>
   );
