@@ -3014,6 +3014,7 @@ export type Database = {
       }
       marche_events: {
         Row: {
+          ai_recognition_config: Json | null
           cover_image_url: string | null
           created_at: string
           created_by: string | null
@@ -3040,6 +3041,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_recognition_config?: Json | null
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -3066,6 +3068,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_recognition_config?: Json | null
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -3680,6 +3683,9 @@ export type Database = {
       }
       marcheur_medias: {
         Row: {
+          ai_kingdom_hint: string | null
+          ai_processed_at: string | null
+          ai_status: Database["public"]["Enums"]["ai_recognition_status"] | null
           attributed_marcheur_id: string | null
           created_at: string
           description: string | null
@@ -3700,6 +3706,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_kingdom_hint?: string | null
+          ai_processed_at?: string | null
+          ai_status?:
+            | Database["public"]["Enums"]["ai_recognition_status"]
+            | null
           attributed_marcheur_id?: string | null
           created_at?: string
           description?: string | null
@@ -3720,6 +3731,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_kingdom_hint?: string | null
+          ai_processed_at?: string | null
+          ai_status?:
+            | Database["public"]["Enums"]["ai_recognition_status"]
+            | null
           attributed_marcheur_id?: string | null
           created_at?: string
           description?: string | null
@@ -3819,6 +3835,53 @@ export type Database = {
             columns: ["marcheur_id"]
             isOneToOne: false
             referencedRelation: "exploration_marcheurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marcheur_photo_ai_suggestions: {
+        Row: {
+          ai_provider: string
+          confidence: number
+          created_at: string
+          id: string
+          kingdom: string | null
+          media_id: string
+          rank: number
+          raw_response: Json | null
+          taxon_common_name_fr: string | null
+          taxon_scientific_name: string
+        }
+        Insert: {
+          ai_provider: string
+          confidence: number
+          created_at?: string
+          id?: string
+          kingdom?: string | null
+          media_id: string
+          rank: number
+          raw_response?: Json | null
+          taxon_common_name_fr?: string | null
+          taxon_scientific_name: string
+        }
+        Update: {
+          ai_provider?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          kingdom?: string | null
+          media_id?: string
+          rank?: number
+          raw_response?: Json | null
+          taxon_common_name_fr?: string | null
+          taxon_scientific_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marcheur_photo_ai_suggestions_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "marcheur_medias"
             referencedColumns: ["id"]
           },
         ]
@@ -5678,6 +5741,14 @@ export type Database = {
       }
     }
     Enums: {
+      ai_recognition_status:
+        | "pending"
+        | "processing"
+        | "auto_validated"
+        | "pending_curation"
+        | "low_confidence"
+        | "unidentifiable"
+        | "validated_by_human"
       community_role:
         | "marcheur_en_devenir"
         | "marcheur"
@@ -5843,6 +5914,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_recognition_status: [
+        "pending",
+        "processing",
+        "auto_validated",
+        "pending_curation",
+        "low_confidence",
+        "unidentifiable",
+        "validated_by_human",
+      ],
       community_role: [
         "marcheur_en_devenir",
         "marcheur",
