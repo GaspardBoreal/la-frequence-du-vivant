@@ -88,7 +88,40 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
 
   const mediaIndex = useMemo(() => buildMediaIndex(allMedia), [allMedia]);
 
-  const sortedEntries = useMemo(() => {
+  // Upload direct depuis appareil (smartphone / tablette / PC) — réutilise le mur Convivialité
+  const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadStage, setUploadStage] = useState<string | null>(null);
+  const { mutate: uploadPhotos, isPending: uploading } = useUploadConvivialitePhotos(
+    explorationId,
+    user?.id,
+    (p) => setUploadStage(`${p.fileIndex + 1}/${p.total} · ${p.stage}`),
+  );
+
+  const handlePickFiles = (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    const files = Array.from(list).filter((f) => {
+      if (f.type.startsWith('image/')) return true;
+      const n = f.name.toLowerCase();
+      return n.endsWith('.heic') || n.endsWith('.heif');
+    });
+    if (files.length === 0) {
+      toast.error('Aucune image valide sélectionnée');
+      return;
+    }
+    uploadPhotos(files, {
+      onSuccess: ({ results }) => {
+        if (results.length > 0) {
+          const newKeys = results.map((r) => `conv:${r.id}`);
+          setEditor((s) => ({ ...s, mediaKeys: [...s.mediaKeys, ...newKeys] }));
+          qc.invalidateQueries({ queryKey: ['exploration-all-media', explorationId] });
+        }
+      },
+      onSettled: () => setUploadStage(null),
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
     if (sortMode === 'alpha') {
       return [...entries].sort((a, b) =>
         (a.title || '').localeCompare(b.title || '', 'fr', { sensitivity: 'base' })
