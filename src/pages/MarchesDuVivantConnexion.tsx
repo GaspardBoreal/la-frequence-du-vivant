@@ -20,7 +20,7 @@ const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
   { value: 'eco_touristique', label: '🌿 Éco-touristique', hint: 'paysages, patrimoine, découverte territoriale' },
   { value: 'rse_rso', label: '🤝 Pratiques RSE / RSO', hint: 'engagement social et environnemental d’entreprise' },
   { value: 'team_building', label: '🏢 Team-building entreprise', hint: 'cohésion d’équipe au contact du vivant' },
-  { value: 'autre', label: '✨ Autre', hint: '' },
+  { value: 'autre', label: '✨ Autre', hint: 'précisez votre intention ci-dessous' },
 ];
 
 const MarchesDuVivantConnexion = () => {
@@ -422,7 +422,7 @@ const MarchesDuVivantConnexion = () => {
                                 value={autreTypeMarche}
                                 onChange={(e) => setAutreTypeMarche(e.target.value)}
                                 maxLength={150}
-                                placeholder="Ex. retraite contemplative, marche thérapeutique…"
+                                placeholder=""
                                 className="bg-white/10 border-white/20 text-white placeholder:text-white/30"
                               />
                             </div>
