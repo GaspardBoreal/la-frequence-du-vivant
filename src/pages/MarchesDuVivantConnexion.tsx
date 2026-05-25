@@ -15,25 +15,12 @@ import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
 
-const KIGO_OPTIONS = [
-  { value: 'parle_aux_arbres', label: '🌳 Je parle déjà aux arbres' },
-  { value: 'transition_beton', label: '🏗️ En transition depuis le béton' },
-  { value: 'curieux_vivant', label: '🦋 Curieux·se du vivant' },
-  { value: 'expert_canape', label: '🛋️ Expert·e en canapé (mais motivé·e)' },
-];
-
-const SUPERPOUVOIR_OPTIONS = [
-  { value: 'vue', label: '👁️ La vue — je repère un rapace à 2 km' },
-  { value: 'ouie', label: '👂 L\'ouïe — je distingue un merle d\'une grive' },
-  { value: 'odorat', label: '👃 L\'odorat — je sens la pluie avant les nuages' },
-  { value: 'sixieme_sens', label: '🌧️ Sixième sens pour la pluie' },
-];
-
-const INTIMITE_OPTIONS = [
-  { value: 'cactus', label: '🌵 Un cactus, ça compte ?' },
-  { value: 'randonneur', label: '🥾 Randonneur·se du dimanche' },
-  { value: 'naturaliste', label: '🔬 Naturaliste assumé·e' },
-  { value: 'druide', label: '🧙 Druide certifié·e' },
+const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
+  { value: 'agroecologique', label: '🌱 Agroécologique', hint: 'sols, cultures, pratiques régénératives' },
+  { value: 'eco_touristique', label: '🌿 Éco-touristique', hint: 'paysages, patrimoine, découverte territoriale' },
+  { value: 'rse_rso', label: '🤝 Pratiques RSE / RSO', hint: 'engagement social et environnemental d’entreprise' },
+  { value: 'team_building', label: '🏢 Team-building entreprise', hint: 'cohésion d’équipe au contact du vivant' },
+  { value: 'autre', label: '✨ Autre', hint: 'précisez votre intention ci-dessous' },
 ];
 
 const MarchesDuVivantConnexion = () => {
