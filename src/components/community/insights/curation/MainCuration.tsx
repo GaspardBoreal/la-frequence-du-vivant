@@ -122,6 +122,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const sortedEntries = useMemo(() => {
     if (sortMode === 'alpha') {
       return [...entries].sort((a, b) =>
         (a.title || '').localeCompare(b.title || '', 'fr', { sensitivity: 'base' })
