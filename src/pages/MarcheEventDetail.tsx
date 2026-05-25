@@ -27,6 +27,7 @@ import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import InvitedReadersTab from '@/components/admin/marche-events/InvitedReadersTab';
 import { BookOpen } from 'lucide-react';
 import PublishPublicPanel from '@/components/admin/marche-events/PublishPublicPanel';
+import ShareNewSignupsPanel from '@/components/admin/marche-events/ShareNewSignupsPanel';
 import ScenographyEditor from '@/components/admin/scenography/ScenographyEditor';
 import AiRecognitionPanel from '@/components/admin/marche-events/AiRecognitionPanel';
 
