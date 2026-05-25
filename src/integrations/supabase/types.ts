@@ -3781,10 +3781,15 @@ export type Database = {
       }
       marcheur_observations: {
         Row: {
+          ai_confidence: number | null
           created_at: string | null
+          curated_at: string | null
+          curated_by_user_id: string | null
           gps_source: string | null
+          iconic_taxon: string | null
           id: string
           inaturalist_observation_id: number | null
+          kingdom: string | null
           latitude: number | null
           longitude: number | null
           marche_id: string
@@ -3792,13 +3797,21 @@ export type Database = {
           notes: string | null
           observation_date: string | null
           photo_url: string | null
+          source: string | null
+          source_media_id: string | null
           species_scientific_name: string
+          taxon_common_name_fr: string | null
         }
         Insert: {
+          ai_confidence?: number | null
           created_at?: string | null
+          curated_at?: string | null
+          curated_by_user_id?: string | null
           gps_source?: string | null
+          iconic_taxon?: string | null
           id?: string
           inaturalist_observation_id?: number | null
+          kingdom?: string | null
           latitude?: number | null
           longitude?: number | null
           marche_id: string
@@ -3806,13 +3819,21 @@ export type Database = {
           notes?: string | null
           observation_date?: string | null
           photo_url?: string | null
+          source?: string | null
+          source_media_id?: string | null
           species_scientific_name: string
+          taxon_common_name_fr?: string | null
         }
         Update: {
+          ai_confidence?: number | null
           created_at?: string | null
+          curated_at?: string | null
+          curated_by_user_id?: string | null
           gps_source?: string | null
+          iconic_taxon?: string | null
           id?: string
           inaturalist_observation_id?: number | null
+          kingdom?: string | null
           latitude?: number | null
           longitude?: number | null
           marche_id?: string
@@ -3820,7 +3841,10 @@ export type Database = {
           notes?: string | null
           observation_date?: string | null
           photo_url?: string | null
+          source?: string | null
+          source_media_id?: string | null
           species_scientific_name?: string
+          taxon_common_name_fr?: string | null
         }
         Relationships: [
           {
@@ -3835,6 +3859,13 @@ export type Database = {
             columns: ["marcheur_id"]
             isOneToOne: false
             referencedRelation: "exploration_marcheurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marcheur_observations_source_media_id_fkey"
+            columns: ["source_media_id"]
+            isOneToOne: false
+            referencedRelation: "marcheur_medias"
             referencedColumns: ["id"]
           },
         ]
@@ -5272,6 +5303,10 @@ export type Database = {
         Args: { p_event_id?: string }
         Returns: Json
       }
+      get_curation_media_context: {
+        Args: { p_media_id: string }
+        Returns: Json
+      }
       get_current_admin_email: { Args: never; Returns: string }
       get_current_admin_email_secure: { Args: never; Returns: string }
       get_current_admin_info: {
@@ -5457,6 +5492,10 @@ export type Database = {
       }
       haversine_km: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
+      haversine_m: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
       increment_download_count: {
