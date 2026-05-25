@@ -5,10 +5,12 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Sparkles, Loader2, CheckCircle2, AlertCircle, EyeOff, Leaf, Bug, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle2, AlertCircle, EyeOff, Leaf, Bug, Image as ImageIcon, Map as MapIcon, List } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import AiCurationMapView from './ai-recognition/AiCurationMapView';
 
 interface Props { eventId: string }
 
