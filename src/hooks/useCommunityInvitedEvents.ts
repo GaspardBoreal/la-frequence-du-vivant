@@ -37,6 +37,7 @@ export const useCommunityInvitedEvents = (userId: string | undefined) => {
           invitation_id,
           added_by_user_id,
           promoted_to_participant_at,
+          invite_source,
           marche_events!inner (
             id, title, description, date_marche, lieu, event_type,
             exploration_id, explorations(name)
