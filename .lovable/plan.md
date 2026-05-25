@@ -1,121 +1,37 @@
+# Diagnostic
 
-# Curation manuelle « Marches Du Vivant » — intégrité totale
+Les deux symptômes (« Aucune marche associée » et « Aucun participant validé ») viennent d'**une seule cause** : la fonction SQL `get_curation_media_context` référence la colonne `community_profiles.display_name` qui **n'existe pas** dans la table (les colonnes réelles sont `prenom` / `nom` / `slug`).
 
-Objectif : tout curateur qui valide une photo dans l'onglet **Reconnaissance IA → Carte de curation** voit en clair l'impact exact de son action et ne peut pas créer d'observation orpheline ou mal rattachée.
+Conséquence : la RPC lève une exception, le hook `useCurationMediaContext` renvoie `null`, et le drawer affiche ses placeholders par défaut :
+- pas de marche → « Aucune marche associée »
+- pas de GPS → « Aucune coordonnée »
+- pas de candidats → « Aucun participant validé sur cet événement »
 
-## 1. Schéma BDD (migration)
+(Les suggestions IA, elles, viennent d'un autre hook — `useAiCurationMedias` — donc elles s'affichent correctement, ce qui masquait la panne.)
 
-Ajouts sur `marcheur_observations` :
-- `source` text — valeurs : `'inaturalist'`, `'manual_mdv'`, `'walker_upload'`, `'editorial'`. Backfill : `inaturalist_observation_id IS NOT NULL` → `'inaturalist'`, sinon `'walker_upload'`.
-- `curated_by_user_id` uuid → `auth.users(id)` (nullable)
-- `curated_at` timestamptz
-- `source_media_id` uuid → `marcheur_medias(id)` (lien direct photo source)
-- `ai_confidence` numeric(4,3) — confiance IA au moment de la validation (audit)
-- `taxon_common_name_fr` text — évite re-fetch FR
-- `kingdom` text, `iconic_taxon` text — alimente tags éco + chaîne trophique sans nouveau fetch
-- Index : `(source)`, `(curated_by_user_id)`, `(source_media_id)`
+Vérification base de données pour la photo « Ail des ours » ouverte :
+- `marche_id` = Prairie humide ✅
+- GPS EXIF présent (48.828577, 0.019497, alt 0) ✅
+- Vincent Levavasseur a bien `validated_at` sur l'événement ✅
 
-## 2. RPC `get_curation_media_context(p_media_id uuid)` (SECURITY DEFINER, admin only)
+Donc dès que la RPC est réparée, les 3 blocs se rempliront correctement.
 
-Retourne en un seul aller-retour tout ce dont le drawer a besoin :
-- Photo : url, gps (lat/lng/altitude/source exif|manual), date_taken
-- Marche : id, nom, date, latitude/longitude centre, rayon, **distance photo↔centre en mètres**, flag `out_of_radius`
-- Marcheurs candidats : liste des participants validés de la marche `[{user_id, display_name, avatar_url, slug}]`
-- Marcheur déjà attribué (si `attributed_marcheur_id`)
-- Impact préview : `{species_already_in_marche: bool, current_obs_count_for_species: int, will_trigger_eco_tags: bool}`
+# Correction (migration unique)
 
-## 3. Edge function `curate-marcheur-photo` (refonte)
+Recréer `get_curation_media_context` avec deux ajustements :
 
-Body étendu :
-```ts
-{ mediaId, action: 'validate'|'unidentifiable',
-  scientificName, commonNameFr, kingdom, iconicTaxon, aiConfidence,
-  marcheurUserId,  // OBLIGATOIRE si action='validate'
-  marcheId         // override optionnel
-}
-```
+1. **Remplacer `cp.display_name`** par `COALESCE(NULLIF(TRIM(cp.prenom||' '||cp.nom),''), cp.slug, '')` dans les deux endroits :
+   - bloc `candidates` (liste des participants validés)
+   - bloc `attributed` (marcheur déjà attribué)
 
-Logique `validate` :
-1. Refuse si `marcheurUserId` manquant (400 `marcheur_required`).
-2. Résout `marcheur_id` via `ensure_exploration_marcheur(marcheurUserId, exploration_id)`.
-3. Calcule distance photo↔marche, warning serveur si > 500 m (n'empêche pas, mais log).
-4. Insert `marcheur_observations` avec `source='manual_mdv'`, `curated_by_user_id=auth.uid()`, `curated_at=now()`, `source_media_id=mediaId`, `ai_confidence`, `kingdom`, `iconic_taxon`, `taxon_common_name_fr`, lat/lng/gps_source, notes propre.
-5. Met à jour `marcheur_medias.attributed_marcheur_id` + `ai_status='validated_by_human'`.
-6. Trigger backfill éco-tags si nouvelle espèce.
+2. **Inclure l'uploader original** dans `candidates` même s'il n'a pas de `marche_participations` validée — sécurité supplémentaire (ici Vincent est validé donc ça ne change rien, mais évite la régression sur d'autres events). Implémentation : `UNION` avec `SELECT m.user_id FROM marcheur_medias m WHERE m.id = p_media_id`, dédupliqué.
 
-Mode batch : pareil mais exige soit un marcheur global soit fallback "curateur" (ré-confirmé côté UI).
+Aucune modification frontend ni edge function nécessaire — la signature et la forme JSONB restent identiques.
 
-## 4. UI — Drawer `DetailContent` (refonte)
+# Validation
 
-Nouveau layout en 4 blocs :
-
-```text
-┌────────────────────────────────────────────┐
-│ [Photo zoomable]                           │
-├────────────────────────────────────────────┤
-│ 📍 MARCHE                                  │
-│ • Nom + date + bouton "voir fiche"         │
-│ • Mini-carte 200px : photo + tracé marche  │
-│ • Distance : 142 m du tracé ✓              │
-│   (ou ⚠️ "Hors rayon : 720 m" en orange)   │
-│ • Coords : 48.8286, 0.0195 · alt 182m      │
-│ • Source GPS : EXIF appareil               │
-├────────────────────────────────────────────┤
-│ 👤 MARCHEUR ATTRIBUÉ *                     │
-│ [Dropdown participants marche]             │
-│   ⚠️ "Sélection obligatoire"               │
-│ Avatar + nom du choisi                     │
-├────────────────────────────────────────────┤
-│ ✨ SUGGESTIONS IA (cliquables)              │
-│   • Ail des ours · Allium ursinum · 95%    │
-├────────────────────────────────────────────┤
-│ 📊 APERÇU IMPACT (avant Valider)           │
-│ ✓ Créera "Ail des ours" dans Marche X      │
-│   (1ère observation → +1 espèce marche)    │
-│ ✓ Attribuée à : Vincent Levavasseur        │
-│ ✓ Déclenche classif éco-tags (plante)      │
-│ ✓ Source : Identification manuelle MdV     │
-├────────────────────────────────────────────┤
-│ [Valider l'identification] (vert, désactivé│
-│  tant que marcheur non choisi)             │
-│ [Non identifiable]  [Relancer IA]          │
-└────────────────────────────────────────────┘
-```
-
-Popup carte allégé : ajoute ligne « Marche : *nom* · 142 m » + « Marcheur : *nom ou Non attribué* » sous le badge.
-
-Row liste : ajoute pastille marche (couleur) + icône warning si hors rayon.
-
-## 5. Mode batch « Valider top-1 »
-
-Modal de confirmation avant exécution :
-- Affiche le nombre par marche
-- Liste les photos sans `attributed_marcheur_id` → impose un choix global :
-  - « Attribuer au curateur » (auth.uid)
-  - « Attribuer marcheur par marche » (sélecteurs par marche)
-  - Annuler
-- Affiche le nombre de photos hors rayon en warning
-
-## 6. Distinguer le flux côté lecture
-
-- Hook `useExplorationSpeciesCount` : aucun changement (les obs `manual_mdv` sont déjà comptées).
-- Badge « Identification manuelle MdV » visible dans la fiche espèce (carrousel + détail obs).
-- Filtre admin « Source » dans la liste des observations.
-
-## 7. Mémoire
-
-Ajout `mem://features/admin/manual-mdv-curation-logic` : "Validation IA manuelle = source='manual_mdv', marcheur_id obligatoire, curated_by tracé, source_media_id lié, distance photo↔marche warning >500m".
-
-## Fichiers touchés
-
-- Migration SQL (colonnes + index + RPC `get_curation_media_context`)
-- `supabase/functions/curate-marcheur-photo/index.ts` (validation marcheur obligatoire, source='manual_mdv', remplissage taxonomie)
-- `src/hooks/useAiCurationMedias.ts` (joint le contexte minimal : nom marche, distance)
-- `src/hooks/useCurationMediaContext.ts` (nouveau, appelle la RPC)
-- `src/components/admin/marche-events/ai-recognition/AiCurationMapView.tsx` (drawer + popup + row enrichis, modal batch)
-- Mémoire projet
-
-## Hors scope
-
-- Pas de modification du flux iNaturalist existant.
-- Pas de re-déclenchement de la classification éco-tags ici (déjà géré par triggers existants côté insert `marcheur_observations`).
+Après migration, recharger la carte de curation et cliquer sur le point « Ail des ours » :
+- Bloc MARCHE → « Prairie humide » + distance au centre + mini-carte
+- Bloc GPS EXACT → 48.828577 / 0.019497 (EXIF)
+- Bloc MARCHEUR ATTRIBUÉ → dropdown avec Vincent Levavasseur et Gaspard Boréal
+- Bloc IMPACT → préviewra « créera espèce Allium ursinum dans Prairie humide »
