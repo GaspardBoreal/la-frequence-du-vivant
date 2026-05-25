@@ -8,7 +8,7 @@ export interface InvitedEventRow {
   added_by_user_id: string | null;
   promoted_to_participant_at: string | null;
   invited_by_prenom: string | null;
-  invite_source: 'invitation' | 'manuel';
+  invite_source: 'invitation' | 'manuel' | 'auto_new_signup';
   event: {
     id: string;
     title: string;
