@@ -56,14 +56,20 @@ const SortSelect: React.FC<{ value: EventSort; onChange: (v: EventSort) => void 
   </Select>
 );
 
+const SHARE_LABELS: Record<EventShareFilter, string> = {
+  all: 'Tous',
+  yes: 'Partagés aux nouveaux',
+  no: 'Non partagés',
+};
+
 const ShareSelect: React.FC<{ value: EventShareFilter; onChange: (v: EventShareFilter) => void }> = ({ value, onChange }) => (
   <Select value={value} onValueChange={(v) => onChange(v as EventShareFilter)}>
     <SelectTrigger className="w-full">
-      <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
-      <SelectValue />
+      <Sparkles className="h-4 w-4 mr-1 text-amber-500 shrink-0" />
+      <span className="truncate">Partage nouveaux : {SHARE_LABELS[value]}</span>
     </SelectTrigger>
     <SelectContent>
-      <SelectItem value="all">Partage nouveaux : Tous</SelectItem>
+      <SelectItem value="all">Tous</SelectItem>
       <SelectItem value="yes">Partagés aux nouveaux</SelectItem>
       <SelectItem value="no">Non partagés</SelectItem>
     </SelectContent>
