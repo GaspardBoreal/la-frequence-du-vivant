@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import { useGuideDeMarche, ChatMessage } from '@/hooks/useGuideDeMarche';
 import { DetectionResult } from '@/hooks/useDetecteurZonesBlanches';
 import { exportGuidePdf } from './GuideDeMarchePdf';
+import DraggableFab from '@/components/ui/DraggableFab';
 
 const SUGGESTIONS = [
   'Où se garer pour cette marche ?',
@@ -46,22 +47,17 @@ const GuideDeMarche: React.FC<GuideProps> = ({ zonesContext }) => {
 
   return (
     <>
-      {/* Floating button */}
-      <AnimatePresence>
-        {!isOpen && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center print:hidden"
-            style={{ background: 'linear-gradient(135deg, #10b981, #0d9488)' }}
-            title="Guide de Marche IA"
-          >
-            <MessageCircle className="w-6 h-6 text-white" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+      <DraggableFab id="guide-marche-fab" size={56} zIndex={50} hidden={isOpen}>
+        <button
+          onClick={() => setIsOpen(true)}
+          className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center print:hidden"
+          style={{ background: 'linear-gradient(135deg, #10b981, #0d9488)' }}
+          title="Guide de Marche IA"
+          aria-label="Ouvrir le Guide de Marche IA"
+        >
+          <MessageCircle className="w-6 h-6 text-white" />
+        </button>
+      </DraggableFab>
 
       {/* Chat panel */}
       <AnimatePresence>
