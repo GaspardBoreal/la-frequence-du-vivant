@@ -16,6 +16,7 @@ import {
   type EventsFilters,
   type EventSort,
   type EventStatus,
+  type EventShareFilter,
 } from '@/hooks/useMarcheEventsQuery';
 
 const PAGE_SIZE_KEY = 'marche-events-admin:pageSize';
