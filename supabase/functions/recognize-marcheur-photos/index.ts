@@ -242,7 +242,7 @@ async function processMedia(
 
   try {
     if (hint === "plante" && cfg.plant_provider === "plantnet" && PLANTNET_KEY) {
-      suggestions = await plantnetIdentify(imageUrl, cfg.plantnet_project, lat, lng);
+      suggestions = await plantnetIdentify(imageUrl, cfg.plantnet_project);
     } else {
       suggestions = await geminiIdentify(imageUrl, hint);
     }
