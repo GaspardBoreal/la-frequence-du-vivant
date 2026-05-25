@@ -48,7 +48,6 @@ const MarchesDuVivantConnexion = () => {
   const [autreTypeMarche, setAutreTypeMarche] = useState('');
   const [recherchePrioritaire, setRecherchePrioritaire] = useState('');
   const [consentementAnalyse, setConsentementAnalyse] = useState(false);
-  const [engagement, setEngagement] = useState(false);
 
   // Invitation Lecteur invité
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
