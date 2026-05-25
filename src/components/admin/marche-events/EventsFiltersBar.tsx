@@ -2,11 +2,11 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ArrowUpDown, Filter } from 'lucide-react';
+import { Search, ArrowUpDown, Filter, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
-import type { EventsFilters, EventSort, EventStatus } from '@/hooks/useMarcheEventsQuery';
+import type { EventsFilters, EventSort, EventStatus, EventShareFilter } from '@/hooks/useMarcheEventsQuery';
 
 interface Props {
   filters: EventsFilters;
@@ -56,7 +56,22 @@ const SortSelect: React.FC<{ value: EventSort; onChange: (v: EventSort) => void 
   </Select>
 );
 
+const ShareSelect: React.FC<{ value: EventShareFilter; onChange: (v: EventShareFilter) => void }> = ({ value, onChange }) => (
+  <Select value={value} onValueChange={(v) => onChange(v as EventShareFilter)}>
+    <SelectTrigger className="w-full">
+      <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">Partage nouveaux : Tous</SelectItem>
+      <SelectItem value="yes">Partagés aux nouveaux</SelectItem>
+      <SelectItem value="no">Non partagés</SelectItem>
+    </SelectContent>
+  </Select>
+);
+
 const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) => {
+  const share = filters.share ?? 'all';
   return (
     <Card className="p-3 sm:p-4 mb-4">
       <div className="flex flex-col gap-3">
@@ -92,16 +107,21 @@ const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) =>
                   <label className="text-xs text-muted-foreground mb-1 block">Tri</label>
                   <SortSelect value={filters.sort} onChange={(v) => onChange({ sort: v })} />
                 </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Partage nouveaux inscrits</label>
+                  <ShareSelect value={share} onChange={(v) => onChange({ share: v })} />
+                </div>
               </div>
             </SheetContent>
           </Sheet>
         </div>
 
         {/* Desktop: filtres en ligne */}
-        <div className="hidden lg:grid lg:grid-cols-3 gap-3">
+        <div className="hidden lg:grid lg:grid-cols-4 gap-3">
           <TypeSelect value={filters.type} onChange={(v) => onChange({ type: v })} />
           <StatusSelect value={filters.status} onChange={(v) => onChange({ status: v })} />
           <SortSelect value={filters.sort} onChange={(v) => onChange({ sort: v })} />
+          <ShareSelect value={share} onChange={(v) => onChange({ share: v })} />
         </div>
 
         {totalLabel && <p className="text-xs text-muted-foreground">{totalLabel}</p>}

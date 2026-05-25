@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink } from 'lucide-react';
+import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink, Sparkles } from 'lucide-react';
 import DuplicateEventDialog from './DuplicateEventDialog';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -111,6 +111,11 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                     {visibility?.[event.id]?.is_public && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
                         <Globe2 className="h-3 w-3" /> Public
+                      </span>
+                    )}
+                    {(event as any).share_with_new_signups && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                        <Sparkles className="h-3 w-3" /> Nouveaux inscrits
                       </span>
                     )}
                   </div>

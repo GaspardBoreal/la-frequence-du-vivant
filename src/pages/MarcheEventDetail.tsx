@@ -27,6 +27,7 @@ import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import InvitedReadersTab from '@/components/admin/marche-events/InvitedReadersTab';
 import { BookOpen } from 'lucide-react';
 import PublishPublicPanel from '@/components/admin/marche-events/PublishPublicPanel';
+import ShareNewSignupsPanel from '@/components/admin/marche-events/ShareNewSignupsPanel';
 import ScenographyEditor from '@/components/admin/scenography/ScenographyEditor';
 import AiRecognitionPanel from '@/components/admin/marche-events/AiRecognitionPanel';
 
@@ -334,11 +335,17 @@ const MarcheEventDetail: React.FC = () => {
           <TabsContent value="informations" className="space-y-6 mt-4">
 
         {!isNew && event && (
-          <PublishPublicPanel
-            eventId={event.id}
-            isPublic={!!(event as any).is_public}
-            publicSlug={(event as any).public_slug ?? null}
-          />
+          <>
+            <PublishPublicPanel
+              eventId={event.id}
+              isPublic={!!(event as any).is_public}
+              publicSlug={(event as any).public_slug ?? null}
+            />
+            <ShareNewSignupsPanel
+              eventId={event.id}
+              initialValue={!!(event as any).share_with_new_signups}
+            />
+          </>
         )}
 
 

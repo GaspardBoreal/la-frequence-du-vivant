@@ -8,7 +8,7 @@ export interface InvitedEventRow {
   added_by_user_id: string | null;
   promoted_to_participant_at: string | null;
   invited_by_prenom: string | null;
-  invite_source: 'invitation' | 'manuel';
+  invite_source: 'invitation' | 'manuel' | 'auto_new_signup';
   event: {
     id: string;
     title: string;
@@ -37,6 +37,7 @@ export const useCommunityInvitedEvents = (userId: string | undefined) => {
           invitation_id,
           added_by_user_id,
           promoted_to_participant_at,
+          invite_source,
           marche_events!inner (
             id, title, description, date_marche, lieu, event_type,
             exploration_id, explorations(name)
@@ -87,7 +88,7 @@ export const useCommunityInvitedEvents = (userId: string | undefined) => {
           added_by_user_id: r.added_by_user_id ?? null,
           promoted_to_participant_at: r.promoted_to_participant_at ?? null,
           invited_by_prenom: inviterId ? prenomMap.get(inviterId) ?? null : null,
-          invite_source: r.invitation_id ? 'invitation' as const : 'manuel' as const,
+          invite_source: (r.invite_source as any) ?? (r.invitation_id ? 'invitation' : 'manuel'),
           event: r.marche_events,
         } as InvitedEventRow;
       });

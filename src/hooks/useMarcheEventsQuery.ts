@@ -3,12 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type EventStatus = 'all' | 'upcoming' | 'past';
 export type EventSort = 'date_desc' | 'date_asc' | 'title_asc' | 'title_desc';
+export type EventShareFilter = 'all' | 'yes' | 'no';
 
 export interface EventsFilters {
   search: string;
   type: string; // 'all' | 'none' | MarcheEventType
   status: EventStatus;
   sort: EventSort;
+  share?: EventShareFilter;
 }
 
 export interface PaginatedEventsParams extends EventsFilters {
@@ -31,6 +33,7 @@ export interface MarcheEventRow {
   max_participants: number | null;
   created_at: string;
   updated_at: string;
+  share_with_new_signups?: boolean | null;
 }
 
 export interface DashboardStats {
@@ -44,6 +47,7 @@ const normalize = (f: EventsFilters) => ({
   _search: f.search?.trim() || null,
   _type: f.type === 'all' ? null : f.type,
   _status: f.status === 'all' ? null : f.status,
+  _share: !f.share || f.share === 'all' ? null : f.share,
 });
 
 export const useMarcheEventsStats = (filters: EventsFilters) =>
