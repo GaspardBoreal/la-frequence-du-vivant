@@ -1,37 +1,63 @@
-# Diagnostic
+# Diagnostic — ce qui marche déjà / ce qui manque
 
-Les deux symptômes (« Aucune marche associée » et « Aucun participant validé ») viennent d'**une seule cause** : la fonction SQL `get_curation_media_context` référence la colonne `community_profiles.display_name` qui **n'existe pas** dans la table (les colonnes réelles sont `prenom` / `nom` / `slug`).
+## Comment valider aujourd'hui (peu visible)
+Dans le drawer « Curation photo », la zone **« Suggestions IA »** liste les propositions (ex : *Ail des ours – 95 % – gemini*). **Chaque carte de suggestion EST le bouton de validation** : un clic sur la carte valide cette identification. Il n'y a pas de CTA explicite « Valider », ce qui explique ta confusion.
 
-Conséquence : la RPC lève une exception, le hook `useCurationMediaContext` renvoie `null`, et le drawer affiche ses placeholders par défaut :
-- pas de marche → « Aucune marche associée »
-- pas de GPS → « Aucune coordonnée »
-- pas de candidats → « Aucun participant validé sur cet événement »
+Le clic est désactivé tant que le marcheur n'est pas sélectionné.
 
-(Les suggestions IA, elles, viennent d'un autre hook — `useAiCurationMedias` — donc elles s'affichent correctement, ce qui masquait la panne.)
+## Ce qui est créé à la validation (déjà OK)
+L'edge function `curate-marcheur-photo` insère une ligne dans `marcheur_observations` avec :
+- `source = 'manual_mdv'`
+- `notes` préfixées par « Identification manuelle Marches Du Vivant — {nom FR} »
+- `species_scientific_name`, `taxon_common_name_fr`, `kingdom`, `latitude`, `longitude`, `gps_source`, `marche_id`, `observation_date`, `photo_url`
+- `curated_by_user_id`, `curated_at`, `source_media_id`, `ai_confidence`
+- `marcheur_id` = participant sélectionné (via `ensure_exploration_marcheur`)
 
-Vérification base de données pour la photo « Ail des ours » ouverte :
-- `marche_id` = Prairie humide ✅
-- GPS EXIF présent (48.828577, 0.019497, alt 0) ✅
-- Vincent Levavasseur a bien `validated_at` sur l'événement ✅
+Puis la photo passe en `ai_status = validated_by_human`.
 
-Donc dès que la RPC est réparée, les 3 blocs se rempliront correctement.
+→ L'observation apparaît immédiatement dans la liste d'espèces de la marche, sur la carte, dans la synthèse, le carnet du marcheur, le Pack Vivant, etc.
 
-# Correction (migration unique)
+## Ce qui manque pour que TOUT fonctionne
+1. **CTA manquant** : pas de bouton « Valider » explicite, juste la carte cliquable.
+2. **`iconic_taxon` toujours NULL** : la table `marcheur_photo_ai_suggestions` ne stocke pas `iconic_taxon` (uniquement `kingdom`). Conséquence :
+   - Trophiques *Plantae / Fungi / Chromista* → OK (le kingdom suffit, classification heuristique).
+   - Trophiques *Animalia* → dégradés : la chaîne trophique tombe sur le fallback générique faute d'`iconic_taxon` (Aves / Insecta / Mammalia…).
+3. **Aucun aperçu d'impact** dans le drawer (le RPC renvoie déjà `impact.species_already_in_marche` et `current_obs_count_for_species`, mais l'UI ne l'affiche pas).
 
-Recréer `get_curation_media_context` avec deux ajustements :
+# Plan de correction (UI + enrichissement post-validation)
 
-1. **Remplacer `cp.display_name`** par `COALESCE(NULLIF(TRIM(cp.prenom||' '||cp.nom),''), cp.slug, '')` dans les deux endroits :
-   - bloc `candidates` (liste des participants validés)
-   - bloc `attributed` (marcheur déjà attribué)
+## 1. UI drawer — Validation explicite
+Dans `src/components/admin/marche-events/ai-recognition/AiCurationMapView.tsx`, dans `DetailContent` :
 
-2. **Inclure l'uploader original** dans `candidates` même s'il n'a pas de `marche_participations` validée — sécurité supplémentaire (ici Vincent est validé donc ça ne change rien, mais évite la régression sur d'autres events). Implémentation : `UNION` avec `SELECT m.user_id FROM marcheur_medias m WHERE m.id = p_media_id`, dédupliqué.
+- Garder les cartes de suggestion cliquables, mais **ajouter au-dessus du bloc une mini-aide** : « Cliquez sur une suggestion pour la valider, ou utilisez le bouton ci-dessous ».
+- **Ajouter une section finale « Action »** avec :
+  - Bouton primaire **« ✓ Valider l'identification top-1 »** (vert, full width) — utilise `useTopSuggestion=true`, désactivé sans marcheur.
+  - Sous-texte d'impact : « Créera *Allium ursinum* (Ail des ours) dans *Prairie humide* — 0 obs existante. Source : Identification manuelle Marches Du Vivant. Marcheur : Vincent Levavasseur. »
+  - Construit à partir de `ctx.top_suggestion`, `ctx.marche.nom_marche`, `ctx.impact.current_obs_count_for_species` et `selectedCandidate.display_name`.
+- Renommer visuellement les cartes de suggestion en ajoutant une icône ✓ au survol pour signaler qu'elles sont validables.
 
-Aucune modification frontend ni edge function nécessaire — la signature et la forme JSONB restent identiques.
+## 2. Enrichissement `iconic_taxon` côté edge function
+Dans `supabase/functions/curate-marcheur-photo/index.ts`, après détermination du `sci` et avant l'INSERT :
+
+- Si `iconic_taxon` est NULL, **interroger l'API iNaturalist taxa** (`/v1/taxa?q={sci}&rank=species`) — déjà utilisé ailleurs dans le projet.
+- Récupérer `iconic_taxon_name` du premier résultat correspondant.
+- Persister dans la nouvelle observation. En cas d'échec API, laisser NULL et marquer en notes pour backfill ultérieur.
+- Fallback dérivé du kingdom si iNat ne répond pas :
+  - `Plantae` → `Plantae`
+  - `Fungi` → `Fungi`
+  - `Animalia` sans détail → laisser NULL (à backfill plus tard, ne pas mentir)
+
+## 3. (Optionnel, hors scope si tu préfères) Réutiliser le backfill existant
+La fonction `backfill-snapshots-taxonomy` existe déjà pour combler `iconic_taxon` rétro­actif­ement sur les snapshots. On pourrait l'appeler en `fire-and-forget` après chaque validation manuelle pour aligner aussi les obs MdV. À confirmer.
+
+# Fichiers modifiés
+- `src/components/admin/marche-events/ai-recognition/AiCurationMapView.tsx` (UI : CTA + preview impact)
+- `supabase/functions/curate-marcheur-photo/index.ts` (lookup iNat → `iconic_taxon`)
 
 # Validation
-
-Après migration, recharger la carte de curation et cliquer sur le point « Ail des ours » :
-- Bloc MARCHE → « Prairie humide » + distance au centre + mini-carte
-- Bloc GPS EXACT → 48.828577 / 0.019497 (EXIF)
-- Bloc MARCHEUR ATTRIBUÉ → dropdown avec Vincent Levavasseur et Gaspard Boréal
-- Bloc IMPACT → préviewra « créera espèce Allium ursinum dans Prairie humide »
+1. Recharger la carte de curation, ouvrir « Ail des ours ».
+2. Choisir « Vincent Levavasseur ».
+3. Voir le nouveau bouton vert « ✓ Valider l'identification top-1 » + le résumé d'impact.
+4. Cliquer → toast « Identification validée ».
+5. Aller dans l'onglet *Espèces* de l'événement : *Ail des ours* apparaît avec source MdV.
+6. Aller dans la chaîne trophique : positionné en L1 (producteur primaire) ✅.
