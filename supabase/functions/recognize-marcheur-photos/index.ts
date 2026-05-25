@@ -349,11 +349,11 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
     const body = await req.json().catch(() => ({}));
-    const { eventId, mediaId, limit = 100 } = body || {};
+    const { eventId, mediaId, mediaIds, limit = 100, forceReprocess = false } = body || {};
 
-    if (!eventId && !mediaId) {
+    if (!eventId && !mediaId && (!Array.isArray(mediaIds) || mediaIds.length === 0)) {
       return new Response(
-        JSON.stringify({ error: "Provide eventId or mediaId" }),
+        JSON.stringify({ error: "Provide eventId, mediaId or mediaIds[]" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -378,11 +378,11 @@ Deno.serve(async (req) => {
       .eq("type_media", "photo");
 
     if (mediaId) q = q.eq("id", mediaId);
-    if (eventId && !mediaId) {
-      q = q
-        .eq("marche_event_id", eventId)
-        .in("ai_status", ["pending", "low_confidence"])
-        .limit(limit);
+    else if (Array.isArray(mediaIds) && mediaIds.length > 0) q = q.in("id", mediaIds);
+    else if (eventId) {
+      q = q.eq("marche_event_id", eventId);
+      if (!forceReprocess) q = q.in("ai_status", ["pending", "low_confidence"]);
+      q = q.limit(limit);
     }
 
     const { data: medias, error: mErr } = await q;
