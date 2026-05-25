@@ -187,40 +187,51 @@ export default function AiRecognitionPanel({ eventId }: Props) {
           />
         )}
 
-        {counters.curation > 0 && (
+        {counters.curation + counters.low > 0 && (
           <Button variant="outline" className="mt-4" onClick={() => setCurationOpen(true)}>
-            <AlertCircle className="h-4 w-4 mr-2" />
-            Curer {counters.curation + counters.low} photo{counters.curation + counters.low > 1 ? 's' : ''}
+            <List className="h-4 w-4 mr-2" />
+            Curation rapide (liste) — {counters.curation + counters.low}
           </Button>
         )}
       </Card>
 
-      {/* Réglages */}
-      <Card className="p-6">
-        <h4 className="font-medium mb-4">Seuils de confiance</h4>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span>Auto-validation</span>
-              <Badge variant="secondary">{(autoThr * 100).toFixed(0)} %</Badge>
+      {/* Vue Carte de curation + réglages dans des onglets */}
+      <Tabs defaultValue="map" className="w-full">
+        <TabsList>
+          <TabsTrigger value="map"><MapIcon className="h-4 w-4 mr-1.5" /> Carte de curation</TabsTrigger>
+          <TabsTrigger value="settings">Seuils & config</TabsTrigger>
+        </TabsList>
+        <TabsContent value="map" className="mt-3">
+          <AiCurationMapView eventId={eventId} />
+        </TabsContent>
+        <TabsContent value="settings" className="mt-3">
+          <Card className="p-6">
+            <h4 className="font-medium mb-4">Seuils de confiance</h4>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Auto-validation</span>
+                  <Badge variant="secondary">{(autoThr * 100).toFixed(0)} %</Badge>
+                </div>
+                <Slider min={0.5} max={0.99} step={0.01} value={[autoThr]} onValueChange={(v) => setAutoThr(v[0])} />
+                <p className="text-xs text-muted-foreground mt-1">≥ ce score, l'espèce est ajoutée automatiquement.</p>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Curation</span>
+                  <Badge variant="secondary">{(curThr * 100).toFixed(0)} %</Badge>
+                </div>
+                <Slider min={0.3} max={0.85} step={0.01} value={[curThr]} onValueChange={(v) => setCurThr(v[0])} />
+                <p className="text-xs text-muted-foreground mt-1">Entre ce seuil et l'auto, la photo passe en curation.</p>
+              </div>
             </div>
-            <Slider min={0.5} max={0.99} step={0.01} value={[autoThr]} onValueChange={(v) => setAutoThr(v[0])} />
-            <p className="text-xs text-muted-foreground mt-1">≥ ce score, l'espèce est ajoutée automatiquement.</p>
-          </div>
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span>Curation</span>
-              <Badge variant="secondary">{(curThr * 100).toFixed(0)} %</Badge>
+            <div className="flex items-center gap-3 mt-4">
+              <Button size="sm" onClick={() => saveConfig.mutate()} disabled={saveConfig.isPending}>Enregistrer</Button>
+              <span className="text-xs text-muted-foreground">Pl@ntNet projet : <code>{cfg.plantnet_project}</code></span>
             </div>
-            <Slider min={0.3} max={0.85} step={0.01} value={[curThr]} onValueChange={(v) => setCurThr(v[0])} />
-            <p className="text-xs text-muted-foreground mt-1">Entre ce seuil et l'auto, la photo passe en curation.</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 mt-4">
-          <Button size="sm" onClick={() => saveConfig.mutate()} disabled={saveConfig.isPending}>Enregistrer</Button>
-          <span className="text-xs text-muted-foreground">Pl@ntNet projet : <code>{cfg.plantnet_project}</code></span>
-        </div>
-      </Card>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Curation Drawer */}
       <Sheet open={curationOpen} onOpenChange={setCurationOpen}>
