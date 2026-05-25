@@ -15,6 +15,34 @@ function haversineM(lat1: number, lon1: number, lat2: number, lon2: number) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
+// Récupère l'iconic_taxon iNaturalist pour un nom scientifique
+async function fetchIconicTaxon(sciName: string): Promise<string | null> {
+  try {
+    const url = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(sciName)}&rank=species,subspecies,variety&per_page=1`;
+    const r = await fetch(url, { headers: { "User-Agent": "MarchesDuVivant/1.0" } });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const t = j?.results?.[0];
+    return t?.iconic_taxon_name || null;
+  } catch { return null; }
+}
+
+// Fallback iconic_taxon depuis kingdom si iNat échoue
+function iconicFromKingdom(kingdom: string | null | undefined): string | null {
+  if (!kingdom) return null;
+  const k = kingdom.toLowerCase();
+  if (k === "plantae") return "Plantae";
+  if (k === "fungi") return "Fungi";
+  if (k === "chromista" || k === "protozoa") return "Protozoa";
+  return null; // Animalia : trop large, on laisse pour backfill ultérieur
+}
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
