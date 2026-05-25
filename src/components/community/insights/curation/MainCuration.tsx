@@ -489,75 +489,161 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         </DndContext>
       ) : (
         <div className="space-y-3">
-          {sortedEntries.map(entry => {
+          {sortedEntries.map((entry, idx) => {
             const items = (entry.media_ids || [])
               .map(normalizeMediaKey)
               .map(k => mediaIndex.get(k))
               .filter(Boolean) as MediaItem[];
+            const isExpanded = expandedIds.has(entry.id);
+            const heroItem = items[0];
+            const plainDesc = entry.description ? stripHtml(entry.description).trim() : '';
+            const isLong = plainDesc.length > 250;
+            const readMore = readMoreIds.has(entry.id);
+            const visibleItems = items.slice(0, 3);
+            const moreCount = Math.max(0, items.length - 3);
+
             return (
-              <article
+              <motion.article
                 key={entry.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: Math.min(idx, 7) * 0.04 }}
                 className="rounded-xl border border-border bg-card overflow-hidden"
               >
-                {items.length > 0 && (
-                  <div className={`grid gap-0.5 ${items.length === 1 ? 'grid-cols-1' : 'grid-cols-3'}`}>
-                    {items.slice(0, 6).map((it, i) => (
-                      <button
-                        type="button"
-                        key={it.key}
-                        onClick={() => setLightbox({ items, index: i })}
-                        className="relative block focus:outline-none focus:ring-2 focus:ring-primary/60"
-                        aria-label={`Ouvrir ${it.titre || 'le média'} en grand`}
-                      >
-                        {renderThumb(
-                          it,
-                          items.length === 1 ? 'aspect-[16/9]' : 'aspect-square'
-                        )}
-                        {i === 5 && items.length > 6 && (
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-semibold text-sm">
-                            +{items.length - 6}
+                {/* Header cliquable (toggle) */}
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(entry.id)}
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  aria-expanded={isExpanded}
+                >
+                  {heroItem ? (
+                    <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 ring-1 ring-border">
+                      {renderThumb(heroItem, 'w-full h-full', { eager: idx === 0, width: 120 })}
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
+                      <Hand className="w-4 h-4 text-muted-foreground/60" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold text-foreground truncate">{entry.title}</h4>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-muted-foreground">
+                        {items.length} média{items.length > 1 ? 's' : ''}
+                      </span>
+                      {plainDesc && !isExpanded && (
+                        <span className="text-[11px] text-muted-foreground/80 italic truncate">
+                          · {plainDesc.slice(0, 90)}{plainDesc.length > 90 ? '…' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {/* Contenu replié */}
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      key="content"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: 'easeOut' }}
+                      className="overflow-hidden"
+                    >
+                      {items.length > 0 && (
+                        <div className={`grid gap-0.5 ${visibleItems.length === 1 ? 'grid-cols-1' : 'grid-cols-3'} border-t border-border`}>
+                          {visibleItems.map((it, i) => (
+                            <button
+                              type="button"
+                              key={it.key}
+                              onClick={() => setLightbox({ items, index: i })}
+                              className="relative block focus:outline-none focus:ring-2 focus:ring-primary/60"
+                              aria-label={`Ouvrir ${it.titre || 'le média'} en grand`}
+                            >
+                              {renderThumb(
+                                it,
+                                visibleItems.length === 1 ? 'aspect-[16/9]' : 'aspect-square',
+                                { width: 600 }
+                              )}
+                              {i === 2 && moreCount > 0 && (
+                                <div
+                                  onClick={(e) => { e.stopPropagation(); setLightbox({ items, index: 3 }); }}
+                                  className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
+                                >
+                                  +{moreCount}
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="p-3 space-y-2 border-t border-border/40">
+                        {isCurator && (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openEdit(entry)}
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                              title="Modifier"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => remove(entry)}
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="p-3 space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-foreground flex-1">{entry.title}</h4>
-                    {isCurator && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => openEdit(entry)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                          title="Modifier"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => remove(entry)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {entry.description && (
+                          <div className="relative">
+                            <div
+                              className={`text-xs text-muted-foreground max-w-none whitespace-pre-line [&_strong]:font-semibold [&_b]:font-semibold [&_em]:italic [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1.5 [&_p:last-child]:mb-0 ${isLong && !readMore ? 'max-h-24 overflow-hidden' : ''}`}
+                              dangerouslySetInnerHTML={{
+                                __html: sanitizeHtml(
+                                  isLong && !readMore
+                                    ? plainDesc.slice(0, 250).trim() + '…'
+                                    : entry.description,
+                                ),
+                              }}
+                            />
+                            {isLong && !readMore && (
+                              <div className="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+                            )}
+                            {isLong && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setReadMoreIds((s) => {
+                                    const n = new Set(s);
+                                    if (n.has(entry.id)) n.delete(entry.id); else n.add(entry.id);
+                                    return n;
+                                  })
+                                }
+                                className="mt-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+                              >
+                                {readMore ? 'Réduire ↑' : 'Lire la suite ↓'}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <PratiqueMarcheursPicker
+                          curationId={entry.id}
+                          explorationId={explorationId}
+                          isCurator={isCurator}
+                        />
                       </div>
-                    )}
-                  </div>
-                  {entry.description && (
-                    <div
-                      className="text-xs text-muted-foreground max-w-none whitespace-pre-line [&_strong]:font-semibold [&_b]:font-semibold [&_em]:italic [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1.5 [&_p:last-child]:mb-0"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.description) }}
-                    />
+                    </motion.div>
                   )}
-                  <PratiqueMarcheursPicker
-                    curationId={entry.id}
-                    explorationId={explorationId}
-                    isCurator={isCurator}
-                  />
-                </div>
-              </article>
+                </AnimatePresence>
+              </motion.article>
             );
           })}
         </div>
