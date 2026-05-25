@@ -1,63 +1,83 @@
-# Diagnostic — ce qui marche déjà / ce qui manque
+# Partage automatique des événements aux nouveaux inscrits
 
-## Comment valider aujourd'hui (peu visible)
-Dans le drawer « Curation photo », la zone **« Suggestions IA »** liste les propositions (ex : *Ail des ours – 95 % – gemini*). **Chaque carte de suggestion EST le bouton de validation** : un clic sur la carte valide cette identification. Il n'y a pas de CTA explicite « Valider », ce qui explique ta confusion.
+## Décisions retenues
+- **Cible** : tous les nouveaux marcheurs, sans condition.
+- **Déclenchement** : futurs inscrits uniquement (pas de backfill rétroactif).
+- **Notification** : ajout silencieux (aucun email), visible dans Mon Espace > Marches comme un Lecteur invité classique.
+- **Décochage** : on conserve les entrées déjà créées (acquis pour les marcheurs concernés).
 
-Le clic est désactivé tant que le marcheur n'est pas sélectionné.
+## 1. Schéma BDD
 
-## Ce qui est créé à la validation (déjà OK)
-L'edge function `curate-marcheur-photo` insère une ligne dans `marcheur_observations` avec :
-- `source = 'manual_mdv'`
-- `notes` préfixées par « Identification manuelle Marches Du Vivant — {nom FR} »
-- `species_scientific_name`, `taxon_common_name_fr`, `kingdom`, `latitude`, `longitude`, `gps_source`, `marche_id`, `observation_date`, `photo_url`
-- `curated_by_user_id`, `curated_at`, `source_media_id`, `ai_confidence`
-- `marcheur_id` = participant sélectionné (via `ensure_exploration_marcheur`)
+### `marche_events`
+- Ajouter `share_with_new_signups boolean NOT NULL DEFAULT false`.
+- Index partiel `WHERE share_with_new_signups = true` pour le trigger.
 
-Puis la photo passe en `ai_status = validated_by_human`.
+### `event_invited_readers`
+- Ajouter `invite_source text` avec valeurs : `'invitation' | 'manuel' | 'auto_new_signup'` (NULL toléré pour l'existant ; backfill : `invitation` si `invitation_id` not null, sinon `manuel`).
+- Cela remplace la dérivation actuelle dans `useCommunityInvitedEvents` (qui se basait uniquement sur `invitation_id`).
 
-→ L'observation apparaît immédiatement dans la liste d'espèces de la marche, sur la carte, dans la synthèse, le carnet du marcheur, le Pack Vivant, etc.
+### Audit / traçabilité
+- Réutiliser la table d'audit existante si présente, sinon créer `event_invited_readers_audit` (event_id, user_id, action, source, performed_by, created_at) pour tracer chaque ajout auto.
+- À vérifier pendant l'implémentation (suivre le pattern des autres tables d'audit du projet : `marcheur_media_gps_audit`, etc.).
 
-## Ce qui manque pour que TOUT fonctionne
-1. **CTA manquant** : pas de bouton « Valider » explicite, juste la carte cliquable.
-2. **`iconic_taxon` toujours NULL** : la table `marcheur_photo_ai_suggestions` ne stocke pas `iconic_taxon` (uniquement `kingdom`). Conséquence :
-   - Trophiques *Plantae / Fungi / Chromista* → OK (le kingdom suffit, classification heuristique).
-   - Trophiques *Animalia* → dégradés : la chaîne trophique tombe sur le fallback générique faute d'`iconic_taxon` (Aves / Insecta / Mammalia…).
-3. **Aucun aperçu d'impact** dans le drawer (le RPC renvoie déjà `impact.species_already_in_marche` et `current_obs_count_for_species`, mais l'UI ne l'affiche pas).
+## 2. Trigger d'auto-invitation
 
-# Plan de correction (UI + enrichissement post-validation)
+Trigger `AFTER INSERT ON community_profiles` (SECURITY DEFINER) :
+1. Pour chaque event où `share_with_new_signups = true` ET `date_marche >= now()` (futurs uniquement, pas d'événements passés).
+2. INSERT dans `event_invited_readers` avec :
+   - `user_id` = nouveau marcheur
+   - `event_id` = event partagé
+   - `added_by_user_id` = NULL (système)
+   - `invite_source = 'auto_new_signup'`
+   - `invitation_id = NULL`
+3. ON CONFLICT DO NOTHING (idempotent).
+4. Log dans la table d'audit.
 
-## 1. UI drawer — Validation explicite
-Dans `src/components/admin/marche-events/ai-recognition/AiCurationMapView.tsx`, dans `DetailContent` :
+Note : le trigger ne s'active que sur de **nouveaux** `community_profiles`. Cocher un événement plus tard n'affecte que les inscrits **après** le cochage — conforme à la décision « Futurs uniquement ».
 
-- Garder les cartes de suggestion cliquables, mais **ajouter au-dessus du bloc une mini-aide** : « Cliquez sur une suggestion pour la valider, ou utilisez le bouton ci-dessous ».
-- **Ajouter une section finale « Action »** avec :
-  - Bouton primaire **« ✓ Valider l'identification top-1 »** (vert, full width) — utilise `useTopSuggestion=true`, désactivé sans marcheur.
-  - Sous-texte d'impact : « Créera *Allium ursinum* (Ail des ours) dans *Prairie humide* — 0 obs existante. Source : Identification manuelle Marches Du Vivant. Marcheur : Vincent Levavasseur. »
-  - Construit à partir de `ctx.top_suggestion`, `ctx.marche.nom_marche`, `ctx.impact.current_obs_count_for_species` et `selectedCandidate.display_name`.
-- Renommer visuellement les cartes de suggestion en ajoutant une icône ✓ au survol pour signaler qu'elles sont validables.
+## 3. UI Admin événements
 
-## 2. Enrichissement `iconic_taxon` côté edge function
-Dans `supabase/functions/curate-marcheur-photo/index.ts`, après détermination du `sci` et avant l'INSERT :
+### Liste (`MarcheEventsAdmin` + `EventsFiltersBar`)
+- Nouveau filtre « Partage nouveaux inscrits » : `Tous | Oui | Non` (Select à côté du filtre Type/Statut).
+- Badge visuel sur les vignettes des événements partagés (icône Sparkles + libellé « Partagé aux nouveaux »).
+- Étendre `EventsFilters` et `useMarcheEventsQuery` pour le nouveau critère.
 
-- Si `iconic_taxon` est NULL, **interroger l'API iNaturalist taxa** (`/v1/taxa?q={sci}&rank=species`) — déjà utilisé ailleurs dans le projet.
-- Récupérer `iconic_taxon_name` du premier résultat correspondant.
-- Persister dans la nouvelle observation. En cas d'échec API, laisser NULL et marquer en notes pour backfill ultérieur.
-- Fallback dérivé du kingdom si iNat ne répond pas :
-  - `Plantae` → `Plantae`
-  - `Fungi` → `Fungi`
-  - `Animalia` sans détail → laisser NULL (à backfill plus tard, ne pas mentir)
+### Formulaire édition événement
+- Switch « Partager aux nouveaux marcheurs inscrits » dans la carte « Publication / Visibilité ».
+- Texte d'aide : « Tout nouveau marcheur sera silencieusement ajouté comme Lecteur invité dès son inscription. Les marcheurs déjà inscrits ne sont pas concernés. »
+- Décocher : aucune action destructive sur les `event_invited_readers` déjà créés.
 
-## 3. (Optionnel, hors scope si tu préfères) Réutiliser le backfill existant
-La fonction `backfill-snapshots-taxonomy` existe déjà pour combler `iconic_taxon` rétro­actif­ement sur les snapshots. On pourrait l'appeler en `fire-and-forget` après chaque validation manuelle pour aligner aussi les obs MdV. À confirmer.
+## 4. UI Marcheur
 
-# Fichiers modifiés
-- `src/components/admin/marche-events/ai-recognition/AiCurationMapView.tsx` (UI : CTA + preview impact)
-- `supabase/functions/curate-marcheur-photo/index.ts` (lookup iNat → `iconic_taxon`)
+Aucune modification visible nécessaire : `useCommunityInvitedEvents` retourne déjà les events, et l'onglet `CarnetTab` / `MarchesTab` les affiche. On enrichit juste la sémantique de `invite_source` pour pouvoir, plus tard (étape 4), distinguer un parcours découverte.
 
-# Validation
-1. Recharger la carte de curation, ouvrir « Ail des ours ».
-2. Choisir « Vincent Levavasseur ».
-3. Voir le nouveau bouton vert « ✓ Valider l'identification top-1 » + le résumé d'impact.
-4. Cliquer → toast « Identification validée ».
-5. Aller dans l'onglet *Espèces* de l'événement : *Ail des ours* apparaît avec source MdV.
-6. Aller dans la chaîne trophique : positionné en L1 (producteur primaire) ✅.
+## 5. Sécurité & RLS
+
+- Trigger en `SECURITY DEFINER` (bypass RLS pour insert système).
+- Policies existantes sur `event_invited_readers` à vérifier : un utilisateur doit pouvoir lire ses propres entrées `auto_new_signup` (déjà couvert si la policy actuelle filtre par `user_id = auth.uid()`).
+- Pas de PII exposée.
+
+## 6. Préparation étape 4 (parcours découverte)
+
+Pas implémenté maintenant, mais le schéma le permet :
+- `invite_source = 'auto_new_signup'` identifie les events à mettre en avant dans un futur onboarding disruptif (carousel « À découvrir », story Wahouhh, etc.).
+- Un champ optionnel `discovery_order int` sur `marche_events` pourra être ajouté plus tard pour ordonner le parcours.
+
+## Fichiers impactés
+
+**Migration SQL** :
+- ALTER `marche_events` (colonne + index)
+- ALTER `event_invited_readers` (colonne `invite_source`)
+- Backfill `invite_source` des lignes existantes
+- Création table audit (si besoin)
+- Création trigger + fonction `auto_invite_new_signup()`
+
+**Frontend** :
+- `src/hooks/useMarcheEventsQuery.ts` — type `EventsFilters` + requête
+- `src/components/admin/marche-events/EventsFiltersBar.tsx` — nouveau Select
+- `src/components/admin/marche-events/EventCard.tsx` (ou équivalent) — badge
+- Formulaire édition event (à localiser : probablement `MarcheEventForm.tsx` ou similaire) — switch
+- `src/hooks/useCommunityInvitedEvents.ts` — utiliser `invite_source` BDD au lieu de la dérivation
+
+## Mémoire à créer après livraison
+`mem://features/admin/event-share-new-signups-logic` — toggle + trigger silent invitation, source `auto_new_signup`.
