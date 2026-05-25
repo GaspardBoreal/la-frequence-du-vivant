@@ -370,74 +370,99 @@ const MarchesDuVivantConnexion = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <Label className="text-emerald-100 text-sm">Date de naissance</Label>
-                      <div className="relative mt-1">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-300/50" />
-                        <Input value={dateNaissance} onChange={e => setDateNaissance(e.target.value)} type="date" className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/30" />
-                      </div>
-                    </div>
-
-                    {/* Creative section */}
+                    {/* Intentions de marche */}
                     <div className="border-t border-white/10 pt-4 mt-4">
                       <div className="flex items-center gap-2 mb-3">
                         <Sparkles className="w-4 h-4 text-amber-400" />
-                        <span className="text-sm font-medium text-emerald-200">Un peu de poésie...</span>
+                        <span className="text-sm font-medium text-emerald-200">Vos intentions de marche</span>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div>
-                          <Label className="text-emerald-100 text-sm">Votre relation actuelle avec le vivant ?</Label>
-                          <Select value={kigo} onValueChange={setKigo}>
-                            <SelectTrigger className="mt-1 bg-white/10 border-white/20 text-white">
-                              <SelectValue placeholder="Choisissez votre kigo d'accueil" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {KIGO_OPTIONS.map(o => (
-                                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Label className="text-emerald-100 text-sm">
+                            Quels types de marches vous inspirent ? <span className="text-emerald-300/60">(au moins un — plusieurs possibles)</span>
+                          </Label>
+                          <div className="mt-2 space-y-2">
+                            {TYPE_MARCHE_OPTIONS.map((opt) => {
+                              const checked = typesMarches.includes(opt.value);
+                              return (
+                                <label
+                                  key={opt.value}
+                                  htmlFor={`type-${opt.value}`}
+                                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                    checked
+                                      ? 'bg-emerald-500/15 border-emerald-400/40'
+                                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                  }`}
+                                >
+                                  <Checkbox
+                                    id={`type-${opt.value}`}
+                                    checked={checked}
+                                    onCheckedChange={(c) => {
+                                      setTypesMarches((prev) =>
+                                        c ? [...prev, opt.value] : prev.filter((v) => v !== opt.value),
+                                      );
+                                    }}
+                                    className="mt-0.5 border-emerald-300/50 data-[state=checked]:bg-emerald-500"
+                                  />
+                                  <span className="text-sm text-emerald-100 leading-tight">
+                                    {opt.label}
+                                    <span className="block text-xs text-emerald-300/60 mt-0.5">{opt.hint}</span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+
+                          {typesMarches.includes('autre') && (
+                            <div className="mt-3">
+                              <Label className="text-emerald-100 text-sm">Précisez votre intention</Label>
+                              <Input
+                                value={autreTypeMarche}
+                                onChange={(e) => setAutreTypeMarche(e.target.value)}
+                                maxLength={150}
+                                placeholder="Ex. retraite contemplative, marche thérapeutique…"
+                                className="mt-1 bg-white/10 border-white/20 text-white placeholder:text-white/30"
+                              />
+                            </div>
+                          )}
                         </div>
 
                         <div>
-                          <Label className="text-emerald-100 text-sm">Votre superpouvoir sensoriel ?</Label>
-                          <Select value={superpouvoir} onValueChange={setSuperpouvoir}>
-                            <SelectTrigger className="mt-1 bg-white/10 border-white/20 text-white">
-                              <SelectValue placeholder="Quel sens vous guide ?" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {SUPERPOUVOIR_OPTIONS.map(o => (
-                                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="text-emerald-100 text-sm">Votre niveau d'intimité avec la nature ?</Label>
-                          <Select value={intimite} onValueChange={setIntimite}>
-                            <SelectTrigger className="mt-1 bg-white/10 border-white/20 text-white">
-                              <SelectValue placeholder="Soyez honnête..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {INTIMITE_OPTIONS.map(o => (
-                                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="text-emerald-100 text-sm">Qu'est-ce qui vous motive ?</Label>
-                          <Textarea value={motivation} onChange={e => setMotivation(e.target.value)} placeholder="Racontez-nous..." className="mt-1 bg-white/10 border-white/20 text-white placeholder:text-white/30 resize-none" rows={2} />
+                          <Label className="text-emerald-100 text-sm">
+                            Que recherchez-vous en priorité lors de vos prochaines marches du vivant ?
+                          </Label>
+                          <Textarea
+                            value={recherchePrioritaire}
+                            onChange={(e) => setRecherchePrioritaire(e.target.value)}
+                            maxLength={600}
+                            placeholder="Reconnecter une équipe au vivant, mesurer notre impact local, prendre le temps d'observer, nourrir une démarche RSE…"
+                            className="mt-1 bg-white/10 border-white/20 text-white placeholder:text-white/30 resize-none"
+                            rows={3}
+                          />
                         </div>
                       </div>
                     </div>
 
-                    {/* Poetic engagement */}
-                    <div className="border-t border-white/10 pt-4">
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-400/20">
+                    {/* Consentements */}
+                    <div className="border-t border-white/10 pt-4 space-y-3">
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-400/30">
+                        <Checkbox
+                          id="consent-analyse"
+                          checked={consentementAnalyse}
+                          onCheckedChange={(checked) => setConsentementAnalyse(!!checked)}
+                          className="mt-0.5 border-emerald-300/50 data-[state=checked]:bg-emerald-500"
+                          required
+                        />
+                        <label htmlFor="consent-analyse" className="text-sm text-emerald-100 leading-relaxed cursor-pointer">
+                          <span className="font-medium">Je consens</span> à ce que mes réponses contribuent, de manière anonymisée, à mesurer l'impact des Marches du Vivant et à accélérer les démarches de transition environnementale.
+                          <span className="block text-xs text-emerald-300/60 mt-1">
+                            Obligatoire (RGPD). Données conservées le temps de votre participation, jamais revendues. Vous pouvez retirer ce consentement à tout moment depuis votre espace.
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
                         <Checkbox
                           id="engagement"
                           checked={engagement}
@@ -447,13 +472,17 @@ const MarchesDuVivantConnexion = () => {
                         <label htmlFor="engagement" className="text-sm text-emerald-100 leading-relaxed cursor-pointer">
                           Je promets de lever les yeux de mon écran au moins une fois pendant la marche 🌿
                           <span className="block text-xs text-emerald-300/50 mt-1">
-                            (C'est notre seule condition d'utilisation)
+                            (Facultatif — notre signature d'âme)
                           </span>
                         </label>
                       </div>
                     </div>
 
-                    <Button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 hover:bg-emerald-400 text-white">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || !consentementAnalyse || typesMarches.length === 0}
+                      className="w-full bg-emerald-500 hover:bg-emerald-400 text-white disabled:opacity-50"
+                    >
                       {isSubmitting ? 'Inscription...' : 'Devenir Marcheur en devenir 🌱'}
                     </Button>
                   </motion.form>
