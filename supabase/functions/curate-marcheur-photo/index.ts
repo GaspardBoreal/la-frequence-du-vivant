@@ -166,6 +166,13 @@ Deno.serve(async (req) => {
         const url = media.url_fichier || media.external_url;
         const obsDate = (meta?.date_taken || new Date().toISOString()).slice(0, 10);
 
+        // 4bis. Enrichit iconic_taxon via iNat si absent (utile pour chaîne trophique Animalia)
+        if (!iconic) {
+          iconic = await fetchIconicTaxon(sci);
+          if (!iconic) iconic = iconicFromKingdom(king);
+        }
+
+
         // 5. Insert observation
         const { error: insErr } = await supabase.from("marcheur_observations").insert({
           marcheur_id: crewId,
