@@ -1,7 +1,45 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Marker, Popup, CircleMarker } from 'react-leaflet';
+import { Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { Plus, Minus } from 'lucide-react';
+
+/** Local high-contrast zoom controls (overrides default for this admin context only) */
+function CurationZoomControls() {
+  const map = useMap();
+  const btn = 'w-9 h-9 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-lg border border-emerald-400/60 transition active:scale-95';
+  return (
+    <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-1.5">
+      <button onClick={() => map.zoomIn()} className={btn} aria-label="Zoomer"><Plus className="w-4 h-4" /></button>
+      <button onClick={() => map.zoomOut()} className={btn} aria-label="Dézoomer"><Minus className="w-4 h-4" /></button>
+    </div>
+  );
+}
+
+/** Highly visible numbered emerald marker for marche centers */
+function makeMarcheIcon(num: number, name: string) {
+  return L.divIcon({
+    className: 'curation-marche-marker',
+    html: `<div style="
+      display:flex;align-items:center;gap:6px;transform:translate(-50%,-50%);
+    ">
+      <div style="
+        width:30px;height:30px;border-radius:50%;
+        background:linear-gradient(135deg,#10b981,#059669);
+        border:3px solid #fff;color:#fff;font-weight:800;font-size:13px;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 0 2px rgba(16,185,129,.4);
+      ">${num}</div>
+      <div style="
+        background:rgba(5,46,22,.92);color:#fff;font-size:11px;font-weight:600;
+        padding:3px 8px;border-radius:6px;border:1px solid rgba(16,185,129,.5);
+        white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;
+      ">${name}</div>
+    </div>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+}
 import { supabase } from '@/integrations/supabase/client';
 import RichMap from '@/components/maps/RichMap';
 import { useAiCurationMedias, type AiCurationMedia } from '@/hooks/useAiCurationMedias';
@@ -236,13 +274,14 @@ export default function AiCurationMapView({ eventId }: Props) {
               <p className="text-sm">Aucune photo géolocalisée pour ces filtres</p>
             </div>
           ) : (
-            <RichMap bounds={bounds} controls={{ zoom: true, style: true, geolocate: true }} height="100%">
+            <RichMap bounds={bounds} controls={{ zoom: false, style: true, geolocate: true }} height="100%">
+              <CurationZoomControls />
               {marches.filter((m: any) => m.latitude && m.longitude && (filters.marcheId === 'all' || filters.marcheId === m.id))
-                .map((m: any) => (
-                  <CircleMarker key={`marche-${m.id}`} center={[m.latitude, m.longitude]} radius={5}
-                    pathOptions={{ color: '#fff', weight: 2, fillColor: '#fff', fillOpacity: 0.2 }}>
+                .map((m: any, idx: number) => (
+                  <Marker key={`marche-${m.id}`} position={[m.latitude, m.longitude]}
+                    icon={makeMarcheIcon(idx + 1, m.nom_marche)}>
                     <Popup>{m.nom_marche}</Popup>
-                  </CircleMarker>
+                  </Marker>
                 ))}
               {withGps.map((m) => (
                 <Marker key={m.id} position={[m.lat!, m.lng!]}
