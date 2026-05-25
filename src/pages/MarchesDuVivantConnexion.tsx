@@ -118,8 +118,16 @@ const MarchesDuVivantConnexion = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!engagement) {
-      toast.error('Veuillez accepter l\'engagement poétique 🌱');
+    if (!consentementAnalyse) {
+      toast.error('Le consentement à l\'analyse d\'impact est nécessaire pour rejoindre la communauté.');
+      return;
+    }
+    if (typesMarches.length === 0) {
+      toast.error('Sélectionnez au moins un type de marche qui vous inspire 🌿');
+      return;
+    }
+    if (typesMarches.includes('autre') && !autreTypeMarche.trim()) {
+      toast.error('Précisez votre type de marche dans le champ « Autre ».');
       return;
     }
     setIsSubmitting(true);
@@ -127,11 +135,10 @@ const MarchesDuVivantConnexion = () => {
       const affiliateToken = getStoredAffiliateToken() || undefined;
       await signUp({
         email, password, prenom, nom, ville, telephone,
-        date_naissance: dateNaissance || undefined,
-        motivation: motivation || undefined,
-        kigo_accueil: kigo || undefined,
-        superpouvoir_sensoriel: superpouvoir || undefined,
-        niveau_intimite_vivant: intimite || undefined,
+        types_marches_interets: typesMarches,
+        autre_type_marche: typesMarches.includes('autre') ? autreTypeMarche.trim() : undefined,
+        recherche_prioritaire: recherchePrioritaire.trim() || undefined,
+        consentement_analyse: consentementAnalyse,
         affiliateToken,
       });
 
