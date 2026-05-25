@@ -1,78 +1,62 @@
-# Analyse critique de la proposition "Jardin Punk" — et plan d'adaptation
+# Upload direct dans « Pratique éditoriale »
 
-## Ce que la proposition a juste
+## Contexte
 
-- **Approche itérative en 4 couches** (données → motion → 3D → son) : c'est la bonne méthode pour ne pas faire diverger l'IA, et elle colle à notre architecture modulaire.
-- **Framer Motion avant GSAP** : exact, c'est déjà ce que notre runtime charge en UMD (`framer-motion@11.11.17`).
-- **Isoler la 3D en arrière-plan z-négatif** : bon réflexe d'archi.
-- **Sonification liée au viewport** : pertinent pour la dimension bioacoustique du projet.
+Aujourd'hui dans Apprendre → L'Œil → Nouvelle pratique éditoriale (`MainCuration.tsx`), le champ Médias ne propose qu'un seul chemin : « Parcourir toutes les marches & le mur Convivialité » (`MediaPickerSheet`). Pas d'import direct depuis appareil, ce qui bloque les rédacteurs qui veulent illustrer un geste avec une photo qu'ils viennent juste de prendre.
 
-## Ce qui ne marchera pas tel quel dans notre contexte
+## Analyse UX/UI
 
-La proposition est écrite pour un projet React vierge créé par Lovable. Or notre scénographie tourne dans un **iframe sandboxé** (`ScenographyRuntime.tsx` + `scenographyRuntimeHtml.ts`) avec un runtime déjà figé. Trois problèmes durs :
+Deux entrées coexistent désormais, avec une hiérarchie claire :
 
-1. **React Three Fiber ne se charge pas en UMD/CDN.** R3F est conçu pour un bundler (réconciliateur custom, hooks, JSX `<mesh>`). Dans notre iframe, on ne peut pas faire `import` ni `npm add`. La seule voie réaliste pour la 3D : **Three.js pur en UMD** (`three.min.js`), monté dans un `useEffect` sur un `<canvas>` classique. On garde l'esprit "réseau mycélien", on perd la syntaxe déclarative R3F.
-2. **Le JSON de 120 espèces n'a pas à être "chargé"** : nos données sont déjà injectées via `postMessage` dans `window.__SCENO_DATA__` (espèces dédoublonnées + photos + waypoints + testimonies). L'étape 1 du prompt original est donc à réécrire en "consomme `data.species` et `data.photos`".
-3. **Web Audio + autoplay** : un iframe `sandbox="allow-scripts"` peut faire de l'audio, mais le navigateur bloque tant qu'il n'y a pas eu d'interaction utilisateur. Il faut un overlay "Entrer dans le jardin" qui débloque l'`AudioContext`, sinon silence garanti sur Chrome/Safari.
+1. **Action principale (la plus rapide pour l'usage mobile)** — « Importer depuis l'appareil » : bouton plein largeur avec icône caméra/upload. Sur mobile, ouvre directement l'app photo ou la galerie (`capture="environment"`). Sur desktop, ouvre le sélecteur de fichiers. Multi-fichiers.
+2. **Action secondaire (réutilisation)** — « Choisir dans la bibliothèque de l'événement » : remplace l'unique CTA actuel, intitulé plus explicite.
 
-## Autres angles morts à corriger
+Les deux entrées s'affichent côte à côte (ou empilées en mobile <480px) au-dessus de la grille de vignettes existante, pour respecter la sobriété informationnelle déjà en place.
 
-- **Pas d'`AnimatePresence` mentionné** alors que c'est ce qui rend l'apparition/disparition fluide au scroll — à ajouter étape 2.
-- **"Rareté" dans le JSON** : notre modèle n'a pas de champ `rarete`. On peut le **dériver** : espèce vue par 1 seul marcheur OU `observations_count = 1` OU absente de `marcheur_observations` (uniquement iNat) = rare. À documenter dans le template.
-- **Performance** : 120 espèces × particules 3D + photos animées + audio = risque de jank mobile. Il faut **plafonner** (ex. 60 particules max, lazy-load photos via `IntersectionObserver`, `prefers-reduced-motion` respecté).
-- **Fallback données vides** : DEVIAT a actuellement 0 espèce remontée (bug RPC en cours de fix). Le template doit gérer gracieusement `species.length === 0` avec un état poétique au lieu d'un écran noir.
-- **Accessibilité** : bouton mute, respect `prefers-reduced-motion`, alt-text sur les photos. Aucun mot là-dessus dans la proposition.
+Pendant l'upload :
+- Barre de progression compacte (réutilise les stages exposés par `useUploadConvivialitePhotos` : `optimizing` / `uploading`).
+- Toast erreur explicite pour HEIC (déjà géré par le hook).
+- Les nouvelles photos sont **immédiatement ajoutées à la sélection de la pratique** (préfixe `conv:<uuid>`) ET au mur Convivialité de l'exploration — un seul stockage canonique, pas de doublon de bucket.
 
-## Plan d'implémentation adapté (4 itérations, dans le template DEVIAT)
+Pourquoi réutiliser le mur Convivialité plutôt que créer un bucket dédié :
+- Le `MediaPickerSheet`, `buildMediaIndex` et la résolution de vignette fonctionnent déjà avec les clés `conv:<uuid>`.
+- Pas de migration, pas de nouvelle RLS, pas de duplication d'infra d'upload (ImageOptimizer, HEIC, EXIF, optimisation 1.5MB/1920px sont déjà branchés).
+- Effet de bord positif : la photo devient réutilisable pour d'autres pratiques et enrichit le mur. Si l'on souhaite plus tard isoler ces uploads « éditoriaux », un flag `source='pratique'` pourra être ajouté sans casser l'existant.
 
-Tout se passe dans `src/lib/scenography/deviatJardinMondeTemplate.ts` (code TSX stocké en BDD, transpilé Babel, exécuté dans l'iframe). On ne touche **pas** au runtime sauf pour charger Three.js UMD à l'étape 3.
+Accessibilité : input file natif (compatible lecteurs d'écran + capture caméra iOS/Android), `aria-label` explicite, focus restauré après upload.
 
-### Itération 1 — Socle données (template uniquement)
-- Consommer `data.species` et `data.photos` déjà injectés.
-- Dériver `isRare` : `(sp.observations_count ?? 0) <= 1 || !sp.has_marcheur_obs`.
-- Rendu de fallback poétique si `species.length === 0`.
-- Grille brute provisoire pour valider le binding.
+## Changements
 
-### Itération 2 — Jardin Punk (Framer Motion)
-- Remplacer la grille par layout asymétrique : positions `x/y` dérivées d'un hash du `scientificName` (déterministe → stable entre renders).
-- Tailles variables (3 buckets : S/M/L selon `observations_count`).
-- `motion.div` + `whileInView` + `AnimatePresence` pour apparition au scroll.
-- Nom de l'espèce en surimpression au survol via `whileHover`.
-- Respect `useReducedMotion()`.
+### `src/components/community/insights/curation/MainCuration.tsx`
 
-### Itération 3 — Mycélium 3D (Three.js pur, pas R3F)
-- Ajouter `<script src="https://unpkg.com/three@0.160/build/three.min.js">` dans `scenographyRuntimeHtml.ts` (seule modification du runtime).
-- Dans le template : `<canvas>` en `fixed inset-0 -z-10`, monté via `useEffect`.
-- Une particule `Points` par espèce (max 60), positions sphériques aléatoires.
-- Lignes `LineSegments` entre particules à distance < seuil → effet réseau.
-- Rotation très lente (`requestAnimationFrame` + `prefers-reduced-motion` kill switch).
-- Couleur de particule via `hashColor(scientificName)` déjà exposé par notre runtime.
+- Ajouter un `<input type="file" accept="image/*" multiple>` masqué, déclenché par un nouveau bouton « Importer depuis l'appareil ».
+- Brancher `useUploadConvivialitePhotos(explorationId, userId)` (le user vient déjà du contexte auth utilisé ailleurs dans le fichier).
+- Après upload réussi : pour chaque photo insérée, push `conv:<id>` dans `editor.mediaKeys` et invalider `['convivialite-photos', explorationId]` + `['exploration-all-media', explorationId]` pour que la vignette apparaisse instantanément dans la grille.
+- Refondre le bloc Médias :
+  - Header inchangé (label + compteur).
+  - Sous le header : 2 boutons (Importer / Bibliothèque) au lieu de l'unique zone dashed actuelle.
+  - Si `mediaKeys.length === 0`, garder un visuel d'incitation léger sous les boutons.
+  - Conserver la grille 4 colonnes existante.
+- Indicateur de progression compact (texte + spinner) tant que la mutation est `pending`.
+- Renommer le CTA secondaire en « Choisir dans la bibliothèque » (plus clair que « Choisir des médias » / « Modifier la sélection »).
 
-### Itération 4 — Souffle bioacoustique (Web Audio API)
-- Overlay d'entrée "Pénétrer dans le jardin" qui `resume()` l'`AudioContext`.
-- `IntersectionObserver` sur chaque carte espèce → `OscillatorNode` court (200ms, sinus, fréquence dérivée du hash du nom).
-- Espèces rares → harmonique mineure + reverb léger (`ConvolverNode` ou simple delay).
-- Bouton mute persistant en haut à droite.
+### Aucune migration SQL
 
-## Sections techniques
+Le bucket `exploration-convivialite` et la table `exploration_convivialite_photos` existent déjà avec les bonnes RLS (un user authentifié peut insérer ses propres photos dans une exploration). Rien à toucher côté DB.
 
-### Fichiers touchés
-- `src/lib/scenography/deviatJardinMondeTemplate.ts` — réécriture complète du TSX template (4 passes).
-- `src/components/scenography/scenographyRuntimeHtml.ts` — **uniquement** ajout du `<script>` Three.js UMD à l'étape 3.
-- `src/components/scenography/ScenographyRuntime.tsx` — **aucune** modification (le bandeau "données vides" est déjà en place).
-- Aucune migration SQL : le RPC corrigé précédemment suffira dès qu'il sera approuvé.
+### Aucun nouveau hook
 
-### Garde-fous
-- Plafond 60 particules 3D, lazy photos, `prefers-reduced-motion` à chaque étape.
-- Fallback texte si Three.js échoue à charger (try/catch autour du `new THREE.Scene()`).
-- Bouton mute + overlay audio obligatoires pour respect autoplay policies iOS/Safari.
+`useUploadConvivialitePhotos` est suffisant. Si plus tard on veut distinguer les uploads « pratique » du mur, on ajoutera une colonne optionnelle.
 
-### Ce qu'on ne fait PAS
-- Pas de R3F (incompatible iframe sandbox sans bundler).
-- Pas de GSAP (Framer Motion suffit et est déjà chargé).
-- Pas de chargement de JSON externe (données déjà piped via postMessage).
-- Pas de refonte du système de scénographie : seul le template DEVIAT change.
+## Hors scope
 
-## Question avant de coder
+- Pas de drag-and-drop de fichiers (peut être ajouté en V2, peu utilisé sur mobile).
+- Pas de recadrage in-app (l'optimizer s'occupe déjà du redimensionnement).
+- Pas de réorganisation des vignettes dans le dialog (le DnD existe déjà sur le mur Convivialité lui-même).
 
-Souhaites-tu que je **fasse les 4 itérations d'un coup** dans un seul commit (rapide mais boîte noire si bug), ou **une itération à la fois** avec validation visuelle entre chaque (plus long mais conforme à l'esprit de la proposition originale) ?
+## Validation
+
+1. Sur mobile, ouvrir le dialog → « Importer » → choisir caméra → la photo apparaît dans la grille et la pratique se sauvegarde avec la photo.
+2. Sur desktop, sélectionner 3 fichiers d'un coup → les 3 vignettes apparaissent.
+3. Vérifier que la photo importée apparaît aussi sur le mur Convivialité de l'exploration.
+4. Tester un HEIC iPhone → toast explicite si conversion impossible.

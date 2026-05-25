@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Hand, Plus, Pencil, Trash2, Image as ImageIcon, Play, Mic, ArrowDownAZ, GripVertical, Check } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Hand, Plus, Pencil, Trash2, Image as ImageIcon, Play, Mic, ArrowDownAZ, GripVertical, Check, Upload, Loader2, FolderOpen } from 'lucide-react';
 import {
   DndContext,
   PointerSensor,
@@ -46,6 +46,8 @@ import MediaLightbox from './MediaLightbox';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import PratiqueMarcheursPicker from './PratiqueMarcheursPicker';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useUploadConvivialitePhotos } from '@/hooks/useConvivialitePhotos';
 
 interface Props {
   explorationId: string;
@@ -85,6 +87,40 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   const [savingOrder, setSavingOrder] = useState(false);
 
   const mediaIndex = useMemo(() => buildMediaIndex(allMedia), [allMedia]);
+
+  // Upload direct depuis appareil (smartphone / tablette / PC) — réutilise le mur Convivialité
+  const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadStage, setUploadStage] = useState<string | null>(null);
+  const { mutate: uploadPhotos, isPending: uploading } = useUploadConvivialitePhotos(
+    explorationId,
+    user?.id,
+    (p) => setUploadStage(`${p.fileIndex + 1}/${p.total} · ${p.stage}`),
+  );
+
+  const handlePickFiles = (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    const files = Array.from(list).filter((f) => {
+      if (f.type.startsWith('image/')) return true;
+      const n = f.name.toLowerCase();
+      return n.endsWith('.heic') || n.endsWith('.heif');
+    });
+    if (files.length === 0) {
+      toast.error('Aucune image valide sélectionnée');
+      return;
+    }
+    uploadPhotos(files, {
+      onSuccess: ({ results }) => {
+        if (results.length > 0) {
+          const newKeys = results.map((r) => `conv:${r.id}`);
+          setEditor((s) => ({ ...s, mediaKeys: [...s.mediaKeys, ...newKeys] }));
+          qc.invalidateQueries({ queryKey: ['exploration-all-media', explorationId] });
+        }
+      },
+      onSettled: () => setUploadStage(null),
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const sortedEntries = useMemo(() => {
     if (sortMode === 'alpha') {
@@ -451,33 +487,59 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  Médias ({editor.mediaKeys.length})
-                </label>
+              <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5" />
+                Médias ({editor.mediaKeys.length})
+              </label>
+
+              {/* Double entrée : upload direct + bibliothèque */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || !user?.id}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 transition px-3 py-2.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Importer des photos depuis l'appareil"
+                >
+                  {uploading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5" />
+                  )}
+                  <span>{uploading ? 'Envoi…' : 'Importer depuis l\'appareil'}</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setPickerOpen(true)}
-                  className="text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition px-3 py-2.5 text-xs font-medium text-foreground"
+                  aria-label="Choisir dans la bibliothèque de l'exploration"
                 >
-                  {editor.mediaKeys.length === 0 ? 'Choisir des médias' : 'Modifier la sélection'}
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Choisir dans la bibliothèque</span>
                 </button>
               </div>
 
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.heic,.heif,.HEIC,.HEIF"
+                multiple
+                hidden
+                onChange={(e) => handlePickFiles(e.target.files)}
+              />
+
+              {uploading && uploadStage && (
+                <div className="text-[11px] text-emerald-700 dark:text-emerald-300 italic">
+                  Traitement en cours · {uploadStage}
+                </div>
+              )}
+
               {editor.mediaKeys.length === 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setPickerOpen(true)}
-                  className="w-full rounded-lg border border-dashed border-border bg-muted/20 hover:bg-muted/40 transition px-3 py-6 text-center"
-                >
-                  <ImageIcon className="w-6 h-6 mx-auto mb-1.5 text-muted-foreground/60" />
-                  <p className="text-xs text-muted-foreground">
-                    Parcourir toutes les marches & le mur Convivialité
-                  </p>
-                </button>
+                <p className="text-[11px] text-muted-foreground italic text-center pt-1">
+                  Aucun média sélectionné — importez une photo ou piochez dans la bibliothèque de l'exploration.
+                </p>
               ) : (
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-4 gap-1.5 pt-1">
                   {editor.mediaKeys.slice(0, 8).map(key => {
                     const it = mediaIndex.get(key);
                     if (!it) {
@@ -505,6 +567,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               )}
             </div>
           </div>
+
 
           <DialogFooter>
             <Button variant="ghost" onClick={close}>Annuler</Button>
