@@ -274,13 +274,14 @@ export default function AiCurationMapView({ eventId }: Props) {
               <p className="text-sm">Aucune photo géolocalisée pour ces filtres</p>
             </div>
           ) : (
-            <RichMap bounds={bounds} controls={{ zoom: true, style: true, geolocate: true }} height="100%">
+            <RichMap bounds={bounds} controls={{ zoom: false, style: true, geolocate: true }} height="100%">
+              <CurationZoomControls />
               {marches.filter((m: any) => m.latitude && m.longitude && (filters.marcheId === 'all' || filters.marcheId === m.id))
-                .map((m: any) => (
-                  <CircleMarker key={`marche-${m.id}`} center={[m.latitude, m.longitude]} radius={5}
-                    pathOptions={{ color: '#fff', weight: 2, fillColor: '#fff', fillOpacity: 0.2 }}>
+                .map((m: any, idx: number) => (
+                  <Marker key={`marche-${m.id}`} position={[m.latitude, m.longitude]}
+                    icon={makeMarcheIcon(idx + 1, m.nom_marche)}>
                     <Popup>{m.nom_marche}</Popup>
-                  </CircleMarker>
+                  </Marker>
                 ))}
               {withGps.map((m) => (
                 <Marker key={m.id} position={[m.lat!, m.lng!]}
