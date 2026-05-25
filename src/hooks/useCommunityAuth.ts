@@ -136,7 +136,11 @@ export function useCommunityAuth() {
         _kigo_accueil: data.kigo_accueil || null,
         _superpouvoir_sensoriel: data.superpouvoir_sensoriel || null,
         _niveau_intimite_vivant: data.niveau_intimite_vivant || null,
-      });
+        _types_marches_interets: data.types_marches_interets ?? null,
+        _autre_type_marche: data.autre_type_marche || null,
+        _recherche_prioritaire: data.recherche_prioritaire || null,
+        _consentement_analyse: !!data.consentement_analyse,
+      } as any);
 
       if (profileError) throw profileError;
 
