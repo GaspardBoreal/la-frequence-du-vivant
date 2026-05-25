@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
+import { Marker, Popup, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
 import RichMap from '@/components/maps/RichMap';
 import { useAiCurationMedias, type AiCurationMedia } from '@/hooks/useAiCurationMedias';
+import { useCurationMediaContext, type CurationCandidate } from '@/hooks/useCurationMediaContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, CheckCircle2, EyeOff, Sparkles, MapPin, MapPinOff, Search, X, Leaf, Bug, Image as ImageIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Loader2, CheckCircle2, EyeOff, Sparkles, MapPin, MapPinOff, Search, X, AlertTriangle, User as UserIcon, Image as ImageIcon, Footprints } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props { eventId: string }
@@ -40,16 +42,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 const ALL_STATUSES = Object.keys(STATUS_LABEL);
 
-const KINGDOM_ICON: Record<string, any> = {
-  plante: Leaf,
-  animal: Bug,
-  champignon: Sparkles,
-};
-
 function makeMarkerIcon(media: AiCurationMedia, selected: boolean, highlighted: boolean) {
   const color = STATUS_COLOR[media.ai_status] || '#999';
   const conf = media.topConfidence ?? 0;
-  const r = 7 + Math.round(conf * 8); // 7→15
+  const r = 7 + Math.round(conf * 8);
   const stroke = selected ? '#fff' : highlighted ? '#fde047' : 'rgba(0,0,0,0.55)';
   const sw = selected || highlighted ? 3 : 1.5;
   const pulse = media.ai_status === 'pending_curation';
@@ -92,8 +88,8 @@ export default function AiCurationMapView({ eventId }: Props) {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [drawerMediaId, setDrawerMediaId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
 
-  // Marches de l'event (pour filtre + tracé)
   const { data: marches = [] } = useQuery({
     queryKey: ['event-marches-list', eventId],
     queryFn: async () => {
@@ -105,6 +101,7 @@ export default function AiCurationMapView({ eventId }: Props) {
     },
     enabled: medias.length > 0,
   });
+  const marchesById = useMemo(() => Object.fromEntries(marches.map((m: any) => [m.id, m])), [marches]);
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
@@ -112,8 +109,8 @@ export default function AiCurationMapView({ eventId }: Props) {
       if (!filters.statuses.has(m.ai_status)) return false;
       if (filters.kingdom !== 'all') {
         const k = m.ai_kingdom_hint;
-        const isKnown = k && KINGDOM_ICON[k];
-        if (filters.kingdom === 'inconnu' ? isKnown : k !== filters.kingdom) return false;
+        const known = ['plante', 'animal', 'champignon'].includes(k || '');
+        if (filters.kingdom === 'inconnu' ? known : k !== filters.kingdom) return false;
       }
       if (filters.marcheId !== 'all' && m.marche_id !== filters.marcheId) return false;
       if ((m.topConfidence ?? 0) * 100 < filters.minConfidence) return false;
@@ -126,11 +123,7 @@ export default function AiCurationMapView({ eventId }: Props) {
 
   const withGps = filtered.filter((m) => m.lat != null && m.lng != null);
   const withoutGps = filtered.filter((m) => m.lat == null || m.lng == null);
-
-  const bounds = useMemo(
-    () => withGps.map((m) => [m.lat!, m.lng!] as [number, number]),
-    [withGps],
-  );
+  const bounds = useMemo(() => withGps.map((m) => [m.lat!, m.lng!] as [number, number]), [withGps]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -139,16 +132,12 @@ export default function AiCurationMapView({ eventId }: Props) {
   }, [medias]);
 
   const toggleSelect = (id: string) => {
-    setSelected((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
   const selectAllVisible = () => setSelected(new Set(filtered.map((m) => m.id)));
   const clearSelection = () => setSelected(new Set());
 
-  const runBatch = async (action: 'validate' | 'unidentifiable' | 'reprocess') => {
+  const runBatchSimple = async (action: 'unidentifiable' | 'reprocess') => {
     if (selected.size === 0) return;
     setBusy(true);
     try {
@@ -161,34 +150,26 @@ export default function AiCurationMapView({ eventId }: Props) {
         toast.success(`Reconnaissance relancée sur ${ids.length} photo(s)`);
       } else {
         const { data, error } = await supabase.functions.invoke('curate-marcheur-photo', {
-          body: { mediaIds: ids, action, useTopSuggestion: action === 'validate' },
+          body: { mediaIds: ids, action },
         });
         if (error) throw error;
-        const ok = (data as any)?.count ?? ids.length;
-        toast.success(`${ok}/${ids.length} photo(s) traitée(s)`);
+        toast.success(`${(data as any)?.count ?? ids.length}/${ids.length} marquée(s) non id.`);
       }
       clearSelection();
       refetch();
-    } catch (e: any) {
-      toast.error(e?.message || 'Erreur');
-    } finally {
-      setBusy(false);
-    }
+    } catch (e: any) { toast.error(e?.message || 'Erreur'); }
+    finally { setBusy(false); }
   };
 
-  const drawerMedia = filtered.find((m) => m.id === drawerMediaId)
-    || medias.find((m) => m.id === drawerMediaId)
-    || null;
+  const drawerMedia = filtered.find((m) => m.id === drawerMediaId) || medias.find((m) => m.id === drawerMediaId) || null;
 
   return (
     <Card className="p-0 overflow-hidden">
-      {/* Toolbar filtres */}
+      {/* Toolbar */}
       <div className="border-b border-border p-3 flex flex-wrap items-center gap-2">
-        {/* Présets */}
         <div className="flex gap-1 flex-wrap">
-          <PresetChip label="À curer" active={
-            filters.statuses.size === 2 && filters.statuses.has('pending_curation') && filters.statuses.has('low_confidence')
-          } onClick={() => setFilters({ ...DEFAULT_FILTERS, statuses: new Set(['pending_curation', 'low_confidence']) })} />
+          <PresetChip label="À curer" active={filters.statuses.size === 2 && filters.statuses.has('pending_curation') && filters.statuses.has('low_confidence')}
+            onClick={() => setFilters({ ...DEFAULT_FILTERS, statuses: new Set(['pending_curation', 'low_confidence']) })} />
           <PresetChip label="Auto-validées" active={filters.statuses.size === 1 && filters.statuses.has('auto_validated')}
             onClick={() => setFilters({ ...DEFAULT_FILTERS, statuses: new Set(['auto_validated']) })} />
           <PresetChip label="Sans GPS" active={filters.hideGps === 'without'}
@@ -197,20 +178,13 @@ export default function AiCurationMapView({ eventId }: Props) {
             onClick={() => setFilters({ ...DEFAULT_FILTERS, statuses: new Set(ALL_STATUSES) })} />
         </div>
         <div className="h-6 w-px bg-border mx-1" />
-        {/* Status chips */}
         <div className="flex gap-1 flex-wrap">
           {ALL_STATUSES.map((s) => (
             <button key={s} onClick={() => {
-              setFilters((f) => {
-                const n = new Set(f.statuses);
-                n.has(s) ? n.delete(s) : n.add(s);
-                return { ...f, statuses: n };
-              });
+              setFilters((f) => { const n = new Set(f.statuses); n.has(s) ? n.delete(s) : n.add(s); return { ...f, statuses: n }; });
             }} className={`px-2 py-1 rounded-full text-[11px] border transition ${
               filters.statuses.has(s) ? 'border-transparent text-white' : 'border-border text-muted-foreground hover:border-foreground/30'
-            }`}
-              style={filters.statuses.has(s) ? { background: STATUS_COLOR[s] } : {}}
-            >
+            }`} style={filters.statuses.has(s) ? { background: STATUS_COLOR[s] } : {}}>
               {STATUS_LABEL[s]} <span className="opacity-70">({counts[s] || 0})</span>
             </button>
           ))}
@@ -230,24 +204,17 @@ export default function AiCurationMapView({ eventId }: Props) {
             <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Toutes marches</SelectItem>
-              {marches.map((m: any) => (
-                <SelectItem key={m.id} value={m.id}>{m.nom_marche}</SelectItem>
-              ))}
+              {marches.map((m: any) => (<SelectItem key={m.id} value={m.id}>{m.nom_marche}</SelectItem>))}
             </SelectContent>
           </Select>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              placeholder="Espèce…"
-              className="h-8 text-xs pl-7 w-[140px]"
-            />
+            <Input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              placeholder="Espèce…" className="h-8 text-xs pl-7 w-[140px]" />
           </div>
         </div>
       </div>
 
-      {/* Slider confiance + GPS toggle */}
       <div className="border-b border-border px-3 py-2 flex items-center gap-4 flex-wrap text-xs">
         <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-[300px]">
           <span className="text-muted-foreground whitespace-nowrap">Confiance min</span>
@@ -259,52 +226,35 @@ export default function AiCurationMapView({ eventId }: Props) {
         </div>
       </div>
 
-      {/* Split view */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] h-[70vh] min-h-[500px]">
-        {/* MAP */}
         <div className="relative bg-[#1a1a2e]">
           {isLoading ? (
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : withGps.length === 0 ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
               <MapPinOff className="h-10 w-10 opacity-40 mb-2" />
               <p className="text-sm">Aucune photo géolocalisée pour ces filtres</p>
             </div>
           ) : (
-            <RichMap
-              bounds={bounds}
-              controls={{ zoom: true, style: true, geolocate: true }}
-              height="100%"
-            >
-              {/* Marche centers */}
-              {marches
-                .filter((m: any) => m.latitude && m.longitude && (filters.marcheId === 'all' || filters.marcheId === m.id))
+            <RichMap bounds={bounds} controls={{ zoom: true, style: true, geolocate: true }} height="100%">
+              {marches.filter((m: any) => m.latitude && m.longitude && (filters.marcheId === 'all' || filters.marcheId === m.id))
                 .map((m: any) => (
-                  <CircleMarker
-                    key={`marche-${m.id}`}
-                    center={[m.latitude, m.longitude]}
-                    radius={5}
-                    pathOptions={{ color: '#fff', weight: 2, fillColor: '#fff', fillOpacity: 0.2 }}
-                  >
+                  <CircleMarker key={`marche-${m.id}`} center={[m.latitude, m.longitude]} radius={5}
+                    pathOptions={{ color: '#fff', weight: 2, fillColor: '#fff', fillOpacity: 0.2 }}>
                     <Popup>{m.nom_marche}</Popup>
                   </CircleMarker>
                 ))}
-              {/* Photo markers */}
               {withGps.map((m) => (
-                <Marker
-                  key={m.id}
-                  position={[m.lat!, m.lng!]}
+                <Marker key={m.id} position={[m.lat!, m.lng!]}
                   icon={makeMarkerIcon(m, selected.has(m.id), highlightedId === m.id)}
                   eventHandlers={{
                     click: () => setDrawerMediaId(m.id),
                     mouseover: () => setHighlightedId(m.id),
                     mouseout: () => setHighlightedId(null),
-                  }}
-                >
+                  }}>
                   <Popup>
-                    <PhotoPopup media={m} onOpen={() => setDrawerMediaId(m.id)} onSelect={() => toggleSelect(m.id)} selected={selected.has(m.id)} />
+                    <PhotoPopup media={m} marcheName={(marchesById[m.marche_id || ''] as any)?.nom_marche}
+                      onOpen={() => setDrawerMediaId(m.id)} onSelect={() => toggleSelect(m.id)} selected={selected.has(m.id)} />
                   </Popup>
                 </Marker>
               ))}
@@ -312,53 +262,38 @@ export default function AiCurationMapView({ eventId }: Props) {
           )}
         </div>
 
-        {/* LIST */}
         <div className="border-l border-border flex flex-col bg-card">
-          {/* Selection bar */}
           <div className="border-b border-border p-2 flex items-center gap-2 text-xs">
-            <Checkbox
-              checked={selected.size > 0 && selected.size === filtered.length}
-              onCheckedChange={(v) => v ? selectAllVisible() : clearSelection()}
-            />
+            <Checkbox checked={selected.size > 0 && selected.size === filtered.length}
+              onCheckedChange={(v) => v ? selectAllVisible() : clearSelection()} />
             <span className="text-muted-foreground">
               {selected.size > 0 ? `${selected.size} sélectionnée(s)` : `${filtered.length} photo(s)`}
             </span>
             {selected.size > 0 && (
-              <Button variant="ghost" size="sm" className="h-6 ml-auto" onClick={clearSelection}>
-                <X className="h-3 w-3" />
-              </Button>
+              <Button variant="ghost" size="sm" className="h-6 ml-auto" onClick={clearSelection}><X className="h-3 w-3" /></Button>
             )}
           </div>
 
           <div className="flex-1 overflow-y-auto">
             {filtered.map((m) => (
-              <PhotoRow
-                key={m.id}
-                media={m}
-                selected={selected.has(m.id)}
-                highlighted={highlightedId === m.id}
-                onSelect={() => toggleSelect(m.id)}
-                onOpen={() => setDrawerMediaId(m.id)}
-                onHover={(v) => setHighlightedId(v ? m.id : null)}
-              />
+              <PhotoRow key={m.id} media={m} marcheName={(marchesById[m.marche_id || ''] as any)?.nom_marche}
+                selected={selected.has(m.id)} highlighted={highlightedId === m.id}
+                onSelect={() => toggleSelect(m.id)} onOpen={() => setDrawerMediaId(m.id)}
+                onHover={(v) => setHighlightedId(v ? m.id : null)} />
             ))}
-            {filtered.length === 0 && !isLoading && (
-              <p className="text-sm text-muted-foreground text-center py-8">Aucune photo</p>
-            )}
+            {filtered.length === 0 && !isLoading && <p className="text-sm text-muted-foreground text-center py-8">Aucune photo</p>}
           </div>
 
-          {/* Bottom action bar */}
           {selected.size > 0 && (
             <div className="border-t border-border p-2 space-y-1 bg-muted/30">
-              <Button size="sm" className="w-full" disabled={busy} onClick={() => runBatch('validate')}>
-                {busy ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1.5" />}
-                Valider top-1 ({selected.size})
+              <Button size="sm" className="w-full" disabled={busy} onClick={() => setBatchOpen(true)}>
+                <CheckCircle2 className="h-3 w-3 mr-1.5" /> Valider top-1 ({selected.size})
               </Button>
               <div className="grid grid-cols-2 gap-1">
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => runBatch('unidentifiable')}>
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => runBatchSimple('unidentifiable')}>
                   <EyeOff className="h-3 w-3 mr-1" /> Non id.
                 </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => runBatch('reprocess')}>
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => runBatchSimple('reprocess')}>
                   <Sparkles className="h-3 w-3 mr-1" /> Re-IA
                 </Button>
               </div>
@@ -370,14 +305,18 @@ export default function AiCurationMapView({ eventId }: Props) {
       {/* Detail drawer */}
       <Sheet open={!!drawerMediaId} onOpenChange={(o) => !o && setDrawerMediaId(null)}>
         <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Curation photo</SheetTitle>
-          </SheetHeader>
-          {drawerMedia && (
-            <DetailContent media={drawerMedia} onDone={() => { refetch(); setDrawerMediaId(null); }} />
+          <SheetHeader><SheetTitle>Curation photo</SheetTitle></SheetHeader>
+          {drawerMediaId && drawerMedia && (
+            <DetailContent mediaId={drawerMediaId} fallback={drawerMedia}
+              onDone={() => { refetch(); setDrawerMediaId(null); }} />
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Batch confirm dialog */}
+      <BatchValidateDialog open={batchOpen} onOpenChange={setBatchOpen}
+        mediaIds={Array.from(selected)} medias={medias} marches={marches}
+        onDone={() => { refetch(); clearSelection(); setBatchOpen(false); }} />
     </Card>
   );
 }
@@ -390,32 +329,24 @@ function PresetChip({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
-function PhotoRow({ media, selected, highlighted, onSelect, onOpen, onHover }: {
-  media: AiCurationMedia; selected: boolean; highlighted: boolean;
+function PhotoRow({ media, marcheName, selected, highlighted, onSelect, onOpen, onHover }: {
+  media: AiCurationMedia; marcheName?: string; selected: boolean; highlighted: boolean;
   onSelect: () => void; onOpen: () => void; onHover: (v: boolean) => void;
 }) {
   const url = media.url_fichier || media.external_url || '';
   const color = STATUS_COLOR[media.ai_status];
   return (
-    <div
-      onMouseEnter={() => onHover(true)}
-      onMouseLeave={() => onHover(false)}
+    <div onMouseEnter={() => onHover(true)} onMouseLeave={() => onHover(false)}
       className={`flex gap-2 p-2 border-b border-border/50 cursor-pointer transition ${
         highlighted ? 'bg-accent/30' : selected ? 'bg-primary/5' : 'hover:bg-muted/40'
-      }`}
-    >
+      }`}>
       <div className="flex items-start pt-1" onClick={(e) => { e.stopPropagation(); onSelect(); }}>
         <Checkbox checked={selected} />
       </div>
       <button onClick={onOpen} className="flex gap-2 flex-1 min-w-0 text-left">
         <div className="relative flex-shrink-0">
-          {url ? (
-            <img src={url} alt="" className="w-16 h-16 object-cover rounded-md" loading="lazy" />
-          ) : (
-            <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center">
-              <ImageIcon className="h-5 w-5 text-muted-foreground" />
-            </div>
-          )}
+          {url ? <img src={url} alt="" className="w-16 h-16 object-cover rounded-md" loading="lazy" />
+            : <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center"><ImageIcon className="h-5 w-5 text-muted-foreground" /></div>}
           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-card" style={{ background: color }} />
           {media.lat == null && (
             <span className="absolute bottom-0 right-0 bg-card/90 rounded-tl-md p-0.5">
@@ -426,26 +357,18 @@ function PhotoRow({ media, selected, highlighted, onSelect, onOpen, onHover }: {
         <div className="flex-1 min-w-0">
           <div className="text-xs font-medium truncate">{media.topName || <span className="italic text-muted-foreground">Sans suggestion</span>}</div>
           <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-            <Badge variant="outline" className="text-[9px] px-1 py-0 h-4" style={{ borderColor: color, color }}>
-              {STATUS_LABEL[media.ai_status]}
-            </Badge>
-            {media.topConfidence != null && (
-              <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
-                {(media.topConfidence * 100).toFixed(0)}%
-              </Badge>
-            )}
-            {media.ai_kingdom_hint && (
-              <span className="text-[10px] text-muted-foreground">{media.ai_kingdom_hint}</span>
-            )}
+            <Badge variant="outline" className="text-[9px] px-1 py-0 h-4" style={{ borderColor: color, color }}>{STATUS_LABEL[media.ai_status]}</Badge>
+            {media.topConfidence != null && <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">{(media.topConfidence * 100).toFixed(0)}%</Badge>}
           </div>
+          {marcheName && <div className="text-[10px] text-muted-foreground truncate mt-0.5 flex items-center gap-1"><Footprints className="h-2.5 w-2.5" />{marcheName}</div>}
         </div>
       </button>
     </div>
   );
 }
 
-function PhotoPopup({ media, onOpen, onSelect, selected }: {
-  media: AiCurationMedia; onOpen: () => void; onSelect: () => void; selected: boolean;
+function PhotoPopup({ media, marcheName, onOpen, onSelect, selected }: {
+  media: AiCurationMedia; marcheName?: string; onOpen: () => void; onSelect: () => void; selected: boolean;
 }) {
   const url = media.url_fichier || media.external_url || '';
   return (
@@ -455,99 +378,209 @@ function PhotoPopup({ media, onOpen, onSelect, selected }: {
       <Badge variant="outline" className="text-[10px]" style={{ borderColor: STATUS_COLOR[media.ai_status], color: STATUS_COLOR[media.ai_status] }}>
         {STATUS_LABEL[media.ai_status]} · {media.topConfidence != null ? `${(media.topConfidence * 100).toFixed(0)}%` : '—'}
       </Badge>
+      {marcheName && <div className="text-[10px] mt-1 flex items-center gap-1"><Footprints className="h-2.5 w-2.5" /> {marcheName}</div>}
       <div className="flex gap-1 mt-2">
         <Button size="sm" className="flex-1 h-7 text-xs" onClick={onOpen}>Ouvrir</Button>
-        <Button size="sm" variant={selected ? 'default' : 'outline'} className="h-7 text-xs" onClick={onSelect}>
-          {selected ? '✓' : '+'}
-        </Button>
+        <Button size="sm" variant={selected ? 'default' : 'outline'} className="h-7 text-xs" onClick={onSelect}>{selected ? '✓' : '+'}</Button>
       </div>
     </div>
   );
 }
 
-function DetailContent({ media, onDone }: { media: AiCurationMedia; onDone: () => void }) {
+function DetailContent({ mediaId, fallback, onDone }: { mediaId: string; fallback: AiCurationMedia; onDone: () => void }) {
+  const { data: ctx, isLoading, refetch } = useCurationMediaContext(mediaId);
   const [busy, setBusy] = useState(false);
-  const url = media.url_fichier || media.external_url || '';
-  const act = async (action: string, sci?: string, fr?: string | null) => {
+  const [marcheurUserId, setMarcheurUserId] = useState<string>('');
+
+  useEffect(() => {
+    if (ctx?.attributed?.user_id) setMarcheurUserId(ctx.attributed.user_id);
+  }, [ctx?.attributed?.user_id]);
+
+  const validate = async (sci: string, fr: string | null, kingdom?: string | null, conf?: number) => {
+    if (!marcheurUserId) { toast.error('Sélectionne un marcheur avant de valider'); return; }
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('curate-marcheur-photo', {
+        body: { mediaId, action: 'validate', scientificName: sci, commonNameFr: fr,
+          kingdom: kingdom || ctx?.media?.ai_kingdom_hint,
+          aiConfidence: conf, marcheurUserId },
+      });
+      if (error) throw error;
+      const w = (data as any)?.warnings;
+      toast.success(w ? `Validée (avec ${w} warning)` : 'Identification validée');
+      onDone();
+    } catch (e: any) { toast.error(e?.message || 'Erreur'); }
+    finally { setBusy(false); }
+  };
+
+  const markUnid = async () => {
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke('curate-marcheur-photo', {
-        body: { mediaId: media.id, action, scientificName: sci, commonNameFr: fr },
+        body: { mediaId, action: 'unidentifiable' },
       });
       if (error) throw error;
-      toast.success(action === 'unidentifiable' ? 'Marquée non identifiable' : 'Espèce validée');
-      onDone();
-    } catch (e: any) {
-      toast.error(e?.message || 'Erreur');
-    } finally { setBusy(false); }
+      toast.success('Marquée non identifiable'); onDone();
+    } catch (e: any) { toast.error(e?.message || 'Erreur'); }
+    finally { setBusy(false); }
   };
 
   const relancer = async () => {
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke('recognize-marcheur-photos', {
-        body: { mediaId: media.id, forceReprocess: true },
+        body: { mediaId, forceReprocess: true },
       });
       if (error) throw error;
-      toast.success('Reconnaissance relancée');
-      onDone();
-    } catch (e: any) {
-      toast.error(e?.message || 'Erreur');
-    } finally { setBusy(false); }
+      toast.success('Reconnaissance relancée'); refetch();
+    } catch (e: any) { toast.error(e?.message || 'Erreur'); }
+    finally { setBusy(false); }
   };
+
+  const url = ctx?.media?.url || fallback.url_fichier || fallback.external_url || '';
+  const gps = ctx?.media?.gps;
+  const marche = ctx?.marche;
+  const candidates = ctx?.candidates ?? [];
+  const top = ctx?.top_suggestion;
+  const selectedCandidate = candidates.find((c: CurationCandidate) => c.user_id === marcheurUserId);
 
   return (
     <div className="space-y-4 mt-4">
-      {url && <img src={url} alt="" className="w-full max-h-[40vh] object-contain rounded-lg bg-muted" />}
-      <div className="flex items-center gap-2 flex-wrap text-xs">
-        <Badge variant="outline" style={{ borderColor: STATUS_COLOR[media.ai_status], color: STATUS_COLOR[media.ai_status] }}>
-          {STATUS_LABEL[media.ai_status]}
-        </Badge>
-        {media.ai_kingdom_hint && <Badge variant="secondary">{media.ai_kingdom_hint}</Badge>}
-        {media.lat != null ? (
-          <span className="flex items-center gap-1 text-muted-foreground">
-            <MapPin className="h-3 w-3" /> {media.lat.toFixed(4)}, {media.lng?.toFixed(4)}
-          </span>
-        ) : (
-          <span className="flex items-center gap-1 text-muted-foreground">
-            <MapPinOff className="h-3 w-3" /> Sans GPS
-          </span>
-        )}
-      </div>
+      {url && <img src={url} alt="" className="w-full max-h-[35vh] object-contain rounded-lg bg-muted" />}
 
-      <div>
-        <h4 className="text-sm font-semibold mb-2">Suggestions IA</h4>
-        {media.suggestions.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">Aucune suggestion. Relancez la reconnaissance.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {media.suggestions.slice(0, 5).map((s) => (
-              <button
-                key={s.rank}
-                onClick={() => act('validate', s.taxon_scientific_name, s.taxon_common_name_fr)}
-                disabled={busy}
-                className="w-full text-left rounded-md border border-border hover:border-primary hover:bg-primary/5 px-3 py-2 transition"
-              >
-                <div className="flex justify-between items-center gap-2">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{s.taxon_common_name_fr || s.taxon_scientific_name}</div>
-                    {s.taxon_common_name_fr && (
-                      <div className="text-xs text-muted-foreground italic truncate">{s.taxon_scientific_name}</div>
-                    )}
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <Badge variant="secondary" className="text-[10px]">{(s.confidence * 100).toFixed(0)}%</Badge>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">{s.ai_provider}</div>
-                  </div>
-                </div>
-              </button>
-            ))}
+      {isLoading && <div className="flex items-center justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>}
+
+      {/* 📍 MARCHE */}
+      <section className="rounded-lg border border-border p-3 space-y-2">
+        <h4 className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground uppercase tracking-wide">
+          <Footprints className="h-3.5 w-3.5" /> Marche
+        </h4>
+        {marche ? (
+          <>
+            <div className="text-sm font-medium">{marche.nom_marche}</div>
+            {marche.date && <div className="text-[11px] text-muted-foreground">{new Date(marche.date).toLocaleDateString('fr-FR')}</div>}
+            {gps?.lat != null && (
+              <div className="h-40 rounded-md overflow-hidden border border-border">
+                <RichMap center={[gps.lat, gps.lng!]} zoom={16} height="100%" controls={{ zoom: false, style: false }}>
+                  <CircleMarker center={[marche.latitude, marche.longitude]} radius={6}
+                    pathOptions={{ color: '#fff', weight: 2, fillColor: '#fff', fillOpacity: 0.3 }}>
+                    <Popup>{marche.nom_marche}</Popup>
+                  </CircleMarker>
+                  <CircleMarker center={[gps.lat, gps.lng!]} radius={8}
+                    pathOptions={{ color: STATUS_COLOR[fallback.ai_status], weight: 2, fillColor: STATUS_COLOR[fallback.ai_status], fillOpacity: 0.7 }} />
+                </RichMap>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-[11px]">
+              {marche.distance_m != null ? (
+                marche.out_of_radius ? (
+                  <span className="flex items-center gap-1 text-orange-600 font-medium">
+                    <AlertTriangle className="h-3 w-3" /> Hors rayon : {Math.round(marche.distance_m)} m (rayon {marche.radius_m} m)
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-emerald-600">
+                    <CheckCircle2 className="h-3 w-3" /> Dans le rayon ({Math.round(marche.distance_m)} m du centre)
+                  </span>
+                )
+              ) : <span className="text-muted-foreground">Distance inconnue</span>}
+            </div>
+          </>
+        ) : <p className="text-[11px] text-muted-foreground italic">Aucune marche associée</p>}
+      </section>
+
+      {/* 📌 GPS */}
+      <section className="rounded-lg border border-border p-3 space-y-1.5">
+        <h4 className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground uppercase tracking-wide">
+          <MapPin className="h-3.5 w-3.5" /> GPS exact
+        </h4>
+        {gps?.lat != null ? (
+          <div className="text-[11px] space-y-0.5">
+            <div className="font-mono">{gps.lat.toFixed(6)}, {gps.lng?.toFixed(6)}</div>
+            {gps.altitude && Number(gps.altitude) > 0 && <div className="text-muted-foreground">Altitude : {Number(gps.altitude).toFixed(0)} m</div>}
+            <div className="text-muted-foreground">Source : {gps.source === 'exif' ? 'EXIF appareil photo' : gps.source}</div>
           </div>
+        ) : <p className="text-[11px] text-muted-foreground italic flex items-center gap-1"><MapPinOff className="h-3 w-3" /> Aucune coordonnée</p>}
+      </section>
+
+      {/* 👤 MARCHEUR */}
+      <section className="rounded-lg border border-border p-3 space-y-2">
+        <h4 className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground uppercase tracking-wide">
+          <UserIcon className="h-3.5 w-3.5" /> Marcheur attribué <span className="text-destructive">*</span>
+        </h4>
+        {candidates.length === 0 ? (
+          <p className="text-[11px] text-orange-600 italic flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" /> Aucun participant validé sur cet événement
+          </p>
+        ) : (
+          <>
+            <Select value={marcheurUserId} onValueChange={setMarcheurUserId}>
+              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Choisir un marcheur participant…" /></SelectTrigger>
+              <SelectContent>
+                {candidates.map((c) => (
+                  <SelectItem key={c.user_id} value={c.user_id}>{c.display_name || c.slug || c.user_id.slice(0, 8)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedCandidate && (
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                {selectedCandidate.avatar_url && <img src={selectedCandidate.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />}
+                Sera attribuée à <span className="font-medium text-foreground">{selectedCandidate.display_name}</span>
+              </div>
+            )}
+            {!marcheurUserId && <p className="text-[10px] text-destructive">Sélection obligatoire avant validation</p>}
+          </>
         )}
-      </div>
+      </section>
+
+      {/* ✨ SUGGESTIONS */}
+      <section className="space-y-1.5">
+        <h4 className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground uppercase tracking-wide">
+          <Sparkles className="h-3.5 w-3.5" /> Suggestions IA
+        </h4>
+        {fallback.suggestions.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground italic">Aucune suggestion. Relancez la reconnaissance.</p>
+        ) : (
+          fallback.suggestions.slice(0, 5).map((s) => (
+            <button key={s.rank} onClick={() => validate(s.taxon_scientific_name, s.taxon_common_name_fr, s.kingdom, s.confidence)}
+              disabled={busy || !marcheurUserId}
+              className="w-full text-left rounded-md border border-border hover:border-primary hover:bg-primary/5 px-3 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              <div className="flex justify-between items-center gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{s.taxon_common_name_fr || s.taxon_scientific_name}</div>
+                  {s.taxon_common_name_fr && <div className="text-xs text-muted-foreground italic truncate">{s.taxon_scientific_name}</div>}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <Badge variant="secondary" className="text-[10px]">{(s.confidence * 100).toFixed(0)}%</Badge>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">{s.ai_provider}</div>
+                </div>
+              </div>
+            </button>
+          ))
+        )}
+      </section>
+
+      {/* 📊 IMPACT */}
+      {top && marche && marcheurUserId && (
+        <section className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-1 text-[11px]">
+          <h4 className="text-xs font-semibold flex items-center gap-1.5 text-emerald-700 uppercase tracking-wide">
+            📊 Aperçu impact
+          </h4>
+          <div className="flex items-start gap-1.5"><CheckCircle2 className="h-3 w-3 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <span>{ctx?.impact.species_already_in_marche
+              ? <>Renforce <strong>{top.common_name_fr || top.scientific_name}</strong> sur <strong>{marche.nom_marche}</strong> ({ctx?.impact.current_obs_count_for_species} obs déjà)</>
+              : <>Crée <strong>{top.common_name_fr || top.scientific_name}</strong> dans <strong>{marche.nom_marche}</strong> (nouvelle espèce)</>}</span>
+          </div>
+          <div className="flex items-start gap-1.5"><CheckCircle2 className="h-3 w-3 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <span>Attribuée à <strong>{selectedCandidate?.display_name}</strong></span>
+          </div>
+          <div className="flex items-start gap-1.5"><CheckCircle2 className="h-3 w-3 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <span>Source : <strong>Identification manuelle Marches Du Vivant</strong></span>
+          </div>
+        </section>
+      )}
 
       <div className="flex gap-2 pt-2 border-t border-border">
-        <Button variant="outline" size="sm" onClick={() => act('unidentifiable')} disabled={busy} className="flex-1">
+        <Button variant="outline" size="sm" onClick={markUnid} disabled={busy} className="flex-1">
           <EyeOff className="h-3.5 w-3.5 mr-1.5" /> Non identifiable
         </Button>
         <Button variant="outline" size="sm" onClick={relancer} disabled={busy} className="flex-1">
@@ -555,5 +588,102 @@ function DetailContent({ media, onDone }: { media: AiCurationMedia; onDone: () =
         </Button>
       </div>
     </div>
+  );
+}
+
+function BatchValidateDialog({ open, onOpenChange, mediaIds, medias, marches, onDone }: {
+  open: boolean; onOpenChange: (v: boolean) => void; mediaIds: string[];
+  medias: AiCurationMedia[]; marches: any[]; onDone: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [perMarcheUser, setPerMarcheUser] = useState<Record<string, string>>({});
+
+  // Participants par marche_event = même pool, on prend l'event_id du premier média
+  const eventId = medias[0]?.metadata?.marche_event_id || null;
+
+  const selectedMedias = medias.filter((m) => mediaIds.includes(m.id));
+  const byMarche = useMemo(() => {
+    const map: Record<string, AiCurationMedia[]> = {};
+    selectedMedias.forEach((m) => { if (m.marche_id) (map[m.marche_id] ||= []).push(m); });
+    return map;
+  }, [selectedMedias]);
+
+  // Charge la liste des participants validés une fois
+  const { data: candidates = [] } = useQuery({
+    queryKey: ['batch-candidates', selectedMedias[0]?.id],
+    enabled: open && selectedMedias.length > 0,
+    queryFn: async () => {
+      const { data: ctx } = await supabase.rpc('get_curation_media_context', { p_media_id: selectedMedias[0].id });
+      return (ctx as any)?.candidates || [];
+    },
+  });
+
+  const allAssigned = Object.keys(byMarche).every((mid) => !!perMarcheUser[mid]);
+
+  const submit = async () => {
+    setBusy(true);
+    let ok = 0, fail = 0, warn = 0;
+    try {
+      for (const mid of Object.keys(byMarche)) {
+        const userIdAttr = perMarcheUser[mid];
+        for (const m of byMarche[mid]) {
+          const { data, error } = await supabase.functions.invoke('curate-marcheur-photo', {
+            body: { mediaId: m.id, action: 'validate', useTopSuggestion: true, marcheurUserId: userIdAttr },
+          });
+          if (error) { fail++; continue; }
+          const res = (data as any)?.results?.[0];
+          if (res?.ok) { ok++; if (res.warning) warn++; } else fail++;
+        }
+      }
+      toast.success(`${ok} validée(s)${warn ? `, ${warn} hors rayon` : ''}${fail ? `, ${fail} échec(s)` : ''}`);
+      onDone();
+    } catch (e: any) { toast.error(e?.message || 'Erreur'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Valider en lot ({mediaIds.length} photo(s))</DialogTitle></DialogHeader>
+        <div className="space-y-3 text-sm">
+          <p className="text-xs text-muted-foreground">
+            Chaque photo sera validée avec sa suggestion IA top-1 et créera une observation
+            <strong> source = Identification manuelle Marches Du Vivant</strong>.
+            Choisis un marcheur à attribuer par marche.
+          </p>
+          {Object.entries(byMarche).map(([mid, list]) => {
+            const marche = marches.find((m: any) => m.id === mid);
+            return (
+              <div key={mid} className="rounded-md border border-border p-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-medium flex items-center gap-1.5">
+                    <Footprints className="h-3.5 w-3.5" /> {marche?.nom_marche || mid.slice(0, 8)}
+                  </div>
+                  <Badge variant="secondary" className="text-[10px]">{list.length} photo(s)</Badge>
+                </div>
+                <Select value={perMarcheUser[mid] || ''} onValueChange={(v) => setPerMarcheUser((p) => ({ ...p, [mid]: v }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Choisir un marcheur…" /></SelectTrigger>
+                  <SelectContent>
+                    {candidates.map((c: CurationCandidate) => (
+                      <SelectItem key={c.user_id} value={c.user_id}>{c.display_name || c.slug}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })}
+          {Object.keys(byMarche).length === 0 && (
+            <p className="text-xs text-orange-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Aucune des photos sélectionnées n'a de marche associée.</p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Annuler</Button>
+          <Button onClick={submit} disabled={busy || !allAssigned || Object.keys(byMarche).length === 0}>
+            {busy ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1.5" />}
+            Valider {mediaIds.length} photo(s)
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
