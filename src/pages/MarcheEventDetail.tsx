@@ -334,11 +334,17 @@ const MarcheEventDetail: React.FC = () => {
           <TabsContent value="informations" className="space-y-6 mt-4">
 
         {!isNew && event && (
-          <PublishPublicPanel
-            eventId={event.id}
-            isPublic={!!(event as any).is_public}
-            publicSlug={(event as any).public_slug ?? null}
-          />
+          <>
+            <PublishPublicPanel
+              eventId={event.id}
+              isPublic={!!(event as any).is_public}
+              publicSlug={(event as any).public_slug ?? null}
+            />
+            <ShareNewSignupsPanel
+              eventId={event.id}
+              initialValue={!!(event as any).share_with_new_signups}
+            />
+          </>
         )}
 
 
