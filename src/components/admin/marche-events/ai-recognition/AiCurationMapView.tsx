@@ -576,17 +576,23 @@ function DetailContent({ mediaId, fallback, onDone }: { mediaId: string; fallbac
         <h4 className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground uppercase tracking-wide">
           <Sparkles className="h-3.5 w-3.5" /> Suggestions IA
         </h4>
+        <p className="text-[10px] text-muted-foreground italic">
+          Cliquez sur une suggestion pour la valider, ou utilisez le bouton vert ci-dessous pour la top-1.
+        </p>
         {fallback.suggestions.length === 0 ? (
           <p className="text-[11px] text-muted-foreground italic">Aucune suggestion. Relancez la reconnaissance.</p>
         ) : (
           fallback.suggestions.slice(0, 5).map((s) => (
             <button key={s.rank} onClick={() => validate(s.taxon_scientific_name, s.taxon_common_name_fr, s.kingdom, s.confidence)}
               disabled={busy || !marcheurUserId}
-              className="w-full text-left rounded-md border border-border hover:border-primary hover:bg-primary/5 px-3 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              className="w-full text-left rounded-md border border-border hover:border-emerald-500 hover:bg-emerald-500/5 px-3 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed group">
               <div className="flex justify-between items-center gap-2">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">{s.taxon_common_name_fr || s.taxon_scientific_name}</div>
-                  {s.taxon_common_name_fr && <div className="text-xs text-muted-foreground italic truncate">{s.taxon_scientific_name}</div>}
+                <div className="min-w-0 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{s.taxon_common_name_fr || s.taxon_scientific_name}</div>
+                    {s.taxon_common_name_fr && <div className="text-xs text-muted-foreground italic truncate">{s.taxon_scientific_name}</div>}
+                  </div>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <Badge variant="secondary" className="text-[10px]">{(s.confidence * 100).toFixed(0)}%</Badge>
@@ -616,6 +622,21 @@ function DetailContent({ mediaId, fallback, onDone }: { mediaId: string; fallbac
             <span>Source : <strong>Identification manuelle Marches Du Vivant</strong></span>
           </div>
         </section>
+      )}
+
+      {/* ✅ CTA PRINCIPAL */}
+      {top && (
+        <Button
+          onClick={() => validate(top.scientific_name, top.common_name_fr, top.kingdom, top.confidence)}
+          disabled={busy || !marcheurUserId}
+          className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+        >
+          {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+          Valider l'identification top-1 ({top.common_name_fr || top.scientific_name})
+        </Button>
+      )}
+      {!marcheurUserId && top && (
+        <p className="text-[10px] text-destructive text-center -mt-2">Sélectionne d'abord un marcheur ci-dessus</p>
       )}
 
       <div className="flex gap-2 pt-2 border-t border-border">
