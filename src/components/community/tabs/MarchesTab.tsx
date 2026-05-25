@@ -441,7 +441,7 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
                 </span>
               </h2>
               <p className="text-muted-foreground text-[11px]">
-                Des sentiers vous attendent — acceptez pour rejoindre la marche
+                Des sentiers vous attendent — acceptez pour découvrir la marche
               </p>
             </div>
             <div className="space-y-3">
