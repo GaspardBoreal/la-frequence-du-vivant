@@ -113,6 +113,11 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                         <Globe2 className="h-3 w-3" /> Public
                       </span>
                     )}
+                    {(event as any).share_with_new_signups && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                        <Sparkles className="h-3 w-3" /> Nouveaux inscrits
+                      </span>
+                    )}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
