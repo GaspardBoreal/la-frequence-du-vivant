@@ -447,6 +447,18 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
               </Button>
             </>
           )}
+          {!reorderMode && entries.length > 1 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={toggleAll}
+              title={allOpen ? 'Tout fermer' : 'Tout ouvrir'}
+            >
+              {allOpen ? <ChevronsDownUp className="w-3.5 h-3.5 mr-1" /> : <ChevronsUpDown className="w-3.5 h-3.5 mr-1" />}
+              {allOpen ? 'Tout fermer' : 'Tout ouvrir'}
+            </Button>
+          )}
           {isCurator && !reorderMode && (
             <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={openCreate}>
               <Plus className="w-3.5 h-3.5 mr-1" />
