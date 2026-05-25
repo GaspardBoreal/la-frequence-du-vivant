@@ -56,7 +56,22 @@ const SortSelect: React.FC<{ value: EventSort; onChange: (v: EventSort) => void 
   </Select>
 );
 
+const ShareSelect: React.FC<{ value: EventShareFilter; onChange: (v: EventShareFilter) => void }> = ({ value, onChange }) => (
+  <Select value={value} onValueChange={(v) => onChange(v as EventShareFilter)}>
+    <SelectTrigger className="w-full">
+      <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">Partage nouveaux : Tous</SelectItem>
+      <SelectItem value="yes">Partagés aux nouveaux</SelectItem>
+      <SelectItem value="no">Non partagés</SelectItem>
+    </SelectContent>
+  </Select>
+);
+
 const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) => {
+  const share = filters.share ?? 'all';
   return (
     <Card className="p-3 sm:p-4 mb-4">
       <div className="flex flex-col gap-3">
