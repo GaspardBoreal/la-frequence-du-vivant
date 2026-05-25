@@ -40,6 +40,7 @@ import { ChatExportDrawer } from './ChatExportDrawer';
 import { chatConfig, type ChatContext } from './chatConfig';
 import { chatPageContext, useChatPageContextStore, SPECIES_POOL_SLICE_KEY, type ChatEntity } from '@/hooks/useChatPageContext';
 import { Leaf } from 'lucide-react';
+import DraggableFab from '@/components/ui/DraggableFab';
 
 interface ChatBotProps {
   currentContext?: ChatContext;
@@ -319,28 +320,19 @@ export function ChatBot({
   return (
     <>
       {/* Floating button */}
-      <AnimatePresence>
-        {!isOpen && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 right-6 z-[1200] pointer-events-auto"
-          >
-            <Button
-              onClick={() => setIsOpen(true)}
-              aria-label={`Ouvrir ${chatConfig.assistantName}`}
-              className="h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 transition-all"
-            >
-              <MessageCircle className="h-6 w-6" />
-            </Button>
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 pointer-events-none">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
-              <span className="relative inline-flex h-4 w-4 rounded-full bg-secondary" />
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <DraggableFab id="chatbot-global" size={56} zIndex={1200} hidden={isOpen}>
+        <Button
+          onClick={() => setIsOpen(true)}
+          aria-label={`Ouvrir ${chatConfig.assistantName}`}
+          className="h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 transition-all"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </Button>
+        <span className="absolute -top-1 -right-1 flex h-4 w-4 pointer-events-none">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
+          <span className="relative inline-flex h-4 w-4 rounded-full bg-secondary" />
+        </span>
+      </DraggableFab>
 
       {/* Overlay */}
       <AnimatePresence>

@@ -1,80 +1,56 @@
-# Onglet « Apprendre › La main » — chargement instantané et lecture progressive
+# FAB chatbot draggable — solution wahouhh universelle
 
-## Constat
+## Problème
+Sur mobile, le bouton chatbot en `fixed bottom-6 right-6` masque souvent les contrôles (boutons « Tout ouvrir », pagination, FAB upload, etc.). L'utilisateur doit pouvoir le **déplacer au doigt** vers une zone libre, sur n'importe quel écran.
 
-L'onglet rend aujourd'hui **toutes les pratiques en entier dès l'ouverture** : pour chaque carte, jusqu'à 6 vignettes en pleine résolution + la description HTML complète + le bloc `PratiqueMarcheursPicker`. Avec 8-15 pratiques, cela représente vite 50+ images simultanées et un long bloc de texte → l'attente perçue est forte, surtout sur mobile.
+## Principe UX
+- **Long press 250 ms** sur la bulle → entre en *mode déplacement* (halo pulsant + léger scale 1.08, vibration haptique 10 ms si supportée).
+- L'utilisateur **glisse** la bulle où il veut. Pendant le drag, l'écran affiche 4 *safe zones* discrètes aux coins (cercles verts translucides) pour suggérer un ancrage propre.
+- **Relâche** → la bulle **snap au bord le plus proche** (gauche ou droite), à la hauteur choisie, en respectant les *safe-area-insets* iOS + une marge de 16 px. Animation spring (framer-motion).
+- **Tap court** (sans long press) = ouvre le chat comme aujourd'hui. Aucune régression.
+- **Double-tap** sur la bulle en mode normal = reset position par défaut (bottom-right).
+- Position **mémorisée** dans `localStorage` par *namespace* de FAB (clé `fab-pos:<id>`), partagée entre routes pour le même chatbot — l'utilisateur ne replace qu'une fois.
+- Hors drag, la bulle reste **non-intrusive** : opacité 100 %, mais après 4 s d'inactivité scroll, passe à 70 % (revient à 100 % au toucher) — option "se faire oublier".
 
-## Objectifs
+## Architecture technique
+1. **Nouveau hook** `src/hooks/useDraggableFab.ts`
+   - Signature : `useDraggableFab({ id, defaultCorner = 'bottom-right', size = 56 })`
+   - Retourne `{ ref, style, isDragging, dragHandlers, resetPosition }`.
+   - Gère :
+     - long-press detection (`pointerdown` + timer 250 ms, annulé si mouvement > 8 px avant seuil).
+     - drag via Pointer Events (compatible touch + souris + stylet).
+     - clamp `x/y` aux bornes `window.innerWidth/Height` − size − insets.
+     - snap horizontal au bord le plus proche au relâchement.
+     - persistance localStorage `{ x, y, edge }` debouncée.
+     - resize listener pour reclamper si rotation/redimensionnement.
+   - Ne déclenche **pas** le onClick d'ouverture si un drag a eu lieu (seuil 6 px).
 
-1. **First paint < 400 ms** : la structure (titres) doit apparaître immédiatement.
-2. **Lecture progressive** : l'utilisateur choisit ce qu'il déplie.
-3. **Effet wahouhh** : skeleton poétique + reveal en cascade + transitions douces.
+2. **Nouveau composant wrapper** `src/components/ui/DraggableFab.tsx`
+   - Wrappe les enfants dans `motion.div` avec `style={fabStyle}` + halo `AnimatePresence` quand `isDragging`.
+   - Affiche les 4 safe-zone hints uniquement pendant drag.
+   - Respecte `env(safe-area-inset-*)`.
 
-## Changements (frontend uniquement, `MainCuration.tsx`)
+3. **Migration des FAB existants** (changement minimal : remplacer le `className="fixed bottom-* right-* z-*"` par `<DraggableFab id="...">`) :
+   - `src/components/chatbot/ChatBot.tsx` (id `chatbot-global`) — lignes 313 et 328.
+   - `src/components/DordoniaFloatingButton.tsx` (id `dordonia-fab`) — ligne 30.
+   - `src/components/zones-blanches/GuideDeMarche.tsx` (id `guide-marche-fab`) — bouton ouverture.
+   - `src/components/admin/marche-events/EventsChatbotFab.tsx` (id `events-chatbot-fab`).
+   - **Non touchés** : FAB upload, audio player, capture admin (hors scope chatbot). Si tu veux, je peux les inclure plus tard.
 
-### 1. Mode accordéon par défaut
-- Chaque pratique devient une **carte repliable** (`<Collapsible>` shadcn).
-- **État par défaut : toutes repliées** sauf la première (donne immédiatement le ton éditorial sans surcharger).
-- En mode replié on affiche : titre + nombre de médias + 1 vignette « héro » miniature (40×40) + 1ʳᵉ ligne de description en aperçu (`line-clamp-1`).
-- Animation : `framer-motion` height + fade (180 ms).
+4. **Indices visuels première fois** : badge `↕` qui apparaît 2 s la 1ʳᵉ utilisation (flag `fab-hint-seen` localStorage) avec micro-tooltip « Maintenez pour déplacer ».
 
-### 2. Bouton « Tout ouvrir / Tout fermer »
-- Petit bouton dans la barre d'en-tête, à côté de « Réordonner ».
-- État global `expandedIds: Set<string>` ; bascule entre `Set(all)` et `Set()`.
-- L'état individuel reste manipulable après un « Tout ouvrir ».
-
-### 3. Résumé tronqué + « Lire la suite »
-- Quand la carte est ouverte, la description s'affiche tronquée à **250 caractères** (via `stripHtml` pour compter, puis on rend le HTML original avec `max-height` + dégradé blanc en bas).
-- Bouton « Lire la suite ↓ » / « Réduire ↑ » en lien discret emeraude.
-- Si la description fait < 250 caractères : pas de bouton, tout est affiché.
-
-### 4. Optimisation des vignettes
-- Quand ouvert, on affiche **les 3 premières vignettes** dans la grille 3-cols (au lieu de 6) + tuile « +N » sur la 3ᵉ si dépassement → clic = ouvre la lightbox sur l'image 4.
-- Toutes les `<img>` reçoivent `loading="lazy"` + `decoding="async"` + `fetchpriority="low"` (sauf la héro de la 1ʳᵉ carte ouverte = `eager`).
-- Pour les vignettes Supabase Storage, on suffixe l'URL avec `?width=400&quality=60` (transformer d'images Supabase natif) — fallback silencieux à l'URL originale si le bucket ne supporte pas.
-- `<video preload="metadata">` déjà en place : on passe à `preload="none"` + un placeholder poster jusqu'au déploiement.
-
-### 5. Skeleton poétique au chargement
-- Tant que `isLoading`, on remplace le texte « Chargement… » par 3 cartes squelettes shimmer émeraude (réutilisation de `MediaSkeletonGrid` en mode `fiche`).
-
-### 6. Stagger reveal à l'apparition
-- `motion.div` avec `transition={{ delay: i * 0.04 }}` sur chaque carte → cascade douce de 40 ms (limité aux 8 premières pour ne pas allonger).
-
-### 7. Lazy-mount du `PratiqueMarcheursPicker`
-- Le sous-composant interroge `useExplorationMarcheurs` et fait du rendu non trivial. **On ne le monte que lorsque la carte est ouverte** (`{expanded && <PratiqueMarcheursPicker .../>}`).
-- Gain massif : avec 10 cartes repliées, 0 picker monté au lieu de 10.
-
-### 8. Mémoire UX
-- État `expandedIds` persistant dans `localStorage` sous clé `main-curation-expanded:<explorationId>` (TTL 7 jours).
-- Au retour, l'utilisateur retrouve ses cartes ouvertes.
-
-## Décisions par défaut (questions non répondues)
-
-- **Ouverture** : 1ʳᵉ carte ouverte, autres repliées (compromis lecture/perf).
-- **Résolution** : transformer Supabase `?width=400&quality=60` avec fallback.
-- **Bonus wahouhh retenus** : skeleton + stagger reveal + lazy-mount picker.
-- **Recherche / sticky-sommaire** : non inclus (à réserver pour quand le nombre de pratiques dépasse vraiment 10-15 dans une exploration).
-- **Mémoire** : oui, localStorage par exploration.
-
-## Détails techniques
-
-```text
-MainCuration.tsx
-├─ état nouveau : expandedIds: Set<string>, allExpanded: boolean
-├─ helper : stripHtml(description).slice(0, 250) pour résumé
-├─ helper : optimizeStorageUrl(url) → ajoute ?width=400&quality=60 si supabase.co/storage
-├─ Collapsible carte :
-│   ├─ Header (toujours visible) : chevron + titre + count médias + ligne aperçu
-│   └─ Content (motion height) : grille 3 vignettes + description tronquée + actions + Picker
-└─ Toolbar : bouton « Tout ouvrir / fermer » avec icône ChevronsUpDown / ChevronsDownUp
-```
-
-Aucune migration SQL, aucune nouvelle dépendance (framer-motion, @radix collapsible, lucide-react déjà présents).
+## Détails comportement clés
+- **Tap vs drag** : si `pointerup` arrive avant 250 ms ET déplacement < 6 px → c'est un tap → on laisse l'onClick natif s'exécuter. Sinon `e.preventDefault()` + `stopPropagation`.
+- **Open chat panel** : quand le panel s'ouvre, il reste **ancré à sa position habituelle** (bottom inset, plein écran sur mobile) — on ne déplace QUE la bulle fermée. Pas de surprise UX.
+- **Accessibilité** : `aria-label` enrichi « Bouton chatbot, double-tap pour réinitialiser la position », rôle bouton, focus visible inchangé.
 
 ## Validation
+- Tester sur 390×844 (iPhone 14) : drag fluide, snap correct gauche/droite, position conservée après reload.
+- Vérifier que tap simple ouvre toujours le chat (pas de régression).
+- Vérifier que sur desktop, le drag souris fonctionne et le hover reste OK.
+- Vérifier `safe-area-inset-bottom` sur iOS PWA.
 
-- Ouverture onglet avec 10+ pratiques : titres apparaissent < 400 ms (devtools Network throttling Fast 3G).
-- Clic « Tout ouvrir » : toutes les cartes se déploient en cascade.
-- Description longue : « Lire la suite » apparaît, clic = expansion complète.
-- Retour sur l'onglet plus tard : cartes ré-ouvertes restaurées depuis localStorage.
-- HEIC, vidéos, audios continuent de fonctionner dans la lightbox.
+## Hors scope
+- Pas de changement du contenu du chat ni du panel ouvert.
+- Pas d'animation 3D ni de magnétisme entre plusieurs FAB.
+- Pas de migration des FAB non-chatbot (upload, audio) — proposable dans un second temps.
