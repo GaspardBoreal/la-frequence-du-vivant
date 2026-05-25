@@ -46,6 +46,8 @@ import MediaLightbox from './MediaLightbox';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import PratiqueMarcheursPicker from './PratiqueMarcheursPicker';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useUploadConvivialitePhotos } from '@/hooks/useConvivialitePhotos';
 
 interface Props {
   explorationId: string;
