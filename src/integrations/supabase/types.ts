@@ -1341,6 +1341,7 @@ export type Database = {
           event_id: string
           id: string
           invitation_id: string | null
+          invite_source: string | null
           promoted_to_participant_at: string | null
           user_id: string
         }
@@ -1350,6 +1351,7 @@ export type Database = {
           event_id: string
           id?: string
           invitation_id?: string | null
+          invite_source?: string | null
           promoted_to_participant_at?: string | null
           user_id: string
         }
@@ -1359,6 +1361,7 @@ export type Database = {
           event_id?: string
           id?: string
           invitation_id?: string | null
+          invite_source?: string | null
           promoted_to_participant_at?: string | null
           user_id?: string
         }
@@ -1378,6 +1381,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_invited_readers_audit: {
+        Row: {
+          action: string
+          created_at: string
+          event_id: string
+          id: string
+          performed_by: string | null
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          event_id: string
+          id?: string
+          performed_by?: string | null
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          performed_by?: string | null
+          source?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       event_public_views: {
         Row: {
@@ -3037,6 +3070,7 @@ export type Database = {
           scenography_title: string | null
           scenography_updated_at: string | null
           scenography_updated_by: string | null
+          share_with_new_signups: boolean
           title: string
           updated_at: string
         }
@@ -3064,6 +3098,7 @@ export type Database = {
           scenography_title?: string | null
           scenography_updated_at?: string | null
           scenography_updated_by?: string | null
+          share_with_new_signups?: boolean
           title: string
           updated_at?: string
         }
@@ -3091,6 +3126,7 @@ export type Database = {
           scenography_title?: string | null
           scenography_updated_at?: string | null
           scenography_updated_by?: string | null
+          share_with_new_signups?: boolean
           title?: string
           updated_at?: string
         }
@@ -5393,30 +5429,64 @@ export type Database = {
         Args: { p_exploration_id: string }
         Returns: Json
       }
-      get_marche_events_dashboard_stats: {
-        Args: { _search?: string; _status?: string; _type?: string }
-        Returns: Json
-      }
-      get_marche_events_filtered_all: {
-        Args: {
-          _max?: number
-          _search?: string
-          _status?: string
-          _type?: string
-        }
-        Returns: Json
-      }
-      get_marche_events_paginated: {
-        Args: {
-          _limit?: number
-          _offset?: number
-          _search?: string
-          _sort?: string
-          _status?: string
-          _type?: string
-        }
-        Returns: Json
-      }
+      get_marche_events_dashboard_stats:
+        | {
+            Args: { _search?: string; _status?: string; _type?: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _search?: string
+              _share?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
+      get_marche_events_filtered_all:
+        | {
+            Args: {
+              _max?: number
+              _search?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _max?: number
+              _search?: string
+              _share?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
+      get_marche_events_paginated:
+        | {
+            Args: {
+              _limit?: number
+              _offset?: number
+              _search?: string
+              _sort?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _limit?: number
+              _offset?: number
+              _search?: string
+              _share?: string
+              _sort?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
       get_marcheur_activity_dashboard: {
         Args: never
         Returns: {
