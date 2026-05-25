@@ -88,7 +88,7 @@ export const useCommunityInvitedEvents = (userId: string | undefined) => {
           added_by_user_id: r.added_by_user_id ?? null,
           promoted_to_participant_at: r.promoted_to_participant_at ?? null,
           invited_by_prenom: inviterId ? prenomMap.get(inviterId) ?? null : null,
-          invite_source: r.invitation_id ? 'invitation' as const : 'manuel' as const,
+          invite_source: (r.invite_source as any) ?? (r.invitation_id ? 'invitation' : 'manuel'),
           event: r.marche_events,
         } as InvitedEventRow;
       });
