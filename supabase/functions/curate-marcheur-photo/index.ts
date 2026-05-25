@@ -15,6 +15,28 @@ function haversineM(lat1: number, lon1: number, lat2: number, lon2: number) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
+// Récupère l'iconic_taxon iNaturalist pour un nom scientifique
+async function fetchIconicTaxon(sciName: string): Promise<string | null> {
+  try {
+    const url = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(sciName)}&rank=species,subspecies,variety&per_page=1`;
+    const r = await fetch(url, { headers: { "User-Agent": "MarchesDuVivant/1.0" } });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const t = j?.results?.[0];
+    return t?.iconic_taxon_name || null;
+  } catch { return null; }
+}
+
+// Fallback iconic_taxon depuis kingdom si iNat échoue
+function iconicFromKingdom(kingdom: string | null | undefined): string | null {
+  if (!kingdom) return null;
+  const k = kingdom.toLowerCase();
+  if (k === "plantae") return "Plantae";
+  if (k === "fungi") return "Fungi";
+  if (k === "chromista" || k === "protozoa") return "Protozoa";
+  return null; // Animalia : trop large, on laisse pour backfill ultérieur
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -143,6 +165,13 @@ Deno.serve(async (req) => {
 
         const url = media.url_fichier || media.external_url;
         const obsDate = (meta?.date_taken || new Date().toISOString()).slice(0, 10);
+
+        // 4bis. Enrichit iconic_taxon via iNat si absent (utile pour chaîne trophique Animalia)
+        if (!iconic) {
+          iconic = await fetchIconicTaxon(sci);
+          if (!iconic) iconic = iconicFromKingdom(king);
+        }
+
 
         // 5. Insert observation
         const { error: insErr } = await supabase.from("marcheur_observations").insert({
