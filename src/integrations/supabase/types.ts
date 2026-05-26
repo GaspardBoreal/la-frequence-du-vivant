@@ -5092,10 +5092,7 @@ export type Database = {
       }
       admin_delete_orphan_activity_logs: {
         Args: { p_user_ids: string[] }
-        Returns: {
-          affected_users: string[]
-          deleted_count: number
-        }[]
+        Returns: number
       }
       admin_list_marcheur_species_tags: {
         Args: {
