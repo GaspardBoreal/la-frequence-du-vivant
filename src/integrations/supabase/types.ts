@@ -5094,6 +5094,13 @@ export type Database = {
         Args: { p_user_ids: string[] }
         Returns: number
       }
+      admin_delete_orphan_invited_readers: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          affected_users: string[]
+          deleted_count: number
+        }[]
+      }
       admin_list_marcheur_species_tags: {
         Args: {
           _label_query?: string
@@ -5123,6 +5130,15 @@ export type Database = {
           first_seen_at: string
           last_seen_at: string
           logs_count: number
+          user_id: string
+        }[]
+      }
+      admin_orphan_invited_readers: {
+        Args: never
+        Returns: {
+          event_titles: string[]
+          invitations_count: number
+          last_invited_at: string
           user_id: string
         }[]
       }
