@@ -1587,6 +1587,13 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
 
     let list = [...marcheurs];
 
+    // Retirer les invités fantômes (crew rows auto-créées au signup, 0 contribution)
+    list = list.filter((m) => {
+      if (!m.userId) return true;
+      if (!pendingInviteesUserIds.has(m.userId)) return true;
+      return (m.totalContributions || 0) > 0;
+    });
+
     if (activeBuckets.size > 0) {
       list = list.filter((m) => {
         const b = metricsById.get(m.id)?.buckets;
