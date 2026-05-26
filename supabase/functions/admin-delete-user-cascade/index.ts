@@ -64,14 +64,16 @@ Deno.serve(async (req) => {
 
     // Compter par table
     const counts: Record<string, number> = {};
-    const tally = async (table: string, q: any) => {
-      const { count, error } = await q.select('*', { count: 'exact', head: true });
+    const tally = async (table: string, filter: (q: any) => any) => {
+      const { count, error } = await filter(
+        admin.from(table).select('*', { count: 'exact', head: true })
+      );
       if (error) console.warn(`[delete-cascade] count ${table} failed`, error);
       counts[table] = count ?? 0;
     };
 
-    await tally('marche_participations', admin.from('marche_participations').eq('user_id', userId!));
-    await tally('event_invited_readers', admin.from('event_invited_readers').eq('user_id', userId!));
+    await tally('marche_participations', (q) => q.eq('user_id', userId!));
+    await tally('event_invited_readers', (q) => q.eq('user_id', userId!));
     // event_invitations: par consumed_by_user_id OU par email
     {
       const { count: c1 } = await admin.from('event_invitations').select('*', { count: 'exact', head: true }).eq('consumed_by_user_id', userId!);
@@ -82,7 +84,7 @@ Deno.serve(async (req) => {
       }
       counts['event_invitations'] = (c1 ?? 0) + c2;
     }
-    await tally('community_profiles', admin.from('community_profiles').eq('user_id', userId!));
+    await tally('community_profiles', (q) => q.eq('user_id', userId!));
 
     if (dryRun) {
       return new Response(JSON.stringify({ success: true, dry_run: true, user_id: userId, email, counts }),
