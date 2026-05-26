@@ -1863,7 +1863,49 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         </div>
       )}
 
+      {/* Invités en attente — hors total marcheurs */}
+      {visiblePendingInvitees.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 rounded-2xl border border-amber-300/40 bg-amber-50/40 dark:border-amber-400/20 dark:bg-amber-500/5 p-3"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <MailOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <span className="text-sm font-semibold text-amber-700 dark:text-amber-200">
+              Invités en attente · {visiblePendingInvitees.length}
+            </span>
+            <span className="text-[11px] text-muted-foreground">(non comptés dans le total)</span>
+          </div>
+          <ul className="space-y-1.5">
+            {visiblePendingInvitees.map((inv) => {
+              const p = inv.profile;
+              const display = p ? `${p.prenom || ''} ${p.nom || ''}`.trim() || 'Marcheur invité' : 'Marcheur invité';
+              const initials = p?.prenom?.[0]?.toUpperCase() || '?';
+              return (
+                <li key={inv.user_id} className="flex items-center gap-2.5 rounded-lg bg-background/60 dark:bg-white/[0.02] px-2.5 py-1.5">
+                  <Avatar className="h-7 w-7 ring-1 ring-amber-400/40">
+                    {p?.avatar_url ? <AvatarImage src={p.avatar_url} alt={display} /> : null}
+                    <AvatarFallback className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{display}</p>
+                    {inv.event?.title && (
+                      <p className="text-[10px] text-muted-foreground truncate">Invité pour « {inv.event.title} »</p>
+                    )}
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                    En attente
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </motion.div>
+      )}
+
       {/* Engagement block */}
+
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
