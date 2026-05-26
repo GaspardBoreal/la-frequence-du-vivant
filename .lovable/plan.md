@@ -1,61 +1,59 @@
-# Analyse
+# Onboarding « invitation-first » + séparation des invités
 
-## Ce que disent les vérifications
+## Objectifs
+1. Un nouvel utilisateur (rôle `marcheur_en_devenir` + 0 participation) atterrit directement sur l'onglet **Marches** avec une UI réduite au seul bloc **« Vous êtes invité·e »**.
+2. Cliquer « Accepter » crée la participation, puis redirige vers la page exploration de la marche (statut Invité).
+3. Côté admin, l'onglet `Marcheurs > Marcheurs` reçoit un sous-bloc « Invités » dont les membres sont exclus du compteur principal.
 
-| Vérification | Résultat |
-|---|---|
-| Compte `auth.users` | ✅ Existe, email confirmé à 07:05:23 |
-| `community_profile` | ✅ Existe (prénom="Aurélien", nom="DRIPT", rôle="marcheur_en_devenir") |
-| Logs `auth` | ✅ Login OK à 07:07:06 (status 200, après 3 tentatives `invalid_credentials`) |
-| Requête `/user` post-login | ✅ Retourne 200 |
-| Erreurs Postgres pendant la session | ❌ Aucune |
-| Références restantes à `app_role` / `has_role` | ❌ Aucune dans le front, 1 dans une edge function non liée au login |
-| RLS `community_profiles` | ✅ L'utilisateur peut lire son propre profil |
+## 1. Détection du mode onboarding
 
-**Conclusion :** la connexion réussit côté serveur. Le blocage est côté client, **après** que le token soit obtenu. Le composant `MarchesDuVivantMonEspace` reste sur l'écran « Chargement… » (rendu quand `loading || !user`).
+Critère unique côté front (pas de migration) :
+```
+isOnboarding = profile.role === 'marcheur_en_devenir' && participations.length === 0
+```
+Dérivé dans `MarchesDuVivantMonEspace.tsx`, propagé en prop `onboarding` aux composants concernés. Dès la première participation insérée (donc dès l'acceptation d'une invitation), le flag bascule automatiquement.
 
-## Causes probables, par ordre de vraisemblance
+## 2. Landing sur l'onglet Marches
 
-1. **Le mot de passe saisi n'est pas le bon** (tu as confirmé que c'est possible). Les 3 `invalid_credentials` dans les logs corroborent. Si la session courante stockée est issue d'un click sur le lien email de confirmation (qui ouvre `/connexion` avec un access_token dans le hash), le user est en réalité connecté — mais une re-soumission du formulaire avec un mot de passe différent déclenche une nouvelle tentative qui peut perturber l'état.
-2. **Race INITIAL_SESSION** dans `useCommunityAuth.ts` (pattern documenté Lovable) : l'abonnement `onAuthStateChange` est posé avant `getSession()`, et le premier événement `INITIAL_SESSION` peut arriver avec une session non encore restaurée → `loading=false` + `user=null` → la `useEffect` de `MonEspace` redirige vers `/connexion`, puis le user réapparait → boucle visible comme un « Chargement… » figé.
-3. **Profil non lu** : `fetchProfile` lance la requête via `setTimeout(0)` sans gérer l'erreur. Si la requête échoue silencieusement (auth.uid encore null au moment du fetch), `profile` reste `null` → écran « Créer mon profil » au lieu de l'espace. Pas exactement « Chargement… », mais possible si le user voit ça brièvement.
+`MarchesDuVivantMonEspace.tsx` :
+- Si `isOnboarding`, forcer `activeTab = 'marches'` à l'initialisation (sauf si `?tab=` est explicitement défini).
+- Passer `onboarding` à `MonEspaceTabBar` pour masquer/désactiver les onglets `accueil`, `carnet`, `outils` (rendu en `disabled` + tooltip « Disponible après votre première marche »).
+- Passer `onboarding` à `MarchesTab`.
 
-# Plan de correction (en 2 temps)
+## 3. MarchesTab épuré
 
-## Étape A — Désambiguïsation rapide (à faire AVANT de toucher au code)
+Dans `src/components/community/tabs/MarchesTab.tsx`, si `onboarding === true` :
+- N'afficher QUE la section « Vous êtes invité·e » (liste des `invitedEvents` non encore acceptés).
+- Cas « aucune invitation » : afficher un état vide doux (« Aucune invitation pour le moment. Demandez à un ambassadeur de vous inviter, ou explorez les marches publiques »), avec un seul CTA vers `/marches-du-vivant` (catalogue public).
+- Masquer : prochaines marches, mes inscriptions, marches passées, etc.
 
-1. **Réinitialiser le mot de passe** d'aurelien.dript via « Mot de passe oublié », saisir un mot de passe simple, retenter la connexion.
-   - Si ça marche → cause #1 confirmée, aucun correctif code nécessaire.
-   - Si ça reste bloqué sur « Chargement… » → on passe à l'étape B.
-2. Si possible, ouvrir la console navigateur pendant le blocage et noter toute erreur rouge (404, 401, RLS, "Cannot read…").
+## 4. Acceptation d'invitation
 
-## Étape B — Correctif code (à exécuter si A ne suffit pas)
+Dans `InvitedEventCard.tsx`, après l'`INSERT` réussi dans `marche_participations` :
+- Invalider les queries (déjà fait).
+- `navigate('/marches-du-vivant/mon-espace/exploration/' + event.exploration_id + '?from=invite&marcheEventId=' + event.id)` si `exploration_id` présent, sinon fallback `/marches-du-vivant/m/<event-id>`.
+- Ajouter `exploration_id` au payload du hook `useCommunityInvitedEvents` (déjà sélectionné dans la requête, juste à exposer dans `InvitedEventRow.event`).
+- Toast inchangé.
 
-### B1. Durcir `useCommunityAuth` contre la race INITIAL_SESSION
+À la sortie, l'utilisateur n'est plus en onboarding (1 participation) → au prochain retour sur `/mon-espace`, tous les onglets se débloquent naturellement.
 
-`src/hooks/useCommunityAuth.ts` :
-- Mettre `loading` à `false` **uniquement** une fois que `getSession()` a résolu (et non plus dans chaque callback `onAuthStateChange`).
-- Aligner le pattern sur celui déjà éprouvé dans `AuthContext.tsx` (drapeau `initialResolvedRef`, validation explicite via `supabase.auth.getUser()`).
-- Ajouter un `console.log` temporaire `[useCommunityAuth] event=… userId=…` pour tracer l'enchaînement en cas de récidive.
+## 5. Liste admin Marcheurs : sous-bloc « Invités »
 
-### B2. Sécuriser `fetchProfile`
+Dans `src/components/community/exploration/MarcheursTab.tsx` :
+- Identifier les `invités` = `community_profiles` présents dans `event_invited_readers` pour la marche/exploration courante mais SANS ligne `marche_participations` correspondante.
+- Récupération : nouvelle requête `event_invited_readers` filtrée par `event_id ∈ explorationMarches` joignant `community_profiles`, puis exclusion des user_ids déjà dans la liste participants existante.
+- Rendu : section repliable « Invités en attente · {n} » placée sous la liste actuelle, carte simplifiée (avatar, prénom, date d'invitation, source, bouton « Relancer » optionnel — hors scope si trop ambigu).
+- Les compteurs existants (header « X marcheurs ») restent calculés sur la liste participants → invités exclus de fait.
 
-- Logger l'erreur si la requête `community_profiles` échoue (actuellement le `.maybeSingle()` swallow toute erreur RLS).
-- Refetch profil au moins une fois si `user` est défini mais `profile` reste `null` après 1 s (filet de sécurité contre la race auth.uid).
+## Détails techniques
 
-### B3. Garde-fou navigation `MonEspace`
+- `useCommunityInvitedEvents.ts` : ajouter `exploration_id` dans le select `marche_events` puis dans le type `InvitedEventRow.event`.
+- `MonEspaceTabBar.tsx` : prop optionnelle `lockedTabs?: TabKey[]` ; les onglets verrouillés sont rendus en `opacity-40 pointer-events-none` avec un cadenas léger.
+- `MarchesTab.tsx` : early-return d'un sous-composant `<OnboardingInvitations invitations={pendingInvites} userId={userId} />`.
+- Pas de migration SQL nécessaire.
+- Pas de changement RLS : `event_invited_readers` est déjà lisible par l'admin et l'utilisateur invité.
 
-`src/pages/MarchesDuVivantMonEspace.tsx`, ligne 96-100 :
-- N'effectuer la redirection vers `/connexion` qu'après un délai de grâce de ~500 ms post-mount, pour éviter le « ping-pong » si `loading=false` + `user=null` ne durent qu'un tick.
-
-## Étape C — Validation
-
-- Re-tester la connexion avec aurelien.dript (PC + mobile).
-- Vérifier dans la console l'enchaînement `INITIAL_SESSION` → `SIGNED_IN` → profile chargé sans `user=null` intermédiaire.
-- Confirmer que l'arrivée sur `/marches-du-vivant/mon-espace` affiche bien l'onglet Accueil sans repasser par « Chargement… » plus de 1 s.
-
-# Détails techniques (annexe)
-
-- Aucune migration BDD n'est nécessaire — la couche serveur est saine.
-- Aucun changement aux RLS — la lecture du propre `community_profile` est déjà autorisée.
-- Pas de modification de `AuthContext` (utilisé uniquement par l'admin) — le bug est isolé à `useCommunityAuth`, hook dédié à la communauté.
+## Hors scope (à valider plus tard si besoin)
+- Bouton « Relancer l'invitation » côté admin.
+- Animation/onboarding tour guidé après acceptation.
+- Refus explicite d'invitation.
