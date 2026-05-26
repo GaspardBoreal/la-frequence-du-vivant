@@ -342,8 +342,9 @@ const CommunityProfilesAdmin: React.FC = () => {
           </TabsContent>
 
           {/* ===== ACTIVITÉS ===== */}
-          <TabsContent value="activites">
+          <TabsContent value="activites" className="space-y-4">
             <ActivityDashboard />
+            <OrphanActivityLogsPanel />
           </TabsContent>
 
           {/* ===== AFFILIATION ===== */}
