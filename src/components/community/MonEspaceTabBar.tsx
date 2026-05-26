@@ -1,8 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Map, BookHeart, Compass, Globe } from 'lucide-react';
+import { Home, Map, BookHeart, Compass, Globe, Lock } from 'lucide-react';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from 'sonner';
+
 
 export type TabKey = 'accueil' | 'marches' | 'carnet' | 'outils' | 'territoire';
 
