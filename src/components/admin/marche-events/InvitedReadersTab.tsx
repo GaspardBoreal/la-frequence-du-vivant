@@ -192,20 +192,34 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
                     {format(new Date(r.created_at), 'd MMM yyyy', { locale: fr })}
                   </TableCell>
                   <TableCell className="text-right">
-                    {r.status === 'inscrit' && r.user_id && !r.promoted_to_participant_at && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={promote.isPending}
-                        onClick={() => promote.mutate(r.user_id!)}
-                      >
-                        <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
-                        Promouvoir
-                      </Button>
-                    )}
-                    {r.promoted_to_participant_at && (
-                      <span className="text-xs text-muted-foreground">Promu</span>
-                    )}
+                    <div className="inline-flex items-center gap-2 justify-end">
+                      {r.status === 'inscrit' && r.user_id && !r.promoted_to_participant_at && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={promote.isPending}
+                          onClick={() => promote.mutate(r.user_id!)}
+                        >
+                          <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
+                          Promouvoir
+                        </Button>
+                      )}
+                      {r.promoted_to_participant_at && (
+                        <span className="text-xs text-muted-foreground">Promu</span>
+                      )}
+                      {!r.promoted_to_participant_at && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Retirer ce Lecteur"
+                          onClick={() => setToDelete(r)}
+                          disabled={remove.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
