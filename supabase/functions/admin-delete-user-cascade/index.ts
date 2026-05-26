@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
         page += 1;
       }
       if (!userId) {
-        return new Response(JSON.stringify({ error: `Aucun compte auth trouvé pour ${email}` }),
+        return new Response(JSON.stringify({ error: `Ce compte n'existe pas dans la liste des utilisateurs (${email})`, not_found: true }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }

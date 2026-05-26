@@ -35,7 +35,17 @@ const DeleteTestUserPanel: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('admin-delete-user-cascade', {
         body: { email: vars.email, dry_run: vars.dry_run },
       });
-      if (error) throw error;
+      if (error) {
+        let msg = error.message || 'Échec';
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            if (body?.error) msg = body.error;
+          }
+        } catch { /* noop */ }
+        throw new Error(msg);
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       return data as any;
     },
