@@ -165,8 +165,7 @@ const MarchesDuVivantConnexion = () => {
         }
       }
 
-      toast.success('Inscription réussie ! Vérifiez vos emails pour confirmer votre compte 📬');
-      setMode('login');
+      setEmailConfirmDialog({ open: true, email });
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors de l\'inscription');
     } finally {
