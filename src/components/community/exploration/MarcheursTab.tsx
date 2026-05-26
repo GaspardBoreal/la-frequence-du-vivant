@@ -1398,9 +1398,13 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
   // === Invités en attente (event_invited_readers non promus) ===
+  // userIds qui apparaissent effectivement dans la liste principale (carte avec contributions)
+  // → sert à dédupliquer le bloc « Invités en attente ».
   const knownParticipantUserIds = useMemo(() => {
     const set = new Set<string>();
-    (marcheurs || []).forEach(m => { if (m.userId) set.add(m.userId); });
+    (marcheurs || []).forEach(m => {
+      if (m.userId && (m.totalContributions || 0) > 0) set.add(m.userId);
+    });
     return set;
   }, [marcheurs]);
 
