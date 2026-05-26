@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather, Sparkles, Quote, ShieldCheck, Bug, AlertTriangle, ArrowDownWideNarrow, ArrowUpNarrowWide, X as XIcon } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon, ArrowUpDown, Check, GripVertical, Headphones, Feather, Sparkles, Quote, ShieldCheck, Bug, AlertTriangle, ArrowDownWideNarrow, ArrowUpNarrowWide, X as XIcon, MailOpen } from 'lucide-react';
 import { computeSentinelleIndex, type SentinelleResult, type SentinelleTier } from '@/lib/sentinelleIndex';
 import { bucketSensibleSpecies, type SpeciesCategory } from '@/lib/speciesClassification';
 import { useExplorationTestimonies, type EventTestimony } from '@/hooks/useEventTestimonies';
