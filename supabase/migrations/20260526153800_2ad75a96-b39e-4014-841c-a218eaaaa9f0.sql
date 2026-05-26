@@ -1,0 +1,1 @@
+DELETE FROM public.exploration_marcheurs WHERE id = 'e7c8652c-0329-4763-be7f-a877205c78aa';
