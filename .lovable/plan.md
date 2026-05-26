@@ -1,83 +1,63 @@
-# Partage automatique des événements aux nouveaux inscrits
+# Nettoyage des activités marcheurs orphelines
 
-## Décisions retenues
-- **Cible** : tous les nouveaux marcheurs, sans condition.
-- **Déclenchement** : futurs inscrits uniquement (pas de backfill rétroactif).
-- **Notification** : ajout silencieux (aucun email), visible dans Mon Espace > Marches comme un Lecteur invité classique.
-- **Décochage** : on conserve les entrées déjà créées (acquis pour les marcheurs concernés).
+## Contexte
 
-## 1. Schéma BDD
+Tes tests d'onboarding ont laissé **46 activités** dans `marcheur_activity_logs` rattachées à **3 `user_id`** qui n'ont **plus de `community_profile`**. Aujourd'hui rien ne permet de les voir ni de les purger depuis l'admin.
 
-### `marche_events`
-- Ajouter `share_with_new_signups boolean NOT NULL DEFAULT false`.
-- Index partiel `WHERE share_with_new_signups = true` pour le trigger.
+## Objectif
 
-### `event_invited_readers`
-- Ajouter `invite_source text` avec valeurs : `'invitation' | 'manuel' | 'auto_new_signup'` (NULL toléré pour l'existant ; backfill : `invitation` si `invitation_id` not null, sinon `manuel`).
-- Cela remplace la dérivation actuelle dans `useCommunityInvitedEvents` (qui se basait uniquement sur `invitation_id`).
+Dans `/admin/community`, onglet **Activités**, ajouter une sous-section « Activités orphelines » qui :
+1. liste les `user_id` orphelins avec compteur d'activités, types d'événements et dernière activité ;
+2. permet de cocher un / plusieurs / tous ;
+3. supprime après confirmation explicite — **avec un double garde-fou côté serveur** pour qu'on ne puisse jamais supprimer par erreur l'activité d'un marcheur réel.
 
-### Audit / traçabilité
-- Réutiliser la table d'audit existante si présente, sinon créer `event_invited_readers_audit` (event_id, user_id, action, source, performed_by, created_at) pour tracer chaque ajout auto.
-- À vérifier pendant l'implémentation (suivre le pattern des autres tables d'audit du projet : `marcheur_media_gps_audit`, etc.).
+## Architecture
 
-## 2. Trigger d'auto-invitation
+### 1. Backend — RPC `admin_orphan_activity_logs` (SECURITY DEFINER, lecture)
 
-Trigger `AFTER INSERT ON community_profiles` (SECURITY DEFINER) :
-1. Pour chaque event où `share_with_new_signups = true` ET `date_marche >= now()` (futurs uniquement, pas d'événements passés).
-2. INSERT dans `event_invited_readers` avec :
-   - `user_id` = nouveau marcheur
-   - `event_id` = event partagé
-   - `added_by_user_id` = NULL (système)
-   - `invite_source = 'auto_new_signup'`
-   - `invitation_id = NULL`
-3. ON CONFLICT DO NOTHING (idempotent).
-4. Log dans la table d'audit.
+Renvoie agrégat par `user_id` orphelin :
+```
+user_id, logs_count, first_seen_at, last_seen_at, event_types text[], sample_user_agent
+```
+Filtre : `NOT EXISTS (SELECT 1 FROM community_profiles WHERE user_id = mal.user_id)`.
+Garde : `has_role(auth.uid(), 'admin')` sinon `raise exception`.
 
-Note : le trigger ne s'active que sur de **nouveaux** `community_profiles`. Cocher un événement plus tard n'affecte que les inscrits **après** le cochage — conforme à la décision « Futurs uniquement ».
+### 2. Backend — RPC `admin_delete_orphan_activity_logs(p_user_ids uuid[])` (SECURITY DEFINER, écriture)
 
-## 3. UI Admin événements
+Sécurités empilées :
+- check `has_role(auth.uid(), 'admin')` ;
+- check `p_user_ids` non null et taille ≤ 500 ;
+- **DELETE filtré deux fois** : `WHERE user_id = ANY(p_user_ids) AND NOT EXISTS (SELECT 1 FROM community_profiles cp WHERE cp.user_id = mal.user_id)` — même si le client envoie un user_id valide, la RPC refuse de toucher à un log dont l'auteur a un profil ;
+- renvoie `{ deleted_count int, affected_users uuid[] }` ;
+- log dans `admin_audit_logs` si la table existe (sinon skip).
 
-### Liste (`MarcheEventsAdmin` + `EventsFiltersBar`)
-- Nouveau filtre « Partage nouveaux inscrits » : `Tous | Oui | Non` (Select à côté du filtre Type/Statut).
-- Badge visuel sur les vignettes des événements partagés (icône Sparkles + libellé « Partagé aux nouveaux »).
-- Étendre `EventsFilters` et `useMarcheEventsQuery` pour le nouveau critère.
+Aucune action sur `auth.users` ni sur d'autres tables — uniquement `marcheur_activity_logs`.
 
-### Formulaire édition événement
-- Switch « Partager aux nouveaux marcheurs inscrits » dans la carte « Publication / Visibilité ».
-- Texte d'aide : « Tout nouveau marcheur sera silencieusement ajouté comme Lecteur invité dès son inscription. Les marcheurs déjà inscrits ne sont pas concernés. »
-- Décocher : aucune action destructive sur les `event_invited_readers` déjà créés.
+### 3. Frontend — `OrphanActivityLogsPanel.tsx`
 
-## 4. UI Marcheur
+Nouveau composant placé **dans l'onglet Activités existant** (`ActivityDashboard`), replié par défaut dans une `Card` « Maintenance · Activités orphelines » avec badge du nombre total.
 
-Aucune modification visible nécessaire : `useCommunityInvitedEvents` retourne déjà les events, et l'onglet `CarnetTab` / `MarchesTab` les affiche. On enrichit juste la sémantique de `invite_source` pour pouvoir, plus tard (étape 4), distinguer un parcours découverte.
+UI :
+- tableau : checkbox · user_id (tronqué, copiable) · nb logs · types (chips) · première / dernière activité ;
+- header : checkbox « tout sélectionner » + bouton `Supprimer la sélection (N)` rouge, désactivé si 0 ;
+- `AlertDialog` de confirmation : « Supprimer **X activités** de **Y comptes orphelins** ? Cette action est irréversible. » + bouton destructif ;
+- toast succès / erreur, invalidation des queries `['orphan-activity-logs']` et `['activity-dashboard']`.
 
-## 5. Sécurité & RLS
+Hook `useOrphanActivityLogs()` (react-query) → appelle la RPC lecture.
+Mutation `useDeleteOrphanActivityLogs()` → appelle la RPC écriture.
 
-- Trigger en `SECURITY DEFINER` (bypass RLS pour insert système).
-- Policies existantes sur `event_invited_readers` à vérifier : un utilisateur doit pouvoir lire ses propres entrées `auto_new_signup` (déjà couvert si la policy actuelle filtre par `user_id = auth.uid()`).
-- Pas de PII exposée.
+### 4. Garanties anti-erreur
 
-## 6. Préparation étape 4 (parcours découverte)
+- **Aucun `DELETE` direct depuis le client** — tout passe par la RPC qui re-valide l'orphelinage.
+- Si un `user_id` redevient légitime entre l'affichage et le clic, la RPC ne supprime simplement rien pour lui (silencieux, comptabilisé dans `deleted_count`).
+- Limite dure à 500 user_ids par appel.
+- RLS sur `marcheur_activity_logs` inchangée — la RPC seule a le privilège.
+- Confirmation obligatoire côté UI.
 
-Pas implémenté maintenant, mais le schéma le permet :
-- `invite_source = 'auto_new_signup'` identifie les events à mettre en avant dans un futur onboarding disruptif (carousel « À découvrir », story Wahouhh, etc.).
-- Un champ optionnel `discovery_order int` sur `marche_events` pourra être ajouté plus tard pour ordonner le parcours.
+## Livrables
 
-## Fichiers impactés
+1. Migration : 2 RPC + grant `execute` à `authenticated`.
+2. Composant `OrphanActivityLogsPanel.tsx` + hook + mutation.
+3. Intégration dans `ActivityDashboard.tsx` (bloc repliable en bas).
 
-**Migration SQL** :
-- ALTER `marche_events` (colonne + index)
-- ALTER `event_invited_readers` (colonne `invite_source`)
-- Backfill `invite_source` des lignes existantes
-- Création table audit (si besoin)
-- Création trigger + fonction `auto_invite_new_signup()`
-
-**Frontend** :
-- `src/hooks/useMarcheEventsQuery.ts` — type `EventsFilters` + requête
-- `src/components/admin/marche-events/EventsFiltersBar.tsx` — nouveau Select
-- `src/components/admin/marche-events/EventCard.tsx` (ou équivalent) — badge
-- Formulaire édition event (à localiser : probablement `MarcheEventForm.tsx` ou similaire) — switch
-- `src/hooks/useCommunityInvitedEvents.ts` — utiliser `invite_source` BDD au lieu de la dérivation
-
-## Mémoire à créer après livraison
-`mem://features/admin/event-share-new-signups-logic` — toggle + trigger silent invitation, source `auto_new_signup`.
+Aucun changement sur les flows existants, aucun risque pour les marcheurs actifs.
