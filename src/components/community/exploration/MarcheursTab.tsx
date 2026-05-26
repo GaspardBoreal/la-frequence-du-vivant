@@ -1872,8 +1872,8 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         </div>
       )}
 
-      {/* Invités en attente — hors total marcheurs */}
-      {visiblePendingInvitees.length > 0 && (
+      {/* A. Invités en attente — invitations email non encore consommées (vraie attente) */}
+      {pendingInvitations.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1882,20 +1882,62 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
           <div className="flex items-center gap-2 mb-2">
             <MailOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <span className="text-sm font-semibold text-amber-700 dark:text-amber-200">
-              Invités en attente · {visiblePendingInvitees.length}
+              Invités en attente · {pendingInvitations.length}
             </span>
-            <span className="text-[11px] text-muted-foreground">(non comptés dans le total)</span>
+            <span className="text-[11px] text-muted-foreground">(invitation envoyée — pas encore inscrits)</span>
           </div>
           <ul className="space-y-1.5">
-            {visiblePendingInvitees.map((inv) => {
+            {pendingInvitations.map((inv) => {
+              const display = inv.prenom || 'Invité';
+              const initials = inv.prenom?.[0]?.toUpperCase() || '?';
+              return (
+                <li key={inv.invitation_id} className="flex items-center gap-2.5 rounded-lg bg-background/60 dark:bg-white/[0.02] px-2.5 py-1.5">
+                  <Avatar className="h-7 w-7 ring-1 ring-amber-400/40">
+                    <AvatarFallback className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {display}
+                      {inv.email_hint && <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">{inv.email_hint}</span>}
+                    </p>
+                    {inv.event?.title && (
+                      <p className="text-[10px] text-muted-foreground truncate">Invité pour « {inv.event.title} »</p>
+                    )}
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                    En attente
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </motion.div>
+      )}
+
+      {/* B. Lecteurs inscrits non promus Participant — déjà comptes créés */}
+      {visibleRegisteredNotPromoted.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 rounded-2xl border border-sky-300/30 bg-sky-50/30 dark:border-sky-400/15 dark:bg-sky-500/5 p-3"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <MailOpen className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+            <span className="text-sm font-semibold text-sky-700 dark:text-sky-200">
+              Lecteurs inscrits · {visibleRegisteredNotPromoted.length}
+            </span>
+            <span className="text-[11px] text-muted-foreground">(compte créé — à promouvoir Participant)</span>
+          </div>
+          <ul className="space-y-1.5">
+            {visibleRegisteredNotPromoted.map((inv) => {
               const p = inv.profile;
-              const display = p ? `${p.prenom || ''} ${p.nom || ''}`.trim() || 'Marcheur invité' : 'Marcheur invité';
+              const display = p ? `${p.prenom || ''} ${p.nom || ''}`.trim() || 'Marcheur inscrit' : 'Marcheur inscrit';
               const initials = p?.prenom?.[0]?.toUpperCase() || '?';
               return (
                 <li key={inv.user_id} className="flex items-center gap-2.5 rounded-lg bg-background/60 dark:bg-white/[0.02] px-2.5 py-1.5">
-                  <Avatar className="h-7 w-7 ring-1 ring-amber-400/40">
+                  <Avatar className="h-7 w-7 ring-1 ring-sky-400/40">
                     {p?.avatar_url ? <AvatarImage src={p.avatar_url} alt={display} /> : null}
-                    <AvatarFallback className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300">{initials}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-foreground truncate">{display}</p>
@@ -1903,8 +1945,8 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                       <p className="text-[10px] text-muted-foreground truncate">Invité pour « {inv.event.title} »</p>
                     )}
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                    En attente
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300">
+                    Inscrit
                   </span>
                 </li>
               );
