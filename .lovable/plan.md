@@ -1,67 +1,61 @@
-## Problème
-
-Dans l'onglet **Lecteurs invités** d'une fiche événement, il n'existe aucune action pour retirer un invité. La seule action disponible aujourd'hui est « Promouvoir ». Si on se trompe d'email, ou si l'on veut nettoyer après un test d'onboarding (typiquement `aurelien.dript@gmail.com` sur DEVIAT), l'invité reste collé à l'événement sans solution depuis l'UI.
-
 ## Objectif
 
-Ajouter une action **Retirer** par ligne dans l'onglet *Lecteurs invités*, qui supprime proprement l'invitation dans toutes les tables liées, avec garde-fous.
+Outiller proprement le cycle de test d'onboarding pour `aurelien.dript@gmail.com` (et tout futur compte de test) en deux briques réutilisables, puis dérouler le scénario de validation.
 
-## Tables impactées
+## Brique 1 — Edge function `admin-delete-user-cascade`
 
-Pour un même `(event_id, user_id)` invité, plusieurs lignes peuvent exister :
+Nouvelle fonction admin-only (pattern `validateAuth` + `check_is_admin_user`) qui supprime un compte de bout en bout dans le bon ordre, en une transaction logique côté service_role.
 
-- `event_invited_readers` — la ligne principale (toujours présente)
-- `event_invitations` — le token d'invitation initial (présent si `invite_source = 'invitation'`, peut avoir été consommé)
-- `marche_participations` — uniquement si l'invité a déjà été **promu** Participant (`promoted_to_participant_at` non null)
-- `community_profiles.statut` — repassé éventuellement à `'lecteur'` si on retire l'unique événement où il était promu
+**Entrée :** `{ user_id?: string, email?: string }` (au moins un des deux ; résolution via `auth.admin.listUsers` si seul l'email est fourni).
 
-## Règles de cascade
+**Garde-fous :**
+- Refus si le user_id correspond à un admin (`has_role(user_id, 'admin')`) — pas de suicide accidentel.
+- Dry-run optionnel `{ dry_run: true }` qui retourne juste le décompte par table sans rien supprimer.
 
-1. **Invité non promu** (cas standard, ex. Aurélien) :
-   - Supprimer la ligne `event_invited_readers`
-   - Si `invitation_id` est renseigné et que l'invitation n'a pas été utilisée pour d'autres événements : supprimer (ou expirer) la ligne `event_invitations` correspondante
-2. **Invité déjà promu Participant** :
-   - **Bloquer la suppression depuis cet onglet** et afficher un message clair : « Ce Lecteur a été promu Participant. Désinscrivez-le d'abord depuis l'onglet Participants. »
-   - Évite de supprimer en cascade des contributions/photos rattachées à la participation
-3. **Source `auto_new_signup`** (ajouté automatiquement à la création de compte) :
-   - Suppression autorisée comme cas 1, mais avec un avertissement secondaire : « Cet invité a été ajouté automatiquement à l'inscription du compte. Il pourra être réajouté manuellement si besoin. »
+**Ordre de suppression (cascade explicite) :**
 
-## Implémentation
+1. `marche_participations` where user_id
+2. `event_invited_readers` where user_id
+3. `event_invitations` where invited_user_id (tokens qui pointaient sur lui)
+4. `marcheur_observations` + `marcheur_media` + `marcheur_media_gps_audit` rattachés (FK déjà cascade pour la plupart, on vérifie)
+5. `exploration_curations` où il apparaît comme marcheur attribué → on dé-attribue (mise à NULL), on ne supprime pas la curation
+6. `community_profiles` where user_id
+7. `auth.users` via `supabase.auth.admin.deleteUser(user_id)` en dernier
 
-### 1. Edge function `event-invited-reader-delete`
+**Retour :** `{ success, deleted: { table: count, ... }, user_id, email }`
 
-Nouvelle fonction admin-only (pattern identique à `event-invited-reader-promote`) :
+## Brique 2 — Étendre la maintenance « Orphelins »
 
-- Entrée : `{ event_id, invited_reader_id }`
-- Vérifie `check_is_admin_user`
-- Recharge la ligne `event_invited_readers` ; refuse si `promoted_to_participant_at` non null (retourne `{ error: 'already_promoted' }`)
-- `DELETE` sur `event_invited_readers` (par `id`)
-- Si `invitation_id` présent : supprime la ligne `event_invitations` correspondante (le token devient inutile)
-- Retourne `{ success: true }`
+Le panneau `OrphanInvitedReadersPanel` couvre déjà `event_invited_readers`. On ajoute deux RPC sœurs et deux sections au même panneau (ou trois sous-panneaux empilés sous le même titre « Maintenance · Données orphelines »).
 
-### 2. UI — `InvitedReadersTab.tsx`
+**Nouvelles RPC + actions admin :**
 
-- Ajouter un bouton icône `Trash2` à droite de « Promouvoir » (ou à la place quand déjà promu n'est pas le cas, sinon désactivé avec tooltip)
-- `AlertDialog` de confirmation listant : prénom, nom, email, événement
-- Mutation appelant la nouvelle edge function
-- En cas de succès : `toast.success` + invalidation de :
-  - `['event-invited-readers', eventId]`
-  - `['community-invited-events', userId]`
-  - `['marcheur-events', userId]`
-  - `['marche-participations', eventId]` (cohérence, même si non touché ici)
-- En cas d'erreur `already_promoted` : toast explicite « Lecteur déjà promu — gérer depuis Participants »
+- `admin_orphan_event_invitations()` + `admin_delete_orphan_event_invitations(p_ids uuid[])` — tokens dont `invited_user_id` n'a plus ni `community_profiles` ni `auth.users` ; renvoie token, email cible, événement, date.
+- `admin_orphan_marche_participations()` + `admin_delete_orphan_marche_participations(p_ids uuid[])` — participations dont `user_id` n'existe plus côté auth. **Garde-fou** : on n'auto-supprime que si la participation n'a aucune contribution rattachée (sinon on flague pour revue manuelle).
 
-### 3. Pas de changement DB
+**UI :** 3 cartes dans `CommunityProfilesAdmin` → onglet Activités, sous un même bandeau « Maintenance · Données orphelines », avec compteur global. Sélection multiple + confirmation alertDialog (pattern déjà en place).
 
-Aucune nouvelle migration : on réutilise les tables et droits existants (l'edge function utilise `service_role`).
+## Scénario de validation (à dérouler après livraison)
 
-## Tests manuels
-
-1. Inviter `aurelien.dript@gmail.com` sur DEVIAT, puis le retirer → la ligne disparaît de *Lecteurs invités*, et l'événement disparaît de l'espace Marcheur d'Aurélien
-2. Promouvoir un invité, puis tenter de le retirer → bouton désactivé / message « déjà promu »
-3. Retirer un invité dont `invite_source = 'invitation'` (avec token) → la ligne `event_invitations` est aussi supprimée
+1. **Toi** : ouvres Admin Communauté → onglet Activités → bouton « Supprimer compte test » sur `aurelien.dript@gmail.com` (lance la nouvelle edge function en dry-run d'abord, puis pour de vrai).
+2. **Toi** : lances « Actualiser » sur les 3 panneaux orphelins → aucun reliquat ne doit apparaître pour cet email/UUID. Si oui, sélection + suppression.
+3. **Toi** : refais l'inscription d'`aurelien.dript@gmail.com` via la page publique.
+4. **Vérifications attendues :**
+   - Le compte apparaît automatiquement en `event_invited_readers` sur tous les events avec `share_new_signups=true` (trigger `auto_new_signup`).
+   - Dans `Mon espace → Marches`, ces marches apparaissent dans la section « Lecteur invité » (pas Participant).
+   - Sur la fiche événement admin (DEVIAT), Aurélien apparaît uniquement dans l'onglet **Lecteurs invités**, jamais dans **Marcheurs → Marcheurs**.
+   - Aurélien accepte l'invitation depuis son espace → passe en Participant → disparaît de « Lecteurs invités », apparaît dans « Marcheurs ».
+5. **Cycle complet validé** → on peut clore.
 
 ## Hors scope
 
-- La désinscription d'un Participant promu reste gérée dans l'onglet *Participants* existant
-- Aucun changement aux panneaux *Orphelins* (déjà couverts par les précédentes itérations)
+- Pas de changement à la logique de promotion existante (`event-invited-reader-promote`).
+- Pas de changement au trigger `auto_new_signup` (déjà conforme).
+- Pas de désinscription auto en cas de rétrogradation — on garde la règle « promote-only ».
+
+## Détails techniques
+
+- Edge function : `supabase/functions/admin-delete-user-cascade/index.ts`, pattern identique à `event-invited-reader-promote` (validateAuth + service_role client + JSON in/out + CORS).
+- Migration : 2 RPC SECURITY DEFINER `admin_orphan_*` + 2 RPC `admin_delete_orphan_*` (revérifient l'absence côté auth.users et community_profiles avant DELETE, comme l'existant).
+- Composants : nouveau `OrphanEventInvitationsPanel.tsx` + `OrphanMarcheParticipationsPanel.tsx` calqués sur `OrphanInvitedReadersPanel.tsx` ; bouton « Supprimer compte test » dans un nouveau bandeau admin (mini-form email + dry-run/confirm).
+- Invalidations React Query : `['orphan-invited-readers']`, `['orphan-event-invitations']`, `['orphan-marche-participations']`, `['exploration-pending-invitees']`.
