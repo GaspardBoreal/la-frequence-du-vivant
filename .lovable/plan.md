@@ -1,59 +1,96 @@
-# Onboarding « invitation-first » + séparation des invités
+## Objectif
 
-## Objectifs
-1. Un nouvel utilisateur (rôle `marcheur_en_devenir` + 0 participation) atterrit directement sur l'onglet **Marches** avec une UI réduite au seul bloc **« Vous êtes invité·e »**.
-2. Cliquer « Accepter » crée la participation, puis redirige vers la page exploration de la marche (statut Invité).
-3. Côté admin, l'onglet `Marcheurs > Marcheurs` reçoit un sous-bloc « Invités » dont les membres sont exclus du compteur principal.
+Corriger trois défauts mis en évidence par le test d'inscription d'`aurelien.dript@gmail.com` :
+1. Le profil communautaire n'est pas systématiquement créé après signup (race / timeout client).
+2. La page `/mon-espace` reste bloquée sur « Chargement… » au lieu de basculer vers « Créer mon profil ».
+3. L'info bulle « Vérifiez vos emails » passe inaperçue.
 
-## 1. Détection du mode onboarding
+## 1. Trigger DB de création automatique du profil (filet de sécurité)
 
-Critère unique côté front (pas de migration) :
-```
-isOnboarding = profile.role === 'marcheur_en_devenir' && participations.length === 0
-```
-Dérivé dans `MarchesDuVivantMonEspace.tsx`, propagé en prop `onboarding` aux composants concernés. Dès la première participation insérée (donc dès l'acceptation d'une invitation), le flag bascule automatiquement.
+Ajouter un trigger `AFTER INSERT ON auth.users` qui crée la ligne `community_profiles` minimale (prénom/nom tirés de `raw_user_meta_data` ou du préfixe de l'email, rôle `marcheur_en_devenir`). 
 
-## 2. Landing sur l'onglet Marches
+- Idempotent : `ON CONFLICT (user_id) DO NOTHING`.
+- N'écrase pas la RPC `create_community_profile` (qui continue d'enrichir le profil avec `ville`, `motivation`, `types_marches_interets`, etc.) → on garde un `UPDATE` plutôt qu'un `INSERT` côté RPC si la ligne existe déjà.
+- Garantit qu'aucun utilisateur authentifié ne se retrouve sans profil, quel que soit le chemin (signup web, magic link, futur OAuth).
 
-`MarchesDuVivantMonEspace.tsx` :
-- Si `isOnboarding`, forcer `activeTab = 'marches'` à l'initialisation (sauf si `?tab=` est explicitement défini).
-- Passer `onboarding` à `MonEspaceTabBar` pour masquer/désactiver les onglets `accueil`, `carnet`, `outils` (rendu en `disabled` + tooltip « Disponible après votre première marche »).
-- Passer `onboarding` à `MarchesTab`.
+Réparation ponctuelle : insérer manuellement la ligne `community_profiles` manquante pour `d0750220-d626-48ad-bf1b-ed4fde22688d` afin qu'`aurelien.dript@gmail.com` puisse se connecter immédiatement.
 
-## 3. MarchesTab épuré
+## 2. Déblocage du loader `useCommunityAuth`
 
-Dans `src/components/community/tabs/MarchesTab.tsx`, si `onboarding === true` :
-- N'afficher QUE la section « Vous êtes invité·e » (liste des `invitedEvents` non encore acceptés).
-- Cas « aucune invitation » : afficher un état vide doux (« Aucune invitation pour le moment. Demandez à un ambassadeur de vous inviter, ou explorez les marches publiques »), avec un seul CTA vers `/marches-du-vivant` (catalogue public).
-- Masquer : prochaines marches, mes inscriptions, marches passées, etc.
+Dans `src/hooks/useCommunityAuth.ts` :
+- Toujours appeler `setLoading(false)` dans `onAuthStateChange` dès qu'un événement est reçu (pas uniquement après `initialResolved`). C'est le motif recommandé Supabase pour éviter le blocage si `getSession()` traîne.
+- Ajouter un garde-fou : `setTimeout(() => setLoading(false), 5000)` au montage (libère le loader si l'init Supabase est anormalement lente).
+- Log explicite quand `loading` bascule, pour diagnostiquer les futurs cas.
 
-## 4. Acceptation d'invitation
+Dans `src/pages/MarchesDuVivantMonEspace.tsx` :
+- Garder l'écran "Créer mon profil" comme filet (au cas où le trigger échouerait), mais comme le trigger garantira désormais l'existence du profil, cet écran ne s'affichera plus dans le flux normal.
 
-Dans `InvitedEventCard.tsx`, après l'`INSERT` réussi dans `marche_participations` :
-- Invalider les queries (déjà fait).
-- `navigate('/marches-du-vivant/mon-espace/exploration/' + event.exploration_id + '?from=invite&marcheEventId=' + event.id)` si `exploration_id` présent, sinon fallback `/marches-du-vivant/m/<event-id>`.
-- Ajouter `exploration_id` au payload du hook `useCommunityInvitedEvents` (déjà sélectionné dans la requête, juste à exposer dans `InvitedEventRow.event`).
-- Toast inchangé.
+## 3. Rendre visible l'info bulle de confirmation email
 
-À la sortie, l'utilisateur n'est plus en onboarding (1 participation) → au prochain retour sur `/mon-espace`, tous les onglets se débloquent naturellement.
+Dans `src/pages/MarchesDuVivantConnexion.tsx`, méthode `handleRegister` :
+- Au lieu d'un simple `toast.success(...)` qui peut être masqué, ouvrir un état local `showEmailConfirmDialog` qui affiche un **dialog modal persistant** avec :
+  - Icône email
+  - Titre : « Vérifiez votre boîte mail 📬 »
+  - Texte : « Un lien de confirmation a été envoyé à <email>. Cliquez dessus pour activer votre compte, puis revenez ici pour vous connecter. »
+  - Lien « Renvoyer l'email » (appelle `supabase.auth.resend`).
+  - Bouton « J'ai compris » qui ferme le dialog et bascule en `mode='login'`.
 
-## 5. Liste admin Marcheurs : sous-bloc « Invités »
+## 4. Fix du retry 504 dans `signUp`
 
-Dans `src/components/community/exploration/MarcheursTab.tsx` :
-- Identifier les `invités` = `community_profiles` présents dans `event_invited_readers` pour la marche/exploration courante mais SANS ligne `marche_participations` correspondante.
-- Récupération : nouvelle requête `event_invited_readers` filtrée par `event_id ∈ explorationMarches` joignant `community_profiles`, puis exclusion des user_ids déjà dans la liste participants existante.
-- Rendu : section repliable « Invités en attente · {n} » placée sous la liste actuelle, carte simplifiée (avatar, prénom, date d'invitation, source, bouton « Relancer » optionnel — hors scope si trop ambigu).
-- Les compteurs existants (header « X marcheurs ») restent calculés sur la liste participants → invités exclus de fait.
+Dans le chemin de retry, ne plus retourner prématurément sans créer le profil — on laisse le trigger DB s'en charger, mais on logue clairement le cas pour observabilité.
 
 ## Détails techniques
 
-- `useCommunityInvitedEvents.ts` : ajouter `exploration_id` dans le select `marche_events` puis dans le type `InvitedEventRow.event`.
-- `MonEspaceTabBar.tsx` : prop optionnelle `lockedTabs?: TabKey[]` ; les onglets verrouillés sont rendus en `opacity-40 pointer-events-none` avec un cadenas léger.
-- `MarchesTab.tsx` : early-return d'un sous-composant `<OnboardingInvitations invitations={pendingInvites} userId={userId} />`.
-- Pas de migration SQL nécessaire.
-- Pas de changement RLS : `event_invited_readers` est déjà lisible par l'admin et l'utilisateur invité.
+### Trigger SQL (migration)
 
-## Hors scope (à valider plus tard si besoin)
-- Bouton « Relancer l'invitation » côté admin.
-- Animation/onboarding tour guidé après acceptation.
-- Refus explicite d'invitation.
+```sql
+create or replace function public.handle_new_community_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_prenom text;
+  v_nom text;
+begin
+  v_prenom := coalesce(
+    new.raw_user_meta_data->>'prenom',
+    initcap(split_part(split_part(new.email, '@', 1), '.', 1)),
+    'Marcheur'
+  );
+  v_nom := coalesce(
+    new.raw_user_meta_data->>'nom',
+    initcap(split_part(split_part(new.email, '@', 1), '.', 2)),
+    ''
+  );
+  insert into public.community_profiles (user_id, prenom, nom, role)
+  values (new.id, v_prenom, v_nom, 'marcheur_en_devenir')
+  on conflict (user_id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created_community on auth.users;
+create trigger on_auth_user_created_community
+  after insert on auth.users
+  for each row execute function public.handle_new_community_user();
+
+-- Réparation profil manquant
+insert into public.community_profiles (user_id, prenom, nom, role)
+select id,
+  initcap(split_part(split_part(email,'@',1),'.',1)),
+  initcap(split_part(split_part(email,'@',1),'.',2)),
+  'marcheur_en_devenir'
+from auth.users
+where id = 'd0750220-d626-48ad-bf1b-ed4fde22688d'
+on conflict (user_id) do nothing;
+```
+
+### RPC `create_community_profile`
+
+Convertir l'`INSERT` en `INSERT … ON CONFLICT (user_id) DO UPDATE SET …` pour cohabiter avec le trigger (le trigger crée la coquille, la RPC enrichit).
+
+## Hors scope
+
+- Refonte du flux d'onboarding (déjà livré).
+- Migration des autres users sans profil (à traiter séparément si le diagnostic en révèle).
