@@ -94,9 +94,12 @@ const MarchesDuVivantMonEspace = () => {
   });
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/marches-du-vivant/connexion');
-    }
+    if (loading || user) return;
+    // Garde-fou : délai de grâce pour éviter un ping-pong si user=null ne dure qu'un tick
+    const timer = setTimeout(() => {
+      if (!user) navigate('/marches-du-vivant/connexion');
+    }, 500);
+    return () => clearTimeout(timer);
   }, [loading, user, navigate]);
 
   // Track session start

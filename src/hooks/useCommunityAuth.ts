@@ -49,34 +49,53 @@ export function useCommunityAuth() {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('community_profiles')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
-    setProfile(data as CommunityProfile | null);
+    if (error) {
+      console.warn('[useCommunityAuth] fetchProfile error:', error);
+    }
+    setProfile((data as CommunityProfile | null) ?? null);
+    return data as CommunityProfile | null;
   }, []);
 
   useEffect(() => {
+    let initialResolved = false;
+
+    const applySession = (s: Session | null) => {
+      setSession(s);
+      setUser(s?.user ?? null);
+      if (s?.user) {
+        // Fire-and-forget — never block auth state on profile fetch.
+        setTimeout(() => {
+          fetchProfile(s.user.id).then((p) => {
+            // Filet de sécurité : race auth.uid lors d'un INITIAL_SESSION précoce.
+            if (!p) {
+              setTimeout(() => fetchProfile(s.user.id), 1000);
+            }
+          });
+        }, 0);
+      } else {
+        setProfile(null);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
-        } else {
-          setProfile(null);
+      (event, s) => {
+        console.log('[useCommunityAuth] event=', event, 'userId=', s?.user?.id ?? null);
+        applySession(s);
+        // Only flip loading once the initial getSession has resolved.
+        if (initialResolved) {
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      initialResolved = true;
+      applySession(s);
       setLoading(false);
     });
 
