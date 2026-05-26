@@ -15,6 +15,9 @@ import { fr } from 'date-fns/locale';
 import ActivityDashboard from '@/components/admin/ActivityDashboard';
 import OrphanActivityLogsPanel from '@/components/admin/OrphanActivityLogsPanel';
 import OrphanInvitedReadersPanel from '@/components/admin/OrphanInvitedReadersPanel';
+import OrphanEventInvitationsPanel from '@/components/admin/OrphanEventInvitationsPanel';
+import OrphanMarcheParticipationsPanel from '@/components/admin/OrphanMarcheParticipationsPanel';
+import DeleteTestUserPanel from '@/components/admin/DeleteTestUserPanel';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import MarcheurEditSheet, { type EditableProfile } from '@/components/admin/community/MarcheurEditSheet';
 import ProfilsImpactDashboard from '@/components/admin/community/ProfilsImpactDashboard';
@@ -346,8 +349,11 @@ const CommunityProfilesAdmin: React.FC = () => {
           {/* ===== ACTIVITÉS ===== */}
           <TabsContent value="activites" className="space-y-4">
             <ActivityDashboard />
+            <DeleteTestUserPanel />
             <OrphanActivityLogsPanel />
             <OrphanInvitedReadersPanel />
+            <OrphanEventInvitationsPanel />
+            <OrphanMarcheParticipationsPanel />
           </TabsContent>
 
           {/* ===== AFFILIATION ===== */}
