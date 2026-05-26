@@ -4,6 +4,7 @@ import { MailOpen, MapPin, ChevronRight, Sparkles, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, differenceInCalendarDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 import { stripHtml } from '@/utils/textUtils';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { supabase } from '@/integrations/supabase/client';
