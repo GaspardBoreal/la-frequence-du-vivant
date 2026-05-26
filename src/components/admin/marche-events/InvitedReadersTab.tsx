@@ -227,6 +227,42 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
           </TableBody>
         </Table>
       )}
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Retirer ce Lecteur invité ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {toDelete && (
+                <>
+                  <span className="font-medium text-foreground">
+                    {toDelete.prenom} {toDelete.nom}
+                  </span>{' '}
+                  <span className="font-mono text-xs">({toDelete.email})</span>
+                  {' '}sera retiré de l'événement
+                  {eventTitle ? <> « {eventTitle} »</> : null}.
+                  {toDelete.invitation_id ? (
+                    <> Le lien d'invitation associé sera également révoqué.</>
+                  ) : null}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={remove.isPending}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={remove.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (toDelete) remove.mutate(toDelete);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Retirer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
