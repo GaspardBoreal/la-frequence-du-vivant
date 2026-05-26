@@ -1397,6 +1397,53 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const explorationEventIds = explorationEventIdsData || [];
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
+  // === Invités en attente (event_invited_readers non promus) ===
+  const knownParticipantUserIds = useMemo(() => {
+    const set = new Set<string>();
+    (marcheurs || []).forEach(m => { if (m.userId) set.add(m.userId); });
+    return set;
+  }, [marcheurs]);
+
+  const { data: pendingInvitees = [] } = useQuery({
+    queryKey: ['exploration-pending-invitees', explorationId, explorationEventIds],
+    enabled: !!explorationId && explorationEventIds.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data: invs } = await supabase
+        .from('event_invited_readers')
+        .select('user_id, event_id, invite_source, created_at, marche_events!inner(id, title, date_marche)')
+        .in('event_id', explorationEventIds)
+        .is('promoted_to_participant_at', null);
+      const rows = (invs || []) as any[];
+      if (rows.length === 0) return [];
+      const userIds = Array.from(new Set(rows.map(r => r.user_id).filter(Boolean)));
+      const { data: profs } = await supabase
+        .from('community_profiles')
+        .select('user_id, prenom, nom, avatar_url')
+        .in('user_id', userIds);
+      const profMap = new Map<string, any>();
+      (profs || []).forEach((p: any) => profMap.set(p.user_id, p));
+      // Dedup by user_id, garder l'invitation la plus récente
+      const byUser = new Map<string, any>();
+      rows.forEach((r: any) => {
+        const prev = byUser.get(r.user_id);
+        if (!prev || new Date(r.created_at) > new Date(prev.created_at)) byUser.set(r.user_id, r);
+      });
+      return Array.from(byUser.values()).map((r: any) => ({
+        user_id: r.user_id as string,
+        event: r.marche_events,
+        invite_source: r.invite_source as string,
+        profile: profMap.get(r.user_id) || null,
+      }));
+    },
+  });
+
+  const visiblePendingInvitees = useMemo(
+    () => pendingInvitees.filter(i => !knownParticipantUserIds.has(i.user_id)),
+    [pendingInvitees, knownParticipantUserIds],
+  );
+
+
   // Index testimonies by user_id for fast lookup per marcheur card
   const { data: testimonies } = useExplorationTestimonies(explorationId);
   const testimoniesByUser = useMemo(() => {
