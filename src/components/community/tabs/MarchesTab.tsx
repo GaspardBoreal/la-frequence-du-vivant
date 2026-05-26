@@ -62,7 +62,9 @@ interface MarchesTabProps {
   pastParticipantCounts?: Record<string, number>;
   invitedEvents?: InvitedEventRow[];
   registeredFromInvitation?: Map<string, string | null>;
+  onboarding?: boolean;
 }
+
 
 const getCountdown = (dateStr: string) => {
   const days = differenceInCalendarDays(new Date(dateStr), new Date());
