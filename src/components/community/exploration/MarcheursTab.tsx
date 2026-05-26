@@ -1572,6 +1572,14 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     });
   };
 
+  // Set of userIds qui sont uniquement invités (non promus, sans contribution)
+  // → on les retire de la liste principale pour ne les laisser que dans le bloc « Invités en attente »
+  const pendingInviteesUserIds = useMemo(() => {
+    const s = new Set<string>();
+    (pendingInvitees || []).forEach((i: any) => { if (i.user_id) s.add(i.user_id); });
+    return s;
+  }, [pendingInvitees]);
+
   // Sort + filter
   const sortedMarcheurs = useMemo(() => {
     if (!marcheurs?.length) return marcheurs ?? [];
