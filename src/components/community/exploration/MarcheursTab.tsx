@@ -1398,9 +1398,13 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
   // === Invités en attente (event_invited_readers non promus) ===
+  // userIds qui apparaissent effectivement dans la liste principale (carte avec contributions)
+  // → sert à dédupliquer le bloc « Invités en attente ».
   const knownParticipantUserIds = useMemo(() => {
     const set = new Set<string>();
-    (marcheurs || []).forEach(m => { if (m.userId) set.add(m.userId); });
+    (marcheurs || []).forEach(m => {
+      if (m.userId && (m.totalContributions || 0) > 0) set.add(m.userId);
+    });
     return set;
   }, [marcheurs]);
 
@@ -1572,12 +1576,27 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     });
   };
 
+  // Set of userIds qui sont uniquement invités (non promus, sans contribution)
+  // → on les retire de la liste principale pour ne les laisser que dans le bloc « Invités en attente »
+  const pendingInviteesUserIds = useMemo(() => {
+    const s = new Set<string>();
+    (pendingInvitees || []).forEach((i: any) => { if (i.user_id) s.add(i.user_id); });
+    return s;
+  }, [pendingInvitees]);
+
   // Sort + filter
   const sortedMarcheurs = useMemo(() => {
     if (!marcheurs?.length) return marcheurs ?? [];
     const collator = new Intl.Collator('fr', { sensitivity: 'base', usage: 'sort' });
 
     let list = [...marcheurs];
+
+    // Retirer les invités fantômes (crew rows auto-créées au signup, 0 contribution)
+    list = list.filter((m) => {
+      if (!m.userId) return true;
+      if (!pendingInviteesUserIds.has(m.userId)) return true;
+      return (m.totalContributions || 0) > 0;
+    });
 
     if (activeBuckets.size > 0) {
       list = list.filter((m) => {
@@ -1610,7 +1629,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     }
 
     return list;
-  }, [marcheurs, metricsById, sortMode, activeBuckets]);
+  }, [marcheurs, metricsById, sortMode, activeBuckets, pendingInviteesUserIds]);
 
   const createAffiliateLink = async (channel: 'copy' | 'share') => {
     if (!explorationId) {
