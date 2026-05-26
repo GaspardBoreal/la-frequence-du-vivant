@@ -21,6 +21,7 @@ export interface InvitedEventRow {
   };
 }
 
+
 export const useCommunityInvitedEvents = (userId: string | undefined) => {
   return useQuery({
     queryKey: ['community-invited-events', userId],
