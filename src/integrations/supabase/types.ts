@@ -5090,6 +5090,13 @@ export type Database = {
         Args: { _event_id: string; _user_id: string }
         Returns: Json
       }
+      admin_delete_orphan_activity_logs: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          affected_users: string[]
+          deleted_count: number
+        }[]
+      }
       admin_list_marcheur_species_tags: {
         Args: {
           _label_query?: string
@@ -5111,6 +5118,16 @@ export type Database = {
       admin_operation_wrapper: {
         Args: { operation_type: string }
         Returns: boolean
+      }
+      admin_orphan_activity_logs: {
+        Args: never
+        Returns: {
+          event_types: string[]
+          first_seen_at: string
+          last_seen_at: string
+          logs_count: number
+          user_id: string
+        }[]
       }
       age_bracket: { Args: { _birth: string }; Returns: string }
       attach_pratique_to_marcheur:
