@@ -35,7 +35,7 @@ const OrphanActivityLogsPanel: React.FC = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const { data, isLoading, isFetching, refetch } = useQuery({
+  const { data, isLoading, isFetching, refetch, error } = useQuery({
     queryKey: ['orphan-activity-logs'],
     queryFn: async (): Promise<OrphanRow[]> => {
       const { data, error } = await supabase.rpc('admin_orphan_activity_logs');
@@ -130,6 +130,10 @@ const OrphanActivityLogsPanel: React.FC = () => {
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-8 w-full" />
         </div>
+      ) : error ? (
+        <p className="text-sm text-destructive py-6 text-center">
+          Erreur de chargement : {(error as Error).message}
+        </p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground py-6 text-center">
           Aucune activité orpheline. ✨
