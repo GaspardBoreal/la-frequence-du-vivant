@@ -89,6 +89,37 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
     onError: (e: Error) => toast.error(e.message || 'Erreur lors de la promotion'),
   });
 
+  const [toDelete, setToDelete] = React.useState<InvitedReader | null>(null);
+
+  const remove = useMutation({
+    mutationFn: async (row: InvitedReader) => {
+      const { data, error } = await supabase.functions.invoke('event-invited-reader-delete', {
+        body: { event_id: eventId, invited_reader_id: row.id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return { data, row };
+    },
+    onSuccess: ({ row }) => {
+      toast.success(`${row.prenom ?? 'Lecteur'} retiré de l'événement`);
+      queryClient.invalidateQueries({ queryKey: ['event-invited-readers', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['marche-participations', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+      if (row.user_id) {
+        queryClient.invalidateQueries({ queryKey: ['community-invited-events', row.user_id] });
+        queryClient.invalidateQueries({ queryKey: ['marcheur-events', row.user_id] });
+      }
+      setToDelete(null);
+    },
+    onError: (e: Error) => {
+      if (e.message === 'already_promoted') {
+        toast.error('Ce Lecteur a été promu Participant. Désinscrivez-le d\'abord depuis l\'onglet Participants.');
+      } else {
+        toast.error(e.message || 'Erreur lors de la suppression');
+      }
+    },
+  });
+
   const rows = data || [];
 
   return (
