@@ -30,6 +30,7 @@ const countdown = (dateStr: string) => {
 
 const InvitedEventCard: React.FC<Props> = ({ userId, invitation, index }) => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [accepting, setAccepting] = useState(false);
   const event = invitation.event;
   const typeMeta = getMarcheEventTypeMeta(event.event_type);
@@ -44,8 +45,13 @@ const InvitedEventCard: React.FC<Props> = ({ userId, invitation, index }) => {
         .insert({ user_id: userId, marche_event_id: event.id });
       if (error && error.code !== '23505') throw error;
       toast.success('Invitation acceptée — à bientôt sur le sentier 🌿');
-      queryClient.invalidateQueries({ queryKey: ['community-participations'] });
-      queryClient.invalidateQueries({ queryKey: ['community-invited-events'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['community-participations'] }),
+        queryClient.invalidateQueries({ queryKey: ['community-invited-events'] }),
+      ]);
+      if (event.exploration_id) {
+        navigate(`/marches-du-vivant/mon-espace/exploration/${event.exploration_id}`);
+      }
     } catch (e: any) {
       toast.error(e.message || "Erreur lors de l'acceptation");
     } finally {
