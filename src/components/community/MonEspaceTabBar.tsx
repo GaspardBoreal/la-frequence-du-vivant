@@ -28,11 +28,22 @@ interface MonEspaceTabBarProps {
   role: CommunityRoleKey;
   activeTab: TabKey;
   onTabChange: (tab: TabKey) => void;
+  lockedTabs?: TabKey[];
+  lockedHint?: string;
 }
 
-const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTabChange }) => {
+const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTabChange, lockedTabs = [], lockedHint }) => {
   const tabs = TABS_BY_ROLE[role];
   const isMobile = useIsMobile();
+  const lockedSet = new Set(lockedTabs);
+
+  const handleClick = (key: TabKey) => {
+    if (lockedSet.has(key)) {
+      toast.info(lockedHint || 'Disponible après votre première marche');
+      return;
+    }
+    onTabChange(key);
+  };
 
   if (isMobile) {
     return (
@@ -41,22 +52,27 @@ const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTa
           {tabs.map((key) => {
             const { label, icon: Icon } = TAB_META[key];
             const isActive = key === activeTab;
+            const locked = lockedSet.has(key);
             return (
                 <button
                 key={key}
-                onClick={() => onTabChange(key)}
+                onClick={() => handleClick(key)}
+                aria-disabled={locked}
                 className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-lg transition-colors relative ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
+                  locked ? 'text-muted-foreground/40' : isActive ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
-                {isActive && (
+                {isActive && !locked && (
                   <motion.div
                     layoutId="tab-indicator-mobile"
                     className="absolute -top-1.5 w-5 h-0.5 rounded-full bg-primary"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
-                <Icon className="w-5 h-5" />
+                <div className="relative">
+                  <Icon className="w-5 h-5" />
+                  {locked && <Lock className="w-2.5 h-2.5 absolute -top-1 -right-1.5 text-muted-foreground/60" />}
+                </div>
                 <span className="text-[10px] font-medium">{label}</span>
               </button>
             );
@@ -73,17 +89,21 @@ const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTa
         {tabs.map((key) => {
           const { label, icon: Icon } = TAB_META[key];
           const isActive = key === activeTab;
+          const locked = lockedSet.has(key);
           return (
             <button
               key={key}
-              onClick={() => onTabChange(key)}
+              onClick={() => handleClick(key)}
+              aria-disabled={locked}
+              title={locked ? (lockedHint || 'Disponible après votre première marche') : undefined}
               className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${
-                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                  locked ? 'text-muted-foreground/40' : isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               <Icon className="w-4 h-4" />
               {label}
-              {isActive && (
+              {locked && <Lock className="w-3 h-3" />}
+              {isActive && !locked && (
                 <motion.div
                   layoutId="tab-indicator-desktop"
                   className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary"
@@ -99,3 +119,4 @@ const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTa
 };
 
 export default MonEspaceTabBar;
+
