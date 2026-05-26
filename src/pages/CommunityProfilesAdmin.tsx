@@ -17,6 +17,7 @@ import OrphanActivityLogsPanel from '@/components/admin/OrphanActivityLogsPanel'
 import OrphanInvitedReadersPanel from '@/components/admin/OrphanInvitedReadersPanel';
 import OrphanEventInvitationsPanel from '@/components/admin/OrphanEventInvitationsPanel';
 import OrphanMarcheParticipationsPanel from '@/components/admin/OrphanMarcheParticipationsPanel';
+import OrphanExplorationMarcheursPanel from '@/components/admin/OrphanExplorationMarcheursPanel';
 import DeleteTestUserPanel from '@/components/admin/DeleteTestUserPanel';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import MarcheurEditSheet, { type EditableProfile } from '@/components/admin/community/MarcheurEditSheet';
@@ -354,6 +355,7 @@ const CommunityProfilesAdmin: React.FC = () => {
             <OrphanInvitedReadersPanel />
             <OrphanEventInvitationsPanel />
             <OrphanMarcheParticipationsPanel />
+            <OrphanExplorationMarcheursPanel />
           </TabsContent>
 
           {/* ===== AFFILIATION ===== */}

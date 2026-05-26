@@ -1,5 +1,6 @@
 // Admin: suppression cascade complète d'un compte utilisateur (tests d'onboarding).
 // Refuse de supprimer un admin. Supporte un mode dry-run qui retourne les décomptes par table sans rien supprimer.
+// La cascade exhaustive (17+ tables) est centralisée côté Postgres dans admin_purge_user_cascade.
 import { validateAuth, createServiceClient, corsHeaders, forbiddenResponse } from '../_shared/auth-helper.ts';
 
 interface Body {
@@ -28,7 +29,7 @@ Deno.serve(async (req) => {
 
     const admin = createServiceClient();
 
-    // Résoudre user_id depuis l'email si nécessaire (auth.admin.listUsers paginé)
+    // Résoudre user_id depuis l'email si nécessaire
     if (!userId && email) {
       let page = 1;
       const perPage = 200;
@@ -62,67 +63,40 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Compter par table
-    const counts: Record<string, number> = {};
-    const tally = async (table: string, filter: (q: any) => any) => {
-      const { count, error } = await filter(
-        admin.from(table).select('*', { count: 'exact', head: true })
-      );
-      if (error) console.warn(`[delete-cascade] count ${table} failed`, error);
-      counts[table] = count ?? 0;
-    };
-
-    await tally('marche_participations', (q) => q.eq('user_id', userId!));
-    await tally('event_invited_readers', (q) => q.eq('user_id', userId!));
-    // event_invitations: par consumed_by_user_id OU par email
-    {
-      const { count: c1 } = await admin.from('event_invitations').select('*', { count: 'exact', head: true }).eq('consumed_by_user_id', userId!);
-      let c2 = 0;
+    // --- DRY RUN : comptage via RPC ---
+    if (dryRun) {
+      const { data: counts, error: cntErr } = await admin.rpc('admin_count_user_cascade', { target_user_id: userId });
+      if (cntErr) {
+        return new Response(JSON.stringify({ error: `count failed: ${cntErr.message}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      // Ajouter les invitations par email (non visibles via user_id)
+      let invByEmail = 0;
       if (email) {
         const { count } = await admin.from('event_invitations').select('*', { count: 'exact', head: true }).ilike('invited_email', email);
-        c2 = count ?? 0;
+        invByEmail = count ?? 0;
       }
-      counts['event_invitations'] = (c1 ?? 0) + c2;
-    }
-    await tally('community_profiles', (q) => q.eq('user_id', userId!));
-
-    if (dryRun) {
-      return new Response(JSON.stringify({ success: true, dry_run: true, user_id: userId, email, counts }),
+      const enriched = { ...(counts as Record<string, number>), event_invitations_by_email: invByEmail };
+      return new Response(JSON.stringify({ success: true, dry_run: true, user_id: userId, email, counts: enriched }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Cascade explicite (les FK en CASCADE feront le reste sur auth.users delete)
-    const deleted: Record<string, number> = {};
+    // --- PURGE CASCADE via RPC atomique ---
+    const { data: purged, error: purgeErr } = await admin.rpc('admin_purge_user_cascade', { target_user_id: userId });
+    if (purgeErr) {
+      return new Response(JSON.stringify({ error: `purge failed: ${purgeErr.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const deleted = (purged as Record<string, number>) ?? {};
 
-    const del = async (table: string, q: any) => {
-      const { error, count } = await q;
-      if (error) throw new Error(`${table}: ${error.message}`);
-      deleted[table] = count ?? 0;
-    };
-
-    await del('marche_participations',
-      admin.from('marche_participations').delete({ count: 'exact' }).eq('user_id', userId!));
-    await del('event_invited_readers',
-      admin.from('event_invited_readers').delete({ count: 'exact' }).eq('user_id', userId!));
-
-    // event_invitations: par consumed_by_user_id puis par email
-    {
-      const { error: e1, count: c1 } = await admin.from('event_invitations').delete({ count: 'exact' }).eq('consumed_by_user_id', userId!);
-      if (e1) throw new Error(`event_invitations(consumed): ${e1.message}`);
-      let c2 = 0;
-      if (email) {
-        const { error: e2, count } = await admin.from('event_invitations').delete({ count: 'exact' }).ilike('invited_email', email);
-        if (e2) throw new Error(`event_invitations(email): ${e2.message}`);
-        c2 = count ?? 0;
-      }
-      deleted['event_invitations'] = (c1 ?? 0) + c2;
+    // Invitations résiduelles par email (non rattachées au user_id)
+    if (email) {
+      const { error: e2, count } = await admin.from('event_invitations').delete({ count: 'exact' }).ilike('invited_email', email);
+      if (e2) throw new Error(`event_invitations(email): ${e2.message}`);
+      deleted['event_invitations_by_email'] = count ?? 0;
     }
 
-    // community_profiles (sera aussi supprimé par CASCADE sur auth.users, mais on le fait explicitement pour avoir le count)
-    await del('community_profiles',
-      admin.from('community_profiles').delete({ count: 'exact' }).eq('user_id', userId!));
-
-    // auth.users en dernier — cascade le reste
+    // auth.users en dernier
     const { error: authErr } = await admin.auth.admin.deleteUser(userId!);
     if (authErr) {
       return new Response(JSON.stringify({ error: `auth delete failed: ${authErr.message}`, deleted_before_auth: deleted }),
@@ -130,7 +104,7 @@ Deno.serve(async (req) => {
     }
     deleted['auth_users'] = 1;
 
-    return new Response(JSON.stringify({ success: true, user_id: userId, email, deleted, planned_counts: counts }),
+    return new Response(JSON.stringify({ success: true, user_id: userId, email, deleted }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error('[admin-delete-user-cascade] unexpected', e);
