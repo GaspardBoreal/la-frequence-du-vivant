@@ -28,10 +28,20 @@ const MarchesDuVivantMonEspace = () => {
   const { data: participations = [] } = useCommunityParticipations(user?.id);
   const [creatingProfile, setCreatingProfile] = useState(false);
   const { data: invitedEvents = [] } = useCommunityInvitedEvents(user?.id);
-  const initialTab = (searchParams.get('tab') as TabKey) || 'accueil';
+  const isOnboarding = !!profile && profile.role === 'marcheur_en_devenir' && participations.length === 0;
+  const initialTab = (searchParams.get('tab') as TabKey) || (isOnboarding ? 'marches' : 'accueil');
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const isMobile = useIsMobile();
   const { trackActivity } = useActivityTracker();
+
+  // Force redirect onboarding users to Marches tab on first profile load
+  useEffect(() => {
+    if (isOnboarding && !searchParams.get('tab') && activeTab !== 'marches') {
+      setActiveTab('marches');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnboarding]);
+
 
   const { data: upcomingEvents = [] } = useQuery({
     queryKey: ['upcoming-marche-events-mon-espace'],
