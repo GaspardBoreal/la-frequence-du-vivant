@@ -355,6 +355,7 @@ const CommunityProfilesAdmin: React.FC = () => {
             <OrphanInvitedReadersPanel />
             <OrphanEventInvitationsPanel />
             <OrphanMarcheParticipationsPanel />
+            <OrphanExplorationMarcheursPanel />
           </TabsContent>
 
           {/* ===== AFFILIATION ===== */}
