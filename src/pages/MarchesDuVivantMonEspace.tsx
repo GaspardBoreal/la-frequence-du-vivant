@@ -250,7 +250,14 @@ const MarchesDuVivantMonEspace = () => {
           onProfileUpdated={() => refreshProfile()}
         />
 
-        <MonEspaceTabBar role={role} activeTab={activeTab} onTabChange={setActiveTab} />
+        <MonEspaceTabBar
+          role={role}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          lockedTabs={isOnboarding ? ['accueil', 'carnet', 'outils', 'territoire'] : []}
+          lockedHint="Disponible après votre première marche"
+        />
+
 
         <main className={`max-w-2xl mx-auto px-4 py-5 bg-gradient-to-b from-white/[0.02] to-transparent ${isMobile ? 'pb-24' : 'pb-12'}`}>
           <AnimatePresence mode="wait">
