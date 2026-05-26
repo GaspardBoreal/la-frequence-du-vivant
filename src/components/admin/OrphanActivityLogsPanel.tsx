@@ -130,6 +130,10 @@ const OrphanActivityLogsPanel: React.FC = () => {
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-8 w-full" />
         </div>
+      ) : error ? (
+        <p className="text-sm text-destructive py-6 text-center">
+          Erreur de chargement : {(error as Error).message}
+        </p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground py-6 text-center">
           Aucune activité orpheline. ✨
