@@ -5,11 +5,21 @@ import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, UserPlus2, ArrowUpRight } from 'lucide-react';
+import { BookOpen, UserPlus2, ArrowUpRight, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import InviteReaderDialog from './InviteReaderDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 
 interface InvitedReader {
@@ -77,6 +87,37 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
       queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
     },
     onError: (e: Error) => toast.error(e.message || 'Erreur lors de la promotion'),
+  });
+
+  const [toDelete, setToDelete] = React.useState<InvitedReader | null>(null);
+
+  const remove = useMutation({
+    mutationFn: async (row: InvitedReader) => {
+      const { data, error } = await supabase.functions.invoke('event-invited-reader-delete', {
+        body: { event_id: eventId, invited_reader_id: row.id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return { data, row };
+    },
+    onSuccess: ({ row }) => {
+      toast.success(`${row.prenom ?? 'Lecteur'} retiré de l'événement`);
+      queryClient.invalidateQueries({ queryKey: ['event-invited-readers', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['marche-participations', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+      if (row.user_id) {
+        queryClient.invalidateQueries({ queryKey: ['community-invited-events', row.user_id] });
+        queryClient.invalidateQueries({ queryKey: ['marcheur-events', row.user_id] });
+      }
+      setToDelete(null);
+    },
+    onError: (e: Error) => {
+      if (e.message === 'already_promoted') {
+        toast.error('Ce Lecteur a été promu Participant. Désinscrivez-le d\'abord depuis l\'onglet Participants.');
+      } else {
+        toast.error(e.message || 'Erreur lors de la suppression');
+      }
+    },
   });
 
   const rows = data || [];
@@ -151,20 +192,34 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
                     {format(new Date(r.created_at), 'd MMM yyyy', { locale: fr })}
                   </TableCell>
                   <TableCell className="text-right">
-                    {r.status === 'inscrit' && r.user_id && !r.promoted_to_participant_at && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={promote.isPending}
-                        onClick={() => promote.mutate(r.user_id!)}
-                      >
-                        <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
-                        Promouvoir
-                      </Button>
-                    )}
-                    {r.promoted_to_participant_at && (
-                      <span className="text-xs text-muted-foreground">Promu</span>
-                    )}
+                    <div className="inline-flex items-center gap-2 justify-end">
+                      {r.status === 'inscrit' && r.user_id && !r.promoted_to_participant_at && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={promote.isPending}
+                          onClick={() => promote.mutate(r.user_id!)}
+                        >
+                          <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
+                          Promouvoir
+                        </Button>
+                      )}
+                      {r.promoted_to_participant_at && (
+                        <span className="text-xs text-muted-foreground">Promu</span>
+                      )}
+                      {!r.promoted_to_participant_at && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Retirer ce Lecteur"
+                          onClick={() => setToDelete(r)}
+                          disabled={remove.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
@@ -172,6 +227,42 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
           </TableBody>
         </Table>
       )}
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Retirer ce Lecteur invité ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {toDelete && (
+                <>
+                  <span className="font-medium text-foreground">
+                    {toDelete.prenom} {toDelete.nom}
+                  </span>{' '}
+                  <span className="font-mono text-xs">({toDelete.email})</span>
+                  {' '}sera retiré de l'événement
+                  {eventTitle ? <> « {eventTitle} »</> : null}.
+                  {toDelete.invitation_id ? (
+                    <> Le lien d'invitation associé sera également révoqué.</>
+                  ) : null}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={remove.isPending}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={remove.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (toDelete) remove.mutate(toDelete);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Retirer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

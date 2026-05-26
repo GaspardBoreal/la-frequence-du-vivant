@@ -1,86 +1,67 @@
-## Constats
+## Problème
 
-Sur la marche DEVIAT, `aurelien.dript@gmail.com` apparaît **deux fois** dans l'onglet Marcheurs :
+Dans l'onglet **Lecteurs invités** d'une fiche événement, il n'existe aucune action pour retirer un invité. La seule action disponible aujourd'hui est « Promouvoir ». Si on se trompe d'email, ou si l'on veut nettoyer après un test d'onboarding (typiquement `aurelien.dript@gmail.com` sur DEVIAT), l'invité reste collé à l'événement sans solution depuis l'UI.
 
-- une fois comme « Marcheur » (carte éditoriale `exploration_marcheurs` historique, liée à son ancien compte `ced8277b…`),
-- une fois comme « Marcheur en devenir » (nouvelle carte éditoriale auto-créée `e7c8652c…`, liée au nouveau `user_id 3ad53b2b…`).
+## Objectif
 
-Pourtant en base : **0 participation**, juste 2 `event_invited_readers` avec `invite_source='auto_new_signup'`. Le bloc amber « Invités en attente » existe déjà mais ne s'affiche pas car la nouvelle ligne crew (auto-créée) pousse l'utilisateur dans la liste principale via `useExplorationParticipants`.
+Ajouter une action **Retirer** par ligne dans l'onglet *Lecteurs invités*, qui supprime proprement l'invitation dans toutes les tables liées, avec garde-fous.
 
-## Plan
+## Tables impactées
 
-### 1. Onglet Marcheurs : exclure strictement les invités du bloc principal
+Pour un même `(event_id, user_id)` invité, plusieurs lignes peuvent exister :
 
-Dans `src/components/community/exploration/MarcheursTab.tsx` :
+- `event_invited_readers` — la ligne principale (toujours présente)
+- `event_invitations` — le token d'invitation initial (présent si `invite_source = 'invitation'`, peut avoir été consommé)
+- `marche_participations` — uniquement si l'invité a déjà été **promu** Participant (`promoted_to_participant_at` non null)
+- `community_profiles.statut` — repassé éventuellement à `'lecteur'` si on retire l'unique événement où il était promu
 
-- Récupérer les `event_invited_readers` non promus (déjà fait via `pendingInvitees`) **avant** le calcul de `sortedMarcheurs`.
-- Construire un `Set<userId>` des invités non promus **sans participation**.
-- Filtrer `sortedMarcheurs` pour retirer toute carte dont le `userId` est dans ce set ET dont `totalContributions === 0` (aucune contribution réelle). Cela couvre les crew rows auto-créées au signup.
-- Le bloc amber « Invités en attente » devient ainsi le seul endroit où ils apparaissent, peu importe la présence d'une crew row fantôme.
+## Règles de cascade
 
-Aucun changement de logique métier ailleurs ; uniquement de la présentation.
+1. **Invité non promu** (cas standard, ex. Aurélien) :
+   - Supprimer la ligne `event_invited_readers`
+   - Si `invitation_id` est renseigné et que l'invitation n'a pas été utilisée pour d'autres événements : supprimer (ou expirer) la ligne `event_invitations` correspondante
+2. **Invité déjà promu Participant** :
+   - **Bloquer la suppression depuis cet onglet** et afficher un message clair : « Ce Lecteur a été promu Participant. Désinscrivez-le d'abord depuis l'onglet Participants. »
+   - Évite de supprimer en cascade des contributions/photos rattachées à la participation
+3. **Source `auto_new_signup`** (ajouté automatiquement à la création de compte) :
+   - Suppression autorisée comme cas 1, mais avec un avertissement secondaire : « Cet invité a été ajouté automatiquement à l'inscription du compte. Il pourra être réajouté manuellement si besoin. »
 
-### 2. Maintenance · enrichir « Activités orphelines » avec les invitations orphelines
+## Implémentation
 
-Étendre `OrphanActivityLogsPanel` (ou créer un panneau frère `OrphanInvitedReadersPanel` rendu juste à côté dans `CommunityProfilesAdmin.tsx`) avec :
+### 1. Edge function `event-invited-reader-delete`
 
-- Nouvelle RPC `admin_orphan_invited_readers()` : retourne les lignes `event_invited_readers` dont le `user_id` n'a **plus** de `community_profiles` ni d'entrée `auth.users` (compte test supprimé). Colonnes : `user_id`, `invitations_count`, `event_titles[]`, `last_invited_at`.
-- Nouvelle RPC `admin_delete_orphan_invited_readers(p_user_ids uuid[])` : sécurité-définie, re-vérifie l'orphelinage puis supprime les `event_invited_readers` correspondants. Retourne `{ deleted_count, affected_users }`.
-- UI : même pattern que le panneau existant (Checkbox / Sélection / AlertDialog de confirmation). Bouton « Actualiser » et libellé : « Invitations orphelines (comptes supprimés) ».
-- Lien explicatif court : « Lignes `event_invited_readers` dont l'utilisateur n'existe plus. Utile pendant les tests d'onboarding. »
+Nouvelle fonction admin-only (pattern identique à `event-invited-reader-promote`) :
 
-### 3. Bonus optionnel (non bloquant)
+- Entrée : `{ event_id, invited_reader_id }`
+- Vérifie `check_is_admin_user`
+- Recharge la ligne `event_invited_readers` ; refuse si `promoted_to_participant_at` non null (retourne `{ error: 'already_promoted' }`)
+- `DELETE` sur `event_invited_readers` (par `id`)
+- Si `invitation_id` présent : supprime la ligne `event_invitations` correspondante (le token devient inutile)
+- Retourne `{ success: true }`
 
-Permettre la sélection de **n'importe quel `user_id` invité** (même s'il a encore un profil) via un second onglet « Tester un compte » qui purge à la fois `event_invited_readers` + `community_profiles` + `auth.users` pour ce user. Utile pour repartir de zéro avec `aurelien.dript@gmail.com`. **À confirmer avec toi avant d'inclure** — c'est une fonction destructive qui touche `auth.users`.
+### 2. UI — `InvitedReadersTab.tsx`
 
-## Détails techniques
+- Ajouter un bouton icône `Trash2` à droite de « Promouvoir » (ou à la place quand déjà promu n'est pas le cas, sinon désactivé avec tooltip)
+- `AlertDialog` de confirmation listant : prénom, nom, email, événement
+- Mutation appelant la nouvelle edge function
+- En cas de succès : `toast.success` + invalidation de :
+  - `['event-invited-readers', eventId]`
+  - `['community-invited-events', userId]`
+  - `['marcheur-events', userId]`
+  - `['marche-participations', eventId]` (cohérence, même si non touché ici)
+- En cas d'erreur `already_promoted` : toast explicite « Lecteur déjà promu — gérer depuis Participants »
 
-```text
-MarcheursTab.tsx
-  pendingInviteesUserIds  : Set<string>
-  filteredSortedMarcheurs : sortedMarcheurs.filter(m =>
-    !(m.userId && pendingInviteesUserIds.has(m.userId) && m.totalContributions === 0)
-  )
-```
+### 3. Pas de changement DB
 
-```sql
--- RPC orphan invited readers
-CREATE OR REPLACE FUNCTION public.admin_orphan_invited_readers()
-RETURNS TABLE(user_id uuid, invitations_count bigint, event_titles text[], last_invited_at timestamptz)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT eir.user_id,
-         count(*)::bigint,
-         array_agg(DISTINCT me.title),
-         max(eir.created_at)
-  FROM event_invited_readers eir
-  JOIN marche_events me ON me.id = eir.event_id
-  WHERE NOT EXISTS (SELECT 1 FROM community_profiles cp WHERE cp.user_id = eir.user_id)
-    AND NOT EXISTS (SELECT 1 FROM auth.users au WHERE au.id = eir.user_id)
-  GROUP BY eir.user_id;
-$$;
+Aucune nouvelle migration : on réutilise les tables et droits existants (l'edge function utilise `service_role`).
 
-CREATE OR REPLACE FUNCTION public.admin_delete_orphan_invited_readers(p_user_ids uuid[])
-RETURNS TABLE(deleted_count int, affected_users uuid[])
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE v_deleted int;
-BEGIN
-  IF NOT public.check_is_admin_user(auth.uid()) THEN
-    RAISE EXCEPTION 'forbidden';
-  END IF;
-  WITH del AS (
-    DELETE FROM event_invited_readers
-    WHERE user_id = ANY(p_user_ids)
-      AND NOT EXISTS (SELECT 1 FROM community_profiles cp WHERE cp.user_id = event_invited_readers.user_id)
-      AND NOT EXISTS (SELECT 1 FROM auth.users au WHERE au.id = event_invited_readers.user_id)
-    RETURNING user_id
-  )
-  SELECT count(*)::int, array_agg(DISTINCT user_id) INTO v_deleted, affected_users FROM del;
-  deleted_count := v_deleted;
-  RETURN NEXT;
-END;
-$$;
-```
+## Tests manuels
 
-## Question avant exécution
+1. Inviter `aurelien.dript@gmail.com` sur DEVIAT, puis le retirer → la ligne disparaît de *Lecteurs invités*, et l'événement disparaît de l'espace Marcheur d'Aurélien
+2. Promouvoir un invité, puis tenter de le retirer → bouton désactivé / message « déjà promu »
+3. Retirer un invité dont `invite_source = 'invitation'` (avec token) → la ligne `event_invitations` est aussi supprimée
 
-Veux-tu **aussi** que je supprime côté nettoyage la **crew row auto-créée** `e7c8652c…` pour l'exploration DEVIAT (et au passage tracer d'où elle vient) ? OUI
+## Hors scope
+
+- La désinscription d'un Participant promu reste gérée dans l'onglet *Participants* existant
+- Aucun changement aux panneaux *Orphelins* (déjà couverts par les précédentes itérations)
