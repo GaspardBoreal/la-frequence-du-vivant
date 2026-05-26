@@ -28,10 +28,20 @@ const MarchesDuVivantMonEspace = () => {
   const { data: participations = [] } = useCommunityParticipations(user?.id);
   const [creatingProfile, setCreatingProfile] = useState(false);
   const { data: invitedEvents = [] } = useCommunityInvitedEvents(user?.id);
-  const initialTab = (searchParams.get('tab') as TabKey) || 'accueil';
+  const isOnboarding = !!profile && profile.role === 'marcheur_en_devenir' && participations.length === 0;
+  const initialTab = (searchParams.get('tab') as TabKey) || (isOnboarding ? 'marches' : 'accueil');
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const isMobile = useIsMobile();
   const { trackActivity } = useActivityTracker();
+
+  // Force redirect onboarding users to Marches tab on first profile load
+  useEffect(() => {
+    if (isOnboarding && !searchParams.get('tab') && activeTab !== 'marches') {
+      setActiveTab('marches');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnboarding]);
+
 
   const { data: upcomingEvents = [] } = useQuery({
     queryKey: ['upcoming-marche-events-mon-espace'],
@@ -209,8 +219,10 @@ const MarchesDuVivantMonEspace = () => {
             pastParticipantCounts={pastParticipantCounts}
             invitedEvents={invitedEvents}
             registeredFromInvitation={registeredFromInvitation}
+            onboarding={isOnboarding}
           />
         );
+
       case 'carnet':
         return <CarnetTab userId={user.id} participations={participations} silentInvitations={silentInvitations} />;
       case 'outils':
@@ -238,7 +250,14 @@ const MarchesDuVivantMonEspace = () => {
           onProfileUpdated={() => refreshProfile()}
         />
 
-        <MonEspaceTabBar role={role} activeTab={activeTab} onTabChange={setActiveTab} />
+        <MonEspaceTabBar
+          role={role}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          lockedTabs={isOnboarding ? ['accueil', 'carnet', 'outils', 'territoire'] : []}
+          lockedHint="Disponible après votre première marche"
+        />
+
 
         <main className={`max-w-2xl mx-auto px-4 py-5 bg-gradient-to-b from-white/[0.02] to-transparent ${isMobile ? 'pb-24' : 'pb-12'}`}>
           <AnimatePresence mode="wait">

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar, ChevronDown, MailOpen, Mail } from 'lucide-react';
+import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar, ChevronDown, MailOpen, Mail, Sprout } from 'lucide-react';
 import PastEventExpandedView from './PastEventExpandedView';
 import InvitedEventCard from '@/components/community/marches/InvitedEventCard';
 import type { InvitedEventRow } from '@/hooks/useCommunityInvitedEvents';
@@ -62,7 +62,9 @@ interface MarchesTabProps {
   pastParticipantCounts?: Record<string, number>;
   invitedEvents?: InvitedEventRow[];
   registeredFromInvitation?: Map<string, string | null>;
+  onboarding?: boolean;
 }
+
 
 const getCountdown = (dateStr: string) => {
   const days = differenceInCalendarDays(new Date(dateStr), new Date());
@@ -343,7 +345,9 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
   userId, upcomingEvents, participations, registeredEventIds,
   pastEvents = [], pastParticipantCounts = {},
   invitedEvents = [], registeredFromInvitation,
+  onboarding = false,
 }) => {
+
   const [registeringId, setRegisteringId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -386,8 +390,56 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
     .filter(e => !registeredEventIds.has(e.id) && !pendingInvitedIds.has(e.id))
     .sort((a, b) => new Date(a.date_marche).getTime() - new Date(b.date_marche).getTime());
 
+  if (onboarding) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-base font-semibold text-foreground mb-0.5 flex items-center gap-2">
+            <MailOpen className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+            Vous êtes invité·e
+            {pendingInvitations.length > 0 && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
+                {pendingInvitations.length}
+              </span>
+            )}
+          </h2>
+          <p className="text-muted-foreground text-[11px]">
+            Acceptez une invitation pour démarrer votre aventure et débloquer votre espace
+          </p>
+        </div>
+
+        {pendingInvitations.length > 0 ? (
+          <div className="space-y-3">
+            {pendingInvitations.map((inv, i) => (
+              <InvitedEventCard
+                key={inv.invitation_row_id}
+                userId={userId}
+                invitation={inv}
+                index={i}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center space-y-2">
+            <Sprout className="w-6 h-6 mx-auto text-muted-foreground/60" />
+            <p className="text-sm text-foreground font-medium">Aucune invitation pour le moment</p>
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              Demandez à un ambassadeur de vous inviter, ou explorez les marches publiques.
+            </p>
+            <Link to="/marches-du-vivant">
+              <Button size="sm" variant="outline" className="mt-2 rounded-full text-xs gap-1">
+                Découvrir les marches publiques <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+
       {/* Section 1 — Mes aventures à venir */}
       <div className="space-y-3">
         <div>
