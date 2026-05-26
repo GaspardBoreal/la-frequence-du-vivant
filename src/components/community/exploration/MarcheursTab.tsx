@@ -1397,9 +1397,10 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const explorationEventIds = explorationEventIdsData || [];
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
-  // === Invités en attente (event_invited_readers non promus) ===
-  // userIds qui apparaissent effectivement dans la liste principale (carte avec contributions)
-  // → sert à dédupliquer le bloc « Invités en attente ».
+  // === Invités (2 catégories bien distinctes) ===
+  // A. pending                → event_invitations.consumed_at IS NULL (jamais inscrit, vraie attente)
+  // B. registered_not_promoted → event_invited_readers.user_id NOT NULL +
+  //                              promoted_to_participant_at IS NULL (inscrit, pas encore Participant)
   const knownParticipantUserIds = useMemo(() => {
     const set = new Set<string>();
     (marcheurs || []).forEach(m => {
@@ -1408,44 +1409,33 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     return set;
   }, [marcheurs]);
 
-  const { data: pendingInvitees = [] } = useQuery({
-    queryKey: ['exploration-pending-invitees', explorationId, explorationEventIds],
-    enabled: !!explorationId && explorationEventIds.length > 0,
+  const { data: inviteesData } = useQuery({
+    queryKey: ['exploration-pending-invitees-v2', explorationId],
+    enabled: !!explorationId,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data: invs } = await supabase
-        .from('event_invited_readers')
-        .select('user_id, event_id, invite_source, created_at, marche_events!inner(id, title, date_marche)')
-        .in('event_id', explorationEventIds)
-        .is('promoted_to_participant_at', null);
-      const rows = (invs || []) as any[];
-      if (rows.length === 0) return [];
-      const userIds = Array.from(new Set(rows.map(r => r.user_id).filter(Boolean)));
-      const { data: profs } = await supabase
-        .from('community_profiles')
-        .select('user_id, prenom, nom, avatar_url')
-        .in('user_id', userIds);
-      const profMap = new Map<string, any>();
-      (profs || []).forEach((p: any) => profMap.set(p.user_id, p));
-      // Dedup by user_id, garder l'invitation la plus récente
-      const byUser = new Map<string, any>();
-      rows.forEach((r: any) => {
-        const prev = byUser.get(r.user_id);
-        if (!prev || new Date(r.created_at) > new Date(prev.created_at)) byUser.set(r.user_id, r);
+      const { data, error } = await supabase.functions.invoke('exploration-pending-invitees-list', {
+        body: { exploration_id: explorationId },
       });
-      return Array.from(byUser.values()).map((r: any) => ({
-        user_id: r.user_id as string,
-        event: r.marche_events,
-        invite_source: r.invite_source as string,
-        profile: profMap.get(r.user_id) || null,
-      }));
+      if (error) throw error;
+      return data as {
+        pending: Array<{ invitation_id: string; prenom: string | null; email_hint: string | null; event: any; created_at: string; expires_at: string | null }>;
+        registered_not_promoted: Array<{ user_id: string; event: any; invite_source: string; profile: any }>;
+      };
     },
   });
 
-  const visiblePendingInvitees = useMemo(
-    () => pendingInvitees.filter(i => !knownParticipantUserIds.has(i.user_id)),
-    [pendingInvitees, knownParticipantUserIds],
+  const pendingInvitations = inviteesData?.pending ?? [];
+  const registeredNotPromoted = inviteesData?.registered_not_promoted ?? [];
+
+  const visibleRegisteredNotPromoted = useMemo(
+    () => registeredNotPromoted.filter(i => !knownParticipantUserIds.has(i.user_id)),
+    [registeredNotPromoted, knownParticipantUserIds],
   );
+
+  // Compat avec le reste du fichier (filtrage de la liste principale par user_id)
+  const pendingInvitees = registeredNotPromoted;
+  const visiblePendingInvitees = visibleRegisteredNotPromoted;
 
 
   // Index testimonies by user_id for fast lookup per marcheur card
