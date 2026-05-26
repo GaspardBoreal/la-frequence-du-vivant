@@ -1397,9 +1397,10 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const explorationEventIds = explorationEventIdsData || [];
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
-  // === Invités en attente (event_invited_readers non promus) ===
-  // userIds qui apparaissent effectivement dans la liste principale (carte avec contributions)
-  // → sert à dédupliquer le bloc « Invités en attente ».
+  // === Invités (2 catégories bien distinctes) ===
+  // A. pending                → event_invitations.consumed_at IS NULL (jamais inscrit, vraie attente)
+  // B. registered_not_promoted → event_invited_readers.user_id NOT NULL +
+  //                              promoted_to_participant_at IS NULL (inscrit, pas encore Participant)
   const knownParticipantUserIds = useMemo(() => {
     const set = new Set<string>();
     (marcheurs || []).forEach(m => {
@@ -1408,44 +1409,33 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     return set;
   }, [marcheurs]);
 
-  const { data: pendingInvitees = [] } = useQuery({
-    queryKey: ['exploration-pending-invitees', explorationId, explorationEventIds],
-    enabled: !!explorationId && explorationEventIds.length > 0,
+  const { data: inviteesData } = useQuery({
+    queryKey: ['exploration-pending-invitees-v2', explorationId],
+    enabled: !!explorationId,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data: invs } = await supabase
-        .from('event_invited_readers')
-        .select('user_id, event_id, invite_source, created_at, marche_events!inner(id, title, date_marche)')
-        .in('event_id', explorationEventIds)
-        .is('promoted_to_participant_at', null);
-      const rows = (invs || []) as any[];
-      if (rows.length === 0) return [];
-      const userIds = Array.from(new Set(rows.map(r => r.user_id).filter(Boolean)));
-      const { data: profs } = await supabase
-        .from('community_profiles')
-        .select('user_id, prenom, nom, avatar_url')
-        .in('user_id', userIds);
-      const profMap = new Map<string, any>();
-      (profs || []).forEach((p: any) => profMap.set(p.user_id, p));
-      // Dedup by user_id, garder l'invitation la plus récente
-      const byUser = new Map<string, any>();
-      rows.forEach((r: any) => {
-        const prev = byUser.get(r.user_id);
-        if (!prev || new Date(r.created_at) > new Date(prev.created_at)) byUser.set(r.user_id, r);
+      const { data, error } = await supabase.functions.invoke('exploration-pending-invitees-list', {
+        body: { exploration_id: explorationId },
       });
-      return Array.from(byUser.values()).map((r: any) => ({
-        user_id: r.user_id as string,
-        event: r.marche_events,
-        invite_source: r.invite_source as string,
-        profile: profMap.get(r.user_id) || null,
-      }));
+      if (error) throw error;
+      return data as {
+        pending: Array<{ invitation_id: string; prenom: string | null; email_hint: string | null; event: any; created_at: string; expires_at: string | null }>;
+        registered_not_promoted: Array<{ user_id: string; event: any; invite_source: string; profile: any }>;
+      };
     },
   });
 
-  const visiblePendingInvitees = useMemo(
-    () => pendingInvitees.filter(i => !knownParticipantUserIds.has(i.user_id)),
-    [pendingInvitees, knownParticipantUserIds],
+  const pendingInvitations = inviteesData?.pending ?? [];
+  const registeredNotPromoted = inviteesData?.registered_not_promoted ?? [];
+
+  const visibleRegisteredNotPromoted = useMemo(
+    () => registeredNotPromoted.filter(i => !knownParticipantUserIds.has(i.user_id)),
+    [registeredNotPromoted, knownParticipantUserIds],
   );
+
+  // Compat avec le reste du fichier (filtrage de la liste principale par user_id)
+  const pendingInvitees = registeredNotPromoted;
+  const visiblePendingInvitees = visibleRegisteredNotPromoted;
 
 
   // Index testimonies by user_id for fast lookup per marcheur card
@@ -1882,8 +1872,8 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         </div>
       )}
 
-      {/* Invités en attente — hors total marcheurs */}
-      {visiblePendingInvitees.length > 0 && (
+      {/* A. Invités en attente — invitations email non encore consommées (vraie attente) */}
+      {pendingInvitations.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1892,20 +1882,62 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
           <div className="flex items-center gap-2 mb-2">
             <MailOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <span className="text-sm font-semibold text-amber-700 dark:text-amber-200">
-              Invités en attente · {visiblePendingInvitees.length}
+              Invités en attente · {pendingInvitations.length}
             </span>
-            <span className="text-[11px] text-muted-foreground">(non comptés dans le total)</span>
+            <span className="text-[11px] text-muted-foreground">(invitation envoyée — pas encore inscrits)</span>
           </div>
           <ul className="space-y-1.5">
-            {visiblePendingInvitees.map((inv) => {
+            {pendingInvitations.map((inv) => {
+              const display = inv.prenom || 'Invité';
+              const initials = inv.prenom?.[0]?.toUpperCase() || '?';
+              return (
+                <li key={inv.invitation_id} className="flex items-center gap-2.5 rounded-lg bg-background/60 dark:bg-white/[0.02] px-2.5 py-1.5">
+                  <Avatar className="h-7 w-7 ring-1 ring-amber-400/40">
+                    <AvatarFallback className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {display}
+                      {inv.email_hint && <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">{inv.email_hint}</span>}
+                    </p>
+                    {inv.event?.title && (
+                      <p className="text-[10px] text-muted-foreground truncate">Invité pour « {inv.event.title} »</p>
+                    )}
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                    En attente
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </motion.div>
+      )}
+
+      {/* B. Lecteurs inscrits non promus Participant — déjà comptes créés */}
+      {visibleRegisteredNotPromoted.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 rounded-2xl border border-sky-300/30 bg-sky-50/30 dark:border-sky-400/15 dark:bg-sky-500/5 p-3"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <MailOpen className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+            <span className="text-sm font-semibold text-sky-700 dark:text-sky-200">
+              Lecteurs inscrits · {visibleRegisteredNotPromoted.length}
+            </span>
+            <span className="text-[11px] text-muted-foreground">(compte créé — à promouvoir Participant)</span>
+          </div>
+          <ul className="space-y-1.5">
+            {visibleRegisteredNotPromoted.map((inv) => {
               const p = inv.profile;
-              const display = p ? `${p.prenom || ''} ${p.nom || ''}`.trim() || 'Marcheur invité' : 'Marcheur invité';
+              const display = p ? `${p.prenom || ''} ${p.nom || ''}`.trim() || 'Marcheur inscrit' : 'Marcheur inscrit';
               const initials = p?.prenom?.[0]?.toUpperCase() || '?';
               return (
                 <li key={inv.user_id} className="flex items-center gap-2.5 rounded-lg bg-background/60 dark:bg-white/[0.02] px-2.5 py-1.5">
-                  <Avatar className="h-7 w-7 ring-1 ring-amber-400/40">
+                  <Avatar className="h-7 w-7 ring-1 ring-sky-400/40">
                     {p?.avatar_url ? <AvatarImage src={p.avatar_url} alt={display} /> : null}
-                    <AvatarFallback className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300">{initials}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-foreground truncate">{display}</p>
@@ -1913,8 +1945,8 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                       <p className="text-[10px] text-muted-foreground truncate">Invité pour « {inv.event.title} »</p>
                     )}
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                    En attente
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300">
+                    Inscrit
                   </span>
                 </li>
               );
