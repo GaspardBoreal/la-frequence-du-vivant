@@ -5090,6 +5090,10 @@ export type Database = {
         Args: { _event_id: string; _user_id: string }
         Returns: Json
       }
+      admin_count_user_cascade: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
       admin_delete_orphan_activity_logs: {
         Args: { p_user_ids: string[] }
         Returns: number
@@ -5157,6 +5161,19 @@ export type Database = {
           token: string
         }[]
       }
+      admin_orphan_exploration_marcheurs: {
+        Args: never
+        Returns: {
+          created_at: string
+          exploration_id: string
+          marcheur_id: string
+          nb_medias: number
+          nb_observations: number
+          nom: string
+          prenom: string
+          user_id: string
+        }[]
+      }
       admin_orphan_invited_readers: {
         Args: never
         Returns: {
@@ -5176,6 +5193,10 @@ export type Database = {
           user_id: string
           validated_at: string
         }[]
+      }
+      admin_purge_user_cascade: {
+        Args: { target_user_id: string }
+        Returns: Json
       }
       age_bracket: { Args: { _birth: string }; Returns: string }
       attach_pratique_to_marcheur:
