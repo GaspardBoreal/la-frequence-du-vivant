@@ -35,7 +35,7 @@ const OrphanActivityLogsPanel: React.FC = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const { data, isLoading, isFetching, refetch } = useQuery({
+  const { data, isLoading, isFetching, refetch, error } = useQuery({
     queryKey: ['orphan-activity-logs'],
     queryFn: async (): Promise<OrphanRow[]> => {
       const { data, error } = await supabase.rpc('admin_orphan_activity_logs');
