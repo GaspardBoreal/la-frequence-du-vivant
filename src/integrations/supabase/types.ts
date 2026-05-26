@@ -5094,10 +5094,22 @@ export type Database = {
         Args: { p_user_ids: string[] }
         Returns: number
       }
+      admin_delete_orphan_event_invitations: {
+        Args: { p_ids: string[] }
+        Returns: {
+          deleted_count: number
+        }[]
+      }
       admin_delete_orphan_invited_readers: {
         Args: { p_user_ids: string[] }
         Returns: {
           affected_users: string[]
+          deleted_count: number
+        }[]
+      }
+      admin_delete_orphan_marche_participations: {
+        Args: { p_ids: string[] }
+        Returns: {
           deleted_count: number
         }[]
       }
@@ -5133,6 +5145,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_orphan_event_invitations: {
+        Args: never
+        Returns: {
+          consumed_at: string
+          created_at: string
+          event_title: string
+          id: string
+          invited_email: string
+          invited_prenom: string
+          token: string
+        }[]
+      }
       admin_orphan_invited_readers: {
         Args: never
         Returns: {
@@ -5140,6 +5164,17 @@ export type Database = {
           invitations_count: number
           last_invited_at: string
           user_id: string
+        }[]
+      }
+      admin_orphan_marche_participations: {
+        Args: never
+        Returns: {
+          created_at: string
+          event_title: string
+          has_observations: boolean
+          id: string
+          user_id: string
+          validated_at: string
         }[]
       }
       age_bracket: { Args: { _birth: string }; Returns: string }
