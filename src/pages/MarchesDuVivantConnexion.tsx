@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
 
@@ -48,6 +49,8 @@ const MarchesDuVivantConnexion = () => {
   const [autreTypeMarche, setAutreTypeMarche] = useState('');
   const [recherchePrioritaire, setRecherchePrioritaire] = useState('');
   const [consentementAnalyse, setConsentementAnalyse] = useState(false);
+  const [emailConfirmDialog, setEmailConfirmDialog] = useState<{ open: boolean; email: string }>({ open: false, email: '' });
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   // Invitation Lecteur invité
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
@@ -162,8 +165,7 @@ const MarchesDuVivantConnexion = () => {
         }
       }
 
-      toast.success('Inscription réussie ! Vérifiez vos emails pour confirmer votre compte 📬');
-      setMode('login');
+      setEmailConfirmDialog({ open: true, email });
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors de l\'inscription');
     } finally {
@@ -511,6 +513,63 @@ const MarchesDuVivantConnexion = () => {
           </motion.div>
         </div>
       </div>
+
+      <Dialog open={emailConfirmDialog.open} onOpenChange={(open) => {
+        setEmailConfirmDialog({ ...emailConfirmDialog, open });
+        if (!open) setMode('login');
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-2">
+              <Mail className="w-7 h-7 text-emerald-600 dark:text-emerald-300" />
+            </div>
+            <DialogTitle className="text-center text-xl">Vérifiez votre boîte mail 📬</DialogTitle>
+            <DialogDescription className="text-center pt-2 space-y-2">
+              <span className="block">
+                Un lien de confirmation vient d'être envoyé à <strong className="text-foreground">{emailConfirmDialog.email}</strong>.
+              </span>
+              <span className="block">
+                Cliquez dessus pour activer votre compte, puis revenez ici pour vous connecter.
+              </span>
+              <span className="block text-xs text-muted-foreground italic pt-2">
+                Pensez à vérifier vos spams si vous ne le voyez pas dans quelques minutes.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={resendingEmail}
+              onClick={async () => {
+                setResendingEmail(true);
+                try {
+                  const { error } = await supabase.auth.resend({ type: 'signup', email: emailConfirmDialog.email });
+                  if (error) throw error;
+                  toast.success('Email renvoyé ! 📧');
+                } catch (e: any) {
+                  toast.error(e.message || 'Erreur lors du renvoi');
+                } finally {
+                  setResendingEmail(false);
+                }
+              }}
+              className="w-full"
+            >
+              {resendingEmail ? 'Envoi…' : 'Renvoyer l\'email de confirmation'}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setEmailConfirmDialog({ open: false, email: '' });
+                setMode('login');
+              }}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              J'ai compris
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

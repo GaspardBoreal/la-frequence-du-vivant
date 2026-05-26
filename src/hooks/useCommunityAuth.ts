@@ -62,8 +62,6 @@ export function useCommunityAuth() {
   }, []);
 
   useEffect(() => {
-    let initialResolved = false;
-
     const applySession = (s: Session | null) => {
       setSession(s);
       setUser(s?.user ?? null);
@@ -86,20 +84,31 @@ export function useCommunityAuth() {
       (event, s) => {
         console.log('[useCommunityAuth] event=', event, 'userId=', s?.user?.id ?? null);
         applySession(s);
-        // Only flip loading once the initial getSession has resolved.
-        if (initialResolved) {
-          setLoading(false);
-        }
+        // Toujours débloquer le loader sur n'importe quel événement auth.
+        setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      initialResolved = true;
       applySession(s);
+      setLoading(false);
+    }).catch((err) => {
+      console.warn('[useCommunityAuth] getSession error:', err);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Garde-fou : libère le loader si l'init Supabase traîne anormalement.
+    const safetyTimer = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) console.warn('[useCommunityAuth] safety timeout — releasing loader');
+        return false;
+      });
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(safetyTimer);
+    };
   }, [fetchProfile]);
 
   const signUp = async (data: SignUpData) => {
