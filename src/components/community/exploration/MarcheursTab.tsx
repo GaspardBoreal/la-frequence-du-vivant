@@ -1625,7 +1625,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     }
 
     return list;
-  }, [marcheurs, metricsById, sortMode, activeBuckets]);
+  }, [marcheurs, metricsById, sortMode, activeBuckets, pendingInviteesUserIds]);
 
   const createAffiliateLink = async (channel: 'copy' | 'share') => {
     if (!explorationId) {
