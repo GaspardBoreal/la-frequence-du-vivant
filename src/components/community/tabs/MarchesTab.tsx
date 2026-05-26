@@ -345,7 +345,9 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
   userId, upcomingEvents, participations, registeredEventIds,
   pastEvents = [], pastParticipantCounts = {},
   invitedEvents = [], registeredFromInvitation,
+  onboarding = false,
 }) => {
+
   const [registeringId, setRegisteringId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
