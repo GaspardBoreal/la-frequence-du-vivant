@@ -159,8 +159,7 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
             </Badge>
           </div>
 
-          {/* Photo source indicator */}
-          {hasPhoto && species.photos?.[0] && (
+          {hasPhoto && trustedLocalPhoto && (
             <div className="absolute top-2 left-2">
               <Badge className="bg-emerald-500/80 backdrop-blur-sm text-white text-[10px]">
                 📸
