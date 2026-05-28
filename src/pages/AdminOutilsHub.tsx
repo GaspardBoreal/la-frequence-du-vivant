@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf } from 'lucide-react';
 
 const OUTILS = [
   {
@@ -17,6 +17,13 @@ const OUTILS = [
     description: 'L\'écosystème vivant : 14 intégrations, métriques live, santé des flux.',
     icon: Network,
     to: '/admin/outils/api-mcp',
+    active: true,
+  },
+  {
+    titre: 'Audit IA Frugale',
+    description: 'Audit AFNOR SPEC 2314 — frugalité numérique IA, score /100, plan d\'action.',
+    icon: Leaf,
+    to: '/admin/outils/audit-frugal',
     active: true,
   },
   {

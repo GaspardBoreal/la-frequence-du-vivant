@@ -87,6 +87,8 @@ import { AdminChatBotMount } from './components/chatbot/AdminChatBotMount';
 import { CommunityChatBotMount } from './components/chatbot/CommunityChatBotMount';
 import ApiMcpPublic from './pages/ApiMcpPublic';
 import AdminApiMcp from './pages/AdminApiMcp';
+import AdminAuditFrugalHub from './pages/AdminAuditFrugalHub';
+import PublicAuditFrugal from './pages/PublicAuditFrugal';
 
 function App() {
   return (
@@ -272,6 +274,12 @@ function App() {
                 <AdminApiMcp />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/audit-frugal" element={
+              <AdminAuth>
+                <AdminAuditFrugalHub />
+              </AdminAuth>
+            } />
+            <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
             <Route path="/api-mcp" element={<ApiMcpPublic />} />
             <Route path="/admin" element={
               <AdminAuth>
