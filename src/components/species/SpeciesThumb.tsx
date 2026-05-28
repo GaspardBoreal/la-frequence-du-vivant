@@ -55,12 +55,16 @@ export const SpeciesThumb: React.FC<Props> = ({
   className,
 }) => {
   const sz = SIZES[size];
-  const shouldFetch = !localPhoto && !!scientificName;
+  // Une URL iNaturalist brute (observation) n'est PAS fiable comme illustration
+  // d'espèce — on la rejette et on tombe sur la ref taxon iNat.
+  const isInatObsUrl = !!localPhoto && /inaturalist(-open-data|\.org|\.com)/i.test(localPhoto);
+  const trustedLocal = localPhoto && !isInatObsUrl ? localPhoto : null;
+  const shouldFetch = !trustedLocal && !!scientificName;
   const { data, isLoading } = useSpeciesPhoto(shouldFetch ? scientificName! : undefined);
 
   const inatPhoto = data?.photos?.[0];
-  const photo = localPhoto || inatPhoto || null;
-  const isInat = !localPhoto && !!inatPhoto;
+  const photo = trustedLocal || inatPhoto || null;
+  const isInat = !trustedLocal && !!inatPhoto;
   const Icon = kingdomIcon(kingdom);
   const alt = commonName || scientificName || 'espèce';
 

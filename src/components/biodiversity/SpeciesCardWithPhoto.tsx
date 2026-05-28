@@ -31,14 +31,22 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
   index,
   viewMode = 'immersion',
 }) => {
-  const shouldFetch = !species.photos || species.photos.length === 0;
+  // Une URL iNaturalist brute (inaturalist-open-data / static.inaturalist.org)
+  // provient d'une observation : elle n'est PAS fiable comme illustration
+  // d'espèce (ex. Pic épeiche identifié au chant → photo d'habitat).
+  // → On la remplace par la photo de référence du taxon via useSpeciesPhoto.
+  const firstPhoto = species.photos?.[0];
+  const isInatObsUrl = !!firstPhoto && /inaturalist(-open-data|\.org|\.com)/i.test(firstPhoto);
+  const trustedLocalPhoto = firstPhoto && !isInatObsUrl ? firstPhoto : null;
+
+  const shouldFetch = !trustedLocalPhoto;
   const { data: photoData, isLoading } = useSpeciesPhoto(
     shouldFetch ? species.scientificName : undefined
   );
 
-  const photoUrl = species.photos?.[0] || photoData?.photos?.[0];
+  const photoUrl = trustedLocalPhoto || photoData?.photos?.[0];
   const hasPhoto = !!photoUrl;
-  const isInatPhoto = !species.photos?.[0] && !!photoData?.photos?.[0];
+  const isInatPhoto = !trustedLocalPhoto && !!photoData?.photos?.[0];
 
   if (viewMode === 'immersion') {
     return (
@@ -151,8 +159,7 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
             </Badge>
           </div>
 
-          {/* Photo source indicator */}
-          {hasPhoto && species.photos?.[0] && (
+          {hasPhoto && trustedLocalPhoto && (
             <div className="absolute top-2 left-2">
               <Badge className="bg-emerald-500/80 backdrop-blur-sm text-white text-[10px]">
                 📸
