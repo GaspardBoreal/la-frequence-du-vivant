@@ -325,47 +325,56 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     );
   }
 
-  const renderThumb = (item: MediaItem, sizeClass: string, opts: { eager?: boolean; width?: number; raw?: boolean } = {}) => (
-    <div className={`relative bg-muted ${sizeClass}`}>
-      {item.type === 'video' ? (
-        <>
-          <video
-            src={`${item.url}#t=0.1`}
-            preload="none"
-            muted
-            playsInline
-            className="w-full h-full object-cover"
+  const renderThumb = (
+    item: MediaItem,
+    sizeClass: string,
+    opts: { eager?: boolean; width?: number; raw?: boolean; objectFit?: 'cover' | 'contain'; bgClass?: string } = {},
+  ) => {
+    const fit = opts.objectFit ?? 'cover';
+    const bg = opts.bgClass ?? 'bg-muted';
+    return (
+      <div className={`relative ${bg} ${sizeClass}`}>
+        {item.type === 'video' ? (
+          <>
+            <video
+              src={`${item.url}#t=0.1`}
+              preload="none"
+              muted
+              playsInline
+              className={`w-full h-full object-${fit}`}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            <div className="absolute bottom-1 left-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px]">
+              <Play className="w-2.5 h-2.5 fill-white" /> vidéo
+            </div>
+          </>
+        ) : item.type === 'audio' ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-amber-500/10 px-2 text-center">
+            <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center mb-1 shadow">
+              <Mic className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-[10px] leading-tight font-medium text-emerald-900 dark:text-emerald-100 line-clamp-2">
+              {item.titre || 'Audio'}
+            </span>
+          </div>
+        ) : (
+          <img
+            src={opts.raw ? item.url : optimizeStorageUrl(item.url, opts.width || 400, 60)}
+            alt=""
+            className={`w-full h-full object-${fit}`}
+            loading={opts.eager ? 'eager' : 'lazy'}
+            decoding="async"
+            {...(opts.eager ? { fetchpriority: 'high' as any } : { fetchpriority: 'low' as any })}
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (img.src !== item.url) img.src = item.url;
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          <div className="absolute bottom-1 left-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px]">
-            <Play className="w-2.5 h-2.5 fill-white" /> vidéo
-          </div>
-        </>
-      ) : item.type === 'audio' ? (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-amber-500/10 px-2 text-center">
-          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center mb-1 shadow">
-            <Mic className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-[10px] leading-tight font-medium text-emerald-900 dark:text-emerald-100 line-clamp-2">
-            {item.titre || 'Audio'}
-          </span>
-        </div>
-      ) : (
-        <img
-          src={opts.raw ? item.url : optimizeStorageUrl(item.url, opts.width || 400, 60)}
-          alt=""
-          className="w-full h-full object-cover"
-          loading={opts.eager ? 'eager' : 'lazy'}
-          decoding="async"
-          {...(opts.eager ? { fetchpriority: 'high' as any } : { fetchpriority: 'low' as any })}
-          onError={(e) => {
-            const img = e.currentTarget;
-            if (img.src !== item.url) img.src = item.url;
-          }}
-        />
-      )}
-    </div>
-  );
+        )}
+      </div>
+    );
+  };
+
 
 
   // Sortable row for reorder mode
