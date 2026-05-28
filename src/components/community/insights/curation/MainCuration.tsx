@@ -557,34 +557,59 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                       transition={{ duration: 0.22, ease: 'easeOut' }}
                       className="overflow-hidden"
                     >
-                      {items.length > 0 && (
-                        <div className={`grid gap-0.5 ${visibleItems.length === 1 ? 'grid-cols-1' : 'grid-cols-3'} border-t border-border`}>
-                          {visibleItems.map((it, i) => (
-                            <button
-                              type="button"
-                              key={it.key}
-                              onClick={() => setLightbox({ items, index: i })}
-                              className="relative block focus:outline-none focus:ring-2 focus:ring-primary/60"
-                              aria-label={`Ouvrir ${it.titre || 'le média'} en grand`}
-                            >
-                              {renderThumb(
-                                it,
-                                visibleItems.length === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]',
-
-                                { width: 600 }
-                              )}
-                              {i === 2 && moreCount > 0 && (
-                                <div
-                                  onClick={(e) => { e.stopPropagation(); setLightbox({ items, index: 3 }); }}
-                                  className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
+                      {items.length > 0 && (() => {
+                        const n = visibleItems.length;
+                        const gridClass =
+                          n === 1
+                            ? 'grid grid-cols-1'
+                            : n === 2
+                              ? 'grid grid-cols-2 gap-1'
+                              : 'grid grid-cols-1 sm:grid-cols-3 sm:grid-rows-2 gap-1';
+                        return (
+                          <div className={`${gridClass} border-t border-border bg-background`}>
+                            {visibleItems.map((it, i) => {
+                              const isHero = n >= 3 && i === 0;
+                              const isSingle = n === 1;
+                              const cellClass = isSingle
+                                ? 'sm:col-span-1'
+                                : isHero
+                                  ? 'sm:col-span-2 sm:row-span-2'
+                                  : 'sm:col-span-1';
+                              const ratioClass = isSingle
+                                ? 'aspect-[16/9]'
+                                : n === 2
+                                  ? 'aspect-[4/3]'
+                                  : isHero
+                                    ? 'aspect-[4/3]'
+                                    : 'aspect-[3/2]';
+                              const imgWidth = isSingle ? 1200 : isHero ? 900 : 450;
+                              const showBadge = i === n - 1 && moreCount > 0;
+                              return (
+                                <button
+                                  type="button"
+                                  key={it.key}
+                                  onClick={() => setLightbox({ items, index: i })}
+                                  className={`group relative block overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60 ${cellClass}`}
+                                  aria-label={`Ouvrir ${it.titre || 'le média'} en grand`}
                                 >
-                                  +{moreCount}
-                                </div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                                  <div className="transition-transform duration-500 ease-out group-hover:scale-[1.02] group-hover:brightness-105 h-full w-full">
+                                    {renderThumb(it, `${ratioClass} h-full w-full`, { width: imgWidth })}
+                                  </div>
+                                  {showBadge && (
+                                    <div
+                                      onClick={(e) => { e.stopPropagation(); setLightbox({ items, index: i }); }}
+                                      className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/55 backdrop-blur-md px-2.5 py-1 text-xs font-semibold text-white shadow-lg ring-1 ring-white/15 cursor-pointer"
+                                    >
+                                      +{moreCount} média{moreCount > 1 ? 's' : ''}
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+
 
                       <div className="p-3 space-y-2 border-t border-border/40">
                         {isCurator && (
