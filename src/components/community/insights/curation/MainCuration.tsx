@@ -325,7 +325,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     );
   }
 
-  const renderThumb = (item: MediaItem, sizeClass: string, opts: { eager?: boolean; width?: number } = {}) => (
+  const renderThumb = (item: MediaItem, sizeClass: string, opts: { eager?: boolean; width?: number; raw?: boolean } = {}) => (
     <div className={`relative bg-muted ${sizeClass}`}>
       {item.type === 'video' ? (
         <>
@@ -352,7 +352,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         </div>
       ) : (
         <img
-          src={optimizeStorageUrl(item.url, opts.width || 400, 60)}
+          src={opts.raw ? item.url : optimizeStorageUrl(item.url, opts.width || 400, 60)}
           alt=""
           className="w-full h-full object-cover"
           loading={opts.eager ? 'eager' : 'lazy'}
@@ -366,6 +366,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       )}
     </div>
   );
+
 
   // Sortable row for reorder mode
   const SortableRow: React.FC<{ entry: ExplorationCuration }> = ({ entry }) => {

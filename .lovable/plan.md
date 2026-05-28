@@ -1,46 +1,53 @@
-## Problème
+# Apprendre → La main · Correction affichage Pratique
 
-Sur la vignette « Pic épeiche » (Marches → Vivant → onglet Vivant, carte `EnhancedSpeciesCard`), l'image affichée n'est pas un Pic épeiche : c'est la 1re photo de l'observation iNaturalist correspondante (souvent un cliché d'habitat quand l'oiseau est identifié au chant). Le composant ne tombe pas en fallback sur la photo de référence iNat (`useSpeciesPhoto` → taxa API) parce que `species.photoData` existe déjà — même s'il pointe vers une photo non pertinente.
+## Constat (capture)
 
-## Règle cible
+1. **Picto de la pratique (48×48 en tête de carte) reste gris/vide** alors que la pratique « Haies pour corridor écologique » a bien 3 médias.
+2. **Les 3 photos s'ouvrent extrêmement zoomées** : le scarabée et les feuilles débordent / sont rognés au centre. Le paysage perd ciel + sol.
 
-Pour les espèces dont la source est iNaturalist et sans photo marcheur (terrain / upload direct), la vignette doit utiliser la **photo de référence du taxon** (taxa API iNat) plutôt que la 1re photo de l'observation. La photo de l'observation reste accessible dans la fiche détaillée (carrousel obs).
+## Cause
 
-Cascade vignette (ordre de priorité) :
+Régression introduite par le refactor en accordéon (commit `54336b7c`) :
 
-1. Photo marcheur (upload direct ou attribution iNat → marcheur)
-2. Photo de référence iNat du taxon (`useSpeciesPhoto`)
-3. Icône royaume (fallback générique)
+- Le **picto** utilise `renderThumb(heroItem, 'w-full h-full', { width: 120 })`, qui passe par `optimizeStorageUrl()` → bascule l'URL sur l'endpoint `/render/image/public/?width=120&resize=cover`. Cet endpoint Supabase exige l'activation des **Image Transformations** sur le bucket ; pour certains buckets (mur Convivialité, médias historiques) il renvoie un 400 silencieux. Le `onError` retombe bien sur l'URL d'origine, **mais** uniquement si l'`<img>` reçoit un event d'erreur — or quand le render renvoie un placeholder gris ou un 200 vide, aucun onError n'est tiré → vignette reste grise.
+- Les **photos dépliées** sont rendues en `aspect-square` + `object-cover`. Sur une grille `grid-cols-3` à ~900px de large, chaque cellule fait ~300×300 ; un cliché portrait (scarabée) ou cadré large (paysage) est fortement cropé au centre.
 
-La 1re photo d'observation iNat brute n'est plus utilisée comme illustration vignette.
+## Correction (frontend uniquement, fichier unique)
 
-## Changements
+Fichier : `src/components/community/insights/curation/MainCuration.tsx`
 
-### 1. `src/components/audio/EnhancedSpeciesCard.tsx`
+### 1. Picto en tête de carte (toujours visible, fiable)
 
-- Élargir la condition `shouldFetchPhoto` : déclencher `useSpeciesPhoto` dès que `species.photoData` n'est pas une photo marcheur certifiée (i.e. `source !== 'marcheur'` et `source !== 'citizen'`).
-- Recomposer `inatPhoto` pour préférer `fetchedPhotoData` (taxon ref) à `species.photoData` quand cette dernière vient d'une observation iNat.
-- La pastille source bottom-right reste : « iNat » (taxon ref) vs « Photo marcheur » vs fallback ambre.
+- Pour le picto **uniquement** (48×48), ne pas passer par `optimizeStorageUrl`. Appeler `renderThumb` avec une nouvelle option `{ raw: true }` qui shortcut l'optimisation et utilise directement `item.url`. Coût : un thumbnail 48px chargé en taille native — négligeable, une seule image par carte.
+- Conserver le fallback `Hand` quand `heroItem` est absent.
 
-### 2. Vérifier `SpeciesCardWithPhoto.tsx` (Synthèse → Taxons observés, mode fiche/immersion)
+### 2. Photos dépliées (3 vignettes) — fin du zoom excessif
 
-Même logique : `species.photos?.[0]` doit être considéré comme « photo marcheur » uniquement si effectivement marqué comme tel. Sinon, préférer la ref taxon. Adapter `shouldFetch` et `photoUrl` en conséquence.
+- Remplacer `aspect-square` par `aspect-[4/3]` (paysage doux) pour les cellules en `grid-cols-3`. Cadrage plus généreux : on garde du contexte sans déformer.
+- Garder `object-cover` (l'esthétique mosaïque reste propre, alignement parfait), mais l'aspect 4/3 réduit le crop vertical sur les portraits et le crop horizontal sur les paysages.
+- Cas 1 média seul : conserver `aspect-[16/9]` (inchangé).
 
-### 3. `src/components/species/SpeciesThumb.tsx`
+### 3. Aucune autre modification
 
-Ajouter un prop optionnel `localPhotoIsField?: boolean` (default `true`) — si `false`, traiter `localPhoto` comme une photo d'observation iNat et préférer le fallback `useSpeciesPhoto`.
+- Pas de changement sur l'éditeur, le lightbox, le picker, ou la BDD.
+- Le `optimizeStorageUrl` reste utilisé pour les vignettes dépliées (largeur 600 reste un usage légitime du render endpoint, déjà éprouvé ailleurs et avec fallback opérationnel sur ces tailles).
 
-### 4. Pas de changement BD ni d'edge function
+## Détail technique : extension de `renderThumb`
 
-Tout reste côté front, cohérent avec la mémoire `species-thumb-inat-fallback-logic`.
+Signature actuelle :
+```ts
+renderThumb(item, sizeClass, opts: { eager?, width? } = {})
+```
+Nouvelle :
+```ts
+renderThumb(item, sizeClass, opts: { eager?, width?, raw? } = {})
+```
+Si `raw === true`, l'`<img>` reçoit `item.url` directement (pas d'`optimizeStorageUrl`).
 
 ## QA
 
-- Pic épeiche (identifié au chant, 1 obs iNat, 0 photo marcheur) → doit afficher l'oiseau via taxa API.
-- Espèce avec photo marcheur → inchangé, photo marcheur visible.
-- Espèce iNat avec une vraie photo d'espèce dans l'observation → vignette = taxon ref (cohérence visuelle), observation visible dans le carrousel de la fiche.
-- Aucune régression sur le toggle Photos marcheurs ↔ iNaturalist.
-
-## Mémoire à mettre à jour
-
-`mem://features/community/species-thumb-inat-fallback-logic` : préciser que la photo d'observation iNat n'est jamais utilisée comme vignette ; la vignette est toujours soit marcheur, soit ref taxon, soit icône royaume.
+- Ouvrir une pratique avec 3 photos mixtes (paysage + macro + portrait) → picto visible, 3 cellules `aspect-[4/3]` lisibles sans crop excessif.
+- Ouvrir une pratique avec 1 seul média → `aspect-[16/9]` conservé.
+- Ouvrir une pratique sans média → fallback `Hand` visible dans le picto.
+- Vérifier mode dark + light.
+- Vérifier qu'aucun autre composant n'importe `renderThumb` (c'est une fonction interne à `MainCuration`).
