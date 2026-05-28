@@ -5,7 +5,11 @@ import { AuditScoreDashboard } from '@/components/admin/audit-frugal/AuditScoreD
 import { AuditReportTabs } from '@/components/admin/audit-frugal/AuditReportTabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
-import { Leaf } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Leaf, ArrowLeft, Link2, Check } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const PublicAuditFrugal: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
