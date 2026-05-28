@@ -34,11 +34,13 @@ const PreuveParLaDataCard: React.FC<Props> = ({
 }) => {
   const { data, isLoading } = useExplorationSpeciesCount(explorationId, { realtime: true });
   const { data: marcheurs } = useExplorationMarcheurs(explorationId);
+  const { data: mainCurations } = useExplorationCurations(explorationId, 'main');
 
   const ambassadeursCount = useMemo(
     () => (marcheurs || []).filter(m => (m.observationsCount || 0) > 0).length,
     [marcheurs],
   );
+  const pratiquesCount = (mainCurations || []).length;
 
   const donutData = useMemo(() => {
     if (!data) return [];
