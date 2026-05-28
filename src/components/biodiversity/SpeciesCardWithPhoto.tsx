@@ -38,6 +38,7 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
 
   const photoUrl = species.photos?.[0] || photoData?.photos?.[0];
   const hasPhoto = !!photoUrl;
+  const isInatPhoto = !species.photos?.[0] && !!photoData?.photos?.[0];
 
   if (viewMode === 'immersion') {
     return (
@@ -77,6 +78,15 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
 
             {/* Hover-only overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+            {isInatPhoto && (
+              <span
+                title="Photo de référence iNaturalist"
+                className="absolute bottom-2 right-2 rounded-full bg-background/85 backdrop-blur-sm border border-border/60 text-muted-foreground text-[9px] font-medium px-1.5 py-0.5 leading-none"
+              >
+                iNat
+              </span>
+            )}
 
             {/* Hover-only name */}
             <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
@@ -148,6 +158,14 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
                 📸
               </Badge>
             </div>
+          )}
+          {isInatPhoto && (
+            <span
+              title="Photo de référence iNaturalist"
+              className="absolute top-2 left-2 rounded-full bg-background/85 backdrop-blur-sm border border-border/60 text-muted-foreground text-[10px] font-medium px-1.5 py-0.5 leading-none"
+            >
+              iNat
+            </span>
           )}
         </div>
       </div>

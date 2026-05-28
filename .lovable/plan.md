@@ -1,56 +1,40 @@
-# Transparence de l'attribution trophique
+# Fallback photo iNaturalist pour vignettes espèces sans photo terrain
 
-Objectif : exposer discrètement la méthode utilisée pour classer chaque espèce dans la chaîne trophique (KB éditoriale, règle famille, iconic_taxon iNat) — sans bruit visuel, avec tooltip explicatif.
+## Objectif
+Quand une espèce identifiée via iNaturalist n'a pas de photo prise par le marcheur, afficher la photo de référence iNaturalist (taxon par défaut) à la place du pictogramme générique, partout dans l'app, avec une pastille discrète « iNat » signalant la source.
 
-## 1. Nouveau composant partagé
+## Composant central : `SpeciesThumb`
+Nouveau composant `src/components/species/SpeciesThumb.tsx` — utilisé par toutes les vignettes espèce.
 
-**`src/components/biodiversity/trophic/TrophicSourceBadge.tsx`**
-- Petit badge monochrome, icône Lucide + libellé court + Tooltip (shadcn) au survol/tap.
-- Mapping :
-  - `kb` → `BookOpenCheck` · « curé » · tooltip : *« Attribution éditoriale validée par la base de connaissances La Fréquence du Vivant. »*
-  - `heuristic` → `Network` · « famille » · tooltip : *« Déduit d'une règle taxonomique (famille / genre) — fiabilité élevée. »*
-  - `iconic` → `Sparkles` · « taxon » · tooltip : *« Déduit du grand groupe iNaturalist (iconic_taxon) — niveau indicatif. »*
-- Style : `text-white/50 text-[10px]`, icône `w-3 h-3`, hover `text-white/80`. Aucune couleur supplémentaire.
-- Variante `compact` (icône seule) et `full` (icône + label).
+Props : `scientificName`, `commonName?`, `kingdom?`, `localPhoto?` (photo terrain prioritaire), `size` (`sm` 40px / `md` 56px / `lg` 80px), `showInatBadge?` (default true), `className?`.
 
-Prérequis : `trophicClassification.ts` distingue déjà `'kb' | 'heuristic'`. Étendre l'union avec `'iconic'` et faire retourner `'iconic'` quand l'attribution provient du fallback `iconic_taxon` (déjà branché, juste à étiqueter distinctement de `'heuristic'`).
+Logique :
+1. Si `localPhoto` → l'affiche tel quel, pas de pastille.
+2. Sinon → appelle `useSpeciesPhoto(scientificName)` (déjà en place, cache React Query 24h, cache GC 7j).
+3. Si photo iNat trouvée → `<img>` + pastille discrète bas-droite : pill `bg-background/80 backdrop-blur border border-border/60 text-[9px] text-muted-foreground px-1 py-0.5 rounded-full` avec libellé `iNat`, tooltip « Photo de référence iNaturalist ».
+4. Sinon (pas de photo nulle part) → fallback actuel : `kingdomIcon` colorisé.
+5. État loading : skeleton `bg-muted animate-pulse` (pas de spinner).
 
-## 2. Fiche espèce — `SpeciesTrophicPosition.tsx`
+Performance : un seul hook par vignette, mais React Query déduplique automatiquement par `scientificName`, donc 50 vignettes de la même espèce = 1 seule requête iNat. Pas de prefetch batch (pas nécessaire au volume actuel).
 
-Remplacer la ligne actuelle `« attribution curée » / « règle taxonomique »` (ligne 70) par `<TrophicSourceBadge source={star.source} variant="full" />`, positionné à droite du badge de niveau L3, comme aujourd'hui mais avec icône + tooltip.
+## Points d'intégration
 
-## 3. Synthèse → Analyse IA → Chaîne trophique (légende globale)
+| Vue | Fichier | Action |
+|---|---|---|
+| Drawer du jour (Évolution) | `src/components/community/exploration/DayDetailDrawer.tsx` | Remplacer le bloc `{obs.photo ? <img/> : <div Icon/>}` (lignes 54-60) par `<SpeciesThumb localPhoto={obs.photo} scientificName={obs.scientificName} commonName={obs.commonName} kingdom={obs.kingdom} size="sm" />` |
+| Synthèse → Taxons observés (cartes) | `src/components/biodiversity/SpeciesCardWithPhoto.tsx` (+ tout consommateur direct utilisant son `kingdomIcon`/photo) | Câbler `SpeciesThumb` en `lg` au lieu de l'image existante quand `photos` est vide. Préserver le carrousel marcheur quand des photos terrain existent. |
+| Bandeau hero fiche espèce | `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` | Vérifié déjà en place (copie 2 montre bien la photo iNat + badge "Référence · iNaturalist"). Aligner uniquement le libellé du badge sur le nouveau composant si redondant (à confirmer en build, sinon no-op). |
+| Toute autre vignette espèce (drawer GPS, liste participants…) | `src/components/community/synthese/indices/SpeciesGpsDrawer.tsx`, `EnhancedSpeciesCard.tsx`, `CuratedSpeciesCard.tsx`, `SpeciesRow` divers | Migration progressive vers `SpeciesThumb` — limiter le scope à `DayDetailDrawer` + grilles `SpeciesCardWithPhoto` dans ce premier lot, et logger un TODO grep `kingdomIcon` pour traiter les vignettes restantes en lot 2 si besoin. |
 
-**Nouveau composant `src/components/community/synthese/trophic/TrophicSourceLegend.tsx`**
-- Reçoit `chain: TrophicChainResult` (déjà calculé par `useTrophicChain`).
-- Agrège les counts par `source` à partir de `chain.stars`.
-- Rend une ligne discrète, centrée sous la vue, ex :
-  ```
-  Méthode d'attribution :  ✓ 12 curées · ƒ 28 famille · ⌬ 40 taxon
-  ```
-  (icônes Lucide monochromes, séparateurs `·`, texte `text-white/45 text-[11px]`)
-- Chaque segment a son propre Tooltip explicatif.
-- Aucune mention des UNCLASSIFIED (décidé).
+## Hors scope (à NE PAS toucher)
+- `useSpeciesPhoto.ts` : aucune modif (déjà robuste).
+- Aucune migration DB, aucun edge function — purement frontend.
+- Pas de changement aux fiches détaillées qui ont déjà leur propre carrousel multi-sources.
 
-**Intégration** : injecter `<TrophicSourceLegend chain={chain} />` une seule fois dans le conteneur parent des 3 onglets (Constellation / Spirale / Réseau), en dessous du graphe, indépendamment de l'onglet actif → cohérence visuelle et code DRY. Identifier le parent (probablement `TrophicChainSection` ou équivalent qui héberge déjà le switcher d'onglets) lors de l'implémentation.
+## Validation
+1. Drawer du jour sur exploration `70fcd8d1…` : Pic épeiche, Bergénie, Clytre lustrée doivent montrer une photo iNat + pastille discrète.
+2. Cas dégradé (taxon iNat sans `default_photo`) : retombe sur le pictogramme `kingdomIcon` (pas de cadre vide).
+3. Espèces avec photo terrain : aucun changement visuel, pas de pastille « iNat ».
 
-## 4. Mode plein écran trophique (bonus cohérence)
-
-`TrophicFullscreenModal` : ajouter la même `TrophicSourceLegend` en pied de modal, pour rester cohérent quand on agrandit depuis la fiche espèce.
-
-## Détails techniques
-
-- Utiliser `Tooltip / TooltipProvider / TooltipTrigger / TooltipContent` de `@/components/ui/tooltip`.
-- Icônes Lucide : `BookOpenCheck`, `Network`, `Sparkles`.
-- Aucune migration DB, aucune nouvelle requête : `source` est déjà calculé côté front par `classifyTrophic`.
-- Ajustement mineur de `trophicClassification.ts` pour distinguer `'iconic'` de `'heuristic'` (actuellement les deux peuvent retourner `'heuristic'` selon la branche).
-- Pas de couleur ajoutée : on respecte la sobriété informationnelle.
-
-## Fichiers touchés
-
-- `src/lib/trophicClassification.ts` — étendre type `source` avec `'iconic'`
-- `src/components/biodiversity/trophic/TrophicSourceBadge.tsx` — créer
-- `src/components/community/synthese/trophic/TrophicSourceLegend.tsx` — créer
-- `src/components/biodiversity/species-modal/SpeciesTrophicPosition.tsx` — remplacer la ligne « attribution curée »
-- Conteneur parent des onglets Constellation/Spirale/Réseau dans Synthèse → ajouter légende
-- `TrophicFullscreenModal.tsx` — ajouter légende en pied
+## Mémoire à mettre à jour
+Ajouter `mem://features/community/species-thumb-inat-fallback-logic` — règle : toute vignette espèce passe par `SpeciesThumb`, fallback iNat automatique + pastille discrète quand pas de photo terrain.

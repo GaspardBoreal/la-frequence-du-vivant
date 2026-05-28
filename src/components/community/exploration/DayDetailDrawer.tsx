@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Sparkles, MapPin, Users, ExternalLink, Leaf, Bird, TreePine, Bug } from 'lucide-react';
+import { Sparkles, MapPin, Users, ExternalLink, Leaf } from 'lucide-react';
 import type { DayBucket, DayObservation } from '@/hooks/useBiodiversityEvolution';
 import { SpeciesName } from '@/components/species/SpeciesName';
+import { SpeciesThumb } from '@/components/species/SpeciesThumb';
 import SpeciesGalleryDetailModal from '@/components/biodiversity/SpeciesGalleryDetailModal';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
@@ -25,39 +26,20 @@ const formatDateFr = (iso: string) => {
   }
 };
 
-const kingdomIcon = (k?: string) => {
-  switch (k) {
-    case 'Animalia': return Bird;
-    case 'Plantae': return TreePine;
-    case 'Fungi': return Leaf;
-    default: return Bug;
-  }
-};
-
-const kingdomColor = (k?: string) => {
-  switch (k) {
-    case 'Animalia': return 'text-sky-600 dark:text-sky-400 bg-sky-500/10';
-    case 'Plantae': return 'text-green-600 dark:text-green-400 bg-green-500/10';
-    case 'Fungi': return 'text-amber-600 dark:text-amber-400 bg-amber-500/10';
-    default: return 'text-purple-600 dark:text-purple-400 bg-purple-500/10';
-  }
-};
-
 const SpeciesRow: React.FC<{ obs: DayObservation; isNew?: boolean; onClick?: () => void }> = ({ obs, isNew, onClick }) => {
-  const Icon = kingdomIcon(obs.kingdom);
   return (
     <button
       type="button"
       onClick={onClick}
       className="w-full text-left flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-muted/40 transition-colors"
     >
-      {obs.photo ? (
-        <img src={obs.photo} alt={obs.scientificName} className="w-10 h-10 rounded-lg object-cover bg-muted" loading="lazy" />
-      ) : (
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kingdomColor(obs.kingdom)}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-      )}
+      <SpeciesThumb
+        scientificName={obs.scientificName}
+        commonName={obs.commonName}
+        kingdom={obs.kingdom}
+        localPhoto={obs.photo}
+        size="sm"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="min-w-0 flex-1">
