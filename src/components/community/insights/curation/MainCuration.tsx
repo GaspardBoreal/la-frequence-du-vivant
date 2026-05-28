@@ -568,14 +568,8 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                     >
                       {items.length > 0 && (() => {
                         const n = visibleItems.length;
-                        const gridClass =
-                          n === 1
-                            ? 'grid grid-cols-1'
-                            : 'grid grid-cols-2 gap-1';
-                        const ratioClass = n === 1 ? 'aspect-[4/3]' : 'aspect-[4/5]';
-                        const imgWidth = n === 1 ? 1400 : 900;
                         return (
-                          <div className={`${gridClass} border-t border-border bg-emerald-950`}>
+                          <div className="flex w-full border-t border-border bg-emerald-950 gap-0.5 h-64 sm:h-72 md:h-80">
                             {visibleItems.map((it, i) => {
                               const showBadge = i === n - 1 && moreCount > 0;
                               return (
@@ -583,12 +577,12 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                                   type="button"
                                   key={it.key}
                                   onClick={() => setLightbox({ items, index: i })}
-                                  className="group relative block overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
+                                  className="group relative block overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60 flex-1 min-w-0 h-full"
                                   aria-label={`Ouvrir ${it.titre || 'le média'} en grand`}
                                 >
                                   <div className="transition-[filter] duration-300 ease-out group-hover:brightness-110 h-full w-full">
-                                    {renderThumb(it, `${ratioClass} h-full w-full`, {
-                                      width: imgWidth,
+                                    {renderThumb(it, 'h-full w-full', {
+                                      width: 900,
                                       objectFit: 'contain',
                                       bgClass: 'bg-emerald-950',
                                     })}
