@@ -325,47 +325,56 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     );
   }
 
-  const renderThumb = (item: MediaItem, sizeClass: string, opts: { eager?: boolean; width?: number; raw?: boolean } = {}) => (
-    <div className={`relative bg-muted ${sizeClass}`}>
-      {item.type === 'video' ? (
-        <>
-          <video
-            src={`${item.url}#t=0.1`}
-            preload="none"
-            muted
-            playsInline
-            className="w-full h-full object-cover"
+  const renderThumb = (
+    item: MediaItem,
+    sizeClass: string,
+    opts: { eager?: boolean; width?: number; raw?: boolean; objectFit?: 'cover' | 'contain'; bgClass?: string } = {},
+  ) => {
+    const fit = opts.objectFit ?? 'cover';
+    const bg = opts.bgClass ?? 'bg-muted';
+    return (
+      <div className={`relative ${bg} ${sizeClass}`}>
+        {item.type === 'video' ? (
+          <>
+            <video
+              src={`${item.url}#t=0.1`}
+              preload="none"
+              muted
+              playsInline
+              className={`w-full h-full object-${fit}`}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            <div className="absolute bottom-1 left-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px]">
+              <Play className="w-2.5 h-2.5 fill-white" /> vidéo
+            </div>
+          </>
+        ) : item.type === 'audio' ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-amber-500/10 px-2 text-center">
+            <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center mb-1 shadow">
+              <Mic className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-[10px] leading-tight font-medium text-emerald-900 dark:text-emerald-100 line-clamp-2">
+              {item.titre || 'Audio'}
+            </span>
+          </div>
+        ) : (
+          <img
+            src={opts.raw ? item.url : optimizeStorageUrl(item.url, opts.width || 400, 60)}
+            alt=""
+            className={`w-full h-full object-${fit}`}
+            loading={opts.eager ? 'eager' : 'lazy'}
+            decoding="async"
+            {...(opts.eager ? { fetchpriority: 'high' as any } : { fetchpriority: 'low' as any })}
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (img.src !== item.url) img.src = item.url;
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          <div className="absolute bottom-1 left-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px]">
-            <Play className="w-2.5 h-2.5 fill-white" /> vidéo
-          </div>
-        </>
-      ) : item.type === 'audio' ? (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-amber-500/10 px-2 text-center">
-          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center mb-1 shadow">
-            <Mic className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-[10px] leading-tight font-medium text-emerald-900 dark:text-emerald-100 line-clamp-2">
-            {item.titre || 'Audio'}
-          </span>
-        </div>
-      ) : (
-        <img
-          src={opts.raw ? item.url : optimizeStorageUrl(item.url, opts.width || 400, 60)}
-          alt=""
-          className="w-full h-full object-cover"
-          loading={opts.eager ? 'eager' : 'lazy'}
-          decoding="async"
-          {...(opts.eager ? { fetchpriority: 'high' as any } : { fetchpriority: 'low' as any })}
-          onError={(e) => {
-            const img = e.currentTarget;
-            if (img.src !== item.url) img.src = item.url;
-          }}
-        />
-      )}
-    </div>
-  );
+        )}
+      </div>
+    );
+  };
+
 
 
   // Sortable row for reorder mode
@@ -564,36 +573,27 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                             ? 'grid grid-cols-1'
                             : n === 2
                               ? 'grid grid-cols-2 gap-1'
-                              : 'grid grid-cols-1 sm:grid-cols-3 sm:grid-rows-2 gap-1';
+                              : 'grid grid-cols-3 gap-1';
+                        const ratioClass = n === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]';
+                        const imgWidth = n === 1 ? 1200 : 700;
                         return (
-                          <div className={`${gridClass} border-t border-border bg-background`}>
+                          <div className={`${gridClass} border-t border-border bg-emerald-950`}>
                             {visibleItems.map((it, i) => {
-                              const isHero = n >= 3 && i === 0;
-                              const isSingle = n === 1;
-                              const cellClass = isSingle
-                                ? 'sm:col-span-1'
-                                : isHero
-                                  ? 'sm:col-span-2 sm:row-span-2'
-                                  : 'sm:col-span-1';
-                              const ratioClass = isSingle
-                                ? 'aspect-[16/9]'
-                                : n === 2
-                                  ? 'aspect-[4/3]'
-                                  : isHero
-                                    ? 'aspect-[4/3]'
-                                    : 'aspect-[3/2]';
-                              const imgWidth = isSingle ? 1200 : isHero ? 900 : 450;
                               const showBadge = i === n - 1 && moreCount > 0;
                               return (
                                 <button
                                   type="button"
                                   key={it.key}
                                   onClick={() => setLightbox({ items, index: i })}
-                                  className={`group relative block overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60 ${cellClass}`}
+                                  className="group relative block overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
                                   aria-label={`Ouvrir ${it.titre || 'le média'} en grand`}
                                 >
-                                  <div className="transition-transform duration-500 ease-out group-hover:scale-[1.02] group-hover:brightness-105 h-full w-full">
-                                    {renderThumb(it, `${ratioClass} h-full w-full`, { width: imgWidth })}
+                                  <div className="transition-[filter] duration-300 ease-out group-hover:brightness-110 h-full w-full">
+                                    {renderThumb(it, `${ratioClass} h-full w-full`, {
+                                      width: imgWidth,
+                                      objectFit: 'contain',
+                                      bgClass: 'bg-emerald-950',
+                                    })}
                                   </div>
                                   {showBadge && (
                                     <div
@@ -609,6 +609,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                           </div>
                         );
                       })()}
+
 
 
                       <div className="p-3 space-y-2 border-t border-border/40">
