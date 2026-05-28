@@ -14,6 +14,15 @@ import { toast } from 'sonner';
 const PublicAuditFrugal: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: run, isLoading, error } = useAuditRunBySlug(slug);
+  const { isAdmin } = useAuth();
+  const [copied, setCopied] = React.useState(false);
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    toast.success('Lien public copié');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   React.useEffect(() => {
     if (run) {
