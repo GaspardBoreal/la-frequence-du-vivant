@@ -569,7 +569,8 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                             >
                               {renderThumb(
                                 it,
-                                visibleItems.length === 1 ? 'aspect-[16/9]' : 'aspect-square',
+                                visibleItems.length === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]',
+
                                 { width: 600 }
                               )}
                               {i === 2 && moreCount > 0 && (
