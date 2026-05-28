@@ -112,23 +112,44 @@ const PreuveParLaDataCard: React.FC<Props> = ({
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
-              <div className="text-4xl font-bold text-emerald-500 dark:text-emerald-400 leading-none mb-2">
-                {data.total}
-              </div>
-              <div className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                Espèces recensées
-              </div>
-            </div>
-            <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
-              <div className="text-4xl font-bold text-emerald-500 dark:text-emerald-400 leading-none mb-2">
-                {ambassadeursCount}
-              </div>
-              <div className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                Citoyens ambassadeurs
-              </div>
-            </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { value: data.total, label: 'Espèces recensées', Icon: Leaf, accent: 'emerald' },
+              { value: ambassadeursCount, label: 'Citoyens ambassadeurs', Icon: Users, accent: 'emerald' },
+              { value: pratiquesCount, label: 'Pratiques emblématiques', Icon: Sparkles, accent: 'amber' },
+            ].map((kpi, i) => (
+              <motion.div
+                key={kpi.label}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + i * 0.08, duration: 0.4 }}
+                className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br p-4 ${
+                  kpi.accent === 'amber'
+                    ? 'border-amber-500/25 from-amber-500/[0.08] to-transparent'
+                    : 'border-emerald-500/20 from-emerald-500/[0.06] to-transparent'
+                }`}
+              >
+                <kpi.Icon
+                  className={`absolute -right-2 -bottom-2 w-16 h-16 opacity-[0.07] ${
+                    kpi.accent === 'amber' ? 'text-amber-500' : 'text-emerald-500'
+                  }`}
+                  strokeWidth={1.5}
+                />
+                <div
+                  className={`text-4xl font-bold leading-none mb-2 tabular-nums ${
+                    kpi.accent === 'amber'
+                      ? 'text-amber-500 dark:text-amber-400'
+                      : 'text-emerald-500 dark:text-emerald-400'
+                  }`}
+                >
+                  {kpi.value}
+                </div>
+                <div className="h-px w-8 bg-gradient-to-r from-current/40 to-transparent mb-2 opacity-30" />
+                <div className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase leading-tight">
+                  {kpi.label}
+                </div>
+              </motion.div>
+            ))}
           </div>
 
           {bioIndicator && (
