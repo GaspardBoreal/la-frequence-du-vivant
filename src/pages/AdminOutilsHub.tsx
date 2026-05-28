@@ -20,6 +20,13 @@ const OUTILS = [
     active: true,
   },
   {
+    titre: 'Audit IA Frugale',
+    description: 'Audit AFNOR SPEC 2314 — frugalité numérique IA, score /100, plan d\'action.',
+    icon: Leaf,
+    to: '/admin/outils/audit-frugal',
+    active: true,
+  },
+  {
     titre: 'Zones',
     description: 'Cartographie des zones de marches.',
     icon: Map,
