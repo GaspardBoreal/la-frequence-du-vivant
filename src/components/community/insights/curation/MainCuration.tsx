@@ -569,7 +569,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                       {items.length > 0 && (() => {
                         const n = visibleItems.length;
                         return (
-                          <div className="flex w-full border-t border-border bg-emerald-950 gap-0.5 h-64 sm:h-72 md:h-80">
+                          <div className="grid w-full border-t border-border bg-emerald-950 gap-0.5 h-56 sm:h-64 md:h-72" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
                             {visibleItems.map((it, i) => {
                               const showBadge = i === n - 1 && moreCount > 0;
                               return (
@@ -577,13 +577,13 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                                   type="button"
                                   key={it.key}
                                   onClick={() => setLightbox({ items, index: i })}
-                                  className="group relative block overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60 flex-1 min-w-0 h-full"
+                                  className="group relative block overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60 min-w-0 h-full"
                                   aria-label={`Ouvrir ${it.titre || 'le média'} en grand`}
                                 >
                                   <div className="transition-[filter] duration-300 ease-out group-hover:brightness-110 h-full w-full">
                                     {renderThumb(it, 'h-full w-full', {
-                                      width: 900,
-                                      objectFit: 'contain',
+                                      width: 700,
+                                      objectFit: 'cover',
                                       bgClass: 'bg-emerald-950',
                                     })}
                                   </div>
