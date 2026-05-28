@@ -154,6 +154,125 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_prompt_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          prompt_text: string
+          referential: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          prompt_text: string
+          referential?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          prompt_text?: string
+          referential?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      audit_runs: {
+        Row: {
+          created_at: string
+          domain_scores: Json | null
+          error_message: string | null
+          global_score: number | null
+          id: string
+          is_public: boolean
+          launched_at: string
+          launched_by: string | null
+          launched_by_email: string | null
+          maturity_level: string | null
+          model_used: string | null
+          prompt_snapshot: string
+          report_json: Json | null
+          report_markdown: string | null
+          scope_context_json: Json | null
+          scope_label: string
+          slug: string
+          status: string
+          template_id: string | null
+          template_name: string | null
+          template_version: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain_scores?: Json | null
+          error_message?: string | null
+          global_score?: number | null
+          id?: string
+          is_public?: boolean
+          launched_at?: string
+          launched_by?: string | null
+          launched_by_email?: string | null
+          maturity_level?: string | null
+          model_used?: string | null
+          prompt_snapshot: string
+          report_json?: Json | null
+          report_markdown?: string | null
+          scope_context_json?: Json | null
+          scope_label: string
+          slug: string
+          status?: string
+          template_id?: string | null
+          template_name?: string | null
+          template_version?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain_scores?: Json | null
+          error_message?: string | null
+          global_score?: number | null
+          id?: string
+          is_public?: boolean
+          launched_at?: string
+          launched_by?: string | null
+          launched_by_email?: string | null
+          maturity_level?: string | null
+          model_used?: string | null
+          prompt_snapshot?: string
+          report_json?: Json | null
+          report_markdown?: string | null
+          scope_context_json?: Json | null
+          scope_label?: string
+          slug?: string
+          status?: string
+          template_id?: string | null
+          template_name?: string | null
+          template_version?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_runs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_prompt_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       biodiversity_snapshots: {
         Row: {
           biodiversity_index: number | null
