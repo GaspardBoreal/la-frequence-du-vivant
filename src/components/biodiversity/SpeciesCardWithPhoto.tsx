@@ -38,6 +38,7 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
 
   const photoUrl = species.photos?.[0] || photoData?.photos?.[0];
   const hasPhoto = !!photoUrl;
+  const isInatPhoto = !species.photos?.[0] && !!photoData?.photos?.[0];
 
   if (viewMode === 'immersion') {
     return (
