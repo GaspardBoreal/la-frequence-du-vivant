@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Bug, Loader2 } from 'lucide-react';
+import { Bug, Loader2, Leaf, Users, Sparkles } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useExplorationSpeciesCount } from '@/hooks/useExplorationSpeciesCount';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
+import { useExplorationCurations } from '@/hooks/useExplorationCurations';
 import { SpeciesName } from '@/components/species/SpeciesName';
 import PackVivantButton from '@/components/community/PackVivantButton';
 
