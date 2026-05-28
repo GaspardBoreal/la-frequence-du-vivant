@@ -325,7 +325,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     );
   }
 
-  const renderThumb = (item: MediaItem, sizeClass: string, opts: { eager?: boolean; width?: number } = {}) => (
+  const renderThumb = (item: MediaItem, sizeClass: string, opts: { eager?: boolean; width?: number; raw?: boolean } = {}) => (
     <div className={`relative bg-muted ${sizeClass}`}>
       {item.type === 'video' ? (
         <>
@@ -352,7 +352,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
         </div>
       ) : (
         <img
-          src={optimizeStorageUrl(item.url, opts.width || 400, 60)}
+          src={opts.raw ? item.url : optimizeStorageUrl(item.url, opts.width || 400, 60)}
           alt=""
           className="w-full h-full object-cover"
           loading={opts.eager ? 'eager' : 'lazy'}
@@ -366,6 +366,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       )}
     </div>
   );
+
 
   // Sortable row for reorder mode
   const SortableRow: React.FC<{ entry: ExplorationCuration }> = ({ entry }) => {
@@ -519,8 +520,9 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                 >
                   {heroItem ? (
                     <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 ring-1 ring-border">
-                      {renderThumb(heroItem, 'w-full h-full', { eager: idx === 0, width: 120 })}
+                      {renderThumb(heroItem, 'w-full h-full', { eager: idx === 0, raw: true })}
                     </div>
+
                   ) : (
                     <div className="w-12 h-12 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
                       <Hand className="w-4 h-4 text-muted-foreground/60" />
@@ -567,7 +569,8 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                             >
                               {renderThumb(
                                 it,
-                                visibleItems.length === 1 ? 'aspect-[16/9]' : 'aspect-square',
+                                visibleItems.length === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]',
+
                                 { width: 600 }
                               )}
                               {i === 2 && moreCount > 0 && (
