@@ -517,12 +517,12 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                   onClick={() => toggleExpanded(entry.id)}
                   className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
                   aria-expanded={isExpanded}
+                >
                   {heroItem ? (
                     <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 ring-1 ring-border">
                       {renderThumb(heroItem, 'w-full h-full', { eager: idx === 0, raw: true })}
                     </div>
 
-                    </div>
                   ) : (
                     <div className="w-12 h-12 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
                       <Hand className="w-4 h-4 text-muted-foreground/60" />
