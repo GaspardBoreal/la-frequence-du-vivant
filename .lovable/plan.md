@@ -1,75 +1,44 @@
-# Apprendre → La main · Galerie photo inspirante
+# Apprendre → La main · Photos entières, grille égale 3 colonnes, fond vert forêt
 
-## Constat
+## Décisions validées
 
-La grille actuelle est plate : 3 vignettes 4/3 identiques, alignées, sans hiérarchie. Visuellement froide, sans souffle. La photo « héroïne » (la 1ʳᵉ) ne respire pas, le scarabée macro perd son impact à côté du paysage.
-
-## Direction retenue : mosaïque éditoriale « hero + side »
-
-Pattern éprouvé (Apple Photos memories, Airbnb gallery, NYT photo essays) : **une grande image héroïne à gauche + une colonne droite de vignettes empilées**. Cadrage cinématographique, hiérarchie immédiate, esthétique magazine.
-
-### Layouts adaptatifs selon le nombre de médias
-
-```text
-1 média        2 médias            3 médias              4+ médias
-┌──────────┐   ┌─────┬─────┐      ┌──────┬─────┐        ┌──────┬─────┐
-│          │   │     │     │      │      │  2  │        │      │  2  │
-│  16/9    │   │  1  │  2  │      │  1   ├─────┤        │  1   ├─────┤
-│  full    │   │     │     │      │      │  3  │        │      │ 3+N │
-└──────────┘   └─────┴─────┘      └──────┴─────┘        └──────┴─────┘
-                                  hero ~2/3 + col 1/3   identique
-```
-
-- **1 média** : `aspect-[16/9]` plein largeur — cinématique.
-- **2 médias** : grille 2 col égales en `aspect-[4/3]`.
-- **3+ médias** : hero `aspect-[4/3]` sur 2 colonnes (66 %), 2 vignettes empilées à droite (33 %) en `aspect-[3/2]` chacune. Sur la 3ᵉ vignette, badge `+N` si plus de 3 médias (au lieu d'un overlay noir brut, badge discret en bas-droite avec backdrop-blur).
-
-### Détails esthétiques
-
-- **Gouttière fine** : `gap-1` (4px) au lieu de `gap-0.5` actuel — respiration sans casser la mosaïque.
-- **Coins arrondis internes** : la mosaïque hérite du `rounded-xl` de la carte parent (overflow-hidden déjà en place), on ne touche pas aux coins individuels — bord franc à l'intérieur, courbe douce en périphérie.
-- **Hover subtil sur chaque tuile** : `hover:brightness-110 transition` + léger `scale-[1.01]` sur l'image (pas sur le cadre, pour ne pas casser la grille).
-- **Ring de focus** conservé pour accessibilité clavier.
-- **Badge `+N`** : pastille `bg-black/55 backdrop-blur-md text-white text-xs font-semibold rounded-full px-2.5 py-1` ancrée bas-droite de la dernière tuile, au lieu de l'overlay noir plein écran actuel. La tuile reste visible derrière.
-
-### Responsive
-
-- **Mobile (<640px)** : la mosaïque hero+side devient trop étroite. À ce breakpoint, repli sur `grid-cols-2` simple en `aspect-[4/3]` (hero garde l'effet de 2 colonnes côté ratio mais sur 1 ligne), ou plus simple : **grille 2 colonnes** pour 3+ médias (hero sur la 1ʳᵉ ligne full, 2 vignettes en dessous). Détail : grille parent passe en `grid-cols-1 sm:grid-cols-3` avec `grid-rows-2` côté desktop ; le hero prend `sm:col-span-2 sm:row-span-2`.
+- **Cadrage** : `object-contain` — la photo entière reste visible, jamais rognée.
+- **Disposition** : grille égale 3 colonnes (retour à un alignement régulier, fini la mosaïque hero+side).
+- **Fond des cellules** : vert forêt très sombre (palette dark Forêt Émeraude). Sur thème light, fallback en `bg-muted/40` neutre pour rester sobre.
 
 ## Implémentation
 
-Fichier unique : `src/components/community/insights/curation/MainCuration.tsx`, bloc rendu autour de la ligne 560 (`{items.length > 0 && ...}`).
+Fichier unique : `src/components/community/insights/curation/MainCuration.tsx`.
 
-### Pseudo-structure
+### 1. Grille des photos dépliées
 
-```tsx
-const gridClass = visibleItems.length === 1
-  ? 'grid grid-cols-1'
-  : visibleItems.length === 2
-    ? 'grid grid-cols-2 gap-1'
-    : 'grid grid-cols-1 sm:grid-cols-3 sm:grid-rows-2 gap-1';
+- **1 média** : 1 colonne, ratio `aspect-[16/9]`, photo en `object-contain` centrée.
+- **2 médias** : 2 colonnes égales, ratio `aspect-[4/3]`, `object-contain`.
+- **3+ médias** : `grid-cols-3` égales, ratio `aspect-[4/3]`, `object-contain`. Sur la 3ᵉ tuile, badge `+N` (déjà fait) conservé.
+- Gouttière `gap-1`.
 
-// vignette 0 : hero (sm:col-span-2 sm:row-span-2 + aspect-[4/3]) si 3+
-// vignettes 1 et 2 : aspect-[3/2]
-// badge +N sur la dernière si moreCount > 0
-```
+### 2. Fond des cellules
 
-### Largeurs d'image
+- Container vignette : `bg-[hsl(var(--forest-deep))]` côté dark / classe utilitaire dédiée. Comme on n'a pas forcément ce token existant, je vais utiliser une approche thème-safe : `bg-emerald-950 dark:bg-emerald-950` (vert forêt profond, ~`#022c22`) qui colle au design dark de l'app. Pour le thème light, on reste sur ce même vert sombre pour garder l'esthétique "galerie" — le cadre photo a sa propre identité, ce n'est pas du chrome d'app.
+- Décision finale : **`bg-emerald-950`** dans toutes les cellules (cohérent avec la palette Forêt Émeraude, lisible en light et en dark, conforme à la demande "vert forêt très sombre").
 
-- Hero : `width: 900` (cellule ~600px en desktop, devicePixelRatio 1-2).
-- Side : `width: 450`.
-- Single 16/9 : `width: 1200`.
+### 3. Adaptation de `renderThumb`
 
-### Aucun changement hors mosaïque
+- Ajouter une option `objectFit?: 'cover' | 'contain'` (défaut : `'cover'` pour préserver les autres usages éventuels, mais ici on passera `'contain'`).
+- L'`<img>` reçoit `object-cover` ou `object-contain` selon l'option. Conserver `w-full h-full` pour que l'image se centre dans la cellule.
 
-- Picto, accordéon, éditeur, lightbox, BDD : inchangés.
-- `renderThumb` API inchangée (on continue de passer `aspect-*` en `sizeClass`).
+### 4. Hover
+
+- Garder le micro-hover (`group-hover:brightness-105`) mais **retirer le `scale-[1.02]`** : un scale sur une photo en `object-contain` recadre visuellement, ce qui contredit l'objectif "voir toute la photo". On garde juste l'effet de luminosité.
+
+### 5. Picto en tête de carte
+
+- Inchangé (URL brute déjà corrigée précédemment).
 
 ## QA visuelle
 
-- Pratique « Haies pour corridor écologique » (3 médias) : paysage en hero gauche, scarabée + feuilles en colonne droite. Composition équilibrée, on lit immédiatement la pratique.
-- Pratique 1 média : full 16/9, image héroïne valorisée.
-- Pratique 2 médias : diptyque.
-- Pratique 5+ médias : hero + side avec badge `+N` discret.
-- Mobile : la mosaïque se replie en colonne unique sans rupture.
-- Dark + light themes : badge `bg-black/55` reste lisible dans les deux modes.
+- Pratique « Haies pour corridor écologique » (3 médias mixtes paysage/macro/macro) : 3 cellules égales, paysage entier visible (bandes vert forêt en haut/bas), scarabée entier visible (bandes sur les côtés), feuilles entières visibles. Aucun crop.
+- Pratique 1 média : 16/9 plein, photo contenue, fond vert forêt si format ne remplit pas.
+- Pratique 2 médias : diptyque 4/3 égal, `object-contain`.
+- Pratique 5+ médias : 3 cellules avec badge `+N` discret sur la dernière.
+- Test dark + light : vert forêt sombre suffisamment sombre pour rester élégant en light theme, intégré naturellement en dark theme.
