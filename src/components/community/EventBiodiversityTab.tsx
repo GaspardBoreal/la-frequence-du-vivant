@@ -507,6 +507,14 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {/* SYNTHÈSE */}
         {activeSubTab === 'synthese' && (
           <motion.div key="synthese" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {explorationId && DEVIAT_RESPIRE_EXPLORATIONS[explorationId] && (
+              <div className="mb-6">
+                <PreuveParLaDataCard
+                  explorationId={explorationId}
+                  description={DEVIAT_RESPIRE_EXPLORATIONS[explorationId]}
+                />
+              </div>
+            )}
             <p className="text-xs text-muted-foreground mb-3">
               {stats.marchesCount} étape{stats.marchesCount > 1 ? 's' : ''} analysée{stats.marchesCount > 1 ? 's' : ''}
             </p>
