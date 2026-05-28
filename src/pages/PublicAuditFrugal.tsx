@@ -5,11 +5,24 @@ import { AuditScoreDashboard } from '@/components/admin/audit-frugal/AuditScoreD
 import { AuditReportTabs } from '@/components/admin/audit-frugal/AuditReportTabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
-import { Leaf } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Leaf, ArrowLeft, Link2, Check } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const PublicAuditFrugal: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: run, isLoading, error } = useAuditRunBySlug(slug);
+  const { isAdmin } = useAuth();
+  const [copied, setCopied] = React.useState(false);
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    toast.success('Lien public copié');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   React.useEffect(() => {
     if (run) {
@@ -52,6 +65,25 @@ const PublicAuditFrugal: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-6xl py-10 space-y-8">
+        {isAdmin && (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+            <div className="flex items-center gap-3">
+              <Link to="/admin/outils/audit-frugal">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="h-4 w-4 mr-2" />Retour Audit IA Frugale
+                </Button>
+              </Link>
+              <Badge variant={run.is_public ? 'default' : 'secondary'}>
+                {run.is_public ? '🌍 Public' : '🔒 Privé'}
+              </Badge>
+            </div>
+            <Button variant="ghost" size="sm" onClick={copyLink}>
+              {copied ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
+              {copied ? 'Copié' : 'Copier le lien public'}
+            </Button>
+          </div>
+        )}
+
         <AuditScoreDashboard
           report={run.report_json}
           scopeLabel={run.scope_label}
