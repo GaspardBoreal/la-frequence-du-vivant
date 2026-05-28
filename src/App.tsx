@@ -87,6 +87,8 @@ import { AdminChatBotMount } from './components/chatbot/AdminChatBotMount';
 import { CommunityChatBotMount } from './components/chatbot/CommunityChatBotMount';
 import ApiMcpPublic from './pages/ApiMcpPublic';
 import AdminApiMcp from './pages/AdminApiMcp';
+import AdminAuditFrugalHub from './pages/AdminAuditFrugalHub';
+import PublicAuditFrugal from './pages/PublicAuditFrugal';
 
 function App() {
   return (
