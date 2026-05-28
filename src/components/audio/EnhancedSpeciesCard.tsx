@@ -27,27 +27,26 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
   const [imageError, setImageError] = useState(false);
   const { playRecording, pause, currentRecording, isPlaying } = useGlobalAudioPlayer();
 
-  // Auto-fetch photo from iNaturalist when photoData is missing
-  const shouldFetchPhoto = !species.photoData || species.photoData.source === 'placeholder';
-  const { data: fetchedPhotoData } = useSpeciesPhoto(
-    shouldFetchPhoto ? species.scientificName : undefined
-  );
-  
-  // Build effective photo: use provided photoData, or fall back to fetched
-  const inatPhoto = species.photoData && species.photoData.source !== 'placeholder'
-    ? species.photoData
-    : fetchedPhotoData 
-      ? { url: fetchedPhotoData.photos[0], source: 'inaturalist' as const, attribution: '' }
-      : null;
+  // Toujours résoudre la photo de référence iNaturalist (taxa API) — elle
+  // remplace systématiquement la 1re photo d'observation iNat, qui peut être
+  // une photo d'habitat non pertinente (ex. Pic épeiche identifié au chant).
+  const { data: fetchedPhotoData } = useSpeciesPhoto(species.scientificName);
 
-  // Global toggle Photos marcheurs ↔ iNaturalist (no-op hors provider)
+  const taxonRefPhoto = fetchedPhotoData?.photos?.[0]
+    ? { url: fetchedPhotoData.photos[0], source: 'inaturalist' as const, attribution: '' }
+    : null;
+
+  // Global toggle Photos marcheurs ↔ iNaturalist (no-op hors provider).
+  // On NE passe PAS `species.photoData` comme fallback : seul une vraie photo
+  // marcheur (ou la ref taxon) est légitime pour la vignette.
   const { mode, getPreferredPhoto } = useSpeciesPhotoMode();
-  const preferred = getPreferredPhoto(species.scientificName, inatPhoto?.url);
-  const effectivePhoto = preferred
-    ? { url: preferred.url, source: preferred.source === 'inat' ? 'inaturalist' as const : preferred.source, attribution: '' }
-    : inatPhoto;
+  const preferred = getPreferredPhoto(species.scientificName, taxonRefPhoto?.url);
   const isFieldPhoto = preferred?.source === 'marcheur' || preferred?.source === 'citizen';
-  const isFieldFallback = preferred?.isFallback === true;
+
+  const effectivePhoto = isFieldPhoto && preferred
+    ? { url: preferred.url, source: preferred.source, attribution: '' }
+    : taxonRefPhoto;
+  const isFieldFallback = isFieldPhoto ? false : (preferred?.isFallback === true);
 
   // Reset image error when the photo URL changes (toggle marcheur ↔ inat)
   useEffect(() => {
