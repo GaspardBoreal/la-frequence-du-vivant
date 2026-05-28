@@ -1,0 +1,1 @@
+UPDATE public.api_mcp_registry SET name = 'Lexicon', simple_description = 'Consolidation des données sur les parcelles de marches [cadastre, information PAC, Sol, production, météo...]' WHERE id = '2f8a0e9b-b761-4c88-9f07-741e7a8575a2';
