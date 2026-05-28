@@ -573,36 +573,27 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                             ? 'grid grid-cols-1'
                             : n === 2
                               ? 'grid grid-cols-2 gap-1'
-                              : 'grid grid-cols-1 sm:grid-cols-3 sm:grid-rows-2 gap-1';
+                              : 'grid grid-cols-3 gap-1';
+                        const ratioClass = n === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]';
+                        const imgWidth = n === 1 ? 1200 : 700;
                         return (
-                          <div className={`${gridClass} border-t border-border bg-background`}>
+                          <div className={`${gridClass} border-t border-border bg-emerald-950`}>
                             {visibleItems.map((it, i) => {
-                              const isHero = n >= 3 && i === 0;
-                              const isSingle = n === 1;
-                              const cellClass = isSingle
-                                ? 'sm:col-span-1'
-                                : isHero
-                                  ? 'sm:col-span-2 sm:row-span-2'
-                                  : 'sm:col-span-1';
-                              const ratioClass = isSingle
-                                ? 'aspect-[16/9]'
-                                : n === 2
-                                  ? 'aspect-[4/3]'
-                                  : isHero
-                                    ? 'aspect-[4/3]'
-                                    : 'aspect-[3/2]';
-                              const imgWidth = isSingle ? 1200 : isHero ? 900 : 450;
                               const showBadge = i === n - 1 && moreCount > 0;
                               return (
                                 <button
                                   type="button"
                                   key={it.key}
                                   onClick={() => setLightbox({ items, index: i })}
-                                  className={`group relative block overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60 ${cellClass}`}
+                                  className="group relative block overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/60"
                                   aria-label={`Ouvrir ${it.titre || 'le média'} en grand`}
                                 >
-                                  <div className="transition-transform duration-500 ease-out group-hover:scale-[1.02] group-hover:brightness-105 h-full w-full">
-                                    {renderThumb(it, `${ratioClass} h-full w-full`, { width: imgWidth })}
+                                  <div className="transition-[filter] duration-300 ease-out group-hover:brightness-110 h-full w-full">
+                                    {renderThumb(it, `${ratioClass} h-full w-full`, {
+                                      width: imgWidth,
+                                      objectFit: 'contain',
+                                      bgClass: 'bg-emerald-950',
+                                    })}
                                   </div>
                                   {showBadge && (
                                     <div
@@ -618,6 +609,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                           </div>
                         );
                       })()}
+
 
 
                       <div className="p-3 space-y-2 border-t border-border/40">
