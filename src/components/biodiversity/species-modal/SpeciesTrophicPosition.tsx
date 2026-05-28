@@ -7,6 +7,7 @@ import { ConstellationTab } from '@/components/community/synthese/trophic/Conste
 import { SpiraleTab } from '@/components/community/synthese/trophic/SpiraleTab';
 import { ReseauTab } from '@/components/community/synthese/trophic/ReseauTab';
 import { TrophicFullscreenModal, type TrophicViewKey } from './trophic-fullscreen/TrophicFullscreenModal';
+import { TrophicSourceBadge } from '@/components/biodiversity/trophic/TrophicSourceBadge';
 
 interface Props {
   scientificName: string;
@@ -69,9 +70,7 @@ export const SpeciesTrophicPosition: React.FC<Props> = ({ scientificName, common
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: `hsl(var(${meta.token}))` }} />
               {meta.shortLabel} · {meta.label}
             </span>
-            <span className="text-[10px] text-white/40">
-              {star.source === 'kb' ? 'attribution curée' : 'règle taxonomique'}
-            </span>
+            <TrophicSourceBadge source={star.source} variant="full" />
           </div>
         </div>
       </div>

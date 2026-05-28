@@ -13,7 +13,7 @@ export type TrophicGroup = `L${TrophicTier}` | 'DECOMPOSER' | 'UNCLASSIFIED';
 
 export interface TrophicAssignment {
   group: TrophicGroup;
-  source: 'kb' | 'heuristic';
+  source: 'kb' | 'heuristic' | 'iconic';
   rationale?: string;
 }
 
@@ -211,7 +211,7 @@ export function classifyTrophic(sp: ClassifyInput): TrophicAssignment {
 
   // 3. iconic_taxon fallback (iNaturalist) — bien plus discriminant que kingdom seul
   if (iconic && ICONIC_RULES[iconic]) {
-    return { group: ICONIC_RULES[iconic], source: 'heuristic', rationale: `Groupe ${iconic}` };
+    return { group: ICONIC_RULES[iconic], source: 'iconic', rationale: `Groupe ${iconic}` };
   }
 
   // 4. Kingdom fallback

@@ -9,6 +9,7 @@ import { getLevelMeta, probablePreyGroups, type TrophicGroup } from '@/lib/troph
 import { ConstellationTab } from '@/components/community/synthese/trophic/ConstellationTab';
 import { SpiraleTab } from '@/components/community/synthese/trophic/SpiraleTab';
 import { ReseauTab } from '@/components/community/synthese/trophic/ReseauTab';
+import { TrophicSourceLegend } from '@/components/community/synthese/trophic/TrophicSourceLegend';
 import {
   DefaultPanel,
   SelectedStarPanel,
@@ -203,7 +204,7 @@ export const TrophicFullscreenModal: React.FC<Props> = ({
           </header>
 
           {/* View switcher */}
-          <div className="px-4 sm:px-6 pt-3 pb-2 border-b border-border">
+          <div className="px-4 sm:px-6 pt-3 pb-2 border-b border-border flex flex-wrap items-center justify-between gap-3">
             <div className="inline-flex gap-1 p-1 bg-muted/40 rounded-xl">
               {VIEWS.map((v) => {
                 const Icon = v.icon;
@@ -227,6 +228,7 @@ export const TrophicFullscreenModal: React.FC<Props> = ({
                 );
               })}
             </div>
+            <TrophicSourceLegend chain={chain} className="justify-end" />
           </div>
 
           {/* Body: canvas + sidebar */}
