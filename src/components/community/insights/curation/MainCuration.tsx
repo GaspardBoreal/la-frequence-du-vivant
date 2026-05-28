@@ -571,11 +571,9 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
                         const gridClass =
                           n === 1
                             ? 'grid grid-cols-1'
-                            : n === 2
-                              ? 'grid grid-cols-2 gap-1'
-                              : 'grid grid-cols-3 gap-1';
-                        const ratioClass = n === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]';
-                        const imgWidth = n === 1 ? 1200 : 700;
+                            : 'grid grid-cols-2 gap-1';
+                        const ratioClass = n === 1 ? 'aspect-[4/3]' : 'aspect-[4/5]';
+                        const imgWidth = n === 1 ? 1400 : 900;
                         return (
                           <div className={`${gridClass} border-t border-border bg-emerald-950`}>
                             {visibleItems.map((it, i) => {
