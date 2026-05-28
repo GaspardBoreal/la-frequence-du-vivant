@@ -1,40 +1,46 @@
-# Fallback photo iNaturalist pour vignettes espèces sans photo terrain
+## Problème
 
-## Objectif
-Quand une espèce identifiée via iNaturalist n'a pas de photo prise par le marcheur, afficher la photo de référence iNaturalist (taxon par défaut) à la place du pictogramme générique, partout dans l'app, avec une pastille discrète « iNat » signalant la source.
+Sur la vignette « Pic épeiche » (Marches → Vivant → onglet Vivant, carte `EnhancedSpeciesCard`), l'image affichée n'est pas un Pic épeiche : c'est la 1re photo de l'observation iNaturalist correspondante (souvent un cliché d'habitat quand l'oiseau est identifié au chant). Le composant ne tombe pas en fallback sur la photo de référence iNat (`useSpeciesPhoto` → taxa API) parce que `species.photoData` existe déjà — même s'il pointe vers une photo non pertinente.
 
-## Composant central : `SpeciesThumb`
-Nouveau composant `src/components/species/SpeciesThumb.tsx` — utilisé par toutes les vignettes espèce.
+## Règle cible
 
-Props : `scientificName`, `commonName?`, `kingdom?`, `localPhoto?` (photo terrain prioritaire), `size` (`sm` 40px / `md` 56px / `lg` 80px), `showInatBadge?` (default true), `className?`.
+Pour les espèces dont la source est iNaturalist et sans photo marcheur (terrain / upload direct), la vignette doit utiliser la **photo de référence du taxon** (taxa API iNat) plutôt que la 1re photo de l'observation. La photo de l'observation reste accessible dans la fiche détaillée (carrousel obs).
 
-Logique :
-1. Si `localPhoto` → l'affiche tel quel, pas de pastille.
-2. Sinon → appelle `useSpeciesPhoto(scientificName)` (déjà en place, cache React Query 24h, cache GC 7j).
-3. Si photo iNat trouvée → `<img>` + pastille discrète bas-droite : pill `bg-background/80 backdrop-blur border border-border/60 text-[9px] text-muted-foreground px-1 py-0.5 rounded-full` avec libellé `iNat`, tooltip « Photo de référence iNaturalist ».
-4. Sinon (pas de photo nulle part) → fallback actuel : `kingdomIcon` colorisé.
-5. État loading : skeleton `bg-muted animate-pulse` (pas de spinner).
+Cascade vignette (ordre de priorité) :
 
-Performance : un seul hook par vignette, mais React Query déduplique automatiquement par `scientificName`, donc 50 vignettes de la même espèce = 1 seule requête iNat. Pas de prefetch batch (pas nécessaire au volume actuel).
+1. Photo marcheur (upload direct ou attribution iNat → marcheur)
+2. Photo de référence iNat du taxon (`useSpeciesPhoto`)
+3. Icône royaume (fallback générique)
 
-## Points d'intégration
+La 1re photo d'observation iNat brute n'est plus utilisée comme illustration vignette.
 
-| Vue | Fichier | Action |
-|---|---|---|
-| Drawer du jour (Évolution) | `src/components/community/exploration/DayDetailDrawer.tsx` | Remplacer le bloc `{obs.photo ? <img/> : <div Icon/>}` (lignes 54-60) par `<SpeciesThumb localPhoto={obs.photo} scientificName={obs.scientificName} commonName={obs.commonName} kingdom={obs.kingdom} size="sm" />` |
-| Synthèse → Taxons observés (cartes) | `src/components/biodiversity/SpeciesCardWithPhoto.tsx` (+ tout consommateur direct utilisant son `kingdomIcon`/photo) | Câbler `SpeciesThumb` en `lg` au lieu de l'image existante quand `photos` est vide. Préserver le carrousel marcheur quand des photos terrain existent. |
-| Bandeau hero fiche espèce | `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` | Vérifié déjà en place (copie 2 montre bien la photo iNat + badge "Référence · iNaturalist"). Aligner uniquement le libellé du badge sur le nouveau composant si redondant (à confirmer en build, sinon no-op). |
-| Toute autre vignette espèce (drawer GPS, liste participants…) | `src/components/community/synthese/indices/SpeciesGpsDrawer.tsx`, `EnhancedSpeciesCard.tsx`, `CuratedSpeciesCard.tsx`, `SpeciesRow` divers | Migration progressive vers `SpeciesThumb` — limiter le scope à `DayDetailDrawer` + grilles `SpeciesCardWithPhoto` dans ce premier lot, et logger un TODO grep `kingdomIcon` pour traiter les vignettes restantes en lot 2 si besoin. |
+## Changements
 
-## Hors scope (à NE PAS toucher)
-- `useSpeciesPhoto.ts` : aucune modif (déjà robuste).
-- Aucune migration DB, aucun edge function — purement frontend.
-- Pas de changement aux fiches détaillées qui ont déjà leur propre carrousel multi-sources.
+### 1. `src/components/audio/EnhancedSpeciesCard.tsx`
 
-## Validation
-1. Drawer du jour sur exploration `70fcd8d1…` : Pic épeiche, Bergénie, Clytre lustrée doivent montrer une photo iNat + pastille discrète.
-2. Cas dégradé (taxon iNat sans `default_photo`) : retombe sur le pictogramme `kingdomIcon` (pas de cadre vide).
-3. Espèces avec photo terrain : aucun changement visuel, pas de pastille « iNat ».
+- Élargir la condition `shouldFetchPhoto` : déclencher `useSpeciesPhoto` dès que `species.photoData` n'est pas une photo marcheur certifiée (i.e. `source !== 'marcheur'` et `source !== 'citizen'`).
+- Recomposer `inatPhoto` pour préférer `fetchedPhotoData` (taxon ref) à `species.photoData` quand cette dernière vient d'une observation iNat.
+- La pastille source bottom-right reste : « iNat » (taxon ref) vs « Photo marcheur » vs fallback ambre.
+
+### 2. Vérifier `SpeciesCardWithPhoto.tsx` (Synthèse → Taxons observés, mode fiche/immersion)
+
+Même logique : `species.photos?.[0]` doit être considéré comme « photo marcheur » uniquement si effectivement marqué comme tel. Sinon, préférer la ref taxon. Adapter `shouldFetch` et `photoUrl` en conséquence.
+
+### 3. `src/components/species/SpeciesThumb.tsx`
+
+Ajouter un prop optionnel `localPhotoIsField?: boolean` (default `true`) — si `false`, traiter `localPhoto` comme une photo d'observation iNat et préférer le fallback `useSpeciesPhoto`.
+
+### 4. Pas de changement BD ni d'edge function
+
+Tout reste côté front, cohérent avec la mémoire `species-thumb-inat-fallback-logic`.
+
+## QA
+
+- Pic épeiche (identifié au chant, 1 obs iNat, 0 photo marcheur) → doit afficher l'oiseau via taxa API.
+- Espèce avec photo marcheur → inchangé, photo marcheur visible.
+- Espèce iNat avec une vraie photo d'espèce dans l'observation → vignette = taxon ref (cohérence visuelle), observation visible dans le carrousel de la fiche.
+- Aucune régression sur le toggle Photos marcheurs ↔ iNaturalist.
 
 ## Mémoire à mettre à jour
-Ajouter `mem://features/community/species-thumb-inat-fallback-logic` — règle : toute vignette espèce passe par `SpeciesThumb`, fallback iNat automatique + pastille discrète quand pas de photo terrain.
+
+`mem://features/community/species-thumb-inat-fallback-logic` : préciser que la photo d'observation iNat n'est jamais utilisée comme vignette ; la vignette est toujours soit marcheur, soit ref taxon, soit icône royaume.
