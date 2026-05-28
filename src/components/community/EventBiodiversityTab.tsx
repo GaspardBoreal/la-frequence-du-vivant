@@ -24,6 +24,14 @@ import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
 import PackVivantButton from './PackVivantButton';
 import AnalyseIAStepper from './analyse/AnalyseIAStepper';
+import PreuveParLaDataCard from './exploration/PreuveParLaDataCard';
+
+// Explorations DEVIAT « Marcher sur un sol qui respire » — affichent le bloc
+// éditorial « Preuve par la data » en tête de l'onglet Synthèse.
+const DEVIAT_RESPIRE_EXPLORATIONS: Record<string, string> = {
+  '70fcd8d1-7f63-43c8-a2bd-2cd436523437':
+    'Lors de cette marche « Éco poétique » (10 km), un petit groupe de citoyens a documenté scientifiquement les espèces réelles sur l\'exploitation. Cette data appartient à l\'agriculteur et constitue une preuve irréfutable de la richesse écologique de ses terres.',
+};
 
 type SubTab = 'synthese' | 'taxons' | 'temoignages' | 'textes' | 'analyse';
 
