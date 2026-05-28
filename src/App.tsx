@@ -274,6 +274,12 @@ function App() {
                 <AdminApiMcp />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/audit-frugal" element={
+              <AdminAuth>
+                <AdminAuditFrugalHub />
+              </AdminAuth>
+            } />
+            <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
             <Route path="/api-mcp" element={<ApiMcpPublic />} />
             <Route path="/admin" element={
               <AdminAuth>
