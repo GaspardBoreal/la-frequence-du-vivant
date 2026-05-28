@@ -1,79 +1,54 @@
-## Diagnostic
+# Bloc « Preuve par la data » — DEVIAT « Marcher sur un sol qui respire » (10 km)
 
-Tu as raison : la logique actuelle est **fausse**. Vérification BDD sur Vincent Levavasseur :
+## 1. Restitution immédiate des chiffres (chat)
 
-- `auth.users` : compte créé le **11 mai 2026**, email confirmé, dernière connexion le **17 mai 2026** → il est **inscrit**.
-- `event_invited_readers` : 2 lignes (DEVIAT 10 km + une autre marche), `user_id` rempli, `promoted_to_participant_at = NULL`, `invite_source = 'manuel'`.
+Sur la marche **DEVIAT « Marcher sur un sol qui respire » (10 km)** — exploration `70fcd8d1…`, event `df85910e…` — la RPC unifiée `get_exploration_species_count` donne :
 
-Il apparaît donc « En attente » uniquement parce qu'il n'a jamais été **promu Participant** — pas parce qu'il n'a pas créé son compte.
+| Indicateur | Valeur |
+|---|---|
+| Espèces recensées | **147** |
+| Marcheurs ambassadeurs | **8** |
+| Flore (Plantae) | **84** (57 %) |
+| Faune (Animalia) | **52** (35 %) |
+| Champignons / Lichens (Fungi) | **2** |
+| Autres règnes | **9** |
+| Source : marcheurs ∩ snapshots | 126 |
+| Source : marcheurs seuls | 9 |
+| Source : snapshots iNat seuls | 12 |
 
-## Pourquoi c'est cassé
+Quelques espèces phares présentes des deux côtés (marcheurs + iNat) : *Anacamptis pyramidalis*, *Carabus coriaceus*, *Hemaris fuciformis*, *Episyrphus balteatus*, *Flavoparmelia caperata* (lichen bio-indicateur de qualité de l'air).
 
-Dans `src/components/community/exploration/MarcheursTab.tsx` (lignes 1411-1448), le bloc « Invités en attente » fait :
+→ Bonne candidate **Focus Espèce Bio-indicatrice** : *Flavoparmelia caperata* (lichen foliacé, sensible à la pollution azotée et SO₂) ou *Carabus coriaceus* (coléoptère prédateur de sols vivants — collerait au titre « sol qui respire »).
 
-```ts
-supabase.from('event_invited_readers')
-  .select(...)
-  .in('event_id', explorationEventIds)
-  .is('promoted_to_participant_at', null);
+## 2. Composant `PreuveParLaData` (intégration app)
+
+### Emplacement
+- Nouveau composant `src/components/community/exploration/PreuveParLaDataCard.tsx`.
+- Injecté dans la **scénographie** de l'event 10 km via le registry per-event (mémoire « Per-event scenography »), pas en dur dans la page exploration — pour ne pas polluer les autres marches.
+- Si la scénographie n'est pas branchée pour cette marche, fallback : afficher sur l'onglet **Synthèse** de `ExplorationLayout` quand `eventSlug === 'deviat-sol-qui-respire-10km'`.
+
+### Données (zéro hallucination, source unique de vérité)
+- Espèces + ventilation royaumes : `useExplorationSpeciesCount(explorationId)` (RPC `get_exploration_species_count`, déjà câblée et realtime).
+- Marcheurs ambassadeurs : `useExplorationMarcheurs(explorationId)` filtré sur ceux qui ont au moins 1 observation (`observationsCount > 0`).
+- Bio-indicatrice : champ éditorial stocké dans `exploration_curations` (clé `bio_indicator`) — saisi en admin, fallback heuristique côté front si vide (priorité : 1er lichen Fungi présent, sinon 1er coléoptère).
+- Bouton **« Extrait direct CSV »** → réutilise l'edge `generate-pack-vivant` (mémoire « Pack Vivant export ») en mode `csv_only`, niveau d'accès `public`.
+
+### UI (Forêt Émeraude / dark — cohérent avec le screenshot)
+- Card glassmorphism 2 colonnes (texte gauche, donut droite), responsive → empile en `<lg`.
+- Donut Plantae/Animalia (+ Fungi/Autres regroupés en « Autres ») via Recharts `PieChart` semi-transparent, label legend en bas.
+- 2 tuiles KPI (« 147 ESPÈCES RECENSÉES », « 8 CITOYENS AMBASSADEURS »).
+- Bloc « Focus Espèce Bio-indicatrice » avec `<SpeciesName />` (jamais de `commonName` brut — règle mémoire).
+- Chips bas droite : 4 premiers genres distincts + « … » qui ouvre le drawer Espèces existant.
+
+### Code (technique)
 ```
+src/components/community/exploration/
+  PreuveParLaDataCard.tsx          ← nouveau
+  PreuveParLaDataDonut.tsx         ← sous-composant Recharts
+src/hooks/
+  useBioIndicatorSpecies.ts        ← résolution heuristique + override curation
+```
+Aucune migration BDD : tout existe déjà (`exploration_curations.functions` peut accueillir la clé `bio_indicator` sans nouvelle colonne — sinon nouvelle colonne `bio_indicator_scientific_name text` si tu préfères stockage explicite).
 
-Conséquences :
-
-1. **Aucun filtrage sur l'état d'inscription Auth.** Toute personne avec un `user_id` dans `event_invited_readers` non promue → étiquetée « En attente », même si elle est inscrite depuis 2 semaines (cas Vincent).
-2. **Les vrais invités sans compte ne s'affichent pas du tout.** Les invitations email non consommées vivent dans la table `event_invitations` (avec `invited_email`, `consumed_at IS NULL`), pas dans `event_invited_readers`. Cette table n'est jamais lue par MarcheursTab.
-
-Donc à la question posée :
-
-- **a.** ❌ Non — un nouvel invité **sans compte** n'apparaîtra **pas du tout** dans ce bloc (il vit dans `event_invitations`).
-- **b.** ⚠️ Partiellement — une fois qu'il crée son compte, il apparaît bien… mais avec le **mauvais label « En attente »** tant qu'un admin ne le promeut pas Participant. Il restera coincé dans ce statut indéfiniment.
-
-À noter : la edge function `event-invited-readers-list` (utilisée côté admin dans `InvitedReadersTab.tsx`) fait correctement la distinction (`event_invited_readers` → `inscrit`, `event_invitations` non consommée → `en_attente` / `expire`). Le bug est uniquement dans la vue publique exploration.
-
-## Plan de correction
-
-### 1. Renommer/séparer les deux états dans MarcheursTab
-
-Restructurer le bloc en **deux sections distinctes** :
-
-**A. « Invités en attente » (vraiment en attente)**  
-Source : `event_invitations` filtrée par `event_id IN explorationEventIds`, `consumed_at IS NULL`, et `expires_at > now()` (ou NULL).  
-Affichage : prénom + email + marche d'invitation + badge ambre « En attente ».  
-Dédup : exclure les emails déjà présents dans `auth.users` (donc déjà inscrits).
-
-**B. « Invités inscrits (non promus Participant) »**  
-Source : `event_invited_readers` avec `user_id` non null, `promoted_to_participant_at IS NULL`, jointe à `community_profiles`.  
-Affichage : carte plus claire « Lecteur inscrit · pas encore promu Participant » avec badge neutre (pas ambre).  
-Dédup : exclure les `user_id` déjà présents dans `knownParticipantUserIds` (déjà fait).
-
-### 2. Edge function dédiée (recommandé)
-
-Pour éviter d'exposer `event_invitations` (emails) au front public, créer une edge function `exploration-pending-invitees-list` qui :
-
-- Reçoit `exploration_id`
-- Vérifie côté serveur que l'appelant a le droit de voir l'exploration (admin OR participant validé d'au moins une marche)
-- Retourne `{ pending: [...], registered_not_promoted: [...] }`
-- Masque les emails sauf pour les admins/organisateurs
-
-### 3. UI
-
-- Renommer la section actuelle « Invités en attente » → garder ce libellé **uniquement** pour la liste A.
-- La liste B devient « Lecteurs inscrits (à promouvoir) » avec un CTA discret « Promouvoir » si l'utilisateur a les droits, sinon simple mention.
-- Conserver le compteur séparé pour chacune ; les deux restent « non comptés dans le total marcheurs ».
-
-### 4. Cas concret après correction
-
-| Scénario | Section affichée | Badge |
-|---|---|---|
-| Email invité, pas de compte | A. Invités en attente | En attente (ambre) |
-| Compte créé, jamais promu (cas Vincent) | B. Lecteurs inscrits à promouvoir | Inscrit (neutre) |
-| Promu Participant | Disparaît des 2 blocs, apparaît dans la liste principale | — |
-| Invitation expirée sans compte | (optionnel) section pliée « Expirées » | Gris |
-
-## Fichiers impactés
-
-- `src/components/community/exploration/MarcheursTab.tsx` — refonte du bloc lignes 1400-1448 + rendu lignes 1885-1920.
-- `supabase/functions/exploration-pending-invitees-list/index.ts` — **nouveau**, basé sur la même logique que `event-invited-readers-list` mais scopé à une exploration et avec garde d'accès lecteur.
-- (optionnel) `src/hooks/useExplorationPendingInvitees.ts` — extraire la logique du composant.
-
-Aucune migration DB nécessaire — les deux tables existent déjà.
+## 3. Question ouverte
+- Bio-indicatrice : je laisse l'heuristique (lichen `Flavoparmelia caperata` par défaut) ou tu préfères forcer **Carabus coriaceus** comme dans le screenshot d'origine ? → réglable ensuite via un champ admin si tu valides ce plan.
