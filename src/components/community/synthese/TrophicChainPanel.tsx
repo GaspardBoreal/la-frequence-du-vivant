@@ -7,6 +7,7 @@ import { TROPHIC_LEVELS, DECOMPOSER_META } from '@/lib/trophicClassification';
 import { ConstellationTab } from './trophic/ConstellationTab';
 import { SpiraleTab } from './trophic/SpiraleTab';
 import { ReseauTab } from './trophic/ReseauTab';
+import { TrophicSourceLegend } from './trophic/TrophicSourceLegend';
 
 interface Props {
   species: TrophicSpeciesInput[];
@@ -141,6 +142,9 @@ export const TrophicChainPanel: React.FC<Props> = ({ species, explorationId }) =
                   {active === 'reseau' && <ReseauTab chain={chain} speciesPool={speciesPool} explorationId={explorationId} />}
                 </motion.div>
               </AnimatePresence>
+
+
+              <TrophicSourceLegend chain={chain} className="pt-1" />
 
               <footer className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground pt-2 border-t border-border">
                 <span>{chain.total} espèce{chain.total > 1 ? 's' : ''} placée{chain.total > 1 ? 's' : ''}</span>
