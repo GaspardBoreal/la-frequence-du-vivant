@@ -65,6 +65,25 @@ const PublicAuditFrugal: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-6xl py-10 space-y-8">
+        {isAdmin && (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+            <div className="flex items-center gap-3">
+              <Link to="/admin/outils/audit-frugal">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="h-4 w-4 mr-2" />Retour Audit IA Frugale
+                </Button>
+              </Link>
+              <Badge variant={run.is_public ? 'default' : 'secondary'}>
+                {run.is_public ? '🌍 Public' : '🔒 Privé'}
+              </Badge>
+            </div>
+            <Button variant="ghost" size="sm" onClick={copyLink}>
+              {copied ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
+              {copied ? 'Copié' : 'Copier le lien public'}
+            </Button>
+          </div>
+        )}
+
         <AuditScoreDashboard
           report={run.report_json}
           scopeLabel={run.scope_label}
