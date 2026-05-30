@@ -19,6 +19,8 @@ import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 import { useSpeciesFilteredByPeriod } from '@/hooks/useSpeciesFilteredByPeriod';
 import type { EvolutionPeriod, DateSource } from '@/hooks/useBiodiversityEvolution';
+import { isSpeciesWithinRadius, isObservationWithinRadius, type MarcheGeoCtx } from '@/utils/speciesRadiusFilter';
+
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
