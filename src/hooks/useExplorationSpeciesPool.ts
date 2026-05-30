@@ -115,8 +115,13 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
       const map = new Map<string, RawExplorationSpecies>();
 
       Array.from(latestByMarche.values()).forEach((s: any) => {
+        const ctx = marcheCtxById.get(s.marche_id);
+        const snapR = (s as any).radius_meters ?? null;
         const arr: any[] = Array.isArray(s.species_data) ? s.species_data : [];
         arr.forEach(sp => {
+          // 🔭 Filtre par rayon résolu de la marche
+          if (ctx && !isSpeciesWithinRadius(sp, { ...ctx, snapshot_radius_m: snapR })) return;
+
           const sci = (sp.scientificName || sp.scientific_name || '').toString().trim();
           const com = (sp.commonName || sp.common_name || sp.vernacularName || '').toString().trim();
           const key = (sci || com).toLowerCase();
