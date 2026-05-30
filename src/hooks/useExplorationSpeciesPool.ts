@@ -183,13 +183,16 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
       // ── Marcheur observations (upload direct) ───────────────────────────
       const { data: marcheurObs } = await supabase
         .from('marcheur_observations')
-        .select('species_scientific_name, photo_url, observation_date')
+        .select('marche_id, species_scientific_name, photo_url, observation_date, latitude, longitude')
         .in('marche_id', marcheIds);
 
       const directMarcheur = new Map<string, { url: string; date: string }>();
 
       (marcheurObs || []).forEach((obs: any) => {
+        const ctx = marcheCtxById.get(obs.marche_id);
+        if (ctx && !isObservationWithinRadius(obs, ctx)) return;
         const sci = (obs.species_scientific_name || '').toString().trim();
+
         if (!sci) return;
         const key = sci.toLowerCase();
 
