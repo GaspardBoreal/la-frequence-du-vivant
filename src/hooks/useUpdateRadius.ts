@@ -26,8 +26,15 @@ export function useUpdateExplorationDefaultRadius() {
       qc.invalidateQueries({ queryKey: ['exploration', explorationId] });
       qc.invalidateQueries({ queryKey: ['explorations'] });
       qc.invalidateQueries({ queryKey: ['exploration-radius', explorationId] });
+      // 🔭 Affecte les décomptes d'espèces dans toutes les vues
+      qc.invalidateQueries({ queryKey: ['exploration-species-count'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-pool-raw'] });
+      qc.invalidateQueries({ queryKey: ['exploration-marche-ctx'] });
+      qc.invalidateQueries({ queryKey: ['event-biodiversity-snapshots-all'] });
+      qc.invalidateQueries({ queryKey: ['event-marcheur-observations'] });
       toast.success('Rayon par défaut enregistré');
     },
+
     onError: (err: any) => {
       console.error(err);
       toast.error("Impossible d'enregistrer le rayon par défaut");
