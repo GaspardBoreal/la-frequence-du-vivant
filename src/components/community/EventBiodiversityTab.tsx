@@ -687,6 +687,7 @@ const TaxonsSubTab: React.FC<TaxonsSubTabProps> = ({
     <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <BiodiversityEvolutionChart
         snapshots={snapshots}
+
         overrideTotalSpecies={speciesFiltered.length}
         marchesById={new Map(
           (allEventMarchesData || []).map(m => [
