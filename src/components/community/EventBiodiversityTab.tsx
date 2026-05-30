@@ -339,10 +339,14 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
 
     // 2. marcheur_observations — chaque ligne = 1 attribution (avec GPS exact iNat)
+    //    Filtre par rayon résolu de la marche (si GPS dispo).
     (marcheurObs || []).forEach((o: any) => {
+      const ctx = marcheCtxById?.get(o.marche_id);
+      if (ctx && !isObservationWithinRadius(o, ctx)) return;
       const sciName = o.species_scientific_name;
       const key = normKey(sciName);
       if (!key) return;
+
       const crew = o.exploration_marcheurs;
       const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim() || 'Contributeur iNaturalist';
       const inatId = o.inaturalist_observation_id;
