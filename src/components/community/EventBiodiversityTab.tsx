@@ -143,19 +143,35 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     setRevealActive(false);
   }, []);
 
-  // Get marche IDs linked to this exploration
-  const { data: marcheIds } = useQuery({
-    queryKey: ['exploration-marche-ids', explorationId],
+  // Get marche IDs + per-marche geo context (lat/lon + resolved radius_m) for radius filtering
+  const { data: marcheCtxData } = useQuery({
+    queryKey: ['exploration-marche-ctx', explorationId],
     queryFn: async () => {
-      if (!explorationId) return [];
+      if (!explorationId) return { ids: [] as string[], ctxById: new Map<string, MarcheGeoCtx>() };
       const { data } = await supabase
         .from('exploration_marches')
-        .select('marche_id')
+        .select('marche_id, marches(latitude, longitude, radius_m), explorations(default_radius_m)')
         .eq('exploration_id', explorationId);
-      return data?.map(d => d.marche_id) || [];
+      const ids: string[] = [];
+      const ctxById = new Map<string, MarcheGeoCtx>();
+      (data || []).forEach((row: any) => {
+        if (!row.marche_id) return;
+        ids.push(row.marche_id);
+        const m = row.marches || {};
+        const e = row.explorations || {};
+        ctxById.set(row.marche_id, {
+          latitude: m.latitude ?? null,
+          longitude: m.longitude ?? null,
+          radius_m: m.radius_m ?? e.default_radius_m ?? 500,
+        });
+      });
+      return { ids, ctxById };
     },
     enabled: !!explorationId,
   });
+  const marcheIds = marcheCtxData?.ids;
+  const marcheCtxById = marcheCtxData?.ctxById;
+
 
   // Fetch ALL biodiversity snapshots for these marches.
   // Aligné avec la RPC unifiée `get_exploration_species_count` (Carnet/Carte):
