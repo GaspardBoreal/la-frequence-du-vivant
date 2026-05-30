@@ -606,7 +606,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {/* TAXONS — via SpeciesExplorer unifié */}
         {activeSubTab === 'taxons' && (
           <TaxonsSubTab
-            snapshots={snapshots}
+            snapshots={filteredSnapshots}
+
             allSpeciesWithFrNames={allSpeciesWithFrNames}
             allEventMarchesData={allEventMarchesData}
             eventParticipants={eventParticipants}
