@@ -56,7 +56,7 @@ const toMediumInat = (url: string): string =>
  */
 export const useExplorationSpeciesPool = (explorationId: string | null | undefined) => {
   const rawQuery = useQuery({
-    queryKey: ['exploration-species-pool-raw', explorationId, 'v3-field-photo-priority'],
+    queryKey: ['exploration-species-pool-raw', explorationId, 'v4-radius-filter'],
     queryFn: async (): Promise<RawExplorationSpecies[]> => {
       if (!explorationId) return [];
 
