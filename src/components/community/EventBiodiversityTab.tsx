@@ -386,7 +386,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
 
     return Array.from(speciesMap.values()).sort((a, b) => b.observations - a.observations);
-  }, [snapshots, marcheurObs]);
+  }, [snapshots, marcheurObs, marcheCtxById]);
 
   // Resolve French names once at the source, before passing to SpeciesExplorer.
   // Mirrors the strategy used by useExplorationSpeciesPool / Bioacoustique view.
