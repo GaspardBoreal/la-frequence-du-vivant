@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFrenchSpeciesNames } from './useFrenchSpeciesNames';
+import {
+  isSpeciesWithinRadius,
+  isObservationWithinRadius,
+  type MarcheGeoCtx,
+} from '@/utils/speciesRadiusFilter';
+
 
 
 export interface ExplorationSpecies {
@@ -50,23 +56,36 @@ const toMediumInat = (url: string): string =>
  */
 export const useExplorationSpeciesPool = (explorationId: string | null | undefined) => {
   const rawQuery = useQuery({
-    queryKey: ['exploration-species-pool-raw', explorationId, 'v3-field-photo-priority'],
+    queryKey: ['exploration-species-pool-raw', explorationId, 'v4-radius-filter'],
     queryFn: async (): Promise<RawExplorationSpecies[]> => {
       if (!explorationId) return [];
 
-      const { data: em, error: emErr } = await supabase
+      // Charger les marches avec lat/lon + radius_m + default_radius_m de l'exploration
+      const { data: emRows, error: emErr } = await supabase
         .from('exploration_marches')
-        .select('marche_id')
+        .select('marche_id, marches(latitude, longitude, radius_m), explorations(default_radius_m)')
         .eq('exploration_id', explorationId);
       if (emErr) throw emErr;
-      const marcheIds = (em || []).map((x: any) => x.marche_id).filter(Boolean);
+      const marcheIds = (emRows || []).map((x: any) => x.marche_id).filter(Boolean);
       if (marcheIds.length === 0) return [];
+
+      const marcheCtxById = new Map<string, MarcheGeoCtx>();
+      (emRows || []).forEach((row: any) => {
+        const m = row.marches || {};
+        const e = row.explorations || {};
+        marcheCtxById.set(row.marche_id, {
+          latitude: m.latitude ?? null,
+          longitude: m.longitude ?? null,
+          radius_m: m.radius_m ?? e.default_radius_m ?? 500,
+        });
+      });
 
       const { data: snaps, error: snapsErr } = await supabase
         .from('biodiversity_snapshots')
-        .select('marche_id, snapshot_date, species_data')
+        .select('marche_id, snapshot_date, species_data, radius_meters')
         .in('marche_id', marcheIds);
       if (snapsErr) throw snapsErr;
+
 
       // Garder seulement le snapshot le plus récent par marche
       // (parité avec useSpeciesMarcheurPhotos).
@@ -96,8 +115,13 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
       const map = new Map<string, RawExplorationSpecies>();
 
       Array.from(latestByMarche.values()).forEach((s: any) => {
+        const ctx = marcheCtxById.get(s.marche_id);
+        const snapR = (s as any).radius_meters ?? null;
         const arr: any[] = Array.isArray(s.species_data) ? s.species_data : [];
         arr.forEach(sp => {
+          // 🔭 Filtre par rayon résolu de la marche
+          if (ctx && !isSpeciesWithinRadius(sp, { ...ctx, snapshot_radius_m: snapR })) return;
+
           const sci = (sp.scientificName || sp.scientific_name || '').toString().trim();
           const com = (sp.commonName || sp.common_name || sp.vernacularName || '').toString().trim();
           const key = (sci || com).toLowerCase();
@@ -159,13 +183,16 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
       // ── Marcheur observations (upload direct) ───────────────────────────
       const { data: marcheurObs } = await supabase
         .from('marcheur_observations')
-        .select('species_scientific_name, photo_url, observation_date')
+        .select('marche_id, species_scientific_name, photo_url, observation_date, latitude, longitude')
         .in('marche_id', marcheIds);
 
       const directMarcheur = new Map<string, { url: string; date: string }>();
 
       (marcheurObs || []).forEach((obs: any) => {
+        const ctx = marcheCtxById.get(obs.marche_id);
+        if (ctx && !isObservationWithinRadius(obs, ctx)) return;
         const sci = (obs.species_scientific_name || '').toString().trim();
+
         if (!sci) return;
         const key = sci.toLowerCase();
 

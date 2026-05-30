@@ -5742,10 +5742,15 @@ export type Database = {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
       }
-      haversine_m: {
-        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
-        Returns: number
-      }
+      haversine_m:
+        | {
+            Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+            Returns: number
+          }
+        | {
+            Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+            Returns: number
+          }
       increment_download_count: {
         Args: { export_slug: string }
         Returns: undefined

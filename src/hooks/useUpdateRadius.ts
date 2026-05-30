@@ -26,8 +26,15 @@ export function useUpdateExplorationDefaultRadius() {
       qc.invalidateQueries({ queryKey: ['exploration', explorationId] });
       qc.invalidateQueries({ queryKey: ['explorations'] });
       qc.invalidateQueries({ queryKey: ['exploration-radius', explorationId] });
+      // 🔭 Affecte les décomptes d'espèces dans toutes les vues
+      qc.invalidateQueries({ queryKey: ['exploration-species-count'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-pool-raw'] });
+      qc.invalidateQueries({ queryKey: ['exploration-marche-ctx'] });
+      qc.invalidateQueries({ queryKey: ['event-biodiversity-snapshots-all'] });
+      qc.invalidateQueries({ queryKey: ['event-marcheur-observations'] });
       toast.success('Rayon par défaut enregistré');
     },
+
     onError: (err: any) => {
       console.error(err);
       toast.error("Impossible d'enregistrer le rayon par défaut");
@@ -57,8 +64,16 @@ export function useUpdateMarcheRadius() {
       qc.invalidateQueries({ queryKey: ['marche-coords', marcheId] });
       qc.invalidateQueries({ queryKey: ['exploration-all-marches'] });
       qc.invalidateQueries({ queryKey: ['event-all-marches'] });
+      // 🔭 Le rayon impacte le décompte d'espèces dans toutes les vues
+      qc.invalidateQueries({ queryKey: ['exploration-species-count'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-pool-raw'] });
+      qc.invalidateQueries({ queryKey: ['exploration-marche-ctx'] });
+      qc.invalidateQueries({ queryKey: ['event-biodiversity-snapshots-all'] });
+      qc.invalidateQueries({ queryKey: ['event-marcheur-observations'] });
+      qc.invalidateQueries({ queryKey: ['exploration-marches-radius'] });
       toast.success('Rayon de la marche enregistré');
     },
+
     onError: (err: any) => {
       console.error(err);
       toast.error("Impossible d'enregistrer le rayon de la marche");
@@ -91,7 +106,13 @@ export function useBulkUpdateMarchesRadius() {
       qc.invalidateQueries({ queryKey: ['marche-radius'] });
       qc.invalidateQueries({ queryKey: ['exploration-all-marches'] });
       qc.invalidateQueries({ queryKey: ['event-all-marches'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-count'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-pool-raw'] });
+      qc.invalidateQueries({ queryKey: ['exploration-marche-ctx'] });
+      qc.invalidateQueries({ queryKey: ['event-biodiversity-snapshots-all'] });
+      qc.invalidateQueries({ queryKey: ['event-marcheur-observations'] });
     },
+
     onError: (err: any) => {
       console.error(err);
       toast.error("Impossible d'appliquer le rayon en lot");

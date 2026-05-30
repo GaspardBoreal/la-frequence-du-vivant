@@ -19,6 +19,8 @@ import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 import { useSpeciesFilteredByPeriod } from '@/hooks/useSpeciesFilteredByPeriod';
 import type { EvolutionPeriod, DateSource } from '@/hooks/useBiodiversityEvolution';
+import { isSpeciesWithinRadius, isObservationWithinRadius, type MarcheGeoCtx } from '@/utils/speciesRadiusFilter';
+
 
 import TestimoniesTab from './insights/testimonies/TestimoniesTab';
 import ExplorationRadiusSummary from './exploration/ExplorationRadiusSummary';
@@ -141,19 +143,35 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     setRevealActive(false);
   }, []);
 
-  // Get marche IDs linked to this exploration
-  const { data: marcheIds } = useQuery({
-    queryKey: ['exploration-marche-ids', explorationId],
+  // Get marche IDs + per-marche geo context (lat/lon + resolved radius_m) for radius filtering
+  const { data: marcheCtxData } = useQuery({
+    queryKey: ['exploration-marche-ctx', explorationId],
     queryFn: async () => {
-      if (!explorationId) return [];
+      if (!explorationId) return { ids: [] as string[], ctxById: new Map<string, MarcheGeoCtx>() };
       const { data } = await supabase
         .from('exploration_marches')
-        .select('marche_id')
+        .select('marche_id, marches(latitude, longitude, radius_m), explorations(default_radius_m)')
         .eq('exploration_id', explorationId);
-      return data?.map(d => d.marche_id) || [];
+      const ids: string[] = [];
+      const ctxById = new Map<string, MarcheGeoCtx>();
+      (data || []).forEach((row: any) => {
+        if (!row.marche_id) return;
+        ids.push(row.marche_id);
+        const m = row.marches || {};
+        const e = row.explorations || {};
+        ctxById.set(row.marche_id, {
+          latitude: m.latitude ?? null,
+          longitude: m.longitude ?? null,
+          radius_m: m.radius_m ?? e.default_radius_m ?? 500,
+        });
+      });
+      return { ids, ctxById };
     },
     enabled: !!explorationId,
   });
+  const marcheIds = marcheCtxData?.ids;
+  const marcheCtxById = marcheCtxData?.ctxById;
+
 
   // Fetch ALL biodiversity snapshots for these marches.
   // Aligné avec la RPC unifiée `get_exploration_species_count` (Carnet/Carte):
@@ -278,13 +296,17 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       return tb > ta ? b : a;
     };
 
-    // 1. Snapshots iNat
+    // 1. Snapshots iNat — filtre par rayon résolu de chaque marche
     (snapshots || []).forEach(snap => {
       const speciesData = snap.species_data as any[] | null;
       if (!speciesData || !Array.isArray(speciesData)) return;
+      const ctx = marcheCtxById?.get(snap.marche_id);
+      const snapR = (snap as any).radius_meters ?? null;
       speciesData.forEach((sp: any) => {
+        if (ctx && !isSpeciesWithinRadius(sp, { ...ctx, snapshot_radius_m: snapR })) return;
         const key = normKey(sp.scientificName || sp.commonName || sp.id);
         if (!key) return;
+
         const spAttributions = Array.isArray(sp.attributions) ? sp.attributions : [];
         const computedLastSeen = computeLastSeen(spAttributions, snap.snapshot_date || '');
         const existing = speciesMap.get(key);
@@ -317,10 +339,14 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
 
     // 2. marcheur_observations — chaque ligne = 1 attribution (avec GPS exact iNat)
+    //    Filtre par rayon résolu de la marche (si GPS dispo).
     (marcheurObs || []).forEach((o: any) => {
+      const ctx = marcheCtxById?.get(o.marche_id);
+      if (ctx && !isObservationWithinRadius(o, ctx)) return;
       const sciName = o.species_scientific_name;
       const key = normKey(sciName);
       if (!key) return;
+
       const crew = o.exploration_marcheurs;
       const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim() || 'Contributeur iNaturalist';
       const inatId = o.inaturalist_observation_id;
@@ -360,7 +386,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
 
     return Array.from(speciesMap.values()).sort((a, b) => b.observations - a.observations);
-  }, [snapshots, marcheurObs]);
+  }, [snapshots, marcheurObs, marcheCtxById]);
 
   // Resolve French names once at the source, before passing to SpeciesExplorer.
   // Mirrors the strategy used by useExplorationSpeciesPool / Bioacoustique view.
