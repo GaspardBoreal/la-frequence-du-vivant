@@ -193,6 +193,29 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     enabled: !!marcheIds?.length,
   });
 
+  // Filtrer côté lecture le species_data de chaque snapshot par le rayon résolu
+  // de sa marche (override marches.radius_m → exploration.default_radius_m).
+  // Aligne la courbe « Pouls du vivant » avec Carte/L'Œil/compteur header.
+  const filteredSnapshots = useMemo(() => {
+    if (!snapshots?.length || !marcheCtxById) return snapshots;
+    return snapshots.map((snap: any) => {
+      const ctx = marcheCtxById.get(snap.marche_id);
+      if (!ctx) return snap;
+      const geoCtx: MarcheGeoCtx = {
+        latitude: ctx.latitude,
+        longitude: ctx.longitude,
+        radius_m: ctx.radius_m,
+        snapshot_radius_m: snap.radius_meters,
+      };
+      const filteredSp = (snap.species_data || []).filter((sp: any) =>
+        isSpeciesWithinRadius(sp, geoCtx),
+      );
+      return { ...snap, species_data: filteredSp };
+    });
+  }, [snapshots, marcheCtxById]);
+
+
+
 
   // Fetch marcheur observations (incl. iNat backfill) for these marches.
   // Source de vérité complémentaire des snapshots : permet d'intégrer dans
