@@ -106,7 +106,13 @@ export function useBulkUpdateMarchesRadius() {
       qc.invalidateQueries({ queryKey: ['marche-radius'] });
       qc.invalidateQueries({ queryKey: ['exploration-all-marches'] });
       qc.invalidateQueries({ queryKey: ['event-all-marches'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-count'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-pool-raw'] });
+      qc.invalidateQueries({ queryKey: ['exploration-marche-ctx'] });
+      qc.invalidateQueries({ queryKey: ['event-biodiversity-snapshots-all'] });
+      qc.invalidateQueries({ queryKey: ['event-marcheur-observations'] });
     },
+
     onError: (err: any) => {
       console.error(err);
       toast.error("Impossible d'appliquer le rayon en lot");
