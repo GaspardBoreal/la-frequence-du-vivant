@@ -296,13 +296,17 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       return tb > ta ? b : a;
     };
 
-    // 1. Snapshots iNat
+    // 1. Snapshots iNat — filtre par rayon résolu de chaque marche
     (snapshots || []).forEach(snap => {
       const speciesData = snap.species_data as any[] | null;
       if (!speciesData || !Array.isArray(speciesData)) return;
+      const ctx = marcheCtxById?.get(snap.marche_id);
+      const snapR = (snap as any).radius_meters ?? null;
       speciesData.forEach((sp: any) => {
+        if (ctx && !isSpeciesWithinRadius(sp, { ...ctx, snapshot_radius_m: snapR })) return;
         const key = normKey(sp.scientificName || sp.commonName || sp.id);
         if (!key) return;
+
         const spAttributions = Array.isArray(sp.attributions) ? sp.attributions : [];
         const computedLastSeen = computeLastSeen(spAttributions, snap.snapshot_date || '');
         const existing = speciesMap.get(key);
