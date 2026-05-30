@@ -1,91 +1,60 @@
-# Faire respecter le rayon par-marche partout (Carte, L'Œil, Synthèse)
+## Problème
 
-## Diagnostic confirmé en base
+Sur l'onglet **Synthèse → Pouls du vivant**, la courbe cumulative affiche **72 espèces** alors que :
+- le rayon paramétré sur la marche « Patio végétalisé ISEG » est **50 m** (override de `marches.radius_m`)
+- le compteur sous le titre montre déjà correctement **6 espèces** (via `overrideTotalSpecies`)
+- les cartes Marcheurs/iNat affichent aussi 6/6
 
-Pour la marche `Patio végétalisé ISEG` (exploration `75e1bb5f…`) :
+## Cause
 
-- `marches.radius_m = 50` ✅ (override bien enregistré)
-- Snapshot iNat actif : `radius_meters = 500`, `total_species = 71` (généré avant le changement de rayon)
-- L'onglet **Marches > Vivant** lit `marcheur_observations` (6 obs photos) → cohérent avec le patio.
-- Les onglets **Carte / Apprendre > L'Œil / Synthèse** comptent **tout le snapshot brut** sans tenir compte du rayon → 72 espèces.
+Dans `EventBiodiversityTab.tsx` (l. 182-194), la query `event-biodiversity-snapshots-all` charge les snapshots **bruts** (radius_meters = 500), puis les passe **tels quels** à `<BiodiversityEvolutionChart snapshots={snapshots} />`. Le hook `useBiodiversityEvolution` parcourt alors `snapshot.species_data[]` sans filtrer par GPS/rayon — d'où les 72 points cumulés issus de l'iNat 500 m.
 
-Bonne nouvelle : chaque espèce du `species_data` contient `attributions[].exactLatitude` / `exactLongitude`. On peut donc **filtrer les espèces par distance Haversine** sans rappeler iNat.
+Seul `overrideTotalSpecies` est patché côté header, mais la **série** (cumul + barres journalières) n'est pas filtrée. Idem `byDay` → le drawer du jour affiche aussi des espèces hors rayon.
 
-## Stratégie
+## Correctif
 
-Filtrer côté lecture (pas re-générer le snapshot) : une espèce ne « compte » pour une marche que si **au moins une de ses attributions iNat tombe dans `marche.radius_m`** autour du point GPS de la marche. Le snapshot reste source unique, le changement de rayon est instantané, pas d'appel API.
+Filtrer côté lecture les snapshots ET les `marcheur_observations` selon le contexte radius/coordonnées de chaque marche (`marcheCtxById`), en réutilisant les utilitaires existants `isSpeciesWithinRadius` / `isObservationWithinRadius` créés pour la Carte/L'Œil. Aucune régénération de snapshot.
 
-## Changements
+### 1. `src/components/community/EventBiodiversityTab.tsx`
 
-### 1. RPC `get_exploration_species_count` (source canonique)
+Ajouter, juste après la query `snapshots`, un memo `filteredSnapshots` :
 
-Nouvelle migration. Réécriture :
-
-```text
-WITH marche_ctx AS (
-  SELECT em.marche_id, m.latitude, m.longitude,
-         COALESCE(m.radius_m, e.default_radius_m, 500) AS radius_m
-  FROM exploration_marches em
-  JOIN marches m   ON m.id = em.marche_id
-  JOIN explorations e ON e.id = em.exploration_id
-  WHERE em.exploration_id = p_exploration_id
-),
-snap_species AS (
-  SELECT DISTINCT lower(sp->>'scientificName') AS sci
-  FROM biodiversity_snapshots bs
-  JOIN marche_ctx mc USING (marche_id)
-  CROSS JOIN LATERAL jsonb_array_elements(bs.species_data) AS sp
-  WHERE EXISTS (
-    SELECT 1
-    FROM jsonb_array_elements(COALESCE(sp->'attributions','[]'::jsonb)) AS att
-    WHERE haversine_m(
-            mc.latitude, mc.longitude,
-            (att->>'exactLatitude')::numeric,
-            (att->>'exactLongitude')::numeric
-          ) <= mc.radius_m
-  )
-)
-…
+```ts
+const filteredSnapshots = useMemo(() => {
+  if (!snapshots?.length || !marcheCtxById) return snapshots;
+  return snapshots.map(snap => {
+    const ctx = marcheCtxById.get(snap.marche_id);
+    if (!ctx) return snap;
+    const geoCtx: MarcheGeoCtx = {
+      latitude: ctx.latitude,
+      longitude: ctx.longitude,
+      radius_m: ctx.radius_m,
+      snapshot_radius_m: snap.radius_meters,
+    };
+    const filteredSp = (snap.species_data || []).filter(sp => isSpeciesWithinRadius(sp, geoCtx));
+    return { ...snap, species_data: filteredSp };
+  });
+}, [snapshots, marcheCtxById]);
 ```
 
-Ajout d'une fonction SQL `haversine_m(lat1, lon1, lat2, lon2)` si elle n'existe pas (sinon réutiliser). Fallback : si une espèce n'a aucune attribution avec GPS, on la garde uniquement quand `radius_m >= radius_meters` du snapshot (compat ancien).
+Puis remplacer `snapshots={snapshots}` par `snapshots={filteredSnapshots}` dans les deux `<BiodiversityEvolutionChart>` (l. 586 sous-onglet Synthèse, l. 665 sous-onglet Taxons).
 
-### 2. `src/hooks/useExplorationSpeciesPool.ts` (alimente L'Œil)
+### 2. `marcheCtxById` doit fournir `latitude/longitude/radius_m`
 
-- Charger en plus `marches.latitude/longitude/radius_m` + `explorations.default_radius_m` (déjà dispo via `useExplorationMarchesRadius`).
-- Après le fetch des snapshots et des `marcheur_observations`, filtrer chaque espèce : conserver uniquement celles dont au moins une attribution est à ≤ rayon résolu de la marche d'origine.
-- Utilitaire commun : `src/utils/speciesRadiusFilter.ts` (nouveau) exposant `isSpeciesWithinRadius(species, marcheCoords, radiusM)` et `filterSpeciesPoolByRadius(pool, marchesById)`.
+Vérifier que la query `exploration-marche-ctx` retourne déjà ces champs (sinon ajouter le SELECT). Le `MarcheGeoCtx` ne filtre pas si `latitude == null`, donc compat ascendante préservée.
 
-### 3. `src/components/community/EventBiodiversityTab.tsx` (Synthèse)
+### 3. Effet de bord positif
 
-Même filtrage que ci-dessus, avec la même util partagée, sur les deux queries lignes 162–197.
+- `byDay` est dérivé de la même série → le drawer « Détails du jour » s'aligne automatiquement.
+- Mode « Observations » : le compteur d'obs journalier reflète aussi le rayon.
+- L'`overrideTotalSpecies` reste utile car il vient du pool unifié (snapshots ∪ marcheur_observations dédupliqué).
 
-### 4. `src/components/community/exploration/ExplorationCarteTab.tsx` (compteur bas + markers carte)
+### Pas dans le scope
 
-Le compteur `unifiedTotalSpecies` viendra automatiquement de la RPC corrigée. En complément : filtrer les markers d'espèces affichés sur la carte avec la même util, pour éviter d'afficher des points iNat hors du cercle visible.
-
-## Détails techniques
-
-- **Util JS** (Haversine en mètres) :
-  ```ts
-  // src/utils/geoDistance.ts
-  export const haversineM = (lat1,lon1,lat2,lon2) => { … }
-  ```
-- **Source d'attributions** : `species.attributions[]` (iNat) + tolérance : si pas d'attribution GPS, on regarde `species.exactLatitude/Longitude` si présents, sinon on rejette dès que `radius_m < 500` (snapshot 500 m hérité).
-- **Invalidations React Query** : `useUpdateMarcheRadius` invalide déjà `marche-radius` / `exploration-marches-radius`. Ajouter l'invalidation de `['exploration-species-count', explorationId]`, `['exploration-species-pool', explorationId]` et de la query Synthèse pour rafraîchir les compteurs immédiatement après changement de rayon.
-- **Pas de regénération de snapshot** : décision explicite — on garde le snapshot à 500 m (pool de référence) et on rétrécit côté lecture. Avantage : changer de rayon est instantané et n'appelle pas iNat.
+- Ne pas régénérer `biodiversity_snapshots` (politique « filtre côté lecture » déjà actée).
+- Pas de changement RPC ni de migration.
+- Pas de modif visuelle de la courbe.
 
 ## Fichiers touchés
 
-- `supabase/migrations/<new>.sql` — RPC `get_exploration_species_count` + éventuel `haversine_m`.
-- `src/utils/geoDistance.ts` *(nouveau)*
-- `src/utils/speciesRadiusFilter.ts` *(nouveau)*
-- `src/hooks/useExplorationSpeciesPool.ts`
-- `src/components/community/EventBiodiversityTab.tsx`
-- `src/components/community/exploration/ExplorationCarteTab.tsx` (filtrage markers)
-- `src/hooks/useUpdateRadius.ts` (invalidations supplémentaires)
-
-## Hors scope
-
-- Régénération automatique du snapshot iNat au changement de rayon (pas nécessaire avec ce filtrage côté lecture).
-- Changement du sous-onglet Marches > Vivant (déjà correct).
+- `src/components/community/EventBiodiversityTab.tsx` (1 memo + 2 props remplacées)
