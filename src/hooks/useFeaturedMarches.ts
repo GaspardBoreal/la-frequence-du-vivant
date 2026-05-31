@@ -59,8 +59,8 @@ export const useFeaturedMarches = (limit: number = 5, includeAll: boolean = fals
 
       const marcheIds = marchesData.map(m => m.id);
 
-      // Fetch related data in parallel
-      const [photosResult, audioResult, biodiversityResult] = await Promise.all([
+      // Fetch related data in parallel (snapshots kept only for birds/plants breakdown)
+      const [photosResult, audioResult, biodiversityResult, canonicalCountsResult] = await Promise.all([
         supabase
           .from('marche_photos')
           .select('marche_id, url_supabase, ordre')
@@ -71,8 +71,11 @@ export const useFeaturedMarches = (limit: number = 5, includeAll: boolean = fals
           .in('marche_id', marcheIds),
         supabase
           .from('biodiversity_snapshots')
-          .select('marche_id, total_species, birds_count, plants_count')
+          .select('marche_id, birds_count, plants_count, snapshot_date')
           .in('marche_id', marcheIds)
+          .order('snapshot_date', { ascending: false }),
+        // ✅ Canonical per-marche species counts (respects each marche's radius_m)
+        supabase.rpc('get_marches_species_counts', { p_marche_ids: marcheIds }),
       ]);
 
       // Count photos per marche and get cover photo
@@ -81,7 +84,6 @@ export const useFeaturedMarches = (limit: number = 5, includeAll: boolean = fals
       
       (photosResult.data || []).forEach(photo => {
         photosCountByMarche[photo.marche_id] = (photosCountByMarche[photo.marche_id] || 0) + 1;
-        // Keep the first photo (lowest ordre) as cover
         if (!coverPhotoByMarche[photo.marche_id] || (photo.ordre || 999) < 999) {
           coverPhotoByMarche[photo.marche_id] = photo.url_supabase;
         }
@@ -93,15 +95,34 @@ export const useFeaturedMarches = (limit: number = 5, includeAll: boolean = fals
         audioCountByMarche[audio.marche_id] = (audioCountByMarche[audio.marche_id] || 0) + 1;
       });
 
-      // Aggregate biodiversity stats per marche
+      // Canonical total_species per marche
+      const canonicalByMarche: Record<string, number> = {};
+      ((canonicalCountsResult.data as any[]) || []).forEach((row: any) => {
+        canonicalByMarche[row.marche_id] = row.species_count || 0;
+      });
+
+      // Birds/plants breakdown — use latest snapshot per marche only (best-effort)
       const biodiversityByMarche: Record<string, { total_species: number; birds_count: number; plants_count: number }> = {};
       (biodiversityResult.data || []).forEach(snapshot => {
         if (!biodiversityByMarche[snapshot.marche_id]) {
-          biodiversityByMarche[snapshot.marche_id] = { total_species: 0, birds_count: 0, plants_count: 0 };
+          biodiversityByMarche[snapshot.marche_id] = {
+            total_species: canonicalByMarche[snapshot.marche_id] ?? 0,
+            birds_count: snapshot.birds_count || 0,
+            plants_count: snapshot.plants_count || 0,
+          };
         }
-        biodiversityByMarche[snapshot.marche_id].total_species += snapshot.total_species || 0;
-        biodiversityByMarche[snapshot.marche_id].birds_count += snapshot.birds_count || 0;
-        biodiversityByMarche[snapshot.marche_id].plants_count += snapshot.plants_count || 0;
+      });
+      // Ensure every marche has an entry with canonical total
+      marcheIds.forEach((id) => {
+        if (!biodiversityByMarche[id]) {
+          biodiversityByMarche[id] = {
+            total_species: canonicalByMarche[id] ?? 0,
+            birds_count: 0,
+            plants_count: 0,
+          };
+        } else {
+          biodiversityByMarche[id].total_species = canonicalByMarche[id] ?? biodiversityByMarche[id].total_species;
+        }
       });
 
       // Build featured marches with completeness score
