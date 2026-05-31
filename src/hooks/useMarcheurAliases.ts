@@ -47,11 +47,15 @@ export const useMarcheurAliases = (
       if (!profile?.id) return Array.from(set);
       const { data: accounts } = await supabase
         .from('community_profile_science_accounts')
-        .select('username')
+        .select('network, username, external_id')
         .eq('profile_id', profile.id);
       (accounts || []).forEach((a: any) => {
         const u = normalizeAlias(a.username || '');
         if (u) set.add(u);
+        // ID numérique iNat — clé d'identité canonique la + stable
+        if (a.network === 'inaturalist' && a.external_id) {
+          set.add(`inat:${String(a.external_id).trim()}`);
+        }
       });
       return Array.from(set);
     },
@@ -109,18 +113,21 @@ export const useMarcheursAliasesMap = (
         if (profileIds.length) {
           const { data: accounts } = await supabase
             .from('community_profile_science_accounts')
-            .select('profile_id, username')
+            .select('profile_id, network, username, external_id')
             .in('profile_id', profileIds);
 
-          // userId -> [usernames]
+          // userId -> [usernames + inat:<id>]
           const aliasesByUserId = new Map<string, string[]>();
           (accounts || []).forEach((a: any) => {
             const uid = profileIdToUserId.get(a.profile_id);
             if (!uid) return;
-            const norm = normalizeAlias(a.username || '');
-            if (!norm) return;
             const arr = aliasesByUserId.get(uid) || [];
-            arr.push(norm);
+            const norm = normalizeAlias(a.username || '');
+            if (norm) arr.push(norm);
+            // ID numérique iNat — clé canonique stable
+            if (a.network === 'inaturalist' && a.external_id) {
+              arr.push(`inat:${String(a.external_id).trim()}`);
+            }
             aliasesByUserId.set(uid, arr);
           });
 
