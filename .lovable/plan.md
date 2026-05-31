@@ -1,80 +1,40 @@
-## Objectif
-Faire en sorte que **toutes les vues** affichent le même total d’espèces pour une même entité, avec une seule règle de calcul, en respectant le **rayon spécifique de chaque marche**.
+## Diagnostic confirmé
 
-## Diagnostic
-- **Carnet** affiche encore `77 espèces` car il passe par `useMarcheCollectedData`, qui **recalcule localement** un total par exploration puis l’**assigne tel quel à chaque événement** de cette exploration.
-- Concrètement, `useMarcheCollectedData` prend `exploration_id`, récupère toutes les `exploration_marches`, fusionne snapshots + marcheur_observations, puis écrit `summaries[event.id].species_count = explorationSpeciesCounts[event.exploration_id]`.
-- Donc si un événement correspond à **une seule marche** dans une exploration plus large, la carte Carnet peut afficher le **total de l’exploration** au lieu du **total de la marche réellement vécue**.
-- Le problème de fond est structurel : `marche_events` a bien `exploration_id`, mais **pas de lien explicite vers la/les `marches` concernées**. Tant que ce lien n’est pas canonique, chaque vue peut ré-inférer différemment, et les écarts reviendront.
+L'utilisatrice "Elsa B / @elsab12" s'est renommée sur iNat en "marie Claude mazaud / @marie_claude25846". Les snapshots contiennent déjà son ID iNat numérique immuable : **`observerId = 10613937`** (capturé par le backfill et l'ingestion). Le compte d'Elsa B en base ne stocke que l'ancien username — pas l'ID numérique → le filtre ne fait jamais le lien.
 
-## Solution proposée
-### 1. Créer une source de vérité canonique au niveau **événement**
-Ajouter une couche DB qui calcule :
-- **par marche** : déjà couvert par `get_marche_species_count`
-- **par exploration** : déjà couvert par `get_exploration_species_count`
-- **par événement** : nouvelle RPC canonique, basée sur les **marches réellement rattachées à l’événement**
+## Solution C — pérennise contre tous les renommages iNat futurs
 
-Règle unique :
-```text
-entité -> marches liées -> filtre radius par marche -> union dédupliquée par nom scientifique normalisé
-```
+### Migration (déjà appliquée ✅)
+- `external_id = '10613937'` sur le compte iNat d'Elsa B.
+- Index unique partiel `(profile_id, network, external_id)` + index de lookup `(network, external_id)`.
 
-### 2. Rendre explicite le lien `marche_event -> marche(s)`
-Pour éviter toute ré-inférence fragile, introduire un mapping canonique en base :
-- soit `marche_event_marches(marche_event_id, marche_id, ordre)`
-- soit un champ direct si la relation est strictement 1→1
+### Code à écrire (à faire en build mode)
 
-Je recommande la **table de mapping**, car elle couvre les cas futurs et les cas mixtes sans hypothèse cachée.
+**1. `src/utils/citizenIdentity.ts`** — Resolver hiérarchique :
+- Clé canonique = `inat:<observerId>` (top), puis `observerLogin`, puis alias normalisé.
+- Pass A : indexe alias/login → `inat:<id>` à partir de toute attribution exposant un `observerId`.
+- Pass B : `resolve()` retourne la clé canonique réconciliée.
+- Effet : "marie Claude mazaud" (legacy) et "elsab12" (futur) tombent tous sur `inat:10613937`.
 
-### 3. Backfill robuste des données existantes
-Remplir ce mapping avec une stratégie sûre :
-- si l’exploration de l’événement ne contient **qu’une seule marche** → liaison automatique
-- sinon, inférence depuis les tables qui portent déjà `marche_event_id` **et** `marche_id` (`marcheur_medias`, `marcheur_audio`, `marcheur_textes`, etc.)
-- si ambiguïté persistante → marquer l’événement comme **à vérifier**, au lieu d’afficher un total faux
+**2. `src/hooks/useMarcheurAliases.ts`** — `useMarcheurAliases` + `useMarcheursAliasesMap` lisent aussi `external_id` depuis `community_profile_science_accounts`, et ajoutent `inat:<external_id>` au set d'alias. Le filtre `useExplorationCitizenContributors` exclura alors toute attribution canonicalisée sur cet ID.
 
-### 4. Faire consommer cette méthode commune par toutes les vues
-Remplacer les calculs locaux restants par les RPC canoniques :
-- **Carnet** : `useMarcheCollectedData` doit lire le total **par événement** via la nouvelle RPC, pas recalculer par exploration
-- **Listes / cartes / badges d’événements** : mêmes RPC canoniques
-- **Vues publiques** et autres compteurs événementiels encore basés sur snapshots locaux : les réaligner sur la même couche
-- garder `get_exploration_species_count` pour les vues **exploration**, et `get_marche_species_count` pour les vues **marche**
+**3. `src/hooks/useScienceAccounts.ts`** + **`src/components/admin/community/ScienceAccountsEditor.tsx`** :
+- `useUpsertScienceAccount` accepte `external_id` et `display_name`.
+- À la sauvegarde d'un compte iNat, appel automatique en arrière-plan à `resolve-inaturalist-user` (mode login) → récupère `id` + `name` → patch la row.
 
-## Implémentation
-1. **Migration Supabase**
-   - créer la table de mapping `marche_event_marches`
-   - backfill des correspondances existantes
-   - créer une RPC batch `get_marche_event_species_counts(p_event_ids uuid[])`
-   - créer éventuellement une RPC unitaire `get_marche_event_species_count(p_event_id uuid)`
-   - faire reposer cette RPC sur la même logique que `get_marche_species_count` / `get_exploration_species_count`
+**4. `supabase/functions/resolve-inaturalist-user/index.ts`** :
+- Accepte un nouveau mode `{ login: "elsab12" }` → appelle `https://api.inaturalist.org/v1/users/<login>`.
+- Le payload renvoyé inclut désormais `id` (numérique).
 
-2. **Refactor frontend**
-   - modifier `useMarcheCollectedData` pour ne plus calculer `species_count` côté client
-   - injecter le résultat de la RPC canonique par `marche_event_id`
-   - conserver les autres compteurs (photos/audio/textes/kigo) si leur logique actuelle est correcte
+**5. Mise à jour de la mémoire** `mem://technical/community/identity-matching-logic` pour documenter la hiérarchie `observerId > observerLogin > alias`.
 
-3. **Audit des consommateurs**
-   - remplacer les derniers usages de `total_species` ou de déductions locales qui affichent un total d’espèces à l’utilisateur
-   - vérifier en particulier les compteurs liés aux événements et aux listes
+### Hors scope
+- Pas besoin de toucher l'ingestion (`biodiversity-data`) ni le backfill (`backfill-snapshot-observer-login`) : tous deux capturent déjà `observerId`.
+- Pas besoin de re-générer les `marcheur_observations` : l'attribution est déjà en place via le trigger existant.
 
-4. **Garde-fous**
-   - si un événement n’a aucune marche liée de façon certaine, ne jamais retomber sur un total exploration “par défaut”
-   - retourner plutôt `0` + état explicite/loggable, ou exclure du calcul jusqu’à résolution
-   - documenter la règle comme mémoire technique du projet
+### Résultat attendu
+- Le bloc "+3 contributeurs citoyens iNaturalist" perd l'entrée `marie Claude mazaud · @elsab12 · 6 espèces`.
+- Les 6 espèces restent comptées dans Elsa B (déjà le cas via marcheur_observations).
+- Tout renommage futur d'un marcheur sur iNat n'a plus d'impact sur l'app.
 
-## Détails techniques
-- La hiérarchie de rayon reste inchangée et s’applique **marche par marche** :
-```text
-marches.radius_m
-  -> explorations.default_radius_m
-  -> 500
-```
-- Le total d’un événement multi-marches sera :
-```text
-union dédupliquée des espèces canoniques de chacune de ses marches
-```
-- Ainsi, un événement avec 150m pour une marche et 500m pour une autre restera exact, sans recalcul divergent selon la vue.
-
-## Résultat attendu
-- **Carnet** n’affichera plus `77` pour `ROQUE GAGEAC / Jardin` si l’événement ne correspond qu’à la marche canonique à `72` ou `44` selon son rattachement réel.
-- Plus aucun écran ne pourra afficher un total différent pour la même entité tant qu’il consomme la couche canonique.
-- On supprime la cause racine : **l’absence de méthode événementielle canonique et l’inférence implicite exploration → événement**.
+**Passe en build mode pour que j'applique les 5 changements de code.**

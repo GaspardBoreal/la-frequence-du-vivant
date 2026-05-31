@@ -4,22 +4,27 @@ import type { BiodiversityObservation } from '@/types/biodiversity';
 /**
  * Identité canonique d'un contributeur science citoyenne.
  *
- * Pour iNaturalist :
- *  - clé prioritaire = `observerLogin` (slug d'URL, immuable, ex: `les-marches-du-vivant`)
- *  - fallback = `normalizeAlias(observerName)` pour les snapshots historiques
- *    ingérés avant que `observerLogin` ne soit capturé.
+ * Hiérarchie de clés (de la + stable à la + fragile) :
+ *  1. `inat:<observerId>`   — ID iNat numérique immuable (résiste aux renommages)
+ *  2. `observerLogin`       — slug d'URL iNat (immuable tant que pas renommé)
+ *  3. `normalizeAlias(observerName)` — nom affiché (fragile)
  *
- * Pour eBird / GBIF (pas de notion de login stable côté API) :
- *  - on retombe sur `normalizeAlias(observerName)`.
+ * Pour eBird / GBIF (pas de notion d'ID stable côté API ingestion),
+ * on retombe sur observerLogin puis name.
  *
  * ⚠ Pour dédupliquer dans une LISTE d'attributions, utiliser plutôt
- * `buildCitizenIdentityResolver(...)` ci-dessous : il réconcilie les
- * legacy (sans login) avec les rows enrichies (avec login) du même observateur.
+ * `buildCitizenIdentityResolver(...)` : il réconcilie les attributions
+ * legacy (sans login/id) avec celles enrichies du même observateur.
  *
  * Voir mem://technical/community/identity-matching-logic.
  */
 export const citizenIdentityKey = (a: Partial<BiodiversityObservation> | null | undefined): string => {
   if (!a) return '';
+  const id = (a as any).observerId;
+  const source = (a.source || '').toString().toLowerCase();
+  if (id != null && id !== '' && (source === 'inaturalist' || !source)) {
+    return `inat:${String(id)}`;
+  }
   const login = (a.observerLogin || '').toString().toLowerCase().trim();
   if (login) return login;
   return normalizeAlias(a.observerName || '');
@@ -37,39 +42,54 @@ export const citizenDisplayName = (a: Partial<BiodiversityObservation> | null | 
 /**
  * Construit un resolver d'identité en 2 passes pour un POOL d'attributions.
  *
- * Pass A : index `normalizeAlias(name) → observerLogin` à partir de toute
- *          attribution qui possède LES DEUX champs.
- * Pass B : `resolve(attr)` retourne le login canonique si :
- *          - l'attribution a déjà un `observerLogin`, OU
- *          - son `normalizeAlias(name)` matche une entrée connue dans l'index.
- *          Sinon retombe sur `normalizeAlias(name)`.
+ * Pass A.1 : ancre alias et login → `inat:<observerId>` pour toute attribution
+ *            exposant un observerId (le + stable).
+ * Pass A.2 : à défaut, ancre alias → observerLogin pour toute attribution
+ *            exposant un login.
+ * Pass B   : `resolve()` retourne la clé canonique réconciliée, dans l'ordre :
+ *            observerId, login mappé, alias mappé, login brut, alias brut.
  *
- * Conséquence : dès qu'AU MOINS UNE attribution d'un observateur a été
- * enrichie (par ingestion ou backfill), TOUTES ses autres attributions
- * legacy sont automatiquement réconciliées sous la même identité.
- *
- * Garantit la robustesse du filtre observateurs même si le backfill est
- * incomplet ou si certaines obs iNat sont supprimées/privées.
+ * Conséquence : dès qu'AU MOINS UNE attribution d'un observateur a un
+ * `observerId`, toutes ses autres attributions du même pool — y compris
+ * celles où il s'est renommé entre temps — tombent sous `inat:<id>`.
  */
 export const buildCitizenIdentityResolver = (
   attributions: Iterable<Partial<BiodiversityObservation> | null | undefined>,
 ) => {
-  const aliasToLogin = new Map<string, string>();
+  const loginToCanonical = new Map<string, string>();
+  const aliasToCanonical = new Map<string, string>();
+
+  // Pass A.1 : ancrer sur observerId
   for (const a of attributions) {
     if (!a) continue;
+    const id = (a as any).observerId;
+    if (id == null || id === '') continue;
+    const canonical = `inat:${String(id)}`;
+    const login = (a.observerLogin || '').toString().toLowerCase().trim();
+    if (login && !loginToCanonical.has(login)) loginToCanonical.set(login, canonical);
+    const alias = normalizeAlias(a.observerName || '');
+    if (alias && !aliasToCanonical.has(alias)) aliasToCanonical.set(alias, canonical);
+  }
+
+  // Pass A.2 : à défaut, ancrer sur observerLogin
+  for (const a of attributions) {
+    if (!a) continue;
+    if ((a as any).observerId != null && (a as any).observerId !== '') continue;
     const login = (a.observerLogin || '').toString().toLowerCase().trim();
     if (!login) continue;
+    if (!loginToCanonical.has(login)) loginToCanonical.set(login, login);
     const alias = normalizeAlias(a.observerName || '');
-    if (!alias) continue;
-    // Premier login gagne (déterministe pour un pool donné)
-    if (!aliasToLogin.has(alias)) aliasToLogin.set(alias, login);
+    if (alias && !aliasToCanonical.has(alias)) aliasToCanonical.set(alias, login);
   }
+
   return (a: Partial<BiodiversityObservation> | null | undefined): string => {
     if (!a) return '';
+    const id = (a as any).observerId;
+    if (id != null && id !== '') return `inat:${String(id)}`;
     const login = (a.observerLogin || '').toString().toLowerCase().trim();
-    if (login) return login;
+    if (login) return loginToCanonical.get(login) || login;
     const alias = normalizeAlias(a.observerName || '');
     if (!alias) return '';
-    return aliasToLogin.get(alias) || alias;
+    return aliasToCanonical.get(alias) || alias;
   };
 };
