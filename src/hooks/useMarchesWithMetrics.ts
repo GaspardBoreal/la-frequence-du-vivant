@@ -14,38 +14,41 @@ export const useMarchesWithMetrics = () => {
   return useQuery({
     queryKey: ['marches-with-metrics'],
     queryFn: async (): Promise<MarcheWithMetrics[]> => {
-      // Get marches and calculate species count
-      const [marchesResult, biodiversityResult] = await Promise.all([
-        supabase.from('marches').select('id, ville, nom_marche, region'),
-        supabase.from('biodiversity_snapshots').select('marche_id, total_species')
-      ]);
+      const { data: marchesData, error } = await supabase
+        .from('marches')
+        .select('id, ville, nom_marche, region');
+      if (error) throw error;
 
-      if (marchesResult.error) throw marchesResult.error;
-      if (biodiversityResult.error) throw biodiversityResult.error;
+      const marcheIds = (marchesData || []).map((m) => m.id);
+      let speciesCountByMarche: Record<string, number> = {};
 
-      const marchesData = marchesResult.data || [];
-      const biodiversityData = biodiversityResult.data || [];
+      if (marcheIds.length > 0) {
+        // ✅ Canonical per-marche count via batch RPC (respects each marche's radius)
+        const { data: counts } = await supabase.rpc('get_marches_species_counts', {
+          p_marche_ids: marcheIds,
+        });
+        speciesCountByMarche = ((counts as any[]) || []).reduce((acc, row) => {
+          acc[row.marche_id] = row.species_count || 0;
+          return acc;
+        }, {} as Record<string, number>);
+      }
 
-      // Calculate species count per marche
-      const speciesCountByMarche = biodiversityData.reduce((acc, snapshot) => {
-        if (!acc[snapshot.marche_id]) {
-          acc[snapshot.marche_id] = 0;
-        }
-        acc[snapshot.marche_id] += snapshot.total_species || 0;
-        return acc;
-      }, {} as Record<string, number>);
-
-      return marchesData.map(marche => ({
-        id: marche.id,
-        ville: marche.ville || 'Non défini',
-        nom_marche: marche.nom_marche,
-        region: marche.region || 'Non défini',
-        total_species: speciesCountByMarche[marche.id] || 0,
-        display_name: `${marche.ville || 'Non défini'}${marche.nom_marche ? ` - ${marche.nom_marche}` : ''} (${speciesCountByMarche[marche.id] || 0} espèces)`
-      })).sort((a, b) => a.display_name.localeCompare(b.display_name));
+      return (marchesData || [])
+        .map((marche) => {
+          const total = speciesCountByMarche[marche.id] || 0;
+          return {
+            id: marche.id,
+            ville: marche.ville || 'Non défini',
+            nom_marche: marche.nom_marche,
+            region: marche.region || 'Non défini',
+            total_species: total,
+            display_name: `${marche.ville || 'Non défini'}${marche.nom_marche ? ` - ${marche.nom_marche}` : ''} (${total} espèces)`,
+          };
+        })
+        .sort((a, b) => a.display_name.localeCompare(b.display_name));
     },
-    staleTime: 1000 * 60 * 30, // 30 minutes
-    gcTime: 1000 * 60 * 60 * 2, // 2 hours
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
     retry: 2,
   });
 };
