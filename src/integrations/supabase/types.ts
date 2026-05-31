@@ -5665,6 +5665,11 @@ export type Database = {
         }
         Returns: Json
       }
+      get_marche_species_count: { Args: { p_marche_id: string }; Returns: Json }
+      get_marches_species_counts: {
+        Args: { p_marche_ids: string[] }
+        Returns: Json
+      }
       get_marcheur_activity_dashboard: {
         Args: never
         Returns: {
