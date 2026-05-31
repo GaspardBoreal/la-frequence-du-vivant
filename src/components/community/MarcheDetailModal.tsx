@@ -1024,6 +1024,19 @@ export const VivantTab: React.FC<{
     dateFilter: 'recent',
   });
 
+  // ✅ Canonical persisted species count for this marche (radius-aware, dedup, snapshots ∪ marcheur)
+  // This is THE figure that must match every other view (Carte / Synthèse / Apprendre / Liste).
+  const { data: canonicalCount } = useQuery({
+    queryKey: ['marche-canonical-species-count', marcheId, radiusCtx?.marcheRadiusM, radiusCtx?.explorationDefaultM],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_marche_species_count', { p_marche_id: marcheId });
+      if (error) throw error;
+      return (data as any)?.total ?? 0;
+    },
+    enabled: !!marcheId,
+    staleTime: 1000 * 60,
+  });
+
   // Silent sync to biodiversity_snapshots after live data arrives
   useEffect(() => {
     if (!biodiversityData?.species || !biodiversityData.summary || !coords || !marcheId) return;
@@ -1045,6 +1058,7 @@ export const VivantTab: React.FC<{
         if (!error) {
           queryClient.invalidateQueries({ queryKey: ['event-biodiversity-snapshots'] });
           queryClient.invalidateQueries({ queryKey: ['biodiversity-snapshots'] });
+          queryClient.invalidateQueries({ queryKey: ['marche-canonical-species-count', marcheId] });
         }
       } catch (err) {
         console.warn('⚠️ Snapshot sync error (non-blocking):', err);
@@ -1053,6 +1067,7 @@ export const VivantTab: React.FC<{
 
     syncSnapshot();
   }, [biodiversityData, coords, marcheId, queryClient]);
+
 
   const explorerLink = marcheSlug ? `/bioacoustique/${marcheSlug}` : null;
 
