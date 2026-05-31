@@ -79,13 +79,24 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         };
       }
 
-      // Fetch biodiversity snapshots for these marches
-      // IMPORTANT: Only take the most recent snapshot per marche to avoid counting duplicates
+      // Canonical per-exploration + per-marche species counts via RPC
+      // (respects each marche's radius_m override or exploration default)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_exploration_species_count', {
+        p_exploration_id: explorationId,
+      });
+      if (rpcError) throw rpcError;
+      const rpcTotal = (rpcData as any)?.total ?? 0;
+      const rpcByKingdom = (rpcData as any)?.by_kingdom ?? {};
+      const byMarcheCount = new Map<string, number>(
+        ((rpcData as any)?.by_marche ?? []).map((x: any) => [x.marche_id as string, x.species_count as number])
+      );
+
+      // Fetch biodiversity snapshots for these marches (used to enrich gallery/photos only)
       const { data: snapshots, error: snapshotsError } = await supabase
         .from('biodiversity_snapshots')
         .select('*')
         .in('marche_id', marcheIds)
-        .order('created_at', { ascending: false });
+        .order('snapshot_date', { ascending: false });
 
       if (snapshotsError) throw snapshotsError;
 
@@ -97,13 +108,14 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         }
       });
 
-      // Calculate aggregated metrics using unique species across all marches
+      // Aggregate species data (for gallery/topSpecies/photos only — NOT the headline count)
       const uniqueSpeciesMap = new Map<string, { count: number; scientificName: string; kingdom: string; photos: string[] }>();
 
       const speciesByMarche = explorationMarches?.map(em => {
         const marche = em.marche as any;
         const snapshot = latestSnapshotsByMarche.get(em.marche_id);
-        const speciesCount = snapshot?.total_species || 0;
+        // ✅ Canonical count from RPC (per-marche radius respected)
+        const speciesCount = byMarcheCount.get(em.marche_id) ?? 0;
         
         if (snapshot) {
 
