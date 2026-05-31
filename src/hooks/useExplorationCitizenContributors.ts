@@ -106,6 +106,9 @@ export function useExplorationCitizenContributors(
             if (!observerName || source !== 'inaturalist') continue;
             const canonical = resolve(a);
             if (!canonical) continue;
+            // Defense-in-depth : on teste TOUTES les formes (inat:id, login, alias)
+            // pour ne pas dépendre du backfill `external_id`.
+            if (matchesKnownMarcheur(a, knownAliases)) continue;
             if (knownAliases && knownAliases.has(canonical)) continue;
 
             const key = `${source}|${canonical}`;
