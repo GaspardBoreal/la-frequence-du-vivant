@@ -260,30 +260,25 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         }
       });
 
-      // Calculate total unique species (deduplicated across all marches)
-      const totalSpecies = uniqueSpeciesMap.size;
+      // Calculate total unique species — CANONICAL from RPC (single source of truth)
+      const totalSpecies = rpcTotal;
 
       // Fetch French translations for all species to enable multilingual search
-      // Use case-insensitive matching since scientific names may have different casing
       const scientificNames = Array.from(uniqueSpeciesMap.values()).map(s => s.scientificName);
       const lowerCaseNames = scientificNames.map(n => n.toLowerCase());
       
-      // Fetch all translations and filter client-side for case-insensitive matching
       const { data: allTranslations } = await supabase
         .from('species_translations')
         .select('scientific_name, common_name_fr');
       
-      // Filter to only relevant translations (case-insensitive)
       const relevantTranslations = allTranslations?.filter(t => 
         lowerCaseNames.includes(t.scientific_name.toLowerCase())
       ) || [];
 
-      // Build translation lookup map (case-insensitive keys)
       const translationMap = new Map<string, string | null>(
         relevantTranslations.map(t => [t.scientific_name.toLowerCase(), t.common_name_fr])
       );
 
-      // Get all species sorted by count, enriched with French names
       const allSpecies = Array.from(uniqueSpeciesMap.entries())
         .sort((a, b) => b[1].count - a[1].count)
         .map(([name, data]) => ({
@@ -295,10 +290,8 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
           photos: data.photos,
         }));
 
-      // Top 10 for podium
       const topSpecies = allSpecies.slice(0, 10);
 
-      // Prepare gradient data (sorted by order for river visualization)
       const gradientData = speciesByMarche
         .sort((a, b) => a.order - b.order)
         .map(m => ({
@@ -308,31 +301,26 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
           order: m.order,
         }));
 
-      // Recalculate kingdom counts from uniqueSpeciesMap (same logic as EventBiodiversityTab)
-      let birds = 0;
-      let plants = 0;
-      let fungi = 0;
-      let others = 0;
-      for (const [, data] of uniqueSpeciesMap) {
-        const k = data.kingdom;
-        if (k === 'Animalia') birds++;
-        else if (k === 'Plantae') plants++;
-        else if (k === 'Fungi') fungi++;
-        else others++;
-      }
+      // ✅ Kingdom breakdown from RPC (canonical, radius-aware, deduplicated)
+      const speciesByKingdom = {
+        birds: rpcByKingdom.animalia ?? 0,
+        plants: rpcByKingdom.plantae ?? 0,
+        fungi: rpcByKingdom.fungi ?? 0,
+        others: rpcByKingdom.others ?? 0,
+      };
 
       return {
         totalSpecies,
         totalMarches: marcheIds.length,
         speciesByMarche,
-        speciesByKingdom: { birds, plants, fungi, others },
+        speciesByKingdom,
         topSpecies,
         allSpecies,
         gradientData,
       };
     },
     enabled: !!explorationId,
-    staleTime: 1000 * 60 * 30, // 30 minutes
-    gcTime: 1000 * 60 * 60 * 2, // 2 hours
+    staleTime: 1000 * 60, // 1 minute (aligned with other canonical hooks)
+    gcTime: 1000 * 60 * 30,
   });
 };
