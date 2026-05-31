@@ -1,60 +1,80 @@
-## Problème
+## Objectif
+Faire en sorte que **toutes les vues** affichent le même total d’espèces pour une même entité, avec une seule règle de calcul, en respectant le **rayon spécifique de chaque marche**.
 
-Sur l'onglet **Synthèse → Pouls du vivant**, la courbe cumulative affiche **72 espèces** alors que :
-- le rayon paramétré sur la marche « Patio végétalisé ISEG » est **50 m** (override de `marches.radius_m`)
-- le compteur sous le titre montre déjà correctement **6 espèces** (via `overrideTotalSpecies`)
-- les cartes Marcheurs/iNat affichent aussi 6/6
+## Diagnostic
+- **Carnet** affiche encore `77 espèces` car il passe par `useMarcheCollectedData`, qui **recalcule localement** un total par exploration puis l’**assigne tel quel à chaque événement** de cette exploration.
+- Concrètement, `useMarcheCollectedData` prend `exploration_id`, récupère toutes les `exploration_marches`, fusionne snapshots + marcheur_observations, puis écrit `summaries[event.id].species_count = explorationSpeciesCounts[event.exploration_id]`.
+- Donc si un événement correspond à **une seule marche** dans une exploration plus large, la carte Carnet peut afficher le **total de l’exploration** au lieu du **total de la marche réellement vécue**.
+- Le problème de fond est structurel : `marche_events` a bien `exploration_id`, mais **pas de lien explicite vers la/les `marches` concernées**. Tant que ce lien n’est pas canonique, chaque vue peut ré-inférer différemment, et les écarts reviendront.
 
-## Cause
+## Solution proposée
+### 1. Créer une source de vérité canonique au niveau **événement**
+Ajouter une couche DB qui calcule :
+- **par marche** : déjà couvert par `get_marche_species_count`
+- **par exploration** : déjà couvert par `get_exploration_species_count`
+- **par événement** : nouvelle RPC canonique, basée sur les **marches réellement rattachées à l’événement**
 
-Dans `EventBiodiversityTab.tsx` (l. 182-194), la query `event-biodiversity-snapshots-all` charge les snapshots **bruts** (radius_meters = 500), puis les passe **tels quels** à `<BiodiversityEvolutionChart snapshots={snapshots} />`. Le hook `useBiodiversityEvolution` parcourt alors `snapshot.species_data[]` sans filtrer par GPS/rayon — d'où les 72 points cumulés issus de l'iNat 500 m.
-
-Seul `overrideTotalSpecies` est patché côté header, mais la **série** (cumul + barres journalières) n'est pas filtrée. Idem `byDay` → le drawer du jour affiche aussi des espèces hors rayon.
-
-## Correctif
-
-Filtrer côté lecture les snapshots ET les `marcheur_observations` selon le contexte radius/coordonnées de chaque marche (`marcheCtxById`), en réutilisant les utilitaires existants `isSpeciesWithinRadius` / `isObservationWithinRadius` créés pour la Carte/L'Œil. Aucune régénération de snapshot.
-
-### 1. `src/components/community/EventBiodiversityTab.tsx`
-
-Ajouter, juste après la query `snapshots`, un memo `filteredSnapshots` :
-
-```ts
-const filteredSnapshots = useMemo(() => {
-  if (!snapshots?.length || !marcheCtxById) return snapshots;
-  return snapshots.map(snap => {
-    const ctx = marcheCtxById.get(snap.marche_id);
-    if (!ctx) return snap;
-    const geoCtx: MarcheGeoCtx = {
-      latitude: ctx.latitude,
-      longitude: ctx.longitude,
-      radius_m: ctx.radius_m,
-      snapshot_radius_m: snap.radius_meters,
-    };
-    const filteredSp = (snap.species_data || []).filter(sp => isSpeciesWithinRadius(sp, geoCtx));
-    return { ...snap, species_data: filteredSp };
-  });
-}, [snapshots, marcheCtxById]);
+Règle unique :
+```text
+entité -> marches liées -> filtre radius par marche -> union dédupliquée par nom scientifique normalisé
 ```
 
-Puis remplacer `snapshots={snapshots}` par `snapshots={filteredSnapshots}` dans les deux `<BiodiversityEvolutionChart>` (l. 586 sous-onglet Synthèse, l. 665 sous-onglet Taxons).
+### 2. Rendre explicite le lien `marche_event -> marche(s)`
+Pour éviter toute ré-inférence fragile, introduire un mapping canonique en base :
+- soit `marche_event_marches(marche_event_id, marche_id, ordre)`
+- soit un champ direct si la relation est strictement 1→1
 
-### 2. `marcheCtxById` doit fournir `latitude/longitude/radius_m`
+Je recommande la **table de mapping**, car elle couvre les cas futurs et les cas mixtes sans hypothèse cachée.
 
-Vérifier que la query `exploration-marche-ctx` retourne déjà ces champs (sinon ajouter le SELECT). Le `MarcheGeoCtx` ne filtre pas si `latitude == null`, donc compat ascendante préservée.
+### 3. Backfill robuste des données existantes
+Remplir ce mapping avec une stratégie sûre :
+- si l’exploration de l’événement ne contient **qu’une seule marche** → liaison automatique
+- sinon, inférence depuis les tables qui portent déjà `marche_event_id` **et** `marche_id` (`marcheur_medias`, `marcheur_audio`, `marcheur_textes`, etc.)
+- si ambiguïté persistante → marquer l’événement comme **à vérifier**, au lieu d’afficher un total faux
 
-### 3. Effet de bord positif
+### 4. Faire consommer cette méthode commune par toutes les vues
+Remplacer les calculs locaux restants par les RPC canoniques :
+- **Carnet** : `useMarcheCollectedData` doit lire le total **par événement** via la nouvelle RPC, pas recalculer par exploration
+- **Listes / cartes / badges d’événements** : mêmes RPC canoniques
+- **Vues publiques** et autres compteurs événementiels encore basés sur snapshots locaux : les réaligner sur la même couche
+- garder `get_exploration_species_count` pour les vues **exploration**, et `get_marche_species_count` pour les vues **marche**
 
-- `byDay` est dérivé de la même série → le drawer « Détails du jour » s'aligne automatiquement.
-- Mode « Observations » : le compteur d'obs journalier reflète aussi le rayon.
-- L'`overrideTotalSpecies` reste utile car il vient du pool unifié (snapshots ∪ marcheur_observations dédupliqué).
+## Implémentation
+1. **Migration Supabase**
+   - créer la table de mapping `marche_event_marches`
+   - backfill des correspondances existantes
+   - créer une RPC batch `get_marche_event_species_counts(p_event_ids uuid[])`
+   - créer éventuellement une RPC unitaire `get_marche_event_species_count(p_event_id uuid)`
+   - faire reposer cette RPC sur la même logique que `get_marche_species_count` / `get_exploration_species_count`
 
-### Pas dans le scope
+2. **Refactor frontend**
+   - modifier `useMarcheCollectedData` pour ne plus calculer `species_count` côté client
+   - injecter le résultat de la RPC canonique par `marche_event_id`
+   - conserver les autres compteurs (photos/audio/textes/kigo) si leur logique actuelle est correcte
 
-- Ne pas régénérer `biodiversity_snapshots` (politique « filtre côté lecture » déjà actée).
-- Pas de changement RPC ni de migration.
-- Pas de modif visuelle de la courbe.
+3. **Audit des consommateurs**
+   - remplacer les derniers usages de `total_species` ou de déductions locales qui affichent un total d’espèces à l’utilisateur
+   - vérifier en particulier les compteurs liés aux événements et aux listes
 
-## Fichiers touchés
+4. **Garde-fous**
+   - si un événement n’a aucune marche liée de façon certaine, ne jamais retomber sur un total exploration “par défaut”
+   - retourner plutôt `0` + état explicite/loggable, ou exclure du calcul jusqu’à résolution
+   - documenter la règle comme mémoire technique du projet
 
-- `src/components/community/EventBiodiversityTab.tsx` (1 memo + 2 props remplacées)
+## Détails techniques
+- La hiérarchie de rayon reste inchangée et s’applique **marche par marche** :
+```text
+marches.radius_m
+  -> explorations.default_radius_m
+  -> 500
+```
+- Le total d’un événement multi-marches sera :
+```text
+union dédupliquée des espèces canoniques de chacune de ses marches
+```
+- Ainsi, un événement avec 150m pour une marche et 500m pour une autre restera exact, sans recalcul divergent selon la vue.
+
+## Résultat attendu
+- **Carnet** n’affichera plus `77` pour `ROQUE GAGEAC / Jardin` si l’événement ne correspond qu’à la marche canonique à `72` ou `44` selon son rattachement réel.
+- Plus aucun écran ne pourra afficher un total différent pour la même entité tant qu’il consomme la couche canonique.
+- On supprime la cause racine : **l’absence de méthode événementielle canonique et l’inférence implicite exploration → événement**.
