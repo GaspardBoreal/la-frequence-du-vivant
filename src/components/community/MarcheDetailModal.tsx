@@ -1139,6 +1139,23 @@ export const VivantTab: React.FC<{
           </div>
         )}
       </div>
+      {/* Canonical inventory headline — single source of truth across all views */}
+      <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-400/20">
+        <div className="flex flex-col">
+          <span className="text-[10px] uppercase tracking-wider text-emerald-300/70">Inventaire collecté</span>
+          <span className="text-emerald-200 text-sm font-medium">
+            {canonicalCount ?? '…'} espèce{(canonicalCount ?? 0) > 1 ? 's' : ''}
+            <span className="text-emerald-300/60 text-[11px] ml-2">
+              (rayon {Math.round(persistedKm * 1000)} m)
+            </span>
+          </span>
+        </div>
+        {biodiversityData?.species && biodiversityData.species.length !== (canonicalCount ?? 0) && (
+          <span className="text-[10px] text-amber-300/80" title="Aperçu en direct depuis iNaturalist, peut différer de l'inventaire persisté">
+            Aperçu live : {biodiversityData.species.length}
+          </span>
+        )}
+      </div>
       {(!biodiversityData?.species || biodiversityData.species.length === 0) ? (
         <EmptyState message="Aucune donnée biodiversité disponible pour ce rayon" />
       ) : (
