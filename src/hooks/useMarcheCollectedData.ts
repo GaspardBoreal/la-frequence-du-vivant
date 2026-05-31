@@ -51,92 +51,39 @@ export const useMarcheCollectedData = (userId: string, marcheEventIds: string[])
         .in('id', marcheEventIds);
 
       if (events) {
-        // Group events by exploration_id for aggregated species count
+        // ✅ Canonical species count per event — uses the same radius-aware RPC
+        // (`get_exploration_species_count`) as Carte / Synthèse / L'Œil, so that
+        // Carnet can never display a number that differs from the rest of the app.
+        // The RPC applies per-marche radius (marches.radius_m → explorations.default_radius_m → 500)
+        // and deduplicates by normalized scientific name.
         const explorationIds = [...new Set(events.filter(e => e.exploration_id).map(e => e.exploration_id!))];
-        
+
         if (explorationIds.length > 0) {
-          // Fetch all marche_ids for these explorations
-          const { data: explorationMarches } = await supabase
-            .from('exploration_marches')
-            .select('exploration_id, marche_id')
-            .in('exploration_id', explorationIds);
-
-          if (explorationMarches && explorationMarches.length > 0) {
-            const allMarcheIds = [...new Set(explorationMarches.map(em => em.marche_id))];
-            
-            // Fetch biodiversity snapshots with species_data for deduplication
-            const { data: snapshots } = await supabase
-              .from('biodiversity_snapshots')
-              .select('marche_id, species_data')
-              .in('marche_id', allMarcheIds);
-
-            if (snapshots) {
-              // Fetch marcheur observations for these marches (validated sightings)
-              // to merge them into the species count, matching the Carte's logic.
-              const { data: marcheurObs } = await supabase
-                .from('marcheur_observations')
-                .select('marche_id, species_scientific_name')
-                .in('marche_id', allMarcheIds);
-
-              // Calculate deduplicated species count per exploration
-              const explorationSpeciesCounts: Record<string, number> = {};
-
-              for (const explorationId of explorationIds) {
-                const relatedMarcheIds = explorationMarches
-                  .filter(em => em.exploration_id === explorationId)
-                  .map(em => em.marche_id);
-
-                const uniqueSpecies = new Set<string>();
-                for (const snapshot of snapshots) {
-                  if (!relatedMarcheIds.includes(snapshot.marche_id)) continue;
-                  const speciesData = snapshot.species_data as any[];
-                  if (Array.isArray(speciesData)) {
-                    for (const sp of speciesData) {
-                      const name = (sp.scientificName || sp.scientific_name || '').toString().trim().toLowerCase();
-                      if (name) uniqueSpecies.add(name);
-                    }
-                  }
-                }
-                // Merge marcheur observations (case-insensitive scientificName)
-                for (const obs of marcheurObs || []) {
-                  if (!relatedMarcheIds.includes(obs.marche_id)) continue;
-                  const name = (obs.species_scientific_name || '').toString().trim().toLowerCase();
-                  if (name) uniqueSpecies.add(name);
-                }
-                explorationSpeciesCounts[explorationId] = uniqueSpecies.size;
-              }
-
-              // Assign exploration-level count to all events in that exploration
-              for (const event of events) {
-                if (event.exploration_id && explorationSpeciesCounts[event.exploration_id] !== undefined && summaries[event.id]) {
-                  summaries[event.id].species_count = explorationSpeciesCounts[event.exploration_id];
-                }
-              }
-            }
-          }
-        }
-
-        // Fallback: for events WITHOUT exploration_id, use GPS proximity
-        const eventsWithoutExploration = events.filter(e => !e.exploration_id && e.latitude && e.longitude);
-        
-        if (eventsWithoutExploration.length > 0) {
-          const { data: snapshots } = await supabase
-            .from('biodiversity_snapshots')
-            .select('latitude, longitude, total_species, marche_id');
-
-          if (snapshots) {
-            for (const event of eventsWithoutExploration) {
-              const match = snapshots.find(s => {
-                const dlat = Math.abs(Number(s.latitude) - Number(event.latitude!));
-                const dlng = Math.abs(Number(s.longitude) - Number(event.longitude!));
-                return dlat < 0.01 && dlng < 0.01;
+          const results = await Promise.all(
+            explorationIds.map(async (explorationId) => {
+              const { data, error } = await supabase.rpc('get_exploration_species_count', {
+                p_exploration_id: explorationId,
               });
-              if (match && summaries[event.id]) {
-                summaries[event.id].species_count = match.total_species;
+              if (error) return { explorationId, total: 0 };
+              return { explorationId, total: (data as any)?.total ?? 0 };
+            })
+          );
+          const canonicalByExploration = new Map(results.map(r => [r.explorationId, r.total]));
+
+          for (const event of events) {
+            if (event.exploration_id && summaries[event.id]) {
+              const total = canonicalByExploration.get(event.exploration_id);
+              if (typeof total === 'number') {
+                summaries[event.id].species_count = total;
               }
             }
           }
         }
+
+        // Events without exploration_id: no canonical anchor → stay at 0
+        // rather than risk an inconsistent local fallback that would diverge
+        // from Carte / Synthèse. (Previously a GPS-proximity heuristic on
+        // total_species was used; it ignored radius and could mismatch.)
 
         // For events with exploration_id, fetch media counts via exploration_marches → marches
         const mediaExplorationIds = [...new Set(events.filter(e => e.exploration_id).map(e => e.exploration_id!))];
