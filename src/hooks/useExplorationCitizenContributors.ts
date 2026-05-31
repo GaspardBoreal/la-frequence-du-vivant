@@ -1,6 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { buildCitizenIdentityResolver, citizenDisplayName } from '@/utils/citizenIdentity';
+import { normalizeAlias } from '@/hooks/useMarcheurAliases';
+
+/**
+ * Vérifie si une attribution iNat correspond à un marcheur connu, en testant
+ * TOUTES les formes possibles d'identité (defense-in-depth) :
+ *  - clé canonique `inat:<observerId>`
+ *  - login iNat normalisé (`observerLogin`)
+ *  - nom d'observateur normalisé NFD
+ *
+ * Robuste même si le `external_id` du science account n'a pas (encore) été
+ * backfillé : tant que le `username` est renseigné, le marcheur est exclu.
+ */
+const matchesKnownMarcheur = (
+  a: any,
+  knownAliases: Set<string> | undefined,
+): boolean => {
+  if (!knownAliases || knownAliases.size === 0) return false;
+  const id = a?.observerId;
+  if (id != null && id !== '' && knownAliases.has(`inat:${String(id)}`)) return true;
+  const login = (a?.observerLogin || '').toString().toLowerCase().trim();
+  if (login && knownAliases.has(login)) return true;
+  const alias = normalizeAlias(a?.observerName || '');
+  if (alias && knownAliases.has(alias)) return true;
+  return false;
+};
 
 export interface CitizenContributor {
   observerName: string;
@@ -81,6 +106,9 @@ export function useExplorationCitizenContributors(
             if (!observerName || source !== 'inaturalist') continue;
             const canonical = resolve(a);
             if (!canonical) continue;
+            // Defense-in-depth : on teste TOUTES les formes (inat:id, login, alias)
+            // pour ne pas dépendre du backfill `external_id`.
+            if (matchesKnownMarcheur(a, knownAliases)) continue;
             if (knownAliases && knownAliases.has(canonical)) continue;
 
             const key = `${source}|${canonical}`;

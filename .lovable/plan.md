@@ -1,40 +1,79 @@
-## Diagnostic confirmé
+# Réconciliation robuste marcheurs ↔ contributeurs iNaturalist
 
-L'utilisatrice "Elsa B / @elsab12" s'est renommée sur iNat en "marie Claude mazaud / @marie_claude25846". Les snapshots contiennent déjà son ID iNat numérique immuable : **`observerId = 10613937`** (capturé par le backfill et l'ingestion). Le compte d'Elsa B en base ne stocke que l'ancien username — pas l'ID numérique → le filtre ne fait jamais le lien.
+## Problème
 
-## Solution C — pérennise contre tous les renommages iNat futurs
+Les snapshots iNat exposent désormais `observerId` (ID numérique). Le resolver canonicalise donc chaque attribution sous `inat:<id>`. Mais les `community_profile_science_accounts` iNat existants ont presque tous `external_id = NULL` (jamais résolus). Résultat : le set d'alias d'un marcheur ne contient que le login (`les-marches-du-vivant`) — il ne matche pas la clé canonique `inat:<id>`. Le marcheur apparaît alors en doublon comme contributeur citoyen.
 
-### Migration (déjà appliquée ✅)
-- `external_id = '10613937'` sur le compte iNat d'Elsa B.
-- Index unique partiel `(profile_id, network, external_id)` + index de lookup `(network, external_id)`.
+Cas observé : « Les marches du Vivant » (marcheur LD) + « Les Marches du Vivant @les-marches-du-vivant » (contributeur citoyen, 70 espèces). Elsa B avait le même problème, résolu manuellement.
 
-### Code à écrire (à faire en build mode)
+## Solution — 2 verrous complémentaires
 
-**1. `src/utils/citizenIdentity.ts`** — Resolver hiérarchique :
-- Clé canonique = `inat:<observerId>` (top), puis `observerLogin`, puis alias normalisé.
-- Pass A : indexe alias/login → `inat:<id>` à partir de toute attribution exposant un `observerId`.
-- Pass B : `resolve()` retourne la clé canonique réconciliée.
-- Effet : "marie Claude mazaud" (legacy) et "elsab12" (futur) tombent tous sur `inat:10613937`.
+### 1. Fix immédiat côté lecture (defense-in-depth, sans BDD)
 
-**2. `src/hooks/useMarcheurAliases.ts`** — `useMarcheurAliases` + `useMarcheursAliasesMap` lisent aussi `external_id` depuis `community_profile_science_accounts`, et ajoutent `inat:<external_id>` au set d'alias. Le filtre `useExplorationCitizenContributors` exclura alors toute attribution canonicalisée sur cet ID.
+Modifier `src/hooks/useExplorationCitizenContributors.ts` : au lieu de tester uniquement `knownAliases.has(canonical)`, tester **toutes les formes possibles** d'identité du contributeur :
 
-**3. `src/hooks/useScienceAccounts.ts`** + **`src/components/admin/community/ScienceAccountsEditor.tsx`** :
-- `useUpsertScienceAccount` accepte `external_id` et `display_name`.
-- À la sauvegarde d'un compte iNat, appel automatique en arrière-plan à `resolve-inaturalist-user` (mode login) → récupère `id` + `name` → patch la row.
+- `inat:<observerId>` (canonique)
+- `observerLogin` normalisé
+- `normalizeAlias(observerName)`
 
-**4. `supabase/functions/resolve-inaturalist-user/index.ts`** :
-- Accepte un nouveau mode `{ login: "elsab12" }` → appelle `https://api.inaturalist.org/v1/users/<login>`.
-- Le payload renvoyé inclut désormais `id` (numérique).
+Si **au moins une** est dans `knownAliases`, on exclut. Cela rattrape immédiatement tout marcheur dont le science account a juste un `username` (login) renseigné, même sans `external_id`. Zéro migration nécessaire pour que ça marche.
 
-**5. Mise à jour de la mémoire** `mem://technical/community/identity-matching-logic` pour documenter la hiérarchie `observerId > observerLogin > alias`.
+### 2. Backfill systémique des `external_id` manquants
 
-### Hors scope
-- Pas besoin de toucher l'ingestion (`biodiversity-data`) ni le backfill (`backfill-snapshot-observer-login`) : tous deux capturent déjà `observerId`.
-- Pas besoin de re-générer les `marcheur_observations` : l'attribution est déjà en place via le trigger existant.
+Edge function one-shot `backfill-inat-external-ids` :
 
-### Résultat attendu
-- Le bloc "+3 contributeurs citoyens iNaturalist" perd l'entrée `marie Claude mazaud · @elsab12 · 6 espèces`.
-- Les 6 espèces restent comptées dans Elsa B (déjà le cas via marcheur_observations).
-- Tout renommage futur d'un marcheur sur iNat n'a plus d'impact sur l'app.
+- SELECT tous les `community_profile_science_accounts` où `network='inaturalist' AND external_id IS NULL`
+- Pour chacun, appeler l'API iNat `GET /users/{login}` (déjà câblée dans `resolve-inaturalist-user`)
+- UPDATE `external_id` + `display_name` canonique
+- Throttle 1 req/s pour respecter rate-limit iNat
 
-**Passe en build mode pour que j'applique les 5 changements de code.**
+Déclenchée une fois manuellement depuis Admin → Outils (ou via bouton temporaire). Idempotent : on peut la relancer.
+
+### 3. Garde-fou pour le futur
+
+`useUpsertScienceAccount` appelle déjà `resolve-inaturalist-user` en fire-and-forget depuis le précédent fix (Elsa B). On ajoute juste un log côté edge function si la résolution échoue, pour diagnostiquer plus tard. Aucune autre modif nécessaire — les nouveaux comptes sont déjà OK.
+
+## Fichiers touchés
+
+```text
+src/hooks/useExplorationCitizenContributors.ts   # multi-form alias match
+supabase/functions/backfill-inat-external-ids/   # one-shot backfill (nouveau)
+  index.ts
+supabase/config.toml                              # déclaration fonction
+src/pages/AdminOutilsHub.tsx                     # bouton "Backfill iNat IDs" (optionnel)
+mem://technical/community/identity-matching-logic # MAJ : multi-form fallback
+```
+
+## Détails techniques
+
+**Multi-form match (cœur du fix #1) :**
+
+```ts
+const matchesKnownMarcheur = (a, knownAliases): boolean => {
+  if (!knownAliases) return false;
+  const id = a?.observerId;
+  if (id != null && knownAliases.has(`inat:${id}`)) return true;
+  const login = (a?.observerLogin || '').toLowerCase().trim();
+  if (login && knownAliases.has(login)) return true;
+  const alias = normalizeAlias(a?.observerName || '');
+  if (alias && knownAliases.has(alias)) return true;
+  return false;
+};
+```
+
+Appliqué juste avant `byKey.set(...)`. Plus de `knownAliases.has(canonical)` rigide.
+
+**Backfill (fix #2) :** réutilise le code de `resolve-inaturalist-user` (mode `{ login }`) en boucle. Aucune nouvelle dépendance externe.
+
+## Hors scope
+
+- Pas de regen des snapshots (les `observerId` y sont déjà).
+- Pas de modif de la table : pas besoin, le multi-form match couvre les comptes sans `external_id` même si le backfill échoue pour certains.
+- Pas de changement UX visible (le marcheur disparaît juste de la liste citoyens).
+
+## Validation post-déploiement
+
+1. Recharger l'onglet Marcheurs sur l'exploration ROQUE GAGEAC.
+2. Vérifier que « Les Marches du Vivant @les-marches-du-vivant » n'apparaît plus comme contributeur citoyen.
+3. Vérifier que le compteur « +N contributeurs citoyens » passe de 3 à 2.
+4. Vérifier que LD reste avec ses 72 fréquences (rien ne doit bouger côté marcheur).
