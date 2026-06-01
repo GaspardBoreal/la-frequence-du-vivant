@@ -100,6 +100,13 @@ const PublicAuditFrugal: React.FC = () => {
           </div>
         )}
 
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button onClick={handleExportPdf} disabled={isExporting} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
+            {isExporting ? 'Génération…' : 'Imprimer le rapport complet'}
+          </Button>
+        </div>
+
         <AuditScoreDashboard
           report={run.report_json}
           scopeLabel={run.scope_label}
