@@ -7,21 +7,37 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Leaf, ArrowLeft, Link2, Check } from 'lucide-react';
+import { Leaf, ArrowLeft, Link2, Check, FileDown, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { exportAuditReportPdf } from '@/components/admin/audit-frugal/AuditReportPdf';
 
 const PublicAuditFrugal: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: run, isLoading, error } = useAuditRunBySlug(slug);
   const { isAdmin } = useAuth();
   const [copied, setCopied] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     toast.success('Lien public copié');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportPdf = async () => {
+    if (!run) return;
+    setIsExporting(true);
+    try {
+      await exportAuditReportPdf(run);
+      toast.success('Rapport PDF généré');
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Erreur lors de la génération du PDF', { description: e?.message });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   React.useEffect(() => {
@@ -83,6 +99,13 @@ const PublicAuditFrugal: React.FC = () => {
             </Button>
           </div>
         )}
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button onClick={handleExportPdf} disabled={isExporting} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
+            {isExporting ? 'Génération…' : 'Imprimer le rapport complet'}
+          </Button>
+        </div>
 
         <AuditScoreDashboard
           report={run.report_json}
