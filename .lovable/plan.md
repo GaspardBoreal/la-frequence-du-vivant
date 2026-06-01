@@ -1,79 +1,52 @@
-# Réconciliation robuste marcheurs ↔ contributeurs iNaturalist
+# Export PDF complet — Rapport d'Audit IA Frugale
 
-## Problème
+## Objectif
 
-Les snapshots iNat exposent désormais `observerId` (ID numérique). Le resolver canonicalise donc chaque attribution sous `inat:<id>`. Mais les `community_profile_science_accounts` iNat existants ont presque tous `external_id = NULL` (jamais résolus). Résultat : le set d'alias d'un marcheur ne contient que le login (`les-marches-du-vivant`) — il ne matche pas la clé canonique `inat:<id>`. Le marcheur apparaît alors en doublon comme contributeur citoyen.
+Ajouter sur la vue publique (`/audit-frugal/:slug`) un bouton **« Imprimer le rapport complet »** qui génère un PDF multi-pages reprenant **l'intégralité** des données de `report_json` (pas seulement les tabs visibles), avec une mise en page éditoriale pro.
 
-Cas observé : « Les marches du Vivant » (marcheur LD) + « Les Marches du Vivant @les-marches-du-vivant » (contributeur citoyen, 70 espèces). Elsa B avait le même problème, résolu manuellement.
+## Stack
 
-## Solution — 2 verrous complémentaires
+- **@react-pdf/renderer** (déjà présent dans le projet — utilisé par `GuideDeMarchePdf.tsx`). Pas de nouvelle dépendance.
+- Pagination native de React-PDF + composants `<Page wrap>` pour césure automatique.
 
-### 1. Fix immédiat côté lecture (defense-in-depth, sans BDD)
+## Contenu du PDF (ordre)
 
-Modifier `src/hooks/useExplorationCitizenContributors.ts` : au lieu de tester uniquement `knownAliases.has(canonical)`, tester **toutes les formes possibles** d'identité du contributeur :
+1. **Page de garde** — Logo/titre « Audit IA Frugale », `scope_label`, score global XXL, badge maturité, date, modèle, template+version, mention AFNOR SPEC 2314.
+2. **Résumé exécutif** — `executive_summary` en pleine page.
+3. **Scores par domaine** — 4 cartes (score/max + barre de progression SVG) + `domain_scores[].comment` si présent.
+4. **Points forts** (tous, regroupés par domaine) — titre, justification, référence AFNOR.
+5. **Améliorations** — 4 sections : Critiques 🔴, Importantes 🟠, Souhaitables 🟡, Long terme 🔵. Chaque entrée : problème, action recommandée, domaine, impact estimé, ref AFNOR.
+6. **Indicateurs environnementaux** — table : nom, unité, priorité, mesuré oui/non.
+7. **Plan d'action** — 3 phases (rapide / court / moyen terme) avec actions + ref AFNOR + impact.
+8. **Annexe — Prompt utilisé** (snapshot figé), petite typo monospace, paginé proprement.
+9. **Avertissement final** (texte du Card existant) + footer légal.
 
-- `inat:<observerId>` (canonique)
-- `observerLogin` normalisé
-- `normalizeAlias(observerName)`
+## Design éditorial
 
-Si **au moins une** est dans `knownAliases`, on exclut. Cela rattrape immédiatement tout marcheur dont le science account a juste un `username` (login) renseigné, même sans `external_id`. Zéro migration nécessaire pour que ça marche.
+- Palette dérivée du thème emerald de l'app (cohérence avec `GuideDeMarchePdf`) : fond crème `#fefdfb`, primaire `#047857`, accent `#0d9488`, gris `#374151`/`#6b7280`.
+- Typo Helvetica (built-in React-PDF — pas d'enregistrement de fonts custom).
+- En-tête fixe : filet émeraude + « Audit IA Frugale » + scope_label tronqué.
+- Pied de page fixe : « Les Marches du Vivant · AFNOR SPEC 2314 » à gauche, `Page X / Y` à droite (via render prop `pageNumber`/`totalPages`).
+- Cartes : bordure 0.5pt gris clair, fond très pâle pour les blocs critiques (rouge), importants (orange), etc.
+- Barres de progression : `<Svg>` rect background + rect fill émeraude.
+- Badges AFNOR : petits chips arrondis fond gris pâle.
+- Saut de page logique entre sections majeures via `break` sur le premier élément.
 
-### 2. Backfill systémique des `external_id` manquants
+## Fichiers à créer / modifier
 
-Edge function one-shot `backfill-inat-external-ids` :
+### Créer `src/components/admin/audit-frugal/AuditReportPdf.tsx`
+- Export du composant `<AuditReportPdfDocument report scopeLabel launchedAt modelUsed templateName templateVersion promptSnapshot />`.
+- Export `async function exportAuditReportPdf(run: AuditRunFull): Promise<void>` qui appelle `pdf(<…/>).toBlob()` et déclenche le téléchargement (nom : `audit-frugal-${slug}.pdf`).
+- StyleSheet partagé inspiré de `GuideDeMarchePdf.tsx`.
 
-- SELECT tous les `community_profile_science_accounts` où `network='inaturalist' AND external_id IS NULL`
-- Pour chacun, appeler l'API iNat `GET /users/{login}` (déjà câblée dans `resolve-inaturalist-user`)
-- UPDATE `external_id` + `display_name` canonique
-- Throttle 1 req/s pour respecter rate-limit iNat
-
-Déclenchée une fois manuellement depuis Admin → Outils (ou via bouton temporaire). Idempotent : on peut la relancer.
-
-### 3. Garde-fou pour le futur
-
-`useUpsertScienceAccount` appelle déjà `resolve-inaturalist-user` en fire-and-forget depuis le précédent fix (Elsa B). On ajoute juste un log côté edge function si la résolution échoue, pour diagnostiquer plus tard. Aucune autre modif nécessaire — les nouveaux comptes sont déjà OK.
-
-## Fichiers touchés
-
-```text
-src/hooks/useExplorationCitizenContributors.ts   # multi-form alias match
-supabase/functions/backfill-inat-external-ids/   # one-shot backfill (nouveau)
-  index.ts
-supabase/config.toml                              # déclaration fonction
-src/pages/AdminOutilsHub.tsx                     # bouton "Backfill iNat IDs" (optionnel)
-mem://technical/community/identity-matching-logic # MAJ : multi-form fallback
-```
-
-## Détails techniques
-
-**Multi-form match (cœur du fix #1) :**
-
-```ts
-const matchesKnownMarcheur = (a, knownAliases): boolean => {
-  if (!knownAliases) return false;
-  const id = a?.observerId;
-  if (id != null && knownAliases.has(`inat:${id}`)) return true;
-  const login = (a?.observerLogin || '').toLowerCase().trim();
-  if (login && knownAliases.has(login)) return true;
-  const alias = normalizeAlias(a?.observerName || '');
-  if (alias && knownAliases.has(alias)) return true;
-  return false;
-};
-```
-
-Appliqué juste avant `byKey.set(...)`. Plus de `knownAliases.has(canonical)` rigide.
-
-**Backfill (fix #2) :** réutilise le code de `resolve-inaturalist-user` (mode `{ login }`) en boucle. Aucune nouvelle dépendance externe.
+### Modifier `src/pages/PublicAuditFrugal.tsx`
+- Ajouter un bouton **« 📄 Imprimer le rapport complet »** dans une nouvelle barre d'actions sous le dashboard (visible publiquement, pas seulement admin), à côté d'un futur emplacement actions.
+- État `isExporting` + spinner pendant génération.
+- `onClick` → `exportAuditReportPdf(run)`, toast succès/erreur.
 
 ## Hors scope
 
-- Pas de regen des snapshots (les `observerId` y sont déjà).
-- Pas de modif de la table : pas besoin, le multi-form match couvre les comptes sans `external_id` même si le backfill échoue pour certains.
-- Pas de changement UX visible (le marcheur disparaît juste de la liste citoyens).
-
-## Validation post-déploiement
-
-1. Recharger l'onglet Marcheurs sur l'exploration ROQUE GAGEAC.
-2. Vérifier que « Les Marches du Vivant @les-marches-du-vivant » n'apparaît plus comme contributeur citoyen.
-3. Vérifier que le compteur « +N contributeurs citoyens » passe de 3 à 2.
-4. Vérifier que LD reste avec ses 72 fréquences (rien ne doit bouger côté marcheur).
+- Pas de modif des tabs HTML actuelles.
+- Pas de changement de schema / RPC.
+- Pas d'historique multi-audits agrégé (l'export couvre **un** audit complet, qui est déjà l'« historique total » du run).
+- Pas de logo bitmap (titre texte stylé pour éviter dépendance asset).
