@@ -7,9 +7,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Leaf, ArrowLeft, Link2, Check } from 'lucide-react';
+import { Leaf, ArrowLeft, Link2, Check, FileDown, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { exportAuditReportPdf } from '@/components/admin/audit-frugal/AuditReportPdf';
 
 const PublicAuditFrugal: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
