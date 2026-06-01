@@ -17,12 +17,27 @@ const PublicAuditFrugal: React.FC = () => {
   const { data: run, isLoading, error } = useAuditRunBySlug(slug);
   const { isAdmin } = useAuth();
   const [copied, setCopied] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     toast.success('Lien public copié');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportPdf = async () => {
+    if (!run) return;
+    setIsExporting(true);
+    try {
+      await exportAuditReportPdf(run);
+      toast.success('Rapport PDF généré');
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Erreur lors de la génération du PDF', { description: e?.message });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   React.useEffect(() => {
