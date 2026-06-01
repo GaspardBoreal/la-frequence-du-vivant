@@ -208,6 +208,9 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
                     totalSpeciesAllRanks={totalSpecies}
                   />
                 )}
+                {s.key === 'origines' && (
+                  <OriginsFluxPanel explorationId={explorationId} species={species as any} />
+                )}
               </div>
 
               {!isLast && (
