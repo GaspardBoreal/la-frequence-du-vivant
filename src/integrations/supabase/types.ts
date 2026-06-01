@@ -4850,6 +4850,51 @@ export type Database = {
           },
         ]
       }
+      species_biogeography_kb: {
+        Row: {
+          authorship: string | null
+          describer_birth_year: number | null
+          describer_country: string | null
+          describer_name: string | null
+          describer_year: number | null
+          fetched_at: string
+          gbif_usage_key: number | null
+          introduced_countries: string[] | null
+          native_continents: string[] | null
+          native_countries: string[] | null
+          scientific_name: string
+          source: string
+        }
+        Insert: {
+          authorship?: string | null
+          describer_birth_year?: number | null
+          describer_country?: string | null
+          describer_name?: string | null
+          describer_year?: number | null
+          fetched_at?: string
+          gbif_usage_key?: number | null
+          introduced_countries?: string[] | null
+          native_continents?: string[] | null
+          native_countries?: string[] | null
+          scientific_name: string
+          source?: string
+        }
+        Update: {
+          authorship?: string | null
+          describer_birth_year?: number | null
+          describer_country?: string | null
+          describer_name?: string | null
+          describer_year?: number | null
+          fetched_at?: string
+          gbif_usage_key?: number | null
+          introduced_countries?: string[] | null
+          native_continents?: string[] | null
+          native_countries?: string[] | null
+          scientific_name?: string
+          source?: string
+        }
+        Relationships: []
+      }
       species_eco_tags_kb: {
         Row: {
           confidence: number
