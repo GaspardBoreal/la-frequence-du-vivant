@@ -44,8 +44,8 @@ const DescriberDrawer: React.FC<Props> = ({ open, aggregate, onClose }) => {
                 {aggregate.species.map((sp) => (
                   <li key={sp.scientificName} className="px-6 py-3 hover:bg-muted/40 transition-colors">
                     <div className="flex items-start gap-3">
-                      {sp.imageUrl && (
-                        <img src={sp.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0" loading="lazy" />
+                      {sp.photos?.[0] && (
+                        <img src={sp.photos[0]} alt="" className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0" loading="lazy" />
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium">
