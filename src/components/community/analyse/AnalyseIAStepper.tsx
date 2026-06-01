@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Compass, Network, Gauge, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { Compass, Network, Gauge, Globe2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import EcologicalJourneyCarousel from '@/components/biodiversity/EcologicalJourneyCarousel';
 import TrophicChainPanel from '@/components/community/synthese/TrophicChainPanel';
 import TaxonsIndicesPanel from '@/components/community/synthese/TaxonsIndicesPanel';
+import OriginsFluxPanel from '@/components/community/analyse/OriginsFluxPanel';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 
 interface AnalyseIAStepperProps {
@@ -12,7 +13,7 @@ interface AnalyseIAStepperProps {
   totalSpecies: number;
 }
 
-type StepKey = 'decouverte' | 'trophique' | 'indicateurs';
+type StepKey = 'decouverte' | 'trophique' | 'indicateurs' | 'origines';
 
 interface StepDef {
   key: StepKey;
