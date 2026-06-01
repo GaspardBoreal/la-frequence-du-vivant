@@ -115,3 +115,6 @@ verify_jwt = false
 
 [functions.backfill-inat-external-ids]
 verify_jwt = false
+
+[functions.enrich-species-biogeography]
+verify_jwt = false

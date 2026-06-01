@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Compass, Network, Gauge, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { Compass, Network, Gauge, Globe2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import EcologicalJourneyCarousel from '@/components/biodiversity/EcologicalJourneyCarousel';
 import TrophicChainPanel from '@/components/community/synthese/TrophicChainPanel';
 import TaxonsIndicesPanel from '@/components/community/synthese/TaxonsIndicesPanel';
+import OriginsFluxPanel from '@/components/community/analyse/OriginsFluxPanel';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 
 interface AnalyseIAStepperProps {
@@ -12,7 +13,7 @@ interface AnalyseIAStepperProps {
   totalSpecies: number;
 }
 
-type StepKey = 'decouverte' | 'trophique' | 'indicateurs';
+type StepKey = 'decouverte' | 'trophique' | 'indicateurs' | 'origines';
 
 interface StepDef {
   key: StepKey;
@@ -60,6 +61,17 @@ const STEPS: StepDef[] = [
     ring: 'ring-sky-500/30',
     glow: 'bg-sky-500/20',
   },
+  {
+    key: 'origines',
+    emoji: '🌍',
+    short: 'Origines',
+    title: 'Voyage vers les origines du vivant',
+    subtitle: "D'où viennent ces espèces, qui les a nommées, qui les observe à travers le monde.",
+    Icon: Globe2,
+    gradient: 'from-amber-500/15 via-rose-500/8 to-transparent',
+    ring: 'ring-amber-500/30',
+    glow: 'bg-amber-500/20',
+  },
 ];
 
 const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, species, totalSpecies }) => {
@@ -68,6 +80,7 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
     decouverte: null,
     trophique: null,
     indicateurs: null,
+    origines: null,
   });
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -194,6 +207,9 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
                     explorationId={explorationId}
                     totalSpeciesAllRanks={totalSpecies}
                   />
+                )}
+                {s.key === 'origines' && (
+                  <OriginsFluxPanel explorationId={explorationId} species={species as any} />
                 )}
               </div>
 
