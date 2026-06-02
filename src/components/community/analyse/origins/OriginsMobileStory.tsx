@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Globe2, Sparkles, Maximize2, MapPin, Feather } from 'lucide-react';
+import { Globe2, Sparkles, Maximize2, MapPin } from 'lucide-react';
 import type { BiogeographyAggregates } from '@/hooks/useExplorationBiogeography';
+import DescribersGallery from './DescribersGallery';
 
 interface Props {
   data: BiogeographyAggregates;
@@ -92,33 +93,12 @@ const OriginsMobileStory: React.FC<Props> = ({
         </section>
       )}
 
-      {/* Describers */}
+      {/* Describers gallery (3 view modes) */}
       {topDescribers.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Feather className="w-4 h-4 text-rose-500" />
-            <h3 className="text-sm font-semibold">Descripteurs historiques</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            {topDescribers.map((d) => (
-              <button
-                key={d.name}
-                onClick={() => onOpenDescriber(d.name)}
-                className="rounded-2xl border border-border/60 bg-gradient-to-br from-rose-500/8 to-transparent p-3 text-left hover:border-rose-500/40 transition-colors"
-              >
-                <div className="flex items-center gap-1.5 text-lg mb-1">
-                  <span>✒️</span>
-                  {d.country && <span className="text-base">{d.country.flag}</span>}
-                </div>
-                <div className="text-xs font-semibold leading-tight italic">{d.name}</div>
-                <div className="text-[10px] text-muted-foreground mt-1">
-                  {d.year && <span>{d.year} · </span>}
-                  <span className="text-rose-600 dark:text-rose-400 font-semibold">{d.species.length}</span> esp.
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
+        <DescribersGallery
+          describers={data.describers}
+          onOpenDescriber={onOpenDescriber}
+        />
       )}
 
       {/* CTA fullscreen map */}

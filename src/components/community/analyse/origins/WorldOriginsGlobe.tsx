@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Globe from 'react-globe.gl';
+import { Plus, Minus, Locate, RotateCw } from 'lucide-react';
 import type { OriginAggregate, DescriberAggregate } from '@/hooks/useExplorationBiogeography';
 
 interface Props {
@@ -16,7 +17,8 @@ const WorldOriginsGlobe: React.FC<Props> = ({
 }) => {
   const ref = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = React.useState(800);
+  const [width, setWidth] = useState(800);
+  const [autoRotate, setAutoRotate] = useState(true);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -27,48 +29,82 @@ const WorldOriginsGlobe: React.FC<Props> = ({
     return () => ro.disconnect();
   }, []);
 
+  // Init controls
   useEffect(() => {
     if (!ref.current) return;
-    // Slow auto-rotation
     const controls = ref.current.controls?.();
     if (controls) {
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.35;
       controls.enableZoom = true;
+      controls.minDistance = 180;
+      controls.maxDistance = 800;
+      // Stop auto-rotation as soon as the user interacts with the globe
+      const stop = () => {
+        if (controls.autoRotate) {
+          controls.autoRotate = false;
+          setAutoRotate(false);
+        }
+      };
+      controls.addEventListener('start', stop);
+      return () => controls.removeEventListener('start', stop);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!ref.current) return;
     ref.current.pointOfView({ lat: eventPoint.lat, lng: eventPoint.lng, altitude: 2.2 }, 1500);
   }, [eventPoint.lat, eventPoint.lng]);
+
+  const handleZoom = (factor: number) => {
+    const controls = ref.current?.controls?.();
+    if (!controls) return;
+    if (controls.autoRotate) { controls.autoRotate = false; setAutoRotate(false); }
+    controls.dollyIn?.(factor) ?? null;
+    // Fallback: tweak camera distance directly
+    if (!controls.dollyIn) {
+      const cam = ref.current.camera?.();
+      if (cam) cam.position.multiplyScalar(1 / factor);
+    }
+    controls.update?.();
+  };
+
+  const handleRecenter = () => {
+    ref.current?.pointOfView({ lat: eventPoint.lat, lng: eventPoint.lng, altitude: 2.2 }, 1200);
+  };
+
+  const toggleAutoRotate = () => {
+    const controls = ref.current?.controls?.();
+    if (!controls) return;
+    controls.autoRotate = !controls.autoRotate;
+    setAutoRotate(controls.autoRotate);
+  };
 
   const maxOrigin = Math.max(1, ...origins.map((o) => o.species.length));
   const maxDescriber = Math.max(1, ...describers.map((d) => d.species.length));
 
+  // ONE arc per species → 1 point per country, weight ∝ species count
   const arcs = useMemo(() => {
-    const list: any[] = [];
-    origins.slice(0, 60).forEach((o, i) => {
-      list.push({
-        startLat: o.country.lat,
-        startLng: o.country.lng,
-        endLat: eventPoint.lat,
-        endLng: eventPoint.lng,
-        color: [['rgba(245, 158, 11, 0.85)', 'rgba(16, 185, 129, 0.85)']],
-        weight: Math.max(0.5, (o.species.length / maxOrigin) * 2.2),
-        speciesCount: o.species.length,
-        countryName: o.country.nameFr,
-        iso: o.country.code,
-        order: i,
-      });
-    });
-    return list;
+    return origins.slice(0, 60).map((o, i) => ({
+      startLat: o.country.lat,
+      startLng: o.country.lng,
+      endLat: eventPoint.lat,
+      endLng: eventPoint.lng,
+      color: [['rgba(245, 158, 11, 0.85)', 'rgba(16, 185, 129, 0.85)']],
+      weight: Math.max(0.5, (o.species.length / maxOrigin) * 2.2),
+      speciesCount: o.species.length,
+      countryName: o.country.nameFr,
+      iso: o.country.code,
+      order: i,
+    }));
   }, [origins, eventPoint, maxOrigin]);
 
   const points = useMemo(() => {
     const list: any[] = [];
-    // Event arrival pulse
     list.push({
       lat: eventPoint.lat, lng: eventPoint.lng,
       label: 'Événement', color: '#10b981', radius: 0.7, altitude: 0.02, kind: 'event',
     });
-    // Origins (amber)
     origins.slice(0, 60).forEach((o) => {
       list.push({
         lat: o.country.lat, lng: o.country.lng,
@@ -80,7 +116,6 @@ const WorldOriginsGlobe: React.FC<Props> = ({
         iso: o.country.code,
       });
     });
-    // Describers (rose)
     describers.filter((d) => d.country).slice(0, 30).forEach((d) => {
       list.push({
         lat: d.country!.lat + 0.5, lng: d.country!.lng + 0.5,
@@ -95,8 +130,11 @@ const WorldOriginsGlobe: React.FC<Props> = ({
     return list;
   }, [origins, describers, eventPoint, maxOrigin, maxDescriber]);
 
+  const btnClass =
+    'w-10 h-10 rounded-xl bg-background/70 backdrop-blur-md border border-border/60 text-foreground flex items-center justify-center hover:bg-amber-500/15 hover:border-amber-500/40 transition-all duration-200 active:scale-95 shadow-lg';
+
   return (
-    <div ref={containerRef} className="w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full">
       <Globe
         ref={ref}
         width={width}
@@ -128,6 +166,27 @@ const WorldOriginsGlobe: React.FC<Props> = ({
           else if (d.kind === 'describer' && d.name) onDescriberClick(d.name);
         }}
       />
+
+      {/* Zoom & navigation controls overlay */}
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-1.5">
+        <button onClick={() => handleZoom(1.35)} className={btnClass} aria-label="Zoomer" title="Zoomer">
+          <Plus className="w-4 h-4" />
+        </button>
+        <button onClick={() => handleZoom(1 / 1.35)} className={btnClass} aria-label="Dézoomer" title="Dézoomer">
+          <Minus className="w-4 h-4" />
+        </button>
+        <button onClick={handleRecenter} className={btnClass} aria-label="Recentrer" title="Recentrer">
+          <Locate className="w-4 h-4" />
+        </button>
+        <button
+          onClick={toggleAutoRotate}
+          className={`${btnClass} ${autoRotate ? 'text-amber-500 border-amber-500/40' : ''}`}
+          aria-label={autoRotate ? 'Stopper la rotation' : 'Activer la rotation'}
+          title={autoRotate ? 'Stopper la rotation' : 'Activer la rotation'}
+        >
+          <RotateCw className={`w-4 h-4 ${autoRotate ? 'animate-spin-slow' : ''}`} />
+        </button>
+      </div>
     </div>
   );
 };

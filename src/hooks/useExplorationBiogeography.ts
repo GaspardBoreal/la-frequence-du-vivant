@@ -14,11 +14,14 @@ export interface BiogeographyRow {
   describer_year: number | null;
   describer_country: string | null;
   describer_birth_year: number | null;
+  type_locality_country?: string | null;
+  type_locality_label?: string | null;
 }
 
 export interface OriginAggregate {
   country: CountryInfo;
   species: BiodiversitySpecies[];
+  inferred?: boolean; // true if origin is a proxy (not real type locality)
 }
 
 export interface DescriberAggregate {
@@ -32,15 +35,35 @@ export interface DescriberAggregate {
 export interface BiogeographyAggregates {
   rows: BiogeographyRow[];
   byScientificName: Map<string, BiogeographyRow>;
-  origins: OriginAggregate[];          // sorted desc by count
-  describers: DescriberAggregate[];    // sorted desc by count
-  coverage: number;                    // 0..1
+  origins: OriginAggregate[];          // 1 species = 1 country (type locality)
+  describers: DescriberAggregate[];
+  coverage: number;
   totalSpecies: number;
   enrichedSpecies: number;
 }
 
-const EVENT_LAT_FALLBACK = 45.0; // France central fallback
+const EVENT_LAT_FALLBACK = 45.0;
 const EVENT_LNG_FALLBACK = 2.5;
+
+/**
+ * Derive THE single country of origin for a species ("type locality" proxy).
+ * Priority cascade:
+ *   1. Explicit type_locality_country if present in cache
+ *   2. describer_country if it belongs to native_countries (likely place of description)
+ *   3. First native_country
+ *   4. describer_country alone
+ */
+function deriveOriginIso(row: BiogeographyRow): { iso: string | null; inferred: boolean } {
+  if (row.type_locality_country && getCountry(row.type_locality_country)) {
+    return { iso: row.type_locality_country, inferred: false };
+  }
+  const natives = (row.native_countries || []).filter((c) => getCountry(c));
+  const desc = row.describer_country && getCountry(row.describer_country) ? row.describer_country : null;
+  if (desc && natives.includes(desc)) return { iso: desc, inferred: false };
+  if (natives.length) return { iso: natives[0], inferred: true };
+  if (desc) return { iso: desc, inferred: true };
+  return { iso: null, inferred: false };
+}
 
 export function useExplorationBiogeography(
   explorationId: string | null | undefined,
@@ -61,32 +84,34 @@ export function useExplorationBiogeography(
           coverage: 0, totalSpecies: 0, enrichedSpecies: 0,
         };
       }
-      // chunked IN query to avoid URL limits
       const chunks: string[][] = [];
       for (let i = 0; i < scientificNames.length; i += 200) chunks.push(scientificNames.slice(i, i + 200));
       const rows: BiogeographyRow[] = [];
       for (const c of chunks) {
         const { data, error } = await supabase
           .from('species_biogeography_kb' as any)
-          .select('scientific_name, native_countries, native_continents, introduced_countries, authorship, describer_name, describer_year, describer_country, describer_birth_year')
+          .select('scientific_name, native_countries, native_continents, introduced_countries, authorship, describer_name, describer_year, describer_country, describer_birth_year, type_locality_country, type_locality_label')
           .in('scientific_name', c);
         if (!error && data) rows.push(...(data as any));
       }
       const byName = new Map<string, BiogeographyRow>();
       rows.forEach((r) => byName.set(r.scientific_name, r));
 
-      // Aggregate origins
-      const originMap = new Map<string, BiodiversitySpecies[]>();
+      // Aggregate origins: ONE country per species (type locality cascade)
+      const originMap = new Map<string, { species: BiodiversitySpecies[]; inferred: boolean }>();
       const describerMap = new Map<string, DescriberAggregate>();
       species.forEach((sp) => {
         if (!sp.scientificName) return;
         const row = byName.get(sp.scientificName);
         if (!row) return;
-        (row.native_countries || []).forEach((iso) => {
-          if (!getCountry(iso)) return;
-          if (!originMap.has(iso)) originMap.set(iso, []);
-          originMap.get(iso)!.push(sp);
-        });
+        const { iso, inferred } = deriveOriginIso(row);
+        if (iso) {
+          if (!originMap.has(iso)) originMap.set(iso, { species: [], inferred });
+          const entry = originMap.get(iso)!;
+          entry.species.push(sp);
+          // if any species in this country is not inferred, mark whole country as not inferred
+          if (!inferred) entry.inferred = false;
+        }
         if (row.describer_name) {
           const key = row.describer_name;
           if (!describerMap.has(key)) {
@@ -102,7 +127,7 @@ export function useExplorationBiogeography(
         }
       });
       const origins: OriginAggregate[] = Array.from(originMap.entries())
-        .map(([iso, sps]) => ({ country: getCountry(iso)!, species: sps }))
+        .map(([iso, v]) => ({ country: getCountry(iso)!, species: v.species, inferred: v.inferred }))
         .sort((a, b) => b.species.length - a.species.length);
       const describers = Array.from(describerMap.values()).sort((a, b) => b.species.length - a.species.length);
       const enrichedSpecies = species.filter((s) => s.scientificName && byName.has(s.scientificName)).length;
@@ -116,7 +141,6 @@ export function useExplorationBiogeography(
     staleTime: 5 * 60 * 1000,
   });
 
-  // Background enrichment when coverage is low
   useEffect(() => {
     if (!query.data || !explorationId) return;
     if (query.data.coverage >= 0.9) return;

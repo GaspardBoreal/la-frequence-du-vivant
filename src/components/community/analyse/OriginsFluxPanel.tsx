@@ -8,6 +8,7 @@ import OriginsMobileStory from './origins/OriginsMobileStory';
 import OriginsRankings from './origins/OriginsRankings';
 import CountryOriginDrawer from './origins/CountryOriginDrawer';
 import DescriberDrawer from './origins/DescriberDrawer';
+import DescribersGallery from './origins/DescribersGallery';
 
 interface Props {
   explorationId?: string;
@@ -131,6 +132,10 @@ const OriginsFluxPanel: React.FC<Props> = ({ explorationId, species, eventCentro
         origins={data.origins}
         describers={data.describers}
         onOpenCountry={setOpenCountry}
+        onOpenDescriber={setOpenDescriber}
+      />
+      <DescribersGallery
+        describers={data.describers}
         onOpenDescriber={setOpenDescriber}
       />
     </>
