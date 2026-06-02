@@ -271,6 +271,7 @@ const CommunityProfilesAdmin: React.FC = () => {
                     <TableRow>
                       <TableHead>Marcheur</TableHead>
                       <TableHead>Rôle</TableHead>
+                      <TableHead>Inscription</TableHead>
                       <TableHead>Marches</TableHead>
                       <TableHead>Ville</TableHead>
                       <TableHead>Formation</TableHead>
@@ -297,6 +298,11 @@ const CommunityProfilesAdmin: React.FC = () => {
                               <Icon className="h-3.5 w-3.5" />
                               {config.label}
                             </span>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                            {(profile as any).created_at
+                              ? new Date((profile as any).created_at).toLocaleDateString('fr-FR')
+                              : '—'}
                           </TableCell>
                           <TableCell className="font-mono">{profile.marches_count}</TableCell>
                           <TableCell>{profile.ville || '—'}</TableCell>
@@ -331,7 +337,7 @@ const CommunityProfilesAdmin: React.FC = () => {
                     })}
                     {filtered?.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                           Aucun profil trouvé.
                         </TableCell>
                       </TableRow>
