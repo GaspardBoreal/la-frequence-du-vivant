@@ -11,6 +11,7 @@ import OriginsRankings from './origins/OriginsRankings';
 import CountryOriginDrawer from './origins/CountryOriginDrawer';
 import DescriberDrawer from './origins/DescriberDrawer';
 import DescribersGallery from './origins/DescribersGallery';
+import ClassificationRulesPanel from './origins/ClassificationRulesPanel';
 
 
 interface Props {
