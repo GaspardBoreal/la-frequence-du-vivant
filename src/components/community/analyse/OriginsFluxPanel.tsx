@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, Minimize2, Globe2, Loader2, Sparkles } from 'lucide-react';
+import { Maximize2, Minimize2, Globe2, Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { useExplorationBiogeography } from '@/hooks/useExplorationBiogeography';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import WorldOriginsGlobe from './origins/WorldOriginsGlobe';
 import OriginsMobileStory from './origins/OriginsMobileStory';
@@ -10,6 +12,7 @@ import CountryOriginDrawer from './origins/CountryOriginDrawer';
 import DescriberDrawer from './origins/DescriberDrawer';
 import DescribersGallery from './origins/DescribersGallery';
 
+
 interface Props {
   explorationId?: string;
   species: BiodiversitySpecies[];
@@ -17,13 +20,33 @@ interface Props {
 }
 
 const OriginsFluxPanel: React.FC<Props> = ({ explorationId, species, eventCentroid }) => {
-  const { data, isLoading, eventPoint } = useExplorationBiogeography(explorationId, species, eventCentroid);
+  const { data, isLoading, eventPoint, refetch } = useExplorationBiogeography(explorationId, species, eventCentroid);
   const [fullscreen, setFullscreen] = useState(false);
   const [openCountry, setOpenCountry] = useState<string | null>(null);
   const [openDescriber, setOpenDescriber] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
   );
+
+  const handleRefresh = async () => {
+    if (!explorationId || refreshing) return;
+    setRefreshing(true);
+    toast.info('Re-vérification scientifique en cours (POWO + GBIF)…');
+    try {
+      const { data: res, error } = await supabase.functions.invoke('enrich-species-biogeography', {
+        body: { explorationId, limit: 200, force: true, maxAgeDays: 0 },
+      });
+      if (error) throw error;
+      toast.success(`${(res as any)?.enriched ?? 0} espèces re-vérifiées.`);
+      await refetch();
+    } catch (e) {
+      toast.error('Échec de la mise à jour. Réessayez plus tard.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -107,12 +130,22 @@ const OriginsFluxPanel: React.FC<Props> = ({ explorationId, species, eventCentro
         </div>
       </div>
       <button
+        onClick={handleRefresh}
+        disabled={refreshing || !explorationId}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-background/80 hover:bg-muted text-xs font-medium transition-colors disabled:opacity-50"
+        title="Re-vérifier toutes les origines via POWO (Kew) et GBIF"
+      >
+        <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+        {refreshing ? 'Vérification…' : 'Re-vérifier'}
+      </button>
+      <button
         onClick={() => setFullscreen((v) => !v)}
         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-background/80 hover:bg-muted text-xs font-medium transition-colors"
       >
         {fullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
         {fullscreen ? 'Réduire' : 'Plein écran'}
       </button>
+
     </div>
   );
 

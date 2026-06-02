@@ -4,6 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { getCountry, COUNTRIES, CountryInfo } from '@/lib/countriesGeoDictionary';
 
+export interface BiogeographySourceRef {
+  name: string;
+  url: string;
+  field: string;
+  accessed_at: string;
+}
+
 export interface BiogeographyRow {
   scientific_name: string;
   native_countries: string[] | null;
@@ -16,13 +23,19 @@ export interface BiogeographyRow {
   describer_birth_year: number | null;
   type_locality_country?: string | null;
   type_locality_label?: string | null;
+  type_locality_source?: string | null;
+  type_locality_confidence?: 'verified' | 'high' | 'medium' | 'low' | null;
+  sources?: BiogeographySourceRef[] | null;
+  native_countries_verified?: string[] | null;
+  fetched_at?: string | null;
 }
 
 export interface OriginAggregate {
   country: CountryInfo;
   species: BiodiversitySpecies[];
-  inferred?: boolean; // true if origin is a proxy (not real type locality)
+  inferred?: boolean;
 }
+
 
 export interface DescriberAggregate {
   name: string;
@@ -46,24 +59,25 @@ const EVENT_LAT_FALLBACK = 45.0;
 const EVENT_LNG_FALLBACK = 2.5;
 
 /**
- * Derive THE single country of origin for a species ("type locality" proxy).
- * Priority cascade:
- *   1. Explicit type_locality_country if present in cache
- *   2. describer_country if it belongs to native_countries (likely place of description)
- *   3. First native_country
- *   4. describer_country alone
+ * Strict origin derivation — no more guessing "first native country".
+ * Returns null when no scientifically reliable origin is available.
  */
 function deriveOriginIso(row: BiogeographyRow): { iso: string | null; inferred: boolean } {
-  if (row.type_locality_country && getCountry(row.type_locality_country)) {
+  const confidence = row.type_locality_confidence;
+  // Trust type_locality_country only when source pipeline has run (≥ medium)
+  if (row.type_locality_country && getCountry(row.type_locality_country) && confidence && confidence !== 'low') {
     return { iso: row.type_locality_country, inferred: false };
   }
-  const natives = (row.native_countries || []).filter((c) => getCountry(c));
-  const desc = row.describer_country && getCountry(row.describer_country) ? row.describer_country : null;
-  if (desc && natives.includes(desc)) return { iso: desc, inferred: false };
-  if (natives.length) return { iso: natives[0], inferred: true };
-  if (desc) return { iso: desc, inferred: true };
+  // Strict verified natives only
+  const natives = (row.native_countries_verified || []).filter((c) => getCountry(c));
+  if (natives.length) return { iso: natives[0], inferred: false };
+  // Low-confidence fallback to type_locality_country (describer-inferred)
+  if (row.type_locality_country && getCountry(row.type_locality_country)) {
+    return { iso: row.type_locality_country, inferred: true };
+  }
   return { iso: null, inferred: false };
 }
+
 
 export function useExplorationBiogeography(
   explorationId: string | null | undefined,
@@ -90,9 +104,10 @@ export function useExplorationBiogeography(
       for (const c of chunks) {
         const { data, error } = await supabase
           .from('species_biogeography_kb' as any)
-          .select('scientific_name, native_countries, native_continents, introduced_countries, authorship, describer_name, describer_year, describer_country, describer_birth_year, type_locality_country, type_locality_label')
+          .select('scientific_name, native_countries, native_continents, introduced_countries, authorship, describer_name, describer_year, describer_country, describer_birth_year, type_locality_country, type_locality_label, type_locality_source, type_locality_confidence, sources, native_countries_verified, fetched_at')
           .in('scientific_name', c);
         if (!error && data) rows.push(...(data as any));
+
       }
       const byName = new Map<string, BiogeographyRow>();
       rows.forEach((r) => byName.set(r.scientific_name, r));

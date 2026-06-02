@@ -4862,12 +4862,16 @@ export type Database = {
           introduced_countries: string[] | null
           native_continents: string[] | null
           native_countries: string[] | null
+          native_countries_verified: string[] | null
           scientific_name: string
           source: string
+          sources: Json | null
+          type_locality_confidence: string | null
           type_locality_country: string | null
           type_locality_label: string | null
           type_locality_lat: number | null
           type_locality_lng: number | null
+          type_locality_source: string | null
         }
         Insert: {
           authorship?: string | null
@@ -4880,12 +4884,16 @@ export type Database = {
           introduced_countries?: string[] | null
           native_continents?: string[] | null
           native_countries?: string[] | null
+          native_countries_verified?: string[] | null
           scientific_name: string
           source?: string
+          sources?: Json | null
+          type_locality_confidence?: string | null
           type_locality_country?: string | null
           type_locality_label?: string | null
           type_locality_lat?: number | null
           type_locality_lng?: number | null
+          type_locality_source?: string | null
         }
         Update: {
           authorship?: string | null
@@ -4898,12 +4906,16 @@ export type Database = {
           introduced_countries?: string[] | null
           native_continents?: string[] | null
           native_countries?: string[] | null
+          native_countries_verified?: string[] | null
           scientific_name?: string
           source?: string
+          sources?: Json | null
+          type_locality_confidence?: string | null
           type_locality_country?: string | null
           type_locality_label?: string | null
           type_locality_lat?: number | null
           type_locality_lng?: number | null
+          type_locality_source?: string | null
         }
         Relationships: []
       }
