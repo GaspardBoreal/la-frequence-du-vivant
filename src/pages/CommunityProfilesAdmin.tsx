@@ -80,9 +80,8 @@ const CommunityProfilesAdmin: React.FC = () => {
     queryKey: ['community-admins-set'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'admin');
+        .from('admin_users')
+        .select('user_id');
       if (error) throw error;
       return new Set((data || []).map((r: any) => r.user_id as string));
     },
