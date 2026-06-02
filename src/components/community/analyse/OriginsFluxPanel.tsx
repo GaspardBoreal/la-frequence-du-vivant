@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, Minimize2, Globe2, Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Maximize2, Minimize2, Globe2, Loader2, Sparkles, RefreshCw, FileDown, FileText } from 'lucide-react';
+import { exportClassificationCsv, exportClassificationPdf } from './origins/exportClassificationReport';
 import { useExplorationBiogeography } from '@/hooks/useExplorationBiogeography';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
