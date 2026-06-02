@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, Minimize2, Globe2, Loader2, Sparkles } from 'lucide-react';
+import { Maximize2, Minimize2, Globe2, Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { useExplorationBiogeography } from '@/hooks/useExplorationBiogeography';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import WorldOriginsGlobe from './origins/WorldOriginsGlobe';
 import OriginsMobileStory from './origins/OriginsMobileStory';
@@ -9,6 +11,7 @@ import OriginsRankings from './origins/OriginsRankings';
 import CountryOriginDrawer from './origins/CountryOriginDrawer';
 import DescriberDrawer from './origins/DescriberDrawer';
 import DescribersGallery from './origins/DescribersGallery';
+
 
 interface Props {
   explorationId?: string;
