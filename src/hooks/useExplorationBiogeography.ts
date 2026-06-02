@@ -59,24 +59,25 @@ const EVENT_LAT_FALLBACK = 45.0;
 const EVENT_LNG_FALLBACK = 2.5;
 
 /**
- * Derive THE single country of origin for a species ("type locality" proxy).
- * Priority cascade:
- *   1. Explicit type_locality_country if present in cache
- *   2. describer_country if it belongs to native_countries (likely place of description)
- *   3. First native_country
- *   4. describer_country alone
+ * Strict origin derivation — no more guessing "first native country".
+ * Returns null when no scientifically reliable origin is available.
  */
 function deriveOriginIso(row: BiogeographyRow): { iso: string | null; inferred: boolean } {
-  if (row.type_locality_country && getCountry(row.type_locality_country)) {
+  const confidence = row.type_locality_confidence;
+  // Trust type_locality_country only when source pipeline has run (≥ medium)
+  if (row.type_locality_country && getCountry(row.type_locality_country) && confidence && confidence !== 'low') {
     return { iso: row.type_locality_country, inferred: false };
   }
-  const natives = (row.native_countries || []).filter((c) => getCountry(c));
-  const desc = row.describer_country && getCountry(row.describer_country) ? row.describer_country : null;
-  if (desc && natives.includes(desc)) return { iso: desc, inferred: false };
-  if (natives.length) return { iso: natives[0], inferred: true };
-  if (desc) return { iso: desc, inferred: true };
+  // Strict verified natives only
+  const natives = (row.native_countries_verified || []).filter((c) => getCountry(c));
+  if (natives.length) return { iso: natives[0], inferred: false };
+  // Low-confidence fallback to type_locality_country (describer-inferred)
+  if (row.type_locality_country && getCountry(row.type_locality_country)) {
+    return { iso: row.type_locality_country, inferred: true };
+  }
   return { iso: null, inferred: false };
 }
+
 
 export function useExplorationBiogeography(
   explorationId: string | null | undefined,
