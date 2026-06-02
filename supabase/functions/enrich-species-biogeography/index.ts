@@ -197,6 +197,15 @@ Deno.serve(async (req) => {
           dist = await gbifDistributions(m.usageKey);
         }
         const continents = Array.from(new Set(dist.native.map((c) => ISO_TO_CONTINENT[c]).filter(Boolean)));
+        // Derive a SINGLE type-locality country (cascade):
+        // 1. describer_country if it is a native country (likely place of description)
+        // 2. first native country otherwise
+        // 3. describer_country alone if no native list
+        let typeLocality: string | null = null;
+        const desc = authorParsed.describer_country || null;
+        if (desc && dist.native.includes(desc)) typeLocality = desc;
+        else if (dist.native.length) typeLocality = dist.native[0];
+        else if (desc) typeLocality = desc;
         await supabase.from('species_biogeography_kb').upsert({
           scientific_name: sci,
           native_countries: dist.native,
@@ -207,6 +216,7 @@ Deno.serve(async (req) => {
           describer_year: authorParsed.describer_year ?? null,
           describer_country: authorParsed.describer_country ?? null,
           describer_birth_year: authorParsed.describer_birth_year ?? null,
+          type_locality_country: typeLocality,
           gbif_usage_key: m.usageKey ?? null,
           fetched_at: new Date().toISOString(),
         });
