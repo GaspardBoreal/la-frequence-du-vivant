@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Globe2, Sparkles, Maximize2, MapPin, Feather } from 'lucide-react';
+import { Globe2, Sparkles, Maximize2, MapPin } from 'lucide-react';
 import type { BiogeographyAggregates } from '@/hooks/useExplorationBiogeography';
+import DescribersGallery from './DescribersGallery';
 
 interface Props {
   data: BiogeographyAggregates;
