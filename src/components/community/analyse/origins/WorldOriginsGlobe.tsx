@@ -174,12 +174,13 @@ const WorldOriginsGlobe: React.FC<Props> = ({
 
       {/* Zoom & navigation controls overlay */}
       <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-1.5">
-        <button onClick={() => handleZoom(1.35)} className={btnClass} aria-label="Zoomer" title="Zoomer">
+        <button onClick={() => handleZoom(1 / 1.35)} className={btnClass} aria-label="Zoomer" title="Zoomer">
           <Plus className="w-4 h-4" />
         </button>
-        <button onClick={() => handleZoom(1 / 1.35)} className={btnClass} aria-label="Dézoomer" title="Dézoomer">
+        <button onClick={() => handleZoom(1.35)} className={btnClass} aria-label="Dézoomer" title="Dézoomer">
           <Minus className="w-4 h-4" />
         </button>
+
         <button onClick={handleRecenter} className={btnClass} aria-label="Recentrer" title="Recentrer">
           <Locate className="w-4 h-4" />
         </button>
