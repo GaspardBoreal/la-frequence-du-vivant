@@ -206,8 +206,12 @@ const CommunityProfilesAdmin: React.FC = () => {
 
   const filtered = profiles?.filter(p => {
     const q = search.toLowerCase();
-    return !q || `${p.prenom} ${p.nom} ${p.ville || ''}`.toLowerCase().includes(q);
+    const matchSearch = !q || `${p.prenom} ${p.nom} ${p.ville || ''}`.toLowerCase().includes(q);
+    const matchAdmin = !adminOnly || adminUserIds?.has(p.user_id);
+    return matchSearch && matchAdmin;
   });
+
+  const adminCount = adminUserIds?.size ?? 0;
 
   return (
     <div className="min-h-screen bg-background p-4">
