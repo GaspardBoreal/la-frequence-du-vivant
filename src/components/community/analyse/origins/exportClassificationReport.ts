@@ -57,7 +57,7 @@ function decideRule(row: BiogeographyRow | undefined): {
     sourceLabel: SOURCE_LABEL[src] || '—',
     confidence: (CONFIDENCE_LABEL[conf] || '—') + (inferred ? ' · fallback inféré' : ''),
     originIso: originIso || '—',
-    originName: country?.name || row.type_locality_label || '—',
+    originName: country?.nameFr || row.type_locality_label || '—',
     sourcesUrls,
   };
 }
