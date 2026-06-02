@@ -8,6 +8,7 @@ import OriginsMobileStory from './origins/OriginsMobileStory';
 import OriginsRankings from './origins/OriginsRankings';
 import CountryOriginDrawer from './origins/CountryOriginDrawer';
 import DescriberDrawer from './origins/DescriberDrawer';
+import DescribersGallery from './origins/DescribersGallery';
 
 interface Props {
   explorationId?: string;
