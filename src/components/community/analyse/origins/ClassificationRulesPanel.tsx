@@ -10,6 +10,13 @@ import { BookOpen, ChevronDown, ShieldCheck, Database, Globe2, Microscope, Alert
 const ClassificationRulesPanel: React.FC = () => {
   const [open, setOpen] = useState(false);
 
+  const toneClasses: Record<string, { bubble: string; icon: string; badge: string }> = {
+    emerald: { bubble: 'bg-emerald-500/15 ring-emerald-500/30', icon: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
+    sky: { bubble: 'bg-sky-500/15 ring-sky-500/30', icon: 'text-sky-600 dark:text-sky-400', badge: 'bg-sky-500/15 text-sky-700 dark:text-sky-300' },
+    indigo: { bubble: 'bg-indigo-500/15 ring-indigo-500/30', icon: 'text-indigo-600 dark:text-indigo-400', badge: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300' },
+    amber: { bubble: 'bg-amber-500/15 ring-amber-500/30', icon: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
+  };
+
   const steps = [
     {
       icon: ShieldCheck,
