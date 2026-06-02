@@ -134,6 +134,10 @@ const OriginsFluxPanel: React.FC<Props> = ({ explorationId, species, eventCentro
         onOpenCountry={setOpenCountry}
         onOpenDescriber={setOpenDescriber}
       />
+      <DescribersGallery
+        describers={data.describers}
+        onOpenDescriber={setOpenDescriber}
+      />
     </>
   );
 
