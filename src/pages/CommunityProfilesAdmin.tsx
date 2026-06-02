@@ -271,6 +271,7 @@ const CommunityProfilesAdmin: React.FC = () => {
                     <TableRow>
                       <TableHead>Marcheur</TableHead>
                       <TableHead>Rôle</TableHead>
+                      <TableHead>Inscription</TableHead>
                       <TableHead>Marches</TableHead>
                       <TableHead>Ville</TableHead>
                       <TableHead>Formation</TableHead>
