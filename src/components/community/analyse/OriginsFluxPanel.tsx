@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, Minimize2, Globe2, Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Maximize2, Minimize2, Globe2, Loader2, Sparkles, RefreshCw, FileDown, FileText } from 'lucide-react';
+import { exportClassificationCsv, exportClassificationPdf } from './origins/exportClassificationReport';
 import { useExplorationBiogeography } from '@/hooks/useExplorationBiogeography';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -140,12 +141,31 @@ const OriginsFluxPanel: React.FC<Props> = ({ explorationId, species, eventCentro
         {refreshing ? 'Vérification…' : 'Re-vérifier'}
       </button>
       <button
+        onClick={() => exportClassificationCsv({ species, data })}
+        disabled={!data}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-background/80 hover:bg-muted text-xs font-medium transition-colors disabled:opacity-50"
+        title="Exporter le rapport de classification au format CSV"
+      >
+        <FileDown className="w-3.5 h-3.5" />
+        CSV
+      </button>
+      <button
+        onClick={() => exportClassificationPdf({ species, data })}
+        disabled={!data}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-background/80 hover:bg-muted text-xs font-medium transition-colors disabled:opacity-50"
+        title="Exporter le rapport de classification au format PDF"
+      >
+        <FileText className="w-3.5 h-3.5" />
+        PDF
+      </button>
+      <button
         onClick={() => setFullscreen((v) => !v)}
         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-background/80 hover:bg-muted text-xs font-medium transition-colors"
       >
         {fullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
         {fullscreen ? 'Réduire' : 'Plein écran'}
       </button>
+
 
     </div>
   );
