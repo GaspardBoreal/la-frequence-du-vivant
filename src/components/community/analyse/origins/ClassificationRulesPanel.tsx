@@ -108,18 +108,19 @@ const ClassificationRulesPanel: React.FC = () => {
               <div className="space-y-3">
                 {steps.map((step) => {
                   const Icon = step.icon;
+                  const tc = toneClasses[step.tone];
                   return (
                     <div
                       key={step.title}
-                      className={`rounded-2xl border border-border/60 bg-background/40 p-4 flex gap-3`}
+                      className="rounded-2xl border border-border/60 bg-background/40 p-4 flex gap-3"
                     >
-                      <div className={`shrink-0 w-9 h-9 rounded-xl bg-${step.tone}-500/15 ring-1 ring-${step.tone}-500/30 flex items-center justify-center`}>
-                        <Icon className={`w-4 h-4 text-${step.tone}-600 dark:text-${step.tone}-400`} />
+                      <div className={`shrink-0 w-9 h-9 rounded-xl ring-1 flex items-center justify-center ${tc.bubble}`}>
+                        <Icon className={`w-4 h-4 ${tc.icon}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <h5 className="text-sm font-semibold">{step.title}</h5>
-                          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-${step.tone}-500/15 text-${step.tone}-700 dark:text-${step.tone}-300 font-semibold`}>
+                          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold ${tc.badge}`}>
                             {step.confidenceLabel}
                           </span>
                         </div>
