@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, MapPin, Sparkles } from 'lucide-react';
+import { Pencil, MapPin, Sparkles, CalendarPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   ageBracketLabel, computeAgeBracket, cspShortLabel, genderLabel,
@@ -105,10 +105,18 @@ export const ProfilCard: React.FC<Props> = ({ profile, onEdit }) => {
           )}
         </div>
 
-        <div className="relative mt-2 pt-2 border-t border-border/40 flex items-center justify-between">
-          <span className="text-[11px] text-muted-foreground">
-            {profile.marches_count ?? 0} marche{(profile.marches_count ?? 0) > 1 ? 's' : ''}
-          </span>
+        <div className="relative mt-2 pt-2 border-t border-border/40 flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-[11px] text-muted-foreground">
+              {profile.marches_count ?? 0} marche{(profile.marches_count ?? 0) > 1 ? 's' : ''}
+            </span>
+            {(profile as any).created_at && (
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <CalendarPlus className="h-3 w-3" />
+                Inscrit·e le {new Date((profile as any).created_at).toLocaleDateString('fr-FR')}
+              </span>
+            )}
+          </div>
           <Button size="sm" variant="ghost" onClick={() => onEdit(profile)} className="h-7 px-2">
             <Pencil className="h-3 w-3 mr-1" /> Éditer
           </Button>
