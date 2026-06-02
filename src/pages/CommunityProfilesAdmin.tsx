@@ -299,6 +299,11 @@ const CommunityProfilesAdmin: React.FC = () => {
                               {config.label}
                             </span>
                           </TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                            {(profile as any).created_at
+                              ? new Date((profile as any).created_at).toLocaleDateString('fr-FR')
+                              : '—'}
+                          </TableCell>
                           <TableCell className="font-mono">{profile.marches_count}</TableCell>
                           <TableCell>{profile.ville || '—'}</TableCell>
                           <TableCell>
