@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList, Pencil, Sparkles, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, ShieldCheck, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList, Pencil, Sparkles, RefreshCw, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -37,6 +37,7 @@ const roleConfig: Record<string, { label: string; icon: React.ElementType; color
 const CommunityProfilesAdmin: React.FC = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [adminOnly, setAdminOnly] = useState(false);
   const [marcheursSearch, setMarcheursSearch] = useState('');
   const [eventFilter, setEventFilter] = useState<string>('all');
   const [editing, setEditing] = useState<EditableProfile | null>(null);
@@ -72,6 +73,18 @@ const CommunityProfilesAdmin: React.FC = () => {
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: adminUserIds } = useQuery({
+    queryKey: ['community-admins-set'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+      if (error) throw error;
+      return new Set((data || []).map((r: any) => r.user_id as string));
     },
   });
 
