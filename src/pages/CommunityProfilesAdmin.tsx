@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList, Pencil, Sparkles, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, ShieldCheck, Link2, MousePointerClick, UserPlus2, Users, Calendar, MapPin, CheckCircle2, ClipboardList, Pencil, Sparkles, RefreshCw, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -37,6 +37,7 @@ const roleConfig: Record<string, { label: string; icon: React.ElementType; color
 const CommunityProfilesAdmin: React.FC = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [adminOnly, setAdminOnly] = useState(false);
   const [marcheursSearch, setMarcheursSearch] = useState('');
   const [eventFilter, setEventFilter] = useState<string>('all');
   const [editing, setEditing] = useState<EditableProfile | null>(null);
@@ -72,6 +73,18 @@ const CommunityProfilesAdmin: React.FC = () => {
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: adminUserIds } = useQuery({
+    queryKey: ['community-admins-set'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+      if (error) throw error;
+      return new Set((data || []).map((r: any) => r.user_id as string));
     },
   });
 
@@ -193,8 +206,12 @@ const CommunityProfilesAdmin: React.FC = () => {
 
   const filtered = profiles?.filter(p => {
     const q = search.toLowerCase();
-    return !q || `${p.prenom} ${p.nom} ${p.ville || ''}`.toLowerCase().includes(q);
+    const matchSearch = !q || `${p.prenom} ${p.nom} ${p.ville || ''}`.toLowerCase().includes(q);
+    const matchAdmin = !adminOnly || adminUserIds?.has(p.user_id);
+    return matchSearch && matchAdmin;
   });
+
+  const adminCount = adminUserIds?.size ?? 0;
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -232,7 +249,7 @@ const CommunityProfilesAdmin: React.FC = () => {
           {/* ===== COMMUNAUTÉ ===== */}
           <TabsContent value="communaute">
             {profiles && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-3 mb-6">
                 <Card className="p-3 text-center">
                   <Users className="h-5 w-5 mx-auto mb-1 text-primary" />
                   <p className="text-2xl font-bold text-foreground">{profiles.length}</p>
@@ -249,6 +266,30 @@ const CommunityProfilesAdmin: React.FC = () => {
                     </Card>
                   );
                 })}
+                <button
+                  type="button"
+                  onClick={() => setAdminOnly(v => !v)}
+                  className={`p-3 text-center rounded-lg border transition-all ${
+                    adminOnly
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                      : 'border-border bg-card hover:border-primary/40 hover:bg-primary/5'
+                  }`}
+                  title={adminOnly ? 'Cliquer pour afficher tous les profils' : 'Filtrer pour ne voir que les admins'}
+                >
+                  <ShieldCheck className={`h-5 w-5 mx-auto mb-1 ${adminOnly ? 'text-primary' : 'text-primary/70'}`} />
+                  <p className="text-2xl font-bold text-foreground">{adminCount}</p>
+                  <p className="text-xs text-muted-foreground">Admins</p>
+                </button>
+              </div>
+            )}
+
+            {adminOnly && (
+              <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-md bg-primary/10 border border-primary/30 text-sm">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <span className="text-foreground">Filtre actif : <strong>Administrateurs uniquement</strong></span>
+                <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => setAdminOnly(false)}>
+                  <X className="h-3.5 w-3.5 mr-1" />Retirer
+                </Button>
               </div>
             )}
 
@@ -294,10 +335,21 @@ const CommunityProfilesAdmin: React.FC = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className={`flex items-center gap-1.5 text-sm ${config.color}`}>
-                              <Icon className="h-3.5 w-3.5" />
-                              {config.label}
-                            </span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`flex items-center gap-1.5 text-sm ${config.color}`}>
+                                <Icon className="h-3.5 w-3.5" />
+                                {config.label}
+                              </span>
+                              {adminUserIds?.has(profile.user_id) && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-primary/15 text-primary border border-primary/30"
+                                  title="Accès administrateur"
+                                >
+                                  <ShieldCheck className="h-3 w-3" />
+                                  Admin
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                             {(profile as any).created_at
