@@ -104,9 +104,10 @@ export function useExplorationBiogeography(
       for (const c of chunks) {
         const { data, error } = await supabase
           .from('species_biogeography_kb' as any)
-          .select('scientific_name, native_countries, native_continents, introduced_countries, authorship, describer_name, describer_year, describer_country, describer_birth_year, type_locality_country, type_locality_label')
+          .select('scientific_name, native_countries, native_continents, introduced_countries, authorship, describer_name, describer_year, describer_country, describer_birth_year, type_locality_country, type_locality_label, type_locality_source, type_locality_confidence, sources, native_countries_verified, fetched_at')
           .in('scientific_name', c);
         if (!error && data) rows.push(...(data as any));
+
       }
       const byName = new Map<string, BiogeographyRow>();
       rows.forEach((r) => byName.set(r.scientific_name, r));
