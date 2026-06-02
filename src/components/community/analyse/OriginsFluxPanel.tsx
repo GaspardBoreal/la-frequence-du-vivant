@@ -130,12 +130,22 @@ const OriginsFluxPanel: React.FC<Props> = ({ explorationId, species, eventCentro
         </div>
       </div>
       <button
+        onClick={handleRefresh}
+        disabled={refreshing || !explorationId}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-background/80 hover:bg-muted text-xs font-medium transition-colors disabled:opacity-50"
+        title="Re-vérifier toutes les origines via POWO (Kew) et GBIF"
+      >
+        <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+        {refreshing ? 'Vérification…' : 'Re-vérifier'}
+      </button>
+      <button
         onClick={() => setFullscreen((v) => !v)}
         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-background/80 hover:bg-muted text-xs font-medium transition-colors"
       >
         {fullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
         {fullscreen ? 'Réduire' : 'Plein écran'}
       </button>
+
     </div>
   );
 
