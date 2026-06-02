@@ -37,8 +37,10 @@ const WorldOriginsGlobe: React.FC<Props> = ({
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.35;
       controls.enableZoom = true;
-      controls.minDistance = 180;
-      controls.maxDistance = 800;
+      controls.minDistance = 110;
+      controls.maxDistance = 1000;
+      controls.enableZoom = true;
+      controls.zoomSpeed = 0.9;
       // Stop auto-rotation as soon as the user interacts with the globe
       const stop = () => {
         if (controls.autoRotate) {
@@ -56,18 +58,21 @@ const WorldOriginsGlobe: React.FC<Props> = ({
     ref.current.pointOfView({ lat: eventPoint.lat, lng: eventPoint.lng, altitude: 2.2 }, 1500);
   }, [eventPoint.lat, eventPoint.lng]);
 
+  // factor < 1 → caméra plus proche (zoom in) ; factor > 1 → plus loin (zoom out)
   const handleZoom = (factor: number) => {
     const controls = ref.current?.controls?.();
-    if (!controls) return;
+    const cam = ref.current?.camera?.();
+    if (!controls || !cam) return;
     if (controls.autoRotate) { controls.autoRotate = false; setAutoRotate(false); }
-    controls.dollyIn?.(factor) ?? null;
-    // Fallback: tweak camera distance directly
-    if (!controls.dollyIn) {
-      const cam = ref.current.camera?.();
-      if (cam) cam.position.multiplyScalar(1 / factor);
-    }
+    const minD = controls.minDistance ?? 110;
+    const maxD = controls.maxDistance ?? 1000;
+    const currentDist = cam.position.length();
+    const targetDist = Math.min(maxD, Math.max(minD, currentDist * factor));
+    const scale = targetDist / currentDist;
+    cam.position.multiplyScalar(scale);
     controls.update?.();
   };
+
 
   const handleRecenter = () => {
     ref.current?.pointOfView({ lat: eventPoint.lat, lng: eventPoint.lng, altitude: 2.2 }, 1200);
