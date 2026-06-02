@@ -4864,6 +4864,10 @@ export type Database = {
           native_countries: string[] | null
           scientific_name: string
           source: string
+          type_locality_country: string | null
+          type_locality_label: string | null
+          type_locality_lat: number | null
+          type_locality_lng: number | null
         }
         Insert: {
           authorship?: string | null
@@ -4878,6 +4882,10 @@ export type Database = {
           native_countries?: string[] | null
           scientific_name: string
           source?: string
+          type_locality_country?: string | null
+          type_locality_label?: string | null
+          type_locality_lat?: number | null
+          type_locality_lng?: number | null
         }
         Update: {
           authorship?: string | null
@@ -4892,6 +4900,10 @@ export type Database = {
           native_countries?: string[] | null
           scientific_name?: string
           source?: string
+          type_locality_country?: string | null
+          type_locality_label?: string | null
+          type_locality_lat?: number | null
+          type_locality_lng?: number | null
         }
         Relationships: []
       }
