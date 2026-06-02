@@ -20,13 +20,33 @@ interface Props {
 }
 
 const OriginsFluxPanel: React.FC<Props> = ({ explorationId, species, eventCentroid }) => {
-  const { data, isLoading, eventPoint } = useExplorationBiogeography(explorationId, species, eventCentroid);
+  const { data, isLoading, eventPoint, refetch } = useExplorationBiogeography(explorationId, species, eventCentroid);
   const [fullscreen, setFullscreen] = useState(false);
   const [openCountry, setOpenCountry] = useState<string | null>(null);
   const [openDescriber, setOpenDescriber] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
   );
+
+  const handleRefresh = async () => {
+    if (!explorationId || refreshing) return;
+    setRefreshing(true);
+    toast.info('Re-vérification scientifique en cours (POWO + GBIF)…');
+    try {
+      const { data: res, error } = await supabase.functions.invoke('enrich-species-biogeography', {
+        body: { explorationId, limit: 200, force: true, maxAgeDays: 0 },
+      });
+      if (error) throw error;
+      toast.success(`${(res as any)?.enriched ?? 0} espèces re-vérifiées.`);
+      await refetch();
+    } catch (e) {
+      toast.error('Échec de la mise à jour. Réessayez plus tard.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
