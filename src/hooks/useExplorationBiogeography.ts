@@ -4,6 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { getCountry, COUNTRIES, CountryInfo } from '@/lib/countriesGeoDictionary';
 
+export interface BiogeographySourceRef {
+  name: string;
+  url: string;
+  field: string;
+  accessed_at: string;
+}
+
 export interface BiogeographyRow {
   scientific_name: string;
   native_countries: string[] | null;
@@ -16,13 +23,19 @@ export interface BiogeographyRow {
   describer_birth_year: number | null;
   type_locality_country?: string | null;
   type_locality_label?: string | null;
+  type_locality_source?: string | null;
+  type_locality_confidence?: 'verified' | 'high' | 'medium' | 'low' | null;
+  sources?: BiogeographySourceRef[] | null;
+  native_countries_verified?: string[] | null;
+  fetched_at?: string | null;
 }
 
 export interface OriginAggregate {
   country: CountryInfo;
   species: BiodiversitySpecies[];
-  inferred?: boolean; // true if origin is a proxy (not real type locality)
+  inferred?: boolean;
 }
+
 
 export interface DescriberAggregate {
   name: string;
