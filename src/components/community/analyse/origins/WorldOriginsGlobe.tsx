@@ -37,8 +37,10 @@ const WorldOriginsGlobe: React.FC<Props> = ({
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.35;
       controls.enableZoom = true;
-      controls.minDistance = 180;
-      controls.maxDistance = 800;
+      controls.minDistance = 110;
+      controls.maxDistance = 1000;
+      controls.enableZoom = true;
+      controls.zoomSpeed = 0.9;
       // Stop auto-rotation as soon as the user interacts with the globe
       const stop = () => {
         if (controls.autoRotate) {
@@ -56,18 +58,21 @@ const WorldOriginsGlobe: React.FC<Props> = ({
     ref.current.pointOfView({ lat: eventPoint.lat, lng: eventPoint.lng, altitude: 2.2 }, 1500);
   }, [eventPoint.lat, eventPoint.lng]);
 
+  // factor < 1 → caméra plus proche (zoom in) ; factor > 1 → plus loin (zoom out)
   const handleZoom = (factor: number) => {
     const controls = ref.current?.controls?.();
-    if (!controls) return;
+    const cam = ref.current?.camera?.();
+    if (!controls || !cam) return;
     if (controls.autoRotate) { controls.autoRotate = false; setAutoRotate(false); }
-    controls.dollyIn?.(factor) ?? null;
-    // Fallback: tweak camera distance directly
-    if (!controls.dollyIn) {
-      const cam = ref.current.camera?.();
-      if (cam) cam.position.multiplyScalar(1 / factor);
-    }
+    const minD = controls.minDistance ?? 110;
+    const maxD = controls.maxDistance ?? 1000;
+    const currentDist = cam.position.length();
+    const targetDist = Math.min(maxD, Math.max(minD, currentDist * factor));
+    const scale = targetDist / currentDist;
+    cam.position.multiplyScalar(scale);
     controls.update?.();
   };
+
 
   const handleRecenter = () => {
     ref.current?.pointOfView({ lat: eventPoint.lat, lng: eventPoint.lng, altitude: 2.2 }, 1200);
@@ -169,12 +174,13 @@ const WorldOriginsGlobe: React.FC<Props> = ({
 
       {/* Zoom & navigation controls overlay */}
       <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-1.5">
-        <button onClick={() => handleZoom(1.35)} className={btnClass} aria-label="Zoomer" title="Zoomer">
+        <button onClick={() => handleZoom(1 / 1.35)} className={btnClass} aria-label="Zoomer" title="Zoomer">
           <Plus className="w-4 h-4" />
         </button>
-        <button onClick={() => handleZoom(1 / 1.35)} className={btnClass} aria-label="Dézoomer" title="Dézoomer">
+        <button onClick={() => handleZoom(1.35)} className={btnClass} aria-label="Dézoomer" title="Dézoomer">
           <Minus className="w-4 h-4" />
         </button>
+
         <button onClick={handleRecenter} className={btnClass} aria-label="Recentrer" title="Recentrer">
           <Locate className="w-4 h-4" />
         </button>
