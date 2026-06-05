@@ -244,6 +244,7 @@ const CommunityProfilesAdmin: React.FC = () => {
             <TabsTrigger value="activites">Activités</TabsTrigger>
             <TabsTrigger value="affiliation">Affiliation marcheurs</TabsTrigger>
             <TabsTrigger value="marcheurs">Inscriptions</TabsTrigger>
+            <TabsTrigger value="a-valider">À valider</TabsTrigger>
           </TabsList>
 
           {/* ===== COMMUNAUTÉ ===== */}
