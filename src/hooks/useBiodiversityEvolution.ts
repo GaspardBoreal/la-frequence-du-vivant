@@ -369,5 +369,5 @@ export function useBiodiversityEvolution(
       totalSpecies: seenSpecies.size,
       totalObservations: totalObs,
     };
-  }, [snapshots, opts.dateSource, opts.metric, opts.period, opts.customRange?.from, opts.customRange?.to, frMap]);
+  }, [snapshots, marcheurObs, opts.dateSource, opts.metric, opts.period, opts.customRange?.from, opts.customRange?.to, frMap]);
 }
