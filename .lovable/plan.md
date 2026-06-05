@@ -1,53 +1,77 @@
-# Correctif proposé
+# Diagnostic — Colyne Bernard / BORDEAUX Patio ISEG
 
-## Constat
-Pour **BORDEAUX / Patio végétalisé ISEG**, il y a bien eu de la mesure le **04/06/2026** :
-- les **4 espèces de Victor** existent en base dans `marcheur_observations`
-- elles sont **dans le rayon 50 m**
-- elles sont aussi visibles par les RPC unifiées (`get_exploration_species_count` et `get_exploration_species_timeline`)
+## Ce que dit la BDD
 
-Le problème n’est donc **pas la collecte**, ni l’ingestion, ni le rayon.
+- Profil `3d0d27ff…` / user `3e3a7897…`, rôle = `marcheur_en_devenir`, `marches_count = 0`
+- Compte iNat lié : `colyne2` ✅
+- **2 inscriptions** (`marche_participations`) :
+  - DEVIAT « Marcher sur un sol qui respire »
+  - BORDEAUX / Patio végétalisé ISEG (expl. `75e1…d8`)
+- Sur les **deux**, `validated_at IS NULL` et `validation_method IS NULL`
+- Aucune entrée dans `marcheur_backfill_log` pour cet utilisateur
 
-## Problème exact
-La vue **Marches** et la vue **Synthèse > Taxons observés** ne lisent pas encore la même source pour la courbe **Pouls du vivant** :
-- **Marches** s’appuie sur le pool unifié et voit bien les 4 espèces du 04/06
-- le graphe **Pouls du vivant** reconstruit encore son historique à partir des **snapshots passés en props**
-- ce hook historique ne prend pas les `marcheur_observations` récentes comme source primaire
+## Cause racine — un seul verrou, deux symptômes
 
-Conséquence :
-- l’inventaire peut afficher **10 espèces**
-- mais le graphe reste bloqué sur **6 espèces depuis le 29/05**
-- cela donne l’impression fausse qu’aucune mesure récente n’a eu lieu
+Le champ `validated_at` est le **gate unique** de tout le pipeline marcheur :
 
-## Ce que je vais corriger
-1. **Brancher le graphe “Pouls du vivant” sur la RPC unifiée `get_exploration_species_timeline`**
-   - même source que le comptage officiel
-   - inclusion des observations du 04/06
-   - cohérence stricte entre Marches, Carte, Synthèse et Taxons
+1. **Rôle bloqué à « En devenir »**
+  Le trigger de promotion (`role-promotion-only-trigger`) ne passe à `marcheur` que lorsque `validated_at IS NOT NULL`. Tant que la présence n'est pas validée, le rôle reste `marcheur_en_devenir`, même si l'inscription existe.
+2. **Aucune observation iNat remontée**
+  Le cron `backfill-marcheur-inat-batch` filtre explicitement :
+   Colyne a bien le compte iNat lié, mais comme `validated_at = NULL`, **elle n'entre jamais dans la boucle de backfill** → ses 10 observations iNat ne sont jamais rattachées à la marche, ni copiées dans `marcheur_observations`, ni visibles dans Patio ISEG.
 
-2. **Retirer la logique locale snapshot-only dans le hook d’évolution**
-   - le calcul actuel à partir de `snapshots` restera seulement en fallback si nécessaire
-   - la vue principale utilisera la timeline SQL canonique
+Le trigger `participation-validation-trigger` (`mem://technical/community/participation-validation-trigger`) qui devrait déclencher la synchro au moment de la validation ne se déclenche jamais non plus, pour la même raison.
 
-3. **Aligner les en-têtes et les totaux affichés**
-   - `10 espèces découvertes depuis le 29 mai 2026`
-   - apparition d’un point/barre au **04/06/2026** avec les **4 nouvelles espèces**
+**Conclusion :** ce n'est pas un bug de code, c'est un **état BDD incohérent** — l'inscription a été créée (probablement via auto-invite ou inscription libre) sans jamais passer par l'étape « validation de présence » qui appose `validated_at`. La logique métier actuelle considère donc Colyne comme jamais venue, alors qu'elle a un compte iNat actif et 10 obs.
 
-4. **Ajouter une garde anti-régression**
-   - si le graphe et le compteur divergent à nouveau, log diagnostic explicite
-   - invalidation/reload cohérent quand `marcheur_observations` ou `biodiversity_snapshots` changent
+## Correctif proposé — 3 niveaux
 
-## Résultat attendu
-Après correction, pour cet événement :
-- **Marches** : 10 espèces
-- **Synthèse / Pouls du vivant** : 10 espèces
-- courbe sur **2 dates** au minimum : **29/05** puis **04/06**
-- les 4 espèces de Victor ne disparaissent plus de la narration temporelle
+### 1. Correctif data immédiat (Colyne + Patio ISEG)
 
-## Détail technique
-- `src/components/community/EventBiodiversityTab.tsx`
-- `src/components/community/exploration/BiodiversityEvolutionChart.tsx`
-- `src/hooks/useBiodiversityEvolution.ts`
-- éventuellement un nouveau hook dédié à `get_exploration_species_timeline`
+Migration ponctuelle :
 
-Je validerai ensuite directement sur cette exploration que le **04/06/2026** ressort bien dans le graphe et que les chiffres sont identiques partout.
+- `UPDATE marche_participations SET validated_at = now(), validation_method = 'manual_backfill' WHERE id IN (…ses 2 lignes…)`
+- Déclenche automatiquement :
+  - promotion `marcheur_en_devenir` → `marcheur` via trigger
+  - synchro iNat via trigger `backfill-marcheur-inaturalist` sur les 2 explorations
+- Vérification : ses 10 obs doivent apparaître dans `marcheur_observations` et dans le « Pouls du vivant ».
+
+### 2. Correctif structurel — détecter la dérive
+
+Nouveau dashboard admin (onglet **Communauté → Inscriptions non validées**) listant :
+
+- Marcheurs inscrits depuis > 48 h avec `validated_at IS NULL`
+- Indicateur « ⚠ compte iNat lié + obs disponibles non remontées »
+- Bouton « Valider rétroactivement » (un clic → UPDATE + trigger backfill)
+
+Évite que d'autres Colyne restent invisibles.
+
+### 3. Hardening pipeline — élargir le filet de sécurité du backfill
+
+Modifier `backfill-marcheur-inat-batch` pour inclure **aussi** les participations non validées **si** :
+
+- compte iNat lié ET
+- au moins 1 obs iNat dans la fenêtre/rayon de la marche
+
+Stratégie : 2e passe dans le cron (basse priorité) qui tente le backfill « opportuniste ». Si on trouve des obs dans le périmètre, on auto-valide la participation (`validation_method = 'inat_auto'`) et on déclenche la promotion. Une obs iNat géolocalisée dans le rayon d'une marche à laquelle on est inscrit = preuve de présence suffisante.
+
+## Fichiers touchés
+
+- **Migration** : `UPDATE marche_participations` (les 2 lignes de Colyne) + éventuel script de rattrapage global pour tous les marcheurs avec compte iNat lié et participation > 48 h sans validation
+- **Edge** `supabase/functions/backfill-marcheur-inat-batch/index.ts` : 2e passe opportuniste
+- **Admin** `src/components/admin/CommunauteDashboard.tsx` (+ nouvelle sous-page `UnvalidatedRegistrationsTab.tsx`)
+- **Mémoire** : nouveau `mem://technical/community/validated-at-as-pipeline-gate` documentant le verrou unique
+
+## Question avant build
+
+Souhaites-tu :
+
+- **A** — uniquement le correctif #1 (fix Colyne maintenant) ?
+- **B** — #1 + #2 (fix + dashboard de détection) ?
+- **C** — les 3 (fix + dashboard + auto-validation opportuniste via iNat) ?
+
+Recommandé : **C**, c'est le seul qui empêche le problème de se reproduire silencieusement.  
+  
+GO POUR LE C
+
+&nbsp;
