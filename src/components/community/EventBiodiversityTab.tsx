@@ -217,6 +217,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
 
 
 
+
   // Fetch marcheur observations (incl. iNat backfill) for these marches.
   // Source de vérité complémentaire des snapshots : permet d'intégrer dans
   // le simulateur et la carte les observations rattachées aux marcheurs avec
@@ -242,6 +243,18 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     },
     enabled: !!marcheIds?.length,
   });
+
+  // Filtre par rayon les marcheur_observations brutes (avant injection dans
+  // le « Pouls du vivant »). Même règle que le RPC unifié : pas de GPS →
+  // conservée (fallback legacy), sinon haversine ≤ radius_m.
+  const filteredMarcheurObsForTimeline = useMemo(() => {
+    if (!marcheCtxById || !marcheurObs) return marcheurObs;
+    return marcheurObs.filter((o: any) => {
+      const ctx = marcheCtxById.get(o.marche_id);
+      if (!ctx) return true;
+      return isObservationWithinRadius(o, ctx);
+    });
+  }, [marcheurObs, marcheCtxById]);
   const { data: allEventMarchesData } = useQuery({
     queryKey: ['event-all-marches', explorationId],
     queryFn: async (): Promise<SpeciesMarcheData[]> => {
@@ -607,7 +620,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {activeSubTab === 'taxons' && (
           <TaxonsSubTab
             snapshots={filteredSnapshots}
-
+            marcheurObs={filteredMarcheurObsForTimeline}
             allSpeciesWithFrNames={allSpeciesWithFrNames}
             allEventMarchesData={allEventMarchesData}
             eventParticipants={eventParticipants}
@@ -660,6 +673,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
 
 interface TaxonsSubTabProps {
   snapshots: any[] | undefined;
+  marcheurObs?: any[] | undefined;
   allSpeciesWithFrNames: BiodiversitySpecies[];
   allEventMarchesData: SpeciesMarcheData[] | undefined;
   eventParticipants: Array<{ name: string; source: 'community' | 'crew' }>;
@@ -674,7 +688,7 @@ interface TaxonsSubTabProps {
 }
 
 const TaxonsSubTab: React.FC<TaxonsSubTabProps> = ({
-  snapshots, allSpeciesWithFrNames, allEventMarchesData, eventParticipants,
+  snapshots, marcheurObs, allSpeciesWithFrNames, allEventMarchesData, eventParticipants,
   explorationId, onNavigateToMarche,
   period, customRange, dateSource,
   onPeriodChange, onCustomRangeChange, onDateSourceChange,
@@ -687,6 +701,8 @@ const TaxonsSubTab: React.FC<TaxonsSubTabProps> = ({
     <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <BiodiversityEvolutionChart
         snapshots={snapshots}
+        marcheurObs={marcheurObs}
+
 
         overrideTotalSpecies={speciesFiltered.length}
         marchesById={new Map(

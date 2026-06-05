@@ -39,6 +39,8 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   snapshots: any[] | undefined;
+  /** marcheur_observations déjà filtrées par rayon (fusion avec snapshots pour la timeline). */
+  marcheurObs?: any[] | undefined;
   marchesById?: Map<string, { name: string; ville?: string; latitude?: number; longitude?: number }>;
   onNavigateToMarche?: (marcheId: string) => void;
   explorationId?: string;
@@ -94,7 +96,7 @@ const fromISOToDate = (s?: string): Date | undefined => {
 
 
 const BiodiversityEvolutionChart: React.FC<Props> = ({
-  snapshots, marchesById, onNavigateToMarche, explorationId, allEventMarches, overrideTotalSpecies,
+  snapshots, marcheurObs, marchesById, onNavigateToMarche, explorationId, allEventMarches, overrideTotalSpecies,
   period: periodProp, onPeriodChange,
   customRange: customRangeProp, onCustomRangeChange,
   dateSource: dateSourceProp, onDateSourceChange,
@@ -122,12 +124,16 @@ const BiodiversityEvolutionChart: React.FC<Props> = ({
   const customFrom = fromISOToDate(customRange?.from);
   const customTo = fromISOToDate(customRange?.to);
 
-  const { series, byDay, firstDate, totalSpecies, totalObservations } = useBiodiversityEvolution(snapshots, {
-    dateSource,
-    metric,
-    period,
-    customRange: period === 'custom' ? customRange : undefined,
-  });
+  const { series, byDay, firstDate, totalSpecies, totalObservations } = useBiodiversityEvolution(
+    snapshots,
+    {
+      dateSource,
+      metric,
+      period,
+      customRange: period === 'custom' ? customRange : undefined,
+    },
+    marcheurObs,
+  );
 
 
   const displayedSpecies = typeof overrideTotalSpecies === 'number' ? overrideTotalSpecies : totalSpecies;
