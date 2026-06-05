@@ -673,6 +673,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
 
 interface TaxonsSubTabProps {
   snapshots: any[] | undefined;
+  marcheurObs?: any[] | undefined;
   allSpeciesWithFrNames: BiodiversitySpecies[];
   allEventMarchesData: SpeciesMarcheData[] | undefined;
   eventParticipants: Array<{ name: string; source: 'community' | 'crew' }>;
@@ -687,7 +688,7 @@ interface TaxonsSubTabProps {
 }
 
 const TaxonsSubTab: React.FC<TaxonsSubTabProps> = ({
-  snapshots, allSpeciesWithFrNames, allEventMarchesData, eventParticipants,
+  snapshots, marcheurObs, allSpeciesWithFrNames, allEventMarchesData, eventParticipants,
   explorationId, onNavigateToMarche,
   period, customRange, dateSource,
   onPeriodChange, onCustomRangeChange, onDateSourceChange,
