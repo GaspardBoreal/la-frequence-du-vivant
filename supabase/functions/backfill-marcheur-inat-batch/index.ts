@@ -1,5 +1,12 @@
 // Cron quotidien : ré-attache les nouvelles obs iNat de tous les marcheurs
-// éligibles (compte iNat lié + participation validée) sur leurs explorations.
+// éligibles (compte iNat lié + inscription) sur leurs explorations.
+// Deux passes :
+//  - Pass 1 (haute priorité) : participations DÉJÀ validées
+//  - Pass 2 (opportuniste)   : participations NON validées → si au moins une
+//                              obs iNat est trouvée dans le périmètre, on
+//                              auto-valide la participation (validation_method
+//                              = 'inat_auto'), ce qui déclenche promotion de
+//                              rôle via trigger update_community_role_on_participation.
 // Auth : header X-Cron-Secret obligatoire (comparé à CRON_SHARED_SECRET).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
 
@@ -13,6 +20,14 @@ const MAX_COUPLES = 200;
 const THROTTLE_MS = 250;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type Couple = {
+  user_id: string;
+  exploration_id: string;
+  marche_event_id: string;
+  participation_id: string;
+  validated: boolean;
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -32,10 +47,11 @@ Deno.serve(async (req) => {
 
   const startedAt = new Date().toISOString();
 
-  // 1. Récupérer les couples éligibles (user_id, exploration_id, marche_event_id)
+  // 1. Récupérer TOUS les couples éligibles (validés et non validés)
   const { data: rows, error: queryErr } = await admin
     .from('marche_participations')
     .select(`
+      id,
       user_id,
       marche_event_id,
       validated_at,
@@ -45,10 +61,9 @@ Deno.serve(async (req) => {
         community_profile_science_accounts!inner(network)
       )
     `)
-    .not('validated_at', 'is', null)
     .eq('community_profiles.community_profile_science_accounts.network', 'inaturalist')
     .not('marche_events.exploration_id', 'is', null)
-    .limit(MAX_COUPLES);
+    .limit(MAX_COUPLES * 2);
 
   if (queryErr) {
     return new Response(JSON.stringify({ error: queryErr.message }), {
@@ -57,26 +72,32 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Dédoublonner sur (user_id, exploration_id) ; on garde un marche_event_id représentatif
-  const seen = new Map<string, { user_id: string; exploration_id: string; marche_event_id: string }>();
+  // Dédoublonner sur (user_id, exploration_id) en gardant la participation
+  // validée si elle existe, sinon une non validée.
+  const seen = new Map<string, Couple>();
   for (const r of (rows ?? []) as any[]) {
     const explorationId = r.marche_events?.exploration_id;
     if (!explorationId) continue;
     const key = `${r.user_id}::${explorationId}`;
-    if (!seen.has(key)) {
+    const validated = !!r.validated_at;
+    const existing = seen.get(key);
+    if (!existing || (validated && !existing.validated)) {
       seen.set(key, {
         user_id: r.user_id,
         exploration_id: explorationId,
         marche_event_id: r.marche_event_id,
+        participation_id: r.id,
+        validated,
       });
     }
   }
-  const couples = Array.from(seen.values());
+  const couples = Array.from(seen.values()).slice(0, MAX_COUPLES);
 
   let ok = 0;
   let noAccount = 0;
   let errors = 0;
   let totalAdded = 0;
+  let autoValidated = 0;
   const errorSamples: Array<{ user_id: string; exploration_id: string; error: string }> = [];
 
   // 2. Invoquer la fonction unitaire pour chaque couple
@@ -93,7 +114,7 @@ Deno.serve(async (req) => {
           user_id: c.user_id,
           exploration_id: c.exploration_id,
           marche_event_id: c.marche_event_id,
-          source: 'cron_daily',
+          source: c.validated ? 'cron_daily' : 'cron_daily_opportunistic',
         }),
       });
       const json = await resp.json().catch(() => ({}));
@@ -110,7 +131,22 @@ Deno.serve(async (req) => {
         noAccount++;
       } else {
         ok++;
-        totalAdded += Number(json?.inserted ?? json?.added ?? 0);
+        const inserted = Number(json?.inserted ?? json?.added ?? 0);
+        totalAdded += inserted;
+
+        // 2.b. Auto-validation opportuniste : participation non validée
+        // + au moins une obs iNat dans le périmètre = preuve de présence.
+        if (!c.validated && inserted > 0) {
+          const { error: upErr } = await admin
+            .from('marche_participations')
+            .update({
+              validated_at: new Date().toISOString(),
+              validation_method: 'inat_auto',
+            })
+            .eq('id', c.participation_id)
+            .is('validated_at', null);
+          if (!upErr) autoValidated++;
+        }
       }
     } catch (e) {
       errors++;
@@ -130,10 +166,13 @@ Deno.serve(async (req) => {
     started_at: startedAt,
     finished_at: new Date().toISOString(),
     couples_total: couples.length,
+    couples_validated: couples.filter((c) => c.validated).length,
+    couples_unvalidated: couples.filter((c) => !c.validated).length,
     ok,
     no_account: noAccount,
     errors,
     observations_added: totalAdded,
+    auto_validated: autoValidated,
     error_samples: errorSamples,
   };
 
