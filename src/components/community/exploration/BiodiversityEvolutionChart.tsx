@@ -39,6 +39,8 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   snapshots: any[] | undefined;
+  /** marcheur_observations déjà filtrées par rayon (fusion avec snapshots pour la timeline). */
+  marcheurObs?: any[] | undefined;
   marchesById?: Map<string, { name: string; ville?: string; latitude?: number; longitude?: number }>;
   onNavigateToMarche?: (marcheId: string) => void;
   explorationId?: string;
