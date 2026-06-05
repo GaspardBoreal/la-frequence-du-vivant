@@ -214,17 +214,6 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
   }, [snapshots, marcheCtxById]);
 
-  // Filtre par rayon les marcheur_observations brutes (avant injection dans
-  // le « Pouls du vivant » et dans le pool fusionné). Même règle que le RPC
-  // unifié : si pas de GPS → conservée (fallback), sinon haversine ≤ radius_m.
-  const filteredMarcheurObsForTimeline = useMemo(() => {
-    if (!marcheCtxById) return undefined;
-    return (marcheurObs || []).filter((o: any) => {
-      const ctx = marcheCtxById.get(o.marche_id);
-      if (!ctx) return true;
-      return isObservationWithinRadius(o, ctx);
-    });
-  }, [marcheCtxById]);
 
 
 
