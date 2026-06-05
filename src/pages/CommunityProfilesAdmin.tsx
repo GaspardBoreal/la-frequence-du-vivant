@@ -607,6 +607,10 @@ const CommunityProfilesAdmin: React.FC = () => {
               </Card>
             )}
           </TabsContent>
+
+          <TabsContent value="a-valider">
+            <UnvalidatedRegistrationsTab />
+          </TabsContent>
         </Tabs>
       </div>
 
