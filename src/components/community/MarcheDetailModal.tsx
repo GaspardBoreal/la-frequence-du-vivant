@@ -1157,17 +1157,33 @@ export const VivantTab: React.FC<{
           </span>
         )}
       </div>
-      {(!biodiversityData?.species || biodiversityData.species.length === 0) ? (
-        <EmptyState message="Aucune donnée biodiversité disponible pour ce rayon" />
-      ) : (
-        <SpeciesExplorer
-          species={biodiversityData.species}
-          compact
-          explorationId={explorationId}
-          trophicPool={biodiversityData.species}
-        />
-
-      )}
+      {(() => {
+        // ⚠️ Cohérence stricte avec la Carte / Synthèse / Apprendre :
+        // l'API live iNat est interrogée au rayon du slider (par défaut le
+        // rayon persisté), mais affichée filtrée par le RAYON CANONIQUE de la
+        // marche. Sinon la même marche peut afficher 10 espèces ici et 6
+        // partout ailleurs (cas BORDEAUX/Patio ISEG : slider 500m ≠ marche 50m).
+        const canonicalRadiusM = (radiusCtx?.marcheRadiusM ?? radiusCtx?.explorationDefaultM ?? 500);
+        const filteredLive = (biodiversityData?.species || []).filter((sp: any) =>
+          isSpeciesWithinRadius(sp, {
+            latitude: radiusCtx?.latitude ?? null,
+            longitude: radiusCtx?.longitude ?? null,
+            radius_m: canonicalRadiusM,
+            snapshot_radius_m: Math.round(radius * 1000),
+          })
+        );
+        if (!filteredLive.length) {
+          return <EmptyState message="Aucune espèce dans le rayon canonique de cette marche" />;
+        }
+        return (
+          <SpeciesExplorer
+            species={filteredLive}
+            compact
+            explorationId={explorationId}
+            trophicPool={filteredLive}
+          />
+        );
+      })()}
     </div>
   );
 };
