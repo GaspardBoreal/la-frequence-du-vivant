@@ -25,6 +25,7 @@ import ProfilsImpactDashboard from '@/components/admin/community/ProfilsImpactDa
 import ProfilsMosaique from '@/components/admin/community/ProfilsMosaique';
 import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import NewMarcheurDialog from '@/components/admin/community/NewMarcheurDialog';
+import UnvalidatedRegistrationsTab from '@/components/admin/community/UnvalidatedRegistrationsTab';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   marcheur_en_devenir: { label: 'En devenir', icon: Footprints, color: 'text-muted-foreground' },
@@ -243,6 +244,7 @@ const CommunityProfilesAdmin: React.FC = () => {
             <TabsTrigger value="activites">Activités</TabsTrigger>
             <TabsTrigger value="affiliation">Affiliation marcheurs</TabsTrigger>
             <TabsTrigger value="marcheurs">Inscriptions</TabsTrigger>
+            <TabsTrigger value="a-valider">À valider</TabsTrigger>
           </TabsList>
 
           {/* ===== COMMUNAUTÉ ===== */}
@@ -604,6 +606,10 @@ const CommunityProfilesAdmin: React.FC = () => {
                 </Table>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="a-valider">
+            <UnvalidatedRegistrationsTab />
           </TabsContent>
         </Tabs>
       </div>
