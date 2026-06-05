@@ -5703,6 +5703,14 @@ export type Database = {
         Args: { p_exploration_id: string }
         Returns: Json
       }
+      get_exploration_species_pool: {
+        Args: { p_exploration_id: string }
+        Returns: Json
+      }
+      get_exploration_species_timeline: {
+        Args: { p_date_source?: string; p_exploration_id: string }
+        Returns: Json
+      }
       get_marche_events_dashboard_stats: {
         Args: {
           _search?: string
