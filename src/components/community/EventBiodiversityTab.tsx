@@ -620,7 +620,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {activeSubTab === 'taxons' && (
           <TaxonsSubTab
             snapshots={filteredSnapshots}
-
+            marcheurObs={filteredMarcheurObsForTimeline}
             allSpeciesWithFrNames={allSpeciesWithFrNames}
             allEventMarchesData={allEventMarchesData}
             eventParticipants={eventParticipants}
