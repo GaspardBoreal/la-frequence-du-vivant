@@ -148,7 +148,8 @@ const guessLogin = (name?: string, originalUrl?: string): string | undefined => 
 
 export function useBiodiversityEvolution(
   snapshots: any[] | undefined | null,
-  opts: UseEvolutionOpts
+  opts: UseEvolutionOpts,
+  marcheurObs?: any[] | null,
 ): EvolutionResult {
   // Collect species list once for the FR resolver (auto-fills DB cache in bg)
   const speciesForFr = useMemo(() => {
@@ -164,8 +165,14 @@ export function useBiodiversityEvolution(
         list.push({ scientificName: sci, commonName: sp?.commonName?.toString().trim() || null });
       });
     });
+    (marcheurObs || []).forEach((o: any) => {
+      const sci = (o?.species_scientific_name || '').toString().trim();
+      if (!sci || seen.has(sci)) return;
+      seen.add(sci);
+      list.push({ scientificName: sci, commonName: null });
+    });
     return list;
-  }, [snapshots]);
+  }, [snapshots, marcheurObs]);
   const { data: frMap } = useFrenchSpeciesNamesAuto(speciesForFr);
 
   return useMemo(() => {
@@ -175,14 +182,16 @@ export function useBiodiversityEvolution(
       totalSpecies: 0,
       totalObservations: 0,
     };
-    if (!snapshots?.length) return empty;
+    if (!snapshots?.length && !marcheurObs?.length) return empty;
 
     const { dateSource, metric, period } = opts;
 
-    // Build per-day buckets across ALL snapshots, deduping species globally.
+    // Build per-day buckets across ALL snapshots ∪ marcheur_observations,
+    // déduplication par originalUrl (iNat) pour ne jamais compter deux fois
+    // la même observation présente dans les deux sources.
     const byDay = new Map<string, DayBucket>();
-    // Track first appearance day per scientific name (cumulative species)
     const firstDayBySpecies = new Map<string, string>();
+    const seenObsKeys = new Set<string>();
 
     const ensureBucket = (day: string): DayBucket => {
       let b = byDay.get(day);
@@ -200,7 +209,30 @@ export function useBiodiversityEvolution(
       return b;
     };
 
-    snapshots.forEach((snap: any) => {
+    const pushObs = (day: string, obs: DayObservation, dedupKey?: string) => {
+      if (dedupKey) {
+        if (seenObsKeys.has(dedupKey)) return;
+        seenObsKeys.add(dedupKey);
+      }
+      const bucket = ensureBucket(day);
+      bucket.observations.push(obs);
+      if (obs.marcheId) bucket.marcheIds.add(obs.marcheId);
+      if (obs.observerName) {
+        const c = bucket.contributors.get(obs.observerName) || {
+          name: obs.observerName,
+          count: 0,
+          profileUrl: inatProfileUrl(obs.observerLogin),
+          avatar: obs.observerAvatar,
+        };
+        c.count += 1;
+        bucket.contributors.set(obs.observerName, c);
+      }
+      const sciKey = obs.scientificName.toLowerCase();
+      const firstDay = firstDayBySpecies.get(sciKey);
+      if (!firstDay || day < firstDay) firstDayBySpecies.set(sciKey, day);
+    };
+
+    (snapshots || []).forEach((snap: any) => {
       const sd = snap?.species_data;
       if (!sd || !Array.isArray(sd)) return;
       const snapDay = toDayISO(snap.snapshot_date) || toDayISO(snap.created_at);
@@ -208,7 +240,6 @@ export function useBiodiversityEvolution(
       sd.forEach((sp: any) => {
         const sciName = (sp?.scientificName || sp?.commonName || sp?.id || '').trim();
         if (!sciName) return;
-        const sciKey = sciName.toLowerCase();
 
         const attributions: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
 
@@ -216,7 +247,10 @@ export function useBiodiversityEvolution(
           attributions.forEach(att => {
             const day = toDayISO(att?.date);
             if (!day) return;
-            const obs: DayObservation = {
+            const dedupKey = att?.originalUrl
+              ? `url:${att.originalUrl}`
+              : `snap:${sciName}|${att?.observerName || ''}|${day}`;
+            pushObs(day, {
               scientificName: sciName,
               commonName: sp.commonName,
               commonNameFr: frMap?.get(sciName)?.commonNameFr ?? sp.commonNameFr ?? null,
@@ -228,30 +262,12 @@ export function useBiodiversityEvolution(
               originalUrl: att.originalUrl,
               marcheId: snap.marche_id,
               isNewSpecies: false,
-            };
-            const bucket = ensureBucket(day);
-            bucket.observations.push(obs);
-            if (snap.marche_id) bucket.marcheIds.add(snap.marche_id);
-            if (obs.observerName) {
-              const c = bucket.contributors.get(obs.observerName) || {
-                name: obs.observerName,
-                count: 0,
-                profileUrl: inatProfileUrl(obs.observerLogin),
-              };
-              c.count += 1;
-              bucket.contributors.set(obs.observerName, c);
-            }
-            // Track first appearance
-            const firstDay = firstDayBySpecies.get(sciKey);
-            if (!firstDay || day < firstDay) {
-              firstDayBySpecies.set(sciKey, day);
-            }
+            }, dedupKey);
           });
         } else {
-          // Collection date mode (or no attributions): one observation on snapshot day
           const day = snapDay;
           if (!day) return;
-          const obs: DayObservation = {
+          pushObs(day, {
             scientificName: sciName,
             commonName: sp.commonName,
             commonNameFr: frMap?.get(sciName)?.commonNameFr ?? sp.commonNameFr ?? null,
@@ -259,16 +275,41 @@ export function useBiodiversityEvolution(
             photo: Array.isArray(sp.photos) && sp.photos[0] ? sp.photos[0] : undefined,
             marcheId: snap.marche_id,
             isNewSpecies: false,
-          };
-          const bucket = ensureBucket(day);
-          bucket.observations.push(obs);
-          if (snap.marche_id) bucket.marcheIds.add(snap.marche_id);
-          const firstDay = firstDayBySpecies.get(sciKey);
-          if (!firstDay || day < firstDay) {
-            firstDayBySpecies.set(sciKey, day);
-          }
+          });
         }
       });
+    });
+
+    // ── marcheur_observations : fusion sur le même axe temporel ──
+    // Indispensable : les obs très récentes (iNat backfill ou upload marcheur)
+    // n'ont pas encore atterri dans biodiversity_snapshots. Sans cette boucle
+    // elles disparaissent du « Pouls du vivant » alors qu'elles comptent
+    // bien dans l'inventaire (get_exploration_species_count).
+    (marcheurObs || []).forEach((o: any) => {
+      const sciName = (o?.species_scientific_name || '').trim();
+      if (!sciName) return;
+      const inatId = o?.inaturalist_observation_id;
+      const day = toDayISO(o?.observation_date) || toDayISO(o?.created_at);
+      if (!day) return;
+      const dedupKey = inatId
+        ? `url:https://www.inaturalist.org/observations/${inatId}`
+        : `mo:${o.id || `${sciName}|${day}|${o?.marche_id || ''}`}`;
+      const crew = o?.exploration_marcheurs;
+      const observerName = `${crew?.prenom || ''} ${crew?.nom || ''}`.trim()
+        || (inatId ? 'Contributeur iNaturalist' : 'Marcheur');
+      pushObs(day, {
+        scientificName: sciName,
+        commonName: null,
+        commonNameFr: frMap?.get(sciName)?.commonNameFr ?? null,
+        kingdom: undefined,
+        photo: o?.photo_url || undefined,
+        observerName,
+        observerLogin: guessLogin(observerName),
+        source: inatId ? 'inaturalist' : 'marcheur',
+        originalUrl: inatId ? `https://www.inaturalist.org/observations/${inatId}` : undefined,
+        marcheId: o?.marche_id,
+        isNewSpecies: false,
+      }, dedupKey);
     });
 
     // Now: split observations per bucket into newSpecies (first day appearance) vs reSpecies
