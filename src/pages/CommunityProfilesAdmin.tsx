@@ -25,6 +25,7 @@ import ProfilsImpactDashboard from '@/components/admin/community/ProfilsImpactDa
 import ProfilsMosaique from '@/components/admin/community/ProfilsMosaique';
 import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import NewMarcheurDialog from '@/components/admin/community/NewMarcheurDialog';
+import UnvalidatedRegistrationsTab from '@/components/admin/community/UnvalidatedRegistrationsTab';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   marcheur_en_devenir: { label: 'En devenir', icon: Footprints, color: 'text-muted-foreground' },
