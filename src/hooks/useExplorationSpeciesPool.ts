@@ -1,13 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFrenchSpeciesNames } from './useFrenchSpeciesNames';
-import {
-  isSpeciesWithinRadius,
-  isObservationWithinRadius,
-  type MarcheGeoCtx,
-} from '@/utils/speciesRadiusFilter';
-
-
 
 export interface ExplorationSpecies {
   /** Stable key used as curation entity_id (scientific name preferred, fallback common name) */
@@ -24,15 +17,24 @@ export interface ExplorationSpecies {
   imageUrl: string | null;
 }
 
-interface RawExplorationSpecies {
+interface RpcSpecies {
   key: string;
-  scientificName: string | null;
-  commonName: string | null;
-  group: string | null;
+  scientific_name: string | null;
+  common_name: string | null;
+  kingdom: string | null;
   family: string | null;
-  count: number;
-  imageUrl: string | null;
+  iconic_taxon: string | null;
+  observations: number;
+  in_snapshot: boolean;
+  in_marcheur: boolean;
+  last_seen: string | null;
+  photos: any; // jsonb array of arrays
+  attributions: any; // jsonb array of arrays
+  marcheur_attrs: any; // jsonb array
 }
+
+const toMediumInat = (url: string): string =>
+  url ? url.replace('/square.', '/medium.').replace('/square.jpg', '/medium.jpg') : url;
 
 const normName = (s: string | null | undefined): string =>
   (s || '')
@@ -41,217 +43,113 @@ const normName = (s: string | null | undefined): string =>
     .toLowerCase()
     .trim();
 
-const toMediumInat = (url: string): string =>
-  url ? url.replace('/square.', '/medium.').replace('/square.jpg', '/medium.jpg') : url;
-
 /**
- * Aggregates all species observed across the marche_events of an exploration,
- * deduplicated by scientific name (case-insensitive).
+ * Pool d'espèces unifié — source unique de vérité, alignée strictement
+ * avec `get_exploration_species_count` (Carte / Synthèse).
  *
- * Priorité photo vignette (cohérent avec useSpeciesMarcheurPhotos) :
- *  1. Upload direct marcheur (marcheur_observations.photo_url) — plus récent
- *  2. Photo iNat dont observerName matche un marcheur éditorial — plus récente
- *  3. 1re photo du snapshot (vraie observation dans le rayon de l'event)
- *  4. null → fallback iNat live côté composant
+ * Appelle la RPC `get_exploration_species_pool` qui applique exactement
+ * le même filtre rayon (50 m / override / 500 m) que le compteur officiel.
+ * La résolution photo (priorité marcheur → iNat attribuée marcheur → 1re iNat
+ * → fallback) est calculée ici à partir des attributions renvoyées par la RPC.
  */
 export const useExplorationSpeciesPool = (explorationId: string | null | undefined) => {
-  const rawQuery = useQuery({
-    queryKey: ['exploration-species-pool-raw', explorationId, 'v4-radius-filter'],
-    queryFn: async (): Promise<RawExplorationSpecies[]> => {
-      if (!explorationId) return [];
-
-      // Charger les marches avec lat/lon + radius_m + default_radius_m de l'exploration
-      const { data: emRows, error: emErr } = await supabase
-        .from('exploration_marches')
-        .select('marche_id, marches(latitude, longitude, radius_m), explorations(default_radius_m)')
-        .eq('exploration_id', explorationId);
-      if (emErr) throw emErr;
-      const marcheIds = (emRows || []).map((x: any) => x.marche_id).filter(Boolean);
-      if (marcheIds.length === 0) return [];
-
-      const marcheCtxById = new Map<string, MarcheGeoCtx>();
-      (emRows || []).forEach((row: any) => {
-        const m = row.marches || {};
-        const e = row.explorations || {};
-        marcheCtxById.set(row.marche_id, {
-          latitude: m.latitude ?? null,
-          longitude: m.longitude ?? null,
-          radius_m: m.radius_m ?? e.default_radius_m ?? 500,
-        });
-      });
-
-      const { data: snaps, error: snapsErr } = await supabase
-        .from('biodiversity_snapshots')
-        .select('marche_id, snapshot_date, species_data, radius_meters')
-        .in('marche_id', marcheIds);
-      if (snapsErr) throw snapsErr;
-
-
-      // Garder seulement le snapshot le plus récent par marche
-      // (parité avec useSpeciesMarcheurPhotos).
-      const latestByMarche = new Map<string, any>();
-      (snaps || []).forEach((s: any) => {
-        const ex = latestByMarche.get(s.marche_id);
-        if (!ex || new Date(s.snapshot_date) > new Date(ex.snapshot_date)) {
-          latestByMarche.set(s.marche_id, s);
-        }
-      });
-
-      // Marcheurs éditoriaux de l'exploration → noms normalisés (NFD)
-      const { data: crew } = await supabase
+  // Marcheurs éditoriaux — utilisés pour matcher les attributions iNat
+  // (priorité photo n°2 dans la cascade).
+  const { data: crewNames } = useQuery({
+    queryKey: ['exploration-marcheurs-names', explorationId],
+    queryFn: async () => {
+      if (!explorationId) return new Set<string>();
+      const { data } = await supabase
         .from('exploration_marcheurs')
         .select('prenom, nom')
         .eq('exploration_id', explorationId);
-      const crewNameSet = new Set<string>();
-      (crew || []).forEach((c: any) => {
+      const set = new Set<string>();
+      (data || []).forEach((c: any) => {
         const full = normName(`${c.prenom || ''} ${c.nom || ''}`);
-        if (full) crewNameSet.add(full);
+        if (full) set.add(full);
       });
-
-      // Index : photos sourcées du snapshot
-      const viaMarcheurInat = new Map<string, { url: string; date: string }>();
-      const fromSnapshot = new Map<string, string>();
-
-      const map = new Map<string, RawExplorationSpecies>();
-
-      Array.from(latestByMarche.values()).forEach((s: any) => {
-        const ctx = marcheCtxById.get(s.marche_id);
-        const snapR = (s as any).radius_meters ?? null;
-        const arr: any[] = Array.isArray(s.species_data) ? s.species_data : [];
-        arr.forEach(sp => {
-          // 🔭 Filtre par rayon résolu de la marche
-          if (ctx && !isSpeciesWithinRadius(sp, { ...ctx, snapshot_radius_m: snapR })) return;
-
-          const sci = (sp.scientificName || sp.scientific_name || '').toString().trim();
-          const com = (sp.commonName || sp.common_name || sp.vernacularName || '').toString().trim();
-          const key = (sci || com).toLowerCase();
-          if (!key) return;
-
-          // family iNat = parfois un nom alphabétique propre, parfois un ID
-          // numérique de taxon (ex. "58321" = Sapindaceae). On ne garde que les
-          // noms exploitables — le classifier filtre déjà les IDs numériques
-          // mais autant économiser le coup.
-          const rawFamily = (sp.family || sp.familyName || '').toString().trim();
-          const family = rawFamily && !/^\d+$/.test(rawFamily) ? rawFamily : null;
-
-          const existing = map.get(key);
-          if (existing) {
-            existing.count += 1;
-            if (!existing.family && family) existing.family = family;
-          } else {
-            map.set(key, {
-              key: sci || com,
-              scientificName: sci || null,
-              commonName: com || null,
-              group: sp.group || sp.kingdom || sp.taxonGroup || null,
-              family,
-              count: 1,
-              imageUrl: null, // résolu en fin de pipeline
-            });
-          }
-
-          // Collecte photos snapshot + attributions
-          const photos: string[] = Array.isArray(sp.photos) ? sp.photos : [];
-          const attrs: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
-
-          // 1re photo snapshot (toujours dans le rayon)
-          if (photos[0] && !fromSnapshot.has(key)) {
-            fromSnapshot.set(key, toMediumInat(photos[0]));
-          }
-
-          // Match observerName ↔ marcheur éditorial
-          photos.forEach((rawUrl, i) => {
-            if (!rawUrl) return;
-            const attr = attrs[i];
-            const observer = normName(attr?.observerName);
-            if (observer && crewNameSet.has(observer)) {
-              const d = attr?.date || s.snapshot_date || '';
-              const ex = viaMarcheurInat.get(key);
-              if (!ex || d > ex.date) {
-                viaMarcheurInat.set(key, { url: toMediumInat(rawUrl), date: d });
-              }
-            }
-          });
-
-          // Fallback : imageUrl explicite dans species_data si pas de photos[]
-          if (!photos[0] && !fromSnapshot.has(key) && (sp.imageUrl || sp.image_url)) {
-            fromSnapshot.set(key, sp.imageUrl || sp.image_url);
-          }
-        });
-      });
-
-      // ── Marcheur observations (upload direct) ───────────────────────────
-      const { data: marcheurObs } = await supabase
-        .from('marcheur_observations')
-        .select('marche_id, species_scientific_name, photo_url, observation_date, latitude, longitude')
-        .in('marche_id', marcheIds);
-
-      const directMarcheur = new Map<string, { url: string; date: string }>();
-
-      (marcheurObs || []).forEach((obs: any) => {
-        const ctx = marcheCtxById.get(obs.marche_id);
-        if (ctx && !isObservationWithinRadius(obs, ctx)) return;
-        const sci = (obs.species_scientific_name || '').toString().trim();
-
-        if (!sci) return;
-        const key = sci.toLowerCase();
-
-        let found: RawExplorationSpecies | undefined;
-        for (const entry of map.values()) {
-          if ((entry.scientificName || '').toLowerCase() === key) {
-            found = entry;
-            break;
-          }
-        }
-        if (found) {
-          found.count += 1;
-        } else {
-          map.set(key, {
-            key: sci,
-            scientificName: sci,
-            commonName: null,
-            group: null,
-            family: null,
-            count: 1,
-            imageUrl: null,
-          });
-        }
-
-        if (obs.photo_url) {
-          const d = obs.observation_date || '';
-          const ex = directMarcheur.get(key);
-          if (!ex || d > ex.date) {
-            directMarcheur.set(key, { url: obs.photo_url, date: d });
-          }
-        }
-      });
-
-      // ── Résolution finale de imageUrl selon les 4 priorités ────────────
-      for (const entry of map.values()) {
-        const k = (entry.scientificName || '').toLowerCase();
-        const p1 = directMarcheur.get(k);
-        if (p1) { entry.imageUrl = p1.url; continue; }
-        const p2 = viaMarcheurInat.get(k);
-        if (p2) { entry.imageUrl = p2.url; continue; }
-        const p3 = fromSnapshot.get(k);
-        if (p3) { entry.imageUrl = p3; continue; }
-        entry.imageUrl = null;
-      }
-
-      return Array.from(map.values()).sort((a, b) => b.count - a.count);
+      return set;
     },
     enabled: !!explorationId,
     staleTime: 5 * 60 * 1000,
   });
 
+  const rawQuery = useQuery({
+    queryKey: ['exploration-species-pool-rpc', explorationId, 'v5-unified'],
+    queryFn: async (): Promise<RpcSpecies[]> => {
+      if (!explorationId) return [];
+      const { data, error } = await supabase.rpc('get_exploration_species_pool', {
+        p_exploration_id: explorationId,
+      });
+      if (error) throw error;
+      const r = (data as any) || {};
+      // eslint-disable-next-line no-console
+      console.log('[species-pool] exploration=%s total=%s source=rpc', explorationId, r.total);
+      return (r.species as RpcSpecies[]) || [];
+    },
+    enabled: !!explorationId,
+    staleTime: 60 * 1000,
+  });
+
   const raw = rawQuery.data || [];
+
+  // Résolution photo — même cascade que l'ancienne implémentation.
+  const resolveImage = (sp: RpcSpecies): string | null => {
+    const crew = crewNames || new Set<string>();
+
+    // (1) Upload direct marcheur — photo_url la plus récente
+    const mAttrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
+    const directMarcheur = mAttrs
+      .filter(a => a?.photo_url)
+      .sort((a, b) => (b.observation_date || '').localeCompare(a.observation_date || ''))[0];
+    if (directMarcheur?.photo_url) return directMarcheur.photo_url;
+
+    // (2) Photo iNat attribuée à un marcheur éditorial (par observerName)
+    // (3) 1re photo snapshot (toujours dans le rayon, garanti par la RPC)
+    const allAttrGroups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+    const allPhotoGroups: any[] = Array.isArray(sp.photos) ? sp.photos : [];
+
+    let inatViaMarcheur: { url: string; date: string } | null = null;
+    let firstSnapshot: string | null = null;
+
+    allAttrGroups.forEach((attrs, gi) => {
+      if (!Array.isArray(attrs)) return;
+      const photos = Array.isArray(allPhotoGroups[gi]) ? allPhotoGroups[gi] : [];
+      attrs.forEach((att: any, i: number) => {
+        const url = photos[i];
+        if (!url) return;
+        const observer = normName(att?.observerName);
+        if (observer && crew.has(observer)) {
+          const d = att?.date || '';
+          if (!inatViaMarcheur || d > inatViaMarcheur.date) {
+            inatViaMarcheur = { url: toMediumInat(url), date: d };
+          }
+        }
+        if (firstSnapshot === null) firstSnapshot = toMediumInat(url);
+      });
+    });
+
+    if (inatViaMarcheur) return (inatViaMarcheur as { url: string }).url;
+    if (firstSnapshot) return firstSnapshot;
+    return null;
+  };
+
+  const intermediate = raw.map<Omit<ExplorationSpecies, 'commonNameFr' | 'displayName'>>(sp => ({
+    key: sp.scientific_name || sp.common_name || sp.key,
+    scientificName: sp.scientific_name,
+    commonName: sp.common_name,
+    group: sp.kingdom || sp.iconic_taxon || null,
+    family: sp.family,
+    count: sp.observations || 0,
+    imageUrl: resolveImage(sp),
+  }));
 
   // Enrich with French names — single batched DB lookup, cached 24h
   const { data: frMap } = useFrenchSpeciesNames(
-    raw.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }))
+    intermediate.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }))
   );
 
-  const enriched: ExplorationSpecies[] = raw.map(s => {
+  const enriched: ExplorationSpecies[] = intermediate.map(s => {
     const fr = s.scientificName ? frMap?.get(s.scientificName) : undefined;
     const displayName = fr?.displayName || s.commonName || s.scientificName || '';
     return {
