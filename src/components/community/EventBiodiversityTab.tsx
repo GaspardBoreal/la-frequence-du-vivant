@@ -78,7 +78,15 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
 };
 
 const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId, eventType, onNavigateToMarche, initialSubTab, onSubTabConsumed }) => {
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>('synthese');
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab ?? 'synthese');
+
+  // Deep-link via prop : appliqué dès qu'une cible arrive (déterministe, pas de bus async)
+  React.useEffect(() => {
+    if (!initialSubTab) return;
+    setActiveSubTab(initialSubTab);
+    onSubTabConsumed?.();
+  }, [initialSubTab, onSubTabConsumed]);
+
   const [revealActive, setRevealActive] = useState(false);
   const [taxonsPeriod, setTaxonsPeriod] = useState<EvolutionPeriod>('all');
   const [taxonsCustomRange, setTaxonsCustomRange] = useState<{ from?: string; to?: string }>({});
