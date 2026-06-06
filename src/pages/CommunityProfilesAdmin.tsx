@@ -26,6 +26,7 @@ import ProfilsMosaique from '@/components/admin/community/ProfilsMosaique';
 import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import NewMarcheurDialog from '@/components/admin/community/NewMarcheurDialog';
 import UnvalidatedRegistrationsTab from '@/components/admin/community/UnvalidatedRegistrationsTab';
+import RecherchesPanel from '@/components/admin/community/RecherchesPanel';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   marcheur_en_devenir: { label: 'En devenir', icon: Footprints, color: 'text-muted-foreground' },
@@ -242,6 +243,7 @@ const CommunityProfilesAdmin: React.FC = () => {
               Profils
             </TabsTrigger>
             <TabsTrigger value="activites">Activités</TabsTrigger>
+            <TabsTrigger value="recherches">Recherches</TabsTrigger>
             <TabsTrigger value="affiliation">Affiliation marcheurs</TabsTrigger>
             <TabsTrigger value="marcheurs">Inscriptions</TabsTrigger>
             <TabsTrigger value="a-valider">À valider</TabsTrigger>
@@ -415,6 +417,11 @@ const CommunityProfilesAdmin: React.FC = () => {
             <OrphanEventInvitationsPanel />
             <OrphanMarcheParticipationsPanel />
             <OrphanExplorationMarcheursPanel />
+          </TabsContent>
+
+          {/* ===== RECHERCHES ===== */}
+          <TabsContent value="recherches">
+            <RecherchesPanel />
           </TabsContent>
 
           {/* ===== AFFILIATION ===== */}
