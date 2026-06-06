@@ -41,7 +41,7 @@ const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] =
   { key: 'marcheurs', label: 'Marcheurs', icon: Users },
   { key: 'marches', label: 'Marches', icon: Footprints },
   { key: 'apprendre', label: 'Apprendre', icon: GraduationCap },
-  { key: 'biodiversite', label: 'Synthèse', icon: TreePine },
+  { key: 'biodiversite', label: 'Biodiversité', icon: TreePine },
 ];
 
 const marcheursSubTabs: { key: MarcheursSubTab; label: string; icon: typeof Users }[] = [
@@ -85,6 +85,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   const { trackActivity } = useActivityTracker();
   const { focus, consume } = useFocusFromUrl();
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
+  const [pendingBiodiversitySub, setPendingBiodiversitySub] = useState<string | null>(null);
 
   // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
   const isEventFallback = rawParam?.startsWith('event-');
@@ -229,9 +230,20 @@ const ExplorationMarcheurPage: React.FC = () => {
       const idx = explorationMarches.findIndex(m => m.id === focus.marcheId);
       if (idx >= 0) setActiveStepIndex(idx);
     }
-    // 4. Cible halo
+    // 4. Sous-onglet biodiversité (déterministe, prop drilling — pas de race bus)
+    const allowedBioSub = ['synthese', 'taxons', 'temoignages', 'textes', 'analyse'];
+    if (focus.sub && allowedBioSub.includes(focus.sub)) {
+      setPendingBiodiversitySub(focus.sub);
+    } else if (focus.kind === 'species') {
+      setPendingBiodiversitySub('taxons');
+    } else if (focus.kind === 'testimony') {
+      setPendingBiodiversitySub('temoignages');
+    } else if (focus.kind === 'text') {
+      setPendingBiodiversitySub('textes');
+    }
+    // 5. Cible halo
     setFocusTarget(`${focus.kind}:${focus.id}`);
-    // 5. Diffuse le focus via le bus (les composants enfants mountés ensuite peuvent encore le recevoir)
+    // 6. Diffuse le focus via le bus (halo + composants enfants secondaires)
     const broadcast = setTimeout(() => {
       dispatchFocus({
         kind: focus.kind,
@@ -619,6 +631,8 @@ const ExplorationMarcheurPage: React.FC = () => {
                 explorationId={effectiveExplorationId || undefined}
                 marcheEventId={marcheEventId || undefined}
                 eventType={marcheEvent?.event_type || null}
+                initialSubTab={pendingBiodiversitySub as any}
+                onSubTabConsumed={() => setPendingBiodiversitySub(null)}
                 onNavigateToMarche={(marcheId) => {
                   const stepIndex = explorationMarches?.findIndex(m => m.id === marcheId) ?? -1;
                   if (stepIndex !== -1) {

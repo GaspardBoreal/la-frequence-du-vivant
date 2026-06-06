@@ -1,78 +1,67 @@
-# Analyse du bug et correctif robuste
-
 ## Diagnostic
 
-La carte espèce « Clematis » liste 3 occurrences (Bordeaux, Déviat C 865, Déviat C 362). Quand on clique sur **DEVIAT C 865**, on atterrit sur **BORDEAUX / Patio végétalisé ISEG → onglet Synthèse**. C'est faux.
+Clic sur **DEVIAT C 835** (résultat espèce) → URL navigée :
+`/.../exploration/event-{id}?focus=species:Clematis...&tab=biodiversite&sub=taxons&marcheId=...`
 
-Cause racine (vérifiée dans `search_global` et `ExplorationMarcheurPage`) :
+Donc :
+- ✅ Bon événement
+- ✅ `setActiveGlobalTab('biodiversite')` est bien appelé par `ExplorationMarcheurPage` (et "biodiversite" est labellisé "Synthèse" dans la nav globale — d'où l'illusion qu'on est "sur Synthèse" alors qu'on est bien sur le bon onglet)
+- ❌ Le **sous-onglet** `taxons` (la vraie « fiche espèces ») n'est pas activé : `EventBiodiversityTab` reste sur `activeSubTab='synthese'`
 
-1. Côté SQL, la `route` du résultat espèce est calculée **une seule fois**, à partir de `last_marche_id` (la marche la plus récente, ici Bordeaux). L'exploration cible dans l'URL est donc toujours celle de Bordeaux, quelle que soit l'occurrence cliquée.
-2. Côté front, on réécrit bien `marcheId=DEVIAT` dans l'URL, mais on garde **la même exploration** dans le chemin. La page exploration de Bordeaux ne contient pas la marche DEVIAT dans `explorationMarches`, donc `findIndex(...) = -1` → on reste sur l'étape par défaut (Bordeaux) et sur l'onglet par défaut (Synthèse).
-3. Les sous-occurrences ne portent aujourd'hui que `marche_id` ; elles ignorent que chaque marche peut appartenir à une **exploration différente** et qu'elle a un **event_id** précis.
+### Cause racine
 
-Conséquence : confusion entre « espèce dans une exploration » et « espèce dans un événement ». L'utilisateur attend une fiche espèce ouverte dans **l'événement** de la marche cliquée.
+`EventBiodiversityTab` écoute le sous-onglet via le **focus bus** (`subscribeFocus`) chargé en **dynamic import** :
 
-## Correctif proposé
-
-### 1. SQL — Enrichir `recent_contexts` avec l'exploration et l'event de la marche
-
-Dans `search_global`, pour chaque ligne de `recent_contexts`, ajouter :
-
-- `exploration_id` (via `exploration_marches`)
-- `exploration_slug` (optionnel pour le routing public)
-- `event_id` (via `marche_events` : l'événement actif/le plus récent pour cette marche)
-- `event_title`, `event_date`
-
-Ainsi chaque occurrence devient routable de manière autonome, sans dépendre du `last_marche_id` global de l'espèce.
-
-### 2. Front — Construire la route par occurrence, pas réécrire celle de l'espèce
-
-Dans `GlobalSearchOverlay.handleResultClick` :
-
-- Si l'utilisateur clique une **sous-occurrence**, ignorer `r.route` et reconstruire :  
-  `/marches-du-vivant/mon-espace/exploration/{ctx.exploration_id}?focus=species:{scientific_name}&tab=biodiversite&sub=taxons&marcheId={ctx.marche_id}&eventId={ctx.event_id}&t={nonce}`
-- Si l'utilisateur clique la **carte espèce** (en-tête), garder le comportement actuel (route globale).
-
-### 3. Front — `useFocusFromUrl` : lire aussi `eventId`
-
-Ajouter `eventId?: string | null` au `FocusDescriptor` et l'inclure dans la liste des params consommés.
-
-### 4. Front — `ExplorationMarcheurPage` : appliquer l'event + onglet sensoriel correct
-
-- Si `focus.eventId` est présent, forcer le step correspondant (déjà fait via `marcheId`) **et** s'assurer que `marcheEvent` ciblé = celui-là (sécurité si plusieurs events partagent une même marche).
-- Pour `focus.kind === 'species'`, basculer automatiquement sur l'onglet sensoriel `voir` + sous-onglet `taxons` plutôt que rester sur « Synthèse ».
-- Garantir que l'effet de focus se rejoue quand `explorationMarches` se charge après le mount (dépendance déjà ok, mais ajouter un guard sur `focus.eventId`).
-
-### 5. UX — Lisibilité de la sous-occurrence
-
-- Afficher en chip dans la ligne de sous-occurrence : la **date** + le **type d'événement** lorsque dispo, pour que l'utilisateur sache qu'il va atterrir sur l'événement et non sur l'exploration.
-
-## Détail technique
-
-Fichiers touchés :
-
-```
-supabase/migrations/<new>.sql              # RPC search_global v3 — contexts enrichis
-src/hooks/useFocusFromUrl.ts               # +eventId
-src/components/search/GlobalSearchOverlay.tsx
-                                           # route reconstruite par occurrence
-src/components/search/SearchResultCard.tsx # passe ctx complet (exploration_id,event_id)
-src/components/community/ExplorationMarcheurPage.tsx
-                                           # consomme focus.eventId, force tab biodiversite/sub=taxons
-```
-
-Signature `onOpen` étendue :
 ```ts
-onOpen(opts?: {
-  marcheId?: string | null;
-  explorationId?: string | null;
-  eventId?: string | null;
-})
+import('@/lib/focusBus').then(({ subscribeFocus }) => { unsub = subscribeFocus(handler); });
 ```
+
+Race condition :
+1. `ExplorationMarcheurPage` schedule `dispatchFocus` à **+120 ms** après le mount.
+2. `EventBiodiversityTab` mount, lance un dynamic import (peut prendre 50–300 ms).
+3. Selon l'ordre :
+   - Si l'import résout **avant** 120 ms → subscribe → le dispatch arrive → OK.
+   - Si l'import résout **après** 120 ms → `subscribeFocus` rejoue `last` SI < 4 s → en général OK.
+   - **Mais** `last` n'est mis à jour qu'au moment du dispatch, et la fenêtre de replay ne couvre pas le cas où `consume()` (à 50 ms) a déjà reset `focus` à null AVANT que `dispatchFocus` soit appelé — `dispatchFocus` est bien appelé (closure), mais `focus.sub` capturé peut être stale si l'effet a re-run entre temps.
+
+Concrètement : le canal "bus + dynamic import + setTimeout" est non-déterministe pour le sous-onglet. C'est pourquoi on retombe sur le default `'synthese'`.
+
+De plus, la nav globale affiche "Synthèse" comme label de l'onglet `biodiversite`, ce qui rend le bug visuellement ambigu : l'utilisateur croit voir le mauvais onglet alors que c'est le mauvais **sous-onglet**.
+
+## Correctif
+
+Approche : **passer le focus en prop, ne plus dépendre du bus pour le sous-onglet**. Synchrone, déterministe, zéro race.
+
+### 1. `ExplorationMarcheurPage.tsx`
+- Maintenir un état `pendingBiodiversitySub: SubTab | null` alimenté par `focus.sub` quand `focus.kind === 'species' | 'testimony' | 'text'` (avec fallback : species→taxons, testimony→temoignages, text→textes).
+- Passer en prop à `EventBiodiversityTab` : `initialSubTab={pendingBiodiversitySub}` + un callback `onSubTabConsumed` pour nettoyer (évite de réimposer le sous-onglet si l'utilisateur navigue ensuite).
+- Conserver le focus bus pour le **halo** sur la fiche espèce (déjà OK via `FocusHalo` + `focusTarget`).
+
+### 2. `EventBiodiversityTab.tsx`
+- Ajouter prop `initialSubTab?: SubTab | null` et `onSubTabConsumed?: () => void`.
+- `useEffect` : si `initialSubTab` change et est non-null → `setActiveSubTab(initialSubTab)` puis `onSubTabConsumed?.()`.
+- Garder le `subscribeFocus` existant en sécurité (no-op si la prop a déjà fait le travail).
+
+### 3. Bonus UX : clarifier le label de la nav globale
+Le label "Synthèse" sur l'onglet `biodiversite` est trompeur (il y a déjà un sous-onglet "Synthèse" dedans). Renommer en **"Biodiversité"** dans la barre globale. Pas de logique impactée.
+
+### 4. (Optionnel) Affichage chip dans le résultat de recherche
+Sur la sous-occurrence species, afficher un petit chip "→ Fiche espèce" pour annoncer la destination et lever toute ambiguïté.
+
+## Fichiers touchés
+
+```
+src/components/community/ExplorationMarcheurPage.tsx   # pendingBiodiversitySub + prop drilling + rename label
+src/components/community/EventBiodiversityTab.tsx      # accept initialSubTab + apply
+src/components/search/SearchResultCard.tsx             # (optionnel) chip "Fiche espèce"
+```
+
+Aucun changement SQL, aucun changement de routing, aucun risque sur les flux existants.
 
 ## Résultat attendu
 
-- Clic sur **DEVIAT C 865** → ouvre l'exploration *contenant* DEVIAT, sur l'événement DEVIAT/Jardin Monde, onglet Biodiversité → Taxons, avec la fiche **Clématite** ouverte en halo.
-- Clic sur **Bordeaux** → ouvre l'événement Bordeaux, même fiche espèce.
-- Clic sur la carte espèce (en-tête) → comportement global inchangé.
-- Plus aucune navigation « morte » ou détournée vers la mauvaise marche.
+- Clic sur **DEVIAT C 835** (espèce) → bon événement → onglet **Biodiversité** → sous-onglet **Taxons** → halo sur la fiche **Clematis** → fiche cliquable.
+- Clic sur résultat **testimony** → onglet Biodiversité → sous-onglet Témoignages.
+- Clic sur résultat **text** → onglet Biodiversité → sous-onglet Textes.
+- Plus de race condition liée au dynamic import.
+- Label nav globale plus clair (Biodiversité, pas Synthèse).
