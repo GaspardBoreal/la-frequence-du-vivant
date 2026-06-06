@@ -595,6 +595,11 @@ const ExplorationMarcheurPage: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+      <GlobalSearchFab
+        eventId={marcheEventId || null}
+        marcheId={activeMarcheId || null}
+        scope="global"
+      />
     </div>
     </SpeciesPhotoModeProvider>
   );
