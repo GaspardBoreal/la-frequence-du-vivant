@@ -85,6 +85,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   const { trackActivity } = useActivityTracker();
   const { focus, consume } = useFocusFromUrl();
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
+  const [pendingBiodiversitySub, setPendingBiodiversitySub] = useState<string | null>(null);
 
   // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
   const isEventFallback = rawParam?.startsWith('event-');
