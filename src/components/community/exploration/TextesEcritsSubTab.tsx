@@ -186,16 +186,18 @@ const TextesEcritsSubTab: React.FC<TextesEcritsSubTabProps> = ({
     }
   }, [searchParams, orderedTextes]);
 
-  // Auto-open from global search (`lfdv:focus` event with kind=text)
+  // Auto-open from global search (focus bus)
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { kind?: string; id?: string };
-      if (detail?.kind !== 'text' || !detail.id) return;
-      const idx = orderedTextes.findIndex(t => t.id === detail.id);
+    const handler = (d: { kind?: string; id?: string }) => {
+      if (d?.kind !== 'text' || !d.id) return;
+      const idx = orderedTextes.findIndex(t => t.id === d.id);
       if (idx >= 0) setSelectedIdx(idx);
     };
-    window.addEventListener('lfdv:focus', handler as EventListener);
-    return () => window.removeEventListener('lfdv:focus', handler as EventListener);
+    let unsub: (() => void) | undefined;
+    import('@/lib/focusBus').then(({ subscribeFocus }) => {
+      unsub = subscribeFocus(handler);
+    });
+    return () => { unsub?.(); };
   }, [orderedTextes]);
 
   const handleOpen = (idx: number) => {

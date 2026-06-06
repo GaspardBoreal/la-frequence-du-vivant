@@ -82,21 +82,23 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const [taxonsCustomRange, setTaxonsCustomRange] = useState<{ from?: string; to?: string }>({});
   const [taxonsDateSource, setTaxonsDateSource] = useState<DateSource>('observation');
 
-  // Deep-link from global search: switch sub-tab based on `lfdv:focus` event.
+  // Deep-link from global search: switch sub-tab based on focus bus.
   React.useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { kind?: string; sub?: string };
+    const handler = (d: { kind?: string; sub?: string | null }) => {
       const allowed: SubTab[] = ['synthese', 'taxons', 'temoignages', 'textes', 'analyse'];
-      if (detail?.sub && (allowed as string[]).includes(detail.sub)) {
-        setActiveSubTab(detail.sub as SubTab);
+      if (d?.sub && (allowed as string[]).includes(d.sub)) {
+        setActiveSubTab(d.sub as SubTab);
         return;
       }
-      if (detail?.kind === 'species') setActiveSubTab('taxons');
-      else if (detail?.kind === 'testimony') setActiveSubTab('temoignages');
-      else if (detail?.kind === 'text') setActiveSubTab('textes');
+      if (d?.kind === 'species') setActiveSubTab('taxons');
+      else if (d?.kind === 'testimony') setActiveSubTab('temoignages');
+      else if (d?.kind === 'text') setActiveSubTab('textes');
     };
-    window.addEventListener('lfdv:focus', handler as EventListener);
-    return () => window.removeEventListener('lfdv:focus', handler as EventListener);
+    let unsub: (() => void) | undefined;
+    import('@/lib/focusBus').then(({ subscribeFocus }) => {
+      unsub = subscribeFocus(handler);
+    });
+    return () => { unsub?.(); };
   }, []);
 
   const collectionMutation = useTriggerBiodiversityCollection();

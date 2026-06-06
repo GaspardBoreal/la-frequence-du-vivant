@@ -27,12 +27,14 @@ const TestimoniesTab: React.FC<Props> = ({ explorationId }) => {
 
   // Deep-link from global search : force "wall" mode so the targeted card is rendered.
   React.useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { kind?: string };
-      if (detail?.kind === 'testimony') setMode('wall');
+    const handler = (d: { kind?: string }) => {
+      if (d?.kind === 'testimony') setMode('wall');
     };
-    window.addEventListener('lfdv:focus', handler as EventListener);
-    return () => window.removeEventListener('lfdv:focus', handler as EventListener);
+    let unsub: (() => void) | undefined;
+    import('@/lib/focusBus').then(({ subscribeFocus }) => {
+      unsub = subscribeFocus(handler);
+    });
+    return () => { unsub?.(); };
   }, []);
 
   if (isLoading) {
