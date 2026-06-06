@@ -1453,6 +1453,11 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   // Batch alias map (nom + logins iNat/GBIF/eBird) for all marcheurs
   const { data: aliasesByMarcheurId } = useMarcheursAliasesMap(marcheurs);
 
+  // Batch iNat science-accounts (déclarés dans le profil) — source primaire du lien iNat
+  const { data: inatAccountsByUserId } = useMarcheursInatAccounts(
+    marcheurs.map((m) => m.userId ?? null)
+  );
+
   // Aggregate set of all known LMDV walker aliases — used to exclude them
   // from the citizen-contributors aggregate row below the list.
   const knownAliases = useMemo(() => {
