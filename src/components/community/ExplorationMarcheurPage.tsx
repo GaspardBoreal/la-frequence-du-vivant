@@ -631,6 +631,8 @@ const ExplorationMarcheurPage: React.FC = () => {
                 explorationId={effectiveExplorationId || undefined}
                 marcheEventId={marcheEventId || undefined}
                 eventType={marcheEvent?.event_type || null}
+                initialSubTab={pendingBiodiversitySub as any}
+                onSubTabConsumed={() => setPendingBiodiversitySub(null)}
                 onNavigateToMarche={(marcheId) => {
                   const stepIndex = explorationMarches?.findIndex(m => m.id === marcheId) ?? -1;
                   if (stepIndex !== -1) {
