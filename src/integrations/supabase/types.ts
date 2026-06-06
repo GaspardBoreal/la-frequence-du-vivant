@@ -5527,6 +5527,19 @@ export type Database = {
               period_label: string
             }[]
           }
+        | {
+            Args: {
+              p_end?: string
+              p_event_id?: string
+              p_period?: string
+              p_start?: string
+              p_user_filter?: string
+            }
+            Returns: {
+              connection_count: number
+              period_label: string
+            }[]
+          }
       get_activity_events_for_filter: {
         Args: never
         Returns: {
@@ -5569,6 +5582,28 @@ export type Database = {
               p_event_id?: string
               p_limit?: number
               p_period?: string
+              p_user_filter?: string
+            }
+            Returns: {
+              created_at: string
+              event_target: string
+              event_type: string
+              exploration_id: string
+              id: string
+              marche_event_id: string
+              metadata: Json
+              nom: string
+              prenom: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_end?: string
+              p_event_id?: string
+              p_limit?: number
+              p_period?: string
+              p_start?: string
               p_user_filter?: string
             }
             Returns: {
@@ -5791,7 +5826,13 @@ export type Database = {
         Returns: Json
       }
       get_marcheur_activity_dashboard: {
-        Args: never
+        Args: {
+          p_end?: string
+          p_event_id?: string
+          p_period?: string
+          p_start?: string
+          p_user_filter?: string
+        }
         Returns: {
           explorations_viewed: number
           favorite_tabs: string[]
@@ -5800,7 +5841,7 @@ export type Database = {
           photos_count: number
           prenom: string
           role: string
-          sessions_7d: number
+          sessions_count: number
           sounds_count: number
           texts_count: number
           user_id: string
