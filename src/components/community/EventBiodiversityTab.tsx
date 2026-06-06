@@ -43,6 +43,8 @@ interface EventBiodiversityTabProps {
   marcheEventId?: string;
   eventType?: string | null;
   onNavigateToMarche?: (marcheId: string) => void;
+  initialSubTab?: SubTab | null;
+  onSubTabConsumed?: () => void;
 }
 
 type SynthCategory = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
