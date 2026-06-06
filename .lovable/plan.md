@@ -1,58 +1,53 @@
+# Plan de correction
+
 ## Objectif
-Rétablir les résultats de recherche (Clématite & co.) et diviser le temps de réponse perçu par ~5.
+Permettre de naviguer vers chaque fiche issue de la recherche, y compris chaque occurrence listée sous une espèce comme « Clématite », avec un comportement rapide, clair et fiable.
 
-## 1. Fix bloquant : ambiguïté `id` dans `search_global`
+## Ce que je propose
 
-La colonne `OUT id text` de `RETURNS TABLE` masque `marche_events.id`. Renommer toutes les colonnes OUT pour éviter toute collision future avec les tables scannées :
+### 1. Rendre chaque sous-résultat cliquable
+Aujourd’hui, dans la carte espèce, les occurrences récentes affichées en dessous sont seulement informatives.
+Je vais transformer chaque ligne de contexte en action explicite :
+- clic sur une occurrence = ouverture de la fiche espèce
+- en transmettant aussi la marche concernée
+- avec fermeture immédiate de l’overlay
 
-```
-RETURNS TABLE (
-  r_kind text, r_id text, r_title text, r_subtitle text,
-  r_context text, r_score real, r_route text, r_meta jsonb
-)
-```
+Résultat : on pourra cliquer directement sur « BORDEAUX / Patio végétalisé ISEG », « DEVIAT C 865 », etc.
 
-Le hook front (`useGlobalSearch.ts`) mappe déjà sur `kind/id/title/...` → on renomme les sorties via alias dans le `SELECT` final (`SELECT r_kind AS kind, r_id AS id, …`) **ou** plus simple : on garde les noms publics mais on **qualifie systématiquement** `marche_events.id = p_event_id`, idem partout où une table scannée a une colonne `id`, `title`, `kind`, etc. Option retenue : qualifier (moins invasif côté client).
+### 2. Faire consommer réellement le `marcheId` côté destination
+Le moteur de recherche renvoie déjà un `marcheId` dans l’URL pour les espèces, mais la page cible ne l’exploite pas assez pour différencier les occurrences.
+Je vais compléter le flux pour que, lors de l’ouverture depuis la recherche :
+- la page biodiversité s’ouvre au bon onglet
+- l’espèce concernée s’ouvre
+- la marche ciblée soit utilisée pour mettre en avant la bonne occurrence/contexte
 
-## 2. Performance : pré-filtre + LIMIT par branche
+Résultat : on n’ouvre plus une fiche générique, mais la bonne entrée contextualisée.
 
-Refonte de la RPC en gardant la même signature :
+### 3. Ajouter une navigation robuste même si on reste sur la même page
+Comme beaucoup de résultats pointent vers la même route d’exploration, React Router peut rester sur la même page sans donner l’impression qu’il s’est passé quelque chose.
+Je vais rendre ce cas robuste en déclenchant systématiquement un focus interne quand :
+- la route change
+- ou la route est identique mais le focus/marche change
 
-- **Pré-filtre rapide** : chaque branche fait d'abord un `WHERE col ILIKE '%q%' OR col % q` (utilise les index trigram), **avec un `LIMIT 50` interne**, puis seulement ensuite calcule le `similarity()` pour le ranking. Ça évite de scorer toute la table.
-- **LIMIT par branche avant UNION** : `LIMIT p_limit * 2` sur chaque CTE → l'UNION final trie 12×6 = 72 lignes max au lieu de potentiellement des milliers.
-- **`STABLE PARALLEL SAFE`** sur la fonction pour autoriser le parallélisme Postgres.
-- **Index trigram garantis** (création si manquants, `IF NOT EXISTS`) :
-  - `marcheur_observations` : `f_unaccent(lower(species_scientific_name))`, `f_unaccent(lower(taxon_common_name_fr))`
-  - `marche_textes` : `f_unaccent(lower(titre))`
-  - `event_testimonies` : `f_unaccent(lower(quote))`
-  - `community_profiles` : `f_unaccent(lower(display_name))`
-  - `marche_events` : `f_unaccent(lower(nom_marche))`
-  - `exploration_curations` : `f_unaccent(lower(title))`
+Résultat : la navigation fonctionne aussi entre plusieurs résultats d’une même exploration sans impression de clic “mort”.
 
-## 3. UX : feedback "recherche en cours" + distinction vide vs erreur
+### 4. Améliorer la lisibilité de l’action dans l’UI
+Je vais clarifier visuellement quelles zones ouvrent quoi :
+- chaque occurrence récente aura un état hover/tap clair
+- libellé/action cohérents
+- éviter l’ambiguïté entre “déplier” et “ouvrir”
 
-Côté front (`GlobalSearchOverlay.tsx`) :
-- État `isFetching` → skeleton 3 cartes (au lieu du carré vide actuel pendant 800ms).
-- État `error` (la RPC plante actuellement mais le hook avale l'erreur silencieusement) → bandeau "Une erreur est survenue, réessayez" au lieu de "Aucun résultat".
-- Vérifier dans `useGlobalSearch.ts` que `throw error` remonte bien dans React Query (déjà OK), et brancher `error` dans l'overlay.
+Résultat : on comprend immédiatement où cliquer pour aller vers une fiche précise.
 
-## 4. Validation
+## Détail technique
+- Mise à jour de `SearchResultCard` pour donner un `onOpenContext(...)` aux lignes d’occurrences des espèces.
+- Enrichissement du payload de navigation/focus avec `marcheId` par occurrence.
+- Ajustement du flux `GlobalSearchOverlay` pour supporter l’ouverture d’un sous-résultat précis.
+- Renforcement du mécanisme `useFocusFromUrl` / `focusBus` pour rejouer correctement un focus même sur même route.
+- Branchement dans la vue biodiversité / `SpeciesExplorer` pour sélectionner l’espèce et exploiter la marche ciblée.
 
-Test SQL direct :
-```sql
-SELECT kind, title, score FROM search_global('clématite', NULL, 8);
-SELECT kind, title, score FROM search_global('clem', NULL, 8);
-```
-Doit retourner ≥ 1 espèce, et s'exécuter en < 300 ms (EXPLAIN ANALYZE pour confirmer usage des index trigram).
-
-## Détails techniques
-
-- **Migration unique** : `CREATE OR REPLACE FUNCTION public.search_global(...)` + `CREATE INDEX IF NOT EXISTS ... USING gin (... extensions.gin_trgm_ops)`.
-- **Pas de breaking change** côté hook/composants : signature et colonnes de retour identiques.
-- **Aucun changement** sur `FocusHalo`, `useFocusFromUrl`, `focusBus`, ni les composants déjà focusables.
-
-## Fichiers touchés
-
-1. `supabase/migrations/<new>.sql` — nouvelle version de `search_global` + index trigram manquants.
-2. `src/components/search/GlobalSearchOverlay.tsx` — skeleton de chargement + affichage erreur.
-3. (optionnel) `src/hooks/useGlobalSearch.ts` — exposer `error` si pas déjà fait.
+## Résultat attendu
+Après implémentation, une recherche comme « cléma » permettra :
+- de cliquer sur la carte espèce entière pour ouvrir la fiche générale
+- de cliquer sur chaque occurrence listée pour ouvrir la même espèce, mais ancrée sur la bonne marche
+- d’obtenir une réaction immédiate et cohérente, même sans changement visible d’URL de page

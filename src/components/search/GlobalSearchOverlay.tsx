@@ -97,7 +97,7 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
     return g;
   }, [filtered]);
 
-  const handleResultClick = (r: SearchResult) => {
+  const handleResultClick = (r: SearchResult, opts?: { marcheId?: string | null }) => {
     logSearch({
       query: query.trim(),
       eventId: effectiveEventId,
@@ -108,8 +108,28 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
       clickedId: r.id,
     });
     onClose();
-    if (r.route) navigate(r.route);
+    if (!r.route) return;
+
+    // If the caller supplied a specific marcheId (e.g. clicked a sub-occurrence),
+    // rewrite the marcheId param in the route so the destination focuses the right step.
+    let target = r.route;
+    if (opts?.marcheId) {
+      const [path, qs = ''] = target.split('?');
+      const params = new URLSearchParams(qs);
+      params.set('marcheId', opts.marcheId);
+      // bust same-route navigations so the destination re-fires its focus effect
+      params.set('t', String(Date.now()));
+      target = `${path}?${params.toString()}`;
+    } else {
+      // Always add a small nonce so navigating to the SAME route still triggers effects.
+      const [path, qs = ''] = target.split('?');
+      const params = new URLSearchParams(qs);
+      params.set('t', String(Date.now()));
+      target = `${path}?${params.toString()}`;
+    }
+    navigate(target);
   };
+
 
   if (!open) return null;
 
@@ -298,7 +318,7 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
                           key={`${r.kind}-${r.id}-${idx}`}
                           result={r}
                           query={query}
-                          onOpen={() => handleResultClick(r)}
+                          onOpen={(opts) => handleResultClick(r, opts)}
                         />
                       ))}
                     </div>

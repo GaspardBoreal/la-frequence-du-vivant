@@ -90,7 +90,7 @@ function Highlight({ text, q }: { text: string; q: string }) {
 interface Props {
   result: SearchResult;
   query: string;
-  onOpen: () => void;
+  onOpen: (opts?: { marcheId?: string | null }) => void;
 }
 
 export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => {
@@ -203,7 +203,7 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
         {/* body */}
         <button
           type="button"
-          onClick={hasExpand ? () => setExpanded(e => !e) : onOpen}
+          onClick={hasExpand ? () => setExpanded(e => !e) : () => onOpen()}
           className="flex-1 min-w-0 text-left"
         >
           <div className="flex items-center gap-1.5">
@@ -227,7 +227,7 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
 
         {/* CTA arrow (always visible, opens the fiche) */}
         <button
-          onClick={onOpen}
+          onClick={() => onOpen()}
           aria-label="Ouvrir la fiche"
           className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-emerald-500/25 ring-1 ring-white/10 hover:ring-emerald-400/50 text-emerald-100/70 hover:text-emerald-50 transition"
         >
@@ -247,7 +247,12 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
           >
             <div className="px-3 pb-3 pt-1 space-y-2 border-t border-white/5">
               {result.kind === 'species' && (meta.recent_contexts ?? []).map((c: any, i: number) => (
-                <div key={i} className="flex items-center justify-between gap-2 text-xs px-2 py-1.5 rounded-lg bg-white/[0.03]">
+                <button
+                  key={i}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onOpen({ marcheId: c.marche_id ?? null }); }}
+                  className="w-full flex items-center justify-between gap-2 text-xs px-2 py-2 rounded-lg bg-white/[0.03] hover:bg-emerald-500/15 ring-1 ring-white/5 hover:ring-emerald-400/40 text-left transition group/row"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="text-emerald-100/90 truncate">
                       {c.nom_marche || c.ville || '—'}
@@ -256,7 +261,8 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
                       {[formatRelative(c.date), c.marcheur, `${c.count} obs`].filter(Boolean).join(' · ')}
                     </div>
                   </div>
-                </div>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-300/50 group-hover/row:text-emerald-200 shrink-0" />
+                </button>
               ))}
 
               {(result.kind === 'text' || result.kind === 'testimony') && meta.excerpt && (
@@ -266,7 +272,7 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
               )}
 
               <button
-                onClick={onOpen}
+                onClick={() => onOpen()}
                 className="w-full mt-1 px-3 py-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 ring-1 ring-emerald-400/30 hover:ring-emerald-400/60 text-emerald-100 text-xs font-medium flex items-center justify-center gap-1.5 transition"
               >
                 Ouvrir la fiche
