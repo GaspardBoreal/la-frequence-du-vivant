@@ -38,7 +38,7 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
   const loggedRef = useRef<string>('');
 
   const effectiveEventId = scopeChoice === 'event' ? eventId : null;
-  const { data: results = [], isFetching } = useGlobalSearch(query, effectiveEventId);
+  const { data: results = [], isFetching, error } = useGlobalSearch(query, effectiveEventId);
 
   // Focus input + reset on open
   useEffect(() => {
