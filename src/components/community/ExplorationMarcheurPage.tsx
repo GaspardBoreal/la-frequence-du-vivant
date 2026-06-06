@@ -392,7 +392,6 @@ const ExplorationMarcheurPage: React.FC = () => {
           </div>
         </div>
 
-        </div>
 
         {/* Global Tabs */}
         <div className="max-w-4xl mx-auto">
