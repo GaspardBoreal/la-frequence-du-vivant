@@ -230,9 +230,20 @@ const ExplorationMarcheurPage: React.FC = () => {
       const idx = explorationMarches.findIndex(m => m.id === focus.marcheId);
       if (idx >= 0) setActiveStepIndex(idx);
     }
-    // 4. Cible halo
+    // 4. Sous-onglet biodiversité (déterministe, prop drilling — pas de race bus)
+    const allowedBioSub = ['synthese', 'taxons', 'temoignages', 'textes', 'analyse'];
+    if (focus.sub && allowedBioSub.includes(focus.sub)) {
+      setPendingBiodiversitySub(focus.sub);
+    } else if (focus.kind === 'species') {
+      setPendingBiodiversitySub('taxons');
+    } else if (focus.kind === 'testimony') {
+      setPendingBiodiversitySub('temoignages');
+    } else if (focus.kind === 'text') {
+      setPendingBiodiversitySub('textes');
+    }
+    // 5. Cible halo
     setFocusTarget(`${focus.kind}:${focus.id}`);
-    // 5. Diffuse le focus via le bus (les composants enfants mountés ensuite peuvent encore le recevoir)
+    // 6. Diffuse le focus via le bus (halo + composants enfants secondaires)
     const broadcast = setTimeout(() => {
       dispatchFocus({
         kind: focus.kind,
