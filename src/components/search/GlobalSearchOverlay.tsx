@@ -97,7 +97,10 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
     return g;
   }, [filtered]);
 
-  const handleResultClick = (r: SearchResult, opts?: { marcheId?: string | null }) => {
+  const handleResultClick = (
+    r: SearchResult,
+    opts?: { marcheId?: string | null; explorationId?: string | null; eventId?: string | null }
+  ) => {
     logSearch({
       query: query.trim(),
       eventId: effectiveEventId,
@@ -110,22 +113,27 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
     onClose();
     if (!r.route) return;
 
-    // If the caller supplied a specific marcheId (e.g. clicked a sub-occurrence),
-    // rewrite the marcheId param in the route so the destination focuses the right step.
     let target = r.route;
-    if (opts?.marcheId) {
-      const [path, qs = ''] = target.split('?');
-      const params = new URLSearchParams(qs);
+    const [basePath, baseQs = ''] = target.split('?');
+    const params = new URLSearchParams(baseQs);
+
+    // Per-occurrence routing: rebuild path so we land on the correct event /
+    // exploration, not on the species' default (most-recent) exploration.
+    if (opts?.eventId) {
+      if (opts.marcheId) params.set('marcheId', opts.marcheId);
+      params.set('t', String(Date.now()));
+      target = `/marches-du-vivant/mon-espace/exploration/event-${opts.eventId}?${params.toString()}`;
+    } else if (opts?.explorationId) {
+      if (opts.marcheId) params.set('marcheId', opts.marcheId);
+      params.set('t', String(Date.now()));
+      target = `/marches-du-vivant/mon-espace/exploration/${opts.explorationId}?${params.toString()}`;
+    } else if (opts?.marcheId) {
       params.set('marcheId', opts.marcheId);
-      // bust same-route navigations so the destination re-fires its focus effect
       params.set('t', String(Date.now()));
-      target = `${path}?${params.toString()}`;
+      target = `${basePath}?${params.toString()}`;
     } else {
-      // Always add a small nonce so navigating to the SAME route still triggers effects.
-      const [path, qs = ''] = target.split('?');
-      const params = new URLSearchParams(qs);
       params.set('t', String(Date.now()));
-      target = `${path}?${params.toString()}`;
+      target = `${basePath}?${params.toString()}`;
     }
     navigate(target);
   };
