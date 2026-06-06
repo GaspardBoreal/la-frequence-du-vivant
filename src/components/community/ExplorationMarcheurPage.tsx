@@ -87,6 +87,8 @@ const ExplorationMarcheurPage: React.FC = () => {
   const { focus, consume } = useFocusFromUrl();
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
   const [pendingBiodiversitySub, setPendingBiodiversitySub] = useState<string | null>(null);
+  const [pendingApprendreSub, setPendingApprendreSub] = useState<'decouvertes' | 'apprendre-creer' | null>(null);
+  const [pendingApprendreSensory, setPendingApprendreSensory] = useState<'oeil' | 'main' | 'oreille' | 'coeur' | 'palais' | null>(null);
 
   // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
   const isEventFallback = rawParam?.startsWith('event-');
@@ -241,6 +243,22 @@ const ExplorationMarcheurPage: React.FC = () => {
       setPendingBiodiversitySub('temoignages');
     } else if (focus.kind === 'text') {
       setPendingBiodiversitySub('textes');
+    }
+    // 4 bis. Sous-onglet + sens pour Apprendre (prop drilling déterministe)
+    const allowedApprendreSub = ['decouvertes', 'apprendre-creer'] as const;
+    const allowedSenses = ['oeil', 'main', 'oreille', 'coeur', 'palais'] as const;
+    if (focus.tab === 'apprendre' || focus.kind === 'practice') {
+      const sub = focus.sub && (allowedApprendreSub as readonly string[]).includes(focus.sub)
+        ? (focus.sub as typeof allowedApprendreSub[number])
+        : 'decouvertes';
+      setPendingApprendreSub(sub);
+      const sense = focus.sensory && (allowedSenses as readonly string[]).includes(focus.sensory)
+        ? (focus.sensory as typeof allowedSenses[number])
+        : (focus.kind === 'practice' ? 'main'
+          : focus.kind === 'testimony' ? 'coeur'
+          : focus.kind === 'text' ? 'coeur'
+          : 'oeil');
+      setPendingApprendreSensory(sense);
     }
     // 5. Cible halo
     setFocusTarget(`${focus.kind}:${focus.id}`);
@@ -659,6 +677,8 @@ const ExplorationMarcheurPage: React.FC = () => {
                 explorationId={effectiveExplorationId || undefined}
                 marcheEventId={directMarcheEventId || undefined}
                 userId={userId}
+                initialSubTab={pendingApprendreSub ?? undefined}
+                initialSensory={pendingApprendreSensory ?? undefined}
               />
             </motion.div>
           )}

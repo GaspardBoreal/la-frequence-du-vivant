@@ -24,10 +24,11 @@ interface Props {
   explorationId: string;
   marcheEventId?: string;
   onNavigateToMarche?: (marcheId: string) => void;
+  initialSensory?: SenseKey;
 }
 
-const CeQueNousAvonsVu: React.FC<Props> = ({ explorationId, marcheEventId, onNavigateToMarche }) => {
-  const [activeSense, setActiveSense] = useState<SenseKey>('oeil');
+const CeQueNousAvonsVu: React.FC<Props> = ({ explorationId, marcheEventId, onNavigateToMarche, initialSensory }) => {
+  const [activeSense, setActiveSense] = useState<SenseKey>(initialSensory ?? 'oeil');
   const { data: isCurator } = useIsCurator(explorationId);
 
   // Bascule automatique sur le bon sens lors d'un deep-link de recherche.
