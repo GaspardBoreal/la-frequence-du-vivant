@@ -32,12 +32,22 @@ const tabLabels: Record<string, string> = {
   'tab:apprendre:geopoetique': 'Géopoétique',
 };
 
+const parseDateParam = (s: string | null): Date | null => {
+  if (!s) return null;
+  const d = new Date(s + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+};
+const fmtDateParam = (d: Date | null): string | null =>
+  d ? format(d, 'yyyy-MM-dd') : null;
+
 const ActivityDashboard: React.FC = () => {
   const [params, setParams] = useSearchParams();
   const period = (params.get('period') as ActivityPeriod) || '7d';
   const eventId = params.get('event');
   const userFilter = params.get('user') || 'all';
   const viewMode = (params.get('view') as 'list' | 'chart') || 'list';
+  const from = parseDateParam(params.get('from'));
+  const to   = parseDateParam(params.get('to'));
 
   const update = (next: Record<string, string | null>) => {
     const p = new URLSearchParams(params);
@@ -48,10 +58,26 @@ const ActivityDashboard: React.FC = () => {
     setParams(p, { replace: true });
   };
 
-  const periodLabel = useMemo(
-    () => PERIOD_OPTIONS.find(o => o.value === period)?.label || period,
-    [period],
-  );
+  // Compute RPC date bounds (ISO timestamptz) when period === 'custom'
+  const { rpcStart, rpcEnd, periodLabel } = useMemo(() => {
+    if (period === 'custom' && from && to) {
+      const start = new Date(from); start.setHours(0, 0, 0, 0);
+      const end   = new Date(to);   end.setHours(23, 59, 59, 999);
+      return {
+        rpcStart: start.toISOString(),
+        rpcEnd:   end.toISOString(),
+        periodLabel: `${format(start, 'dd/MM', { locale: fr })} → ${format(end, 'dd/MM', { locale: fr })}`,
+      };
+    }
+    return {
+      rpcStart: null as string | null,
+      rpcEnd:   null as string | null,
+      periodLabel: PERIOD_OPTIONS.find(o => o.value === period)?.label || period,
+    };
+  }, [period, from, to]);
+
+  // Whether the dashboard query should fire (custom requires from+to)
+  const filtersReady = period !== 'custom' || (!!from && !!to);
 
   const { data: globalStats } = useQuery({
     queryKey: ['activity-global-stats'],
@@ -69,25 +95,33 @@ const ActivityDashboard: React.FC = () => {
   });
 
   const { data: dashboard } = useQuery({
-    queryKey: ['activity-dashboard'],
+    queryKey: ['activity-dashboard', period, eventId, userFilter, rpcStart, rpcEnd],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_marcheur_activity_dashboard');
+      const args: any = { p_period: period === 'custom' ? 'all' : period };
+      if (eventId) args.p_event_id = eventId;
+      if (userFilter !== 'all') args.p_user_filter = userFilter;
+      if (rpcStart) args.p_start = rpcStart;
+      if (rpcEnd)   args.p_end   = rpcEnd;
+      const { data, error } = await supabase.rpc('get_marcheur_activity_dashboard' as any, args);
       if (error) throw error;
-      return data as Array<{
+      return (data || []) as Array<{
         user_id: string; prenom: string | null; nom: string | null; role: string | null;
-        last_seen: string; sessions_7d: number; favorite_tabs: string[];
+        last_seen: string; sessions_count: number; favorite_tabs: string[];
         photos_count: number; sounds_count: number; texts_count: number;
         explorations_viewed: number;
       }>;
     },
+    enabled: filtersReady,
   });
 
   const { data: timeline } = useQuery({
-    queryKey: ['activity-timeline', userFilter, period, eventId],
+    queryKey: ['activity-timeline', userFilter, period, eventId, rpcStart, rpcEnd],
     queryFn: async () => {
-      const args: any = { p_limit: 100, p_period: period };
+      const args: any = { p_limit: 100, p_period: period === 'custom' ? 'all' : period };
       if (userFilter !== 'all') args.p_user_filter = userFilter;
       if (eventId) args.p_event_id = eventId;
+      if (rpcStart) args.p_start = rpcStart;
+      if (rpcEnd)   args.p_end   = rpcEnd;
       const { data, error } = await supabase.rpc('get_activity_timeline' as any, args);
       if (error) throw error;
       return data as Array<{
@@ -96,20 +130,37 @@ const ActivityDashboard: React.FC = () => {
         marche_event_id: string | null; metadata: Record<string, unknown>; created_at: string;
       }>;
     },
+    enabled: filtersReady,
   });
 
   const { data: chartData } = useQuery({
-    queryKey: ['activity-chart', period, eventId, userFilter],
+    queryKey: ['activity-chart', period, eventId, userFilter, rpcStart, rpcEnd],
     queryFn: async () => {
-      const args: any = { p_period: period };
+      const args: any = { p_period: period === 'custom' ? 'all' : period };
       if (eventId) args.p_event_id = eventId;
       if (userFilter !== 'all') args.p_user_filter = userFilter;
+      if (rpcStart) args.p_start = rpcStart;
+      if (rpcEnd)   args.p_end   = rpcEnd;
       const { data, error } = await supabase.rpc('get_activity_connections_chart' as any, args);
       if (error) throw error;
       return (data || []) as Array<{ period_label: string; connection_count: number }>;
     },
-    enabled: viewMode === 'chart',
+    enabled: viewMode === 'chart' && filtersReady,
   });
+
+  // Compact label for the "Sessions (…)" column header
+  const sessionsColLabel = useMemo(() => {
+    switch (period) {
+      case 'today': return "auj.";
+      case 'yesterday': return "hier";
+      case '7d': return '7 j';
+      case 'month': return '30 j';
+      case 'year': return '12 m';
+      case 'all': return 'tout';
+      case 'custom': return from && to ? `${format(from, 'dd/MM')}→${format(to, 'dd/MM')}` : '—';
+      default: return period;
+    }
+  }, [period, from, to]);
 
   return (
     <Card className="p-4">
@@ -171,25 +222,41 @@ const ActivityDashboard: React.FC = () => {
           period={period}
           eventId={eventId}
           userFilter={userFilter}
+          from={from}
+          to={to}
           marcheurs={dashboard || []}
-          onPeriodChange={(p) => update({ period: p === '7d' ? null : p })}
+          onPeriodChange={(p) => {
+            if (p === 'custom') {
+              update({ period: 'custom' });
+            } else {
+              update({ period: p === '7d' ? null : p, from: null, to: null });
+            }
+          }}
           onEventChange={(id) => update({ event: id })}
           onUserChange={(u) => update({ user: u })}
-          onReset={() => update({ period: null, event: null, user: null })}
+          onRangeChange={(f, t) => update({ from: fmtDateParam(f), to: fmtDateParam(t) })}
+          onReset={() => update({ period: null, event: null, user: null, from: null, to: null })}
         />
+        {period === 'custom' && !filtersReady && (
+          <p className="text-xs text-muted-foreground mt-2 ml-1">
+            Sélectionnez une date de début et de fin pour appliquer le filtre.
+          </p>
+        )}
       </div>
 
       {viewMode === 'list' ? (
         <>
           {/* Per-marcheur table */}
-          <h3 className="text-sm font-semibold text-foreground mb-2">Détail par marcheur</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-2">
+            Détail par marcheur — <span className="text-muted-foreground font-normal">{periodLabel}</span>
+          </h3>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Marcheur</TableHead>
                   <TableHead>Dernière connexion</TableHead>
-                  <TableHead>Sessions (7j)</TableHead>
+                  <TableHead>Sessions ({sessionsColLabel})</TableHead>
                   <TableHead>Onglets favoris</TableHead>
                   <TableHead><Camera className="h-3.5 w-3.5 inline" /></TableHead>
                   <TableHead><Headphones className="h-3.5 w-3.5 inline" /></TableHead>
@@ -204,7 +271,7 @@ const ActivityDashboard: React.FC = () => {
                     <TableCell className="text-xs text-muted-foreground">
                       {row.last_seen ? formatDistanceToNow(new Date(row.last_seen), { addSuffix: true, locale: fr }) : '—'}
                     </TableCell>
-                    <TableCell>{row.sessions_7d}</TableCell>
+                    <TableCell>{row.sessions_count}</TableCell>
                     <TableCell className="text-xs">
                       {row.favorite_tabs?.map(t => tabLabels[t] || t).join(', ') || '—'}
                     </TableCell>
@@ -217,7 +284,7 @@ const ActivityDashboard: React.FC = () => {
                 {!dashboard?.length && (
                   <TableRow>
                     <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
-                      Aucune activité enregistrée pour le moment.
+                      Aucune activité sur cette période / cet événement.
                     </TableCell>
                   </TableRow>
                 )}
