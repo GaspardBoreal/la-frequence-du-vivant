@@ -1455,7 +1455,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
 
   // Batch iNat science-accounts (déclarés dans le profil) — source primaire du lien iNat
   const { data: inatAccountsByUserId } = useMarcheursInatAccounts(
-    marcheurs.map((m) => m.userId ?? null)
+    (marcheurs || []).map((m) => m.userId ?? null)
   );
 
   // Aggregate set of all known LMDV walker aliases — used to exclude them
