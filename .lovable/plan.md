@@ -1,42 +1,85 @@
-## Diagnostic
+## Objectif
 
-**Pb 1 — "Aujourd'hui" affiche d'anciens enregistrements.** Le filtre fonctionne correctement sur la **Timeline** (RPC `get_activity_timeline` bornée à `date_trunc('day', now() AT TIME ZONE 'Europe/Paris')`). Mais le tableau **« Détail par marcheur »** juste au-dessus utilise une RPC séparée `get_marcheur_activity_dashboard` qui **ignore complètement** les filtres et agrège toujours sur 7 jours (colonne hardcodée « Sessions (7j) », `last_seen` = max global). Visuellement, l'utilisateur croit donc que le filtre est cassé.
+Le bandeau « Indicateurs globaux » de `/admin/community` → Activités est aujourd'hui **figé sur 7 jours** et **ignore** les filtres période/événement/marcheur. On le rend pleinement réactif et on ajoute une **5ᵉ carte « Marche la plus active »** (événement le plus consulté par les marcheurs sur la fenêtre choisie).
 
-**Pb 2.** Pas de plage personnalisée date début → date fin.
+## Comportement cible
 
-## Correctifs proposés
+- Le sous-titre passe de « Indicateurs globaux — 7 derniers jours » à un libellé dynamique :
+  `Indicateurs globaux — Aujourd'hui` / `Hier` / `7 derniers jours` / `01/05 → 06/06` / etc.
+- Les 5 cartes recalculent leurs valeurs à chaque changement de période, événement ou marcheur, en cohérence stricte avec le tableau « Détail par marcheur » en dessous.
+- Nouvelle carte **« Marche la plus active »** : affiche le titre de l'événement (`marche_events.title`) le plus consulté (event_type `marche_view` ou `page_view` ciblant `/m/:slug`/`exploration`) sur la fenêtre, avec un compteur discret en sous-ligne (« 42 vues »).
+- Quand un événement est filtré, la carte affiche directement ce titre (cohérence) plutôt que de masquer la carte.
+- Layout : grille `md:grid-cols-5` (au lieu de 4), cartes plus compactes, troncature `truncate` + tooltip sur le titre long.
 
-### 1. Faire respecter les filtres au tableau « Détail par marcheur »
-Étendre `get_marcheur_activity_dashboard(p_start timestamptz, p_end timestamptz, p_event_id uuid, p_user_filter uuid)` — tous optionnels (défauts : 7 derniers jours, comportement actuel conservé). Les agrégats `last_seen`, `sessions`, `photos/sounds/texts/explorations`, `favorite_tabs` se calculent **dans la fenêtre** et tiennent compte de `marche_event_id` + `user_id` si fournis. La colonne du header devient dynamique : « Sessions (aujourd'hui) », « Sessions (7 j) », « Sessions (01/05 → 06/06) »…
+## Détail technique
 
-### 2. Ajouter une option « Plage personnalisée »
-- Nouvelle valeur de période : `custom`.
-- Quand sélectionnée, deux date-pickers (shadcn `Calendar` dans `Popover`) apparaissent à droite du select Période : **Du** … **Au** … (inclusif). Validation : `from ≤ to ≤ aujourd'hui`, max 2 ans.
-- URL sync : `?period=custom&from=YYYY-MM-DD&to=YYYY-MM-DD`.
-- Bouton « Effacer » remet `period=7d` et purge `from`/`to`.
+### 1. Migration SQL — refonte de `get_activity_global_stats`
 
-### 3. Étendre les 3 RPC pour accepter `p_start` / `p_end` (timestamptz, optionnels)
-- `get_activity_timeline`, `get_activity_connections_chart`, `get_marcheur_activity_dashboard`.
-- Si `p_start`/`p_end` fournis, ils **priment** sur `p_period`. Sinon, comportement actuel inchangé.
-- Pour le chart en mode `custom`, le bucket est inféré de la durée : ≤2 j → hour, ≤60 j → day, ≤24 mois → week, sinon month.
+Nouvelle signature alignée sur les 3 autres RPC du dashboard :
 
-### 4. Frontend
-- `ActivityFiltersBar` :
-  - Ajouter option `custom` dans `PERIOD_OPTIONS` (label « Plage personnalisée »).
-  - Quand `period === 'custom'`, afficher 2 boutons date (icône `CalendarIcon` + label `dd MMM yyyy`) ouvrant un `Calendar` shadcn (locale fr).
-  - Nouvelles props `from`, `to`, `onRangeChange(from, to)`.
-- `ActivityDashboard.tsx` :
-  - Lire `from`/`to` depuis `useSearchParams`, convertir en `YYYY-MM-DD` → bornes timestamptz Paris (`from 00:00`, `to 23:59:59.999`).
-  - Passer `p_start`/`p_end` aux 3 RPC.
-  - Remplacer la requête `get_marcheur_activity_dashboard` (sans args) par l'appel filtré → invalidation à chaque changement de filtre.
-  - Header colonne dynamique « Sessions (<label période>) ».
-  - Sous-titre du bloc : « Aucune activité enregistrée pour cette période / cet événement. ».
+```
+get_activity_global_stats(
+  p_period text default '7d',
+  p_event_id uuid default null,
+  p_user_filter uuid default null,
+  p_start timestamptz default null,
+  p_end   timestamptz default null
+)
+RETURNS TABLE(
+  active_sessions      bigint,
+  media_uploads        bigint,
+  most_popular_tab     text,
+  most_active_user_id  uuid,
+  most_active_prenom   text,
+  most_active_nom      text,
+  most_active_event_id uuid,         -- NEW
+  most_active_event_title text,      -- NEW
+  most_active_event_views bigint,    -- NEW
+  total_events         bigint
+)
+```
 
-### 5. Hors scope
-- Pas de modification des 4 KPI cards globales (gardent 7 j explicite, libellé déjà en place).
+Logique interne (SECURITY DEFINER, `search_path = public`, Europe/Paris) :
+
+- `v_start` / `v_end` calculés exactement comme dans `get_marcheur_activity_dashboard` (override par `p_start`/`p_end` sinon dérivés de `p_period` ; `all` = pas de borne).
+- CTE `recent` = `marcheur_activity_logs` filtré sur `[v_start, v_end]` + `p_event_id` (sur `marche_event_id`) + `p_user_filter` (sur `user_id`).
+- Compteurs : `active_sessions = COUNT(DISTINCT user_id)`, `media_uploads = COUNT(event_type='media_upload')`, `total_events = COUNT(*)`.
+- `most_popular_tab` : `event_target` le plus fréquent parmi `event_type='tab_switch'`.
+- `most_active_user` : `user_id` avec le plus d'events, jointure `community_profiles`.
+- `most_active_event` :
+  - source = `recent` où `marche_event_id IS NOT NULL` (couvre `marche_view`, `page_view`, `tab_switch` sur la page marche),
+  - `GROUP BY marche_event_id ORDER BY COUNT(*) DESC LIMIT 1`,
+  - jointure `marche_events` pour récupérer `title`.
+
+Renommage des colonnes `_7d` → sans suffixe (la fenêtre n'est plus fixe). Anciennes colonnes supprimées proprement par `DROP FUNCTION` puis `CREATE`.
+
+### 2. Frontend — `ActivityDashboard.tsx`
+
+- `useQuery(['activity-global-stats', period, eventId, userFilter, rpcStart, rpcEnd])` : passer les 5 mêmes args que les 3 autres queries, `enabled: filtersReady`.
+- Adapter le typage TS de la réponse (nouveaux champs).
+- Remplacer le sous-titre figé par `Indicateurs globaux — {periodLabel}` (déjà calculé).
+- Passer de `md:grid-cols-4` à `md:grid-cols-5` (responsive : `sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5`).
+- Ajouter la 5ᵉ carte « Marche la plus active » :
+  - icône `MapPin` (cohérent avec le filtre Événement),
+  - titre tronqué + `title={...}` pour tooltip natif,
+  - sous-ligne `text-xs text-muted-foreground` : `{views} vue·s`,
+  - fallback `'—'` si aucune vue.
+- Quand `eventId` est défini, court-circuit côté frontend : afficher directement le titre de l'événement sélectionné (récupéré depuis la liste `get_activity_events_for_filter` déjà chargée par la barre de filtres) plutôt que d'attendre la RPC, pour une UX instantanée.
+
+### 3. Hors scope
+
+- Pas de changement aux RPCs `get_marcheur_activity_dashboard`, `get_activity_timeline`, `get_activity_connections_chart` (déjà réactives).
+- Pas de modif de `ActivityFiltersBar.tsx`.
 
 ## Fichiers touchés
-- Migration : 3 RPC remplacées (signatures rétro-compatibles via `DEFAULT NULL`).
-- `src/components/admin/ActivityFiltersBar.tsx` (option custom + date pickers).
-- `src/components/admin/ActivityDashboard.tsx` (URL params from/to, dashboard query paramétrée, libellé colonne dynamique).
-- `src/integrations/supabase/types.ts` régénéré.
+
+- `supabase/migrations/<timestamp>_activity_global_stats_filters.sql` (drop + recreate fonction)
+- `src/components/admin/ActivityDashboard.tsx` (query args + nouvelle carte + libellé dynamique + grid-cols-5)
+- `src/integrations/supabase/types.ts` (régénéré auto après migration)
+
+## Validation
+
+1. Sélectionner « Aujourd'hui » → vérifier que Sessions / Médias chutent et que « Marche la plus active » affiche un titre cohérent avec le tableau.
+2. Sélectionner un événement → la carte « Marche la plus active » verrouille sur ce titre.
+3. Plage personnalisée 2 jours → tous les KPI recalculés, libellé `01/05 → 02/05`.
+4. Filtrer sur un marcheur → « Plus actif » = ce marcheur, « Marche la plus active » = sa marche la plus consultée.
