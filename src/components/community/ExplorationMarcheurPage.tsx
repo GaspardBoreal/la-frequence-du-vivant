@@ -638,6 +638,7 @@ const ExplorationMarcheurPage: React.FC = () => {
         marcheId={activeMarcheId || null}
         scope="global"
       />
+      <FocusHalo target={focusTarget} delay={400} onSettled={() => setFocusTarget(null)} />
     </div>
     </SpeciesPhotoModeProvider>
   );
