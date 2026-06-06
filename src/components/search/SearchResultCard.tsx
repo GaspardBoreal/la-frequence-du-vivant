@@ -90,7 +90,7 @@ function Highlight({ text, q }: { text: string; q: string }) {
 interface Props {
   result: SearchResult;
   query: string;
-  onOpen: (opts?: { marcheId?: string | null }) => void;
+  onOpen: (opts?: { marcheId?: string | null; explorationId?: string | null; eventId?: string | null }) => void;
 }
 
 export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => {
@@ -250,7 +250,14 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
                 <button
                   key={i}
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); onOpen({ marcheId: c.marche_id ?? null }); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpen({
+                      marcheId: c.marche_id ?? null,
+                      explorationId: c.exploration_id ?? null,
+                      eventId: c.event_id ?? null,
+                    });
+                  }}
                   className="w-full flex items-center justify-between gap-2 text-xs px-2 py-2 rounded-lg bg-white/[0.03] hover:bg-emerald-500/15 ring-1 ring-white/5 hover:ring-emerald-400/40 text-left transition group/row"
                 >
                   <div className="min-w-0 flex-1">
@@ -258,7 +265,7 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
                       {c.nom_marche || c.ville || '—'}
                     </div>
                     <div className="text-emerald-100/40 truncate">
-                      {[formatRelative(c.date), c.marcheur, `${c.count} obs`].filter(Boolean).join(' · ')}
+                      {[formatRelative(c.date), c.marcheur, `${c.count} obs`, c.event_title].filter(Boolean).join(' · ')}
                     </div>
                   </div>
                   <ArrowUpRight className="w-3.5 h-3.5 text-emerald-300/50 group-hover/row:text-emerald-200 shrink-0" />
