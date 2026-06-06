@@ -1,43 +1,100 @@
-## Problème
+# 🔍 Moteur de recherche « Forêt Émeraude »
 
-Dans l'onglet **Marcheurs** d'une exploration, le petit lien `↗ iNat` à côté du nom n'apparaît que pour 2 marcheurs sur 25 — alors que les 25 ont bien renseigné leur compte iNaturalist dans leur profil (table `community_profile_science_accounts`, 25 lignes `network='inaturalist'`).
+Un FAB flottant 🔍 ouvre une overlay plein écran immersive (glassmorphism vert émeraude, particules, halos) qui cherche en live, avec tolérance aux fautes et aux accents, dans **5 univers de données** et affiche les résultats groupés par type avec un picto distinctif.
 
-### Cause racine
+---
 
-Le hook actuel `useMarcheurInatProfile` (utilisé dans `MarcheursTab.tsx` ligne 1074) ne résout le profil iNat **que** si une observation iNat est déjà rattachée au marcheur dans `biodiversity_snapshots.species_data` (via matching d'alias). Tant qu'un marcheur n'a pas d'observation iNat publiée et rattachée à cette exploration, son lien n'apparaît jamais — même s'il a un compte iNat déclaré sur son profil.
+## 1. Périmètre v1
 
-→ Aujourd'hui seuls **Victor Boixeda** et **Les marches du Vivant** ont des attributions iNat actives sur cette marche, d'où les 2 seuls liens visibles.
+- **Marcheur (global)** : recherche dans toutes ses marches/événements/carnet/outils via FAB visible partout dans `/marches-du-vivant/mon-espace` et `/exploration/:id`.
+- **Admin (cross-marcheurs)** : même UX dans `/admin/...`, mais scope élargi (tous les marcheurs, tous les événements).
+- Pas de mode « événement uniquement » au v1 : un toggle in-overlay « Cet événement / Toutes mes marches » sera disponible **uniquement** quand on est sur une page exploration.
 
-## Proposition
+---
 
-Faire du **compte iNat déclaré dans le profil** la source primaire du lien (toujours fiable, dispo dès qu'un marcheur l'a renseigné), et garder la résolution par observation comme enrichissement.
+## 2. Sources de données interrogées
 
-### 1. Nouveau hook `useMarcheursInatAccounts(userIds)` (batch)
+| Type | Picto | Source |
+|---|---|---|
+| 🌿 Espèce | feuille verte | `biodiversity_snapshots.species_data` + `marcheur_observations` (nom commun FR via `useFrenchSpeciesNamesAuto` + nom scientifique) |
+| ✨ Pratique remarquable | étoile dorée | `exploration_curations` (source='main', liée marcheur) |
+| 📖 Texte / écrit / témoignage | livre ouvert | `marche_textes` + `event_testimonies` + descriptions audio marcheur |
+| 👤 Marcheur | silhouette | `community_profiles` (prénom, nom, slug) |
+| 🚶 Marche / événement | pin émeraude | `marche_events` + `explorations` (titre, lieu, description) |
 
-- Une seule requête : `community_profile_science_accounts` JOIN `community_profiles` sur `profile_id`, filtré par `network='inaturalist'` et `user_id IN (…)`.
-- Retourne une `Map<userId, { username, profile_url, verified }>`.
-- RLS déjà OK : policy SELECT `readable by all` → accessible aux marcheurs connectés et admins.
-- Construit `profile_url` via `buildProfileUrl()` de `src/types/scienceAccounts.ts` si la colonne est `NULL`.
+Chaque résultat → clic = navigation directe vers la fiche/drawer correspondant.
 
-### 2. Intégration dans `MarcheursTab.tsx`
+---
 
-- Au niveau du composant parent (liste), appeler **une fois** `useMarcheursInatAccounts` avec tous les `userId` de la liste → évite N requêtes.
-- Passer la map à chaque `MarcheurCard` via prop `inatAccount?: { login, profile_url }`.
-- Dans le rendu du badge `iNat` (lignes 1132-1144) : prioriser `inatAccount` sur le résultat de `useMarcheurInatProfile`. Logique :
-  - `const inatLink = inatAccount ?? (inatProfile?.login ? { login: inatProfile.login, profile_url: inatProfile.profile_url } : null);`
-- Le badge utilise déjà `ExternalLink` + texte « iNat » → aucun changement visuel, juste plus de liens affichés.
+## 3. UX & Design — Forêt Émeraude immersive
 
-### 3. Hors périmètre
+**Déclencheur** : FAB rond `bottom-20 right-4` (mobile-first), au-dessus de la TabBar, halo pulsé vert `#2dd4a8`, ic. Lucide `Search`. Raccourci ⌘K en bonus desktop.
 
-- Pas de modification de `useMarcheurInatProfile` (conservé pour les attributions réelles utilisées ailleurs : CitizenPlatformsCard, ContributionsSubTab).
-- Pas de migration SQL — la table existe et est lisible.
-- Pas de changement sur les autres réseaux (eBird, GBIF, Pl@ntNet…) — peuvent être ajoutés ensuite si souhaité avec le même pattern.
+**Overlay** :
+- Plein écran, fond `bg-[#0a1f1a]/95 backdrop-blur-2xl`
+- Particules vertes flottantes (MagicUI `Particles`)
+- Input géant centré, typo serif élégante, curseur lumineux, ring émeraude
+- Sous l'input : **chips de filtres rapides** (Tous · 🌿 · ✨ · 📖 · 👤 · 🚶) avec compteurs
+- Résultats en **AnimatedList** (MagicUI), cards glassmorphism, halo vert au hover, picto coloré à gauche, titre + snippet + contexte (« dans Marche X · 12 mai »)
+- État vide : suggestions populaires (top 5 termes BDD) + 3 derniers termes du marcheur (`localStorage` + table `search_logs`)
+- Loader : barre de lumière qui traverse (BorderBeam)
+- Fermeture : Escape, swipe down mobile, clic backdrop
 
-### Fichiers touchés
+**Animations** : `fade-in` overlay, `scale-in` cards en cascade, `BlurFade` sur transitions de filtre.
 
-- **Créé** : `src/hooks/useMarcheursInatAccounts.ts`
-- **Édité** : `src/components/community/exploration/MarcheursTab.tsx` (appel batch + prop + fallback dans le badge)
+---
 
-### Résultat attendu
+## 4. Logique de recherche
 
-Les 25 marcheurs avec compte iNat déclaré afficheront immédiatement le lien `↗ iNat` cliquable vers leur profil iNaturalist, indépendamment de la présence d'observations rattachées à la marche en cours.
+- **Live debounced 250 ms** (`useDebounce`)
+- **Fuzzy** : normalisation NFD côté JS + extension Postgres `unaccent` + `pg_trgm` (`similarity()`) côté DB → tolère « ortié » = « Ortie », « victorb » = « Victor Boixeda »
+- **Mot ou groupe de mots** : tokenisation, chaque token doit matcher (AND), OR sur les colonnes
+- **RPC unique** `search_global(p_query text, p_user_id uuid, p_event_id uuid default null, p_limit int default 8)` SECURITY DEFINER qui retourne une union typée `{kind, id, title, subtitle, context, score, route}` triée par score
+- **RLS-aware** : la RPC respecte les permissions (un marcheur ne voit que ses marches et co-participants, l'admin tout)
+
+---
+
+## 5. Table de logs `search_logs`
+
+```text
+search_logs
+├─ id uuid pk
+├─ user_id uuid (nullable pour admin anon)
+├─ prenom text, nom text          -- snapshot dénormalisé
+├─ query text                      -- mot(s) recherché(s)
+├─ event_id uuid nullable          -- événement courant
+├─ marche_id uuid nullable         -- marche courante
+├─ scope text                      -- 'global' | 'event' | 'admin'
+├─ results_count int               -- nb total résultats
+├─ clicked_kind text nullable      -- type sur lequel on a cliqué
+├─ clicked_id text nullable
+├─ created_at timestamptz          -- date+heure (Paris)
+└─ user_agent text, route text     -- contexte
+```
+
+- Insert silencieux après chaque recherche **validée** (debounce 800 ms ou submit explicite) — pas chaque frappe
+- Onglet admin `/admin/community → Recherches` pour visualiser les requêtes (cloud de mots, top termes, requêtes sans résultats)
+
+---
+
+## 6. Détails techniques
+
+- Nouveau composant `<GlobalSearchFab />` monté dans `MarchesDuVivantMonEspace.tsx` + `ExplorationLayout.tsx` + layouts admin
+- Overlay : `<GlobalSearchOverlay />` (Dialog Radix fullscreen)
+- Hook `useGlobalSearch(query, scope)` → React Query, `staleTime: 30s`
+- Migration : extension `pg_trgm` + `unaccent`, table `search_logs` avec GRANTs + RLS (insert authenticated own, select admin only), RPC `search_global`, RPC `log_search`
+- Index trigram sur les colonnes texte fréquemment cherchées (species names, profile names, curation titles)
+- Pictos via Lucide : `Leaf`, `Sparkles`, `BookOpen`, `User`, `MapPin`
+
+---
+
+## 7. Hors scope v1 (pour itérations futures)
+
+- Recherche sémantique vectorielle (embeddings)
+- Recherche dans les médias (OCR photos, transcripts audio)
+- Auto-complete suggestions IA
+- Synchronisation Algolia
+
+---
+
+**Livrables** : 1 migration SQL, 1 RPC, 4 composants React, 1 hook, intégration dans 3 layouts, 1 onglet admin de visualisation.
