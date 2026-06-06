@@ -30,6 +30,25 @@ const CeQueNousAvonsVu: React.FC<Props> = ({ explorationId, marcheEventId, onNav
   const [activeSense, setActiveSense] = useState<SenseKey>('oeil');
   const { data: isCurator } = useIsCurator(explorationId);
 
+  // Bascule automatique sur le bon sens lors d'un deep-link de recherche.
+  useEffect(() => {
+    const mapKindToSense = (kind: FocusDetail['kind']): SenseKey | null => {
+      switch (kind) {
+        case 'practice': return 'main';
+        case 'testimony': return 'coeur';
+        case 'species': return 'oeil';
+        default: return null;
+      }
+    };
+    const apply = (d: FocusDetail) => {
+      const next = mapKindToSense(d.kind);
+      if (next) setActiveSense(next);
+    };
+    const last = getLastFocus();
+    if (last) apply(last);
+    return subscribeFocus(apply);
+  }, []);
+
   // Publie au ChatBot le sens en cours pour enrichir le tabPath et les filtres
   React.useEffect(() => {
     const senseLabel = SENSES.find(s => s.key === activeSense)?.label || activeSense;
