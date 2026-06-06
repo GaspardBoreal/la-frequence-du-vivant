@@ -80,18 +80,27 @@ const ActivityDashboard: React.FC = () => {
   const filtersReady = period !== 'custom' || (!!from && !!to);
 
   const { data: globalStats } = useQuery({
-    queryKey: ['activity-global-stats'],
+    queryKey: ['activity-global-stats', period, eventId, userFilter, rpcStart, rpcEnd],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_activity_global_stats');
+      const args: any = { p_period: period === 'custom' ? 'all' : period };
+      if (eventId) args.p_event_id = eventId;
+      if (userFilter !== 'all') args.p_user_filter = userFilter;
+      if (rpcStart) args.p_start = rpcStart;
+      if (rpcEnd)   args.p_end   = rpcEnd;
+      const { data, error } = await supabase.rpc('get_activity_global_stats' as any, args);
       if (error) throw error;
       return (data as unknown as Array<{
-        active_sessions_7d: number; media_uploads_7d: number;
+        active_sessions: number; media_uploads: number;
         most_popular_tab: string | null;
         most_active_user_id: string | null;
         most_active_prenom: string | null; most_active_nom: string | null;
-        total_events_7d: number;
+        most_active_event_id: string | null;
+        most_active_event_title: string | null;
+        most_active_event_views: number | null;
+        total_events: number;
       }>)?.[0] || null;
     },
+    enabled: filtersReady,
   });
 
   const { data: dashboard } = useQuery({
