@@ -1070,9 +1070,12 @@ const MarcheurCard: React.FC<{
   localSpeciesCount?: number;
   onForceOpen: () => void;
   aliases?: string[];
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, sensibleNames, uncuratedSpeciesNames, localSpeciesCount, onForceOpen, aliases }) => {
+  inatAccount?: MarcheurInatAccount | null;
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, sensibleNames, uncuratedSpeciesNames, localSpeciesCount, onForceOpen, aliases, inatAccount }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
   const { data: inatProfile } = useMarcheurInatProfile(aliases, explorationMarcheIds);
+  const inatLink = inatAccount
+    ?? (inatProfile?.login ? { login: inatProfile.login, profile_url: inatProfile.profile_url } : null);
 
   const openImpact = () => {
     setActiveSubTab('impact');
