@@ -1,88 +1,58 @@
-# Recherche → Navigation directe vers chaque fiche
+## Objectif
+Rétablir les résultats de recherche (Clématite & co.) et diviser le temps de réponse perçu par ~5.
 
-## Problème
+## 1. Fix bloquant : ambiguïté `id` dans `search_global`
 
-Aujourd'hui, "Ouvrir la fiche" envoie tout le monde vers `/exploration/:id` (page racine, onglet Carte). Le marcheur arrive « quelque part » mais doit re-chercher l'espèce / le texte / la pratique / le témoignage. L'effet wahouh de la recherche s'effondre à la dernière marche.
-
-## Vision
-
-La recherche devient un **téléporteur contextuel** : un clic = on atterrit sur le bon onglet, à la bonne marche, avec la **fiche déjà ouverte** (drawer ou modal), un léger halo « focus » sur l'élément ciblé, et l'historique navigateur permet de revenir à la liste de résultats.
-
-## Mécanique unifiée : un seul paramètre `?focus=`
-
-Toutes les routes sortent vers la page exploration (ou la page profil/public selon le cas), avec un query param normalisé :
+La colonne `OUT id text` de `RETURNS TABLE` masque `marche_events.id`. Renommer toutes les colonnes OUT pour éviter toute collision future avec les tables scannées :
 
 ```
-?focus=<kind>:<encodedId>[&marcheId=<id>][&tab=<tab>]
+RETURNS TABLE (
+  r_kind text, r_id text, r_title text, r_subtitle text,
+  r_context text, r_score real, r_route text, r_meta jsonb
+)
 ```
 
-Exemples :
+Le hook front (`useGlobalSearch.ts`) mappe déjà sur `kind/id/title/...` → on renomme les sorties via alias dans le `SELECT` final (`SELECT r_kind AS kind, r_id AS id, …`) **ou** plus simple : on garde les noms publics mais on **qualifie systématiquement** `marche_events.id = p_event_id`, idem partout où une table scannée a une colonne `id`, `title`, `kind`, etc. Option retenue : qualifier (moins invasif côté client).
 
-| Résultat | Route générée |
-|---|---|
-| Espèce *Clematis* | `/exploration/{exp}?focus=species:Clematis` |
-| Pratique remarquable | `/exploration/{exp}?focus=practice:{curationId}&tab=apprendre` |
-| Texte « Le chant du patio » | `/exploration/{exp}?focus=text:{textId}&marcheId={m}&tab=marches&sensory=lire` |
-| Témoignage | `/exploration/{exp}?focus=testimony:{testimonyId}&tab=marcheurs` |
-| Marche / Event | `/exploration/{exp}?focus=event:{eventId}` |
-| Marcheur | `/marcheur/{slug}` (déjà direct) |
+## 2. Performance : pré-filtre + LIMIT par branche
 
-## Architecture
+Refonte de la RPC en gardant la même signature :
 
-### 1. RPC `search_global` — enrichir les routes
+- **Pré-filtre rapide** : chaque branche fait d'abord un `WHERE col ILIKE '%q%' OR col % q` (utilise les index trigram), **avec un `LIMIT 50` interne**, puis seulement ensuite calcule le `similarity()` pour le ranking. Ça évite de scorer toute la table.
+- **LIMIT par branche avant UNION** : `LIMIT p_limit * 2` sur chaque CTE → l'UNION final trie 12×6 = 72 lignes max au lieu de potentiellement des milliers.
+- **`STABLE PARALLEL SAFE`** sur la fonction pour autoriser le parallélisme Postgres.
+- **Index trigram garantis** (création si manquants, `IF NOT EXISTS`) :
+  - `marcheur_observations` : `f_unaccent(lower(species_scientific_name))`, `f_unaccent(lower(taxon_common_name_fr))`
+  - `marche_textes` : `f_unaccent(lower(titre))`
+  - `event_testimonies` : `f_unaccent(lower(quote))`
+  - `community_profiles` : `f_unaccent(lower(display_name))`
+  - `marche_events` : `f_unaccent(lower(nom_marche))`
+  - `exploration_curations` : `f_unaccent(lower(title))`
 
-Régénérer la fonction pour qu'elle retourne directement la route ciblée :
-- **species** : `?focus=species:<scientific_name>` (+ `marcheId` du `recent_contexts[0]` pour pré-positionner l'étape)
-- **practice** : `?focus=practice:<curation_id>&tab=apprendre`
-- **text** : `?focus=text:<text_id>&marcheId=<marche_id>&tab=marches&sensory=lire`
-- **testimony** : `?focus=testimony:<testimony_id>&tab=marcheurs` (ou onglet Synthèse selon mémoire `event-testimonies-logic`)
-- **event** : `?focus=event:<event_id>`
+## 3. UX : feedback "recherche en cours" + distinction vide vs erreur
 
-### 2. Hook côté page exploration : `useFocusFromUrl()`
+Côté front (`GlobalSearchOverlay.tsx`) :
+- État `isFetching` → skeleton 3 cartes (au lieu du carré vide actuel pendant 800ms).
+- État `error` (la RPC plante actuellement mais le hook avale l'erreur silencieusement) → bandeau "Une erreur est survenue, réessayez" au lieu de "Aucun résultat".
+- Vérifier dans `useGlobalSearch.ts` que `throw error` remonte bien dans React Query (déjà OK), et brancher `error` dans l'overlay.
 
-Petit hook lu une fois au montage de `ExplorationMarcheurPage` :
-- parse `?focus=…&marcheId=…&tab=…&sensory=…`
-- positionne `activeGlobalTab`, `activeSensoryTab`, `activeStepIndex` (via `marcheId → index`)
-- expose `{ focus: { kind, id }, consume() }` pour les composants enfants
-- `consume()` nettoie l'URL avec `navigate(pathname, { replace: true })` une fois la fiche affichée → l'utilisateur peut « partager le lien » avant, mais l'historique reste propre.
+## 4. Validation
 
-### 3. Auto-ouverture par kind
+Test SQL direct :
+```sql
+SELECT kind, title, score FROM search_global('clématite', NULL, 8);
+SELECT kind, title, score FROM search_global('clem', NULL, 8);
+```
+Doit retourner ≥ 1 espèce, et s'exécuter en < 300 ms (EXPLAIN ANALYZE pour confirmer usage des index trigram).
 
-| Kind | Composant qui réagit | Comportement |
-|---|---|---|
-| `species` | `SpeciesExplorer` / drawer espèce existant | Ouvre `SpeciesGalleryDetailModal` sur le `scientific_name` ciblé |
-| `practice` | onglet *Apprendre* (ou *Vivant*) | Scroll + halo sur la carte pratique + ouvre son drawer si dispo |
-| `text` | `LireDescriptionsTab` / `TextesEcritsSubTab` | Scroll sur le texte, mode lecture immersive ouvert |
-| `testimony` | onglet témoignages | Modal témoignage avec citation entière |
-| `event` | rien (la page = l'event) | léger halo sur le bandeau titre |
+## Détails techniques
 
-Pour chaque kind, un seul `useEffect` qui surveille `focus` et déclenche le `setOpen(...)` du drawer/modal correspondant, puis appelle `consume()`.
+- **Migration unique** : `CREATE OR REPLACE FUNCTION public.search_global(...)` + `CREATE INDEX IF NOT EXISTS ... USING gin (... extensions.gin_trgm_ops)`.
+- **Pas de breaking change** côté hook/composants : signature et colonnes de retour identiques.
+- **Aucun changement** sur `FocusHalo`, `useFocusFromUrl`, `focusBus`, ni les composants déjà focusables.
 
-### 4. Ergonomie « wahouh »
+## Fichiers touchés
 
-- **Transition** : quand on clique « Ouvrir la fiche », overlay search se ferme avec un *zoom-out* vers la vignette ; la fiche s'ouvre 250 ms plus tard avec un *zoom-in*. Sensation de continuité spatiale (shared element-like via `framer-motion layoutId`).
-- **Halo de bienvenue** : à l'arrivée, un ring émeraude pulse 1.5 s autour de la fiche (`animate-pulse-once`).
-- **Toast retour** : un mini-toast en bas « Retour aux résultats » qui ré-ouvre l'overlay avec la requête mémorisée (state via `sessionStorage: lastSearchQuery`).
-- **Skeleton fiche** pendant le chargement (drawer ouvert vide → contenu progressif) — pas d'écran blanc.
-
-### 5. Robustesse
-
-- Si la marche cible n'est pas dans `explorationMarches` (l'utilisateur n'y a pas participé) → fallback : ouvrir la fiche espèce/texte en mode lecture seule, sans changer d'onglet, avec une bannière « Observée sur une marche que vous n'avez pas suivie ».
-- Si `focus.id` n'existe plus → toast « Cette fiche n'est plus disponible » + `consume()`.
-- `?focus=` est ignoré sur les pages publiques `/marche/:id` (texte) sauf si on décide de l'y supporter aussi.
-
-## Détails techniques (section technique)
-
-- `useGlobalSearch` : aucune modif côté types (`route` reste un string déjà enrichi par le RPC).
-- `GlobalSearchOverlay.handleResultClick` : stocke `sessionStorage.setItem('last-search', query)` avant `navigate(r.route)`.
-- Nouveau fichier `src/hooks/useFocusFromUrl.ts` (~40 lignes).
-- Nouveau composant `src/components/search/FocusHalo.tsx` (motion ring réutilisable).
-- Migration SQL : `CREATE OR REPLACE FUNCTION search_global` avec les nouvelles routes (concat directe des query params, encode via `replace`).
-- Aucun changement de schéma DB.
-
-## Questions avant de coder
-
-1. **Pratiques remarquables** : existe-t-il déjà un drawer dédié, ou seulement une carte dans `ApprendreTab` ? (J'ai vu `exploration_curations` mais pas de modal pratique unique — confirme-tu qu'un *PracticeDetailModal* doit être créé, ou réutilise-t-on `SpeciesGalleryDetailModal` ?)
-2. **Témoignages** : faut-il les ouvrir dans la vue *Mur*, *Carrousel*, *Nuage* ou *Constellation* (mémoire `event-testimonies-logic`), ou un modal dédié indépendant du mode courant ?
-3. **Hors périmètre du marcheur** (espèce vue dans une marche non suivie) : on bloque ? on affiche en lecture seule avec bannière ? on redirige vers la page publique `/m/:slug` si publiée ?
-4. **Transition shared-element** (zoom vignette → fiche) : OK pour ce niveau de polish, ou on reste sur un fade simple pour livrer plus vite ?
+1. `supabase/migrations/<new>.sql` — nouvelle version de `search_global` + index trigram manquants.
+2. `src/components/search/GlobalSearchOverlay.tsx` — skeleton de chargement + affichage erreur.
+3. (optionnel) `src/hooks/useGlobalSearch.ts` — exposer `error` si pas déjà fait.
