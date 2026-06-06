@@ -50,6 +50,7 @@ import MarcheurImpactPanel from './impact/MarcheurImpactPanel';
 import CitizenContributorsAggregateRow from './CitizenContributorsAggregateRow';
 import { useExplorationCitizenContributors } from '@/hooks/useExplorationCitizenContributors';
 import { useMarcheurInatProfile } from '@/hooks/useMarcheurInatProfile';
+import { useMarcheursInatAccounts, type MarcheurInatAccount } from '@/hooks/useMarcheursInatAccounts';
 import { useMarcheurAttributedSpecies } from '@/hooks/useMarcheurAttributedSpecies';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 import InatUploadPrepDrawer from './InatUploadPrepDrawer';
