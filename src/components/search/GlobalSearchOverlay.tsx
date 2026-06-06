@@ -38,7 +38,7 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
   const loggedRef = useRef<string>('');
 
   const effectiveEventId = scopeChoice === 'event' ? eventId : null;
-  const { data: results = [], isFetching } = useGlobalSearch(query, effectiveEventId);
+  const { data: results = [], isFetching, error } = useGlobalSearch(query, effectiveEventId);
 
   // Focus input + reset on open
   useEffect(() => {
@@ -235,7 +235,42 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
               <EmptyState recent={recent} onPick={setQuery} />
             )}
 
-            {query.trim().length >= 2 && !isFetching && results.length === 0 && (
+            {query.trim().length >= 2 && isFetching && results.length === 0 && (
+              <div className="space-y-2" aria-label="Recherche en cours">
+                {[0, 1, 2].map(i => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 p-2.5 rounded-xl bg-white/[0.03] ring-1 ring-white/5 animate-pulse"
+                    style={{ animationDelay: `${i * 120}ms` }}
+                  >
+                    <div className="w-11 h-11 rounded-lg bg-emerald-400/10 shrink-0" />
+                    <div className="flex-1 space-y-2 py-1">
+                      <div className="h-3.5 w-2/3 rounded bg-emerald-400/10" />
+                      <div className="h-2.5 w-1/2 rounded bg-emerald-400/5" />
+                      <div className="flex gap-1.5">
+                        <div className="h-3 w-14 rounded-full bg-emerald-400/10" />
+                        <div className="h-3 w-10 rounded-full bg-emerald-400/10" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <p className="text-center text-emerald-100/30 text-xs italic pt-3">
+                  La forêt cherche…
+                </p>
+              </div>
+            )}
+
+            {query.trim().length >= 2 && !isFetching && error && (
+              <div className="text-center py-12">
+                <div className="text-4xl mb-3">⚠️</div>
+                <p className="text-rose-200/80 text-sm">Une erreur est survenue pendant la recherche.</p>
+                <p className="text-emerald-100/40 text-xs mt-1">
+                  {(error as any)?.message?.slice(0, 160) || 'Réessayez dans un instant.'}
+                </p>
+              </div>
+            )}
+
+            {query.trim().length >= 2 && !isFetching && !error && results.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-4xl mb-3">🌫️</div>
                 <p className="text-emerald-100/60 text-sm">Aucun résultat pour <span className="text-emerald-200">« {query} »</span></p>
