@@ -521,6 +521,7 @@ const CitationCard: React.FC<{
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: Math.min(index * 0.04, 0.6) }}
       onClick={onClick}
+      data-focus-id={`text:${texte.id}`}
       className={cn(
         'group relative w-full mb-3 break-inside-avoid text-left',
         'rounded-2xl overflow-hidden',
