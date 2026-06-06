@@ -119,6 +119,22 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     });
   };
 
+  // Auto-expand a practice card on `lfdv:focus` (deep-link from global search)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { kind?: string; id?: string };
+      if (detail?.kind !== 'practice' || !detail.id) return;
+      setExpandedIds(prev => {
+        if (prev.has(detail.id!)) return prev;
+        const next = new Set(prev);
+        next.add(detail.id!);
+        return next;
+      });
+    };
+    window.addEventListener('lfdv:focus', handler as EventListener);
+    return () => window.removeEventListener('lfdv:focus', handler as EventListener);
+  }, []);
+
   const mediaIndex = useMemo(() => buildMediaIndex(allMedia), [allMedia]);
 
   // Upload direct depuis appareil (smartphone / tablette / PC) — réutilise le mur Convivialité
