@@ -1,48 +1,64 @@
-
 ## Problème
 
-Quand on clique « Datation de l'âge des grands arbres (dendrochronologie) » dans la recherche :
-- ✅ on arrive bien sur la bonne exploration
-- ✅ on arrive bien sur l'onglet **Apprendre** (URL `?focus=practice:<id>&tab=apprendre`)
-- ❌ mais le sous-onglet sensoriel reste sur **L'Œil** au lieu de **La main**, donc la fiche pratique n'est jamais visible — et donc jamais auto-dépliée par `MainCuration`.
+La route d'un résultat « pratique » porte `tab=apprendre` mais pas le sous-onglet ni le sens. La bascule vers **La main** repose uniquement sur le focus-bus consommé au mount de `CeQueNousAvonsVu`. Cette fenêtre de 4 s n'est pas garantie quand on arrive de l'extérieur (home, recherche cross-marche, deep-link partagé), d'où la retombée sur **L'œil**.
 
-## Cause
+## Objectif
 
-`CeQueNousAvonsVu` (le sélecteur des 5 sens dans Apprendre › Ce que nous avons vu) initialise un état local `activeSense = 'oeil'` et **n'écoute pas le focus bus**. Le focus de la recherche est bien diffusé (`dispatchFocus({ kind: 'practice', … })`) et `MainCuration` sait déjà auto-déplier la bonne carte (`data-focus-id="practice:<id>"`), mais il n'est jamais monté car on reste sur le sens « œil ».
+Un deep-link de pratique atterrit **toujours** sur `Apprendre → Ce que nous avons vu → La main`, avec la fiche pratique déjà déroulée et halo emerald.
 
-## Correction
+Étendu aux autres kinds pour cohérence :
 
-Brancher `CeQueNousAvonsVu` sur le focus bus pour qu'il bascule automatiquement vers le bon sens lorsque la recherche pointe vers une entité curée :
+| kind       | tab        | sub (Apprendre)   | sensory |
+| ---------- | ---------- | ----------------- | ------- |
+| practice   | apprendre  | decouvertes       | main    |
+| testimony  | apprendre  | decouvertes       | coeur   |
+| species    | apprendre  | decouvertes       | oeil    |
+| text       | apprendre  | decouvertes       | coeur   |
 
-| Focus venant de la recherche | Sens à activer |
-| --- | --- |
-| `kind: 'practice'` | `main` |
-| `kind: 'testimony'` (sous-onglet coeur) | `coeur` |
-| `kind: 'text'` (déjà routé vers Marches/Lire — pas concerné ici) | — |
-| `kind: 'species'` (l'œil contient les espèces curées) | `oeil` (déjà défaut) |
+(la route « espèce » conserve aussi sa variante `biodiversite` quand on vient de la carte ; ce plan ne touche que la branche « pratique » / Apprendre.)
 
-Implémentation (un seul fichier modifié) :
+## Changements
 
+### 1. URL — enrichir la RPC `search_global`
+Ajouter `&sub=decouvertes&sensory=main` à la route pratique :
 ```text
-src/components/community/insights/curation/CeQueNousAvonsVu.tsx
-  + import { subscribeFocus, getLastFocus } from '@/lib/focusBus';
-  + useEffect au montage :
-      - lit getLastFocus() (replay si récent)
-      - subscribeFocus(d => mapKindToSense(d.kind) && setActiveSense(...))
+/marches-du-vivant/mon-espace/exploration/<exp>
+  ?focus=practice:<id>&tab=apprendre&sub=decouvertes&sensory=main
 ```
+Migration : nouvelle révision de `search_global` (même corps que la dernière, seules les lignes route des branches `practice` / `testimony` / `text` portant sur Apprendre sont enrichies).
 
-Le bus rejoue déjà le dernier focus si reçu < 4 s (`RECENT_MS`) → fonctionne même si le composant monte après le `dispatchFocus`.
+### 2. `useFocusFromUrl` — pas de changement
+Déjà capable de relire `sub` et `sensory`.
 
-`MainCuration` fait déjà le reste (scroll + dépliage de la carte via `data-focus-id`), et `FocusHalo` ajoute le halo sur la cible.
+### 3. `ExplorationMarcheurPage`
+Étendre le `useEffect` qui consomme `focus` :
+- déjà : map `kind→tab`, set `activeGlobalTab`
+- **ajout** : si `focus.tab === 'apprendre'`, propager `focus.sub` (decouvertes/apprendre-creer) et `focus.sensory` (oeil/main/coeur/oreille/palais) à `ApprendreTab` via deux nouvelles props `initialApprendreSub` / `initialApprendreSensory` (état local de la page, consommé une fois).
+- conserver `dispatchFocus(...)` pour le halo + auto-expand de `MainCuration`.
 
-## Détails techniques
+### 4. `ApprendreTab`
+- Accepter `initialApprendreSub?: 'decouvertes' | 'apprendre-creer'` et `initialApprendreSensory?: SenseKey`.
+- `useState(initialApprendreSub ?? 'decouvertes')` pour le sous-onglet.
+- Passer `initialSensory={initialApprendreSensory}` à `CeQueNousAvonsVu`.
 
-- Pas de migration BDD, pas de changement du RPC `search_global` (la route `?focus=practice:<id>&tab=apprendre` est déjà correcte).
-- Pas de changement de la barre de recherche ni de `ExplorationMarcheurPage`.
-- Aucun risque de régression sur le défaut « œil » : on ne change `activeSense` que si un focus pertinent existe.
+### 5. `CeQueNousAvonsVu`
+- Accepter `initialSensory?: SenseKey`.
+- `useState<SenseKey>(initialSensory ?? 'oeil')`.
+- Conserver l'abonnement focus-bus en filet de sécurité (déjà en place), mais l'init via props devient la source primaire — plus de dépendance au timing.
 
-## Validation
+### 6. `MainCuration`
+Déjà compatible : reçoit le focus via le bus et `data-focus-id="practice:<id>"`. Le halo (`FocusHalo`) cible déjà la carte. Rien à changer.
 
-1. Taper « dendro » dans la recherche globale → cliquer la pratique.
-2. On doit atterrir sur Apprendre › Ce que nous avons vu › **La main**, avec la carte « Datation de l'âge des grands arbres » dépliée et le halo visible.
-3. Le défaut sans focus reste « L'œil ».
+## Validation manuelle
+
+1. Depuis la home `/marches-du-vivant/mon-espace`, taper `tonte` → cliquer la pratique.  
+   ✅ Atterrissage direct sur Apprendre › Ce que nous avons vu › La main, carte « Tondre moins… » dépliée + halo.
+2. Recharger l'URL deep-link (test à froid, sans recherche en amont) → même résultat (prouve qu'on ne dépend plus du bus).
+3. Cliquer un témoignage → atterrit sur `coeur`.
+4. Cliquer une espèce depuis la recherche → continue d'atterrir sur l'œil (régression non introduite).
+
+## Pas dans le scope
+
+- Refactor du focus-bus.
+- Changements de la barre de recherche / `SearchResultCard`.
+- Modifications visuelles.
