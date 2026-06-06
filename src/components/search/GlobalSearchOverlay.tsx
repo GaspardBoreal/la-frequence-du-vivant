@@ -6,6 +6,7 @@ import {
   Search, X, Leaf, Sparkles, BookOpen, MessageCircle, User, MapPin, Clock, TrendingUp,
 } from 'lucide-react';
 import { useGlobalSearch, logSearch, pushRecentSearch, getRecentSearches, type SearchKind, type SearchResult } from '@/hooks/useGlobalSearch';
+import { SearchResultCard } from './SearchResultCard';
 import { cn } from '@/lib/utils';
 
 const KIND_META: Record<SearchKind, { label: string; icon: React.ComponentType<any>; color: string; chip: string }> = {
@@ -256,9 +257,14 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
                       </span>
                       <span className="text-[0.7rem] text-emerald-100/30">· {list.length}</span>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       {list.map((r, idx) => (
-                        <ResultRow key={`${r.kind}-${r.id}-${idx}`} result={r} onClick={() => handleResultClick(r)} />
+                        <SearchResultCard
+                          key={`${r.kind}-${r.id}-${idx}`}
+                          result={r}
+                          query={query}
+                          onOpen={() => handleResultClick(r)}
+                        />
                       ))}
                     </div>
                   </div>
