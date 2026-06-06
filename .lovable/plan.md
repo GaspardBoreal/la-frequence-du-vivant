@@ -1,54 +1,48 @@
-# Recherche — inclure les pratiques emblématiques
 
-## Diagnostic
+## Problème
 
-Le RPC `search_global` contient la branche « practice » mais avec un filtre erroné :
+Quand on clique « Datation de l'âge des grands arbres (dendrochronologie) » dans la recherche :
+- ✅ on arrive bien sur la bonne exploration
+- ✅ on arrive bien sur l'onglet **Apprendre** (URL `?focus=practice:<id>&tab=apprendre`)
+- ❌ mais le sous-onglet sensoriel reste sur **L'Œil** au lieu de **La main**, donc la fiche pratique n'est jamais visible — et donc jamais auto-dépliée par `MainCuration`.
 
-```sql
-WHERE c.source = 'main'        -- ❌ 'main' n'est pas une source
+## Cause
+
+`CeQueNousAvonsVu` (le sélecteur des 5 sens dans Apprendre › Ce que nous avons vu) initialise un état local `activeSense = 'oeil'` et **n'écoute pas le focus bus**. Le focus de la recherche est bien diffusé (`dispatchFocus({ kind: 'practice', … })`) et `MainCuration` sait déjà auto-déplier la bonne carte (`data-focus-id="practice:<id>"`), mais il n'est jamais monté car on reste sur le sens « œil ».
+
+## Correction
+
+Brancher `CeQueNousAvonsVu` sur le focus bus pour qu'il bascule automatiquement vers le bon sens lorsque la recherche pointe vers une entité curée :
+
+| Focus venant de la recherche | Sens à activer |
+| --- | --- |
+| `kind: 'practice'` | `main` |
+| `kind: 'testimony'` (sous-onglet coeur) | `coeur` |
+| `kind: 'text'` (déjà routé vers Marches/Lire — pas concerné ici) | — |
+| `kind: 'species'` (l'œil contient les espèces curées) | `oeil` (déjà défaut) |
+
+Implémentation (un seul fichier modifié) :
+
+```text
+src/components/community/insights/curation/CeQueNousAvonsVu.tsx
+  + import { subscribeFocus, getLastFocus } from '@/lib/focusBus';
+  + useEffect au montage :
+      - lit getLastFocus() (replay si récent)
+      - subscribeFocus(d => mapKindToSense(d.kind) && setActiveSense(...))
 ```
 
-Les sources réelles dans `exploration_curations` sont `manual` et `ai` (260 + 11 lignes). Le mot-clé `main` désigne en réalité le **sens** (`sense = 'main'`, "La main" — les pratiques), pas la provenance. Résultat : **zéro pratique** ne remonte jamais dans la recherche, alors que la branche, le focus URL (`focus=practice:<id>`), la téléportation vers l'onglet *Apprendre* et la carte de résultat sont déjà en place.
+Le bus rejoue déjà le dernier focus si reçu < 4 s (`RECENT_MS`) → fonctionne même si le composant monte après le `dispatchFocus`.
 
-Vérifié sur la pratique "Datation de l'âge des grands arbres (dendrochronologie)" :
-- `id = 64d88f2c-…`, `exploration_id = 20dd3be8-…`, `source = manual`, `sense = main` (implicite), titre contient « dendro ».
-- Recherche `dendro` ne la remonte pas → confirmé par la copie d'écran.
+`MainCuration` fait déjà le reste (scroll + dépliage de la carte via `data-focus-id`), et `FocusHalo` ajoute le halo sur la cible.
 
-## Correctif
+## Détails techniques
 
-### 1. Migration : RPC `search_global`
+- Pas de migration BDD, pas de changement du RPC `search_global` (la route `?focus=practice:<id>&tab=apprendre` est déjà correcte).
+- Pas de changement de la barre de recherche ni de `ExplorationMarcheurPage`.
+- Aucun risque de régression sur le défaut « œil » : on ne change `activeSense` que si un focus pertinent existe.
 
-Une seule modification fonctionnelle dans la CTE/UNION ALL "practice" :
+## Validation
 
-- Remplacer `WHERE c.source = 'main'` par `WHERE c.sense = 'main'::curation_sense` afin de cibler les **pratiques** (sens « La main »).
-- Élargir le matching : ajouter `category` aux champs ILIKE/similarity (déjà scoré, pas encore filtré) pour que des recherches sur la catégorie remontent aussi.
-- Ajouter `sense`, `marcheur` (prénom + nom du créateur si dispo via `created_by → community_profiles`) et `thumb` (1er media) au `meta` pour enrichir la carte de résultat.
-- Garder le scope événement existant (`v_exploration_id`).
-
-La route reste : `/marches-du-vivant/mon-espace/exploration/<exploration_id>?focus=practice:<id>&tab=apprendre` — déjà gérée par `useFocusFromUrl` + `MainCuration` (qui pose `data-focus-id="practice:<id>"`).
-
-### 2. Front — `SearchResultCard` (kind=practice)
-
-Aujourd'hui la carte n'affiche que `title` + `subtitle` (description tronquée) + `context` (nom exploration). Améliorations légères pour aligner sur l'esprit des pratiques emblématiques :
-
-- Icône ambrée déjà OK (`Sparkles`).
-- Si `meta.thumb_url` présent → afficher vignette carrée 56×56 à gauche (cohérent avec carte espèce).
-- Sous-titre : préfixer par un chip « Pratique » + catégorie si présente.
-- Conserver le clic existant qui déclenche la navigation `route`.
-
-### 3. Hors-scope (non touché)
-
-- Pas de changement aux autres branches (species, text, testimony, marcheur, event).
-- Pas de changement au composant `HeaderSearchTrigger` ni à `GlobalSearchOverlay` (l'ordre `species → practice → text …` est déjà bon).
-- Pas de modif des permissions : `exploration_curations` est déjà lisible par les rôles concernés via les RLS existantes.
-
-## Fichiers impactés
-
-1. `supabase/migrations/<timestamp>_search_global_fix_practices.sql` — `CREATE OR REPLACE FUNCTION search_global(…)` avec le filtre `c.sense = 'main'` + enrichissement meta + matching `category`.
-2. `src/components/search/SearchResultCard.tsx` — affichage vignette + chip catégorie pour `kind='practice'`.
-
-## Test après livraison
-
-- Ouvrir l'événement DEVIAT, lancer la recherche `dendro` → la pratique « Datation de l'âge des grands arbres (dendrochronologie) » apparaît dans la section ✨ Pratiques.
-- Clic → ouvre l'onglet *Apprendre*, *La main*, scroll/halo sur la carte de la pratique.
-- Recherches `pic épeiche`, `Robert`, etc. continuent de fonctionner inchangées.
+1. Taper « dendro » dans la recherche globale → cliquer la pratique.
+2. On doit atterrir sur Apprendre › Ce que nous avons vu › **La main**, avec la carte « Datation de l'âge des grands arbres » dépliée et le halo visible.
+3. Le défaut sans focus reste « L'œil ».
