@@ -230,9 +230,20 @@ const ExplorationMarcheurPage: React.FC = () => {
     }
     // 4. Cible halo
     setFocusTarget(`${focus.kind}:${focus.id}`);
+    // 5. Diffuse l'événement enrichi (sub-tab inclus) pour les composants enfants
+    const detail = {
+      kind: focus.kind,
+      id: focus.id,
+      sub: focus.sub,
+      marcheId: focus.marcheId,
+      target: `${focus.kind}:${focus.id}`,
+    };
+    const broadcast = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('lfdv:focus', { detail }));
+    }, 120);
     // Consume URL once the tab change is queued.
     const t = setTimeout(() => consume(), 50);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); clearTimeout(broadcast); };
   }, [focus, explorationMarches, consume]);
 
   // Stats for badge indicators
