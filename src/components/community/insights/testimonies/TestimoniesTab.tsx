@@ -25,6 +25,16 @@ const TestimoniesTab: React.FC<Props> = ({ explorationId }) => {
   const { data: items = [], isLoading } = useExplorationTestimonies(explorationId);
   const published = items.filter((t) => t.is_published);
 
+  // Deep-link from global search : force "wall" mode so the targeted card is rendered.
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { kind?: string };
+      if (detail?.kind === 'testimony') setMode('wall');
+    };
+    window.addEventListener('lfdv:focus', handler as EventListener);
+    return () => window.removeEventListener('lfdv:focus', handler as EventListener);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-border bg-card p-8 text-center text-xs text-muted-foreground animate-pulse">
