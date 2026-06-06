@@ -5508,11 +5508,33 @@ export type Database = {
         Args: { _date: string; _title: string }
         Returns: string
       }
-      get_activity_connections_chart: {
-        Args: { p_period?: string }
+      get_activity_connections_chart:
+        | {
+            Args: { p_period?: string }
+            Returns: {
+              connection_count: number
+              period_label: string
+            }[]
+          }
+        | {
+            Args: {
+              p_event_id?: string
+              p_period?: string
+              p_user_filter?: string
+            }
+            Returns: {
+              connection_count: number
+              period_label: string
+            }[]
+          }
+      get_activity_events_for_filter: {
+        Args: never
         Returns: {
-          connection_count: number
-          period_label: string
+          activity_count: number
+          date_marche: string
+          id: string
+          lieu: string
+          title: string
         }[]
       }
       get_activity_global_stats: {
@@ -5527,20 +5549,41 @@ export type Database = {
           total_events_7d: number
         }[]
       }
-      get_activity_timeline: {
-        Args: { p_limit?: number; p_user_filter?: string }
-        Returns: {
-          created_at: string
-          event_target: string
-          event_type: string
-          exploration_id: string
-          id: string
-          metadata: Json
-          nom: string
-          prenom: string
-          user_id: string
-        }[]
-      }
+      get_activity_timeline:
+        | {
+            Args: { p_limit?: number; p_user_filter?: string }
+            Returns: {
+              created_at: string
+              event_target: string
+              event_type: string
+              exploration_id: string
+              id: string
+              metadata: Json
+              nom: string
+              prenom: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_event_id?: string
+              p_limit?: number
+              p_period?: string
+              p_user_filter?: string
+            }
+            Returns: {
+              created_at: string
+              event_target: string
+              event_type: string
+              exploration_id: string
+              id: string
+              marche_event_id: string
+              metadata: Json
+              nom: string
+              prenom: string
+              user_id: string
+            }[]
+          }
       get_admin_chatbot_context: { Args: { _scope?: string }; Returns: Json }
       get_admin_count: { Args: never; Returns: number }
       get_admin_count_secure: { Args: never; Returns: number }
