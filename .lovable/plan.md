@@ -1,49 +1,43 @@
-## Diagnostic — pourquoi « consou » ne trouve rien
+# Recherche accessible sur tablette — barre dans le header
 
-La recherche globale (Ctrl+K → RPC `search_global`) cherche les espèces **uniquement** dans `marcheur_observations` sur deux colonnes :
-- `species_scientific_name` (ex : `Symphytum × uplandicum`)
-- `taxon_common_name_fr`
+## Intention
+Rendre la recherche globale immédiatement visible et cliquable sur tablette/desktop, sans alourdir le mobile (qui garde le FAB existant).
 
-Vérification BDD : pour `Symphytum × uplandicum`, **`taxon_common_name_fr` est NULL** sur toutes les observations (le nom FR n'est jamais stocké dans cette colonne pour les espèces issues d'iNat ; il est résolu à l'affichage via `useFrenchSpeciesNamesAuto` qui lit la table `species_translations`).
+## Comportement
+- À partir de `md` (≥ 768px), afficher dans `MonEspaceHeader` un champ discret « Rechercher une espèce, marche, marcheur… » avec icône loupe à gauche et badge `⌘K` à droite.
+- Le champ n'est **pas un vrai input** : un clic (ou focus clavier) ouvre l'overlay `GlobalSearchOverlay` existant. Cela évite tout double système de saisie et garantit une seule source d'UX.
+- Sur mobile (< 768px) : la barre est masquée, le `GlobalSearchFab` reste seul (inchangé).
+- Sur tablette/desktop : le `GlobalSearchFab` est masqué pour éviter la redondance visuelle (le bouton resterait utile uniquement en repli si on souhaite garder le raccourci flottant — voir option ci-dessous).
 
-Résultat :
-- « consou » → ne matche ni `symphytum × uplandicum` ni NULL → **0 résultat**.
-- « cons » dans l'onglet Biodiversité de l'événement (copie 1) fonctionne parce que ce moteur-là (interne au tab) résout déjà le nom FR côté client avant de filtrer — c'est un autre chemin de code, sans rapport avec la recherche globale.
+## Design (cohérent avec la charte glassmorphism émeraude)
+- Hauteur 36px, fond `bg-background/60 backdrop-blur-md`, bordure `border border-primary/15`, focus ring `ring-primary/30`.
+- Largeur : `w-64` sur `md`, `w-80` sur `lg`.
+- Placeholder en `text-muted-foreground`, ton sobre.
+- Badge raccourci : pastille `kbd` discrète `text-[10px] bg-muted/60 border border-border rounded px-1.5`.
+- Animation d'apparition : fade + translate-y léger au mount (cohérent avec le reste du header).
 
-Le nom « Consoude de Russie » vit dans `species_translations.common_name_fr` (+ `alternative_names_fr` pour les synonymes), jointe sur `scientific_name`. La RPC l'ignore : c'est la racine du bug, qui affecte **toutes** les espèces iNat-only à travers toute l'app.
+## Intégration
+- Lieu : `src/components/community/MonEspaceHeader.tsx`, inséré entre le bloc identité et les actions (cloche/profil), aligné à droite via `ml-auto md:mr-3`.
+- Composant nouveau : `src/components/search/HeaderSearchTrigger.tsx`
+  - Props : `onOpen: () => void`
+  - Rendu : bouton `<button>` stylé en faux input, accessible (`aria-label="Ouvrir la recherche"`, `role="search"`).
+- État `open` du `GlobalSearchOverlay` remonté dans `MonEspaceHeader` (ou un petit context local) pour piloter à la fois ce trigger et, si conservé, le FAB.
+- `GlobalSearchFab` : ajouter `className="md:hidden"` à son usage dans `MarchesDuVivantMonEspace.tsx` pour ne le garder qu'en mobile.
 
-## Correctif proposé — robuste, une seule migration
-
-Modifier `public.search_global` pour brancher `species_translations` dans la CTE `species_matches` :
-
-1. `LEFT JOIN public.species_translations st ON st.scientific_name = o.species_scientific_name` dans `species_matches`.
-2. Étendre le `WHERE` pour matcher aussi sur :
-   - `f_unaccent(lower(st.common_name_fr))` (ILIKE + trigram `%`)
-   - `f_unaccent(lower(array_to_string(st.alternative_names_fr, ' ')))` (ILIKE)
-3. Étendre le `GREATEST(...)` du score pour inclure la similarité trigram contre `st.common_name_fr` (le meilleur des trois canaux : scientifique, FR observation, FR translation).
-4. Remonter `MAX(st.common_name_fr)` dans la CTE et l'utiliser en priorité dans le `title` final :
-   `COALESCE(MAX(st.common_name_fr), sm.common_name_fr, sm.species_scientific_name)`.
-5. Conserver le `GROUP BY o.species_scientific_name` (la jointure n-1 reste agrégée par MAX).
-6. Aucun changement de signature, aucun impact frontend, aucune autre RPC touchée.
-
-Bénéfice : « consou », « consoude », « ortie blanche » (alias), « bourdaine »… tout nom FR connu de l'app devient cherchable partout (global + per-event), avec la même tolérance accents/casse/typos que les noms scientifiques.
+## À ne pas toucher
+- Logique de recherche (`useGlobalSearch`, RPC `search_global`) : inchangée.
+- Raccourci `⌘/Ctrl + K` : déjà géré dans `GlobalSearchFab`, à déplacer dans le nouveau composant header pour rester actif même quand le FAB est masqué.
+- Overlay lui-même : inchangé.
 
 ## Détails techniques
+- Détection responsive via classes Tailwind uniquement (pas de `useIsMobile`) pour éviter un flash au mount.
+- Le listener clavier `⌘K` est attaché une seule fois (dans `HeaderSearchTrigger`) ; on retire celui de `GlobalSearchFab` pour éviter le double toggle.
+- Aucune migration, aucun changement de données.
 
-Fichier touché : nouvelle migration SQL `CREATE OR REPLACE FUNCTION public.search_global(...)` reprenant le corps existant + le patch ci-dessus. Index recommandés (à créer s'ils n'existent pas déjà) :
+## Fichiers impactés
+1. `src/components/search/HeaderSearchTrigger.tsx` *(création)*
+2. `src/components/community/MonEspaceHeader.tsx` *(insertion du trigger + state overlay)*
+3. `src/components/search/GlobalSearchFab.tsx` *(retrait du listener ⌘K — déplacé dans le trigger)*
+4. `src/pages/MarchesDuVivantMonEspace.tsx` *(ajout `className="md:hidden"` au FAB)*
 
-```sql
-CREATE INDEX IF NOT EXISTS species_translations_scientific_name_idx
-  ON public.species_translations (scientific_name);
-CREATE INDEX IF NOT EXISTS species_translations_common_name_fr_trgm_idx
-  ON public.species_translations
-  USING gin (public.f_unaccent(lower(common_name_fr)) extensions.gin_trgm_ops);
-```
-
-Aucun GRANT additionnel : `species_translations` est déjà accessible et la fonction est `SECURITY DEFINER`.
-
-## Hors-scope
-
-- Pas de refonte du composant `GlobalSearchOverlay` ni de `SearchResultCard`.
-- Pas de modification du moteur de recherche interne du tab Biodiversité (déjà OK).
-- Pas de changement de la logique de routage per-occurrence corrigée précédemment.
+À étendre ensuite aux pages exploration/event si tu valides l'approche ici.
