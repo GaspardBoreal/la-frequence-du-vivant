@@ -1,67 +1,49 @@
-## Diagnostic
+## Diagnostic — pourquoi « consou » ne trouve rien
 
-Clic sur **DEVIAT C 835** (résultat espèce) → URL navigée :
-`/.../exploration/event-{id}?focus=species:Clematis...&tab=biodiversite&sub=taxons&marcheId=...`
+La recherche globale (Ctrl+K → RPC `search_global`) cherche les espèces **uniquement** dans `marcheur_observations` sur deux colonnes :
+- `species_scientific_name` (ex : `Symphytum × uplandicum`)
+- `taxon_common_name_fr`
 
-Donc :
-- ✅ Bon événement
-- ✅ `setActiveGlobalTab('biodiversite')` est bien appelé par `ExplorationMarcheurPage` (et "biodiversite" est labellisé "Synthèse" dans la nav globale — d'où l'illusion qu'on est "sur Synthèse" alors qu'on est bien sur le bon onglet)
-- ❌ Le **sous-onglet** `taxons` (la vraie « fiche espèces ») n'est pas activé : `EventBiodiversityTab` reste sur `activeSubTab='synthese'`
+Vérification BDD : pour `Symphytum × uplandicum`, **`taxon_common_name_fr` est NULL** sur toutes les observations (le nom FR n'est jamais stocké dans cette colonne pour les espèces issues d'iNat ; il est résolu à l'affichage via `useFrenchSpeciesNamesAuto` qui lit la table `species_translations`).
 
-### Cause racine
+Résultat :
+- « consou » → ne matche ni `symphytum × uplandicum` ni NULL → **0 résultat**.
+- « cons » dans l'onglet Biodiversité de l'événement (copie 1) fonctionne parce que ce moteur-là (interne au tab) résout déjà le nom FR côté client avant de filtrer — c'est un autre chemin de code, sans rapport avec la recherche globale.
 
-`EventBiodiversityTab` écoute le sous-onglet via le **focus bus** (`subscribeFocus`) chargé en **dynamic import** :
+Le nom « Consoude de Russie » vit dans `species_translations.common_name_fr` (+ `alternative_names_fr` pour les synonymes), jointe sur `scientific_name`. La RPC l'ignore : c'est la racine du bug, qui affecte **toutes** les espèces iNat-only à travers toute l'app.
 
-```ts
-import('@/lib/focusBus').then(({ subscribeFocus }) => { unsub = subscribeFocus(handler); });
+## Correctif proposé — robuste, une seule migration
+
+Modifier `public.search_global` pour brancher `species_translations` dans la CTE `species_matches` :
+
+1. `LEFT JOIN public.species_translations st ON st.scientific_name = o.species_scientific_name` dans `species_matches`.
+2. Étendre le `WHERE` pour matcher aussi sur :
+   - `f_unaccent(lower(st.common_name_fr))` (ILIKE + trigram `%`)
+   - `f_unaccent(lower(array_to_string(st.alternative_names_fr, ' ')))` (ILIKE)
+3. Étendre le `GREATEST(...)` du score pour inclure la similarité trigram contre `st.common_name_fr` (le meilleur des trois canaux : scientifique, FR observation, FR translation).
+4. Remonter `MAX(st.common_name_fr)` dans la CTE et l'utiliser en priorité dans le `title` final :
+   `COALESCE(MAX(st.common_name_fr), sm.common_name_fr, sm.species_scientific_name)`.
+5. Conserver le `GROUP BY o.species_scientific_name` (la jointure n-1 reste agrégée par MAX).
+6. Aucun changement de signature, aucun impact frontend, aucune autre RPC touchée.
+
+Bénéfice : « consou », « consoude », « ortie blanche » (alias), « bourdaine »… tout nom FR connu de l'app devient cherchable partout (global + per-event), avec la même tolérance accents/casse/typos que les noms scientifiques.
+
+## Détails techniques
+
+Fichier touché : nouvelle migration SQL `CREATE OR REPLACE FUNCTION public.search_global(...)` reprenant le corps existant + le patch ci-dessus. Index recommandés (à créer s'ils n'existent pas déjà) :
+
+```sql
+CREATE INDEX IF NOT EXISTS species_translations_scientific_name_idx
+  ON public.species_translations (scientific_name);
+CREATE INDEX IF NOT EXISTS species_translations_common_name_fr_trgm_idx
+  ON public.species_translations
+  USING gin (public.f_unaccent(lower(common_name_fr)) extensions.gin_trgm_ops);
 ```
 
-Race condition :
-1. `ExplorationMarcheurPage` schedule `dispatchFocus` à **+120 ms** après le mount.
-2. `EventBiodiversityTab` mount, lance un dynamic import (peut prendre 50–300 ms).
-3. Selon l'ordre :
-   - Si l'import résout **avant** 120 ms → subscribe → le dispatch arrive → OK.
-   - Si l'import résout **après** 120 ms → `subscribeFocus` rejoue `last` SI < 4 s → en général OK.
-   - **Mais** `last` n'est mis à jour qu'au moment du dispatch, et la fenêtre de replay ne couvre pas le cas où `consume()` (à 50 ms) a déjà reset `focus` à null AVANT que `dispatchFocus` soit appelé — `dispatchFocus` est bien appelé (closure), mais `focus.sub` capturé peut être stale si l'effet a re-run entre temps.
+Aucun GRANT additionnel : `species_translations` est déjà accessible et la fonction est `SECURITY DEFINER`.
 
-Concrètement : le canal "bus + dynamic import + setTimeout" est non-déterministe pour le sous-onglet. C'est pourquoi on retombe sur le default `'synthese'`.
+## Hors-scope
 
-De plus, la nav globale affiche "Synthèse" comme label de l'onglet `biodiversite`, ce qui rend le bug visuellement ambigu : l'utilisateur croit voir le mauvais onglet alors que c'est le mauvais **sous-onglet**.
-
-## Correctif
-
-Approche : **passer le focus en prop, ne plus dépendre du bus pour le sous-onglet**. Synchrone, déterministe, zéro race.
-
-### 1. `ExplorationMarcheurPage.tsx`
-- Maintenir un état `pendingBiodiversitySub: SubTab | null` alimenté par `focus.sub` quand `focus.kind === 'species' | 'testimony' | 'text'` (avec fallback : species→taxons, testimony→temoignages, text→textes).
-- Passer en prop à `EventBiodiversityTab` : `initialSubTab={pendingBiodiversitySub}` + un callback `onSubTabConsumed` pour nettoyer (évite de réimposer le sous-onglet si l'utilisateur navigue ensuite).
-- Conserver le focus bus pour le **halo** sur la fiche espèce (déjà OK via `FocusHalo` + `focusTarget`).
-
-### 2. `EventBiodiversityTab.tsx`
-- Ajouter prop `initialSubTab?: SubTab | null` et `onSubTabConsumed?: () => void`.
-- `useEffect` : si `initialSubTab` change et est non-null → `setActiveSubTab(initialSubTab)` puis `onSubTabConsumed?.()`.
-- Garder le `subscribeFocus` existant en sécurité (no-op si la prop a déjà fait le travail).
-
-### 3. Bonus UX : clarifier le label de la nav globale
-Le label "Synthèse" sur l'onglet `biodiversite` est trompeur (il y a déjà un sous-onglet "Synthèse" dedans). Renommer en **"Biodiversité"** dans la barre globale. Pas de logique impactée.
-
-### 4. (Optionnel) Affichage chip dans le résultat de recherche
-Sur la sous-occurrence species, afficher un petit chip "→ Fiche espèce" pour annoncer la destination et lever toute ambiguïté.
-
-## Fichiers touchés
-
-```
-src/components/community/ExplorationMarcheurPage.tsx   # pendingBiodiversitySub + prop drilling + rename label
-src/components/community/EventBiodiversityTab.tsx      # accept initialSubTab + apply
-src/components/search/SearchResultCard.tsx             # (optionnel) chip "Fiche espèce"
-```
-
-Aucun changement SQL, aucun changement de routing, aucun risque sur les flux existants.
-
-## Résultat attendu
-
-- Clic sur **DEVIAT C 835** (espèce) → bon événement → onglet **Biodiversité** → sous-onglet **Taxons** → halo sur la fiche **Clematis** → fiche cliquable.
-- Clic sur résultat **testimony** → onglet Biodiversité → sous-onglet Témoignages.
-- Clic sur résultat **text** → onglet Biodiversité → sous-onglet Textes.
-- Plus de race condition liée au dynamic import.
-- Label nav globale plus clair (Biodiversité, pas Synthèse).
+- Pas de refonte du composant `GlobalSearchOverlay` ni de `SearchResultCard`.
+- Pas de modification du moteur de recherche interne du tab Biodiversité (déjà OK).
+- Pas de changement de la logique de routage per-occurrence corrigée précédemment.
