@@ -515,6 +515,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             return (
               <motion.article
                 key={entry.id}
+                data-focus-id={`practice:${entry.id}`}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: Math.min(idx, 7) * 0.04 }}
