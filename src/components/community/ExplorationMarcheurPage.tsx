@@ -26,6 +26,7 @@ import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 import GlobalSearchFab from '@/components/search/GlobalSearchFab';
 import { useFocusFromUrl } from '@/hooks/useFocusFromUrl';
 import FocusHalo from '@/components/search/FocusHalo';
+import { dispatchFocus } from '@/lib/focusBus';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -230,16 +231,14 @@ const ExplorationMarcheurPage: React.FC = () => {
     }
     // 4. Cible halo
     setFocusTarget(`${focus.kind}:${focus.id}`);
-    // 5. Diffuse l'événement enrichi (sub-tab inclus) pour les composants enfants
-    const detail = {
-      kind: focus.kind,
-      id: focus.id,
-      sub: focus.sub,
-      marcheId: focus.marcheId,
-      target: `${focus.kind}:${focus.id}`,
-    };
+    // 5. Diffuse le focus via le bus (les composants enfants mountés ensuite peuvent encore le recevoir)
     const broadcast = setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('lfdv:focus', { detail }));
+      dispatchFocus({
+        kind: focus.kind,
+        id: focus.id,
+        sub: focus.sub,
+        marcheId: focus.marcheId,
+      });
     }, 120);
     // Consume URL once the tab change is queued.
     const t = setTimeout(() => consume(), 50);
