@@ -83,6 +83,20 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     localStorage.setItem('species-explorer-view', mode);
   };
 
+  // Deep-link from global search: open the modal when a `lfdv:focus` event fires.
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { kind?: string; id?: string };
+      if (detail?.kind !== 'species' || !detail.id) return;
+      const match = species.find(
+        s => s.scientificName?.toLowerCase() === detail.id!.toLowerCase()
+      );
+      if (match) setSelectedSpecies(match);
+    };
+    window.addEventListener('lfdv:focus', handler as EventListener);
+    return () => window.removeEventListener('lfdv:focus', handler as EventListener);
+  }, [species]);
+
   // Batch translations (déclaré tôt car utilisé par le filtre search)
   const speciesForTranslation = useMemo(() =>
     species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName })),
@@ -355,7 +369,11 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       {list.map((sp, i) => {
         const spTags = tagsBySpecies.get(normalizeTagKey(sp.scientificName)) || [];
         return (
-          <div key={`${sp.id}-${i}`} className="relative">
+          <div
+            key={`${sp.id}-${i}`}
+            className="relative"
+            data-focus-id={`species:${sp.scientificName}`}
+          >
             <EnhancedSpeciesCard
               species={sp}
               onSpeciesClick={setSelectedSpecies}

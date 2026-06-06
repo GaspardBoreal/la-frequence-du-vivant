@@ -24,6 +24,8 @@ import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
 import { Loader2 } from 'lucide-react';
 import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 import GlobalSearchFab from '@/components/search/GlobalSearchFab';
+import { useFocusFromUrl } from '@/hooks/useFocusFromUrl';
+import FocusHalo from '@/components/search/FocusHalo';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -80,6 +82,8 @@ const ExplorationMarcheurPage: React.FC = () => {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [activeMarcheursSubTab, setActiveMarcheursSubTab] = useState<MarcheursSubTab>('convivialite');
   const { trackActivity } = useActivityTracker();
+  const { focus, consume } = useFocusFromUrl();
+  const [focusTarget, setFocusTarget] = useState<string | null>(null);
 
   // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
   const isEventFallback = rawParam?.startsWith('event-');
@@ -197,6 +201,39 @@ const ExplorationMarcheurPage: React.FC = () => {
   const activeMarche = explorationMarches?.[activeStepIndex];
   const activeMarcheSlug = activeMarche ? createSlug(activeMarche.nom_marche || activeMarche.ville, activeMarche.ville) : undefined;
   const marcheEventId = marcheEvent?.id || '';
+
+  // ─── Téléportation depuis la recherche : applique tab + step + halo ───
+  useEffect(() => {
+    if (!focus) return;
+    // 1. Onglet global
+    const allowedGlobal: GlobalTab[] = ['carte', 'marcheurs', 'marches', 'biodiversite', 'apprendre'];
+    if (focus.tab && (allowedGlobal as string[]).includes(focus.tab)) {
+      setActiveGlobalTab(focus.tab as GlobalTab);
+    } else if (focus.kind === 'species' || focus.kind === 'testimony') {
+      setActiveGlobalTab('biodiversite');
+    } else if (focus.kind === 'practice') {
+      setActiveGlobalTab('apprendre');
+    } else if (focus.kind === 'text') {
+      setActiveGlobalTab('marches');
+    }
+    // 2. Onglet sensoriel
+    const allowedSensory: SensoryTab[] = ['voir', 'ecouter', 'lire', 'ecrire', 'vivant'];
+    if (focus.sensory && (allowedSensory as string[]).includes(focus.sensory)) {
+      setActiveSensoryTab(focus.sensory as SensoryTab);
+    } else if (focus.kind === 'text') {
+      setActiveSensoryTab('lire');
+    }
+    // 3. Étape (marche)
+    if (focus.marcheId && explorationMarches?.length) {
+      const idx = explorationMarches.findIndex(m => m.id === focus.marcheId);
+      if (idx >= 0) setActiveStepIndex(idx);
+    }
+    // 4. Cible halo
+    setFocusTarget(`${focus.kind}:${focus.id}`);
+    // Consume URL once the tab change is queued.
+    const t = setTimeout(() => consume(), 50);
+    return () => clearTimeout(t);
+  }, [focus, explorationMarches, consume]);
 
   // Stats for badge indicators
   const { data: stats } = useMarcheurStats(marcheEventId, userId || '', activeMarcheId);
@@ -601,6 +638,7 @@ const ExplorationMarcheurPage: React.FC = () => {
         marcheId={activeMarcheId || null}
         scope="global"
       />
+      <FocusHalo target={focusTarget} delay={400} onSettled={() => setFocusTarget(null)} />
     </div>
     </SpeciesPhotoModeProvider>
   );
