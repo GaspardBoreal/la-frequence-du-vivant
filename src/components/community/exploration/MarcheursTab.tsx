@@ -1873,6 +1873,9 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 highlightBuckets={activeBuckets}
                 aliases={aliasesByMarcheurId?.get(m.id)}
                 inatAccount={m.userId ? inatAccountsByUserId?.get(m.userId) ?? null : null}
+              />
+            );
+          })}
           {citizenContributors && citizenContributors.contributors.length > 0 && (
             <CitizenContributorsAggregateRow contributors={citizenContributors.contributors} totalUniqueSpecies={citizenContributors.totalUniqueSpecies} />
           )}
