@@ -1,85 +1,43 @@
-## Objectif
+## Problème
 
-Le bandeau « Indicateurs globaux » de `/admin/community` → Activités est aujourd'hui **figé sur 7 jours** et **ignore** les filtres période/événement/marcheur. On le rend pleinement réactif et on ajoute une **5ᵉ carte « Marche la plus active »** (événement le plus consulté par les marcheurs sur la fenêtre choisie).
+Dans l'onglet **Marcheurs** d'une exploration, le petit lien `↗ iNat` à côté du nom n'apparaît que pour 2 marcheurs sur 25 — alors que les 25 ont bien renseigné leur compte iNaturalist dans leur profil (table `community_profile_science_accounts`, 25 lignes `network='inaturalist'`).
 
-## Comportement cible
+### Cause racine
 
-- Le sous-titre passe de « Indicateurs globaux — 7 derniers jours » à un libellé dynamique :
-  `Indicateurs globaux — Aujourd'hui` / `Hier` / `7 derniers jours` / `01/05 → 06/06` / etc.
-- Les 5 cartes recalculent leurs valeurs à chaque changement de période, événement ou marcheur, en cohérence stricte avec le tableau « Détail par marcheur » en dessous.
-- Nouvelle carte **« Marche la plus active »** : affiche le titre de l'événement (`marche_events.title`) le plus consulté (event_type `marche_view` ou `page_view` ciblant `/m/:slug`/`exploration`) sur la fenêtre, avec un compteur discret en sous-ligne (« 42 vues »).
-- Quand un événement est filtré, la carte affiche directement ce titre (cohérence) plutôt que de masquer la carte.
-- Layout : grille `md:grid-cols-5` (au lieu de 4), cartes plus compactes, troncature `truncate` + tooltip sur le titre long.
+Le hook actuel `useMarcheurInatProfile` (utilisé dans `MarcheursTab.tsx` ligne 1074) ne résout le profil iNat **que** si une observation iNat est déjà rattachée au marcheur dans `biodiversity_snapshots.species_data` (via matching d'alias). Tant qu'un marcheur n'a pas d'observation iNat publiée et rattachée à cette exploration, son lien n'apparaît jamais — même s'il a un compte iNat déclaré sur son profil.
 
-## Détail technique
+→ Aujourd'hui seuls **Victor Boixeda** et **Les marches du Vivant** ont des attributions iNat actives sur cette marche, d'où les 2 seuls liens visibles.
 
-### 1. Migration SQL — refonte de `get_activity_global_stats`
+## Proposition
 
-Nouvelle signature alignée sur les 3 autres RPC du dashboard :
+Faire du **compte iNat déclaré dans le profil** la source primaire du lien (toujours fiable, dispo dès qu'un marcheur l'a renseigné), et garder la résolution par observation comme enrichissement.
 
-```
-get_activity_global_stats(
-  p_period text default '7d',
-  p_event_id uuid default null,
-  p_user_filter uuid default null,
-  p_start timestamptz default null,
-  p_end   timestamptz default null
-)
-RETURNS TABLE(
-  active_sessions      bigint,
-  media_uploads        bigint,
-  most_popular_tab     text,
-  most_active_user_id  uuid,
-  most_active_prenom   text,
-  most_active_nom      text,
-  most_active_event_id uuid,         -- NEW
-  most_active_event_title text,      -- NEW
-  most_active_event_views bigint,    -- NEW
-  total_events         bigint
-)
-```
+### 1. Nouveau hook `useMarcheursInatAccounts(userIds)` (batch)
 
-Logique interne (SECURITY DEFINER, `search_path = public`, Europe/Paris) :
+- Une seule requête : `community_profile_science_accounts` JOIN `community_profiles` sur `profile_id`, filtré par `network='inaturalist'` et `user_id IN (…)`.
+- Retourne une `Map<userId, { username, profile_url, verified }>`.
+- RLS déjà OK : policy SELECT `readable by all` → accessible aux marcheurs connectés et admins.
+- Construit `profile_url` via `buildProfileUrl()` de `src/types/scienceAccounts.ts` si la colonne est `NULL`.
 
-- `v_start` / `v_end` calculés exactement comme dans `get_marcheur_activity_dashboard` (override par `p_start`/`p_end` sinon dérivés de `p_period` ; `all` = pas de borne).
-- CTE `recent` = `marcheur_activity_logs` filtré sur `[v_start, v_end]` + `p_event_id` (sur `marche_event_id`) + `p_user_filter` (sur `user_id`).
-- Compteurs : `active_sessions = COUNT(DISTINCT user_id)`, `media_uploads = COUNT(event_type='media_upload')`, `total_events = COUNT(*)`.
-- `most_popular_tab` : `event_target` le plus fréquent parmi `event_type='tab_switch'`.
-- `most_active_user` : `user_id` avec le plus d'events, jointure `community_profiles`.
-- `most_active_event` :
-  - source = `recent` où `marche_event_id IS NOT NULL` (couvre `marche_view`, `page_view`, `tab_switch` sur la page marche),
-  - `GROUP BY marche_event_id ORDER BY COUNT(*) DESC LIMIT 1`,
-  - jointure `marche_events` pour récupérer `title`.
+### 2. Intégration dans `MarcheursTab.tsx`
 
-Renommage des colonnes `_7d` → sans suffixe (la fenêtre n'est plus fixe). Anciennes colonnes supprimées proprement par `DROP FUNCTION` puis `CREATE`.
+- Au niveau du composant parent (liste), appeler **une fois** `useMarcheursInatAccounts` avec tous les `userId` de la liste → évite N requêtes.
+- Passer la map à chaque `MarcheurCard` via prop `inatAccount?: { login, profile_url }`.
+- Dans le rendu du badge `iNat` (lignes 1132-1144) : prioriser `inatAccount` sur le résultat de `useMarcheurInatProfile`. Logique :
+  - `const inatLink = inatAccount ?? (inatProfile?.login ? { login: inatProfile.login, profile_url: inatProfile.profile_url } : null);`
+- Le badge utilise déjà `ExternalLink` + texte « iNat » → aucun changement visuel, juste plus de liens affichés.
 
-### 2. Frontend — `ActivityDashboard.tsx`
+### 3. Hors périmètre
 
-- `useQuery(['activity-global-stats', period, eventId, userFilter, rpcStart, rpcEnd])` : passer les 5 mêmes args que les 3 autres queries, `enabled: filtersReady`.
-- Adapter le typage TS de la réponse (nouveaux champs).
-- Remplacer le sous-titre figé par `Indicateurs globaux — {periodLabel}` (déjà calculé).
-- Passer de `md:grid-cols-4` à `md:grid-cols-5` (responsive : `sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5`).
-- Ajouter la 5ᵉ carte « Marche la plus active » :
-  - icône `MapPin` (cohérent avec le filtre Événement),
-  - titre tronqué + `title={...}` pour tooltip natif,
-  - sous-ligne `text-xs text-muted-foreground` : `{views} vue·s`,
-  - fallback `'—'` si aucune vue.
-- Quand `eventId` est défini, court-circuit côté frontend : afficher directement le titre de l'événement sélectionné (récupéré depuis la liste `get_activity_events_for_filter` déjà chargée par la barre de filtres) plutôt que d'attendre la RPC, pour une UX instantanée.
+- Pas de modification de `useMarcheurInatProfile` (conservé pour les attributions réelles utilisées ailleurs : CitizenPlatformsCard, ContributionsSubTab).
+- Pas de migration SQL — la table existe et est lisible.
+- Pas de changement sur les autres réseaux (eBird, GBIF, Pl@ntNet…) — peuvent être ajoutés ensuite si souhaité avec le même pattern.
 
-### 3. Hors scope
+### Fichiers touchés
 
-- Pas de changement aux RPCs `get_marcheur_activity_dashboard`, `get_activity_timeline`, `get_activity_connections_chart` (déjà réactives).
-- Pas de modif de `ActivityFiltersBar.tsx`.
+- **Créé** : `src/hooks/useMarcheursInatAccounts.ts`
+- **Édité** : `src/components/community/exploration/MarcheursTab.tsx` (appel batch + prop + fallback dans le badge)
 
-## Fichiers touchés
+### Résultat attendu
 
-- `supabase/migrations/<timestamp>_activity_global_stats_filters.sql` (drop + recreate fonction)
-- `src/components/admin/ActivityDashboard.tsx` (query args + nouvelle carte + libellé dynamique + grid-cols-5)
-- `src/integrations/supabase/types.ts` (régénéré auto après migration)
-
-## Validation
-
-1. Sélectionner « Aujourd'hui » → vérifier que Sessions / Médias chutent et que « Marche la plus active » affiche un titre cohérent avec le tableau.
-2. Sélectionner un événement → la carte « Marche la plus active » verrouille sur ce titre.
-3. Plage personnalisée 2 jours → tous les KPI recalculés, libellé `01/05 → 02/05`.
-4. Filtrer sur un marcheur → « Plus actif » = ce marcheur, « Marche la plus active » = sa marche la plus consultée.
+Les 25 marcheurs avec compte iNat déclaré afficheront immédiatement le lien `↗ iNat` cliquable vers leur profil iNaturalist, indépendamment de la présence d'observations rattachées à la marche en cours.

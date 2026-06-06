@@ -50,6 +50,7 @@ import MarcheurImpactPanel from './impact/MarcheurImpactPanel';
 import CitizenContributorsAggregateRow from './CitizenContributorsAggregateRow';
 import { useExplorationCitizenContributors } from '@/hooks/useExplorationCitizenContributors';
 import { useMarcheurInatProfile } from '@/hooks/useMarcheurInatProfile';
+import { useMarcheursInatAccounts, type MarcheurInatAccount } from '@/hooks/useMarcheursInatAccounts';
 import { useMarcheurAttributedSpecies } from '@/hooks/useMarcheurAttributedSpecies';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 import InatUploadPrepDrawer from './InatUploadPrepDrawer';
@@ -1069,9 +1070,12 @@ const MarcheurCard: React.FC<{
   localSpeciesCount?: number;
   onForceOpen: () => void;
   aliases?: string[];
-}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, sensibleNames, uncuratedSpeciesNames, localSpeciesCount, onForceOpen, aliases }) => {
+  inatAccount?: MarcheurInatAccount | null;
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount, testimony, contributionsCount = 0, sentinelle, highlightBuckets, marcheurBuckets, sensibleNames, uncuratedSpeciesNames, localSpeciesCount, onForceOpen, aliases, inatAccount }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
   const { data: inatProfile } = useMarcheurInatProfile(aliases, explorationMarcheIds);
+  const inatLink = inatAccount
+    ?? (inatProfile?.login ? { login: inatProfile.login, profile_url: inatProfile.profile_url } : null);
 
   const openImpact = () => {
     setActiveSubTab('impact');
@@ -1129,14 +1133,14 @@ const MarcheurCard: React.FC<{
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate flex items-center gap-1.5">
             <span className="truncate">{marcheur.prenom} {marcheur.nom}</span>
-            {inatProfile?.login && (
+            {inatLink?.login && (
               <a
-                href={inatProfile.profile_url}
+                href={inatLink.profile_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center gap-0.5 text-[10px] font-normal text-muted-foreground hover:text-emerald-500 transition-colors flex-shrink-0"
-                title={`Profil iNaturalist : @${inatProfile.login}`}
+                title={`Profil iNaturalist : @${inatLink.login}`}
               >
                 <ExternalLink className="w-2.5 h-2.5" />
                 <span>iNat</span>
@@ -1448,6 +1452,11 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
 
   // Batch alias map (nom + logins iNat/GBIF/eBird) for all marcheurs
   const { data: aliasesByMarcheurId } = useMarcheursAliasesMap(marcheurs);
+
+  // Batch iNat science-accounts (déclarés dans le profil) — source primaire du lien iNat
+  const { data: inatAccountsByUserId } = useMarcheursInatAccounts(
+    marcheurs.map((m) => m.userId ?? null)
+  );
 
   // Aggregate set of all known LMDV walker aliases — used to exclude them
   // from the citizen-contributors aggregate row below the list.
@@ -1863,6 +1872,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 localSpeciesCount={metrics.localSpeciesCount}
                 highlightBuckets={activeBuckets}
                 aliases={aliasesByMarcheurId?.get(m.id)}
+                inatAccount={m.userId ? inatAccountsByUserId?.get(m.userId) ?? null : null}
               />
             );
           })}
