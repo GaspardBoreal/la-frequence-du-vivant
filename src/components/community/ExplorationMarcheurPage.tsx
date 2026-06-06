@@ -24,6 +24,8 @@ import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
 import { Loader2 } from 'lucide-react';
 import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 import GlobalSearchFab from '@/components/search/GlobalSearchFab';
+import { useFocusFromUrl } from '@/hooks/useFocusFromUrl';
+import FocusHalo from '@/components/search/FocusHalo';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -80,6 +82,8 @@ const ExplorationMarcheurPage: React.FC = () => {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [activeMarcheursSubTab, setActiveMarcheursSubTab] = useState<MarcheursSubTab>('convivialite');
   const { trackActivity } = useActivityTracker();
+  const { focus, consume } = useFocusFromUrl();
+  const [focusTarget, setFocusTarget] = useState<string | null>(null);
 
   // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
   const isEventFallback = rawParam?.startsWith('event-');
