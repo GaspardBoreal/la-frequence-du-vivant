@@ -82,6 +82,23 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const [taxonsCustomRange, setTaxonsCustomRange] = useState<{ from?: string; to?: string }>({});
   const [taxonsDateSource, setTaxonsDateSource] = useState<DateSource>('observation');
 
+  // Deep-link from global search: switch sub-tab based on `lfdv:focus` event.
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { kind?: string; sub?: string };
+      const allowed: SubTab[] = ['synthese', 'taxons', 'temoignages', 'textes', 'analyse'];
+      if (detail?.sub && (allowed as string[]).includes(detail.sub)) {
+        setActiveSubTab(detail.sub as SubTab);
+        return;
+      }
+      if (detail?.kind === 'species') setActiveSubTab('taxons');
+      else if (detail?.kind === 'testimony') setActiveSubTab('temoignages');
+      else if (detail?.kind === 'text') setActiveSubTab('textes');
+    };
+    window.addEventListener('lfdv:focus', handler as EventListener);
+    return () => window.removeEventListener('lfdv:focus', handler as EventListener);
+  }, []);
+
   const collectionMutation = useTriggerBiodiversityCollection();
 
   // Fetch crew + community participants for contributor filter
