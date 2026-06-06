@@ -35,6 +35,8 @@ interface ApprendreTabProps {
   totalSpecies?: number;
   userId?: string;
   onNavigateToMarche?: (marcheId: string) => void;
+  initialSubTab?: 'decouvertes' | 'apprendre-creer';
+  initialSensory?: 'oeil' | 'main' | 'oreille' | 'coeur' | 'palais';
 }
 
 type ApprendreSubTab = 'decouvertes' | 'apprendre-creer';
@@ -44,9 +46,9 @@ const apprendreSubTabs: { key: ApprendreSubTab; label: string }[] = [
   { key: 'apprendre-creer', label: 'Apprendre et créer' },
 ];
 
-const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, marcheEventId, totalSpecies, userId, onNavigateToMarche }) => {
+const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, marcheEventId, totalSpecies, userId, onNavigateToMarche, initialSubTab, initialSensory }) => {
   void eventType;
-  const [activeSubTab, setActiveSubTab] = useState<ApprendreSubTab>('decouvertes');
+  const [activeSubTab, setActiveSubTab] = useState<ApprendreSubTab>(initialSubTab ?? 'decouvertes');
   const [activePillar, setActivePillar] = useState<LivingPillarKey>('oeil');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const { trackActivity } = useActivityTracker();
@@ -114,6 +116,7 @@ const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explo
           explorationId={explorationId}
           marcheEventId={marcheEventId}
           onNavigateToMarche={onNavigateToMarche}
+          initialSensory={initialSensory}
         />
       )}
 
