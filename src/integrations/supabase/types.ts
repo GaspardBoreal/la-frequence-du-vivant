@@ -5551,15 +5551,24 @@ export type Database = {
         }[]
       }
       get_activity_global_stats: {
-        Args: never
+        Args: {
+          p_end?: string
+          p_event_id?: string
+          p_period?: string
+          p_start?: string
+          p_user_filter?: string
+        }
         Returns: {
-          active_sessions_7d: number
-          media_uploads_7d: number
+          active_sessions: number
+          media_uploads: number
+          most_active_event_id: string
+          most_active_event_title: string
+          most_active_event_views: number
           most_active_nom: string
           most_active_prenom: string
           most_active_user_id: string
           most_popular_tab: string
-          total_events_7d: number
+          total_events: number
         }[]
       }
       get_activity_timeline:
