@@ -4794,6 +4794,57 @@ export type Database = {
         }
         Relationships: []
       }
+      search_logs: {
+        Row: {
+          clicked_id: string | null
+          clicked_kind: string | null
+          created_at: string
+          event_id: string | null
+          id: string
+          marche_id: string | null
+          nom: string | null
+          prenom: string | null
+          query: string
+          results_count: number
+          route: string | null
+          scope: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clicked_id?: string | null
+          clicked_kind?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          marche_id?: string | null
+          nom?: string | null
+          prenom?: string | null
+          query: string
+          results_count?: number
+          route?: string | null
+          scope?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clicked_id?: string | null
+          clicked_kind?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          marche_id?: string | null
+          nom?: string | null
+          prenom?: string | null
+          query?: string
+          results_count?: number
+          route?: string | null
+          scope?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       sound_recordings: {
         Row: {
           created_at: string
@@ -5488,6 +5539,7 @@ export type Database = {
         Args: { p_exploration_id: string; p_user_id: string }
         Returns: string
       }
+      f_unaccent: { Args: { "": string }; Returns: string }
       generate_community_affiliate_link: {
         Args: {
           _channel: string
@@ -6023,6 +6075,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_search: {
+        Args: {
+          p_clicked_id?: string
+          p_clicked_kind?: string
+          p_event_id?: string
+          p_marche_id?: string
+          p_query: string
+          p_results_count?: number
+          p_route?: string
+          p_scope?: string
+          p_user_agent?: string
+        }
+        Returns: string
+      }
       match_documents: {
         Args: { filter?: Json; match_count?: number; query_embedding: string }
         Returns: {
@@ -6116,6 +6182,19 @@ export type Database = {
           nom: string
           prenom: string
           user_id: string
+        }[]
+      }
+      search_global: {
+        Args: { p_event_id?: string; p_limit?: number; p_query: string }
+        Returns: {
+          context: string
+          id: string
+          kind: string
+          meta: Json
+          route: string
+          score: number
+          subtitle: string
+          title: string
         }[]
       }
       set_species_translation_manual: {
