@@ -24,6 +24,7 @@ import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
 import { Loader2 } from 'lucide-react';
 import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 import GlobalSearchFab from '@/components/search/GlobalSearchFab';
+import HeaderSearchTrigger from '@/components/search/HeaderSearchTrigger';
 import { useFocusFromUrl } from '@/hooks/useFocusFromUrl';
 import FocusHalo from '@/components/search/FocusHalo';
 import { dispatchFocus } from '@/lib/focusBus';
@@ -383,7 +384,14 @@ const ExplorationMarcheurPage: React.FC = () => {
                 )}
               </div>
             </div>
+            <HeaderSearchTrigger
+              scope="event"
+              eventId={marcheEventId || null}
+              marcheId={activeMarcheId || null}
+            />
           </div>
+        </div>
+
         </div>
 
         {/* Global Tabs */}
@@ -661,6 +669,7 @@ const ExplorationMarcheurPage: React.FC = () => {
         eventId={marcheEventId || null}
         marcheId={activeMarcheId || null}
         scope="global"
+        className="md:hidden"
       />
       <FocusHalo target={focusTarget} delay={400} onSettled={() => setFocusTarget(null)} />
     </div>
