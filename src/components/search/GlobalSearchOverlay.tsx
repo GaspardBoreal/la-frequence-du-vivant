@@ -257,9 +257,14 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
                       </span>
                       <span className="text-[0.7rem] text-emerald-100/30">· {list.length}</span>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       {list.map((r, idx) => (
-                        <ResultRow key={`${r.kind}-${r.id}-${idx}`} result={r} onClick={() => handleResultClick(r)} />
+                        <SearchResultCard
+                          key={`${r.kind}-${r.id}-${idx}`}
+                          result={r}
+                          query={query}
+                          onOpen={() => handleResultClick(r)}
+                        />
                       ))}
                     </div>
                   </div>
