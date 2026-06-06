@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import RoleBadge from './RoleBadge';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import MonEspaceSettings from './MonEspaceSettings';
+import HeaderSearchTrigger from '@/components/search/HeaderSearchTrigger';
 
 interface CommunityProfile {
   id: string;
@@ -54,7 +55,7 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
   return (
     <>
       <div className={`sticky top-0 z-40 bg-white/95 dark:bg-background/80 backdrop-blur-xl border-b border-border/40 dark:border-border/30 ${ROLE_GLOW[role]}`}>
-        <div className="max-w-2xl mx-auto px-4 py-2">
+        <div className="max-w-3xl md:max-w-4xl mx-auto px-4 py-2">
           <div className="flex items-center gap-2">
             <Link to="/marches-du-vivant" className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
               <ArrowLeft className="w-4 h-4" />
@@ -69,6 +70,7 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
             <div className="flex-1 min-w-0">
               <RoleBadge role={role} size="sm" darkMode />
             </div>
+            <HeaderSearchTrigger scope="global" />
             <motion.div
               key={totalFrequences}
               initial={{ scale: 1.2 }}
