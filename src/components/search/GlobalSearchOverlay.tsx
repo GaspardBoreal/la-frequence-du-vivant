@@ -6,6 +6,7 @@ import {
   Search, X, Leaf, Sparkles, BookOpen, MessageCircle, User, MapPin, Clock, TrendingUp,
 } from 'lucide-react';
 import { useGlobalSearch, logSearch, pushRecentSearch, getRecentSearches, type SearchKind, type SearchResult } from '@/hooks/useGlobalSearch';
+import { SearchResultCard } from './SearchResultCard';
 import { cn } from '@/lib/utils';
 
 const KIND_META: Record<SearchKind, { label: string; icon: React.ComponentType<any>; color: string; chip: string }> = {
