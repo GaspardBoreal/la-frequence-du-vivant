@@ -273,6 +273,7 @@ const MarchesDuVivantMonEspace = () => {
             </motion.div>
           </AnimatePresence>
         </main>
+        <GlobalSearchFab scope="global" />
       </div>
     </>
   );
