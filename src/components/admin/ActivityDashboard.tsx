@@ -190,15 +190,6 @@ const ActivityDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI cards globaux 7 jours */}
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
-        Indicateurs globaux — 7 derniers jours
-      </p>
-      <div className="grid gap-3 md:grid-cols-4 mb-4">
-        <Card className="p-3">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <TrendingUp className="h-4 w-4" /> Sessions
-          </div>
       {/* KPI cards globaux — réactifs aux filtres */}
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
         Indicateurs globaux — {periodLabel}
