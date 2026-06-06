@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, Hand, Heart, Ear, Utensils, Sparkles } from 'lucide-react';
 import { useIsCurator } from '@/hooks/useExplorationCurations';
 import { chatPageContext } from '@/hooks/useChatPageContext';
+import { subscribeFocus, getLastFocus, type FocusDetail } from '@/lib/focusBus';
 import OeilCuration from './OeilCuration';
 import MainCuration from './MainCuration';
 import OreilleCuration from './OreilleCuration';
