@@ -23,6 +23,7 @@ import ChatViewportObserver from '@/components/chatbot/ChatViewportObserver';
 import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
 import { Loader2 } from 'lucide-react';
 import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
+import GlobalSearchFab from '@/components/search/GlobalSearchFab';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -595,6 +596,11 @@ const ExplorationMarcheurPage: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+      <GlobalSearchFab
+        eventId={marcheEventId || null}
+        marcheId={activeMarcheId || null}
+        scope="global"
+      />
     </div>
     </SpeciesPhotoModeProvider>
   );
