@@ -57,7 +57,7 @@ export const HeaderSearchTrigger: React.FC<Props> = ({
       >
         <Search className="w-4 h-4 text-primary/70 shrink-0" strokeWidth={2.2} />
         <span className="flex-1 text-left text-xs truncate">
-          Rechercher espèce, marche, marcheur…
+          {scope === 'event' ? 'Rechercher dans cet événement…' : 'Rechercher espèce, marche, marcheur…'}
         </span>
         <kbd className="hidden lg:inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted/60 border border-border text-muted-foreground">
           {isMac ? '⌘' : 'Ctrl'}<span>K</span>
