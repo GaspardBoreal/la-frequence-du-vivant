@@ -1,28 +1,54 @@
-# Recherche dans la page Événement — réutiliser le même trigger
+# Recherche — inclure les pratiques emblématiques
 
-## Constat
-La page `ExplorationMarcheurPage` (consultation d'un événement) possède son propre header sticky et utilise `GlobalSearchFab` (qui reste un cercle flottant). Sur tablette, on retombe sur le même problème : pas de barre visible.
+## Diagnostic
 
-## Objectif
-Réutiliser exactement le même composant `HeaderSearchTrigger` que dans `MonEspaceHeader`, pour garantir une UX/UI strictement identique sur tous les écrans. Toute évolution future (placeholder, style, raccourcis, badge IA…) se fera dans ce composant unique.
+Le RPC `search_global` contient la branche « practice » mais avec un filtre erroné :
 
-## Changements
+```sql
+WHERE c.source = 'main'        -- ❌ 'main' n'est pas une source
+```
 
-### 1. `src/components/community/ExplorationMarcheurPage.tsx`
-- Importer `HeaderSearchTrigger`.
-- L'insérer dans la ligne du header sticky (ligne ~386, juste après le bloc `flex-1 min-w-0`), aligné à droite.
-- Lui passer le **scope événement** : `scope="event"`, `eventId={marcheEventId}`, `marcheId={activeMarcheId}` — exactement les mêmes props que le FAB actuel reçoit, pour que la recherche reste pré-filtrée sur l'événement courant.
-- Sur le `GlobalSearchFab` (ligne 660), ajouter `className="md:hidden"` pour ne le garder qu'en mobile, comme dans `MarchesDuVivantMonEspace`.
+Les sources réelles dans `exploration_curations` sont `manual` et `ai` (260 + 11 lignes). Le mot-clé `main` désigne en réalité le **sens** (`sense = 'main'`, "La main" — les pratiques), pas la provenance. Résultat : **zéro pratique** ne remonte jamais dans la recherche, alors que la branche, le focus URL (`focus=practice:<id>`), la téléportation vers l'onglet *Apprendre* et la carte de résultat sont déjà en place.
 
-### 2. `src/components/search/HeaderSearchTrigger.tsx`
-- Ajuster le placeholder selon le scope :
-  - `scope="event"` → « Rechercher dans cet événement… »
-  - autre → texte global actuel.
-- Aucune autre logique modifiée — toujours un seul composant, source unique de vérité.
+Vérifié sur la pratique "Datation de l'âge des grands arbres (dendrochronologie)" :
+- `id = 64d88f2c-…`, `exploration_id = 20dd3be8-…`, `source = manual`, `sense = main` (implicite), titre contient « dendro ».
+- Recherche `dendro` ne la remonte pas → confirmé par la copie d'écran.
 
-## Hors scope (à généraliser ensuite si tu valides)
-Autres pages possédant un FAB ou un header (ex. admin, exploration historique publique) : on étendra le même pattern dans une passe ultérieure. Ici on reste sur le parcours marcheur évoqué.
+## Correctif
+
+### 1. Migration : RPC `search_global`
+
+Une seule modification fonctionnelle dans la CTE/UNION ALL "practice" :
+
+- Remplacer `WHERE c.source = 'main'` par `WHERE c.sense = 'main'::curation_sense` afin de cibler les **pratiques** (sens « La main »).
+- Élargir le matching : ajouter `category` aux champs ILIKE/similarity (déjà scoré, pas encore filtré) pour que des recherches sur la catégorie remontent aussi.
+- Ajouter `sense`, `marcheur` (prénom + nom du créateur si dispo via `created_by → community_profiles`) et `thumb` (1er media) au `meta` pour enrichir la carte de résultat.
+- Garder le scope événement existant (`v_exploration_id`).
+
+La route reste : `/marches-du-vivant/mon-espace/exploration/<exploration_id>?focus=practice:<id>&tab=apprendre` — déjà gérée par `useFocusFromUrl` + `MainCuration` (qui pose `data-focus-id="practice:<id>"`).
+
+### 2. Front — `SearchResultCard` (kind=practice)
+
+Aujourd'hui la carte n'affiche que `title` + `subtitle` (description tronquée) + `context` (nom exploration). Améliorations légères pour aligner sur l'esprit des pratiques emblématiques :
+
+- Icône ambrée déjà OK (`Sparkles`).
+- Si `meta.thumb_url` présent → afficher vignette carrée 56×56 à gauche (cohérent avec carte espèce).
+- Sous-titre : préfixer par un chip « Pratique » + catégorie si présente.
+- Conserver le clic existant qui déclenche la navigation `route`.
+
+### 3. Hors-scope (non touché)
+
+- Pas de changement aux autres branches (species, text, testimony, marcheur, event).
+- Pas de changement au composant `HeaderSearchTrigger` ni à `GlobalSearchOverlay` (l'ordre `species → practice → text …` est déjà bon).
+- Pas de modif des permissions : `exploration_curations` est déjà lisible par les rôles concernés via les RLS existantes.
 
 ## Fichiers impactés
-1. `src/components/community/ExplorationMarcheurPage.tsx` (insertion trigger + `md:hidden` sur FAB)
-2. `src/components/search/HeaderSearchTrigger.tsx` (placeholder contextuel)
+
+1. `supabase/migrations/<timestamp>_search_global_fix_practices.sql` — `CREATE OR REPLACE FUNCTION search_global(…)` avec le filtre `c.sense = 'main'` + enrichissement meta + matching `category`.
+2. `src/components/search/SearchResultCard.tsx` — affichage vignette + chip catégorie pour `kind='practice'`.
+
+## Test après livraison
+
+- Ouvrir l'événement DEVIAT, lancer la recherche `dendro` → la pratique « Datation de l'âge des grands arbres (dendrochronologie) » apparaît dans la section ✨ Pratiques.
+- Clic → ouvre l'onglet *Apprendre*, *La main*, scroll/halo sur la carte de la pratique.
+- Recherches `pic épeiche`, `Robert`, etc. continuent de fonctionner inchangées.
