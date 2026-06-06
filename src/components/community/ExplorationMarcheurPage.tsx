@@ -202,6 +202,39 @@ const ExplorationMarcheurPage: React.FC = () => {
   const activeMarcheSlug = activeMarche ? createSlug(activeMarche.nom_marche || activeMarche.ville, activeMarche.ville) : undefined;
   const marcheEventId = marcheEvent?.id || '';
 
+  // ─── Téléportation depuis la recherche : applique tab + step + halo ───
+  useEffect(() => {
+    if (!focus) return;
+    // 1. Onglet global
+    const allowedGlobal: GlobalTab[] = ['carte', 'marcheurs', 'marches', 'biodiversite', 'apprendre'];
+    if (focus.tab && (allowedGlobal as string[]).includes(focus.tab)) {
+      setActiveGlobalTab(focus.tab as GlobalTab);
+    } else if (focus.kind === 'species' || focus.kind === 'testimony') {
+      setActiveGlobalTab('biodiversite');
+    } else if (focus.kind === 'practice') {
+      setActiveGlobalTab('apprendre');
+    } else if (focus.kind === 'text') {
+      setActiveGlobalTab('marches');
+    }
+    // 2. Onglet sensoriel
+    const allowedSensory: SensoryTab[] = ['voir', 'ecouter', 'lire', 'ecrire', 'vivant'];
+    if (focus.sensory && (allowedSensory as string[]).includes(focus.sensory)) {
+      setActiveSensoryTab(focus.sensory as SensoryTab);
+    } else if (focus.kind === 'text') {
+      setActiveSensoryTab('lire');
+    }
+    // 3. Étape (marche)
+    if (focus.marcheId && explorationMarches?.length) {
+      const idx = explorationMarches.findIndex(m => m.id === focus.marcheId);
+      if (idx >= 0) setActiveStepIndex(idx);
+    }
+    // 4. Cible halo
+    setFocusTarget(`${focus.kind}:${focus.id}`);
+    // Consume URL once the tab change is queued.
+    const t = setTimeout(() => consume(), 50);
+    return () => clearTimeout(t);
+  }, [focus, explorationMarches, consume]);
+
   // Stats for badge indicators
   const { data: stats } = useMarcheurStats(marcheEventId, userId || '', activeMarcheId);
 
