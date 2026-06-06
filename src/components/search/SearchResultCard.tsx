@@ -90,7 +90,7 @@ function Highlight({ text, q }: { text: string; q: string }) {
 interface Props {
   result: SearchResult;
   query: string;
-  onOpen: (opts?: { marcheId?: string | null }) => void;
+  onOpen: (opts?: { marcheId?: string | null; explorationId?: string | null; eventId?: string | null }) => void;
 }
 
 export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => {
