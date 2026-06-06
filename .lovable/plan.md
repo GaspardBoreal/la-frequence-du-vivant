@@ -1,77 +1,62 @@
-# Diagnostic — Colyne Bernard / BORDEAUX Patio ISEG
+# Filtres Activités — Date & Événement
 
-## Ce que dit la BDD
+## Objectif
+Dans `/admin/community` → onglet **Activités**, permettre de filtrer la Timeline et le graphique des connexions par **période** (aujourd'hui, hier, semaine, mois, année, tout) et par **événement** (un événement précis ou tous), en plus du filtre marcheur existant.
 
-- Profil `3d0d27ff…` / user `3e3a7897…`, rôle = `marcheur_en_devenir`, `marches_count = 0`
-- Compte iNat lié : `colyne2` ✅
-- **2 inscriptions** (`marche_participations`) :
-  - DEVIAT « Marcher sur un sol qui respire »
-  - BORDEAUX / Patio végétalisé ISEG (expl. `75e1…d8`)
-- Sur les **deux**, `validated_at IS NULL` et `validation_method IS NULL`
-- Aucune entrée dans `marcheur_backfill_log` pour cet utilisateur
+## UX / UI
 
-## Cause racine — un seul verrou, deux symptômes
+Une barre de filtres unifiée, sticky en haut du dashboard (sous les 4 KPI cards), regroupant tous les contrôles de la vue active. Trois "chip-selects" alignés à droite, séparés par un fin diviseur, cohérents avec le style des autres filtres admin (`NetworkFilters`, `EventsFiltersBar`) :
 
-Le champ `validated_at` est le **gate unique** de tout le pipeline marcheur :
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ 🗓 Période ▾   📍 Événement ▾   👤 Marcheur ▾   [📋 Liste|📊 Chart]│
+└──────────────────────────────────────────────────────────────────┘
+```
 
-1. **Rôle bloqué à « En devenir »**
-  Le trigger de promotion (`role-promotion-only-trigger`) ne passe à `marcheur` que lorsque `validated_at IS NOT NULL`. Tant que la présence n'est pas validée, le rôle reste `marcheur_en_devenir`, même si l'inscription existe.
-2. **Aucune observation iNat remontée**
-  Le cron `backfill-marcheur-inat-batch` filtre explicitement :
-   Colyne a bien le compte iNat lié, mais comme `validated_at = NULL`, **elle n'entre jamais dans la boucle de backfill** → ses 10 observations iNat ne sont jamais rattachées à la marche, ni copiées dans `marcheur_observations`, ni visibles dans Patio ISEG.
+- **Période** : pill-select avec 6 options + badge du nombre d'événements correspondants  
+  `Aujourd'hui · Hier · 7 j · 30 j · 12 mois · Tout` (défaut : 7 j).
+- **Événement** : Combobox cherchable (Command + Popover shadcn) listant les `marche_events` triés par date décroissante avec format `📅 dd/MM · Titre court · Lieu`. Largeur min 260 px, max 360 px, ellipsis. Option par défaut « Tous les événements ».
+- **Marcheur** : conserve le Select existant, déplacé dans la même barre pour cohérence.
+- **Reset** : petit bouton « Effacer » apparaît seulement si ≥ 1 filtre non-défaut.
+- Les filtres pilotent **les deux vues** (Liste timeline + Chart connexions). Les 4 KPI cards restent globales 7 j (inchangées) pour garder un repère stable — un libellé « 7 derniers jours » discret sous le titre KPI clarifie le périmètre.
+- État stocké dans l'URL (`?period=&event=&user=`) pour partage/back-button, comme `MarcheEventsAdmin`.
+- Vue vide : illustration + texte « Aucune activité sur cette période / cet événement », avec lien « Réinitialiser les filtres ».
 
-Le trigger `participation-validation-trigger` (`mem://technical/community/participation-validation-trigger`) qui devrait déclencher la synchro au moment de la validation ne se déclenche jamais non plus, pour la même raison.
+## Comportement
 
-**Conclusion :** ce n'est pas un bug de code, c'est un **état BDD incohérent** — l'inscription a été créée (probablement via auto-invite ou inscription libre) sans jamais passer par l'étape « validation de présence » qui appose `validated_at`. La logique métier actuelle considère donc Colyne comme jamais venue, alors qu'elle a un compte iNat actif et 10 obs.
+- Changement de filtre ⇒ refetch immédiat (debounce 150 ms pour la recherche d'événement).
+- Le sélecteur `chartPeriod` actuel disparaît : la **période globale** pilote le chart. Le bucket d'agrégation est dérivé automatiquement (hour pour today/yesterday, day pour 7j/30j, month pour 12 mois & all).
+- Quand un événement est choisi, un sous-titre apparaît au-dessus du chart : « Connexions des participants à *Titre* — *date* ».
 
-## Correctif proposé — 3 niveaux
+## Détails techniques
 
-### 1. Correctif data immédiat (Colyne + Patio ISEG)
+### 1. Étendre les RPC Postgres (migration)
+- `get_activity_timeline(p_limit, p_user_filter, p_period text default 'all', p_event_id uuid default null)`  
+  Ajoute `WHERE created_at >= <bornes calculées>` + `AND (p_event_id is null OR marche_event_id = p_event_id)`.
+- `get_activity_connections_chart(p_period, p_event_id uuid default null, p_user_filter uuid default null)`  
+  Même filtre `marche_event_id`. Le bucket SQL est inféré côté fonction depuis `p_period` (réutilise la logique time-series existante en heure locale Paris — cf. mémoire `activity-chart-time-series-logic`).
+- Bornes période (heure locale Paris) :  
+  `today` = `date_trunc('day', now() AT TIME ZONE 'Europe/Paris')`  
+  `yesterday` = veille uniquement  
+  `7d` / `30d` / `12m` = `now() - interval`  
+  `all` = pas de borne.
+- Aucune modification de schéma de table ; la colonne `marche_event_id` existe déjà sur `marcheur_activity_logs`.
 
-Migration ponctuelle :
+### 2. Nouveau RPC léger
+- `get_activity_events_for_filter()` : retourne `id, title, date_marche, lieu` des événements ayant au moins 1 ligne d'activité (évite de lister 500 events vides). Tri date desc, limit 200.
 
-- `UPDATE marche_participations SET validated_at = now(), validation_method = 'manual_backfill' WHERE id IN (…ses 2 lignes…)`
-- Déclenche automatiquement :
-  - promotion `marcheur_en_devenir` → `marcheur` via trigger
-  - synchro iNat via trigger `backfill-marcheur-inaturalist` sur les 2 explorations
-- Vérification : ses 10 obs doivent apparaître dans `marcheur_observations` et dans le « Pouls du vivant ».
+### 3. Frontend
+- `src/components/admin/ActivityDashboard.tsx` :
+  - State `period`, `eventId`, `userFilter` (URL-synced via `useSearchParams`).
+  - Nouveau sous-composant `ActivityFiltersBar` (fichier dédié) avec les 3 selects + reset.
+  - Passe les filtres aux 2 queries (`activity-timeline`, `activity-chart`).
+  - Supprime le second Select période du chart.
+- Pas de changement aux 4 cards KPI globales.
 
-### 2. Correctif structurel — détecter la dérive
+### 4. Types
+- `src/integrations/supabase/types.ts` est régénéré automatiquement après la migration.
 
-Nouveau dashboard admin (onglet **Communauté → Inscriptions non validées**) listant :
-
-- Marcheurs inscrits depuis > 48 h avec `validated_at IS NULL`
-- Indicateur « ⚠ compte iNat lié + obs disponibles non remontées »
-- Bouton « Valider rétroactivement » (un clic → UPDATE + trigger backfill)
-
-Évite que d'autres Colyne restent invisibles.
-
-### 3. Hardening pipeline — élargir le filet de sécurité du backfill
-
-Modifier `backfill-marcheur-inat-batch` pour inclure **aussi** les participations non validées **si** :
-
-- compte iNat lié ET
-- au moins 1 obs iNat dans la fenêtre/rayon de la marche
-
-Stratégie : 2e passe dans le cron (basse priorité) qui tente le backfill « opportuniste ». Si on trouve des obs dans le périmètre, on auto-valide la participation (`validation_method = 'inat_auto'`) et on déclenche la promotion. Une obs iNat géolocalisée dans le rayon d'une marche à laquelle on est inscrit = preuve de présence suffisante.
-
-## Fichiers touchés
-
-- **Migration** : `UPDATE marche_participations` (les 2 lignes de Colyne) + éventuel script de rattrapage global pour tous les marcheurs avec compte iNat lié et participation > 48 h sans validation
-- **Edge** `supabase/functions/backfill-marcheur-inat-batch/index.ts` : 2e passe opportuniste
-- **Admin** `src/components/admin/CommunauteDashboard.tsx` (+ nouvelle sous-page `UnvalidatedRegistrationsTab.tsx`)
-- **Mémoire** : nouveau `mem://technical/community/validated-at-as-pipeline-gate` documentant le verrou unique
-
-## Question avant build
-
-Souhaites-tu :
-
-- **A** — uniquement le correctif #1 (fix Colyne maintenant) ?
-- **B** — #1 + #2 (fix + dashboard de détection) ?
-- **C** — les 3 (fix + dashboard + auto-validation opportuniste via iNat) ?
-
-Recommandé : **C**, c'est le seul qui empêche le problème de se reproduire silencieusement.  
-  
-GO POUR LE C
-
-&nbsp;
+## Hors scope
+- Pas de filtre par type d'événement (`event_type`) — reportable.
+- Pas d'export CSV de la timeline filtrée — reportable.
+- Pas de modification des KPI cards (gardent leur fenêtre 7 j).
