@@ -355,7 +355,11 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       {list.map((sp, i) => {
         const spTags = tagsBySpecies.get(normalizeTagKey(sp.scientificName)) || [];
         return (
-          <div key={`${sp.id}-${i}`} className="relative">
+          <div
+            key={`${sp.id}-${i}`}
+            className="relative"
+            data-focus-id={`species:${sp.scientificName}`}
+          >
             <EnhancedSpeciesCard
               species={sp}
               onSpeciesClick={setSelectedSpecies}
