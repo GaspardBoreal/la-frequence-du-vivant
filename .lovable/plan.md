@@ -1,53 +1,78 @@
-# Plan de correction
+# Analyse du bug et correctif robuste
 
-## Objectif
-Permettre de naviguer vers chaque fiche issue de la recherche, y compris chaque occurrence listée sous une espèce comme « Clématite », avec un comportement rapide, clair et fiable.
+## Diagnostic
 
-## Ce que je propose
+La carte espèce « Clematis » liste 3 occurrences (Bordeaux, Déviat C 865, Déviat C 362). Quand on clique sur **DEVIAT C 865**, on atterrit sur **BORDEAUX / Patio végétalisé ISEG → onglet Synthèse**. C'est faux.
 
-### 1. Rendre chaque sous-résultat cliquable
-Aujourd’hui, dans la carte espèce, les occurrences récentes affichées en dessous sont seulement informatives.
-Je vais transformer chaque ligne de contexte en action explicite :
-- clic sur une occurrence = ouverture de la fiche espèce
-- en transmettant aussi la marche concernée
-- avec fermeture immédiate de l’overlay
+Cause racine (vérifiée dans `search_global` et `ExplorationMarcheurPage`) :
 
-Résultat : on pourra cliquer directement sur « BORDEAUX / Patio végétalisé ISEG », « DEVIAT C 865 », etc.
+1. Côté SQL, la `route` du résultat espèce est calculée **une seule fois**, à partir de `last_marche_id` (la marche la plus récente, ici Bordeaux). L'exploration cible dans l'URL est donc toujours celle de Bordeaux, quelle que soit l'occurrence cliquée.
+2. Côté front, on réécrit bien `marcheId=DEVIAT` dans l'URL, mais on garde **la même exploration** dans le chemin. La page exploration de Bordeaux ne contient pas la marche DEVIAT dans `explorationMarches`, donc `findIndex(...) = -1` → on reste sur l'étape par défaut (Bordeaux) et sur l'onglet par défaut (Synthèse).
+3. Les sous-occurrences ne portent aujourd'hui que `marche_id` ; elles ignorent que chaque marche peut appartenir à une **exploration différente** et qu'elle a un **event_id** précis.
 
-### 2. Faire consommer réellement le `marcheId` côté destination
-Le moteur de recherche renvoie déjà un `marcheId` dans l’URL pour les espèces, mais la page cible ne l’exploite pas assez pour différencier les occurrences.
-Je vais compléter le flux pour que, lors de l’ouverture depuis la recherche :
-- la page biodiversité s’ouvre au bon onglet
-- l’espèce concernée s’ouvre
-- la marche ciblée soit utilisée pour mettre en avant la bonne occurrence/contexte
+Conséquence : confusion entre « espèce dans une exploration » et « espèce dans un événement ». L'utilisateur attend une fiche espèce ouverte dans **l'événement** de la marche cliquée.
 
-Résultat : on n’ouvre plus une fiche générique, mais la bonne entrée contextualisée.
+## Correctif proposé
 
-### 3. Ajouter une navigation robuste même si on reste sur la même page
-Comme beaucoup de résultats pointent vers la même route d’exploration, React Router peut rester sur la même page sans donner l’impression qu’il s’est passé quelque chose.
-Je vais rendre ce cas robuste en déclenchant systématiquement un focus interne quand :
-- la route change
-- ou la route est identique mais le focus/marche change
+### 1. SQL — Enrichir `recent_contexts` avec l'exploration et l'event de la marche
 
-Résultat : la navigation fonctionne aussi entre plusieurs résultats d’une même exploration sans impression de clic “mort”.
+Dans `search_global`, pour chaque ligne de `recent_contexts`, ajouter :
 
-### 4. Améliorer la lisibilité de l’action dans l’UI
-Je vais clarifier visuellement quelles zones ouvrent quoi :
-- chaque occurrence récente aura un état hover/tap clair
-- libellé/action cohérents
-- éviter l’ambiguïté entre “déplier” et “ouvrir”
+- `exploration_id` (via `exploration_marches`)
+- `exploration_slug` (optionnel pour le routing public)
+- `event_id` (via `marche_events` : l'événement actif/le plus récent pour cette marche)
+- `event_title`, `event_date`
 
-Résultat : on comprend immédiatement où cliquer pour aller vers une fiche précise.
+Ainsi chaque occurrence devient routable de manière autonome, sans dépendre du `last_marche_id` global de l'espèce.
+
+### 2. Front — Construire la route par occurrence, pas réécrire celle de l'espèce
+
+Dans `GlobalSearchOverlay.handleResultClick` :
+
+- Si l'utilisateur clique une **sous-occurrence**, ignorer `r.route` et reconstruire :  
+  `/marches-du-vivant/mon-espace/exploration/{ctx.exploration_id}?focus=species:{scientific_name}&tab=biodiversite&sub=taxons&marcheId={ctx.marche_id}&eventId={ctx.event_id}&t={nonce}`
+- Si l'utilisateur clique la **carte espèce** (en-tête), garder le comportement actuel (route globale).
+
+### 3. Front — `useFocusFromUrl` : lire aussi `eventId`
+
+Ajouter `eventId?: string | null` au `FocusDescriptor` et l'inclure dans la liste des params consommés.
+
+### 4. Front — `ExplorationMarcheurPage` : appliquer l'event + onglet sensoriel correct
+
+- Si `focus.eventId` est présent, forcer le step correspondant (déjà fait via `marcheId`) **et** s'assurer que `marcheEvent` ciblé = celui-là (sécurité si plusieurs events partagent une même marche).
+- Pour `focus.kind === 'species'`, basculer automatiquement sur l'onglet sensoriel `voir` + sous-onglet `taxons` plutôt que rester sur « Synthèse ».
+- Garantir que l'effet de focus se rejoue quand `explorationMarches` se charge après le mount (dépendance déjà ok, mais ajouter un guard sur `focus.eventId`).
+
+### 5. UX — Lisibilité de la sous-occurrence
+
+- Afficher en chip dans la ligne de sous-occurrence : la **date** + le **type d'événement** lorsque dispo, pour que l'utilisateur sache qu'il va atterrir sur l'événement et non sur l'exploration.
 
 ## Détail technique
-- Mise à jour de `SearchResultCard` pour donner un `onOpenContext(...)` aux lignes d’occurrences des espèces.
-- Enrichissement du payload de navigation/focus avec `marcheId` par occurrence.
-- Ajustement du flux `GlobalSearchOverlay` pour supporter l’ouverture d’un sous-résultat précis.
-- Renforcement du mécanisme `useFocusFromUrl` / `focusBus` pour rejouer correctement un focus même sur même route.
-- Branchement dans la vue biodiversité / `SpeciesExplorer` pour sélectionner l’espèce et exploiter la marche ciblée.
+
+Fichiers touchés :
+
+```
+supabase/migrations/<new>.sql              # RPC search_global v3 — contexts enrichis
+src/hooks/useFocusFromUrl.ts               # +eventId
+src/components/search/GlobalSearchOverlay.tsx
+                                           # route reconstruite par occurrence
+src/components/search/SearchResultCard.tsx # passe ctx complet (exploration_id,event_id)
+src/components/community/ExplorationMarcheurPage.tsx
+                                           # consomme focus.eventId, force tab biodiversite/sub=taxons
+```
+
+Signature `onOpen` étendue :
+```ts
+onOpen(opts?: {
+  marcheId?: string | null;
+  explorationId?: string | null;
+  eventId?: string | null;
+})
+```
 
 ## Résultat attendu
-Après implémentation, une recherche comme « cléma » permettra :
-- de cliquer sur la carte espèce entière pour ouvrir la fiche générale
-- de cliquer sur chaque occurrence listée pour ouvrir la même espèce, mais ancrée sur la bonne marche
-- d’obtenir une réaction immédiate et cohérente, même sans changement visible d’URL de page
+
+- Clic sur **DEVIAT C 865** → ouvre l'exploration *contenant* DEVIAT, sur l'événement DEVIAT/Jardin Monde, onglet Biodiversité → Taxons, avec la fiche **Clématite** ouverte en halo.
+- Clic sur **Bordeaux** → ouvre l'événement Bordeaux, même fiche espèce.
+- Clic sur la carte espèce (en-tête) → comportement global inchangé.
+- Plus aucune navigation « morte » ou détournée vers la mauvaise marche.
