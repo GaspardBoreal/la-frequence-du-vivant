@@ -199,13 +199,22 @@ const ActivityDashboard: React.FC = () => {
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <TrendingUp className="h-4 w-4" /> Sessions
           </div>
-          <p className="mt-2 text-2xl font-semibold text-foreground">{globalStats?.active_sessions_7d || 0}</p>
+      {/* KPI cards globaux — réactifs aux filtres */}
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+        Indicateurs globaux — {periodLabel}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-4">
+        <Card className="p-3">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <TrendingUp className="h-4 w-4" /> Sessions
+          </div>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{globalStats?.active_sessions || 0}</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <Camera className="h-4 w-4" /> Médias
           </div>
-          <p className="mt-2 text-2xl font-semibold text-foreground">{globalStats?.media_uploads_7d || 0}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{globalStats?.media_uploads || 0}</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
@@ -222,6 +231,22 @@ const ActivityDashboard: React.FC = () => {
           <p className="mt-2 text-lg font-semibold text-foreground truncate">
             {globalStats?.most_active_prenom ? `${globalStats.most_active_prenom} ${globalStats.most_active_nom || ''}` : '—'}
           </p>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <MapPin className="h-4 w-4" /> Marche la plus active
+          </div>
+          <p
+            className="mt-2 text-lg font-semibold text-foreground truncate"
+            title={globalStats?.most_active_event_title || ''}
+          >
+            {globalStats?.most_active_event_title || '—'}
+          </p>
+          {globalStats?.most_active_event_views ? (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {globalStats.most_active_event_views} vue{globalStats.most_active_event_views > 1 ? 's' : ''}
+            </p>
+          ) : null}
         </Card>
       </div>
 
