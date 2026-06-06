@@ -1,120 +1,88 @@
+# Recherche → Navigation directe vers chaque fiche
 
-# Recherche enrichie — « Quand un résultat raconte d'où il vient »
+## Problème
 
-## Le problème
-Aujourd'hui, taper « clématite » renvoie 3 lignes « Clematis · Clematis » identiques. Le marcheur ne sait pas **où**, **quand**, ni **par qui** ces observations ont été faites — donc impossible de retrouver le bon contexte. La recherche n'a pas de mémoire géographique ni temporelle.
+Aujourd'hui, "Ouvrir la fiche" envoie tout le monde vers `/exploration/:id` (page racine, onglet Carte). Le marcheur arrive « quelque part » mais doit re-chercher l'espèce / le texte / la pratique / le témoignage. L'effet wahouh de la recherche s'effondre à la dernière marche.
 
-## La proposition retenue
-**Fusion intelligente côté SQL + cartes contextuelles côté UI avec expand inline.**
+## Vision
 
-Chaque résultat raconte trois choses en un coup d'œil :
-- **📍 où** (marche + ville)
-- **📅 quand** (« il y a 3 jours », « 12 mars »)
-- **🌿 combien / par qui** (« Vue 12× sur 3 marches » ou « observée par Marie + 2 »)
+La recherche devient un **téléporteur contextuel** : un clic = on atterrit sur le bon onglet, à la bonne marche, avec la **fiche déjà ouverte** (drawer ou modal), un léger halo « focus » sur l'élément ciblé, et l'historique navigateur permet de revenir à la liste de résultats.
 
-Et un tap déplie une mini-galerie + mini-carte + sous-liste des occurrences, avec un bouton explicite « Ouvrir la fiche ».
+## Mécanique unifiée : un seul paramètre `?focus=`
 
----
+Toutes les routes sortent vers la page exploration (ou la page profil/public selon le cas), avec un query param normalisé :
 
-## Mockup conceptuel
-
-```text
-ESPÈCES · 3 résultats fusionnés
-
-┌──────────────────────────────────────────────────┐
-│ [🖼]  Clématite des haies                    ▾  │
-│       Clematis vitalba                           │
-│       📍 Dordogne · Beynac  📅 il y a 3 j        │
-│       🌿 Vue 12× sur 3 marches · 4 marcheurs    │
-└──────────────────────────────────────────────────┘
-  └ (déplié)
-    • Beynac — 12 mars · Marie L. · 5 obs    [🖼🖼🖼]
-    • Sarlat — 8 mars  · Pierre D. · 4 obs   [🖼🖼]
-    • Domme  — 1 mars  · Anouk B. · 3 obs    [🖼]
-    [mini-carte avec 3 pins]
-                              [Ouvrir la fiche →]
-
-TEXTES · 1
-┌──────────────────────────────────────────────────┐
-│ [📖]  Carnet de Beynac                       ▾  │
-│       « …la clématite grimpe le long du… »      │
-│       📍 Beynac  📅 12 mars · ✍ Marie L.        │
-└──────────────────────────────────────────────────┘
+```
+?focus=<kind>:<encodedId>[&marcheId=<id>][&tab=<tab>]
 ```
 
-Les chips contextuels (📍 📅 🌿) sont des badges glassmorphism émeraude, sobres, scannables au pouce.
+Exemples :
 
----
+| Résultat | Route générée |
+|---|---|
+| Espèce *Clematis* | `/exploration/{exp}?focus=species:Clematis` |
+| Pratique remarquable | `/exploration/{exp}?focus=practice:{curationId}&tab=apprendre` |
+| Texte « Le chant du patio » | `/exploration/{exp}?focus=text:{textId}&marcheId={m}&tab=marches&sensory=lire` |
+| Témoignage | `/exploration/{exp}?focus=testimony:{testimonyId}&tab=marcheurs` |
+| Marche / Event | `/exploration/{exp}?focus=event:{eventId}` |
+| Marcheur | `/marcheur/{slug}` (déjà direct) |
 
-## Comportement par type
+## Architecture
 
-| Type | Titre | Sous-ligne 1 | Sous-ligne 2 | Expand révèle |
-|---|---|---|---|---|
-| **Espèce** | nom FR (fallback sci.) | 📍 marche principale · ville | 🌿 vue N× sur K marches · M marcheurs | sous-liste marches + mini-carte + 3 vignettes |
-| **Pratique** | titre curation | 📍 exploration · ville | ✨ catégorie | extrait description + bouton |
-| **Texte** | titre | 📍 marche | 📅 date · ✍ auteur | extrait surligné autour du match |
-| **Témoignage** | auteur | 📍 marche · 📅 date | extrait avec match surligné | citation complète |
-| **Marcheur** | prénom + nom | 📍 ville · 🎭 rôle | 🚶 N marches · 🌿 N obs | mini-stats + bouton |
-| **Event** | titre | 📍 lieu · 📅 date | 🏷️ type | description + bouton |
+### 1. RPC `search_global` — enrichir les routes
 
----
+Régénérer la fonction pour qu'elle retourne directement la route ciblée :
+- **species** : `?focus=species:<scientific_name>` (+ `marcheId` du `recent_contexts[0]` pour pré-positionner l'étape)
+- **practice** : `?focus=practice:<curation_id>&tab=apprendre`
+- **text** : `?focus=text:<text_id>&marcheId=<marche_id>&tab=marches&sensory=lire`
+- **testimony** : `?focus=testimony:<testimony_id>&tab=marcheurs` (ou onglet Synthèse selon mémoire `event-testimonies-logic`)
+- **event** : `?focus=event:<event_id>`
 
-## Changements techniques
+### 2. Hook côté page exploration : `useFocusFromUrl()`
 
-### 1. RPC `search_global` — fusion + enrichissement
+Petit hook lu une fois au montage de `ExplorationMarcheurPage` :
+- parse `?focus=…&marcheId=…&tab=…&sensory=…`
+- positionne `activeGlobalTab`, `activeSensoryTab`, `activeStepIndex` (via `marcheId → index`)
+- expose `{ focus: { kind, id }, consume() }` pour les composants enfants
+- `consume()` nettoie l'URL avec `navigate(pathname, { replace: true })` une fois la fiche affichée → l'utilisateur peut « partager le lien » avant, mais l'historique reste propre.
 
-Refonte du bloc `species` :
-- `GROUP BY species_scientific_name` (anti-doublon)
-- Agrège : `count(*)`, `count(distinct marche_id)`, `count(distinct user_id)`, `max(observation_date)`, `array_agg` des 3 dernières marches (id, title, ville, date, marcheur prénom)
-- Retourne dans `meta` : `{ occurrences, marches_count, marcheurs_count, last_observation_date, recent_contexts: [{marche_id, title, ville, date, marcheur, photo_url}], thumb_url }`
+### 3. Auto-ouverture par kind
 
-Enrichissement des autres blocs dans `meta` :
-- **practice** : `ville`, `exploration_name`, `photo_url`
-- **text** : `ville`, `date_marche`, `author_name`, `excerpt_around_match` (snippet ±40 chars)
-- **testimony** : `date_marche`, `ville`, `excerpt_around_match`
-- **marcheur** : `marches_count`, `observations_count`, `role_label`
-- **event** : déjà OK, ajouter `ville`, `participants_count`
+| Kind | Composant qui réagit | Comportement |
+|---|---|---|
+| `species` | `SpeciesExplorer` / drawer espèce existant | Ouvre `SpeciesGalleryDetailModal` sur le `scientific_name` ciblé |
+| `practice` | onglet *Apprendre* (ou *Vivant*) | Scroll + halo sur la carte pratique + ouvre son drawer si dispo |
+| `text` | `LireDescriptionsTab` / `TextesEcritsSubTab` | Scroll sur le texte, mode lecture immersive ouvert |
+| `testimony` | onglet témoignages | Modal témoignage avec citation entière |
+| `event` | rien (la page = l'event) | léger halo sur le bandeau titre |
 
-`subtitle` reste le nom FR/sci ; `context` devient une chaîne pré-formatée des chips principaux ; le détail riche est dans `meta`.
+Pour chaque kind, un seul `useEffect` qui surveille `focus` et déclenche le `setOpen(...)` du drawer/modal correspondant, puis appelle `consume()`.
 
-### 2. Hook `useGlobalSearch` — typage du `meta`
+### 4. Ergonomie « wahouh »
 
-Ajout d'un type discriminé `SearchResultMeta` par `kind` pour exposer les champs typés au composant.
+- **Transition** : quand on clique « Ouvrir la fiche », overlay search se ferme avec un *zoom-out* vers la vignette ; la fiche s'ouvre 250 ms plus tard avec un *zoom-in*. Sensation de continuité spatiale (shared element-like via `framer-motion layoutId`).
+- **Halo de bienvenue** : à l'arrivée, un ring émeraude pulse 1.5 s autour de la fiche (`animate-pulse-once`).
+- **Toast retour** : un mini-toast en bas « Retour aux résultats » qui ré-ouvre l'overlay avec la requête mémorisée (state via `sessionStorage: lastSearchQuery`).
+- **Skeleton fiche** pendant le chargement (drawer ouvert vide → contenu progressif) — pas d'écran blanc.
 
-### 3. UI `GlobalSearchOverlay`
+### 5. Robustesse
 
-Extraction de `<SearchResultCard />` (nouveau composant) :
-- Layout : vignette 48×48 (cascade `SpeciesThumb` pour espèces, avatar pour marcheurs, gradient + picto pour autres) + bloc texte 2 lignes + chevron expand
-- Chips contextuels : composant `<ContextChip icon label />` réutilisable (📍 📅 🌿 ✍ 🏷️)
-- Helper `formatRelativeDate(date)` → « il y a 3 j », « hier », « 12 mars »
-- Helper `highlightMatch(text, query)` pour les snippets textes/témoignages (span émeraude)
-- État `expanded` local par carte ; animation Framer Motion `AnimatePresence` height auto
-- Zone dépliée : sous-liste des `recent_contexts` (espèces) ou extrait long (textes), + mini-carte Leaflet `<RichMap>` compact 120px de haut pour espèces multi-marches, + bouton CTA « Ouvrir la fiche → » qui ferme l'overlay et navigue
+- Si la marche cible n'est pas dans `explorationMarches` (l'utilisateur n'y a pas participé) → fallback : ouvrir la fiche espèce/texte en mode lecture seule, sans changer d'onglet, avec une bannière « Observée sur une marche que vous n'avez pas suivie ».
+- Si `focus.id` n'existe plus → toast « Cette fiche n'est plus disponible » + `consume()`.
+- `?focus=` est ignoré sur les pages publiques `/marche/:id` (texte) sauf si on décide de l'y supporter aussi.
 
-### 4. Logging
+## Détails techniques (section technique)
 
-Le `logSearch` enregistre toujours, et au CTA on passe `clicked_kind` + `clicked_id` (déjà supporté).
+- `useGlobalSearch` : aucune modif côté types (`route` reste un string déjà enrichi par le RPC).
+- `GlobalSearchOverlay.handleResultClick` : stocke `sessionStorage.setItem('last-search', query)` avant `navigate(r.route)`.
+- Nouveau fichier `src/hooks/useFocusFromUrl.ts` (~40 lignes).
+- Nouveau composant `src/components/search/FocusHalo.tsx` (motion ring réutilisable).
+- Migration SQL : `CREATE OR REPLACE FUNCTION search_global` avec les nouvelles routes (concat directe des query params, encode via `replace`).
+- Aucun changement de schéma DB.
 
----
+## Questions avant de coder
 
-## Détails techniques
-
-- **Performance** : la fusion `species` réduit drastiquement les lignes retournées (de N obs à K espèces) → plus rapide à rendre.
-- **Vignette espèce** : utilise `<SpeciesThumb />` existant (cascade locale → iNat → kingdom) — pas de nouvel appel réseau.
-- **Vignette marche / event** : on prend la `cover_url` de `marche_events` si présente, sinon gradient émeraude + picto.
-- **Mini-carte expand** : montée seulement à l'ouverture (lazy) pour ne pas tuer le scroll.
-- **Snippet « highlight match »** : regex côté front sur `meta.excerpt_around_match` déjà coupé en SQL (LEFT/RIGHT autour de la position du match), évite de transférer le `contenu` complet.
-- **Migration** : `CREATE OR REPLACE FUNCTION public.search_global(...)` — un seul fichier, pas de table modifiée.
-
----
-
-## Hors scope (pour une itération future)
-- Vue carte agrégée de TOUS les résultats sur une seule mini-mappemonde
-- Filtres temporels (« seulement cette saison »)
-- Reconnaissance vocale dans le champ recherche
-- Suggestions sémantiques IA (« vous cherchez peut-être… »)
-
----
-
-## Question résiduelle (optionnelle, je peux choisir si pas de réponse)
-Pour les espèces, quand un seul résultat existe (1 obs, 1 marche, 1 marcheur), affiche-t-on quand même le compteur « Vue 1× » ou on le masque pour rester sobre ? **Recommandation** : masquer si N=1, afficher « 📅 12 mars · ✍ Marie L. » à la place, plus humain.
+1. **Pratiques remarquables** : existe-t-il déjà un drawer dédié, ou seulement une carte dans `ApprendreTab` ? (J'ai vu `exploration_curations` mais pas de modal pratique unique — confirme-tu qu'un *PracticeDetailModal* doit être créé, ou réutilise-t-on `SpeciesGalleryDetailModal` ?)
+2. **Témoignages** : faut-il les ouvrir dans la vue *Mur*, *Carrousel*, *Nuage* ou *Constellation* (mémoire `event-testimonies-logic`), ou un modal dédié indépendant du mode courant ?
+3. **Hors périmètre du marcheur** (espèce vue dans une marche non suivie) : on bloque ? on affiche en lecture seule avec bannière ? on redirige vers la page publique `/m/:slug` si publiée ?
+4. **Transition shared-element** (zoom vignette → fiche) : OK pour ce niveau de polish, ou on reste sur un fade simple pour livrer plus vite ?
