@@ -1,64 +1,57 @@
-## Problème
+# Onglet « Recherches » dans `/admin/community`
 
-La route d'un résultat « pratique » porte `tab=apprendre` mais pas le sous-onglet ni le sens. La bascule vers **La main** repose uniquement sur le focus-bus consommé au mount de `CeQueNousAvonsVu`. Cette fenêtre de 4 s n'est pas garantie quand on arrive de l'extérieur (home, recherche cross-marche, deep-link partagé), d'où la retombée sur **L'œil**.
+Ajouter un nouvel onglet **Recherches** entre **Activités** et **Affiliation marcheurs** pour consulter et analyser la table `search_logs` (alimentée par la RPC `log_search`).
 
-## Objectif
+## Emplacement
 
-Un deep-link de pratique atterrit **toujours** sur `Apprendre → Ce que nous avons vu → La main`, avec la fiche pratique déjà déroulée et halo emerald.
+`src/pages/CommunityProfilesAdmin.tsx` — insertion d'un `TabsTrigger value="recherches"` après « Activités » et avant « Affiliation marcheurs », plus un `TabsContent` correspondant.
 
-Étendu aux autres kinds pour cohérence :
+## Composant
 
-| kind       | tab        | sub (Apprendre)   | sensory |
-| ---------- | ---------- | ----------------- | ------- |
-| practice   | apprendre  | decouvertes       | main    |
-| testimony  | apprendre  | decouvertes       | coeur   |
-| species    | apprendre  | decouvertes       | oeil    |
-| text       | apprendre  | decouvertes       | coeur   |
+Nouveau fichier `src/components/admin/community/RecherchesPanel.tsx` (cohérent avec `ProfilsPanel.tsx`, `ActivityDashboard`, etc.).
 
-(la route « espèce » conserve aussi sa variante `biodiversite` quand on vient de la carte ; ce plan ne touche que la branche « pratique » / Apprendre.)
+### Données affichées (depuis `search_logs`)
 
-## Changements
+1. **Cartes KPI** (7 derniers jours vs 30 jours) :
+   - Total recherches
+   - Recherches uniques (DISTINCT `query` normalisé lower+unaccent)
+   - Marcheurs actifs (DISTINCT `user_id`)
+   - Taux de clic (`clicked_kind IS NOT NULL` / total)
+   - Recherches « 0 résultat » (% et nombre)
 
-### 1. URL — enrichir la RPC `search_global`
-Ajouter `&sub=decouvertes&sensory=main` à la route pratique :
-```text
-/marches-du-vivant/mon-espace/exploration/<exp>
-  ?focus=practice:<id>&tab=apprendre&sub=decouvertes&sensory=main
-```
-Migration : nouvelle révision de `search_global` (même corps que la dernière, seules les lignes route des branches `practice` / `testimony` / `text` portant sur Apprendre sont enrichies).
+2. **Top requêtes** (table triable) : query normalisée, occurrences, résultats moyens, taux de clic, dernière occurrence.
 
-### 2. `useFocusFromUrl` — pas de changement
-Déjà capable de relire `sub` et `sensory`.
+3. **Requêtes infructueuses** (`results_count = 0`) : liste à fort signal produit — opportunités de contenu manquant ou d'amélioration du `search_global`.
 
-### 3. `ExplorationMarcheurPage`
-Étendre le `useEffect` qui consomme `focus` :
-- déjà : map `kind→tab`, set `activeGlobalTab`
-- **ajout** : si `focus.tab === 'apprendre'`, propager `focus.sub` (decouvertes/apprendre-creer) et `focus.sensory` (oeil/main/coeur/oreille/palais) à `ApprendreTab` via deux nouvelles props `initialApprendreSub` / `initialApprendreSensory` (état local de la page, consommé une fois).
-- conserver `dispatchFocus(...)` pour le halo + auto-expand de `MainCuration`.
+4. **Répartition par `clicked_kind`** : species / practice / testimony / text / marcheur / event (barres horizontales simples).
 
-### 4. `ApprendreTab`
-- Accepter `initialApprendreSub?: 'decouvertes' | 'apprendre-creer'` et `initialApprendreSensory?: SenseKey`.
-- `useState(initialApprendreSub ?? 'decouvertes')` pour le sous-onglet.
-- Passer `initialSensory={initialApprendreSensory}` à `CeQueNousAvonsVu`.
+5. **Répartition par `scope`** : global / event / admin.
 
-### 5. `CeQueNousAvonsVu`
-- Accepter `initialSensory?: SenseKey`.
-- `useState<SenseKey>(initialSensory ?? 'oeil')`.
-- Conserver l'abonnement focus-bus en filet de sécurité (déjà en place), mais l'init via props devient la source primaire — plus de dépendance au timing.
+6. **Flux temps réel** (50 dernières recherches) : `created_at`, `prenom nom`, `query`, `results_count`, `clicked_kind`, `route` (lien cliquable interne).
 
-### 6. `MainCuration`
-Déjà compatible : reçoit le focus via le bus et `data-focus-id="practice:<id>"`. Le halo (`FocusHalo`) cible déjà la carte. Rien à changer.
+### Filtres globaux du panel
 
-## Validation manuelle
+- Période : 24 h / 7 j / 30 j / 90 j (par défaut 7 j)
+- Scope : tous / global / event / admin
+- Recherche texte (filtre client sur `query`)
 
-1. Depuis la home `/marches-du-vivant/mon-espace`, taper `tonte` → cliquer la pratique.  
-   ✅ Atterrissage direct sur Apprendre › Ce que nous avons vu › La main, carte « Tondre moins… » dépliée + halo.
-2. Recharger l'URL deep-link (test à froid, sans recherche en amont) → même résultat (prouve qu'on ne dépend plus du bus).
-3. Cliquer un témoignage → atterrit sur `coeur`.
-4. Cliquer une espèce depuis la recherche → continue d'atterrir sur l'œil (régression non introduite).
+## Détails techniques
 
-## Pas dans le scope
+- **Pas de nouvelle RPC nécessaire** : `search_logs` est déjà accessible côté admin via les policies existantes (à vérifier — si lecture restreinte, créer une RPC `get_search_logs_admin(p_from, p_to, p_scope)` `SECURITY DEFINER` gardée par `has_role(auth.uid(),'admin')`). Cf. mémoire « Edge function auth ».
+- Hook dédié `src/hooks/useSearchLogs.ts` (React Query, `staleTime: 60_000`).
+- Normalisation des queries (lower + trim + `unaccent` côté client pour le top) pour regrouper « Tonte », « tonte », « tonté ».
+- Pagination simple côté client (top 50 / flux 50). Pas d'export demandé pour l'instant.
+- Suit la mémoire **Sobriété informationnelle** : layout minimal, cartes claires, pas de banner pédagogique.
 
-- Refactor du focus-bus.
-- Changements de la barre de recherche / `SearchResultCard`.
-- Modifications visuelles.
+## Vérification
+
+- `/admin/community` → onglet **Recherches** apparaît entre Activités et Affiliation marcheurs.
+- Les KPI 7 j collent au contenu actuel (`tonte`, `dendro`, `Hup`, `consoude`…).
+- Cliquer sur une ligne du flux ouvre la `route` dans un nouvel onglet.
+- Aucune régression visuelle sur les autres onglets.
+
+## Hors scope
+
+- Export CSV (peut être ajouté plus tard si besoin)
+- Graphique d'évolution temporelle (peut être ajouté en v2)
+- Action de suppression de logs
