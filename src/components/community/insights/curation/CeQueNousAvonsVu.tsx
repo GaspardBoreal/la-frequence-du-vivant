@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, Hand, Heart, Ear, Utensils, Sparkles } from 'lucide-react';
 import { useIsCurator } from '@/hooks/useExplorationCurations';
 import { chatPageContext } from '@/hooks/useChatPageContext';
+import { subscribeFocus, getLastFocus, type FocusDetail } from '@/lib/focusBus';
 import OeilCuration from './OeilCuration';
 import MainCuration from './MainCuration';
 import OreilleCuration from './OreilleCuration';
@@ -28,6 +29,25 @@ interface Props {
 const CeQueNousAvonsVu: React.FC<Props> = ({ explorationId, marcheEventId, onNavigateToMarche }) => {
   const [activeSense, setActiveSense] = useState<SenseKey>('oeil');
   const { data: isCurator } = useIsCurator(explorationId);
+
+  // Bascule automatique sur le bon sens lors d'un deep-link de recherche.
+  useEffect(() => {
+    const mapKindToSense = (kind: FocusDetail['kind']): SenseKey | null => {
+      switch (kind) {
+        case 'practice': return 'main';
+        case 'testimony': return 'coeur';
+        case 'species': return 'oeil';
+        default: return null;
+      }
+    };
+    const apply = (d: FocusDetail) => {
+      const next = mapKindToSense(d.kind);
+      if (next) setActiveSense(next);
+    };
+    const last = getLastFocus();
+    if (last) apply(last);
+    return subscribeFocus(apply);
+  }, []);
 
   // Publie au ChatBot le sens en cours pour enrichir le tabPath et les filtres
   React.useEffect(() => {
