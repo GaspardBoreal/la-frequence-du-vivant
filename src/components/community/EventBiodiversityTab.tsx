@@ -77,7 +77,7 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
   );
 };
 
-const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId, eventType, onNavigateToMarche }) => {
+const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId, eventType, onNavigateToMarche, initialSubTab, onSubTabConsumed }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('synthese');
   const [revealActive, setRevealActive] = useState(false);
   const [taxonsPeriod, setTaxonsPeriod] = useState<EvolutionPeriod>('all');
