@@ -8,6 +8,7 @@ export interface FocusDescriptor {
   id: string;
   marcheId?: string | null;
   tab?: string | null;
+  sub?: string | null;
   sensory?: string | null;
 }
 
@@ -41,6 +42,7 @@ export function useFocusFromUrl(): {
       id,
       marcheId: params.get('marcheId'),
       tab: params.get('tab'),
+      sub: params.get('sub'),
       sensory: params.get('sensory'),
     });
   }, [location.search]);
@@ -50,7 +52,7 @@ export function useFocusFromUrl(): {
     if (consumedRef.current === key) return;
     consumedRef.current = key;
     const params = new URLSearchParams(location.search);
-    ['focus', 'marcheId', 'tab', 'sensory'].forEach(k => params.delete(k));
+    ['focus', 'marcheId', 'tab', 'sub', 'sensory'].forEach(k => params.delete(k));
     const qs = params.toString();
     navigate(location.pathname + (qs ? `?${qs}` : ''), { replace: true });
   }, [location.pathname, location.search, navigate]);

@@ -13,6 +13,7 @@ const QuoteWall: React.FC<Props> = ({ items }) => {
       {items.map((t, i) => (
         <motion.div
           key={t.id}
+          data-focus-id={`testimony:${t.id}`}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.05, duration: 0.4 }}

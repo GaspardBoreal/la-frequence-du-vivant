@@ -119,6 +119,24 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     });
   };
 
+  // Auto-expand a practice card on focus (deep-link from global search)
+  useEffect(() => {
+    const handler = (d: { kind?: string; id?: string }) => {
+      if (d?.kind !== 'practice' || !d.id) return;
+      setExpandedIds(prev => {
+        if (prev.has(d.id!)) return prev;
+        const next = new Set(prev);
+        next.add(d.id!);
+        return next;
+      });
+    };
+    let unsub: (() => void) | undefined;
+    import('@/lib/focusBus').then(({ subscribeFocus }) => {
+      unsub = subscribeFocus(handler);
+    });
+    return () => { unsub?.(); };
+  }, []);
+
   const mediaIndex = useMemo(() => buildMediaIndex(allMedia), [allMedia]);
 
   // Upload direct depuis appareil (smartphone / tablette / PC) — réutilise le mur Convivialité
@@ -515,6 +533,7 @@ const MainCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
             return (
               <motion.article
                 key={entry.id}
+                data-focus-id={`practice:${entry.id}`}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: Math.min(idx, 7) * 0.04 }}

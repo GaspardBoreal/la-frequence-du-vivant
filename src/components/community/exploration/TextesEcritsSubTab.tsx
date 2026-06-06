@@ -186,6 +186,20 @@ const TextesEcritsSubTab: React.FC<TextesEcritsSubTabProps> = ({
     }
   }, [searchParams, orderedTextes]);
 
+  // Auto-open from global search (focus bus)
+  useEffect(() => {
+    const handler = (d: { kind?: string; id?: string }) => {
+      if (d?.kind !== 'text' || !d.id) return;
+      const idx = orderedTextes.findIndex(t => t.id === d.id);
+      if (idx >= 0) setSelectedIdx(idx);
+    };
+    let unsub: (() => void) | undefined;
+    import('@/lib/focusBus').then(({ subscribeFocus }) => {
+      unsub = subscribeFocus(handler);
+    });
+    return () => { unsub?.(); };
+  }, [orderedTextes]);
+
   const handleOpen = (idx: number) => {
     setSelectedIdx(idx);
     const t = orderedTextes[idx];
@@ -521,6 +535,7 @@ const CitationCard: React.FC<{
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: Math.min(index * 0.04, 0.6) }}
       onClick={onClick}
+      data-focus-id={`text:${texte.id}`}
       className={cn(
         'group relative w-full mb-3 break-inside-avoid text-left',
         'rounded-2xl overflow-hidden',

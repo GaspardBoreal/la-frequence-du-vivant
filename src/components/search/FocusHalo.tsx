@@ -23,10 +23,8 @@ export const FocusHalo: React.FC<Props> = ({ target, delay = 250, onSettled }) =
     if (!target) return;
     let cancelled = false;
 
-    // Broadcast — deep components can listen & open their drawer/modal.
-    const [kind, ...rest] = target.split(':');
-    const id = rest.join(':');
-    window.dispatchEvent(new CustomEvent('lfdv:focus', { detail: { kind, id, target } }));
+    // Note: parent (ExplorationMarcheurPage) already dispatches `lfdv:focus`
+    // with full descriptor (kind/id/sub/marcheId). We just handle scroll+halo.
 
     const tick = (attempt: number) => {
       if (cancelled) return;

@@ -82,6 +82,25 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const [taxonsCustomRange, setTaxonsCustomRange] = useState<{ from?: string; to?: string }>({});
   const [taxonsDateSource, setTaxonsDateSource] = useState<DateSource>('observation');
 
+  // Deep-link from global search: switch sub-tab based on focus bus.
+  React.useEffect(() => {
+    const handler = (d: { kind?: string; sub?: string | null }) => {
+      const allowed: SubTab[] = ['synthese', 'taxons', 'temoignages', 'textes', 'analyse'];
+      if (d?.sub && (allowed as string[]).includes(d.sub)) {
+        setActiveSubTab(d.sub as SubTab);
+        return;
+      }
+      if (d?.kind === 'species') setActiveSubTab('taxons');
+      else if (d?.kind === 'testimony') setActiveSubTab('temoignages');
+      else if (d?.kind === 'text') setActiveSubTab('textes');
+    };
+    let unsub: (() => void) | undefined;
+    import('@/lib/focusBus').then(({ subscribeFocus }) => {
+      unsub = subscribeFocus(handler);
+    });
+    return () => { unsub?.(); };
+  }, []);
+
   const collectionMutation = useTriggerBiodiversityCollection();
 
   // Fetch crew + community participants for contributor filter

@@ -83,18 +83,21 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     localStorage.setItem('species-explorer-view', mode);
   };
 
-  // Deep-link from global search: open the modal when a `lfdv:focus` event fires.
+  // Deep-link from global search: open the modal on focus event.
   React.useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { kind?: string; id?: string };
-      if (detail?.kind !== 'species' || !detail.id) return;
+    const handler = (d: { kind?: string; id?: string }) => {
+      if (d?.kind !== 'species' || !d.id) return;
       const match = species.find(
-        s => s.scientificName?.toLowerCase() === detail.id!.toLowerCase()
+        s => s.scientificName?.toLowerCase() === d.id!.toLowerCase()
       );
       if (match) setSelectedSpecies(match);
     };
-    window.addEventListener('lfdv:focus', handler as EventListener);
-    return () => window.removeEventListener('lfdv:focus', handler as EventListener);
+    // Use focusBus (replays a recent focus to late-mounted listeners)
+    let unsub: (() => void) | undefined;
+    import('@/lib/focusBus').then(({ subscribeFocus }) => {
+      unsub = subscribeFocus(handler);
+    });
+    return () => { unsub?.(); };
   }, [species]);
 
   // Batch translations (déclaré tôt car utilisé par le filtre search)
