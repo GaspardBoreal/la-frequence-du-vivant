@@ -535,6 +535,14 @@ const ContributionsSubTab: React.FC<{
         </div>
       </div>
 
+      {/* Le Seuil du Vivant — pédagogie iNat (apparaît seulement si des obs sont en chemin) */}
+      <EnCheminBanner
+        recognizedCount={allSpecies.length}
+        pendingCount={seuilData?.pending.length || 0}
+        isLoading={isSeuilLoading}
+        onOpen={() => setSeuilDrawerOpen(true)}
+      />
+
       {isEmpty ? (
         <div className="px-3 py-6 text-center">
           <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
@@ -565,6 +573,16 @@ const ContributionsSubTab: React.FC<{
         explorationMarcheIds={explorationMarcheIds}
         explorationEventIds={explorationEventIds}
         identifiedPhotoUrls={identifiedPhotoUrls}
+      />
+
+      <SeuilDuVivantDrawer
+        open={seuilDrawerOpen}
+        onOpenChange={setSeuilDrawerOpen}
+        marcheurPrenom={marcheur.prenom}
+        inatLogin={seuilData?.login || null}
+        recognizedCount={allSpecies.length}
+        pending={seuilData?.pending || []}
+        isLoading={isSeuilLoading}
       />
     </div>
 
