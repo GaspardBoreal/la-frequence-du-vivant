@@ -1,56 +1,99 @@
-## Diagnostic
-La fiche espèce ne s'ouvre pas malgré le bon onglet et le halo car le déclenchement de l'ouverture du drawer dépend du **bus de focus** (`focusBus.subscribeFocus`) consommé dans `SpeciesExplorer.tsx` — fragile pour 3 raisons :
+# Plan de correction
 
-1. **Fenêtre de replay courte (4 s).** Si `species[]` (BiodiversitySpecies transformés) arrive après cette fenêtre (RPC lent, première synchro snapshots), la subscribe ne replay plus rien → pas d'ouverture.
-2. **Souscription asynchrone (`import('@/lib/focusBus')`).** Le `dispatchFocus` (T0+120ms) peut tomber avant que la subscription `SpeciesExplorer` soit en place ; on dépend alors uniquement du replay, lui-même borné par le point 1.
-3. **Comparaison stricte.** `s.scientificName.toLowerCase() === d.id.toLowerCase()` rate dès qu'il y a un accent, un espace insécable, un caractère de casse atypique ou un suffixe d'autorité (« Catalpa bignonioides Walter »). Aucun fallback NFD ni match par préfixe.
+## Reproduction confirmée
+J’ai rejoué le parcours complet dans le preview :
+1. ouvrir la recherche sur l’événement
+2. taper `catalpa`
+3. ouvrir `Catalpa du sud`
+4. cliquer `ROQUE GAGEAC / Jardin`
 
-Conséquence : halo (DOM trouvé) ✅, drawer (state React) ❌.
+Résultat observé :
+- la navigation arrive bien sur le bon événement
+- l’onglet **Biodiversité** est actif
+- le sous-onglet **Taxons observés** est actif
+- la carte espèce **Catalpa du sud** reçoit bien le halo/focus
+- mais le **bandeau droit / drawer espèce** ne s’ouvre pas
 
-## Correctif proposé
-Découpler totalement l'ouverture du drawer du timing du bus, en faisant **descendre la cible focus comme prop persistante** depuis le parent qui orchestre l'onglet (déjà abonné au bus) jusqu'à `SpeciesExplorer`, qui consomme dès que ses données sont prêtes.
+## Cause racine
+Le flux actuel a deux vitesses différentes :
+- le **halo** réessaie assez longtemps pour retrouver la carte quand la grille finit de charger
+- le **drawer** consomme le focus trop tôt dans `SpeciesExplorer` avec un délai fixe court, avant que la liste d’espèces soit prête dans certains cas
 
-### 1) `EventBiodiversityTab.tsx` — gardien du focus
-- Étendre l'effet d'abonnement existant : en plus de basculer `activeSubTab = 'taxons'`, capturer `d.id` dans un state `pendingSpeciesFocus`.
-- Ce state n'a **pas de TTL** : il vit jusqu'à ce que `SpeciesExplorer` confirme l'ouverture.
-- Passer `pendingSpeciesFocus` + `onSpeciesFocusConsumed` en props à `<SpeciesExplorer …/>`.
+Donc :
+- le focus visuel survit
+- le focus fonctionnel d’ouverture de fiche est perdu
 
-### 2) `SpeciesExplorer.tsx` — consommation déterministe
-- Accepter les nouvelles props `focusSpeciesId?: string | null` et `onFocusConsumed?: () => void`.
-- Remplacer la subscription bus actuelle par un `useEffect([focusSpeciesId, species])` qui :
-  - sort si `!focusSpeciesId` ou `!species?.length`,
-  - normalise la cible et chaque `scientificName` via `NFD + lower + trim`,
-  - match exact NFD, sinon **fallback** par `startsWith` (gère les suffixes d'autorité), sinon par `commonName`/`commonNameFr`,
-  - si match → `setSelectedSpecies(match)` puis `onFocusConsumed?.()`,
-  - si pas de match alors que `species` est chargé non vide → tentative retardée de 600 ms (laisse arriver les traductions ou un délai de rerender), sinon `onFocusConsumed?.()` pour éviter un état figé.
-- Garder une `ref` d'idempotence pour ne pas réouvrir si l'utilisateur a déjà fermé le drawer.
+## Mise en oeuvre proposée
 
-### 3) `OeilCuration.tsx` — revert ciblé
-- Mon ajout précédent (subscription `focusBus` côté OeilCuration) n'était pas utile : OeilCuration n'est pas le rendu de **Biodiversité > Taxons observés** (c'est SpeciesExplorer). Le retirer pour ne pas dupliquer l'ouverture sur l'onglet « L'œil » de la curation et éviter des effets de bord.
+### 1. Faire du prop-driven la source de vérité pour l’ouverture de la fiche espèce
+Dans `EventBiodiversityTab` et `SpeciesExplorer`, conserver le `focusSpeciesId` tant que la correspondance espèce n’a pas réellement été trouvée et ouverte.
 
-### 4) `focusBus.ts` — durcissement secondaire
-- Pousser `RECENT_MS` de 4 000 → 15 000 ms : utile pour les autres consommateurs (témoignages, textes) avec données lentes. Aucun risque, c'est juste une fenêtre de rejeu.
+Objectif UX :
+- aucun timeout “d’abandon” court
+- pas de perte du focus si les données arrivent tard
+- ouverture exactement une fois
 
-## Pourquoi c'est robuste
-- **Aucune dépendance au timing** : le focus est mémorisé comme état React, pas un signal volatile.
-- **Aucune dépendance à la fenêtre du bus** : le parent (déjà monté avant SpeciesExplorer) capture, l'enfant consomme à son rythme.
-- **Match tolérant** : NFD + fallbacks couvrent variations d'écriture du nom scientifique et noms communs (FR / latin tronqué / autorité).
-- **Idempotent** : `onFocusConsumed` empêche la réouverture intempestive, l'utilisateur peut fermer le drawer sans qu'il se rouvre.
-- **Unique source de vérité** : `EventBiodiversityTab` orchestre `sub` + `species focus`, `SpeciesExplorer` se contente d'exécuter.
+### 2. Remplacer la consommation prématurée par un ack réel d’ouverture
+Dans `SpeciesExplorer` :
+- ne consommer le focus **que lorsque `selectedSpecies` est effectivement défini**
+- supprimer la logique actuelle qui “give up” après ~800 ms
+- garder une protection d’idempotence pour éviter les réouvertures parasites
 
-## UX/UI
-- Séquence perçue inchangée et fluide : T0 navigation → T+~200 ms halo émeraude → T+~400-500 ms drawer slide-in droite (animation native du modal). Sentiment de révélation guidée.
-- Si l'espèce n'est pas dans le pool (cas limite), le halo s'éteint normalement, aucun drawer fantôme.
+Effet attendu :
+- si la grille met 2 s à arriver, le drawer s’ouvre quand même dès que l’espèce est disponible
+
+### 3. Rendre la résolution d’espèce plus tolérante et stable
+Unifier le matching avec une normalisation robuste :
+- NFD + suppression des diacritiques
+- lowercase + trim
+- exact scientific name
+- fallback `startsWith` / authority suffix
+- fallback nom commun FR/EN si présent
+
+Et aligner ce matching avec le `data-focus-id` utilisé pour le halo, pour que le focus visuel et le focus fonctionnel parlent exactement de la même cible.
+
+### 4. Durcir le flux parent : focus conservé tant que l’enfant ne l’a pas confirmé
+Dans `EventBiodiversityTab` :
+- garder `pendingSpeciesFocus` tant que `SpeciesExplorer` n’a pas confirmé l’ouverture
+- ne jamais l’effacer sur simple attente ou premier render vide
+- ne l’effacer qu’après succès ou impossibilité certaine après chargement complet
+
+### 5. Fiabiliser l’entrée du flux depuis la recherche
+Dans `SearchResultCard` / `GlobalSearchOverlay` :
+- vérifier que tous les chemins de clic d’un résultat espèce portent le même contexte (`eventId`, `explorationId`, `marcheId`)
+- éviter qu’un CTA secondaire ouvre une fiche sans contexte alors que le clic principal ouvre la bonne occurrence
+
+Ce point n’est pas la cause directe du bug reproduit, mais il est nécessaire pour un comportement cohérent sur tout le flux de recherche.
+
+### 6. Réduire la dépendance au bus pour ce cas critique
+Conserver le bus pour les usages secondaires, mais faire en sorte que l’ouverture du drawer espèce repose d’abord sur le flux déterministe :
+`URL/search target -> ExplorationMarcheurPage -> EventBiodiversityTab -> SpeciesExplorer`
+
+Le bus devient un renfort, pas la mécanique principale.
 
 ## Fichiers concernés
-- `src/components/community/EventBiodiversityTab.tsx` (capture + prop drilling)
-- `src/components/biodiversity/SpeciesExplorer.tsx` (consommation déterministe, match tolérant)
-- `src/components/community/insights/curation/OeilCuration.tsx` (retirer la souscription espèce ajoutée précédemment)
-- `src/lib/focusBus.ts` (RECENT_MS → 15 s)
+- `src/components/biodiversity/SpeciesExplorer.tsx`
+- `src/components/community/EventBiodiversityTab.tsx`
+- `src/components/community/ExplorationMarcheurPage.tsx`
+- `src/components/search/SearchResultCard.tsx`
+- `src/components/search/GlobalSearchOverlay.tsx`
 
-## Validation
-1. Recherche `catalpa` → « Catalpa du sud » → contexte « ROQUE GAGEAC / Jardin » : onglet Biodiversité / Taxons, halo + **drawer ouvert**.
-2. Refaire avec « Buddleja de David ».
-3. Fermer le drawer, relancer une autre recherche d'espèce : drawer s'ouvre à nouveau sans clic.
-4. Recharger directement une URL avec `?focus=species:…&tab=biodiversite&sub=taxons` (sans passer par la recherche) : drawer s'ouvre.
-5. Cas où `species[]` arrive lentement (throttling réseau) : drawer s'ouvre dès que les données arrivent.
+## Validation prévue
+Je validerai dans le navigateur avec le parcours exact :
+- `catalpa` → `Catalpa du sud` → `ROQUE GAGEAC / Jardin`
+
+Critères de succès :
+- arrivée sur le bon événement
+- **Biodiversité > Taxons observés** actif
+- halo visible sur **Catalpa du sud**
+- **drawer droit ouvert automatiquement** sans clic supplémentaire
+- fermeture manuelle possible puis réouverture correcte via une nouvelle recherche
+- comportement stable même avec chargement lent
+
+## Détail technique
+- supprimer la consommation sur timeout court dans `SpeciesExplorer`
+- consommer uniquement après `setSelectedSpecies(match)`
+- garder le focus pending côté parent tant que `species[]` n’est pas exploitable
+- n’effacer le pending qu’après succès ou absence confirmée après chargement complet
+- harmoniser la normalisation de matching entre focus, halo et carte espèce
+- vérifier que les CTA secondaires de `SearchResultCard` n’échappent pas au contexte de la ligne sélectionnée

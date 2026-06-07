@@ -89,13 +89,34 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     localStorage.setItem('species-explorer-view', mode);
   };
 
+  // Batch translations (déclaré tôt car utilisé par le filtre search et le
+  // matching de focusSpeciesId via le nom FR).
+  const speciesForTranslation = useMemo(() =>
+    species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName })),
+    [species]
+  );
+  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
+  const translationMap = useMemo(() =>
+    new Map(translations?.map(t => [t.scientificName, t]) || []),
+    [translations]
+  );
+
   // Deep-link from global search: open the species detail drawer when a
   // focusSpeciesId is provided as a prop and the species list is loaded.
   // Tolerant matching (NFD + lower + trim, then startsWith fallback, then
-  // commonName) to survive minor name variations and authority suffixes.
+  // commonName/FR translation) to survive minor name variations, accents
+  // and authority suffixes.
+  //
+  // Robustesse : on ne « consomme » le focus qu'au moment où le drawer est
+  // réellement ouvert (setSelectedSpecies). Aucun timeout d'abandon : tant
+  // que la liste d'espèces n'est pas chargée ou que le match échoue, on
+  // ré-essaye à chaque render (cheap, idempotent via consumedFocusRef).
   const consumedFocusRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (!focusSpeciesId) return;
+    if (!focusSpeciesId) {
+      consumedFocusRef.current = null; // reset pour permettre une réouverture
+      return;
+    }
     if (consumedFocusRef.current === focusSpeciesId) return;
     if (!species || species.length === 0) return;
     const norm = (s?: string | null) =>
@@ -106,32 +127,19 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     if (!match) match = species.find(s => norm(s.scientificName).startsWith(target));
     if (!match) match = species.find(s => target.startsWith(norm(s.scientificName)));
     if (!match) match = species.find(s => norm((s as any).commonName) === target);
+    if (!match) match = species.find(s => {
+      const fr = translationMap.get(s.scientificName)?.commonName;
+      return fr && norm(fr) === target;
+    });
     if (match) {
       setSelectedSpecies(match);
       consumedFocusRef.current = focusSpeciesId;
       onFocusConsumed?.();
-      return;
     }
-    // No match yet — retry once after a short delay (translations/rerender),
-    // then give up so we never leave a pending focus stuck.
-    const t = setTimeout(() => {
-      consumedFocusRef.current = focusSpeciesId;
-      onFocusConsumed?.();
-    }, 800);
-    return () => clearTimeout(t);
-  }, [focusSpeciesId, species, onFocusConsumed]);
+    // Pas de match cette passe : on n'abandonne pas. L'effet se ré-exécutera
+    // dès que `species` ou `translationMap` changera (chargement async).
+  }, [focusSpeciesId, species, onFocusConsumed, translationMap]);
 
-
-  // Batch translations (déclaré tôt car utilisé par le filtre search)
-  const speciesForTranslation = useMemo(() =>
-    species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName })),
-    [species]
-  );
-  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
-  const translationMap = useMemo(() =>
-    new Map(translations?.map(t => [t.scientificName, t]) || []),
-    [translations]
-  );
 
   // Marcheur tags (private to current user)
   const allScientificNames = useMemo(

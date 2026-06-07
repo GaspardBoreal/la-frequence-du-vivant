@@ -45,6 +45,10 @@ interface EventBiodiversityTabProps {
   onNavigateToMarche?: (marcheId: string) => void;
   initialSubTab?: SubTab | null;
   onSubTabConsumed?: () => void;
+  /** Prop-drilled species focus from global search (deterministic, no bus race). */
+  pendingSpeciesFocus?: string | null;
+  /** Called once SpeciesExplorer has actually opened the species drawer. */
+  onSpeciesFocusConsumed?: () => void;
 }
 
 type SynthCategory = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
@@ -77,7 +81,11 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
   );
 };
 
-const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId, eventType, onNavigateToMarche, initialSubTab, onSubTabConsumed }) => {
+const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({
+  explorationId, marcheEventId, eventType, onNavigateToMarche,
+  initialSubTab, onSubTabConsumed,
+  pendingSpeciesFocus: propSpeciesFocus, onSpeciesFocusConsumed,
+}) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab ?? 'synthese');
 
   // Deep-link via prop : appliqué dès qu'une cible arrive (déterministe, pas de bus async)
@@ -92,11 +100,11 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const [taxonsCustomRange, setTaxonsCustomRange] = useState<{ from?: string; to?: string }>({});
   const [taxonsDateSource, setTaxonsDateSource] = useState<DateSource>('observation');
 
-  // Deep-link from global search: switch sub-tab + capture species focus.
-  // We keep the focus id in component state (no TTL) so SpeciesExplorer can
-  // consume it as soon as its `species` prop is populated — robust against
-  // slow data loads and the bus replay window.
-  const [pendingSpeciesFocus, setPendingSpeciesFocus] = useState<string | null>(null);
+  // Focus espèce : la prop (prop-drillée depuis ExplorationMarcheurPage) est la
+  // source de vérité déterministe. Le bus reste branché en renfort pour les
+  // cas secondaires (ex. émissions internes hors flux URL).
+  const [busSpeciesFocus, setBusSpeciesFocus] = useState<string | null>(null);
+  const effectiveSpeciesFocus = propSpeciesFocus ?? busSpeciesFocus;
   React.useEffect(() => {
     const handler = (d: { kind?: string; id?: string; sub?: string | null }) => {
       const allowed: SubTab[] = ['synthese', 'taxons', 'temoignages', 'textes', 'analyse'];
@@ -106,7 +114,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
       else if (d?.kind === 'testimony') setActiveSubTab('temoignages');
       else if (d?.kind === 'text') setActiveSubTab('textes');
       if (d?.kind === 'species' && d?.id) {
-        setPendingSpeciesFocus(d.id);
+        setBusSpeciesFocus(d.id);
       }
     };
     let unsub: (() => void) | undefined;
@@ -115,6 +123,12 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
     return () => { unsub?.(); };
   }, []);
+
+  const handleSpeciesFocusConsumed = React.useCallback(() => {
+    setBusSpeciesFocus(null);
+    onSpeciesFocusConsumed?.();
+  }, [onSpeciesFocusConsumed]);
+
 
 
   const collectionMutation = useTriggerBiodiversityCollection();
@@ -667,8 +681,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             onPeriodChange={setTaxonsPeriod}
             onCustomRangeChange={setTaxonsCustomRange}
             onDateSourceChange={setTaxonsDateSource}
-            focusSpeciesId={pendingSpeciesFocus}
-            onFocusConsumed={() => setPendingSpeciesFocus(null)}
+            focusSpeciesId={effectiveSpeciesFocus}
+            onFocusConsumed={handleSpeciesFocusConsumed}
           />
         )}
 

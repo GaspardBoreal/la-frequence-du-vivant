@@ -89,6 +89,9 @@ const ExplorationMarcheurPage: React.FC = () => {
   const { focus, consume } = useFocusFromUrl();
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
   const [pendingBiodiversitySub, setPendingBiodiversitySub] = useState<string | null>(null);
+  // Prop-drilled species focus from global search (deterministic, no bus race).
+  // Cleared by EventBiodiversityTab once the drawer is actually opened.
+  const [pendingSpeciesFocus, setPendingSpeciesFocus] = useState<string | null>(null);
   const [pendingApprendreSub, setPendingApprendreSub] = useState<'decouvertes' | 'apprendre-creer' | null>(null);
   const [pendingApprendreSensory, setPendingApprendreSensory] = useState<'oeil' | 'main' | 'oreille' | 'coeur' | 'palais' | null>(null);
 
@@ -273,6 +276,11 @@ const ExplorationMarcheurPage: React.FC = () => {
     }
     // 5. Cible halo
     setFocusTarget(`${focus.kind}:${focus.id}`);
+    // 5 bis. Focus espèce → prop-drillé jusqu'à SpeciesExplorer (déterministe,
+    // pas de race bus). Consommé par EventBiodiversityTab à l'ouverture réelle.
+    if (focus.kind === 'species') {
+      setPendingSpeciesFocus(focus.id);
+    }
     // 6. Diffuse le focus via le bus (halo + composants enfants secondaires)
     const broadcast = setTimeout(() => {
       dispatchFocus({
@@ -670,6 +678,8 @@ const ExplorationMarcheurPage: React.FC = () => {
                 eventType={marcheEvent?.event_type || null}
                 initialSubTab={pendingBiodiversitySub as any}
                 onSubTabConsumed={() => setPendingBiodiversitySub(null)}
+                pendingSpeciesFocus={pendingSpeciesFocus}
+                onSpeciesFocusConsumed={() => setPendingSpeciesFocus(null)}
                 onNavigateToMarche={(marcheId) => {
                   const stepIndex = explorationMarches?.findIndex(m => m.id === marcheId) ?? -1;
                   if (stepIndex !== -1) {
