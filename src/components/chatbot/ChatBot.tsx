@@ -63,7 +63,15 @@ export function ChatBot({
   edgeFunctionPath,
   assistantNameOverride,
   roleBadge = null,
+  hideFab = false,
 }: ChatBotProps) {
+  // Permet à un FAB externe (ex: MobileActionFab) d'ouvrir le chat
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener('frequence:open-chatbot', handler);
+    return () => window.removeEventListener('frequence:open-chatbot', handler);
+  }, []);
+
   // Si l'URL contient une entité et qu'aucune page n'en a posé d'explicite, on l'enregistre.
   useEffect(() => {
     if (urlEntity && !chatPageContext.getState().entity) {
