@@ -1,82 +1,137 @@
-# Fusion FAB Recherche + Chatbot (mobile uniquement)
+# Pédagogie « De l'observation à l'espèce » — rassurer & former les marcheurs
 
-## Constat
+## Principe directeur
 
-Sur mobile (`/marches-du-vivant/mon-espace` et autres routes communautaires), deux pastilles flottantes s'empilent en bas à droite :
+Ne **rien changer** au pipeline d'ingestion (qualité scientifique préservée), mais **rendre visible et désirable** le chemin entre « ce que je photographie » et « ce qui apparaît dans la marche ». Transformer un filtrage silencieux (frustrant) en un **rite de passage** valorisant la communauté iNaturalist.
 
-- **Loupe émeraude** — `GlobalSearchFab` (rendu dans `MarchesDuVivantMonEspace.tsx` avec `className="md:hidden"`, et aussi dans `ExplorationMarcheurPage.tsx`).
-- **Bulle de chat** — `ChatBot` (monté globalement via `CommunityChatBotMount`), uniquement visible pour **Admin / Ambassadeur / Sentinelle** (vérifié par `useCanUseContextualChat` + défense en profondeur côté edge `community-chat`).
+## Concept narratif : « Le Seuil du Vivant »
 
-Sur desktop, la recherche est déjà intégrée au header (`HeaderSearchTrigger`) → seul le chatbot flotte. **Aucune modification desktop.**
+Chaque observation traverse un seuil. Ce qui passe entre dans la mémoire collective de la marche. Ce qui attend est tout aussi précieux — c'est la matière vivante en cours d'identification.
 
-## Objectif
+Trois états poétiques affichés au marcheur :
 
-Sur mobile seulement, un **unique bouton flottant** « Action » qui :
+```
+   📸 Posée            🔍 En attente d'œil           🌿 Reconnue
+  (sur iNat)          (genre / informel)           (espèce validée
+                                                    → entre dans la marche)
+```
 
-- **Si l'utilisateur n'a PAS accès au chatbot** (visiteur, marcheur, éclaireur) → le bouton est strictement la loupe, comportement actuel inchangé (ouvre la recherche directement). Aucun indice de chatbot caché n'apparaît.
-- **Si l'utilisateur a accès au chatbot** (admin/ambassadeur/sentinelle) → le bouton est une pastille « duo » (icône composite Search + Sparkles) ; au tap, un mini-menu radial/arc élégant se déploie avec **deux actions** : « Rechercher » et « Compagnon du Vivant ».
+Aucune obs n'est « perdue » : elle est simplement à un autre stade de son chemin.
 
-## Design proposé
+## Proposition d'expérience
 
-Pastille unique, mêmes coordonnées que l'actuelle loupe (`fixed bottom-20 right-4 z-[150]`, 48px). Gradient émeraude → teal cohérent avec le système. Au repos, icône `Sparkles` superposée discrètement à la `Search` (badge à 3h, 10px, glow doux) pour signaler la double fonction sans bruit visuel.
+### 1. Panneau « Vos observations en chemin » (onglet Contributions du marcheur)
 
-Au tap (utilisateur autorisé) :
+Sous le bandeau actuel « 4 espèces identifiées », ajouter une **bande douce** non intrusive :
 
-- La pastille se transforme en `X` (rotation 90°, spring).
-- Un **arc de 2 boutons** se déploie vers le haut-gauche en stagger (90 ms entre items), chaque item est une pastille 44px glassmorphism (`bg-background/85 backdrop-blur-xl border-primary/20`) avec :
-  - icône colorée (Search = primary, MessageCircle = accent émeraude clair),
-  - libellé en pill latérale qui slide depuis la droite (`Rechercher` / `Compagnon`),
-  - micro-halo pulsé sur le Compagnon pour rappeler le caractère « vivant ».
-- Tap hors zone ou sur `X` → repli inverse.
-- Tap sur un item → action puis fermeture immédiate du menu.
+```
+┌─────────────────────────────────────────────────────────┐
+│  🌿 4 espèces reconnues  ·  ⏳ 7 en chemin sur iNat     │
+│  [Voir mes observations en cours d'identification →]    │
+└─────────────────────────────────────────────────────────┘
+```
 
-Animations Framer Motion (déjà utilisé partout) : `AnimatePresence` + `spring` léger (`stiffness 320, damping 24`), pas de dépendance externe. Respect des tokens HSL (aucune couleur en dur, on réutilise `from-emerald-500 to-teal-600` déjà présent dans `GlobalSearchFab`).
+Au clic → drawer pédagogique (voir §2). Le compteur « 7 en chemin » est calculé côté client en interrogeant **directement l'API iNat publique** (`user_login + lat/lng + radius`) **sans toucher au backfill** — c'est de la lecture éphémère, pas de l'ingestion.
 
-## Changements de code
+### 2. Drawer « Le Seuil du Vivant » (inspirant, non technique)
 
-### Nouveau : `src/components/mobile/MobileActionFab.tsx`
+Trois sections rythmées :
 
-Composant orchestrateur, utilisé uniquement en mobile (`md:hidden`). Props : `eventId?`, `marcheId?`, `scope?`. Logique :
+**a) Pourquoi ce seuil existe**
+> « Une espèce n'est jamais reconnue par une personne seule. Sur iNaturalist, c'est un collectif mondial qui confirme — botanistes, ornithologues, naturalistes amateurs. C'est ce qui rend chaque marche scientifiquement précieuse. »
 
-1. `useCanUseContextualChat()` → `canUse`, `isLoading`.
-2. Si `isLoading` → ne rien rendre (évite flash).
-3. Si `!canUse` → rend simplement `<GlobalSearchFab />` (réutilisé tel quel) → zéro régression pour les non-privilégiés.
-4. Sinon → rend la pastille fusionnée + son menu radial, et un `<GlobalSearchOverlay open={...} />` interne pour la recherche. Pour le chatbot, on déclenche son ouverture via un `CustomEvent('frequence:open-chatbot')` que `ChatBot` écoutera (voir ci-dessous) — cela évite de remonter l'état global ou de dupliquer `ChatBot`.
+Une mini-frise :
+```
+Vous postez → 1 naturaliste confirme → 2ème confirme
+            → Grade Recherche → Entre dans la marche
+```
 
-### Modif : `src/components/chatbot/ChatBot.tsx`
+**b) Vos 7 observations en attente**
+Liste sobre, chaque ligne = 1 obs iNat avec :
+- vignette photo
+- état actuel (« Genre identifié », « Sans taxon », « En attente d'avis »)
+- 1 action contextuelle :
+  - *Sans taxon* → « Demander une suggestion IA iNat » (lien deep-link `identify` iNat)
+  - *Genre* → « Préciser l'espèce » (lien identify)
+  - *Informel* → « Ajouter une seconde photo » (conseil)
 
-- Ajouter un `useEffect` qui écoute `window`-level `frequence:open-chatbot` et appelle l'`setIsOpen(true)` existant.
-- Ajouter une prop optionnelle (ou un flag interne) `hideFab?: boolean` ; si vrai, on ne rend pas le `DraggableFab` mais on garde le panneau et le listener. Sur mobile uniquement, `CommunityChatBotMount` passera `hideFab` quand on est sur les routes où la `MobileActionFab` prend le relais (toutes les routes communautaires + `/marches-du-vivant/mon-espace`).
+Aucun jugement, juste des **gestes activables** qui font progresser l'obs.
 
-Détection mobile dans `CommunityChatBotMount` via `useIsMobile()` → `hideFab={isMobile}`.
+**c) Comment aider les autres**
+> « Vous savez reconnaître une plante ? 30 sec sur iNat suffisent à faire passer le seuil à une obs d'un autre marcheur. »
 
-### Modif : `src/pages/MarchesDuVivantMonEspace.tsx`
+Bouton → liste des obs « en attente » de la marche, tous marcheurs confondus (drawer curateur seulement, ou ambassadeur+).
 
-- Remplacer `<GlobalSearchFab scope="global" className="md:hidden" />` par `<MobileActionFab scope="global" />` (qui gère lui-même son `md:hidden`).
+### 3. Micro-pédagogie contextuelle (badge tooltip)
 
-### Modif : `src/components/community/ExplorationMarcheurPage.tsx`
+Sur le badge onglet « Contributions 4 », ajouter au survol/long-press un tooltip court :
 
-- Remplacer le `<GlobalSearchFab ... />` mobile par `<MobileActionFab ... />` avec les mêmes props (`eventId`, `marcheId`, `scope`).
+> « 4 espèces reconnues par la communauté iNat. Vos autres obs sont en chemin — touchez ici pour les voir. »
 
-### Inchangé
+Zéro changement visuel par défaut — la pédagogie s'active **à la demande**.
 
-- `HeaderSearchTrigger` (desktop) ✅
-- `GlobalSearchOverlay` (réutilisé) ✅
-- `useCanUseContextualChat` + edge `community-chat` (défense en profondeur côté serveur) ✅
-- Toutes les autres routes (admin, Dordonia, etc.) — `DordoniaFloatingButton`, `EventsChatbotFab` non concernés.
+### 4. Onboarding « Première observation » (one-shot)
 
-## Validation des droits (rigueur demandée)
+À la **première fois** qu'un marcheur a un écart obs iNat > obs reconnues, une carte douce s'affiche une seule fois (puis `localStorage`), avec animation de seuil :
 
-| Cas | Côté client | Côté serveur |
-|---|---|---|
-| Visiteur non connecté | `canUse = false` → loupe seule, pas de trace de chatbot dans le DOM | `community-chat` rejette via `has_community_chat_access` |
-| Marcheur / Éclaireur | idem | idem |
-| Ambassadeur / Sentinelle / Admin | menu fusionné affiché | autorisé |
+```
+✨ Saviez-vous ?
+Vos photos vivent leur vie sur iNaturalist.
+Quand 2 naturalistes confirment, elles rejoignent la marche.
+C'est ce qui rend nos données fiables et publiables.
+[J'ai compris]  [Voir mes obs en chemin →]
+```
 
-Le `MobileActionFab` ne **jamais** rendre l'item « Compagnon » si `canUse=false` : pas d'item grisé, pas de toast « non autorisé » — c'est une absence pure. Cela évite toute fuite d'information sur la hiérarchie des rôles.
+### 5. Page « Le chemin du Vivant » (statique, /marches-du-vivant/seuil-du-vivant)
 
-## Hors-scope
+Une page éditoriale courte (mobile-first, scroll narratif) accessible depuis :
+- le drawer §2 (« en savoir plus »)
+- le hub Outils marcheur
+- les emails de bienvenue
 
-- Desktop (header inchangé, chatbot FAB inchangé).
-- Pages publiques sans chatbot (galerie publique non connectée) → comportement = loupe seule, identique à aujourd'hui.
-- Repositionnement / drag du nouveau FAB (on garde la position fixe actuelle de la loupe pour ne pas casser les habitudes).
+Contenu :
+- *Pourquoi la qualité avant la quantité*
+- *Comment iNat fonctionne* (Grade Recherche en 3 étapes)
+- *Le rôle du marcheur* (poster sans peur, l'identification viendra)
+- *Témoignage* d'un naturaliste iNat français (à recueillir plus tard)
+- *FAQ* : « Ma photo n'apparaît pas — est-elle perdue ? » / « Combien de temps pour validation ? » / « Puis-je aider ? »
+
+### 6. Notification douce de passage (optionnel, phase 2)
+
+Quand une obs « en chemin » passe Grade Recherche et entre dans la marche : push email/in-app :
+> « 🌿 Votre *Fatsia japonica* du 5 juin a franchi le Seuil. Elle rejoint la mémoire de la marche ISEG. »
+
+Nourrit la motivation. Techniquement : cron diff entre 2 backfills consécutifs.
+
+## Ce qui n'est PAS modifié
+
+- ❌ Pas de changement à `backfill-marcheur-inaturalist` (filtre `!sciName` conservé)
+- ❌ Pas d'insertion en `marcheur_observations` des obs non validées
+- ❌ Pas d'impact sur Fréquence, snapshots, compteurs espèces, export Pack Vivant
+- ❌ Pas de modif RLS ni de migration DB pour les §1-5
+
+## Détails techniques minimaux
+
+### Fichiers à créer / modifier
+- **Nouveau** `src/hooks/useMarcheurInatPending.ts` — appel direct `https://api.inaturalist.org/v1/observations?user_login=...&lat/lng/radius=...` côté client, cache React Query 10 min, **sans** persistance Supabase. Filtre côté client : obs absentes de `marcheur_observations.inaturalist_observation_id`.
+- **Nouveau** `src/components/community/exploration/marcheurs/SeuilDuVivantDrawer.tsx` — drawer §2 (réutilise `Sheet` shadcn).
+- **Nouveau** `src/components/community/exploration/marcheurs/EnCheminBanner.tsx` — bande §1.
+- **Modif** `MarcheursTab.tsx` (`ContributionsSubTab`) — insertion banner + branchement drawer.
+- **Modif** `MarcheursTab.tsx` — tooltip §3 sur le badge onglet.
+- **Nouveau** `src/components/community/onboarding/SeuilOnboardingCard.tsx` — carte §4 + clé `localStorage` `seuil-onboarding-seen-v1`.
+- **Nouvelle page** `src/pages/SeuilDuVivant.tsx` + route + lien dans Outils.
+- **Phase 2 (optionnel)** edge function `notify-seuil-crossing` (cron quotidien diff) + table `marcheur_seuil_notifications`.
+
+### Mesure d'impact (à ajouter au plan)
+Tracker (via `useActivityTracker` existant) :
+- ouverture drawer Seuil
+- clics « Préciser l'espèce » / « Demander suggestion »
+- vue page éditoriale
+
+But : valider que la pédagogie réduit la confusion sans pousser au sur-upload.
+
+## Mémoire à ajouter après implémentation
+`mem://features/community/seuil-du-vivant-pedagogy` — Concept « Seuil du Vivant » : on n'ingère que les obs validées iNat ; les obs en chemin sont montrées en lecture éphémère via API iNat directe, avec drawer pédagogique inspirant. Aucune mutation Supabase.
+
+## Recommandation
+Phase 1 = §1 + §2 + §3 (1 hook, 2 composants, 1 modif). Effet pédagogique immédiat, zéro risque backend. §4 + §5 + §6 ensuite si l'engagement le justifie.
