@@ -52,7 +52,10 @@ interface ChatBotProps {
   assistantNameOverride?: string;
   /** Badge rôle affiché dans le header (ex: "Ambassadeur") */
   roleBadge?: string | null;
+  /** Masque le FAB intégré (utile quand un FAB externe orchestre l'ouverture) */
+  hideFab?: boolean;
 }
+
 
 export function ChatBot({
   currentContext = 'dashboard',
