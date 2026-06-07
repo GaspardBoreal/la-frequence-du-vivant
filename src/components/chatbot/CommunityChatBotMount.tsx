@@ -162,9 +162,11 @@ function CommunityChatBotInner() {
       edgeFunctionPath="community-chat"
       assistantNameOverride="Compagnon du Vivant"
       roleBadge={roleBadge}
+      hideFab={isMobile}
     />
   );
 }
+
 
 export function CommunityChatBotMount() {
   const location = useLocation();
