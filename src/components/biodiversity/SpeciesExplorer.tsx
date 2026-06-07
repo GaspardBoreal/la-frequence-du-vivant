@@ -53,6 +53,10 @@ interface SpeciesExplorerProps {
   eventParticipants?: EventParticipant[];
   /** Full species pool (incl. family/iconicTaxon) for trophic classification in the species detail modal */
   trophicPool?: BiodiversitySpecies[];
+  /** Deep-link from global search: scientific name to auto-open in detail drawer */
+  focusSpeciesId?: string | null;
+  /** Called once the focus has been applied (or definitively missed) */
+  onFocusConsumed?: () => void;
 }
 
 const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
@@ -65,6 +69,8 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   allEventMarches,
   eventParticipants = [],
   trophicPool,
+  focusSpeciesId,
+  onFocusConsumed,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -83,22 +89,38 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     localStorage.setItem('species-explorer-view', mode);
   };
 
-  // Deep-link from global search: open the modal on focus event.
+  // Deep-link from global search: open the species detail drawer when a
+  // focusSpeciesId is provided as a prop and the species list is loaded.
+  // Tolerant matching (NFD + lower + trim, then startsWith fallback, then
+  // commonName) to survive minor name variations and authority suffixes.
+  const consumedFocusRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    const handler = (d: { kind?: string; id?: string }) => {
-      if (d?.kind !== 'species' || !d.id) return;
-      const match = species.find(
-        s => s.scientificName?.toLowerCase() === d.id!.toLowerCase()
-      );
-      if (match) setSelectedSpecies(match);
-    };
-    // Use focusBus (replays a recent focus to late-mounted listeners)
-    let unsub: (() => void) | undefined;
-    import('@/lib/focusBus').then(({ subscribeFocus }) => {
-      unsub = subscribeFocus(handler);
-    });
-    return () => { unsub?.(); };
-  }, [species]);
+    if (!focusSpeciesId) return;
+    if (consumedFocusRef.current === focusSpeciesId) return;
+    if (!species || species.length === 0) return;
+    const norm = (s?: string | null) =>
+      (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const target = norm(focusSpeciesId);
+    if (!target) return;
+    let match = species.find(s => norm(s.scientificName) === target);
+    if (!match) match = species.find(s => norm(s.scientificName).startsWith(target));
+    if (!match) match = species.find(s => target.startsWith(norm(s.scientificName)));
+    if (!match) match = species.find(s => norm((s as any).commonName) === target);
+    if (match) {
+      setSelectedSpecies(match);
+      consumedFocusRef.current = focusSpeciesId;
+      onFocusConsumed?.();
+      return;
+    }
+    // No match yet — retry once after a short delay (translations/rerender),
+    // then give up so we never leave a pending focus stuck.
+    const t = setTimeout(() => {
+      consumedFocusRef.current = focusSpeciesId;
+      onFocusConsumed?.();
+    }, 800);
+    return () => clearTimeout(t);
+  }, [focusSpeciesId, species, onFocusConsumed]);
+
 
   // Batch translations (déclaré tôt car utilisé par le filtre search)
   const speciesForTranslation = useMemo(() =>
