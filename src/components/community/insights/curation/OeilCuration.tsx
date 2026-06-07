@@ -194,28 +194,7 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
   // fiche de l'espèce ciblée (UX : "halo + drawer" en séquence guidée).
   const pendingFocusRef = React.useRef<string | null>(null);
   const consumedFocusRef = React.useRef<string | null>(null);
-
-  React.useEffect(() => {
-    const { subscribeFocus } = require('@/lib/focusBus') as typeof import('@/lib/focusBus');
-    const unsub = subscribeFocus((d) => {
-      if (d.kind !== 'species' || !d.id) return;
-      pendingFocusRef.current = d.id;
-      // Force la vue Pool si l'espèce n'est pas épinglée — la vignette ciblée
-      // doit être visible pour que le halo et l'ouverture soient cohérents.
-      const key = d.id.toLowerCase();
-      const pinned = pinnedSpecies.some(
-        s => (s.scientificName || '').toLowerCase() === key || s.key.toLowerCase() === key,
-      );
-      if (!pinned) {
-        setView('pool');
-        setHasUserPickedView(true);
-      }
-      // Tente une résolution immédiate (cas où pool déjà chargé)
-      tryOpenFromFocus();
-    });
-    return () => { unsub(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pinnedSpecies]);
+  const pinnedRef = React.useRef<Array<{ scientificName: string | null; key: string }>>([]);
 
   const tryOpenFromFocus = React.useCallback(() => {
     const target = pendingFocusRef.current;
@@ -229,7 +208,6 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       s => norm(s.scientificName) === t || norm(s.key) === t || norm(s.commonName) === t,
     );
     if (!match) return;
-    // Idempotence : ne pas réouvrir si déjà ouverte sur cette même espèce
     if (
       selectedSpecies &&
       norm(selectedSpecies.scientificName) === norm(match.scientificName)
@@ -247,10 +225,33 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     pendingFocusRef.current = null;
   }, [pool, translationMap, selectedSpecies]);
 
-  // Rejoue si le pool arrive après le focus, ou si translations finissent de charger.
+  React.useEffect(() => {
+    let unsub = () => {};
+    import('@/lib/focusBus').then(({ subscribeFocus }) => {
+      unsub = subscribeFocus((d) => {
+        if (d.kind !== 'species' || !d.id) return;
+        pendingFocusRef.current = d.id;
+        // Force la vue Pool si l'espèce n'est pas épinglée — la vignette ciblée
+        // doit être visible pour que le halo et l'ouverture soient cohérents.
+        const key = d.id.toLowerCase();
+        const pinned = pinnedRef.current.some(
+          s => (s.scientificName || '').toLowerCase() === key || s.key.toLowerCase() === key,
+        );
+        if (!pinned) {
+          setView('pool');
+          setHasUserPickedView(true);
+        }
+        tryOpenFromFocus();
+      });
+    });
+    return () => { unsub(); };
+  }, [tryOpenFromFocus]);
+
+  // Rejoue si le pool/translations arrivent après le focus.
   React.useEffect(() => {
     if (pendingFocusRef.current) tryOpenFromFocus();
   }, [pool, translationMap, tryOpenFromFocus]);
+
 
   const curationByKey = useMemo(() => {
     const m = new Map<string, ExplorationCuration>();
