@@ -45,6 +45,10 @@ interface EventBiodiversityTabProps {
   onNavigateToMarche?: (marcheId: string) => void;
   initialSubTab?: SubTab | null;
   onSubTabConsumed?: () => void;
+  /** Prop-drilled species focus from global search (deterministic, no bus race). */
+  pendingSpeciesFocus?: string | null;
+  /** Called once SpeciesExplorer has actually opened the species drawer. */
+  onSpeciesFocusConsumed?: () => void;
 }
 
 type SynthCategory = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
