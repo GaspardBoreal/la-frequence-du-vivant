@@ -94,9 +94,50 @@ interface Props {
 }
 
 export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => {
-  const [expanded, setExpanded] = useState(false);
   const meta = (result.meta ?? {}) as any;
   const FallbackIcon = KIND_FALLBACK_ICON[result.kind];
+
+  /* -------- species: dédupe + tri stable des contexts par ville (récence DESC) -------- */
+  const sortedContexts = React.useMemo<any[]>(() => {
+    if (result.kind !== 'species') return [];
+    const raw = (meta.recent_contexts ?? []) as any[];
+    // Regroupe par ville en conservant le contexte le plus récent par ville en tête de groupe
+    const byVille = new Map<string, any[]>();
+    for (const c of raw) {
+      const key = (c.ville || c.nom_marche || '—').toUpperCase();
+      if (!byVille.has(key)) byVille.set(key, []);
+      byVille.get(key)!.push(c);
+    }
+    // Tri des villes par date max DESC
+    const villes = [...byVille.entries()].sort((a, b) => {
+      const da = Math.max(...a[1].map(x => new Date(x.date || 0).getTime()));
+      const db = Math.max(...b[1].map(x => new Date(x.date || 0).getTime()));
+      return db - da;
+    });
+    return villes.flatMap(([, arr]) =>
+      arr.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+    );
+  }, [result.kind, meta.recent_contexts]);
+
+  // Villes distinctes (préserve l'ordre de sortedContexts)
+  const distinctVilles = React.useMemo<string[]>(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const c of sortedContexts) {
+      const v = c.ville || c.nom_marche;
+      if (!v) continue;
+      const k = v.toUpperCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(v);
+    }
+    return out;
+  }, [sortedContexts]);
+
+  const marchesCount = (meta.marches_count ?? 0) as number;
+  // Auto-expand quand l'espèce a >= 3 marches (pour révéler immédiatement les autres villes)
+  const shouldAutoExpand = result.kind === 'species' && marchesCount >= 3;
+  const [expanded, setExpanded] = useState(shouldAutoExpand);
 
   /* -------- thumbnail -------- */
   const thumbUrl: string | null =
@@ -109,20 +150,25 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
   const chips: React.ReactNode[] = [];
 
   if (result.kind === 'species') {
-    const first = (meta.recent_contexts ?? [])[0];
-    if (first?.nom_marche || first?.ville) {
+    const first = sortedContexts[0];
+    if (distinctVilles.length > 0) {
+      const shown = distinctVilles.slice(0, 3);
+      const extra = distinctVilles.length - shown.length;
       chips.push(
         <Chip key="loc" icon={MapPin}>
-          {first.nom_marche || first.ville}
+          <span className="truncate max-w-[18rem]">
+            {shown.join(' · ')}
+            {extra > 0 && <span className="text-emerald-300/80"> +{extra}</span>}
+          </span>
         </Chip>
       );
     }
     const rel = formatRelative(meta.last_observation_date);
     if (rel) chips.push(<Chip key="date" icon={Calendar}>{rel}</Chip>);
-    if ((meta.marches_count ?? 0) > 1) {
+    if (marchesCount > 1) {
       chips.push(
         <Chip key="count" icon={Leaf} tone="accent">
-          Vue {meta.occurrences}× · {meta.marches_count} marches
+          Vue {meta.occurrences}× · {marchesCount} marches
         </Chip>
       );
     } else if (first?.marcheur) {
