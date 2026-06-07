@@ -89,6 +89,9 @@ const ExplorationMarcheurPage: React.FC = () => {
   const { focus, consume } = useFocusFromUrl();
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
   const [pendingBiodiversitySub, setPendingBiodiversitySub] = useState<string | null>(null);
+  // Prop-drilled species focus from global search (deterministic, no bus race).
+  // Cleared by EventBiodiversityTab once the drawer is actually opened.
+  const [pendingSpeciesFocus, setPendingSpeciesFocus] = useState<string | null>(null);
   const [pendingApprendreSub, setPendingApprendreSub] = useState<'decouvertes' | 'apprendre-creer' | null>(null);
   const [pendingApprendreSensory, setPendingApprendreSensory] = useState<'oeil' | 'main' | 'oreille' | 'coeur' | 'palais' | null>(null);
 
