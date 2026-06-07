@@ -82,6 +82,8 @@ function useMarcheEventIdFromSlug(slugOrId: string | undefined): string | null {
 function CommunityChatBotInner() {
   const location = useLocation();
   const { role } = useCanUseContextualChat();
+  const isMobile = useIsMobile();
+
 
   // Extraction de slugs des routes connues
   const explorationMatch =
