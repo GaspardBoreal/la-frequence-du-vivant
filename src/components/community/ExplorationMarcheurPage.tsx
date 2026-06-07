@@ -684,12 +684,12 @@ const ExplorationMarcheurPage: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
-      <GlobalSearchFab
+      <MobileActionFab
         eventId={marcheEventId || null}
         marcheId={activeMarcheId || null}
         scope="global"
-        className="md:hidden"
       />
+
       <FocusHalo target={focusTarget} delay={400} onSettled={() => setFocusTarget(null)} />
     </div>
     </SpeciesPhotoModeProvider>
