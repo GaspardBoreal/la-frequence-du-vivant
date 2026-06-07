@@ -21,7 +21,7 @@ export interface FocusDetail {
   ts: number;
 }
 
-const RECENT_MS = 4_000;
+const RECENT_MS = 15_000;
 let last: FocusDetail | null = null;
 const listeners = new Set<(d: FocusDetail) => void>();
 
