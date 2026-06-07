@@ -89,6 +89,18 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     localStorage.setItem('species-explorer-view', mode);
   };
 
+  // Batch translations (déclaré tôt car utilisé par le filtre search et le
+  // matching de focusSpeciesId via le nom FR).
+  const speciesForTranslation = useMemo(() =>
+    species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName })),
+    [species]
+  );
+  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
+  const translationMap = useMemo(() =>
+    new Map(translations?.map(t => [t.scientificName, t]) || []),
+    [translations]
+  );
+
   // Deep-link from global search: open the species detail drawer when a
   // focusSpeciesId is provided as a prop and the species list is loaded.
   // Tolerant matching (NFD + lower + trim, then startsWith fallback, then
@@ -99,7 +111,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   // réellement ouvert (setSelectedSpecies). Aucun timeout d'abandon : tant
   // que la liste d'espèces n'est pas chargée ou que le match échoue, on
   // ré-essaye à chaque render (cheap, idempotent via consumedFocusRef).
-  // Un éventuel give-up sur absence définitive est piloté côté parent.
   const consumedFocusRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (!focusSpeciesId) {
@@ -129,17 +140,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     // dès que `species` ou `translationMap` changera (chargement async).
   }, [focusSpeciesId, species, onFocusConsumed, translationMap]);
 
-
-  // Batch translations (déclaré tôt car utilisé par le filtre search)
-  const speciesForTranslation = useMemo(() =>
-    species.map(s => ({ scientificName: s.scientificName, commonName: s.commonName })),
-    [species]
-  );
-  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
-  const translationMap = useMemo(() =>
-    new Map(translations?.map(t => [t.scientificName, t]) || []),
-    [translations]
-  );
 
   // Marcheur tags (private to current user)
   const allScientificNames = useMemo(
