@@ -332,19 +332,22 @@ export function ChatBot({
   return (
     <>
       {/* Floating button */}
-      <DraggableFab id="chatbot-global" size={56} zIndex={1200} hidden={isOpen}>
-        <Button
-          onClick={() => setIsOpen(true)}
-          aria-label={`Ouvrir ${chatConfig.assistantName}`}
-          className="h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 transition-all"
-        >
-          <MessageCircle className="h-6 w-6" />
-        </Button>
-        <span className="absolute -top-1 -right-1 flex h-4 w-4 pointer-events-none">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
-          <span className="relative inline-flex h-4 w-4 rounded-full bg-secondary" />
-        </span>
-      </DraggableFab>
+      {!hideFab && (
+        <DraggableFab id="chatbot-global" size={56} zIndex={1200} hidden={isOpen}>
+          <Button
+            onClick={() => setIsOpen(true)}
+            aria-label={`Ouvrir ${chatConfig.assistantName}`}
+            className="h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 transition-all"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </Button>
+          <span className="absolute -top-1 -right-1 flex h-4 w-4 pointer-events-none">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
+            <span className="relative inline-flex h-4 w-4 rounded-full bg-secondary" />
+          </span>
+        </DraggableFab>
+      )}
+
 
       {/* Overlay */}
       <AnimatePresence>
