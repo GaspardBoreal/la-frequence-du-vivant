@@ -723,6 +723,8 @@ interface TaxonsSubTabProps {
   onPeriodChange: (p: EvolutionPeriod) => void;
   onCustomRangeChange: (r: { from?: string; to?: string }) => void;
   onDateSourceChange: (s: DateSource) => void;
+  focusSpeciesId?: string | null;
+  onFocusConsumed?: () => void;
 }
 
 const TaxonsSubTab: React.FC<TaxonsSubTabProps> = ({
