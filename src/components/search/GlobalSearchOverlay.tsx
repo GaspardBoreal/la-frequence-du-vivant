@@ -20,6 +20,63 @@ const KIND_META: Record<SearchKind, { label: string; icon: React.ComponentType<a
 
 const KIND_ORDER: SearchKind[] = ['species', 'practice', 'text', 'testimony', 'marcheur', 'event'];
 
+const FOCUSABLE_KINDS = new Set<SearchKind>(['species', 'testimony', 'text', 'practice', 'event']);
+
+/**
+ * Canonical URL builder for a search result click.
+ *
+ * Source of truth for *where* a click lands. The destination page
+ * (ExplorationMarcheurPage) is the source of truth for *what* shows up.
+ *
+ * For focusable kinds, we DO NOT trust the querystring that may already be
+ * baked into `result.route` by the SQL `search_global`. We rebuild the QS
+ * from scratch so that `tab`, `sub`, `focus` and `marcheId` are deterministic
+ * and a per-context click (e.g. species → "ROQUE GAGEAC / Jardin") never
+ * inherits the species' default exploration's params.
+ */
+function buildSearchTarget(
+  r: SearchResult,
+  opts?: { marcheId?: string | null; explorationId?: string | null; eventId?: string | null }
+): string | null {
+  if (!r.route) return null;
+
+  const [basePath] = r.route.split('?');
+  const params = new URLSearchParams();
+
+  // 1) Focus + tab + sub (deterministic mapping per kind)
+  if (FOCUSABLE_KINDS.has(r.kind) && r.id) {
+    params.set('focus', `${r.kind}:${r.id}`);
+    const tab =
+      r.kind === 'species' || r.kind === 'testimony' ? 'biodiversite' :
+      r.kind === 'practice' ? 'apprendre' :
+      r.kind === 'text' ? 'marches' :
+      r.kind === 'event' ? 'carte' : null;
+    if (tab) params.set('tab', tab);
+    const sub =
+      r.kind === 'species' ? 'taxons' :
+      r.kind === 'testimony' ? 'temoignages' :
+      r.kind === 'text' ? 'textes' : null;
+    if (sub) params.set('sub', sub);
+  }
+
+  // 2) Per-occurrence routing
+  let path = basePath;
+  if (opts?.eventId) {
+    path = `/marches-du-vivant/mon-espace/exploration/event-${opts.eventId}`;
+    if (opts.marcheId) params.set('marcheId', opts.marcheId);
+  } else if (opts?.explorationId) {
+    path = `/marches-du-vivant/mon-espace/exploration/${opts.explorationId}`;
+    if (opts.marcheId) params.set('marcheId', opts.marcheId);
+  } else if (opts?.marcheId) {
+    params.set('marcheId', opts.marcheId);
+  }
+
+  // 3) Cache-buster so React Router re-runs effects when same path re-clicked
+  params.set('t', String(Date.now()));
+
+  return `${path}?${params.toString()}`;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
