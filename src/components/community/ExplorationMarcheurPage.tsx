@@ -210,8 +210,17 @@ const ExplorationMarcheurPage: React.FC = () => {
   const marcheEventId = marcheEvent?.id || '';
 
   // ─── Téléportation depuis la recherche : applique tab + step + halo ───
+  // Robustesse : on attend que les prérequis soient prêts AVANT de consommer
+  // l'URL, sinon un focus avec marcheId pourrait ne jamais sélectionner la
+  // bonne étape (explorationMarches arrive en différé).
   useEffect(() => {
     if (!focus) return;
+
+    // Prérequis : si une marche est ciblée, on attend que la liste soit chargée.
+    const needsMarches = !!focus.marcheId;
+    const marchesReady = !needsMarches || (explorationMarches !== undefined);
+    if (!marchesReady) return;
+
     // 1. Onglet global
     const allowedGlobal: GlobalTab[] = ['carte', 'marcheurs', 'marches', 'biodiversite', 'apprendre'];
     if (focus.tab && (allowedGlobal as string[]).includes(focus.tab)) {
@@ -273,8 +282,9 @@ const ExplorationMarcheurPage: React.FC = () => {
         marcheId: focus.marcheId,
       });
     }, 120);
-    // Consume URL once the tab change is queued.
-    const t = setTimeout(() => consume(), 50);
+    // Consume URL only after we've actually applied the focus — laisse aux
+    // setState le temps de prendre effet avant de stripper les params.
+    const t = setTimeout(() => consume(), 80);
     return () => { clearTimeout(t); clearTimeout(broadcast); };
   }, [focus, explorationMarches, consume]);
 

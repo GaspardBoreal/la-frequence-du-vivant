@@ -20,6 +20,63 @@ const KIND_META: Record<SearchKind, { label: string; icon: React.ComponentType<a
 
 const KIND_ORDER: SearchKind[] = ['species', 'practice', 'text', 'testimony', 'marcheur', 'event'];
 
+const FOCUSABLE_KINDS = new Set<SearchKind>(['species', 'testimony', 'text', 'practice', 'event']);
+
+/**
+ * Canonical URL builder for a search result click.
+ *
+ * Source of truth for *where* a click lands. The destination page
+ * (ExplorationMarcheurPage) is the source of truth for *what* shows up.
+ *
+ * For focusable kinds, we DO NOT trust the querystring that may already be
+ * baked into `result.route` by the SQL `search_global`. We rebuild the QS
+ * from scratch so that `tab`, `sub`, `focus` and `marcheId` are deterministic
+ * and a per-context click (e.g. species → "ROQUE GAGEAC / Jardin") never
+ * inherits the species' default exploration's params.
+ */
+function buildSearchTarget(
+  r: SearchResult,
+  opts?: { marcheId?: string | null; explorationId?: string | null; eventId?: string | null }
+): string | null {
+  if (!r.route) return null;
+
+  const [basePath] = r.route.split('?');
+  const params = new URLSearchParams();
+
+  // 1) Focus + tab + sub (deterministic mapping per kind)
+  if (FOCUSABLE_KINDS.has(r.kind) && r.id) {
+    params.set('focus', `${r.kind}:${r.id}`);
+    const tab =
+      r.kind === 'species' || r.kind === 'testimony' ? 'biodiversite' :
+      r.kind === 'practice' ? 'apprendre' :
+      r.kind === 'text' ? 'marches' :
+      r.kind === 'event' ? 'carte' : null;
+    if (tab) params.set('tab', tab);
+    const sub =
+      r.kind === 'species' ? 'taxons' :
+      r.kind === 'testimony' ? 'temoignages' :
+      r.kind === 'text' ? 'textes' : null;
+    if (sub) params.set('sub', sub);
+  }
+
+  // 2) Per-occurrence routing
+  let path = basePath;
+  if (opts?.eventId) {
+    path = `/marches-du-vivant/mon-espace/exploration/event-${opts.eventId}`;
+    if (opts.marcheId) params.set('marcheId', opts.marcheId);
+  } else if (opts?.explorationId) {
+    path = `/marches-du-vivant/mon-espace/exploration/${opts.explorationId}`;
+    if (opts.marcheId) params.set('marcheId', opts.marcheId);
+  } else if (opts?.marcheId) {
+    params.set('marcheId', opts.marcheId);
+  }
+
+  // 3) Cache-buster so React Router re-runs effects when same path re-clicked
+  params.set('t', String(Date.now()));
+
+  return `${path}?${params.toString()}`;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -113,52 +170,8 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
     onClose();
     if (!r.route) return;
 
-    let target = r.route;
-    const [basePath, baseQs = ''] = target.split('?');
-    const params = new URLSearchParams(baseQs);
-
-    // Propagation du focus halo (téléportation visuelle vers la fiche)
-    // ExplorationMarcheurPage lit ?focus=<kind>:<id>&tab=&sub=&marcheId= et
-    // bascule onglet + sous-onglet + déclenche le halo émeraude.
-    const FOCUSABLE = new Set<SearchKind>(['species', 'testimony', 'text', 'practice', 'event']);
-    if (FOCUSABLE.has(r.kind) && r.id) {
-      params.set('focus', `${r.kind}:${r.id}`);
-      if (!params.has('tab')) {
-        const defaultTab =
-          r.kind === 'species' || r.kind === 'testimony' ? 'biodiversite' :
-          r.kind === 'practice' ? 'apprendre' :
-          r.kind === 'text' ? 'marches' :
-          r.kind === 'event' ? 'carte' : null;
-        if (defaultTab) params.set('tab', defaultTab);
-      }
-      if (!params.has('sub')) {
-        const defaultSub =
-          r.kind === 'species' ? 'taxons' :
-          r.kind === 'testimony' ? 'temoignages' :
-          r.kind === 'text' ? 'textes' : null;
-        if (defaultSub) params.set('sub', defaultSub);
-      }
-    }
-
-    // Per-occurrence routing: rebuild path so we land on the correct event /
-    // exploration, not on the species' default (most-recent) exploration.
-    if (opts?.eventId) {
-      if (opts.marcheId) params.set('marcheId', opts.marcheId);
-      params.set('t', String(Date.now()));
-      target = `/marches-du-vivant/mon-espace/exploration/event-${opts.eventId}?${params.toString()}`;
-    } else if (opts?.explorationId) {
-      if (opts.marcheId) params.set('marcheId', opts.marcheId);
-      params.set('t', String(Date.now()));
-      target = `/marches-du-vivant/mon-espace/exploration/${opts.explorationId}?${params.toString()}`;
-    } else if (opts?.marcheId) {
-      params.set('marcheId', opts.marcheId);
-      params.set('t', String(Date.now()));
-      target = `${basePath}?${params.toString()}`;
-    } else {
-      params.set('t', String(Date.now()));
-      target = `${basePath}?${params.toString()}`;
-    }
-    navigate(target);
+    const target = buildSearchTarget(r, opts);
+    if (target) navigate(target);
   };
 
 
