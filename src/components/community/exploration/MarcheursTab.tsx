@@ -432,7 +432,8 @@ const ContributionsSubTab: React.FC<{
   explorationEventIds: string[];
   resolvedUserId: string | null;
   aliases?: string[];
-}> = ({ marcheur, explorationId, explorationMarcheIds, explorationEventIds, resolvedUserId, aliases = [] }) => {
+  inatAccount?: MarcheurInatAccount | null;
+}> = ({ marcheur, explorationId, explorationMarcheIds, explorationEventIds, resolvedUserId, aliases = [], inatAccount = null }) => {
   const [onlyOwn, setOnlyOwn] = useState(false);
   const [inatDrawerOpen, setInatDrawerOpen] = useState(false);
   const [seuilDrawerOpen, setSeuilDrawerOpen] = useState(false);
@@ -447,11 +448,14 @@ const ContributionsSubTab: React.FC<{
     explorationId,
   });
 
-  const { data: seuilData, isLoading: isSeuilLoading } = useMarcheurInatPending({
+  const { data: seuilData, isLoading: isSeuilLoading, hasInatLogin, inatLogin } = useMarcheurInatPending({
     aliases,
     explorationMarcheIds,
     crewId,
+    inatLoginOverride: inatAccount?.login || null,
   });
+
+
 
   const allSpecies = data?.species || [];
   const ownUploaded = data?.ownUploadedSciNames || new Set<string>();
