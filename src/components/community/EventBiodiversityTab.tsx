@@ -667,8 +667,11 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             onPeriodChange={setTaxonsPeriod}
             onCustomRangeChange={setTaxonsCustomRange}
             onDateSourceChange={setTaxonsDateSource}
+            focusSpeciesId={pendingSpeciesFocus}
+            onFocusConsumed={() => setPendingSpeciesFocus(null)}
           />
         )}
+
 
 
         {/* TÉMOIGNAGES */}
