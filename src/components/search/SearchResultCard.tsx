@@ -220,7 +220,7 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
       : result.subtitle;
 
   const hasExpand =
-    (result.kind === 'species' && (meta.recent_contexts ?? []).length > 0) ||
+    (result.kind === 'species' && sortedContexts.length > 0) ||
     ((result.kind === 'text' || result.kind === 'testimony') && meta.excerpt);
 
   return (
@@ -252,14 +252,22 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
           onClick={hasExpand ? () => setExpanded(e => !e) : () => onOpen()}
           className="flex-1 min-w-0 text-left"
         >
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <div className="text-sm text-emerald-50 font-medium truncate">{titleNode}</div>
-            {hasExpand && (
+            {result.kind === 'species' && marchesCount > 1 ? (
+              <span className={cn(
+                'inline-flex items-center gap-1 text-[0.68rem] px-1.5 py-0.5 rounded-full',
+                'bg-emerald-400/15 ring-1 ring-emerald-400/40 text-emerald-100 shrink-0'
+              )}>
+                <ChevronDown className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')} />
+                {expanded ? 'Replier' : `Voir les ${marchesCount} marches`}
+              </span>
+            ) : hasExpand ? (
               <ChevronDown className={cn(
                 'w-3.5 h-3.5 text-emerald-300/60 transition-transform shrink-0',
                 expanded && 'rotate-180'
               )} />
-            )}
+            ) : null}
           </div>
           {subtitleNode && (
             <div className="text-xs text-emerald-100/50 truncate italic mt-0.5">
@@ -292,7 +300,7 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
             className="overflow-hidden"
           >
             <div className="px-3 pb-3 pt-1 space-y-2 border-t border-white/5">
-              {result.kind === 'species' && (meta.recent_contexts ?? []).map((c: any, i: number) => (
+              {result.kind === 'species' && sortedContexts.map((c: any, i: number) => (
                 <button
                   key={i}
                   type="button"
