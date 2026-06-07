@@ -58,7 +58,7 @@ export function useMarcheurInatPending(params: {
   const login = inatLoginOverride || inatProfile?.login || null;
 
 
-  return useQuery({
+  const query = useQuery({
     queryKey: [
       'marcheur-inat-pending',
       login,
@@ -184,4 +184,12 @@ export function useMarcheurInatPending(params: {
       };
     },
   });
+
+  return {
+    ...query,
+    hasInatLogin: !!login,
+    inatLogin: login,
+    inatProfileResolving: !inatLoginOverride && profileLoading,
+  };
 }
+
