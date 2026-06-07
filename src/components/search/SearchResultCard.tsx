@@ -261,8 +261,16 @@ export const SearchResultCard: React.FC<Props> = ({ result, query, onOpen }) => 
                   className="w-full flex items-center justify-between gap-2 text-xs px-2 py-2 rounded-lg bg-white/[0.03] hover:bg-emerald-500/15 ring-1 ring-white/5 hover:ring-emerald-400/40 text-left transition group/row"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="text-emerald-100/90 truncate">
-                      {c.nom_marche || c.ville || '—'}
+                    <div className="text-emerald-100/90 truncate flex items-center gap-1.5">
+                      <span className="truncate">{c.nom_marche || c.ville || '—'}</span>
+                      {c.source === 'citizen' && (
+                        <span
+                          title="Observation citoyenne iNaturalist"
+                          className="shrink-0 text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-200 ring-1 ring-cyan-400/30"
+                        >
+                          iNat
+                        </span>
+                      )}
                     </div>
                     <div className="text-emerald-100/40 truncate">
                       {[formatRelative(c.date), c.marcheur, `${c.count} obs`, c.event_title].filter(Boolean).join(' · ')}
