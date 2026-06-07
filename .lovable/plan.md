@@ -1,57 +1,82 @@
-# Onglet « Recherches » dans `/admin/community`
+# Fusion FAB Recherche + Chatbot (mobile uniquement)
 
-Ajouter un nouvel onglet **Recherches** entre **Activités** et **Affiliation marcheurs** pour consulter et analyser la table `search_logs` (alimentée par la RPC `log_search`).
+## Constat
 
-## Emplacement
+Sur mobile (`/marches-du-vivant/mon-espace` et autres routes communautaires), deux pastilles flottantes s'empilent en bas à droite :
 
-`src/pages/CommunityProfilesAdmin.tsx` — insertion d'un `TabsTrigger value="recherches"` après « Activités » et avant « Affiliation marcheurs », plus un `TabsContent` correspondant.
+- **Loupe émeraude** — `GlobalSearchFab` (rendu dans `MarchesDuVivantMonEspace.tsx` avec `className="md:hidden"`, et aussi dans `ExplorationMarcheurPage.tsx`).
+- **Bulle de chat** — `ChatBot` (monté globalement via `CommunityChatBotMount`), uniquement visible pour **Admin / Ambassadeur / Sentinelle** (vérifié par `useCanUseContextualChat` + défense en profondeur côté edge `community-chat`).
 
-## Composant
+Sur desktop, la recherche est déjà intégrée au header (`HeaderSearchTrigger`) → seul le chatbot flotte. **Aucune modification desktop.**
 
-Nouveau fichier `src/components/admin/community/RecherchesPanel.tsx` (cohérent avec `ProfilsPanel.tsx`, `ActivityDashboard`, etc.).
+## Objectif
 
-### Données affichées (depuis `search_logs`)
+Sur mobile seulement, un **unique bouton flottant** « Action » qui :
 
-1. **Cartes KPI** (7 derniers jours vs 30 jours) :
-   - Total recherches
-   - Recherches uniques (DISTINCT `query` normalisé lower+unaccent)
-   - Marcheurs actifs (DISTINCT `user_id`)
-   - Taux de clic (`clicked_kind IS NOT NULL` / total)
-   - Recherches « 0 résultat » (% et nombre)
+- **Si l'utilisateur n'a PAS accès au chatbot** (visiteur, marcheur, éclaireur) → le bouton est strictement la loupe, comportement actuel inchangé (ouvre la recherche directement). Aucun indice de chatbot caché n'apparaît.
+- **Si l'utilisateur a accès au chatbot** (admin/ambassadeur/sentinelle) → le bouton est une pastille « duo » (icône composite Search + Sparkles) ; au tap, un mini-menu radial/arc élégant se déploie avec **deux actions** : « Rechercher » et « Compagnon du Vivant ».
 
-2. **Top requêtes** (table triable) : query normalisée, occurrences, résultats moyens, taux de clic, dernière occurrence.
+## Design proposé
 
-3. **Requêtes infructueuses** (`results_count = 0`) : liste à fort signal produit — opportunités de contenu manquant ou d'amélioration du `search_global`.
+Pastille unique, mêmes coordonnées que l'actuelle loupe (`fixed bottom-20 right-4 z-[150]`, 48px). Gradient émeraude → teal cohérent avec le système. Au repos, icône `Sparkles` superposée discrètement à la `Search` (badge à 3h, 10px, glow doux) pour signaler la double fonction sans bruit visuel.
 
-4. **Répartition par `clicked_kind`** : species / practice / testimony / text / marcheur / event (barres horizontales simples).
+Au tap (utilisateur autorisé) :
 
-5. **Répartition par `scope`** : global / event / admin.
+- La pastille se transforme en `X` (rotation 90°, spring).
+- Un **arc de 2 boutons** se déploie vers le haut-gauche en stagger (90 ms entre items), chaque item est une pastille 44px glassmorphism (`bg-background/85 backdrop-blur-xl border-primary/20`) avec :
+  - icône colorée (Search = primary, MessageCircle = accent émeraude clair),
+  - libellé en pill latérale qui slide depuis la droite (`Rechercher` / `Compagnon`),
+  - micro-halo pulsé sur le Compagnon pour rappeler le caractère « vivant ».
+- Tap hors zone ou sur `X` → repli inverse.
+- Tap sur un item → action puis fermeture immédiate du menu.
 
-6. **Flux temps réel** (50 dernières recherches) : `created_at`, `prenom nom`, `query`, `results_count`, `clicked_kind`, `route` (lien cliquable interne).
+Animations Framer Motion (déjà utilisé partout) : `AnimatePresence` + `spring` léger (`stiffness 320, damping 24`), pas de dépendance externe. Respect des tokens HSL (aucune couleur en dur, on réutilise `from-emerald-500 to-teal-600` déjà présent dans `GlobalSearchFab`).
 
-### Filtres globaux du panel
+## Changements de code
 
-- Période : 24 h / 7 j / 30 j / 90 j (par défaut 7 j)
-- Scope : tous / global / event / admin
-- Recherche texte (filtre client sur `query`)
+### Nouveau : `src/components/mobile/MobileActionFab.tsx`
 
-## Détails techniques
+Composant orchestrateur, utilisé uniquement en mobile (`md:hidden`). Props : `eventId?`, `marcheId?`, `scope?`. Logique :
 
-- **Pas de nouvelle RPC nécessaire** : `search_logs` est déjà accessible côté admin via les policies existantes (à vérifier — si lecture restreinte, créer une RPC `get_search_logs_admin(p_from, p_to, p_scope)` `SECURITY DEFINER` gardée par `has_role(auth.uid(),'admin')`). Cf. mémoire « Edge function auth ».
-- Hook dédié `src/hooks/useSearchLogs.ts` (React Query, `staleTime: 60_000`).
-- Normalisation des queries (lower + trim + `unaccent` côté client pour le top) pour regrouper « Tonte », « tonte », « tonté ».
-- Pagination simple côté client (top 50 / flux 50). Pas d'export demandé pour l'instant.
-- Suit la mémoire **Sobriété informationnelle** : layout minimal, cartes claires, pas de banner pédagogique.
+1. `useCanUseContextualChat()` → `canUse`, `isLoading`.
+2. Si `isLoading` → ne rien rendre (évite flash).
+3. Si `!canUse` → rend simplement `<GlobalSearchFab />` (réutilisé tel quel) → zéro régression pour les non-privilégiés.
+4. Sinon → rend la pastille fusionnée + son menu radial, et un `<GlobalSearchOverlay open={...} />` interne pour la recherche. Pour le chatbot, on déclenche son ouverture via un `CustomEvent('frequence:open-chatbot')` que `ChatBot` écoutera (voir ci-dessous) — cela évite de remonter l'état global ou de dupliquer `ChatBot`.
 
-## Vérification
+### Modif : `src/components/chatbot/ChatBot.tsx`
 
-- `/admin/community` → onglet **Recherches** apparaît entre Activités et Affiliation marcheurs.
-- Les KPI 7 j collent au contenu actuel (`tonte`, `dendro`, `Hup`, `consoude`…).
-- Cliquer sur une ligne du flux ouvre la `route` dans un nouvel onglet.
-- Aucune régression visuelle sur les autres onglets.
+- Ajouter un `useEffect` qui écoute `window`-level `frequence:open-chatbot` et appelle l'`setIsOpen(true)` existant.
+- Ajouter une prop optionnelle (ou un flag interne) `hideFab?: boolean` ; si vrai, on ne rend pas le `DraggableFab` mais on garde le panneau et le listener. Sur mobile uniquement, `CommunityChatBotMount` passera `hideFab` quand on est sur les routes où la `MobileActionFab` prend le relais (toutes les routes communautaires + `/marches-du-vivant/mon-espace`).
 
-## Hors scope
+Détection mobile dans `CommunityChatBotMount` via `useIsMobile()` → `hideFab={isMobile}`.
 
-- Export CSV (peut être ajouté plus tard si besoin)
-- Graphique d'évolution temporelle (peut être ajouté en v2)
-- Action de suppression de logs
+### Modif : `src/pages/MarchesDuVivantMonEspace.tsx`
+
+- Remplacer `<GlobalSearchFab scope="global" className="md:hidden" />` par `<MobileActionFab scope="global" />` (qui gère lui-même son `md:hidden`).
+
+### Modif : `src/components/community/ExplorationMarcheurPage.tsx`
+
+- Remplacer le `<GlobalSearchFab ... />` mobile par `<MobileActionFab ... />` avec les mêmes props (`eventId`, `marcheId`, `scope`).
+
+### Inchangé
+
+- `HeaderSearchTrigger` (desktop) ✅
+- `GlobalSearchOverlay` (réutilisé) ✅
+- `useCanUseContextualChat` + edge `community-chat` (défense en profondeur côté serveur) ✅
+- Toutes les autres routes (admin, Dordonia, etc.) — `DordoniaFloatingButton`, `EventsChatbotFab` non concernés.
+
+## Validation des droits (rigueur demandée)
+
+| Cas | Côté client | Côté serveur |
+|---|---|---|
+| Visiteur non connecté | `canUse = false` → loupe seule, pas de trace de chatbot dans le DOM | `community-chat` rejette via `has_community_chat_access` |
+| Marcheur / Éclaireur | idem | idem |
+| Ambassadeur / Sentinelle / Admin | menu fusionné affiché | autorisé |
+
+Le `MobileActionFab` ne **jamais** rendre l'item « Compagnon » si `canUse=false` : pas d'item grisé, pas de toast « non autorisé » — c'est une absence pure. Cela évite toute fuite d'information sur la hiérarchie des rôles.
+
+## Hors-scope
+
+- Desktop (header inchangé, chatbot FAB inchangé).
+- Pages publiques sans chatbot (galerie publique non connectée) → comportement = loupe seule, identique à aujourd'hui.
+- Repositionnement / drag du nouveau FAB (on garde la position fixe actuelle de la loupe pour ne pas casser les habitudes).

@@ -5,7 +5,9 @@ import type { ChatContext } from './chatConfig';
 import { chatPageContext, type ChatEntity, type CompactSpecies } from '@/hooks/useChatPageContext';
 import { useCanUseContextualChat } from '@/hooks/useCanUseContextualChat';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+
 
 /** Max d'espèces poussées dans le contexte IA lorsqu'attachées (frugalité). */
 const SPECIES_POOL_CAP = 200;
@@ -80,6 +82,8 @@ function useMarcheEventIdFromSlug(slugOrId: string | undefined): string | null {
 function CommunityChatBotInner() {
   const location = useLocation();
   const { role } = useCanUseContextualChat();
+  const isMobile = useIsMobile();
+
 
   // Extraction de slugs des routes connues
   const explorationMatch =
@@ -158,9 +162,11 @@ function CommunityChatBotInner() {
       edgeFunctionPath="community-chat"
       assistantNameOverride="Compagnon du Vivant"
       roleBadge={roleBadge}
+      hideFab={isMobile}
     />
   );
 }
+
 
 export function CommunityChatBotMount() {
   const location = useLocation();

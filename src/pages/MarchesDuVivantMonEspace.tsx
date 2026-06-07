@@ -21,6 +21,8 @@ import CarnetTab from '@/components/community/tabs/CarnetTab';
 import OutilsTab from '@/components/community/tabs/OutilsTab';
 import PlaceholderTab from '@/components/community/tabs/PlaceholderTab';
 import GlobalSearchFab from '@/components/search/GlobalSearchFab';
+import MobileActionFab from '@/components/mobile/MobileActionFab';
+
 
 const MarchesDuVivantMonEspace = () => {
   const navigate = useNavigate();
@@ -273,7 +275,7 @@ const MarchesDuVivantMonEspace = () => {
             </motion.div>
           </AnimatePresence>
         </main>
-        <GlobalSearchFab scope="global" className="md:hidden" />
+        <MobileActionFab scope="global" />
       </div>
     </>
   );

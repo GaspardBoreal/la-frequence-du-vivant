@@ -24,6 +24,8 @@ import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
 import { Loader2 } from 'lucide-react';
 import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 import GlobalSearchFab from '@/components/search/GlobalSearchFab';
+import MobileActionFab from '@/components/mobile/MobileActionFab';
+
 import HeaderSearchTrigger from '@/components/search/HeaderSearchTrigger';
 import { useFocusFromUrl } from '@/hooks/useFocusFromUrl';
 import FocusHalo from '@/components/search/FocusHalo';
@@ -684,12 +686,12 @@ const ExplorationMarcheurPage: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
-      <GlobalSearchFab
+      <MobileActionFab
         eventId={marcheEventId || null}
         marcheId={activeMarcheId || null}
         scope="global"
-        className="md:hidden"
       />
+
       <FocusHalo target={focusTarget} delay={400} onSettled={() => setFocusTarget(null)} />
     </div>
     </SpeciesPhotoModeProvider>
