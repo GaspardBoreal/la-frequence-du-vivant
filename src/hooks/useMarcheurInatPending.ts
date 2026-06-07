@@ -46,12 +46,19 @@ export function useMarcheurInatPending(params: {
   aliases: string[];
   explorationMarcheIds: string[];
   crewId: string | null;
+  /** Compte iNat déjà rattaché manuellement (prioritaire sur la résolution par alias) */
+  inatLoginOverride?: string | null;
 }) {
-  const { aliases, explorationMarcheIds, crewId } = params;
-  const { data: inatProfile } = useMarcheurInatProfile(aliases, explorationMarcheIds);
-  const login = inatProfile?.login || null;
+  const { aliases, explorationMarcheIds, crewId, inatLoginOverride } = params;
+  // Si un login iNat est déjà déclaré (table marcheurs_inat_accounts), on l'utilise directement.
+  const { data: inatProfile, isLoading: profileLoading } = useMarcheurInatProfile(
+    inatLoginOverride ? [] : aliases,
+    inatLoginOverride ? [] : explorationMarcheIds,
+  );
+  const login = inatLoginOverride || inatProfile?.login || null;
 
-  return useQuery({
+
+  const query = useQuery({
     queryKey: [
       'marcheur-inat-pending',
       login,
@@ -177,4 +184,12 @@ export function useMarcheurInatPending(params: {
       };
     },
   });
+
+  return {
+    ...query,
+    hasInatLogin: !!login,
+    inatLogin: login,
+    inatProfileResolving: !inatLoginOverride && profileLoading,
+  };
 }
+

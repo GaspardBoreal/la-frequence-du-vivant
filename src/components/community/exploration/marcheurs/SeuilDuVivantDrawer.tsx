@@ -135,7 +135,20 @@ export const SeuilDuVivantDrawer: React.FC<Props> = ({
             </div>
           )}
 
-          {!isLoading && pending.length === 0 && (
+          {!isLoading && !inatLogin && (
+            <div className="text-center py-8 px-4">
+              <Sparkles className="w-8 h-8 text-emerald-500/50 mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground">
+                Vos observations vivent sur iNaturalist
+              </p>
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                Si vous avez un compte iNat, indiquez-le à un curateur ou dans votre profil —
+                vos obs en chemin apparaîtront automatiquement ici, et celles validées rejoindront la marche.
+              </p>
+            </div>
+          )}
+
+          {!isLoading && inatLogin && pending.length === 0 && (
             <div className="text-center py-8 px-4">
               <Leaf className="w-8 h-8 text-emerald-500/40 mx-auto mb-3" />
               <p className="text-sm font-medium text-foreground">Toutes vos obs ont franchi le seuil ✨</p>

@@ -432,7 +432,8 @@ const ContributionsSubTab: React.FC<{
   explorationEventIds: string[];
   resolvedUserId: string | null;
   aliases?: string[];
-}> = ({ marcheur, explorationId, explorationMarcheIds, explorationEventIds, resolvedUserId, aliases = [] }) => {
+  inatAccount?: MarcheurInatAccount | null;
+}> = ({ marcheur, explorationId, explorationMarcheIds, explorationEventIds, resolvedUserId, aliases = [], inatAccount = null }) => {
   const [onlyOwn, setOnlyOwn] = useState(false);
   const [inatDrawerOpen, setInatDrawerOpen] = useState(false);
   const [seuilDrawerOpen, setSeuilDrawerOpen] = useState(false);
@@ -447,11 +448,14 @@ const ContributionsSubTab: React.FC<{
     explorationId,
   });
 
-  const { data: seuilData, isLoading: isSeuilLoading } = useMarcheurInatPending({
+  const { data: seuilData, isLoading: isSeuilLoading, hasInatLogin, inatLogin } = useMarcheurInatPending({
     aliases,
     explorationMarcheIds,
     crewId,
+    inatLoginOverride: inatAccount?.login || null,
   });
+
+
 
   const allSpecies = data?.species || [];
   const ownUploaded = data?.ownUploadedSciNames || new Set<string>();
@@ -535,10 +539,11 @@ const ContributionsSubTab: React.FC<{
         </div>
       </div>
 
-      {/* Le Seuil du Vivant — pédagogie iNat (apparaît seulement si des obs sont en chemin) */}
+      {/* Le Seuil du Vivant — pédagogie iNat (toujours visible) */}
       <EnCheminBanner
         recognizedCount={allSpecies.length}
         pendingCount={seuilData?.pending.length || 0}
+        hasInatLogin={hasInatLogin}
         isLoading={isSeuilLoading}
         onOpen={() => setSeuilDrawerOpen(true)}
       />
@@ -579,7 +584,7 @@ const ContributionsSubTab: React.FC<{
         open={seuilDrawerOpen}
         onOpenChange={setSeuilDrawerOpen}
         marcheurPrenom={marcheur.prenom}
-        inatLogin={seuilData?.login || null}
+        inatLogin={inatLogin}
         recognizedCount={allSpecies.length}
         pending={seuilData?.pending || []}
         isLoading={isSeuilLoading}
@@ -1355,7 +1360,7 @@ const MarcheurCard: React.FC<{
 
               {activeSubTab === 'contributions' && (
                 <motion.div key="contribs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} explorationEventIds={explorationEventIds} resolvedUserId={resolvedUserId} aliases={aliases} />
+                  <ContributionsSubTab marcheur={marcheur} explorationId={explorationId} explorationMarcheIds={explorationMarcheIds} explorationEventIds={explorationEventIds} resolvedUserId={resolvedUserId} aliases={aliases} inatAccount={inatAccount} />
                 </motion.div>
               )}
 
