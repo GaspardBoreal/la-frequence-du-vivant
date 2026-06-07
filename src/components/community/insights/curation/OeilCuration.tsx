@@ -269,6 +269,10 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
       }),
     [pool, curationByKey]
   );
+  React.useEffect(() => {
+    pinnedRef.current = pinnedSpecies.map(s => ({ scientificName: s.scientificName, key: s.key }));
+  }, [pinnedSpecies]);
+
 
   const aiSuggestions = useMemo(
     () =>
