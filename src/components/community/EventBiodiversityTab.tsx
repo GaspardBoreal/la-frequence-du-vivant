@@ -92,17 +92,22 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const [taxonsCustomRange, setTaxonsCustomRange] = useState<{ from?: string; to?: string }>({});
   const [taxonsDateSource, setTaxonsDateSource] = useState<DateSource>('observation');
 
-  // Deep-link from global search: switch sub-tab based on focus bus.
+  // Deep-link from global search: switch sub-tab + capture species focus.
+  // We keep the focus id in component state (no TTL) so SpeciesExplorer can
+  // consume it as soon as its `species` prop is populated — robust against
+  // slow data loads and the bus replay window.
+  const [pendingSpeciesFocus, setPendingSpeciesFocus] = useState<string | null>(null);
   React.useEffect(() => {
-    const handler = (d: { kind?: string; sub?: string | null }) => {
+    const handler = (d: { kind?: string; id?: string; sub?: string | null }) => {
       const allowed: SubTab[] = ['synthese', 'taxons', 'temoignages', 'textes', 'analyse'];
       if (d?.sub && (allowed as string[]).includes(d.sub)) {
         setActiveSubTab(d.sub as SubTab);
-        return;
-      }
-      if (d?.kind === 'species') setActiveSubTab('taxons');
+      } else if (d?.kind === 'species') setActiveSubTab('taxons');
       else if (d?.kind === 'testimony') setActiveSubTab('temoignages');
       else if (d?.kind === 'text') setActiveSubTab('textes');
+      if (d?.kind === 'species' && d?.id) {
+        setPendingSpeciesFocus(d.id);
+      }
     };
     let unsub: (() => void) | undefined;
     import('@/lib/focusBus').then(({ subscribeFocus }) => {
@@ -110,6 +115,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     });
     return () => { unsub?.(); };
   }, []);
+
 
   const collectionMutation = useTriggerBiodiversityCollection();
 
