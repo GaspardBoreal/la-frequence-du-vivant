@@ -276,6 +276,11 @@ const ExplorationMarcheurPage: React.FC = () => {
     }
     // 5. Cible halo
     setFocusTarget(`${focus.kind}:${focus.id}`);
+    // 5 bis. Focus espèce → prop-drillé jusqu'à SpeciesExplorer (déterministe,
+    // pas de race bus). Consommé par EventBiodiversityTab à l'ouverture réelle.
+    if (focus.kind === 'species') {
+      setPendingSpeciesFocus(focus.id);
+    }
     // 6. Diffuse le focus via le bus (halo + composants enfants secondaires)
     const broadcast = setTimeout(() => {
       dispatchFocus({
