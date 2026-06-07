@@ -53,6 +53,10 @@ interface SpeciesExplorerProps {
   eventParticipants?: EventParticipant[];
   /** Full species pool (incl. family/iconicTaxon) for trophic classification in the species detail modal */
   trophicPool?: BiodiversitySpecies[];
+  /** Deep-link from global search: scientific name to auto-open in detail drawer */
+  focusSpeciesId?: string | null;
+  /** Called once the focus has been applied (or definitively missed) */
+  onFocusConsumed?: () => void;
 }
 
 const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
@@ -65,6 +69,8 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   allEventMarches,
   eventParticipants = [],
   trophicPool,
+  focusSpeciesId,
+  onFocusConsumed,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
