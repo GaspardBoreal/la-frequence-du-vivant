@@ -539,10 +539,11 @@ const ContributionsSubTab: React.FC<{
         </div>
       </div>
 
-      {/* Le Seuil du Vivant — pédagogie iNat (apparaît seulement si des obs sont en chemin) */}
+      {/* Le Seuil du Vivant — pédagogie iNat (toujours visible) */}
       <EnCheminBanner
         recognizedCount={allSpecies.length}
         pendingCount={seuilData?.pending.length || 0}
+        hasInatLogin={hasInatLogin}
         isLoading={isSeuilLoading}
         onOpen={() => setSeuilDrawerOpen(true)}
       />
@@ -583,7 +584,7 @@ const ContributionsSubTab: React.FC<{
         open={seuilDrawerOpen}
         onOpenChange={setSeuilDrawerOpen}
         marcheurPrenom={marcheur.prenom}
-        inatLogin={seuilData?.login || null}
+        inatLogin={inatLogin}
         recognizedCount={allSpecies.length}
         pending={seuilData?.pending || []}
         isLoading={isSeuilLoading}
