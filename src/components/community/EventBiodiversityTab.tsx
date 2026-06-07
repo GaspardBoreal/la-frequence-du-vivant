@@ -732,6 +732,7 @@ const TaxonsSubTab: React.FC<TaxonsSubTabProps> = ({
   explorationId, onNavigateToMarche,
   period, customRange, dateSource,
   onPeriodChange, onCustomRangeChange, onDateSourceChange,
+  focusSpeciesId, onFocusConsumed,
 }) => {
   const speciesFiltered = useSpeciesFilteredByPeriod(allSpeciesWithFrNames, {
     period, customRange, dateSource,
@@ -768,6 +769,8 @@ const TaxonsSubTab: React.FC<TaxonsSubTabProps> = ({
         allEventMarches={allEventMarchesData}
         eventParticipants={eventParticipants}
         trophicPool={allSpeciesWithFrNames}
+        focusSpeciesId={focusSpeciesId}
+        onFocusConsumed={onFocusConsumed}
       />
     </motion.div>
   );
