@@ -54,6 +54,9 @@ import { useMarcheursInatAccounts, type MarcheurInatAccount } from '@/hooks/useM
 import { useMarcheurAttributedSpecies } from '@/hooks/useMarcheurAttributedSpecies';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 import InatUploadPrepDrawer from './InatUploadPrepDrawer';
+import { useMarcheurInatPending } from '@/hooks/useMarcheurInatPending';
+import { EnCheminBanner } from './marcheurs/EnCheminBanner';
+import { SeuilDuVivantDrawer } from './marcheurs/SeuilDuVivantDrawer';
 
 interface MarcheursTabProps {
   explorationId?: string;
@@ -432,6 +435,7 @@ const ContributionsSubTab: React.FC<{
 }> = ({ marcheur, explorationId, explorationMarcheIds, explorationEventIds, resolvedUserId, aliases = [] }) => {
   const [onlyOwn, setOnlyOwn] = useState(false);
   const [inatDrawerOpen, setInatDrawerOpen] = useState(false);
+  const [seuilDrawerOpen, setSeuilDrawerOpen] = useState(false);
   const { data: isCurator } = useIsCurator(explorationId);
   const crewId = marcheur.crewId || (marcheur.source === 'crew' ? marcheur.id : null);
 
@@ -441,6 +445,12 @@ const ContributionsSubTab: React.FC<{
     aliases,
     explorationMarcheIds,
     explorationId,
+  });
+
+  const { data: seuilData, isLoading: isSeuilLoading } = useMarcheurInatPending({
+    aliases,
+    explorationMarcheIds,
+    crewId,
   });
 
   const allSpecies = data?.species || [];
