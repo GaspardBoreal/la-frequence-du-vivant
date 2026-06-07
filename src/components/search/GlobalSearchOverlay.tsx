@@ -117,6 +117,29 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
     const [basePath, baseQs = ''] = target.split('?');
     const params = new URLSearchParams(baseQs);
 
+    // Propagation du focus halo (téléportation visuelle vers la fiche)
+    // ExplorationMarcheurPage lit ?focus=<kind>:<id>&tab=&sub=&marcheId= et
+    // bascule onglet + sous-onglet + déclenche le halo émeraude.
+    const FOCUSABLE = new Set<SearchKind>(['species', 'testimony', 'text', 'practice', 'event']);
+    if (FOCUSABLE.has(r.kind) && r.id) {
+      params.set('focus', `${r.kind}:${r.id}`);
+      if (!params.has('tab')) {
+        const defaultTab =
+          r.kind === 'species' || r.kind === 'testimony' ? 'biodiversite' :
+          r.kind === 'practice' ? 'apprendre' :
+          r.kind === 'text' ? 'marches' :
+          r.kind === 'event' ? 'carte' : null;
+        if (defaultTab) params.set('tab', defaultTab);
+      }
+      if (!params.has('sub')) {
+        const defaultSub =
+          r.kind === 'species' ? 'taxons' :
+          r.kind === 'testimony' ? 'temoignages' :
+          r.kind === 'text' ? 'textes' : null;
+        if (defaultSub) params.set('sub', defaultSub);
+      }
+    }
+
     // Per-occurrence routing: rebuild path so we land on the correct event /
     // exploration, not on the species' default (most-recent) exploration.
     if (opts?.eventId) {
@@ -137,6 +160,7 @@ export const GlobalSearchOverlay: React.FC<Props> = ({ open, onClose, eventId, m
     }
     navigate(target);
   };
+
 
 
   if (!open) return null;
