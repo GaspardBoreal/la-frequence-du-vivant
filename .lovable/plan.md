@@ -1,63 +1,83 @@
-## Le bug
+## Objectif
+Garantir que tout clic sur un résultat d’espèce — y compris un contexte précis comme « ROQUE GAGEAC / Jardin » — ouvre toujours la bonne exploration/le bon événement sur **Biodiversité > Taxons observés**, avec la **bonne marche sélectionnée** et le **focus halo sur la fiche espèce**.
 
-Quand tu cliques sur « ROQUE GAGEAC / Jardin » dans le drawer "Catalpa du sud", `GlobalSearchOverlay.handleResultClick` construit bien l'URL de l'événement (`/exploration/event-<id>?marcheId=…`) mais **n'ajoute jamais** les paramètres `focus=species:<scientificName>`, `tab=biodiversite`, ni `sub=taxons`.
+## Diagnostic
+Le flux actuel est fragile à deux endroits :
 
-Or toute la mécanique de téléportation côté `ExplorationMarcheurPage` (lignes 213-279) est déjà câblée :
-- `useFocusFromUrl()` lit `?focus=<kind>:<id>&tab=&sub=&marcheId=`
-- Si `focus.kind === 'species'` → bascule sur l'onglet `biodiversite`, sous-onglet `taxons`, et déclenche le halo via `setFocusTarget('species:'+id)` + `dispatchFocus(...)`
-- `FocusHalo` retrouve `[data-focus-id="species:Catalpa bignonioides"]` rendu par `SpeciesExplorer.tsx:378`, scroll-into-view puis pulse émeraude.
+1. **Émetteur de navigation trop permissif**
+   - `src/components/search/GlobalSearchOverlay.tsx`
+   - Le clic reconstruit la destination à partir de `result.route`, puis ne force `tab/sub/focus` que partiellement.
+   - La logique dépend donc à la fois du SQL (`search_global`) et de l’overlay React pour définir la destination finale.
 
-Sans `focus=…` dans l'URL, on tombe sur l'onglet par défaut (`carte`) et aucun halo ne s'allume. C'est exactement ce que montre la copie 3.
+2. **Consommation du deep-link trop tôt**
+   - `src/components/community/ExplorationMarcheurPage.tsx`
+   - Les paramètres `focus/marcheId/tab/sub` sont consommés très vite, même si l’exploration résolue ou la liste des marches n’est pas encore prête.
+   - Résultat possible : application partielle du deep-link, puis impossibilité de rejouer correctement la sélection de marche / sous-onglet.
 
-J'ai vérifié que `result.id` pour une espèce vaut le scientificName (`Catalpa bignonioides`), ce qui matche bien le `data-focus-id` cible. Aucune transformation supplémentaire n'est nécessaire.
+## Correctif proposé
+### 1) Canonicaliser la navigation de recherche
+Dans `src/components/search/GlobalSearchOverlay.tsx` :
+- Extraire un builder unique du type `buildSearchTarget(result, opts)`.
+- **Ne plus faire confiance au querystring déjà présent dans `result.route` pour les résultats focusables.**
+- Pour `species`, construire systématiquement une URL canonique :
+  - `focus=species:<id>`
+  - `tab=biodiversite`
+  - `sub=taxons`
+  - `marcheId=<marche cliquée>` si le contexte en fournit une
+  - route prioritaire vers `event-<eventId>` si disponible, sinon exploration ciblée
+- Même principe pour `testimony`, `text`, `practice`, `event` avec leur mapping dédié.
 
-## Correctif robuste (un seul fichier)
+Effet attendu : le clic sur un contexte espèce n’hérite plus d’un état ambigu ; il émet toujours une URL déterministe.
 
-**`src/components/search/GlobalSearchOverlay.tsx`** — enrichir `handleResultClick` pour qu'il propage systématiquement le focus quand le `kind` est focusable.
+### 2) Rendre l’application du focus idempotente côté page cible
+Dans `src/components/community/ExplorationMarcheurPage.tsx` :
+- Introduire une notion de **focus prêt à être appliqué**.
+- Ne consommer l’URL (`consume()`) qu’une fois ces prérequis réunis :
+  - si route `event-...`, l’`explorationId` résolu est disponible
+  - si `focus.marcheId` existe, `explorationMarches` est chargée
+- Appliquer alors, dans le même cycle logique :
+  - `activeGlobalTab = biodiversite` pour une espèce
+  - `pendingBiodiversitySub = taxons`
+  - `activeStepIndex` correspondant à `marcheId`
+  - `focusTarget = species:<scientificName>`
+- Protéger avec une clé de consommation/apparition pour éviter les doubles applications.
 
-Logique ajoutée juste après la résolution de `target`/`params` :
+Effet attendu : même si les données arrivent en différé, le deep-link espèce est rejoué au bon moment et ne retombe plus sur l’onglet par défaut.
 
+### 3) Garder le contrat de focus simple et unique
+- L’overlay devient la **source de vérité de l’URL de navigation**.
+- `useFocusFromUrl` + `ExplorationMarcheurPage` deviennent la **source de vérité de l’application UI**.
+- Le SQL `search_global` peut continuer à fournir une route par défaut, mais l’UI ne doit plus dépendre de son querystring pour les clics contextuels d’espèces.
+
+## Fichiers concernés
+- `src/components/search/GlobalSearchOverlay.tsx`
+- `src/components/community/ExplorationMarcheurPage.tsx`
+
+## Validation
+Je validerai le correctif sur les parcours suivants :
+1. Depuis `/marches-du-vivant/mon-espace`, recherche `catalpa`
+2. Ouvrir `Catalpa du sud`
+3. Cliquer `ROQUE GAGEAC / Jardin`
+4. Vérifier :
+   - ouverture du bon événement
+   - onglet global `Biodiversité`
+   - sous-onglet `Taxons observés`
+   - marche `ROQUE GAGEAC / Jardin` sélectionnée
+   - halo sur `Catalpa du sud`
+5. Refaire le même test sur au moins une autre espèce multi-marches pour éviter une régression locale
+
+## Détails techniques
 ```text
-if (kind ∈ {species, testimony, text, practice, event}) {
-  params.set('focus', `${r.kind}:${r.id}`)
-  // tab par défaut selon kind (alignée sur ExplorationMarcheurPage)
-  if (!params.has('tab')) {
-    species|testimony → 'biodiversite'
-    practice          → 'apprendre'
-    text              → 'marches'
-    event             → 'carte'
-  }
-  // sub par défaut (alignée sur les setPending… de la page)
-  species   → sub=taxons
-  testimony → sub=temoignages
-  text      → sub=textes
-}
+SearchResultCard context click
+  -> GlobalSearchOverlay.buildSearchTarget()
+     -> /exploration/event-<id>?focus=species:...&tab=biodiversite&sub=taxons&marcheId=...
+  -> ExplorationMarcheurPage waits until target data is ready
+     -> set global tab
+     -> set biodiversity sub-tab
+     -> set active step
+     -> trigger halo
+     -> consume URL once applied
 ```
 
-Ce qui produit pour le cas Catalpa du sud :
-```
-/marches-du-vivant/mon-espace/exploration/event-32945ab4…
-   ?marcheId=bfebc538…
-   &focus=species:Catalpa%20bignonioides
-   &tab=biodiversite
-   &sub=taxons
-   &t=…
-```
-
-Résultat : la page s'ouvre sur **Biodiversité → Taxons**, l'étape ROQUE GAGEAC / Jardin est sélectionnée, et le halo émeraude pulse autour de la vignette « Catalpa du sud ».
-
-## Pourquoi c'est robuste pour TOUTES les recherches
-
-1. **Source unique de vérité** : un seul endroit (`handleResultClick`) ajoute `focus=`. Tous les flux (clic carte principale, clic contexte d'un drawer multi-marches, clic "Ouvrir la fiche") passent par lui via le prop `onOpen()` de `SearchResultCard`.
-2. **Mapping kind→tab/sub aligné** sur les fallbacks déjà présents dans `ExplorationMarcheurPage` lignes 219-247 — pas de divergence.
-3. **Pas de cassure d'URL publique** : on n'ajoute des params que sur les routes `/mon-espace/exploration/…` (espace privé). Les routes publiques `/m/:slug` ne sont pas concernées par la recherche globale.
-4. **Idempotent** : `useFocusFromUrl.consume()` strippe `focus/marcheId/tab/sub/sensory` après application (déjà en place ligne 50-58), donc pas de pollution de l'historique.
-5. **Aucune modif côté RPC, hooks, ou autres composants** — uniquement la couche routing de l'overlay.
-
-## Hors-scope
-
-- Pas de touche aux RPC `search_global` ni `useGlobalSearch`.
-- Pas de modif de `SearchResultCard`, `FocusHalo`, `useFocusFromUrl`, `ExplorationMarcheurPage`.
-- Pas de changement visuel.
-
-Aucune question bloquante : la mécanique cible existe déjà, il manque juste les query params côté émetteur. Si tu valides, je l'applique en build mode.
+## Résultat attendu
+Le bug ne sera plus traité comme un cas particulier de `catalpa`, mais comme un **contrat robuste de deep-link espèce** valable pour toutes les recherches d’espèces et tous les contextes multi-marches.
