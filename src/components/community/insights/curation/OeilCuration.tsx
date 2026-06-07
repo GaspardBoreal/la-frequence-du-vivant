@@ -189,6 +189,69 @@ const OeilCuration: React.FC<Props> = ({ explorationId, isCurator }) => {
     });
   };
 
+  // ─── Deep-link recherche : ouverture auto du drawer espèce ───
+  // Reçoit le focus émis par ExplorationMarcheurPage et ouvre directement la
+  // fiche de l'espèce ciblée (UX : "halo + drawer" en séquence guidée).
+  const pendingFocusRef = React.useRef<string | null>(null);
+  const consumedFocusRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    const { subscribeFocus } = require('@/lib/focusBus') as typeof import('@/lib/focusBus');
+    const unsub = subscribeFocus((d) => {
+      if (d.kind !== 'species' || !d.id) return;
+      pendingFocusRef.current = d.id;
+      // Force la vue Pool si l'espèce n'est pas épinglée — la vignette ciblée
+      // doit être visible pour que le halo et l'ouverture soient cohérents.
+      const key = d.id.toLowerCase();
+      const pinned = pinnedSpecies.some(
+        s => (s.scientificName || '').toLowerCase() === key || s.key.toLowerCase() === key,
+      );
+      if (!pinned) {
+        setView('pool');
+        setHasUserPickedView(true);
+      }
+      // Tente une résolution immédiate (cas où pool déjà chargé)
+      tryOpenFromFocus();
+    });
+    return () => { unsub(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pinnedSpecies]);
+
+  const tryOpenFromFocus = React.useCallback(() => {
+    const target = pendingFocusRef.current;
+    if (!target) return;
+    if (consumedFocusRef.current === target) return;
+    if (!pool || pool.length === 0) return;
+    const norm = (s?: string | null) =>
+      (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const t = norm(target);
+    const match = pool.find(
+      s => norm(s.scientificName) === t || norm(s.key) === t || norm(s.commonName) === t,
+    );
+    if (!match) return;
+    // Idempotence : ne pas réouvrir si déjà ouverte sur cette même espèce
+    if (
+      selectedSpecies &&
+      norm(selectedSpecies.scientificName) === norm(match.scientificName)
+    ) {
+      consumedFocusRef.current = target;
+      return;
+    }
+    const displayName =
+      match.scientificName
+        ? translationMap.get(match.scientificName)?.commonName || match.commonName || match.scientificName
+        : match.commonName || '';
+    const photos = match.imageUrl ? [match.imageUrl] : [];
+    handleSpeciesClick(match as CuratedSpeciesItem, displayName, photos);
+    consumedFocusRef.current = target;
+    pendingFocusRef.current = null;
+  }, [pool, translationMap, selectedSpecies]);
+
+  // Rejoue si le pool arrive après le focus, ou si translations finissent de charger.
+  React.useEffect(() => {
+    if (pendingFocusRef.current) tryOpenFromFocus();
+  }, [pool, translationMap, tryOpenFromFocus]);
+
   const curationByKey = useMemo(() => {
     const m = new Map<string, ExplorationCuration>();
     curations.forEach(c => {
