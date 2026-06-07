@@ -65,13 +65,6 @@ export function ChatBot({
   roleBadge = null,
   hideFab = false,
 }: ChatBotProps) {
-  // Permet à un FAB externe (ex: MobileActionFab) d'ouvrir le chat
-  useEffect(() => {
-    const handler = () => setIsOpen(true);
-    window.addEventListener('frequence:open-chatbot', handler);
-    return () => window.removeEventListener('frequence:open-chatbot', handler);
-  }, []);
-
   // Si l'URL contient une entité et qu'aucune page n'en a posé d'explicite, on l'enregistre.
   useEffect(() => {
     if (urlEntity && !chatPageContext.getState().entity) {
@@ -89,6 +82,14 @@ export function ChatBot({
   const [voiceMode, setVoiceMode] = useState(false);
   const [interruptBanner, setInterruptBanner] = useState(false);
   const [originContext, setOriginContext] = useState<{ speciesLabel?: string } | null>(null);
+
+  // Permet à un FAB externe (ex: MobileActionFab) d'ouvrir le chat
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener('frequence:open-chatbot', handler);
+    return () => window.removeEventListener('frequence:open-chatbot', handler);
+  }, []);
+
   const { messages, isLoading, wasStopped, send, stop, reset } = useChatStream(currentContext, edgeFunctionPath);
   const { exportPrint } = useChatExport(messages);
   const isMobile = useIsMobile();
