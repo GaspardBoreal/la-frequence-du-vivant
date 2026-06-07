@@ -5,7 +5,9 @@ import type { ChatContext } from './chatConfig';
 import { chatPageContext, type ChatEntity, type CompactSpecies } from '@/hooks/useChatPageContext';
 import { useCanUseContextualChat } from '@/hooks/useCanUseContextualChat';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+
 
 /** Max d'espèces poussées dans le contexte IA lorsqu'attachées (frugalité). */
 const SPECIES_POOL_CAP = 200;
