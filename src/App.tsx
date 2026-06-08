@@ -89,6 +89,7 @@ import ApiMcpPublic from './pages/ApiMcpPublic';
 import AdminApiMcp from './pages/AdminApiMcp';
 import AdminAuditFrugalHub from './pages/AdminAuditFrugalHub';
 import PublicAuditFrugal from './pages/PublicAuditFrugal';
+import AgentIA from './pages/AgentIA';
 
 function App() {
   return (
@@ -100,6 +101,7 @@ function App() {
             <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/agent-ia" element={<AgentIA />} />
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
             <Route path="/m/:slug" element={<PublicEventPage />} />
