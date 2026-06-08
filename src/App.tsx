@@ -104,6 +104,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/agent-ia" element={<AgentIA />} />
+            <Route path="/agent-ia/fiche" element={<AgentIAFiche />} />
+
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
             <Route path="/m/:slug" element={<PublicEventPage />} />
