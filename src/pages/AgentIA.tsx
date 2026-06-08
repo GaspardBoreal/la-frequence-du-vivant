@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Download, ArrowLeft, Sparkles, Leaf, Users, ShieldCheck, MapPin, Database, Activity, Microscope } from 'lucide-react';
+import { Download, ArrowLeft, Sparkles, Leaf, Users, ShieldCheck, MapPin, Database, Activity, Microscope, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -87,7 +87,7 @@ const AgentIA: React.FC = () => {
 
       {/* Nav */}
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-2">
+        <Link to="/marches-du-vivant" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-2">
           <ArrowLeft className="h-4 w-4" /> Accueil
         </Link>
         <Button asChild size="sm" variant="default">
@@ -112,7 +112,7 @@ const AgentIA: React.FC = () => {
         </p>
         <div className="flex flex-wrap gap-2">
           <Badge className="bg-primary text-primary-foreground">ACTIF</Badge>
-          <Badge variant="outline">v1.0</Badge>
+          <Badge variant="outline">v1.3</Badge>
           <Badge variant="outline">AI Gateway</Badge>
           <Badge variant="outline">Supabase souverain (UE)</Badge>
           <Badge variant="outline">Open Source · MIT</Badge>
@@ -247,7 +247,7 @@ const AgentIA: React.FC = () => {
         <h2 className="text-4xl md:text-5xl font-bold mb-4">Prêt à mesurer le vivant<br/>de votre domaine ?</h2>
         <p className="text-lg text-muted-foreground mb-2">Nos équipes vous accompagnent de la première marche au premier rapport public.</p>
         <p className="text-sm italic text-primary mb-8">IA responsable · Open Source · Ancrage terrain</p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center">
           <Button asChild size="lg">
             <a href="https://calendly.com/laurent-bziiit/entretien-ia" target="_blank" rel="noreferrer">
               Prendre rendez-vous →
@@ -258,7 +258,11 @@ const AgentIA: React.FC = () => {
               <Download className="h-4 w-4 mr-2" /> Télécharger la fiche PDF
             </Link>
           </Button>
-
+          <Button asChild size="lg" variant="hero">
+            <a href="https://la-frequence-du-vivant.com/marches-du-vivant/connexion">
+              <UserPlus className="h-4 w-4 mr-2" /> Créer un compte
+            </a>
+          </Button>
         </div>
         <div className="mt-12 text-xs text-muted-foreground">
           la-frequence-du-vivant.com&nbsp;
