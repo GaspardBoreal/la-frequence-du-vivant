@@ -254,10 +254,11 @@ const AgentIA: React.FC = () => {
             </a>
           </Button>
           <Button asChild size="lg" variant="outline">
-            <a href="/fiche-agent-marches-du-vivant.pdf" download>
+            <Link to="/agent-ia/fiche" target="_blank" rel="noreferrer">
               <Download className="h-4 w-4 mr-2" /> Télécharger la fiche PDF
-            </a>
+            </Link>
           </Button>
+
         </div>
         <div className="mt-12 text-xs text-muted-foreground">
           la-frequence-du-vivant.com&nbsp;
