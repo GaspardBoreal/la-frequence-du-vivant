@@ -155,7 +155,7 @@ const AgentIA: React.FC = () => {
           <h2 className="text-3xl md:text-4xl font-bold">Engagement éthique</h2>
         </div>
         <p className="text-muted-foreground mb-8 max-w-3xl">
-          <strong>"Les Marches du Vivant"</strong> a été développé dans le respect de la <strong>charte IA responsable de bziiit</strong> et d'une
+          <strong>"Les Marches du Vivant"</strong> a été développé dans le respect de la <strong>charte IA responsable de notre partenaire technologique bziiit&nbsp;- PiloTerra</strong> et d'une
           philosophie open source. La donnée d'observation reste la propriété du marcheur et de l'exploitant.
           <strong> Aucune revente, aucun entraînement de modèle tiers sur vos données.</strong> Les espèces sensibles bénéficient d'un
           flou géographique automatique.
