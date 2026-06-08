@@ -247,7 +247,7 @@ const AgentIA: React.FC = () => {
         <h2 className="text-4xl md:text-5xl font-bold mb-4">Prêt à mesurer le vivant<br/>de votre domaine ?</h2>
         <p className="text-lg text-muted-foreground mb-2">Nos équipes vous accompagnent de la première marche au premier rapport public.</p>
         <p className="text-sm italic text-primary mb-8">IA responsable · Open Source · Ancrage terrain</p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center">
           <Button asChild size="lg">
             <a href="https://calendly.com/laurent-bziiit/entretien-ia" target="_blank" rel="noreferrer">
               Prendre rendez-vous →
@@ -258,7 +258,11 @@ const AgentIA: React.FC = () => {
               <Download className="h-4 w-4 mr-2" /> Télécharger la fiche PDF
             </Link>
           </Button>
-
+          <Button asChild size="lg" variant="hero">
+            <a href="https://la-frequence-du-vivant.com/marches-du-vivant/connexion">
+              <UserPlus className="h-4 w-4 mr-2" /> Créer un compte
+            </a>
+          </Button>
         </div>
         <div className="mt-12 text-xs text-muted-foreground">
           la-frequence-du-vivant.com&nbsp;
