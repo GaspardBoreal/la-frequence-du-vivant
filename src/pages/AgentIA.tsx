@@ -87,7 +87,7 @@ const AgentIA: React.FC = () => {
 
       {/* Nav */}
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-2">
+        <Link to="/marches-du-vivant" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-2">
           <ArrowLeft className="h-4 w-4" /> Accueil
         </Link>
         <Button asChild size="sm" variant="default">
