@@ -31,13 +31,13 @@ const stats = [
 
 const ethics = [
   'Open Source — Licence MIT',
-  'IA Responsable (charte bziiit)',
+  'IA Responsable (selon référentiel charte bziiit - PiloTerra)',
   'Données hébergées en UE (Supabase)',
   'RGPD — données non revendues',
   'Empreinte carbone mesurée',
   'Traçabilité complète (snapshots horodatés)',
   'Protection des espèces sensibles (flou GPS)',
-  'Souveraineté du marcheur sur ses données',
+  'Souveraineté des données',
 ];
 
 const profiles = [
