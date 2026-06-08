@@ -78,7 +78,7 @@ const AgentIA: React.FC = () => {
       <section className="container mx-auto px-4 pt-12 pb-20 max-w-5xl">
         <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-primary mb-6">
           <Sparkles className="h-4 w-4" />
-          <span>bziiit × La Fréquence du Vivant — Fiche Agent IA 2026</span>
+          <span>LA FRÉQUENCE DU VIVANT — FICHE AGENT IA 2026</span>
         </div>
         <h1 className="text-5xl md:text-7xl font-bold leading-[1.05] mb-6">
           Les Marches<br/>du Vivant
@@ -113,7 +113,7 @@ const AgentIA: React.FC = () => {
       {/* Capacités */}
       <section className="container mx-auto px-4 py-16 max-w-6xl">
         <h2 className="text-3xl md:text-4xl font-bold mb-2">Ce qu'il fait</h2>
-        <p className="text-muted-foreground mb-10">4 capacités clés — applicables à tout territoire agricole, naturel ou péri-urbain.</p>
+        <p className="text-muted-foreground mb-10">4 capacités clés applicables à tout territoire agricole, naturel ou péri-urbain.</p>
         <div className="grid md:grid-cols-2 gap-6">
           {capabilities.map((c, i) => (
             <Card key={i} className="p-6 hover:border-primary/40 transition">
