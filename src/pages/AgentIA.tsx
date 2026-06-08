@@ -156,7 +156,7 @@ const AgentIA: React.FC = () => {
         </div>
         <p className="text-muted-foreground mb-8 max-w-3xl">
           <strong>"Les Marches du Vivant"</strong> a été développé dans le respect de la <strong>charte IA responsable de notre partenaire technologique bziiit&nbsp;- PiloTerra</strong> et d'une
-          philosophie open source en collaboration avec le <strong>collectif OSFARM</strong>. La donnée d'observation reste la propriété du marcheur et de l'exploitant.
+          philosophie open source en collaboration avec le <strong>collectif OSFARM</strong>. La donnée d'observation reste la propriété du marcheur, de l'exploitant et de l'association <strong>"La Fréquence du vivant"</strong>.
           <strong> Aucune revente, aucun entraînement de modèle tiers sur vos données.</strong> Les espèces sensibles bénéficient d'un
           flou géographique automatique.
         </p>
