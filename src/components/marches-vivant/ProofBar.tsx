@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Leaf, Camera, MapPin, Database, ExternalLink, Sparkles } from 'lucide-react';
-import { useBiodiversityStats } from '@/hooks/useBiodiversityStats';
 import { useRegionsCount } from '@/hooks/useRegionalCoverage';
-import { usePhotosCount } from '@/hooks/usePhotosCount';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
+
 
 interface AnimatedCounterProps {
   target: number;
