@@ -89,7 +89,7 @@ const AgentIA: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           <Badge className="bg-primary text-primary-foreground">ACTIF</Badge>
           <Badge variant="outline">v1.0</Badge>
-          <Badge variant="outline">Lovable AI Gateway</Badge>
+          <Badge variant="outline">AI Gateway</Badge>
           <Badge variant="outline">Supabase souverain (UE)</Badge>
           <Badge variant="outline">Open Source · MIT</Badge>
         </div>
