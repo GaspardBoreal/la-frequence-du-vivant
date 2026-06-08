@@ -61,57 +61,45 @@ const ProofBar: React.FC<ProofBarProps> = ({ className = '' }) => {
   const ref = React.useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   
-  const { data: stats } = useBiodiversityStats();
+  const { data: stats } = usePublicGlobalStats();
   const { data: regionsCount } = useRegionsCount();
-  const { data: photosCount } = usePhotosCount();
-  
-  // Count marches
-  const { data: marchesCount } = useQuery({
-    queryKey: ['marches-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('marches')
-        .select('*', { count: 'exact', head: true });
-      if (error) throw error;
-      return count || 0;
-    },
-    staleTime: 1000 * 60 * 30,
-  });
 
   const metrics = [
-    { 
-      icon: <MapPin className="w-4 h-4" />, 
-      value: marchesCount || 32, 
-      label: 'Marches',
+    {
+      icon: <MapPin className="w-4 h-4" />,
+      value: stats?.domaines ?? 0,
+      label: 'Domaines',
       color: 'text-blue-400',
       bgColor: 'bg-blue-500/10',
-      borderColor: 'border-blue-500/20'
+      borderColor: 'border-blue-500/20',
     },
-    { 
-      icon: <Leaf className="w-4 h-4" />, 
-      value: stats?.totalSpecies || 41257, 
+    {
+      icon: <Leaf className="w-4 h-4" />,
+      value: stats?.especes_tracees ?? 0,
       label: 'Espèces',
       color: 'text-emerald-400',
       bgColor: 'bg-emerald-500/10',
-      borderColor: 'border-emerald-500/20'
+      borderColor: 'border-emerald-500/20',
     },
-    { 
-      icon: <Sparkles className="w-4 h-4" />, 
-      value: regionsCount || 6, 
+    {
+      icon: <Sparkles className="w-4 h-4" />,
+      value: regionsCount || 0,
       label: 'Régions',
       color: 'text-purple-400',
       bgColor: 'bg-purple-500/10',
-      borderColor: 'border-purple-500/20'
+      borderColor: 'border-purple-500/20',
     },
-    { 
-      icon: <Camera className="w-4 h-4" />, 
-      value: photosCount || 241, 
+    {
+      icon: <Camera className="w-4 h-4" />,
+      value: stats?.photos_collectees ?? 0,
       label: 'Preuves',
       color: 'text-amber-400',
       bgColor: 'bg-amber-500/10',
-      borderColor: 'border-amber-500/20'
+      borderColor: 'border-amber-500/20',
     },
   ];
+
+
 
   return (
     <motion.div
