@@ -104,7 +104,7 @@ const AgentIA: React.FC = () => {
             <strong> protocole citoyen de mesure de la biodiversité</strong>. Il agrège en temps réel les observations des marcheurs
             (photos géolocalisées, sons, témoignages) et les données scientifiques ouvertes (iNaturalist, GBIF, MNHN), reconstruit
             la <strong>Fréquence du Vivant</strong> d'un lieu, identifie les <strong>espèces sentinelles</strong> et les
-            <strong> zones blanches</strong> à explorer, et restitue un bilan biodiversité <strong>tracé, vérifiable et géopoétique</strong> —
+            <strong> zones blanches</strong> à explorer, et restitue un bilan biodiversité <strong>tracé, vérifiable</strong>,
             sans tableur, sans intermédiaire, en pleine souveraineté.
           </p>
         </Card>
