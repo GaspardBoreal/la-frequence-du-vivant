@@ -100,9 +100,9 @@ const AgentIA: React.FC = () => {
         <Card className="p-8 md:p-12 border-primary/20 bg-card/50 backdrop-blur">
           <div className="text-xs uppercase tracking-widest text-primary mb-4">Mission</div>
           <p className="text-lg md:text-xl leading-relaxed">
-            <strong>Les Marches du Vivant</strong> est un agent IA collaboratif qui transforme la marche sur un domaine agricole en
+            <strong>Les Marches du Vivant</strong> est un agent IA collaboratif qui transforme la marche sur un domaine, exploitation agricole en
             <strong> protocole citoyen de mesure de la biodiversité</strong>. Il agrège en temps réel les observations des marcheurs
-            (photos géolocalisées, sons, témoignages) et les données scientifiques ouvertes (iNaturalist, GBIF, MNHN), reconstruit
+            (photos géolocalisées, sons, témoignages) et les données scientifiques ouvertes (iNaturalist, Pl@ntNet, GBIF, MNHN), reconstruit
             la <strong>Fréquence du Vivant</strong> d'un lieu, identifie les <strong>espèces sentinelles</strong> et les
             <strong> zones blanches</strong> à explorer, et restitue un bilan biodiversité <strong>tracé, vérifiable</strong>,
             sans tableur, sans intermédiaire, en pleine souveraineté.
@@ -221,8 +221,8 @@ const AgentIA: React.FC = () => {
       {/* CTA */}
       <section className="container mx-auto px-4 py-20 max-w-4xl text-center">
         <h2 className="text-4xl md:text-5xl font-bold mb-4">Prêt à mesurer le vivant<br/>de votre territoire&nbsp;?</h2>
-        <p className="text-lg text-muted-foreground mb-2">Nos équipes vous accompagnent de la première marche au premier rapport public.</p>
-        <p className="text-sm italic text-primary mb-8">IA responsable · Open Source · Ancrage terrain</p>
+        <p className="text-lg text-muted-foreground mb-2">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Nos équipes vous accompagnent de la première marche au premier rapport public.</p>
+        <p className="text-sm italic text-primary mb-8">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; IA responsable · Open Source · Ancrage terrain</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button asChild size="lg">
             <a href="https://calendly.com/laurent-bziiit/entretien-ia" target="_blank" rel="noreferrer">
@@ -236,7 +236,7 @@ const AgentIA: React.FC = () => {
           </Button>
         </div>
         <div className="mt-12 text-xs text-muted-foreground">
-          la-frequence-du-vivant.com · bziiit.com
+          la-frequence-du-vivant.com&nbsp;
         </div>
       </section>
     </div>
