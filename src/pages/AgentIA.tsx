@@ -84,7 +84,7 @@ const AgentIA: React.FC = () => {
           Les Marches<br/>du Vivant
         </h1>
         <p className="text-xl md:text-2xl text-primary italic max-w-3xl mb-8">
-          Mesurer la biodiversité, ensemble, pour accélérer la transition agroécologique
+          Mesurer collectivement la biodiversité pour accélérer la transition agroécologique
         </p>
         <div className="flex flex-wrap gap-2">
           <Badge className="bg-primary text-primary-foreground">ACTIF</Badge>
