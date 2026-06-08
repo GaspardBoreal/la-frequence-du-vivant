@@ -53,7 +53,31 @@ const steps = [
 ];
 
 const AgentIA: React.FC = () => {
+  const { data: live } = usePublicGlobalStats();
+  const stats = [
+    {
+      value: fmt(live?.especes_tracees),
+      label: 'espèces tracées',
+      sub: `sur ${fmt(live?.domaines)} domaines mesurés (sources scientifiques agrégées)`,
+    },
+    {
+      value: fmt(live?.domaines),
+      label: 'domaines documentés',
+      sub: 'avec Fréquence du Vivant calculée et historisée',
+    },
+    {
+      value: fmt(live?.observations_citoyennes),
+      label: 'observations citoyennes',
+      sub: `attribuées à ${fmt(live?.marcheurs)} marcheurs (photos · audio · témoignages)`,
+    },
+    {
+      value: fmt(live?.marches_organisees),
+      label: 'marches organisées',
+      sub: `${fmt(live?.participations_validees)} participations validées`,
+    },
+  ];
   return (
+
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
         <title>Agent IA · Les Marches du Vivant — Mesure collaborative de la biodiversité</title>
