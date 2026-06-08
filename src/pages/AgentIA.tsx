@@ -24,12 +24,9 @@ const capabilities = [
   { icon: MapPin,     title: 'Restitution & partage souverain', desc: 'Pack Vivant (PDF + Excel + CSV + GeoJSON + KML), pages publiques /m/:slug ON/OFF, chatbot contextuel pour élus, agriculteurs et scientifiques.' },
 ];
 
-const stats = [
-  { value: '2 002', label: 'espèces tracées',        sub: 'sur 80 domaines mesurés (sources scientifiques agrégées)' },
-  { value: '80',    label: 'domaines documentés',    sub: 'avec Fréquence du Vivant calculée et historisée' },
-  { value: '592',   label: 'observations citoyennes',sub: 'attribuées à 45 marcheurs (photos · audio · témoignages)' },
-  { value: '13',    label: 'marches organisées',     sub: '91 participations validées' },
-];
+const fmt = (n?: number | null) =>
+  typeof n === 'number' ? n.toLocaleString('fr-FR').replace(/\u202F/g, ' ') : '—';
+
 
 const ethics = [
   'Open Source — Licence MIT',
