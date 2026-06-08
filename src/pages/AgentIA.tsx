@@ -5,6 +5,8 @@ import { Download, ArrowLeft, Sparkles, Leaf, Users, ShieldCheck, MapPin, Databa
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
+
 
 const sections = [
   { num: '01', title: 'Identité & Statut', desc: "Nom, tagline, catégorie, version, statut de l'agent." },
