@@ -90,6 +90,8 @@ import AdminApiMcp from './pages/AdminApiMcp';
 import AdminAuditFrugalHub from './pages/AdminAuditFrugalHub';
 import PublicAuditFrugal from './pages/PublicAuditFrugal';
 import AgentIA from './pages/AgentIA';
+import AgentIAFiche from './pages/AgentIAFiche';
+
 
 function App() {
   return (
