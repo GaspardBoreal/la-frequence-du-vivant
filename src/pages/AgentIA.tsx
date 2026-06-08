@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Download, ArrowLeft, Sparkles, Leaf, Users, ShieldCheck, MapPin, Database, Activity, Microscope } from 'lucide-react';
+import { Download, ArrowLeft, Sparkles, Leaf, Users, ShieldCheck, MapPin, Database, Activity, Microscope, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
