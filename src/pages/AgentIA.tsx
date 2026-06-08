@@ -26,7 +26,7 @@ const stats = [
   { value: '2 002', label: 'espèces tracées',        sub: 'sur 80 domaines mesurés (sources scientifiques agrégées)' },
   { value: '80',    label: 'domaines documentés',    sub: 'avec Fréquence du Vivant calculée et historisée' },
   { value: '592',   label: 'observations citoyennes',sub: 'attribuées à 45 marcheurs (photos · audio · témoignages)' },
-  { value: '13',    label: 'marches organisées',     sub: '70 participations validées · 15 explorations territoriales' },
+  { value: '13',    label: 'marches organisées',     sub: '91 participations validées' },
 ];
 
 const ethics = [
@@ -155,7 +155,7 @@ const AgentIA: React.FC = () => {
           <h2 className="text-3xl md:text-4xl font-bold">Engagement éthique</h2>
         </div>
         <p className="text-muted-foreground mb-8 max-w-3xl">
-          Les Marches du Vivant a été développé dans le respect de la <strong>charte IA responsable de bziiit</strong> et d'une
+          <strong>"Les Marches du Vivant"</strong> a été développé dans le respect de la <strong>charte IA responsable de bziiit</strong> et d'une
           philosophie open source. La donnée d'observation reste la propriété du marcheur et de l'exploitant.
           <strong> Aucune revente, aucun entraînement de modèle tiers sur vos données.</strong> Les espèces sensibles bénéficient d'un
           flou géographique automatique.
