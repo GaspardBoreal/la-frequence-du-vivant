@@ -221,9 +221,15 @@ const AgentIAFiche: React.FC = () => {
 
           {/* Footer */}
           <footer className="border-t border-slate-200 pt-4 mt-10 text-center text-[10px] text-slate-500">
-            <p className="italic text-emerald-700 text-sm not-italic font-medium mb-1">
+            <p className="italic text-emerald-700 text-sm not-italic font-medium mb-2">
               IA responsable · Open Source · Ancrage terrain
             </p>
+            <a
+              href="https://la-frequence-du-vivant.com/marches-du-vivant/connexion"
+              className="inline-block bg-gradient-to-r from-emerald-700 to-emerald-500 text-white text-[11px] font-semibold px-4 py-2 rounded-md no-underline mb-2"
+            >
+              Créer un compte → la-frequence-du-vivant.com/marches-du-vivant/connexion
+            </a>
             <p>la-frequence-du-vivant.com</p>
           </footer>
         </article>
