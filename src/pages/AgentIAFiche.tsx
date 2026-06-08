@@ -67,7 +67,7 @@ const AgentIAFiche: React.FC = () => {
           {/* Header */}
           <header className="border-b-2 border-emerald-700 pb-4 mb-8">
             <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-700 mb-2">
-              La Fréquence du Vivant — Fiche Agent IA 2026
+              La Fréquence du Vivant — Fiche Agent IA 2026 · v1.3
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-slate-900">
               Les Marches du Vivant
