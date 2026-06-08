@@ -1,13 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, Camera, MapPin, Database } from 'lucide-react';
-import { useBiodiversityStats } from '@/hooks/useBiodiversityStats';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { Leaf, Users, MapPin, Database } from 'lucide-react';
+import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
 
 interface CounterItemProps {
   icon: React.ReactNode;
-  value: number;
+  value: number | undefined;
   label: string;
   delay: number;
 }
@@ -23,12 +21,10 @@ const CounterItem: React.FC<CounterItemProps> = ({ icon, value, label, delay }) 
     <div className="w-12 h-12 rounded-full bg-emerald-900/50 border border-emerald-500/30 flex items-center justify-center mb-3">
       {icon}
     </div>
-    <div className="text-3xl md:text-4xl font-crimson font-semibold text-foreground mb-1">
-      {value.toLocaleString('fr-FR')}
+    <div className="text-3xl md:text-4xl font-crimson font-semibold text-foreground mb-1 tabular-nums">
+      {typeof value === 'number' ? value.toLocaleString('fr-FR') : '—'}
     </div>
-    <div className="text-sm text-muted-foreground">
-      {label}
-    </div>
+    <div className="text-sm text-muted-foreground">{label}</div>
   </motion.div>
 );
 
@@ -36,37 +32,28 @@ interface ScienceCountersProps {
   className?: string;
 }
 
+/**
+ * Source de vérité unifiée avec /agent-ia (RPC get_public_global_stats).
+ * Terminologie alignée : espèces tracées · domaines documentés · observations citoyennes.
+ */
 const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => {
-  const { data: stats } = useBiodiversityStats();
-  
-  // Requête séparée pour le nombre réel de marches
-  const { data: marchesCount } = useQuery({
-    queryKey: ['marches-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('marches')
-        .select('*', { count: 'exact', head: true });
-      if (error) throw error;
-      return count || 0;
-    },
-    staleTime: 1000 * 60 * 30,
-  });
+  const { data: stats } = usePublicGlobalStats();
 
   const counters = [
-    { 
-      icon: <Leaf className="w-5 h-5 text-emerald-400" />, 
-      value: stats?.totalSpecies || 1709, 
-      label: 'Espèces recensées' 
+    {
+      icon: <Leaf className="w-5 h-5 text-emerald-400" />,
+      value: stats?.especes_tracees,
+      label: 'Espèces tracées',
     },
-    { 
-      icon: <Camera className="w-5 h-5 text-amber-400" />, 
-      value: 241,
-      label: 'Photos collectées' 
+    {
+      icon: <MapPin className="w-5 h-5 text-blue-400" />,
+      value: stats?.domaines,
+      label: 'Domaines documentés',
     },
-    { 
-      icon: <MapPin className="w-5 h-5 text-blue-400" />, 
-      value: marchesCount || 32, 
-      label: 'Marches documentées' 
+    {
+      icon: <Users className="w-5 h-5 text-amber-400" />,
+      value: stats?.observations_citoyennes,
+      label: 'Observations citoyennes',
     },
   ];
 
@@ -108,9 +95,9 @@ const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => 
         >
           <span className="text-xs text-muted-foreground">
             Données certifiées connectées au{' '}
-            <a 
-              href="https://www.gbif.org/" 
-              target="_blank" 
+            <a
+              href="https://www.gbif.org/"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-emerald-400 hover:underline"
             >
