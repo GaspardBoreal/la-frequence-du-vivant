@@ -5,6 +5,8 @@ import { Download, ArrowLeft, Sparkles, Leaf, Users, ShieldCheck, MapPin, Databa
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
+
 
 const sections = [
   { num: '01', title: 'Identité & Statut', desc: "Nom, tagline, catégorie, version, statut de l'agent." },
@@ -22,12 +24,9 @@ const capabilities = [
   { icon: MapPin,     title: 'Restitution & partage souverain', desc: 'Pack Vivant (PDF + Excel + CSV + GeoJSON + KML), pages publiques /m/:slug ON/OFF, chatbot contextuel pour élus, agriculteurs et scientifiques.' },
 ];
 
-const stats = [
-  { value: '2 002', label: 'espèces tracées',        sub: 'sur 80 domaines mesurés (sources scientifiques agrégées)' },
-  { value: '80',    label: 'domaines documentés',    sub: 'avec Fréquence du Vivant calculée et historisée' },
-  { value: '592',   label: 'observations citoyennes',sub: 'attribuées à 45 marcheurs (photos · audio · témoignages)' },
-  { value: '13',    label: 'marches organisées',     sub: '91 participations validées' },
-];
+const fmt = (n?: number | null) =>
+  typeof n === 'number' ? n.toLocaleString('fr-FR').replace(/\u202F/g, ' ') : '—';
+
 
 const ethics = [
   'Open Source — Licence MIT',
@@ -54,7 +53,31 @@ const steps = [
 ];
 
 const AgentIA: React.FC = () => {
+  const { data: live } = usePublicGlobalStats();
+  const stats = [
+    {
+      value: fmt(live?.especes_tracees),
+      label: 'espèces tracées',
+      sub: `sur ${fmt(live?.domaines)} domaines mesurés (sources scientifiques agrégées)`,
+    },
+    {
+      value: fmt(live?.domaines),
+      label: 'domaines documentés',
+      sub: 'avec Fréquence du Vivant calculée et historisée',
+    },
+    {
+      value: fmt(live?.observations_citoyennes),
+      label: 'observations citoyennes',
+      sub: `attribuées à ${fmt(live?.marcheurs)} marcheurs (photos · audio · témoignages)`,
+    },
+    {
+      value: fmt(live?.marches_organisees),
+      label: 'marches organisées',
+      sub: `${fmt(live?.participations_validees)} participations validées`,
+    },
+  ];
   return (
+
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
         <title>Agent IA · Les Marches du Vivant — Mesure collaborative de la biodiversité</title>
@@ -68,10 +91,11 @@ const AgentIA: React.FC = () => {
           <ArrowLeft className="h-4 w-4" /> Accueil
         </Link>
         <Button asChild size="sm" variant="default">
-          <a href="/fiche-agent-marches-du-vivant.pdf" download>
+          <Link to="/agent-ia/fiche" target="_blank" rel="noreferrer">
             <Download className="h-4 w-4 mr-2" /> Télécharger la fiche PDF
-          </a>
+          </Link>
         </Button>
+
       </div>
 
       {/* Hero */}
@@ -230,10 +254,11 @@ const AgentIA: React.FC = () => {
             </a>
           </Button>
           <Button asChild size="lg" variant="outline">
-            <a href="/fiche-agent-marches-du-vivant.pdf" download>
+            <Link to="/agent-ia/fiche" target="_blank" rel="noreferrer">
               <Download className="h-4 w-4 mr-2" /> Télécharger la fiche PDF
-            </a>
+            </Link>
           </Button>
+
         </div>
         <div className="mt-12 text-xs text-muted-foreground">
           la-frequence-du-vivant.com&nbsp;

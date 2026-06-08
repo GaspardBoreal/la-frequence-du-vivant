@@ -5927,6 +5927,7 @@ export type Database = {
       get_public_event_medias: { Args: { _slug: string }; Returns: Json }
       get_public_event_stats: { Args: { _slug: string }; Returns: Json }
       get_public_event_testimonies: { Args: { _slug: string }; Returns: Json }
+      get_public_global_stats: { Args: never; Returns: Json }
       get_public_marcheur_carnet: { Args: { p_slug: string }; Returns: Json }
       get_public_shared_contribution: {
         Args: { p_id: string; p_type: string }
