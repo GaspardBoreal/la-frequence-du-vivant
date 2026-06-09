@@ -91,6 +91,7 @@ import AdminAuditFrugalHub from './pages/AdminAuditFrugalHub';
 import PublicAuditFrugal from './pages/PublicAuditFrugal';
 import AgentIA from './pages/AgentIA';
 import AgentIAFiche from './pages/AgentIAFiche';
+import InterregSudoeMdv from './pages/InterregSudoeMdv';
 
 
 function App() {
@@ -105,6 +106,7 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/agent-ia" element={<AgentIA />} />
             <Route path="/agent-ia/fiche" element={<AgentIAFiche />} />
+            <Route path="/interreg-sudoe-mdv" element={<InterregSudoeMdv />} />
 
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
