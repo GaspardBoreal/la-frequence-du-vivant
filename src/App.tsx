@@ -91,6 +91,7 @@ import AdminAuditFrugalHub from './pages/AdminAuditFrugalHub';
 import PublicAuditFrugal from './pages/PublicAuditFrugal';
 import AgentIA from './pages/AgentIA';
 import AgentIAFiche from './pages/AgentIAFiche';
+import InterregSudoeMdv from './pages/InterregSudoeMdv';
 
 
 function App() {
