@@ -106,6 +106,7 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/agent-ia" element={<AgentIA />} />
             <Route path="/agent-ia/fiche" element={<AgentIAFiche />} />
+            <Route path="/interreg-sudoe-mdv" element={<InterregSudoeMdv />} />
 
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
