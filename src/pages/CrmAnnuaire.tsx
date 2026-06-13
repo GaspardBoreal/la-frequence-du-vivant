@@ -219,6 +219,7 @@ const CrmAnnuaire: React.FC = () => {
                       onToggleSelect={() => toggleSelect(r.siren)}
                       existingStage={importedBySiren.get(r.siren)}
                       onImport={() => importOne(r.siren)}
+                      onPickNaf={(code) => setFilters(f => ({ ...f, activite_principale: code, page: 1 }))}
                     />
                   ))}
                   {!isFetching && searchData?.results.length === 0 && (
