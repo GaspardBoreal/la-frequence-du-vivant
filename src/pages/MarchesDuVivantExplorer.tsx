@@ -10,7 +10,7 @@ import {
   Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X, BookOpen, UserCircle } from
 'lucide-react';
 import Footer from '@/components/Footer';
-import ThemeToggle from '@/components/community/ThemeToggle';
+import PublicTopBar from '@/components/layout/PublicTopBar';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
