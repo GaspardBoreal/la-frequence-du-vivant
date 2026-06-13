@@ -1,33 +1,76 @@
 ## Objectif
 
-Améliorer la lisibilité de la liste de résultats `CrmAnnuaire` à la manière de annuaire-entreprises.data.gouv.fr, en restant 100% frontend / présentation.
+Permettre au commercial de **voir, contrôler et ré-ouvrir** ses entreprises sélectionnées avant import, même si elles ne sont plus visibles dans la liste courante (changement de filtre, de page, de recherche).
 
-## Problèmes constatés
+## Constat
 
-1. **Pas de compteur en haut de liste** — le total n'apparaît qu'en bas et seulement si `total_pages > 1`.
-2. **Statut "Cessée" peu visible** — relégué dans la ligne meta sous le NAF, alors que sur data.gouv il est collé au nom.
-3. **Tooltip NAF illisible** — le `title=` natif est inesthétique et, au hover, la pastille (texte sur `bg-muted` → `hover:bg-accent`) perd du contraste. Pas de signal d'interactivité clair.
+- `selected` ne stocke que des SIREN (`Set<string>`). Dès qu'on change la recherche, on n'a plus accès au nom / ville / NAF des entreprises mises de côté.
+- La barre verte « 2 entreprise(s) sélectionnée(s) » n'offre que **Annuler** et **Importer**. Pas de moyen de revoir la liste ni de retirer une seule entreprise.
 
-## Solution — `src/components/crm/CompanySearchResultCard.tsx`
+## Solution UX — « Panier de qualification »
 
-- **Badge "Cessée" inline** : déplacer à droite du nom (même ligne que `nom_complet`), variante `destructive` compacte, à côté du `CompanyStageBadge`. Retirer du bloc meta du bas.
-- **Pastille NAF élégante** :
-  - Remplacer `title` natif par un `Tooltip` shadcn (`<Tooltip><TooltipTrigger asChild>…<TooltipContent>Filtrer par cette activité</TooltipContent></Tooltip>`).
-  - Style : `bg-primary/10 text-primary border-primary/20 hover:bg-primary/20`, focus ring, icône `Filter` (h-3 w-3) à gauche pour signaler l'action.
-  - Garde le label complet `Culture de la vigne (01.21Z)` via `formatNaf`.
+### 1. Mémoriser un snapshot par sélection
+- Remplacer `selected: Set<string>` par `selectedMap: Map<siren, CompanySearchResultLite>` (nom_complet, siren, ville, code_postal, code_naf, libelle_naf, etat_administratif, date_cessation, existingStage à la sélection).
+- `toggleSelect(result)` reçoit l'objet complet ; la map persiste indépendamment de la liste affichée.
+- `selectedCount` = `selectedMap.size`. Toute la logique aval (`Array.from(selectedMap.keys())` pour l'import) reste identique.
 
-## Solution — `src/pages/CrmAnnuaire.tsx`
+### 2. Bouton « Voir la sélection » dans la barre verte
+Nouvelle barre :
 
-- **Compteur en tête de liste** : juste au-dessus du `space-y-2`, afficher une ligne discrète
-  `{total} résultat(s) trouvé(s)` (pluralisation) + sous-texte `Page X / Y` si pagination. Visible dès qu'il y a `searchData` (y compris 0 résultat → "Aucun résultat").
-- Conserve la pagination existante en bas.
+```text
+[✓] 2 entreprise(s) sélectionnée(s)   [Voir la sélection ▸]  [Annuler]  [Importer comme Suspect]
+```
+
+- `Voir la sélection` ouvre un **Sheet latéral droit** (`sm:max-w-md`), réutilisant le pattern de `CompanyPreviewSheet`.
+- Pastille numérique animée sur le bouton quand la sélection change.
+
+### 3. Sheet « Ma sélection »
+Header sticky :
+- Titre « Ma sélection · {n} entreprise(s) »
+- Sous-titre discret : « Vérifiez chaque fiche avant import »
+- Bouton « Tout désélectionner » (ghost destructive)
+
+Corps : liste verticale de mini-cartes (`CompanySelectionCard`), une par entreprise :
+- Nom (strikethrough rouge si cessée) + badge `Cessée` si applicable
+- Ligne meta : SIREN · ville · NAF court
+- Badge `Déjà importée` si `existingStage`
+- Actions à droite :
+  - **Œil** → ouvre `CompanyPreviewSheet` sur ce SIREN (le sheet sélection reste monté en arrière-plan, z-index inférieur)
+  - **X** → retire de la sélection (sans confirmation, undo via re-clic dans la liste principale)
+
+Footer sticky :
+- `Importer comme Suspect ({n})` — primary, full width
+- État disabled si toutes déjà importées (avec libellé contextuel)
+
+### 4. État vide & cohérence
+- Si `selectedMap.size === 0`, fermer automatiquement le sheet.
+- Persister la sélection dans `sessionStorage` (`crm.annuaire.selection`) pour ne rien perdre au refresh accidentel pendant la qualification.
 
 ## Hors-scope
-
-- Edge function, RLS, BDD, logique de recherche : aucun changement.
-- Pas de refonte des autres cartes/écrans.
+- Pas de changement BDD, RLS, edge functions.
+- Pas de modification de `CompanyPreviewSheet` ni de la recherche.
+- Pas de drag-and-drop ni de groupes (à voir plus tard si besoin).
 
 ## Fichiers touchés
+- `src/pages/CrmAnnuaire.tsx` — refactor `selected` → `selectedMap`, ajout bouton + state `selectionOpen`, persistance sessionStorage.
+- `src/components/crm/CompanySearchResultCard.tsx` — `onToggleSelect` reçoit le `result` complet (déjà dispo via prop).
+- **Nouveau** `src/components/crm/CompanySelectionSheet.tsx` — sheet liste + mini-cartes + actions.
 
-- `src/components/crm/CompanySearchResultCard.tsx`
-- `src/pages/CrmAnnuaire.tsx`
+## Détails techniques
+
+```ts
+type SelectionEntry = Pick<CompanySearchResult,
+  'siren' | 'nom_complet' | 'denomination' | 'ville' | 'code_postal'
+  | 'code_naf' | 'libelle_naf' | 'etat_administratif' | 'date_cessation'>;
+
+const [selectedMap, setSelectedMap] =
+  React.useState<Map<string, SelectionEntry>>(() => loadFromSession());
+
+const toggleSelect = (r: SelectionEntry) =>
+  setSelectedMap(prev => {
+    const next = new Map(prev);
+    next.has(r.siren) ? next.delete(r.siren) : next.set(r.siren, r);
+    sessionStorage.setItem('crm.annuaire.selection', JSON.stringify([...next]));
+    return next;
+  });
+```
