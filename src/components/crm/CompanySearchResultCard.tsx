@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { MapPin, Users, Building2, Plus, Check, Filter, Ban } from 'lucide-react';
+import { MapPin, Users, Building2, Plus, Check, Filter, Ban, Eye } from 'lucide-react';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { CompanyStageBadge } from './CompanyStageBadge';
 import type { CompanySearchResult, CrmCompanyStage } from '@/types/crmCompany';
@@ -17,9 +17,10 @@ interface Props {
   existingStage?: CrmCompanyStage;
   onImport: () => void;
   onPickNaf?: (code: string) => void;
+  onPreview?: () => void;
 }
 
-export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport, onPickNaf }) => {
+export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport, onPickNaf, onPreview }) => {
   const isImported = !!existingStage;
   const isCessee = result.etat_administratif === 'C';
   const cessationDate = result.date_cessation
@@ -33,7 +34,14 @@ export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onT
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className={`font-semibold text-sm sm:text-base leading-tight ${isCessee ? 'line-through text-muted-foreground' : ''}`}>{result.nom_complet || result.denomination || 'Sans nom'}</h3>
+                <button
+                  type="button"
+                  onClick={onPreview}
+                  disabled={!onPreview}
+                  className={`text-left font-semibold text-sm sm:text-base leading-tight transition-colors ${isCessee ? 'line-through text-muted-foreground' : ''} ${onPreview ? 'hover:text-primary cursor-pointer' : ''}`}
+                >
+                  {result.nom_complet || result.denomination || 'Sans nom'}
+                </button>
                 {isCessee && (
                   <Badge variant="destructive" className="uppercase text-[10px] tracking-wider px-2 py-0.5 gap-1 shadow-sm">
                     <Ban className="h-3 w-3" /> Cessée
@@ -88,7 +96,12 @@ export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onT
             </p>
           )}
 
-          <div className="mt-3 flex justify-end">
+          <div className="mt-3 flex justify-end gap-2">
+            {onPreview && (
+              <Button size="sm" variant="ghost" onClick={onPreview} className="gap-1">
+                <Eye className="h-3.5 w-3.5" /> Aperçu
+              </Button>
+            )}
             <Button size="sm" variant={isImported || isCessee ? 'outline' : 'default'} onClick={onImport} disabled={isImported} className="gap-1">
               {isImported ? <><Check className="h-3.5 w-3.5" /> Déjà importée</> : <><Plus className="h-3.5 w-3.5" /> Importer</>}
             </Button>

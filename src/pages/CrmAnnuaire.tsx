@@ -14,6 +14,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { CompanySearchFiltersDrawer } from '@/components/crm/CompanySearchFiltersDrawer';
 import { CompanySearchResultCard } from '@/components/crm/CompanySearchResultCard';
 import { CompanyDetailSheet } from '@/components/crm/CompanyDetailSheet';
+import { CompanyPreviewSheet } from '@/components/crm/CompanyPreviewSheet';
 import { CrmCompaniesMap } from '@/components/crm/CrmCompaniesMap';
 import { CompanyStageBadge } from '@/components/crm/CompanyStageBadge';
 import { FRENCH_DEPARTMENTS_WITH_CODES, FRENCH_REGIONS_WITH_CODES } from '@/utils/frenchAdministrativeCodes';
@@ -76,6 +77,7 @@ const CrmAnnuaire: React.FC = () => {
 
   const importMutation = useImportCompanies();
   const [drawerId, setDrawerId] = React.useState<string | null>(null);
+  const [previewSiren, setPreviewSiren] = React.useState<string | null>(null);
 
   if (!canAccessCrm) {
     return (
@@ -230,6 +232,7 @@ const CrmAnnuaire: React.FC = () => {
                       existingStage={importedBySiren.get(r.siren)}
                       onImport={() => importOne(r.siren)}
                       onPickNaf={(code) => setFilters(f => ({ ...f, activite_principale: code, page: 1 }))}
+                      onPreview={() => setPreviewSiren(r.siren)}
                     />
                   ))}
                   {!isFetching && searchData?.results.length === 0 && (
@@ -347,6 +350,15 @@ const CrmAnnuaire: React.FC = () => {
         </Tabs>
 
         <CompanyDetailSheet companyId={drawerId} onOpenChange={(o) => !o && setDrawerId(null)} />
+        <CompanyPreviewSheet
+          siren={previewSiren}
+          onOpenChange={(o) => !o && setPreviewSiren(null)}
+          selected={previewSiren ? selected.has(previewSiren) : false}
+          onToggleSelect={() => previewSiren && toggleSelect(previewSiren)}
+          existingStage={previewSiren ? importedBySiren.get(previewSiren) : undefined}
+          onImport={() => previewSiren && importOne(previewSiren)}
+          importing={importMutation.isPending}
+        />
       </div>
     </div>
   );
