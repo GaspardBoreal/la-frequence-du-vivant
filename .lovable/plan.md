@@ -1,76 +1,21 @@
-## Objectif
+## Problème
 
-Permettre au commercial de **voir, contrôler et ré-ouvrir** ses entreprises sélectionnées avant import, même si elles ne sont plus visibles dans la liste courante (changement de filtre, de page, de recherche).
+Dans l'onglet **Carte**, le `SelectContent` « Tous les stages » s'affiche **sous** la carte Leaflet. Cause : Radix `SelectContent` utilise `z-50`, alors que les panes/controls Leaflet montent jusqu'à `z-index: 400–700` (et `.leaflet-top` à 1000). Le dropdown est donc visuellement masqué par la carte.
 
-## Constat
+## Correction
 
-- `selected` ne stocke que des SIREN (`Set<string>`). Dès qu'on change la recherche, on n'a plus accès au nom / ville / NAF des entreprises mises de côté.
-- La barre verte « 2 entreprise(s) sélectionnée(s) » n'offre que **Annuler** et **Importer**. Pas de moyen de revoir la liste ni de retirer une seule entreprise.
+Approche minimale et ciblée — pas de refactor :
 
-## Solution UX — « Panier de qualification »
+1. **`src/pages/CrmAnnuaire.tsx`** — sur les deux `<SelectContent>` du filtre « stages » (onglet Carte ligne ~399, et onglet Entreprises ligne ~353 par cohérence), ajouter `className="z-[1100]"` pour passer au-dessus de tous les layers Leaflet.
 
-### 1. Mémoriser un snapshot par sélection
-- Remplacer `selected: Set<string>` par `selectedMap: Map<siren, CompanySearchResultLite>` (nom_complet, siren, ville, code_postal, code_naf, libelle_naf, etat_administratif, date_cessation, existingStage à la sélection).
-- `toggleSelect(result)` reçoit l'objet complet ; la map persiste indépendamment de la liste affichée.
-- `selectedCount` = `selectedMap.size`. Toute la logique aval (`Array.from(selectedMap.keys())` pour l'import) reste identique.
+2. **`src/components/crm/CrmCompaniesMap.tsx`** (à vérifier) — s'assurer que le conteneur Leaflet est `isolate` / `relative` avec un `z-index: 0` explicite sur le wrapper, pour que le stacking context reste contenu et n'empêche pas les portails Radix de remonter. Si déjà OK, ne rien toucher.
 
-### 2. Bouton « Voir la sélection » dans la barre verte
-Nouvelle barre :
+## Hors scope
 
-```text
-[✓] 2 entreprise(s) sélectionnée(s)   [Voir la sélection ▸]  [Annuler]  [Importer comme Suspect]
-```
+- Pas de changement de logique, de data, ni de design global.
+- Pas de modification des autres `SelectContent` du projet.
+- Pas de toucher au composant `ui/select` (impact transverse).
 
-- `Voir la sélection` ouvre un **Sheet latéral droit** (`sm:max-w-md`), réutilisant le pattern de `CompanyPreviewSheet`.
-- Pastille numérique animée sur le bouton quand la sélection change.
+## Vérification
 
-### 3. Sheet « Ma sélection »
-Header sticky :
-- Titre « Ma sélection · {n} entreprise(s) »
-- Sous-titre discret : « Vérifiez chaque fiche avant import »
-- Bouton « Tout désélectionner » (ghost destructive)
-
-Corps : liste verticale de mini-cartes (`CompanySelectionCard`), une par entreprise :
-- Nom (strikethrough rouge si cessée) + badge `Cessée` si applicable
-- Ligne meta : SIREN · ville · NAF court
-- Badge `Déjà importée` si `existingStage`
-- Actions à droite :
-  - **Œil** → ouvre `CompanyPreviewSheet` sur ce SIREN (le sheet sélection reste monté en arrière-plan, z-index inférieur)
-  - **X** → retire de la sélection (sans confirmation, undo via re-clic dans la liste principale)
-
-Footer sticky :
-- `Importer comme Suspect ({n})` — primary, full width
-- État disabled si toutes déjà importées (avec libellé contextuel)
-
-### 4. État vide & cohérence
-- Si `selectedMap.size === 0`, fermer automatiquement le sheet.
-- Persister la sélection dans `sessionStorage` (`crm.annuaire.selection`) pour ne rien perdre au refresh accidentel pendant la qualification.
-
-## Hors-scope
-- Pas de changement BDD, RLS, edge functions.
-- Pas de modification de `CompanyPreviewSheet` ni de la recherche.
-- Pas de drag-and-drop ni de groupes (à voir plus tard si besoin).
-
-## Fichiers touchés
-- `src/pages/CrmAnnuaire.tsx` — refactor `selected` → `selectedMap`, ajout bouton + state `selectionOpen`, persistance sessionStorage.
-- `src/components/crm/CompanySearchResultCard.tsx` — `onToggleSelect` reçoit le `result` complet (déjà dispo via prop).
-- **Nouveau** `src/components/crm/CompanySelectionSheet.tsx` — sheet liste + mini-cartes + actions.
-
-## Détails techniques
-
-```ts
-type SelectionEntry = Pick<CompanySearchResult,
-  'siren' | 'nom_complet' | 'denomination' | 'ville' | 'code_postal'
-  | 'code_naf' | 'libelle_naf' | 'etat_administratif' | 'date_cessation'>;
-
-const [selectedMap, setSelectedMap] =
-  React.useState<Map<string, SelectionEntry>>(() => loadFromSession());
-
-const toggleSelect = (r: SelectionEntry) =>
-  setSelectedMap(prev => {
-    const next = new Map(prev);
-    next.has(r.siren) ? next.delete(r.siren) : next.set(r.siren, r);
-    sessionStorage.setItem('crm.annuaire.selection', JSON.stringify([...next]));
-    return next;
-  });
-```
+Après build : ouvrir `/admin/crm/annuaire?tab=carte`, cliquer sur « Tous les stages » → la liste doit apparaître intégralement au-dessus de la carte, cliquable.

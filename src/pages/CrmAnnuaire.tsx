@@ -350,7 +350,7 @@ const CrmAnnuaire: React.FC = () => {
                 </div>
                 <Select value={companyFilters.stage} onValueChange={(v) => setCompanyFilters(f => ({ ...f, stage: v as any }))}>
                   <SelectTrigger className="w-48 gap-1"><ListFilter className="h-4 w-4" /><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[1100]">
                     <SelectItem value="all">Tous les stages</SelectItem>
                     <SelectItem value="suspect">Suspect</SelectItem>
                     <SelectItem value="prospect">Prospect</SelectItem>
@@ -396,7 +396,7 @@ const CrmAnnuaire: React.FC = () => {
               <div className="flex flex-wrap gap-2 items-center">
                 <Select value={companyFilters.stage} onValueChange={(v) => setCompanyFilters(f => ({ ...f, stage: v as any }))}>
                   <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[1100]">
                     <SelectItem value="all">Tous les stages</SelectItem>
                     <SelectItem value="suspect">Suspect</SelectItem>
                     <SelectItem value="prospect">Prospect</SelectItem>
