@@ -62,6 +62,7 @@ export function useCrmHomeStats() {
 
       return {
         contacts: contactsRes.count || 0,
+        dirigeants: dirigeantsRes.count || 0,
         suspects: byStage('suspect'),
         prospects: byStage('prospect'),
         clients: byStage('client'),
