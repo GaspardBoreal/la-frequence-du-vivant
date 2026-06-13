@@ -693,8 +693,7 @@ export const NAF_CATALOG: NafEntry[] = [
   { code: "88.10C", label: "Aide par le travail" },
   { code: "88.91A", label: "Accueil de jeunes enfants" },
   { code: "88.91B", label: "Accueil ou accompagnement sans hébergement d’enfants handicapés" },
-  { code: "88.99A", label: "Autre accueil ou accompagnement sans hébergement d’enfants
- et d’adolescents" },
+  { code: "88.99A", label: "Autre accueil ou accompagnement sans hébergement d’enfants et d’adolescents" },
   { code: "88.99B", label: "Action sociale sans hébergement n.c.a." },
   { code: "90.01Z", label: "Arts du spectacle vivant" },
   { code: "90.02Z", label: "Activités de soutien au spectacle vivant" },
