@@ -64,7 +64,23 @@ const CrmPipeline: React.FC = () => {
   };
 
   const handleFormSubmit = async (data: any) => {
-    const { linkedCompanies, linkedContacts, ...payload } = data;
+    const { linkedCompanies, linkedContacts, ...rest } = data;
+
+    // Sanitize: convert "" → null for optional fields (Postgres rejects "" for date/uuid)
+    const TEXT_NULLABLE = ['entreprise', 'fonction', 'telephone', 'experience_souhaitee',
+      'format_souhaite', 'lieu_prefere', 'objectifs', 'financement_souhaite',
+      'source', 'notes', 'date_souhaitee', 'assigned_to'];
+    const NUM_NULLABLE = ['budget_estime', 'nombre_participants'];
+    const payload: any = { ...rest };
+    for (const k of TEXT_NULLABLE) {
+      if (payload[k] === '' || payload[k] === undefined) payload[k] = null;
+    }
+    for (const k of NUM_NULLABLE) {
+      const v = payload[k];
+      if (v === '' || v === undefined || v === null || Number.isNaN(Number(v))) payload[k] = null;
+      else payload[k] = Number(v);
+    }
+
     // Sync the primary company onto legacy company_id for backward compat
     const primary = (linkedCompanies || []).find((c: any) => c.role === 'primary');
     if (primary) payload.company_id = primary.company_id;
@@ -87,6 +103,7 @@ const CrmPipeline: React.FC = () => {
       setEditingOpportunity(null);
     }
   };
+
 
   const handleFormClose = (open: boolean) => {
     if (!open) {
