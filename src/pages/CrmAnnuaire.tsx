@@ -17,6 +17,7 @@ import { CompanyDetailSheet } from '@/components/crm/CompanyDetailSheet';
 import { CrmCompaniesMap } from '@/components/crm/CrmCompaniesMap';
 import { CompanyStageBadge } from '@/components/crm/CompanyStageBadge';
 import { FRENCH_DEPARTMENTS_WITH_CODES, FRENCH_REGIONS_WITH_CODES } from '@/utils/frenchAdministrativeCodes';
+import { getNafLabel, formatNaf } from '@/lib/nafCatalog';
 import type { CompanySearchFilters, CrmCompanyStage } from '@/types/crmCompany';
 import { STAGE_LABELS } from '@/types/crmCompany';
 
