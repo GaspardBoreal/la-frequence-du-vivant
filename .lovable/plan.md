@@ -1,80 +1,64 @@
-## Problème observé
+## Diagnostic (ce qui bugge sur la capture)
 
-Sur l'onglet **Carte**, ouvrir une fiche entreprise déclenche un `Sheet` plein hauteur (max-w-2xl) qui **recouvre la carte**, masque le marqueur sélectionné, casse l'auto-zoom et empêche toute lecture spatiale. Le popup Leaflet par défaut est aussi très basique ("Ouvrir la fiche" en lien souligné). Résultat : on perd le contexte géographique dès qu'on clique.
+1. **Titre tronqué** : `truncate` sur `<h2>` coupe "COOPERATIVE DES SAUNIER…" alors que le panneau est large de 440 px — aucune raison de tronquer.
+2. **Bouton "Supprimer" masqué** par le FAB du chatbot (rond vert en bas-droite). Le footer sticky du panneau et le FAB se chevauchent.
+3. **Contenu coupé en bas** ("46.38P)" tronqué) : le `overflow-y-auto` du body fonctionne, mais l'ombre + le footer mangent visuellement la dernière ligne, et le scrollbar est invisible (pas de padding bas).
+4. **La carte est inutilisable quand le panneau est ouvert** : le `grid-cols-[1fr_440px]` rétrécit la carte à ~560 px et le pin sélectionné reste à gauche (le `panBy` se fait avant que la carte n'ait rétréci → décalage faux).
+5. **Pills de stage** débordent sur étroit et le `layoutId="stage-pill"` est partagé entre 2 instances (sheet mobile + inline) → animation qui saute si les deux montent.
+6. **Pas de séparation visuelle** entre carte et panneau (pas d'ombre franche, pas de "poignée"), donc on a l'impression que le panneau "mange" la carte.
 
-## Direction proposée — « Atlas Commercial »
+## Correctif élégant — "Floating Glass Panel"
 
-Une mise en page split-screen façon Mapbox Studio / Linear Insights : la carte reste reine, le panneau d'information glisse à droite **sans la masquer**, et la carte se re-cadre automatiquement sur le marqueur sélectionné dans l'espace visible restant.
+Au lieu d'un split-grid qui rétrécit la carte, on passe à un **panneau flottant en overlay** sur la carte (desktop) + bottom-sheet plein écran (mobile). La carte reste pleine largeur, le panneau "lévite" au-dessus avec glassmorphism et ombre douce.
 
-### 1. Split layout sur l'onglet Carte
+### 1. `src/pages/CrmAnnuaire.tsx` — onglet Carte
 
-```text
-┌───────────────────────────────────────────────┬──────────────────┐
-│                                               │  ◐ CO            │
-│            CARTE (flex-1)                     │  Construire pour │
-│                                               │  Partager        │
-│        ● marqueur sélectionné                 │  ──────────────  │
-│        (halo pulsé, recentré)                 │  [Suspect ▾]     │
-│                                               │  → Prospect      │
-│                                               │  → Client        │
-│                                               │  ──────────────  │
-│                                               │  Identité ▸      │
-│                                               │  Dirigeants      │
-│                                               │  Finances        │
-│                                               │  Activités       │
-└───────────────────────────────────────────────┴──────────────────┘
-```
+- Supprimer le `grid-cols-[1fr_440px]` qui rétrécit la carte.
+- Conteneur `relative` autour de `<CrmCompaniesMap>` ; carte plein largeur (`70vh`, `100%`).
+- Panneau desktop (`hidden lg:flex`) en **`absolute right-4 top-4 bottom-4 w-[420px] z-[450]`** (au-dessus des tuiles Leaflet z-index 400 mais sous les overlays Radix z-50 du body), avec `<AnimatePresence>` + slide-in depuis la droite (Framer Motion `initial={{ x: 32, opacity: 0 }}`).
+- Le `flyOffsetX` de la carte passe à **`-210`** (moitié du panneau) seulement quand le panneau est ouvert, et **après** un `requestAnimationFrame` pour laisser Leaflet recalculer.
+- Mobile : on garde la `Sheet bottom` 85vh, mais avec `lg:hidden`.
+- `<CompanyDetailSheet>` global déjà filtré (`tab === 'carte' ? null : drawerId`) — OK.
 
-- Sur Carte, quand `selectedId` est défini : grid `1fr 420px` (desktop) ; sur mobile (`<lg`) on retombe sur un Sheet bottom-sheet (drag handle) qui n'occupe que ~70 % de la hauteur.
-- Le panneau latéral utilise une nouvelle variante du composant détail (mode `inline`) : pas d'overlay sombre, pas de `Sheet`, juste une card sticky avec glassmorphism léger (`bg-card/95 backdrop-blur border-l`).
-- Bouton fermeture rond flottant en haut à gauche du panneau (chevron »).
-- Quand la sélection se ferme, la carte reprend toute la largeur avec une transition fluide (`transition-[grid-template-columns] duration-500`).
+### 2. `src/components/crm/CompanyDetailContent.tsx` — fixes visuels
 
-### 2. Carte plus expressive
+- **Titre** : retirer `truncate`, mettre `line-clamp-2 leading-snug` (2 lignes max, pas de coupure brutale).
+- **Header** : `pr-12` pour libérer la zone du bouton fermer ; bouton close `z-10`.
+- **Stage pills** : `flex-wrap gap-1 p-1`, garantir wrap propre si <380 px ; `layoutId` rendu unique via prop `panelId` (ex. `stage-pill-${mode}-${companyId}`) pour éviter le conflit Framer Motion entre instances.
+- **Body** : `pb-6` pour respirer avant le footer ; scrollbar fine custom (`scrollbar-thin` Tailwind plugin déjà présent sinon `[&::-webkit-scrollbar]:w-1.5`).
+- **Footer sticky** :
+  - `sticky bottom-0` (déjà), mais ajouter **`pr-20`** sur desktop pour ne jamais passer sous le FAB chatbot (qui fait ~56px + marge).
+  - En mode `inline`, le footer reste dans le panneau (pas global) → pas de conflit FAB tant que le panneau a `right-4` + on garde un `pr-2` simple. Le vrai conflit FAB n'arrive qu'en mode `mobile-sheet` plein écran → ajouter `pb-[env(safe-area-inset-bottom)] mb-2` et augmenter `right` du FAB seulement quand panneau ouvert n'est pas faisable globalement → solution simple : **ajouter une marge bas `pb-4` + `pr-16` au footer en mode `mobile-sheet`**.
+- Header hero : réduire padding (`px-4 pt-4 pb-3`) pour gagner de la place ; avatar 12×12 (au lieu de 14) → plus compact, le titre tient.
 
-- **Marqueurs custom** : pin goutte SVG (au lieu du disque actuel) colorée selon le stage, avec halo pulsé pour le marqueur sélectionné (`animate-ping` + ring).
-- **Popup remplacé** par un *tooltip carte de visite* au survol uniquement : avatar 2 lettres + nom + ville + chip stage. Le clic ouvre directement le panneau (plus de popup intermédiaire avec "Ouvrir la fiche").
-- **Recadrage intelligent** sur sélection : `map.flyTo([lat, lng], 14, { duration: 0.8 })` avec offset latéral pour compenser le panneau (utilise `map.panBy([panelWidth/2, 0])`).
-- **Clustering doux** si > 50 marqueurs proches (optionnel — à confirmer si on veut l'ajouter maintenant).
+### 3. `CrmCompaniesMap.tsx`
 
-### 3. Refonte visuelle du panneau détail
+- Le `FlyToSelected` actuel fait `panBy` 720 ms après le `flyTo`. Problème : si la carte a été redimensionnée (cas grid), `flyTo` se base sur l'ancienne taille → pin off-screen. Avec le passage en overlay, la carte ne change plus de taille → on enlève simplement l'attente et on combine en un seul `flyTo` avec destination déjà décalée :
+  ```ts
+  const targetLatLng = map.containerPointToLatLng(
+    map.latLngToContainerPoint([lat, lng]).add([offsetX, 0])
+  );
+  map.flyTo(targetLatLng, targetZoom, { duration: 0.7 });
+  ```
+- Pas d'autre changement.
 
-- **Header hero** : bandeau dégradé subtil (`from-primary/10 via-card to-card`), avatar 56px avec halo radial coloré selon le stage, titre en `text-xl font-semibold tracking-tight`.
-- **Stage switcher visuel** : 4 pills horizontaux (Suspect · Prospect · Client · Inactif) avec ligne soulignée animée sous l'actif (Framer Motion `layoutId`), au lieu du Select + 2 boutons "Passer en…".
-- **Tabs sticky** sous le header avec indicateur underline et compteurs discrets (`Dirigeants · 3`, `Finances · 5 ans`, `Activités · 12`).
-- **Rows Identité** : grille 2 colonnes (label / valeur) plus dense, séparateurs `border-border/40`, icônes en cercle teinté.
-- **Footer flottant** sticky en bas avec actions secondaires (Supprimer en ghost rouge discret, plus de gros bouton rouge agressif en haut).
-- Animations d'entrée Framer Motion (`opacity 0 → 1`, `x: 20 → 0`, durée 250 ms).
+### 4. Détails de polish
 
-### 4. Cohérence avec les autres tabs
+- Ombre du panneau : `shadow-2xl ring-1 ring-border/60`.
+- Coin du panneau : `rounded-2xl` (déjà).
+- Backdrop : `bg-card/85 backdrop-blur-xl` pour vraiment laisser deviner la carte derrière.
+- Bouton fermer : `ChevronsRight` → meilleure affordance "replier le tiroir".
 
-Hors onglet Carte (Annuaire, Entreprises, Kanban), l'ouverture continue d'utiliser le `Sheet` actuel (le split n'a de sens que face à une carte). Le composant détail expose deux modes : `mode="sheet"` (par défaut) et `mode="inline"` (utilisé par la Carte).
+### Hors scope
 
-## Détails techniques
+- Pas de clustering Leaflet.
+- Pas de refonte des autres onglets.
+- Pas de modification du chatbot/FAB.
 
-- **`CompanyDetailSheet.tsx`** : factoriser le corps en `<CompanyDetailContent companyId={id} onClose={…} />` réutilisable. Garder l'export `CompanyDetailSheet` qui enveloppe `<CompanyDetailContent>` dans un `Sheet` (rétro-compatibilité pour Annuaire / Entreprises / Kanban).
-- **`CrmAnnuaire.tsx`** :
-  - Sur tab `carte` : grid `lg:grid-cols-[1fr_420px]` quand `selectedCompanyId` est set, sinon une seule colonne. Le `<CompanyDetailSheet>` est remplacé par `<CompanyDetailContent>` dans la 2e colonne. Sur mobile, fallback `Sheet` bottom (`side="bottom"`).
-  - Sur les autres tabs : on garde `<CompanyDetailSheet>` tel quel.
-- **`CrmCompaniesMap.tsx`** :
-  - Nouvelles icônes SVG pin (gradient, ombre portée) via `L.divIcon`.
-  - Halo pulsé pour `selectedId` (prop ajoutée).
-  - `flyTo` + offset au lieu de l'auto-fit quand un marqueur est sélectionné.
-  - Tooltip Leaflet (hover) à la place du Popup ; clic = `onSelect`.
-- **Tokens design** : aucune nouvelle couleur, on réutilise `--primary`, `--card`, `--border`, `STAGE_MARKER_COLOR`.
+### Résultat visuel attendu
 
-## Hors scope
-
-- Pas de clustering Leaflet (sauf si tu veux l'ajouter maintenant).
-- Pas de mini-streetview / Google StreetView.
-- Pas de réorganisation des onglets internes Identité/Dirigeants/Finances/Activités (juste re-skin).
-- Pas de modif des autres tabs (Annuaire, Entreprises, Kanban).
-
-## Livrables
-
-1. `src/components/crm/CompanyDetailContent.tsx` (nouveau) — corps réutilisable, mode inline + sheet.
-2. `src/components/crm/CompanyDetailSheet.tsx` — devient un mince wrapper `Sheet` autour de `CompanyDetailContent`.
-3. `src/components/crm/CrmCompaniesMap.tsx` — pins SVG, halo sélection, `flyTo` avec offset, tooltip hover.
-4. `src/pages/CrmAnnuaire.tsx` — split layout sur tab Carte, mobile bottom-sheet fallback.
-
-Veux-tu que j'ajoute le **clustering Leaflet** dans le même chantier, ou on garde simple pour cette première passe ?
+- Carte plein largeur, jamais rétrécie.
+- Panneau flottant à droite, ombre douce, titre complet sur 2 lignes max.
+- Bouton "Supprimer" visible, jamais sous le FAB.
+- Pin sélectionné correctement décalé vers la gauche pour rester visible.
+- Mobile : bottom-sheet 85vh, padding bas pour éviter le FAB.
