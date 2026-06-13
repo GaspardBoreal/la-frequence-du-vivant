@@ -107,8 +107,17 @@ export const CompanySearchFiltersDrawer: React.FC<Props> = ({ value, onChange })
                   </div>
                 </div>
                 <div>
-                  <Label>Forme juridique (code)</Label>
-                  <Input value={draft.categorie_juridique ?? ''} onChange={e => set('categorie_juridique', e.target.value || undefined)} placeholder="ex: 5710" />
+                  <Label>Forme juridique (code à 4 chiffres)</Label>
+                  <Input
+                    value={draft.categorie_juridique ?? ''}
+                    onChange={e => set('categorie_juridique', e.target.value || undefined)}
+                    placeholder="ex : 5710 (SAS), 5499 (autre SA)"
+                    inputMode="numeric"
+                    maxLength={4}
+                  />
+                  {draft.categorie_juridique && !/^\d{4}$/.test(draft.categorie_juridique) && (
+                    <p className="text-[11px] text-destructive mt-1">Doit être 4 chiffres (ex : 5710). Ne pas confondre avec le code NAF.</p>
+                  )}
                 </div>
                 <div>
                   <Label>Catégorie d'entreprise</Label>

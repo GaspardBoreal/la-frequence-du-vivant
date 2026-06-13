@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X } from 'lucide-react';
 import { useCrmRole } from '@/hooks/useCrmRole';
 import { useCompanySearch } from '@/hooks/useCompanySearch';
 import { useCrmCompanies, useImportCompanies } from '@/hooks/useCrmCompanies';
@@ -16,8 +16,33 @@ import { CompanySearchResultCard } from '@/components/crm/CompanySearchResultCar
 import { CompanyDetailSheet } from '@/components/crm/CompanyDetailSheet';
 import { CrmCompaniesMap } from '@/components/crm/CrmCompaniesMap';
 import { CompanyStageBadge } from '@/components/crm/CompanyStageBadge';
+import { FRENCH_DEPARTMENTS_WITH_CODES, FRENCH_REGIONS_WITH_CODES } from '@/utils/frenchAdministrativeCodes';
 import type { CompanySearchFilters, CrmCompanyStage } from '@/types/crmCompany';
 import { STAGE_LABELS } from '@/types/crmCompany';
+
+const FILTER_LABELS: Partial<Record<keyof CompanySearchFilters, string>> = {
+  commune: 'Ville', code_postal: 'CP', departement: 'Département', region: 'Région',
+  activite_principale: 'NAF', categorie_juridique: 'Forme juridique',
+  tranche_effectif_salarie: 'Effectif', categorie_entreprise: 'Catégorie', etat_administratif: 'État',
+  nom_personne: 'Dirigeant (nom)', prenoms_personne: 'Dirigeant (prénom)',
+  ca_min: 'CA min', ca_max: 'CA max', resultat_net_min: 'Résultat min', resultat_net_max: 'Résultat max',
+  est_ess: 'ESS', est_rge: 'RGE', est_bio: 'Bio', est_qualiopi: 'Qualiopi', est_finess: 'FINESS',
+  est_uai: 'UAI', est_entrepreneur_spectacle: 'Spectacle',
+  est_collectivite_territoriale: 'Collectivité', est_societe_mission: 'Société à mission',
+};
+
+function formatFilterValue(key: keyof CompanySearchFilters, v: any): string {
+  if (typeof v === 'boolean') return 'Oui';
+  if (key === 'departement') {
+    const d = FRENCH_DEPARTMENTS_WITH_CODES.find(x => x.code === v);
+    return d ? `${d.code} — ${d.label}` : String(v);
+  }
+  if (key === 'region') {
+    const r = FRENCH_REGIONS_WITH_CODES.find(x => x.code === v);
+    return r ? r.label : String(v);
+  }
+  return String(v);
+}
 
 const CrmAnnuaire: React.FC = () => {
   const { canAccessCrm } = useCrmRole();
@@ -106,10 +131,52 @@ const CrmAnnuaire: React.FC = () => {
               <div className="flex gap-2 flex-wrap">
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Nom, SIREN, dirigeant…" className="pl-9" />
+                  <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Nom, SIREN, dirigeant…" className="pl-9 pr-9" />
+                  {q && (
+                    <button type="button" onClick={() => setQ('')}
+                      aria-label="Effacer la recherche"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted text-muted-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
                 <CompanySearchFiltersDrawer value={filters} onChange={setFilters} />
               </div>
+
+              {/* Chips des filtres actifs */}
+              {(() => {
+                const chips: Array<{ key: string; label: string; onRemove: () => void }> = [];
+                if (debouncedQ) chips.push({ key: 'q', label: `Recherche : "${debouncedQ}"`, onRemove: () => setQ('') });
+                (Object.keys(filters) as Array<keyof CompanySearchFilters>).forEach((k) => {
+                  if (['q', 'page', 'per_page'].includes(k as string)) return;
+                  const v = (filters as any)[k];
+                  if (v === undefined || v === '' || v === null || v === false) return;
+                  const lbl = FILTER_LABELS[k] ?? String(k);
+                  chips.push({
+                    key: String(k),
+                    label: `${lbl} : ${formatFilterValue(k, v)}`,
+                    onRemove: () => setFilters(f => { const n = { ...f }; delete (n as any)[k]; return { ...n, page: 1 }; }),
+                  });
+                });
+                if (chips.length === 0) return null;
+                return (
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                    {chips.map(c => (
+                      <button key={c.key} type="button" onClick={c.onRemove}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-muted hover:bg-accent border">
+                        {c.label}
+                        <X className="h-3 w-3" />
+                      </button>
+                    ))}
+                    <button type="button"
+                      onClick={() => { setQ(''); setFilters({ per_page: 20, page: 1 }); }}
+                      className="text-xs text-muted-foreground hover:text-foreground underline ml-1">
+                      Tout effacer
+                    </button>
+                  </div>
+                );
+              })()}
+
               {selected.size > 0 && (
                 <div className="mt-3 flex items-center justify-between gap-2 p-2 bg-primary/10 rounded-md">
                   <span className="text-sm font-medium">{selected.size} entreprise(s) sélectionnée(s)</span>
@@ -150,7 +217,15 @@ const CrmAnnuaire: React.FC = () => {
                     />
                   ))}
                   {!isFetching && searchData?.results.length === 0 && (
-                    <Card className="p-8 text-center text-muted-foreground">Aucun résultat.</Card>
+                    <Card className="p-6 text-center text-muted-foreground space-y-3">
+                      <p className="font-medium text-foreground">Aucun résultat.</p>
+                      {debouncedQ && (
+                        <div className="text-xs space-y-2">
+                          <p>Votre recherche texte <span className="font-mono bg-muted px-1.5 py-0.5 rounded">"{debouncedQ}"</span> est combinée aux filtres en ET logique.</p>
+                          <Button size="sm" variant="outline" onClick={() => setQ('')}>Essayer sans le texte de recherche</Button>
+                        </div>
+                      )}
+                    </Card>
                   )}
                   {searchData && searchData.total_pages > 1 && (
                     <div className="flex items-center justify-between pt-3">
