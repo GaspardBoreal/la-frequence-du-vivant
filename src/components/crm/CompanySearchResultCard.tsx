@@ -7,9 +7,7 @@ import { MapPin, Users, Building2, Plus, Check } from 'lucide-react';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { CompanyStageBadge } from './CompanyStageBadge';
 import type { CompanySearchResult, CrmCompanyStage } from '@/types/crmCompany';
-
-import { formatNaf, getNafLabel } from '@/lib/nafCatalog';
-import type { CompanySearchResult, CrmCompanyStage } from '@/types/crmCompany';
+import { formatNaf } from '@/lib/nafCatalog';
 
 interface Props {
   result: CompanySearchResult;
@@ -20,7 +18,7 @@ interface Props {
   onPickNaf?: (code: string) => void;
 }
 
-export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport }) => {
+export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport, onPickNaf }) => {
   const isImported = !!existingStage;
   return (
     <Card className="p-3 sm:p-4 hover:shadow-md transition-shadow">
