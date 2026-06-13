@@ -98,18 +98,10 @@ export const CompanySearchFiltersDrawer: React.FC<Props> = ({ value, onChange })
             <AccordionItem value="act">
               <AccordionTrigger>Activité &amp; structure</AccordionTrigger>
               <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Code NAF/APE</Label>
-                  <Input value={draft.activite_principale ?? ''} onChange={e => set('activite_principale', e.target.value || undefined)} placeholder="ex: 01.11Z" />
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {NAF_QUICK_PICKS.slice(0, 5).map(p => (
-                      <button key={p.code} type="button" onClick={() => set('activite_principale', p.code)}
-                        className="text-[11px] px-2 py-0.5 rounded-full border bg-muted hover:bg-accent">
-                        {p.code}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <NafCombobox
+                  value={draft.activite_principale}
+                  onChange={(code) => set('activite_principale', code)}
+                />
                 <div>
                   <Label>Forme juridique (code à 4 chiffres)</Label>
                   <Input
