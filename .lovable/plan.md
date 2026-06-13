@@ -1,104 +1,58 @@
-## Objectif
+# Refonte de la vue Observations — Pouls du vivant
 
-Rendre les 4 actions (Mode clair/sombre, Connexion / Mon espace, Partager, Suivre sur LinkedIn) accessibles en haut de toutes les pages publiques de La Fréquence du Vivant, de manière harmonieuse avec les designs très différents (Forêt Émeraude sombre vs Papier Crème clair vs hybrides), tout en préparant l'évolution du bouton Partager vers un drawer riche (reels data hebdo/mensuels/départemental).
+Périmètre : **uniquement** `src/components/community/exploration/BiodiversityEvolutionChart.tsx` quand `metric === 'observations'`. La vue Espèces reste **strictement inchangée**. Pas de modif de données — tout est dérivé de `series` + `byDay` déjà filtrés par période dans `useBiodiversityEvolution`.
 
-## Principe directeur
+## 1. Inversion de hiérarchie visuelle
 
-Un **seul composant** `PublicTopBar` réutilisable, sticky en haut, pleine largeur, qui :
-- Auto-détecte le ton du fond (`light` / `dark` / `glass`) via un prop `tone` ou auto-détection `ThemeContext`.
-- Remplace les nav existantes en intégrant leur **slot gauche** (logo / breadcrumb / ArrowLeft retour) pour ne **rien casser visuellement**.
-- Expose les 4 actions à droite, toujours à la même place (mémoire musculaire utilisateurs).
+Quand `metric === 'observations'` :
 
-## Architecture
+- **Barres XXL** : hauteur conteneur `h-80 sm:h-96` (vs `h-64 sm:h-72`), `maxBarSize=42`, `radius=[6,6,0,0]`, **dégradé vertical** (`hsl(var(--primary))` → `hsl(var(--primary)/0.45)`) au lieu du gris à 25 % d'opacité.
+- **Highlight du jour record** : la barre du `daily` max passe en accent (`hsl(var(--accent))` ou primary saturé) + label valeur au-dessus.
+- **Courbe espèces discrète** : la `Area cumulative` devient une `Line` fine sur **axe Y droit** — `stroke="hsl(var(--muted-foreground))"`, `strokeWidth={1}`, `strokeDasharray="3 3"`, `strokeOpacity={0.5}`, `dot={false}`. Légende : « Cumul espèces (réf.) ». En vue Espèces, on garde l'`Area` actuelle inchangée.
+- Tooltip enrichi : observations du jour (gros), + cumul espèces (petit, secondaire), + jour vs moyenne (ex : « +120 % vs moyenne période »).
 
-### 1. Nouveau composant `src/components/layout/PublicTopBar.tsx`
+## 2. Bandeau KPI riche (sous le header, au-dessus du graphe)
 
-Props :
-```ts
-{
-  tone?: 'light' | 'dark' | 'glass' | 'auto'; // défaut 'auto'
-  leftSlot?: React.ReactNode;     // logo, retour, breadcrumb spécifique à la page
-  sticky?: boolean;               // défaut true
-  transparent?: boolean;          // pour hero immersifs (Index, Interreg)
-  className?: string;
-}
-```
+Composant inline `<ObservationsKpiStrip />` rendu uniquement si `metric === 'observations'` et `series.length > 0`. **Mobile first** : `flex overflow-x-auto snap-x` sur < sm, `grid grid-cols-4` sur sm+, `grid-cols-8` sur lg.
 
-Comportement visuel par `tone` :
-- **light** (Papier Crème) : `bg-[rgba(254,253,251,0.92)] backdrop-blur-md border-b border-stone-200/50`, icônes `text-stone-600`, hover emerald — reprend exactement le style actuel de `/marches-du-vivant/explorer`.
-- **dark** (Forêt Émeraude) : `bg-[rgba(10,31,26,0.6)] backdrop-blur-xl border-b border-emerald-500/15`, icônes `text-emerald-200/80`, hover gold `#c9a84c`.
-- **glass** (hero immersif, Index, Interreg) : `bg-white/5 backdrop-blur-xl border-b border-white/10`, icônes `text-white/80`.
-- **auto** : utilise `useTheme().resolvedTheme` → `dark` ou `light`.
+8 KPI calculés en `useMemo` à partir de `series` + `byDay` filtrés sur la période :
 
-Bouton LinkedIn : même esprit que celui posé sur Explorer (rounded-full, ring subtil, hover bleu LinkedIn `#0A66C2`), couleurs du ring adaptées au `tone`.
+| KPI | Calcul |
+|---|---|
+| **Total obs** | `Σ observationsDaily` |
+| **Jour record** | `max(daily)` + date courte (« 12 mars · 47 obs ») |
+| **Moy / jour actif** | `total / jours où daily > 0` |
+| **Jours actifs** | `filteredDays.filter(d => daily>0).length` / nb total jours période (ex « 14 / 30 j ») |
+| **Streak actuel** | nb jours consécutifs avec `daily>0` en fin de période |
+| **Nouv. espèces** | `Σ newSpeciesCount` sur la période + % du total obs |
+| **Contributeurs** | `Set(observerName)` agrégé sur les buckets filtrés |
+| **Top espèce** | espèce avec le plus d'`observations` sur la période (nom FR via `commonNameFr` déjà résolu) |
 
-### 2. Bouton « Partager » — préparé pour les reels
+Chaque chip : icône lucide (`Eye`, `Trophy`, `TrendingUp`, `CalendarDays`, `Flame`, `Sparkles`, `Users`, `Star`), valeur en `text-xl sm:text-2xl font-bold tabular-nums`, label en `text-[10px] uppercase tracking-wide text-muted-foreground`. Bordure `border-border`, fond `bg-gradient-to-br from-primary/5 to-transparent`, hover scale léger. Largeur min sur mobile `min-w-[140px] snap-start`.
 
-Nouveau composant `src/components/share/ShareButton.tsx` + `ShareDrawer.tsx` :
-- **Aujourd'hui (livré tout de suite)** : clic → si `navigator.share` dispo, partage natif Web Share API avec `title`/`url` de la page courante ; sinon copie le lien (toast).
-- **Architecture prête pour demain** : le bouton lit une prop `mode: 'native' | 'drawer'` (défaut `native`). Quand `drawer`, ouvre un `Sheet` shadcn avec onglets prévus :
-  - 🔗 Lien (actif)
-  - 🎬 Reel — Cette semaine (placeholder « Bientôt »)
-  - 🎬 Reel — Ce mois-ci (placeholder)
-  - 🎬 Reel — Par département (placeholder + sélecteur)
-- L'enrichissement futur n'aura qu'à brancher les générateurs de reels dans les onglets existants, **zéro refacto du composant ni des pages**.
+Texte « 211 observations enregistrées depuis le 29 janv. 2026 » du header devient redondant en vue Observations → on le **masque** au profit du strip KPI (gardé tel quel en vue Espèces).
 
-### 3. Intégration page par page (sans casser le design)
+## 3. Cohérence période
 
-Pour chaque page publique, je remplace son `<nav>` actuel (ou je l'ajoute si absent) par `<PublicTopBar>` avec le bon `tone` et `leftSlot` :
+Tous les KPI consomment exactement `series` (déjà filtré par `period`/`customRange`) et `byDay` restreint à `filteredDays` — un changement de période recalcule l'intégralité du strip via `useMemo([series, byDay, period])`. Pour `today`, on bascule automatiquement le graphe en barres horaires si possible — sinon affiche 1 grosse barre + KPI strip (les KPI restent pertinents même sur 1 jour).
 
-| Page | tone | leftSlot |
-|------|------|----------|
-| `/` Index | `glass` (transparent over hero) | logo « La Fréquence du Vivant » blanc |
-| `/marches-du-vivant` | `light` | ArrowLeft → `/` + « Accueil » |
-| `/marches-du-vivant/explorer` | `light` | actuel (ArrowLeft + « Les Marches du Vivant ») |
-| `/marches-du-vivant/entreprises`, `/agriculture`, `/partenaires`, `/association` | `light` | ArrowLeft → `/marches-du-vivant` |
-| `/marches-du-vivant/carnets-de-terrain` | `light` | idem |
-| `/bioacoustique-poetique` | `dark` | logo + retour |
-| `/interreg-sudoe-mdv` | `glass` (sur hero animé) puis bascule `dark` au scroll | logo Interreg textuel |
-| `/marches-techno-sensibles`, `/explorations-sensibles`, `/dordonia`, `/api-mcp`, `/audit-frugal/:slug` | auto-détecté | retour contextuel |
+## 4. Mobile first
 
-Pour les pages déjà munies d'une nav très typée (Index header dramatique, BioacoustiquePoetique), le bandeau est ajouté **par-dessus en mode transparent/glass** afin de ne pas écraser l'art-direction du hero (option `transparent` + position absolute sur les 2-3 hero pages concernées).
-
-### 4. Pages explicitement EXCLUES
-
-Le bandeau **ne s'affiche pas** sur :
-- `/marches-du-vivant/mon-espace` et sous-routes (ont déjà `MonEspaceHeader` avec mêmes fonctions)
-- `/admin/*` (back-office)
-- `/m/:slug` (event public immersif — scénographie custom)
-- viewers eBook / ExperienceLecture / ExplorationPodcast (lecture immersive)
-
-### 5. Wiring des 4 actions
-
-- **Mode clair/sombre** : réutilise `<ThemeToggle />` existant (`src/components/community/ThemeToggle.tsx`).
-- **Connexion / Mon espace** : `<Link>` intelligent → si `useAuth().user`, pointe vers `/marches-du-vivant/mon-espace` avec icône `UserCircle` + petit dot vert ; sinon vers `/marches-du-vivant/connexion`.
-- **Partager** : `ShareButton` (cf. §2).
-- **LinkedIn** : `<a>` vers `https://www.linkedin.com/company/la-fr%C3%A9quence-du-vivant/`, hover `#0A66C2`.
-
-### 6. Responsive
-
-- Desktop ≥ md : 4 icônes alignées + leftSlot complet.
-- Mobile : 4 icônes restent visibles (compactes 36×36 px), leftSlot tronqué (juste ArrowLeft sans label si manque de place).
+- KPI strip horizontal scrollable avec snap (8 chips visibles par scroll), gradients fade gauche/droite pour suggérer le scroll.
+- Graphe : hauteur `h-80` sur mobile, marges X réduites (`-mx-3`), `XAxis` `minTickGap={32}` pour éviter le chevauchement, `YAxis` masqué sur mobile (`width={0}` < sm) car les valeurs sont surfaceées via le tooltip et les KPI.
+- Toggle Espèces/Observations reste accessible en haut à droite, inchangé.
 
 ## Détails techniques
 
-- Tous les composants en `src/components/layout/` (nouveau dossier) + `src/components/share/`.
-- Aucune modification de `App.tsx` (pas de layout wrapper global — chaque page intègre `PublicTopBar` en tête, pour préserver les hero immersifs et l'art-direction page par page).
-- Le composant existant `MonEspaceHeader` reste inchangé.
-- Le bandeau actuel de `/marches-du-vivant/explorer` (lignes 218-244) devient le **template visuel canonique** du tone `light` — donc visuellement aucune régression sur cette page.
-
-## QA visuelle
-
-Après implémentation, je vérifie visuellement (screenshots ou preview) :
-1. `/` — bandeau glass invisible sur hero, lisible.
-2. `/marches-du-vivant/explorer` — strictement identique à aujourd'hui.
-3. `/marches-du-vivant` + `/entreprises` + `/association` — bandeau Papier Crème harmonieux.
-4. `/bioacoustique-poetique` — bandeau sombre émeraude.
-5. `/interreg-sudoe-mdv` — bandeau glass sur spectrogramme animé.
-6. Mobile 375px sur chaque page : 4 icônes visibles, pas de débordement.
+- Pas de nouvelle dépendance. Recharts gère le second axe Y (`yAxisId="right"` + `<YAxis yAxisId="right" orientation="right" hide />`).
+- `ObservationsKpiStrip` reste **dans le même fichier** (pas de nouveau fichier) — composant local pour éviter la prop drilling de `byDay`/`series`.
+- Calcul Top espèce : itérer `filteredDays.flatMap(d => byDay.get(d).observations)` puis `Map<sciName, count>`.
+- Calcul streak : remonter `filteredDays` depuis la fin tant que `daily > 0`.
+- Toutes les couleurs via tokens sémantiques (`--primary`, `--accent`, `--muted-foreground`) — aucune couleur custom.
 
 ## Hors scope
 
-- L'implémentation effective des **générateurs de reels** (juste la coquille drawer + onglets placeholders).
-- Toute modif des pages `/mon-espace`, `/admin`, `/m/:slug`, viewers immersifs.
-- Refonte du `MonEspaceHeader` existant.
+- Vue Espèces : aucune modif.
+- `useBiodiversityEvolution` : aucune modif (toutes les données nécessaires y sont déjà).
+- DayDetailDrawer : inchangé.
+- Vue horaire intra-journée (`today`) : implémentée seulement si les données portent une heure exploitable ; sinon fallback barre unique + KPI (à confirmer pendant l'implémentation, pas bloquant).
