@@ -15,6 +15,8 @@ import {
   useAddCompanyActivity,
 } from '@/hooks/useCrmCompanies';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
+import { useCrmContacts } from '@/hooks/useCrmContacts';
+import { Crown, Mail, Phone, Linkedin } from 'lucide-react';
 import {
   STAGE_LABELS,
   STAGE_MARKER_COLOR,
