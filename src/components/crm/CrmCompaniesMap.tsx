@@ -1,8 +1,26 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { STAGE_MARKER_COLOR, type CrmCompany, type CrmCompanyStage } from '@/types/crmCompany';
+
+const FitBounds: React.FC<{ points: Array<{ lat: number; lng: number }> }> = ({ points }) => {
+  const map = useMap();
+  const key = points.map(p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join('|');
+  React.useEffect(() => {
+    if (points.length === 0) {
+      map.setView([46.6, 2.5], 5);
+    } else if (points.length === 1) {
+      map.setView([points[0].lat, points[0].lng], 13);
+    } else {
+      const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng] as [number, number]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return null;
+};
+
 
 function buildIcon(color: string, ring?: boolean) {
   const html = `<div style="background:${color};width:18px;height:18px;border-radius:50%;border:2px solid white;box-shadow:0 0 0 ${ring ? '3px' : '1px'} ${color}80;"></div>`;
@@ -47,8 +65,10 @@ export const CrmCompaniesMap: React.FC<{
 
   return (
     <div className="rounded-lg overflow-hidden border" style={{ height }}>
-      <MapContainer center={center} zoom={points.length > 0 ? 6 : 5} style={{ width: '100%', height: '100%' }} scrollWheelZoom>
+      <MapContainer center={[46.6, 2.5]} zoom={5} style={{ width: '100%', height: '100%' }} scrollWheelZoom>
         <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <FitBounds points={points} />
+
         {points.map(p => (
           <Marker
             key={p.id}
