@@ -42,8 +42,17 @@ export const CompanyDetailSheet: React.FC<Props> = ({ companyId, onOpenChange })
     );
   }
 
-  const dirigeants = (company.dirigeants ?? []) as any[];
-  const finances = (company.finances ?? []) as any[];
+  const dirigeants = Array.isArray(company.dirigeants) ? (company.dirigeants as any[]) : [];
+  const financesRaw = company.finances;
+  const finances: any[] = Array.isArray(financesRaw)
+    ? financesRaw
+    : financesRaw && typeof financesRaw === 'object'
+      ? Object.entries(financesRaw as Record<string, any>).map(([year, vals]) => ({
+          year,
+          ca: vals?.ca ?? null,
+          resultat_net: vals?.resultat_net ?? null,
+        }))
+      : [];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
