@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SlidersHorizontal, RotateCcw } from 'lucide-react';
 import type { CompanySearchFilters } from '@/types/crmCompany';
-import { FRENCH_DEPARTMENTS } from '@/utils/frenchDepartments';
-import { FRENCH_REGIONS } from '@/utils/frenchRegions';
+import { FRENCH_DEPARTMENTS_WITH_CODES, FRENCH_REGIONS_WITH_CODES } from '@/utils/frenchAdministrativeCodes';
 import { CATEGORIE_ENTREPRISE_OPTIONS, ETAT_ADMIN_OPTIONS, LABEL_FILTERS, NAF_QUICK_PICKS, TRANCHE_EFFECTIF_OPTIONS } from '@/lib/crmAnnuaireOptions';
 
 interface Props {
@@ -75,7 +74,7 @@ export const CompanySearchFiltersDrawer: React.FC<Props> = ({ value, onChange })
                     <SelectTrigger><SelectValue placeholder="Tous" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value={NONE}>Tous</SelectItem>
-                      {FRENCH_DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      {FRENCH_DEPARTMENTS_WITH_CODES.map(d => <SelectItem key={d.code} value={d.code}>{d.code} — {d.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -85,7 +84,7 @@ export const CompanySearchFiltersDrawer: React.FC<Props> = ({ value, onChange })
                     <SelectTrigger><SelectValue placeholder="Toutes" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value={NONE}>Toutes</SelectItem>
-                      {FRENCH_REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      {FRENCH_REGIONS_WITH_CODES.map(r => <SelectItem key={r.code + r.label} value={r.code}>{r.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
