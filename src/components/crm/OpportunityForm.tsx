@@ -82,6 +82,20 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
 }) => {
   const { activeMembers } = useTeamMembers();
   const isEditing = !!opportunity;
+  const { data: existingLinks } = useOpportunityLinks(opportunity?.id ?? null);
+
+  const [linkedCompanies, setLinkedCompanies] = React.useState<OppLinkedCompany[]>([]);
+  const [linkedContacts, setLinkedContacts] = React.useState<OppLinkedContact[]>([]);
+
+  React.useEffect(() => {
+    if (existingLinks) {
+      setLinkedCompanies(existingLinks.companies);
+      setLinkedContacts(existingLinks.contacts);
+    } else if (!opportunity) {
+      setLinkedCompanies([]);
+      setLinkedContacts([]);
+    }
+  }, [existingLinks, opportunity]);
 
   const form = useForm<OpportunityFormData>({
     resolver: zodResolver(opportunitySchema),
@@ -110,9 +124,9 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
   React.useEffect(() => {
     if (opportunity) {
       form.reset({
-        prenom: opportunity.prenom,
-        nom: opportunity.nom,
-        email: opportunity.email,
+        prenom: opportunity.prenom || '',
+        nom: opportunity.nom || '',
+        email: opportunity.email || '',
         entreprise: opportunity.entreprise || '',
         fonction: opportunity.fonction || '',
         telephone: opportunity.telephone || '',
@@ -131,31 +145,42 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
       });
     } else {
       form.reset({
-        prenom: '',
-        nom: '',
-        email: '',
-        entreprise: '',
-        fonction: '',
-        telephone: '',
-        experience_souhaitee: '',
-        format_souhaite: '',
-        date_souhaitee: '',
-        lieu_prefere: '',
-        objectifs: '',
-        financement_souhaite: '',
-        budget_estime: undefined,
-        nombre_participants: undefined,
-        statut: 'a_contacter',
-        notes: '',
-        assigned_to: '',
-        source: '',
+        prenom: '', nom: '', email: '', entreprise: '', fonction: '', telephone: '',
+        experience_souhaitee: '', format_souhaite: '', date_souhaitee: '', lieu_prefere: '',
+        objectifs: '', financement_souhaite: '', budget_estime: undefined, nombre_participants: undefined,
+        statut: 'a_contacter', notes: '', assigned_to: '', source: '',
       });
     }
   }, [opportunity, form]);
 
   const handleSubmit = (data: OpportunityFormData) => {
-    onSubmit(data);
+    if (linkedCompanies.length === 0) {
+      toast.error('Liez au moins une entreprise (prospect ou client).');
+      return;
+    }
+    if (!linkedCompanies.some(c => c.role === 'primary')) {
+      toast.error('Désignez une entreprise comme « Principal ».');
+      return;
+    }
+    if (linkedContacts.length === 0) {
+      toast.error('Liez au moins un contact.');
+      return;
+    }
+    // Auto-fill legacy flat fields from primary contact/company if empty
+    const primaryContact = linkedContacts[0];
+    const primaryCompany = linkedCompanies.find(c => c.role === 'primary');
+    onSubmit({
+      ...data,
+      prenom: data.prenom || primaryContact.prenom || '',
+      nom: data.nom || primaryContact.nom || '',
+      email: data.email || primaryContact.email || '',
+      entreprise: data.entreprise || primaryCompany?.denomination || '',
+      fonction: data.fonction || primaryContact.fonction || '',
+      linkedCompanies,
+      linkedContacts,
+    });
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
