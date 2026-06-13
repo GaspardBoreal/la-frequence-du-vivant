@@ -113,20 +113,56 @@ const CrmAnnuaire: React.FC = () => {
     setSearchParams(prev => { prev.set('tab', v); return prev; });
   };
 
-  const toggleSelect = (siren: string) => setSelected(s => {
-    const next = new Set(s);
-    next.has(siren) ? next.delete(siren) : next.add(siren);
+  const toggleSelect = (entry: SelectionEntry) => setSelectedMap(m => {
+    const next = new Map(m);
+    if (next.has(entry.siren)) next.delete(entry.siren);
+    else next.set(entry.siren, entry);
     return next;
   });
 
+  const removeFromSelection = (siren: string) => setSelectedMap(m => {
+    const next = new Map(m);
+    next.delete(siren);
+    return next;
+  });
+
+  const clearSelection = () => setSelectedMap(new Map());
+
   const importSelected = () => {
-    if (selected.size === 0) return;
-    importMutation.mutate({ sirens: Array.from(selected) }, {
-      onSuccess: () => setSelected(new Set()),
+    if (selectedMap.size === 0) return;
+    importMutation.mutate({ sirens: Array.from(selectedMap.keys()) }, {
+      onSuccess: () => { clearSelection(); setSelectionOpen(false); },
     });
   };
 
   const importOne = (siren: string) => importMutation.mutate({ sirens: [siren] });
+
+  // Auto-close selection sheet when empty
+  React.useEffect(() => {
+    if (selectedMap.size === 0 && selectionOpen) setSelectionOpen(false);
+  }, [selectedMap, selectionOpen]);
+
+  // Build entry from preview details (cached by react-query)
+  const { data: previewDetails } = useFrenchCompanyDetails(previewSiren);
+  const togglePreviewSelect = () => {
+    if (!previewSiren) return;
+    if (selectedMap.has(previewSiren)) {
+      removeFromSelection(previewSiren);
+      return;
+    }
+    const entry: SelectionEntry = previewDetails ? {
+      siren: previewDetails.siren,
+      nom_complet: previewDetails.nom_complet,
+      denomination: previewDetails.denomination,
+      ville: previewDetails.siege?.commune ?? null,
+      code_postal: previewDetails.siege?.code_postal ?? null,
+      code_naf: previewDetails.code_naf,
+      libelle_naf: previewDetails.libelle_naf,
+      etat_administratif: previewDetails.etat_administratif,
+      date_cessation: previewDetails.date_cessation,
+    } : { siren: previewSiren };
+    toggleSelect(entry);
+  };
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4">
