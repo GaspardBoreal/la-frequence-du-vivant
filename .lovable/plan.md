@@ -1,32 +1,17 @@
-## Problème confirmé
+## Problème
 
-`HAUT ROCHER` (SIREN 491615993) est dans la base mais `latitude/longitude` sont NULL → le filtre `c.latitude && c.longitude` l'exclut de la carte. Aucun mécanisme de rattrapage n'existe : `rg "geocode-crm\|missingGeo\|Géolocaliser" src/` ne retourne rien, et `supabase/functions/geocode-crm-company/` n'existe pas. Les deux plans précédents n'ont jamais été implémentés.
+`CrmCompaniesMap` (l.46-50) fige `center = points[0]` et `zoom = 6` au montage. Pas de `fitBounds` → quel que soit le nombre de points, on reste sur la France/Bordeaux sans s'adapter.
 
-## Correctif (3 fichiers)
+## Correctif (1 fichier — `src/components/crm/CrmCompaniesMap.tsx`)
 
-### 1. Nouvelle edge function `supabase/functions/geocode-crm-company/index.ts`
-- Admin-only : valide JWT + vérifie `has_role(uid, 'admin')` via service-role.
-- Input : `{ company_ids?: string[] }`. Si vide → cible toutes les `crm_companies` avec `latitude IS NULL OR longitude IS NULL`.
-- Pour chaque entreprise :
-  1. Appel `https://api-adresse.data.gouv.fr/search/?q={adresse} {code_postal} {ville}&limit=1` (BAN, gratuit, sans clé).
-  2. Fallback : `?q={code_postal} {ville}&type=municipality` si zéro résultat.
-  3. `UPDATE crm_companies SET latitude, longitude WHERE id = …`.
-- Retour : `{ updated, failed, details: [{siren, status, source}] }`.
-
-### 2. UI bandeau orange dans `src/pages/CrmAnnuaire.tsx`
-- Calcul `const missingGeo = companies.filter(c => !c.latitude || !c.longitude)`.
-- Bandeau **placé au-dessus du contenu des deux onglets « Entreprises » ET « Carte »** (juste sous la barre de recherche, dans le `<Card>` filtres ou en bandeau indépendant) — c'est ce qui manquait : l'utilisateur est sur Entreprises et ne le voyait pas.
-  ```
-  ⚠️ N entreprise(s) non géolocalisée(s)   [Géolocaliser maintenant]
-  ```
-- Click → `supabase.functions.invoke('geocode-crm-company', { body: { company_ids: missingGeo.map(c => c.id) } })`.
-- Toast récap + `queryClient.invalidateQueries(['crm-companies'])`.
-- Bouton avec `disabled` + spinner pendant la requête.
-
-### 3. Fallback inline dans `supabase/functions/import-companies-batch/index.ts`
-- Si `siege.latitude` est null après normalisation API gouv, appel BAN avant `insert` pour que les futurs imports n'aient plus le problème.
+1. Ajout d'un composant interne `FitBounds` utilisant `useMap()` de `react-leaflet` :
+   - `useEffect` déclenché à chaque changement de `points` (clé = liste des `lat,lng`).
+   - Si **0 point** : `setView([46.6, 2.5], 5)` (France).
+   - Si **1 point** : `setView([lat, lng], 13)` (zoom commune).
+   - Si **N ≥ 2** : `map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 14 })`.
+2. Suppression du `center`/`zoom` figé du `<MapContainer>` (on garde un fallback initial neutre, le `FitBounds` recadrera dès le 1er render).
+3. Aucun changement d'API du composant : `CrmAnnuaire.tsx` reste inchangé.
 
 ## Hors scope
-- Pas de nouvelle table/colonne, pas de migration.
-- Pas de re-geocoding périodique (cron).
-- Pas de cluster Leaflet.
+- Pas de cluster, pas de dé-collision (déjà discuté).
+- Pas de mémorisation du zoom utilisateur entre filtres.
