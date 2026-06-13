@@ -6,7 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
 import { CompanySelectionSheet, type SelectionEntry } from '@/components/crm/CompanySelectionSheet';
 import { useFrenchCompanyDetails } from '@/hooks/useFrenchCompanyDetails';
 import { useCrmRole } from '@/hooks/useCrmRole';
@@ -95,6 +99,28 @@ const CrmAnnuaire: React.FC = () => {
   const importMutation = useImportCompanies();
   const [drawerId, setDrawerId] = React.useState<string | null>(null);
   const [previewSiren, setPreviewSiren] = React.useState<string | null>(null);
+
+  const qc = useQueryClient();
+  const [geocoding, setGeocoding] = React.useState(false);
+  const missingGeo = React.useMemo(() => companies.filter(c => !c.latitude || !c.longitude), [companies]);
+  const runGeocode = async () => {
+    if (missingGeo.length === 0 || geocoding) return;
+    setGeocoding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('geocode-crm-company', {
+        body: { company_ids: missingGeo.map(c => c.id) },
+      });
+      if (error) throw error;
+      const r = data as { updated: number; failed: number };
+      toast.success(`Géolocalisation : ${r.updated} mises à jour, ${r.failed} échec(s)`);
+      qc.invalidateQueries({ queryKey: ['crm-companies'] });
+    } catch (e: any) {
+      toast.error(`Échec géolocalisation : ${e?.message ?? e}`);
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
 
   if (!canAccessCrm) {
     return (
@@ -361,6 +387,22 @@ const CrmAnnuaire: React.FC = () => {
               </div>
             </Card>
 
+            {missingGeo.length > 0 && (
+              <Card className="p-3 mb-3 border-orange-500/50 bg-orange-500/10">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <AlertTriangle className="h-5 w-5 text-orange-500 shrink-0" />
+                  <p className="text-sm flex-1 min-w-[180px]">
+                    <strong>{missingGeo.length}</strong> entreprise{missingGeo.length > 1 ? 's' : ''} non géolocalisée{missingGeo.length > 1 ? 's' : ''}
+                  </p>
+                  <Button size="sm" onClick={runGeocode} disabled={geocoding}>
+                    {geocoding ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Géolocalisation…</> : 'Géolocaliser maintenant'}
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+
+
             {companiesLoading ? (
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : companies.length === 0 ? (
@@ -411,7 +453,22 @@ const CrmAnnuaire: React.FC = () => {
                 </div>
               </div>
             </Card>
+
+            {missingGeo.length > 0 && (
+              <Card className="p-3 mb-3 border-orange-500/50 bg-orange-500/10">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <AlertTriangle className="h-5 w-5 text-orange-500 shrink-0" />
+                  <p className="text-sm flex-1 min-w-[180px]">
+                    <strong>{missingGeo.length}</strong> entreprise{missingGeo.length > 1 ? 's' : ''} non géolocalisée{missingGeo.length > 1 ? 's' : ''}
+                  </p>
+                  <Button size="sm" onClick={runGeocode} disabled={geocoding}>
+                    {geocoding ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Géolocalisation…</> : 'Géolocaliser maintenant'}
+                  </Button>
+                </div>
+              </Card>
+            )}
             <CrmCompaniesMap companies={companies.filter(c => c.latitude && c.longitude)} height="70vh" onSelect={setDrawerId} />
+
             <p className="text-xs text-muted-foreground mt-2">{companies.filter(c => c.latitude && c.longitude).length} entreprise(s) géolocalisée(s) sur {companies.length}.</p>
           </TabsContent>
         </Tabs>
