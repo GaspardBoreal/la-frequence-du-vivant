@@ -1,58 +1,56 @@
-# Refonte de la vue Observations — Pouls du vivant
+# Ajouter un membre CRM depuis les marcheurs
 
-Périmètre : **uniquement** `src/components/community/exploration/BiodiversityEvolutionChart.tsx` quand `metric === 'observations'`. La vue Espèces reste **strictement inchangée**. Pas de modif de données — tout est dérivé de `series` + `byDay` déjà filtrés par période dans `useBiodiversityEvolution`.
+## Objectif
 
-## 1. Inversion de hiérarchie visuelle
+Sur `/admin/crm/equipe`, transformer le bouton « Ajouter un membre » en un flow à deux choix :
 
-Quand `metric === 'observations'` :
+1. **Depuis un marcheur** (chemin principal, mis en avant) — picker avec recherche live nom/prénom dans `community_profiles`.
+2. **Créer manuellement** (chemin secondaire, repli pour membres externes type prestataire).
 
-- **Barres XXL** : hauteur conteneur `h-80 sm:h-96` (vs `h-64 sm:h-72`), `maxBarSize=42`, `radius=[6,6,0,0]`, **dégradé vertical** (`hsl(var(--primary))` → `hsl(var(--primary)/0.45)`) au lieu du gris à 25 % d'opacité.
-- **Highlight du jour record** : la barre du `daily` max passe en accent (`hsl(var(--accent))` ou primary saturé) + label valeur au-dessus.
-- **Courbe espèces discrète** : la `Area cumulative` devient une `Line` fine sur **axe Y droit** — `stroke="hsl(var(--muted-foreground))"`, `strokeWidth={1}`, `strokeDasharray="3 3"`, `strokeOpacity={0.5}`, `dot={false}`. Légende : « Cumul espèces (réf.) ». En vue Espèces, on garde l'`Area` actuelle inchangée.
-- Tooltip enrichi : observations du jour (gros), + cumul espèces (petit, secondaire), + jour vs moyenne (ex : « +120 % vs moyenne période »).
+## Expérience utilisateur
 
-## 2. Bandeau KPI riche (sous le header, au-dessus du graphe)
+Au clic sur « Ajouter un membre », ouverture d'un **Dialog en deux temps** :
 
-Composant inline `<ObservationsKpiStrip />` rendu uniquement si `metric === 'observations'` et `series.length > 0`. **Mobile first** : `flex overflow-x-auto snap-x` sur < sm, `grid grid-cols-4` sur sm+, `grid-cols-8` sur lg.
+### Étape 1 — Choix de la source (split visuel)
 
-8 KPI calculés en `useMemo` à partir de `series` + `byDay` filtrés sur la période :
+Deux grandes cartes côte à côte, design "wahouh" :
+- 🚶 **Depuis la communauté de marcheurs** — gradient `from-primary/10 to-accent/10`, icône `Footprints`, badge « Recommandé ».
+- ✍️ **Créer un membre externe** — bordure simple, icône `UserPlus`.
 
-| KPI | Calcul |
-|---|---|
-| **Total obs** | `Σ observationsDaily` |
-| **Jour record** | `max(daily)` + date courte (« 12 mars · 47 obs ») |
-| **Moy / jour actif** | `total / jours où daily > 0` |
-| **Jours actifs** | `filteredDays.filter(d => daily>0).length` / nb total jours période (ex « 14 / 30 j ») |
-| **Streak actuel** | nb jours consécutifs avec `daily>0` en fin de période |
-| **Nouv. espèces** | `Σ newSpeciesCount` sur la période + % du total obs |
-| **Contributeurs** | `Set(observerName)` agrégé sur les buckets filtrés |
-| **Top espèce** | espèce avec le plus d'`observations` sur la période (nom FR via `commonNameFr` déjà résolu) |
+### Étape 2a — Picker marcheur (si choix communauté)
 
-Chaque chip : icône lucide (`Eye`, `Trophy`, `TrendingUp`, `CalendarDays`, `Flame`, `Sparkles`, `Users`, `Star`), valeur en `text-xl sm:text-2xl font-bold tabular-nums`, label en `text-[10px] uppercase tracking-wide text-muted-foreground`. Bordure `border-border`, fond `bg-gradient-to-br from-primary/5 to-transparent`, hover scale léger. Largeur min sur mobile `min-w-[140px] snap-start`.
+- `Command` (cmdk shadcn) plein dialog avec :
+  - Input recherche en haut : « Rechercher un marcheur (nom ou prénom)… » + auto-focus.
+  - Liste virtuelle scrollable : avatar + prénom nom + ville + badge rôle (Ambassadeur/Sentinelle/Marcheur) + petit chip si déjà membre CRM (grisé, non sélectionnable).
+  - Tri : Ambassadeurs/Sentinelles en premier, puis ordre alphabétique.
+  - Filtre live côté client (debounce 200ms) sur `prenom ILIKE %q% OR nom ILIKE %q%` (normalisé NFD pour ignorer accents).
+  - Pied : compteur « X marcheurs trouvés ».
+- Au clic sur un marcheur → étape de **confirmation pré-remplie** : fonction (optionnelle, ex. « Ambassadeur Dordogne »), switch actif, bouton « Ajouter à l'équipe ».
+- Création du `team_members` avec `user_id = profile.user_id`, `prenom`, `nom`, `email` (récupéré via RPC si dispo, sinon null), `photo_url = avatar_url`, `telephone`, `fonction` saisi.
+- Le rôle CRM (admin/member/walker) reste attribué via le `Select` existant sur la carte du membre après création — non bloquant à l'ajout. Default suggéré : `walker`.
 
-Texte « 211 observations enregistrées depuis le 29 janv. 2026 » du header devient redondant en vue Observations → on le **masque** au profit du strip KPI (gardé tel quel en vue Espèces).
+### Étape 2b — Formulaire manuel
 
-## 3. Cohérence période
+Le formulaire actuel inchangé (prenom/nom/email/fonction/telephone/actif).
 
-Tous les KPI consomment exactement `series` (déjà filtré par `period`/`customRange`) et `byDay` restreint à `filteredDays` — un changement de période recalcule l'intégralité du strip via `useMemo([series, byDay, period])`. Pour `today`, on bascule automatiquement le graphe en barres horaires si possible — sinon affiche 1 grosse barre + KPI strip (les KPI restent pertinents même sur 1 jour).
+## Composants à créer / modifier
 
-## 4. Mobile first
-
-- KPI strip horizontal scrollable avec snap (8 chips visibles par scroll), gradients fade gauche/droite pour suggérer le scroll.
-- Graphe : hauteur `h-80` sur mobile, marges X réduites (`-mx-3`), `XAxis` `minTickGap={32}` pour éviter le chevauchement, `YAxis` masqué sur mobile (`width={0}` < sm) car les valeurs sont surfaceées via le tooltip et les KPI.
-- Toggle Espèces/Observations reste accessible en haut à droite, inchangé.
+- **`src/components/crm/AddMemberDialog.tsx`** (nouveau) — orchestre les 2 étapes (source → picker | manuel).
+- **`src/components/crm/MarcheurPicker.tsx`** (nouveau) — `Command` + liste filtrée + état "déjà membre".
+- **`src/hooks/useMarcheursForCrm.ts`** (nouveau) — `useQuery` qui fetch `community_profiles` (id, user_id, prenom, nom, ville, avatar_url, role, telephone) limité aux profils avec `user_id` non null, ordonnés par rôle puis nom. Limite 1000 (suffisant à ce stade).
+- **`src/pages/TeamManagement.tsx`** — remplace le `Dialog` actuel par `AddMemberDialog`, conserve l'édition existante (clic crayon ouvre le formulaire manuel pré-rempli).
+- **`src/hooks/useTeamMembers.ts`** — ajoute une fonction utilitaire `getExistingUserIds()` (Set des `user_id` déjà liés) pour griser les marcheurs déjà membres.
 
 ## Détails techniques
 
-- Pas de nouvelle dépendance. Recharts gère le second axe Y (`yAxisId="right"` + `<YAxis yAxisId="right" orientation="right" hide />`).
-- `ObservationsKpiStrip` reste **dans le même fichier** (pas de nouveau fichier) — composant local pour éviter la prop drilling de `byDay`/`series`.
-- Calcul Top espèce : itérer `filteredDays.flatMap(d => byDay.get(d).observations)` puis `Map<sciName, count>`.
-- Calcul streak : remonter `filteredDays` depuis la fin tant que `daily > 0`.
-- Toutes les couleurs via tokens sémantiques (`--primary`, `--accent`, `--muted-foreground`) — aucune couleur custom.
+- Recherche normalisée : helper `normalize(s)` = `s.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase()` côté client.
+- Email du marcheur : non stocké dans `community_profiles` (vit dans `auth.users`). On laisse `email = null` à la création ; l'admin pourra l'éditer ensuite (ou on prévoit un RPC `get_user_email` plus tard — hors scope).
+- Aucune migration DB requise. Aucune RLS à modifier (lecture `community_profiles` déjà ouverte aux admins via les policies existantes).
+- Mobile first : dialog plein écran < `sm`, picker `Command` en pleine hauteur.
+- Pas de duplicate : avant insert, check `members.some(m => m.user_id === picked.user_id)` → toast d'erreur si déjà lié.
 
 ## Hors scope
 
-- Vue Espèces : aucune modif.
-- `useBiodiversityEvolution` : aucune modif (toutes les données nécessaires y sont déjà).
-- DayDetailDrawer : inchangé.
-- Vue horaire intra-journée (`today`) : implémentée seulement si les données portent une heure exploitable ; sinon fallback barre unique + KPI (à confirmer pendant l'implémentation, pas bloquant).
+- Synchronisation automatique de l'email depuis `auth.users`.
+- Attribution du rôle CRM dans le même flow (reste sur la carte).
+- Édition du lien marcheur ↔ membre existant (on ne casse pas l'existant).
