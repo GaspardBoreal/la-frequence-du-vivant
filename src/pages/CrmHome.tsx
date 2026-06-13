@@ -22,6 +22,7 @@ const CrmHome: React.FC = () => {
   const { data, isLoading } = useCrmHomeStats();
   const s = data || {
     contacts: 0,
+    dirigeants: 0,
     suspects: 0,
     prospects: 0,
     clients: 0,
