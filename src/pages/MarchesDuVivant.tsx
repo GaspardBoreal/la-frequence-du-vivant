@@ -26,6 +26,15 @@ const MarchesDuVivant = () => {
       </Helmet>
 
       <div className="min-h-screen bg-background">
+        <PublicTopBar
+          tone="dark"
+          leftSlot={
+            <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
+              <ArrowLeft className="w-4 h-4" />
+              <span>Accueil</span>
+            </Link>
+          }
+        />
         {/* Hero Section */}
         <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
           {/* Background avec gradient */}

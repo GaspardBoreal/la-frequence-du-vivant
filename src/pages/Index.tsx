@@ -31,6 +31,7 @@ const Index = () => {
         <DecorativeElements className="text-accent/20" />
         
         <div className="relative z-10">
+          <PublicTopBar tone="glass" />
           {/* Header avec typographie exacte */}
           <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
             <div className="max-w-6xl mx-auto px-6 py-16">
