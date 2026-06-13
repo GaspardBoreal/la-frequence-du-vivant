@@ -1,0 +1,55 @@
+/* CRM Shell — Linear / Vercel Dark Minimal — scoped tokens */
+[data-crm-shell] {
+  --crm-bg: 0 0% 4%;            /* #0a0a0a */
+  --crm-surface: 240 4% 10%;    /* #18181b */
+  --crm-surface-2: 240 5% 16%;  /* #27272a */
+  --crm-border: 240 5% 18%;
+  --crm-text: 0 0% 98%;         /* #fafafa */
+  --crm-text-muted: 240 5% 65%; /* #a1a1aa */
+  --crm-accent: 258 90% 76%;    /* #a78bfa */
+  --crm-accent-soft: 258 90% 76% / 0.12;
+  --crm-accent-glow: 258 90% 76% / 0.25;
+
+  background-color: hsl(var(--crm-bg));
+  color: hsl(var(--crm-text));
+  color-scheme: dark;
+}
+
+[data-crm-shell] .crm-surface {
+  background-color: hsl(var(--crm-surface));
+  border: 1px solid hsl(var(--crm-border));
+}
+
+[data-crm-shell] .crm-surface-elevated {
+  background-color: hsl(var(--crm-surface-2));
+  border: 1px solid hsl(var(--crm-border));
+}
+
+[data-crm-shell] .crm-muted {
+  color: hsl(var(--crm-text-muted));
+}
+
+[data-crm-shell] .crm-accent {
+  color: hsl(var(--crm-accent));
+}
+
+[data-crm-shell] .crm-glow:hover {
+  box-shadow: 0 0 0 1px hsl(var(--crm-accent) / 0.35),
+              0 8px 30px -10px hsl(var(--crm-accent) / 0.45);
+  border-color: hsl(var(--crm-accent) / 0.4);
+}
+
+[data-crm-shell] .crm-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Scrollbar */
+[data-crm-shell] *::-webkit-scrollbar { width: 10px; height: 10px; }
+[data-crm-shell] *::-webkit-scrollbar-thumb {
+  background: hsl(var(--crm-border));
+  border-radius: 8px;
+}
+[data-crm-shell] *::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--crm-surface-2));
+}
