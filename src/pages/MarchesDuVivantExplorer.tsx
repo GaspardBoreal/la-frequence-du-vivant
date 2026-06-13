@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Leaf, Cpu, Users, Footprints, Map, TrendingUp,
-  Printer, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart,
+  Linkedin, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart,
   Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X, BookOpen, UserCircle } from
 'lucide-react';
 import Footer from '@/components/Footer';
