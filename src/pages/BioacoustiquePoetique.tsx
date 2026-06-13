@@ -11,6 +11,7 @@ import Sidebar from '../components/Sidebar';
 import DecorativeElements from '../components/DecorativeElements';
 import Footer from '../components/Footer';
 import SEOHead from '../components/SEOHead';
+import PublicTopBar from '@/components/layout/PublicTopBar';
 import { BioacousticSheet } from '../components/BioacousticSheet';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
