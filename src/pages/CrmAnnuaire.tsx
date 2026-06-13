@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket, AlertTriangle, UserRound } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket, AlertTriangle, UserRound, Plus } from 'lucide-react';
+import { CompanyManualCreateDialog } from '@/components/crm/CompanyManualCreateDialog';
 import { CrmContactsTab } from '@/components/crm/contacts/CrmContactsTab';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -107,6 +108,7 @@ const CrmAnnuaire: React.FC = () => {
   const importMutation = useImportCompanies();
   const [drawerId, setDrawerId] = React.useState<string | null>(null);
   const [previewSiren, setPreviewSiren] = React.useState<string | null>(null);
+  const [manualCreateOpen, setManualCreateOpen] = React.useState(false);
 
   // Deep-link: ?company=<id> opens the company drawer
   React.useEffect(() => {
@@ -400,6 +402,10 @@ const CrmAnnuaire: React.FC = () => {
                     <SelectItem value="inactif">Inactif</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button size="sm" onClick={() => setManualCreateOpen(true)} className="gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  Nouvelle entreprise
+                </Button>
               </div>
             </Card>
 
@@ -546,6 +552,11 @@ const CrmAnnuaire: React.FC = () => {
           existingStage={previewSiren ? importedBySiren.get(previewSiren) : undefined}
           onImport={() => previewSiren && importOne(previewSiren)}
           importing={importMutation.isPending}
+        />
+        <CompanyManualCreateDialog
+          open={manualCreateOpen}
+          onOpenChange={setManualCreateOpen}
+          onCreated={(id) => setDrawerId(id)}
         />
         <CompanySelectionSheet
           open={selectionOpen}
