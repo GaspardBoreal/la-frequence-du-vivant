@@ -5,7 +5,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, MapPin, Calendar, Trash2, X, ChevronsRight } from 'lucide-react';
+import { Building2, MapPin, Calendar, Trash2, X, ChevronsRight, Plus } from 'lucide-react';
+import { ContactFormDialog } from './contacts/ContactFormDialog';
 import {
   useCrmCompany,
   useCrmCompanyActivities,
