@@ -8,12 +8,16 @@ import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { CompanyStageBadge } from './CompanyStageBadge';
 import type { CompanySearchResult, CrmCompanyStage } from '@/types/crmCompany';
 
+import { formatNaf, getNafLabel } from '@/lib/nafCatalog';
+import type { CompanySearchResult, CrmCompanyStage } from '@/types/crmCompany';
+
 interface Props {
   result: CompanySearchResult;
   selected: boolean;
   onToggleSelect: () => void;
   existingStage?: CrmCompanyStage;
   onImport: () => void;
+  onPickNaf?: (code: string) => void;
 }
 
 export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport }) => {
