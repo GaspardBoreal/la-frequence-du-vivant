@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface CrmHomeStats {
   contacts: number;
+  dirigeants: number;
   suspects: number;
   prospects: number;
   clients: number;
