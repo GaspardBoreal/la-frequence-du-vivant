@@ -17,6 +17,22 @@ async function fetchOne(siren: string) {
   return j?.results?.[0] ?? null;
 }
 
+async function geocodeBAN(addr: string, postal: string, ville: string): Promise<{ lat: number; lng: number } | null> {
+  const tryQ = async (q: string, type?: string) => {
+    if (!q.trim()) return null;
+    try {
+      const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=1${type ? `&type=${type}` : ''}`, { headers: { Accept: 'application/json' } });
+      if (!r.ok) return null;
+      const j = await r.json();
+      const f = j?.features?.[0];
+      const [lng, lat] = f?.geometry?.coordinates ?? [];
+      return (typeof lat === 'number' && typeof lng === 'number') ? { lat, lng } : null;
+    } catch { return null; }
+  };
+  return (await tryQ([addr, postal, ville].filter(Boolean).join(' '))) ?? (await tryQ([postal, ville].filter(Boolean).join(' '), 'municipality'));
+}
+
+
 function toRow(raw: any, opts: { assigned_to?: string | null; tags?: string[]; created_by: string }) {
   const siege = raw?.siege ?? {};
   return {
@@ -67,8 +83,14 @@ Deno.serve(async (req) => {
     for (const siren of cleaned) {
       const raw = await fetchOne(siren);
       if (!raw) continue;
-      rows.push(toRow(raw, { assigned_to: assigned_to ?? null, tags: tags ?? [], created_by: user.id }));
+      const row = toRow(raw, { assigned_to: assigned_to ?? null, tags: tags ?? [], created_by: user.id });
+      if (row.latitude == null || row.longitude == null) {
+        const geo = await geocodeBAN(row.adresse ?? '', row.code_postal ?? '', row.ville ?? '');
+        if (geo) { row.latitude = geo.lat; row.longitude = geo.lng; }
+      }
+      rows.push(row);
     }
+
 
     if (rows.length === 0) {
       return new Response(JSON.stringify({ imported: 0, results: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
