@@ -91,7 +91,12 @@ const CrmAnnuaire: React.FC = () => {
   const { data: searchData, isFetching, error: searchError } = useCompanySearch(searchFilters, hasQuery && canAccessCrm);
 
   // Entreprises importées
-  const [companyFilters, setCompanyFilters] = React.useState<{ stage: CrmCompanyStage | 'all'; search: string }>({ stage: 'all', search: '' });
+  const initialStage = (searchParams.get('stage') as CrmCompanyStage | 'all' | null) || 'all';
+  const [companyFilters, setCompanyFilters] = React.useState<{ stage: CrmCompanyStage | 'all'; search: string }>({ stage: initialStage, search: '' });
+  React.useEffect(() => {
+    const s = (searchParams.get('stage') as CrmCompanyStage | 'all' | null) || 'all';
+    setCompanyFilters(f => f.stage === s ? f : { ...f, stage: s });
+  }, [searchParams]);
   const { data: companies = [], isLoading: companiesLoading } = useCrmCompanies(companyFilters);
   const importedBySiren = React.useMemo(() => {
     const map = new Map<string, CrmCompanyStage>();
