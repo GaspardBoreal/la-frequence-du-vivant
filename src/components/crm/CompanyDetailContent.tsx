@@ -5,7 +5,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, MapPin, Calendar, Trash2, X, ChevronsRight } from 'lucide-react';
+import { Building2, MapPin, Calendar, Trash2, X, ChevronsRight, Plus } from 'lucide-react';
+import { ContactFormDialog } from './contacts/ContactFormDialog';
 import {
   useCrmCompany,
   useCrmCompanyActivities,
@@ -46,6 +47,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
   const { data: companyContacts = [] } = useCrmContacts({ companyId });
 
   const [notes, setNotes] = React.useState('');
+  const [creatingContact, setCreatingContact] = React.useState(false);
   const [newActivity, setNewActivity] = React.useState<{
     type: CrmCompanyActivityType;
     summary: string;
@@ -219,6 +221,11 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
           </TabsContent>
 
           <TabsContent value="dirigeants" className="space-y-2 mt-4">
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setCreatingContact(true)}>
+                <Plus className="h-3.5 w-3.5" /> Nouveau contact
+              </Button>
+            </div>
             {companyContacts.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-6">Aucun contact rattaché.</p>
             )}
@@ -366,6 +373,13 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
           <Trash2 className="h-3.5 w-3.5" /> Supprimer
         </Button>
       </div>
+
+      <ContactFormDialog
+        open={creatingContact}
+        onOpenChange={setCreatingContact}
+        defaultCompanyId={company.id}
+        defaultEntreprise={company.denomination ?? company.nom_complet ?? null}
+      />
     </motion.div>
   );
 };
