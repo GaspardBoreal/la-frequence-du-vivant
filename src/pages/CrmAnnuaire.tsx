@@ -553,6 +553,11 @@ const CrmAnnuaire: React.FC = () => {
           onImport={() => previewSiren && importOne(previewSiren)}
           importing={importMutation.isPending}
         />
+        <CompanyManualCreateDialog
+          open={manualCreateOpen}
+          onOpenChange={setManualCreateOpen}
+          onCreated={(id) => setDrawerId(id)}
+        />
         <CompanySelectionSheet
           open={selectionOpen}
           onOpenChange={setSelectionOpen}
