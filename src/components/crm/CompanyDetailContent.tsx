@@ -43,6 +43,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
   const updateCompany = useUpdateCompany();
   const deleteCompany = useDeleteCompany();
   const addActivity = useAddCompanyActivity();
+  const { data: companyContacts = [] } = useCrmContacts({ companyId });
 
   const [notes, setNotes] = React.useState('');
   const [newActivity, setNewActivity] = React.useState<{
