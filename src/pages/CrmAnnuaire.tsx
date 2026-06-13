@@ -208,9 +208,10 @@ const CrmAnnuaire: React.FC = () => {
         </div>
 
         <Tabs value={tab} onValueChange={onTabChange}>
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <TabsList className="grid grid-cols-4 w-full max-w-xl">
             <TabsTrigger value="annuaire" className="gap-2"><Search className="h-4 w-4" />Annuaire</TabsTrigger>
             <TabsTrigger value="entreprises" className="gap-2"><Building2 className="h-4 w-4" />Entreprises</TabsTrigger>
+            <TabsTrigger value="contacts" className="gap-2"><UserRound className="h-4 w-4" />Contacts</TabsTrigger>
             <TabsTrigger value="carte" className="gap-2"><MapPin className="h-4 w-4" />Carte</TabsTrigger>
           </TabsList>
 
