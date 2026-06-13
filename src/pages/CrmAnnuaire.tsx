@@ -23,7 +23,7 @@ import { STAGE_LABELS } from '@/types/crmCompany';
 
 const FILTER_LABELS: Partial<Record<keyof CompanySearchFilters, string>> = {
   commune: 'Ville', code_postal: 'CP', departement: 'Département', region: 'Région',
-  activite_principale: 'NAF', categorie_juridique: 'Forme juridique',
+  activite_principale: 'Activité', categorie_juridique: 'Forme juridique',
   tranche_effectif_salarie: 'Effectif', categorie_entreprise: 'Catégorie', etat_administratif: 'État',
   nom_personne: 'Dirigeant (nom)', prenoms_personne: 'Dirigeant (prénom)',
   ca_min: 'CA min', ca_max: 'CA max', resultat_net_min: 'Résultat min', resultat_net_max: 'Résultat max',
@@ -41,6 +41,10 @@ function formatFilterValue(key: keyof CompanySearchFilters, v: any): string {
   if (key === 'region') {
     const r = FRENCH_REGIONS_WITH_CODES.find(x => x.code === v);
     return r ? r.label : String(v);
+  }
+  if (key === 'activite_principale') {
+    const lbl = getNafLabel(String(v));
+    return lbl ? `${v} — ${lbl}` : String(v);
   }
   return String(v);
 }
