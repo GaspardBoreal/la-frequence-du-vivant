@@ -105,12 +105,15 @@ Deno.serve(async (req) => {
     if (body.radius && body.radius > 50) body.radius = 50;
 
     const url = buildUrl(body);
+    console.log('[search-french-companies] GET', url);
     const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    console.log('[search-french-companies] status', resp.status);
 
     if (!resp.ok) {
       const text = await resp.text();
-      return new Response(JSON.stringify({ error: 'API gouv error', status: resp.status, detail: text.slice(0, 500) }), {
-        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      console.error('[search-french-companies] API gouv error', resp.status, text.slice(0, 500));
+      return new Response(JSON.stringify({ error: `API gouv ${resp.status}`, status: resp.status, detail: text.slice(0, 500) }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     const data = await resp.json();

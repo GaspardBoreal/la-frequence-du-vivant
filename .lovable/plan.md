@@ -1,32 +1,27 @@
-# Fix : "Aucun résultat" sur l'Annuaire CRM
-
 ## Cause racine
-Les edge functions `search-french-companies` et `import-companies-batch` existent dans le code mais **ne sont pas déployées** (appel direct → 404). Elles n'ont pas d'entrée dans `supabase/config.toml`, et l'UI n'affiche pas l'erreur réseau → l'utilisateur voit juste un état vide.
 
-L'API gouv elle-même fonctionne parfaitement (testé en direct, BZIIIT remonte bien).
+L'API `recherche-entreprises.api.gouv.fr` attend le **code INSEE** du département (ex: `33`) et de la région (ex: `75`), pas leur libellé. Or notre dropdown envoie `"GIRONDE"` (label brut de `FRENCH_DEPARTMENTS`). L'API renvoie donc `400 Bad Request` → `FunctionsHttpError` côté client.
+
+Test direct API : `?departement=33&activite_principale=01.21Z` → 200 OK avec résultats. Avec `departement=GIRONDE` → 400.
 
 ## Correctifs
 
-### 1. Déployer les edge functions
-Ajouter dans `supabase/config.toml` :
-```toml
-[functions.search-french-companies]
-verify_jwt = false
+### 1. Mapping département/région → code INSEE
+Dans `CompanySearchFiltersDrawer.tsx`, remplacer les `<SelectItem value={d}>` par des paires `{ code, label }`. Sources :
+- Créer `src/utils/frenchDepartmentsCodes.ts` : tableau `[{ code: '01', label: 'AIN' }, …, { code: '33', label: 'GIRONDE' }, …, '2A', '2B', '971'…'976']` (101 départements + DOM).
+- Créer `src/utils/frenchRegionsCodes.ts` : 18 régions avec leur code INSEE (`11` Île-de-France, `75` Nouvelle-Aquitaine, etc.).
+- Le `SelectItem` envoie `value=code` mais affiche `label`.
 
-[functions.import-companies-batch]
-verify_jwt = false
-```
-(L'auth est déjà validée dans le code via `validateAuth(req)` — pattern identique aux autres fonctions du projet.)
+### 2. Guard côté edge function
+Dans `search-french-companies/index.ts`, ajouter un `console.log('[search-french-companies] URL:', url)` avant le fetch + logger le `status` HTTP et le body en cas de non-200, pour que la prochaine régression soit immédiatement lisible dans les logs.
 
-### 2. Rendre les erreurs visibles dans l'UI
-Dans `src/hooks/useCompanySearch.ts` : retirer le `try/catch` silencieux implicite et laisser remonter l'erreur React Query. Dans `src/pages/CrmAnnuaire.tsx` : afficher un encart `Card` rouge avec le message d'erreur quand `error` est défini (plutôt qu'un simple "Aucun résultat"), pour qu'on voie immédiatement les futurs incidents (rate-limit, 502, etc.).
-
-### 3. Garde-fou supplémentaire dans l'edge function
-Logger l'URL appelée et le statut HTTP de l'API gouv (`console.log` côté edge) — déjà partiellement en place, on s'assure que ça couvre le cas succès aussi pour faciliter le debug.
+### 3. Propager le `detail` API gouv jusqu'au toast UI
+L'edge function renvoie déjà `detail` en cas de 502, mais ici c'est un 400 → on retourne actuellement `status: 502` ce qui masque l'info. Renvoyer `status: resp.status` et inclure `detail` brut pour debug.
 
 ## Vérification
-- Recharger `/admin/crm/annuaire`, taper "bziiit" → 1 résultat avec carte cliquable et bouton "Importer comme Suspect".
-- Test direct edge function via `supabase--curl_edge_functions` doit renvoyer 200 + le résultat normalisé.
+- Sélectionner Gironde + `01.21Z` → liste de viticulteurs girondins (SCEA, EARL…).
+- Sélectionner Nouvelle-Aquitaine seule → résultats régionaux.
+- Texte libre seul (`bziiit`) → continue de fonctionner.
 
 ## Hors scope
-- Phase B (pipeline / devis / IA) — on n'y touche pas tant que l'Annuaire ne fonctionne pas.
+- Phase B (pipeline / devis / IA) tant que l'Annuaire n'est pas stable.
