@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface CrmHomeStats {
   contacts: number;
+  dirigeants: number;
   suspects: number;
   prospects: number;
   clients: number;
@@ -27,12 +28,14 @@ export function useCrmHomeStats() {
 
       const [
         contactsRes,
+        dirigeantsRes,
         companiesRes,
         oppsRes,
         eventsUpcomingRes,
         eventsPastRes,
       ] = await Promise.all([
         supabase.from('crm_contacts').select('id', { count: 'exact', head: true }),
+        supabase.from('crm_contacts').select('id', { count: 'exact', head: true }).eq('is_dirigeant', true),
         supabase.from('crm_companies').select('lifecycle_stage'),
         supabase.from('crm_opportunities').select('statut, budget_estime'),
         supabase
@@ -59,6 +62,7 @@ export function useCrmHomeStats() {
 
       return {
         contacts: contactsRes.count || 0,
+        dirigeants: dirigeantsRes.count || 0,
         suspects: byStage('suspect'),
         prospects: byStage('prospect'),
         clients: byStage('client'),
