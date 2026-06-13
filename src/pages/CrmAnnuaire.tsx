@@ -211,6 +211,16 @@ const CrmAnnuaire: React.FC = () => {
                     </Card>
                   )}
                   {isFetching && <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
+                  {!isFetching && searchData && searchData.results.length > 0 && (
+                    <div className="flex items-baseline justify-between px-1 pb-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {searchData.total.toLocaleString('fr-FR')} résultat{searchData.total > 1 ? 's' : ''} trouvé{searchData.total > 1 ? 's' : ''}
+                      </p>
+                      {searchData.total_pages > 1 && (
+                        <p className="text-xs text-muted-foreground">Page {searchData.page} / {searchData.total_pages}</p>
+                      )}
+                    </div>
+                  )}
                   {searchData?.results.map(r => (
                     <CompanySearchResultCard
                       key={r.siren}

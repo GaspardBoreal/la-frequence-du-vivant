@@ -3,7 +3,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Users, Building2, Plus, Check } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { MapPin, Users, Building2, Plus, Check, Filter } from 'lucide-react';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { CompanyStageBadge } from './CompanyStageBadge';
 import type { CompanySearchResult, CrmCompanyStage } from '@/types/crmCompany';
@@ -20,24 +21,35 @@ interface Props {
 
 export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport, onPickNaf }) => {
   const isImported = !!existingStage;
+  const isCessee = result.etat_administratif === 'C';
   return (
     <Card className="p-3 sm:p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-3">
         <Checkbox checked={selected} onCheckedChange={onToggleSelect} className="mt-1" />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 flex-wrap">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-sm sm:text-base leading-tight truncate">{result.nom_complet || result.denomination || 'Sans nom'}</h3>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-sm sm:text-base leading-tight">{result.nom_complet || result.denomination || 'Sans nom'}</h3>
+                {isCessee && (
+                  <Badge variant="destructive" className="uppercase text-[10px] tracking-wide px-1.5 py-0">Cessée</Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground mt-0.5">SIREN {result.siren}</p>
               {result.code_naf && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onPickNaf?.(result.code_naf!); }}
-                  className="inline-flex items-center gap-1 mt-1 text-[11px] px-2 py-0.5 rounded-full border bg-muted hover:bg-accent transition-colors"
-                  title="Filtrer par cette activité"
-                >
-                  {formatNaf(result.code_naf, result.libelle_naf)}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onPickNaf?.(result.code_naf!); }}
+                      className="inline-flex items-center gap-1 mt-1.5 text-[11px] px-2 py-0.5 rounded-full border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    >
+                      <Filter className="h-3 w-3" />
+                      {formatNaf(result.code_naf, result.libelle_naf)}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Filtrer par cette activité</TooltipContent>
+                </Tooltip>
               )}
             </div>
             {existingStage ? <CompanyStageBadge stage={existingStage} /> : null}
@@ -52,9 +64,6 @@ export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onT
             )}
             {result.categorie_entreprise && (
               <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{result.categorie_entreprise}</span>
-            )}
-            {result.etat_administratif === 'C' && (
-              <Badge variant="outline" className="border-destructive text-destructive">Cessée</Badge>
             )}
           </div>
 
@@ -76,3 +85,4 @@ export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onT
     </Card>
   );
 };
+
