@@ -284,8 +284,18 @@ const CrmAnnuaire: React.FC = () => {
                     <CompanySearchResultCard
                       key={r.siren}
                       result={r}
-                      selected={selected.has(r.siren)}
-                      onToggleSelect={() => toggleSelect(r.siren)}
+                      selected={selectedMap.has(r.siren)}
+                      onToggleSelect={() => toggleSelect({
+                        siren: r.siren,
+                        nom_complet: r.nom_complet,
+                        denomination: r.denomination,
+                        ville: r.ville,
+                        code_postal: r.code_postal,
+                        code_naf: r.code_naf,
+                        libelle_naf: r.libelle_naf,
+                        etat_administratif: r.etat_administratif,
+                        date_cessation: r.date_cessation,
+                      })}
                       existingStage={importedBySiren.get(r.siren)}
                       onImport={() => importOne(r.siren)}
                       onPickNaf={(code) => setFilters(f => ({ ...f, activite_principale: code, page: 1 }))}
