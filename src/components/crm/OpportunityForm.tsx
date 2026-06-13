@@ -35,11 +35,14 @@ import {
   type CrmOpportunity,
 } from '@/types/crm';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { OpportunityLinksSection } from '@/components/crm/opportunities/OpportunityLinksSection';
+import { useOpportunityLinks, type OppLinkedCompany, type OppLinkedContact } from '@/hooks/useCrmOpportunityLinks';
+import { toast } from 'sonner';
 
 const opportunitySchema = z.object({
-  prenom: z.string().min(1, 'Le prénom est requis'),
-  nom: z.string().min(1, 'Le nom est requis'),
-  email: z.string().email('Email invalide'),
+  prenom: z.string().optional(),
+  nom: z.string().optional(),
+  email: z.string().email('Email invalide').optional().or(z.literal('')),
   entreprise: z.string().optional(),
   fonction: z.string().optional(),
   telephone: z.string().optional(),
