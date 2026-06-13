@@ -89,7 +89,7 @@ export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onT
           )}
 
           <div className="mt-3 flex justify-end">
-            <Button size="sm" variant={isImported ? 'outline' : 'default'} onClick={onImport} disabled={isImported} className="gap-1">
+            <Button size="sm" variant={isImported || isCessee ? 'outline' : 'default'} onClick={onImport} disabled={isImported} className="gap-1">
               {isImported ? <><Check className="h-3.5 w-3.5" /> Déjà importée</> : <><Plus className="h-3.5 w-3.5" /> Importer</>}
             </Button>
           </div>
