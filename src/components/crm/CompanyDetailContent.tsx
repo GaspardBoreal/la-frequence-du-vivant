@@ -158,9 +158,9 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
           <TabsList className="grid grid-cols-4 w-full bg-muted/50">
             <TabsTrigger value="identite">Identité</TabsTrigger>
             <TabsTrigger value="dirigeants">
-              Dirigeants
-              {dirigeants.length > 0 && (
-                <span className="ml-1 text-[10px] opacity-60">· {dirigeants.length}</span>
+              Contacts
+              {companyContacts.length > 0 && (
+                <span className="ml-1 text-[10px] opacity-60">· {companyContacts.length}</span>
               )}
             </TabsTrigger>
             <TabsTrigger value="finances">
