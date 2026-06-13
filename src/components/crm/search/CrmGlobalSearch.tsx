@@ -226,14 +226,8 @@ export const CrmGlobalSearch: React.FC<Props> = ({ open: controlledOpen, onOpenC
             return (
               <React.Fragment key={kind}>
                 {idx > 0 && <CommandSeparator />}
-                <CommandGroup
-                  heading={
-                    <span className="flex items-center gap-1.5">
-                      <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
-                      {meta.label}
-                    </span> as any
-                  }
-                >
+                <CommandGroup heading={meta.label}>
+
                   {items.map(r => (
                     <CommandItem
                       key={`${r.kind}-${r.id}`}
