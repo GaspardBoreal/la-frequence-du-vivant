@@ -261,19 +261,19 @@ const InterregSudoeMdv: React.FC = () => {
       </div>
 
       {/* Nav minimal */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-[#0a1f1a]/70 border-b border-white/5 print:hidden">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <Link
-            to="/marches-du-vivant"
-            className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white"
-          >
-            <Home className="h-4 w-4" /> Accueil
-          </Link>
-          <span className="text-[11px] uppercase tracking-[0.2em] text-[#c9a84c]/80">
-            Interreg SUDOE · AGROBOTICS-DITWINS
-          </span>
-        </div>
-      </header>
+      <PublicTopBar
+        tone="glass"
+        leftSlot={
+          <div className="flex items-center justify-between w-full gap-4">
+            <Link to="/marches-du-vivant" className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white">
+              <Home className="h-4 w-4" /> Accueil
+            </Link>
+            <span className="hidden sm:inline text-[11px] uppercase tracking-[0.2em] text-[#c9a84c]/80">
+              Interreg SUDOE · AGROBOTICS-DITWINS
+            </span>
+          </div>
+        }
+      />
 
       {/* HERO */}
       <section className="relative min-h-[92vh] flex items-center overflow-hidden">
