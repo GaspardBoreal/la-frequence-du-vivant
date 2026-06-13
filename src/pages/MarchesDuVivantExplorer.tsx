@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Leaf, Cpu, Users, Footprints, Map, TrendingUp,
-  Printer, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart,
+  Linkedin, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart,
   Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X, BookOpen, UserCircle } from
 'lucide-react';
 import Footer from '@/components/Footer';
@@ -85,7 +85,7 @@ const MarchesDuVivantExplorer = () => {
     setSelectedDate(null);
   };
 
-  const handlePrint = () => window.print();
+  
   const handleShare = async () => {
     const url = window.location.href;
     try {
@@ -229,9 +229,16 @@ const MarchesDuVivantExplorer = () => {
               <button onClick={handleShare} className="p-2.5 rounded-xl hover:bg-stone-100 transition-colors text-stone-400 hover:text-stone-600" title="Partager">
                 <Share2 className="w-4 h-4" />
               </button>
-              <button onClick={handlePrint} className="p-2.5 rounded-xl hover:bg-stone-100 transition-colors text-stone-400 hover:text-stone-600" title="Imprimer / PDF">
-                <Printer className="w-4 h-4" />
-              </button>
+              <a
+                href="https://www.linkedin.com/company/la-fr%C3%A9quence-du-vivant/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Suivre La Fréquence du Vivant sur LinkedIn"
+                title="Suivre sur LinkedIn"
+                className="group inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50/70 ring-1 ring-emerald-200/60 text-emerald-700 hover:text-[#0A66C2] hover:bg-emerald-100 hover:shadow-sm hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-50"
+              >
+                <Linkedin className="w-4 h-4" />
+              </a>
             </div>
           </div>
         </nav>
