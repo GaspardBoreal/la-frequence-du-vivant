@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Building2, Users, Heart, Trophy, ArrowRight, Waves, Leaf, Mic2, Sparkles, Trees, Sprout } from 'lucide-react';
 import Footer from '@/components/Footer';
+import PublicTopBar from '@/components/layout/PublicTopBar';
+import { ArrowLeft } from 'lucide-react';
 import TrustBar from '@/components/marches-vivant/TrustBar';
 import ScienceCounters from '@/components/marches-vivant/ScienceCounters';
 

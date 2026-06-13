@@ -7,6 +7,7 @@ import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import BioacousticPortal from '../components/home/BioacousticPortal';
 import TerritoryPortal from '../components/home/TerritoryPortal';
 import PoetryPortal from '../components/home/PoetryPortal';
+import PublicTopBar from '@/components/layout/PublicTopBar';
 
 const Index = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
