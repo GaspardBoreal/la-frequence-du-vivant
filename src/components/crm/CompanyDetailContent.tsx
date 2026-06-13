@@ -312,7 +312,12 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
       </div>
 
       {/* Sticky footer */}
-      <div className="border-t bg-card/80 backdrop-blur px-5 py-2.5 flex justify-end">
+      <div
+        className={cn(
+          'border-t bg-card/80 backdrop-blur px-5 py-2.5 flex justify-end',
+          mode === 'mobile-sheet' && 'pr-20 pb-[max(0.625rem,env(safe-area-inset-bottom))]'
+        )}
+      >
         <Button
           size="sm"
           variant="ghost"
