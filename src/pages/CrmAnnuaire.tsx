@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X } from 'lucide-react';
 import { useCrmRole } from '@/hooks/useCrmRole';
 import { useCompanySearch } from '@/hooks/useCompanySearch';
 import { useCrmCompanies, useImportCompanies } from '@/hooks/useCrmCompanies';
@@ -16,8 +16,33 @@ import { CompanySearchResultCard } from '@/components/crm/CompanySearchResultCar
 import { CompanyDetailSheet } from '@/components/crm/CompanyDetailSheet';
 import { CrmCompaniesMap } from '@/components/crm/CrmCompaniesMap';
 import { CompanyStageBadge } from '@/components/crm/CompanyStageBadge';
+import { FRENCH_DEPARTMENTS_WITH_CODES, FRENCH_REGIONS_WITH_CODES } from '@/utils/frenchAdministrativeCodes';
 import type { CompanySearchFilters, CrmCompanyStage } from '@/types/crmCompany';
 import { STAGE_LABELS } from '@/types/crmCompany';
+
+const FILTER_LABELS: Partial<Record<keyof CompanySearchFilters, string>> = {
+  commune: 'Ville', code_postal: 'CP', departement: 'Département', region: 'Région',
+  activite_principale: 'NAF', categorie_juridique: 'Forme juridique',
+  tranche_effectif_salarie: 'Effectif', categorie_entreprise: 'Catégorie', etat_administratif: 'État',
+  nom_personne: 'Dirigeant (nom)', prenoms_personne: 'Dirigeant (prénom)',
+  ca_min: 'CA min', ca_max: 'CA max', resultat_net_min: 'Résultat min', resultat_net_max: 'Résultat max',
+  est_ess: 'ESS', est_rge: 'RGE', est_bio: 'Bio', est_qualiopi: 'Qualiopi', est_finess: 'FINESS',
+  est_uai: 'UAI', est_entrepreneur_spectacle: 'Spectacle',
+  est_collectivite_territoriale: 'Collectivité', est_societe_mission: 'Société à mission',
+};
+
+function formatFilterValue(key: keyof CompanySearchFilters, v: any): string {
+  if (typeof v === 'boolean') return 'Oui';
+  if (key === 'departement') {
+    const d = FRENCH_DEPARTMENTS_WITH_CODES.find(x => x.code === v);
+    return d ? `${d.code} — ${d.label}` : String(v);
+  }
+  if (key === 'region') {
+    const r = FRENCH_REGIONS_WITH_CODES.find(x => x.code === v);
+    return r ? r.label : String(v);
+  }
+  return String(v);
+}
 
 const CrmAnnuaire: React.FC = () => {
   const { canAccessCrm } = useCrmRole();
