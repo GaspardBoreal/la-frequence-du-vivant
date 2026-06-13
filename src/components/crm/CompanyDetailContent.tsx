@@ -149,7 +149,8 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
       </div>
 
       {/* Body scrollable */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div className="flex-1 overflow-y-auto px-5 py-4 pb-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
+
         <Tabs defaultValue="identite">
           <TabsList className="grid grid-cols-4 w-full bg-muted/50">
             <TabsTrigger value="identite">Identité</TabsTrigger>
