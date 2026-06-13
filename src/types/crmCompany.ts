@@ -14,6 +14,7 @@ export interface CompanySearchResult {
   categorie_entreprise: string | null;
   tranche_effectif: string | null;
   etat_administratif: string | null;
+  date_cessation?: string | null;
   adresse: string | null;
   ville: string | null;
   code_postal: string | null;
