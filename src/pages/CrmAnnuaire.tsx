@@ -470,22 +470,22 @@ const CrmAnnuaire: React.FC = () => {
               </Card>
             )}
 
-            {/* Split layout : carte + panneau latéral (desktop) */}
-            <div
-              className={`grid gap-3 transition-[grid-template-columns] duration-500 ease-out ${
-                drawerId ? 'lg:grid-cols-[1fr_440px]' : 'lg:grid-cols-[1fr]'
-              }`}
-            >
+            {/* Carte plein largeur + panneau flottant en overlay (desktop) */}
+            <div className="relative">
               <CrmCompaniesMap
                 companies={companies.filter(c => c.latitude && c.longitude)}
-                height="70vh"
+                height="75vh"
                 onSelect={setDrawerId}
                 selectedId={drawerId}
+                flyOffsetX={drawerId ? -220 : 0}
               />
-              {/* Inline panel — desktop only */}
+
+              {/* Floating glass panel — desktop only */}
               {drawerId && (
-                <div className="hidden lg:block">
-                  <div className="sticky top-4 rounded-2xl border bg-card/95 backdrop-blur shadow-xl overflow-hidden" style={{ height: '70vh' }}>
+                <div className="hidden lg:block absolute top-4 right-4 bottom-4 w-[420px] z-[450] pointer-events-none">
+                  <div
+                    className="h-full rounded-2xl border border-border/60 bg-card/85 backdrop-blur-xl shadow-2xl ring-1 ring-black/5 overflow-hidden pointer-events-auto animate-in slide-in-from-right-4 fade-in duration-300"
+                  >
                     <CompanyDetailContent
                       companyId={drawerId}
                       onClose={() => setDrawerId(null)}
@@ -503,7 +503,7 @@ const CrmAnnuaire: React.FC = () => {
             >
               <SheetContent
                 side="bottom"
-                className="lg:hidden h-[80vh] p-0 rounded-t-2xl flex flex-col"
+                className="lg:hidden h-[85vh] p-0 rounded-t-2xl flex flex-col"
               >
                 <CompanyDetailContent
                   companyId={drawerId}
@@ -512,6 +512,7 @@ const CrmAnnuaire: React.FC = () => {
                 />
               </SheetContent>
             </Sheet>
+
 
             <p className="text-xs text-muted-foreground mt-2">{companies.filter(c => c.latitude && c.longitude).length} entreprise(s) géolocalisée(s) sur {companies.length}.</p>
           </TabsContent>
