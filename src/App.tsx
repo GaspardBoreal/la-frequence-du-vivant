@@ -68,6 +68,7 @@ import CarnetsDeTerrainGalerie from './pages/CarnetsDeTerrainGalerie';
 import CarnetDeTerrain from './pages/CarnetDeTerrain';
 import CrmDashboard from './pages/CrmDashboard';
 import CrmPipeline from './pages/CrmPipeline';
+import CrmAnnuaire from './pages/CrmAnnuaire';
 import TeamManagement from './pages/TeamManagement';
 import MarchesDuVivantConnexion from './pages/MarchesDuVivantConnexion';
 import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
@@ -240,6 +241,11 @@ function App() {
             <Route path="/admin/crm/pipeline" element={
               <AdminAuth>
                 <CrmPipeline />
+              </AdminAuth>
+            } />
+            <Route path="/admin/crm/annuaire" element={
+              <AdminAuth>
+                <CrmAnnuaire />
               </AdminAuth>
             } />
             <Route path="/admin/crm/equipe" element={

@@ -9,7 +9,9 @@ import {
   BarChart3,
   Mail,
   Target,
-  TrendingUp
+  TrendingUp,
+  Building2,
+  MapPin
 } from 'lucide-react';
 import { DashboardKPIs } from '@/components/crm/DashboardKPIs';
 import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
@@ -93,11 +95,23 @@ const CrmDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Link to="/admin/crm/annuaire?tab=annuaire">
+              <Button variant="default">
+                <Building2 className="h-4 w-4 mr-2" />
+                Annuaire entreprises
+              </Button>
+            </Link>
+            <Link to="/admin/crm/annuaire?tab=carte">
+              <Button variant="outline">
+                <MapPin className="h-4 w-4 mr-2" />
+                Carte
+              </Button>
+            </Link>
             <Link to="/admin/crm/pipeline">
-              <Button>
+              <Button variant="outline">
                 <Kanban className="h-4 w-4 mr-2" />
-                Voir le Pipeline
+                Pipeline
               </Button>
             </Link>
           </div>
