@@ -53,6 +53,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
+import { AddMemberDialog } from '@/components/crm/AddMemberDialog';
 
 const memberSchema = z.object({
   prenom: z.string().min(1, 'Le prénom est requis'),
@@ -67,6 +68,7 @@ type MemberFormData = z.infer<typeof memberSchema>;
 
 const TeamManagement: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -194,10 +196,12 @@ const TeamManagement: React.FC = () => {
             </div>
           </div>
 
-          <Button onClick={() => setIsFormOpen(true)}>
+          <Button onClick={() => setIsAddOpen(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
             Ajouter un membre
           </Button>
+
+          <AddMemberDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
         </div>
 
         {/* Members Grid */}
