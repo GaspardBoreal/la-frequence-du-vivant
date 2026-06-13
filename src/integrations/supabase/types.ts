@@ -875,6 +875,51 @@ export type Database = {
           },
         ]
       }
+      crm_company_events: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          event_id: string
+          id: string
+          notes: string | null
+          relation_type: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          id?: string
+          notes?: string | null
+          relation_type?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          id?: string
+          notes?: string | null
+          relation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_company_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_company_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_contacts: {
         Row: {
           company_id: string | null
