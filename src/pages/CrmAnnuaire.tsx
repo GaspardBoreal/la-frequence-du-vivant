@@ -108,6 +108,13 @@ const CrmAnnuaire: React.FC = () => {
   const [drawerId, setDrawerId] = React.useState<string | null>(null);
   const [previewSiren, setPreviewSiren] = React.useState<string | null>(null);
 
+  // Deep-link: ?company=<id> opens the company drawer
+  React.useEffect(() => {
+    const cid = searchParams.get('company');
+    if (cid && cid !== drawerId) setDrawerId(cid);
+  }, [searchParams]);
+
+
   const qc = useQueryClient();
   const [geocoding, setGeocoding] = React.useState(false);
   const missingGeo = React.useMemo(() => companies.filter(c => !c.latitude || !c.longitude), [companies]);

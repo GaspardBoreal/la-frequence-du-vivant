@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { CrmGlobalSearch } from '@/components/crm/search/CrmGlobalSearch';
 
 const TITLES: Record<string, { title: string; subtitle: string }> = {
   '/admin/crm': { title: 'Accueil', subtitle: "Vue d'ensemble du CRM" },
@@ -26,11 +26,7 @@ export const CrmTopBar: React.FC = () => {
         )}
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <div className="hidden md:flex items-center gap-2 px-3 h-8 rounded-md crm-surface-elevated text-xs crm-muted w-[260px]">
-          <Search className="h-3.5 w-3.5" />
-          <span className="truncate">Rechercher…</span>
-          <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-[hsl(var(--crm-bg))] border border-[hsl(var(--crm-border))]">⌘K</kbd>
-        </div>
+        <CrmGlobalSearch />
       </div>
     </header>
   );

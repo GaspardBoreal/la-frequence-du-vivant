@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus, LayoutGrid, List, RefreshCw } from 'lucide-react';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
@@ -36,6 +36,7 @@ const CrmPipeline: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOpportunity, setEditingOpportunity] = useState<CrmOpportunity | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
 
   const { 
     opportunities, 
@@ -46,6 +47,18 @@ const CrmPipeline: React.FC = () => {
     deleteOpportunity 
   } = useCrmOpportunities();
   const { canAccessCrm } = useCrmRole();
+
+  // Deep-link: ?opportunity=<id> opens the edit form
+  React.useEffect(() => {
+    const oid = searchParams.get('opportunity');
+    if (!oid || !opportunities?.length) return;
+    if (editingOpportunity?.id === oid) return;
+    const found = opportunities.find((o: any) => o.id === oid);
+    if (found) {
+      setEditingOpportunity(found as CrmOpportunity);
+      setIsFormOpen(true);
+    }
+  }, [searchParams, opportunities]);
 
   const handleEditOpportunity = (opportunity: CrmOpportunity) => {
     setEditingOpportunity(opportunity);
