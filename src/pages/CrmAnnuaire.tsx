@@ -402,6 +402,10 @@ const CrmAnnuaire: React.FC = () => {
                     <SelectItem value="inactif">Inactif</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button size="sm" onClick={() => setManualCreateOpen(true)} className="gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  Nouvelle entreprise
+                </Button>
               </div>
             </Card>
 
