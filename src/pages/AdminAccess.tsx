@@ -168,28 +168,12 @@ const AdminAccess: React.FC = () => {
               Gérer le pipeline commercial, les opportunités B2B 
               et les communications avec les prospects.
             </p>
-            <div className="flex flex-col gap-2">
-              <Link to="/admin/crm">
-                <Button variant="default" className="w-full">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Tableau de Bord
-                </Button>
-              </Link>
-              <div className="flex gap-2">
-                <Link to="/admin/crm/pipeline" className="flex-1">
-                  <Button variant="outline" className="w-full text-sm">
-                    <Kanban className="h-4 w-4 mr-2" />
-                    Pipeline
-                  </Button>
-                </Link>
-                <Link to="/admin/crm/equipe" className="flex-1">
-                  <Button variant="outline" className="w-full text-sm">
-                    <Users className="h-4 w-4 mr-2" />
-                    Équipe
-                  </Button>
-                </Link>
-              </div>
-            </div>
+            <Link to="/admin/crm">
+              <Button variant="default" className="w-full">
+                <Briefcase className="h-4 w-4 mr-2" />
+                Accéder au CRM
+              </Button>
+            </Link>
           </Card>
 
           {/* Conservée en fin de grille */}
