@@ -1,17 +1,5 @@
-// Quelques codes NAF/APE fréquents pour les filtres rapides.
-// Liste non exhaustive ; le champ texte libre reste autorisé.
-export const NAF_QUICK_PICKS: Array<{ code: string; label: string }> = [
-  { code: '01.11Z', label: 'Cultures céréales et légumineuses' },
-  { code: '01.50Z', label: 'Culture et élevage associés' },
-  { code: '10.71C', label: 'Boulangerie-pâtisserie' },
-  { code: '47.11D', label: 'Supermarchés' },
-  { code: '55.10Z', label: 'Hôtels et hébergement similaire' },
-  { code: '56.10A', label: 'Restauration traditionnelle' },
-  { code: '70.22Z', label: 'Conseil pour les affaires' },
-  { code: '85.59A', label: 'Formation continue d\'adultes' },
-  { code: '88.99B', label: 'Action sociale sans hébergement' },
-  { code: '94.99Z', label: 'Autres organisations associatives' },
-];
+// NAF/APE : voir src/lib/nafCatalog.ts (référentiel complet INSEE rév. 2 + recherche fuzzy).
+
 
 export const TRANCHE_EFFECTIF_OPTIONS = [
   { value: 'NN', label: 'Unités non employeuses' },
