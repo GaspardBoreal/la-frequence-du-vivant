@@ -66,7 +66,10 @@ interface OpportunityFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   opportunity?: CrmOpportunity | null;
-  onSubmit: (data: OpportunityFormData) => void;
+  onSubmit: (data: OpportunityFormData & {
+    linkedCompanies: OppLinkedCompany[];
+    linkedContacts: OppLinkedContact[];
+  }) => void;
   isSubmitting?: boolean;
 }
 
