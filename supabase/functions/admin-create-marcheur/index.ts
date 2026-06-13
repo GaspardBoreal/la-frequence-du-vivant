@@ -94,9 +94,11 @@ Deno.serve(async (req) => {
     }
 
     // Create the community profile
+    // Upsert because an auth trigger (handle_new_community_user) already creates
+    // a minimal community_profiles row on signup. We update it with full data.
     const { data: profile, error: profileError } = await admin
       .from('community_profiles')
-      .insert({
+      .upsert({
         user_id: newUserId,
         prenom: String(prenom).trim(),
         nom: String(nom).trim(),
@@ -107,7 +109,7 @@ Deno.serve(async (req) => {
         csp: csp || null,
         csp_precision: csp_precision?.trim().slice(0, 80) || null,
         role: role || 'marcheur_en_devenir',
-      })
+      }, { onConflict: 'user_id' })
       .select()
       .single();
 

@@ -1,50 +1,31 @@
-## Problème
+## Diagnostic
 
-Dans `/admin/crm`, la "cellule Rechercher" de la barre du haut (`src/components/crm/shell/CrmTopBar.tsx`) n'est **pas un input** : c'est un simple `<div>` décoratif avec le texte "Rechercher…" et un raccourci `⌘K`. Impossible donc d'y saisir quoi que ce soit.
+Les logs de l'edge function `admin-create-marcheur` montrent :
 
-## Objectif
+```
+duplicate key value violates unique constraint "community_profiles_user_id_key"
+```
 
-Transformer cette zone en une **vraie recherche globale CRM** qui :
-1. Permet la saisie au clavier (input réel, focus auto, raccourci `⌘K` / `Ctrl+K`).
-2. Cherche en parallèle dans 4 entités : **Entreprises**, **Contacts**, **Opportunités**, **Marches**.
-3. Affiche les résultats groupés avec un **picto distinctif par type** pour identifier immédiatement la nature de chaque résultat.
-4. Navigue directement vers la fiche correspondante au clic / touche Entrée.
+**Cause racine** : un trigger Postgres `on_auth_user_created_community` sur `auth.users` appelle `handle_new_community_user()` qui insère automatiquement une ligne dans `community_profiles` à chaque signup (avec `on conflict do nothing`).
 
-## Pictos & destinations
+Flow actuel cassé :
+1. L'admin crée le marcheur → `auth.admin.inviteUserByEmail` (ou `createUser`)
+2. Le trigger crée déjà un `community_profiles` minimal (prenom/nom depuis metadata, role=`marcheur_en_devenir`)
+3. L'edge function fait ensuite un `.insert()` → conflit, rollback, message d'erreur côté UI
+4. L'utilisateur auth est supprimé mais en pratique le profil créé par le trigger reste orphelin si la suppression échoue
 
-| Type | Picto (lucide) | Couleur | Route de la fiche |
-|---|---|---|---|
-| Entreprise | `Building2` | bleu | `/admin/crm/annuaire?company=<id>` (ouvre le drawer) |
-| Contact | `User` | violet | `/admin/crm/annuaire?tab=contacts&contact=<id>` |
-| Opportunité | `Target` | ambre | `/admin/crm/pipeline?opportunity=<id>` |
-| Marche | `Footprints` | émeraude | `/admin/crm/marches?marche=<id>` |
+## Correctif
 
-Chaque résultat affiche : picto coloré + titre principal (nom entreprise / nom contact / titre opportunité / nom marche) + sous-titre contextuel (ville, fonction, statut/montant, date).
+**Fichier** : `supabase/functions/admin-create-marcheur/index.ts`
 
-## Composant à créer
+Remplacer le `.insert()` du profil par un `.upsert({...}, { onConflict: 'user_id' }).select().single()`. Cela :
+- met à jour la ligne créée par le trigger avec toutes les valeurs fournies (ville, téléphone, csp, genre, date_naissance, role…)
+- reste idempotent si le trigger est désactivé un jour
+- supprime le besoin de rollback dans le cas nominal (on garde le rollback en cas d'erreur réelle d'upsert)
 
-`src/components/crm/search/CrmGlobalSearch.tsx`
-
-- Bouton/zone dans `CrmTopBar` qui ouvre un `CommandDialog` (cmdk via `@/components/ui/command`).
-- Champ `CommandInput` avec autofocus.
-- 4 `CommandGroup` : Entreprises / Contacts / Opportunités / Marches, chacun avec son picto en tête de groupe et sur chaque `CommandItem`.
-- Debounce 250ms, requêtes parallèles via `useQueries` (React Query) avec `ilike` côté Supabase :
-  - `crm_companies` : `denomination`, `nom_complet`, `siren`, `ville` (limit 8)
-  - `crm_contacts` : `nom`, `prenom`, `email`, `entreprise` (limit 8)
-  - `crm_opportunities` : `titre`, `entreprise` (limit 8)
-  - `crm_marches` (ou table équivalente déjà utilisée dans `CrmMarches`) : `nom`, `lieu` (limit 8)
-- État vide : "Tapez pour rechercher…" puis "Aucun résultat" quand applicable.
-- Sur sélection : `navigate(route)` + fermeture du dialog.
-- Raccourci global `⌘K` / `Ctrl+K` (listener `keydown` monté dans le composant).
-
-## Modifications
-
-1. **Nouveau fichier** `src/components/crm/search/CrmGlobalSearch.tsx` — bouton-déclencheur + dialog cmdk + logique de recherche et navigation.
-2. **`src/components/crm/shell/CrmTopBar.tsx`** — remplacer le faux input (la `<div>` avec "Rechercher…") par `<CrmGlobalSearch />`. Garder l'apparence visuelle (badge `⌘K`, largeur 260px sur md+).
-3. Vérifier la structure réelle de la table des marches CRM (`useCrmCompanyEvents` / page `CrmMarches`) pour brancher la 4ᵉ requête sur la bonne table/colonnes ; ajuster si nécessaire.
+Aucun changement SQL nécessaire — le trigger reste utile pour les signups directs hors admin.
 
 ## Hors scope
 
-- Pas de RPC SQL dédié (les `ilike` parallèles suffisent largement pour les volumes CRM actuels).
-- Pas de fuzzy matching avancé ni de mise en évidence des termes.
-- Pas de modification des fiches cibles : on suppose que les routes ci-dessus ouvrent déjà la bonne vue (à confirmer rapidement lors de l'implémentation, sinon on adapte la route).
+- Pas de refonte du formulaire UI
+- Pas de modification du trigger DB (il protège les signups publics)
