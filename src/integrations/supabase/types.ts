@@ -920,17 +920,68 @@ export type Database = {
           },
         ]
       }
+      crm_contact_companies: {
+        Row: {
+          company_id: string
+          contact_id: string
+          created_at: string
+          is_primary: boolean
+          qualite: string | null
+          role: string
+        }
+        Insert: {
+          company_id: string
+          contact_id: string
+          created_at?: string
+          is_primary?: boolean
+          qualite?: string | null
+          role?: string
+        }
+        Update: {
+          company_id?: string
+          contact_id?: string
+          created_at?: string
+          is_primary?: boolean
+          qualite?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contact_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contact_companies_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_contacts: {
         Row: {
           company_id: string | null
           created_at: string | null
-          email: string
+          date_naissance_partielle: string | null
+          dirigeant_external_key: string | null
+          dirigeant_source: string | null
+          email: string | null
           entreprise: string | null
           fonction: string | null
           id: string
+          is_dirigeant: boolean
           is_subscribed: boolean | null
+          linkedin_url: string | null
+          nationalite: string | null
           nom: string | null
+          notes: string | null
           prenom: string | null
+          qualite: string | null
+          role_type: string | null
           segment: string | null
           source: string | null
           telephone: string | null
@@ -939,13 +990,22 @@ export type Database = {
         Insert: {
           company_id?: string | null
           created_at?: string | null
-          email: string
+          date_naissance_partielle?: string | null
+          dirigeant_external_key?: string | null
+          dirigeant_source?: string | null
+          email?: string | null
           entreprise?: string | null
           fonction?: string | null
           id?: string
+          is_dirigeant?: boolean
           is_subscribed?: boolean | null
+          linkedin_url?: string | null
+          nationalite?: string | null
           nom?: string | null
+          notes?: string | null
           prenom?: string | null
+          qualite?: string | null
+          role_type?: string | null
           segment?: string | null
           source?: string | null
           telephone?: string | null
@@ -954,13 +1014,22 @@ export type Database = {
         Update: {
           company_id?: string | null
           created_at?: string | null
-          email?: string
+          date_naissance_partielle?: string | null
+          dirigeant_external_key?: string | null
+          dirigeant_source?: string | null
+          email?: string | null
           entreprise?: string | null
           fonction?: string | null
           id?: string
+          is_dirigeant?: boolean
           is_subscribed?: boolean | null
+          linkedin_url?: string | null
+          nationalite?: string | null
           nom?: string | null
+          notes?: string | null
           prenom?: string | null
+          qualite?: string | null
+          role_type?: string | null
           segment?: string | null
           source?: string | null
           telephone?: string | null
@@ -1140,6 +1209,78 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_opportunity_companies: {
+        Row: {
+          company_id: string
+          created_at: string
+          opportunity_id: string
+          role: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          opportunity_id: string
+          role?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          opportunity_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_opportunity_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunity_companies_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_opportunity_contacts: {
+        Row: {
+          contact_id: string
+          created_at: string
+          opportunity_id: string
+          role: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          opportunity_id: string
+          role?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          opportunity_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_opportunity_contacts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunity_contacts_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_opportunities"
             referencedColumns: ["id"]
           },
         ]
@@ -6475,6 +6616,10 @@ export type Database = {
           species_count: number
           ville: string
         }[]
+      }
+      sync_company_dirigeants_to_contacts: {
+        Args: { _company_id: string }
+        Returns: number
       }
       toggle_event_public: {
         Args: { _event_id: string; _is_public: boolean }
