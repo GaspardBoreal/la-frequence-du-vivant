@@ -47,6 +47,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
   const { data: companyContacts = [] } = useCrmContacts({ companyId });
 
   const [notes, setNotes] = React.useState('');
+  const [creatingContact, setCreatingContact] = React.useState(false);
   const [newActivity, setNewActivity] = React.useState<{
     type: CrmCompanyActivityType;
     summary: string;
