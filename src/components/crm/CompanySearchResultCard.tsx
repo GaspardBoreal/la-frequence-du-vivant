@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { MapPin, Users, Building2, Plus, Check, Filter, Ban } from 'lucide-react';
+import { MapPin, Users, Building2, Plus, Check, Filter, Ban, Eye } from 'lucide-react';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { CompanyStageBadge } from './CompanyStageBadge';
 import type { CompanySearchResult, CrmCompanyStage } from '@/types/crmCompany';
@@ -17,9 +17,10 @@ interface Props {
   existingStage?: CrmCompanyStage;
   onImport: () => void;
   onPickNaf?: (code: string) => void;
+  onPreview?: () => void;
 }
 
-export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport, onPickNaf }) => {
+export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport, onPickNaf, onPreview }) => {
   const isImported = !!existingStage;
   const isCessee = result.etat_administratif === 'C';
   const cessationDate = result.date_cessation
