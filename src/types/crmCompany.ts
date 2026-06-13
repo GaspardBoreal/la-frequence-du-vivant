@@ -29,6 +29,42 @@ export interface CompanySearchResult {
   raw: any;
 }
 
+export interface CompanyEtablissement {
+  siret: string;
+  est_siege: boolean;
+  adresse: string | null;
+  code_postal: string | null;
+  commune: string | null;
+  departement: string | null;
+  region: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  activite_principale: string | null;
+  libelle_activite_principale: string | null;
+  etat_administratif: string | null;
+  date_creation: string | null;
+  date_fermeture: string | null;
+  tranche_effectif_salarie: string | null;
+}
+
+export interface CompanyFullDetails extends Omit<CompanySearchResult, 'adresse' | 'ville' | 'code_postal' | 'departement' | 'region' | 'latitude' | 'longitude'> {
+  date_creation: string | null;
+  date_mise_a_jour: string | null;
+  annee_tranche_effectif: string | null;
+  tva_intracommunautaire: string | null;
+  capital_social: string | null;
+  economie_sociale_solidaire: boolean;
+  siege: CompanyEtablissement;
+  etablissements: CompanyEtablissement[];
+  nombre_etablissements_ouverts: number | null;
+  liens_externes: {
+    annuaire_entreprises: string;
+    pappers: string;
+    societe_com: string;
+    insee: string;
+  };
+}
+
 export interface CompanySearchFilters {
   q?: string;
   page?: number;
