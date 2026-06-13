@@ -440,14 +440,17 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Assigné à</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)}
+                        value={field.value || "__none__"}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Non assigné" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Non assigné</SelectItem>
+                          <SelectItem value="__none__">Non assigné</SelectItem>
                           {activeMembers.map(member => (
                             <SelectItem key={member.id} value={member.id}>
                               {member.prenom} {member.nom}
