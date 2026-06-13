@@ -83,8 +83,9 @@ const CrmHome: React.FC = () => {
           label="Contacts"
           value={s.contacts}
           icon={Mail}
-          to="/admin/crm/annuaire"
+          to="/admin/crm/annuaire?tab=contacts"
           accent="sky"
+          hint={s.dirigeants > 0 ? `dont ${s.dirigeants} dirigeant${s.dirigeants > 1 ? 's' : ''}` : undefined}
           loading={isLoading}
         />
 
