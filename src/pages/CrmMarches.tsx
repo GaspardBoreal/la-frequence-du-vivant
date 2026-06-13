@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarRange, Search, MapPin, Loader2, Plus } from 'lucide-react';
+import { Search, MapPin, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Table,
