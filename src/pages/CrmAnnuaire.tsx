@@ -131,10 +131,52 @@ const CrmAnnuaire: React.FC = () => {
               <div className="flex gap-2 flex-wrap">
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Nom, SIREN, dirigeant…" className="pl-9" />
+                  <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Nom, SIREN, dirigeant…" className="pl-9 pr-9" />
+                  {q && (
+                    <button type="button" onClick={() => setQ('')}
+                      aria-label="Effacer la recherche"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted text-muted-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
                 <CompanySearchFiltersDrawer value={filters} onChange={setFilters} />
               </div>
+
+              {/* Chips des filtres actifs */}
+              {(() => {
+                const chips: Array<{ key: string; label: string; onRemove: () => void }> = [];
+                if (debouncedQ) chips.push({ key: 'q', label: `Recherche : "${debouncedQ}"`, onRemove: () => setQ('') });
+                (Object.keys(filters) as Array<keyof CompanySearchFilters>).forEach((k) => {
+                  if (['q', 'page', 'per_page'].includes(k as string)) return;
+                  const v = (filters as any)[k];
+                  if (v === undefined || v === '' || v === null || v === false) return;
+                  const lbl = FILTER_LABELS[k] ?? String(k);
+                  chips.push({
+                    key: String(k),
+                    label: `${lbl} : ${formatFilterValue(k, v)}`,
+                    onRemove: () => setFilters(f => { const n = { ...f }; delete (n as any)[k]; return { ...n, page: 1 }; }),
+                  });
+                });
+                if (chips.length === 0) return null;
+                return (
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                    {chips.map(c => (
+                      <button key={c.key} type="button" onClick={c.onRemove}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-muted hover:bg-accent border">
+                        {c.label}
+                        <X className="h-3 w-3" />
+                      </button>
+                    ))}
+                    <button type="button"
+                      onClick={() => { setQ(''); setFilters({ per_page: 20, page: 1 }); }}
+                      className="text-xs text-muted-foreground hover:text-foreground underline ml-1">
+                      Tout effacer
+                    </button>
+                  </div>
+                );
+              })()}
+
               {selected.size > 0 && (
                 <div className="mt-3 flex items-center justify-between gap-2 p-2 bg-primary/10 rounded-md">
                   <span className="text-sm font-medium">{selected.size} entreprise(s) sélectionnée(s)</span>
