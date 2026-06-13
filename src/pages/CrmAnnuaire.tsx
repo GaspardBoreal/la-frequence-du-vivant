@@ -436,6 +436,11 @@ const CrmAnnuaire: React.FC = () => {
             )}
           </TabsContent>
 
+          {/* === CONTACTS === */}
+          <TabsContent value="contacts" className="mt-4">
+            <CrmContactsTab />
+          </TabsContent>
+
           {/* === CARTE === */}
           <TabsContent value="carte" className="mt-4">
             <Card className="p-3 mb-3">
