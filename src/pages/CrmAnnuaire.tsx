@@ -217,7 +217,15 @@ const CrmAnnuaire: React.FC = () => {
                     />
                   ))}
                   {!isFetching && searchData?.results.length === 0 && (
-                    <Card className="p-8 text-center text-muted-foreground">Aucun résultat.</Card>
+                    <Card className="p-6 text-center text-muted-foreground space-y-3">
+                      <p className="font-medium text-foreground">Aucun résultat.</p>
+                      {debouncedQ && (
+                        <div className="text-xs space-y-2">
+                          <p>Votre recherche texte <span className="font-mono bg-muted px-1.5 py-0.5 rounded">"{debouncedQ}"</span> est combinée aux filtres en ET logique.</p>
+                          <Button size="sm" variant="outline" onClick={() => setQ('')}>Essayer sans le texte de recherche</Button>
+                        </div>
+                      )}
+                    </Card>
                   )}
                   {searchData && searchData.total_pages > 1 && (
                     <div className="flex items-center justify-between pt-3">
