@@ -66,10 +66,13 @@ import MarchesDuVivantAssociation from './pages/MarchesDuVivantAssociation';
 import MarchesDuVivantExplorer from './pages/MarchesDuVivantExplorer';
 import CarnetsDeTerrainGalerie from './pages/CarnetsDeTerrainGalerie';
 import CarnetDeTerrain from './pages/CarnetDeTerrain';
-import CrmDashboard from './pages/CrmDashboard';
 import CrmPipeline from './pages/CrmPipeline';
 import CrmAnnuaire from './pages/CrmAnnuaire';
 import TeamManagement from './pages/TeamManagement';
+import CrmShell from './layouts/CrmShell';
+import CrmHome from './pages/CrmHome';
+import CrmMarches from './pages/CrmMarches';
+import CrmIa from './pages/CrmIa';
 import MarchesDuVivantConnexion from './pages/MarchesDuVivantConnexion';
 import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
 import MarchesDuVivantValiderPresence from './pages/MarchesDuVivantValiderPresence';
@@ -232,27 +235,15 @@ function App() {
                 <OpusAdmin />
               </AdminAuth>
             } />
-            {/* CRM Routes */}
-            <Route path="/admin/crm" element={
-              <AdminAuth>
-                <CrmDashboard />
-              </AdminAuth>
-            } />
-            <Route path="/admin/crm/pipeline" element={
-              <AdminAuth>
-                <CrmPipeline />
-              </AdminAuth>
-            } />
-            <Route path="/admin/crm/annuaire" element={
-              <AdminAuth>
-                <CrmAnnuaire />
-              </AdminAuth>
-            } />
-            <Route path="/admin/crm/equipe" element={
-              <AdminAuth>
-                <TeamManagement />
-              </AdminAuth>
-            } />
+            {/* CRM Routes — unified shell with sidebar */}
+            <Route path="/admin/crm" element={<AdminAuth><CrmShell /></AdminAuth>}>
+              <Route index element={<CrmHome />} />
+              <Route path="annuaire" element={<CrmAnnuaire />} />
+              <Route path="pipeline" element={<CrmPipeline />} />
+              <Route path="marches" element={<CrmMarches />} />
+              <Route path="equipe" element={<TeamManagement />} />
+              <Route path="ia" element={<CrmIa />} />
+            </Route>
             <Route path="/admin/marche-events" element={
               <AdminAuth>
                 <MarcheEventsAdmin />
