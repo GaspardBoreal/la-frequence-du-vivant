@@ -373,6 +373,13 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
           <Trash2 className="h-3.5 w-3.5" /> Supprimer
         </Button>
       </div>
+
+      <ContactFormDialog
+        open={creatingContact}
+        onOpenChange={setCreatingContact}
+        defaultCompanyId={company.id}
+        defaultEntreprise={company.denomination ?? company.nom_complet ?? null}
+      />
     </motion.div>
   );
 };
