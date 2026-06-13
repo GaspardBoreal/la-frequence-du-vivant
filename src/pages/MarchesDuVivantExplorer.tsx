@@ -10,7 +10,7 @@ import {
   Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X, BookOpen, UserCircle } from
 'lucide-react';
 import Footer from '@/components/Footer';
-import ThemeToggle from '@/components/community/ThemeToggle';
+import PublicTopBar from '@/components/layout/PublicTopBar';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -215,33 +215,15 @@ const MarchesDuVivantExplorer = () => {
         </div>
 
         {/* === NAV === */}
-        <nav className="print:hidden sticky top-0 z-50 backdrop-blur-md border-b border-stone-200/50" style={{ background: 'rgba(254,253,251,0.92)' }}>
-          <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+        <PublicTopBar
+          tone="light"
+          leftSlot={
             <Link to="/marches-du-vivant" className="inline-flex items-center gap-2 text-stone-500 hover:text-stone-800 transition-colors text-sm">
               <ArrowLeft className="w-4 h-4" />
               <span className="font-medium">Les Marches du Vivant</span>
             </Link>
-            <div className="flex items-center gap-1">
-              <ThemeToggle />
-              <Link to="/marches-du-vivant/connexion" className="p-2.5 rounded-xl hover:bg-emerald-50 transition-colors text-emerald-600 hover:text-emerald-800" title="Connexion / Mon espace">
-                <UserCircle className="w-4 h-4" />
-              </Link>
-              <button onClick={handleShare} className="p-2.5 rounded-xl hover:bg-stone-100 transition-colors text-stone-400 hover:text-stone-600" title="Partager">
-                <Share2 className="w-4 h-4" />
-              </button>
-              <a
-                href="https://www.linkedin.com/company/la-fr%C3%A9quence-du-vivant/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Suivre La Fréquence du Vivant sur LinkedIn"
-                title="Suivre sur LinkedIn"
-                className="group inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50/70 ring-1 ring-emerald-200/60 text-emerald-700 hover:text-[#0A66C2] hover:bg-emerald-100 hover:shadow-sm hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-50"
-              >
-                <Linkedin className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-        </nav>
+          }
+        />
 
         {/* === HERO === */}
         <section className="relative pt-10 pb-10 md:pt-16 md:pb-14 px-6 text-center overflow-hidden">

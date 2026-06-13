@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PublicTopBar from '@/components/layout/PublicTopBar';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -102,17 +103,15 @@ const MarchesDuVivantEntreprises = () => {
 
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="border-b border-border/20 bg-card/40 backdrop-blur-lg">
-          <div className="max-w-6xl mx-auto px-6 py-4">
-            <Link 
-              to="/marches-du-vivant"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
+        <PublicTopBar
+          tone="dark"
+          leftSlot={
+            <Link to="/marches-du-vivant" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Retour aux Marches du Vivant</span>
+              <span>Retour aux Marches du Vivant</span>
             </Link>
-          </div>
-        </header>
+          }
+        />
 
         {/* Hero */}
         <section className="py-16 px-6">

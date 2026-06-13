@@ -7,6 +7,7 @@ import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import BioacousticPortal from '../components/home/BioacousticPortal';
 import TerritoryPortal from '../components/home/TerritoryPortal';
 import PoetryPortal from '../components/home/PoetryPortal';
+import PublicTopBar from '@/components/layout/PublicTopBar';
 
 const Index = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
@@ -30,6 +31,7 @@ const Index = () => {
         <DecorativeElements className="text-accent/20" />
         
         <div className="relative z-10">
+          <PublicTopBar tone="glass" />
           {/* Header avec typographie exacte */}
           <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
             <div className="max-w-6xl mx-auto px-6 py-16">

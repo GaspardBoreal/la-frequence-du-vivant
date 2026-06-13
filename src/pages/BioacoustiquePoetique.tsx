@@ -11,6 +11,7 @@ import Sidebar from '../components/Sidebar';
 import DecorativeElements from '../components/DecorativeElements';
 import Footer from '../components/Footer';
 import SEOHead from '../components/SEOHead';
+import PublicTopBar from '@/components/layout/PublicTopBar';
 import { BioacousticSheet } from '../components/BioacousticSheet';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
@@ -132,6 +133,7 @@ const BioacoustiquePoetique = () => {
         <DecorativeElements className="text-accent/20" />
         
         <div className="relative z-10">
+          <PublicTopBar tone="dark" />
           {/* Header avec typographie compacte */}
           <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
             <div className="max-w-6xl mx-auto px-6 py-8 relative">
