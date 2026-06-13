@@ -702,8 +702,182 @@ export type Database = {
           },
         ]
       }
+      crm_companies: {
+        Row: {
+          adresse: string | null
+          api_synced_at: string | null
+          assigned_to: string | null
+          categorie_entreprise: string | null
+          code_naf: string | null
+          code_postal: string | null
+          created_at: string
+          created_by: string | null
+          denomination: string | null
+          departement: string | null
+          dirigeants: Json | null
+          etat_administratif: string | null
+          finances: Json | null
+          forme_juridique: string | null
+          id: string
+          last_contacted_at: string | null
+          latitude: number | null
+          libelle_naf: string | null
+          lifecycle_stage: Database["public"]["Enums"]["crm_company_stage"]
+          longitude: number | null
+          next_action_at: string | null
+          next_action_label: string | null
+          nom_complet: string | null
+          notes: string | null
+          qualites_labels: Json | null
+          raw_payload: Json | null
+          region: string | null
+          siren: string
+          siret_siege: string | null
+          source: string | null
+          tags: string[]
+          tranche_effectif: string | null
+          updated_at: string
+          ville: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          api_synced_at?: string | null
+          assigned_to?: string | null
+          categorie_entreprise?: string | null
+          code_naf?: string | null
+          code_postal?: string | null
+          created_at?: string
+          created_by?: string | null
+          denomination?: string | null
+          departement?: string | null
+          dirigeants?: Json | null
+          etat_administratif?: string | null
+          finances?: Json | null
+          forme_juridique?: string | null
+          id?: string
+          last_contacted_at?: string | null
+          latitude?: number | null
+          libelle_naf?: string | null
+          lifecycle_stage?: Database["public"]["Enums"]["crm_company_stage"]
+          longitude?: number | null
+          next_action_at?: string | null
+          next_action_label?: string | null
+          nom_complet?: string | null
+          notes?: string | null
+          qualites_labels?: Json | null
+          raw_payload?: Json | null
+          region?: string | null
+          siren: string
+          siret_siege?: string | null
+          source?: string | null
+          tags?: string[]
+          tranche_effectif?: string | null
+          updated_at?: string
+          ville?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          api_synced_at?: string | null
+          assigned_to?: string | null
+          categorie_entreprise?: string | null
+          code_naf?: string | null
+          code_postal?: string | null
+          created_at?: string
+          created_by?: string | null
+          denomination?: string | null
+          departement?: string | null
+          dirigeants?: Json | null
+          etat_administratif?: string | null
+          finances?: Json | null
+          forme_juridique?: string | null
+          id?: string
+          last_contacted_at?: string | null
+          latitude?: number | null
+          libelle_naf?: string | null
+          lifecycle_stage?: Database["public"]["Enums"]["crm_company_stage"]
+          longitude?: number | null
+          next_action_at?: string | null
+          next_action_label?: string | null
+          nom_complet?: string | null
+          notes?: string | null
+          qualites_labels?: Json | null
+          raw_payload?: Json | null
+          region?: string | null
+          siren?: string
+          siret_siege?: string | null
+          source?: string | null
+          tags?: string[]
+          tranche_effectif?: string | null
+          updated_at?: string
+          ville?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_companies_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_company_activities: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          member_id: string | null
+          metadata: Json | null
+          next_action_at: string | null
+          outcome: string | null
+          performed_by: string | null
+          summary: string | null
+          type: Database["public"]["Enums"]["crm_company_activity_type"]
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          metadata?: Json | null
+          next_action_at?: string | null
+          outcome?: string | null
+          performed_by?: string | null
+          summary?: string | null
+          type?: Database["public"]["Enums"]["crm_company_activity_type"]
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          metadata?: Json | null
+          next_action_at?: string | null
+          outcome?: string | null
+          performed_by?: string | null
+          summary?: string | null
+          type?: Database["public"]["Enums"]["crm_company_activity_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_company_activities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_company_activities_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_contacts: {
         Row: {
+          company_id: string | null
           created_at: string | null
           email: string
           entreprise: string | null
@@ -718,6 +892,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           email: string
           entreprise?: string | null
@@ -732,6 +907,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           email?: string
           entreprise?: string | null
@@ -745,7 +921,15 @@ export type Database = {
           telephone?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_email_logs: {
         Row: {
@@ -812,9 +996,14 @@ export type Database = {
           assigned_to: string | null
           budget_estime: number | null
           closed_at: string | null
+          company_id: string | null
           created_at: string | null
           created_by: string | null
           date_souhaitee: string | null
+          devis_envoye_le: string | null
+          devis_montant_ht: number | null
+          devis_signe_le: string | null
+          devis_statut: Database["public"]["Enums"]["crm_devis_statut"]
           email: string
           entreprise: string | null
           experience_souhaitee: string | null
@@ -837,9 +1026,14 @@ export type Database = {
           assigned_to?: string | null
           budget_estime?: number | null
           closed_at?: string | null
+          company_id?: string | null
           created_at?: string | null
           created_by?: string | null
           date_souhaitee?: string | null
+          devis_envoye_le?: string | null
+          devis_montant_ht?: number | null
+          devis_signe_le?: string | null
+          devis_statut?: Database["public"]["Enums"]["crm_devis_statut"]
           email: string
           entreprise?: string | null
           experience_souhaitee?: string | null
@@ -862,9 +1056,14 @@ export type Database = {
           assigned_to?: string | null
           budget_estime?: number | null
           closed_at?: string | null
+          company_id?: string | null
           created_at?: string | null
           created_by?: string | null
           date_souhaitee?: string | null
+          devis_envoye_le?: string | null
+          devis_montant_ht?: number | null
+          devis_signe_le?: string | null
+          devis_statut?: Database["public"]["Enums"]["crm_devis_statut"]
           email?: string
           entreprise?: string | null
           experience_souhaitee?: string | null
@@ -889,6 +1088,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -5467,6 +5673,7 @@ export type Database = {
         }
         Returns: number
       }
+      can_access_crm: { Args: { _user_id: string }; Returns: boolean }
       can_create_marche: { Args: { _user_id: string }; Returns: boolean }
       can_curate_audio: { Args: { _user_id: string }; Returns: boolean }
       can_edit_marche_event: {
@@ -6302,6 +6509,21 @@ export type Database = {
         | "eclaireur"
         | "ambassadeur"
         | "sentinelle"
+      crm_company_activity_type:
+        | "appel"
+        | "mail"
+        | "rdv"
+        | "note"
+        | "stage_change"
+        | "import"
+        | "autre"
+      crm_company_stage: "suspect" | "prospect" | "client" | "inactif"
+      crm_devis_statut:
+        | "aucun"
+        | "en_cours"
+        | "en_negociation"
+        | "signe"
+        | "perdu"
       crm_role: "admin" | "member" | "walker"
       curation_sense: "oeil" | "main" | "coeur" | "oreille" | "palais"
       etude_type: "principale" | "complementaire" | "annexe"
@@ -6476,6 +6698,23 @@ export const Constants = {
         "eclaireur",
         "ambassadeur",
         "sentinelle",
+      ],
+      crm_company_activity_type: [
+        "appel",
+        "mail",
+        "rdv",
+        "note",
+        "stage_change",
+        "import",
+        "autre",
+      ],
+      crm_company_stage: ["suspect", "prospect", "client", "inactif"],
+      crm_devis_statut: [
+        "aucun",
+        "en_cours",
+        "en_negociation",
+        "signe",
+        "perdu",
       ],
       crm_role: ["admin", "member", "walker"],
       curation_sense: ["oeil", "main", "coeur", "oreille", "palais"],
