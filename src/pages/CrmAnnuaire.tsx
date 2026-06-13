@@ -33,7 +33,7 @@ const CrmAnnuaire: React.FC = () => {
 
   const searchFilters = React.useMemo(() => ({ ...filters, q: debouncedQ || undefined }), [filters, debouncedQ]);
   const hasQuery = !!(searchFilters.q || Object.keys(searchFilters).some(k => !['q', 'page', 'per_page'].includes(k) && (searchFilters as any)[k] != null && (searchFilters as any)[k] !== ''));
-  const { data: searchData, isFetching } = useCompanySearch(searchFilters, hasQuery && canAccessCrm);
+  const { data: searchData, isFetching, error: searchError } = useCompanySearch(searchFilters, hasQuery && canAccessCrm);
 
   // Entreprises importées
   const [companyFilters, setCompanyFilters] = React.useState<{ stage: CrmCompanyStage | 'all'; search: string }>({ stage: 'all', search: '' });
@@ -132,6 +132,12 @@ const CrmAnnuaire: React.FC = () => {
             ) : (
               <div className="grid lg:grid-cols-[1fr_400px] gap-3">
                 <div className="space-y-2">
+                  {searchError && (
+                    <Card className="p-4 border-destructive/50 bg-destructive/10 text-sm text-destructive">
+                      <p className="font-semibold mb-1">Erreur de recherche</p>
+                      <p className="text-xs">{(searchError as Error).message}</p>
+                    </Card>
+                  )}
                   {isFetching && <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
                   {searchData?.results.map(r => (
                     <CompanySearchResultCard

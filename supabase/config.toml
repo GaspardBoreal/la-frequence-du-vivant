@@ -118,3 +118,9 @@ verify_jwt = false
 
 [functions.enrich-species-biogeography]
 verify_jwt = false
+
+[functions.search-french-companies]
+verify_jwt = false
+
+[functions.import-companies-batch]
+verify_jwt = false
