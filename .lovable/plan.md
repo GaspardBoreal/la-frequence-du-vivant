@@ -1,56 +1,189 @@
-# Ajouter un membre CRM depuis les marcheurs
 
-## Objectif
+# CRM commercial B2B — V1 complète (Étapes 1+2+3)
 
-Sur `/admin/crm/equipe`, transformer le bouton « Ajouter un membre » en un flow à deux choix :
+Objectif : équiper téléprospecteurs / ambassadeurs / commerciaux d'un CRM rapide pour identifier des cibles via l'annuaire officiel des entreprises françaises, les qualifier en Suspect → Prospect → Client, suivre les opportunités/devis, et visualiser tout ça sur carte.
 
-1. **Depuis un marcheur** (chemin principal, mis en avant) — picker avec recherche live nom/prénom dans `community_profiles`.
-2. **Créer manuellement** (chemin secondaire, repli pour membres externes type prestataire).
+L'IA (brief d'appel, mails, devis) est explicitement reportée en V2 — la V1 pose des fondations propres pour la brancher facilement ensuite.
 
-## Expérience utilisateur
+## 1. Nouvelle architecture de données
 
-Au clic sur « Ajouter un membre », ouverture d'un **Dialog en deux temps** :
+### Table `crm_companies` (cœur du CRM B2B)
+Une entreprise = un SIREN. Les données API gouv sont mises en cache pour éviter de re-fetcher et permettre la recherche offline / filtrée.
 
-### Étape 1 — Choix de la source (split visuel)
+Champs métier :
+- `siren` (text, unique), `siret_siege`, `denomination`, `nom_complet`
+- `lifecycle_stage` : `suspect` | `prospect` | `client` | `inactif` (défaut `suspect`)
+- `assigned_to` (uuid → team_members) — commercial attitré
+- `tags` (text[]) — étiquettes libres ("priorité haute", "Salon Pollutec"…)
+- `notes` (text), `source` (text, ex: `api_gouv`, `manuel`, `import_csv`)
+- `last_contacted_at`, `next_action_at`, `next_action_label`
 
-Deux grandes cartes côte à côte, design "wahouh" :
-- 🚶 **Depuis la communauté de marcheurs** — gradient `from-primary/10 to-accent/10`, icône `Footprints`, badge « Recommandé ».
-- ✍️ **Créer un membre externe** — bordure simple, icône `UserPlus`.
+Champs cache API gouv (snapshot JSONB + colonnes indexées pour filtres rapides) :
+- `code_naf`, `libelle_naf`, `forme_juridique`, `tranche_effectif`, `categorie_entreprise`
+- `etat_administratif` (A/F)
+- `ville`, `code_postal`, `departement`, `region`
+- `latitude`, `longitude` (depuis le siège API gouv, via `geo_adresse`)
+- `dirigeants` (jsonb), `qualites_labels` (jsonb : ESS, RGE, EPV, BIO, etc.)
+- `finances` (jsonb : CA, résultat net par millésime)
+- `raw_payload` (jsonb complet API)
+- `api_synced_at`
 
-### Étape 2a — Picker marcheur (si choix communauté)
+RLS : lecture/écriture réservée aux membres CRM (`has_role(auth.uid(), 'admin')` OU appartient à `team_members`). Pas d'accès anon.
 
-- `Command` (cmdk shadcn) plein dialog avec :
-  - Input recherche en haut : « Rechercher un marcheur (nom ou prénom)… » + auto-focus.
-  - Liste virtuelle scrollable : avatar + prénom nom + ville + badge rôle (Ambassadeur/Sentinelle/Marcheur) + petit chip si déjà membre CRM (grisé, non sélectionnable).
-  - Tri : Ambassadeurs/Sentinelles en premier, puis ordre alphabétique.
-  - Filtre live côté client (debounce 200ms) sur `prenom ILIKE %q% OR nom ILIKE %q%` (normalisé NFD pour ignorer accents).
-  - Pied : compteur « X marcheurs trouvés ».
-- Au clic sur un marcheur → étape de **confirmation pré-remplie** : fonction (optionnelle, ex. « Ambassadeur Dordogne »), switch actif, bouton « Ajouter à l'équipe ».
-- Création du `team_members` avec `user_id = profile.user_id`, `prenom`, `nom`, `email` (récupéré via RPC si dispo, sinon null), `photo_url = avatar_url`, `telephone`, `fonction` saisi.
-- Le rôle CRM (admin/member/walker) reste attribué via le `Select` existant sur la carte du membre après création — non bloquant à l'ajout. Default suggéré : `walker`.
+### Table `crm_company_activities`
+Journal d'actions sur une entreprise : appel, mail, RDV, note, changement de stage. Champs : `company_id`, `member_id`, `type`, `summary`, `outcome`, `next_action_at`, `created_at`.
 
-### Étape 2b — Formulaire manuel
+### Évolution de `crm_opportunities`
+Ajout de :
+- `company_id` (uuid → crm_companies, nullable pour ne pas casser l'existant)
+- `devis_statut` : `aucun` | `en_cours` | `en_negociation` | `signe` | `perdu` (champ sur l'opportunité, pas de table séparée)
+- `devis_montant_ht`, `devis_envoye_le`, `devis_signe_le`
 
-Le formulaire actuel inchangé (prenom/nom/email/fonction/telephone/actif).
+Migration : non destructive. Les opportunités existantes restent valides avec `company_id IS NULL`.
 
-## Composants à créer / modifier
+### Évolution de `crm_contacts`
+Ajout de `company_id` (lien vers `crm_companies`) pour rattacher personnes physiques ↔ entreprises sans dupliquer.
 
-- **`src/components/crm/AddMemberDialog.tsx`** (nouveau) — orchestre les 2 étapes (source → picker | manuel).
-- **`src/components/crm/MarcheurPicker.tsx`** (nouveau) — `Command` + liste filtrée + état "déjà membre".
-- **`src/hooks/useMarcheursForCrm.ts`** (nouveau) — `useQuery` qui fetch `community_profiles` (id, user_id, prenom, nom, ville, avatar_url, role, telephone) limité aux profils avec `user_id` non null, ordonnés par rôle puis nom. Limite 1000 (suffisant à ce stade).
-- **`src/pages/TeamManagement.tsx`** — remplace le `Dialog` actuel par `AddMemberDialog`, conserve l'édition existante (clic crayon ouvre le formulaire manuel pré-rempli).
-- **`src/hooks/useTeamMembers.ts`** — ajoute une fonction utilitaire `getExistingUserIds()` (Set des `user_id` déjà liés) pour griser les marcheurs déjà membres.
+## 2. Intégration API recherche-entreprises.api.gouv.fr
 
-## Détails techniques
+API publique, gratuite, sans clé. Limite : 7 req/s par IP → on l'appelle depuis une **edge function** `search-french-companies` qui :
+- Reçoit `{ query, filters, page, per_page }`
+- Construit l'URL `https://recherche-entreprises.api.gouv.fr/search?...`
+- Mappe nos filtres UI vers les query params officiels :
 
-- Recherche normalisée : helper `normalize(s)` = `s.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase()` côté client.
-- Email du marcheur : non stocké dans `community_profiles` (vit dans `auth.users`). On laisse `email = null` à la création ; l'admin pourra l'éditer ensuite (ou on prévoit un RPC `get_user_email` plus tard — hors scope).
-- Aucune migration DB requise. Aucune RLS à modifier (lecture `community_profiles` déjà ouverte aux admins via les policies existantes).
-- Mobile first : dialog plein écran < `sm`, picker `Command` en pleine hauteur.
-- Pas de duplicate : avant insert, check `members.some(m => m.user_id === picked.user_id)` → toast d'erreur si déjà lié.
+| Filtre UI | Param API |
+|---|---|
+| Texte libre (nom, SIREN, dirigeant) | `q` |
+| Ville / code postal | `code_postal`, `commune` |
+| Département / Région | `departement`, `region` |
+| Code NAF/APE | `activite_principale` |
+| Forme juridique | `categorie_juridique` |
+| Tranche d'effectif | `tranche_effectif_salarie` |
+| Catégorie entreprise (PME/ETI/GE) | `categorie_entreprise` |
+| État administratif | `etat_administratif` |
+| Labels (ESS, RGE, BIO, EPV…) | `est_ess`, `est_rge`, `est_bio`, `est_entrepreneur_spectacle`, `est_qualiopi`, `est_finess`, `est_uai`, etc. |
+| Dirigeant | `nom_personne`, `prenoms_personne` |
+| CA / Résultat net | `ca_min`, `ca_max`, `resultat_net_min`, `resultat_net_max` |
+| Recherche géo (carte) | `lat`, `long`, `radius` via endpoint `/near_point` |
 
-## Hors scope
+Retour : normalisé en `CompanySearchResult[]` côté front (siren, nom, adresse, lat/long, naf, effectif, dirigeants, finances, labels).
 
-- Synchronisation automatique de l'email depuis `auth.users`.
-- Attribution du rôle CRM dans le même flow (reste sur la carte).
-- Édition du lien marcheur ↔ membre existant (on ne casse pas l'existant).
+Pas de stockage tant que pas taggé : la recherche est volatile, seules les entreprises **importées** atterrissent dans `crm_companies`.
+
+## 3. UI — réorganisation `/admin/crm`
+
+Nouvelle barre d'onglets dans `CrmDashboard` :
+
+```text
+[ Tableau de bord ] [ Annuaire ] [ Entreprises ] [ Pipeline ] [ Carte ] [ Équipe ]
+```
+
+### 3.1 Onglet Annuaire (nouveau) — la pièce wahouh
+Layout split desktop / empilé mobile :
+
+```text
++--------------------------------------------------+
+| 🔍 Recherche multi-critères (drawer filtres)      |
++--------------------+-----------------------------+
+| Liste résultats     | Mini-carte synchronisée    |
+| (cards avec badge   | (markers cliquables,        |
+|  Suspect/Prospect/  |  bbox auto-fit)            |
+|  Client si déjà     |                             |
+|  importé)           |                             |
+| ☑ sélection multi   |                             |
++--------------------+-----------------------------+
+| Barre actions : [Tagger comme Suspect] [Assigner à…] [Exporter CSV] |
++--------------------------------------------------+
+```
+
+- Drawer "Filtres avancés" : sections repliables (Localisation / Activité / Taille / Labels & qualités / Financier / Dirigeant / État admin), compteur de filtres actifs, bouton "Réinitialiser".
+- Recherche debouncée 300ms, pagination infinie, état URL-synchronisé (partageable).
+- Chips au-dessus des résultats pour visualiser les filtres actifs.
+- Sur chaque card : badge coloré si déjà en base (Suspect bleu, Prospect orange, Client vert), bouton "+ Importer" sinon.
+- Sélection multi-lignes (checkbox) → action en masse "Tagger comme Suspect" (upsert par SIREN, idempotent).
+
+### 3.2 Onglet Entreprises (nouveau)
+Vue tableau + cards des `crm_companies` importées. Filtres locaux : stage, commercial assigné, tags, NAF, région. Recherche plein texte. Actions ligne : ouvrir drawer détail, changer stage, supprimer.
+
+**Drawer détail entreprise** (Sheet plein écran mobile) :
+- Header : logo généré (initiales), nom, SIREN, badges stage + labels (RGE, ESS…)
+- Tabs internes : `Identité` (toutes données API), `Dirigeants`, `Finances` (mini-graph CA/RN par millésime), `Activités` (timeline journal), `Opportunités` (liées via company_id), `Notes`
+- CTA flottants : `→ Prospect`, `→ Client`, `Créer opportunité`, `Logger une activité`
+- Bouton "Rafraîchir données API gouv" (re-fetch + maj cache).
+
+### 3.3 Onglet Pipeline (existant — enrichi)
+- Le Kanban existant reste intact.
+- L'`OpportunityForm` gagne un sélecteur entreprise (autocomplete sur `crm_companies`, sinon "créer nouvelle" qui ouvre l'annuaire en modale).
+- Nouvelle section "Devis" dans le form : statut (`aucun` → `signe`/`perdu`), montant HT, dates.
+- Sur les cards Kanban : pastille couleur statut devis + montant si défini.
+
+### 3.4 Onglet Carte (nouveau)
+- `RichMap` (Leaflet OSM, déjà mutualisé dans le projet) plein écran.
+- Markers colorés par `lifecycle_stage` (suspect/prospect/client) + clustering (`react-leaflet-cluster`).
+- Panneau latéral filtres (mêmes filtres que l'onglet Entreprises + filtre géo : rayon autour d'un point cliqué).
+- Clic marker → mini-popup avec nom, stage, commercial → "Ouvrir fiche" (réutilise drawer détail).
+- Bouton "Dessiner zone" (polygone) en V1.1 — pas bloquant.
+
+## 4. Edge functions
+
+1. **`search-french-companies`** : proxy + normalisation API gouv. Cache mémoire 60s pour requêtes identiques.
+2. **`import-companies-batch`** : reçoit liste de SIREN à importer comme `suspect`, fetch détails (`/search?q=<siren>`), upsert dans `crm_companies` (`ON CONFLICT (siren)`), log dans `crm_company_activities` (type `import`).
+3. **`refresh-company-data`** : refresh d'une entreprise (clic utilisateur), met à jour `raw_payload`, finances, dirigeants, `api_synced_at`.
+
+Toutes en `verify_jwt=false` avec validation en code : `supabase.auth.getUser()` + check `has_role(user, 'admin')` ou présence dans `team_members`.
+
+## 5. Hooks & composants front
+
+Nouveaux hooks :
+- `useCompanySearch(filters)` — query React Query branchée sur edge function annuaire.
+- `useCrmCompanies(filters)` — liste paginée des entreprises importées (Supabase direct).
+- `useCrmCompany(id)` — détail + activités + opportunités.
+- `useImportCompanies()` — mutation batch tag Suspect.
+- `useUpdateCompanyStage()` — mutation stage transition (avec log auto activité).
+
+Nouveaux composants (`src/components/crm/`) :
+- `CompanySearchFiltersDrawer.tsx`, `CompanySearchResultCard.tsx`, `CompanySearchResultsMap.tsx`
+- `CompaniesTable.tsx`, `CompanyDetailSheet.tsx`, `CompanyStageBadge.tsx`, `CompanyLabelsChips.tsx`
+- `CrmMapView.tsx` (carte plein écran)
+- Ajout d'un `CompanyPicker.tsx` (autocomplete) dans `OpportunityForm`
+
+## 6. Découpage de livraison
+
+```text
+Phase A — Fondations (1 PR)
+  • Migration crm_companies + crm_company_activities + colonnes opportunités/contacts
+  • Edge function search-french-companies + import-companies-batch
+  • Hooks de base
+
+Phase B — Annuaire (1 PR)
+  • Onglet Annuaire complet (filtres, liste, mini-carte, import batch)
+
+Phase C — Entreprises & Pipeline enrichi (1 PR)
+  • Onglet Entreprises + drawer détail
+  • Évolution OpportunityForm (company picker + bloc devis)
+  • Affichage devis sur Kanban
+
+Phase D — Carte CRM (1 PR)
+  • Onglet Carte plein écran + clustering + filtres + popup → drawer détail
+
+Phase E (V2, hors scope actuel) — IA
+  • Edge function generate-call-brief, generate-email, generate-quote
+  • Boutons IA dans le drawer entreprise et opportunité
+```
+
+## Section technique (détails)
+
+- Géocodage : on utilise `geo_adresse` du payload API gouv qui contient lat/long du siège — pas besoin d'appel géocoder tiers. Fallback : si manquant et adresse présente → file d'attente d'enrichissement Nominatim (1 req/s) en background dans `import-companies-batch`.
+- Index DB clés : `crm_companies(lifecycle_stage)`, `crm_companies(assigned_to)`, `crm_companies USING gin(tags)`, `crm_companies(latitude, longitude)`, `crm_companies(code_naf)`.
+- Idempotence import : upsert sur `siren`. Si déjà `prospect`/`client`, le stage **n'est pas rétrogradé** à `suspect`.
+- État URL annuaire : sérialisation filtres dans query string (`?naf=01.11Z&region=NOUVELLE-AQUITAINE&label=bio`) → permet partage de recherches entre commerciaux.
+- Mobile-first : annuaire en single column + bottom-sheet pour filtres ; carte avec FAB "Filtres" ; drawers en plein écran sur mobile (Sheet).
+- Sécurité RLS : aucune table CRM accessible à `anon`. Lecture/écriture conditionnée à `has_role(uid,'admin')` OR `EXISTS (SELECT 1 FROM team_members WHERE user_id = auth.uid() AND is_active)`.
+- Pas de secrets requis (API gouv ouverte). Lovable AI Gateway sera utilisé en Phase E.
+
+## Hors scope V1 (explicitement)
+- Génération IA (briefs, mails, devis) → Phase E.
+- Export PDF devis.
+- Synchronisation calendrier / mailbox externe.
+- Dessin polygone sur carte (V1.1).
+- Notifications push commerciaux.
