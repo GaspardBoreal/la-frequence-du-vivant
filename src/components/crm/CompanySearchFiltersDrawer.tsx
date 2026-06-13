@@ -6,10 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { SlidersHorizontal, RotateCcw, Check, ChevronsUpDown, X } from 'lucide-react';
 import type { CompanySearchFilters } from '@/types/crmCompany';
 import { FRENCH_DEPARTMENTS_WITH_CODES, FRENCH_REGIONS_WITH_CODES } from '@/utils/frenchAdministrativeCodes';
-import { CATEGORIE_ENTREPRISE_OPTIONS, ETAT_ADMIN_OPTIONS, LABEL_FILTERS, NAF_QUICK_PICKS, TRANCHE_EFFECTIF_OPTIONS } from '@/lib/crmAnnuaireOptions';
+import { CATEGORIE_ENTREPRISE_OPTIONS, ETAT_ADMIN_OPTIONS, LABEL_FILTERS, TRANCHE_EFFECTIF_OPTIONS } from '@/lib/crmAnnuaireOptions';
+import { searchNaf, getNafLabel, formatNaf } from '@/lib/nafCatalog';
+import { cn } from '@/lib/utils';
 
 interface Props {
   value: CompanySearchFilters;
@@ -17,6 +21,65 @@ interface Props {
 }
 
 const NONE = '__none__';
+
+const NafCombobox: React.FC<{ value?: string; onChange: (code?: string) => void }> = ({ value, onChange }) => {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const results = React.useMemo(() => searchNaf(query, 50), [query]);
+  const label = value ? (getNafLabel(value) ? formatNaf(value) : value) : '';
+  return (
+    <div>
+      <Label>Activité (NAF/APE)</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn('w-full justify-between font-normal mt-1 h-auto min-h-10 py-2', !value && 'text-muted-foreground')}
+          >
+            <span className="truncate text-left">{label || 'Code ou libellé : "vigne", "01.21Z"…'}</span>
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput placeholder="Tapez un code ou un mot-clé…" value={query} onValueChange={setQuery} />
+            <CommandList className="max-h-72">
+              <CommandEmpty>Aucun code NAF correspondant.</CommandEmpty>
+              <CommandGroup>
+                {results.map((e) => (
+                  <CommandItem
+                    key={e.code}
+                    value={e.code}
+                    onSelect={() => { onChange(e.code); setOpen(false); setQuery(''); }}
+                    className="flex items-start gap-2"
+                  >
+                    <Check className={cn('h-4 w-4 mt-0.5 shrink-0', value === e.code ? 'opacity-100' : 'opacity-0')} />
+                    <div className="min-w-0">
+                      <div className="font-mono text-xs text-muted-foreground">{e.code}</div>
+                      <div className="text-sm leading-tight">{e.label}</div>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange(undefined)}
+          className="text-[11px] text-muted-foreground hover:text-foreground underline mt-1 inline-flex items-center gap-1"
+        >
+          <X className="h-3 w-3" /> Retirer le filtre activité
+        </button>
+      )}
+    </div>
+  );
+};
+
 
 export const CompanySearchFiltersDrawer: React.FC<Props> = ({ value, onChange }) => {
   const [draft, setDraft] = React.useState<CompanySearchFilters>(value);
@@ -94,18 +157,10 @@ export const CompanySearchFiltersDrawer: React.FC<Props> = ({ value, onChange })
             <AccordionItem value="act">
               <AccordionTrigger>Activité &amp; structure</AccordionTrigger>
               <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Code NAF/APE</Label>
-                  <Input value={draft.activite_principale ?? ''} onChange={e => set('activite_principale', e.target.value || undefined)} placeholder="ex: 01.11Z" />
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {NAF_QUICK_PICKS.slice(0, 5).map(p => (
-                      <button key={p.code} type="button" onClick={() => set('activite_principale', p.code)}
-                        className="text-[11px] px-2 py-0.5 rounded-full border bg-muted hover:bg-accent">
-                        {p.code}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <NafCombobox
+                  value={draft.activite_principale}
+                  onChange={(code) => set('activite_principale', code)}
+                />
                 <div>
                   <Label>Forme juridique (code à 4 chiffres)</Label>
                   <Input

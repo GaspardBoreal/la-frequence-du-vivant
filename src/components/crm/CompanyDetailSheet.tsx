@@ -11,6 +11,7 @@ import { CompanyStageBadge } from './CompanyStageBadge';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { STAGE_LABELS, type CrmCompanyStage, type CrmCompanyActivityType } from '@/types/crmCompany';
 import { toast } from 'sonner';
+import { formatNaf } from '@/lib/nafCatalog';
 
 interface Props {
   companyId: string | null;
@@ -103,7 +104,7 @@ export const CompanyDetailSheet: React.FC<Props> = ({ companyId, onOpenChange })
             <Row icon={<Building2 className="h-4 w-4" />} label="Forme juridique" value={company.forme_juridique} />
             <Row icon={<Building2 className="h-4 w-4" />} label="Catégorie" value={company.categorie_entreprise} />
             <Row icon={<Building2 className="h-4 w-4" />} label="Effectif" value={company.tranche_effectif} />
-            <Row icon={<Building2 className="h-4 w-4" />} label="Code NAF" value={`${company.code_naf ?? '—'}${company.libelle_naf ? ` · ${company.libelle_naf}` : ''}`} />
+            <Row icon={<Building2 className="h-4 w-4" />} label="Activité (NAF/APE)" value={formatNaf(company.code_naf, company.libelle_naf) || '—'} />
             <Row icon={<MapPin className="h-4 w-4" />} label="Adresse" value={`${company.adresse ?? ''} ${company.code_postal ?? ''} ${company.ville ?? ''}`.trim()} />
             <Row icon={<MapPin className="h-4 w-4" />} label="Région / dépt" value={`${company.region ?? '—'}${company.departement ? ` · ${company.departement}` : ''}`} />
 

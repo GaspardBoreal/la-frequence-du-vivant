@@ -7,6 +7,7 @@ import { MapPin, Users, Building2, Plus, Check } from 'lucide-react';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { CompanyStageBadge } from './CompanyStageBadge';
 import type { CompanySearchResult, CrmCompanyStage } from '@/types/crmCompany';
+import { formatNaf } from '@/lib/nafCatalog';
 
 interface Props {
   result: CompanySearchResult;
@@ -14,9 +15,10 @@ interface Props {
   onToggleSelect: () => void;
   existingStage?: CrmCompanyStage;
   onImport: () => void;
+  onPickNaf?: (code: string) => void;
 }
 
-export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport }) => {
+export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport, onPickNaf }) => {
   const isImported = !!existingStage;
   return (
     <Card className="p-3 sm:p-4 hover:shadow-md transition-shadow">
@@ -26,7 +28,17 @@ export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onT
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="min-w-0">
               <h3 className="font-semibold text-sm sm:text-base leading-tight truncate">{result.nom_complet || result.denomination || 'Sans nom'}</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">SIREN {result.siren} · {result.code_naf ?? '—'}{result.libelle_naf ? ` · ${result.libelle_naf}` : ''}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">SIREN {result.siren}</p>
+              {result.code_naf && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onPickNaf?.(result.code_naf!); }}
+                  className="inline-flex items-center gap-1 mt-1 text-[11px] px-2 py-0.5 rounded-full border bg-muted hover:bg-accent transition-colors"
+                  title="Filtrer par cette activité"
+                >
+                  {formatNaf(result.code_naf, result.libelle_naf)}
+                </button>
+              )}
             </div>
             {existingStage ? <CompanyStageBadge stage={existingStage} /> : null}
           </div>
