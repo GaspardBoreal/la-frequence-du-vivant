@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket, AlertTriangle, UserRound } from 'lucide-react';
+import { CrmContactsTab } from '@/components/crm/contacts/CrmContactsTab';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -207,9 +208,10 @@ const CrmAnnuaire: React.FC = () => {
         </div>
 
         <Tabs value={tab} onValueChange={onTabChange}>
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <TabsList className="grid grid-cols-4 w-full max-w-xl">
             <TabsTrigger value="annuaire" className="gap-2"><Search className="h-4 w-4" />Annuaire</TabsTrigger>
             <TabsTrigger value="entreprises" className="gap-2"><Building2 className="h-4 w-4" />Entreprises</TabsTrigger>
+            <TabsTrigger value="contacts" className="gap-2"><UserRound className="h-4 w-4" />Contacts</TabsTrigger>
             <TabsTrigger value="carte" className="gap-2"><MapPin className="h-4 w-4" />Carte</TabsTrigger>
           </TabsList>
 
@@ -432,6 +434,11 @@ const CrmAnnuaire: React.FC = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* === CONTACTS === */}
+          <TabsContent value="contacts" className="mt-4">
+            <CrmContactsTab />
           </TabsContent>
 
           {/* === CARTE === */}

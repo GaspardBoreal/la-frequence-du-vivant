@@ -63,14 +63,29 @@ const CrmPipeline: React.FC = () => {
     }
   };
 
-  const handleFormSubmit = (data: any) => {
-    if (editingOpportunity) {
-      updateOpportunity.mutate({ id: editingOpportunity.id, ...data });
-    } else {
-      createOpportunity.mutate(data);
+  const handleFormSubmit = async (data: any) => {
+    const { linkedCompanies, linkedContacts, ...payload } = data;
+    // Sync the primary company onto legacy company_id for backward compat
+    const primary = (linkedCompanies || []).find((c: any) => c.role === 'primary');
+    if (primary) payload.company_id = primary.company_id;
+
+    try {
+      let oppId = editingOpportunity?.id;
+      if (editingOpportunity) {
+        const res = await updateOpportunity.mutateAsync({ id: editingOpportunity.id, ...payload });
+        oppId = (res as any)?.id ?? editingOpportunity.id;
+      } else {
+        const res = await createOpportunity.mutateAsync(payload);
+        oppId = (res as any)?.id;
+      }
+      if (oppId) {
+        const { syncOpportunityLinks } = await import('@/hooks/useCrmOpportunityLinks');
+        await syncOpportunityLinks(oppId, linkedCompanies || [], linkedContacts || []);
+      }
+    } finally {
+      setIsFormOpen(false);
+      setEditingOpportunity(null);
     }
-    setIsFormOpen(false);
-    setEditingOpportunity(null);
   };
 
   const handleFormClose = (open: boolean) => {
