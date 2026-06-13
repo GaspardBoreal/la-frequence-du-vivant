@@ -302,7 +302,7 @@ const CrmAnnuaire: React.FC = () => {
                     </div>
                     <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
                       {c.ville && <p className="flex items-center gap-1"><MapPin className="h-3 w-3" />{c.ville}{c.code_postal ? ` (${c.code_postal})` : ''}</p>}
-                      {c.libelle_naf && <p className="truncate">{c.libelle_naf}</p>}
+                      {c.code_naf && <p className="truncate">{formatNaf(c.code_naf, c.libelle_naf)}</p>}
                     </div>
                   </Card>
                 ))}
