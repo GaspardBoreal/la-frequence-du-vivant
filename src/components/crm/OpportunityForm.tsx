@@ -193,96 +193,39 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* Contact Info */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm text-muted-foreground">Informations contact</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="prenom"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prénom *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="nom"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nom *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            {/* Entreprises & contacts liés */}
+            <OpportunityLinksSection
+              companies={linkedCompanies}
+              contacts={linkedContacts}
+              onCompaniesChange={setLinkedCompanies}
+              onContactsChange={setLinkedContacts}
+            />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email *</FormLabel>
-                      <FormControl>
-                        <Input type="email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="telephone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Téléphone</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {/* Legacy contact override (rétro-compat affichage rapide) */}
+            <details className="rounded-md border bg-card/40 p-3 text-sm">
+              <summary className="cursor-pointer text-xs text-muted-foreground">Surcharger les coordonnées d'affichage (optionnel)</summary>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <FormField control={form.control} name="prenom" render={({ field }) => (
+                  <FormItem><FormLabel>Prénom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="nom" render={({ field }) => (
+                  <FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="telephone" render={({ field }) => (
+                  <FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="entreprise" render={({ field }) => (
+                  <FormItem><FormLabel>Entreprise (libellé)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="fonction" render={({ field }) => (
+                  <FormItem><FormLabel>Fonction</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
               </div>
+            </details>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="entreprise"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Entreprise</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="fonction"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fonction</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
 
             {/* Project Details */}
             <div className="space-y-4">
