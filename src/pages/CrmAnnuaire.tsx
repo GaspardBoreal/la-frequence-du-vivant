@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket } from 'lucide-react';
+import { CompanySelectionSheet, type SelectionEntry } from '@/components/crm/CompanySelectionSheet';
+import { useFrenchCompanyDetails } from '@/hooks/useFrenchCompanyDetails';
 import { useCrmRole } from '@/hooks/useCrmRole';
 import { useCompanySearch } from '@/hooks/useCompanySearch';
 import { useCrmCompanies, useImportCompanies } from '@/hooks/useCrmCompanies';
@@ -60,7 +62,22 @@ const CrmAnnuaire: React.FC = () => {
   const [q, setQ] = React.useState('');
   const debouncedQ = useDebounce(q, 350);
   const [filters, setFilters] = React.useState<CompanySearchFilters>({ per_page: 20, page: 1 });
-  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const SELECTION_KEY = 'crm.annuaire.selection.v1';
+  const [selectedMap, setSelectedMap] = React.useState<Map<string, SelectionEntry>>(() => {
+    try {
+      const raw = sessionStorage.getItem(SELECTION_KEY);
+      if (!raw) return new Map();
+      const arr = JSON.parse(raw) as Array<[string, SelectionEntry]>;
+      return new Map(arr);
+    } catch { return new Map(); }
+  });
+  const [selectionOpen, setSelectionOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    try {
+      sessionStorage.setItem(SELECTION_KEY, JSON.stringify(Array.from(selectedMap.entries())));
+    } catch { /* ignore */ }
+  }, [selectedMap]);
 
   const searchFilters = React.useMemo(() => ({ ...filters, q: debouncedQ || undefined }), [filters, debouncedQ]);
   const hasQuery = !!(searchFilters.q || Object.keys(searchFilters).some(k => !['q', 'page', 'per_page'].includes(k) && (searchFilters as any)[k] != null && (searchFilters as any)[k] !== ''));
@@ -96,20 +113,56 @@ const CrmAnnuaire: React.FC = () => {
     setSearchParams(prev => { prev.set('tab', v); return prev; });
   };
 
-  const toggleSelect = (siren: string) => setSelected(s => {
-    const next = new Set(s);
-    next.has(siren) ? next.delete(siren) : next.add(siren);
+  const toggleSelect = (entry: SelectionEntry) => setSelectedMap(m => {
+    const next = new Map(m);
+    if (next.has(entry.siren)) next.delete(entry.siren);
+    else next.set(entry.siren, entry);
     return next;
   });
 
+  const removeFromSelection = (siren: string) => setSelectedMap(m => {
+    const next = new Map(m);
+    next.delete(siren);
+    return next;
+  });
+
+  const clearSelection = () => setSelectedMap(new Map());
+
   const importSelected = () => {
-    if (selected.size === 0) return;
-    importMutation.mutate({ sirens: Array.from(selected) }, {
-      onSuccess: () => setSelected(new Set()),
+    if (selectedMap.size === 0) return;
+    importMutation.mutate({ sirens: Array.from(selectedMap.keys()) }, {
+      onSuccess: () => { clearSelection(); setSelectionOpen(false); },
     });
   };
 
   const importOne = (siren: string) => importMutation.mutate({ sirens: [siren] });
+
+  // Auto-close selection sheet when empty
+  React.useEffect(() => {
+    if (selectedMap.size === 0 && selectionOpen) setSelectionOpen(false);
+  }, [selectedMap, selectionOpen]);
+
+  // Build entry from preview details (cached by react-query)
+  const { data: previewDetails } = useFrenchCompanyDetails(previewSiren);
+  const togglePreviewSelect = () => {
+    if (!previewSiren) return;
+    if (selectedMap.has(previewSiren)) {
+      removeFromSelection(previewSiren);
+      return;
+    }
+    const entry: SelectionEntry = previewDetails ? {
+      siren: previewDetails.siren,
+      nom_complet: previewDetails.nom_complet,
+      denomination: previewDetails.denomination,
+      ville: previewDetails.siege?.commune ?? null,
+      code_postal: previewDetails.siege?.code_postal ?? null,
+      code_naf: previewDetails.code_naf,
+      libelle_naf: previewDetails.libelle_naf,
+      etat_administratif: previewDetails.etat_administratif,
+      date_cessation: previewDetails.date_cessation,
+    } : { siren: previewSiren };
+    toggleSelect(entry);
+  };
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4">
@@ -184,11 +237,15 @@ const CrmAnnuaire: React.FC = () => {
                 );
               })()}
 
-              {selected.size > 0 && (
-                <div className="mt-3 flex items-center justify-between gap-2 p-2 bg-primary/10 rounded-md">
-                  <span className="text-sm font-medium">{selected.size} entreprise(s) sélectionnée(s)</span>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Annuler</Button>
+              {selectedMap.size > 0 && (
+                <div className="mt-3 flex items-center justify-between gap-2 p-2 bg-primary/10 rounded-md flex-wrap">
+                  <span className="text-sm font-medium">{selectedMap.size} entreprise(s) sélectionnée(s)</span>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => setSelectionOpen(true)} className="gap-1.5">
+                      <ShoppingBasket className="h-3.5 w-3.5" />
+                      Voir la sélection
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={clearSelection}>Annuler</Button>
                     <Button size="sm" onClick={importSelected} disabled={importMutation.isPending}>
                       {importMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
                       Importer comme Suspect
@@ -227,8 +284,18 @@ const CrmAnnuaire: React.FC = () => {
                     <CompanySearchResultCard
                       key={r.siren}
                       result={r}
-                      selected={selected.has(r.siren)}
-                      onToggleSelect={() => toggleSelect(r.siren)}
+                      selected={selectedMap.has(r.siren)}
+                      onToggleSelect={() => toggleSelect({
+                        siren: r.siren,
+                        nom_complet: r.nom_complet,
+                        denomination: r.denomination,
+                        ville: r.ville,
+                        code_postal: r.code_postal,
+                        code_naf: r.code_naf,
+                        libelle_naf: r.libelle_naf,
+                        etat_administratif: r.etat_administratif,
+                        date_cessation: r.date_cessation,
+                      })}
                       existingStage={importedBySiren.get(r.siren)}
                       onImport={() => importOne(r.siren)}
                       onPickNaf={(code) => setFilters(f => ({ ...f, activite_principale: code, page: 1 }))}
@@ -353,10 +420,21 @@ const CrmAnnuaire: React.FC = () => {
         <CompanyPreviewSheet
           siren={previewSiren}
           onOpenChange={(o) => !o && setPreviewSiren(null)}
-          selected={previewSiren ? selected.has(previewSiren) : false}
-          onToggleSelect={() => previewSiren && toggleSelect(previewSiren)}
+          selected={previewSiren ? selectedMap.has(previewSiren) : false}
+          onToggleSelect={togglePreviewSelect}
           existingStage={previewSiren ? importedBySiren.get(previewSiren) : undefined}
           onImport={() => previewSiren && importOne(previewSiren)}
+          importing={importMutation.isPending}
+        />
+        <CompanySelectionSheet
+          open={selectionOpen}
+          onOpenChange={setSelectionOpen}
+          entries={Array.from(selectedMap.values())}
+          importedBySiren={importedBySiren}
+          onPreview={(siren) => setPreviewSiren(siren)}
+          onRemove={removeFromSelection}
+          onClearAll={clearSelection}
+          onImportAll={importSelected}
           importing={importMutation.isPending}
         />
       </div>
