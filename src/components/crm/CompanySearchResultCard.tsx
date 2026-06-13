@@ -28,7 +28,17 @@ export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onT
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="min-w-0">
               <h3 className="font-semibold text-sm sm:text-base leading-tight truncate">{result.nom_complet || result.denomination || 'Sans nom'}</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">SIREN {result.siren} · {result.code_naf ?? '—'}{result.libelle_naf ? ` · ${result.libelle_naf}` : ''}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">SIREN {result.siren}</p>
+              {result.code_naf && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onPickNaf?.(result.code_naf!); }}
+                  className="inline-flex items-center gap-1 mt-1 text-[11px] px-2 py-0.5 rounded-full border bg-muted hover:bg-accent transition-colors"
+                  title="Filtrer par cette activité"
+                >
+                  {formatNaf(result.code_naf, result.libelle_naf)}
+                </button>
+              )}
             </div>
             {existingStage ? <CompanyStageBadge stage={existingStage} /> : null}
           </div>
