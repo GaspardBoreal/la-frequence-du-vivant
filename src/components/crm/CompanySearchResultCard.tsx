@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { MapPin, Users, Building2, Plus, Check, Filter } from 'lucide-react';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { CompanyStageBadge } from './CompanyStageBadge';
