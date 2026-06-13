@@ -30,16 +30,18 @@ const FlyToSelected: React.FC<{ point: { lat: number; lng: number } | null; offs
   React.useEffect(() => {
     if (!point) return;
     const targetZoom = Math.max(map.getZoom(), 13);
-    map.flyTo([point.lat, point.lng], targetZoom, { duration: 0.7 });
-    if (offsetX !== 0) {
-      // After flight, nudge so the pin sits on the visible side
-      const t = setTimeout(() => {
-        try {
-          map.panBy([offsetX, 0], { animate: true, duration: 0.3 });
-        } catch {/* noop */}
-      }, 720);
-      return () => clearTimeout(t);
-    }
+    // Compose offset into destination so a single flyTo lands correctly,
+    // even if the map container was just resized.
+    const raf = requestAnimationFrame(() => {
+      try {
+        const cp = map.latLngToContainerPoint([point.lat, point.lng]).add([offsetX, 0] as any);
+        const dest = map.containerPointToLatLng(cp);
+        map.flyTo(dest, targetZoom, { duration: 0.7 });
+      } catch {
+        map.flyTo([point.lat, point.lng], targetZoom, { duration: 0.7 });
+      }
+    });
+    return () => cancelAnimationFrame(raf);
   }, [point?.lat, point?.lng, offsetX, map]);
   return null;
 };
