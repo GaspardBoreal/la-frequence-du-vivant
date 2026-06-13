@@ -1,64 +1,160 @@
-## Diagnostic (ce qui bugge sur la capture)
+# Refonte CRM — Shell unifié, sidebar Linear-style, Bento Home
 
-1. **Titre tronqué** : `truncate` sur `<h2>` coupe "COOPERATIVE DES SAUNIER…" alors que le panneau est large de 440 px — aucune raison de tronquer.
-2. **Bouton "Supprimer" masqué** par le FAB du chatbot (rond vert en bas-droite). Le footer sticky du panneau et le FAB se chevauchent.
-3. **Contenu coupé en bas** ("46.38P)" tronqué) : le `overflow-y-auto` du body fonctionne, mais l'ombre + le footer mangent visuellement la dernière ligne, et le scrollbar est invisible (pas de padding bas).
-4. **La carte est inutilisable quand le panneau est ouvert** : le `grid-cols-[1fr_440px]` rétrécit la carte à ~560 px et le pin sélectionné reste à gauche (le `panBy` se fait avant que la carte n'ait rétréci → décalage faux).
-5. **Pills de stage** débordent sur étroit et le `layoutId="stage-pill"` est partagé entre 2 instances (sheet mobile + inline) → animation qui saute si les deux montent.
-6. **Pas de séparation visuelle** entre carte et panneau (pas d'ombre franche, pas de "poignée"), donc on a l'impression que le panneau "mange" la carte.
+Refonte ergonomique complète du CRM : un seul shell d'app avec sidebar verticale persistante, navigation interne sans rechargement, accueil Bento moderne, et nouvelle vue Marches reliée aux entreprises.
 
-## Correctif élégant — "Floating Glass Panel"
+## 1. Direction visuelle — « Linear / Vercel Dark Minimal »
 
-Au lieu d'un split-grid qui rétrécit la carte, on passe à un **panneau flottant en overlay** sur la carte (desktop) + bottom-sheet plein écran (mobile). La carte reste pleine largeur, le panneau "lévite" au-dessus avec glassmorphism et ombre douce.
+Palette dédiée CRM (scopée via `data-crm-shell` pour ne pas polluer le reste de l'app) :
+- `--crm-bg: #0a0a0a` (canvas)
+- `--crm-surface: #18181b` (cartes)
+- `--crm-surface-elevated: #27272a` (hover, sidebar)
+- `--crm-border: #27272a / 60%`
+- `--crm-text: #fafafa` / `--crm-text-muted: #a1a1aa`
+- `--crm-accent: #a78bfa` (violet) + `--crm-accent-glow: #a78bfa / 20%`
+- Glassmorphism subtil sur sidebar (`backdrop-blur-xl`, `bg-zinc-900/80`)
+- Typographie dense, tabular-nums sur chiffres, micro-interactions framer-motion (200ms ease-out)
 
-### 1. `src/pages/CrmAnnuaire.tsx` — onglet Carte
+## 2. Architecture — Shell unifié
 
-- Supprimer le `grid-cols-[1fr_440px]` qui rétrécit la carte.
-- Conteneur `relative` autour de `<CrmCompaniesMap>` ; carte plein largeur (`70vh`, `100%`).
-- Panneau desktop (`hidden lg:flex`) en **`absolute right-4 top-4 bottom-4 w-[420px] z-[450]`** (au-dessus des tuiles Leaflet z-index 400 mais sous les overlays Radix z-50 du body), avec `<AnimatePresence>` + slide-in depuis la droite (Framer Motion `initial={{ x: 32, opacity: 0 }}`).
-- Le `flyOffsetX` de la carte passe à **`-210`** (moitié du panneau) seulement quand le panneau est ouvert, et **après** un `requestAnimationFrame` pour laisser Leaflet recalculer.
-- Mobile : on garde la `Sheet bottom` 85vh, mais avec `lg:hidden`.
-- `<CompanyDetailSheet>` global déjà filtré (`tab === 'carte' ? null : drawerId`) — OK.
+```text
+/admin/crm/*  →  <CrmShell>
+                    ├─ <CrmSidebar />          (collapsible icon, offcanvas mobile)
+                    ├─ <CrmTopBar />           (breadcrumb + search globale + profil)
+                    └─ <Outlet />              (route enfant)
+```
 
-### 2. `src/components/crm/CompanyDetailContent.tsx` — fixes visuels
+- Nouveau layout React Router : route parent `/admin/crm` avec `<Outlet />`, enfants : `index` (Accueil), `annuaire`, `pipeline`, `marches` (nouveau), `equipe`, `ia` (stub).
+- La sidebar reste montée → transitions instantanées entre vues (pas de remount du shell).
+- Sidebar : `collapsible="icon"` desktop (56px ↔ 240px), `offcanvas` mobile via `SidebarTrigger` dans la top bar.
+- Persistance état collapsed dans `localStorage` (`crm-sidebar-state`).
 
-- **Titre** : retirer `truncate`, mettre `line-clamp-2 leading-snug` (2 lignes max, pas de coupure brutale).
-- **Header** : `pr-12` pour libérer la zone du bouton fermer ; bouton close `z-10`.
-- **Stage pills** : `flex-wrap gap-1 p-1`, garantir wrap propre si <380 px ; `layoutId` rendu unique via prop `panelId` (ex. `stage-pill-${mode}-${companyId}`) pour éviter le conflit Framer Motion entre instances.
-- **Body** : `pb-6` pour respirer avant le footer ; scrollbar fine custom (`scrollbar-thin` Tailwind plugin déjà présent sinon `[&::-webkit-scrollbar]:w-1.5`).
-- **Footer sticky** :
-  - `sticky bottom-0` (déjà), mais ajouter **`pr-20`** sur desktop pour ne jamais passer sous le FAB chatbot (qui fait ~56px + marge).
-  - En mode `inline`, le footer reste dans le panneau (pas global) → pas de conflit FAB tant que le panneau a `right-4` + on garde un `pr-2` simple. Le vrai conflit FAB n'arrive qu'en mode `mobile-sheet` plein écran → ajouter `pb-[env(safe-area-inset-bottom)] mb-2` et augmenter `right` du FAB seulement quand panneau ouvert n'est pas faisable globalement → solution simple : **ajouter une marge bas `pb-4` + `pr-16` au footer en mode `mobile-sheet`**.
-- Header hero : réduire padding (`px-4 pt-4 pb-3`) pour gagner de la place ; avatar 12×12 (au lieu de 14) → plus compact, le titre tient.
+### Items sidebar
 
-### 3. `CrmCompaniesMap.tsx`
+| Icône | Label | Route | Badge |
+|---|---|---|---|
+| LayoutDashboard | Accueil | `/admin/crm` | — |
+| Building2 | Annuaire | `/admin/crm/annuaire` | nb entreprises |
+| Target | Opportunités | `/admin/crm/pipeline` | nb actives |
+| CalendarRange | Marches | `/admin/crm/marches` | nb à venir |
+| Users | Équipe | `/admin/crm/equipe` | — |
+| Sparkles | IA | `/admin/crm/ia` | « Bientôt » |
 
-- Le `FlyToSelected` actuel fait `panBy` 720 ms après le `flyTo`. Problème : si la carte a été redimensionnée (cas grid), `flyTo` se base sur l'ancienne taille → pin off-screen. Avec le passage en overlay, la carte ne change plus de taille → on enlève simplement l'attente et on combine en un seul `flyTo` avec destination déjà décalée :
-  ```ts
-  const targetLatLng = map.containerPointToLatLng(
-    map.latLngToContainerPoint([lat, lng]).add([offsetX, 0])
-  );
-  map.flyTo(targetLatLng, targetZoom, { duration: 0.7 });
-  ```
-- Pas d'autre changement.
+Footer sidebar : retour `/admin`, toggle collapse, avatar utilisateur.
 
-### 4. Détails de polish
+## 3. Accueil — Bento Grid
 
-- Ombre du panneau : `shadow-2xl ring-1 ring-border/60`.
-- Coin du panneau : `rounded-2xl` (déjà).
-- Backdrop : `bg-card/85 backdrop-blur-xl` pour vraiment laisser deviner la carte derrière.
-- Bouton fermer : `ChevronsRight` → meilleure affordance "replier le tiroir".
+Remplace `CrmDashboard.tsx` actuel. Grille 12 colonnes responsive avec tuiles de tailles mixtes :
 
-### Hors scope
+```text
+┌──────────────┬────────┬────────┐
+│  Pipeline    │ Suspect│Prospect│
+│  Funnel (6) │  (3)  │  (3)  │
+│              ├────────┼────────┤
+│              │ Client │Contact │
+├──────┬───────┤  (3)  │  (3)  │
+│Oppor.│Commd. ├────────┴────────┤
+│ (3) │ (3)  │  Activité récente │
+├──────┼───────┤      (6)         │
+│Factu.│ CA   │                  │
+│ (3) │ (3)  │                  │
+└──────┴───────┴──────────────────┘
+```
 
-- Pas de clustering Leaflet.
-- Pas de refonte des autres onglets.
-- Pas de modification du chatbot/FAB.
+7 KPI tiles + funnel Suspect→Prospect→Client (recharts) + activity feed. Chaque tile :
+- Grand chiffre tabular-nums (text-5xl)
+- Label muted, icône violette en haut-droite
+- Sparkline 30j discret en bas (sauf stubs)
+- Hover : léger glow violet, click → vue détaillée
 
-### Résultat visuel attendu
+Commandes / Factures : tiles présentes avec valeur `0` et badge « Bientôt » discret.
 
-- Carte plein largeur, jamais rétrécie.
-- Panneau flottant à droite, ombre douce, titre complet sur 2 lignes max.
-- Bouton "Supprimer" visible, jamais sous le FAB.
-- Pin sélectionné correctement décalé vers la gauche pour rester visible.
-- Mobile : bottom-sheet 85vh, padding bas pour éviter le FAB.
+## 4. Vues existantes — Reprises telles quelles
+
+- `Annuaire` (`CrmAnnuaire.tsx`) : conservé intégralement (sous-onglets Annuaire / Entreprises / Carte, drawer flottant). Juste re-skinné via tokens CRM (background, borders).
+- `Pipeline` (`CrmPipeline.tsx`) : conservé.
+- `Équipe` : conservé.
+
+Re-skin = remplacement `bg-background` → `bg-[hsl(var(--crm-bg))]` etc. via wrapper CSS scopé. Pas de refonte fonctionnelle.
+
+## 5. Nouvelle vue — Marches (`/admin/crm/marches`)
+
+Liste des `marche_events` côté CRM avec liaison entreprises.
+
+### UI
+- Header : recherche + filtres (statut, type, date range) + bouton « Lier entreprise »
+- Vue toggle : Liste (DataTable) ↔ Calendrier (mois)
+- Liste cols : Date | Titre | Type | Lieu | Entreprises liées (avatars empilés) | Statut | Actions
+- Drawer détail event au clic : infos event + section « Entreprises associées » avec recherche/ajout/suppression de liens vers `crm_companies`
+
+### Modèle de données (migration)
+Nouvelle table de liaison many-to-many :
+
+```sql
+CREATE TABLE public.crm_company_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL REFERENCES public.crm_companies(id) ON DELETE CASCADE,
+  event_id uuid NOT NULL REFERENCES public.marche_events(id) ON DELETE CASCADE,
+  relation_type text NOT NULL DEFAULT 'participant',
+    -- 'participant' | 'sponsor' | 'organisateur' | 'invite'
+  notes text,
+  created_at timestamptz DEFAULT now(),
+  created_by uuid,
+  UNIQUE(company_id, event_id)
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_company_events TO authenticated;
+GRANT ALL ON public.crm_company_events TO service_role;
+
+ALTER TABLE public.crm_company_events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "CRM members can manage company-event links"
+  ON public.crm_company_events FOR ALL TO authenticated
+  USING (public.has_crm_access(auth.uid()))
+  WITH CHECK (public.has_crm_access(auth.uid()));
+```
+
+Sera réutilisable depuis la fiche entreprise (onglet « Marches associées »).
+
+## 6. Vue IA (stub)
+
+Page placeholder élégante : icône Sparkles animée, titre « Assistant CRM », baseline « Bientôt — spécifications en cours », CTA désactivé. Aucune logique.
+
+## 7. Détails techniques
+
+### Fichiers créés
+- `src/layouts/CrmShell.tsx` — provider + grid layout
+- `src/components/crm/shell/CrmSidebar.tsx`
+- `src/components/crm/shell/CrmTopBar.tsx`
+- `src/components/crm/shell/crmShell.css` — tokens CRM scopés
+- `src/components/crm/home/CrmBentoHome.tsx`
+- `src/components/crm/home/BentoKpiTile.tsx`
+- `src/components/crm/home/PipelineFunnelTile.tsx`
+- `src/components/crm/home/ActivityFeedTile.tsx`
+- `src/pages/CrmMarches.tsx`
+- `src/components/crm/marches/MarchesDataTable.tsx`
+- `src/components/crm/marches/MarcheDetailDrawer.tsx`
+- `src/components/crm/marches/CompanyLinkPicker.tsx`
+- `src/pages/CrmIa.tsx` (stub)
+- `src/hooks/useCrmHomeStats.ts` (aggrège Contacts/Suspects/Prospects/Clients/Opportunités/Marches via RPC ou queries parallèles)
+- `src/hooks/useCrmCompanyEvents.ts`
+
+### Fichiers modifiés
+- `src/App.tsx` — restructure les routes `/admin/crm/*` sous `<CrmShell>`
+- `src/pages/CrmDashboard.tsx` → remplacé par `CrmBentoHome` (l'ancien fichier supprimé)
+- `src/pages/CrmAnnuaire.tsx`, `CrmPipeline.tsx`, `CrmEquipe` → suppression de leur header/back-button (désormais dans la TopBar du shell), wrapping minimal.
+- `src/types/crm.ts` — ajoute `CrmCompanyEvent`
+
+### Migration
+1 migration SQL : table `crm_company_events` + grants + RLS + index `(event_id)` et `(company_id)`.
+
+### Pas dans ce lot
+- Module IA (specs futures)
+- Commandes / Factures (tiles stub uniquement, aucune table)
+- Recherche globale dans la TopBar (placeholder visuel pour l'instant)
+- Vue calendrier des Marches (toggle visible mais activé en V2 si Liste suffit) — **à confirmer**
+
+## Questions résiduelles
+
+1. **Définition Suspect / Prospect / Client** : aujourd'hui dans `crm_companies` il y a un champ stage. Je m'appuie dessus pour les compteurs Bento ; tu confirmes ?
+2. **Vue calendrier Marches** : utile dès maintenant ou juste liste pour ce lot ?
+3. **« Contacts » distincts des entreprises** : on compte les lignes `crm_contacts`, ou les contacts à l'intérieur des entreprises ?
