@@ -11,6 +11,7 @@ import { CompanyStageBadge } from './CompanyStageBadge';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { STAGE_LABELS, type CrmCompanyStage, type CrmCompanyActivityType } from '@/types/crmCompany';
 import { toast } from 'sonner';
+import { formatNaf } from '@/lib/nafCatalog';
 
 interface Props {
   companyId: string | null;
