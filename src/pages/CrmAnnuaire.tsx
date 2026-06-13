@@ -108,6 +108,7 @@ const CrmAnnuaire: React.FC = () => {
   const importMutation = useImportCompanies();
   const [drawerId, setDrawerId] = React.useState<string | null>(null);
   const [previewSiren, setPreviewSiren] = React.useState<string | null>(null);
+  const [manualCreateOpen, setManualCreateOpen] = React.useState(false);
 
   // Deep-link: ?company=<id> opens the company drawer
   React.useEffect(() => {
