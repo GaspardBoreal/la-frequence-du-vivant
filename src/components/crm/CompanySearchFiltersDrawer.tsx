@@ -6,10 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { SlidersHorizontal, RotateCcw, Check, ChevronsUpDown, X } from 'lucide-react';
 import type { CompanySearchFilters } from '@/types/crmCompany';
 import { FRENCH_DEPARTMENTS_WITH_CODES, FRENCH_REGIONS_WITH_CODES } from '@/utils/frenchAdministrativeCodes';
-import { CATEGORIE_ENTREPRISE_OPTIONS, ETAT_ADMIN_OPTIONS, LABEL_FILTERS, NAF_QUICK_PICKS, TRANCHE_EFFECTIF_OPTIONS } from '@/lib/crmAnnuaireOptions';
+import { CATEGORIE_ENTREPRISE_OPTIONS, ETAT_ADMIN_OPTIONS, LABEL_FILTERS, TRANCHE_EFFECTIF_OPTIONS } from '@/lib/crmAnnuaireOptions';
+import { searchNaf, getNafLabel, formatNaf } from '@/lib/nafCatalog';
+import { cn } from '@/lib/utils';
 
 interface Props {
   value: CompanySearchFilters;
