@@ -469,7 +469,49 @@ const CrmAnnuaire: React.FC = () => {
                 </div>
               </Card>
             )}
-            <CrmCompaniesMap companies={companies.filter(c => c.latitude && c.longitude)} height="70vh" onSelect={setDrawerId} />
+
+            {/* Split layout : carte + panneau latéral (desktop) */}
+            <div
+              className={`grid gap-3 transition-[grid-template-columns] duration-500 ease-out ${
+                drawerId ? 'lg:grid-cols-[1fr_440px]' : 'lg:grid-cols-[1fr]'
+              }`}
+            >
+              <CrmCompaniesMap
+                companies={companies.filter(c => c.latitude && c.longitude)}
+                height="70vh"
+                onSelect={setDrawerId}
+                selectedId={drawerId}
+              />
+              {/* Inline panel — desktop only */}
+              {drawerId && (
+                <div className="hidden lg:block">
+                  <div className="sticky top-4 rounded-2xl border bg-card/95 backdrop-blur shadow-xl overflow-hidden" style={{ height: '70vh' }}>
+                    <CompanyDetailContent
+                      companyId={drawerId}
+                      onClose={() => setDrawerId(null)}
+                      mode="inline"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile bottom-sheet fallback */}
+            <Sheet
+              open={!!drawerId && tab === 'carte'}
+              onOpenChange={(o) => !o && setDrawerId(null)}
+            >
+              <SheetContent
+                side="bottom"
+                className="lg:hidden h-[80vh] p-0 rounded-t-2xl flex flex-col"
+              >
+                <CompanyDetailContent
+                  companyId={drawerId}
+                  onClose={() => setDrawerId(null)}
+                  mode="mobile-sheet"
+                />
+              </SheetContent>
+            </Sheet>
 
             <p className="text-xs text-muted-foreground mt-2">{companies.filter(c => c.latitude && c.longitude).length} entreprise(s) géolocalisée(s) sur {companies.length}.</p>
           </TabsContent>
