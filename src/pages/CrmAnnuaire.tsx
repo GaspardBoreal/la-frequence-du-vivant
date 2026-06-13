@@ -237,11 +237,15 @@ const CrmAnnuaire: React.FC = () => {
                 );
               })()}
 
-              {selected.size > 0 && (
-                <div className="mt-3 flex items-center justify-between gap-2 p-2 bg-primary/10 rounded-md">
-                  <span className="text-sm font-medium">{selected.size} entreprise(s) sélectionnée(s)</span>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Annuler</Button>
+              {selectedMap.size > 0 && (
+                <div className="mt-3 flex items-center justify-between gap-2 p-2 bg-primary/10 rounded-md flex-wrap">
+                  <span className="text-sm font-medium">{selectedMap.size} entreprise(s) sélectionnée(s)</span>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => setSelectionOpen(true)} className="gap-1.5">
+                      <ShoppingBasket className="h-3.5 w-3.5" />
+                      Voir la sélection
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={clearSelection}>Annuler</Button>
                     <Button size="sm" onClick={importSelected} disabled={importMutation.isPending}>
                       {importMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
                       Importer comme Suspect
