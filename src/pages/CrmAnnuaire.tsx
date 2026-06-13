@@ -62,7 +62,22 @@ const CrmAnnuaire: React.FC = () => {
   const [q, setQ] = React.useState('');
   const debouncedQ = useDebounce(q, 350);
   const [filters, setFilters] = React.useState<CompanySearchFilters>({ per_page: 20, page: 1 });
-  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const SELECTION_KEY = 'crm.annuaire.selection.v1';
+  const [selectedMap, setSelectedMap] = React.useState<Map<string, SelectionEntry>>(() => {
+    try {
+      const raw = sessionStorage.getItem(SELECTION_KEY);
+      if (!raw) return new Map();
+      const arr = JSON.parse(raw) as Array<[string, SelectionEntry]>;
+      return new Map(arr);
+    } catch { return new Map(); }
+  });
+  const [selectionOpen, setSelectionOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    try {
+      sessionStorage.setItem(SELECTION_KEY, JSON.stringify(Array.from(selectedMap.entries())));
+    } catch { /* ignore */ }
+  }, [selectedMap]);
 
   const searchFilters = React.useMemo(() => ({ ...filters, q: debouncedQ || undefined }), [filters, debouncedQ]);
   const hasQuery = !!(searchFilters.q || Object.keys(searchFilters).some(k => !['q', 'page', 'per_page'].includes(k) && (searchFilters as any)[k] != null && (searchFilters as any)[k] !== ''));
