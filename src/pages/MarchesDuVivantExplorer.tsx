@@ -85,7 +85,7 @@ const MarchesDuVivantExplorer = () => {
     setSelectedDate(null);
   };
 
-  const handlePrint = () => window.print();
+  
   const handleShare = async () => {
     const url = window.location.href;
     try {
