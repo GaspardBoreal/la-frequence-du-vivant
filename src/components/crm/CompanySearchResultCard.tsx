@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { MapPin, Users, Building2, Plus, Check, Filter } from 'lucide-react';
+import { MapPin, Users, Building2, Plus, Check, Filter, Ban } from 'lucide-react';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
 import { CompanyStageBadge } from './CompanyStageBadge';
 import type { CompanySearchResult, CrmCompanyStage } from '@/types/crmCompany';
@@ -22,20 +22,31 @@ interface Props {
 export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onToggleSelect, existingStage, onImport, onPickNaf }) => {
   const isImported = !!existingStage;
   const isCessee = result.etat_administratif === 'C';
+  const cessationDate = result.date_cessation
+    ? new Date(result.date_cessation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : null;
   return (
-    <Card className="p-3 sm:p-4 hover:shadow-md transition-shadow">
+    <Card className={`p-3 sm:p-4 hover:shadow-md transition-shadow ${isCessee ? 'border-l-4 border-l-destructive bg-destructive/5' : ''}`}>
       <div className="flex items-start gap-3">
         <Checkbox checked={selected} onCheckedChange={onToggleSelect} className="mt-1" />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-sm sm:text-base leading-tight">{result.nom_complet || result.denomination || 'Sans nom'}</h3>
+                <h3 className={`font-semibold text-sm sm:text-base leading-tight ${isCessee ? 'line-through text-muted-foreground' : ''}`}>{result.nom_complet || result.denomination || 'Sans nom'}</h3>
                 {isCessee && (
-                  <Badge variant="destructive" className="uppercase text-[10px] tracking-wide px-1.5 py-0">Cessée</Badge>
+                  <Badge variant="destructive" className="uppercase text-[10px] tracking-wider px-2 py-0.5 gap-1 shadow-sm">
+                    <Ban className="h-3 w-3" /> Cessée
+                  </Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">SIREN {result.siren}</p>
+              {isCessee && (
+                <p className="text-xs text-destructive font-medium mt-1 flex items-center gap-1">
+                  <Ban className="h-3 w-3" />
+                  Activité cessée{cessationDate ? ` le ${cessationDate}` : ''}
+                </p>
+              )}
               {result.code_naf && (
                 <TooltipProvider>
                   <Tooltip>
@@ -78,7 +89,7 @@ export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onT
           )}
 
           <div className="mt-3 flex justify-end">
-            <Button size="sm" variant={isImported ? 'outline' : 'default'} onClick={onImport} disabled={isImported} className="gap-1">
+            <Button size="sm" variant={isImported || isCessee ? 'outline' : 'default'} onClick={onImport} disabled={isImported} className="gap-1">
               {isImported ? <><Check className="h-3.5 w-3.5" /> Déjà importée</> : <><Plus className="h-3.5 w-3.5" /> Importer</>}
             </Button>
           </div>
