@@ -22,6 +22,65 @@ interface Props {
 
 const NONE = '__none__';
 
+const NafCombobox: React.FC<{ value?: string; onChange: (code?: string) => void }> = ({ value, onChange }) => {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const results = React.useMemo(() => searchNaf(query, 50), [query]);
+  const label = value ? (getNafLabel(value) ? formatNaf(value) : value) : '';
+  return (
+    <div>
+      <Label>Activité (NAF/APE)</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn('w-full justify-between font-normal mt-1 h-auto min-h-10 py-2', !value && 'text-muted-foreground')}
+          >
+            <span className="truncate text-left">{label || 'Code ou libellé : "vigne", "01.21Z"…'}</span>
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput placeholder="Tapez un code ou un mot-clé…" value={query} onValueChange={setQuery} />
+            <CommandList className="max-h-72">
+              <CommandEmpty>Aucun code NAF correspondant.</CommandEmpty>
+              <CommandGroup>
+                {results.map((e) => (
+                  <CommandItem
+                    key={e.code}
+                    value={e.code}
+                    onSelect={() => { onChange(e.code); setOpen(false); setQuery(''); }}
+                    className="flex items-start gap-2"
+                  >
+                    <Check className={cn('h-4 w-4 mt-0.5 shrink-0', value === e.code ? 'opacity-100' : 'opacity-0')} />
+                    <div className="min-w-0">
+                      <div className="font-mono text-xs text-muted-foreground">{e.code}</div>
+                      <div className="text-sm leading-tight">{e.label}</div>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange(undefined)}
+          className="text-[11px] text-muted-foreground hover:text-foreground underline mt-1 inline-flex items-center gap-1"
+        >
+          <X className="h-3 w-3" /> Retirer le filtre activité
+        </button>
+      )}
+    </div>
+  );
+};
+
+
 export const CompanySearchFiltersDrawer: React.FC<Props> = ({ value, onChange }) => {
   const [draft, setDraft] = React.useState<CompanySearchFilters>(value);
   const [open, setOpen] = React.useState(false);
