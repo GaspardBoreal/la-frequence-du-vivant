@@ -82,7 +82,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
     >
       {/* Header hero */}
       <div
-        className="relative px-5 pt-5 pb-4 border-b"
+        className="relative px-4 pt-4 pb-3 border-b"
         style={{
           background: `linear-gradient(135deg, ${stageColor}14 0%, hsl(var(--card)) 70%)`,
         }}
@@ -90,7 +90,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
         <button
           onClick={onClose}
           aria-label="Fermer"
-          className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/80 hover:bg-background border flex items-center justify-center transition-colors"
+          className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-background/80 hover:bg-background border flex items-center justify-center transition-colors"
         >
           {mode === 'inline' ? (
             <ChevronsRight className="h-4 w-4" />
@@ -99,9 +99,9 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
           )}
         </button>
 
-        <div className="flex items-start gap-3 pr-10">
+        <div className="flex items-start gap-3 pr-12">
           <div
-            className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold shrink-0 shadow-lg ring-1 ring-white/10"
+            className="h-12 w-12 rounded-2xl flex items-center justify-center text-base font-bold shrink-0 shadow-lg ring-1 ring-white/10"
             style={{
               background: `linear-gradient(135deg, ${stageColor} 0%, ${stageColor}aa 100%)`,
               color: 'white',
@@ -110,7 +110,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-semibold tracking-tight leading-tight truncate">
+            <h2 className="text-lg font-semibold tracking-tight leading-snug line-clamp-2 break-words">
               {company.denomination ?? company.nom_complet}
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">SIREN {company.siren}</p>
@@ -119,7 +119,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
         </div>
 
         {/* Stage pill switcher */}
-        <div className="mt-4 inline-flex p-1 rounded-full bg-muted/60 border relative">
+        <div className="mt-3 inline-flex flex-wrap gap-1 p-1 rounded-full bg-muted/60 border relative">
           {STAGES.map((s) => {
             const active = company.lifecycle_stage === s;
             return (
@@ -135,7 +135,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
               >
                 {active && (
                   <motion.span
-                    layoutId="stage-pill"
+                    layoutId={`stage-pill-${mode}-${company.id}`}
                     className="absolute inset-0 rounded-full -z-10"
                     style={{ background: STAGE_MARKER_COLOR[s] }}
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
