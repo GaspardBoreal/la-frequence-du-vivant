@@ -219,15 +219,47 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
           </TabsContent>
 
           <TabsContent value="dirigeants" className="space-y-2 mt-4">
-            {dirigeants.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-6">Aucun dirigeant connu.</p>
+            {companyContacts.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-6">Aucun contact rattaché.</p>
             )}
-            {dirigeants.map((d, i) => (
-              <div key={i} className="p-3 rounded-lg border bg-card/60 text-sm">
-                <p className="font-medium">{[d.prenoms, d.nom].filter(Boolean).join(' ')}</p>
-                <p className="text-xs text-muted-foreground">{d.qualite ?? d.type_dirigeant ?? '—'}</p>
-              </div>
-            ))}
+            {companyContacts.map((c) => {
+              const fullName = [c.prenom, c.nom].filter(Boolean).join(' ') || c.email || '—';
+              return (
+                <div key={c.id} className="p-3 rounded-lg border bg-card/60 text-sm space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium flex items-center gap-1.5">
+                      {c.is_dirigeant && <Crown className="h-3.5 w-3.5 text-amber-500" />}
+                      {fullName}
+                    </p>
+                    {c.is_dirigeant && (
+                      <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                        {c.dirigeant_source === 'api' ? 'API' : 'Dirigeant'}
+                      </Badge>
+                    )}
+                  </div>
+                  {(c.fonction || c.qualite) && (
+                    <p className="text-xs text-muted-foreground">{c.fonction || c.qualite}</p>
+                  )}
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground pt-0.5">
+                    {c.email && (
+                      <a href={`mailto:${c.email}`} className="flex items-center gap-1 hover:text-foreground">
+                        <Mail className="h-3 w-3" /> {c.email}
+                      </a>
+                    )}
+                    {c.telephone && (
+                      <a href={`tel:${c.telephone}`} className="flex items-center gap-1 hover:text-foreground">
+                        <Phone className="h-3 w-3" /> {c.telephone}
+                      </a>
+                    )}
+                    {c.linkedin_url && (
+                      <a href={c.linkedin_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-foreground">
+                        <Linkedin className="h-3 w-3" /> LinkedIn
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </TabsContent>
 
           <TabsContent value="finances" className="space-y-1.5 mt-4">
