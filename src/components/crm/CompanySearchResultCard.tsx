@@ -37,19 +37,21 @@ export const CompanySearchResultCard: React.FC<Props> = ({ result, selected, onT
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">SIREN {result.siren}</p>
               {result.code_naf && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onPickNaf?.(result.code_naf!); }}
-                      className="inline-flex items-center gap-1 mt-1.5 text-[11px] px-2 py-0.5 rounded-full border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                    >
-                      <Filter className="h-3 w-3" />
-                      {formatNaf(result.code_naf, result.libelle_naf)}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>Filtrer par cette activité</TooltipContent>
-                </Tooltip>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onPickNaf?.(result.code_naf!); }}
+                        className="inline-flex items-center gap-1 mt-1.5 text-[11px] px-2 py-0.5 rounded-full border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                      >
+                        <Filter className="h-3 w-3" />
+                        {formatNaf(result.code_naf, result.libelle_naf)}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Filtrer par cette activité</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
             {existingStage ? <CompanyStageBadge stage={existingStage} /> : null}
