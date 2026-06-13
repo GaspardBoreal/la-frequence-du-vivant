@@ -51,9 +51,11 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contact?: CrmContactRow | null;
+  defaultCompanyId?: string | null;
+  defaultEntreprise?: string | null;
 }
 
-export const ContactFormDialog: React.FC<Props> = ({ open, onOpenChange, contact }) => {
+export const ContactFormDialog: React.FC<Props> = ({ open, onOpenChange, contact, defaultCompanyId, defaultEntreprise }) => {
   const isEdit = !!contact;
   const create = useCreateContact();
   const update = useUpdateContact();
@@ -87,11 +89,14 @@ export const ContactFormDialog: React.FC<Props> = ({ open, onOpenChange, contact
       });
     } else {
       form.reset({
-        prenom: '', nom: '', email: '', telephone: '', entreprise: '',
-        fonction: '', role_type: 'autre', company_id: '', linkedin_url: '', notes: '',
+        prenom: '', nom: '', email: '', telephone: '',
+        entreprise: defaultEntreprise ?? '',
+        fonction: '', role_type: 'autre',
+        company_id: defaultCompanyId ?? '',
+        linkedin_url: '', notes: '',
       });
     }
-  }, [contact, form, open]);
+  }, [contact, form, open, defaultCompanyId, defaultEntreprise]);
 
   const onSubmit = (v: FormValues) => {
     const payload = {
