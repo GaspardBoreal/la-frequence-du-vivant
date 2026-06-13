@@ -221,6 +221,11 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
           </TabsContent>
 
           <TabsContent value="dirigeants" className="space-y-2 mt-4">
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setCreatingContact(true)}>
+                <Plus className="h-3.5 w-3.5" /> Nouveau contact
+              </Button>
+            </div>
             {companyContacts.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-6">Aucun contact rattaché.</p>
             )}
