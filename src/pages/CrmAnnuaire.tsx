@@ -420,10 +420,21 @@ const CrmAnnuaire: React.FC = () => {
         <CompanyPreviewSheet
           siren={previewSiren}
           onOpenChange={(o) => !o && setPreviewSiren(null)}
-          selected={previewSiren ? selected.has(previewSiren) : false}
-          onToggleSelect={() => previewSiren && toggleSelect(previewSiren)}
+          selected={previewSiren ? selectedMap.has(previewSiren) : false}
+          onToggleSelect={togglePreviewSelect}
           existingStage={previewSiren ? importedBySiren.get(previewSiren) : undefined}
           onImport={() => previewSiren && importOne(previewSiren)}
+          importing={importMutation.isPending}
+        />
+        <CompanySelectionSheet
+          open={selectionOpen}
+          onOpenChange={setSelectionOpen}
+          entries={Array.from(selectedMap.values())}
+          importedBySiren={importedBySiren}
+          onPreview={(siren) => setPreviewSiren(siren)}
+          onRemove={removeFromSelection}
+          onClearAll={clearSelection}
+          onImportAll={importSelected}
           importing={importMutation.isPending}
         />
       </div>
