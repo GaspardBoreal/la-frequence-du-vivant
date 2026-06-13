@@ -350,6 +350,15 @@ const CrmAnnuaire: React.FC = () => {
         </Tabs>
 
         <CompanyDetailSheet companyId={drawerId} onOpenChange={(o) => !o && setDrawerId(null)} />
+        <CompanyPreviewSheet
+          siren={previewSiren}
+          onOpenChange={(o) => !o && setPreviewSiren(null)}
+          selected={previewSiren ? selected.has(previewSiren) : false}
+          onToggleSelect={() => previewSiren && toggleSelect(previewSiren)}
+          existingStage={previewSiren ? importedBySiren.get(previewSiren) : undefined}
+          onImport={() => previewSiren && importOne(previewSiren)}
+          importing={importMutation.isPending}
+        />
       </div>
     </div>
   );
