@@ -28,12 +28,14 @@ export function useCrmHomeStats() {
 
       const [
         contactsRes,
+        dirigeantsRes,
         companiesRes,
         oppsRes,
         eventsUpcomingRes,
         eventsPastRes,
       ] = await Promise.all([
         supabase.from('crm_contacts').select('id', { count: 'exact', head: true }),
+        supabase.from('crm_contacts').select('id', { count: 'exact', head: true }).eq('is_dirigeant', true),
         supabase.from('crm_companies').select('lifecycle_stage'),
         supabase.from('crm_opportunities').select('statut, budget_estime'),
         supabase
