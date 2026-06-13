@@ -1,29 +1,20 @@
-## Diagnostic
+# Simplifier le bloc CRM & Commercial dans /admin
 
-Le formulaire envoie `date_souhaitee: ""` (chaîne vide) au lieu de `null`. Postgres rejette : `invalid input syntax for type date: ""` (code 22007). L'opportunité n'est donc jamais créée — d'où la liste vide.
+## Contexte
+Dans `src/pages/AdminAccess.tsx` (lignes ~161-190), le bloc **CRM & Commercial** affiche aujourd'hui 3 boutons (Tableau de Bord, Pipeline, Équipe) qui pointent vers `/admin/crm`, `/admin/crm/pipeline` et `/admin/crm/equipe`.
 
-Console log confirmé :
-```
-Error creating opportunity: invalid input syntax for type date: ""
-  at handleFormSubmit (CrmPipeline.tsx:59)
-```
+Depuis l'introduction du shell CRM (`src/layouts/CrmShell.tsx` + `CrmSidebar`), toutes ces sections sont déjà accessibles via la sidebar latérale une fois entré dans le module. Les 3 boutons font donc doublon.
 
-Le toast d'erreur s'affiche mais le message technique n'est pas explicite, ce qui a masqué le vrai problème.
+## Changement
+Remplacer les 3 boutons par **un seul bouton principal « Accéder au CRM »** qui ouvre `/admin/crm` (point d'entrée du shell avec bandeau/sidebar).
 
-## Correctif
+### Détails UI
+- Conserver l'en-tête du bloc (icône mallette verte + titre « CRM & Commercial » + description courte existante).
+- Bouton unique pleine largeur, style identique à l'actuel « Tableau de Bord » (variant primaire vert), icône `ArrowRight` (ou conserver `LayoutDashboard`), libellé **« Accéder au CRM »**.
+- Lien `<Link to="/admin/crm">`.
+- Supprimer la ligne contenant les boutons Pipeline + Équipe.
 
-Dans `src/pages/CrmPipeline.tsx`, normaliser le payload avant `createOpportunity` / `updateOpportunity` :
+## Fichier modifié
+- `src/pages/AdminAccess.tsx` — bloc CRM uniquement (≈ lignes 161-190).
 
-1. `date_souhaitee` : `""` → `null`
-2. `assigned_to` : `""` → `null` (uuid)
-3. Champs texte optionnels (`fonction`, `telephone`, `experience_souhaitee`, `format_souhaite`, `lieu_prefere`, `objectifs`, `financement_souhaite`, `source`, `notes`, `entreprise`) : `""` → `null`
-4. Numériques (`budget_estime`, `nombre_participants`) : `NaN`/`undefined`/`""` → `null`
-
-Une petite fonction `sanitizeOpportunityPayload(payload)` appliquée dans `handleFormSubmit` avant les mutations.
-
-Aucun changement DB, aucun changement de schéma. Pas de migration.
-
-## Vérification
-
-- Saisir une opportunité sans date → doit créer la ligne et l'afficher dans la liste/kanban.
-- Console doit être vierge d'erreur 22007.
+Aucun autre changement (routes, shell, sidebar) n'est nécessaire — la navigation interne au CRM reste assurée par la sidebar.
