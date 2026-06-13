@@ -33,7 +33,7 @@ const CrmAnnuaire: React.FC = () => {
 
   const searchFilters = React.useMemo(() => ({ ...filters, q: debouncedQ || undefined }), [filters, debouncedQ]);
   const hasQuery = !!(searchFilters.q || Object.keys(searchFilters).some(k => !['q', 'page', 'per_page'].includes(k) && (searchFilters as any)[k] != null && (searchFilters as any)[k] !== ''));
-  const { data: searchData, isFetching } = useCompanySearch(searchFilters, hasQuery && canAccessCrm);
+  const { data: searchData, isFetching, error: searchError } = useCompanySearch(searchFilters, hasQuery && canAccessCrm);
 
   // Entreprises importées
   const [companyFilters, setCompanyFilters] = React.useState<{ stage: CrmCompanyStage | 'all'; search: string }>({ stage: 'all', search: '' });
