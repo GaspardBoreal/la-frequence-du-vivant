@@ -183,7 +183,8 @@ export const PratiquesRemarquablesTab: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((p) => {
-            const cover = p.cover_urls[0] || null;
+            const covers = p.cover_urls ?? [];
+            const cover = covers[0] || null;
             const preview = stripHtml(p.description);
             const total = p.media_ids?.length || 0;
             return (
