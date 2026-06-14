@@ -37,11 +37,12 @@ interface Props {
   companyId: string | null;
   onClose: () => void;
   mode?: 'sheet' | 'inline' | 'mobile-sheet';
+  initialTab?: string;
 }
 
 const STAGES: CrmCompanyStage[] = ['suspect', 'prospect', 'client', 'inactif'];
 
-export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode = 'sheet' }) => {
+export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode = 'sheet', initialTab = 'identite' }) => {
   const { data: company } = useCrmCompany(companyId);
   const { data: activities = [] } = useCrmCompanyActivities(companyId);
   const updateStage = useUpdateCompanyStage();
