@@ -31,6 +31,10 @@ export interface CrmContactsFilters {
   roleType?: string | 'all';
   companyId?: string | null;
   dirigeantOnly?: boolean;
+  hasEmail?: boolean;
+  hasPhone?: boolean;
+  fonction?: string;
+  entreprise?: string;
 }
 
 export function useCrmContacts(filters: CrmContactsFilters = {}) {
@@ -45,6 +49,10 @@ export function useCrmContacts(filters: CrmContactsFilters = {}) {
       if (filters.companyId) q = q.eq('company_id', filters.companyId);
       if (filters.roleType && filters.roleType !== 'all') q = q.eq('role_type', filters.roleType);
       if (filters.dirigeantOnly) q = q.eq('is_dirigeant', true);
+      if (filters.hasEmail) q = q.not('email', 'is', null).neq('email', '');
+      if (filters.hasPhone) q = q.not('telephone', 'is', null).neq('telephone', '');
+      if (filters.fonction) q = q.ilike('fonction', `%${filters.fonction.trim()}%`);
+      if (filters.entreprise) q = q.ilike('entreprise', `%${filters.entreprise.trim()}%`);
       if (filters.search) {
         const s = filters.search.trim();
         q = q.or(
@@ -58,6 +66,7 @@ export function useCrmContacts(filters: CrmContactsFilters = {}) {
     staleTime: 30_000,
   });
 }
+
 
 export interface CrmContactInput {
   prenom?: string | null;
