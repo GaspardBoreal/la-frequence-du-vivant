@@ -120,7 +120,7 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
               )}
 
               {/* Body */}
-              <ScrollArea className="max-h-[50vh]">
+              <ScrollArea className="flex-1 min-h-0">
                 <div className="p-5 sm:p-6">
                   {pratique.description ? (
                     <div
