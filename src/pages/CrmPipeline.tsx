@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus, LayoutGrid, List, RefreshCw } from 'lucide-react';
@@ -8,6 +8,9 @@ import { DashboardKPIs } from '@/components/crm/DashboardKPIs';
 import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
 import { useCrmRole } from '@/hooks/useCrmRole';
 import type { CrmOpportunity } from '@/types/crm';
+import { PipelineActionsFilter } from '@/components/crm/opportunities/PipelineActionsFilter';
+import { OpportunityActionsBadges } from '@/components/crm/opportunities/OpportunityActionsBadges';
+import { isValidActionCode, type OpportunityActionCode } from '@/lib/crmOpportunityActions';
 import {
   Table,
   TableBody,
@@ -36,7 +39,45 @@ const CrmPipeline: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOpportunity, setEditingOpportunity] = useState<CrmOpportunity | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Filtre jalons (URL: ?actions=plaquette_envoyee,point_avancement&actions_mode=and)
+  const actionsFilter = useMemo<OpportunityActionCode[]>(() => {
+    return (searchParams.get('actions') || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(isValidActionCode);
+  }, [searchParams]);
+  const actionsMode: 'and' | 'or' = searchParams.get('actions_mode') === 'or' ? 'or' : 'and';
+
+  const setActionsFilter = (next: OpportunityActionCode[]) => {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (next.length === 0) p.delete('actions');
+      else p.set('actions', next.join(','));
+      if (next.length < 2) p.delete('actions_mode');
+      return p;
+    }, { replace: true });
+  };
+  const setActionsMode = (m: 'and' | 'or') => {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (m === 'or') p.set('actions_mode', 'or');
+      else p.delete('actions_mode');
+      return p;
+    }, { replace: true });
+  };
+
+  const matchesActions = React.useCallback(
+    (opp: CrmOpportunity) => {
+      if (actionsFilter.length === 0) return true;
+      const set = new Set(opp.actions_realisees ?? []);
+      return actionsMode === 'and'
+        ? actionsFilter.every(c => set.has(c))
+        : actionsFilter.some(c => set.has(c));
+    },
+    [actionsFilter, actionsMode]
+  );
 
   const { 
     opportunities, 
@@ -77,7 +118,7 @@ const CrmPipeline: React.FC = () => {
   };
 
   const handleFormSubmit = async (data: any) => {
-    const { linkedCompanies, linkedContacts, ...rest } = data;
+    const { linkedCompanies, linkedContacts, actions_realisees, ...rest } = data;
 
     // Sanitize: convert "" → null for optional fields (Postgres rejects "" for date/uuid)
     const TEXT_NULLABLE = ['titre', 'entreprise', 'fonction', 'telephone', 'experience_souhaitee',
@@ -93,6 +134,7 @@ const CrmPipeline: React.FC = () => {
       if (v === '' || v === undefined || v === null || Number.isNaN(Number(v))) payload[k] = null;
       else payload[k] = Number(v);
     }
+    payload.actions_realisees = Array.isArray(actions_realisees) ? actions_realisees : [];
 
     // Sync the primary company onto legacy company_id for backward compat
     const primary = (linkedCompanies || []).find((c: any) => c.role === 'primary');
@@ -201,6 +243,23 @@ const CrmPipeline: React.FC = () => {
           <DashboardKPIs stats={stats} />
         </div>
 
+        {/* Filtre par jalons */}
+        {(() => {
+          const filtered = opportunities.filter(matchesActions);
+          return (
+            <div className="mb-4">
+              <PipelineActionsFilter
+                value={actionsFilter}
+                onChange={setActionsFilter}
+                mode={actionsMode}
+                onModeChange={setActionsMode}
+                matchedCount={filtered.length}
+                totalCount={opportunities.length}
+              />
+            </div>
+          );
+        })()}
+
         {/* Content */}
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
@@ -210,6 +269,7 @@ const CrmPipeline: React.FC = () => {
           <KanbanBoard
             onEditOpportunity={handleEditOpportunity}
             onDeleteOpportunity={handleDeleteOpportunity}
+            filterPredicate={matchesActions}
           />
         ) : (
           <div className="bg-card rounded-lg border">
@@ -222,11 +282,12 @@ const CrmPipeline: React.FC = () => {
                   <TableHead>Expérience</TableHead>
                   <TableHead>Budget</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead>Jalons</TableHead>
                   <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {opportunities.map((opp) => (
+                {opportunities.filter(matchesActions).map((opp) => (
                   <TableRow 
                     key={opp.id} 
                     className="cursor-pointer hover:bg-muted/50"
@@ -246,13 +307,16 @@ const CrmPipeline: React.FC = () => {
                     </TableCell>
                     <TableCell>{getStatusBadge(opp.statut)}</TableCell>
                     <TableCell>
+                      <OpportunityActionsBadges value={opp.actions_realisees} size="xs" />
+                    </TableCell>
+                    <TableCell>
                       {new Date(opp.created_at).toLocaleDateString('fr-FR')}
                     </TableCell>
                   </TableRow>
                 ))}
-                {opportunities.length === 0 && (
+                {opportunities.filter(matchesActions).length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Aucune opportunité. Cliquez sur "Nouvelle opportunité" pour commencer.
                     </TableCell>
                   </TableRow>

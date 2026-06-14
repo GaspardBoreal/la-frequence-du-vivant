@@ -20,13 +20,23 @@ import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
 interface KanbanBoardProps {
   onEditOpportunity?: (opportunity: CrmOpportunity) => void;
   onDeleteOpportunity?: (id: string) => void;
+  filterPredicate?: (opportunity: CrmOpportunity) => boolean;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onEditOpportunity,
   onDeleteOpportunity,
+  filterPredicate,
 }) => {
-  const { opportunitiesByStatus, updateStatus } = useCrmOpportunities();
+  const { opportunitiesByStatus: rawByStatus, updateStatus } = useCrmOpportunities();
+  const opportunitiesByStatus = React.useMemo(() => {
+    if (!filterPredicate) return rawByStatus;
+    const out: typeof rawByStatus = {} as any;
+    for (const [k, list] of Object.entries(rawByStatus)) {
+      (out as any)[k] = (list as CrmOpportunity[]).filter(filterPredicate);
+    }
+    return out;
+  }, [rawByStatus, filterPredicate]);
   const [activeOpportunity, setActiveOpportunity] = useState<CrmOpportunity | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 

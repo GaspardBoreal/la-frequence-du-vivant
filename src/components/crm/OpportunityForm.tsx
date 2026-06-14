@@ -37,6 +37,8 @@ import {
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { OpportunityLinksSection } from '@/components/crm/opportunities/OpportunityLinksSection';
 import { useOpportunityLinks, type OppLinkedCompany, type OppLinkedContact } from '@/hooks/useCrmOpportunityLinks';
+import { OpportunityActionsPicker } from '@/components/crm/opportunities/OpportunityActionsPicker';
+import { ALL_ACTION_CODES, isValidActionCode, type OpportunityActionCode } from '@/lib/crmOpportunityActions';
 import { toast } from 'sonner';
 
 const opportunitySchema = z.object({
@@ -90,6 +92,20 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
 
   const [linkedCompanies, setLinkedCompanies] = React.useState<OppLinkedCompany[]>([]);
   const [linkedContacts, setLinkedContacts] = React.useState<OppLinkedContact[]>([]);
+  const [actionsRealisees, setActionsRealisees] = React.useState<OpportunityActionCode[]>(
+    () =>
+      (opportunity?.actions_realisees ?? [])
+        .filter(isValidActionCode)
+        .sort((a, b) => ALL_ACTION_CODES.indexOf(a) - ALL_ACTION_CODES.indexOf(b))
+  );
+
+  React.useEffect(() => {
+    setActionsRealisees(
+      (opportunity?.actions_realisees ?? [])
+        .filter(isValidActionCode)
+        .sort((a, b) => ALL_ACTION_CODES.indexOf(a) - ALL_ACTION_CODES.indexOf(b))
+    );
+  }, [opportunity?.id]);
 
   React.useEffect(() => {
     if (existingLinks && opportunity) {
@@ -182,9 +198,10 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
       email: data.email || primaryContact.email || '',
       entreprise: data.entreprise || primaryCompany?.denomination || '',
       fonction: data.fonction || primaryContact.fonction || '',
+      actions_realisees: actionsRealisees,
       linkedCompanies,
       linkedContacts,
-    });
+    } as any);
   };
 
 
@@ -233,6 +250,14 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
               onCompaniesChange={setLinkedCompanies}
               onContactsChange={setLinkedContacts}
             />
+
+            {/* Actions réalisées (jalons process) */}
+            <OpportunityActionsPicker
+              value={actionsRealisees}
+              onChange={setActionsRealisees}
+            />
+
+
 
 
             {/* Legacy contact override (rétro-compat affichage rapide) */}

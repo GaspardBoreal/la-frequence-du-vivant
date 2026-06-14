@@ -22,6 +22,7 @@ import {
 import type { CrmOpportunity } from '@/types/crm';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { OpportunityActionsBadges } from '@/components/crm/opportunities/OpportunityActionsBadges';
 
 interface OpportunityCardProps {
   opportunity: CrmOpportunity;
@@ -180,6 +181,11 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
               <span>{formatBudget(opportunity.budget_estime)}</span>
             </div>
           )}
+        </div>
+
+        {/* Jalons process */}
+        <div className="pt-1">
+          <OpportunityActionsBadges value={opportunity.actions_realisees} size="xs" />
         </div>
 
         {/* Source */}
