@@ -79,12 +79,15 @@ async function runSearch(raw: string): Promise<SearchResult[]> {
 
   (contactsRes.data ?? []).forEach((c: any) => {
     const name = [c.prenom, c.nom].filter(Boolean).join(' ').trim() || c.email || 'Contact';
+    const route = c.company_id
+      ? `/admin/crm/annuaire?company=${c.company_id}&companyTab=dirigeants`
+      : `/admin/crm/annuaire?tab=contacts&contact=${c.id}`;
     out.push({
       kind: 'contact',
       id: c.id,
       title: name,
       subtitle: [c.fonction, c.entreprise].filter(Boolean).join(' — ') || c.email || null,
-      route: `/admin/crm/annuaire?tab=contacts&contact=${c.id}`,
+      route,
     });
   });
 
