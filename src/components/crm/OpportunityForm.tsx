@@ -104,6 +104,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
   const form = useForm<OpportunityFormData>({
     resolver: zodResolver(opportunitySchema),
     defaultValues: {
+      titre: opportunity?.titre || '',
       prenom: opportunity?.prenom || '',
       nom: opportunity?.nom || '',
       email: opportunity?.email || '',
