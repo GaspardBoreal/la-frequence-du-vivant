@@ -583,7 +583,20 @@ const CrmAnnuaire: React.FC = () => {
           </TabsContent>
         </Tabs>
 
-        <CompanyDetailSheet companyId={drawerId} onOpenChange={(o) => !o && setDrawerId(null)} />
+        <CompanyDetailSheet
+          companyId={drawerId}
+          initialTab={searchParams.get('companyTab') ?? undefined}
+          onOpenChange={(o) => {
+            if (!o) {
+              setDrawerId(null);
+              setSearchParams(prev => {
+                prev.delete('company');
+                prev.delete('companyTab');
+                return prev;
+              });
+            }
+          }}
+        />
         <CompanyPreviewSheet
           siren={previewSiren}
           onOpenChange={(o) => !o && setPreviewSiren(null)}
