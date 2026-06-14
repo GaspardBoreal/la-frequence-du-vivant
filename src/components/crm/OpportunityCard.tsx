@@ -104,11 +104,18 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
       </div>
 
       <div className="space-y-2" onClick={() => onEdit?.(opportunity)}>
-        {/* Name & Company */}
+        {/* Titre & Name & Company */}
         <div>
-          <h4 className="font-semibold text-sm text-foreground">
-            {opportunity.prenom} {opportunity.nom}
-          </h4>
+          {opportunity.titre && (
+            <h4 className="font-semibold text-base text-foreground leading-tight line-clamp-2 mb-0.5">
+              {opportunity.titre}
+            </h4>
+          )}
+          {(opportunity.prenom || opportunity.nom) && (
+            <div className={opportunity.titre ? 'text-sm text-muted-foreground' : 'font-semibold text-sm text-foreground'}>
+              {opportunity.prenom} {opportunity.nom}
+            </div>
+          )}
           {opportunity.entreprise && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Building2 className="h-3 w-3" />
