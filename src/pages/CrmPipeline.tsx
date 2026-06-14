@@ -243,6 +243,23 @@ const CrmPipeline: React.FC = () => {
           <DashboardKPIs stats={stats} />
         </div>
 
+        {/* Filtre par jalons */}
+        {(() => {
+          const filtered = opportunities.filter(matchesActions);
+          return (
+            <div className="mb-4">
+              <PipelineActionsFilter
+                value={actionsFilter}
+                onChange={setActionsFilter}
+                mode={actionsMode}
+                onModeChange={setActionsMode}
+                matchedCount={filtered.length}
+                totalCount={opportunities.length}
+              />
+            </div>
+          );
+        })()}
+
         {/* Content */}
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
@@ -252,6 +269,7 @@ const CrmPipeline: React.FC = () => {
           <KanbanBoard
             onEditOpportunity={handleEditOpportunity}
             onDeleteOpportunity={handleDeleteOpportunity}
+            filterPredicate={matchesActions}
           />
         ) : (
           <div className="bg-card rounded-lg border">
@@ -264,11 +282,12 @@ const CrmPipeline: React.FC = () => {
                   <TableHead>Expérience</TableHead>
                   <TableHead>Budget</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead>Jalons</TableHead>
                   <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {opportunities.map((opp) => (
+                {opportunities.filter(matchesActions).map((opp) => (
                   <TableRow 
                     key={opp.id} 
                     className="cursor-pointer hover:bg-muted/50"
@@ -288,13 +307,16 @@ const CrmPipeline: React.FC = () => {
                     </TableCell>
                     <TableCell>{getStatusBadge(opp.statut)}</TableCell>
                     <TableCell>
+                      <OpportunityActionsBadges value={opp.actions_realisees} size="xs" />
+                    </TableCell>
+                    <TableCell>
                       {new Date(opp.created_at).toLocaleDateString('fr-FR')}
                     </TableCell>
                   </TableRow>
                 ))}
-                {opportunities.length === 0 && (
+                {opportunities.filter(matchesActions).length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Aucune opportunité. Cliquez sur "Nouvelle opportunité" pour commencer.
                     </TableCell>
                   </TableRow>
