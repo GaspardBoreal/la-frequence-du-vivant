@@ -38,7 +38,7 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden border-[hsl(var(--crm-border))] bg-gradient-to-br from-[hsl(var(--crm-surface))] via-[hsl(var(--crm-surface-2))] to-[hsl(var(--crm-accent))]/5">
+      <DialogContent className="max-w-3xl p-0 overflow-hidden max-h-[92vh] flex flex-col border-[hsl(var(--crm-border))] bg-gradient-to-br from-[hsl(var(--crm-surface))] via-[hsl(var(--crm-surface-2))] to-[hsl(var(--crm-accent))]/5">
         <AnimatePresence mode="wait">
           {pratique && (
             <motion.div
@@ -47,7 +47,10 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
+              className="flex flex-col min-h-0 flex-1"
             >
+
+
               {/* Hero */}
               <div className="relative aspect-[16/9] bg-[hsl(var(--crm-surface-2))] overflow-hidden">
                 {hero ? (
@@ -117,7 +120,7 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
               )}
 
               {/* Body */}
-              <ScrollArea className="max-h-[50vh]">
+              <ScrollArea className="flex-1 min-h-0">
                 <div className="p-5 sm:p-6">
                   {pratique.description ? (
                     <div
