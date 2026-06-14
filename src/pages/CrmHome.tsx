@@ -104,7 +104,7 @@ const CrmHome: React.FC = () => {
           value={formatCurrency(s.caPotentiel)}
           icon={Euro}
           accent="emerald"
-          hint="Sur opportunités actives"
+          hint="Opportunités actives + gagnées"
           loading={isLoading}
           span="col-1"
         />
