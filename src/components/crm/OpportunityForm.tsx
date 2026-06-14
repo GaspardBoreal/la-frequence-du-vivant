@@ -40,6 +40,7 @@ import { useOpportunityLinks, type OppLinkedCompany, type OppLinkedContact } fro
 import { toast } from 'sonner';
 
 const opportunitySchema = z.object({
+  titre: z.string().max(250, 'Maximum 250 caractères').optional(),
   prenom: z.string().optional(),
   nom: z.string().optional(),
   email: z.string().email('Email invalide').optional().or(z.literal('')),
