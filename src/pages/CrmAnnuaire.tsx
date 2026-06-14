@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket, AlertTriangle, UserRound, Plus } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Building2, MapPin, X, ShoppingBasket, AlertTriangle, UserRound, Plus } from 'lucide-react';
+
 import { CompanyManualCreateDialog } from '@/components/crm/CompanyManualCreateDialog';
 import { CrmContactsTab } from '@/components/crm/contacts/CrmContactsTab';
 import { FiltersBandeau, type FilterChip } from '@/components/crm/filters/FiltersBandeau';
