@@ -1118,6 +1118,66 @@ export type Database = {
           },
         ]
       }
+      crm_maronnier_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_debut: string
+          date_fin: string | null
+          description: string | null
+          id: string
+          latitude: number | null
+          lieu: string | null
+          longitude: number | null
+          nom: string
+          notes: string | null
+          region: string | null
+          secteurs_naf: string[] | null
+          site_url: string | null
+          statut_curation: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_debut: string
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          lieu?: string | null
+          longitude?: number | null
+          nom: string
+          notes?: string | null
+          region?: string | null
+          secteurs_naf?: string[] | null
+          site_url?: string | null
+          statut_curation?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_debut?: string
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          lieu?: string | null
+          longitude?: number | null
+          nom?: string
+          notes?: string | null
+          region?: string | null
+          secteurs_naf?: string[] | null
+          site_url?: string | null
+          statut_curation?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_opportunities: {
         Row: {
           assigned_to: string | null
@@ -6291,6 +6351,17 @@ export type Database = {
         Returns: Json
       }
       get_marche_species_count: { Args: { p_marche_id: string }; Returns: Json }
+      get_marches_for_species: {
+        Args: { p_query: string }
+        Returns: {
+          last_photo_url: string
+          marche_date: string
+          marche_id: string
+          marche_lieu: string
+          marche_title: string
+          observation_count: number
+        }[]
+      }
       get_marches_species_counts: {
         Args: { p_marche_ids: string[] }
         Returns: Json
@@ -6349,6 +6420,21 @@ export type Database = {
           pratiques: Json
           sources: Json
           termes_locaux: Json
+        }[]
+      }
+      get_top_species_observed: {
+        Args: { p_limit?: number }
+        Returns: {
+          common_name_fr: string
+          iconic_taxon: string
+          kingdom: string
+          last_lieu: string
+          last_marche_id: string
+          last_marcheur_name: string
+          last_observation_date: string
+          last_photo_url: string
+          observation_count: number
+          scientific_name: string
         }[]
       }
       get_top_species_optimized: {
