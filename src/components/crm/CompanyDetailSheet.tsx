@@ -11,7 +11,7 @@ export const CompanyDetailSheet: React.FC<Props> = ({ companyId, onOpenChange })
   const open = !!companyId;
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col">
+      <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-3xl p-0 flex flex-col bg-background">
         <CompanyDetailContent
           companyId={companyId}
           onClose={() => onOpenChange(false)}
