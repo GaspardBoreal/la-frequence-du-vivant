@@ -94,16 +94,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[500px]">
-        {KANBAN_COLUMNS.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            opportunities={opportunitiesByStatus[column.id] || []}
-            onEditOpportunity={onEditOpportunity}
-            onDeleteOpportunity={onDeleteOpportunity}
-          />
-        ))}
+      <div
+        tabIndex={0}
+        onKeyDown={onKeyDown}
+        className="relative outline-none"
+      >
+        <PipelineNavigator
+          scrollRef={scrollRef}
+          columns={KANBAN_COLUMNS}
+          opportunitiesByStatus={opportunitiesByStatus}
+        />
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-4 min-h-[500px] scroll-smooth"
+        >
+          {KANBAN_COLUMNS.map((column) => (
+            <div key={column.id} data-col-id={column.id} className="shrink-0">
+              <KanbanColumn
+                column={column}
+                opportunities={opportunitiesByStatus[column.id] || []}
+                onEditOpportunity={onEditOpportunity}
+                onDeleteOpportunity={onDeleteOpportunity}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <DragOverlay>
