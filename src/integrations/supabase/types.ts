@@ -1120,6 +1120,7 @@ export type Database = {
       }
       crm_maronnier_events: {
         Row: {
+          audience_cibles: string[] | null
           created_at: string
           created_by: string | null
           date_debut: string
@@ -1139,6 +1140,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audience_cibles?: string[] | null
           created_at?: string
           created_by?: string | null
           date_debut: string
@@ -1158,6 +1160,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audience_cibles?: string[] | null
           created_at?: string
           created_by?: string | null
           date_debut?: string
@@ -1398,6 +1401,63 @@ export type Database = {
             columns: ["opportunity_id"]
             isOneToOne: false
             referencedRelation: "crm_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_prospect_decks: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          error: string | null
+          file_url: string | null
+          generated_by: string | null
+          id: string
+          marche_id: string | null
+          sections: Json | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          error?: string | null
+          file_url?: string | null
+          generated_by?: string | null
+          id?: string
+          marche_id?: string | null
+          sections?: Json | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          error?: string | null
+          file_url?: string | null
+          generated_by?: string | null
+          id?: string
+          marche_id?: string | null
+          sections?: Json | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_prospect_decks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_prospect_decks_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
             referencedColumns: ["id"]
           },
         ]
@@ -6388,6 +6448,23 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_maronnier_matches_for_company: {
+        Args: { p_company_id: string; p_limit?: number }
+        Returns: {
+          date_debut: string
+          date_fin: string
+          description: string
+          event_id: string
+          lieu: string
+          match_reasons: string[]
+          match_score: number
+          nom: string
+          region: string
+          secteurs_naf: string[]
+          site_url: string
+          type: string
+        }[]
+      }
       get_my_admin_email_only: { Args: never; Returns: string }
       get_my_marcheur_tags_for_species: {
         Args: { _marche_ids?: string[]; _scientific_names: string[] }
@@ -6412,6 +6489,23 @@ export type Database = {
       get_public_shared_contribution: {
         Args: { p_id: string; p_type: string }
         Returns: Json
+      }
+      get_signature_species_for_company: {
+        Args: { p_company_id: string; p_limit?: number; p_radius_km?: number }
+        Returns: {
+          common_name_fr: string
+          distance_km: number
+          iconic_taxon: string
+          kingdom: string
+          last_marche_id: string
+          last_marche_slug: string
+          last_marche_title: string
+          last_observation_date: string
+          last_photo_url: string
+          observation_count: number
+          patrimoine_score: number
+          scientific_name: string
+        }[]
       }
       get_structured_vocabulary_data: {
         Args: { marche_id_param: string }

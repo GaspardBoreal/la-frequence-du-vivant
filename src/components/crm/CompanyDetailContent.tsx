@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { WebsiteField } from './company-tabs/WebsiteField';
 import { CompanyOpportunitiesTab } from './company-tabs/CompanyOpportunitiesTab';
 import { CompanyMarchesTab } from './company-tabs/CompanyMarchesTab';
+import { CommercialLeversTab } from './company-tabs/CommercialLeversTab';
 
 interface Props {
   companyId: string | null;
@@ -177,7 +178,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
       <div className="flex-1 overflow-y-auto px-5 py-4 pb-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
 
         <Tabs defaultValue="identite">
-          <TabsList className="flex w-full overflow-x-auto bg-muted/50 justify-start sm:justify-stretch sm:grid sm:grid-cols-6 gap-0.5">
+          <TabsList className="flex w-full overflow-x-auto bg-muted/50 justify-start sm:justify-stretch sm:grid sm:grid-cols-7 gap-0.5">
             <TabsTrigger value="identite" className="shrink-0">Identité</TabsTrigger>
             <TabsTrigger value="dirigeants" className="shrink-0">
               Contacts
@@ -193,6 +194,9 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
             </TabsTrigger>
             <TabsTrigger value="opportunites" className="shrink-0">Opportunités</TabsTrigger>
             <TabsTrigger value="marches" className="shrink-0">Marches</TabsTrigger>
+            <TabsTrigger value="leviers" className="shrink-0 gap-1">
+              <span className="text-primary">✦</span> Leviers
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="identite" className="space-y-1 mt-4">
@@ -413,6 +417,14 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
 
           <TabsContent value="marches">
             <CompanyMarchesTab companyId={company.id} />
+          </TabsContent>
+
+          <TabsContent value="leviers" className="mt-4">
+            <CommercialLeversTab
+              companyId={company.id}
+              companyName={company.denomination ?? company.nom_complet ?? company.siren ?? 'cette entreprise'}
+              hasGps={!!company.latitude && !!company.longitude}
+            />
           </TabsContent>
         </Tabs>
       </div>
