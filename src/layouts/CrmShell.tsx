@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { CrmSidebar } from '@/components/crm/shell/CrmSidebar';
 import { CrmTopBar } from '@/components/crm/shell/CrmTopBar';
+import CrmScrollToTop from '@/layouts/CrmScrollToTop';
 import '@/components/crm/shell/crmShell.css';
 
 const STORAGE_KEY = 'crm-sidebar-open';
@@ -26,6 +27,7 @@ const CrmShell: React.FC = () => {
 
   return (
     <div data-crm-shell className="min-h-screen bg-[hsl(var(--crm-bg))]">
+      <CrmScrollToTop />
       <SidebarProvider open={open} onOpenChange={handleOpenChange}>
         <div className="min-h-screen flex w-full">
           <CrmSidebar />

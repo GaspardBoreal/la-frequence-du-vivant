@@ -1,24 +1,33 @@
-## Ajouter un nom (titre) aux opportunités
+## Problème
 
-### 1. Base de données
-Migration : ajouter `titre text` à `crm_opportunities` avec `CHECK (char_length(titre) <= 250)`. Le champ `nom` existant est conservé (c'est le nom de famille du contact, distinct).
+Quand on clique sur une vignette du Bento de `/admin/crm` (ex. « Équipe active »), la page de destination s'ouvre à la position de scroll précédente — l'utilisateur arrive en bas de page sans s'en rendre compte. React Router ne réinitialise pas le scroll lors d'un changement de route.
 
-### 2. Types
-- `src/types/crm.ts` : ajouter `titre: string | null` sur `CrmOpportunity`.
+## Cause
 
-### 3. Formulaire de création / modification
-- `src/components/crm/OpportunityForm.tsx` : ajouter un champ `<Input>` "Nom de l'opportunité" en tout début du formulaire (avant "Entreprises liées"), `maxLength={250}`, avec compteur de caractères discret (ex. `123 / 250`). Inclure `titre` dans le state initial et le payload soumis.
+`CrmShell` (layout commun `/admin/crm/*`) ne contient aucun mécanisme de scroll-restoration. Le scroll est porté par la fenêtre (`min-h-screen` sans `overflow`), donc il faut remettre `window.scrollY = 0` à chaque changement de pathname.
 
-### 4. Vignette Kanban (carte d'opportunité)
-- Repérer le composant de carte (probablement `src/components/crm/KanbanCard.tsx` ou équivalent utilisé par `KanbanColumn`).
-- Ajouter une première ligne affichant `opp.titre` au-dessus de l'`experience_souhaitee` actuelle.
-- Taille de police : légèrement supérieure à la ligne "experience_souhaitee" (ex. si actuel `text-sm font-semibold`, le titre passe en `text-base font-semibold` ; experience devient `text-sm`). Conserver le reste du design (bandeau coloré, badge statut, avatar, footer participants/date) strictement à l'identique.
-- Si `titre` est vide, fallback sur l'affichage actuel (pas de ligne vide).
+## Solution — `CrmScrollToTop` (scope CRM uniquement)
 
-### 5. Mini-carte côté entreprise
-- `src/components/crm/company-tabs/CompanyOpportunitiesTab.tsx` (`OpportunityMiniCard`) : même règle — `title = opp.titre || experience || nom/prenom || entreprise`. La hiérarchie typographique de la mini-carte reste inchangée.
+Ajout d'un petit composant utilitaire monté dans `CrmShell`, pour ne pas modifier le comportement du reste de l'app (espace marcheur, exploration, etc., qui peuvent vouloir conserver leur scroll).
 
-### Notes techniques
-- Migration SQL : `ALTER TABLE public.crm_opportunities ADD COLUMN titre text; ALTER TABLE public.crm_opportunities ADD CONSTRAINT crm_opportunities_titre_length CHECK (titre IS NULL OR char_length(titre) <= 250);`
-- Pas de modification des hooks `useCrmOpportunities` ni `useCompanyOpportunities` (le `select *` propage automatiquement le nouveau champ).
-- Validation côté client via `maxLength` sur l'input + garde-fou serveur via le CHECK.
+### Fichiers
+
+1. **Créer `src/layouts/CrmScrollToTop.tsx`**
+   - `useLocation()` → écoute `pathname` (et éventuellement `search` ignoré pour ne pas re-scroller sur un simple changement de filtre dans la même page).
+   - `useEffect` → `window.scrollTo({ top: 0, left: 0, behavior: 'instant' })`.
+   - Retourne `null`.
+
+2. **Modifier `src/layouts/CrmShell.tsx`**
+   - Importer `CrmScrollToTop` et le monter en haut de `<main>` (à l'intérieur du Router, donc `useLocation` fonctionne).
+
+### Comportement
+
+- Click sur n'importe quelle vignette/lien du CRM → la nouvelle page s'ouvre toujours en haut.
+- Changement d'onglet via le sidebar CRM → idem.
+- Modification d'un `?queryParam` (filtres annuaire, pipeline) → **pas** de re-scroll (on n'écoute que `pathname`).
+- Aucun impact hors `/admin/crm/*`.
+
+## Hors scope
+
+- Aucune autre route applicative n'est touchée.
+- Pas de scroll-restoration sur "back" navigateur (comportement natif conservé).
