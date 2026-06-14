@@ -141,9 +141,25 @@ Deno.serve(async (req) => {
     if (errorResponse) return errorResponse;
     if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-    const body = (await req.json().catch(() => ({}))) as SearchPayload;
+    const body = (await req.json().catch(() => ({}))) as SearchPayload & { commune?: string };
     if (body.per_page && body.per_page > 25) body.per_page = 25;
     if (body.radius && body.radius > 50) body.radius = 50;
+
+    // Résolution commune nom -> INSEE (l'API gouv attend un code INSEE)
+    if (body.commune && typeof body.commune === 'string') {
+      const raw = body.commune.trim();
+      if (raw && !/^\d{5}$/.test(raw)) {
+        const insee = await resolveCommuneToInsee(raw, body.code_postal);
+        if (insee) {
+          console.log(`[search-french-companies] commune "${raw}" + CP ${body.code_postal ?? '-'} -> INSEE ${insee}`);
+          body.commune = insee;
+        } else {
+          console.log(`[search-french-companies] commune "${raw}" non résolue -> fallback q`);
+          delete body.commune;
+          body.q = [body.q, raw].filter(Boolean).join(' ').trim();
+        }
+      }
+    }
 
     const url = buildUrl(body);
     console.log('[search-french-companies] GET', url);
