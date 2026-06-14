@@ -5,13 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
-import { SlidersHorizontal, RotateCcw, Check, ChevronsUpDown, X } from 'lucide-react';
+import { SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { FRENCH_DEPARTMENTS_WITH_CODES, FRENCH_REGIONS_WITH_CODES } from '@/utils/frenchAdministrativeCodes';
-import { searchNaf, getNafLabel, formatNaf } from '@/lib/nafCatalog';
+import { NafCombobox } from '@/components/crm/filters/NafCombobox';
 import type { CrmCompanyStage } from '@/types/crmCompany';
-import { cn } from '@/lib/utils';
 
 export interface ImportedCompanyFilters {
   stage?: CrmCompanyStage | 'all';

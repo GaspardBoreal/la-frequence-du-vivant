@@ -1,44 +1,63 @@
 ## Objectif
 
-Sur `/admin/crm` (Home) :
-- Supprimer les deux tuiles **Commandes** et **Factures** (modules à venir, bruit visuel).
-- Inclure les opportunités **gagnées** dans le calcul du **CA potentiel** (actuellement uniquement actives → 0 €). Avec la data actuelle, on doit obtenir `0 + 1 260 € = 1 260 €`.
+Corriger définitivement le filtre **Activité (NAF/APE)** sur `/admin/crm/annuaire?tab=entreprises`, qui s’ouvre visuellement mais reste non interactif / figé, puis vérifier que la sélection applique bien le filtre sur la liste Entreprises.
 
-Sur `/admin/crm/pipeline` :
-- Appliquer la même règle pour la KPI "CA potentiel" (composant `DashboardKPIs`, alimenté par `useCrmOpportunities.stats.potentialRevenue`).
+## Diagnostic
 
-## Changements
+Le correctif précédent a été appliqué au mauvais composant.
 
-### 1. `src/hooks/useCrmHomeStats.ts`
-Élargir le filtre `caPotentiel` pour additionner :
-- les opportunités aux statuts actifs (`a_contacter`, `relance_1/2/3`)
-- **+ les opportunités `gagne`** (CA acquis = part du potentiel réalisé)
+- `/admin/crm/annuaire` onglet **Annuaire** utilise `src/components/crm/CompanySearchFiltersDrawer.tsx`
+- `/admin/crm/annuaire?tab=entreprises` onglet **Entreprises** utilise `src/components/crm/filters/ImportedCompanyFiltersDrawer.tsx`
+- Le combobox NAF de ce second drawer possède encore sa propre implémentation, distincte, sans les ajustements nécessaires pour cohabiter correctement avec le `Sheet` Radix.
 
-Exclus : `perdu`, `pas_interesse` (et `gagne` n'est plus exclu).
+Le câblage du filtre est, lui, déjà correct :
+- la sélection alimente `companyFilters.code_naf` dans `src/pages/CrmAnnuaire.tsx`
+- puis `useCrmCompanies()` filtre bien avec `q.eq('code_naf', filters.code_naf)`
 
-```ts
-const REVENUE_STATUSES = [...ACTIVE_STATUSES, 'gagne'];
-const caPotentiel = opps
-  .filter((o) => REVENUE_STATUSES.includes(o.statut))
-  .reduce((sum, o) => sum + (o.budget_estime || 0), 0);
-```
+Le bug est donc **UI / interaction**, pas métier.
 
-### 2. `src/hooks/useCrmOpportunities.ts` (l. 156-158)
-Même règle pour `stats.potentialRevenue` utilisé par `DashboardKPIs` sur la page Pipeline :
-```ts
-potentialRevenue: opportunities
-  .filter(o => !['perdu', 'pas_interesse'].includes(o.statut))
-  .reduce((sum, o) => sum + (o.budget_estime || 0), 0),
-```
+## Changements à faire
 
-### 3. `src/pages/CrmHome.tsx`
-- Retirer les deux `<BentoKpiTile>` **Commandes** et **Factures** (et les imports `ShoppingCart`, `FileText` devenus inutiles).
-- Retirer `commandes` / `factures` du fallback `s = { ... }`.
+### 1. Corriger le bon composant
+Fichier : `src/components/crm/filters/ImportedCompanyFiltersDrawer.tsx`
 
-### 4. UI — clarification du libellé
-Renommer le hint de la tuile "CA potentiel" en **"Opportunités actives + gagnées"** (CrmHome) et garder le libellé "CA potentiel" tel quel sur Pipeline — la sémantique est désormais "pipeline valorisé hors perdu".
+Mettre à jour le `NafCombobox` interne pour qu’il fonctionne correctement dans le contexte du `Sheet` :
+- activer le mode adapté du `Popover`
+- relever la couche (`z-index`) du `PopoverContent`
+- conserver une largeur calée sur le trigger
+- s’assurer que l’ouverture/fermeture reste pilotée proprement par l’état local
+
+### 2. Éviter la duplication source du bug
+Toujours dans `ImportedCompanyFiltersDrawer.tsx`, aligner cette implémentation avec le composant mutualisé déjà présent dans `src/components/crm/filters/NafCombobox.tsx`, afin d’éviter une divergence future.
+
+Deux options valides pendant l’implémentation :
+- soit réutiliser directement le composant mutualisé `NafCombobox`
+- soit reproduire strictement la même configuration technique dans le composant local
+
+Préférence d’implémentation : **réutiliser le composant mutualisé** pour supprimer la duplication.
+
+### 3. Vérifier le fonctionnement du filtre
+Confirmer après correction que :
+- la liste déroulante s’ouvre et reste cliquable
+- on peut taper dans la recherche NAF
+- le choix d’un code ferme bien la liste
+- la puce / valeur du filtre remonte dans l’UI
+- la liste Entreprises est bien filtrée via `code_naf`
+
+## Détails techniques
+
+Fichiers concernés :
+- `src/components/crm/filters/ImportedCompanyFiltersDrawer.tsx`
+- possiblement `src/components/crm/filters/NafCombobox.tsx` si un petit ajustement partagé est nécessaire
+
+Fichiers relus pour validation du flux :
+- `src/pages/CrmAnnuaire.tsx`
+- `src/hooks/useCrmCompanies.ts`
+- `src/components/ui/popover.tsx`
+- `src/components/ui/sheet.tsx`
 
 ## Hors scope
 
-- Pas de migration SQL.
-- Pas de retrait du champ `commandes/factures` du type `CrmHomeStats` (laisse la porte ouverte aux futurs modules) — on les calcule toujours à 0 côté hook, simplement plus affichés.
+- Pas de changement de logique SQL / Supabase
+- Pas de modification du filtre NAF de l’onglet Annuaire, sauf si un mini-ajustement partagé est requis pour la mutualisation
+- Pas de refonte visuelle du drawer au-delà de ce qui est nécessaire pour rendre l’interaction fiable
