@@ -38,7 +38,7 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(94vw,56rem)] max-w-4xl h-[min(92vh,860px)] p-0 overflow-hidden !flex flex-col gap-0 border-[hsl(var(--crm-border))] bg-gradient-to-br from-[hsl(var(--crm-surface))] via-[hsl(var(--crm-surface-2))] to-[hsl(var(--crm-accent))]/5">
+      <DialogContent className="w-[min(94vw,56rem)] max-w-4xl max-h-[92vh] p-0 overflow-y-auto !flex flex-col gap-0 border-[hsl(var(--crm-border))] bg-gradient-to-br from-[hsl(var(--crm-surface))] via-[hsl(var(--crm-surface-2))] to-[hsl(var(--crm-accent))]/5">
         <AnimatePresence mode="wait">
           {pratique && (
             <motion.div
@@ -47,7 +47,7 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="flex min-h-0 flex-1 flex-col overflow-hidden"
+              className="flex flex-col"
             >
 
 
@@ -100,7 +100,7 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
 
               {/* Carrousel vignettes */}
               {covers.length > 1 && (
-                <div className="shrink-0 px-5 pt-4">
+                <div className="px-5 pt-4">
                   <div className="flex gap-2 overflow-x-auto pb-2 scroll-smooth snap-x">
                     {covers.map((url, i) => (
                       <button
@@ -121,19 +121,17 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
               )}
 
               {/* Body */}
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                <div className="p-5 pb-8 sm:p-6 sm:pb-10">
-                  {pratique.description ? (
-                    <div
-                      className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-[hsl(var(--crm-text))] prose-p:text-[hsl(var(--crm-text))]/85 prose-strong:text-[hsl(var(--crm-text))] prose-a:text-[hsl(var(--crm-accent))] prose-li:text-[hsl(var(--crm-text))]/85"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(pratique.description) }}
-                    />
-                  ) : (
-                    <p className="text-sm crm-muted italic flex items-center gap-2">
-                      <ImageOff className="h-4 w-4" /> Aucune description renseignée.
-                    </p>
-                  )}
-                </div>
+              <div className="p-5 pb-8 sm:p-6 sm:pb-10">
+                {pratique.description ? (
+                  <div
+                    className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-[hsl(var(--crm-text))] prose-p:text-[hsl(var(--crm-text))]/85 prose-strong:text-[hsl(var(--crm-text))] prose-a:text-[hsl(var(--crm-accent))] prose-li:text-[hsl(var(--crm-text))]/85"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(pratique.description) }}
+                  />
+                ) : (
+                  <p className="text-sm crm-muted italic flex items-center gap-2">
+                    <ImageOff className="h-4 w-4" /> Aucune description renseignée.
+                  </p>
+                )}
               </div>
             </motion.div>
           )}
