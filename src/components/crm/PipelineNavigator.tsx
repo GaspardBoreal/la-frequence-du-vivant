@@ -101,7 +101,7 @@ export const PipelineNavigator: React.FC<Props> = ({ scrollRef, columns, opportu
           <ChevronLeft className="h-4 w-4" />
         </button>
 
-        <div className="flex-1 overflow-x-auto scrollbar-hide">
+        <div className="flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center gap-1.5 min-w-max px-0.5">
             {columns.map((col) => {
               const count = opportunitiesByStatus[col.id]?.length ?? 0;
