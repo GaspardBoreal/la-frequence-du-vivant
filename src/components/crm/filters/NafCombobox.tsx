@@ -37,7 +37,7 @@ export const NafCombobox: React.FC<Props> = ({
   return (
     <div>
       {!hideLabel && <Label>{label}</Label>}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
