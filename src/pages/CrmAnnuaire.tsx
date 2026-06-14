@@ -535,25 +535,22 @@ const CrmAnnuaire: React.FC = () => {
 
           {/* === CARTE === */}
           <TabsContent value="carte" className="mt-4">
-            <Card className="p-3 mb-3">
-              <div className="flex flex-wrap gap-2 items-center">
-                <Select value={companyFilters.stage} onValueChange={(v) => setCompanyFilters(f => ({ ...f, stage: v as any }))}>
-                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                  <SelectContent className="z-[1100]">
-                    <SelectItem value="all">Tous les stages</SelectItem>
-                    <SelectItem value="suspect">Suspect</SelectItem>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="inactif">Inactif</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground ml-auto">
+            <FiltersBandeau
+              searchValue={companyFilters.search}
+              onSearchChange={(v) => setCompanyFilters((f) => ({ ...f, search: v }))}
+              searchPlaceholder="Rechercher (nom, SIREN, ville)…"
+              filtersButton={<ImportedCompanyFiltersDrawer value={drawerValue} onChange={setDrawerValue} hideGeolocatedToggle />}
+              actions={
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500" />Suspect</span>
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-orange-500" />Prospect</span>
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500" />Client</span>
                 </div>
-              </div>
-            </Card>
+              }
+              chips={buildCompanyChips({ includeGeolocated: false })}
+              onClearAll={() => clearCompanyFilters()}
+            />
+
 
             {missingGeo.length > 0 && (
               <Card className="p-3 mb-3 border-orange-500/50 bg-orange-500/10">
