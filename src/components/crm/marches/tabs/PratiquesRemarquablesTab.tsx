@@ -59,12 +59,10 @@ export const PratiquesRemarquablesTab: React.FC = () => {
       if (allMediaIds.length) {
         const { data: medias } = await supabase
           .from('marcheur_medias')
-          .select('id, storage_path, public_url')
+          .select('id, url_fichier, external_url')
           .in('id', allMediaIds as string[]);
         (medias || []).forEach((m: any) => {
-          const url = m.public_url || (m.storage_path
-            ? supabase.storage.from('marcheur-uploads').getPublicUrl(m.storage_path).data.publicUrl
-            : null);
+          const url = m.external_url || m.url_fichier || null;
           if (url) mediaByKey.set(m.id, url);
         });
       }
