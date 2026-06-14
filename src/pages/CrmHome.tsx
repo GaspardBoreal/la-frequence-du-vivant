@@ -128,25 +128,6 @@ const CrmHome: React.FC = () => {
           loading={isLoadingTeam}
           span="col-1"
         />
-
-        <BentoKpiTile
-          label="Commandes"
-          value={s.commandes}
-          icon={ShoppingCart}
-          accent="amber"
-          comingSoon
-          hint="Module en cours de spécification"
-          span="col-2"
-        />
-        <BentoKpiTile
-          label="Factures"
-          value={s.factures}
-          icon={FileText}
-          accent="rose"
-          comingSoon
-          hint="Module en cours de spécification"
-          span="col-2"
-        />
       </div>
     </div>
   );
