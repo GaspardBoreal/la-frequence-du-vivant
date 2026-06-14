@@ -151,7 +151,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
       });
     } else {
       form.reset({
-        prenom: '', nom: '', email: '', entreprise: '', fonction: '', telephone: '',
+        titre: '', prenom: '', nom: '', email: '', entreprise: '', fonction: '', telephone: '',
         experience_souhaitee: '', format_souhaite: '', date_souhaitee: '', lieu_prefere: '',
         objectifs: '', financement_souhaite: '', budget_estime: undefined, nombre_participants: undefined,
         statut: 'a_contacter', notes: '', assigned_to: '', source: '',
