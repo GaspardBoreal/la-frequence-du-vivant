@@ -165,7 +165,12 @@ const OpportunityMiniCard: React.FC<{
       <div className="p-3.5 space-y-2.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h4 className="font-semibold text-sm leading-tight line-clamp-2">{title}</h4>
+            {titre && (
+              <h4 className="font-semibold text-base leading-tight line-clamp-2 mb-0.5">{titre}</h4>
+            )}
+            <div className={cn('leading-tight line-clamp-2', titre ? 'text-sm text-muted-foreground' : 'font-semibold text-sm')}>
+              {subtitle}
+            </div>
             {column && (
               <Badge variant="outline" className="mt-1.5 text-[10px] h-5 px-1.5">
                 <span className={cn('h-1.5 w-1.5 rounded-full mr-1', column.color)} />
