@@ -1,111 +1,60 @@
-## Objectif
-Enrichir le drawer "Détail entreprise" (`CompanyDetailContent`) accessible depuis `/admin/crm/annuaire?tab=entreprises` afin de pouvoir éditer en profondeur les fiches importées via API, et y greffer la vie commerciale (opportunités) + la vie terrain (marches).
+# Navigation horizontale au-dessus du Kanban
 
----
+## Problème
+Sur `/admin/crm/pipeline`, la scrollbar native n'apparaît qu'en bas du board (souvent hors écran selon la hauteur). Avec 6+ colonnes, naviguer latéralement est pénible : il faut scroller jusqu'en bas, ou utiliser shift+molette (non découvrable).
 
-## 1. Onglet "Identité" — ajout champ Site web
+## Solution UX proposée — barre de navigation sticky
 
-**Migration DB** (table `crm_companies`) :
-- Ajouter colonne `site_web text` (nullable).
-- Ajouter colonne `primary_contact_id uuid references public.crm_contacts(id) on delete set null` (utilisée par l'onglet Contact ci-dessous).
+Une **PipelineNavigator** placée **au-dessus du board**, sticky en haut de la zone scrollable. Elle combine 3 affordances complémentaires :
 
-**UI** : entre la ligne "Région / dépt" et la zone "Notes internes" :
-- Champ éditable inline `Site web` (input + bouton Enregistrer ou auto-save sur blur).
-- Validation via `zod` : `z.string().trim().url().max(500)` — accepte vide. Toast d'erreur si URL invalide.
-- Normalisation : si l'utilisateur tape `monsite.fr` sans schéma, préfixer `https://` avant validation/sauvegarde.
-- Si valeur présente : affichage en lien `<a target="_blank" rel="noopener noreferrer">` avec icône `ExternalLink` + favicon via `https://www.google.com/s2/favicons?domain=...`. Icône crayon pour basculer en mode édition.
+### 1. Flèches latérales `‹` `›`
+Boutons ronds aux extrémités, désactivés en bout de course, qui font scroller d'une largeur de colonne (~320px) avec `scrollBy({ behavior: 'smooth' })`.
 
----
+### 2. Mini-map de colonnes (cœur du design)
+Une rangée compacte de pastilles, une par colonne du pipeline. Chaque pastille affiche :
+- le point de couleur du statut (réutilise `KANBAN_COLUMNS[i].color`)
+- le nom court ("À contacter", "Relance 1"…)
+- un badge avec le compte d'opportunités
 
-## 2. Onglet "Contacts" — édition + contact principal
+Comportements :
+- **Clic** → scroll-into-view doux sur la colonne correspondante (centrée).
+- **Active state** → la/les colonnes actuellement visibles dans le viewport sont surlignées (détection via `IntersectionObserver` sur chaque `KanbanColumn`).
+- **Drag&drop friendly** → en survolant une pastille pendant un drag d'opportunité, on auto-scrolle vers cette colonne (bonus, simple à activer plus tard).
 
-- Sur chaque carte contact : bouton crayon ouvrant `ContactFormDialog` (déjà existant) en mode édition (passer `contact` en prop ; étendre le dialog si nécessaire pour gérer update via `useUpdateContact`).
-- Bouton étoile / `Crown` à côté du crayon : marque le contact comme principal → `updateCompany.mutate({ id, patch: { primary_contact_id: c.id } })`.
-- Le contact principal est trié en premier, badge "Principal" doré, légère lueur ; clic sur l'étoile active à nouveau pour désactiver.
-- Header de l'entreprise (hero) : sous le SIREN, afficher si défini "Contact principal · Prénom Nom" cliquable (ancre vers l'onglet Contacts).
+### 3. Indicateur de progression
+Fine barre sous la mini-map qui reflète la position de scroll (`scrollLeft / (scrollWidth - clientWidth)`), façon "scroll progress". Donne un repère visuel immédiat.
 
----
-
-## 3. Onglet "Activités" → "Activités CRM"
-
-- Renommer le `TabsTrigger` (`Activités CRM`). Aucune autre modif.
-
----
-
-## 4. Nouvel onglet "Opportunités" (design soigné)
-
-Source de données : `crm_opportunity_companies` joint à `crm_opportunities` (filtrer par `company_id`). Hook nouveau `useCompanyOpportunities(companyId)`.
-
-**Design** :
-- Grille de cartes (1 col mobile, 2 cols desktop) avec :
-  - Bandeau supérieur coloré selon `statut` (réutiliser `KANBAN_COLUMNS.color`).
-  - Titre = `experience_souhaitee` ou nom du contact.
-  - Métriques inline : budget (€), participants, date souhaitée (icônes `Euro`, `Users`, `Calendar`).
-  - Pastille `assigned_member` (avatar) en haut à droite.
-  - Animation `framer-motion` `whileHover={{ y: -2 }}` + glow doux.
-- En haut : bouton "Nouvelle opportunité" pleine largeur en glassmorphism → ouvre `OpportunityForm` pré-rempli avec la `company_id` (création + lien automatique via `syncOpportunityLinks`).
-- Clic sur une carte : ouvre `OpportunityForm` en édition.
-- Menu kebab : Modifier / Délier de l'entreprise / Supprimer.
-- État vide : illustration vectorielle légère + CTA "Créer la première opportunité".
-
-**Composants nouveaux** : `src/components/crm/company-tabs/CompanyOpportunitiesTab.tsx`, `OpportunityMiniCard.tsx`.
-
----
-
-## 5. Nouvel onglet "Marches" (design soigné)
-
-Source : `crm_company_events` joint à `marche_events` (filtrer par `company_id`). Hook existant `useCrmCompanyEvents` à étendre avec `useCompanyMarches(companyId)`.
-
-**Design** :
-- Timeline verticale chronologique (passé / à venir) :
-  - Ligne centrale dégradée (vert émeraude → ambre).
-  - Marqueurs pulsants pour événements à venir, pleins pour passés.
-  - Chaque entrée = carte avec image héro (si `marche.cover_url`), titre, date formatée FR, lieu, badge `relation_type` (Sponsor/Participant/Organisateur/Invité).
-  - Hover : zoom léger + bouton "Voir la fiche marche" → navigate `/admin/marche-events/:id`.
-- Header de l'onglet : bouton "Lier une marche existante" (picker réutilisant `CompanyLinkPicker` pattern inversé) + bouton "Créer un nouvel événement" → ouvre dialog rapide (titre + date + lieu) qui crée dans `marche_events` puis lie via `useLinkCompanyEvent`.
-- Édition d'un lien : sélecteur `relation_type` inline + champ notes.
-- Suppression du lien via `useUnlinkCompanyEvent` (avec confirm).
-- État vide : "Aucune marche associée. Lier ou créer la première."
-
-**Composants nouveaux** : `src/components/crm/company-tabs/CompanyMarchesTab.tsx`, `CompanyMarcheTimeline.tsx`, `LinkMarcheDialog.tsx`, `QuickCreateMarcheDialog.tsx`.
-
----
-
-## 6. Layout des onglets
-
-Le `TabsList` passe de `grid-cols-4` à `grid-cols-6` (Identité · Contacts · Finances · Activités CRM · Opportunités · Marches). Sur mobile (drawer étroit), passer en scroll horizontal `overflow-x-auto` avec `flex` au lieu de `grid` pour préserver la lisibilité.
-
----
-
-## Détails techniques
-
-**Migration SQL** :
-```sql
-ALTER TABLE public.crm_companies
-  ADD COLUMN site_web text,
-  ADD COLUMN primary_contact_id uuid REFERENCES public.crm_contacts(id) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS crm_companies_primary_contact_idx ON public.crm_companies(primary_contact_id);
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ ‹  ● À contacter (0)  ● Relance 1 (0)  ● Relance 2 (0) …  › │
+│ ▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+└──────────────────────────────────────────────────────────────┘
+[ À contacter ] [ Relance 1 ] [ Relance 2 ] [ Relance 3 ] …
 ```
-Aucun changement RLS (politiques existantes couvrent tous les `UPDATE` admin).
 
-**Fichiers modifiés** :
-- `src/types/crmCompany.ts` (ajout `site_web`, `primary_contact_id`).
-- `src/components/crm/CompanyDetailContent.tsx` (refactor en sous-composants par onglet).
-- `src/components/crm/contacts/ContactFormDialog.tsx` (support édition).
-- `src/hooks/useCrmCompanies.ts` (rien à changer, `useUpdateCompany` suffit).
+### Bonus low-cost
+- **Raccourcis clavier** `←` / `→` quand le board a le focus → scroll d'une colonne.
+- **Shift + molette** déjà natif sur le conteneur (rien à faire, juste hint visuel "↔ glisser pour naviguer" la 1re fois via `localStorage`).
+- **Masquer la scrollbar du bas** (`scrollbar-thin` ou `scrollbar-hide`) puisque la navigation du haut la remplace avantageusement — ou la garder fine et discrète.
 
-**Fichiers créés** :
-- `src/components/crm/company-tabs/CompanyIdentityTab.tsx`
-- `src/components/crm/company-tabs/CompanyContactsTab.tsx`
-- `src/components/crm/company-tabs/CompanyOpportunitiesTab.tsx`
-- `src/components/crm/company-tabs/CompanyMarchesTab.tsx`
-- `src/components/crm/company-tabs/OpportunityMiniCard.tsx`
-- `src/components/crm/company-tabs/CompanyMarcheTimeline.tsx`
-- `src/components/crm/company-tabs/LinkMarcheDialog.tsx`
-- `src/components/crm/company-tabs/QuickCreateMarcheDialog.tsx`
-- `src/hooks/useCompanyOpportunities.ts`
-- `src/hooks/useCompanyMarches.ts`
+## Implémentation
 
-**Validation site web** : composant `WebsiteField.tsx` réutilisable encapsulant zod + normalisation + lien.
+### Fichiers à créer
+- `src/components/crm/PipelineNavigator.tsx` — barre sticky (flèches + mini-map + progress).
 
-Aucun secret, aucun edge function à modifier.
+### Fichiers à modifier
+- `src/components/crm/KanbanBoard.tsx`
+  - Extraire le `<div className="flex gap-4 overflow-x-auto…">` dans une `ref` (`scrollRef`).
+  - Ajouter au-dessus `<PipelineNavigator scrollRef={scrollRef} columns={KANBAN_COLUMNS} counts={opportunitiesByStatus} />`.
+  - Donner un `id={`col-${column.id}`}` à chaque `KanbanColumn` (ou wrapper) pour le scroll-into-view + IntersectionObserver.
+  - Handler clavier `←/→` sur le board.
+- `src/components/crm/KanbanColumn.tsx` — accepter un `id` HTML pour la cible scroll.
+
+### Détails techniques
+- Détection des colonnes visibles : un seul `IntersectionObserver` (root = `scrollRef.current`, threshold ~0.5) → set d'IDs actifs → styling des pastilles.
+- Progress bar : `onScroll` du conteneur met à jour un state throttlé (`requestAnimationFrame`).
+- Aucune dépendance nouvelle, full Tailwind + design tokens existants (`bg-primary`, `border`, `bg-muted`).
+- Responsive : sur mobile la mini-map devient elle-même scrollable horizontalement (overflow-x-auto) avec les flèches qui restent fixes.
+
+## Hors-scope
+Pas de changement aux cartes, au DnD, ni à la logique métier — uniquement de la navigation/UX.

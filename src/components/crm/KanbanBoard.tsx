@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -13,6 +13,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { KanbanColumn } from './KanbanColumn';
 import { OpportunityCard } from './OpportunityCard';
+import { PipelineNavigator } from './PipelineNavigator';
 import { KANBAN_COLUMNS, type CrmOpportunity, type OpportunityStatus } from '@/types/crm';
 import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
 
@@ -27,6 +28,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 }) => {
   const { opportunitiesByStatus, updateStatus } = useCrmOpportunities();
   const [activeOpportunity, setActiveOpportunity] = useState<CrmOpportunity | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const onKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (e.key === 'ArrowRight') { scrollRef.current?.scrollBy({ left: 296, behavior: 'smooth' }); }
+    else if (e.key === 'ArrowLeft') { scrollRef.current?.scrollBy({ left: -296, behavior: 'smooth' }); }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -87,16 +94,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[500px]">
-        {KANBAN_COLUMNS.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            opportunities={opportunitiesByStatus[column.id] || []}
-            onEditOpportunity={onEditOpportunity}
-            onDeleteOpportunity={onDeleteOpportunity}
-          />
-        ))}
+      <div
+        tabIndex={0}
+        onKeyDown={onKeyDown}
+        className="relative outline-none"
+      >
+        <PipelineNavigator
+          scrollRef={scrollRef}
+          columns={KANBAN_COLUMNS}
+          opportunitiesByStatus={opportunitiesByStatus}
+        />
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-4 min-h-[500px] scroll-smooth"
+        >
+          {KANBAN_COLUMNS.map((column) => (
+            <div key={column.id} data-col-id={column.id} className="shrink-0">
+              <KanbanColumn
+                column={column}
+                opportunities={opportunitiesByStatus[column.id] || []}
+                onEditOpportunity={onEditOpportunity}
+                onDeleteOpportunity={onDeleteOpportunity}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <DragOverlay>
