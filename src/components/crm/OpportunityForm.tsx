@@ -198,9 +198,10 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
       email: data.email || primaryContact.email || '',
       entreprise: data.entreprise || primaryCompany?.denomination || '',
       fonction: data.fonction || primaryContact.fonction || '',
+      actions_realisees: actionsRealisees,
       linkedCompanies,
       linkedContacts,
-    });
+    } as any);
   };
 
 
