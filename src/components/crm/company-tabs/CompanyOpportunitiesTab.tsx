@@ -142,10 +142,11 @@ const OpportunityMiniCard: React.FC<{
   onDelete: () => void;
 }> = ({ opp, onEdit, onUnlink, onDelete }) => {
   const column = KANBAN_COLUMNS.find((c) => c.id === opp.statut);
-  const title = opp.experience_souhaitee ||
+  const subtitle = opp.experience_souhaitee ||
     [opp.prenom, opp.nom].filter(Boolean).join(' ') ||
     opp.entreprise ||
     'Opportunité';
+  const titre = (opp.titre || '').trim();
   const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
 
   return (
