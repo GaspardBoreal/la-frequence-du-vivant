@@ -122,11 +122,12 @@ const CrmHome: React.FC = () => {
         />
         <BentoKpiTile
           label="Équipe active"
-          value={'—'}
+          value={activeMembers.length}
           icon={Users}
           to="/admin/crm/equipe"
           accent="sky"
           hint="Voir les membres"
+          loading={isLoadingTeam}
           span="col-1"
         />
 
