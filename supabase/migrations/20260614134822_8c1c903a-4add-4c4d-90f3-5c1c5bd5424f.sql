@@ -1,0 +1,2 @@
+ALTER TABLE public.crm_opportunities ADD COLUMN IF NOT EXISTS actions_realisees text[] NOT NULL DEFAULT '{}'::text[];
+CREATE INDEX IF NOT EXISTS crm_opportunities_actions_realisees_idx ON public.crm_opportunities USING gin (actions_realisees);

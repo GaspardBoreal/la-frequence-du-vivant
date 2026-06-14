@@ -1183,6 +1183,7 @@ export type Database = {
       }
       crm_opportunities: {
         Row: {
+          actions_realisees: string[]
           assigned_to: string | null
           budget_estime: number | null
           closed_at: string | null
@@ -1214,6 +1215,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          actions_realisees?: string[]
           assigned_to?: string | null
           budget_estime?: number | null
           closed_at?: string | null
@@ -1245,6 +1247,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          actions_realisees?: string[]
           assigned_to?: string | null
           budget_estime?: number | null
           closed_at?: string | null
