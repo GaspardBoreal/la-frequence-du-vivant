@@ -179,7 +179,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
       {/* Body scrollable */}
       <div className="flex-1 overflow-y-auto px-5 py-4 pb-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
 
-        <Tabs defaultValue="identite">
+        <Tabs key={initialTab} defaultValue={initialTab}>
           <TabsList className="flex w-full overflow-x-auto bg-muted/50 justify-start sm:justify-stretch sm:grid sm:grid-cols-7 gap-0.5">
             <TabsTrigger value="identite" className="shrink-0">Identité</TabsTrigger>
             <TabsTrigger value="dirigeants" className="shrink-0">
