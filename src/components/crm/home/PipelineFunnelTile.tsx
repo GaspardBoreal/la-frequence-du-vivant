@@ -9,6 +9,7 @@ interface Props {
 }
 
 export const PipelineFunnelTile: React.FC<Props> = ({ suspects, prospects, clients }) => {
+  const total = suspects + prospects + clients;
   const max = Math.max(suspects, prospects, clients, 1);
   const rows = [
     { label: 'Suspects', value: suspects, color: 'from-zinc-500/40 to-zinc-500/10' },
@@ -16,7 +17,7 @@ export const PipelineFunnelTile: React.FC<Props> = ({ suspects, prospects, clien
     { label: 'Clients', value: clients, color: 'from-emerald-400/60 to-emerald-400/10' },
   ];
 
-  const conversion = suspects > 0 ? Math.round((clients / suspects) * 100) : 0;
+  const conversion = total > 0 ? Math.round((clients / total) * 100) : 0;
 
   return (
     <Link
@@ -24,20 +25,28 @@ export const PipelineFunnelTile: React.FC<Props> = ({ suspects, prospects, clien
       className="col-span-12 md:col-span-6 md:row-span-2 group"
     >
       <div className="relative h-full rounded-xl crm-surface p-6 overflow-hidden crm-glow">
-        <div className="flex items-start justify-between mb-6">
-          <div>
+        <div className="flex items-start justify-between mb-6 gap-4">
+          <div className="min-w-0">
             <div className="text-[11px] uppercase tracking-wider crm-muted font-medium mb-1">
               Tunnel de conversion
             </div>
             <div className="text-2xl font-semibold text-[hsl(var(--crm-text))]">
               Suspects → Clients
             </div>
+            <div className="text-[11px] crm-muted mt-1">
+              Part des fiches devenues clientes
+            </div>
           </div>
-          <div className="text-right">
-            <div className="text-3xl font-semibold crm-num text-[hsl(var(--crm-accent))]">
+          <div className="text-right shrink-0">
+            <div className="text-3xl font-semibold crm-num text-[hsl(var(--crm-accent))] leading-none">
               {conversion}%
             </div>
-            <div className="text-[10px] uppercase tracking-wider crm-muted">conversion</div>
+            <div className="text-[11px] crm-muted mt-1 crm-num">
+              {clients} / {total} fiches
+            </div>
+            <div className="text-[10px] uppercase tracking-wider crm-muted">
+              clients ÷ total
+            </div>
           </div>
         </div>
 
@@ -60,8 +69,18 @@ export const PipelineFunnelTile: React.FC<Props> = ({ suspects, prospects, clien
               </div>
             </div>
           ))}
+
+          <div className="pt-3 mt-2 border-t border-[hsl(var(--crm-border))] flex items-baseline justify-between">
+            <span className="text-xs uppercase tracking-wider crm-muted font-medium">
+              Total fiches
+            </span>
+            <span className="text-xl font-semibold crm-num text-[hsl(var(--crm-text))]">
+              {total}
+            </span>
+          </div>
         </div>
       </div>
     </Link>
   );
 };
+
