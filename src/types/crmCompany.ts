@@ -130,6 +130,8 @@ export interface CrmCompany {
   finances: any;
   raw_payload: any;
   api_synced_at: string | null;
+  site_web: string | null;
+  primary_contact_id: string | null;
   created_at: string;
   updated_at: string;
 }

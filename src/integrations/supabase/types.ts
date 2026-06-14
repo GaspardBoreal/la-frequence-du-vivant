@@ -728,11 +728,13 @@ export type Database = {
           next_action_label: string | null
           nom_complet: string | null
           notes: string | null
+          primary_contact_id: string | null
           qualites_labels: Json | null
           raw_payload: Json | null
           region: string | null
           siren: string
           siret_siege: string | null
+          site_web: string | null
           source: string | null
           tags: string[]
           tranche_effectif: string | null
@@ -764,11 +766,13 @@ export type Database = {
           next_action_label?: string | null
           nom_complet?: string | null
           notes?: string | null
+          primary_contact_id?: string | null
           qualites_labels?: Json | null
           raw_payload?: Json | null
           region?: string | null
           siren: string
           siret_siege?: string | null
+          site_web?: string | null
           source?: string | null
           tags?: string[]
           tranche_effectif?: string | null
@@ -800,11 +804,13 @@ export type Database = {
           next_action_label?: string | null
           nom_complet?: string | null
           notes?: string | null
+          primary_contact_id?: string | null
           qualites_labels?: Json | null
           raw_payload?: Json | null
           region?: string | null
           siren?: string
           siret_siege?: string | null
+          site_web?: string | null
           source?: string | null
           tags?: string[]
           tranche_effectif?: string | null
@@ -817,6 +823,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_companies_primary_contact_id_fkey"
+            columns: ["primary_contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
             referencedColumns: ["id"]
           },
         ]
