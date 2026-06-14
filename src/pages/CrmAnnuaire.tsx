@@ -96,7 +96,15 @@ const CrmAnnuaire: React.FC = () => {
 
   // Entreprises importées
   const initialStage = (searchParams.get('stage') as CrmCompanyStage | 'all' | null) || 'all';
-  const [companyFilters, setCompanyFilters] = React.useState<{ stage: CrmCompanyStage | 'all'; search: string }>({ stage: initialStage, search: '' });
+  const [companyFilters, setCompanyFilters] = React.useState<{
+    stage: CrmCompanyStage | 'all';
+    search: string;
+    ville?: string;
+    departement?: string;
+    region?: string;
+    code_naf?: string;
+    geolocated_only?: boolean;
+  }>({ stage: initialStage, search: '' });
   React.useEffect(() => {
     const s = (searchParams.get('stage') as CrmCompanyStage | 'all' | null) || 'all';
     setCompanyFilters(f => f.stage === s ? f : { ...f, stage: s });
@@ -107,6 +115,7 @@ const CrmAnnuaire: React.FC = () => {
     companies.forEach(c => map.set(c.siren, c.lifecycle_stage));
     return map;
   }, [companies]);
+
 
   const importMutation = useImportCompanies();
   const [drawerId, setDrawerId] = React.useState<string | null>(null);
