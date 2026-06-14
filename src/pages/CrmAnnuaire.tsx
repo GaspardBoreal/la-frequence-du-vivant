@@ -9,9 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket, AlertTriangle, UserRound, Plus } from 'lucide-react';
 import { CompanyManualCreateDialog } from '@/components/crm/CompanyManualCreateDialog';
 import { CrmContactsTab } from '@/components/crm/contacts/CrmContactsTab';
+import { FiltersBandeau, type FilterChip } from '@/components/crm/filters/FiltersBandeau';
+import { ImportedCompanyFiltersDrawer, type ImportedCompanyFilters } from '@/components/crm/filters/ImportedCompanyFiltersDrawer';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+
 
 import { CompanySelectionSheet, type SelectionEntry } from '@/components/crm/CompanySelectionSheet';
 import { useFrenchCompanyDetails } from '@/hooks/useFrenchCompanyDetails';
