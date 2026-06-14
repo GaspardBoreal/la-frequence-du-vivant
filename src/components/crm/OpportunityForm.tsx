@@ -251,6 +251,14 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
               onContactsChange={setLinkedContacts}
             />
 
+            {/* Actions réalisées (jalons process) */}
+            <OpportunityActionsPicker
+              value={actionsRealisees}
+              onChange={setActionsRealisees}
+            />
+
+
+
 
             {/* Legacy contact override (rétro-compat affichage rapide) */}
             <details className="rounded-md border bg-card/40 p-3 text-sm">
