@@ -12,6 +12,7 @@ import {
   Euro,
 } from 'lucide-react';
 import { useCrmHomeStats } from '@/hooks/useCrmHomeStats';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { BentoKpiTile } from '@/components/crm/home/BentoKpiTile';
 import { PipelineFunnelTile } from '@/components/crm/home/PipelineFunnelTile';
 
@@ -20,6 +21,7 @@ const formatCurrency = (n: number) =>
 
 const CrmHome: React.FC = () => {
   const { data, isLoading } = useCrmHomeStats();
+  const { activeMembers, isLoading: isLoadingTeam } = useTeamMembers();
   const s = data || {
     contacts: 0,
     dirigeants: 0,
