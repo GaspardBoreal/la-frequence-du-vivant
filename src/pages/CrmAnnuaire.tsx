@@ -462,29 +462,26 @@ const CrmAnnuaire: React.FC = () => {
 
           {/* === ENTREPRISES IMPORTEES === */}
           <TabsContent value="entreprises" className="mt-4">
-            <Card className="p-3 mb-3">
-              <div className="flex flex-wrap gap-2">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input value={companyFilters.search} onChange={e => setCompanyFilters(f => ({ ...f, search: e.target.value }))}
-                    placeholder="Rechercher (nom, SIREN, ville)…" className="pl-9" />
-                </div>
-                <Select value={companyFilters.stage} onValueChange={(v) => setCompanyFilters(f => ({ ...f, stage: v as any }))}>
-                  <SelectTrigger className="w-48 gap-1"><ListFilter className="h-4 w-4" /><SelectValue /></SelectTrigger>
-                  <SelectContent className="z-[1100]">
-                    <SelectItem value="all">Tous les stages</SelectItem>
-                    <SelectItem value="suspect">Suspect</SelectItem>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="inactif">Inactif</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button size="sm" onClick={() => setManualCreateOpen(true)} className="gap-1.5">
-                  <Plus className="h-4 w-4" />
-                  Nouvelle entreprise
-                </Button>
-              </div>
-            </Card>
+            <FiltersBandeau
+              searchValue={companyFilters.search}
+              onSearchChange={(v) => setCompanyFilters((f) => ({ ...f, search: v }))}
+              searchPlaceholder="Rechercher (nom, SIREN, ville)…"
+              filtersButton={<ImportedCompanyFiltersDrawer value={drawerValue} onChange={setDrawerValue} />}
+              actions={
+                <>
+                  <span className="text-xs text-muted-foreground">
+                    {companies.length} entreprise{companies.length > 1 ? 's' : ''}
+                  </span>
+                  <Button size="sm" onClick={() => setManualCreateOpen(true)} className="gap-1.5">
+                    <Plus className="h-4 w-4" />
+                    Nouvelle entreprise
+                  </Button>
+                </>
+              }
+              chips={buildCompanyChips()}
+              onClearAll={() => clearCompanyFilters()}
+            />
+
 
             {missingGeo.length > 0 && (
               <Card className="p-3 mb-3 border-orange-500/50 bg-orange-500/10">
