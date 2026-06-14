@@ -5,9 +5,10 @@ import { CompanyDetailContent } from './CompanyDetailContent';
 interface Props {
   companyId: string | null;
   onOpenChange: (open: boolean) => void;
+  initialTab?: string;
 }
 
-export const CompanyDetailSheet: React.FC<Props> = ({ companyId, onOpenChange }) => {
+export const CompanyDetailSheet: React.FC<Props> = ({ companyId, onOpenChange, initialTab }) => {
   const open = !!companyId;
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -16,6 +17,7 @@ export const CompanyDetailSheet: React.FC<Props> = ({ companyId, onOpenChange })
           companyId={companyId}
           onClose={() => onOpenChange(false)}
           mode="sheet"
+          initialTab={initialTab}
         />
       </SheetContent>
     </Sheet>
