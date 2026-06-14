@@ -19,6 +19,7 @@ export interface CrmHomeStats {
 }
 
 const ACTIVE_STATUSES = ['a_contacter', 'relance_1', 'relance_2', 'relance_3'];
+const REVENUE_STATUSES = [...ACTIVE_STATUSES, 'gagne'];
 
 export function useCrmHomeStats() {
   return useQuery({
