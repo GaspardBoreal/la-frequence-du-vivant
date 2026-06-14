@@ -8,7 +8,10 @@ export interface CrmCompaniesFilters {
   search?: string;
   assigned_to?: string;
   region?: string;
+  departement?: string;
+  ville?: string;
   code_naf?: string;
+  geolocated_only?: boolean;
 }
 
 export function useCrmCompanies(filters: CrmCompaniesFilters = {}) {
@@ -19,7 +22,10 @@ export function useCrmCompanies(filters: CrmCompaniesFilters = {}) {
       if (filters.stage && filters.stage !== 'all') q = q.eq('lifecycle_stage', filters.stage);
       if (filters.assigned_to) q = q.eq('assigned_to', filters.assigned_to);
       if (filters.region) q = q.eq('region', filters.region);
+      if (filters.departement) q = q.eq('departement', filters.departement);
+      if (filters.ville) q = q.ilike('ville', `%${filters.ville.trim()}%`);
       if (filters.code_naf) q = q.eq('code_naf', filters.code_naf);
+      if (filters.geolocated_only) q = q.not('latitude', 'is', null).not('longitude', 'is', null);
       if (filters.search) {
         const s = filters.search.trim();
         q = q.or(`denomination.ilike.%${s}%,nom_complet.ilike.%${s}%,siren.ilike.%${s}%,ville.ilike.%${s}%`);
@@ -31,6 +37,7 @@ export function useCrmCompanies(filters: CrmCompaniesFilters = {}) {
     staleTime: 30_000,
   });
 }
+
 
 export function useCrmCompany(id: string | null) {
   return useQuery({
