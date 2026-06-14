@@ -236,7 +236,7 @@ export const CrmGlobalSearch: React.FC<Props> = ({ open: controlledOpen, onOpenC
                       key={`${r.kind}-${r.id}`}
                       value={`${r.kind}-${r.id}`}
                       onSelect={() => handleSelect(r)}
-                      className="gap-3 data-[selected=true]:bg-[hsl(var(--crm-surface-2))] data-[selected=true]:text-[hsl(var(--crm-text))]"
+                      className="gap-3 cursor-pointer rounded-md transition-colors hover:bg-[hsl(var(--crm-surface-2))] data-[selected=true]:bg-[hsl(var(--crm-surface-2))] data-[selected=true]:text-[hsl(var(--crm-text))]"
                     >
                       <Icon className={`h-4 w-4 shrink-0 ${meta.color}`} />
                       <div className="flex flex-col min-w-0">
