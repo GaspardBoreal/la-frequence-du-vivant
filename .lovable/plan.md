@@ -1,31 +1,32 @@
+# Correctif recherche entreprises — paramètre `commune`
+
 ## Diagnostic
 
-Les logs de l'edge function `admin-create-marcheur` montrent :
+L'API `recherche-entreprises.api.gouv.fr` attend pour le paramètre `commune` un **code INSEE** (ex. `33290`), pas un nom de ville. Quand l'utilisateur tape `MONTAGNE`, l'edge function `search-french-companies` transmet la chaîne telle quelle → l'API répond `400 — "Au moins une valeur du paramètre commune est non valide."`.
 
-```
-duplicate key value violates unique constraint "community_profiles_user_id_key"
-```
+Le champ `code_postal` (`33570`), lui, est accepté tel quel par l'API.
 
-**Cause racine** : un trigger Postgres `on_auth_user_created_community` sur `auth.users` appelle `handle_new_community_user()` qui insère automatiquement une ligne dans `community_profiles` à chaque signup (avec `on conflict do nothing`).
+## Correction (edge function uniquement)
 
-Flow actuel cassé :
-1. L'admin crée le marcheur → `auth.admin.inviteUserByEmail` (ou `createUser`)
-2. Le trigger crée déjà un `community_profiles` minimal (prenom/nom depuis metadata, role=`marcheur_en_devenir`)
-3. L'edge function fait ensuite un `.insert()` → conflit, rollback, message d'erreur côté UI
-4. L'utilisateur auth est supprimé mais en pratique le profil créé par le trigger reste orphelin si la suppression échoue
+Dans `supabase/functions/search-french-companies/index.ts`, avant `buildUrl()` :
 
-## Correctif
+1. Si `commune` est fourni **et n'est pas** un code INSEE (5 chiffres) :
+   - Appeler `https://geo.api.gouv.fr/communes?nom=<commune>&fields=code,nom,codesPostaux&boost=population&limit=5`
+   - Si `code_postal` est fourni, ajouter `&codePostal=<code_postal>` pour désambiguïser (cas « La Montagne 44 » vs « Montagne 33 »).
+   - Prendre le 1ᵉʳ résultat exact (nom normalisé NFD/casse) ou le mieux classé, et remplacer `payload.commune` par son `code` INSEE.
+2. Si aucun match :
+   - Supprimer `commune` du payload.
+   - Concaténer le nom saisi dans `payload.q` (`[q, communeName].filter(Boolean).join(' ')`) pour conserver l'intention de l'utilisateur.
+3. Logger la résolution (`[search-french-companies] commune "MONTAGNE" + CP 33570 → INSEE 33290`).
+4. Petit cache mémoire (`Map<string, string>`) sur clé `nom|cp` pour éviter de retaper geo.api à chaque frappe.
 
-**Fichier** : `supabase/functions/admin-create-marcheur/index.ts`
+## Hors périmètre
 
-Remplacer le `.insert()` du profil par un `.upsert({...}, { onConflict: 'user_id' }).select().single()`. Cela :
-- met à jour la ligne créée par le trigger avec toutes les valeurs fournies (ville, téléphone, csp, genre, date_naissance, role…)
-- reste idempotent si le trigger est désactivé un jour
-- supprime le besoin de rollback dans le cas nominal (on garde le rollback en cas d'erreur réelle d'upsert)
+- UI du drawer inchangée (le label « Ville / commune » reste, le user continue à taper un nom).
+- Aucune migration DB, aucun nouveau secret.
 
-Aucun changement SQL nécessaire — le trigger reste utile pour les signups directs hors admin.
+## Vérification
 
-## Hors scope
-
-- Pas de refonte du formulaire UI
-- Pas de modification du trigger DB (il protège les signups publics)
+- `MONTAGNE` + `33570` → doit retourner les entreprises de la commune INSEE 33290.
+- `Bordeaux` seul → INSEE 33063, résultats OK.
+- `XyzInexistant` → fallback `q`, pas d'erreur 400.

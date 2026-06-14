@@ -59,6 +59,46 @@ function buildUrl(payload: SearchPayload): string {
   return `${API_BASE}${endpoint}?${params.toString()}`;
 }
 
+// Cache mémoire pour résolution commune -> INSEE
+const communeCache = new Map<string, string | null>();
+
+async function resolveCommuneToInsee(nom: string, codePostal?: string): Promise<string | null> {
+  const key = `${nom.toLowerCase()}|${codePostal ?? ''}`;
+  if (communeCache.has(key)) return communeCache.get(key) ?? null;
+  try {
+    const params = new URLSearchParams({
+      nom,
+      fields: 'code,nom,codesPostaux',
+      boost: 'population',
+      limit: '5',
+    });
+    if (codePostal && /^\d{5}$/.test(codePostal)) params.set('codePostal', codePostal);
+    const url = `https://geo.api.gouv.fr/communes?${params.toString()}`;
+    const resp = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!resp.ok) {
+      communeCache.set(key, null);
+      return null;
+    }
+    const list = (await resp.json()) as Array<{ code: string; nom: string; codesPostaux?: string[] }>;
+    if (!list || list.length === 0) {
+      communeCache.set(key, null);
+      return null;
+    }
+    // Match strict CP si fourni
+    let pick = list[0];
+    if (codePostal) {
+      const exact = list.find((c) => (c.codesPostaux ?? []).includes(codePostal));
+      if (exact) pick = exact;
+    }
+    communeCache.set(key, pick.code);
+    return pick.code;
+  } catch (e) {
+    console.error('[search-french-companies] geo.api error', e);
+    communeCache.set(key, null);
+    return null;
+  }
+}
+
 function normalizeResult(r: any) {
   const siege = r?.siege ?? {};
   const lat = siege.latitude ? parseFloat(siege.latitude) : null;
