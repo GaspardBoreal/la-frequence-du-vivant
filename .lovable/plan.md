@@ -1,32 +1,111 @@
-# Correctif recherche entreprises — paramètre `commune`
+## Objectif
+Enrichir le drawer "Détail entreprise" (`CompanyDetailContent`) accessible depuis `/admin/crm/annuaire?tab=entreprises` afin de pouvoir éditer en profondeur les fiches importées via API, et y greffer la vie commerciale (opportunités) + la vie terrain (marches).
 
-## Diagnostic
+---
 
-L'API `recherche-entreprises.api.gouv.fr` attend pour le paramètre `commune` un **code INSEE** (ex. `33290`), pas un nom de ville. Quand l'utilisateur tape `MONTAGNE`, l'edge function `search-french-companies` transmet la chaîne telle quelle → l'API répond `400 — "Au moins une valeur du paramètre commune est non valide."`.
+## 1. Onglet "Identité" — ajout champ Site web
 
-Le champ `code_postal` (`33570`), lui, est accepté tel quel par l'API.
+**Migration DB** (table `crm_companies`) :
+- Ajouter colonne `site_web text` (nullable).
+- Ajouter colonne `primary_contact_id uuid references public.crm_contacts(id) on delete set null` (utilisée par l'onglet Contact ci-dessous).
 
-## Correction (edge function uniquement)
+**UI** : entre la ligne "Région / dépt" et la zone "Notes internes" :
+- Champ éditable inline `Site web` (input + bouton Enregistrer ou auto-save sur blur).
+- Validation via `zod` : `z.string().trim().url().max(500)` — accepte vide. Toast d'erreur si URL invalide.
+- Normalisation : si l'utilisateur tape `monsite.fr` sans schéma, préfixer `https://` avant validation/sauvegarde.
+- Si valeur présente : affichage en lien `<a target="_blank" rel="noopener noreferrer">` avec icône `ExternalLink` + favicon via `https://www.google.com/s2/favicons?domain=...`. Icône crayon pour basculer en mode édition.
 
-Dans `supabase/functions/search-french-companies/index.ts`, avant `buildUrl()` :
+---
 
-1. Si `commune` est fourni **et n'est pas** un code INSEE (5 chiffres) :
-   - Appeler `https://geo.api.gouv.fr/communes?nom=<commune>&fields=code,nom,codesPostaux&boost=population&limit=5`
-   - Si `code_postal` est fourni, ajouter `&codePostal=<code_postal>` pour désambiguïser (cas « La Montagne 44 » vs « Montagne 33 »).
-   - Prendre le 1ᵉʳ résultat exact (nom normalisé NFD/casse) ou le mieux classé, et remplacer `payload.commune` par son `code` INSEE.
-2. Si aucun match :
-   - Supprimer `commune` du payload.
-   - Concaténer le nom saisi dans `payload.q` (`[q, communeName].filter(Boolean).join(' ')`) pour conserver l'intention de l'utilisateur.
-3. Logger la résolution (`[search-french-companies] commune "MONTAGNE" + CP 33570 → INSEE 33290`).
-4. Petit cache mémoire (`Map<string, string>`) sur clé `nom|cp` pour éviter de retaper geo.api à chaque frappe.
+## 2. Onglet "Contacts" — édition + contact principal
 
-## Hors périmètre
+- Sur chaque carte contact : bouton crayon ouvrant `ContactFormDialog` (déjà existant) en mode édition (passer `contact` en prop ; étendre le dialog si nécessaire pour gérer update via `useUpdateContact`).
+- Bouton étoile / `Crown` à côté du crayon : marque le contact comme principal → `updateCompany.mutate({ id, patch: { primary_contact_id: c.id } })`.
+- Le contact principal est trié en premier, badge "Principal" doré, légère lueur ; clic sur l'étoile active à nouveau pour désactiver.
+- Header de l'entreprise (hero) : sous le SIREN, afficher si défini "Contact principal · Prénom Nom" cliquable (ancre vers l'onglet Contacts).
 
-- UI du drawer inchangée (le label « Ville / commune » reste, le user continue à taper un nom).
-- Aucune migration DB, aucun nouveau secret.
+---
 
-## Vérification
+## 3. Onglet "Activités" → "Activités CRM"
 
-- `MONTAGNE` + `33570` → doit retourner les entreprises de la commune INSEE 33290.
-- `Bordeaux` seul → INSEE 33063, résultats OK.
-- `XyzInexistant` → fallback `q`, pas d'erreur 400.
+- Renommer le `TabsTrigger` (`Activités CRM`). Aucune autre modif.
+
+---
+
+## 4. Nouvel onglet "Opportunités" (design soigné)
+
+Source de données : `crm_opportunity_companies` joint à `crm_opportunities` (filtrer par `company_id`). Hook nouveau `useCompanyOpportunities(companyId)`.
+
+**Design** :
+- Grille de cartes (1 col mobile, 2 cols desktop) avec :
+  - Bandeau supérieur coloré selon `statut` (réutiliser `KANBAN_COLUMNS.color`).
+  - Titre = `experience_souhaitee` ou nom du contact.
+  - Métriques inline : budget (€), participants, date souhaitée (icônes `Euro`, `Users`, `Calendar`).
+  - Pastille `assigned_member` (avatar) en haut à droite.
+  - Animation `framer-motion` `whileHover={{ y: -2 }}` + glow doux.
+- En haut : bouton "Nouvelle opportunité" pleine largeur en glassmorphism → ouvre `OpportunityForm` pré-rempli avec la `company_id` (création + lien automatique via `syncOpportunityLinks`).
+- Clic sur une carte : ouvre `OpportunityForm` en édition.
+- Menu kebab : Modifier / Délier de l'entreprise / Supprimer.
+- État vide : illustration vectorielle légère + CTA "Créer la première opportunité".
+
+**Composants nouveaux** : `src/components/crm/company-tabs/CompanyOpportunitiesTab.tsx`, `OpportunityMiniCard.tsx`.
+
+---
+
+## 5. Nouvel onglet "Marches" (design soigné)
+
+Source : `crm_company_events` joint à `marche_events` (filtrer par `company_id`). Hook existant `useCrmCompanyEvents` à étendre avec `useCompanyMarches(companyId)`.
+
+**Design** :
+- Timeline verticale chronologique (passé / à venir) :
+  - Ligne centrale dégradée (vert émeraude → ambre).
+  - Marqueurs pulsants pour événements à venir, pleins pour passés.
+  - Chaque entrée = carte avec image héro (si `marche.cover_url`), titre, date formatée FR, lieu, badge `relation_type` (Sponsor/Participant/Organisateur/Invité).
+  - Hover : zoom léger + bouton "Voir la fiche marche" → navigate `/admin/marche-events/:id`.
+- Header de l'onglet : bouton "Lier une marche existante" (picker réutilisant `CompanyLinkPicker` pattern inversé) + bouton "Créer un nouvel événement" → ouvre dialog rapide (titre + date + lieu) qui crée dans `marche_events` puis lie via `useLinkCompanyEvent`.
+- Édition d'un lien : sélecteur `relation_type` inline + champ notes.
+- Suppression du lien via `useUnlinkCompanyEvent` (avec confirm).
+- État vide : "Aucune marche associée. Lier ou créer la première."
+
+**Composants nouveaux** : `src/components/crm/company-tabs/CompanyMarchesTab.tsx`, `CompanyMarcheTimeline.tsx`, `LinkMarcheDialog.tsx`, `QuickCreateMarcheDialog.tsx`.
+
+---
+
+## 6. Layout des onglets
+
+Le `TabsList` passe de `grid-cols-4` à `grid-cols-6` (Identité · Contacts · Finances · Activités CRM · Opportunités · Marches). Sur mobile (drawer étroit), passer en scroll horizontal `overflow-x-auto` avec `flex` au lieu de `grid` pour préserver la lisibilité.
+
+---
+
+## Détails techniques
+
+**Migration SQL** :
+```sql
+ALTER TABLE public.crm_companies
+  ADD COLUMN site_web text,
+  ADD COLUMN primary_contact_id uuid REFERENCES public.crm_contacts(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS crm_companies_primary_contact_idx ON public.crm_companies(primary_contact_id);
+```
+Aucun changement RLS (politiques existantes couvrent tous les `UPDATE` admin).
+
+**Fichiers modifiés** :
+- `src/types/crmCompany.ts` (ajout `site_web`, `primary_contact_id`).
+- `src/components/crm/CompanyDetailContent.tsx` (refactor en sous-composants par onglet).
+- `src/components/crm/contacts/ContactFormDialog.tsx` (support édition).
+- `src/hooks/useCrmCompanies.ts` (rien à changer, `useUpdateCompany` suffit).
+
+**Fichiers créés** :
+- `src/components/crm/company-tabs/CompanyIdentityTab.tsx`
+- `src/components/crm/company-tabs/CompanyContactsTab.tsx`
+- `src/components/crm/company-tabs/CompanyOpportunitiesTab.tsx`
+- `src/components/crm/company-tabs/CompanyMarchesTab.tsx`
+- `src/components/crm/company-tabs/OpportunityMiniCard.tsx`
+- `src/components/crm/company-tabs/CompanyMarcheTimeline.tsx`
+- `src/components/crm/company-tabs/LinkMarcheDialog.tsx`
+- `src/components/crm/company-tabs/QuickCreateMarcheDialog.tsx`
+- `src/hooks/useCompanyOpportunities.ts`
+- `src/hooks/useCompanyMarches.ts`
+
+**Validation site web** : composant `WebsiteField.tsx` réutilisable encapsulant zod + normalisation + lien.
+
+Aucun secret, aucun edge function à modifier.
