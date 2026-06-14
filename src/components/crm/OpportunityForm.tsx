@@ -129,6 +129,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
   React.useEffect(() => {
     if (opportunity) {
       form.reset({
+        titre: opportunity.titre || '',
         prenom: opportunity.prenom || '',
         nom: opportunity.nom || '',
         email: opportunity.email || '',
