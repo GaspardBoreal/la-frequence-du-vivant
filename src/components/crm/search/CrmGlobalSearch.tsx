@@ -48,7 +48,7 @@ async function runSearch(raw: string): Promise<SearchResult[]> {
       .limit(8),
     supabase
       .from('crm_contacts')
-      .select('id, prenom, nom, email, entreprise, fonction')
+      .select('id, prenom, nom, email, entreprise, fonction, company_id')
       .or(`nom.ilike.${like},prenom.ilike.${like},email.ilike.${like},entreprise.ilike.${like}`)
       .limit(8),
     supabase
