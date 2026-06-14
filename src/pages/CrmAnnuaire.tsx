@@ -566,48 +566,17 @@ const CrmAnnuaire: React.FC = () => {
               </Card>
             )}
 
-            {/* Carte plein largeur + panneau flottant en overlay (desktop) */}
+            {/* Carte plein largeur — la fiche entreprise s'ouvre dans le Sheet global (cf. CompanyDetailSheet) */}
             <div className="relative">
               <CrmCompaniesMap
                 companies={companies.filter(c => c.latitude && c.longitude)}
                 height="75vh"
                 onSelect={setDrawerId}
                 selectedId={drawerId}
-                flyOffsetX={drawerId ? -220 : 0}
+                flyOffsetX={0}
               />
-
-              {/* Floating glass panel — desktop only */}
-              {drawerId && (
-                <div className="hidden lg:block absolute top-4 right-4 bottom-4 w-[420px] z-[450] pointer-events-none">
-                  <div
-                    className="h-full rounded-2xl border border-border/60 bg-card/85 backdrop-blur-xl shadow-2xl ring-1 ring-black/5 overflow-hidden pointer-events-auto animate-in slide-in-from-right-4 fade-in duration-300"
-                  >
-                    <CompanyDetailContent
-                      companyId={drawerId}
-                      onClose={() => setDrawerId(null)}
-                      mode="inline"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Mobile bottom-sheet fallback */}
-            <Sheet
-              open={!!drawerId && tab === 'carte'}
-              onOpenChange={(o) => !o && setDrawerId(null)}
-            >
-              <SheetContent
-                side="bottom"
-                className="lg:hidden h-[85vh] p-0 rounded-t-2xl flex flex-col"
-              >
-                <CompanyDetailContent
-                  companyId={drawerId}
-                  onClose={() => setDrawerId(null)}
-                  mode="mobile-sheet"
-                />
-              </SheetContent>
-            </Sheet>
 
 
             <p className="text-xs text-muted-foreground mt-2">{companies.filter(c => c.latitude && c.longitude).length} entreprise(s) géolocalisée(s) sur {companies.length}.</p>
