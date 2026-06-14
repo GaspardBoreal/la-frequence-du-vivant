@@ -1,10 +1,8 @@
 import React from 'react';
 import { useCrmContacts, useDeleteContact } from '@/hooks/useCrmContacts';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -29,9 +27,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Crown, Loader2, Plus, Search, Trash2, UserRound, Mail, Phone, Pencil } from 'lucide-react';
+import { Crown, Loader2, Plus, Trash2, UserRound, Mail, Phone, Pencil } from 'lucide-react';
 import { ContactFormDialog } from './ContactFormDialog';
 import type { CrmContactRow } from '@/hooks/useCrmContacts';
+import { FiltersBandeau, type FilterChip } from '@/components/crm/filters/FiltersBandeau';
+import { ContactFiltersDrawer, type ContactFiltersValue } from '@/components/crm/filters/ContactFiltersDrawer';
 
 const ROLE_LABEL: Record<string, string> = {
   dirigeant: 'Dirigeant',
@@ -57,49 +57,58 @@ function initials(prenom?: string | null, nom?: string | null) {
 
 export const CrmContactsTab: React.FC = () => {
   const [search, setSearch] = React.useState('');
-  const [roleType, setRoleType] = React.useState<string>('all');
-  const [dirigeantOnly, setDirigeantOnly] = React.useState(false);
-  const { data: contacts = [], isLoading } = useCrmContacts({ search, roleType, dirigeantOnly });
+  const [filters, setFilters] = React.useState<ContactFiltersValue>({ roleType: 'all' });
+  const { data: contacts = [], isLoading } = useCrmContacts({
+    search,
+    roleType: filters.roleType,
+    dirigeantOnly: filters.dirigeantOnly,
+    hasEmail: filters.hasEmail,
+    hasPhone: filters.hasPhone,
+    fonction: filters.fonction,
+    entreprise: filters.entreprise,
+  });
 
   const [editing, setEditing] = React.useState<CrmContactRow | null>(null);
   const [creating, setCreating] = React.useState(false);
   const [toDelete, setToDelete] = React.useState<CrmContactRow | null>(null);
   const deleteContact = useDeleteContact();
 
+  const chips: FilterChip[] = React.useMemo(() => {
+    const list: FilterChip[] = [];
+    if (filters.roleType && filters.roleType !== 'all') {
+      list.push({
+        key: 'roleType',
+        label: `Rôle : ${ROLE_LABEL[filters.roleType] ?? filters.roleType}`,
+        onRemove: () => setFilters((f) => ({ ...f, roleType: 'all' })),
+      });
+    }
+    if (filters.dirigeantOnly) {
+      list.push({ key: 'dirigeantOnly', label: 'Dirigeants API', onRemove: () => setFilters((f) => ({ ...f, dirigeantOnly: undefined })) });
+    }
+    if (filters.hasEmail) {
+      list.push({ key: 'hasEmail', label: 'Avec email', onRemove: () => setFilters((f) => ({ ...f, hasEmail: undefined })) });
+    }
+    if (filters.hasPhone) {
+      list.push({ key: 'hasPhone', label: 'Avec téléphone', onRemove: () => setFilters((f) => ({ ...f, hasPhone: undefined })) });
+    }
+    if (filters.fonction) {
+      list.push({ key: 'fonction', label: `Fonction : ${filters.fonction}`, onRemove: () => setFilters((f) => ({ ...f, fonction: undefined })) });
+    }
+    if (filters.entreprise) {
+      list.push({ key: 'entreprise', label: `Entreprise : ${filters.entreprise}`, onRemove: () => setFilters((f) => ({ ...f, entreprise: undefined })) });
+    }
+    return list;
+  }, [filters]);
+
   return (
     <div className="space-y-3">
-      <Card className="p-3">
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher un contact, une entreprise, un email…"
-              className="pl-9"
-            />
-          </div>
-          <Select value={roleType} onValueChange={setRoleType}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-            <SelectContent className="z-[1100]">
-              <SelectItem value="all">Tous les rôles</SelectItem>
-              <SelectItem value="dirigeant">Dirigeants</SelectItem>
-              <SelectItem value="decideur">Décideurs</SelectItem>
-              <SelectItem value="operationnel">Opérationnels</SelectItem>
-              <SelectItem value="prescripteur">Prescripteurs</SelectItem>
-              <SelectItem value="autre">Autres</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant={dirigeantOnly ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDirigeantOnly((v) => !v)}
-            className="gap-1.5"
-          >
-            <Crown className="h-3.5 w-3.5" />
-            Dirigeants API
-          </Button>
-          <div className="ml-auto flex items-center gap-2">
+      <FiltersBandeau
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Rechercher un contact, une entreprise, un email…"
+        filtersButton={<ContactFiltersDrawer value={filters} onChange={setFilters} />}
+        actions={
+          <>
             <span className="text-xs text-muted-foreground">
               {contacts.length} contact{contacts.length > 1 ? 's' : ''}
             </span>
@@ -107,9 +116,11 @@ export const CrmContactsTab: React.FC = () => {
               <Plus className="h-3.5 w-3.5" />
               Nouveau
             </Button>
-          </div>
-        </div>
-      </Card>
+          </>
+        }
+        chips={chips}
+        onClearAll={() => { setSearch(''); setFilters({ roleType: 'all' }); }}
+      />
 
       <Card className="overflow-hidden">
         {isLoading ? (

@@ -5,13 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Loader2, Building2, MapPin, ListFilter, X, ShoppingBasket, AlertTriangle, UserRound, Plus } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Building2, MapPin, X, ShoppingBasket, AlertTriangle, UserRound, Plus } from 'lucide-react';
+
 import { CompanyManualCreateDialog } from '@/components/crm/CompanyManualCreateDialog';
 import { CrmContactsTab } from '@/components/crm/contacts/CrmContactsTab';
+import { FiltersBandeau, type FilterChip } from '@/components/crm/filters/FiltersBandeau';
+import { ImportedCompanyFiltersDrawer, type ImportedCompanyFilters } from '@/components/crm/filters/ImportedCompanyFiltersDrawer';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+
 
 import { CompanySelectionSheet, type SelectionEntry } from '@/components/crm/CompanySelectionSheet';
 import { useFrenchCompanyDetails } from '@/hooks/useFrenchCompanyDetails';
@@ -93,7 +96,15 @@ const CrmAnnuaire: React.FC = () => {
 
   // Entreprises importées
   const initialStage = (searchParams.get('stage') as CrmCompanyStage | 'all' | null) || 'all';
-  const [companyFilters, setCompanyFilters] = React.useState<{ stage: CrmCompanyStage | 'all'; search: string }>({ stage: initialStage, search: '' });
+  const [companyFilters, setCompanyFilters] = React.useState<{
+    stage: CrmCompanyStage | 'all';
+    search: string;
+    ville?: string;
+    departement?: string;
+    region?: string;
+    code_naf?: string;
+    geolocated_only?: boolean;
+  }>({ stage: initialStage, search: '' });
   React.useEffect(() => {
     const s = (searchParams.get('stage') as CrmCompanyStage | 'all' | null) || 'all';
     setCompanyFilters(f => f.stage === s ? f : { ...f, stage: s });
@@ -104,6 +115,7 @@ const CrmAnnuaire: React.FC = () => {
     companies.forEach(c => map.set(c.siren, c.lifecycle_stage));
     return map;
   }, [companies]);
+
 
   const importMutation = useImportCompanies();
   const [drawerId, setDrawerId] = React.useState<string | null>(null);
@@ -206,6 +218,71 @@ const CrmAnnuaire: React.FC = () => {
     } : { siren: previewSiren };
     toggleSelect(entry);
   };
+
+  // ImportedCompanyFiltersDrawer <-> companyFilters bridge
+  const drawerValue: ImportedCompanyFilters = {
+    stage: companyFilters.stage,
+    ville: companyFilters.ville,
+    departement: companyFilters.departement,
+    region: companyFilters.region,
+    code_naf: companyFilters.code_naf,
+    geolocated_only: companyFilters.geolocated_only,
+  };
+  const setDrawerValue = (v: ImportedCompanyFilters) => {
+    setCompanyFilters((f) => ({
+      ...f,
+      stage: v.stage ?? 'all',
+      ville: v.ville,
+      departement: v.departement,
+      region: v.region,
+      code_naf: v.code_naf,
+      geolocated_only: v.geolocated_only,
+    }));
+  };
+
+  const buildCompanyChips = (opts?: { includeStage?: boolean; includeGeolocated?: boolean }): FilterChip[] => {
+    const includeStage = opts?.includeStage ?? true;
+    const includeGeo = opts?.includeGeolocated ?? true;
+    const chips: FilterChip[] = [];
+    if (includeStage && companyFilters.stage && companyFilters.stage !== 'all') {
+      chips.push({
+        key: 'stage',
+        label: `Stage : ${STAGE_LABELS[companyFilters.stage as CrmCompanyStage]}`,
+        onRemove: () => setCompanyFilters((f) => ({ ...f, stage: 'all' })),
+      });
+    }
+    if (companyFilters.ville) chips.push({ key: 'ville', label: `Ville : ${companyFilters.ville}`, onRemove: () => setCompanyFilters((f) => ({ ...f, ville: undefined })) });
+    if (companyFilters.departement) {
+      const d = FRENCH_DEPARTMENTS_WITH_CODES.find((x) => x.code === companyFilters.departement);
+      chips.push({ key: 'dep', label: `Dépt : ${d ? `${d.code} — ${d.label}` : companyFilters.departement}`, onRemove: () => setCompanyFilters((f) => ({ ...f, departement: undefined })) });
+    }
+    if (companyFilters.region) {
+      const r = FRENCH_REGIONS_WITH_CODES.find((x) => x.code === companyFilters.region);
+      chips.push({ key: 'reg', label: `Région : ${r?.label ?? companyFilters.region}`, onRemove: () => setCompanyFilters((f) => ({ ...f, region: undefined })) });
+    }
+    if (companyFilters.code_naf) {
+      const lbl = getNafLabel(companyFilters.code_naf);
+      chips.push({ key: 'naf', label: `NAF : ${lbl ? `${companyFilters.code_naf} — ${lbl}` : companyFilters.code_naf}`, onRemove: () => setCompanyFilters((f) => ({ ...f, code_naf: undefined })) });
+    }
+    if (includeGeo && companyFilters.geolocated_only) {
+      chips.push({ key: 'geo', label: 'Géolocalisées', onRemove: () => setCompanyFilters((f) => ({ ...f, geolocated_only: undefined })) });
+    }
+    return chips;
+  };
+
+  const clearCompanyFilters = (opts?: { keepStage?: boolean }) => {
+    setCompanyFilters((f) => ({
+      stage: opts?.keepStage ? f.stage : 'all',
+      search: '',
+      ville: undefined,
+      departement: undefined,
+      region: undefined,
+      code_naf: undefined,
+      geolocated_only: undefined,
+    }));
+  };
+
+
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4">
@@ -385,29 +462,26 @@ const CrmAnnuaire: React.FC = () => {
 
           {/* === ENTREPRISES IMPORTEES === */}
           <TabsContent value="entreprises" className="mt-4">
-            <Card className="p-3 mb-3">
-              <div className="flex flex-wrap gap-2">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input value={companyFilters.search} onChange={e => setCompanyFilters(f => ({ ...f, search: e.target.value }))}
-                    placeholder="Rechercher (nom, SIREN, ville)…" className="pl-9" />
-                </div>
-                <Select value={companyFilters.stage} onValueChange={(v) => setCompanyFilters(f => ({ ...f, stage: v as any }))}>
-                  <SelectTrigger className="w-48 gap-1"><ListFilter className="h-4 w-4" /><SelectValue /></SelectTrigger>
-                  <SelectContent className="z-[1100]">
-                    <SelectItem value="all">Tous les stages</SelectItem>
-                    <SelectItem value="suspect">Suspect</SelectItem>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="inactif">Inactif</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button size="sm" onClick={() => setManualCreateOpen(true)} className="gap-1.5">
-                  <Plus className="h-4 w-4" />
-                  Nouvelle entreprise
-                </Button>
-              </div>
-            </Card>
+            <FiltersBandeau
+              searchValue={companyFilters.search}
+              onSearchChange={(v) => setCompanyFilters((f) => ({ ...f, search: v }))}
+              searchPlaceholder="Rechercher (nom, SIREN, ville)…"
+              filtersButton={<ImportedCompanyFiltersDrawer value={drawerValue} onChange={setDrawerValue} />}
+              actions={
+                <>
+                  <span className="text-xs text-muted-foreground">
+                    {companies.length} entreprise{companies.length > 1 ? 's' : ''}
+                  </span>
+                  <Button size="sm" onClick={() => setManualCreateOpen(true)} className="gap-1.5">
+                    <Plus className="h-4 w-4" />
+                    Nouvelle entreprise
+                  </Button>
+                </>
+              }
+              chips={buildCompanyChips()}
+              onClearAll={() => clearCompanyFilters()}
+            />
+
 
             {missingGeo.length > 0 && (
               <Card className="p-3 mb-3 border-orange-500/50 bg-orange-500/10">
@@ -461,25 +535,22 @@ const CrmAnnuaire: React.FC = () => {
 
           {/* === CARTE === */}
           <TabsContent value="carte" className="mt-4">
-            <Card className="p-3 mb-3">
-              <div className="flex flex-wrap gap-2 items-center">
-                <Select value={companyFilters.stage} onValueChange={(v) => setCompanyFilters(f => ({ ...f, stage: v as any }))}>
-                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                  <SelectContent className="z-[1100]">
-                    <SelectItem value="all">Tous les stages</SelectItem>
-                    <SelectItem value="suspect">Suspect</SelectItem>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="inactif">Inactif</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground ml-auto">
+            <FiltersBandeau
+              searchValue={companyFilters.search}
+              onSearchChange={(v) => setCompanyFilters((f) => ({ ...f, search: v }))}
+              searchPlaceholder="Rechercher (nom, SIREN, ville)…"
+              filtersButton={<ImportedCompanyFiltersDrawer value={drawerValue} onChange={setDrawerValue} hideGeolocatedToggle />}
+              actions={
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500" />Suspect</span>
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-orange-500" />Prospect</span>
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500" />Client</span>
                 </div>
-              </div>
-            </Card>
+              }
+              chips={buildCompanyChips({ includeGeolocated: false })}
+              onClearAll={() => clearCompanyFilters()}
+            />
+
 
             {missingGeo.length > 0 && (
               <Card className="p-3 mb-3 border-orange-500/50 bg-orange-500/10">
