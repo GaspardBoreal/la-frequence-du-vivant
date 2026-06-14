@@ -28,6 +28,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 }) => {
   const { opportunitiesByStatus, updateStatus } = useCrmOpportunities();
   const [activeOpportunity, setActiveOpportunity] = useState<CrmOpportunity | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const onKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (e.key === 'ArrowRight') { scrollRef.current?.scrollBy({ left: 296, behavior: 'smooth' }); }
+    else if (e.key === 'ArrowLeft') { scrollRef.current?.scrollBy({ left: -296, behavior: 'smooth' }); }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
