@@ -33,7 +33,7 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
 
   const handleSubmit = async (data: any) => {
     const { linkedCompanies, linkedContacts, ...rest } = data;
-    const TEXT_NULLABLE = ['entreprise', 'fonction', 'telephone', 'experience_souhaitee',
+    const TEXT_NULLABLE = ['titre', 'entreprise', 'fonction', 'telephone', 'experience_souhaitee',
       'format_souhaite', 'lieu_prefere', 'objectifs', 'financement_souhaite',
       'source', 'notes', 'date_souhaitee', 'assigned_to'];
     const NUM_NULLABLE = ['budget_estime', 'nombre_participants'];
@@ -142,10 +142,11 @@ const OpportunityMiniCard: React.FC<{
   onDelete: () => void;
 }> = ({ opp, onEdit, onUnlink, onDelete }) => {
   const column = KANBAN_COLUMNS.find((c) => c.id === opp.statut);
-  const title = opp.experience_souhaitee ||
+  const subtitle = opp.experience_souhaitee ||
     [opp.prenom, opp.nom].filter(Boolean).join(' ') ||
     opp.entreprise ||
     'Opportunité';
+  const titre = (opp.titre || '').trim();
   const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
 
   return (
@@ -164,7 +165,12 @@ const OpportunityMiniCard: React.FC<{
       <div className="p-3.5 space-y-2.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h4 className="font-semibold text-sm leading-tight line-clamp-2">{title}</h4>
+            {titre && (
+              <h4 className="font-semibold text-base leading-tight line-clamp-2 mb-0.5">{titre}</h4>
+            )}
+            <div className={cn('leading-tight line-clamp-2', titre ? 'text-sm text-muted-foreground' : 'font-semibold text-sm')}>
+              {subtitle}
+            </div>
             {column && (
               <Badge variant="outline" className="mt-1.5 text-[10px] h-5 px-1.5">
                 <span className={cn('h-1.5 w-1.5 rounded-full mr-1', column.color)} />

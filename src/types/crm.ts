@@ -59,6 +59,7 @@ export interface TeamMember {
 
 export interface CrmOpportunity {
   id: string;
+  titre: string | null;
   // Contact info
   prenom: string;
   nom: string;

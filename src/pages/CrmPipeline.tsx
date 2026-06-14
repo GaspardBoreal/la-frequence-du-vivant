@@ -80,7 +80,7 @@ const CrmPipeline: React.FC = () => {
     const { linkedCompanies, linkedContacts, ...rest } = data;
 
     // Sanitize: convert "" → null for optional fields (Postgres rejects "" for date/uuid)
-    const TEXT_NULLABLE = ['entreprise', 'fonction', 'telephone', 'experience_souhaitee',
+    const TEXT_NULLABLE = ['titre', 'entreprise', 'fonction', 'telephone', 'experience_souhaitee',
       'format_souhaite', 'lieu_prefere', 'objectifs', 'financement_souhaite',
       'source', 'notes', 'date_souhaitee', 'assigned_to'];
     const NUM_NULLABLE = ['budget_estime', 'nombre_participants'];

@@ -40,6 +40,7 @@ import { useOpportunityLinks, type OppLinkedCompany, type OppLinkedContact } fro
 import { toast } from 'sonner';
 
 const opportunitySchema = z.object({
+  titre: z.string().max(250, 'Maximum 250 caractères').optional(),
   prenom: z.string().optional(),
   nom: z.string().optional(),
   email: z.string().email('Email invalide').optional().or(z.literal('')),
@@ -103,6 +104,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
   const form = useForm<OpportunityFormData>({
     resolver: zodResolver(opportunitySchema),
     defaultValues: {
+      titre: opportunity?.titre || '',
       prenom: opportunity?.prenom || '',
       nom: opportunity?.nom || '',
       email: opportunity?.email || '',
@@ -127,6 +129,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
   React.useEffect(() => {
     if (opportunity) {
       form.reset({
+        titre: opportunity.titre || '',
         prenom: opportunity.prenom || '',
         nom: opportunity.nom || '',
         email: opportunity.email || '',
@@ -148,7 +151,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
       });
     } else {
       form.reset({
-        prenom: '', nom: '', email: '', entreprise: '', fonction: '', telephone: '',
+        titre: '', prenom: '', nom: '', email: '', entreprise: '', fonction: '', telephone: '',
         experience_souhaitee: '', format_souhaite: '', date_souhaitee: '', lieu_prefere: '',
         objectifs: '', financement_souhaite: '', budget_estime: undefined, nombre_participants: undefined,
         statut: 'a_contacter', notes: '', assigned_to: '', source: '',
@@ -196,6 +199,33 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* Nom de l'opportunité */}
+            <FormField
+              control={form.control}
+              name="titre"
+              render={({ field }) => {
+                const len = (field.value || '').length;
+                return (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Nom de l'opportunité</FormLabel>
+                      <span className={`text-xs ${len > 240 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {len} / 250
+                      </span>
+                    </div>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        maxLength={250}
+                        placeholder="Ex. Team building Verdeterre — printemps 2026"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
             {/* Entreprises & contacts liés */}
             <OpportunityLinksSection
               companies={linkedCompanies}
@@ -203,6 +233,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
               onCompaniesChange={setLinkedCompanies}
               onContactsChange={setLinkedContacts}
             />
+
 
             {/* Legacy contact override (rétro-compat affichage rapide) */}
             <details className="rounded-md border bg-card/40 p-3 text-sm">
