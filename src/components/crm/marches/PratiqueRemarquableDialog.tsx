@@ -47,7 +47,8 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-            >
+              className="flex flex-col min-h-0 flex-1"
+
               {/* Hero */}
               <div className="relative aspect-[16/9] bg-[hsl(var(--crm-surface-2))] overflow-hidden">
                 {hero ? (
