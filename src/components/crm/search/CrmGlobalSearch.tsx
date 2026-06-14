@@ -197,7 +197,7 @@ export const CrmGlobalSearch: React.FC<Props> = ({ open: controlledOpen, onOpenC
         </button>
       )}
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
         <CommandInput
           placeholder="Rechercher une entreprise, un contact, une opportunité, une marche…"
           value={query}
