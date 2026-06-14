@@ -199,6 +199,33 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* Nom de l'opportunité */}
+            <FormField
+              control={form.control}
+              name="titre"
+              render={({ field }) => {
+                const len = (field.value || '').length;
+                return (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Nom de l'opportunité</FormLabel>
+                      <span className={`text-xs ${len > 240 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {len} / 250
+                      </span>
+                    </div>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        maxLength={250}
+                        placeholder="Ex. Team building Verdeterre — printemps 2026"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
             {/* Entreprises & contacts liés */}
             <OpportunityLinksSection
               companies={linkedCompanies}
@@ -206,6 +233,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
               onCompaniesChange={setLinkedCompanies}
               onContactsChange={setLinkedContacts}
             />
+
 
             {/* Legacy contact override (rétro-compat affichage rapide) */}
             <details className="rounded-md border bg-card/40 p-3 text-sm">
