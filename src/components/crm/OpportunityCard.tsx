@@ -22,6 +22,7 @@ import {
 import type { CrmOpportunity } from '@/types/crm';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { OpportunityActionsBadges } from '@/components/crm/opportunities/OpportunityActionsBadges';
 
 interface OpportunityCardProps {
   opportunity: CrmOpportunity;
