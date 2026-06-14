@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { WebsiteField } from './company-tabs/WebsiteField';
 import { CompanyOpportunitiesTab } from './company-tabs/CompanyOpportunitiesTab';
 import { CompanyMarchesTab } from './company-tabs/CompanyMarchesTab';
+import { CommercialLeversTab } from './company-tabs/CommercialLeversTab';
 
 interface Props {
   companyId: string | null;
