@@ -1,67 +1,145 @@
-# Bouton « Filtres » universel sur les 4 onglets de l'Annuaire CRM
+# Refonte `/admin/crm/marches` — Hub de valorisation commercial
 
-## Objectif UX
+Transformer la page actuelle (simple liste tableau) en **tableau de bord narratif** au service des commerciaux des Marches du Vivant.
 
-Aujourd'hui, seul l'onglet **Annuaire** dispose du bouton `Filtres` (drawer riche INSEE + chips dismissibles + lien « Tout effacer »). Les 3 autres onglets (**Entreprises**, **Contacts**, **Carte**) exposent leurs filtres « à plat » dans le bandeau (Select stage, toggle Dirigeants…), ce qui crée une **dissonance visuelle** et limite la richesse des filtres possibles.
+---
 
-Cible : **un même langage UX** dans les 4 bandeaux — *barre de recherche + bouton `Filtres` (avec pastille compteur) + actions à droite*, sur une seule ligne, avec chips dismissibles sous la barre.
+## Architecture cible
 
-## Principe de design
-
-Un même composant visuel `Filtres` (icône `SlidersHorizontal` + label + pastille compteur), mais **drawer contextuel** par onglet (filtres pertinents au domaine de données affiché).
+`CrmMarches.tsx` devient un shell avec 5 sous-onglets (Tabs shadcn, URL `?tab=…` persistée, scroll top via `CrmScrollToTop` déjà en place) :
 
 ```text
-┌──────────────────────────────────────────────────────────────────┐
-│ [🔍 Rechercher…             ] [⚙ Filtres (2)] [Actions ▸]         │ ← bandeau 1 ligne
-├──────────────────────────────────────────────────────────────────┤
-│ • Stage : Prospect ✕   • Ville : Bordeaux ✕   Tout effacer        │ ← chips
-└──────────────────────────────────────────────────────────────────┘
+/admin/crm/marches
+├── ?tab=liste       → Liste (sous-onglets À venir / Passées / Carte)
+├── ?tab=pratiques   → Pratiques remarquables (mur de vignettes)
+├── ?tab=especes     → Top 25 Espèces + recherche
+├── ?tab=maronnier   → Calendrier 2026-2027 des grands rendez-vous
+└── ?tab=galerie     → Galerie des scénographies publiées
 ```
 
-## Filtres par onglet
+Un bandeau commun en tête (chiffres clés à valeur commerciale) : nb marches passées, nb participants cumulés, nb espèces uniques observées, nb pratiques documentées, nb entreprises liées CRM.
 
-| Onglet | Filtres dans le drawer |
-|---|---|
-| **Annuaire** (existant) | INSEE : NAF, région, département, dirigeant, effectif, CA, labels (ESS/RGE/Qualiopi/Bio/FINESS/UAI/Spectacle/Collectivité/Société à mission), état admin |
-| **Entreprises** (nouveau) | Stage (suspect/prospect/client/inactif), Ville, Département, Région, NAF, Labels présents, A des contacts ?, Géolocalisée ?, Date d'import (range) |
-| **Contacts** (nouveau) | Rôle (dirigeant/décideur/opérationnel/prescripteur/autre), Dirigeant API Sirene (oui/non), A un email / téléphone, Entreprise (autocomplete sur companies importées), Fonction (texte) |
-| **Carte** (nouveau) | Stage, Ville, Département, Région, NAF, Géolocalisée uniquement (par défaut ON), Labels |
+---
 
-## Plan d'implémentation
+## Onglet 1 — Liste des marches
 
-### 1. Composant générique `FiltersBandeau`
-Nouveau `src/components/crm/filters/FiltersBandeau.tsx` — wrapper unifié :
-- Props : `searchValue`, `onSearchChange`, `searchPlaceholder`, `filtersButton: ReactNode`, `actions?: ReactNode`, `chips: Chip[]`, `onClearAll: () => void`.
-- Rend : `<Card class="p-3 mb-3">` avec ligne flex (search expand + slot filtres + slot actions) + chips dessous (réutilise le pattern exact de Annuaire l.234-300).
+Réutilise l'existant `CrmMarches.tsx` actuel (table + `MarcheDetailDrawer`) et ajoute :
 
-### 2. Drawers contextuels (3 nouveaux)
-Tous calqués sur `CompanySearchFiltersDrawer` (même `Sheet` + bouton trigger + pastille compteur de filtres actifs) :
+- **3 sous-onglets** : *À venir* | *Passées* | *Carte*
+- **Vue Carte** : Mapbox/MapLibre (réutiliser le `<RichMap>` mutualisé memorisé) avec markers cliquables → ouvre `MarcheDetailDrawer`. Couleur marker = type d'event (agroécologique / éco-poétique / éco-tourisme).
+- Recherche + filtres déjà présents conservés (titre / lieu / type).
+- Compteur d'entreprises liées CRM par marche (existant via `useEventCompanyCounts`).
 
-- `src/components/crm/filters/ImportedCompanyFiltersDrawer.tsx` (Entreprises + Carte partagent ce drawer, props pour masquer/forcer certains champs)
-- `src/components/crm/filters/ContactFiltersDrawer.tsx`
+---
 
-Type d'état : étendre `CompanyFilters` (entreprises) et créer `ContactFilters` côté `useCrmContacts` (ajouter `ville`, `departement`, `naf`, `has_email`, `has_phone`, `entreprise_id`, etc. + filtrage côté hook).
+## Onglet 2 — Pratiques remarquables
 
-### 3. Refactor des 4 onglets dans `src/pages/CrmAnnuaire.tsx`
-- **Annuaire** : remplacer la Card actuelle par `<FiltersBandeau>` + injecter `<CompanySearchFiltersDrawer>` dans `filtersButton`. Chips inchangés.
-- **Entreprises** : déplacer le Select stage + futurs filtres dans `<ImportedCompanyFiltersDrawer>`. Le bouton « Nouvelle entreprise » va dans le slot `actions`. Construire les chips depuis `companyFilters`.
-- **Contacts** : `CrmContactsTab.tsx` — sortir le Select rôle + toggle Dirigeants du bandeau, les placer dans `<ContactFiltersDrawer>`. Le bouton « Nouveau » reste dans `actions`. Chips dismissibles. (Le composant `CrmContactsTab` reçoit déjà tout en interne — refactor local.)
-- **Carte** : déplacer le Select stage dans `<ImportedCompanyFiltersDrawer>` (variante carte). La légende couleurs reste à droite dans `actions`.
+Mur de vignettes (grille responsive) alimenté par `exploration_curations` (kind='main', existant — cf. memory `pratiques-emblematiques-marcheurs-logic`).
 
-### 4. Synchronisation
-- Le filtre `stage` reste **partagé** entre Entreprises et Carte (même état `companyFilters.stage`) — pratique pour switcher d'onglet sans perdre le contexte.
-- Les filtres avancés (ville, naf…) sont locaux à `companyFilters` et persistés en URL via `searchParams` si pertinent (cohérence avec `?stage=` déjà géré l.95-100).
+- Carte vignette : photo principale + titre + lieu + date événement + marcheurs liés (jointure `curation_marcheurs` → `community_profiles`).
+- Tri : **Date de création (défaut)** | Nom ↑ | Nom ↓.
+- Filtre rapide : type d'event, lieu (combobox), marcheur.
+- Clic → drawer détail (réutilise le composant `PratiquesEmblematiquesDialog` existant).
+
+---
+
+## Onglet 3 — Top Espèces
+
+Vue en deux temps :
+
+1. **Top 25** : RPC SQL agrégeant `marcheur_observations` + `biodiversity_snapshots` (déduplication par nom scientifique, cf. memory `unified-species-count-rpc`) groupé par espèce, classé par nb d'observations décroissant.
+2. **Carte espèce** : photo réelle (cascade marcheur → iNat via `<SpeciesThumb />`), nom FR/latin (`<SpeciesName />`), compteur, mini-liste des dernières observations (lieu + date + marcheur).
+3. **Combobox de recherche** sur toutes espèces hors top 25 → ouvre un drawer plein écran avec toutes les marches associées (réutilise le drawer espèce mutualisé Carnet/Carte).
+
+---
+
+## Onglet 4 — Maronnier 2026-2027
+
+Calendrier curé de **grands rendez-vous français** où Les Marches du Vivant devraient être présentes.
+
+**Sources proposées** (à charger en seed via une migration de données initiale, table `crm_maronnier_events`) :
+
+- **Salons B2B agri/environnement** : SIA (Salon International de l'Agriculture, Paris, fév-mars), SITEVI (Montpellier, nov 2027), Tech&Bio (Valence), Pollutec (Lyon, oct 2026), Salon des Maires (Paris, nov), Produrable (Paris, sept), ChangeNOW (Paris, avr), Vivatech (Paris, juin).
+- **Sommets territoires & biodiv** : Congrès Mondial UICN, Assises de la Biodiversité, Universités d'été du MEDEF/CJD, Forum Zéro Carbone, COP régionales.
+- **Festivals nature/éco-culture** : Festival du Film Ornithologique de Ménigoute, Festival International du Film Nature et Environnement, Rencontres Nationales Trame Verte & Bleue, Fête de la Nature, Jour de la Nuit.
+- **B2C / éducation** : Salon de l'Agriculture Bio Marjolaine, Salon Primevère, Naturissima, Vivre Autrement.
+
+**Sourcing dates exactes** : edge function `seed-maronnier-2026-2027` qui appelle Firecrawl (`search` + `scrape`) sur les sites officiels, puis insertion BDD. Curation manuelle ensuite via UI admin.
+
+**UI** : vue Liste (cards date/lieu/type/site) + vue Carte France + filtres (date range, type [Salon B2B / Sommet / Festival / B2C], nom contient, région). Bouton "Ajouter au CRM" par event → crée une opportunité.
+
+---
+
+## Onglet 5 — Galerie média (Scénographies)
+
+Mur de vignettes de toutes les marches avec `scenography_enabled = true` ET `is_public = true` (table `marche_events`).
+
+- Vignette = `cover_image_url` + titre scénographique + lieu + date + lien direct `/m/:public_slug`.
+- Tri : récentes d'abord, ou date événement.
+- Bouton "Copier lien" + "Ouvrir scénographie" par carte.
+- Filtre : type d'event, lieu, période.
+
+---
+
+## 3 idées pour aider les commerciaux à closer
+
+### Idée 1 — "Dossier Preuve par la Data" (export 1-clic)
+
+Bouton **"Générer dossier prospect"** depuis n'importe quelle marche passée → PDF/PPTX premium combinant :
+
+- Hero scénographie (vignette + QR vers `/m/:slug`)
+- KPI : nb participants, nb espèces, top 5 pratiques, empreinte biodiv
+- Témoignages (`event_testimonies` existant) en citations
+- Carte des observations
+- Page "Et si c'était chez vous ?" pré-remplie avec le nom du prospect
+
+Implémentation : edge function `generate-prospect-pitch-deck` (réutilise pipeline `generate-pack-vivant` mémorisé).
+
+### Idée 2 — "Match Maronnier × Prospect"
+
+Sur la fiche entreprise CRM (`/admin/crm/entreprises/:id`) : widget proposant automatiquement les 3 prochains événements du Maronnier les plus pertinents selon :
+
+- Secteur NAF de l'entreprise → mapping vers type de salon
+- Région de l'entreprise → proximité géographique
+- Stage CRM (suspect/prospect/client) → priorité
+
+→ "Croisons votre route au SIA 2027 sur le stand X" devient un argument d'ouverture concret.
+
+### Idée 3 — "Storytelling Espèce Signature"
+
+Pour chaque entreprise CRM, proposer une **"espèce signature"** présente sur ses territoires (croisement géoloc entreprise × `biodiversity_snapshots`).
+
+Widget commercial : "12 espèces patrimoniales ont été observées dans un rayon de 10 km autour de votre siège lors de marches précédentes — dont la Salamandre tachetée. Voulez-vous une marche qui révèle votre patrimoine vivant local à vos équipes ?"
+
+Implémentation : RPC géospatial `get_signature_species_for_company(company_id, radius_km)`.
+
+---
 
 ## Détails techniques
 
-- Pastille compteur sur le bouton : `Object.entries(filters).filter(([k,v]) => !['q','page','per_page'].includes(k) && v != null && v !== '' && v !== false).length`.
-- Chips : mêmes classes Tailwind que l.270 (`bg-muted hover:bg-accent border rounded-full`).
-- Filtrage Contacts ajouté dans `useCrmContacts` (passer les nouveaux paramètres au query Supabase via `.ilike` / `.eq`).
-- Pas de changement backend (RLS, RPC) — tout reste côté requêtes existantes.
-- Responsive : `flex-wrap` conservé (sur écran étroit le bouton Filtres passe en dessous, comme aujourd'hui sur Annuaire).
+**Nouveaux fichiers** :
 
-## Hors scope
+- `src/pages/CrmMarches.tsx` (refactor en shell Tabs)
+- `src/components/crm/marches/tabs/MarchesListTab.tsx` (sous-onglets À venir/Passées/Carte — extrait de l'existant)
+- `src/components/crm/marches/tabs/PratiquesRemarquablesTab.tsx`
+- `src/components/crm/marches/tabs/TopEspecesTab.tsx`
+- `src/components/crm/marches/tabs/MaronnierTab.tsx`
+- `src/components/crm/marches/tabs/GalerieScenographiesTab.tsx`
+- `src/components/crm/marches/CrmMarchesHeaderKpi.tsx`
 
-- Pas de modification du drawer INSEE existant (`CompanySearchFiltersDrawer`).
-- Pas de migration SQL.
-- Pas de changement des KPI ou des routes.
+**Backend** :
+
+- Nouvelle table `crm_maronnier_events` (titre, date_debut, date_fin, lieu, latitude, longitude, type, site_url, description, region, secteurs_naf[], statut_curation, created_at). GRANTs + RLS admin-only.
+- RPC `get_top_species_observed(limit_n int)` — agrège snapshots + observations marcheurs.
+- Edge function `seed-maronnier-2026-2027` (Firecrawl) — exécution manuelle initiale via bouton admin.
+- (Idées 1-3 listées comme suite, pas dans cette première itération sauf si validé).
+
+**Périmètre de cette première itération** : les 5 sous-onglets + table maronnier + seed initial. Les 3 idées commerciales sont présentées pour décision — à prioriser ensuite.
+
+---
+
+## Questions ouvertes
+
+1. Sur le **maronnier** : on seed via Firecrawl (besoin connector Firecrawl) 
+2. Les **3 idées commerciales** : on les construit dans la foulée (Idée 1 = plus rapide, Idée 3 = plus différenciante) 
+3. **Galerie scénographies** : on filtre uniquement `is_public = true` 
