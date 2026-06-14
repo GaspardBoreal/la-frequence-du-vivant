@@ -39,7 +39,45 @@ const CrmPipeline: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOpportunity, setEditingOpportunity] = useState<CrmOpportunity | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Filtre jalons (URL: ?actions=plaquette_envoyee,point_avancement&actions_mode=and)
+  const actionsFilter = useMemo<OpportunityActionCode[]>(() => {
+    return (searchParams.get('actions') || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(isValidActionCode);
+  }, [searchParams]);
+  const actionsMode: 'and' | 'or' = searchParams.get('actions_mode') === 'or' ? 'or' : 'and';
+
+  const setActionsFilter = (next: OpportunityActionCode[]) => {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (next.length === 0) p.delete('actions');
+      else p.set('actions', next.join(','));
+      if (next.length < 2) p.delete('actions_mode');
+      return p;
+    }, { replace: true });
+  };
+  const setActionsMode = (m: 'and' | 'or') => {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (m === 'or') p.set('actions_mode', 'or');
+      else p.delete('actions_mode');
+      return p;
+    }, { replace: true });
+  };
+
+  const matchesActions = React.useCallback(
+    (opp: CrmOpportunity) => {
+      if (actionsFilter.length === 0) return true;
+      const set = new Set(opp.actions_realisees ?? []);
+      return actionsMode === 'and'
+        ? actionsFilter.every(c => set.has(c))
+        : actionsFilter.some(c => set.has(c));
+    },
+    [actionsFilter, actionsMode]
+  );
 
   const { 
     opportunities, 
