@@ -1,6 +1,5 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, Calendar, MapPin, Leaf, ImageOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -29,16 +28,17 @@ interface Props {
 const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) => {
   const open = !!pratique;
   const [heroIdx, setHeroIdx] = React.useState(0);
+  const covers = pratique?.cover_urls ?? [];
 
   React.useEffect(() => {
     if (pratique) setHeroIdx(0);
   }, [pratique?.id]);
 
-  const hero = pratique?.cover_urls?.[heroIdx] || pratique?.cover_urls?.[0] || null;
+  const hero = covers[heroIdx] || covers[0] || null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden max-h-[92vh] flex flex-col border-[hsl(var(--crm-border))] bg-gradient-to-br from-[hsl(var(--crm-surface))] via-[hsl(var(--crm-surface-2))] to-[hsl(var(--crm-accent))]/5">
+      <DialogContent className="w-[min(94vw,56rem)] max-w-4xl max-h-[92vh] p-0 overflow-y-auto !flex flex-col gap-0 border-[hsl(var(--crm-border))] bg-gradient-to-br from-[hsl(var(--crm-surface))] via-[hsl(var(--crm-surface-2))] to-[hsl(var(--crm-accent))]/5">
         <AnimatePresence mode="wait">
           {pratique && (
             <motion.div
@@ -47,12 +47,12 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="flex flex-col min-h-0 flex-1"
+              className="flex flex-col"
             >
 
 
               {/* Hero */}
-              <div className="relative aspect-[16/9] bg-[hsl(var(--crm-surface-2))] overflow-hidden">
+              <div className="relative h-[clamp(220px,34vh,320px)] shrink-0 bg-[hsl(var(--crm-surface-2))] overflow-hidden">
                 {hero ? (
                   <img
                     src={hero}
@@ -70,7 +70,7 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
                 </div>
                 {pratique.total_medias > 1 && (
                   <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-md text-white text-xs">
-                    {heroIdx + 1} / {pratique.cover_urls.length}
+                    {heroIdx + 1} / {covers.length}
                   </div>
                 )}
                 <div className="absolute inset-x-0 bottom-0 p-5">
@@ -99,12 +99,13 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
               </div>
 
               {/* Carrousel vignettes */}
-              {pratique.cover_urls.length > 1 && (
+              {covers.length > 1 && (
                 <div className="px-5 pt-4">
                   <div className="flex gap-2 overflow-x-auto pb-2 scroll-smooth snap-x">
-                    {pratique.cover_urls.map((url, i) => (
+                    {covers.map((url, i) => (
                       <button
                         key={url + i}
+                        type="button"
                         onClick={() => setHeroIdx(i)}
                         className={`relative shrink-0 w-20 h-20 rounded-lg overflow-hidden snap-start border-2 transition-all ${
                           i === heroIdx
@@ -120,20 +121,18 @@ const PratiqueRemarquableDialog: React.FC<Props> = ({ pratique, onOpenChange }) 
               )}
 
               {/* Body */}
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="p-5 sm:p-6">
-                  {pratique.description ? (
-                    <div
-                      className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-[hsl(var(--crm-text))] prose-p:text-[hsl(var(--crm-text))]/85 prose-strong:text-[hsl(var(--crm-text))] prose-a:text-[hsl(var(--crm-accent))] prose-li:text-[hsl(var(--crm-text))]/85"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(pratique.description) }}
-                    />
-                  ) : (
-                    <p className="text-sm crm-muted italic flex items-center gap-2">
-                      <ImageOff className="h-4 w-4" /> Aucune description renseignée.
-                    </p>
-                  )}
-                </div>
-              </ScrollArea>
+              <div className="p-5 pb-8 sm:p-6 sm:pb-10">
+                {pratique.description ? (
+                  <div
+                    className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-[hsl(var(--crm-text))] prose-p:text-[hsl(var(--crm-text))]/85 prose-strong:text-[hsl(var(--crm-text))] prose-a:text-[hsl(var(--crm-accent))] prose-li:text-[hsl(var(--crm-text))]/85"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(pratique.description) }}
+                  />
+                ) : (
+                  <p className="text-sm crm-muted italic flex items-center gap-2">
+                    <ImageOff className="h-4 w-4" /> Aucune description renseignée.
+                  </p>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
