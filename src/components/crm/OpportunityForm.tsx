@@ -92,6 +92,20 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
 
   const [linkedCompanies, setLinkedCompanies] = React.useState<OppLinkedCompany[]>([]);
   const [linkedContacts, setLinkedContacts] = React.useState<OppLinkedContact[]>([]);
+  const [actionsRealisees, setActionsRealisees] = React.useState<OpportunityActionCode[]>(
+    () =>
+      (opportunity?.actions_realisees ?? [])
+        .filter(isValidActionCode)
+        .sort((a, b) => ALL_ACTION_CODES.indexOf(a) - ALL_ACTION_CODES.indexOf(b))
+  );
+
+  React.useEffect(() => {
+    setActionsRealisees(
+      (opportunity?.actions_realisees ?? [])
+        .filter(isValidActionCode)
+        .sort((a, b) => ALL_ACTION_CODES.indexOf(a) - ALL_ACTION_CODES.indexOf(b))
+    );
+  }, [opportunity?.id]);
 
   React.useEffect(() => {
     if (existingLinks && opportunity) {
