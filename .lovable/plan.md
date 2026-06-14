@@ -1,39 +1,66 @@
 ## Objectif
 
-Permettre de modifier le **Nom complet** (`nom_complet`) d'une fiche entreprise existante depuis `/admin/crm`, tout en gardant la **Dénomination** (`denomination`, issue de l'API INSEE/Sirene) **non modifiable**.
+Permettre de tracer les actions réalisées sur chaque opportunité (jalons du process commercial) et filtrer le pipeline par ces jalons.
 
-## Diagnostic
+## Les 4 actions (dans l'ordre process)
 
-- Aujourd'hui, dans `src/components/crm/CompanyDetailContent.tsx`, l'en-tête affiche `company.denomination ?? company.nom_complet` mais aucun de ces champs n'est éditable.
-- À la création manuelle (`CompanyManualCreateDialog.tsx`), les deux champs existent déjà.
-- Le hook `useUpdateCompany` est déjà câblé (`patch: Partial<CrmCompany>`) et utilisé pour `site_web` via le pattern `WebsiteField` (édition inline avec crayon + Check/X + Enter/Escape).
+1. Plaquette envoyée
+2. Fiche préparation Marche
+3. Point d'avancement
+4. Pack du vivant complet
 
-## Changements
+Chaque opportunité peut en avoir 0 à 4 (multi-sélection).
 
-### 1. Nouveau composant `NomCompletField` (édition inline)
-Fichier : `src/components/crm/company-tabs/NomCompletField.tsx`
+## 1. Base de données
 
-- Inspiré de `WebsiteField` : label "Nom complet", icône crayon au survol, Enter pour valider, Escape pour annuler, toast de confirmation.
-- Validation simple : trim, longueur max raisonnable (255), peut être vidé (revient à `null`).
-- Pas d'effet sur la dénomination.
+Migration : ajouter sur `crm_opportunities`
+- `actions_realisees text[] NOT NULL DEFAULT '{}'` — codes : `plaquette_envoyee`, `fiche_preparation_marche`, `point_avancement`, `pack_vivant_complet`
+- Index GIN pour filtrage rapide
 
-### 2. Intégration dans la fiche
-Fichier : `src/components/crm/CompanyDetailContent.tsx`
+## 2. Catalogue partagé
 
-- Dans l'onglet **Identité**, juste sous le bloc en-tête (ou en première ligne de l'onglet), ajouter :
-  - Une ligne **Dénomination** (lecture seule, badge "API INSEE" pour expliquer pourquoi non modifiable).
-  - Le champ éditable **Nom complet** via `<NomCompletField />` câblé à `updateCompany.mutate({ id, patch: { nom_complet: v } })`.
-- Aucune modification du fallback d'affichage en-tête (`denomination ?? nom_complet`) — il reste cohérent.
+Nouveau `src/lib/crmOpportunityActions.ts` :
+- type `OpportunityActionCode`
+- `OPPORTUNITY_ACTIONS` : array ordonné `{ code, label, shortLabel, icon (lucide), description, color }` avec une palette inspirée (chaque action a sa propre teinte du design system — primary / amber / sky / emerald, en HSL via tokens).
 
-### 3. Hors scope
-- Pas de migration SQL (les colonnes existent déjà).
-- Pas de modification du flow de création manuelle.
-- Pas d'édition de la dénomination, par design (source officielle).
+## 3. Formulaire opportunité (création / modification)
+
+Dans `OpportunityForm.tsx` :
+- Ajout champ `actions_realisees: string[]` au schéma Zod, defaults `[]`.
+- Nouvelle section « Actions réalisées » entre les blocs existants : 4 cartes-pills cliquables, ordonnées, affichant numéro (1→4), icône, label, courte description.
+- Sélection multiple : clic toggle. État sélectionné = fond teinté + ring + check animé + scale subtil. Hover = élévation douce.
+- Mini-progress bar « 2/4 jalons » au-dessus du groupe pour donner un feedback inspirant.
+- Sauvegarde via `updateOpportunity` / `createOpportunity` (déjà génériques).
+
+## 4. Affichage sur les cartes Kanban + liste
+
+`OpportunityCard.tsx` : rangée de 4 mini-pastilles numérotées (1-4) — saturées si action faite, sinon outline discret. Tooltip au survol. Compact, n'alourdit pas la carte.
+
+Vue liste pipeline : nouvelle colonne « Actions » avec les mêmes 4 pastilles compactes.
+
+## 5. Filtre sur /admin/crm/pipeline
+
+Nouveau composant `PipelineActionsFilter.tsx` au-dessus du Kanban/Liste :
+- Barre élégante alignée avec les KPIs : label « Filtrer par jalons » + les 4 chips toggle (mêmes visuels que dans le form, version compacte).
+- Logique : multi-sélection. Mode « ET » (l'opportunité doit avoir TOUTES les actions cochées) — option de toggle « ET / OU » discret à droite si besoin (par défaut ET, plus utile pour "dossiers traités selon le process complet").
+- Bouton « Réinitialiser » qui apparaît quand au moins un filtre est actif.
+- Compteur « X opportunités correspondent ».
+- État stocké dans l'URL (`?actions=plaquette_envoyee,point_avancement`) pour partage/persistance.
+
+Câblage : `CrmPipeline.tsx` filtre `opportunities` avant de les passer au Kanban (via prop) et à la table liste. Le `KanbanBoard` accepte une prop optionnelle `filterPredicate` ou reçoit directement `opportunitiesByStatus` filtré (refacto léger du hook ou filtrage local dans la page).
+
+## 6. UX / UI — soin particulier
+
+- Tokens HSL existants (pas de couleurs hardcodées).
+- Animations Motion : fade+scale 150ms à la sélection, stagger sur l'apparition initiale des 4 chips.
+- Numérotation visible (cercle 1-4) qui rappelle que c'est un parcours ordonné, sans bloquer l'ordre de sélection.
+- État « process complet » (4/4) : micro-célébration — ring doré + label « Process complet ✨ » sur la carte.
+- Responsive : sur mobile les chips passent en grille 2×2 compacte.
 
 ## Détails techniques
 
-Fichiers touchés :
-- création : `src/components/crm/company-tabs/NomCompletField.tsx`
-- édition : `src/components/crm/CompanyDetailContent.tsx`
-
-Hook réutilisé : `useUpdateCompany` (déjà existant dans `src/hooks/useCrmCompanies.ts`).
+- DB : `ALTER TABLE public.crm_opportunities ADD COLUMN actions_realisees text[] NOT NULL DEFAULT '{}'`. Pas de CHECK constraint (validation côté UI + catalogue). Index : `CREATE INDEX crm_opportunities_actions_realisees_idx ON public.crm_opportunities USING gin (actions_realisees)`.
+- Types : ajout du champ dans `src/types/crm.ts` `CrmOpportunity` (regeneré auto pour `types.ts`).
+- Hook `useCrmOpportunities` : aucun changement nécessaire (passe-plat).
+- Filtre URL via `useSearchParams` (déjà importé dans la page).
+- Aucune modification du backend/edge functions.
