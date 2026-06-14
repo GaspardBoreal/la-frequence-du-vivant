@@ -6,8 +6,6 @@ import {
   Trophy,
   Activity,
   CalendarRange,
-  ShoppingCart,
-  FileText,
   Mail,
   Euro,
 } from 'lucide-react';
