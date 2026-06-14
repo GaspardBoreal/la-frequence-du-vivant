@@ -58,7 +58,7 @@ export function useCrmHomeStats() {
       const active = opps.filter((o) => ACTIVE_STATUSES.includes(o.statut)).length;
       const signed = opps.filter((o) => o.statut === 'gagne').length;
       const caPotentiel = opps
-        .filter((o) => ACTIVE_STATUSES.includes(o.statut))
+        .filter((o) => REVENUE_STATUSES.includes(o.statut))
         .reduce((sum, o) => sum + (o.budget_estime || 0), 0);
 
       return {
