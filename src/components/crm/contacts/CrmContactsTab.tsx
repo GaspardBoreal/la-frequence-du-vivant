@@ -1,10 +1,8 @@
 import React from 'react';
 import { useCrmContacts, useDeleteContact } from '@/hooks/useCrmContacts';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -13,6 +11,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Crown, Loader2, Plus, Trash2, UserRound, Mail, Phone, Pencil } from 'lucide-react';
+import { ContactFormDialog } from './ContactFormDialog';
+import type { CrmContactRow } from '@/hooks/useCrmContacts';
+import { FiltersBandeau, type FilterChip } from '@/components/crm/filters/FiltersBandeau';
+import { ContactFiltersDrawer, type ContactFiltersValue } from '@/components/crm/filters/ContactFiltersDrawer';
+
 import {
   Tooltip,
   TooltipContent,
