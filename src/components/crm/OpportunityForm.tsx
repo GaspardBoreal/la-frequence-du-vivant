@@ -71,6 +71,8 @@ interface OpportunityFormProps {
     linkedContacts: OppLinkedContact[];
   }) => void;
   isSubmitting?: boolean;
+  /** Pre-fill a linked company when creating a new opportunity (e.g. from a company drawer). */
+  defaultLinkedCompany?: OppLinkedCompany | null;
 }
 
 export const OpportunityForm: React.FC<OpportunityFormProps> = ({
@@ -79,6 +81,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
   opportunity,
   onSubmit,
   isSubmitting = false,
+  defaultLinkedCompany = null,
 }) => {
   const { activeMembers } = useTeamMembers();
   const isEditing = !!opportunity;
@@ -88,14 +91,14 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
   const [linkedContacts, setLinkedContacts] = React.useState<OppLinkedContact[]>([]);
 
   React.useEffect(() => {
-    if (existingLinks) {
+    if (existingLinks && opportunity) {
       setLinkedCompanies(existingLinks.companies);
       setLinkedContacts(existingLinks.contacts);
     } else if (!opportunity) {
-      setLinkedCompanies([]);
+      setLinkedCompanies(defaultLinkedCompany ? [{ ...defaultLinkedCompany, role: 'primary' }] : []);
       setLinkedContacts([]);
     }
-  }, [existingLinks, opportunity]);
+  }, [existingLinks, opportunity, open, defaultLinkedCompany?.company_id]);
 
   const form = useForm<OpportunityFormData>({
     resolver: zodResolver(opportunitySchema),
