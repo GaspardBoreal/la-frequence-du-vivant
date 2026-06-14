@@ -48,7 +48,7 @@ async function runSearch(raw: string): Promise<SearchResult[]> {
       .limit(8),
     supabase
       .from('crm_contacts')
-      .select('id, prenom, nom, email, entreprise, fonction')
+      .select('id, prenom, nom, email, entreprise, fonction, company_id')
       .or(`nom.ilike.${like},prenom.ilike.${like},email.ilike.${like},entreprise.ilike.${like}`)
       .limit(8),
     supabase
@@ -79,12 +79,15 @@ async function runSearch(raw: string): Promise<SearchResult[]> {
 
   (contactsRes.data ?? []).forEach((c: any) => {
     const name = [c.prenom, c.nom].filter(Boolean).join(' ').trim() || c.email || 'Contact';
+    const route = c.company_id
+      ? `/admin/crm/annuaire?company=${c.company_id}&companyTab=dirigeants`
+      : `/admin/crm/annuaire?tab=contacts&contact=${c.id}`;
     out.push({
       kind: 'contact',
       id: c.id,
       title: name,
       subtitle: [c.fonction, c.entreprise].filter(Boolean).join(' — ') || c.email || null,
-      route: `/admin/crm/annuaire?tab=contacts&contact=${c.id}`,
+      route,
     });
   });
 
@@ -233,7 +236,7 @@ export const CrmGlobalSearch: React.FC<Props> = ({ open: controlledOpen, onOpenC
                       key={`${r.kind}-${r.id}`}
                       value={`${r.kind}-${r.id}`}
                       onSelect={() => handleSelect(r)}
-                      className="gap-3 data-[selected=true]:bg-[hsl(var(--crm-surface-2))] data-[selected=true]:text-[hsl(var(--crm-text))]"
+                      className="gap-3 cursor-pointer rounded-md transition-colors hover:bg-[hsl(var(--crm-surface-2))] data-[selected=true]:bg-[hsl(var(--crm-surface-2))] data-[selected=true]:text-[hsl(var(--crm-text))]"
                     >
                       <Icon className={`h-4 w-4 shrink-0 ${meta.color}`} />
                       <div className="flex flex-col min-w-0">
