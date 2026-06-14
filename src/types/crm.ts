@@ -86,6 +86,7 @@ export interface CrmOpportunity {
   created_at: string;
   updated_at: string;
   closed_at: string | null;
+  actions_realisees?: string[] | null;
   // Joined data
   assigned_member?: TeamMember;
 }
