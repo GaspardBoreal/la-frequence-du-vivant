@@ -219,6 +219,71 @@ const CrmAnnuaire: React.FC = () => {
     toggleSelect(entry);
   };
 
+  // ImportedCompanyFiltersDrawer <-> companyFilters bridge
+  const drawerValue: ImportedCompanyFilters = {
+    stage: companyFilters.stage,
+    ville: companyFilters.ville,
+    departement: companyFilters.departement,
+    region: companyFilters.region,
+    code_naf: companyFilters.code_naf,
+    geolocated_only: companyFilters.geolocated_only,
+  };
+  const setDrawerValue = (v: ImportedCompanyFilters) => {
+    setCompanyFilters((f) => ({
+      ...f,
+      stage: v.stage ?? 'all',
+      ville: v.ville,
+      departement: v.departement,
+      region: v.region,
+      code_naf: v.code_naf,
+      geolocated_only: v.geolocated_only,
+    }));
+  };
+
+  const buildCompanyChips = (opts?: { includeStage?: boolean; includeGeolocated?: boolean }): FilterChip[] => {
+    const includeStage = opts?.includeStage ?? true;
+    const includeGeo = opts?.includeGeolocated ?? true;
+    const chips: FilterChip[] = [];
+    if (includeStage && companyFilters.stage && companyFilters.stage !== 'all') {
+      chips.push({
+        key: 'stage',
+        label: `Stage : ${STAGE_LABELS[companyFilters.stage as CrmCompanyStage]}`,
+        onRemove: () => setCompanyFilters((f) => ({ ...f, stage: 'all' })),
+      });
+    }
+    if (companyFilters.ville) chips.push({ key: 'ville', label: `Ville : ${companyFilters.ville}`, onRemove: () => setCompanyFilters((f) => ({ ...f, ville: undefined })) });
+    if (companyFilters.departement) {
+      const d = FRENCH_DEPARTMENTS_WITH_CODES.find((x) => x.code === companyFilters.departement);
+      chips.push({ key: 'dep', label: `Dépt : ${d ? `${d.code} — ${d.label}` : companyFilters.departement}`, onRemove: () => setCompanyFilters((f) => ({ ...f, departement: undefined })) });
+    }
+    if (companyFilters.region) {
+      const r = FRENCH_REGIONS_WITH_CODES.find((x) => x.code === companyFilters.region);
+      chips.push({ key: 'reg', label: `Région : ${r?.label ?? companyFilters.region}`, onRemove: () => setCompanyFilters((f) => ({ ...f, region: undefined })) });
+    }
+    if (companyFilters.code_naf) {
+      const lbl = getNafLabel(companyFilters.code_naf);
+      chips.push({ key: 'naf', label: `NAF : ${lbl ? `${companyFilters.code_naf} — ${lbl}` : companyFilters.code_naf}`, onRemove: () => setCompanyFilters((f) => ({ ...f, code_naf: undefined })) });
+    }
+    if (includeGeo && companyFilters.geolocated_only) {
+      chips.push({ key: 'geo', label: 'Géolocalisées', onRemove: () => setCompanyFilters((f) => ({ ...f, geolocated_only: undefined })) });
+    }
+    return chips;
+  };
+
+  const clearCompanyFilters = (opts?: { keepStage?: boolean }) => {
+    setCompanyFilters((f) => ({
+      stage: opts?.keepStage ? f.stage : 'all',
+      search: '',
+      ville: undefined,
+      departement: undefined,
+      region: undefined,
+      code_naf: undefined,
+      geolocated_only: undefined,
+    }));
+  };
+
+
+
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4">
       <div className="max-w-[1600px] mx-auto">
