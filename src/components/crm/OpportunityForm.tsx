@@ -37,6 +37,8 @@ import {
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { OpportunityLinksSection } from '@/components/crm/opportunities/OpportunityLinksSection';
 import { useOpportunityLinks, type OppLinkedCompany, type OppLinkedContact } from '@/hooks/useCrmOpportunityLinks';
+import { OpportunityActionsPicker } from '@/components/crm/opportunities/OpportunityActionsPicker';
+import { ALL_ACTION_CODES, isValidActionCode, type OpportunityActionCode } from '@/lib/crmOpportunityActions';
 import { toast } from 'sonner';
 
 const opportunitySchema = z.object({
