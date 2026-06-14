@@ -418,6 +418,14 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
           <TabsContent value="marches">
             <CompanyMarchesTab companyId={company.id} />
           </TabsContent>
+
+          <TabsContent value="leviers" className="mt-4">
+            <CommercialLeversTab
+              companyId={company.id}
+              companyName={company.denomination ?? company.nom_complet ?? company.siren ?? 'cette entreprise'}
+              hasGps={!!company.latitude && !!company.longitude}
+            />
+          </TabsContent>
         </Tabs>
       </div>
 
