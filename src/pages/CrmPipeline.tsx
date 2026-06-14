@@ -77,7 +77,7 @@ const CrmPipeline: React.FC = () => {
   };
 
   const handleFormSubmit = async (data: any) => {
-    const { linkedCompanies, linkedContacts, ...rest } = data;
+    const { linkedCompanies, linkedContacts, actions_realisees, ...rest } = data;
 
     // Sanitize: convert "" → null for optional fields (Postgres rejects "" for date/uuid)
     const TEXT_NULLABLE = ['titre', 'entreprise', 'fonction', 'telephone', 'experience_souhaitee',
@@ -93,6 +93,7 @@ const CrmPipeline: React.FC = () => {
       if (v === '' || v === undefined || v === null || Number.isNaN(Number(v))) payload[k] = null;
       else payload[k] = Number(v);
     }
+    payload.actions_realisees = Array.isArray(actions_realisees) ? actions_realisees : [];
 
     // Sync the primary company onto legacy company_id for backward compat
     const primary = (linkedCompanies || []).find((c: any) => c.role === 'primary');
