@@ -1,63 +1,39 @@
 ## Objectif
 
-Corriger définitivement le filtre **Activité (NAF/APE)** sur `/admin/crm/annuaire?tab=entreprises`, qui s’ouvre visuellement mais reste non interactif / figé, puis vérifier que la sélection applique bien le filtre sur la liste Entreprises.
+Permettre de modifier le **Nom complet** (`nom_complet`) d'une fiche entreprise existante depuis `/admin/crm`, tout en gardant la **Dénomination** (`denomination`, issue de l'API INSEE/Sirene) **non modifiable**.
 
 ## Diagnostic
 
-Le correctif précédent a été appliqué au mauvais composant.
+- Aujourd'hui, dans `src/components/crm/CompanyDetailContent.tsx`, l'en-tête affiche `company.denomination ?? company.nom_complet` mais aucun de ces champs n'est éditable.
+- À la création manuelle (`CompanyManualCreateDialog.tsx`), les deux champs existent déjà.
+- Le hook `useUpdateCompany` est déjà câblé (`patch: Partial<CrmCompany>`) et utilisé pour `site_web` via le pattern `WebsiteField` (édition inline avec crayon + Check/X + Enter/Escape).
 
-- `/admin/crm/annuaire` onglet **Annuaire** utilise `src/components/crm/CompanySearchFiltersDrawer.tsx`
-- `/admin/crm/annuaire?tab=entreprises` onglet **Entreprises** utilise `src/components/crm/filters/ImportedCompanyFiltersDrawer.tsx`
-- Le combobox NAF de ce second drawer possède encore sa propre implémentation, distincte, sans les ajustements nécessaires pour cohabiter correctement avec le `Sheet` Radix.
+## Changements
 
-Le câblage du filtre est, lui, déjà correct :
-- la sélection alimente `companyFilters.code_naf` dans `src/pages/CrmAnnuaire.tsx`
-- puis `useCrmCompanies()` filtre bien avec `q.eq('code_naf', filters.code_naf)`
+### 1. Nouveau composant `NomCompletField` (édition inline)
+Fichier : `src/components/crm/company-tabs/NomCompletField.tsx`
 
-Le bug est donc **UI / interaction**, pas métier.
+- Inspiré de `WebsiteField` : label "Nom complet", icône crayon au survol, Enter pour valider, Escape pour annuler, toast de confirmation.
+- Validation simple : trim, longueur max raisonnable (255), peut être vidé (revient à `null`).
+- Pas d'effet sur la dénomination.
 
-## Changements à faire
+### 2. Intégration dans la fiche
+Fichier : `src/components/crm/CompanyDetailContent.tsx`
 
-### 1. Corriger le bon composant
-Fichier : `src/components/crm/filters/ImportedCompanyFiltersDrawer.tsx`
+- Dans l'onglet **Identité**, juste sous le bloc en-tête (ou en première ligne de l'onglet), ajouter :
+  - Une ligne **Dénomination** (lecture seule, badge "API INSEE" pour expliquer pourquoi non modifiable).
+  - Le champ éditable **Nom complet** via `<NomCompletField />` câblé à `updateCompany.mutate({ id, patch: { nom_complet: v } })`.
+- Aucune modification du fallback d'affichage en-tête (`denomination ?? nom_complet`) — il reste cohérent.
 
-Mettre à jour le `NafCombobox` interne pour qu’il fonctionne correctement dans le contexte du `Sheet` :
-- activer le mode adapté du `Popover`
-- relever la couche (`z-index`) du `PopoverContent`
-- conserver une largeur calée sur le trigger
-- s’assurer que l’ouverture/fermeture reste pilotée proprement par l’état local
-
-### 2. Éviter la duplication source du bug
-Toujours dans `ImportedCompanyFiltersDrawer.tsx`, aligner cette implémentation avec le composant mutualisé déjà présent dans `src/components/crm/filters/NafCombobox.tsx`, afin d’éviter une divergence future.
-
-Deux options valides pendant l’implémentation :
-- soit réutiliser directement le composant mutualisé `NafCombobox`
-- soit reproduire strictement la même configuration technique dans le composant local
-
-Préférence d’implémentation : **réutiliser le composant mutualisé** pour supprimer la duplication.
-
-### 3. Vérifier le fonctionnement du filtre
-Confirmer après correction que :
-- la liste déroulante s’ouvre et reste cliquable
-- on peut taper dans la recherche NAF
-- le choix d’un code ferme bien la liste
-- la puce / valeur du filtre remonte dans l’UI
-- la liste Entreprises est bien filtrée via `code_naf`
+### 3. Hors scope
+- Pas de migration SQL (les colonnes existent déjà).
+- Pas de modification du flow de création manuelle.
+- Pas d'édition de la dénomination, par design (source officielle).
 
 ## Détails techniques
 
-Fichiers concernés :
-- `src/components/crm/filters/ImportedCompanyFiltersDrawer.tsx`
-- possiblement `src/components/crm/filters/NafCombobox.tsx` si un petit ajustement partagé est nécessaire
+Fichiers touchés :
+- création : `src/components/crm/company-tabs/NomCompletField.tsx`
+- édition : `src/components/crm/CompanyDetailContent.tsx`
 
-Fichiers relus pour validation du flux :
-- `src/pages/CrmAnnuaire.tsx`
-- `src/hooks/useCrmCompanies.ts`
-- `src/components/ui/popover.tsx`
-- `src/components/ui/sheet.tsx`
-
-## Hors scope
-
-- Pas de changement de logique SQL / Supabase
-- Pas de modification du filtre NAF de l’onglet Annuaire, sauf si un mini-ajustement partagé est requis pour la mutualisation
-- Pas de refonte visuelle du drawer au-delà de ce qui est nécessaire pour rendre l’interaction fiable
+Hook réutilisé : `useUpdateCompany` (déjà existant dans `src/hooks/useCrmCompanies.ts`).
