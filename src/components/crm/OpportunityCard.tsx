@@ -183,6 +183,11 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
           )}
         </div>
 
+        {/* Jalons process */}
+        <div className="pt-1">
+          <OpportunityActionsBadges value={opportunity.actions_realisees} size="xs" />
+        </div>
+
         {/* Source */}
         {opportunity.source && (
           <div className="text-xs text-muted-foreground italic">
