@@ -66,20 +66,41 @@ export const DossierPreuveDialog: React.FC<Props> = ({ open, onOpenChange, compa
   const generate = useMutation({
     mutationFn: async () => {
       if (!marcheId) throw new Error('Sélectionnez une marche source');
-      const selected = Object.entries(sections).filter(([, v]) => v).map(([k]) => k);
+      const keyMap: Record<string, string> = {
+        hero: 'hero_photo',
+        closing: 'cta',
+        pratiques: 'top_species',
+        temoignages: 'testimonies',
+        carte: 'map',
+        kpis: 'kpis',
+      };
+      const selected: Record<string, boolean> = { cover: true };
+      for (const s of SECTIONS) selected[keyMap[s.key] ?? s.key] = !!sections[s.key];
+
       const userRes = await supabase.auth.getUser();
-      const { error } = await supabase.from('crm_prospect_decks').insert({
-        company_id: companyId,
-        marche_id: marcheId,
-        generated_by: userRes.data.user?.id,
-        sections: { selected },
-        status: 'pending',
-      });
+      const { data: inserted, error } = await supabase
+        .from('crm_prospect_decks')
+        .insert({
+          company_id: companyId,
+          marche_id: marcheId,
+          generated_by: userRes.data.user?.id,
+          sections: selected,
+          status: 'pending',
+        })
+        .select('id')
+        .single();
       if (error) throw error;
+
+      const { data, error: fnErr } = await supabase.functions.invoke(
+        'generate-prospect-pitch-deck',
+        { body: { deck_id: inserted.id } },
+      );
+      if (fnErr) throw fnErr;
+      return data;
     },
     onSuccess: () => {
-      toast.success('Dossier prospect demandé', {
-        description: 'Génération en file. Le PDF sera disponible dès qu\'il sera prêt.',
+      toast.success('Dossier prospect généré', {
+        description: 'Le PDF est prêt à être téléchargé ci-dessous.',
       });
       qc.invalidateQueries({ queryKey: ['prospect-decks', companyId] });
     },
