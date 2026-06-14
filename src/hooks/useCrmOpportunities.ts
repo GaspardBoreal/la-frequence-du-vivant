@@ -154,7 +154,7 @@ export function useCrmOpportunities() {
     won: opportunities.filter(o => o.statut === 'gagne').length,
     lost: opportunities.filter(o => o.statut === 'perdu' || o.statut === 'pas_interesse').length,
     potentialRevenue: opportunities
-      .filter(o => !['gagne', 'perdu', 'pas_interesse'].includes(o.statut))
+      .filter(o => !['perdu', 'pas_interesse'].includes(o.statut))
       .reduce((sum, o) => sum + (o.budget_estime || 0), 0),
   };
 

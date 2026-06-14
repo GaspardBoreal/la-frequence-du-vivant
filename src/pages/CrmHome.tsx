@@ -6,8 +6,6 @@ import {
   Trophy,
   Activity,
   CalendarRange,
-  ShoppingCart,
-  FileText,
   Mail,
   Euro,
 } from 'lucide-react';
@@ -106,7 +104,7 @@ const CrmHome: React.FC = () => {
           value={formatCurrency(s.caPotentiel)}
           icon={Euro}
           accent="emerald"
-          hint="Sur opportunités actives"
+          hint="Opportunités actives + gagnées"
           loading={isLoading}
           span="col-1"
         />
@@ -129,25 +127,6 @@ const CrmHome: React.FC = () => {
           hint="Voir les membres"
           loading={isLoadingTeam}
           span="col-1"
-        />
-
-        <BentoKpiTile
-          label="Commandes"
-          value={s.commandes}
-          icon={ShoppingCart}
-          accent="amber"
-          comingSoon
-          hint="Module en cours de spécification"
-          span="col-2"
-        />
-        <BentoKpiTile
-          label="Factures"
-          value={s.factures}
-          icon={FileText}
-          accent="rose"
-          comingSoon
-          hint="Module en cours de spécification"
-          span="col-2"
         />
       </div>
     </div>
