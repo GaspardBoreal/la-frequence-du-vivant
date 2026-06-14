@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -13,6 +13,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { KanbanColumn } from './KanbanColumn';
 import { OpportunityCard } from './OpportunityCard';
+import { PipelineNavigator } from './PipelineNavigator';
 import { KANBAN_COLUMNS, type CrmOpportunity, type OpportunityStatus } from '@/types/crm';
 import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
 
