@@ -1,66 +1,57 @@
-## Objectif
+# Onglet Pratiques /admin/crm/marches — 3 corrections
 
-Permettre de tracer les actions réalisées sur chaque opportunité (jalons du process commercial) et filtrer le pipeline par ces jalons.
+## Diagnostic
 
-## Les 4 actions (dans l'ordre process)
+Dans `PratiquesRemarquablesTab.tsx` :
 
-1. Plaquette envoyée
-2. Fiche préparation Marche
-3. Point d'avancement
-4. Pack du vivant complet
+1. **Images manquantes** — les `media_ids` stockés sont préfixés (`conv:<uuid>` pour `exploration_convivialite_photos`, `media:<uuid>` pour `marcheur_medias`). La requête actuelle interroge uniquement `marcheur_medias` avec les UUID préfixés bruts → 0 résultats, fallback sur l'icône « sparkle ».
+2. **Balises HTML brutes** — la description contient du HTML (`<span>`, `<h1>`, `<p>…`) issu de Google Docs, affichée via `{p.description}` en texte brut → balises visibles.
+3. **Fiche non cliquable** — la `<article>` est purement décorative, aucun `onClick` ni handler.
 
-Chaque opportunité peut en avoir 0 à 4 (multi-sélection).
+## Plan
 
-## 1. Base de données
+### 1. Résolution unifiée des médias (cover)
 
-Migration : ajouter sur `crm_opportunities`
-- `actions_realisees text[] NOT NULL DEFAULT '{}'` — codes : `plaquette_envoyee`, `fiche_preparation_marche`, `point_avancement`, `pack_vivant_complet`
-- Index GIN pour filtrage rapide
+Dans le `queryFn` :
+- Parser tous les `media_ids` en deux buckets : préfixe `conv:` → IDs convivialité, préfixe `media:` → IDs marcheur_medias, bare UUID → fallback `conv:` (legacy, voir `useExplorationAllMedia`).
+- Faire **deux requêtes en parallèle** :
+  - `exploration_convivialite_photos`: `id, url` (champ `url` direct).
+  - `marcheur_medias`: `id, url_fichier, external_url`.
+- Construire une `Map<rawId, url>` fusionnée.
+- Pour chaque curation, garder la **première URL résolue** (pas seulement le premier ID) afin d'avoir une vraie cover même si le 1er ID est cassé.
 
-## 2. Catalogue partagé
+### 2. Affichage texte enrichi
 
-Nouveau `src/lib/crmOpportunityActions.ts` :
-- type `OpportunityActionCode`
-- `OPPORTUNITY_ACTIONS` : array ordonné `{ code, label, shortLabel, icon (lucide), description, color }` avec une palette inspirée (chaque action a sa propre teinte du design system — primary / amber / sky / emerald, en HSL via tokens).
+- Importer `sanitizeHtml` depuis `@/utils/htmlSanitizer`.
+- Sur la carte (aperçu) : extraire le **plain text** (`stripTags` simple : `description.replace(/<[^>]+>/g, ' ').replace(/\s+/g,' ').trim()`) puis `line-clamp-2`.
+- Dans la fiche détaillée (dialog) : rendu HTML sanitizé via `dangerouslySetInnerHTML` dans un conteneur `prose prose-invert prose-sm max-w-none` pour une typographie élégante (titres, paragraphes, listes correctement stylés).
 
-## 3. Formulaire opportunité (création / modification)
+### 3. Fiche cliquable + Dialog design
 
-Dans `OpportunityForm.tsx` :
-- Ajout champ `actions_realisees: string[]` au schéma Zod, defaults `[]`.
-- Nouvelle section « Actions réalisées » entre les blocs existants : 4 cartes-pills cliquables, ordonnées, affichant numéro (1→4), icône, label, courte description.
-- Sélection multiple : clic toggle. État sélectionné = fond teinté + ring + check animé + scale subtil. Hover = élévation douce.
-- Mini-progress bar « 2/4 jalons » au-dessus du groupe pour donner un feedback inspirant.
-- Sauvegarde via `updateOpportunity` / `createOpportunity` (déjà génériques).
+Nouveau composant `PratiqueRemarquableDialog.tsx` (`src/components/crm/marches/`) :
+- Reprend le langage visuel de `PratiquesEmblematiquesDialog` (public-event) — gradient `from-background via-card to-primary/5`, bordure `primary/20`, glassmorphism léger — adapté aux tokens CRM (`hsl(var(--crm-surface))`, `--crm-accent`).
+- **Layout** :
+  - Header avec icône Sparkles dorée + titre `font-display` + sous-titre marche/lieu/date.
+  - **Hero cover** pleine largeur (aspect 16/9) avec dégradé bas pour lisibilité.
+  - **Mini-carrousel** horizontal des autres médias (vignettes 80×80, scroll-snap, clic = swap dans le hero) — résout TOUTES les URLs, pas juste la première.
+  - **Corps texte** : HTML sanitizé dans `prose` (police chaleureuse, line-height généreux, marges respirantes).
+  - **Footer** : badge marche cliquable (lien vers fiche marche existante si dispo via `/admin/crm/marches?marcheId=…`), date formatée, lieu.
+- Animation `motion.div` discrète à l'ouverture (fade + scale 0.98→1, 200ms).
 
-## 4. Affichage sur les cartes Kanban + liste
+Sur la carte :
+- `<article>` devient `<button>` (ou `role="button" tabIndex={0}` + handlers clavier) avec `cursor-pointer`, `focus-visible:ring-2 ring-[hsl(var(--crm-accent))]`.
+- Hover : `scale-[1.01]` + ombre accent + bordure `crm-accent/60` (déjà partiellement présent, à renforcer).
+- État sélectionné géré dans `PratiquesRemarquablesTab` via `useState<PratiqueRow | null>`.
 
-`OpportunityCard.tsx` : rangée de 4 mini-pastilles numérotées (1-4) — saturées si action faite, sinon outline discret. Tooltip au survol. Compact, n'alourdit pas la carte.
+### 4. Petits + UX
 
-Vue liste pipeline : nouvelle colonne « Actions » avec les mêmes 4 pastilles compactes.
+- Si aucune cover résolue, montrer une cover dégradée élégante (emerald→amber) plutôt que l'icône grise actuelle.
+- Badge `+N` (compte total de médias) repositionné avec `backdrop-blur` pour rester lisible sur images claires.
+- Tronquer titres à 2 lignes, descriptions à 2 lignes — déjà fait, vérifier après le strip HTML.
 
-## 5. Filtre sur /admin/crm/pipeline
+## Fichiers touchés
 
-Nouveau composant `PipelineActionsFilter.tsx` au-dessus du Kanban/Liste :
-- Barre élégante alignée avec les KPIs : label « Filtrer par jalons » + les 4 chips toggle (mêmes visuels que dans le form, version compacte).
-- Logique : multi-sélection. Mode « ET » (l'opportunité doit avoir TOUTES les actions cochées) — option de toggle « ET / OU » discret à droite si besoin (par défaut ET, plus utile pour "dossiers traités selon le process complet").
-- Bouton « Réinitialiser » qui apparaît quand au moins un filtre est actif.
-- Compteur « X opportunités correspondent ».
-- État stocké dans l'URL (`?actions=plaquette_envoyee,point_avancement`) pour partage/persistance.
+- `src/components/crm/marches/tabs/PratiquesRemarquablesTab.tsx` — résolution medias (conv+media), strip HTML pour aperçu, ouverture dialog, fallback cover.
+- `src/components/crm/marches/PratiqueRemarquableDialog.tsx` — **nouveau**, fiche détaillée design.
 
-Câblage : `CrmPipeline.tsx` filtre `opportunities` avant de les passer au Kanban (via prop) et à la table liste. Le `KanbanBoard` accepte une prop optionnelle `filterPredicate` ou reçoit directement `opportunitiesByStatus` filtré (refacto léger du hook ou filtrage local dans la page).
-
-## 6. UX / UI — soin particulier
-
-- Tokens HSL existants (pas de couleurs hardcodées).
-- Animations Motion : fade+scale 150ms à la sélection, stagger sur l'apparition initiale des 4 chips.
-- Numérotation visible (cercle 1-4) qui rappelle que c'est un parcours ordonné, sans bloquer l'ordre de sélection.
-- État « process complet » (4/4) : micro-célébration — ring doré + label « Process complet ✨ » sur la carte.
-- Responsive : sur mobile les chips passent en grille 2×2 compacte.
-
-## Détails techniques
-
-- DB : `ALTER TABLE public.crm_opportunities ADD COLUMN actions_realisees text[] NOT NULL DEFAULT '{}'`. Pas de CHECK constraint (validation côté UI + catalogue). Index : `CREATE INDEX crm_opportunities_actions_realisees_idx ON public.crm_opportunities USING gin (actions_realisees)`.
-- Types : ajout du champ dans `src/types/crm.ts` `CrmOpportunity` (regeneré auto pour `types.ts`).
-- Hook `useCrmOpportunities` : aucun changement nécessaire (passe-plat).
-- Filtre URL via `useSearchParams` (déjà importé dans la page).
-- Aucune modification du backend/edge functions.
+Aucune migration BDD, aucune modification d'API.
