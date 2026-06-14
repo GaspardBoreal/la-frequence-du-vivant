@@ -231,15 +231,15 @@ export const CrmGlobalSearch: React.FC<Props> = ({ open: controlledOpen, onOpenC
                   {items.map(r => (
                     <CommandItem
                       key={`${r.kind}-${r.id}`}
-                      value={`${r.kind} ${r.title} ${r.subtitle ?? ''}`}
+                      value={`${r.kind}-${r.id}`}
                       onSelect={() => handleSelect(r)}
-                      className="gap-3"
+                      className="gap-3 data-[selected=true]:bg-[hsl(var(--crm-surface-2))] data-[selected=true]:text-[hsl(var(--crm-text))]"
                     >
                       <Icon className={`h-4 w-4 shrink-0 ${meta.color}`} />
                       <div className="flex flex-col min-w-0">
-                        <span className="truncate text-sm">{r.title}</span>
+                        <span className="truncate text-sm font-medium text-[hsl(var(--crm-text))]">{r.title}</span>
                         {r.subtitle && (
-                          <span className="truncate text-xs text-muted-foreground">{r.subtitle}</span>
+                          <span className="truncate text-xs text-[hsl(var(--crm-text-muted))]/90">{r.subtitle}</span>
                         )}
                       </div>
                     </CommandItem>
