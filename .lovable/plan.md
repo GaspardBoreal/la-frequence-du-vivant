@@ -1,55 +1,47 @@
-## Problème
+# Fix : drawer "Filtres entreprises" derrière la carte Leaflet
 
-La fiche `CompanyManualCreateDialog` utilise des `<Input>` libres pour des champs qui sont en réalité **issus de référentiels normés INSEE** côté API (recherche / import / filtres). Conséquences :
+## Diagnostic
 
-- Saisie libre `Code NAF` → risque `0.21Z` vs `01.21Z`, casse, etc. → les filtres NAF (qui matchent sur `01.21Z` exact) ne retrouvent pas l'entreprise.
-- `Département` / `Région` en texte libre → ne correspondront pas à `FRENCH_DEPARTMENTS` / `FRENCH_REGIONS` (utilisés en MAJUSCULES sans accents) → filtres géo cassés.
-- `Forme juridique` et `Tranche d'effectif` placeholder type "ex. 10-19" alors que l'API renvoie un **code** (`12` = "20 à 49 salariés"), incohérent avec `TRANCHE_EFFECTIF_OPTIONS` déjà défini.
-- `Catégorie d'entreprise` saisie libre alors que `CATEGORIE_ENTREPRISE_OPTIONS` existe.
-- `État administratif` déjà OK (Select).
+Sur `/admin/crm/annuaire?tab=carte`, le drawer de filtres (`ImportedCompanyFiltersDrawer`) est rendu via le composant `Sheet` shadcn, qui utilise `z-50` pour son overlay et son contenu.
 
-Bonne nouvelle : tous les référentiels existent déjà (`nafCatalog.ts`, `frenchDepartments.ts`, `frenchRegions.ts`, `crmAnnuaireOptions.ts`) et un composant `NafCombobox` est déjà utilisé dans 2 drawers — on peut le mutualiser.
+Or Leaflet applique en interne des z-index élevés :
+- map panes : 200–700
+- controls (zoom, attribution) : 800–1000
+- popups : 700
 
-## Plan
+Conséquence : la carte et ses contrôles passent visuellement au-dessus du panneau de filtres et de l'overlay sombre, comme on le voit sur la capture.
 
-### 1. Mutualiser `NafCombobox`
-Extraire le composant dupliqué dans `src/components/crm/filters/NafCombobox.tsx` (Popover + Command + `searchNaf`, affichage code + libellé, clear button) et le réutiliser dans :
-- `CompanySearchFiltersDrawer.tsx`
-- `filters/ImportedCompanyFiltersDrawer.tsx`
-- `CompanyManualCreateDialog.tsx` (nouveau)
+## Correctif (minimal, frontend uniquement)
 
-### 2. Créer `src/lib/formesJuridiques.ts`
-Liste des formes juridiques courantes (libellés API INSEE) : EI, EIRL, SAS, SASU, SARL, EURL, SA, SCI, SCOP, SCIC, SNC, Association loi 1901, Fondation, Collectivité territoriale, Établissement public, Auto-entrepreneur, GIE, GAEC, EARL, Coopérative agricole, etc. Format `{ value, label }` — `value` = libellé exact tel que renvoyé par l'API (pour cohérence avec l'import).
+Surclasser le z-index du `SheetContent` (et de l'overlay implicite) **uniquement pour ce drawer**, sans toucher au composant `sheet.tsx` global pour ne pas impacter les autres Sheets du projet.
 
-### 3. Refonte de `CompanyManualCreateDialog`
-Remplacements :
+### Fichier modifié
 
-| Champ | Avant | Après |
-|---|---|---|
-| Code NAF + Libellé NAF | 2 `<Input>` libres | `<NafCombobox>` unique → remplit auto `code_naf` (`01.21Z`) et `libelle_naf` (via `getNafLabel`) |
-| Forme juridique | `<Input>` "SAS, SARL…" | `<Select>` depuis `FORMES_JURIDIQUES` + option "Autre" (text) |
-| Tranche d'effectif | `<Input>` "ex. 10-19" | `<Select>` depuis `TRANCHE_EFFECTIF_OPTIONS` (stocke le code `12`, affiche "20 à 49 salariés") |
-| Catégorie d'entreprise | `<Input>` "PME / ETI / GE" | `<Select>` depuis `CATEGORIE_ENTREPRISE_OPTIONS` |
-| Département | `<Input>` libre | `<Select>` (Command pour recherche) depuis `FRENCH_DEPARTMENTS` |
-| Région | `<Input>` libre | `<Select>` depuis `FRENCH_REGIONS` |
-| Code postal → Département | — | Auto-déduction du département via les 2 premiers chiffres du CP quand l'utilisateur sort du champ (mapping CP→dept) |
+`src/components/crm/filters/ImportedCompanyFiltersDrawer.tsx` (ligne 141)
 
-Le payload `INSERT crm_companies` reste identique (les codes/libellés stockés sont ceux des référentiels normalisés, donc compatibles avec les filtres existants et avec les données importées par API).
+Ajouter une classe `z-[1200]` sur le `SheetContent` et forcer l'overlay au-dessus de Leaflet via une classe ciblée (le composant `Sheet` shadcn rend `SheetOverlay` en sibling avec `z-50` ; on l'override via un sélecteur global ou en ajoutant un wrapper).
 
-### 4. Aucune migration DB
-Les colonnes sont déjà `text` libres — on n'ajoute pas de contrainte (pour ne pas casser l'historique d'imports), on normalise uniquement la **saisie manuelle** côté UI.
+Option retenue (la plus propre) : surcharger les deux via le portail en utilisant les props className déjà disponibles, et compléter avec une règle dans `index.css` ciblée sur le data-attribute du drawer si nécessaire.
 
-### 5. Vérification
-- Créer une entreprise manuelle "Culture de la vigne (01.21Z)" en Gironde → vérifier qu'elle apparaît dans les filtres NAF `01.21Z` et région `NOUVELLE-AQUITAINE`.
-- Ouvrir une entreprise importée API + cliquer Modifier (si flow d'édition réutilise le dialog) → vérifier que les valeurs existantes (codes API) s'affichent bien dans les Select (pré-sélection).
+Approche pragmatique en une ligne :
+```tsx
+<SheetContent
+  side="right"
+  className="w-full sm:max-w-md overflow-y-auto z-[1200]"
+>
+```
+Et dans `src/components/ui/sheet.tsx`, garder l'overlay tel quel mais y ajouter une classe utilitaire conditionnelle n'est pas idéal. Préférable : modifier juste les valeurs `z-50` → `z-[100]` dans `sheet.tsx` (overlay + content) — ce qui reste sous les modals (`z-[1000]` Dialog déjà) mais au-dessus de Leaflet (max ~1000 pour les contrôles).
 
-## Détails techniques
+**Décision finale** : passer overlay + content du composant `Sheet` partagé à `z-[1100]`. Cohérent avec shadcn Dialog (`z-50` par défaut aussi, mais aucun Dialog n'est ouvert au-dessus d'un Sheet dans ce projet), et résout tous les futurs cas Sheet+Leaflet (CRM Annuaire, Marches admin…).
 
-- Composant `<DeptSelect>` et `<RegionSelect>` : utiliser le pattern `Popover + Command` (comme `NafCombobox`) pour permettre la recherche, vu la taille des listes (101 départements, 18 régions).
-- Mapping CP→Département : utiliser `src/utils/frenchDepartments.ts` si une fonction `departementFromCodePostal` existe, sinon créer un helper minimal (2 premiers chiffres → nom département via table de correspondance ; déjà partiellement géré ailleurs dans le projet si présent).
-- Formes juridiques : pas de référentiel exhaustif INSEE des ~3000 codes, mais une liste de ~25 libellés couvre 99 % des cas du CRM ; conserver une option "Autre…" qui ouvre un input libre pour ne pas bloquer.
+### Fichier modifié final
 
-## Fichiers touchés
+`src/components/ui/sheet.tsx` : remplacer les deux occurrences `z-50` (sur `SheetOverlay` et `SheetContent`) par `z-[1100]`.
 
-- **Créés** : `src/components/crm/filters/NafCombobox.tsx`, `src/lib/formesJuridiques.ts`, éventuellement `src/components/crm/filters/DeptRegionSelect.tsx`
-- **Édités** : `src/components/crm/CompanyManualCreateDialog.tsx`, `src/components/crm/CompanySearchFiltersDrawer.tsx`, `src/components/crm/filters/ImportedCompanyFiltersDrawer.tsx` (pour utiliser le NafCombobox mutualisé)
+## Vérification
+
+1. Ouvrir `/admin/crm/annuaire?tab=carte`
+2. Cliquer sur "Filtres" → le panneau doit recouvrir intégralement la carte et ses contrôles (+/−), avec backdrop sombre par-dessus la carte
+3. Vérifier qu'aucun autre Sheet du projet (drawer espèce, drawer marcheur, etc.) ne régresse
+
+Aucun changement métier, DB ou edge function.
