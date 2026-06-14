@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { formatNaf } from '@/lib/nafCatalog';
 import { cn } from '@/lib/utils';
 import { WebsiteField } from './company-tabs/WebsiteField';
+import { NomCompletField } from './company-tabs/NomCompletField';
 import { CompanyOpportunitiesTab } from './company-tabs/CompanyOpportunitiesTab';
 import { CompanyMarchesTab } from './company-tabs/CompanyMarchesTab';
 import { CommercialLeversTab } from './company-tabs/CommercialLeversTab';
@@ -200,6 +201,23 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
           </TabsList>
 
           <TabsContent value="identite" className="space-y-1 mt-4">
+            <div className="grid grid-cols-[110px_1fr] gap-3 items-baseline py-2 border-b border-border/40 text-sm">
+              <span className="text-xs text-muted-foreground">Dénomination</span>
+              <div className="font-medium break-words flex items-center gap-2">
+                <span>{company.denomination ?? '—'}</span>
+                <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4 font-normal text-muted-foreground">
+                  source INSEE
+                </Badge>
+              </div>
+            </div>
+            <NomCompletField
+              value={company.nom_complet ?? null}
+              saving={updateCompany.isPending}
+              onSave={(v) => updateCompany.mutate(
+                { id: company.id, patch: { nom_complet: v } as any },
+                { onSuccess: () => toast.success(v ? 'Nom complet enregistré' : 'Nom complet retiré') }
+              )}
+            />
             <Row label="Forme juridique" value={company.forme_juridique} />
             <Row label="Catégorie" value={company.categorie_entreprise} />
             <Row label="Effectif" value={company.tranche_effectif} />
