@@ -5,7 +5,7 @@ import { OPPORTUNITY_ACTIONS, type OpportunityActionCode } from '@/lib/crmOpport
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface OpportunityActionsBadgesProps {
-  value: OpportunityActionCode[] | null | undefined;
+  value: readonly (OpportunityActionCode | string)[] | null | undefined;
   size?: 'xs' | 'sm';
   className?: string;
   /** Affiche un anneau doré + label si les 4 jalons sont cochés */
