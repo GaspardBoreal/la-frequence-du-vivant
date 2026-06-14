@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, MapPin, Calendar, Trash2, X, ChevronsRight, Plus } from 'lucide-react';
+import { MapPin, Calendar, Trash2, X, ChevronsRight, Plus, Pencil, Star } from 'lucide-react';
 import { ContactFormDialog } from './contacts/ContactFormDialog';
 import {
   useCrmCompany,
@@ -16,7 +16,7 @@ import {
   useAddCompanyActivity,
 } from '@/hooks/useCrmCompanies';
 import { CompanyLabelsChips } from './CompanyLabelsChips';
-import { useCrmContacts } from '@/hooks/useCrmContacts';
+import { useCrmContacts, type CrmContactRow } from '@/hooks/useCrmContacts';
 import { Crown, Mail, Phone, Linkedin } from 'lucide-react';
 import {
   STAGE_LABELS,
@@ -27,11 +27,13 @@ import {
 import { toast } from 'sonner';
 import { formatNaf } from '@/lib/nafCatalog';
 import { cn } from '@/lib/utils';
+import { WebsiteField } from './company-tabs/WebsiteField';
+import { CompanyOpportunitiesTab } from './company-tabs/CompanyOpportunitiesTab';
+import { CompanyMarchesTab } from './company-tabs/CompanyMarchesTab';
 
 interface Props {
   companyId: string | null;
   onClose: () => void;
-  /** "sheet" = inside a Radix Sheet (default), "inline" = side panel, "mobile-sheet" = bottom sheet */
   mode?: 'sheet' | 'inline' | 'mobile-sheet';
 }
 
@@ -47,7 +49,8 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
   const { data: companyContacts = [] } = useCrmContacts({ companyId });
 
   const [notes, setNotes] = React.useState('');
-  const [creatingContact, setCreatingContact] = React.useState(false);
+  const [contactDialogOpen, setContactDialogOpen] = React.useState(false);
+  const [editingContact, setEditingContact] = React.useState<CrmContactRow | null>(null);
   const [newActivity, setNewActivity] = React.useState<{
     type: CrmCompanyActivityType;
     summary: string;
@@ -61,7 +64,6 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
     return <div className="p-8 text-center text-muted-foreground">Chargement…</div>;
   }
 
-  const dirigeants = Array.isArray(company.dirigeants) ? (company.dirigeants as any[]) : [];
   const financesRaw = company.finances;
   const finances: any[] = Array.isArray(financesRaw)
     ? financesRaw
@@ -78,6 +80,26 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
     .slice(0, 2)
     .toUpperCase();
 
+  // Sort contacts with primary first
+  const sortedContacts = [...companyContacts].sort((a, b) => {
+    if (a.id === company.primary_contact_id) return -1;
+    if (b.id === company.primary_contact_id) return 1;
+    return 0;
+  });
+
+  const primaryContact = companyContacts.find((c) => c.id === company.primary_contact_id);
+
+  const openContactCreate = () => { setEditingContact(null); setContactDialogOpen(true); };
+  const openContactEdit = (c: CrmContactRow) => { setEditingContact(c); setContactDialogOpen(true); };
+
+  const togglePrimary = (c: CrmContactRow) => {
+    const newId = company.primary_contact_id === c.id ? null : c.id;
+    updateCompany.mutate(
+      { id: company.id, patch: { primary_contact_id: newId } as any },
+      { onSuccess: () => toast.success(newId ? 'Contact principal défini' : 'Contact principal retiré') }
+    );
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: mode === 'inline' ? 24 : 0, y: mode === 'mobile-sheet' ? 24 : 0 }}
@@ -88,20 +110,14 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
       {/* Header hero */}
       <div
         className="relative px-4 pt-4 pb-3 border-b"
-        style={{
-          background: `linear-gradient(135deg, ${stageColor}14 0%, hsl(var(--card)) 70%)`,
-        }}
+        style={{ background: `linear-gradient(135deg, ${stageColor}14 0%, hsl(var(--card)) 70%)` }}
       >
         <button
           onClick={onClose}
           aria-label="Fermer"
           className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-background/80 hover:bg-background border flex items-center justify-center transition-colors"
         >
-          {mode === 'inline' ? (
-            <ChevronsRight className="h-4 w-4" />
-          ) : (
-            <X className="h-4 w-4" />
-          )}
+          {mode === 'inline' ? <ChevronsRight className="h-4 w-4" /> : <X className="h-4 w-4" />}
         </button>
 
         <div className="flex items-start gap-3 pr-12">
@@ -119,6 +135,12 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
               {company.denomination ?? company.nom_complet}
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">SIREN {company.siren}</p>
+            {primaryContact && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5 flex items-center gap-1">
+                <Crown className="h-3 w-3" />
+                Contact principal · {[primaryContact.prenom, primaryContact.nom].filter(Boolean).join(' ') || primaryContact.email}
+              </p>
+            )}
             <CompanyLabelsChips complements={company.qualites_labels} className="mt-2" />
           </div>
         </div>
@@ -130,9 +152,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
             return (
               <button
                 key={s}
-                onClick={() =>
-                  !active && updateStage.mutate({ id: company.id, stage: s })
-                }
+                onClick={() => !active && updateStage.mutate({ id: company.id, stage: s })}
                 className={cn(
                   'relative px-3 py-1 text-xs font-medium rounded-full transition-colors z-10',
                   active ? 'text-white' : 'text-muted-foreground hover:text-foreground'
@@ -157,26 +177,22 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
       <div className="flex-1 overflow-y-auto px-5 py-4 pb-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
 
         <Tabs defaultValue="identite">
-          <TabsList className="grid grid-cols-4 w-full bg-muted/50">
-            <TabsTrigger value="identite">Identité</TabsTrigger>
-            <TabsTrigger value="dirigeants">
+          <TabsList className="flex w-full overflow-x-auto bg-muted/50 justify-start sm:justify-stretch sm:grid sm:grid-cols-6 gap-0.5">
+            <TabsTrigger value="identite" className="shrink-0">Identité</TabsTrigger>
+            <TabsTrigger value="dirigeants" className="shrink-0">
               Contacts
-              {companyContacts.length > 0 && (
-                <span className="ml-1 text-[10px] opacity-60">· {companyContacts.length}</span>
-              )}
+              {companyContacts.length > 0 && <span className="ml-1 text-[10px] opacity-60">· {companyContacts.length}</span>}
             </TabsTrigger>
-            <TabsTrigger value="finances">
+            <TabsTrigger value="finances" className="shrink-0">
               Finances
-              {finances.length > 0 && (
-                <span className="ml-1 text-[10px] opacity-60">· {finances.length}</span>
-              )}
+              {finances.length > 0 && <span className="ml-1 text-[10px] opacity-60">· {finances.length}</span>}
             </TabsTrigger>
-            <TabsTrigger value="activites">
-              Activités
-              {activities.length > 0 && (
-                <span className="ml-1 text-[10px] opacity-60">· {activities.length}</span>
-              )}
+            <TabsTrigger value="activites" className="shrink-0">
+              Activités CRM
+              {activities.length > 0 && <span className="ml-1 text-[10px] opacity-60">· {activities.length}</span>}
             </TabsTrigger>
+            <TabsTrigger value="opportunites" className="shrink-0">Opportunités</TabsTrigger>
+            <TabsTrigger value="marches" className="shrink-0">Marches</TabsTrigger>
           </TabsList>
 
           <TabsContent value="identite" className="space-y-1 mt-4">
@@ -193,6 +209,15 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
               icon={<MapPin className="h-3.5 w-3.5" />}
               label="Région / dépt"
               value={`${company.region ?? '—'}${company.departement ? ` · ${company.departement}` : ''}`}
+            />
+
+            <WebsiteField
+              value={company.site_web ?? null}
+              saving={updateCompany.isPending}
+              onSave={(v) => updateCompany.mutate(
+                { id: company.id, patch: { site_web: v } as any },
+                { onSuccess: () => toast.success(v ? 'Site web enregistré' : 'Site web retiré') }
+              )}
             />
 
             <div className="mt-5">
@@ -222,27 +247,57 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
 
           <TabsContent value="dirigeants" className="space-y-2 mt-4">
             <div className="flex justify-end">
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setCreatingContact(true)}>
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={openContactCreate}>
                 <Plus className="h-3.5 w-3.5" /> Nouveau contact
               </Button>
             </div>
-            {companyContacts.length === 0 && (
+            {sortedContacts.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-6">Aucun contact rattaché.</p>
             )}
-            {companyContacts.map((c) => {
+            {sortedContacts.map((c) => {
               const fullName = [c.prenom, c.nom].filter(Boolean).join(' ') || c.email || '—';
+              const isPrimary = c.id === company.primary_contact_id;
               return (
-                <div key={c.id} className="p-3 rounded-lg border bg-card/60 text-sm space-y-1">
+                <div
+                  key={c.id}
+                  className={cn(
+                    'p-3 rounded-lg border bg-card/60 text-sm space-y-1 transition-all',
+                    isPrimary && 'border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-transparent shadow-[0_0_20px_-10px_rgb(245,158,11)]'
+                  )}
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium flex items-center gap-1.5">
-                      {c.is_dirigeant && <Crown className="h-3.5 w-3.5 text-amber-500" />}
-                      {fullName}
+                    <p className="font-medium flex items-center gap-1.5 min-w-0">
+                      {c.is_dirigeant && <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
+                      <span className="truncate">{fullName}</span>
+                      {isPrimary && (
+                        <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] h-5 px-1.5">
+                          Principal
+                        </Badge>
+                      )}
                     </p>
-                    {c.is_dirigeant && (
-                      <Badge variant="outline" className="text-[10px] h-5 px-1.5">
-                        {c.dirigeant_source === 'api' ? 'API' : 'Dirigeant'}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className={cn(
+                          'h-7 w-7',
+                          isPrimary ? 'text-amber-500' : 'text-muted-foreground hover:text-amber-500'
+                        )}
+                        title={isPrimary ? 'Retirer comme principal' : 'Définir comme contact principal'}
+                        onClick={() => togglePrimary(c)}
+                      >
+                        <Star className={cn('h-3.5 w-3.5', isPrimary && 'fill-current')} />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        title="Éditer"
+                        onClick={() => openContactEdit(c)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
                   {(c.fonction || c.qualite) && (
                     <p className="text-xs text-muted-foreground">{c.fonction || c.qualite}</p>
@@ -299,9 +354,7 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
                   value={newActivity.type}
                   onValueChange={(v) => setNewActivity((s) => ({ ...s, type: v as any }))}
                 >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="appel">📞 Appel</SelectItem>
                     <SelectItem value="mail">✉️ Mail</SelectItem>
@@ -350,6 +403,17 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
               <p className="text-sm text-muted-foreground text-center py-6">Aucune activité.</p>
             )}
           </TabsContent>
+
+          <TabsContent value="opportunites">
+            <CompanyOpportunitiesTab
+              companyId={company.id}
+              companyName={company.denomination ?? company.nom_complet ?? company.siren}
+            />
+          </TabsContent>
+
+          <TabsContent value="marches">
+            <CompanyMarchesTab companyId={company.id} />
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -375,8 +439,9 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
       </div>
 
       <ContactFormDialog
-        open={creatingContact}
-        onOpenChange={setCreatingContact}
+        open={contactDialogOpen}
+        onOpenChange={(o) => { setContactDialogOpen(o); if (!o) setEditingContact(null); }}
+        contact={editingContact}
         defaultCompanyId={company.id}
         defaultEntreprise={company.denomination ?? company.nom_complet ?? null}
       />
