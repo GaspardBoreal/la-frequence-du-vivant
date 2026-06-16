@@ -317,12 +317,18 @@ function App() {
             <Route path="/presentation" element={<ProjectPresentation />} />
             <Route path="/partage/:id" element={<PartagePublic />} />
             <Route path="/marcheur/:slug/carnet" element={<CarnetMarcheur />} />
-            
+
+            {/* Adhésion association */}
+            <Route path="/adhesion" element={<Adhesion />} />
+            <Route path="/admin/adhesions" element={<AdminAuth><AdhesionAdmin /></AdminAuth>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AdminChatBotMount />
           <CommunityChatBotMount />
+          <AdhesionFab />
           <Toaster position="top-right" />
+
             </BrowserRouter>
           </AudioProvider>
         </LanguageProvider>
