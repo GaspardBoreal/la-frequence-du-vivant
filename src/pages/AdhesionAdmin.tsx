@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Download, QrCode, Plus, Loader2, Users, Heart } from 'lucide-react';
+import { Download, QrCode, Plus, Loader2, Users, Heart, ArrowLeft } from 'lucide-react';
 
 interface Campaign {
   id: string;
@@ -148,12 +149,21 @@ const AdhesionAdmin: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <Link to="/access-admin-gb2025">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Retour
+            </Button>
+          </Link>
+        </div>
+
         <header>
           <h1 className="text-3xl font-bold mb-1 flex items-center gap-2">
             <Heart className="w-6 h-6 text-emerald-600" /> Adhésions — Kit & Pilotage
           </h1>
           <p className="text-muted-foreground">
-            Générez vos QR codes trackés, suivez les demandes d’adhésion et pilotez les 3 collèges.
+            Générez vos QR codes trackés, suivez les demandes d'adhésion et pilotez les 3 collèges.
           </p>
         </header>
 
@@ -199,7 +209,7 @@ const AdhesionAdmin: React.FC = () => {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Couleurs Forêt Émeraude (#0D6B58 sur Papier Crème #FAF8F3). Correction d’erreur niveau H — supporte un
+                  Couleurs Forêt Émeraude (#0D6B58 sur Papier Crème #FAF8F3). Correction d'erreur niveau H — supporte un
                   logo central et reste lisible même partiellement imprimé.
                 </p>
               </div>
@@ -263,7 +273,7 @@ const AdhesionAdmin: React.FC = () => {
                   </div>
                 ))}
                 {Object.keys(stats.byCampaign).length === 0 && (
-                  <p className="text-muted-foreground text-sm">Aucune demande pour l’instant.</p>
+                  <p className="text-muted-foreground text-sm">Aucune demande pour l'instant.</p>
                 )}
               </div>
             </Card>
@@ -315,7 +325,7 @@ const AdhesionAdmin: React.FC = () => {
                       {requests.length === 0 && (
                         <tr>
                           <td colSpan={8} className="p-6 text-center text-muted-foreground">
-                            Aucune demande d’adhésion pour l’instant.
+                            Aucune demande d'adhésion pour l'instant.
                           </td>
                         </tr>
                       )}
