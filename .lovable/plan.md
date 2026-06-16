@@ -1,50 +1,71 @@
-# Plan — Statuts v2 « LA FRÉQUENCE DU VIVANT »
+# Plan — Adhésion à l'association
 
-Génération d'un fichier `.docx` corrigé intégrant vos choix : compatibilité **mécénat / intérêt général**, **veto ciblé** des fondateurs (au lieu du 51 %), régime **Open Data / Creative Commons** pour les observations.
+## 1. Évolution BDD (table `community_profiles`)
 
-## Corrections apportées
+Ajout de champs liés à l'adhésion (sans casser l'existant — `types_marches_interets` et `autre_type_marche` sont déjà présents) :
 
-### Gouvernance (refonte majeure)
-- **Art. 5** — Suppression de la pondération 51 %. Les fondateurs deviennent **membres de droit du CA** (siège permanent, dispensés d'élection) mais 1 voix = 1 voix en AG.
-- **Art. 8** — CA porté à **3-10 membres** (minimum légal sain), dont au moins 1 hors fondateurs. Ajout d'une **clause de cooptation** en cours de mandat.
-- **Art. 11 bis (nouveau) — Droit de veto ciblé des fondateurs**, limité à 4 sujets :
-  1. Modification de l'objet social,
-  2. Dissolution,
-  3. Cession ou licence exclusive des actifs apportés en jouissance,
-  4. Transfert du siège social hors région.
-  Veto exerçable collectivement par les fondateurs présents, valable tant qu'au moins un fondateur est membre.
-- **Art. 9** — Ajout d'une **délégation de signature de secours** à la Vice-Présidente en cas d'empêchement.
-- **Bureau** (Art. 8) — Mention explicite de Trésorier et Secrétaire (rôles cumulables en 2026 par les 2 fondateurs) pour lever l'incohérence avec Art. 11.
+- `is_adherent` (boolean, défaut `false`)
+- `college_adhesion` (enum `adhesion_college`: `fondateurs` | `actifs` | `partenaires_mecenes`, nullable)
+- `adhesion_date` (timestamptz, nullable)
+- `adhesion_source` (text — ex. `formulaire_public`, `qr_code`, `manuel_admin`)
+- `rgpd_newsletter_consent` (boolean, défaut `false`)
+- `rgpd_newsletter_consent_at` (timestamptz, nullable)
+- `adhesion_commentaires` (text, nullable)
 
-### Propriété intellectuelle & données (Art. 7 & 15)
-- **Code, algos, œuvres artistiques (Gaspard Boréal)** : apport en jouissance → reprise par L. TRIPIED en cas de dissolution (clause maintenue).
-- **Données collectées lors des marches** : publiées sous **licence Creative Commons (CC-BY-SA 4.0)** et **Open Data** dès leur collecte. **L'association en est gestionnaire**, pas propriétaire exclusive. **Aucune reprise individuelle** possible (cohérent RGPD + science participative).
-- Renvoi à un **traité d'apport séparé** à annexer pour valoriser/lister précisément les actifs apportés.
-- Mention **marque « LA FRÉQUENCE DU VIVANT »** : dépôt INPI au nom de l'association.
+Création d'une **table d'audit** `adhesion_requests` (toutes les soumissions du formulaire public, même celles d'un email déjà existant) :
 
-### Conformité fiscale / mécénat
-- **Art. 2** — Reformulation « gestion désintéressée, fonctionnement démocratique, gestion ouverte à un cercle large de bénéficiaires » (vocabulaire BOFiP).
-- **Art. 13** — Sectorisation détaillée + seuil de **franchise des activités lucratives accessoires** (78 596 € en 2026) + engagement de filialisation si dépassement durable.
-- **Art. 10** — Clause sur le **plafond de rémunération des dirigeants** (¾ SMIC ou règle des 3 dirigeants rémunérés selon ressources).
+- email, prenom, nom, telephone, ville, types_marches[], autre_type_marche, commentaires, college_demande, rgpd_consent, source, user_agent, ip_hash, matched_profile_id, status (`pending`/`linked`/`created`/`rejected`), created_at.
 
-### Procédures & finitions
-- **Art. 6** — Procédure d'exclusion clarifiée : convocation par LRAR, **délai de 15 jours** pour présenter ses observations, **recours devant l'AG**.
-- **Art. 11** — Ajout **quorum AGO** (1/4 des membres sur 1ère convocation, sans quorum sur 2e), **vote à distance / par procuration** (max 2 pouvoirs par membre), **convocation par email** acceptée.
-- **Art. 12** — Ajout **quorum AGE** (1/2 sur 1ère, 1/4 sur 2e), majorité 2/3 des présents.
-- **Art. 3** — Mention de la **convention réglementée SCI / Président** soumise au vote annuel de l'AG.
-- **Article RGPD (nouveau, Art. 16)** — Responsable de traitement, finalités, base légale, droits des adhérents.
-- Correction coquilles (« technology » → « technologie », etc.).
+Politiques RLS : insert public (anon) autorisé sur `adhesion_requests`, lecture admin uniquement. `community_profiles` continue d'être protégée par RLS existante.
 
-## Livrable
+## 2. Logique d'adhésion (Edge Function `submit-adhesion`)
 
-- `/mnt/documents/Statuts_LA_FREQUENCE_DU_VIVANT_v2.docx` — version finale propre, prête à signer.
-- Document généré avec `docx-js` (typographie soignée : titres Arial bold, justifications, listes propres, smart quotes françaises).
-- QA visuelle obligatoire : conversion PDF + inspection page par page avant remise.
+Fonction publique (verify_jwt=false) qui :
 
-## Détails techniques
+1. Valide les champs avec Zod (email, longueurs, RGPD obligatoire).
+2. Enregistre toujours une ligne dans `adhesion_requests`.
+3. Normalise l'email (lowercase + trim) et cherche un `community_profile` existant (via auth.users.email côté service role).
+4. **Si trouvé** → met à jour le profil : `is_adherent=true`, `college_adhesion='actifs'`, `adhesion_date=now()`, complète les champs manquants (téléphone, ville, types_marches_interets en union), `rgpd_newsletter_consent=true`. Status request = `linked`.
+5. **Si non trouvé** → crée une demande `pending` (pas de création de compte auth automatique, pour éviter le spam). Un onglet admin permettra de valider et créer le compte (réutilise `admin-create-marcheur`). Status request = `pending`.
+6. Envoie un email de confirmation via `send-transactional-email` (nouveau template `adhesion-confirmation.tsx`) + notif admin.
 
-- Script Node `/tmp/gen_statuts.js` utilisant `docx` (déjà compatible projet).
-- Pas de modification du code applicatif ni de la base de données.
-- Aucune édition de fichiers du dépôt — uniquement l'artifact dans `/mnt/documents/`.
+Le **Collège des Fondateurs** et **Partenaires/Mécènes** ne sont **jamais** auto-attribués via le formulaire public — seuls les admins peuvent les positionner (sécurité gouvernance). Le formulaire public mentionne les 3 collèges à titre informatif, et l'utilisateur exprime un *souhait* (`college_demande`), mais l'attribution finale reste admin sauf pour `actifs`.
 
-**⚠️ Avertissement** : ce document est une base solide mais une **relecture par un avocat ou notaire** spécialisé en droit des associations reste recommandée avant signature, notamment pour le traité d'apport en jouissance.
+## 3. Formulaire public
+
+Nouvelle route `/adhesion` (page dédiée, SEO optimisée, partageable) + composant `<AdhesionDialog />` (drawer modal réutilisable).
+
+Champs : Prénom, Nom, Email, Téléphone, Ville, Types de marche (checkboxes multi : agroécologique / écotouristique / géopoétique / autre + champ texte), Souhait de collège (radio avec descriptions pédagogiques des 3 collèges), Commentaires, **case RGPD obligatoire** (newsletter + traitement données).
+
+Confirmation : écran de succès avec animation Fréquence + invitation à partager le QR code + lien WhatsApp/email pour parrainer.
+
+## 4. Bouton global "Rejoindre"
+
+Ajout d'un **CTA persistant** dans `PublicTopBar` (header partagé) → ouvre `<AdhesionDialog />`. Présent automatiquement sur toutes les pages publiques listées :
+
+- `/`, `/marches-du-vivant`, `/marches-du-vivant/entreprises`, `/marches-du-vivant/agriculture`, `/marches-du-vivant/explorer`, `/marches-du-vivant/association`.
+
+Pour les pages qui n'utilisent pas `PublicTopBar`, ajout d'un **FAB flottant** discret (bouton "✨ Rejoindre la Fréquence") en bas à droite mobile + desktop, masqué dans l'espace marcheur connecté.
+
+Bandeau d'appel narratif en bas de la home (`/`) et de `/marches-du-vivant/association` : section "Devenir Marcheur de la Fréquence" avec les 3 collèges illustrés (cartes glassmorphism dans la palette Forêt Émeraude/Papier Crème).
+
+## 5. QR Code
+
+- Page admin dédiée `/access-admin-gb2025` → onglet **"Kit Adhésion"** : génère un QR code (lib `qrcode`) pointant vers `https://la-frequence-du-vivant.com/adhesion?src=qr&campaign=<slug>` avec paramètres trackés (UTM-like) pour mesurer la provenance (flyer, mug, tee-shirt, salon X…).
+- Téléchargement PNG haute résolution + SVG vectoriel + PDF prêt à imprimer (A6 flyer recto/verso avec QR + baseline + 3 collèges).
+- Bonus créatif : QR code stylisé (logo Fréquence au centre, couleurs Forêt Émeraude) via `qr-code-styling`.
+
+## 6. Bonus créatifs (prescription & viralité)
+
+- **Parrainage** : chaque adhérent reçoit un lien `?ref=<slug>` (réutilise le système d'affiliation `community_affiliate_links` déjà en place — voir mem). Les filleuls liés à un parrain comptent vers un badge "Sentinelle".
+- **Carte d'adhérent numérique** générée après adhésion (PDF + Apple Wallet `.pkpass` plus tard) avec n° adhérent, collège, QR de profil.
+- **Onglet admin "Adhésions"** dans `MarcheAdmin` : kanban `pending → linked/created → relancé`, export CSV des adhérents par collège, KPIs (taux conversion QR, sources).
+- **Email automatique** de bienvenue narratif (« Vous venez de rejoindre la Fréquence du Vivant… ») + lien pour compléter le profil Kigo.
+- **Open Graph** dédié sur `/adhesion` (image générée premium) pour partage social soigné.
+
+## Questions ouvertes
+
+1. **Validation des Fondateurs / Mécènes** : je confirmes que ces 2 collèges sont **uniquement attribués manuellement par un admin** (le formulaire public ne fait qu'enregistrer un *souhait*).
+2. **Adhésion = cotisation ?** Rester sur une adhésion gratuite/déclarative dans un premier temps avec cotisation gérée hors-ligne (ou plus tard)
+3. **Création de compte marcheur** : pour un nouvel adhérent inconnu, on crée immédiatement un compte auth
+4. **Slug de campagne QR** : je veux pouvoir créer des QR multiples (1 par support : flyer-salon-agri-2026, mug-noel, etc.) avec stats par campagne et j'ai besoin dès aujourd'hui du QR CODE "Flyer Devenez marcheur du vivant"
