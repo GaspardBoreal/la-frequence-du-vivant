@@ -1330,6 +1330,209 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_mission_activity: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: string
+          mission_id: string
+          payload: Json | null
+          type: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          mission_id: string
+          payload?: Json | null
+          type: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          mission_id?: string
+          payload?: Json | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_mission_activity_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "crm_missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_mission_assignees: {
+        Row: {
+          created_at: string
+          id: string
+          mission_id: string
+          notified_at: string | null
+          role: Database["public"]["Enums"]["crm_mission_assignee_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mission_id: string
+          notified_at?: string | null
+          role?: Database["public"]["Enums"]["crm_mission_assignee_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mission_id?: string
+          notified_at?: string | null
+          role?: Database["public"]["Enums"]["crm_mission_assignee_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_mission_assignees_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "crm_missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_mission_comments: {
+        Row: {
+          author_id: string | null
+          body_rich: Json
+          created_at: string
+          edited_at: string | null
+          id: string
+          mission_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body_rich: Json
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          mission_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body_rich?: Json
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          mission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_mission_comments_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "crm_missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_missions: {
+        Row: {
+          ai_reason: string | null
+          ai_score: number | null
+          color: string | null
+          company_id: string | null
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          description_rich: Json | null
+          due_at: string | null
+          estimated_minutes: number | null
+          id: string
+          marche_event_id: string | null
+          opportunity_id: string | null
+          priorite: Database["public"]["Enums"]["crm_mission_priority"]
+          start_at: string | null
+          statut: Database["public"]["Enums"]["crm_mission_status"]
+          tags: string[]
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          ai_reason?: string | null
+          ai_score?: number | null
+          color?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description_rich?: Json | null
+          due_at?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          marche_event_id?: string | null
+          opportunity_id?: string | null
+          priorite?: Database["public"]["Enums"]["crm_mission_priority"]
+          start_at?: string | null
+          statut?: Database["public"]["Enums"]["crm_mission_status"]
+          tags?: string[]
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          ai_reason?: string | null
+          ai_score?: number | null
+          color?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description_rich?: Json | null
+          due_at?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          marche_event_id?: string | null
+          opportunity_id?: string | null
+          priorite?: Database["public"]["Enums"]["crm_mission_priority"]
+          start_at?: string | null
+          statut?: Database["public"]["Enums"]["crm_mission_status"]
+          tags?: string[]
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_missions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_missions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_missions_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_missions_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_opportunities: {
         Row: {
           actions_realisees: string[]
@@ -7063,6 +7266,9 @@ export type Database = {
         | "en_negociation"
         | "signe"
         | "perdu"
+      crm_mission_assignee_role: "owner" | "collab" | "watcher"
+      crm_mission_priority: "basse" | "normale" | "haute" | "critique"
+      crm_mission_status: "a_faire" | "en_cours" | "realisee" | "archivee"
       crm_role: "admin" | "member" | "walker"
       curation_sense: "oeil" | "main" | "coeur" | "oreille" | "palais"
       etude_type: "principale" | "complementaire" | "annexe"
@@ -7256,6 +7462,9 @@ export const Constants = {
         "signe",
         "perdu",
       ],
+      crm_mission_assignee_role: ["owner", "collab", "watcher"],
+      crm_mission_priority: ["basse", "normale", "haute", "critique"],
+      crm_mission_status: ["a_faire", "en_cours", "realisee", "archivee"],
       crm_role: ["admin", "member", "walker"],
       curation_sense: ["oeil", "main", "coeur", "oreille", "palais"],
       etude_type: ["principale", "complementaire", "annexe"],
