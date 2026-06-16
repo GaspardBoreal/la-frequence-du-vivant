@@ -301,7 +301,7 @@ const AdhesionAdmin: React.FC = () => {
               </div>
               <div className="flex items-center justify-center">
                 <div className="p-6 rounded-2xl bg-[#FAF8F3] shadow-sm border border-stone-200">
-                  <canvas ref={canvasRef} />
+                  <canvas ref={setCanvasEl} />
                 </div>
               </div>
             </Card>
