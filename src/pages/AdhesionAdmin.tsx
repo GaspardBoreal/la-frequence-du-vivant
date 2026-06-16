@@ -52,7 +52,7 @@ const AdhesionAdmin: React.FC = () => {
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [selectedCollege, setSelectedCollege] = useState<'actifs' | 'fondateurs' | 'partenaires_mecenes'>('actifs');
   const [linkBusy, setLinkBusy] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
 
   const fetchAll = async () => {
     setLoading(true);
