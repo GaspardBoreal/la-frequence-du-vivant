@@ -1,12 +1,13 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, MapPin, Sparkles, CalendarPlus } from 'lucide-react';
+import { Pencil, MapPin, Sparkles, CalendarPlus, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   ageBracketLabel, computeAgeBracket, cspShortLabel, genderLabel,
 } from '@/lib/communityProfileTaxonomy';
-import type { EditableProfile } from './MarcheurEditSheet';
+import { COLLEGE_LABELS, COLLEGE_BADGE_CLASSES, type EditableProfile } from './MarcheurEditSheet';
 import type { ScienceAccount } from '@/types/scienceAccounts';
 import NetworkBadge from './NetworkBadge';
 
