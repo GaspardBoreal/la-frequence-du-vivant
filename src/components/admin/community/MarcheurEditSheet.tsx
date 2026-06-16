@@ -117,6 +117,11 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
           role: payload.role as never,
           formation_validee: payload.formation_validee,
           certification_validee: payload.certification_validee,
+          is_adherent: !!payload.is_adherent,
+          college_adhesion: (payload.is_adherent ? (payload.college_adhesion ?? 'actifs') : null) as never,
+          adhesion_date: payload.is_adherent
+            ? (payload.adhesion_date ?? new Date().toISOString())
+            : null,
         })
         .eq('id', payload.id);
       if (error) throw error;
