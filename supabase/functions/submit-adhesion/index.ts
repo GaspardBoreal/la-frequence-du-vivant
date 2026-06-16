@@ -55,26 +55,30 @@ Deno.serve(async (req) => {
 
     const userAgent = req.headers.get('user-agent') ?? null;
 
-    // 1. Cherche un profil existant via auth.users.email
+    // 1. Cherche un profil existant via auth.users.email (best-effort)
     let matchedProfileId: string | null = null;
     let matchedUserId: string | null = null;
     try {
-      const { data: userList } = await supabase.auth.admin.listUsers({
-        page: 1,
-        perPage: 200,
-      });
-      // Naïf : recherche dans la première page. Pour BDD volumineuse → ajouter une RPC.
-      const found = userList?.users?.find(
-        (u) => (u.email ?? '').toLowerCase() === data.email,
-      );
-      if (found) {
-        matchedUserId = found.id;
-        const { data: profile } = await supabase
-          .from('community_profiles')
-          .select('id')
-          .eq('user_id', found.id)
-          .maybeSingle();
-        if (profile) matchedProfileId = profile.id;
+      for (let page = 1; page <= 3; page++) {
+        const { data: userList } = await supabase.auth.admin.listUsers({
+          page,
+          perPage: 1000,
+        });
+        const users = userList?.users ?? [];
+        const found = users.find(
+          (u) => (u.email ?? '').toLowerCase() === data.email,
+        );
+        if (found) {
+          matchedUserId = found.id;
+          const { data: profile } = await supabase
+            .from('community_profiles')
+            .select('id')
+            .eq('user_id', found.id)
+            .maybeSingle();
+          if (profile) matchedProfileId = profile.id;
+          break;
+        }
+        if (users.length < 1000) break;
       }
     } catch (e) {
       console.warn('user lookup failed', e);
@@ -111,46 +115,49 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Si profil trouvé → mise à jour automatique vers Collège des Actifs.
-    //    Le souhait des collèges Fondateurs/Mécènes reste un *souhait* (admin valide).
+    // 3. Si profil trouvé → mise à jour automatique vers Collège des Actifs (best-effort).
     let outcome: 'linked' | 'pending' = 'pending';
     if (matchedProfileId) {
-      const collegeFinal: typeof COLLEGES[number] =
-        data.college_demande === 'actifs' || !data.college_demande
-          ? 'actifs'
-          : 'actifs'; // toujours 'actifs' via formulaire public
-      const updatePatch: Record<string, unknown> = {
-        is_adherent: true,
-        college_adhesion: collegeFinal,
-        adhesion_date: new Date().toISOString(),
-        adhesion_source: data.source ?? 'formulaire_public',
-        adhesion_campaign: data.campaign ?? null,
-        rgpd_newsletter_consent: true,
-        rgpd_newsletter_consent_at: new Date().toISOString(),
-        adhesion_commentaires: data.commentaires ?? null,
-      };
-      if (data.telephone) updatePatch.telephone = data.telephone;
-      if (data.ville) updatePatch.ville = data.ville;
+      try {
+        const { data: existing } = await supabase
+          .from('community_profiles')
+          .select('types_marches_interets, telephone, ville, autre_type_marche')
+          .eq('id', matchedProfileId)
+          .maybeSingle();
 
-      // Complète aussi types_marches_interets en union
-      const { data: existing } = await supabase
-        .from('community_profiles')
-        .select('types_marches_interets, autre_type_marche')
-        .eq('id', matchedProfileId)
-        .maybeSingle();
-      const previousTypes = (existing?.types_marches_interets as string[] | null) ?? [];
-      const merged = Array.from(new Set([...previousTypes, ...data.types_marches]));
-      updatePatch.types_marches_interets = merged;
-      if (data.autre_type_marche) updatePatch.autre_type_marche = data.autre_type_marche;
+        const previousTypes = (existing?.types_marches_interets as string[] | null) ?? [];
+        const merged = Array.from(new Set([...previousTypes, ...data.types_marches]));
 
-      const { error: updErr } = await supabase
-        .from('community_profiles')
-        .update(updatePatch)
-        .eq('id', matchedProfileId);
-      if (updErr) {
-        console.error('profile update failed', updErr);
-      } else {
-        outcome = 'linked';
+        const updatePatch: Record<string, unknown> = {
+          is_adherent: true,
+          college_adhesion: 'actifs',
+          adhesion_date: new Date().toISOString(),
+          adhesion_source: data.source ?? 'formulaire_public',
+          adhesion_campaign: data.campaign ?? null,
+          rgpd_newsletter_consent: true,
+          rgpd_newsletter_consent_at: new Date().toISOString(),
+          adhesion_commentaires: data.commentaires ?? null,
+          types_marches_interets: merged,
+        };
+        // ne pas écraser des valeurs déjà renseignées
+        if (data.telephone && !existing?.telephone) updatePatch.telephone = data.telephone;
+        if (data.ville && !existing?.ville) updatePatch.ville = data.ville;
+        if (data.autre_type_marche && !existing?.autre_type_marche) {
+          updatePatch.autre_type_marche = data.autre_type_marche;
+        }
+
+        const { error: updErr } = await supabase
+          .from('community_profiles')
+          .update(updatePatch)
+          .eq('id', matchedProfileId);
+
+        if (updErr) {
+          console.error('profile update failed (non-fatal)', updErr);
+        } else {
+          outcome = 'linked';
+        }
+      } catch (e) {
+        console.error('profile update threw (non-fatal)', e);
       }
     }
 
