@@ -14,6 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
+      adhesion_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          label: string
+          slug: string
+          support: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          slug: string
+          support?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          slug?: string
+          support?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      adhesion_requests: {
+        Row: {
+          admin_notes: string | null
+          autre_type_marche: string | null
+          campaign: string | null
+          college_demande:
+            | Database["public"]["Enums"]["adhesion_college"]
+            | null
+          commentaires: string | null
+          created_at: string
+          email: string
+          id: string
+          matched_profile_id: string | null
+          nom: string
+          prenom: string
+          rgpd_consent: boolean
+          source: string | null
+          status: string
+          telephone: string | null
+          types_marches: string[]
+          updated_at: string
+          user_agent: string | null
+          ville: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          autre_type_marche?: string | null
+          campaign?: string | null
+          college_demande?:
+            | Database["public"]["Enums"]["adhesion_college"]
+            | null
+          commentaires?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          matched_profile_id?: string | null
+          nom: string
+          prenom: string
+          rgpd_consent?: boolean
+          source?: string | null
+          status?: string
+          telephone?: string | null
+          types_marches?: string[]
+          updated_at?: string
+          user_agent?: string | null
+          ville?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          autre_type_marche?: string | null
+          campaign?: string | null
+          college_demande?:
+            | Database["public"]["Enums"]["adhesion_college"]
+            | null
+          commentaires?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          matched_profile_id?: string | null
+          nom?: string
+          prenom?: string
+          rgpd_consent?: boolean
+          source?: string | null
+          status?: string
+          telephone?: string | null
+          types_marches?: string[]
+          updated_at?: string
+          user_agent?: string | null
+          ville?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adhesion_requests_matched_profile_id_fkey"
+            columns: ["matched_profile_id"]
+            isOneToOne: false
+            referencedRelation: "community_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -576,9 +692,17 @@ export type Database = {
       }
       community_profiles: {
         Row: {
+          adhesion_campaign: string | null
+          adhesion_commentaires: string | null
+          adhesion_date: string | null
+          adhesion_numero: number
+          adhesion_source: string | null
           autre_type_marche: string | null
           avatar_url: string | null
           certification_validee: boolean
+          college_adhesion:
+            | Database["public"]["Enums"]["adhesion_college"]
+            | null
           consentement_analyse_at: string | null
           created_at: string
           csp: Database["public"]["Enums"]["profile_csp"] | null
@@ -587,6 +711,7 @@ export type Database = {
           formation_validee: boolean
           genre: Database["public"]["Enums"]["profile_gender"] | null
           id: string
+          is_adherent: boolean
           kigo_accueil: string | null
           marches_count: number
           motivation: string | null
@@ -595,6 +720,8 @@ export type Database = {
           prenom: string
           public_event_consent: boolean
           recherche_prioritaire: string | null
+          rgpd_newsletter_consent: boolean
+          rgpd_newsletter_consent_at: string | null
           role: Database["public"]["Enums"]["community_role"]
           slug: string | null
           statut: string
@@ -606,9 +733,17 @@ export type Database = {
           ville: string | null
         }
         Insert: {
+          adhesion_campaign?: string | null
+          adhesion_commentaires?: string | null
+          adhesion_date?: string | null
+          adhesion_numero?: number
+          adhesion_source?: string | null
           autre_type_marche?: string | null
           avatar_url?: string | null
           certification_validee?: boolean
+          college_adhesion?:
+            | Database["public"]["Enums"]["adhesion_college"]
+            | null
           consentement_analyse_at?: string | null
           created_at?: string
           csp?: Database["public"]["Enums"]["profile_csp"] | null
@@ -617,6 +752,7 @@ export type Database = {
           formation_validee?: boolean
           genre?: Database["public"]["Enums"]["profile_gender"] | null
           id?: string
+          is_adherent?: boolean
           kigo_accueil?: string | null
           marches_count?: number
           motivation?: string | null
@@ -625,6 +761,8 @@ export type Database = {
           prenom: string
           public_event_consent?: boolean
           recherche_prioritaire?: string | null
+          rgpd_newsletter_consent?: boolean
+          rgpd_newsletter_consent_at?: string | null
           role?: Database["public"]["Enums"]["community_role"]
           slug?: string | null
           statut?: string
@@ -636,9 +774,17 @@ export type Database = {
           ville?: string | null
         }
         Update: {
+          adhesion_campaign?: string | null
+          adhesion_commentaires?: string | null
+          adhesion_date?: string | null
+          adhesion_numero?: number
+          adhesion_source?: string | null
           autre_type_marche?: string | null
           avatar_url?: string | null
           certification_validee?: boolean
+          college_adhesion?:
+            | Database["public"]["Enums"]["adhesion_college"]
+            | null
           consentement_analyse_at?: string | null
           created_at?: string
           csp?: Database["public"]["Enums"]["profile_csp"] | null
@@ -647,6 +793,7 @@ export type Database = {
           formation_validee?: boolean
           genre?: Database["public"]["Enums"]["profile_gender"] | null
           id?: string
+          is_adherent?: boolean
           kigo_accueil?: string | null
           marches_count?: number
           motivation?: string | null
@@ -655,6 +802,8 @@ export type Database = {
           prenom?: string
           public_event_consent?: boolean
           recherche_prioritaire?: string | null
+          rgpd_newsletter_consent?: boolean
+          rgpd_newsletter_consent_at?: string | null
           role?: Database["public"]["Enums"]["community_role"]
           slug?: string | null
           statut?: string
@@ -6884,6 +7033,7 @@ export type Database = {
       }
     }
     Enums: {
+      adhesion_college: "fondateurs" | "actifs" | "partenaires_mecenes"
       ai_recognition_status:
         | "pending"
         | "processing"
@@ -7072,6 +7222,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      adhesion_college: ["fondateurs", "actifs", "partenaires_mecenes"],
       ai_recognition_status: [
         "pending",
         "processing",

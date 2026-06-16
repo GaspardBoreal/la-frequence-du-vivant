@@ -89,6 +89,9 @@ import PartagePublic from './pages/PartagePublic';
 import CarnetMarcheur from './pages/CarnetMarcheur';
 import { AdminChatBotMount } from './components/chatbot/AdminChatBotMount';
 import { CommunityChatBotMount } from './components/chatbot/CommunityChatBotMount';
+import Adhesion from './pages/Adhesion';
+import AdhesionAdmin from './pages/AdhesionAdmin';
+import AdhesionFab from './components/adhesion/AdhesionFab';
 import ApiMcpPublic from './pages/ApiMcpPublic';
 import AdminApiMcp from './pages/AdminApiMcp';
 import AdminAuditFrugalHub from './pages/AdminAuditFrugalHub';
@@ -314,12 +317,18 @@ function App() {
             <Route path="/presentation" element={<ProjectPresentation />} />
             <Route path="/partage/:id" element={<PartagePublic />} />
             <Route path="/marcheur/:slug/carnet" element={<CarnetMarcheur />} />
-            
+
+            {/* Adhésion association */}
+            <Route path="/adhesion" element={<Adhesion />} />
+            <Route path="/admin/adhesions" element={<AdminAuth><AdhesionAdmin /></AdminAuth>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AdminChatBotMount />
           <CommunityChatBotMount />
+          <AdhesionFab />
           <Toaster position="top-right" />
+
             </BrowserRouter>
           </AudioProvider>
         </LanguageProvider>
