@@ -52,7 +52,7 @@ const AdhesionAdmin: React.FC = () => {
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [selectedCollege, setSelectedCollege] = useState<'actifs' | 'fondateurs' | 'partenaires_mecenes'>('actifs');
   const [linkBusy, setLinkBusy] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -82,14 +82,14 @@ const AdhesionAdmin: React.FC = () => {
   }, [selectedCampaign]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, qrUrl, {
+    if (!canvasEl) return;
+    QRCode.toCanvas(canvasEl, qrUrl, {
       width: 360,
       margin: 2,
       color: { dark: '#0D6B58', light: '#FAF8F3' },
       errorCorrectionLevel: 'H',
     }).catch(console.error);
-  }, [qrUrl]);
+  }, [qrUrl, canvasEl]);
 
   const handleDownload = async (format: 'png' | 'svg') => {
     if (format === 'png') {
@@ -301,7 +301,7 @@ const AdhesionAdmin: React.FC = () => {
               </div>
               <div className="flex items-center justify-center">
                 <div className="p-6 rounded-2xl bg-[#FAF8F3] shadow-sm border border-stone-200">
-                  <canvas ref={canvasRef} />
+                  <canvas ref={setCanvasEl} />
                 </div>
               </div>
             </Card>
