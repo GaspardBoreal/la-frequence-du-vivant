@@ -9,6 +9,7 @@ import {
   Sparkles,
   ArrowLeft,
   ChevronsLeft,
+  ListChecks,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -36,6 +37,7 @@ const ITEMS: NavItem[] = [
   { to: '/admin/crm', label: 'Accueil', icon: LayoutDashboard, end: true },
   { to: '/admin/crm/annuaire', label: 'Annuaire', icon: Building2 },
   { to: '/admin/crm/pipeline', label: 'Opportunités', icon: Target },
+  { to: '/admin/crm/missions', label: 'Missions', icon: ListChecks, badge: 'Nouveau' },
   { to: '/admin/crm/marches', label: 'Marches', icon: CalendarRange },
   { to: '/admin/crm/equipe', label: 'Équipe', icon: Users },
   { to: '/admin/crm/ia', label: 'IA', icon: Sparkles, badge: 'Bientôt' },

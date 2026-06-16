@@ -13,6 +13,7 @@ import { useCrmHomeStats } from '@/hooks/useCrmHomeStats';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { BentoKpiTile } from '@/components/crm/home/BentoKpiTile';
 import { PipelineFunnelTile } from '@/components/crm/home/PipelineFunnelTile';
+import { BriefDuMatinTile } from '@/components/crm/home/BriefDuMatinTile';
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
@@ -49,6 +50,7 @@ const CrmHome: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-12 gap-4 auto-rows-[minmax(140px,auto)]">
+        <BriefDuMatinTile />
         <PipelineFunnelTile
           suspects={s.suspects}
           prospects={s.prospects}
