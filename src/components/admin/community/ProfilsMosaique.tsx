@@ -7,6 +7,7 @@ import {
 } from '@/lib/communityProfileTaxonomy';
 import ProfilCard from './ProfilCard';
 import NetworkFilters, { type NetworkFilterMode, type SpecialFilter } from './NetworkFilters';
+import AdhesionFilters, { type AdhesionFilter, type CollegeFilter } from './AdhesionFilters';
 import SuggestionsBanner from './SuggestionsBanner';
 import type { EditableProfile } from './MarcheurEditSheet';
 import { useAllScienceAccounts } from '@/hooks/useScienceAccounts';
