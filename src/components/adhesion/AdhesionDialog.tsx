@@ -154,20 +154,20 @@ export const AdhesionForm: React.FC<AdhesionFormProps> = ({ onSuccess, source, e
 
       <div className="space-y-2">
         <Label>Quels types de marche vous attirent ?</Label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {TYPES.map((t) => (
             <button
               type="button"
               key={t.value}
               onClick={() => toggleType(t.value)}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${
+              className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-base min-h-[52px] w-full transition ${
                 form.types_marches.includes(t.value)
                   ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-100'
                   : 'border-stone-200 dark:border-emerald-500/20 hover:border-emerald-300'
               }`}
             >
-              <span>{t.emoji}</span>
-              <span>{t.label}</span>
+              <span className="shrink-0 text-lg">{t.emoji}</span>
+              <span className="truncate">{t.label}</span>
             </button>
           ))}
         </div>
