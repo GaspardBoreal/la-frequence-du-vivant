@@ -73,6 +73,7 @@ import CrmShell from './layouts/CrmShell';
 import CrmHome from './pages/CrmHome';
 import CrmMarches from './pages/CrmMarches';
 import CrmIa from './pages/CrmIa';
+import CrmMissions from './pages/CrmMissions';
 import MarchesDuVivantConnexion from './pages/MarchesDuVivantConnexion';
 import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
 import MarchesDuVivantValiderPresence from './pages/MarchesDuVivantValiderPresence';
@@ -243,6 +244,7 @@ function App() {
               <Route index element={<CrmHome />} />
               <Route path="annuaire" element={<CrmAnnuaire />} />
               <Route path="pipeline" element={<CrmPipeline />} />
+              <Route path="missions" element={<CrmMissions />} />
               <Route path="marches" element={<CrmMarches />} />
               <Route path="equipe" element={<TeamManagement />} />
               <Route path="ia" element={<CrmIa />} />

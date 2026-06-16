@@ -7,6 +7,7 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   '/admin/crm': { title: 'Accueil', subtitle: "Vue d'ensemble du CRM" },
   '/admin/crm/annuaire': { title: 'Annuaire', subtitle: 'Recherche, entreprises et carte' },
   '/admin/crm/pipeline': { title: 'Opportunités', subtitle: 'Pipeline commercial' },
+  '/admin/crm/missions': { title: 'Missions', subtitle: 'ToDo prédictif des Bizdev' },
   '/admin/crm/marches': { title: 'Marches', subtitle: 'Événements et entreprises liées' },
   '/admin/crm/equipe': { title: 'Équipe', subtitle: 'Membres et rôles' },
   '/admin/crm/ia': { title: 'IA', subtitle: 'Assistant intelligent — bientôt' },
