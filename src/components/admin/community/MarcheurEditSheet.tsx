@@ -35,7 +35,23 @@ export interface EditableProfile {
   genre?: string | null;
   csp?: string | null;
   csp_precision?: string | null;
+  is_adherent?: boolean | null;
+  college_adhesion?: 'fondateurs' | 'actifs' | 'partenaires_mecenes' | null;
+  adhesion_date?: string | null;
+  adhesion_numero?: number | null;
 }
+
+export const COLLEGE_LABELS: Record<'fondateurs' | 'actifs' | 'partenaires_mecenes', string> = {
+  fondateurs: 'Fondateurs',
+  actifs: 'Actifs',
+  partenaires_mecenes: 'Partenaires & Mécènes',
+};
+
+export const COLLEGE_BADGE_CLASSES: Record<'fondateurs' | 'actifs' | 'partenaires_mecenes', string> = {
+  fondateurs: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-500/40',
+  actifs: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-500/40',
+  partenaires_mecenes: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-500/40',
+};
 
 const ROLE_OPTIONS = [
   { value: 'marcheur_en_devenir', label: 'En devenir' },
