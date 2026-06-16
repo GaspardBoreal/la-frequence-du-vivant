@@ -23,7 +23,7 @@ const CrmMissions: React.FC = () => {
   const [mine, setMine] = React.useState(false);
   const [openMission, setOpenMission] = React.useState<CrmMission | null>(null);
 
-  const { missions, isLoading, updateStatus } = useCrmMissions({
+  const { missions, isLoading, updateStatus, updateMission } = useCrmMissions({
     search,
     priorite: priorite === 'all' ? null : priorite,
     assignee: assignee === 'all' ? null : assignee,
