@@ -82,14 +82,14 @@ const AdhesionAdmin: React.FC = () => {
   }, [selectedCampaign]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, qrUrl, {
+    if (!canvasEl) return;
+    QRCode.toCanvas(canvasEl, qrUrl, {
       width: 360,
       margin: 2,
       color: { dark: '#0D6B58', light: '#FAF8F3' },
       errorCorrectionLevel: 'H',
     }).catch(console.error);
-  }, [qrUrl]);
+  }, [qrUrl, canvasEl]);
 
   const handleDownload = async (format: 'png' | 'svg') => {
     if (format === 'png') {
