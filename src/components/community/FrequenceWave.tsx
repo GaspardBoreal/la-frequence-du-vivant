@@ -166,17 +166,14 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
 
     if (!sessionStorage.getItem(sessionKey)) {
       sessionStorage.setItem(sessionKey, '1');
-      supabase.from('frequence_citations')
-        .update({ viewed_count: citation.viewed_count + 1 })
-        .eq('id', citation.id).then(() => {});
+      supabase.rpc('increment_citation_counter', { _id: citation.id, _kind: 'viewed' }).then(() => {});
     }
 
     if (!localStorage.getItem(shownKey)) {
       localStorage.setItem(shownKey, '1');
-      supabase.from('frequence_citations')
-        .update({ shown_count: citation.shown_count + 1 })
-        .eq('id', citation.id).then(() => {});
+      supabase.rpc('increment_citation_counter', { _id: citation.id, _kind: 'shown' }).then(() => {});
     }
+
   }, [citation.id, citation.viewed_count, citation.shown_count]);
 
   const bars = 16;
