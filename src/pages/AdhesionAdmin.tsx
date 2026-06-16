@@ -62,6 +62,7 @@ const AdhesionAdmin: React.FC = () => {
   };
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     fetchAll();
   }, []);
 
