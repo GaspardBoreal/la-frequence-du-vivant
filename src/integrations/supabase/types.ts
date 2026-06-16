@@ -6923,6 +6923,10 @@ export type Database = {
             Args: { lat1: number; lat2: number; lon1: number; lon2: number }
             Returns: number
           }
+      increment_citation_counter: {
+        Args: { _id: string; _kind: string }
+        Returns: undefined
+      }
       increment_download_count: {
         Args: { export_slug: string }
         Returns: undefined
