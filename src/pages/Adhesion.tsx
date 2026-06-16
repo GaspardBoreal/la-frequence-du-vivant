@@ -20,7 +20,7 @@ const Adhesion: React.FC = () => {
               <Sparkles className="w-3.5 h-3.5" /> Association loi 1901
             </div>
             <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-3">
-              Devenez marcheur de la <span className="text-emerald-600 dark:text-emerald-300">Fréquence</span>
+              Devenez marcheur de la <span className="text-emerald-600 dark:text-emerald-300">Fréquence du Vivant</span>
             </h1>
             <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
               Une association qui relie marcheurs, scientifiques, artistes, agriculteurs et territoires

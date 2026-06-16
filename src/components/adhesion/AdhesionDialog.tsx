@@ -229,7 +229,7 @@ export const AdhesionForm: React.FC<AdhesionFormProps> = ({ onSuccess, source, e
 
       <Button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
         {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Heart className="w-4 h-4 mr-2" />}
-        Rejoindre la Fréquence
+        Rejoindre l'association
       </Button>
     </form>
   );
