@@ -283,6 +283,63 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
 
           <Separator />
 
+          {/* Adhésion association */}
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Heart className="h-4 w-4 text-rose-500" /> Adhésion association
+            </h3>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="text-sm">
+                <div className="font-medium">Adhérent·e à la Fréquence du Vivant</div>
+                <div className="text-xs text-muted-foreground">
+                  Active l'appartenance à un collège et la date d'adhésion.
+                </div>
+              </div>
+              <Switch
+                checked={!!form.is_adherent}
+                onCheckedChange={v => {
+                  update('is_adherent', v);
+                  if (v && !form.college_adhesion) update('college_adhesion', 'actifs');
+                }}
+              />
+            </div>
+            {form.is_adherent && (
+              <>
+                <div>
+                  <Label>Collège</Label>
+                  <Select
+                    value={form.college_adhesion ?? 'actifs'}
+                    onValueChange={v => update('college_adhesion', v as EditableProfile['college_adhesion'])}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="actifs">Collège des Actifs</SelectItem>
+                      <SelectItem value="fondateurs">Collège des Fondateurs</SelectItem>
+                      <SelectItem value="partenaires_mecenes">Collège des Partenaires & Mécènes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="adhdate">Date d'adhésion</Label>
+                    <Input
+                      id="adhdate"
+                      type="date"
+                      value={form.adhesion_date ? form.adhesion_date.slice(0, 10) : ''}
+                      onChange={e => update('adhesion_date', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                    />
+                  </div>
+                  <div>
+                    <Label>N° d'adhérent</Label>
+                    <Input value={form.adhesion_numero ?? ''} disabled placeholder="Attribué auto" />
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
+
+          <Separator />
+
           <section className="space-y-3">
             <ProfileSuggestionsList profileId={form.id} />
             <ScienceAccountsEditor ref={scienceRef} profileId={form.id} />
