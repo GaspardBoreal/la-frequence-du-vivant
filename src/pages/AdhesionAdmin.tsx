@@ -153,16 +153,26 @@ const AdhesionAdmin: React.FC = () => {
   };
 
   const searchProfiles = async (q: string) => {
-    if (!q || q.trim().length < 2) {
+    const tokens = (q || '')
+      .split(/\s+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length >= 2);
+    if (tokens.length === 0) {
       setProfileResults([]);
       return;
     }
-    const term = `%${q.trim()}%`;
-    const { data } = await supabase
+    let query = supabase
       .from('community_profiles')
-      .select('id, prenom, nom, ville')
-      .or(`prenom.ilike.${term},nom.ilike.${term},ville.ilike.${term}`)
+      .select('id, prenom, nom, ville, user_id')
+      .order('nom', { ascending: true })
       .limit(20);
+    // Chaque token doit matcher au moins un des champs (AND entre tokens,
+    // OR entre champs) — permet de trouver "Gaspard Boréal" via prenom + nom.
+    for (const t of tokens) {
+      const term = `%${t}%`;
+      query = query.or(`prenom.ilike.${term},nom.ilike.${term},ville.ilike.${term}`);
+    }
+    const { data } = await query;
     setProfileResults((data as any) ?? []);
   };
 
