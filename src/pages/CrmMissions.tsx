@@ -23,7 +23,7 @@ const CrmMissions: React.FC = () => {
   const [mine, setMine] = React.useState(false);
   const [openMission, setOpenMission] = React.useState<CrmMission | null>(null);
 
-  const { missions, isLoading, updateStatus } = useCrmMissions({
+  const { missions, isLoading, updateStatus, updateMission } = useCrmMissions({
     search,
     priorite: priorite === 'all' ? null : priorite,
     assignee: assignee === 'all' ? null : assignee,
@@ -143,7 +143,12 @@ const CrmMissions: React.FC = () => {
             onStatusChange={(id, statut) => updateStatus.mutate({ id, statut })}
           />
         ) : view === 'planning' ? (
-          <MissionsPlanning missions={missions} onOpen={setOpenMission} />
+          <MissionsPlanning
+            missions={missions}
+            onOpen={setOpenMission}
+            onReschedule={(id, due_at) => updateMission.mutate({ id, due_at })}
+          />
+
         ) : (
           <MissionsList missions={missions} onOpen={setOpenMission} />
         )}
