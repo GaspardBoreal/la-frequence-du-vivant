@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Save, X, ShieldCheck, GraduationCap, Award } from 'lucide-react';
+import { Save, X, ShieldCheck, GraduationCap, Award, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,7 +35,23 @@ export interface EditableProfile {
   genre?: string | null;
   csp?: string | null;
   csp_precision?: string | null;
+  is_adherent?: boolean | null;
+  college_adhesion?: 'fondateurs' | 'actifs' | 'partenaires_mecenes' | null;
+  adhesion_date?: string | null;
+  adhesion_numero?: number | null;
 }
+
+export const COLLEGE_LABELS: Record<'fondateurs' | 'actifs' | 'partenaires_mecenes', string> = {
+  fondateurs: 'Fondateurs',
+  actifs: 'Actifs',
+  partenaires_mecenes: 'Partenaires & Mécènes',
+};
+
+export const COLLEGE_BADGE_CLASSES: Record<'fondateurs' | 'actifs' | 'partenaires_mecenes', string> = {
+  fondateurs: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-500/40',
+  actifs: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-500/40',
+  partenaires_mecenes: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-500/40',
+};
 
 const ROLE_OPTIONS = [
   { value: 'marcheur_en_devenir', label: 'En devenir' },
@@ -101,6 +117,11 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
           role: payload.role as never,
           formation_validee: payload.formation_validee,
           certification_validee: payload.certification_validee,
+          is_adherent: !!payload.is_adherent,
+          college_adhesion: (payload.is_adherent ? (payload.college_adhesion ?? 'actifs') : null) as never,
+          adhesion_date: payload.is_adherent
+            ? (payload.adhesion_date ?? new Date().toISOString())
+            : null,
         })
         .eq('id', payload.id);
       if (error) throw error;
@@ -258,6 +279,63 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
               </div>
               <Switch checked={form.certification_validee} onCheckedChange={v => update('certification_validee', v)} />
             </div>
+          </section>
+
+          <Separator />
+
+          {/* Adhésion association */}
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Heart className="h-4 w-4 text-rose-500" /> Adhésion association
+            </h3>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="text-sm">
+                <div className="font-medium">Adhérent·e à la Fréquence du Vivant</div>
+                <div className="text-xs text-muted-foreground">
+                  Active l'appartenance à un collège et la date d'adhésion.
+                </div>
+              </div>
+              <Switch
+                checked={!!form.is_adherent}
+                onCheckedChange={v => {
+                  update('is_adherent', v);
+                  if (v && !form.college_adhesion) update('college_adhesion', 'actifs');
+                }}
+              />
+            </div>
+            {form.is_adherent && (
+              <>
+                <div>
+                  <Label>Collège</Label>
+                  <Select
+                    value={form.college_adhesion ?? 'actifs'}
+                    onValueChange={v => update('college_adhesion', v as EditableProfile['college_adhesion'])}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="actifs">Collège des Actifs</SelectItem>
+                      <SelectItem value="fondateurs">Collège des Fondateurs</SelectItem>
+                      <SelectItem value="partenaires_mecenes">Collège des Partenaires & Mécènes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="adhdate">Date d'adhésion</Label>
+                    <Input
+                      id="adhdate"
+                      type="date"
+                      value={form.adhesion_date ? form.adhesion_date.slice(0, 10) : ''}
+                      onChange={e => update('adhesion_date', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                    />
+                  </div>
+                  <div>
+                    <Label>N° d'adhérent</Label>
+                    <Input value={form.adhesion_numero ?? ''} disabled placeholder="Attribué auto" />
+                  </div>
+                </div>
+              </>
+            )}
           </section>
 
           <Separator />

@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Download, QrCode, Plus, Loader2, Users, Heart, ArrowLeft } from 'lucide-react';
+import { Download, QrCode, Plus, Loader2, Users, Heart, ArrowLeft, Link2, X, Search } from 'lucide-react';
 
 interface Campaign {
   id: string;
@@ -44,6 +46,12 @@ const AdhesionAdmin: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState<string>('flyer-devenez-marcheur');
   const [newCampaign, setNewCampaign] = useState({ slug: '', label: '', support: '', description: '' });
+  const [linkingRequest, setLinkingRequest] = useState<AdhesionRequest | null>(null);
+  const [profileSearch, setProfileSearch] = useState('');
+  const [profileResults, setProfileResults] = useState<Array<{ id: string; prenom: string; nom: string; ville: string | null }>>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedCollege, setSelectedCollege] = useState<'actifs' | 'fondateurs' | 'partenaires_mecenes'>('actifs');
+  const [linkBusy, setLinkBusy] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const fetchAll = async () => {
@@ -133,6 +141,73 @@ const AdhesionAdmin: React.FC = () => {
     setNewCampaign({ slug: '', label: '', support: '', description: '' });
     fetchAll();
   };
+
+  // Ouvre le dialogue de rattachement, pré-rempli avec le nom de la demande
+  const openLinkDialog = async (r: AdhesionRequest) => {
+    setLinkingRequest(r);
+    setSelectedProfileId(null);
+    setSelectedCollege((r.college_demande as any) || 'actifs');
+    const initial = `${r.prenom} ${r.nom}`.trim();
+    setProfileSearch(initial);
+    await searchProfiles(initial);
+  };
+
+  const searchProfiles = async (q: string) => {
+    if (!q || q.trim().length < 2) {
+      setProfileResults([]);
+      return;
+    }
+    const term = `%${q.trim()}%`;
+    const { data } = await supabase
+      .from('community_profiles')
+      .select('id, prenom, nom, ville')
+      .or(`prenom.ilike.${term},nom.ilike.${term},ville.ilike.${term}`)
+      .limit(20);
+    setProfileResults((data as any) ?? []);
+  };
+
+  const confirmLink = async () => {
+    if (!linkingRequest || !selectedProfileId) return;
+    setLinkBusy(true);
+    try {
+      const { error: pErr } = await supabase
+        .from('community_profiles')
+        .update({
+          is_adherent: true,
+          college_adhesion: selectedCollege as never,
+          adhesion_date: new Date().toISOString(),
+          adhesion_source: linkingRequest.source ?? 'manual_admin',
+          adhesion_campaign: linkingRequest.campaign ?? null,
+          adhesion_commentaires: null,
+        })
+        .eq('id', selectedProfileId);
+      if (pErr) throw pErr;
+      const { error: rErr } = await supabase
+        .from('adhesion_requests')
+        .update({ status: 'linked', matched_profile_id: selectedProfileId })
+        .eq('id', linkingRequest.id);
+      if (rErr) throw rErr;
+      toast.success('Demande rattachée et adhésion activée');
+      setLinkingRequest(null);
+      fetchAll();
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur lors du rattachement');
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
+  const rejectRequest = async (r: AdhesionRequest) => {
+    if (!confirm(`Refuser la demande de ${r.prenom} ${r.nom} ?`)) return;
+    const { error } = await supabase
+      .from('adhesion_requests')
+      .update({ status: 'rejected' })
+      .eq('id', r.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Demande refusée');
+    fetchAll();
+  };
+
 
   const stats = useMemo(() => {
     const byStatus = requests.reduce<Record<string, number>>((acc, r) => {
@@ -299,6 +374,7 @@ const AdhesionAdmin: React.FC = () => {
                         <th className="text-left p-2">Collège</th>
                         <th className="text-left p-2">Source</th>
                         <th className="text-left p-2">Statut</th>
+                        <th className="text-left p-2">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -316,16 +392,36 @@ const AdhesionAdmin: React.FC = () => {
                           <td className="p-2">
                             <Badge
                               variant={r.status === 'linked' ? 'default' : 'secondary'}
-                              className={r.status === 'linked' ? 'bg-emerald-600' : ''}
+                              className={
+                                r.status === 'linked'
+                                  ? 'bg-emerald-600'
+                                  : r.status === 'rejected'
+                                    ? 'bg-stone-400'
+                                    : ''
+                              }
                             >
-                              {r.status}
+                              {r.status === 'linked' ? '✓ Liée' : r.status === 'rejected' ? 'Refusée' : 'En attente'}
                             </Badge>
+                          </td>
+                          <td className="p-2">
+                            {r.status === 'pending' ? (
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="outline" onClick={() => openLinkDialog(r)}>
+                                  <Link2 className="w-3.5 h-3.5 mr-1" /> Rattacher
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => rejectRequest(r)}>
+                                  <X className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
                           </td>
                         </tr>
                       ))}
                       {requests.length === 0 && (
                         <tr>
-                          <td colSpan={8} className="p-6 text-center text-muted-foreground">
+                          <td colSpan={9} className="p-6 text-center text-muted-foreground">
                             Aucune demande d'adhésion pour l'instant.
                           </td>
                         </tr>
@@ -335,8 +431,84 @@ const AdhesionAdmin: React.FC = () => {
                 </div>
               )}
             </Card>
+
+            <Card className="p-4 text-xs text-muted-foreground space-y-1">
+              <p>
+                <strong>Liée</strong> · l'email correspond à un compte existant et le profil a été automatiquement
+                passé en Collège des Actifs.
+              </p>
+              <p>
+                <strong>En attente</strong> · aucun compte ne correspond à cet email. Cliquez sur
+                « Rattacher » pour relier la demande à un profil existant et choisir son collège (Actifs, Fondateurs,
+                Partenaires &amp; Mécènes).
+              </p>
+              <p>
+                Pour changer le collège d'un adhérent après coup, ouvrez sa fiche dans
+                <strong> /admin/community → onglet Profils</strong> et utilisez la section « Adhésion association ».
+              </p>
+            </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={!!linkingRequest} onOpenChange={(v) => !v && setLinkingRequest(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Rattacher la demande à un profil</DialogTitle>
+              <DialogDescription>
+                {linkingRequest && (
+                  <>Demande de <strong>{linkingRequest.prenom} {linkingRequest.nom}</strong> ({linkingRequest.email}).</>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>Rechercher un profil</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    value={profileSearch}
+                    onChange={(e) => { setProfileSearch(e.target.value); searchProfiles(e.target.value); }}
+                    placeholder="Prénom, nom, ville…"
+                  />
+                </div>
+              </div>
+              <div className="max-h-60 overflow-auto border rounded-md divide-y">
+                {profileResults.length === 0 ? (
+                  <p className="p-3 text-sm text-muted-foreground">Aucun profil trouvé.</p>
+                ) : profileResults.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedProfileId(p.id)}
+                    className={`w-full text-left p-2 text-sm hover:bg-muted transition ${selectedProfileId === p.id ? 'bg-primary/10' : ''}`}
+                  >
+                    <div className="font-medium">{p.prenom} {p.nom}</div>
+                    {p.ville && <div className="text-xs text-muted-foreground">{p.ville}</div>}
+                  </button>
+                ))}
+              </div>
+              <div>
+                <Label>Collège d'adhésion</Label>
+                <Select value={selectedCollege} onValueChange={(v) => setSelectedCollege(v as any)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="actifs">Collège des Actifs</SelectItem>
+                    <SelectItem value="fondateurs">Collège des Fondateurs</SelectItem>
+                    <SelectItem value="partenaires_mecenes">Collège des Partenaires &amp; Mécènes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setLinkingRequest(null)}>Annuler</Button>
+              <Button onClick={confirmLink} disabled={!selectedProfileId || linkBusy}>
+                {linkBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Link2 className="w-4 h-4 mr-2" />}
+                Rattacher &amp; activer l'adhésion
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

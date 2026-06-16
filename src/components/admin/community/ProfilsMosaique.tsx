@@ -7,6 +7,7 @@ import {
 } from '@/lib/communityProfileTaxonomy';
 import ProfilCard from './ProfilCard';
 import NetworkFilters, { type NetworkFilterMode, type SpecialFilter } from './NetworkFilters';
+import AdhesionFilters, { type AdhesionFilter, type CollegeFilter } from './AdhesionFilters';
 import SuggestionsBanner from './SuggestionsBanner';
 import type { EditableProfile } from './MarcheurEditSheet';
 import { useAllScienceAccounts } from '@/hooks/useScienceAccounts';
@@ -35,6 +36,8 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
   const [selectedNetworks, setSelectedNetworks] = useState<ScienceNetwork[]>([]);
   const [networkMode, setNetworkMode] = useState<NetworkFilterMode>('or');
   const [special, setSpecial] = useState<SpecialFilter>('none');
+  const [adhesion, setAdhesion] = useState<AdhesionFilter>('all');
+  const [college, setCollege] = useState<CollegeFilter>('all');
 
   const { data: allAccounts = [] } = useAllScienceAccounts();
 
@@ -73,6 +76,19 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
   );
   const totalWithoutAny = enriched.length - totalWithAny;
 
+  const adhesionCounts = useMemo(() => {
+    let yes = 0;
+    const byCollege = { actifs: 0, fondateurs: 0, partenaires_mecenes: 0 } as Record<'actifs' | 'fondateurs' | 'partenaires_mecenes', number>;
+    for (const p of enriched) {
+      if (p.is_adherent) {
+        yes++;
+        const c = (p.college_adhesion ?? 'actifs') as keyof typeof byCollege;
+        if (c in byCollege) byCollege[c]++;
+      }
+    }
+    return { yes, no: enriched.length - yes, byCollege };
+  }, [enriched]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return enriched.filter(p => {
@@ -86,6 +102,13 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
       if (age !== 'all') {
         const b = computeAgeBracket(p.date_naissance);
         if (b !== age) return false;
+      }
+
+      // Adhésion filter
+      if (adhesion === 'yes' && !p.is_adherent) return false;
+      if (adhesion === 'no' && p.is_adherent) return false;
+      if (adhesion === 'yes' && college !== 'all') {
+        if ((p.college_adhesion ?? 'actifs') !== college) return false;
       }
 
       // Special filters
@@ -103,7 +126,7 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
       }
       return true;
     });
-  }, [enriched, search, age, gender, csp, role, selectedNetworks, networkMode, special]);
+  }, [enriched, search, age, gender, csp, role, selectedNetworks, networkMode, special, adhesion, college]);
 
   return (
     <div className="space-y-4">
@@ -152,6 +175,18 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
         totalWithAny={totalWithAny}
         totalWithoutAny={totalWithoutAny}
       />
+
+      <AdhesionFilters
+        filter={adhesion}
+        onFilterChange={setAdhesion}
+        college={college}
+        onCollegeChange={setCollege}
+        total={enriched.length}
+        adherents={adhesionCounts.yes}
+        nonAdherents={adhesionCounts.no}
+        collegeCounts={adhesionCounts.byCollege}
+      />
+
 
       <div className="flex items-center justify-between">
         <Select value={role} onValueChange={setRole}>

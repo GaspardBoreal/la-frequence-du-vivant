@@ -1,12 +1,13 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, MapPin, Sparkles, CalendarPlus } from 'lucide-react';
+import { Pencil, MapPin, Sparkles, CalendarPlus, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   ageBracketLabel, computeAgeBracket, cspShortLabel, genderLabel,
 } from '@/lib/communityProfileTaxonomy';
-import type { EditableProfile } from './MarcheurEditSheet';
+import { COLLEGE_LABELS, COLLEGE_BADGE_CLASSES, type EditableProfile } from './MarcheurEditSheet';
 import type { ScienceAccount } from '@/types/scienceAccounts';
 import NetworkBadge from './NetworkBadge';
 
@@ -35,6 +36,25 @@ export const ProfilCard: React.FC<Props> = ({ profile, onEdit }) => {
     >
       <Card className="relative overflow-hidden h-full p-4 backdrop-blur bg-card/80 border-border/60 hover:border-primary/40 hover:shadow-lg transition-all">
         <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-primary/5 group-hover:bg-primary/10 transition-colors" />
+
+        {profile.is_adherent && profile.college_adhesion && (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`absolute top-2 right-2 z-10 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${COLLEGE_BADGE_CLASSES[profile.college_adhesion]}`}
+                >
+                  <Heart className="h-2.5 w-2.5 fill-current" />
+                  {COLLEGE_LABELS[profile.college_adhesion]}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                Adhérent·e — Collège des {COLLEGE_LABELS[profile.college_adhesion]}
+                {profile.adhesion_date && ` depuis le ${new Date(profile.adhesion_date).toLocaleDateString('fr-FR')}`}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
 
         <div className="relative flex items-start gap-3">
           {profile.avatar_url ? (
