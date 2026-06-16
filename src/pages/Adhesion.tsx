@@ -10,7 +10,7 @@ const Adhesion: React.FC = () => {
       <SEOHead
         title="Adhérer à La Fréquence du Vivant — Association"
         description="Rejoignez l'association La Fréquence du Vivant : marcheurs, partenaires, mécènes et fondateurs. Trois collèges pour faire vibrer le vivant ensemble."
-        canonical="https://la-frequence-du-vivant.com/adhesion"
+        canonicalUrl="https://la-frequence-du-vivant.com/adhesion"
       />
       <PublicTopBar />
       <main className="min-h-screen bg-gradient-to-b from-stone-50 to-emerald-50/30 dark:from-emerald-950 dark:to-emerald-950/80">
