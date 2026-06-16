@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban, Building2, Wrench } from 'lucide-react';
+import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban, Building2, Wrench, Heart } from 'lucide-react';
 import ApiHealthBanner from '@/components/api-mcp/ApiHealthBanner';
 import Footer from '@/components/Footer';
 
@@ -172,6 +172,24 @@ const AdminAccess: React.FC = () => {
               <Button variant="default" className="w-full">
                 <Briefcase className="h-4 w-4 mr-2" />
                 Accéder au CRM
+              </Button>
+            </Link>
+          </Card>
+
+          {/* 9. Adhésions */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center mb-4">
+              <Heart className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Adhésions</h2>
+            </div>
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
+              Générer les QR codes trackés, suivre les demandes d'adhésion
+              et piloter les collèges de l'association.
+            </p>
+            <Link to="/admin/adhesions">
+              <Button variant="outline" className="w-full">
+                <Heart className="h-4 w-4 mr-2" />
+                Accéder aux Adhésions
               </Button>
             </Link>
           </Card>
