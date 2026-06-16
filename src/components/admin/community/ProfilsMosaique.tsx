@@ -176,6 +176,18 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
         totalWithoutAny={totalWithoutAny}
       />
 
+      <AdhesionFilters
+        filter={adhesion}
+        onFilterChange={setAdhesion}
+        college={college}
+        onCollegeChange={setCollege}
+        total={enriched.length}
+        adherents={adhesionCounts.yes}
+        nonAdherents={adhesionCounts.no}
+        collegeCounts={adhesionCounts.byCollege}
+      />
+
+
       <div className="flex items-center justify-between">
         <Select value={role} onValueChange={setRole}>
           <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
