@@ -36,6 +36,8 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
   const [selectedNetworks, setSelectedNetworks] = useState<ScienceNetwork[]>([]);
   const [networkMode, setNetworkMode] = useState<NetworkFilterMode>('or');
   const [special, setSpecial] = useState<SpecialFilter>('none');
+  const [adhesion, setAdhesion] = useState<AdhesionFilter>('all');
+  const [college, setCollege] = useState<CollegeFilter>('all');
 
   const { data: allAccounts = [] } = useAllScienceAccounts();
 
