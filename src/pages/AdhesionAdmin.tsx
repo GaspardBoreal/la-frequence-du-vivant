@@ -142,6 +142,73 @@ const AdhesionAdmin: React.FC = () => {
     fetchAll();
   };
 
+  // Ouvre le dialogue de rattachement, pré-rempli avec le nom de la demande
+  const openLinkDialog = async (r: AdhesionRequest) => {
+    setLinkingRequest(r);
+    setSelectedProfileId(null);
+    setSelectedCollege((r.college_demande as any) || 'actifs');
+    const initial = `${r.prenom} ${r.nom}`.trim();
+    setProfileSearch(initial);
+    await searchProfiles(initial);
+  };
+
+  const searchProfiles = async (q: string) => {
+    if (!q || q.trim().length < 2) {
+      setProfileResults([]);
+      return;
+    }
+    const term = `%${q.trim()}%`;
+    const { data } = await supabase
+      .from('community_profiles')
+      .select('id, prenom, nom, ville')
+      .or(`prenom.ilike.${term},nom.ilike.${term},ville.ilike.${term}`)
+      .limit(20);
+    setProfileResults((data as any) ?? []);
+  };
+
+  const confirmLink = async () => {
+    if (!linkingRequest || !selectedProfileId) return;
+    setLinkBusy(true);
+    try {
+      const { error: pErr } = await supabase
+        .from('community_profiles')
+        .update({
+          is_adherent: true,
+          college_adhesion: selectedCollege as never,
+          adhesion_date: new Date().toISOString(),
+          adhesion_source: linkingRequest.source ?? 'manual_admin',
+          adhesion_campaign: linkingRequest.campaign ?? null,
+          adhesion_commentaires: null,
+        })
+        .eq('id', selectedProfileId);
+      if (pErr) throw pErr;
+      const { error: rErr } = await supabase
+        .from('adhesion_requests')
+        .update({ status: 'linked', matched_profile_id: selectedProfileId })
+        .eq('id', linkingRequest.id);
+      if (rErr) throw rErr;
+      toast.success('Demande rattachée et adhésion activée');
+      setLinkingRequest(null);
+      fetchAll();
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur lors du rattachement');
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
+  const rejectRequest = async (r: AdhesionRequest) => {
+    if (!confirm(`Refuser la demande de ${r.prenom} ${r.nom} ?`)) return;
+    const { error } = await supabase
+      .from('adhesion_requests')
+      .update({ status: 'rejected' })
+      .eq('id', r.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Demande refusée');
+    fetchAll();
+  };
+
+
   const stats = useMemo(() => {
     const byStatus = requests.reduce<Record<string, number>>((acc, r) => {
       acc[r.status] = (acc[r.status] ?? 0) + 1;
