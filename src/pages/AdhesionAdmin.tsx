@@ -46,6 +46,12 @@ const AdhesionAdmin: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState<string>('flyer-devenez-marcheur');
   const [newCampaign, setNewCampaign] = useState({ slug: '', label: '', support: '', description: '' });
+  const [linkingRequest, setLinkingRequest] = useState<AdhesionRequest | null>(null);
+  const [profileSearch, setProfileSearch] = useState('');
+  const [profileResults, setProfileResults] = useState<Array<{ id: string; prenom: string; nom: string; ville: string | null }>>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedCollege, setSelectedCollege] = useState<'actifs' | 'fondateurs' | 'partenaires_mecenes'>('actifs');
+  const [linkBusy, setLinkBusy] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const fetchAll = async () => {
