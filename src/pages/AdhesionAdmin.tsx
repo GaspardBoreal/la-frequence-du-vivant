@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Download, QrCode, Plus, Loader2, Users, Heart, ArrowLeft } from 'lucide-react';
+import { Download, QrCode, Plus, Loader2, Users, Heart, ArrowLeft, Link2, X, Search } from 'lucide-react';
 
 interface Campaign {
   id: string;
