@@ -291,6 +291,8 @@ const CrmPipeline: React.FC = () => {
             onDeleteOpportunity={handleDeleteOpportunity}
             filterPredicate={matchesActions}
           />
+        ) : viewMode === 'map' ? (
+          <PipelineMapView opportunitiesAfterActions={opportunities.filter(matchesActions)} />
         ) : (
           <div className="bg-card rounded-lg border">
             <Table>
