@@ -421,12 +421,116 @@ function BiodivSection({ onOpen }: { onOpen: (url: string) => void }) {
         ))}
       </div>
 
+      <PatioBiodivLiveCounters />
+
       <div className="text-center">
         <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
           <Link to="/mon-espace">
             <Leaf className="mr-2 h-4 w-4" /> Voir l'expérience biodiversité dans l'app
           </Link>
         </Button>
+      </div>
+    </div>
+  );
+}
+
+/* --------------- LIVE COUNTERS · Patio ISEG --------------- */
+const PATIO_ISEG_EXPLORATION_ID = "75e1bb5f-030c-4448-97b6-eeffef2e2dc8";
+
+function LiveStat({
+  value,
+  label,
+  Icon,
+  accent,
+  delay,
+  loading,
+}: {
+  value: number;
+  label: string;
+  Icon: typeof Layers;
+  accent: string;
+  delay: number;
+  loading: boolean;
+}) {
+  const animated = useAnimatedCounter(value, 1200, delay);
+  return (
+    <div className="relative rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-5 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors">
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center"
+        style={{ background: `${accent}1f`, color: accent }}
+      >
+        <Icon className="w-5 h-5" />
+      </div>
+      <span
+        className="font-crimson text-4xl md:text-5xl font-bold tabular-nums"
+        style={{ color: accent }}
+      >
+        {loading ? "—" : animated}
+      </span>
+      <span className="text-[10px] uppercase tracking-[0.15em] font-bold text-white/60 text-center">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function PatioBiodivLiveCounters() {
+  const { data, isLoading, isError } = useExplorationSpeciesCount(
+    PATIO_ISEG_EXPLORATION_ID,
+    { realtime: true },
+  );
+
+  const total = data?.total ?? 0;
+  const k = data?.by_kingdom ?? { animalia: 0, plantae: 0, fungi: 0, others: 0 };
+  const loading = isLoading || isError;
+
+  return (
+    <div className="relative">
+      <div className="absolute -inset-2 bg-gradient-to-br from-[#c9a961]/20 via-transparent to-[#0d6b58]/20 rounded-[2rem] blur-2xl pointer-events-none" />
+      <div className="relative rounded-3xl bg-[#0d6b58] border border-[#c9a961]/30 shadow-2xl overflow-hidden">
+        <div className="pointer-events-none absolute -top-20 -right-20 w-72 h-72 rounded-full bg-[#c9a961]/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-16 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
+
+        <div className="relative p-8 md:p-12">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#c9a961]/40 bg-[#c9a961]/10 w-fit">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-[#c9a961] opacity-75 animate-ping" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#c9a961]" />
+              </span>
+              <Radio className="h-3 w-3 text-[#c9a961]" />
+              <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#c9a961]">
+                En direct du Patio ISEG
+              </span>
+            </div>
+            <span className="text-[11px] text-white/50 font-medium">
+              Données fusionnées iNaturalist + observations marcheurs
+            </span>
+          </div>
+
+          {/* Title */}
+          <div className="mb-10 max-w-2xl">
+            <h3 className="font-crimson text-4xl md:text-5xl text-white leading-tight">
+              Le Vivant compte —
+              <br />
+              <span className="italic text-[#c9a961]">et il compte vite.</span>
+            </h3>
+            <p className="mt-4 text-white/70 leading-relaxed">
+              Chaque observation publiée par la promo enrichit ce compteur en temps réel.
+              C'est l'IA au service du vivant, mesuré et restitué.
+            </p>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+            <LiveStat value={total} label="Espèces totales" Icon={Layers} accent="#34d399" delay={0} loading={loading} />
+            <LiveStat value={k.animalia} label="Faune" Icon={Bird} accent="#7dd3fc" delay={120} loading={loading} />
+            <LiveStat value={k.plantae} label="Flore" Icon={TreePine} accent="#86efac" delay={240} loading={loading} />
+            <LiveStat value={k.fungi} label="Champignons" Icon={Leaf} accent="#fcd34d" delay={360} loading={loading} />
+            <LiveStat value={k.others} label="Autre" Icon={Bug} accent="#c4b5fd" delay={480} loading={loading} />
+          </div>
+        </div>
       </div>
     </div>
   );
