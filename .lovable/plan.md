@@ -1,30 +1,43 @@
-# Refonte hero ISEGCOM Bordeaux
+# Compteurs biodiversité dynamiques · Patio ISEG
 
-## Scope strict
-Seul le hero de `src/pages/IsegcomBordeaux.tsx` est modifié. Onglets, galerie, sections Formation / Expérience Biodiv / Pourquoi nous, SEO, route, data : **aucun changement**.
+## Source de données
+- Event identifié : **BORDEAUX / Patio végétalisé ISEG** → `exploration_id = 75e1bb5f-030c-4448-97b6-eeffef2e2dc8`
+- Hook réutilisé : `useExplorationSpeciesCount(explorationId, { realtime: true })` — RPC `get_exploration_species_count` (fusion snapshots + marcheur_observations, dédoublonnée).
+- Renvoie `total` + `by_kingdom { animalia, plantae, fungi, others }` → mapping direct sur Espèces / Faune / Flore / Champignons / Autre.
 
-## Nouvelle direction artistique
-Split éditorial 7/5 sur fond **papier crème `#fdfbf7`** :
+## Insertion (scope strict : uniquement bas de la section Biodiv)
+Nouveau composant inline `PatioBiodivLiveCounters` placé **dans `BiodivSection`** de `src/pages/IsegcomBordeaux.tsx`, juste **après** la grille `Observer / Identifier / Restituer` et **avant** le CTA "Voir l'expérience biodiversité dans l'app". Rien d'autre n'est modifié.
 
-**Colonne gauche (7/12)**
-- Chip discret bordé `border-[#0d6b58]/10`, pastille dorée, label `ISEGCOM Bordeaux × Les Marches du Vivant`
-- Titre `Crimson Pro` 5xl→8xl, vert profond `#0d6b58`, italique doré souligné sur `prompt-e`
-- Sous-titre MBA en `text-[#0d6b58]/70`
-- Bloc citation à filet doré gauche `border-l-4 border-[#c9a961] bg-[#0d6b58]/5` : phrase formation + Laurent Tripied
-- Rangée CTA arrondi vert + 3 stats serif (13 / 02 / 01) séparées par un filet vertical fin
+## Direction artistique « hyper wahouhh »
+Bloc éditorial encadré, sur fond crème, qui prolonge le hero :
 
-**Colonne droite (5/12)**
-- Photo unique (Eleves_et_professeur_01) en `aspect-[3/4] rounded-[1.5rem] shadow-2xl`
-- Cadre doré décalé `-inset-4 border border-[#c9a961]/20 -rotate-1`
-- Gradient bas vert + bloc citation glassmorphism : *« L'impact réel naît de la rencontre entre l'IA et l'engagement collectif. »*
-- Halos flous décoratifs (or + vert)
+```text
+┌────────────────────────────────────────────────────────────┐
+│  ● EN DIRECT DU PATIO            mis à jour il y a Xs       │
+│                                                            │
+│       Le Vivant compte —                                   │
+│       et il compte vite.                                   │
+│                                                            │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐              │
+│  │  22  │ │   2  │ │   8  │ │   0  │ │  12  │              │
+│  │Espèces│ │Faune │ │Flore │ │Champ.│ │Autre │              │
+│  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘              │
+│                                                            │
+│  Données collectées par la promo via iNaturalist ·         │
+│  rafraîchies en temps réel.                                │
+└────────────────────────────────────────────────────────────┘
+```
 
-## Détails techniques
-- Garder Crimson Pro déjà chargé via Tailwind (`font-crimson`), pas de nouveau font à installer
-- Conserver le contenu textuel existant (titre, sous-titre, phrase, 3 stats, CTA "Découvrir les 13 projets" scrollant vers `#galerie`)
-- Couleurs hex en dur acceptées ici car prototype validé (palette Forest Emerald spécifique à cette page)
-- Animation Ken Burns douce sur la photo + fade-in titre via `animate-fade-in`
-- Mobile : stack vertical, photo en premier ou sous le bloc texte selon lisibilité
+- Carte large `rounded-3xl` fond `#0d6b58` (forêt profonde), filet doré `#c9a961/30`, ombre douce — contraste fort avec le crème de la page
+- Pastille « EN DIRECT » : point doré pulsant + texte uppercase tracking-wide
+- Titre Crimson Pro italique doré + cream
+- 5 tuiles `bg-white/5 backdrop-blur border-white/10 rounded-2xl`, chiffres serif XXL en dégradé (émeraude clair pour total, sky/green/amber/purple pour catégories — alignés sur `categoryConfig` existant), pictos Lucide (Layers, Bird, TreePine, Leaf, Bug)
+- Compteurs animés via `useAnimatedCounter` (rampe 0→N en 1.2s, déclenchés en entrée viewport via `framer-motion`)
+- Skeleton shimmer pendant le chargement RPC
+- Si erreur RPC → tuiles affichent `—` (pas de crash, pas d'alerte rouge)
+- Realtime ON : si un marcheur ajoute une obs, les chiffres incrémentent en live
 
 ## Fichier touché
-- `src/pages/IsegcomBordeaux.tsx` — uniquement le bloc hero (du `<section>` du haut jusqu'à la fin du hero, avant le bloc tabs)
+- `src/pages/IsegcomBordeaux.tsx` — ajout d'un import (`useExplorationSpeciesCount`, `useAnimatedCounter`, `motion`, icônes), définition d'un sous-composant local `PatioBiodivLiveCounters` avec la constante `PATIO_ISEG_EXPLORATION_ID`, et insertion d'une ligne dans `BiodivSection`.
+
+Aucune autre section, aucun autre fichier, aucune migration.
