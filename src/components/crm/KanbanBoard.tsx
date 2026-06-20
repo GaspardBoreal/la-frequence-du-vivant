@@ -120,14 +120,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       >
         <PipelineNavigator
           scrollRef={scrollRef}
-          columns={KANBAN_COLUMNS}
+          columns={visibleColumns}
           opportunitiesByStatus={opportunitiesByStatus}
         />
         <div
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto pb-4 min-h-[500px] scroll-smooth"
         >
-          {KANBAN_COLUMNS.map((column) => (
+          {visibleColumns.map((column) => (
             <div key={column.id} data-col-id={column.id} className="shrink-0">
               <KanbanColumn
                 column={column}
