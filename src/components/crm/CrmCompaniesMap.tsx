@@ -95,7 +95,11 @@ export const CrmCompaniesMap: React.FC<{
   onSelect?: (id: string) => void;
   selectedId?: string | null;
   flyOffsetX?: number;
-}> = ({ companies, height = 480, onSelect, selectedId, flyOffsetX = 0 }) => {
+  /** Override pin color per point (returns hex/css color). Falls back to stage color. */
+  colorBy?: (point: MapPoint) => string;
+  /** Override tooltip content per point. If omitted, the default tooltip is rendered. */
+  renderTooltip?: (point: MapPoint) => React.ReactNode;
+}> = ({ companies, height = 480, onSelect, selectedId, flyOffsetX = 0, colorBy, renderTooltip }) => {
   const points: MapPoint[] = React.useMemo(() => {
     return companies
       .map((c: any) => {
@@ -171,7 +175,7 @@ export const CrmCompaniesMap: React.FC<{
 
         {points.map((p) => {
           const isSelected = p.id === selectedId;
-          const color = p.stage ? STAGE_MARKER_COLOR[p.stage] : '#0ea5e9';
+          const color = colorBy ? colorBy(p) : p.stage ? STAGE_MARKER_COLOR[p.stage] : '#0ea5e9';
           return (
             <Marker
               key={p.id + (isSelected ? ':sel' : '')}
@@ -181,19 +185,23 @@ export const CrmCompaniesMap: React.FC<{
               eventHandlers={{ click: () => onSelect?.(p.id) }}
             >
               <Tooltip direction="top" offset={[0, -8]} opacity={1} className="crm-tip">
-                <div className="text-xs">
-                  <p className="font-semibold leading-tight">{p.title}</p>
-                  {p.subtitle && <p className="text-[11px] opacity-70 mt-0.5">{p.subtitle}</p>}
-                  {p.stage && (
-                    <p className="mt-1 inline-flex items-center gap-1 text-[10px]">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ background: STAGE_MARKER_COLOR[p.stage] }}
-                      />
-                      {STAGE_LABELS[p.stage]}
-                    </p>
-                  )}
-                </div>
+                {renderTooltip ? (
+                  renderTooltip(p)
+                ) : (
+                  <div className="text-xs">
+                    <p className="font-semibold leading-tight">{p.title}</p>
+                    {p.subtitle && <p className="text-[11px] opacity-70 mt-0.5">{p.subtitle}</p>}
+                    {p.stage && (
+                      <p className="mt-1 inline-flex items-center gap-1 text-[10px]">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ background: STAGE_MARKER_COLOR[p.stage] }}
+                        />
+                        {STAGE_LABELS[p.stage]}
+                      </p>
+                    )}
+                  </div>
+                )}
               </Tooltip>
             </Marker>
           );
