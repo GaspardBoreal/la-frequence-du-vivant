@@ -52,6 +52,7 @@ import AutomationsAdmin from './pages/AutomationsAdmin';
 import ExplorationLayout from './layouts/ExplorationLayout';
 import ExplorationBiodiversite from './pages/ExplorationBiodiversite';
 import TraverseesLecteurs from './pages/TraverseesLecteurs';
+import IsegcomBordeaux from './pages/IsegcomBordeaux';
 
 import ExplorationsSensibles from './pages/ExplorationsSensibles';
 import MaterielPedagogique from './pages/MaterielPedagogique';
@@ -323,6 +324,9 @@ function App() {
             {/* Adhésion association */}
             <Route path="/adhesion" element={<Adhesion />} />
             <Route path="/admin/adhesions" element={<AdminAuth><AdhesionAdmin /></AdminAuth>} />
+
+            {/* Formations */}
+            <Route path="/formations/isegcom-bordeaux" element={<IsegcomBordeaux />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
