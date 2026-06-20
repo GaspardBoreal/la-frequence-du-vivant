@@ -1,45 +1,107 @@
-## Objectif
+## Nouvelle page : Vitrine Formation ISEGCOM Bordeaux × IA Générative
 
-Produire un PDF A4 de 2 pages présentant LES MARCHES DU VIVANT, conçu comme document de contexte à fournir à une IA tierce (ou partenaire technique) pour qu'elle comprenne le positionnement, les services, l'architecture et les points d'intégration possibles.
+Route publique dédiée présentant la formation IA Générative & Prompt Engineering animée par **Laurent Tripied** auprès des MBA ISEGCOM Bordeaux, avec les 13 projets livrés par la promotion.
 
-## Livrable
+### Route & accès
+- Nouvelle route publique : `/formations/isegcom-bordeaux`
+- Lien discret depuis `PublicTopBar` (menu Formations) — sans casser les URLs publiques existantes.
+- SEO : title « Formation IA Générative × Impact — ISEGCOM Bordeaux × Laurent Tripied », meta description, OG image, JSON-LD `Course`.
 
-Un fichier `/mnt/documents/marches-du-vivant-synthese-ia.pdf` téléchargeable, au format A4 portrait, charté aux couleurs du projet (Papier Crème #FAF8F3 / Vert Forêt #0D6B58), typographie sobre, dense mais lisible.
+### Architecture de la page (single page, hero + onglets ancrés)
 
-## Structure des 2 pages
+```text
+┌─────────────────────────────────────────────┐
+│  HERO — La promo qui a prompté le Vivant    │
+├─────────────────────────────────────────────┤
+│  [Tabs : Formation · Expérience Biodiv ·    │
+│          Galerie 13 projets · Pourquoi nous]│
+└─────────────────────────────────────────────┘
+```
 
-**Page 1 — Positionnement, Vision & Services**
-- En-tête : titre, baseline « La Fréquence du Vivant », date, mention "Document de contexte pour intégration IA"
-- Bloc Manifeste : géopoétique, sobriété informationnelle, droit au silence, biodiversité vécue
-- Bloc Publics : B2B (Entreprises/Collectivités), B2C (Marcheurs/Citoyens), Associations — codes couleur Emerald/Cyan/Amber
-- Bloc Services & Modules : Marches du Vivant (events terrain), Carnets de Terrain, CRM communauté, Livre Vivant (eBook interactif), Dordonia (IA poétique), Zones Blanches, Quiz, Pack Vivant (export .zip)
-- Bloc Rôles communautaires & Fréquences : Marcheur → Éclaireur → Ambassadeur → Sentinelle
+#### 1. HERO « wahouh » — `IsegcomHero.tsx`
+- Plein écran, fond mosaïque animée des 4 photos formation (Ken Burns lent + parallax + voile vert émeraude `from-primary/70 via-primary/40 to-background`).
+- Titre `font-crimson` 7xl/9xl : « **Quand une promo** *prompt-e* **le Vivant** ».
+- Sous-titre : « MBA Communication Globale & Stratégies d'Influence · MBA Communication & Événementiel — ISEGCOM Bordeaux ».
+- Bandeau prof : avatar + « Animé par **Laurent Tripied** · Formation IA Générative & Prompt Engineering · Thème à impact : *Les Marches du Vivant* ».
+- 3 chips statistiques pulsées : `13 projets livrés` · `2 MBA` · `1 thème à impact réel`.
+- CTA scroll-down vers la galerie.
 
-**Page 2 — Architecture technique & Cas d'usage IA**
-- Stack : React 18 + Vite + TS + Tailwind, Supabase (Postgres + RLS + Edge Functions Deno), Lovable AI Gateway, n8n hybride
-- Sources de données intégrées : GBIF, iNaturalist, Xeno-Canto, eBird, INPN, Open-Meteo, IGN, INSEE…
-- Schéma data clé : marches, events, marcheur_observations, snapshots biodiversité, user_roles, exploration_curations, species_eco_tags_kb
-- Points d'intégration IA (cas d'usage concrets) :
-  1. Chatbot screen-aware (DOM observer + slices métier + contexte géo)
-  2. Classification éco-fonctionnelle d'espèces (edge `classify-species-eco-tags`)
-  3. Résumés éditoriaux de marches (edge `marche-editorial-summary`)
-  4. Dordonia dual-persona (Laurent business / Gaspard poétique)
-  5. Diagnostic biodiversité 5 km temps réel
-  6. Génération visuels Story (`generate-story-visuals`)
-- Modes d'intégration possibles pour une IA tierce : Edge Function dédiée, MCP, webhook n8n, RPC Supabase, AI Gateway proxy
-- Pied de page : URLs publiques, contact
+#### 2. Onglet « Formation » — `IsegcomFormationSection.tsx`
+- Carrousel des 4 photos `Formation_à_l_IA_*` + `Elèves_et_professeur_*` (lightbox).
+- Bloc « Pédagogie » : 4 cartes (Prompt Engineering · IA Générative multimodale · Pensée systémique · Livrable réel client) avec icônes Lucide.
+- Quote Laurent Tripied (placeholder éditable).
 
-## Implémentation technique
+#### 3. Onglet « Expérience Mesure Biodiversité » — `IsegcomBiodivExperience.tsx`
+- Storytelling : « Sortir du prompt, mesurer le vivant — Patio végétalisé ISEGCOM Bordeaux ».
+- Galerie masonry des **6 photos** (Patio_01→05 + Mesure_Biodiv_01), lightbox plein écran.
+- 3 étapes : Observer · Identifier (iNaturalist) · Restituer (data + récit).
+- Lien sortant vers la page « Mon Espace » biodiversité existante de l'app (réutilisation).
 
-- Script Python avec **ReportLab** (Platypus, SimpleDocTemplate A4, marges 1.5 cm)
-- Palette : Papier Crème #FAF8F3 (fond), Vert Forêt #0D6B58 (titres/accents), gris anthracite #2A2A2A (corps), Or doux #C9A961 (filets)
-- Typographie : Helvetica-Bold pour titres, Helvetica pour corps (polices natives ReportLab, pas de glyphes Unicode exotiques)
-- Mise en page : 2 colonnes sur la page 2 pour densifier, cartouches colorés pour les blocs publics/cas d'usage
-- QA : conversion `pdftoppm -jpeg -r 150`, inspection visuelle des 2 pages, correction si overflow / chevauchement
-- Affichage final via `<presentation-artifact>`
+#### 4. Onglet « Galerie des 13 projets » — `IsegcomProjectsGallery.tsx`
+Grille bento responsive (3 cols desktop / 2 tablet / 1 mobile), chaque carte affiche **uniquement** :
+- **Screenshot live** via `https://image.thum.io/get/width/800/crop/600/<url>` (fallback gradient + initiales du projet).
+- Titre du projet + badge MBA concerné (Communication Globale / Événementiel).
+- Description courte (2 lignes, ellipsis).
+- 3 chips « points forts ».
+- Bouton « Ouvrir en grand » → URL Lovable publique, nouvel onglet.
+- Hover : élévation + gradient overlay + scale 1.02.
 
-## Hors périmètre
+> **Aucun nom d'étudiant·e** n'apparaît sur les cartes ni dans les données.
 
-- Pas de modification du code de l'application
-- Pas de nouvelle route ni page web (livrable = PDF seul)
-- Pas de logo personnalisé généré (utilisation typographique uniquement, sauf si vous fournissez un asset)
+Données statiques dans `src/data/isegcomProjects.ts` :
+
+| # | Projet | URL publique |
+|---|---|---|
+| 1 | Catalogue Marketing Automation | marketing-automation-lmdv |
+| 2 | Offre Mécénat & Expérience Collaborateurs | offre-mecenat-lmdv |
+| 3 | Réalité Virtuelle & Biodiversité locale | realite-vituelle-biodiv-locale |
+| 4 | Notification SMS | notification-sms-lmdv |
+| 5 | Op. France Travail & Missions Locales | op-france-travail-missionlocale |
+| 6 | Recrutement Ambassadeurs | ambassadeurs-marches-du-vivants |
+| 7 | App Famille / App Simple | versionjoueur |
+| 8 | Offre Agence Tourisme | agence-tourisme-bordeaux |
+| 9 | Onboarding Ambassadeurs | onboarding-ambassadeur |
+| 10 | Générateur de Newsletter | newsletter-lmdv-generator |
+| 11 | Offre Université Bordeaux | offre-universite-bordeaux |
+| 12 | Configurateur de Marche | generateur-de-marche |
+| 13 | Offre Coopératives & Caves Coop | team-building-lesmarchesduvivant |
+
+> Descriptions courtes + 3 points forts rédigés à partir des prompts/descriptions remontés par `cross_project--list_projects`.
+
+#### 5. Onglet « Pourquoi confier cette formation à votre école »
+Argumentaire conversion vers d'autres établissements :
+- 4 cartes : *Cas réel client* · *Livrables publiés* · *IA + thème à impact* · *Mesure terrain (biodiv patio)*.
+- CTA final : « Organiser cette formation chez vous » → mailto Laurent Tripied.
+
+### Design tokens
+- Palette : Forêt Émeraude (déjà en place) + accent or `#C9A961` pour le hero.
+- Typo : `font-crimson` (titres) + Inter (body) — cohérent app.
+- Composants shadcn existants : `Tabs`, `Card`, `Dialog` (lightbox), `Badge`.
+- Aucune couleur hardcodée — passage par les tokens HSL.
+
+### Fichiers (création uniquement)
+```
+src/pages/IsegcomBordeaux.tsx                    (page + Tabs + SEO)
+src/components/isegcom/IsegcomHero.tsx
+src/components/isegcom/IsegcomFormationSection.tsx
+src/components/isegcom/IsegcomBiodivExperience.tsx
+src/components/isegcom/IsegcomProjectsGallery.tsx
+src/components/isegcom/IsegcomProjectCard.tsx
+src/components/isegcom/IsegcomPourquoiNous.tsx
+src/components/isegcom/ImageLightbox.tsx          (réutilisable Dialog)
+src/data/isegcomProjects.ts                       (13 projets typés, sans noms)
+```
+- Ajout route dans `src/App.tsx`.
+- 10 photos uploadées copiées via `lovable-assets create --file /mnt/user-uploads/...` → pointeurs JSON sous `src/assets/isegcom/`.
+- Screenshots projets : service `thum.io` (gratuit, sans clé) avec fallback gradient.
+
+### Hors périmètre
+- **Aucun nom d'étudiant·e** affiché ni stocké.
+- Pas de backend / table Supabase (données statiques côté front).
+- Pas de modification du CRM ni des modules existants.
+- Pas de logo généré.
+- Pas de touche aux URLs publiques actuelles.
+
+### Validation
+- `browser--view_preview` sur `/formations/isegcom-bordeaux` desktop + mobile après build.
+- Vérification visuelle hero, grille 13 cartes, lightbox patio, onglets.
