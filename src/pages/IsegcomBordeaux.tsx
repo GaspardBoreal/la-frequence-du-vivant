@@ -21,8 +21,14 @@ import {
   Award,
   Layers,
   HeartHandshake,
+  Bird,
+  TreePine,
+  Bug,
+  Radio,
 } from "lucide-react";
 import { ISEGCOM_PROJECTS } from "@/data/isegcomProjects";
+import { useExplorationSpeciesCount } from "@/hooks/useExplorationSpeciesCount";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 
 import formation01 from "@/assets/isegcom/Formation_a_l_IA_SCIENCE_PARTICIPATIVE_01.jpeg.asset.json";
 import formation02 from "@/assets/isegcom/Formation_a_l_IA_SCIENCE_PARTICIPATIVE_02.jpeg.asset.json";
