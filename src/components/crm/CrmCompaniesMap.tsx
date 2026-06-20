@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { STAGE_MARKER_COLOR, STAGE_LABELS, type CrmCompany, type CrmCompanyStage } from '@/types/crmCompany';
@@ -89,6 +89,52 @@ interface MapPoint {
   stage?: CrmCompanyStage;
 }
 
+const DefaultMapTooltip: React.FC<{ point: MapPoint }> = ({ point }) => (
+  <div className="text-xs">
+    <p className="font-semibold leading-tight">{point.title}</p>
+    {point.subtitle && <p className="mt-0.5 text-[11px] opacity-70">{point.subtitle}</p>}
+    {point.stage && (
+      <p className="mt-1 inline-flex items-center gap-1 text-[10px]">
+        <span className="h-2 w-2 rounded-full" style={{ background: STAGE_MARKER_COLOR[point.stage] }} />
+        {STAGE_LABELS[point.stage]}
+      </p>
+    )}
+  </div>
+);
+
+const MarkerLayer: React.FC<{
+  points: MapPoint[];
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
+  colorBy?: (point: MapPoint) => string;
+  onHoverPoint: (point: MapPoint, map: L.Map) => void;
+  onLeavePoint: () => void;
+}> = ({ points, selectedId, onSelect, colorBy, onHoverPoint, onLeavePoint }) => {
+  const map = useMap();
+
+  return (
+    <>
+      {points.map((p) => {
+        const isSelected = p.id === selectedId;
+        const color = colorBy ? colorBy(p) : p.stage ? STAGE_MARKER_COLOR[p.stage] : '#0ea5e9';
+        return (
+          <Marker
+            key={p.id + (isSelected ? ':sel' : '')}
+            position={[p.lat, p.lng]}
+            icon={buildIcon(color, isSelected)}
+            zIndexOffset={isSelected ? 1000 : 0}
+            eventHandlers={{
+              click: () => onSelect?.(p.id),
+              mouseover: () => onHoverPoint(p, map),
+              mouseout: onLeavePoint,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+};
+
 export const CrmCompaniesMap: React.FC<{
   companies: Array<CrmCompany | MapPoint>;
   height?: number | string;
@@ -101,9 +147,12 @@ export const CrmCompaniesMap: React.FC<{
   renderTooltip?: (point: MapPoint) => React.ReactNode;
   /** Padding [y, x] in pixels reserved around points when fitting bounds. */
   fitPadding?: [number, number];
-  /** Approx tooltip size [w, h] used to auto-pan on hover so the tooltip stays in view. */
+  /** Approx hover card size [w, h] used to clamp the card inside the map without moving it. */
   tooltipSize?: [number, number];
 }> = ({ companies, height = 480, onSelect, selectedId, flyOffsetX = 0, colorBy, renderTooltip, fitPadding = [40, 40], tooltipSize = [220, 120] }) => {
+  const [hoverCard, setHoverCard] = React.useState<{ point: MapPoint; left: number; top: number } | null>(null);
+  const hideTimerRef = React.useRef<number | null>(null);
+
   const points: MapPoint[] = React.useMemo(() => {
     return companies
       .map((c: any) => {
@@ -127,6 +176,39 @@ export const CrmCompaniesMap: React.FC<{
     () => (selectedId ? points.find((p) => p.id === selectedId) ?? null : null),
     [selectedId, points]
   );
+
+  const clearHideTimer = React.useCallback(() => {
+    if (hideTimerRef.current !== null) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  const hideHoverCard = React.useCallback(() => {
+    clearHideTimer();
+    hideTimerRef.current = window.setTimeout(() => setHoverCard(null), 500);
+  }, [clearHideTimer]);
+
+  React.useEffect(() => () => clearHideTimer(), [clearHideTimer]);
+
+  const showHoverCard = React.useCallback((point: MapPoint, map: L.Map) => {
+    clearHideTimer();
+    const [cardWidth, cardHeight] = tooltipSize;
+    const margin = 12;
+    const markerGap = 46;
+    const size = map.getSize();
+    const cp = map.latLngToContainerPoint([point.lat, point.lng]);
+
+    const maxLeft = Math.max(margin, size.x - cardWidth - margin);
+    const left = Math.min(Math.max(cp.x - cardWidth / 2, margin), maxLeft);
+    const preferredTop = cp.y - cardHeight - markerGap;
+    const fallbackTop = cp.y + 12;
+    const rawTop = preferredTop >= margin ? preferredTop : fallbackTop;
+    const maxTop = Math.max(margin, size.y - cardHeight - margin);
+    const top = Math.min(Math.max(rawTop, margin), maxTop);
+
+    setHoverCard({ point, left, top });
+  }, [clearHideTimer, tooltipSize]);
 
   return (
     <div className="relative rounded-2xl overflow-hidden border shadow-sm" style={{ height }}>
@@ -152,7 +234,7 @@ export const CrmCompaniesMap: React.FC<{
           0% { transform: translateX(-50%) scale(0.7); opacity: .55; }
           80%, 100% { transform: translateX(-50%) scale(2.2); opacity: 0; }
         }
-        .leaflet-tooltip.crm-tip {
+        .crm-map-hover-card {
           background: hsl(var(--card));
           color: hsl(var(--foreground));
           border: 1px solid hsl(var(--border));
@@ -161,7 +243,6 @@ export const CrmCompaniesMap: React.FC<{
           box-shadow: 0 10px 30px -10px rgba(0,0,0,.4);
           font-family: inherit;
         }
-        .leaflet-tooltip.crm-tip::before { display: none; }
       `}</style>
       <MapContainer
         center={[46.6, 2.5]}
@@ -177,65 +258,27 @@ export const CrmCompaniesMap: React.FC<{
         <FitBounds points={points} skip={!!selectedPoint} padding={fitPadding} />
         <FlyToSelected point={selectedPoint} offsetX={flyOffsetX} />
 
-        {points.map((p) => {
-          const isSelected = p.id === selectedId;
-          const color = colorBy ? colorBy(p) : p.stage ? STAGE_MARKER_COLOR[p.stage] : '#0ea5e9';
-          return (
-            <Marker
-              key={p.id + (isSelected ? ':sel' : '')}
-              position={[p.lat, p.lng]}
-              icon={buildIcon(color, isSelected)}
-              zIndexOffset={isSelected ? 1000 : 0}
-              eventHandlers={{
-                click: () => onSelect?.(p.id),
-                mouseover: (e) => {
-                  // Auto-pan so the tooltip stays fully inside the map container.
-                  const map = e.target._map;
-                  if (!map) return;
-                  const [tw, th] = tooltipSize;
-                  const margin = 12;
-                  const size = map.getSize();
-                  const cp = map.latLngToContainerPoint([p.lat, p.lng]);
-                  // Tooltip can flip to any side; conservatively require the larger of (tw/2, th + margin) around the point.
-                  const needLeft = tw / 2 + margin;
-                  const needRight = tw / 2 + margin;
-                  const needTop = th + margin + 40; // marker height
-                  const needBottom = th + margin + 40;
-                  let dx = 0;
-                  let dy = 0;
-                  if (cp.x < needLeft) dx = cp.x - needLeft;
-                  else if (cp.x > size.x - needRight) dx = cp.x - (size.x - needRight);
-                  if (cp.y < needTop) dy = cp.y - needTop;
-                  else if (cp.y > size.y - needBottom) dy = cp.y - (size.y - needBottom);
-                  if (dx !== 0 || dy !== 0) {
-                    map.panBy([dx, dy], { animate: true, duration: 0.25 });
-                  }
-                },
-              }}
-            >
-              <Tooltip direction="auto" offset={[0, -16]} opacity={1} className="crm-tip">
-                {renderTooltip ? (
-                  renderTooltip(p)
-                ) : (
-                  <div className="text-xs">
-                    <p className="font-semibold leading-tight">{p.title}</p>
-                    {p.subtitle && <p className="text-[11px] opacity-70 mt-0.5">{p.subtitle}</p>}
-                    {p.stage && (
-                      <p className="mt-1 inline-flex items-center gap-1 text-[10px]">
-                        <span
-                          className="w-2 h-2 rounded-full"
-                          style={{ background: STAGE_MARKER_COLOR[p.stage] }}
-                        />
-                        {STAGE_LABELS[p.stage]}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </Tooltip>
-            </Marker>
-          );
-        })}
+        <MarkerLayer
+          points={points}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          colorBy={colorBy}
+          onHoverPoint={showHoverCard}
+          onLeavePoint={hideHoverCard}
+        />
       </MapContainer>
+      {hoverCard && (
+        <button
+          type="button"
+          className="crm-map-hover-card absolute z-[1000] block cursor-pointer text-left"
+          style={{ left: hoverCard.left, top: hoverCard.top, width: tooltipSize[0] }}
+          onMouseEnter={clearHideTimer}
+          onMouseLeave={hideHoverCard}
+          onClick={() => onSelect?.(hoverCard.point.id)}
+        >
+          {renderTooltip ? renderTooltip(hoverCard.point) : <DefaultMapTooltip point={hoverCard.point} />}
+        </button>
+      )}
     </div>
   );
 };
