@@ -128,78 +128,110 @@ export default function IsegcomBordeaux() {
 /* ----------------------------- HERO ----------------------------- */
 function Hero({ onScroll }: { onScroll: () => void }) {
   return (
-    <header className="relative min-h-[92vh] overflow-hidden flex items-center justify-center text-white">
-      <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
-        {HERO_IMAGES.map((src, i) => (
-          <div key={i} className="relative overflow-hidden">
-            <img
-              src={src}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover animate-[kenburns_22s_ease-in-out_infinite_alternate]"
-              style={{ animationDelay: `${i * 1.4}s` }}
-              loading="eager"
-            />
-          </div>
-        ))}
-      </div>
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(135deg, hsl(var(--primary) / 0.78) 0%, hsl(var(--primary) / 0.55) 45%, hsl(var(--background) / 0.85) 100%)",
-        }}
-      />
-      <div
-        className="absolute inset-0 mix-blend-overlay opacity-40"
-        style={{ background: "radial-gradient(circle at 20% 30%, #C9A961 0%, transparent 55%)" }}
-      />
+    <header className="relative min-h-screen w-full flex items-center justify-center bg-[#fdfbf7] overflow-hidden selection:bg-[#c9a961]/30">
+      {/* Halos décoratifs globaux */}
+      <div className="pointer-events-none absolute -top-32 -left-32 w-[420px] h-[420px] rounded-full bg-[#c9a961]/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -right-20 w-[500px] h-[500px] rounded-full bg-[#0d6b58]/5 blur-3xl" />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-        <Badge className="mb-6 bg-white/15 backdrop-blur border border-white/30 text-white text-sm px-4 py-1.5">
-          ISEGCOM Bordeaux × Les Marches du Vivant
-        </Badge>
-        <h1 className="font-crimson text-5xl md:text-7xl lg:text-8xl leading-tight mb-6">
-          Quand une promo
-          <br />
-          <em className="text-[#F5D58A]">prompt-e</em> le Vivant
-        </h1>
-        <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto mb-4">
-          MBA Communication Globale &amp; Stratégies d'Influence · MBA Communication &amp; Événementiel
-        </p>
-        <p className="text-base md:text-lg text-white/85 max-w-3xl mx-auto mb-10">
-          Une formation <strong>IA Générative &amp; Prompt Engineering</strong> animée par{" "}
-          <strong>Laurent Tripied</strong> sur un <strong>thème à impact</strong> réel.
-        </p>
-
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {[
-            { v: "13", l: "projets livrés" },
-            { v: "2", l: "MBA mobilisés" },
-            { v: "1", l: "thème à impact réel" },
-          ].map((s) => (
-            <div
-              key={s.l}
-              className="px-5 py-3 rounded-full border border-white/30 bg-white/10 backdrop-blur animate-pulse"
-            >
-              <span className="font-crimson text-3xl mr-2 text-[#F5D58A]">{s.v}</span>
-              <span className="text-white/90 text-sm">{s.l}</span>
+      <div className="relative max-w-7xl w-full px-6 py-16 md:py-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+          {/* Colonne texte */}
+          <div className="lg:col-span-7 flex flex-col space-y-9 animate-fade-in">
+            <div className="inline-flex items-center space-x-3 px-4 py-2 rounded-full border border-[#0d6b58]/10 bg-white shadow-sm w-fit">
+              <span className="flex h-2 w-2 rounded-full bg-[#c9a961]" />
+              <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#0d6b58]/80">
+                ISEGCOM Bordeaux × Les Marches du Vivant
+              </span>
             </div>
-          ))}
-        </div>
 
-        <Button
-          size="lg"
-          onClick={onScroll}
-          className="bg-white text-primary hover:bg-white/90 shadow-2xl"
-        >
-          Découvrir les 13 projets <ChevronDown className="ml-2 h-5 w-5" />
-        </Button>
+            <div className="space-y-6">
+              <h1 className="font-crimson text-5xl md:text-7xl lg:text-8xl font-bold text-[#0d6b58] leading-[1.05] tracking-tight">
+                Quand une promo
+                <br />
+                <span className="text-[#c9a961] italic font-normal underline decoration-[#c9a961]/30 underline-offset-8">
+                  prompt-e
+                </span>{" "}
+                le Vivant
+              </h1>
+              <p className="text-lg md:text-xl text-[#0d6b58]/70 font-medium leading-relaxed max-w-2xl">
+                MBA Communication Globale &amp; Stratégies d'Influence
+                <br className="hidden md:block" />
+                · MBA Communication &amp; Événementiel
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl border-l-4 border-[#c9a961] bg-[#0d6b58]/5 max-w-xl">
+              <p className="text-[#0d6b58]/85 leading-relaxed">
+                Une formation{" "}
+                <span className="font-semibold text-[#0d6b58]">
+                  IA Générative &amp; Prompt Engineering
+                </span>{" "}
+                animée par <span className="text-[#0d6b58] font-medium">Laurent Tripied</span> sur un{" "}
+                <span className="text-[#0d6b58] font-medium">thème à impact</span> réel.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 md:gap-10 pt-2">
+              <button
+                onClick={onScroll}
+                className="group inline-flex items-center px-9 py-4 bg-[#0d6b58] text-white font-semibold rounded-full transition-all duration-300 hover:bg-[#0a5243] hover:-translate-y-0.5 shadow-xl shadow-[#0d6b58]/20"
+              >
+                Découvrir les 13 projets
+                <ChevronDown className="ml-2 h-5 w-5 transition-transform group-hover:translate-y-0.5" />
+              </button>
+
+              <div className="flex space-x-8 border-l border-[#0d6b58]/15 pl-8">
+                {[
+                  { v: "13", l: "Projets", gold: false },
+                  { v: "02", l: "MBA", gold: false },
+                  { v: "01", l: "Thème", gold: true },
+                ].map((s) => (
+                  <div key={s.l} className="flex flex-col">
+                    <span
+                      className={`font-crimson text-3xl font-bold ${
+                        s.gold ? "text-[#c9a961]" : "text-[#0d6b58]"
+                      }`}
+                    >
+                      {s.v}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider text-[#0d6b58]/50 font-bold">
+                      {s.l}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Colonne image */}
+          <div className="lg:col-span-5 relative group">
+            <div className="absolute -inset-4 border border-[#c9a961]/25 rounded-[2rem] -rotate-1 transition-transform duration-500 group-hover:rotate-0" />
+            <div className="relative aspect-[3/4] rounded-[1.5rem] overflow-hidden shadow-2xl bg-[#0d6b58]/10">
+              <img
+                src={eleves01.url}
+                alt="Formation IA Générative ISEGCOM Bordeaux animée par Laurent Tripied"
+                className="absolute inset-0 w-full h-full object-cover animate-[kenburns_22s_ease-in-out_infinite_alternate]"
+                loading="eager"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0d6b58]/55 via-transparent to-transparent pointer-events-none" />
+
+              <div className="absolute bottom-6 left-6 right-6 p-5 backdrop-blur-md bg-white/10 border border-white/20 rounded-xl">
+                <p className="text-white text-sm font-medium leading-relaxed">
+                  « L'impact réel naît de la rencontre entre l'IA et l'engagement collectif. »
+                </p>
+              </div>
+            </div>
+
+            <div className="pointer-events-none absolute -top-6 -right-6 w-32 h-32 bg-[#c9a961]/15 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-10 -left-10 w-48 h-48 bg-[#0d6b58]/10 rounded-full blur-3xl" />
+          </div>
+        </div>
       </div>
 
       <style>{`
         @keyframes kenburns {
           0% { transform: scale(1) translate(0,0); }
-          100% { transform: scale(1.15) translate(-2%, -2%); }
+          100% { transform: scale(1.12) translate(-2%, -2%); }
         }
       `}</style>
     </header>
