@@ -1,23 +1,19 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MapPinOff, Loader2 } from 'lucide-react';
-import type { CrmOpportunity, OpportunityStatus } from '@/types/crm';
+import type { CrmOpportunity } from '@/types/crm';
 import { CrmCompaniesMap } from '@/components/crm/CrmCompaniesMap';
 import { CompanyDetailSheet } from '@/components/crm/CompanyDetailSheet';
 import { useCrmPipelineMapData, type PipelineMapPoint } from '@/hooks/useCrmPipelineMapData';
-import { PipelineStagesFilter, STAGE_HUE } from './PipelineStagesFilter';
+import { STAGE_HUE } from './PipelineStagesFilter';
 import { PipelineMapTooltip } from './PipelineMapTooltip';
-import { KANBAN_COLUMNS } from '@/types/crm';
 
 interface Props {
-  /** Already filtered by jalons in CrmPipeline */
-  opportunitiesAfterActions: CrmOpportunity[];
+  /** Opportunités déjà filtrées par la barre globale (jalons + étapes). */
+  opportunities: CrmOpportunity[];
 }
 
-const ALL_STAGES = KANBAN_COLUMNS.map((c) => c.id);
-
 function hueToHex(hue: string): string {
-  // Convert "H S% L%" string to hex via temporary DOM
   if (typeof document === 'undefined') return '#0ea5e9';
   const el = document.createElement('div');
   el.style.color = `hsl(${hue})`;
@@ -30,41 +26,13 @@ function hueToHex(hue: string): string {
   return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 }
 
-export const PipelineMapView: React.FC<Props> = ({ opportunitiesAfterActions }) => {
+export const PipelineMapView: React.FC<Props> = ({ opportunities }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const stages = React.useMemo<OpportunityStatus[]>(() => {
-    const raw = searchParams.get('stages');
-    if (raw === null) return ALL_STAGES; // default: all
-    if (raw === '') return [];
-    return raw
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s): s is OpportunityStatus => ALL_STAGES.includes(s as OpportunityStatus));
-  }, [searchParams]);
-
-  const setStages = (next: OpportunityStatus[]) => {
-    setSearchParams(
-      (prev) => {
-        const p = new URLSearchParams(prev);
-        if (next.length === ALL_STAGES.length) p.delete('stages');
-        else p.set('stages', next.join(','));
-        return p;
-      },
-      { replace: true },
-    );
-  };
-
-  const filteredByStage = React.useMemo(
-    () => opportunitiesAfterActions.filter((o) => stages.includes(o.statut)),
-    [opportunitiesAfterActions, stages],
-  );
-
-  const { data, isLoading } = useCrmPipelineMapData(filteredByStage);
+  const { data, isLoading } = useCrmPipelineMapData(opportunities);
   const points = data?.points ?? [];
   const missing = data?.missingGeoloc ?? 0;
 
-  // Selected company drawer — via URL ?company=<id>
   const selectedCompanyId = searchParams.get('company');
   const setSelectedCompanyId = (id: string | null) => {
     setSearchParams(
@@ -78,7 +46,6 @@ export const PipelineMapView: React.FC<Props> = ({ opportunitiesAfterActions }) 
     );
   };
 
-  // Map our enriched points to map points + colorBy
   const mapPoints = React.useMemo(
     () =>
       points.map((p) => ({
@@ -116,8 +83,6 @@ export const PipelineMapView: React.FC<Props> = ({ opportunitiesAfterActions }) 
 
   return (
     <div className="space-y-3">
-      <PipelineStagesFilter value={stages} onChange={setStages} />
-
       <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
         <span>
           {isLoading ? (
@@ -128,7 +93,7 @@ export const PipelineMapView: React.FC<Props> = ({ opportunitiesAfterActions }) 
             <>
               <strong className="text-foreground">{points.length}</strong> entreprise
               {points.length > 1 ? 's' : ''} affichée{points.length > 1 ? 's' : ''}
-              {filteredByStage.length === 0 && ' — aucune opportunité dans la sélection'}
+              {opportunities.length === 0 && ' — aucune opportunité dans la sélection'}
             </>
           )}
         </span>

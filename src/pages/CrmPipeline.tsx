@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus, LayoutGrid, List, RefreshCw, Map as MapIcon } from 'lucide-react';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { PipelineMapView } from '@/components/crm/pipeline/PipelineMapView';
+import { PipelineFiltersBar } from '@/components/crm/pipeline/PipelineFiltersBar';
+import { usePipelineFilters } from '@/hooks/usePipelineFilters';
 import { OpportunityForm } from '@/components/crm/OpportunityForm';
 import { DashboardKPIs } from '@/components/crm/DashboardKPIs';
 import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
 import { useCrmRole } from '@/hooks/useCrmRole';
 import type { CrmOpportunity } from '@/types/crm';
-import { PipelineActionsFilter } from '@/components/crm/opportunities/PipelineActionsFilter';
 import { OpportunityActionsBadges } from '@/components/crm/opportunities/OpportunityActionsBadges';
-import { isValidActionCode, type OpportunityActionCode } from '@/lib/crmOpportunityActions';
 import {
   Table,
   TableBody,
@@ -54,43 +54,17 @@ const CrmPipeline: React.FC = () => {
   const [editingOpportunity, setEditingOpportunity] = useState<CrmOpportunity | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Filtre jalons (URL: ?actions=plaquette_envoyee,point_avancement&actions_mode=and)
-  const actionsFilter = useMemo<OpportunityActionCode[]>(() => {
-    return (searchParams.get('actions') || '')
-      .split(',')
-      .map(s => s.trim())
-      .filter(isValidActionCode);
-  }, [searchParams]);
-  const actionsMode: 'and' | 'or' = searchParams.get('actions_mode') === 'or' ? 'or' : 'and';
-
-  const setActionsFilter = (next: OpportunityActionCode[]) => {
-    setSearchParams(prev => {
-      const p = new URLSearchParams(prev);
-      if (next.length === 0) p.delete('actions');
-      else p.set('actions', next.join(','));
-      if (next.length < 2) p.delete('actions_mode');
-      return p;
-    }, { replace: true });
-  };
-  const setActionsMode = (m: 'and' | 'or') => {
-    setSearchParams(prev => {
-      const p = new URLSearchParams(prev);
-      if (m === 'or') p.set('actions_mode', 'or');
-      else p.delete('actions_mode');
-      return p;
-    }, { replace: true });
-  };
-
-  const matchesActions = React.useCallback(
-    (opp: CrmOpportunity) => {
-      if (actionsFilter.length === 0) return true;
-      const set = new Set(opp.actions_realisees ?? []);
-      return actionsMode === 'and'
-        ? actionsFilter.every(c => set.has(c))
-        : actionsFilter.some(c => set.has(c));
-    },
-    [actionsFilter, actionsMode]
-  );
+  // Filtres unifiés (jalons + étapes) partagés par les 3 vues
+  const {
+    actionsFilter,
+    setActionsFilter,
+    actionsMode,
+    setActionsMode,
+    stagesFilter,
+    setStagesFilter,
+    allStagesActive,
+    matchesAll,
+  } = usePipelineFilters();
 
   const { 
     opportunities, 
@@ -263,16 +237,18 @@ const CrmPipeline: React.FC = () => {
           <DashboardKPIs stats={stats} />
         </div>
 
-        {/* Filtre par jalons */}
+        {/* Filtres unifiés (jalons + étapes) */}
         {(() => {
-          const filtered = opportunities.filter(matchesActions);
+          const filtered = opportunities.filter(matchesAll);
           return (
             <div className="mb-4">
-              <PipelineActionsFilter
-                value={actionsFilter}
-                onChange={setActionsFilter}
-                mode={actionsMode}
-                onModeChange={setActionsMode}
+              <PipelineFiltersBar
+                actionsFilter={actionsFilter}
+                setActionsFilter={setActionsFilter}
+                actionsMode={actionsMode}
+                setActionsMode={setActionsMode}
+                stagesFilter={stagesFilter}
+                setStagesFilter={setStagesFilter}
                 matchedCount={filtered.length}
                 totalCount={opportunities.length}
               />
@@ -289,10 +265,11 @@ const CrmPipeline: React.FC = () => {
           <KanbanBoard
             onEditOpportunity={handleEditOpportunity}
             onDeleteOpportunity={handleDeleteOpportunity}
-            filterPredicate={matchesActions}
+            filterPredicate={matchesAll}
+            visibleStages={allStagesActive ? undefined : stagesFilter}
           />
         ) : viewMode === 'map' ? (
-          <PipelineMapView opportunitiesAfterActions={opportunities.filter(matchesActions)} />
+          <PipelineMapView opportunities={opportunities.filter(matchesAll)} />
         ) : (
           <div className="bg-card rounded-lg border">
             <Table>
@@ -309,7 +286,7 @@ const CrmPipeline: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {opportunities.filter(matchesActions).map((opp) => (
+                {opportunities.filter(matchesAll).map((opp) => (
                   <TableRow 
                     key={opp.id} 
                     className="cursor-pointer hover:bg-muted/50"
@@ -336,10 +313,10 @@ const CrmPipeline: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {opportunities.filter(matchesActions).length === 0 && (
+                {opportunities.filter(matchesAll).length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Aucune opportunité. Cliquez sur "Nouvelle opportunité" pour commencer.
+                      Aucune opportunité ne correspond aux filtres actifs.
                     </TableCell>
                   </TableRow>
                 )}

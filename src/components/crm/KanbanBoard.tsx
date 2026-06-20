@@ -21,12 +21,15 @@ interface KanbanBoardProps {
   onEditOpportunity?: (opportunity: CrmOpportunity) => void;
   onDeleteOpportunity?: (id: string) => void;
   filterPredicate?: (opportunity: CrmOpportunity) => boolean;
+  /** Si fourni, masque les colonnes dont l'id n'est pas dans la liste. */
+  visibleStages?: OpportunityStatus[];
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onEditOpportunity,
   onDeleteOpportunity,
   filterPredicate,
+  visibleStages,
 }) => {
   const { opportunitiesByStatus: rawByStatus, updateStatus } = useCrmOpportunities();
   const opportunitiesByStatus = React.useMemo(() => {
@@ -37,6 +40,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
     return out;
   }, [rawByStatus, filterPredicate]);
+  const visibleColumns = React.useMemo(() => {
+    if (!visibleStages || visibleStages.length === KANBAN_COLUMNS.length) return KANBAN_COLUMNS;
+    const set = new Set(visibleStages);
+    const filtered = KANBAN_COLUMNS.filter((c) => set.has(c.id));
+    return filtered.length > 0 ? filtered : KANBAN_COLUMNS;
+  }, [visibleStages]);
   const [activeOpportunity, setActiveOpportunity] = useState<CrmOpportunity | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -111,14 +120,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       >
         <PipelineNavigator
           scrollRef={scrollRef}
-          columns={KANBAN_COLUMNS}
+          columns={visibleColumns}
           opportunitiesByStatus={opportunitiesByStatus}
         />
         <div
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto pb-4 min-h-[500px] scroll-smooth"
         >
-          {KANBAN_COLUMNS.map((column) => (
+          {visibleColumns.map((column) => (
             <div key={column.id} data-col-id={column.id} className="shrink-0">
               <KanbanColumn
                 column={column}
