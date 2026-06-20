@@ -1,94 +1,47 @@
-## Problème
+# Bulles toujours visibles sur la carte du Pipeline
 
-Aujourd'hui les filtres sont éclatés et incohérents entre les 3 vues :
+## Problème observé
 
-| Vue        | Filtre Jalons (`PipelineActionsFilter`) | Filtre Étapes (`PipelineStagesFilter`) |
-|------------|-----------------------------------------|----------------------------------------|
-| Kanban     | OUI (rendu dans `CrmPipeline.tsx`)      | Implicite (chips d'étapes au-dessus des colonnes) |
-| Carte      | OUI                                     | OUI (rendu dans `PipelineMapView`)     |
-| Liste      | OUI                                     | **MANQUANT**                           |
+Sur `/admin/crm/pipeline?view=map`, la vignette (~260×210 px) survolée sur un point proche d'un bord de la carte est **tronquée** (haut, droite, gauche…). Cas reproductible : un seul point filtré près du bord supérieur.
 
-Le filtre Étapes n'est rendu que dans `PipelineMapView.tsx`, donc invisible en vue Liste. Et le code de filtrage est dupliqué (un `matchesActions` côté page, un filtre stages côté map). À chaque évolution future (nouveau filtre type/budget/owner…), il faudrait toucher 3 endroits.
+Causes dans `CrmCompaniesMap.tsx` :
 
-## Objectif
+1. `Tooltip direction="top"` est **figé** — Leaflet ne bascule pas vers le bas/côté quand il manque de place.
+2. `fitBounds(..., padding: [40, 40])` ne réserve pas assez de marge pour la taille réelle de la vignette pipeline.
+3. Aucun **auto-pan** : ni au survol, ni au clic — donc même avec un flip, une vignette de 260 px peut déborder.
 
-Une **barre de filtres unique** rendue une seule fois dans `CrmPipeline.tsx`, partagée par Kanban / Liste / Carte, avec un **prédicat unique `matchesAll(opp)`** appliqué partout.
+## Solution (3 couches, complémentaires et robustes)
 
-## Plan
+### 1. Tooltip auto-flip (Leaflet natif)
 
-### 1. Créer `PipelineFiltersBar.tsx` (nouveau composant factorisé)
+Remplacer `direction="top"` par `direction="auto"` sur le `<Tooltip>` de `CrmCompaniesMap`. Leaflet choisit alors top/bottom/left/right selon la place disponible dans le conteneur. Ajuster `offset` pour rester joli quel que soit le sens (offset symétrique `[0, -16]` + recalage CSS sur `.leaflet-tooltip-top/bottom/left/right`).
 
-`src/components/crm/pipeline/PipelineFiltersBar.tsx`
+### 2. Padding `fitBounds` calibré sur la taille de la vignette
 
-Composition visuelle (une seule rangée responsive, design sobre cohérent avec l'existant) :
+Exposer une nouvelle prop `fitPadding?: [number, number]` sur `CrmCompaniesMap` (défaut `[40, 40]`). `PipelineMapView` passera `[140, 80]` (≈ hauteur/largeur max d'une vignette pipeline + marge). Garantit qu'aucun pin filtré ne se retrouve collé au bord après auto-zoom.
 
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│ JALONS  [① Plaquette] [② Fiche prépa] [③ Point] [④ Pack]   8/8 ET│OU │
-│ ÉTAPES  [● À contacter] [● Relance 1] [● Relance 2] … Tout / Aucun   │
-└──────────────────────────────────────────────────────────────────────┘
-```
+### 3. Auto-pan au survol (filet de sécurité)
 
-- Réutilise `PipelineActionsFilter` (jalons + mode AND/OR) tel quel
-- Réutilise `PipelineStagesFilter` (étapes colorées) tel quel
-- Props : `actionsFilter, setActionsFilter, actionsMode, setActionsMode, stagesFilter, setStagesFilter, matchedCount, totalCount`
+Ajouter dans `CrmCompaniesMap` un handler `mouseover` sur chaque `Marker` qui :
 
-### 2. Créer un hook `usePipelineFilters` (état + URL + prédicat)
+- calcule la `containerPoint` du marker,
+- vérifie si un rectangle vignette (260×210, marge 12 px) tient autour selon la direction choisie,
+- si non : `map.panBy([dx, dy], { animate: true, duration: 0.25 })` pour rapatrier juste ce qu'il faut.
 
-`src/hooks/usePipelineFilters.ts`
+C'est l'équivalent de l'`autoPan` des Popup, appliqué aux tooltips. Aucune dépendance ajoutée, calcul ~10 lignes via `map.getSize()` + `latLngToContainerPoint`.
 
-Centralise tout l'état actuellement éparpillé dans `CrmPipeline.tsx` :
+### Bonus cohérence
 
-- Lit/écrit les `searchParams` : `?actions=`, `?actions_mode=`, `?stages=`
-- Expose `{ actionsFilter, setActionsFilter, actionsMode, setActionsMode, stagesFilter, setStagesFilter, matchesAll }`
-- `matchesAll(opp)` = `matchesActions(opp) && matchesStages(opp)`
-  - `stagesFilter.length === 0` → laisser passer (= toutes)
-  - sinon `stagesFilter.includes(opp.statut)`
-- Extensible : prochains filtres (owner, type, budget) viendront ici sans toucher les vues
+- Même traitement appliqué à la **sélection** (clic) : `FlyToSelected` reçoit aussi un `tooltipSize` pour décaler la destination si nécessaire (déjà partiellement fait via `flyOffsetX`, on étend en Y).
+- Pas de changement visuel/UX sur l'annuaire qui utilise déjà ce composant — comportements activés via props optionnelles avec defaults rétro-compatibles.
 
-### 3. Refactor `CrmPipeline.tsx`
+## Vérifications
 
-- Supprime les `useMemo`/`useCallback` `actionsFilter` / `matchesActions` → remplacés par `const { matchesAll, …filters } = usePipelineFilters()`
-- Remplace le bloc `<PipelineActionsFilter />` par `<PipelineFiltersBar {...filters} matchedCount={filtered.length} totalCount={opportunities.length} />`
-- Passe `matchesAll` (au lieu de `matchesActions`) à :
-  - `<KanbanBoard filterPredicate={matchesAll} />`
-  - `<PipelineMapView opportunitiesAfterActions={opportunities.filter(matchesAll)} />` (renommé prop → `opportunities`)
-  - Vue Liste : `opportunities.filter(matchesAll)`
+- 1 point isolé en haut/bas/gauche/droite de la carte : vignette toujours intégralement visible après survol.
+- 2 points filtrés (cas de la copie d'écran) : `fitPadding` réserve la place ; vignette flip vers le bas si pin trop haut.
+- Vue annuaire (`CrmCompanies`) inchangée car props optionnelles avec fallback ancien comportement.
 
-### 4. Refactor `PipelineMapView.tsx`
+## Fichiers à modifier
 
-- Retire le `PipelineStagesFilter` interne (déplacé dans la barre globale)
-- Retire l'état local `stagesFilter` / les `useSearchParams` redondants
-- Reçoit simplement `opportunities` déjà filtrées
-- Le `colorBy` pin reste sur `dominantStatut` (inchangé)
-
-### 5. Vue Kanban — comportement avec `stagesFilter`
-
-Décision UX : quand des étapes sont sélectionnées, **masquer les colonnes non sélectionnées** (le Kanban devient une vue focalisée Relance 2 + Gagné, par ex.). Si aucune étape n'est sélectionnée → toutes les colonnes. Cela évite des colonnes vides parasites et est cohérent avec la sémantique « filtre actif ».
-
-→ Ajouter une prop `visibleStages?: OpportunityStatus[]` à `KanbanBoard` (optionnelle, rétrocompatible).
-
-### 6. Vérification
-
-- `/admin/crm/pipeline?view=list&stages=relance_3` → seuls les Relance 3 listés
-- `/admin/crm/pipeline?view=list&actions=plaquette_envoyee&stages=gagne,relance_2` → intersection
-- Toggle Kanban / Liste / Map → la barre de filtres et le compteur `n/total` restent identiques
-- URL deep-linkable et rétrocompatible (les anciens `?actions=…` continuent de marcher)
-
-## Fichiers touchés
-
-**Créés**
-- `src/components/crm/pipeline/PipelineFiltersBar.tsx`
-- `src/hooks/usePipelineFilters.ts`
-
-**Modifiés**
-- `src/pages/CrmPipeline.tsx` (simplification, supprime la duplication)
-- `src/components/crm/pipeline/PipelineMapView.tsx` (retire son filtre interne)
-- `src/components/crm/KanbanBoard.tsx` (ajoute `visibleStages` optionnel)
-
-**Inchangés**
-- `PipelineActionsFilter.tsx`, `PipelineStagesFilter.tsx`, `PipelineMapTooltip.tsx`, `useCrmPipelineMapData.ts`
-
-## Bénéfice
-
-Un seul endroit pour faire évoluer les filtres pipeline (prochains ajouts : owner, type d'expérience, plage budget, marche liée…). Les 3 vues restent strictement synchronisées via `matchesAll` + URL params partagés.
+- `src/components/crm/CrmCompaniesMap.tsx` — `direction="auto"`, prop `fitPadding`, handler `mouseover` auto-pan, CSS tooltip pour les 4 directions.
+- `src/components/crm/pipeline/PipelineMapView.tsx` — passe `fitPadding={[140, 80]}` à `<CrmCompaniesMap>`.
