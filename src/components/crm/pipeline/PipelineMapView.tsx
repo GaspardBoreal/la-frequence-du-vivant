@@ -113,6 +113,8 @@ export const PipelineMapView: React.FC<Props> = ({ opportunities }) => {
         flyOffsetX={-260}
         colorBy={colorBy}
         renderTooltip={renderTooltip}
+        fitPadding={[140, 80]}
+        tooltipSize={[280, 220]}
       />
 
       <CompanyDetailSheet

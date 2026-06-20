@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { STAGE_MARKER_COLOR, STAGE_LABELS, type CrmCompany, type CrmCompanyStage } from '@/types/crmCompany';
 
-const FitBounds: React.FC<{ points: Array<{ lat: number; lng: number }>; skip: boolean }> = ({ points, skip }) => {
+const FitBounds: React.FC<{ points: Array<{ lat: number; lng: number }>; skip: boolean; padding: [number, number] }> = ({ points, skip, padding }) => {
   const map = useMap();
   const key = points.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join('|');
   React.useEffect(() => {
@@ -15,10 +15,10 @@ const FitBounds: React.FC<{ points: Array<{ lat: number; lng: number }>; skip: b
       map.setView([points[0].lat, points[0].lng], 13);
     } else {
       const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+      map.fitBounds(bounds, { padding, maxZoom: 14 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, skip]);
+  }, [key, skip, padding[0], padding[1]]);
   return null;
 };
 
@@ -99,7 +99,11 @@ export const CrmCompaniesMap: React.FC<{
   colorBy?: (point: MapPoint) => string;
   /** Override tooltip content per point. If omitted, the default tooltip is rendered. */
   renderTooltip?: (point: MapPoint) => React.ReactNode;
-}> = ({ companies, height = 480, onSelect, selectedId, flyOffsetX = 0, colorBy, renderTooltip }) => {
+  /** Padding [y, x] in pixels reserved around points when fitting bounds. */
+  fitPadding?: [number, number];
+  /** Approx tooltip size [w, h] used to auto-pan on hover so the tooltip stays in view. */
+  tooltipSize?: [number, number];
+}> = ({ companies, height = 480, onSelect, selectedId, flyOffsetX = 0, colorBy, renderTooltip, fitPadding = [40, 40], tooltipSize = [220, 120] }) => {
   const points: MapPoint[] = React.useMemo(() => {
     return companies
       .map((c: any) => {
@@ -170,7 +174,7 @@ export const CrmCompaniesMap: React.FC<{
           attribution="&copy; OpenStreetMap"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitBounds points={points} skip={!!selectedPoint} />
+        <FitBounds points={points} skip={!!selectedPoint} padding={fitPadding} />
         <FlyToSelected point={selectedPoint} offsetX={flyOffsetX} />
 
         {points.map((p) => {
@@ -182,9 +186,34 @@ export const CrmCompaniesMap: React.FC<{
               position={[p.lat, p.lng]}
               icon={buildIcon(color, isSelected)}
               zIndexOffset={isSelected ? 1000 : 0}
-              eventHandlers={{ click: () => onSelect?.(p.id) }}
+              eventHandlers={{
+                click: () => onSelect?.(p.id),
+                mouseover: (e) => {
+                  // Auto-pan so the tooltip stays fully inside the map container.
+                  const map = e.target._map;
+                  if (!map) return;
+                  const [tw, th] = tooltipSize;
+                  const margin = 12;
+                  const size = map.getSize();
+                  const cp = map.latLngToContainerPoint([p.lat, p.lng]);
+                  // Tooltip can flip to any side; conservatively require the larger of (tw/2, th + margin) around the point.
+                  const needLeft = tw / 2 + margin;
+                  const needRight = tw / 2 + margin;
+                  const needTop = th + margin + 40; // marker height
+                  const needBottom = th + margin + 40;
+                  let dx = 0;
+                  let dy = 0;
+                  if (cp.x < needLeft) dx = cp.x - needLeft;
+                  else if (cp.x > size.x - needRight) dx = cp.x - (size.x - needRight);
+                  if (cp.y < needTop) dy = cp.y - needTop;
+                  else if (cp.y > size.y - needBottom) dy = cp.y - (size.y - needBottom);
+                  if (dx !== 0 || dy !== 0) {
+                    map.panBy([dx, dy], { animate: true, duration: 0.25 });
+                  }
+                },
+              }}
             >
-              <Tooltip direction="top" offset={[0, -8]} opacity={1} className="crm-tip">
+              <Tooltip direction="auto" offset={[0, -16]} opacity={1} className="crm-tip">
                 {renderTooltip ? (
                   renderTooltip(p)
                 ) : (
