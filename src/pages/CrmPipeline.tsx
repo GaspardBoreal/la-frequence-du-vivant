@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, LayoutGrid, List, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, LayoutGrid, List, RefreshCw, Map as MapIcon } from 'lucide-react';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
+import { PipelineMapView } from '@/components/crm/pipeline/PipelineMapView';
 import { OpportunityForm } from '@/components/crm/OpportunityForm';
 import { DashboardKPIs } from '@/components/crm/DashboardKPIs';
 import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
@@ -32,14 +33,26 @@ import {
 } from '@/components/ui/alert-dialog';
 import { KANBAN_COLUMNS } from '@/types/crm';
 
-type ViewMode = 'kanban' | 'list';
+type ViewMode = 'kanban' | 'list' | 'map';
 
 const CrmPipeline: React.FC = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const viewMode: ViewMode =
+    searchParams.get('view') === 'map' ? 'map' : searchParams.get('view') === 'list' ? 'list' : 'kanban';
+  const setViewMode = (v: ViewMode) => {
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (v === 'kanban') p.delete('view');
+        else p.set('view', v);
+        return p;
+      },
+      { replace: true },
+    );
+  };
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOpportunity, setEditingOpportunity] = useState<CrmOpportunity | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
 
   // Filtre jalons (URL: ?actions=plaquette_envoyee,point_avancement&actions_mode=and)
   const actionsFilter = useMemo<OpportunityActionCode[]>(() => {
@@ -228,6 +241,13 @@ const CrmPipeline: React.FC = () => {
                 onClick={() => setViewMode('list')}
               >
                 <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'map' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('map')}
+              >
+                <MapIcon className="h-4 w-4" />
               </Button>
             </div>
 
