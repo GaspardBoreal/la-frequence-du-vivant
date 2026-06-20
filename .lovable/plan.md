@@ -1,119 +1,94 @@
+## Problème
 
-# Carte interactive du Pipeline
+Aujourd'hui les filtres sont éclatés et incohérents entre les 3 vues :
+
+| Vue        | Filtre Jalons (`PipelineActionsFilter`) | Filtre Étapes (`PipelineStagesFilter`) |
+|------------|-----------------------------------------|----------------------------------------|
+| Kanban     | OUI (rendu dans `CrmPipeline.tsx`)      | Implicite (chips d'étapes au-dessus des colonnes) |
+| Carte      | OUI                                     | OUI (rendu dans `PipelineMapView`)     |
+| Liste      | OUI                                     | **MANQUANT**                           |
+
+Le filtre Étapes n'est rendu que dans `PipelineMapView.tsx`, donc invisible en vue Liste. Et le code de filtrage est dupliqué (un `matchesActions` côté page, un filtre stages côté map). À chaque évolution future (nouveau filtre type/budget/owner…), il faudrait toucher 3 endroits.
 
 ## Objectif
-Ajouter à `/admin/crm/pipeline` une 3ᵉ vue **Carte** (à côté de Kanban / Liste) qui affiche les entreprises liées aux opportunités, filtrables par **étape pipeline** ET / OU **jalons**, avec tooltip riche et ouverture du **drawer entreprise** déjà utilisé dans l'annuaire (factorisé).
 
-## UX cible
+Une **barre de filtres unique** rendue une seule fois dans `CrmPipeline.tsx`, partagée par Kanban / Liste / Carte, avec un **prédicat unique `matchesAll(opp)`** appliqué partout.
 
-### 1. Sélecteur de vue
-Ajout d'un 3ᵉ bouton `<Map />` dans le toggle existant Kanban / Liste / **Carte** (même groupe `bg-muted rounded-lg p-1`, aucune nouvelle nav).
+## Plan
 
-### 2. Barre de filtres compacte (au-dessus de la carte)
+### 1. Créer `PipelineFiltersBar.tsx` (nouveau composant factorisé)
+
+`src/components/crm/pipeline/PipelineFiltersBar.tsx`
+
+Composition visuelle (une seule rangée responsive, design sobre cohérent avec l'existant) :
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
-│  Étapes pipeline                          Jalons                     │
-│  ◉ À contacter  ◉ Relance 1  ◉ Relance 2  │ □ Plaquette  □ Fiche…    │
-│  ◉ Relance 3   □ Pas intéressé  ◉ Gagné  │ □ Point avanc. □ Pack…   │
-│  □ Perdu          [Tout]  [Aucun]         │ Mode  ◉ ET   ○ OU        │
+│ JALONS  [① Plaquette] [② Fiche prépa] [③ Point] [④ Pack]   8/8 ET│OU │
+│ ÉTAPES  [● À contacter] [● Relance 1] [● Relance 2] … Tout / Aucun   │
 └──────────────────────────────────────────────────────────────────────┘
-            42 entreprises affichées · 17 sans géoloc (cachées)
 ```
 
-- **Étapes** : chips multi-select colorées (couleurs `KANBAN_COLUMNS`). Clic toggle ; bouton "Tout / Aucun".
-- **Jalons** : réutilise **exactement** `PipelineActionsFilter` déjà en place (mêmes URL params `actions` + `actions_mode`).
-- **Étapes** synchronisées sur URL via `?stages=a_contacter,gagne` (cohérent avec `?actions=`).
-- Compteur dynamique `N affichées / N sans géoloc`.
+- Réutilise `PipelineActionsFilter` (jalons + mode AND/OR) tel quel
+- Réutilise `PipelineStagesFilter` (étapes colorées) tel quel
+- Props : `actionsFilter, setActionsFilter, actionsMode, setActionsMode, stagesFilter, setStagesFilter, matchedCount, totalCount`
 
-### 3. Carte (réutilise `CrmCompaniesMap`)
-- Composant existant `CrmCompaniesMap` déjà parfait (pins SVG avec halo, fitBounds, flyTo, tooltip Leaflet). On l'enrichit légèrement :
-  - **Couleur du pin** = couleur de l'étape opportunité (et non du `lifecycle_stage` entreprise) → nouvelle prop `colorBy?: (point) => string`.
-  - **Tooltip riche** (overload du `<Tooltip>` actuel) : nom entreprise · ville · activité (NAF) · contact principal · nb marches liées · badges étape + jalons.
-  - **Cluster doux** : si > 80 points, regrouper visuellement par offset radial automatique (`leaflet.markercluster` optionnel — sinon décalage déterministe pour éviter superposition). Démarrage : pas de cluster, on garde l'esthétique pin+halo ; on ajoute cluster seulement si l'utilisateur en a besoin.
-- Hauteur `calc(100vh - 320px)` pour une vraie carte immersive sur desktop.
+### 2. Créer un hook `usePipelineFilters` (état + URL + prédicat)
 
-### 4. Tooltip vignette (mouse-over)
-Vignette HSL design tokens, ~260px :
+`src/hooks/usePipelineFilters.ts`
 
-```text
-┌──────────────────────────────────────┐
-│ ●  ENTREPRISE NOM                    │
-│    Bordeaux · NAF 7022Z              │
-│ ─────────────────────────────────── │
-│ 👤 Marie Dupont — Directrice RSE     │
-│ 🥾 3 marches programmées             │
-│ ─────────────────────────────────── │
-│ [Relance 2]  [Plaquette] [Fiche]     │
-└──────────────────────────────────────┘
-```
+Centralise tout l'état actuellement éparpillé dans `CrmPipeline.tsx` :
 
-### 5. Clic sur un pin → drawer entreprise
-**Factorisation** : on réutilise tel quel `CompanyDetailSheet` (déjà utilisé dans l'Annuaire). Aucun fork — il évoluera côté annuaire, le pipeline en profite automatiquement.
+- Lit/écrit les `searchParams` : `?actions=`, `?actions_mode=`, `?stages=`
+- Expose `{ actionsFilter, setActionsFilter, actionsMode, setActionsMode, stagesFilter, setStagesFilter, matchesAll }`
+- `matchesAll(opp)` = `matchesActions(opp) && matchesStages(opp)`
+  - `stagesFilter.length === 0` → laisser passer (= toutes)
+  - sinon `stagesFilter.includes(opp.statut)`
+- Extensible : prochains filtres (owner, type, budget) viendront ici sans toucher les vues
 
-```tsx
-<CompanyDetailSheet
-  companyId={selectedCompanyId}
-  onOpenChange={(o) => !o && setSelectedCompanyId(null)}
-/>
-```
+### 3. Refactor `CrmPipeline.tsx`
 
-Deep-link : `?company=<id>` ouvre le drawer (cohérent avec le pattern `?opportunity=` existant).
+- Supprime les `useMemo`/`useCallback` `actionsFilter` / `matchesActions` → remplacés par `const { matchesAll, …filters } = usePipelineFilters()`
+- Remplace le bloc `<PipelineActionsFilter />` par `<PipelineFiltersBar {...filters} matchedCount={filtered.length} totalCount={opportunities.length} />`
+- Passe `matchesAll` (au lieu de `matchesActions`) à :
+  - `<KanbanBoard filterPredicate={matchesAll} />`
+  - `<PipelineMapView opportunitiesAfterActions={opportunities.filter(matchesAll)} />` (renommé prop → `opportunities`)
+  - Vue Liste : `opportunities.filter(matchesAll)`
 
-## Architecture technique
+### 4. Refactor `PipelineMapView.tsx`
 
-### Nouveau hook `useCrmPipelineMapData`
-Source unique : agrège opportunités + entreprises liées + contact principal + nb marches.
+- Retire le `PipelineStagesFilter` interne (déplacé dans la barre globale)
+- Retire l'état local `stagesFilter` / les `useSearchParams` redondants
+- Reçoit simplement `opportunities` déjà filtrées
+- Le `colorBy` pin reste sur `dominantStatut` (inchangé)
 
-```ts
-// Étapes :
-// 1. SELECT crm_opportunities (filtre client par stages + actions)
-// 2. SELECT crm_opportunity_companies WHERE opportunity_id IN (...)
-//    JOIN crm_companies(latitude, longitude, denomination, ville, libelle_naf, code_naf)
-// 3. SELECT crm_opportunity_contacts (role='primary' en priorité)
-//    JOIN crm_contacts
-// 4. SELECT crm_company_events count GROUP BY company_id
-// 5. Renvoie MapPoint[] enrichi : { id, lat, lng, title, ville, naf,
-//        contact:{nom,fonction}, marchesCount, opportunityStage, actions[] }
-```
+### 5. Vue Kanban — comportement avec `stagesFilter`
 
-Cache react-query 30s. Dépend de `[stages, actionsFilter, actionsMode]`.
+Décision UX : quand des étapes sont sélectionnées, **masquer les colonnes non sélectionnées** (le Kanban devient une vue focalisée Relance 2 + Gagné, par ex.). Si aucune étape n'est sélectionnée → toutes les colonnes. Cela évite des colonnes vides parasites et est cohérent avec la sémantique « filtre actif ».
 
-### Composant `PipelineMapView`
-- Conteneur orchestrateur : filtres (chips étapes) + carte + drawer.
-- Reçoit `opportunities` déjà fetchées par `CrmPipeline` (évite double fetch), filtre par stages + jalons, dérive `mapPoints` via le hook ci-dessus.
-- État local : `selectedCompanyId`.
+→ Ajouter une prop `visibleStages?: OpportunityStatus[]` à `KanbanBoard` (optionnelle, rétrocompatible).
 
-### Extension `CrmCompaniesMap` (rétro-compatible)
-- Ajouter prop optionnelle `renderTooltip?: (point) => ReactNode` → si fournie, remplace le tooltip par défaut.
-- Ajouter prop optionnelle `colorBy?: (point) => string` → override couleur du pin.
-- Aucun changement pour l'usage existant Annuaire.
+### 6. Vérification
 
-### Fichiers créés / édités
-| Fichier | Action |
-|---|---|
-| `src/components/crm/pipeline/PipelineStagesFilter.tsx` | **Créer** — chips multi-select étapes |
-| `src/components/crm/pipeline/PipelineMapView.tsx` | **Créer** — vue carte complète |
-| `src/components/crm/pipeline/PipelineMapTooltip.tsx` | **Créer** — vignette riche |
-| `src/hooks/useCrmPipelineMapData.ts` | **Créer** — agrège opp+company+contact+marches |
-| `src/components/crm/CrmCompaniesMap.tsx` | **Éditer** — props `renderTooltip` + `colorBy` |
-| `src/pages/CrmPipeline.tsx` | **Éditer** — 3ᵉ bouton Map, URL `?stages=`, rendu `PipelineMapView` |
+- `/admin/crm/pipeline?view=list&stages=relance_3` → seuls les Relance 3 listés
+- `/admin/crm/pipeline?view=list&actions=plaquette_envoyee&stages=gagne,relance_2` → intersection
+- Toggle Kanban / Liste / Map → la barre de filtres et le compteur `n/total` restent identiques
+- URL deep-linkable et rétrocompatible (les anciens `?actions=…` continuent de marcher)
 
-### URL state
-- `?view=map` (persistance vue)
-- `?stages=relance_2,gagne` (filtre étapes)
-- `?actions=plaquette_envoyee&actions_mode=or` (déjà géré)
-- `?company=<uuid>` (drawer ouvert)
+## Fichiers touchés
 
-## Garde-fous
-- Entreprises sans `latitude/longitude` → exclues de la carte, comptées dans "N sans géoloc" (lien vers Annuaire pour géocoder).
-- Multi-entreprises sur 1 opportunité : chaque entreprise est un pin (rôle "primary" mis en avant, autres en pin plus petit / atténué).
-- Aucun changement du Kanban / Liste existant.
-- Tokens HSL uniquement (cohérent design system CRM).
+**Créés**
+- `src/components/crm/pipeline/PipelineFiltersBar.tsx`
+- `src/hooks/usePipelineFilters.ts`
 
-## Vérification après build
-1. `/admin/crm/pipeline?view=map` → carte rendue, pins colorés par étape.
-2. Désélectionner toutes les étapes sauf "Relance 2" + "Gagné" → seules ces opp restent.
-3. Hover un pin → vignette riche.
-4. Clic pin → drawer entreprise s'ouvre (le même qu'Annuaire).
-5. Recharger la page avec `?stages=…&actions=…` → état restauré.
+**Modifiés**
+- `src/pages/CrmPipeline.tsx` (simplification, supprime la duplication)
+- `src/components/crm/pipeline/PipelineMapView.tsx` (retire son filtre interne)
+- `src/components/crm/KanbanBoard.tsx` (ajoute `visibleStages` optionnel)
+
+**Inchangés**
+- `PipelineActionsFilter.tsx`, `PipelineStagesFilter.tsx`, `PipelineMapTooltip.tsx`, `useCrmPipelineMapData.ts`
+
+## Bénéfice
+
+Un seul endroit pour faire évoluer les filtres pipeline (prochains ajouts : owner, type d'expérience, plage budget, marche liée…). Les 3 vues restent strictement synchronisées via `matchesAll` + URL params partagés.
