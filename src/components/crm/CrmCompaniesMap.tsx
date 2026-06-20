@@ -150,6 +150,9 @@ export const CrmCompaniesMap: React.FC<{
   /** Approx hover card size [w, h] used to clamp the card inside the map without moving it. */
   tooltipSize?: [number, number];
 }> = ({ companies, height = 480, onSelect, selectedId, flyOffsetX = 0, colorBy, renderTooltip, fitPadding = [40, 40], tooltipSize = [220, 120] }) => {
+  const [hoverCard, setHoverCard] = React.useState<{ point: MapPoint; left: number; top: number } | null>(null);
+  const hideTimerRef = React.useRef<number | null>(null);
+
   const points: MapPoint[] = React.useMemo(() => {
     return companies
       .map((c: any) => {
@@ -173,6 +176,39 @@ export const CrmCompaniesMap: React.FC<{
     () => (selectedId ? points.find((p) => p.id === selectedId) ?? null : null),
     [selectedId, points]
   );
+
+  const clearHideTimer = React.useCallback(() => {
+    if (hideTimerRef.current !== null) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  const hideHoverCard = React.useCallback(() => {
+    clearHideTimer();
+    hideTimerRef.current = window.setTimeout(() => setHoverCard(null), 180);
+  }, [clearHideTimer]);
+
+  React.useEffect(() => () => clearHideTimer(), [clearHideTimer]);
+
+  const showHoverCard = React.useCallback((point: MapPoint, map: L.Map) => {
+    clearHideTimer();
+    const [cardWidth, cardHeight] = tooltipSize;
+    const margin = 12;
+    const markerGap = 46;
+    const size = map.getSize();
+    const cp = map.latLngToContainerPoint([point.lat, point.lng]);
+
+    const maxLeft = Math.max(margin, size.x - cardWidth - margin);
+    const left = Math.min(Math.max(cp.x - cardWidth / 2, margin), maxLeft);
+    const preferredTop = cp.y - cardHeight - markerGap;
+    const fallbackTop = cp.y + 12;
+    const rawTop = preferredTop >= margin ? preferredTop : fallbackTop;
+    const maxTop = Math.max(margin, size.y - cardHeight - margin);
+    const top = Math.min(Math.max(rawTop, margin), maxTop);
+
+    setHoverCard({ point, left, top });
+  }, [clearHideTimer, tooltipSize]);
 
   return (
     <div className="relative rounded-2xl overflow-hidden border shadow-sm" style={{ height }}>
@@ -198,7 +234,7 @@ export const CrmCompaniesMap: React.FC<{
           0% { transform: translateX(-50%) scale(0.7); opacity: .55; }
           80%, 100% { transform: translateX(-50%) scale(2.2); opacity: 0; }
         }
-        .leaflet-tooltip.crm-tip {
+        .crm-map-hover-card {
           background: hsl(var(--card));
           color: hsl(var(--foreground));
           border: 1px solid hsl(var(--border));
@@ -207,7 +243,6 @@ export const CrmCompaniesMap: React.FC<{
           box-shadow: 0 10px 30px -10px rgba(0,0,0,.4);
           font-family: inherit;
         }
-        .leaflet-tooltip.crm-tip::before { display: none; }
       `}</style>
       <MapContainer
         center={[46.6, 2.5]}
