@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { STAGE_MARKER_COLOR, STAGE_LABELS, type CrmCompany, type CrmCompanyStage } from '@/types/crmCompany';
@@ -89,6 +89,52 @@ interface MapPoint {
   stage?: CrmCompanyStage;
 }
 
+const DefaultMapTooltip: React.FC<{ point: MapPoint }> = ({ point }) => (
+  <div className="text-xs">
+    <p className="font-semibold leading-tight">{point.title}</p>
+    {point.subtitle && <p className="mt-0.5 text-[11px] opacity-70">{point.subtitle}</p>}
+    {point.stage && (
+      <p className="mt-1 inline-flex items-center gap-1 text-[10px]">
+        <span className="h-2 w-2 rounded-full" style={{ background: STAGE_MARKER_COLOR[point.stage] }} />
+        {STAGE_LABELS[point.stage]}
+      </p>
+    )}
+  </div>
+);
+
+const MarkerLayer: React.FC<{
+  points: MapPoint[];
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
+  colorBy?: (point: MapPoint) => string;
+  onHoverPoint: (point: MapPoint, map: L.Map) => void;
+  onLeavePoint: () => void;
+}> = ({ points, selectedId, onSelect, colorBy, onHoverPoint, onLeavePoint }) => {
+  const map = useMap();
+
+  return (
+    <>
+      {points.map((p) => {
+        const isSelected = p.id === selectedId;
+        const color = colorBy ? colorBy(p) : p.stage ? STAGE_MARKER_COLOR[p.stage] : '#0ea5e9';
+        return (
+          <Marker
+            key={p.id + (isSelected ? ':sel' : '')}
+            position={[p.lat, p.lng]}
+            icon={buildIcon(color, isSelected)}
+            zIndexOffset={isSelected ? 1000 : 0}
+            eventHandlers={{
+              click: () => onSelect?.(p.id),
+              mouseover: () => onHoverPoint(p, map),
+              mouseout: onLeavePoint,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+};
+
 export const CrmCompaniesMap: React.FC<{
   companies: Array<CrmCompany | MapPoint>;
   height?: number | string;
@@ -101,7 +147,7 @@ export const CrmCompaniesMap: React.FC<{
   renderTooltip?: (point: MapPoint) => React.ReactNode;
   /** Padding [y, x] in pixels reserved around points when fitting bounds. */
   fitPadding?: [number, number];
-  /** Approx tooltip size [w, h] used to auto-pan on hover so the tooltip stays in view. */
+  /** Approx hover card size [w, h] used to clamp the card inside the map without moving it. */
   tooltipSize?: [number, number];
 }> = ({ companies, height = 480, onSelect, selectedId, flyOffsetX = 0, colorBy, renderTooltip, fitPadding = [40, 40], tooltipSize = [220, 120] }) => {
   const points: MapPoint[] = React.useMemo(() => {
