@@ -1,47 +1,39 @@
-# Bulles toujours visibles sur la carte du Pipeline
+## Diagnostic
 
-## Problème observé
+Le `MissionAssigneesPicker` utilise `<Popover>` (shadcn) qui pose son `PopoverContent` à **`z-50`**. Or :
+- `DialogContent` / `DialogOverlay` (utilisé par `MissionCreateDialog`) sont à **`z-[1200]`**
+- `SheetContent` / `SheetOverlay` (utilisé par `MissionDrawer`) sont à **`z-[1100]`**
 
-Sur `/admin/crm/pipeline?view=map`, la vignette (~260×210 px) survolée sur un point proche d'un bord de la carte est **tronquée** (haut, droite, gauche…). Cas reproductible : un seul point filtré près du bord supérieur.
+Résultat : la liste « Assigner » s'ouvre **derrière** la modale/drawer, on voit le contenu en filigrane mais on ne peut pas cliquer dessus. Le même problème affecterait n'importe quel `Select`, `DropdownMenu`, `Tooltip` ouvert depuis l'intérieur d'un Dialog/Sheet (eux aussi à `z-50`).
 
-Causes dans `CrmCompaniesMap.tsx` :
+C'est un bug global de stacking : les surfaces flottantes Radix doivent toujours passer **au-dessus** des conteneurs flottants (modale, drawer).
 
-1. `Tooltip direction="top"` est **figé** — Leaflet ne bascule pas vers le bas/côté quand il manque de place.
-2. `fitBounds(..., padding: [40, 40])` ne réserve pas assez de marge pour la taille réelle de la vignette pipeline.
-3. Aucun **auto-pan** : ni au survol, ni au clic — donc même avec un flip, une vignette de 260 px peut déborder.
+## Solution
 
-## Solution (3 couches, complémentaires et robustes)
+Aligner tous les "popups" Radix sur une échelle z-index cohérente, **au-dessus** de Dialog (`1200`) et Sheet (`1100`) :
 
-### 1. Tooltip auto-flip (Leaflet natif)
+| Élément | Avant | Après |
+|---|---|---|
+| `DialogOverlay` / `DialogContent` | `z-[1200]` | `z-[1200]` (inchangé) |
+| `SheetOverlay` / `SheetContent` | `z-[1100]` | `z-[1100]` (inchangé) |
+| `PopoverContent` | `z-50` | **`z-[1300]`** |
+| `SelectContent` | `z-50` | **`z-[1300]`** |
+| `DropdownMenuContent` / `SubContent` | `z-50` | **`z-[1300]`** |
+| `TooltipContent` (si existant) | `z-50` | **`z-[1300]`** |
 
-Remplacer `direction="top"` par `direction="auto"` sur le `<Tooltip>` de `CrmCompaniesMap`. Leaflet choisit alors top/bottom/left/right selon la place disponible dans le conteneur. Ajuster `offset` pour rester joli quel que soit le sens (offset symétrique `[0, -16]` + recalage CSS sur `.leaflet-tooltip-top/bottom/left/right`).
+### Fichiers modifiés (4 fichiers, 1 ligne chacun)
+1. `src/components/ui/popover.tsx` — `z-50` → `z-[1300]`
+2. `src/components/ui/select.tsx` — `z-50` → `z-[1300]`
+3. `src/components/ui/dropdown-menu.tsx` — `z-50` → `z-[1300]` (deux occurrences : `Content` et `SubContent`)
+4. `src/components/ui/tooltip.tsx` — `z-50` → `z-[1300]` (si présent)
 
-### 2. Padding `fitBounds` calibré sur la taille de la vignette
+### Pourquoi cette approche
 
-Exposer une nouvelle prop `fitPadding?: [number, number]` sur `CrmCompaniesMap` (défaut `[40, 40]`). `PipelineMapView` passera `[140, 80]` (≈ hauteur/largeur max d'une vignette pipeline + marge). Garantit qu'aucun pin filtré ne se retrouve collé au bord après auto-zoom.
+- **Globale et durable** : corrige *tous* les cas (création, édition, futurs formulaires) sans patch ponctuel.
+- **Aucune régression** : les popups étaient déjà à `z-50` donc au-dessus de tout contenu non-flottant ; on conserve cette priorité et on ajoute la priorité sur Dialog/Sheet.
+- **Cohérence avec la convention Lovable** : Dialog/Sheet ont déjà été remontés à `z-[1100/1200]` ; les flyouts doivent suivre.
 
-### 3. Auto-pan au survol (filet de sécurité)
-
-Ajouter dans `CrmCompaniesMap` un handler `mouseover` sur chaque `Marker` qui :
-
-- calcule la `containerPoint` du marker,
-- vérifie si un rectangle vignette (260×210, marge 12 px) tient autour selon la direction choisie,
-- si non : `map.panBy([dx, dy], { animate: true, duration: 0.25 })` pour rapatrier juste ce qu'il faut.
-
-C'est l'équivalent de l'`autoPan` des Popup, appliqué aux tooltips. Aucune dépendance ajoutée, calcul ~10 lignes via `map.getSize()` + `latLngToContainerPoint`.
-
-### Bonus cohérence
-
-- Même traitement appliqué à la **sélection** (clic) : `FlyToSelected` reçoit aussi un `tooltipSize` pour décaler la destination si nécessaire (déjà partiellement fait via `flyOffsetX`, on étend en Y).
-- Pas de changement visuel/UX sur l'annuaire qui utilise déjà ce composant — comportements activés via props optionnelles avec defaults rétro-compatibles.
-
-## Vérifications
-
-- 1 point isolé en haut/bas/gauche/droite de la carte : vignette toujours intégralement visible après survol.
-- 2 points filtrés (cas de la copie d'écran) : `fitPadding` réserve la place ; vignette flip vers le bas si pin trop haut.
-- Vue annuaire (`CrmCompanies`) inchangée car props optionnelles avec fallback ancien comportement.
-
-## Fichiers à modifier
-
-- `src/components/crm/CrmCompaniesMap.tsx` — `direction="auto"`, prop `fitPadding`, handler `mouseover` auto-pan, CSS tooltip pour les 4 directions.
-- `src/components/crm/pipeline/PipelineMapView.tsx` — passe `fitPadding={[140, 80]}` à `<CrmCompaniesMap>`.
+### Vérification
+- Ouvrir « Nouvelle mission » → cliquer « Assigner » → la liste s'affiche au-dessus de la modale, sélection fonctionnelle.
+- Ouvrir une mission existante (drawer) → cliquer « Assigner » → idem.
+- Vérifier que les `Select` Statut/Priorité dans le dialog restent cliquables (ils le sont déjà mais on les passe aussi au-dessus par sécurité).
