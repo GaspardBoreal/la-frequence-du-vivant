@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { STAGE_MARKER_COLOR, STAGE_LABELS, type CrmCompany, type CrmCompanyStage } from '@/types/crmCompany';
 
-const FitBounds: React.FC<{ points: Array<{ lat: number; lng: number }>; skip: boolean }> = ({ points, skip }) => {
+const FitBounds: React.FC<{ points: Array<{ lat: number; lng: number }>; skip: boolean; padding: [number, number] }> = ({ points, skip, padding }) => {
   const map = useMap();
   const key = points.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join('|');
   React.useEffect(() => {
@@ -15,10 +15,10 @@ const FitBounds: React.FC<{ points: Array<{ lat: number; lng: number }>; skip: b
       map.setView([points[0].lat, points[0].lng], 13);
     } else {
       const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+      map.fitBounds(bounds, { padding, maxZoom: 14 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, skip]);
+  }, [key, skip, padding[0], padding[1]]);
   return null;
 };
 
