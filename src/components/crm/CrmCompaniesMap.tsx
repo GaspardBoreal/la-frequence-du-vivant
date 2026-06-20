@@ -99,7 +99,11 @@ export const CrmCompaniesMap: React.FC<{
   colorBy?: (point: MapPoint) => string;
   /** Override tooltip content per point. If omitted, the default tooltip is rendered. */
   renderTooltip?: (point: MapPoint) => React.ReactNode;
-}> = ({ companies, height = 480, onSelect, selectedId, flyOffsetX = 0, colorBy, renderTooltip }) => {
+  /** Padding [y, x] in pixels reserved around points when fitting bounds. */
+  fitPadding?: [number, number];
+  /** Approx tooltip size [w, h] used to auto-pan on hover so the tooltip stays in view. */
+  tooltipSize?: [number, number];
+}> = ({ companies, height = 480, onSelect, selectedId, flyOffsetX = 0, colorBy, renderTooltip, fitPadding = [40, 40], tooltipSize = [220, 120] }) => {
   const points: MapPoint[] = React.useMemo(() => {
     return companies
       .map((c: any) => {
