@@ -22,9 +22,15 @@ interface Props {
 }
 
 export const MissionDrawer: React.FC<Props> = ({ mission, open, onOpenChange }) => {
-  const { updateMission, deleteMission, setAssignees } = useCrmMissions();
+  const { allMissions, updateMission, deleteMission, setAssignees } = useCrmMissions();
   const { activeMembers } = useTeamMembers();
   const { comments, activity, addComment } = useCrmMissionDetail(mission?.id ?? null);
+
+  // Live mission from cache so assignees/status updates reflect immediately
+  const liveMission = React.useMemo(
+    () => allMissions.find(m => m.id === mission?.id) ?? mission,
+    [allMissions, mission],
+  );
 
   const [titre, setTitre] = React.useState('');
   const [desc, setDesc] = React.useState<any>(null);
@@ -43,9 +49,9 @@ export const MissionDrawer: React.FC<Props> = ({ mission, open, onOpenChange }) 
     }
   }, [mission?.id]);
 
-  if (!mission) return null;
+  if (!liveMission) return null;
 
-  const assigneeIds = (mission.assignees ?? []).map(a => a.user_id);
+  const assigneeIds = (liveMission.assignees ?? []).map(a => a.user_id);
 
   const save = async () => {
     await updateMission.mutateAsync({
