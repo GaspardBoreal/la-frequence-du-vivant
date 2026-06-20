@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus, LayoutGrid, List, RefreshCw, Map as MapIcon } from 'lucide-react';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { PipelineMapView } from '@/components/crm/pipeline/PipelineMapView';
+import { PipelineFiltersBar } from '@/components/crm/pipeline/PipelineFiltersBar';
+import { usePipelineFilters } from '@/hooks/usePipelineFilters';
 import { OpportunityForm } from '@/components/crm/OpportunityForm';
 import { DashboardKPIs } from '@/components/crm/DashboardKPIs';
 import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
 import { useCrmRole } from '@/hooks/useCrmRole';
 import type { CrmOpportunity } from '@/types/crm';
-import { PipelineActionsFilter } from '@/components/crm/opportunities/PipelineActionsFilter';
 import { OpportunityActionsBadges } from '@/components/crm/opportunities/OpportunityActionsBadges';
-import { isValidActionCode, type OpportunityActionCode } from '@/lib/crmOpportunityActions';
 import {
   Table,
   TableBody,
