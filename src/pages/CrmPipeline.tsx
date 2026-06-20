@@ -237,16 +237,18 @@ const CrmPipeline: React.FC = () => {
           <DashboardKPIs stats={stats} />
         </div>
 
-        {/* Filtre par jalons */}
+        {/* Filtres unifiés (jalons + étapes) */}
         {(() => {
-          const filtered = opportunities.filter(matchesActions);
+          const filtered = opportunities.filter(matchesAll);
           return (
             <div className="mb-4">
-              <PipelineActionsFilter
-                value={actionsFilter}
-                onChange={setActionsFilter}
-                mode={actionsMode}
-                onModeChange={setActionsMode}
+              <PipelineFiltersBar
+                actionsFilter={actionsFilter}
+                setActionsFilter={setActionsFilter}
+                actionsMode={actionsMode}
+                setActionsMode={setActionsMode}
+                stagesFilter={stagesFilter}
+                setStagesFilter={setStagesFilter}
                 matchedCount={filtered.length}
                 totalCount={opportunities.length}
               />
@@ -263,10 +265,11 @@ const CrmPipeline: React.FC = () => {
           <KanbanBoard
             onEditOpportunity={handleEditOpportunity}
             onDeleteOpportunity={handleDeleteOpportunity}
-            filterPredicate={matchesActions}
+            filterPredicate={matchesAll}
+            visibleStages={allStagesActive ? undefined : stagesFilter}
           />
         ) : viewMode === 'map' ? (
-          <PipelineMapView opportunitiesAfterActions={opportunities.filter(matchesActions)} />
+          <PipelineMapView opportunities={opportunities.filter(matchesAll)} />
         ) : (
           <div className="bg-card rounded-lg border">
             <Table>
@@ -283,7 +286,7 @@ const CrmPipeline: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {opportunities.filter(matchesActions).map((opp) => (
+                {opportunities.filter(matchesAll).map((opp) => (
                   <TableRow 
                     key={opp.id} 
                     className="cursor-pointer hover:bg-muted/50"
@@ -310,10 +313,10 @@ const CrmPipeline: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {opportunities.filter(matchesActions).length === 0 && (
+                {opportunities.filter(matchesAll).length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Aucune opportunité. Cliquez sur "Nouvelle opportunité" pour commencer.
+                      Aucune opportunité ne correspond aux filtres actifs.
                     </TableCell>
                   </TableRow>
                 )}
