@@ -186,7 +186,7 @@ export const CrmCompaniesMap: React.FC<{
 
   const hideHoverCard = React.useCallback(() => {
     clearHideTimer();
-    hideTimerRef.current = window.setTimeout(() => setHoverCard(null), 180);
+    hideTimerRef.current = window.setTimeout(() => setHoverCard(null), 500);
   }, [clearHideTimer]);
 
   React.useEffect(() => () => clearHideTimer(), [clearHideTimer]);
