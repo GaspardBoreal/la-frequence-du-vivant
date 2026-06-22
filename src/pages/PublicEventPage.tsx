@@ -231,9 +231,18 @@ const PublicEventPage: React.FC = () => {
             <ChevronRight className="h-3 w-3 rotate-180" />
             Les Marches du Vivant
           </Link>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest backdrop-blur-xl bg-card/40 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300">
-            <Eye className="h-3 w-3" /> Lecture publique
-          </span>
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/apprendre/${slug}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs backdrop-blur-xl bg-card/40 border border-primary/20 text-foreground/80 hover:text-foreground transition"
+            >
+              <BookOpen className="h-3 w-3" />
+              Apprendre cette marche
+            </Link>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest backdrop-blur-xl bg-card/40 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300">
+              <Eye className="h-3 w-3" /> Lecture publique
+            </span>
+          </div>
         </div>
 
         {/* Centerpiece */}
