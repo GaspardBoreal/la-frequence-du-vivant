@@ -1,109 +1,129 @@
-# Fiabilisation définitive des vignettes espèces
 
-## Constat sur la capture
+# 🦋 Apprendre cette marche — Duolingo du Vivant local
 
-Drawer "Lundi 22 Juin" (DEVIAT) : 5 espèces, **3 sans photo** (Painted Lady, Argus bleu, Mélanargie galathée) → fallback pictogramme **oiseau** alors que ce sont des **papillons**. Deux problèmes distincts :
+URL publique : **`/apprendre/:slug`** (ex : `/apprendre/deviat-jardin-monde`)
 
-1. **Photo manquante** → l'appel iNaturalist live depuis le navigateur a échoué/timeout/rate-limit, ou la recherche n'a pas trouvé le taxon. Aucune persistance : chaque client retente, le même utilisateur peut voir une photo aujourd'hui et pas demain.
-2. **Picto incohérent** : `SpeciesThumb` mappe `kingdom = 'Animalia'` → `Bird`. Tout insecte/reptile/mollusque hérite donc d'un pictogramme oiseau.
+Un parcours pédagogique gamifié, hyper-local, alimenté **uniquement par les espèces réellement observées sur la marche**, regroupées par tags (papillons, oiseaux, arbres mellifères, fixateurs d'azote…). Pas de blabla générique : chaque carte montre **la photo prise par un marcheur**, **le jour**, **l'endroit exact**.
 
-## Cause racine
+---
 
-`src/hooks/useSpeciesPhoto.ts` interroge `api.inaturalist.org/v1/taxa` **à la volée, côté client, sans cache serveur**. Conséquences :
-- Rate-limit iNat (60 req/min anonyme) → réponses vides en cas de drawer chargé.
-- CORS / timeout réseau → silencieux (`return null`).
-- Match fuzzy sur `q=` peut rendre une mauvaise espèce sans photo.
-- Aucun fallback secondaire (GBIF, photo terrain manuelle).
-- Aucun moyen pour un curateur de patcher une vignette manquante.
-
-## Architecture cible — cache serveur durable
-
-### 1. Table `public.species_thumb_cache` (nouvelle migration)
+## L'expérience en 5 écrans
 
 ```text
-scientific_name text PRIMARY KEY      -- normalisé NFD lower
-photo_url        text
-photo_attribution text                 -- "© Auteur / iNat CC-BY"
-iconic_taxon     text                  -- Aves|Insecta|Plantae|Mammalia|Fungi|Reptilia|Amphibia|Mollusca|Arachnida|Actinopterygii|Other
-kingdom          text
-common_name_fr   text
-common_name_en   text
-source           text                  -- 'inaturalist' | 'gbif' | 'manual' | 'none'
-miss_count       int DEFAULT 0         -- nb de tentatives infructueuses
-resolved_at      timestamptz
-created_at       timestamptz
+┌─────────────────────────────────────────────────────────┐
+│ 1. PORTAIL               2. CHOIX DU TAG                │
+│ "Découvre les 47        🦋 Papillons (12)              │
+│  espèces vivantes de    🐦 Oiseaux (18)                │
+│  Jardin Monde"          🌳 Arbres mellifères (8)       │
+│  [Commencer →]          🐝 Pollinisateurs (9)          │
+└─────────────────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 3. CARTE-MÉMOIRE (swipe)                                │
+│ ┌───────────────┐  Recto :                              │
+│ │ photo plein   │  • Photo marcheur plein cadre         │
+│ │ écran (Marie  │  • "Qui suis-je ?" → 3 choix          │
+│ │ 14 juin)      │                                       │
+│ └───────────────┘  Verso (flip) :                       │
+│ Papillon Citron    • Nom FR + scientifique              │
+│ Gonepteryx rhamni  • 1 fait WAOUH (ex : "vit 1 an !")  │
+│ [Suivante →]       • Indice de reconnaissance (1 critère)│
+│                    • "Vu ici par Marie le 14 juin"      │
+└─────────────────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 4. QUIZ ÉCLAIR (3 questions)                            │
+│  • Reconnais : 4 photos, 1 nom                          │
+│  • Habitat : où me trouves-tu ?                         │
+│  • Geste : lequel me protège ?                          │
+└─────────────────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 5. BADGE & PARTAGE                                      │
+│ "Tu connais les 12 papillons de Jardin Monde 🦋"       │
+│ [Partager] [Découvrir une autre marche] [M'inscrire]    │
+└─────────────────────────────────────────────────────────┘
 ```
 
-- RLS : lecture publique (`anon`, `authenticated`), écriture uniquement via RPC SECURITY DEFINER (curateurs/admin) ou service_role (edge function).
-- Index sur `(source, miss_count, resolved_at)` pour la re-résolution périodique.
-- GRANTs : `SELECT` à anon/authenticated, `ALL` à service_role.
+---
 
-### 2. Edge function `resolve-species-thumb`
+## Ce qui en fait une révolution pédagogique
 
-- Entrée : `{ scientific_names: string[] }` (batch jusqu'à 50).
-- Pour chaque nom non présent en cache (ou en `source='none'` + résolu il y a >7j) :
-  1. **iNat exact** : `/v1/taxa?q=...&rank=species,subspecies,genus` puis filtrage strict `name === scientificName`.
-  2. **iNat fuzzy** : 1er résultat si aucun exact, **et seulement si `default_photo` non vide**.
-  3. **GBIF** en fallback : `/v1/species/match` + `/v1/species/{key}/media` (vmcache pour Plantae/Fungi notamment).
-  4. Sinon `source='none'`, `miss_count++`.
-- Upsert atomique. Retourne les rows résolues + restantes.
-- Limitée à 5 req/sec vers iNat (politesse + évite ban).
+1. **Incarné** — Chaque espèce est introduite par "Marie, 14 juin, Jardin Monde" et la photo qu'elle a prise. On n'apprend pas une espèce abstraite, on rencontre **celle d'ici**.
+2. **Court & addictif** — 1 tag = 5 min. Swipe, flip, quiz, badge. Format mobile-first inspiré de Duolingo / Tinder.
+3. **Zéro friction** — URL publique, pas de compte requis. Score local (localStorage). Inscription seulement à la fin, optionnelle.
+4. **Auto-alimenté** — Dès qu'une espèce est observée + taguée sur la marche, elle apparaît dans l'outil. Pas de contenu à écrire manuellement.
+5. **Boucle vertueuse** — Le bouton "Tu veux voir cette espèce en vrai ?" renvoie vers la prochaine marche programmée du tag.
 
-### 3. Edge function `backfill-species-thumb-cache` (one-shot)
+---
 
-- Walks `DISTINCT lower(unaccent(scientific_name))` depuis `biodiversity_snapshots ∪ marcheur_observations`.
-- Appelle `resolve-species-thumb` par lots de 25.
-- Logue progression. Idempotent.
+## Périmètre v1 (ce qu'on construit)
 
-### 4. Re-résolution périodique
+- Route publique `/apprendre/:slug` (SEO optimisé par marche + par tag)
+- Sélecteur de tag (lit `exploration_curations.functions` + iconic_taxon des snapshots)
+- Composant `<MemoryCard>` swipable (Framer Motion) avec flip recto/verso
+- Mini-quiz 3 questions auto-généré depuis le pool d'espèces du tag
+- Écran badge + boutons partage (Web Share API) et CTA marche suivante
+- Tracking anonyme dans `engagement_analytics` (vues, complétions, partages)
+- Metadata Open Graph dynamique par marche+tag pour bon rendu réseaux sociaux
 
-- `pg_cron` hebdo : pour chaque ligne `source='none' AND miss_count < 5 AND resolved_at < now() - interval '7 days'`, ré-appelle `resolve-species-thumb`. Récupère les espèces récemment indexées par iNat.
+## Hors périmètre v1 (pour itérations futures)
 
-### 5. Frontend — refonte `useSpeciesPhoto` → `useSpeciesThumb`
+- IA conversationnelle (proposable en v2 si succès)
+- Gestes de protection détaillés par espèce (nécessite curation experte)
+- Mode multi-marches / classements inter-territoires
+- Création de compte / progression persistante
 
-- Nouveau hook `useSpeciesThumbs(names: string[])` : 1 requête Supabase (`select * from species_thumb_cache where scientific_name = ANY($1)`).
-- Pour les noms manquants : invoque `resolve-species-thumb` en arrière-plan (debounce 300 ms, batch) puis invalide la query.
-- `SpeciesThumb` :
-  - Lit `localPhoto` (photo terrain) → cache (`photo_url`) → pictogramme `iconic_taxon`.
-  - Mapping iconique fin : `Insecta`/`Arachnida` → `Bug` 🪲, `Aves` → `Bird` 🐦, `Mammalia` → `Rabbit`, `Reptilia`/`Amphibia` → `Squirrel`/`Frog` Lucide, `Actinopterygii`/`Mollusca` → `Fish`, `Plantae` → `Sprout`/`TreePine`, `Fungi` → `Mushroom` (via `@lucide/lab` si manquant côté core), défaut → `Leaf`.
-  - Pastille « iNat » conservée + tooltip avec `photo_attribution`.
-  - État `isLoading` ⇒ skeleton shimmer (jamais d'icône oiseau pendant le fetch).
+---
 
-### 6. Onglet admin « Vignettes espèces » (léger)
+## Détails techniques
 
-- Liste des `source IN ('none','manual') OR miss_count > 0`.
-- Bouton « Re-résoudre maintenant » (appelle l'edge function).
-- Champ « URL photo manuelle » + attribution → RPC `upsert_species_thumb_manual` (curateurs uniquement, `source='manual'`).
-- Compteur global « X espèces sans vignette » sur la dashboard admin Communauté.
+**Données**
+- Source unique : `get_exploration_species_count` RPC + `species_thumb_cache` (déjà en place suite à la session précédente)
+- Tags : fusion `exploration_curations.functions` (12 tags écologiques) + `iconic_taxon_name` (papillons = Insecta+Lepidoptera, oiseaux = Aves…)
+- Photos : cascade `marcheur_observations.photo_url` → `species_thumb_cache` → icône kingdom (composant `<SpeciesThumb />` existant)
+- Attribution marcheur : jointure `marcheur_observations` → `community_profiles` (prénom + date d'observation)
 
-## Effet pour l'utilisateur
+**Composants nouveaux** (`src/components/apprendre/`)
+- `ApprendreMarchePage.tsx` — route + layout immersif fond crème/forêt
+- `TagSelector.tsx` — grille tags avec compteur d'espèces
+- `MemoryCardDeck.tsx` — pile swipable Framer Motion (drag x, exit animations)
+- `MemoryCard.tsx` — recto photo + 3 choix, verso fiche flip 3D
+- `FlashQuiz.tsx` — 3 questions générées dynamiquement
+- `BadgeReveal.tsx` — animation badge + partage
 
-- Les vignettes deviennent **stables** (servies depuis Supabase, pas iNat live).
-- Aucune espèce ne montre plus de pictogramme erroné : un papillon est un 🪲, un poisson est un 🐟, etc.
-- Une espèce nouvellement rencontrée déclenche **une seule** résolution serveur ; tous les marcheurs suivants la voient instantanément.
-- Un curateur peut patcher une vignette manquante en 10 sec sans toucher au code.
+**Routing** : ajouter dans `src/App.tsx` la route `/apprendre/:slug` (publique, sous `ExplorationLayout` sans auth).
 
-## Hors scope
+**SEO**
+- `<title>` : "Apprendre les papillons de Jardin Monde — La Fréquence du Vivant"
+- Meta description dynamique
+- JSON-LD `LearningResource` par tag
+- Sitemap auto-généré par marche publiée
 
-- Pas de modification du pipeline de classification éco-tags / FR names existants (réutilise les mêmes patterns : KB partagée + RPC + edge function).
-- Pas de re-photos manuelles obligatoires : 100 % auto par défaut.
-- Pas de changement aux RPC `get_exploration_species_count`, snapshots, etc.
+**Hook nouveau** : `useApprendreSpecies(slug, tag)` — agrège espèces + photos + attribution, mémoïsé.
 
-## Fichiers concernés
+**Accessibilité**
+- Navigation clavier (← → pour swipe, espace pour flip)
+- Alt text sur chaque photo (nom espèce + attribution)
+- Quiz utilisable au clavier
+- Contrastes WCAG AA en thèmes clair + sombre
 
-- `supabase/migrations/<new>.sql` — table + RPC `upsert_species_thumb_manual` + grants + pg_cron.
-- `supabase/functions/resolve-species-thumb/index.ts` — nouvelle edge function.
-- `supabase/functions/backfill-species-thumb-cache/index.ts` — backfill one-shot.
-- `src/hooks/useSpeciesThumb.ts` — nouveau (remplace `useSpeciesPhoto` côté cache).
-- `src/hooks/useSpeciesPhoto.ts` — conservé en *thin wrapper* pour rétro-compat (lit la cache, déclenche resolve).
-- `src/components/species/SpeciesThumb.tsx` — mapping iconique fin + skeleton.
-- `src/pages/MarchesDuVivantAdmin*` — onglet « Vignettes espèces » (1 tab, ~150 lignes).
+**Tracking** (table `engagement_analytics` existante)
+- `event_type` = `apprendre_tag_started` / `apprendre_card_flipped` / `apprendre_quiz_completed` / `apprendre_shared`
+- Permet ensuite un dashboard admin "Quels tags fonctionnent le mieux ?"
 
-## Étapes d'exécution (ordre d'implémentation)
+**Performance**
+- Préchargement des 3 prochaines photos du deck
+- Lazy load au-delà
+- Cache React Query 10 min sur les espèces (déjà stable une fois la marche terminée)
 
-1. Migration table + RPC + grants.
-2. Edge function `resolve-species-thumb`.
-3. Refactor `SpeciesThumb` + nouveau hook `useSpeciesThumb` (mapping iconique inclus → la régression « papillon avec icône oiseau » disparaît immédiatement).
-4. Backfill function + run sur production.
-5. Onglet admin curation vignettes.
-6. Cron pg_cron hebdo de re-résolution.
+---
+
+## Critères de réussite
+
+- Un visiteur non-initié comprend et retient 5 espèces en moins de 5 minutes
+- Taux de complétion d'un tag > 60%
+- Au moins 1 partage social par 10 sessions
+- Conversion CTA "marche suivante" > 5%
+
+Une fois la v1 validée sur DEVIAT/Jardin Monde, on étend tags + on envisage v2 (IA + gestes de protection).
