@@ -7,7 +7,7 @@ import { fr } from 'date-fns/locale';
 import {
   Calendar, MapPin, Eye, Users, Share2, ArrowRight, Sparkles, Copy,
   Leaf, Bird, Trees, Globe2, Heart, ChevronRight, Camera, Quote, Mail,
-  Waves, ChevronDown,
+  Waves, ChevronDown, BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
