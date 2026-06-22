@@ -127,6 +127,16 @@ const PublicEventPage: React.FC = () => {
           title={title}
           onExit={() => setScenoBypassed(true)}
         />
+        {slug && (
+          <Link
+            to={`/apprendre/${slug}`}
+            className="fixed top-4 right-4 z-50 inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium backdrop-blur-xl bg-card/60 border border-primary/30 text-foreground shadow-lg hover:bg-card/80 transition"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Apprendre cette marche</span>
+            <span className="sm:hidden">Apprendre</span>
+          </Link>
+        )}
       </>
     );
   }

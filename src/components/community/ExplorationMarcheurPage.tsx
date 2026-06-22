@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -166,14 +166,14 @@ const ExplorationMarcheurPage: React.FC = () => {
       if (directMarcheEventId) {
         const { data } = await supabase
           .from('marche_events')
-          .select('id, title, date_marche, lieu, event_type')
+          .select('id, title, date_marche, lieu, event_type, is_public, public_slug')
           .eq('id', directMarcheEventId)
           .single();
         return data;
       }
       const { data } = await supabase
         .from('marche_events')
-        .select('id, title, date_marche, lieu, event_type')
+        .select('id, title, date_marche, lieu, event_type, is_public, public_slug')
         .eq('exploration_id', effectiveExplorationId!)
         .order('date_marche', { ascending: false })
         .limit(1)
@@ -422,6 +422,16 @@ const ExplorationMarcheurPage: React.FC = () => {
                 )}
               </div>
             </div>
+            {marcheEvent?.is_public && marcheEvent?.public_slug && (
+              <Link
+                to={`/apprendre/${marcheEvent.public_slug}`}
+                title="Outil pédagogique public"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition shrink-0"
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Apprendre cette marche</span>
+              </Link>
+            )}
             <HeaderSearchTrigger
               scope="event"
               eventId={marcheEventId || null}
