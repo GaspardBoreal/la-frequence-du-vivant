@@ -95,11 +95,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     processingTokenRef.current = null;
 
     if (error || !validatedUser) {
-      console.warn('Session expired or invalid, signing out:', error?.message);
-      setSignedOutState();
-      await supabase.auth.signOut();
+      // NE PAS appeler supabase.auth.signOut() ici : ce contexte admin est
+      // monté globalement et partage le client Supabase (donc le token) avec
+      // useCommunityAuth. Un signOut forcé déconnecterait l'utilisateur côté
+      // Mon Espace sur la moindre erreur transitoire de getUser()
+      // (tablette / réseau instable). On se contente de vider l'état admin
+      // local ; si le token est réellement révoqué, Supabase émettra
+      // SIGNED_OUT de lui-même.
+      console.warn('[AuthContext] getUser failed, clearing local admin state only:', error?.message);
+      validatedUserIdRef.current = null;
+      processingTokenRef.current = null;
+      initialResolvedRef.current = true;
+      setAuthState({
+        user: null,
+        session: null,
+        isLoading: false,
+        isAdmin: false,
+        isAdminChecked: true,
+      });
       return;
     }
+
 
     validatedUserIdRef.current = validatedUser.id;
 
