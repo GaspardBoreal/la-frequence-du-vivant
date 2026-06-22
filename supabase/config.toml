@@ -124,3 +124,9 @@ verify_jwt = false
 
 [functions.import-companies-batch]
 verify_jwt = false
+
+[functions.resolve-species-thumb]
+verify_jwt = false
+
+[functions.backfill-species-thumb-cache]
+verify_jwt = false

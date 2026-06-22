@@ -35,12 +35,12 @@ Deno.serve(async (req: Request) => {
     while (true) {
       const { data, error } = await supabase
         .from('biodiversity_snapshots')
-        .select('observations')
+        .select('species_data')
         .range(from, from + PAGE - 1);
       if (error) { console.warn('snapshots err', error.message); break; }
       if (!data || data.length === 0) break;
       for (const row of data) {
-        const obs = (row as any).observations;
+        const obs = (row as any).species_data;
         if (Array.isArray(obs)) {
           for (const o of obs) {
             const sn = o?.scientificName || o?.scientific_name;
