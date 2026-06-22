@@ -101,6 +101,7 @@ import PublicAuditFrugal from './pages/PublicAuditFrugal';
 import AgentIA from './pages/AgentIA';
 import AgentIAFiche from './pages/AgentIAFiche';
 import InterregSudoeMdv from './pages/InterregSudoeMdv';
+import ApprendreMarchePage from './pages/ApprendreMarchePage';
 
 
 function App() {
@@ -120,6 +121,7 @@ function App() {
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
             <Route path="/m/:slug" element={<PublicEventPage />} />
+            <Route path="/apprendre/:slug" element={<ApprendreMarchePage />} />
             
             {/* Nouvelles routes bioacoustiques */}
             <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />
