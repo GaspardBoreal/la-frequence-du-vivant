@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useSpeciesThumb } from './useSpeciesThumb';
 
 interface SpeciesPhotoData {
   photos: string[];
@@ -8,88 +8,27 @@ interface SpeciesPhotoData {
 }
 
 /**
- * Hook to fetch species photo and metadata from iNaturalist API
- * Uses the taxa API to find species by scientific name
+ * @deprecated Préférez `useSpeciesThumb` / `useSpeciesThumbs` qui lisent
+ * directement `species_thumb_cache` (cache serveur fiabilisée).
+ *
+ * Ce hook est conservé en thin-wrapper pour la rétro-compatibilité des
+ * composants existants qui attendent la forme `{ photos, kingdom, commonName }`.
  */
 export const useSpeciesPhoto = (scientificName: string | undefined) => {
-  return useQuery({
-    queryKey: ['species-photo', scientificName],
-    queryFn: async (): Promise<SpeciesPhotoData | null> => {
-      if (!scientificName) return null;
+  const { data, isLoading, isFetching } = useSpeciesThumb(scientificName);
 
-      try {
-        // Query iNaturalist Taxa API
-        const response = await fetch(
-          `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientificName)}&per_page=5`
-        );
-
-        if (!response.ok) {
-          console.warn('iNaturalist API error:', response.status);
-          return null;
-        }
-
-        const data = await response.json();
-
-        if (!data.results || data.results.length === 0) {
-          return null;
-        }
-
-        // Find the best match - prefer exact scientific name match
-        const exactMatch = data.results.find(
-          (taxon: any) => taxon.name?.toLowerCase() === scientificName.toLowerCase()
-        );
-        const taxon = exactMatch || data.results[0];
-
-        // Extract photos
-        const photos: string[] = [];
-        
-        // Default photo
-        if (taxon.default_photo?.medium_url) {
-          photos.push(taxon.default_photo.medium_url);
-        }
-        
-        // Try to get additional photos from taxon_photos
-        if (taxon.taxon_photos && Array.isArray(taxon.taxon_photos)) {
-          taxon.taxon_photos.slice(0, 4).forEach((tp: any) => {
-            if (tp.photo?.medium_url && !photos.includes(tp.photo.medium_url)) {
-              photos.push(tp.photo.medium_url);
-            }
-          });
-        }
-
-        // Determine kingdom from iconic_taxon_name or ancestor_ids
-        let kingdom = 'Unknown';
-        if (taxon.iconic_taxon_name) {
-          const iconicName = taxon.iconic_taxon_name.toLowerCase();
-          if (iconicName.includes('plant') || iconicName === 'plantae') {
-            kingdom = 'Plantae';
-          } else if (iconicName.includes('bird') || iconicName === 'aves') {
-            kingdom = 'Animalia';
-          } else if (iconicName.includes('mammal') || iconicName === 'mammalia') {
-            kingdom = 'Animalia';
-          } else if (iconicName.includes('insect') || iconicName === 'insecta') {
-            kingdom = 'Animalia';
-          } else if (iconicName.includes('fungi')) {
-            kingdom = 'Fungi';
-          } else if (['amphibia', 'reptilia', 'actinopterygii', 'mollusca', 'arachnida'].includes(iconicName)) {
-            kingdom = 'Animalia';
-          }
-        }
-
-        return {
-          photos,
-          kingdom,
-          commonName: taxon.preferred_common_name || taxon.english_common_name,
-          family: taxon.ancestor_ids ? String(taxon.ancestor_ids[taxon.ancestor_ids.length - 2]) : undefined,
-        };
-      } catch (error) {
-        console.warn('Error fetching species photo:', error);
-        return null;
+  const photos = data?.photo_url ? [data.photo_url] : [];
+  const result: SpeciesPhotoData | null = data
+    ? {
+        photos,
+        kingdom: data.kingdom || 'Unknown',
+        commonName: data.common_name_fr || data.common_name_en || undefined,
       }
-    },
-    enabled: !!scientificName,
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours - species photos don't change often
-    gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
-    retry: 1,
-  });
+    : null;
+
+  return {
+    data: result,
+    isLoading,
+    isFetching,
+  };
 };

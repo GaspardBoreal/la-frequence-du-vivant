@@ -5886,6 +5886,51 @@ export type Database = {
         }
         Relationships: []
       }
+      species_thumb_cache: {
+        Row: {
+          common_name_en: string | null
+          common_name_fr: string | null
+          created_at: string
+          iconic_taxon: string | null
+          kingdom: string | null
+          miss_count: number
+          photo_attribution: string | null
+          photo_url: string | null
+          resolved_at: string | null
+          scientific_name: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          common_name_en?: string | null
+          common_name_fr?: string | null
+          created_at?: string
+          iconic_taxon?: string | null
+          kingdom?: string | null
+          miss_count?: number
+          photo_attribution?: string | null
+          photo_url?: string | null
+          resolved_at?: string | null
+          scientific_name: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          common_name_en?: string | null
+          common_name_fr?: string | null
+          created_at?: string
+          iconic_taxon?: string | null
+          kingdom?: string | null
+          miss_count?: number
+          photo_attribution?: string | null
+          photo_url?: string | null
+          resolved_at?: string | null
+          scientific_name?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       species_translations: {
         Row: {
           alternative_names_fr: string[] | null
@@ -6862,6 +6907,29 @@ export type Database = {
           scientific_name: string
         }[]
       }
+      get_species_thumbs: {
+        Args: { _names: string[] }
+        Returns: {
+          common_name_en: string | null
+          common_name_fr: string | null
+          created_at: string
+          iconic_taxon: string | null
+          kingdom: string | null
+          miss_count: number
+          photo_attribution: string | null
+          photo_url: string | null
+          resolved_at: string | null
+          scientific_name: string
+          source: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "species_thumb_cache"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_structured_vocabulary_data: {
         Args: { marche_id_param: string }
         Returns: {
@@ -6978,6 +7046,7 @@ export type Database = {
         Returns: boolean
       }
       is_system_initialized: { Args: never; Returns: boolean }
+      is_thumb_curator: { Args: { _user_id: string }; Returns: boolean }
       list_event_invited_readers: {
         Args: { _event_id: string }
         Returns: {
@@ -7217,6 +7286,36 @@ export type Database = {
           _scientific_name: string
         }
         Returns: string
+      }
+      upsert_species_thumb_manual: {
+        Args: {
+          _common_name_fr?: string
+          _iconic_taxon?: string
+          _kingdom?: string
+          _photo_attribution?: string
+          _photo_url: string
+          _scientific_name: string
+        }
+        Returns: {
+          common_name_en: string | null
+          common_name_fr: string | null
+          created_at: string
+          iconic_taxon: string | null
+          kingdom: string | null
+          miss_count: number
+          photo_attribution: string | null
+          photo_url: string | null
+          resolved_at: string | null
+          scientific_name: string
+          source: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "species_thumb_cache"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       validate_admin_email_access: { Args: never; Returns: boolean }
       validate_species_eco_tags: {
