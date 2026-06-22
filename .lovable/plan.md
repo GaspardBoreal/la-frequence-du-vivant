@@ -1,79 +1,109 @@
-# Bug : connexion `/mon-espace` rebondit vers `/connexion` sur tablette
+# Fiabilisation définitive des vignettes espèces
 
-## Diagnostic
+## Constat sur la capture
 
-Deux contextes d'auth coexistent sur le projet et partagent **le même client Supabase** (donc le même `localStorage` + les mêmes tokens) :
+Drawer "Lundi 22 Juin" (DEVIAT) : 5 espèces, **3 sans photo** (Painted Lady, Argus bleu, Mélanargie galathée) → fallback pictogramme **oiseau** alors que ce sont des **papillons**. Deux problèmes distincts :
 
-1. `src/contexts/AuthContext.tsx` (admin) — monté **globalement** dans `App.tsx` (ligne 109), donc actif aussi sur `/marches-du-vivant/mon-espace`.
-2. `src/hooks/useCommunityAuth.ts` — utilisé par la page Mon Espace.
+1. **Photo manquante** → l'appel iNaturalist live depuis le navigateur a échoué/timeout/rate-limit, ou la recherche n'a pas trouvé le taxon. Aucune persistance : chaque client retente, le même utilisateur peut voir une photo aujourd'hui et pas demain.
+2. **Picto incohérent** : `SpeciesThumb` mappe `kingdom = 'Animalia'` → `Bird`. Tout insecte/reptile/mollusque hérite donc d'un pictogramme oiseau.
 
-Quand un utilisateur se connecte côté communauté :
+## Cause racine
 
-- Supabase déclenche `SIGNED_IN` → `AuthContext.handleSession` appelle `supabase.auth.getUser()` pour revalider le JWT côté serveur.
-- Si cet appel échoue pour une raison transitoire (réseau hésitant, refresh-token concurrent, ITP, etc. — fréquent sur tablette Android Chrome en 4G/WiFi instable), le bloc suivant s'exécute :
+`src/hooks/useSpeciesPhoto.ts` interroge `api.inaturalist.org/v1/taxa` **à la volée, côté client, sans cache serveur**. Conséquences :
+- Rate-limit iNat (60 req/min anonyme) → réponses vides en cas de drawer chargé.
+- CORS / timeout réseau → silencieux (`return null`).
+- Match fuzzy sur `q=` peut rendre une mauvaise espèce sans photo.
+- Aucun fallback secondaire (GBIF, photo terrain manuelle).
+- Aucun moyen pour un curateur de patcher une vignette manquante.
 
-```ts
-if (error || !validatedUser) {
-  setSignedOutState();
-  await supabase.auth.signOut();   // ← TUE LA SESSION GLOBALEMENT
-  return;
-}
+## Architecture cible — cache serveur durable
+
+### 1. Table `public.species_thumb_cache` (nouvelle migration)
+
+```text
+scientific_name text PRIMARY KEY      -- normalisé NFD lower
+photo_url        text
+photo_attribution text                 -- "© Auteur / iNat CC-BY"
+iconic_taxon     text                  -- Aves|Insecta|Plantae|Mammalia|Fungi|Reptilia|Amphibia|Mollusca|Arachnida|Actinopterygii|Other
+kingdom          text
+common_name_fr   text
+common_name_en   text
+source           text                  -- 'inaturalist' | 'gbif' | 'manual' | 'none'
+miss_count       int DEFAULT 0         -- nb de tentatives infructueuses
+resolved_at      timestamptz
+created_at       timestamptz
 ```
 
-→ Le `signOut()` global purge le token partagé → `useCommunityAuth` reçoit `SIGNED_OUT` → `user = null` → la garde `MarchesDuVivantMonEspace` (ligne 113) redirige vers `/connexion`.
+- RLS : lecture publique (`anon`, `authenticated`), écriture uniquement via RPC SECURITY DEFINER (curateurs/admin) ou service_role (edge function).
+- Index sur `(source, miss_count, resolved_at)` pour la re-résolution périodique.
+- GRANTs : `SELECT` à anon/authenticated, `ALL` à service_role.
 
-Les logs auth confirment le pattern : succession de `password` 200 OK, puis `token_revoked` + `Invalid Refresh Token: Refresh Token Not Found` (06:00:09), suivis d'une cascade de reconnexions manuelles. Sur mobile la latence est plus stable → `getUser()` passe du premier coup → pas de signOut. Sur tablette, un seul échec transitoire suffit pour casser la session.
+### 2. Edge function `resolve-species-thumb`
 
-## Correctif
+- Entrée : `{ scientific_names: string[] }` (batch jusqu'à 50).
+- Pour chaque nom non présent en cache (ou en `source='none'` + résolu il y a >7j) :
+  1. **iNat exact** : `/v1/taxa?q=...&rank=species,subspecies,genus` puis filtrage strict `name === scientificName`.
+  2. **iNat fuzzy** : 1er résultat si aucun exact, **et seulement si `default_photo` non vide**.
+  3. **GBIF** en fallback : `/v1/species/match` + `/v1/species/{key}/media` (vmcache pour Plantae/Fungi notamment).
+  4. Sinon `source='none'`, `miss_count++`.
+- Upsert atomique. Retourne les rows résolues + restantes.
+- Limitée à 5 req/sec vers iNat (politesse + évite ban).
 
-Ne plus laisser le contexte **admin** purger la session **globale** : `AuthContext` doit se contenter de mettre à jour son **état local** quand `getUser()` échoue. Si le token est réellement révoqué, Supabase le signalera par un événement `SIGNED_OUT` ou `TOKEN_REFRESHED` ; aucun besoin de forcer un signOut côté client.
+### 3. Edge function `backfill-species-thumb-cache` (one-shot)
 
-### Fichier modifié — `src/contexts/AuthContext.tsx`
+- Walks `DISTINCT lower(unaccent(scientific_name))` depuis `biodiversity_snapshots ∪ marcheur_observations`.
+- Appelle `resolve-species-thumb` par lots de 25.
+- Logue progression. Idempotent.
 
-Dans `handleSession`, remplacer :
+### 4. Re-résolution périodique
 
-```ts
-if (error || !validatedUser) {
-  console.warn('Session expired or invalid, signing out:', error?.message);
-  setSignedOutState();
-  await supabase.auth.signOut();
-  return;
-}
-```
+- `pg_cron` hebdo : pour chaque ligne `source='none' AND miss_count < 5 AND resolved_at < now() - interval '7 days'`, ré-appelle `resolve-species-thumb`. Récupère les espèces récemment indexées par iNat.
 
-par :
+### 5. Frontend — refonte `useSpeciesPhoto` → `useSpeciesThumb`
 
-```ts
-if (error || !validatedUser) {
-  // NE PAS appeler supabase.auth.signOut() ici : ce contexte est global
-  // et la session est partagée avec useCommunityAuth. Un signOut forcé
-  // déconnecterait l'utilisateur côté Mon Espace sur la moindre erreur
-  // transitoire de getUser() (tablette/réseau instable).
-  console.warn('[AuthContext] getUser failed, clearing local admin state only:', error?.message);
-  validatedUserIdRef.current = null;
-  processingTokenRef.current = null;
-  initialResolvedRef.current = true;
-  setAuthState({
-    user: null,
-    session: null,
-    isLoading: false,
-    isAdmin: false,
-    isAdminChecked: true,
-  });
-  return;
-}
-```
+- Nouveau hook `useSpeciesThumbs(names: string[])` : 1 requête Supabase (`select * from species_thumb_cache where scientific_name = ANY($1)`).
+- Pour les noms manquants : invoque `resolve-species-thumb` en arrière-plan (debounce 300 ms, batch) puis invalide la query.
+- `SpeciesThumb` :
+  - Lit `localPhoto` (photo terrain) → cache (`photo_url`) → pictogramme `iconic_taxon`.
+  - Mapping iconique fin : `Insecta`/`Arachnida` → `Bug` 🪲, `Aves` → `Bird` 🐦, `Mammalia` → `Rabbit`, `Reptilia`/`Amphibia` → `Squirrel`/`Frog` Lucide, `Actinopterygii`/`Mollusca` → `Fish`, `Plantae` → `Sprout`/`TreePine`, `Fungi` → `Mushroom` (via `@lucide/lab` si manquant côté core), défaut → `Leaf`.
+  - Pastille « iNat » conservée + tooltip avec `photo_attribution`.
+  - État `isLoading` ⇒ skeleton shimmer (jamais d'icône oiseau pendant le fetch).
 
-L'admin reste protégé : `AdminAuth` requiert toujours `user && isAdmin` → un échec de `getUser()` rendra simplement le formulaire de login admin, sans casser la session communautaire partagée.
+### 6. Onglet admin « Vignettes espèces » (léger)
 
-## Vérification
+- Liste des `source IN ('none','manual') OR miss_count > 0`.
+- Bouton « Re-résoudre maintenant » (appelle l'edge function).
+- Champ « URL photo manuelle » + attribution → RPC `upsert_species_thumb_manual` (curateurs uniquement, `source='manual'`).
+- Compteur global « X espèces sans vignette » sur la dashboard admin Communauté.
 
-1. Se connecter en compte communautaire (Gaspard Boréal) sur tablette Android Chrome.
-2. Vérifier que `/marches-du-vivant/mon-espace` reste affichée sans rebond vers `/connexion`.
-3. Vérifier en parallèle que `/admin` exige toujours le login admin (pas de régression côté admin).
-4. Console : plus de `Session expired or invalid, signing out` déclenché par `AuthContext` lors d'une navigation Mon Espace.
+## Effet pour l'utilisateur
+
+- Les vignettes deviennent **stables** (servies depuis Supabase, pas iNat live).
+- Aucune espèce ne montre plus de pictogramme erroné : un papillon est un 🪲, un poisson est un 🐟, etc.
+- Une espèce nouvellement rencontrée déclenche **une seule** résolution serveur ; tous les marcheurs suivants la voient instantanément.
+- Un curateur peut patcher une vignette manquante en 10 sec sans toucher au code.
 
 ## Hors scope
 
-- Aucune modification de `useCommunityAuth`, des routes, du schéma DB ou du UX `/connexion`.
-- Le garde-fou 500 ms de `MarchesDuVivantMonEspace` reste tel quel (utile pour le tick initial).
+- Pas de modification du pipeline de classification éco-tags / FR names existants (réutilise les mêmes patterns : KB partagée + RPC + edge function).
+- Pas de re-photos manuelles obligatoires : 100 % auto par défaut.
+- Pas de changement aux RPC `get_exploration_species_count`, snapshots, etc.
+
+## Fichiers concernés
+
+- `supabase/migrations/<new>.sql` — table + RPC `upsert_species_thumb_manual` + grants + pg_cron.
+- `supabase/functions/resolve-species-thumb/index.ts` — nouvelle edge function.
+- `supabase/functions/backfill-species-thumb-cache/index.ts` — backfill one-shot.
+- `src/hooks/useSpeciesThumb.ts` — nouveau (remplace `useSpeciesPhoto` côté cache).
+- `src/hooks/useSpeciesPhoto.ts` — conservé en *thin wrapper* pour rétro-compat (lit la cache, déclenche resolve).
+- `src/components/species/SpeciesThumb.tsx` — mapping iconique fin + skeleton.
+- `src/pages/MarchesDuVivantAdmin*` — onglet « Vignettes espèces » (1 tab, ~150 lignes).
+
+## Étapes d'exécution (ordre d'implémentation)
+
+1. Migration table + RPC + grants.
+2. Edge function `resolve-species-thumb`.
+3. Refactor `SpeciesThumb` + nouveau hook `useSpeciesThumb` (mapping iconique inclus → la régression « papillon avec icône oiseau » disparaît immédiatement).
+4. Backfill function + run sur production.
+5. Onglet admin curation vignettes.
+6. Cron pg_cron hebdo de re-résolution.
