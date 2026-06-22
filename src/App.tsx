@@ -121,6 +121,7 @@ function App() {
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
             <Route path="/m/:slug" element={<PublicEventPage />} />
+            <Route path="/apprendre/:slug" element={<ApprendreMarchePage />} />
             
             {/* Nouvelles routes bioacoustiques */}
             <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />
