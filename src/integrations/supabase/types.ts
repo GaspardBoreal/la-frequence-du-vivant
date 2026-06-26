@@ -5412,8 +5412,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pheno_ai_suggestions: {
+        Row: {
+          alternative_macro: number | null
+          confidence: number | null
+          created_at: string
+          crop_key: string
+          id: string
+          macro: number | null
+          model: string | null
+          photo_url: string
+          rationale: string | null
+          scientific_name: string | null
+          unknown: boolean
+        }
+        Insert: {
+          alternative_macro?: number | null
+          confidence?: number | null
+          created_at?: string
+          crop_key: string
+          id?: string
+          macro?: number | null
+          model?: string | null
+          photo_url: string
+          rationale?: string | null
+          scientific_name?: string | null
+          unknown?: boolean
+        }
+        Update: {
+          alternative_macro?: number | null
+          confidence?: number | null
+          created_at?: string
+          crop_key?: string
+          id?: string
+          macro?: number | null
+          model?: string | null
+          photo_url?: string
+          rationale?: string | null
+          scientific_name?: string | null
+          unknown?: boolean
+        }
+        Relationships: []
+      }
       pheno_observations: {
         Row: {
+          ai_accepted: boolean | null
+          ai_confidence: number | null
+          ai_rationale: string | null
+          ai_suggested_macro: number | null
           bbch_label_fr: string
           bbch_macro: number
           bbch_uri: string | null
@@ -5433,6 +5479,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_accepted?: boolean | null
+          ai_confidence?: number | null
+          ai_rationale?: string | null
+          ai_suggested_macro?: number | null
           bbch_label_fr: string
           bbch_macro: number
           bbch_uri?: string | null
@@ -5452,6 +5502,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_accepted?: boolean | null
+          ai_confidence?: number | null
+          ai_rationale?: string | null
+          ai_suggested_macro?: number | null
           bbch_label_fr?: string
           bbch_macro?: number
           bbch_uri?: string | null

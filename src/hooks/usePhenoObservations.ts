@@ -40,6 +40,10 @@ export interface CreatePhenoObservationInput {
   longitude?: number | null;
   photo_url?: string | null;
   notes?: string | null;
+  ai_suggested_macro?: number | null;
+  ai_confidence?: number | null;
+  ai_rationale?: string | null;
+  ai_accepted?: boolean | null;
 }
 
 /** Liste des observations phéno pour une exploration donnée. */
@@ -101,11 +105,15 @@ export function useCreatePhenoObservation() {
         longitude: input.longitude ?? null,
         photo_url: input.photo_url ?? null,
         notes: input.notes ?? null,
-        source: 'manual',
+        source: input.ai_accepted ? 'ai_assisted' : 'manual',
+        ai_suggested_macro: input.ai_suggested_macro ?? null,
+        ai_confidence: input.ai_confidence ?? null,
+        ai_rationale: input.ai_rationale ?? null,
+        ai_accepted: input.ai_accepted ?? null,
       };
       const { data, error } = await supabase
         .from('pheno_observations')
-        .insert(payload)
+        .insert(payload as any)
         .select()
         .single();
       if (error) throw error;
