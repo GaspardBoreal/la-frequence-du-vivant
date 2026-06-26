@@ -5412,6 +5412,81 @@ export type Database = {
         }
         Relationships: []
       }
+      pheno_observations: {
+        Row: {
+          bbch_label_fr: string
+          bbch_macro: number
+          bbch_uri: string | null
+          created_at: string
+          crop_key: string
+          exploration_id: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          marche_id: string | null
+          marcheur_id: string
+          notes: string | null
+          observed_at: string
+          photo_url: string | null
+          source: string
+          species_scientific_name: string
+          updated_at: string
+        }
+        Insert: {
+          bbch_label_fr: string
+          bbch_macro: number
+          bbch_uri?: string | null
+          created_at?: string
+          crop_key: string
+          exploration_id?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          marche_id?: string | null
+          marcheur_id: string
+          notes?: string | null
+          observed_at?: string
+          photo_url?: string | null
+          source?: string
+          species_scientific_name: string
+          updated_at?: string
+        }
+        Update: {
+          bbch_label_fr?: string
+          bbch_macro?: number
+          bbch_uri?: string | null
+          created_at?: string
+          crop_key?: string
+          exploration_id?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          marche_id?: string | null
+          marcheur_id?: string
+          notes?: string | null
+          observed_at?: string
+          photo_url?: string | null
+          source?: string
+          species_scientific_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pheno_observations_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pheno_observations_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       préfigurations_interactives: {
         Row: {
           config_interaction: Json | null
