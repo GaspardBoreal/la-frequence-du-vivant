@@ -40,6 +40,10 @@ export interface CreatePhenoObservationInput {
   longitude?: number | null;
   photo_url?: string | null;
   notes?: string | null;
+  ai_suggested_macro?: number | null;
+  ai_confidence?: number | null;
+  ai_rationale?: string | null;
+  ai_accepted?: boolean | null;
 }
 
 /** Liste des observations phéno pour une exploration donnée. */
