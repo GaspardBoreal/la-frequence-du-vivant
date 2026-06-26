@@ -1,130 +1,73 @@
-## Carnet Phéno BBCH — v1 (Scénario S1)
+# Mini-dossier « Pack Vivant Mécène » — 4 pages
 
-Outil de carnet phénologique citoyen branché sur les **échelles BBCH INRAE/AgroPortal**. Quand un marcheur observe une culture suivable, il peut noter son stade de développement (germination → récolte) en 2 taps. Les données alimentent une frise territoriale et préparent les scénarios S2-S5 (croisement biodiv, BSV citoyen, jumeau phénologique).
+Livrable autonome au format PDF, dans la même charte que la plaquette mécènes existante (palette ivoire / vert forêt / accent doré, typo titres serif éditoriale, corps sans-serif aéré). Posé dans `/mnt/documents/pack-vivant-mecene-v1.pdf`, prêt à être annexé à la plaquette ou envoyé seul en RDV.
 
----
+## Intention éditoriale
 
-### Périmètre v1 retenu
+Sortir du vocabulaire « domaine / terroir » (Pack vignoble) pour parler le langage des directions RSE, COMEX et Communication : **preuve, engagement, visibilité, science**. Ton sobre, inspirant, factuel — registre mécénat haut de gamme, pas plaquette commerciale.
 
-**Large — 12 cultures suivables** (couvre 90% des cultures déjà observées dans les snapshots) :
+Fil rouge : *« Vous donnez du sens. Nous le rendons visible, mesurable et partagé. »*
 
-| # | Culture | Nom scientifique | Échelle BBCH source | Marches déjà concernées |
-|---|---|---|---|---|
-| 1 | Vigne | `Vitis vinifera` | `grapevine` | 7 (DEVIAT) |
-| 2 | Blé tendre | `Triticum aestivum` | `cereals` | 2 (DEVIAT) |
-| 3 | Colza | `Brassica napus` | `oilseedRape` | 2 (DEVIAT) |
-| 4 | Tournesol | `Helianthus annuus` | `sunflower` | 1 (Paris) |
-| 5 | Féverole | `Vicia faba` | `fabaBean` | 3 (DEVIAT, LATILLÉ) |
-| 6 | Betterave | `Beta vulgaris` | `beet` | 1 (Paris) |
-| 7 | Chanvre | `Cannabis sativa` | `hemp` | 1 (Paris) |
-| 8 | Cerisier | `Prunus avium` | `stoneFruits` | 14 |
-| 9 | Prunier | `Prunus domestica` | `stoneFruits` | 25 |
-| 10 | Pêcher | `Prunus persica` | `stoneFruits` | 10 |
-| 11 | Poirier | `Pyrus communis` | `pomeFruits` | 1 |
-| 12 | Fraisier | `Fragaria vesca` | `strawberry` | 1 |
-| (bonus) | Olivier | `Olea europaea` | `oliveTree` | 25 (à activer seulement zone méditerranée) |
-
-> Maïs, soja, orge, riz, pomme de terre, tomate, lin : pas encore observés → présents dans le référentiel mais cachés tant qu'aucune observation, pour ne pas polluer l'UX.
-
----
-
-### Architecture fonctionnelle
+## Structure des 4 pages
 
 ```text
-┌──────────────────────────────────────────────────────────┐
-│  Marcheur observe une espèce (flow contribution actuel)  │
-└──────────────────────────┬───────────────────────────────┘
-                           ▼
-        ┌──────────────────────────────────────┐
-        │  Détection auto: scientificName      │
-        │  ∈ référentiel BBCH (bbchStages.ts)  │
-        └──────────────────┬───────────────────┘
-                           ▼ (si match)
-        ┌──────────────────────────────────────┐
-        │  Bouton « 🌾 Noter le stade phéno »  │
-        │  apparaît dans la fiche observation  │
-        └──────────────────┬───────────────────┘
-                           ▼
-        ┌──────────────────────────────────────┐
-        │  Drawer PhenoStageSelector           │
-        │  Grid 2×5 emoji + label macro BBCH   │
-        │  Photo optionnelle (réutilise photo  │
-        │  de l'observation si présente)       │
-        └──────────────────┬───────────────────┘
-                           ▼
-        ┌──────────────────────────────────────┐
-        │  INSERT public.pheno_observations    │
-        │  +5 / +10 Fréquences                 │
-        └──────────────────┬───────────────────┘
-                           ▼
-        ┌──────────────────────────────────────┐
-        │  Restitution Synthèse exploration:   │
-        │  « Calendrier phéno »                │
-        │  gradient + compteurs par stade      │
-        └──────────────────────────────────────┘
+P1  Couverture + promesse mécène
+P2  Le Pack Vivant Mécène — 4 piliers
+P3  Trois niveaux d'engagement (Bronze / Argent / Or)
+P4  Contreparties, cadre fiscal & prochaine étape
 ```
 
-### Référentiel BBCH local
+### Page 1 — Couverture
 
-Fichier `src/lib/bbchStages.ts` — pour chaque culture : 10 stades macro (BBCH 0-9) avec libellé FR, emoji, et URI canonique INRAE pour cohérence sémantique future.
+- Bandeau supérieur : *La Fréquence du Vivant — Mécénat 2026*
+- Titre : **« Le Pack Vivant Mécène »**
+- Sous-titre : *Ce que reçoit votre entreprise quand elle soutient les Marches du Vivant.*
+- Encadré promesse en 3 lignes : Preuve · Expérience · Visibilité
+- Pied : *Document complémentaire à la plaquette mécènes*
 
-```text
-0 🌰 Germination      5 🌾 Apparition inflorescence
-1 🌱 Levée / feuilles 6 🌸 Floraison
-2 🍃 Talles/pousses   7 🫐 Fructification
-3 📏 Élongation tige  8 🌾 Maturation
-4 🌿 Gainage/bourgeon 9 🍂 Sénescence / récolté
-```
+### Page 2 — Le Pack Vivant Mécène, 4 piliers
 
-Les emojis sont adaptés par culture (vigne → 🍇 en stade 7, blé → 🌾 en 8, etc.) — table de surcharge légère.
+Grille 2×2, chaque pilier = pictogramme + titre + 3 livrables concrets.
 
-### UX
+| Pilier | Livrables clés |
+|---|---|
+| **1. Preuves RSE / CSRD** | Indicateurs biodiversité certifiés GBIF · Export CSV / XLSX / GeoJSON horodaté · Fiche synthèse intégrable rapport extra-financier (ESRS E4) |
+| **2. Engagement collaborateurs** | 1 à 3 Marches du Vivant avec vos équipes · Restitution live le jour même · Kit comm' interne (photos, témoignages, récit de journée) |
+| **3. Visibilité & communauté** | Page mécène dédiée sur l'app · Logo sur les pages publiques des marches financées · Mention dans la newsletter nationale (communauté en croissance) |
+| **4. Contribution scientifique** | Observations versées à GBIF & iNaturalist sous votre nom · Attestation de contribution science participative · Focus espèces remarquables de vos territoires |
 
-- **Détection auto** : dès qu'une observation match une espèce cultivée du référentiel, badge discret « BBCH » + CTA « Noter le stade » dans la fiche.
-- **Drawer mobile-first** : grille 2×5 emoji géante, tap → confirmation → toast Fréquence.
-- **Pas d'écran admin v1** : référentiel statique versionné dans le repo.
-- **Badge** « Phénologue » dans Impact Stories après 10 observations BBCH.
-- **Onglet Synthèse** : module *« Calendrier phéno »* affichant pour chaque culture observée la timeline des stades constatés (gradient vert → or → ambre) avec compteur par stade.
+### Page 3 — Trois niveaux d'engagement
 
-### Données & Sécurité
+Tableau comparatif clair, paliers indicatifs (à valider avec Victor/Laurent).
 
-Nouvelle table `public.pheno_observations` :
+| | **Bronze — 5 000 €** | **Argent — 15 000 €** | **Or — 50 000 €** |
+|---|---|---|---|
+| Marches du Vivant | 1 marche (≤ 20 collab.) | 3 marches (≤ 60 collab.) | Programme annuel — jusqu'à 10 marches |
+| Pack données | Export standard + fiche RSE | + rapport personnalisé PDF | + dashboard biodiversité dédié, mis à jour en continu |
+| Visibilité | Logo page marche | + page mécène dédiée + post réseaux | + co-construction d'un récit territorial (film court, podcast) |
+| Communauté | Mention newsletter | + intervention d'un explorateur en interne | + conférence Gaspard Boréal / Laurent Tripied |
+| Science | Attestation GBIF | + focus espèces remarquables | + parrainage d'un territoire prioritaire sur 12 mois |
 
-| Champ | Type | Note |
-|---|---|---|
-| `id` | uuid PK | |
-| `exploration_id` | uuid | nullable (cas hors exploration) |
-| `marche_id` | uuid | nullable |
-| `marcheur_id` | uuid | = community_profiles.user_id |
-| `species_scientific_name` | text | clef de jointure avec marcheur_observations |
-| `crop_key` | text | ex. `wheat`, `grapevine`… |
-| `bbch_macro` | smallint 0-9 | stade macro |
-| `bbch_label_fr` | text | snapshot lisible |
-| `bbch_uri` | text | URI INRAE pour traçabilité sémantique |
-| `observed_at` | date | |
-| `latitude`, `longitude` | numeric | |
-| `photo_url` | text | nullable |
-| `source` | text | `manual` v1 |
-| `created_at`, `updated_at` | timestamptz | |
+Note de bas de page : *« Tous les paliers sont éligibles au mécénat d'entreprise — réduction d'impôt de 60 % (art. 238 bis CGI), dans la limite de 0,5 % du CA HT. »*
 
-GRANTs : `authenticated` (SELECT/INSERT/UPDATE/DELETE conditionné `marcheur_id = auth.uid()`), `anon` SELECT si exploration publique, `service_role` ALL. RLS via `has_role` + jointure exploration publique pour la lecture publique.
+### Page 4 — Contreparties, cadre & contact
 
-### Hors scope v1
+- Bloc **Cadre fiscal mécénat** : rappel 60 % réduction IS, plafond, contreparties autorisées ≤ 25 % du don.
+- Bloc **Ce que vous ne recevez pas** (assumé, posture mécène) : pas de prestation commerciale exclusive, pas de greenwashing — *vous soutenez une mission d'intérêt général dont vous bénéficiez en retour.*
+- Bloc **Calendrier type** : signature → 1ʳᵉ marche < 90 jours → Pack Vivant sous 48 h → bilan annuel.
+- CTA : *Prendre RDV avec Victor Boixeda / Laurent Tripied* + emails + QR code vers `/adhesion` (ou page mécénat dédiée).
 
-- Pas d'appel SPARQL live vers `rdf.codex.cati.inrae.fr` (référentiel local figé).
-- Pas de croisement automatique pollinisateurs × stade (S3).
-- Pas de génération BSV PDF (S4).
-- Pas de modèle degrés-jours Open-Meteo (S5).
-- Pas d'édition admin du référentiel.
-- Pas de promotion globale dans la home (déploiement progressif via DEVIAT d'abord).
+## Production technique
 
-### Livrables
+- Génération via **skill DOCX** (Arial / Georgia pour rester lisible et imprimable), conversion PDF via LibreOffice.
+- Palette alignée plaquette : fond ivoire `#FAF8F3`, vert forêt `#0D6B58`, accent doré `#C9A961`, texte `#1A1F1C`.
+- Visuels : 2 photos réutilisées depuis la plaquette (page 1 arbre + page 5 fleurs bleues) recopiées depuis `parsed-documents://…/Plaquette_mécènes.pdf/images/`.
+- QA obligatoire : conversion PDF → images de chaque page → relecture (overflow, contraste, alignement tableau paliers).
 
-1. `src/lib/bbchStages.ts` — référentiel 12 cultures × 10 stades + URI INRAE.
-2. Migration Supabase `pheno_observations` (table + GRANTs + RLS + trigger updated_at).
-3. Hook `usePhenoObservations(explorationId)` (live via React Query + invalidation).
-4. Composant `<PhenoStageSelector species={...} onSave={...} />` (drawer mobile).
-5. Intégration dans le flow contribution marcheur (fiche observation + bouton conditionnel).
-6. Composant `<PhenoCalendar />` dans l'onglet Synthèse d'exploration.
-7. Bonus Fréquences + badge « Phénologue » (Impact Stories).
-8. Mémoire projet : `mem://features/phenologie/carnet-pheno-bbch-logic`.
+## Livrable final
+
+- `/mnt/documents/pack-vivant-mecene-v1.pdf` (4 pages, prêt à envoyer)
+- Présenté avec `<presentation-artifact>` pour téléchargement immédiat.
+- Message court à Victor résumant les choix structurants (paliers indicatifs, posture mécénat assumée, 4 piliers vs offre vignoble).
+
+Si tu approuves, je passe en build et je te livre le PDF dans la foulée. Les montants 5k / 15k / 50k sont des **propositions de cadrage** — dis-moi si tu veux les ajuster avant production ou les laisser comme base de discussion avec Victor.
