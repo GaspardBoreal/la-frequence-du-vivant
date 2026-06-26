@@ -18,6 +18,7 @@ import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import { useChatTabSnapshot } from '@/hooks/useChatPageContext';
 import { useSpeciesFilteredByPeriod } from '@/hooks/useSpeciesFilteredByPeriod';
+import PhenoCalendar from '@/components/phenologie/PhenoCalendar';
 import type { EvolutionPeriod, DateSource } from '@/hooks/useBiodiversityEvolution';
 import { isSpeciesWithinRadius, isObservationWithinRadius, type MarcheGeoCtx } from '@/utils/speciesRadiusFilter';
 
