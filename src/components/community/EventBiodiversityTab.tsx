@@ -662,6 +662,9 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Carnet Phéno BBCH — calendrier des cultures suivies sur cette exploration */}
+            <PhenoCalendar explorationId={explorationId} />
           </motion.div>
         )}
 

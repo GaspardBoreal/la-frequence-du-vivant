@@ -29,6 +29,7 @@ import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import SpeciesTrophicPosition from './species-modal/SpeciesTrophicPosition';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
+import PhenoCtaButton from '@/components/phenologie/PhenoCtaButton';
 
 interface SpeciesGalleryDetailModalProps {
   /** Minimal identity used for hero + queries. `count` may be exact (Synthèse)
@@ -356,6 +357,16 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                   speciesPool={resolvedTrophicPool as any}
                 />
               )}
+
+              {/* Carnet Phéno BBCH — visible uniquement si l'espèce est une culture suivie */}
+              {species && (
+                <PhenoCtaButton
+                  speciesScientificName={species.scientificName}
+                  explorationId={explorationId ?? null}
+                />
+              )}
+
+
 
 
               {/* CTA IA inline (desktop) */}
