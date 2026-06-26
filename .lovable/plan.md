@@ -1,73 +1,56 @@
-# Mini-dossier « Pack Vivant Mécène » — 4 pages
+# Suggestion IA du stade phénologique (BBCH)
 
-Livrable autonome au format PDF, dans la même charte que la plaquette mécènes existante (palette ivoire / vert forêt / accent doré, typo titres serif éditoriale, corps sans-serif aéré). Posé dans `/mnt/documents/pack-vivant-mecene-v1.pdf`, prêt à être annexé à la plaquette ou envoyé seul en RDV.
+## Objectif
+Quand le marcheur ouvre « Noter le stade phénologique » sur une espèce-culture (ex. Colza), l'app analyse **la photo courante** + le **référentiel BBCH** de la culture et **pré-sélectionne** le stade le plus probable, avec un niveau de confiance et une courte justification visuelle ("fleurs jaunes ouvertes + premières siliques visibles → BBCH 6–7").
 
-## Intention éditoriale
+## UX dans le drawer `PhenoStageSelector`
+1. Bandeau IA en haut du drawer dès l'ouverture :
+   - État *analyse* : shimmer + "Lecture de la photo en cours…"
+   - État *résultat* : carte ambre/émeraude avec
+     - Emoji + libellé du stade suggéré (ex. 🌼 BBCH 6 — Floraison)
+     - Barre de confiance (0–100 %) + 1 phrase de justification
+     - Boutons : **Accepter la suggestion** (sélectionne la tuile + scroll) / **Choisir un autre stade**
+   - État *incertain* (confidence < 0.5) : propose **2 stades plausibles** côte à côte.
+2. Tuile suggérée mise en évidence (anneau ambre pulsant ✨) dans la grille existante.
+3. Si pas de photo disponible → bandeau masqué, comportement actuel inchangé.
+4. Au save : on stocke `ai_suggested_stage`, `ai_confidence`, `ai_rationale` pour audit (et apprentissage futur).
 
-Sortir du vocabulaire « domaine / terroir » (Pack vignoble) pour parler le langage des directions RSE, COMEX et Communication : **preuve, engagement, visibilité, science**. Ton sobre, inspirant, factuel — registre mécénat haut de gamme, pas plaquette commerciale.
+## Architecture technique
 
-Fil rouge : *« Vous donnez du sens. Nous le rendons visible, mesurable et partagé. »*
+### 1. Edge function `suggest-bbch-stage` (nouvelle)
+- Auth : JWT marcheur requis.
+- Input : `{ crop_key, photo_url, scientific_name }`.
+- Construit dynamiquement le prompt à partir de `BBCH_CROPS` (libellés FR + URI ontologie INRAE/AgroPortal PPD-* déjà référencées dans `src/lib/bbchStages.ts`) → liste des 10 stades macro **spécifiques à la culture**.
+- Appelle Lovable AI Gateway, modèle **`google/gemini-3-flash-preview`** (multimodal vision), via `/v1/chat/completions` avec :
+  - `content` = `[ { type:'text', text: systemPrompt }, { type:'image_url', image_url:{ url: photo_url } } ]`
+  - `tools` = function calling strict → `submit_bbch_stage({ macro:0-9, confidence:0-1, rationale:string, alternative_macro?:number })`
+- Garde-fous : si confidence < 0.4 → renvoie `unknown=true`. Gestion 429 / 402 comme `classify-species-eco-tags`.
+- Cache léger côté DB (clé = `photo_url`+`crop_key`) pour éviter de re-tarifer la même photo (table `pheno_ai_suggestions`).
 
-## Structure des 4 pages
+### 2. Schéma DB
+- Table `pheno_ai_suggestions` (cache) : `photo_url text pk, crop_key text, macro int, confidence numeric, rationale text, created_at timestamptz` + GRANTs + RLS lecture authenticated, écriture service_role.
+- Colonnes ajoutées à `pheno_observations` : `ai_suggested_macro int`, `ai_confidence numeric`, `ai_rationale text`, `ai_accepted boolean`.
 
-```text
-P1  Couverture + promesse mécène
-P2  Le Pack Vivant Mécène — 4 piliers
-P3  Trois niveaux d'engagement (Bronze / Argent / Or)
-P4  Contreparties, cadre fiscal & prochaine étape
-```
+### 3. Frontend
+- Nouveau hook `useBbchStageSuggestion({ crop, photoUrl, scientificName, enabled })` → invoque l'edge function, react-query, dédoublonne par `photo_url+crop_key`.
+- Modif `PhenoStageSelector.tsx` :
+  - Récupère la `photoUrl` (déjà passée en prop) et appelle le hook quand `open && photoUrl`.
+  - Insère le bandeau IA + logique « Accepter » qui set `selected` sur l'index du stade suggéré.
+  - Passe `ai_*` dans `useCreatePhenoObservation.mutateAsync`.
+- Modif `useCreatePhenoObservation` pour persister les 4 colonnes IA.
 
-### Page 1 — Couverture
+### 4. Sources BBCH branchées
+- On reste sur la **source de vérité locale** `src/lib/bbchStages.ts` (déjà alignée INRAE `phenologicalstages` + AgroPortal PPD-CR/PPDO). Le prompt référence les URIs ontologiques pour ancrer l'IA sur les bons stades.
+- Pas d'appel runtime aux endpoints INRAE/AgroPortal (pas d'API publique stable orientée requête par stade) — on garde la latence basse et la robustesse offline.
 
-- Bandeau supérieur : *La Fréquence du Vivant — Mécénat 2026*
-- Titre : **« Le Pack Vivant Mécène »**
-- Sous-titre : *Ce que reçoit votre entreprise quand elle soutient les Marches du Vivant.*
-- Encadré promesse en 3 lignes : Preuve · Expérience · Visibilité
-- Pied : *Document complémentaire à la plaquette mécènes*
+## Hors scope (v1)
+- Détection multi-stades (mosaïque parcelle).
+- Apprentissage actif depuis `ai_accepted` (préparé en DB, exploité plus tard).
+- Suggestion sur photos iNaturalist tierces (v1 : photos marcheur uniquement, droits clairs).
 
-### Page 2 — Le Pack Vivant Mécène, 4 piliers
-
-Grille 2×2, chaque pilier = pictogramme + titre + 3 livrables concrets.
-
-| Pilier | Livrables clés |
-|---|---|
-| **1. Preuves RSE / CSRD** | Indicateurs biodiversité certifiés GBIF · Export CSV / XLSX / GeoJSON horodaté · Fiche synthèse intégrable rapport extra-financier (ESRS E4) |
-| **2. Engagement collaborateurs** | 1 à 3 Marches du Vivant avec vos équipes · Restitution live le jour même · Kit comm' interne (photos, témoignages, récit de journée) |
-| **3. Visibilité & communauté** | Page mécène dédiée sur l'app · Logo sur les pages publiques des marches financées · Mention dans la newsletter nationale (communauté en croissance) |
-| **4. Contribution scientifique** | Observations versées à GBIF & iNaturalist sous votre nom · Attestation de contribution science participative · Focus espèces remarquables de vos territoires |
-
-### Page 3 — Trois niveaux d'engagement
-
-Tableau comparatif clair, paliers indicatifs (à valider avec Victor/Laurent).
-
-| | **Bronze — 5 000 €** | **Argent — 15 000 €** | **Or — 50 000 €** |
-|---|---|---|---|
-| Marches du Vivant | 1 marche (≤ 20 collab.) | 3 marches (≤ 60 collab.) | Programme annuel — jusqu'à 10 marches |
-| Pack données | Export standard + fiche RSE | + rapport personnalisé PDF | + dashboard biodiversité dédié, mis à jour en continu |
-| Visibilité | Logo page marche | + page mécène dédiée + post réseaux | + co-construction d'un récit territorial (film court, podcast) |
-| Communauté | Mention newsletter | + intervention d'un explorateur en interne | + conférence Gaspard Boréal / Laurent Tripied |
-| Science | Attestation GBIF | + focus espèces remarquables | + parrainage d'un territoire prioritaire sur 12 mois |
-
-Note de bas de page : *« Tous les paliers sont éligibles au mécénat d'entreprise — réduction d'impôt de 60 % (art. 238 bis CGI), dans la limite de 0,5 % du CA HT. »*
-
-### Page 4 — Contreparties, cadre & contact
-
-- Bloc **Cadre fiscal mécénat** : rappel 60 % réduction IS, plafond, contreparties autorisées ≤ 25 % du don.
-- Bloc **Ce que vous ne recevez pas** (assumé, posture mécène) : pas de prestation commerciale exclusive, pas de greenwashing — *vous soutenez une mission d'intérêt général dont vous bénéficiez en retour.*
-- Bloc **Calendrier type** : signature → 1ʳᵉ marche < 90 jours → Pack Vivant sous 48 h → bilan annuel.
-- CTA : *Prendre RDV avec Victor Boixeda / Laurent Tripied* + emails + QR code vers `/adhesion` (ou page mécénat dédiée).
-
-## Production technique
-
-- Génération via **skill DOCX** (Arial / Georgia pour rester lisible et imprimable), conversion PDF via LibreOffice.
-- Palette alignée plaquette : fond ivoire `#FAF8F3`, vert forêt `#0D6B58`, accent doré `#C9A961`, texte `#1A1F1C`.
-- Visuels : 2 photos réutilisées depuis la plaquette (page 1 arbre + page 5 fleurs bleues) recopiées depuis `parsed-documents://…/Plaquette_mécènes.pdf/images/`.
-- QA obligatoire : conversion PDF → images de chaque page → relecture (overflow, contraste, alignement tableau paliers).
-
-## Livrable final
-
-- `/mnt/documents/pack-vivant-mecene-v1.pdf` (4 pages, prêt à envoyer)
-- Présenté avec `<presentation-artifact>` pour téléchargement immédiat.
-- Message court à Victor résumant les choix structurants (paliers indicatifs, posture mécénat assumée, 4 piliers vs offre vignoble).
-
-Si tu approuves, je passe en build et je te livre le PDF dans la foulée. Les montants 5k / 15k / 50k sont des **propositions de cadrage** — dis-moi si tu veux les ajuster avant production ou les laisser comme base de discussion avec Victor.
+## Livrables
+1. Migration SQL (`pheno_ai_suggestions` + colonnes `pheno_observations` + GRANTs/RLS).
+2. Edge function `suggest-bbch-stage` + déclaration `supabase/config.toml`.
+3. Hook `useBbchStageSuggestion.ts`.
+4. Refonte `PhenoStageSelector.tsx` (bandeau IA + tuile mise en avant).
+5. Mise à jour `usePhenoObservations` pour les champs IA.
