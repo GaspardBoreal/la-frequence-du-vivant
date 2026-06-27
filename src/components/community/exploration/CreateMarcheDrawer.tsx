@@ -10,7 +10,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { MapPin, Loader2, Sparkles } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { MapPin, Loader2, Sparkles, Leaf } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -42,6 +44,8 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
   const [nom, setNom] = useState('');
   const [ville, setVille] = useState(defaultVille);
   const [date, setDate] = useState(defaultDate);
+  const [description, setDescription] = useState('');
+  const [collectBio, setCollectBio] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Sync defaults when they change (e.g. when drawer reopens)
@@ -50,6 +54,8 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
       setVille(defaultVille);
       setDate(defaultDate);
       setNom('');
+      setDescription('');
+      setCollectBio(true);
     }
   }, [open, defaultVille, defaultDate]);
 
