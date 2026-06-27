@@ -712,6 +712,26 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     setDrawerOpen(true);
   }, [createPosition]);
 
+  // Cadastre tap-to-add: handle map clicks while in tap mode
+  const handleCadastreTap = useCallback((lat: number, lng: number) => {
+    if (!userCanCreate || !explorationId) return;
+    setCreatePosition({ lat, lng });
+    setIsCreatingMarche(true);
+    setIsCadastreTapMode(false);
+    setDrawerOpen(true);
+  }, [userCanCreate, explorationId]);
+
+  // Auto-exit tap mode when leaving cadastre view, and listen Escape to cancel
+  useEffect(() => {
+    if (mapStyle !== 'cadastre' && isCadastreTapMode) setIsCadastreTapMode(false);
+  }, [mapStyle, isCadastreTapMode]);
+  useEffect(() => {
+    if (!isCadastreTapMode) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsCadastreTapMode(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isCadastreTapMode]);
+
   if (geoMarches.length === 0) {
     return (
       <motion.div
