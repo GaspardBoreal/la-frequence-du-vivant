@@ -1210,6 +1210,31 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       {/* Map style toggle */}
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
 
+      {/* Cadastre tap-to-add: pill button shown only in Cadastre view for curators */}
+      {mapStyle === 'cadastre' && userCanCreate && explorationId && !isCreatingMarche && (
+        <button
+          onClick={() => setIsCadastreTapMode(v => !v)}
+          className={`absolute top-16 right-4 z-[1000] flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold shadow-lg backdrop-blur-xl border transition-all ${
+            isCadastreTapMode
+              ? 'bg-amber-500/90 hover:bg-amber-500 border-amber-300/50 text-white animate-pulse'
+              : 'bg-emerald-700/90 hover:bg-emerald-700 border-emerald-400/40 text-white'
+          }`}
+          title={isCadastreTapMode ? 'Échap pour annuler' : 'Cliquer sur la parcelle pour poser un nouveau point'}
+        >
+          {isCadastreTapMode ? (
+            <>
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Cliquez sur la parcelle… (Échap)</span>
+            </>
+          ) : (
+            <>
+              <Plus className="w-3.5 h-3.5" />
+              <span>Ajouter un point</span>
+            </>
+          )}
+        </button>
+      )}
+
       {/* Create-marche top banner (Ambassadeur / Sentinelle only, in create mode) */}
       <AnimatePresence>
         {isCreatingMarche && createPosition && (
