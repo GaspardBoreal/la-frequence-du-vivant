@@ -261,6 +261,21 @@ function DraggableCreateMarker({
   return null;
 }
 
+// Cadastre tap-to-add: intercept next map click to drop a new step
+function CadastreTapCapture({ onPick }: { onPick: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) { onPick(e.latlng.lat, e.latlng.lng); },
+  });
+  const map = useMap();
+  useEffect(() => {
+    const c = map.getContainer();
+    const prev = c.style.cursor;
+    c.style.cursor = 'crosshair';
+    return () => { c.style.cursor = prev; };
+  }, [map]);
+  return null;
+}
+
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   explorationId,
   explorationName,
