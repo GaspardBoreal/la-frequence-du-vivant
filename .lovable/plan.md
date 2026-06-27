@@ -1,38 +1,108 @@
-## Plan d'implémentation — Drawer "Nouvelle marche" v1 Compact épuré
 
-Refonte purement visuelle du `CreateMarcheDrawer.tsx` selon le prototype validé. Aucun changement fonctionnel.
+# Toggle Galerie ↔ Liste pour les vues espèces
 
-### Structure du drawer (Sheet existant, côté droit)
+## Objectif
 
-1. **Header sticky** (border-bottom subtil)
-   - Titre `Nouvelle marche` (text-xl font-bold, tracking-tight)
-   - Bouton close X aligné droite
-   - **Pill ambre déplacée SOUS le titre** : `inline-flex` chip arrondi `bg-amber-500/10 border-amber-500/20 text-amber-400` avec icône pin + "Glissez le repère, puis validez"
-   - Coordonnées GPS affichées en mono discret sous la pill
+Aligner la qualité d'affichage des vignettes espèces sur celle de l'écran « Apprendre › L'œil » (tuile carrée plein cadre, photo haute résolution, badges flottants élégants) tout en conservant la vue Liste actuelle comme alternative analytique.
 
-2. **Corps** (`p-6 space-y-6`)
-   - Champ **Nom de l'étape** (label `text-sm font-semibold text-zinc-300`, input `bg-zinc-800/50 border-zinc-700 rounded-lg`)
-   - Grille 2 colonnes **Ville / Date**
-   - **Description courte** (textarea 3 rows, compteur 0/200 aligné droite)
-   - Carte toggle **Collecter la biodiversité** (conservée, restylée avec même langage : `bg-zinc-800/50 border-zinc-700`)
-   - Carte **Position GPS** (conservée, restylée)
+## Méthode validée (analyse E1)
 
-3. **Footer sticky** (`p-6 pt-2 flex gap-3`)
-   - **Annuler** : `flex-1 border-zinc-700 text-zinc-300`
-   - **Créer l'étape** : `flex-1 bg-amber-500 text-zinc-900 font-bold shadow-amber-500/20`
+L'écran « Apprendre › L'œil » utilise `CuratedSpeciesCard` :
+- Tuile `aspect-square` plein cadre, `object-cover`, `loading="lazy"`, `group-hover:scale-[1.03]`
+- Source photo : `useSpeciesPhoto(scientificName)` → cascade photo marcheur > iNaturalist (URL « large » non « square »)
+- Compteur d'observations en pill noire `bg-black/60 backdrop-blur` bas-gauche
+- Nom commun FR + nom latin italic sous la photo
+- Bordure ambre subtile si épinglée
 
-### Tokens / cohérence
+L'écran « Biodiversité › Taxons observés » utilise `EnhancedSpeciesCard` : carte horizontale avec mini-vignette (~64 px), badges source/photo et date à droite. Format dense mais résolution photo bridée.
 
-- Utiliser les tokens sémantiques existants du projet (palette dark forêt) : remplacer `zinc-900/800/700` par leurs équivalents `card / muted / border` du design system, et `amber-500` par `accent` (ambre du thème). Vérifier `index.css` et `tailwind.config.ts` avant — sinon utiliser HSL via tokens existants.
-- Conserver tous les comportements existants : auto-suggestion nom, validation 200 car., toggle biodiversité (fire-and-forget Edge function), affichage GPS read-only.
+## Architecture
 
-### Fichier touché
+### 1. Contexte global de mode d'affichage
 
-- `src/components/community/exploration/CreateMarcheDrawer.tsx` uniquement.
+Nouveau `src/contexts/SpeciesViewModeContext.tsx`
+- Valeurs : `'gallery' | 'list'` (défaut `'gallery'`)
+- Persistance `localStorage` clé `lfdv.species-view-mode`
+- Provider monté au niveau racine `App.tsx` (à côté de `SpeciesPhotoModeProvider`)
+- Hook `useSpeciesViewMode()` exposant `{ mode, setMode }`
 
-### Validation
+### 2. Composant de bascule
 
-- Header lisible (titre + pill séparés, plus de chevauchement).
-- Champs respirent (space-y-6).
-- Footer toujours visible (sticky), CTA ambre haut contraste.
-- Drawer reste un `Sheet` Radix (z-index 1100 préservé, comportement responsive intact).
+Nouveau `src/components/biodiversity/SpeciesViewModeToggle.tsx`
+- Même langage visuel que `SpeciesPhotoModeToggle` (pill segmentée glassmorphism)
+- 2 options : `Galerie` (icône `LayoutGrid`) / `Liste` (icône `Rows3`)
+- Indicateur actif `layoutId` framer-motion (slide fluide entre options)
+- Halo pulsé sur sélection (cohérent avec le toggle existant)
+
+### 3. Nouvelle tuile Galerie réutilisable
+
+Nouveau `src/components/biodiversity/SpeciesGalleryCard.tsx`
+- S'inspire directement de `CuratedSpeciesCard` mais sans logique de curation
+- Props : `species: BiodiversitySpecies`, `translation?`, `onClick?`
+- Tuile `aspect-square` plein cadre, photo via `useSpeciesPhoto`
+- Pill compteur `XX obs.` bas-gauche
+- Pastille source iNat (réutilise le composant pastille existant de `SpeciesThumb`) discrète haut-droite
+- Nom FR (semi-bold) + nom latin (italic, plus petit) sous l'image, padding `p-2.5`
+- Hover : `scale-[1.03]` sur l'image + halo subtil sur la bordure
+- Slot `overlayTopLeft` pour les `MarcheurSpeciesTagDots` déjà gérés par le parent
+
+### 4. Intégration dans `SpeciesExplorer.tsx`
+
+- Insertion du `<SpeciesViewModeToggle />` à droite de la ligne « 19 espèces trouvées » (ligne refondue en flex avec `justify-between`)
+- `renderSpeciesGrid` devient :
+  ```tsx
+  <motion.div layout className={mode === 'gallery' ? galleryGridCols : listGridCols}>
+    <AnimatePresence>
+      {list.map(sp => (
+        <motion.div key={sp.id} layout
+          initial={{opacity:0, scale:0.96}} animate={{opacity:1, scale:1}} exit={{opacity:0}}
+          transition={{ type:'spring', stiffness:260, damping:28 }}>
+          {mode === 'gallery'
+            ? <SpeciesGalleryCard ... />
+            : <EnhancedSpeciesCard ... />}
+          <MarcheurSpeciesTagDots ... overlay />
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  </motion.div>
+  ```
+- Grille Galerie : `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5` (haute densité visuelle)
+- Grille Liste : conservation des `gridCols` actuels
+
+### 5. Transition FLIP morph
+
+- `motion.div layout` sur le conteneur ET chaque vignette pour interpolation automatique des positions
+- `LayoutGroup` autour de la grille pour partager le layoutId
+- Image elle-même en `layoutId={`species-img-${sp.id}`}` pour qu'elle morphe de la mini-vignette liste vers la tuile carrée galerie et inversement
+- `transition={{ layout: { duration: 0.45, ease: [0.32, 0.72, 0, 1] } }}` (easing « expo-out » premium)
+- Réduction des reflows : `will-change: transform` ajouté pendant la transition
+
+## Périmètre d'application
+
+Le contexte étant global, le toggle pilote l'affichage partout où `SpeciesExplorer` est utilisé (Biodiversité > Taxons, vue Carte si présente, portfolio marcheur, etc.). Le toggle visuel n'est rendu **que dans le bandeau de `SpeciesExplorer`** pour ne pas polluer les autres surfaces, mais la préférence stockée s'applique uniformément.
+
+## Détails techniques
+
+- Aucun changement backend, aucune nouvelle table.
+- `useSpeciesPhoto` est déjà cache-aware via `species_thumb_cache` → pas de surcharge réseau.
+- `framer-motion` déjà installé.
+- `EnhancedSpeciesCard` et `CuratedSpeciesCard` restent intacts (zéro régression sur Apprendre > L'œil).
+- Mode par défaut `gallery` à la première visite, mémorisé ensuite.
+
+## Fichiers touchés
+
+- **Nouveaux** :
+  - `src/contexts/SpeciesViewModeContext.tsx`
+  - `src/components/biodiversity/SpeciesViewModeToggle.tsx`
+  - `src/components/biodiversity/SpeciesGalleryCard.tsx`
+- **Modifiés** :
+  - `src/App.tsx` (montage Provider)
+  - `src/components/biodiversity/SpeciesExplorer.tsx` (bandeau + renderSpeciesGrid + LayoutGroup)
+
+## Vérification
+
+- Build TS / lint propres
+- Navigation Biodiversité > Taxons : toggle visible à droite de « 19 espèces trouvées », défaut Galerie, photos plein cadre identiques à Apprendre > L'œil
+- Bascule Galerie ↔ Liste : morph fluide ~450 ms, aucun saut, photos persistantes via `layoutId`
+- Rechargement de page : mode mémorisé
+- Vérification écran Apprendre > L'œil inchangé
