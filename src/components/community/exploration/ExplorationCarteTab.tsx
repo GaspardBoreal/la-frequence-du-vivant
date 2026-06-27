@@ -1240,7 +1240,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
       {/* Create-marche top banner (Ambassadeur / Sentinelle only, in create mode) */}
       <AnimatePresence>
-        {isCreatingMarche && createPosition && (
+        {isCreatingMarche && createPosition && !drawerOpen && (
+
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
