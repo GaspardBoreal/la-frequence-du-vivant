@@ -11,6 +11,9 @@ interface CadastreLayerProps {
   /** Géométrie supplémentaire (preview après repositionnement). */
   previewGeometry?: any;
   previewData?: any;
+  /** Mode "Ajouter un point" : on intercepte les clics sur parcelle pour les forwarder à la map. */
+  tapMode?: boolean;
+  onTapLatLng?: (lat: number, lng: number) => void;
 }
 
 const STYLE: L.PathOptions = {

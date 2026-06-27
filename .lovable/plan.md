@@ -1,76 +1,44 @@
+## Diagnostic
 
-# Ajout d'étapes par clic-carte en vue Cadastre
+En vue Cadastre, les parcelles sont rendues comme polygones GeoJSON Leaflet. Par défaut Leaflet **absorbe** les clics sur ces polygones et n'émet pas l'event `click` au niveau de la map — c'est pour ça que `CadastreTapCapture` (qui écoute `useMapEvents({ click })`) ne se déclenche jamais quand on clique pile sur une parcelle. Le clic n'aboutit que sur les zones sans parcelle (tuile de fond visible).
 
-## Confirmation du schéma de données
-Confirmé. Le rattachement passe **uniquement** par l'exploration :
-- `marches` (nouvelle ligne avec lat/lng/nom)
-- `exploration_marches` (lien `exploration_id ↔ marche_id` + `ordre`)
-- L'événement (`marche_events`) est déjà lié à l'exploration via `exploration_id`.
+## Proposition
 
-Pour POITIERS Maison Sous Blossac → les 4 nouveaux points seront insérés dans **l'exploration `POITIERS Maison Sous Blossac`** (ID exploré depuis `marcheEventId → exploration_id` déjà disponible dans `ExplorationCarteTab`).
+Quand le mode "Ajouter un point" est actif, faire en sorte que **les parcelles laissent passer le clic** jusqu'à la map, sans casser leur fonction normale (popup d'info parcelle quand on n'est pas en mode ajout).
 
-Bonne nouvelle : **toute la plomberie existe déjà** dans `ExplorationCarteTab.tsx` :
-- `useState`s `isCreatingMarche`, `createPosition`, `drawerOpen`
-- Garde de rôle `userCanCreate` (admin / ambassadeur / sentinelle)
-- `CreateMarcheDrawer` câblé avec `explorationId`, qui insère dans `marches` puis dans `exploration_marches` avec le bon `ordre`
+Deux options possibles :
 
-Aujourd'hui le déclencheur (`handleStartCreate` via `MapOptionsMenu`) **pré-positionne le marqueur au centre des étapes existantes** et oblige l'utilisateur à le **glisser**. Pour poser 4 points sur une parcelle de 1750 m², c'est lent et imprécis. La vue Cadastre appelle un geste plus naturel : **cliquer = poser**.
+**Option A — Forwarder le clic (recommandée)**  
+On garde les parcelles cliquables (popup parcelle conservé visuellement), mais en mode tap on attache un handler `click` sur chaque GeoJSON qui :
+- récupère `e.latlng`
+- empêche le popup parcelle de s'ouvrir
+- appelle `onPick(lat, lng)` exactement comme un clic carte
 
-## Ce qu'on ajoute (UX minimaliste)
+→ Avantage : 0 changement visuel, le curseur reticule reste, et le clic "atterrit" exactement où l'utilisateur visait, même au centre d'une parcelle.
 
-### 1. Bouton « + Ajouter un point » dédié Cadastre
-- Visible **uniquement quand la couche `cadastre` est active** et que `userCanCreate` est vrai.
-- Position : haut-gauche de la carte, sous la pill « Géo / Sat / Relief / **Cadastre** ».
-- Style : pill vert forêt avec icône `Plus + MapPin`, label « Ajouter un point ».
-- État actif (mode cadastre-tap) : pill ambre pulsante, label « Cliquez sur la parcelle… (Échap pour annuler) ».
+**Option B — Désactiver l'interactivité des parcelles en mode tap**  
+Passer `interactive: false` aux GeoJSON tant que `isCadastreTapMode` est vrai. Plus simple mais on perd temporairement le hover/popup parcelle pendant la création.
 
-### 2. Mode « cadastre-tap »
-- Nouveau flag `isCadastreTapMode` (local au composant).
-- Pendant ce mode :
-  - Curseur `cursor-crosshair` sur le conteneur carte.
-  - Un composant `<CadastreTapCapture />` (React-Leaflet `useMapEvents({ click })`) intercepte le prochain clic.
-  - Au clic : `setCreatePosition({ lat, lng })` + `setIsCreatingMarche(true)` + `setDrawerOpen(true)` → ouverture immédiate du `CreateMarcheDrawer` déjà existant, pré-rempli avec la position cliquée.
-  - Le marqueur fantôme draggable existant (`isCreatingMarche && createPosition` → bloc l. 1042) reste actif pour micro-ajustement avant validation.
-- Après validation OU annulation → sortie du mode tap (un point à la fois, comme convenu).
-- Échap → sortie du mode tap sans rien créer.
+Je recommande **A** : plus fluide, l'utilisateur garde le feedback visuel des parcelles.
 
-### 3. Drawer (déjà existant — léger enrichissement)
-`CreateMarcheDrawer.tsx` : ajout de **2 ajustements** :
-- Champ **Description courte** (optionnel, max 200 car) → écrit dans `marches.descriptif_court`.
-- Toggle **« Collecter la biodiversité maintenant »** (coché par défaut) → après l'insert réussi, déclenche `supabase.functions.invoke('collect-biodiversity-step', { body: { marcheId: newMarche.id } })`. Échec silencieux (toast secondaire) — la marche est créée quoi qu'il arrive.
+## Mise en œuvre (Option A)
 
-Le nommage du toast et l'invalidation des queries (`exploration-marcheur-steps`, `exploration-marches`) sont déjà corrects.
+1. **`CadastreLayer.tsx`** — Ajouter deux props optionnelles :
+   - `tapMode?: boolean`
+   - `onTapLatLng?: (lat: number, lng: number) => void`
+   
+   Sur chaque `<GeoJSON>` (parcelles + preview), brancher `eventHandlers={{ click: (e) => { if (tapMode && onTapLatLng) { L.DomEvent.stopPropagation(e); onTapLatLng(e.latlng.lat, e.latlng.lng); } } }}`. Quand `tapMode` est faux, comportement actuel inchangé (popup parcelle).
 
-### 4. Préservation des fonctionnalités existantes
-- **« Explorer cette étape »** et **« Repositionner (aperçu) »** du popup riche : zéro changement. Ils s'appliqueront automatiquement aux nouveaux points dès qu'ils sont créés.
-- Le bouton **« + »** du `MapOptionsMenu` (vue Géo/Sat/Relief) reste inchangé — c'est le flux historique « centre + drag ».
+2. **`ExplorationCarteTab.tsx`** — Passer les deux props à `<CadastreLayer>` :
+   ```tsx
+   tapMode={isCadastreTapMode && !isCreatingMarche}
+   onTapLatLng={handleCadastreTap}
+   ```
+   `CadastreTapCapture` reste en place pour capturer les clics **hors parcelle**.
 
-## Détails techniques
+3. **Curseur reticule sur les parcelles** — Quand `tapMode` est actif, ajouter `className="cadastre-tap-cursor"` sur les GeoJSON et une règle CSS globale `.cadastre-tap-cursor { cursor: crosshair !important; }` pour que le reticule s'affiche aussi en survolant une parcelle (sinon Leaflet remet `cursor: pointer`).
 
-### Fichiers modifiés
-- `src/components/community/exploration/ExplorationCarteTab.tsx`
-  - Ajout state `isCadastreTapMode`.
-  - Ajout du composant local `<CadastreTapCapture onPick={…} />` rendu uniquement si `isCadastreTapMode && mapLayers.cadastre`.
-  - Ajout du pill « + Ajouter un point » conditionnel (montré quand cadastre actif + curator + pas déjà en train de créer).
-  - Listener Échap pour sortir du mode.
-  - Au pick : ouvre drawer comme aujourd'hui via `setCreatePosition` + `setIsCreatingMarche(true)` + `setDrawerOpen(true)`.
+## Hors scope
 
-- `src/components/community/exploration/CreateMarcheDrawer.tsx`
-  - Ajout champ description (textarea optionnel).
-  - Ajout toggle « collecter biodiversité » + appel `collect-biodiversity-step` post-insert.
-  - Insert élargi : `descriptif_court: description.trim() || null`.
-
-### Aucun changement
-- Pas de migration DB (toutes les colonnes existent : `marches.descriptif_court` est déjà présent).
-- Pas de nouvelle RPC ni edge function.
-- Pas de modification de `CadastreMapStandalone.tsx` (usage open-data, hors périmètre).
-- Pas de modification du popup riche (preserve « Explorer » / « Repositionner »).
-
-## Résultat attendu
-Sur la parcelle de Maison Sous Blossac, un ambassadeur :
-1. Active la couche Cadastre.
-2. Clique sur le pill vert « + Ajouter un point » → mode tap.
-3. Tape sur la parcelle → drawer s'ouvre, position pré-remplie.
-4. Saisit le nom (ex. « Massif Est ») → *Créer*.
-5. La nouvelle étape numérotée apparaît, popup riche ouvert dessus, prêt pour *Repositionner (aperçu)* si micro-ajustement nécessaire.
-6. Répète × 4 — environ 60 secondes total.
+- Pas de changement du drawer de création ni du flow de collecte biodiversité.
+- Pas de modification du comportement hors mode tap (popup parcelle conservé).
