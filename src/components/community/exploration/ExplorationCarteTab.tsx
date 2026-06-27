@@ -1249,24 +1249,24 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             transition={{ type: 'spring', damping: 22, stiffness: 280 }}
             className="absolute top-4 left-4 right-[7.5rem] z-[1000]"
           >
-            <div className="bg-amber-500/15 backdrop-blur-xl rounded-xl border border-amber-400/40 px-3 py-2.5 shadow-lg shadow-amber-500/10">
-              <div className="flex items-center gap-2 text-amber-100 text-[11px] font-medium">
+            <div className="bg-zinc-950/95 backdrop-blur-xl rounded-xl border border-amber-400/60 px-3 py-2.5 shadow-2xl shadow-black/50 ring-1 ring-black/30">
+              <div className="flex items-center gap-2 text-amber-200 text-[11px] font-semibold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
                 <span className="truncate">Glissez le repère, puis validez</span>
               </div>
-              <div className="mt-1 font-mono text-[10px] text-amber-200/80 tabular-nums">
+              <div className="mt-1 font-mono text-[10px] text-amber-100/90 tabular-nums">
                 {createPosition.lat.toFixed(5)}, {createPosition.lng.toFixed(5)}
               </div>
               <div className="mt-2 flex gap-1.5">
                 <button
                   onClick={handleCancelCreate}
-                  className="flex-1 px-2 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-white/80 text-[11px] font-medium transition-colors"
+                  className="flex-1 px-2 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-[11px] font-medium transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleConfirmCreate}
-                  className="flex-1 px-2 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-semibold transition-colors shadow-sm"
+                  className="flex-1 px-2 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-[11px] font-bold transition-colors shadow-sm"
                 >
                   Valider
                 </button>
