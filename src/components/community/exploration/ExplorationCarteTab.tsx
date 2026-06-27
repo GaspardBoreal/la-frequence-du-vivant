@@ -733,8 +733,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     setCreatePosition({ lat, lng });
     setIsCreatingMarche(true);
     setIsCadastreTapMode(false);
-    setDrawerOpen(true);
+    setShowDistances(false);
   }, [userCanCreate, explorationId]);
+
 
   // Auto-exit tap mode when leaving cadastre view, and listen Escape to cancel
   useEffect(() => {
