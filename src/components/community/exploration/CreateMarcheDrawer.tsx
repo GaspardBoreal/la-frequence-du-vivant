@@ -85,6 +85,7 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
           latitude: position.lat,
           longitude: position.lng,
           coordonnees: `(${position.lng},${position.lat})`,
+          descriptif_court: description.trim() || null,
         })
         .select('id')
         .single();
@@ -112,6 +113,21 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
         });
 
       if (linkErr) throw linkErr;
+
+      // 4. Optional: kick off biodiversity collection (fire and forget — failure tolerated)
+      if (collectBio) {
+        supabase.functions
+          .invoke('collect-biodiversity-step', { body: { marcheId: newMarche.id } })
+          .then(({ error }) => {
+            if (error) {
+              console.warn('[CreateMarcheDrawer] collect-biodiversity-step failed:', error);
+              toast.message('Collecte biodiversité en différé', { description: 'Le point est créé, la collecte sera relancée automatiquement.' });
+            } else {
+              toast.success('Biodiversité collectée 🌿');
+              queryClient.invalidateQueries({ queryKey: ['exploration-marcheur-steps', explorationId] });
+            }
+          });
+      }
 
       toast.success('Marche créée ✨', {
         description: 'Elle apparaît maintenant sur la carte de l\'exploration',
