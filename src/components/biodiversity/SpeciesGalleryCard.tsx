@@ -86,24 +86,7 @@ const SpeciesGalleryCard: React.FC<Props> = ({ species, translation, onClick }) 
             </div>
           )}
 
-          {/* Compteur observations */}
-          <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/65 text-white text-[10px] font-medium backdrop-blur-sm">
-            {species.observations} obs.
-          </div>
-
-          {/* Pastille source discrète */}
-          {photoUrl && !imageError && (
-            <div
-              className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md text-[9px] font-semibold backdrop-blur-sm ${
-                isFieldPhoto
-                  ? 'bg-emerald-500/85 text-white'
-                  : 'bg-sky-500/80 text-white'
-              }`}
-              title={isFieldPhoto ? 'Photo marcheur' : 'Photo iNaturalist'}
-            >
-              {isFieldPhoto ? 'Photo' : 'iNat'}
-            </div>
-          )}
+          {/* Voile bas discret au survol */}
 
           {/* Voile bas pour lisibilité du nom au survol */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/35 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
