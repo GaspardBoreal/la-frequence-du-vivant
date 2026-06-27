@@ -341,10 +341,12 @@ export function getStagesForCrop(crop: BbchCrop): BbchStage[] {
       emoji: override?.emoji ?? base.emoji,
       labelFr: override?.labelFr ?? base.labelFr,
       uri: `${crop.ontologyUri}#stage-${macro}`,
+      na: override?.na ?? false,
     });
   }
   return out;
 }
+
 
 /** Couleur d'accent par stade (gradient germination → récolte). */
 export function getStageColor(macro: number): string {
