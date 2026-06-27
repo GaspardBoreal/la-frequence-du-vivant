@@ -720,10 +720,13 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
             ) : null}
           </div>
 
-          {/* Results count */}
-          <p className="text-sm text-muted-foreground">
-            {filteredSpecies.length} espèce{filteredSpecies.length > 1 ? 's' : ''} trouvée{filteredSpecies.length > 1 ? 's' : ''}
-          </p>
+          {/* Results count + toggle Galerie/Liste */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-sm text-muted-foreground">
+              {filteredSpecies.length} espèce{filteredSpecies.length > 1 ? 's' : ''} trouvée{filteredSpecies.length > 1 ? 's' : ''}
+            </p>
+            <SpeciesViewModeToggle />
+          </div>
         </div>
       </Card>
 
