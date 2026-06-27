@@ -396,39 +396,63 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     { group: DECOMPOSER_META.group, label: DECOMPOSER_META.label, shortLabel: DECOMPOSER_META.shortLabel, token: DECOMPOSER_META.token },
   ];
 
-  const gridCols = compact
+  const { mode: viewMode } = useSpeciesViewMode();
+
+  const galleryGridCols = compact
+    ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+    : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4';
+  const listGridCols = compact
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
     : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
 
   const renderSpeciesGrid = (list: BiodiversitySpecies[]) => (
-    <div className={`grid gap-3 ${gridCols}`}>
-      {list.map((sp, i) => {
-        const spTags = tagsBySpecies.get(normalizeTagKey(sp.scientificName)) || [];
-        return (
-          <div
-            key={`${sp.id}-${i}`}
-            className="relative"
-            data-focus-id={`species:${sp.scientificName}`}
-          >
-            <EnhancedSpeciesCard
-              species={sp}
-              onSpeciesClick={setSelectedSpecies}
-              translation={translationMap.get(sp.scientificName)}
-            />
-            <MarcheurSpeciesTagDots
-              scientificName={sp.scientificName}
-              tags={spTags}
-              overlay
-            />
-          </div>
-        );
-      })}
+    <motion.div
+      layout
+      className={`grid gap-3 ${viewMode === 'gallery' ? galleryGridCols : listGridCols}`}
+      transition={{ layout: { duration: 0.45, ease: [0.32, 0.72, 0, 1] } }}
+    >
+      <AnimatePresence initial={false}>
+        {list.map((sp, i) => {
+          const spTags = tagsBySpecies.get(normalizeTagKey(sp.scientificName)) || [];
+          return (
+            <motion.div
+              key={`${sp.id}-${i}`}
+              layout
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+              className="relative"
+              data-focus-id={`species:${sp.scientificName}`}
+            >
+              {viewMode === 'gallery' ? (
+                <SpeciesGalleryCard
+                  species={sp}
+                  onClick={setSelectedSpecies}
+                  translation={translationMap.get(sp.scientificName)}
+                />
+              ) : (
+                <EnhancedSpeciesCard
+                  species={sp}
+                  onSpeciesClick={setSelectedSpecies}
+                  translation={translationMap.get(sp.scientificName)}
+                />
+              )}
+              <MarcheurSpeciesTagDots
+                scientificName={sp.scientificName}
+                tags={spTags}
+                overlay
+              />
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
       {list.length === 0 && (
         <div className="col-span-full text-center py-8 text-muted-foreground text-sm">
           Aucune espèce ne correspond aux filtres sélectionnés
         </div>
       )}
-    </div>
+    </motion.div>
   );
 
   return (
