@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { MapContainer, Polyline, Marker, Popup, useMap, Circle, CircleMarker, Pane } from 'react-leaflet';
+import { MapContainer, Polyline, Marker, Popup, useMap, useMapEvents, Circle, CircleMarker, Pane } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -289,6 +289,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [isCreatingMarche, setIsCreatingMarche] = useState(false);
   const [createPosition, setCreatePosition] = useState<{ lat: number; lng: number } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Cadastre "tap-to-add" mode (click on the parcel to instantly drop a new step)
+  const [isCadastreTapMode, setIsCadastreTapMode] = useState(false);
 
   // Waypoints (intermediate route points)
   const { data: waypoints = [] } = useExplorationWaypoints(marcheEventId);
