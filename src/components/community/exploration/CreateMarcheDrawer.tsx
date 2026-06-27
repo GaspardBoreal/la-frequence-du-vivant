@@ -201,6 +201,43 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="marche-desc" className="text-xs font-medium">
+                Description courte <span className="text-muted-foreground font-normal">(optionnel)</span>
+              </Label>
+              <Textarea
+                id="marche-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+                placeholder="Ex. Massif est, lisière bordée d'arbres mellifères"
+                rows={2}
+                disabled={submitting}
+                className="resize-none text-sm"
+              />
+              <div className="text-[10px] text-muted-foreground text-right tabular-nums">
+                {description.length}/200
+              </div>
+            </div>
+
+            <label
+              htmlFor="collect-bio"
+              className="flex items-center justify-between gap-3 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-2.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Leaf className="w-4 h-4 text-emerald-500" />
+                <div>
+                  <div className="text-xs font-semibold text-foreground">Collecter la biodiversité</div>
+                  <div className="text-[10px] text-muted-foreground">Lance une collecte iNaturalist autour du point.</div>
+                </div>
+              </div>
+              <Switch
+                id="collect-bio"
+                checked={collectBio}
+                onCheckedChange={setCollectBio}
+                disabled={submitting}
+              />
+            </label>
+
             <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
               <div className="flex items-center gap-2 text-xs text-foreground">
                 <MapPin className="w-3.5 h-3.5 text-emerald-500" />
