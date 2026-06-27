@@ -28,7 +28,7 @@ export interface BbchCrop {
   emoji: string;
   ontologyUri: string;
   /** Stades macro 0..9 surchargés (emoji + label). Fallback sur GENERIC_STAGES. */
-  stages?: Partial<Record<number, { emoji: string; labelFr: string }>>;
+  stages?: Partial<Record<number, { emoji: string; labelFr: string; na?: boolean }>>;
 }
 
 export interface BbchStage {
@@ -36,7 +36,10 @@ export interface BbchStage {
   emoji: string;
   labelFr: string;
   uri: string;
+  /** Stade non utilisé pour cette culture (affiché grisé, non sélectionnable). */
+  na?: boolean;
 }
+
 
 /** 10 stades macro génériques BBCH (PPD-GEN). */
 const GENERIC_STAGES: Record<number, { emoji: string; labelFr: string }> = {
