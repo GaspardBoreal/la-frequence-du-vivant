@@ -1114,6 +1114,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             enabled={mapStyle === 'cadastre'}
             previewGeometry={cadastrePreview?.geometry}
             previewData={cadastrePreview?.data}
+            tapMode={isCadastreTapMode && !isCreatingMarche}
+            onTapLatLng={handleCadastreTap}
           />
         )}
 
