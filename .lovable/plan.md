@@ -1,48 +1,37 @@
 ## Diagnostic
 
-Le composant `FitBounds` (`src/components/maps/controls/FitBounds.tsx`) re-déclenche un `map.setView` / `map.fitBounds` à chaque fois que la **référence** du tableau `positions` change. Or :
+Le câblage « tap cadastre » est **incomplet** dans `CadastreLayer.tsx` :
 
-- Cliquer sur « Ajouter un point » bascule `isCadastreTapMode`, ce qui re-render `ExplorationCarteTab`.
-- À ce re-render, plusieurs sources amont (refetch, recomputations en cascade) peuvent produire un nouveau `geoMarches` et donc un nouveau `positions`, même si les coordonnées sont identiques.
-- `FitBounds` voit une nouvelle référence → rejoue `setView([lat,lng], 17)` → **écrase le zoom utilisateur** (qui était à ~19) et le ramène à 17. C'est exactement ce que montrent les captures.
+- `tapMode` et `onTapLatLng` sont déclarés dans l'interface mais **jamais destructurés** (ligne 36) → ignorés silencieusement.
+- Chaque `<GeoJSON>` parcelle contient un `<ParcelPopup>` qui **bind un popup Leaflet** sur la feature. Au clic, Leaflet ouvre ce popup et **ne propage pas l'event** à la `MapContainer` → le `useMapEvents` de `CadastreTapCapture` ne reçoit jamais rien.
+- Aucun `eventHandlers={{ click }}` n'est posé sur les `<GeoJSON>`, donc même si on voulait forwarder, on ne le fait pas.
+- Côté `ExplorationCarteTab.tsx`, `tapMode` est bien passé mais `onTapLatLng` n'est **pas branché**.
 
-Plus largement, le pattern actuel est fragile : n'importe quel re-render qui retouche la liste casse le zoom utilisateur. Il faut un fit *intentionnel*, pas réactif.
+Résultat observé (copie 3) : le clic sur la parcelle ouvre la fiche cadastre au lieu de poser un point, et le curseur reste en `pointer` (forcé par Leaflet sur les polygones interactifs).
 
-## Proposition (robuste, 2 garde-fous cumulés)
+## Plan de résolution
 
-**Garde-fou 1 — Fit basé sur le contenu, pas la référence**  
-Dans `FitBounds`, calculer une *signature* stable (`positions.length + JSON des lat/lng arrondis à 6 décimales`) et n'exécuter le fit que quand cette signature change réellement. Toute recréation d'array avec mêmes coordonnées devient un no-op.
+### 1. `src/components/cadastre/CadastreLayer.tsx`
+- Destructurer `tapMode` et `onTapLatLng` dans la signature.
+- En mode `tapMode` :
+  - **Ne pas rendre** `<ParcelPopup>` (sinon Leaflet absorbe le clic).
+  - Poser `eventHandlers={{ click: (e) => { L.DomEvent.stopPropagation(e); onTapLatLng?.(e.latlng.lat, e.latlng.lng); } }}` sur chaque `<GeoJSON>` (parcelles + preview).
+  - Surcharger le style : `fillOpacity` 0.15, `cursor: crosshair` via une `className` Leaflet appliquée au pane.
+- Hors `tapMode` : comportement actuel inchangé (popup riche).
 
-**Garde-fou 2 — Respect de l'interaction utilisateur**  
-Une fois que l'utilisateur a zoomé/pané manuellement (events Leaflet `zoomstart`/`dragstart` déclenchés par un input humain), `FitBounds` suspend tout auto-fit suivant — sauf si on lui passe explicitement un `force` ou si la signature change (nouveau point ajouté → on refit pour englober tout).
+### 2. `src/components/community/exploration/ExplorationCarteTab.tsx`
+- Passer `onTapLatLng={(lat, lng) => { setIsCadastreTapMode(false); setCreatingMarcheLatLng({ lat, lng }); setIsCreatingMarche(true); }}` à `<CadastreLayer>` (réutiliser la même logique que `CadastreTapCapture`, factorisée dans un handler unique `handleTapAddPoint`).
+- Garder `CadastreTapCapture` pour les clics **hors parcelle** (zones grises de la carte). Les deux chemins convergent vers `handleTapAddPoint`.
 
-Cette double protection garantit :
-- Cliquer « Ajouter un point » ne bouge plus jamais la caméra.
-- Changer de mode (Géo/Sat/Cadastre) ne re-zoome plus si l'utilisateur a ajusté manuellement.
-- Quand on crée une nouvelle étape, un fit unique se redéclenche pour la rendre visible (signature changée).
+### 3. `src/index.css`
+- Étendre `.cadastre-tap-cursor` au pane `cadastre-parcels` (`.leaflet-pane.cadastre-tap-cursor path { cursor: crosshair !important; }`) pour neutraliser le `pointer` que Leaflet force sur les SVG interactifs.
 
-## Mise en œuvre
+### Détails techniques
 
-**1. `src/components/maps/controls/FitBounds.tsx`**
+- `L.DomEvent.stopPropagation` évite un double déclenchement (parcelle + map). Sans popup attaché, l'event arrive proprement sur le handler React.
+- Le re-render conditionnel du `<ParcelPopup>` (présent / absent selon `tapMode`) force Leaflet à dé-binder le popup → plus d'absorption de clic.
+- Le zoom reste préservé grâce au `FitBounds` déjà durci (signature de contenu + respect interaction utilisateur) — aucun changement nécessaire.
 
-- Calculer `const sig = useMemo(() => positions.map(([a,b]) => \`${a.toFixed(6)},${b.toFixed(6)}\`).join('|'), [positions])`.
-- Ajouter une ref `hasUserInteractedRef`. Au mount, attacher sur `map` :
-  - `map.on('zoomstart', onUserMove)` et `map.on('dragstart', onUserMove)`.
-  - Mais distinguer les mouvements programmatiques : utiliser un drapeau `isProgrammaticRef` mis à `true` juste avant chaque `setView`/`fitBounds` et remis à `false` au prochain `moveend`.
-- `useEffect` dépendant de `[sig]` (pas `positions`) :
-  - Première exécution → fit.
-  - Exécutions suivantes → fit uniquement si la signature a changé **et** réinitialiser `hasUserInteractedRef = false` parce qu'il y a vraiment du nouveau contenu à montrer.
-- Si `sig` inchangée → ne rien faire, même si `positions` est une nouvelle référence.
-
-**2. Pas de changement côté `ExplorationCarteTab.tsx`** — la signature absorbe les recreations d'array. (Optionnel bonus : laisser tel quel, mais on pourra plus tard supprimer le `useMemo` devenu superflu.)
-
-## Vérification
-
-- Zoomer fort sur la parcelle → cliquer « Ajouter un point » → la caméra ne bouge plus.
-- Basculer Géo ↔ Cadastre après zoom manuel → la caméra ne bouge plus.
-- Créer un nouveau point hors champ → la caméra refite une fois pour l'inclure (signature changée).
-
-## Hors scope
-
-- Aucune modification de la logique tap/cadastre, du drawer de création, ni du flow de collecte biodiversité.
-- Pas de changement des appels `flyTo` explicites (sélection d'une étape) qui restent intentionnels.
+### Validation
+- Cadastre + zoom manuel → clic « Ajouter un point » → curseur réticule sur parcelle ET hors parcelle → clic dépose le marqueur et ouvre le drawer, sans afficher la fiche cadastre.
+- Hors mode tap : la fiche cadastre s'ouvre normalement au clic.

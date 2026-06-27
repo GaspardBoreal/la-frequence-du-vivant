@@ -33,10 +33,30 @@ const PREVIEW_STYLE: L.PathOptions = {
   dashArray: '6 6',
 };
 
-const CadastreLayer: React.FC<CadastreLayerProps> = ({ points, enabled = true, previewGeometry, previewData }) => {
+const CadastreLayer: React.FC<CadastreLayerProps> = ({
+  points,
+  enabled = true,
+  previewGeometry,
+  previewData,
+  tapMode = false,
+  onTapLatLng,
+}) => {
   const items = useLexiconParcelsWithGeometry(points, enabled);
 
   if (!enabled) return null;
+
+  const tapHandlers = tapMode && onTapLatLng
+    ? {
+        click: (e: L.LeafletMouseEvent) => {
+          L.DomEvent.stopPropagation(e);
+          onTapLatLng(e.latlng.lat, e.latlng.lng);
+        },
+      }
+    : undefined;
+
+  const tapStyle: L.PathOptions | undefined = tapMode
+    ? { ...STYLE, fillOpacity: 0.15, className: 'cadastre-tap-cursor' }
+    : undefined;
 
   return (
     <>
@@ -55,28 +75,38 @@ const CadastreLayer: React.FC<CadastreLayerProps> = ({ points, enabled = true, p
         const info = extractParcelInfo(lexicon);
         const centroid = geometryCentroid(geometry) || { lat: point.lat, lng: point.lng };
         return (
-          <GeoJSON key={`${point.id}-${info.parcelId || 'p'}`} data={geometry as any} style={STYLE} pane="cadastre-parcels">
-            <ParcelPopup info={info} centroid={centroid} />
+          <GeoJSON
+            key={`${point.id}-${info.parcelId || 'p'}-${tapMode ? 'tap' : 'view'}`}
+            data={geometry as any}
+            style={tapStyle || STYLE}
+            pane="cadastre-parcels"
+            eventHandlers={tapHandlers}
+          >
+            {!tapMode && <ParcelPopup info={info} centroid={centroid} />}
           </GeoJSON>
         );
       })}
 
       {previewGeometry?.coordinates && (
         <GeoJSON
-          key={`preview-${JSON.stringify(previewGeometry.coordinates).slice(0, 50)}`}
+          key={`preview-${JSON.stringify(previewGeometry.coordinates).slice(0, 50)}-${tapMode ? 'tap' : 'view'}`}
           data={previewGeometry as any}
-          style={PREVIEW_STYLE}
+          style={tapMode ? { ...PREVIEW_STYLE, fillOpacity: 0.12, className: 'cadastre-tap-cursor' } : PREVIEW_STYLE}
           pane="cadastre-parcels"
+          eventHandlers={tapHandlers}
         >
-          <ParcelPopup
-            info={extractParcelInfo(previewData)}
-            centroid={geometryCentroid(previewGeometry)}
-          />
+          {!tapMode && (
+            <ParcelPopup
+              info={extractParcelInfo(previewData)}
+              centroid={geometryCentroid(previewGeometry)}
+            />
+          )}
         </GeoJSON>
       )}
     </Pane>
     </>
   );
 };
+
 
 export default CadastreLayer;
