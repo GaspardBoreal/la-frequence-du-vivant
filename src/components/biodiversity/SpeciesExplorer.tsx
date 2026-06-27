@@ -396,7 +396,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     { group: DECOMPOSER_META.group, label: DECOMPOSER_META.label, shortLabel: DECOMPOSER_META.shortLabel, token: DECOMPOSER_META.token },
   ];
 
-  const { mode: viewMode } = useSpeciesViewMode();
+  const { mode: displayMode } = useSpeciesViewMode();
 
   const galleryGridCols = compact
     ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
