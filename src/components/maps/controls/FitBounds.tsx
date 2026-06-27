@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -14,9 +14,11 @@ interface FitBoundsProps {
 }
 
 /**
- * Auto-fits the map to a set of positions with intelligent maxZoom selection
- * based on the diagonal distance of the bounds. Shared by RichMap and the
- * exploration map.
+ * Auto-fits the map to a set of positions, robustly:
+ *  - Triggers only when the CONTENT of positions changes (signature based on lat/lng rounded to 6 decimals),
+ *    not when the array reference changes on re-render.
+ *  - Once the user has interacted manually (zoom/drag), suspends auto-fit until the
+ *    positions content actually changes again (new step added/removed/moved).
  */
 export const FitBounds: React.FC<FitBoundsProps> = ({
   positions,
@@ -26,12 +28,54 @@ export const FitBounds: React.FC<FitBoundsProps> = ({
 }) => {
   const map = useMap();
 
+  // Content signature: stable across re-renders if coordinates are unchanged.
+  const sig = useMemo(
+    () => positions.map(([a, b]) => `${a.toFixed(6)},${b.toFixed(6)}`).join('|'),
+    [positions],
+  );
+
+  const hasUserInteractedRef = useRef(false);
+  const isProgrammaticRef = useRef(false);
+  const lastSigRef = useRef<string | null>(null);
+
+  // Attach interaction listeners once. Distinguish programmatic moves from user moves.
   useEffect(() => {
-    if (positions.length === 0) return;
+    const onUserMove = () => {
+      if (isProgrammaticRef.current) return;
+      hasUserInteractedRef.current = true;
+    };
+    const onMoveEnd = () => {
+      // Reset the programmatic flag at the end of any move.
+      isProgrammaticRef.current = false;
+    };
+    map.on('zoomstart', onUserMove);
+    map.on('dragstart', onUserMove);
+    map.on('moveend', onMoveEnd);
+    return () => {
+      map.off('zoomstart', onUserMove);
+      map.off('dragstart', onUserMove);
+      map.off('moveend', onMoveEnd);
+    };
+  }, [map]);
+
+  useEffect(() => {
+    if (!sig) return; // no positions
+    const sigChanged = lastSigRef.current !== sig;
+    const isFirstFit = lastSigRef.current === null;
+
+    // Skip if user has taken control AND content hasn't really changed.
+    if (!isFirstFit && !sigChanged) return;
+    if (!isFirstFit && hasUserInteractedRef.current && !sigChanged) return;
+
+    lastSigRef.current = sig;
+    // New content → reset user-interaction guard so a single fit can run.
+    hasUserInteractedRef.current = false;
+
     const bounds = L.latLngBounds(positions.map((p) => L.latLng(p[0], p[1])));
     const diag = bounds.getNorthWest().distanceTo(bounds.getSouthEast());
 
-    // Single point or coincident points → zoom in directly
+    isProgrammaticRef.current = true;
+
     if (positions.length === 1 || diag < 1) {
       map.setView(positions[0], maxZoom ?? 17, { animate });
       return;
@@ -46,7 +90,8 @@ export const FitBounds: React.FC<FitBoundsProps> = ({
     }
 
     map.fitBounds(bounds, { padding, maxZoom: computedMax, animate });
-  }, [positions, map, padding, maxZoom, animate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig, map]);
 
   return null;
 };

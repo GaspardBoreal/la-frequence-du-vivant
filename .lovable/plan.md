@@ -1,44 +1,48 @@
 ## Diagnostic
 
-En vue Cadastre, les parcelles sont rendues comme polygones GeoJSON Leaflet. Par défaut Leaflet **absorbe** les clics sur ces polygones et n'émet pas l'event `click` au niveau de la map — c'est pour ça que `CadastreTapCapture` (qui écoute `useMapEvents({ click })`) ne se déclenche jamais quand on clique pile sur une parcelle. Le clic n'aboutit que sur les zones sans parcelle (tuile de fond visible).
+Le composant `FitBounds` (`src/components/maps/controls/FitBounds.tsx`) re-déclenche un `map.setView` / `map.fitBounds` à chaque fois que la **référence** du tableau `positions` change. Or :
 
-## Proposition
+- Cliquer sur « Ajouter un point » bascule `isCadastreTapMode`, ce qui re-render `ExplorationCarteTab`.
+- À ce re-render, plusieurs sources amont (refetch, recomputations en cascade) peuvent produire un nouveau `geoMarches` et donc un nouveau `positions`, même si les coordonnées sont identiques.
+- `FitBounds` voit une nouvelle référence → rejoue `setView([lat,lng], 17)` → **écrase le zoom utilisateur** (qui était à ~19) et le ramène à 17. C'est exactement ce que montrent les captures.
 
-Quand le mode "Ajouter un point" est actif, faire en sorte que **les parcelles laissent passer le clic** jusqu'à la map, sans casser leur fonction normale (popup d'info parcelle quand on n'est pas en mode ajout).
+Plus largement, le pattern actuel est fragile : n'importe quel re-render qui retouche la liste casse le zoom utilisateur. Il faut un fit *intentionnel*, pas réactif.
 
-Deux options possibles :
+## Proposition (robuste, 2 garde-fous cumulés)
 
-**Option A — Forwarder le clic (recommandée)**  
-On garde les parcelles cliquables (popup parcelle conservé visuellement), mais en mode tap on attache un handler `click` sur chaque GeoJSON qui :
-- récupère `e.latlng`
-- empêche le popup parcelle de s'ouvrir
-- appelle `onPick(lat, lng)` exactement comme un clic carte
+**Garde-fou 1 — Fit basé sur le contenu, pas la référence**  
+Dans `FitBounds`, calculer une *signature* stable (`positions.length + JSON des lat/lng arrondis à 6 décimales`) et n'exécuter le fit que quand cette signature change réellement. Toute recréation d'array avec mêmes coordonnées devient un no-op.
 
-→ Avantage : 0 changement visuel, le curseur reticule reste, et le clic "atterrit" exactement où l'utilisateur visait, même au centre d'une parcelle.
+**Garde-fou 2 — Respect de l'interaction utilisateur**  
+Une fois que l'utilisateur a zoomé/pané manuellement (events Leaflet `zoomstart`/`dragstart` déclenchés par un input humain), `FitBounds` suspend tout auto-fit suivant — sauf si on lui passe explicitement un `force` ou si la signature change (nouveau point ajouté → on refit pour englober tout).
 
-**Option B — Désactiver l'interactivité des parcelles en mode tap**  
-Passer `interactive: false` aux GeoJSON tant que `isCadastreTapMode` est vrai. Plus simple mais on perd temporairement le hover/popup parcelle pendant la création.
+Cette double protection garantit :
+- Cliquer « Ajouter un point » ne bouge plus jamais la caméra.
+- Changer de mode (Géo/Sat/Cadastre) ne re-zoome plus si l'utilisateur a ajusté manuellement.
+- Quand on crée une nouvelle étape, un fit unique se redéclenche pour la rendre visible (signature changée).
 
-Je recommande **A** : plus fluide, l'utilisateur garde le feedback visuel des parcelles.
+## Mise en œuvre
 
-## Mise en œuvre (Option A)
+**1. `src/components/maps/controls/FitBounds.tsx`**
 
-1. **`CadastreLayer.tsx`** — Ajouter deux props optionnelles :
-   - `tapMode?: boolean`
-   - `onTapLatLng?: (lat: number, lng: number) => void`
-   
-   Sur chaque `<GeoJSON>` (parcelles + preview), brancher `eventHandlers={{ click: (e) => { if (tapMode && onTapLatLng) { L.DomEvent.stopPropagation(e); onTapLatLng(e.latlng.lat, e.latlng.lng); } } }}`. Quand `tapMode` est faux, comportement actuel inchangé (popup parcelle).
+- Calculer `const sig = useMemo(() => positions.map(([a,b]) => \`${a.toFixed(6)},${b.toFixed(6)}\`).join('|'), [positions])`.
+- Ajouter une ref `hasUserInteractedRef`. Au mount, attacher sur `map` :
+  - `map.on('zoomstart', onUserMove)` et `map.on('dragstart', onUserMove)`.
+  - Mais distinguer les mouvements programmatiques : utiliser un drapeau `isProgrammaticRef` mis à `true` juste avant chaque `setView`/`fitBounds` et remis à `false` au prochain `moveend`.
+- `useEffect` dépendant de `[sig]` (pas `positions`) :
+  - Première exécution → fit.
+  - Exécutions suivantes → fit uniquement si la signature a changé **et** réinitialiser `hasUserInteractedRef = false` parce qu'il y a vraiment du nouveau contenu à montrer.
+- Si `sig` inchangée → ne rien faire, même si `positions` est une nouvelle référence.
 
-2. **`ExplorationCarteTab.tsx`** — Passer les deux props à `<CadastreLayer>` :
-   ```tsx
-   tapMode={isCadastreTapMode && !isCreatingMarche}
-   onTapLatLng={handleCadastreTap}
-   ```
-   `CadastreTapCapture` reste en place pour capturer les clics **hors parcelle**.
+**2. Pas de changement côté `ExplorationCarteTab.tsx`** — la signature absorbe les recreations d'array. (Optionnel bonus : laisser tel quel, mais on pourra plus tard supprimer le `useMemo` devenu superflu.)
 
-3. **Curseur reticule sur les parcelles** — Quand `tapMode` est actif, ajouter `className="cadastre-tap-cursor"` sur les GeoJSON et une règle CSS globale `.cadastre-tap-cursor { cursor: crosshair !important; }` pour que le reticule s'affiche aussi en survolant une parcelle (sinon Leaflet remet `cursor: pointer`).
+## Vérification
+
+- Zoomer fort sur la parcelle → cliquer « Ajouter un point » → la caméra ne bouge plus.
+- Basculer Géo ↔ Cadastre après zoom manuel → la caméra ne bouge plus.
+- Créer un nouveau point hors champ → la caméra refite une fois pour l'inclure (signature changée).
 
 ## Hors scope
 
-- Pas de changement du drawer de création ni du flow de collecte biodiversité.
-- Pas de modification du comportement hors mode tap (popup parcelle conservé).
+- Aucune modification de la logique tap/cadastre, du drawer de création, ni du flow de collecte biodiversité.
+- Pas de changement des appels `flyTo` explicites (sélection d'une étape) qui restent intentionnels.
