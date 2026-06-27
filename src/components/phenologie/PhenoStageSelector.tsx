@@ -225,21 +225,26 @@ export const PhenoStageSelector: React.FC<PhenoStageSelectorProps> = ({
         <div className="mt-5 grid grid-cols-2 gap-3">
           {stages.map((stage, idx) => {
             const isActive = selected === idx;
-            const isSuggested = suggestedIdx === idx;
+            const isSuggested = suggestedIdx === idx && !stage.na;
+            const isNa = !!stage.na;
             return (
               <button
                 key={stage.macro}
                 ref={(el) => (tileRefs.current[idx] = el)}
-                onClick={() => setSelected(idx)}
+                onClick={() => !isNa && setSelected(idx)}
+                disabled={isNa}
+                aria-disabled={isNa}
                 className={`group relative rounded-2xl border p-4 text-left transition-all duration-200 ${
-                  isActive
+                  isNa
+                    ? 'border-white/5 bg-white/[0.02] opacity-40 cursor-not-allowed'
+                    : isActive
                     ? 'border-amber-400/80 bg-amber-400/15 shadow-[0_0_30px_-5px_rgba(251,191,36,0.5)] scale-[1.02]'
                     : isSuggested
                     ? 'border-amber-300/50 bg-amber-400/[0.06] hover:bg-amber-400/[0.10]'
                     : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/20'
                 }`}
                 style={
-                  isActive
+                  isActive && !isNa
                     ? { boxShadow: `0 0 32px -8px ${getStageColor(stage.macro)}` }
                     : undefined
                 }
@@ -253,21 +258,24 @@ export const PhenoStageSelector: React.FC<PhenoStageSelectorProps> = ({
                   <div className="text-3xl">{stage.emoji}</div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[10px] font-mono uppercase tracking-wider text-white/50">
-                      BBCH {stage.macro}
+                      BBCH {stage.macro}{isNa && ' · n/a'}
                     </div>
-                    <div className="text-sm font-medium leading-snug text-white">
+                    <div className={`text-sm font-medium leading-snug ${isNa ? 'text-white/50 italic' : 'text-white'}`}>
                       {stage.labelFr}
                     </div>
                   </div>
                 </div>
-                <div
-                  className="absolute left-3 bottom-2 right-3 h-[2px] rounded-full opacity-60"
-                  style={{ background: getStageColor(stage.macro) }}
-                />
+                {!isNa && (
+                  <div
+                    className="absolute left-3 bottom-2 right-3 h-[2px] rounded-full opacity-60"
+                    style={{ background: getStageColor(stage.macro) }}
+                  />
+                )}
               </button>
             );
           })}
         </div>
+
 
         <div className="sticky bottom-0 left-0 right-0 mt-6 pt-4 pb-2 bg-gradient-to-t from-emerald-950 via-emerald-950/90 to-transparent">
           <Button

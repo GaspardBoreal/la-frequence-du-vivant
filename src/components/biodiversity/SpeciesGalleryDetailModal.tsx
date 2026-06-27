@@ -363,8 +363,15 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                 <PhenoCtaButton
                   speciesScientificName={species.scientificName}
                   explorationId={explorationId ?? null}
+                  photoUrl={
+                    gallerySlides.find((s) => s.source === 'marcheur' || s.source === 'citizen')?.url
+                    ?? gallerySlides[0]?.url
+                    ?? photos[0]
+                    ?? null
+                  }
                 />
               )}
+
 
 
 

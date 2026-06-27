@@ -1,56 +1,47 @@
-# Suggestion IA du stade phénologique (BBCH)
+## Diagnostic
 
-## Objectif
-Quand le marcheur ouvre « Noter le stade phénologique » sur une espèce-culture (ex. Colza), l'app analyse **la photo courante** + le **référentiel BBCH** de la culture et **pré-sélectionne** le stade le plus probable, avec un niveau de confiance et une courte justification visuelle ("fleurs jaunes ouvertes + premières siliques visibles → BBCH 6–7").
+**1) Ordre/libellés "illogiques" sur Colza**
+Le référentiel `src/lib/bbchStages.ts` ne définit que 4 stades spécifiques au Colza (5→8). Les 6 autres (0,1,2,3,4,9) retombent sur `GENERIC_STAGES` qui contient des libellés céréaliers — d'où l'apparition de **« Talles / pousses latérales »** et **« Élongation de la tige »** entre la levée et les boutons. L'ordre 0→9 est correct, mais ces étiquettes ne s'appliquent pas au colza : c'est ça qui paraît incohérent.
 
-## UX dans le drawer `PhenoStageSelector`
-1. Bandeau IA en haut du drawer dès l'ouverture :
-   - État *analyse* : shimmer + "Lecture de la photo en cours…"
-   - État *résultat* : carte ambre/émeraude avec
-     - Emoji + libellé du stade suggéré (ex. 🌼 BBCH 6 — Floraison)
-     - Barre de confiance (0–100 %) + 1 phrase de justification
-     - Boutons : **Accepter la suggestion** (sélectionne la tuile + scroll) / **Choisir un autre stade**
-   - État *incertain* (confidence < 0.5) : propose **2 stades plausibles** côte à côte.
-2. Tuile suggérée mise en évidence (anneau ambre pulsant ✨) dans la grille existante.
-3. Si pas de photo disponible → bandeau masqué, comportement actuel inchangé.
-4. Au save : on stocke `ai_suggested_stage`, `ai_confidence`, `ai_rationale` pour audit (et apprentissage futur).
+**2) Pas de suggestion IA**
+Dans `SpeciesGalleryDetailModal.tsx` (l. 363), `<PhenoCtaButton>` est instancié sans `photoUrl`, `latitude/longitude` ni `marcheId`. Or dans `PhenoStageSelector`, tout le bandeau IA est gardé par `{photoUrl && …}`. Sans photo → pas de lecture multimodale → pas de recommandation.
 
-## Architecture technique
+## Plan de résolution
 
-### 1. Edge function `suggest-bbch-stage` (nouvelle)
-- Auth : JWT marcheur requis.
-- Input : `{ crop_key, photo_url, scientific_name }`.
-- Construit dynamiquement le prompt à partir de `BBCH_CROPS` (libellés FR + URI ontologie INRAE/AgroPortal PPD-* déjà référencées dans `src/lib/bbchStages.ts`) → liste des 10 stades macro **spécifiques à la culture**.
-- Appelle Lovable AI Gateway, modèle **`google/gemini-3-flash-preview`** (multimodal vision), via `/v1/chat/completions` avec :
-  - `content` = `[ { type:'text', text: systemPrompt }, { type:'image_url', image_url:{ url: photo_url } } ]`
-  - `tools` = function calling strict → `submit_bbch_stage({ macro:0-9, confidence:0-1, rationale:string, alternative_macro?:number })`
-- Garde-fous : si confidence < 0.4 → renvoie `unknown=true`. Gestion 429 / 402 comme `classify-species-eco-tags`.
-- Cache léger côté DB (clé = `photo_url`+`crop_key`) pour éviter de re-tarifer la même photo (table `pheno_ai_suggestions`).
+### Étape 1 — Référentiel BBCH complet par culture (libellés spécifiques 0→9)
 
-### 2. Schéma DB
-- Table `pheno_ai_suggestions` (cache) : `photo_url text pk, crop_key text, macro int, confidence numeric, rationale text, created_at timestamptz` + GRANTs + RLS lecture authenticated, écriture service_role.
-- Colonnes ajoutées à `pheno_observations` : `ai_suggested_macro int`, `ai_confidence numeric`, `ai_rationale text`, `ai_accepted boolean`.
+Compléter `src/lib/bbchStages.ts` pour que chaque culture déjà listée définisse **les 10 stades** avec des libellés conformes à la version culture des échelles BBCH (INRAE/PPD-CR). Plus aucun fallback générique sur des plantes annuelles/pérennes connues.
 
-### 3. Frontend
-- Nouveau hook `useBbchStageSuggestion({ crop, photoUrl, scientificName, enabled })` → invoque l'edge function, react-query, dédoublonne par `photo_url+crop_key`.
-- Modif `PhenoStageSelector.tsx` :
-  - Récupère la `photoUrl` (déjà passée en prop) et appelle le hook quand `open && photoUrl`.
-  - Insère le bandeau IA + logique « Accepter » qui set `selected` sur l'index du stade suggéré.
-  - Passe `ai_*` dans `useCreatePhenoObservation.mutateAsync`.
-- Modif `useCreatePhenoObservation` pour persister les 4 colonnes IA.
+- **Colza** : 0 Germination · 1 Levée / cotylédons · 2 Formation de la rosette · 3 Élongation de la tige · 4 *(non utilisé en colza — masqué)* · 5 Boutons accolés · 6 Floraison · 7 Formation des siliques · 8 Maturation · 9 Sénescence / récolte
+- Même travail pour : Vigne, Blé, Maïs, Tournesol, Féverole, Betterave, Olivier, Cerisier, Prunier, Pêcher, Pommier (+ générique pour les autres).
+- Ajouter un flag optionnel `na?: true` sur un stade → la tuile s'affiche grisée « non applicable » et n'est pas sélectionnable. Permet de respecter la numérotation BBCH officielle sans induire en erreur (ex. colza n'utilise pas le 4).
+- `getStagesForCrop` retourne toujours les 10 stades dans l'ordre 0→9 (préservé), avec le bon libellé culture.
 
-### 4. Sources BBCH branchées
-- On reste sur la **source de vérité locale** `src/lib/bbchStages.ts` (déjà alignée INRAE `phenologicalstages` + AgroPortal PPD-CR/PPDO). Le prompt référence les URIs ontologiques pour ancrer l'IA sur les bons stades.
-- Pas d'appel runtime aux endpoints INRAE/AgroPortal (pas d'API publique stable orientée requête par stade) — on garde la latence basse et la robustesse offline.
+### Étape 2 — Brancher la suggestion IA depuis la fiche espèce
 
-## Hors scope (v1)
-- Détection multi-stades (mosaïque parcelle).
-- Apprentissage actif depuis `ai_accepted` (préparé en DB, exploité plus tard).
-- Suggestion sur photos iNaturalist tierces (v1 : photos marcheur uniquement, droits clairs).
+Dans `SpeciesGalleryDetailModal.tsx`, transmettre à `<PhenoCtaButton>` :
+- `photoUrl` : meilleure photo disponible (cover de la fiche, sinon 1ʳᵉ photo marcheur).
+- `latitude` / `longitude` : si présentes sur l'observation.
+- `marcheId` : marche en contexte.
 
-## Livrables
-1. Migration SQL (`pheno_ai_suggestions` + colonnes `pheno_observations` + GRANTs/RLS).
-2. Edge function `suggest-bbch-stage` + déclaration `supabase/config.toml`.
-3. Hook `useBbchStageSuggestion.ts`.
-4. Refonte `PhenoStageSelector.tsx` (bandeau IA + tuile mise en avant).
-5. Mise à jour `usePhenoObservations` pour les champs IA.
+Aucune modif d'API : le drawer affichera automatiquement le bandeau "Lecture de la photo en cours…" puis la suggestion (anneau ambre + bouton « Accepter la suggestion »), déjà câblés sur `useBbchStageSuggestion` / edge `suggest-bbch-stage`.
+
+### Étape 3 — UX du selector
+
+- Les tuiles `na` (stade non utilisé pour la culture) : opacité 40 %, libellé « — non applicable », `disabled`.
+- Conserver le tri 0→9 sur 2 colonnes (lecture naturelle gauche→droite).
+- Quand l'IA propose un stade `na` (cas improbable mais possible), fallback sur le stade adjacent et signaler "ajusté".
+
+### Étape 4 — Vérification
+
+- Ouvrir la fiche Colza sur la marche DEVIAT : ✅ libellés colza-spécifiques, ✅ stade 4 grisé, ✅ bandeau IA chargé puis suggestion affichée avec confiance.
+- Vérifier une seconde culture (Vigne) pour valider le nouveau mapping.
+
+## Détails techniques
+
+**Fichiers modifiés**
+- `src/lib/bbchStages.ts` — étend `BbchStageOverride` avec `na?: boolean`, complète `stages` 0→9 pour chaque culture.
+- `src/components/phenologie/PhenoStageSelector.tsx` — gère l'état `disabled` des stades `na` (style + click).
+- `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` — passe `photoUrl`, `latitude`, `longitude`, `marcheId` au `PhenoCtaButton` (utiliser les médias déjà chargés dans la modal).
+
+**Aucun changement** d'edge function ni de schéma DB.
