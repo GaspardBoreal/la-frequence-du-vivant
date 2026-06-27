@@ -10,7 +10,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { MapPin, Loader2, Sparkles } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { MapPin, Loader2, Sparkles, Leaf } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -42,6 +44,8 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
   const [nom, setNom] = useState('');
   const [ville, setVille] = useState(defaultVille);
   const [date, setDate] = useState(defaultDate);
+  const [description, setDescription] = useState('');
+  const [collectBio, setCollectBio] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Sync defaults when they change (e.g. when drawer reopens)
@@ -50,6 +54,8 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
       setVille(defaultVille);
       setDate(defaultDate);
       setNom('');
+      setDescription('');
+      setCollectBio(true);
     }
   }, [open, defaultVille, defaultDate]);
 
@@ -79,6 +85,7 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
           latitude: position.lat,
           longitude: position.lng,
           coordonnees: `(${position.lng},${position.lat})`,
+          descriptif_court: description.trim() || null,
         })
         .select('id')
         .single();
@@ -106,6 +113,21 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
         });
 
       if (linkErr) throw linkErr;
+
+      // 4. Optional: kick off biodiversity collection (fire and forget — failure tolerated)
+      if (collectBio) {
+        supabase.functions
+          .invoke('collect-biodiversity-step', { body: { marcheId: newMarche.id } })
+          .then(({ error }) => {
+            if (error) {
+              console.warn('[CreateMarcheDrawer] collect-biodiversity-step failed:', error);
+              toast.message('Collecte biodiversité en différé', { description: 'Le point est créé, la collecte sera relancée automatiquement.' });
+            } else {
+              toast.success('Biodiversité collectée 🌿');
+              queryClient.invalidateQueries({ queryKey: ['exploration-marcheur-steps', explorationId] });
+            }
+          });
+      }
 
       toast.success('Marche créée ✨', {
         description: 'Elle apparaît maintenant sur la carte de l\'exploration',
@@ -178,6 +200,43 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
                 />
               </div>
             </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="marche-desc" className="text-xs font-medium">
+                Description courte <span className="text-muted-foreground font-normal">(optionnel)</span>
+              </Label>
+              <Textarea
+                id="marche-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+                placeholder="Ex. Massif est, lisière bordée d'arbres mellifères"
+                rows={2}
+                disabled={submitting}
+                className="resize-none text-sm"
+              />
+              <div className="text-[10px] text-muted-foreground text-right tabular-nums">
+                {description.length}/200
+              </div>
+            </div>
+
+            <label
+              htmlFor="collect-bio"
+              className="flex items-center justify-between gap-3 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-2.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Leaf className="w-4 h-4 text-emerald-500" />
+                <div>
+                  <div className="text-xs font-semibold text-foreground">Collecter la biodiversité</div>
+                  <div className="text-[10px] text-muted-foreground">Lance une collecte iNaturalist autour du point.</div>
+                </div>
+              </div>
+              <Switch
+                id="collect-bio"
+                checked={collectBio}
+                onCheckedChange={setCollectBio}
+                disabled={submitting}
+              />
+            </label>
 
             <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
               <div className="flex items-center gap-2 text-xs text-foreground">

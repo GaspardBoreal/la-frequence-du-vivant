@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { MapContainer, Polyline, Marker, Popup, useMap, Circle, CircleMarker, Pane } from 'react-leaflet';
+import { MapContainer, Polyline, Marker, Popup, useMap, useMapEvents, Circle, CircleMarker, Pane } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -261,6 +261,21 @@ function DraggableCreateMarker({
   return null;
 }
 
+// Cadastre tap-to-add: intercept next map click to drop a new step
+function CadastreTapCapture({ onPick }: { onPick: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) { onPick(e.latlng.lat, e.latlng.lng); },
+  });
+  const map = useMap();
+  useEffect(() => {
+    const c = map.getContainer();
+    const prev = c.style.cursor;
+    c.style.cursor = 'crosshair';
+    return () => { c.style.cursor = prev; };
+  }, [map]);
+  return null;
+}
+
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   explorationId,
   explorationName,
@@ -289,6 +304,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [isCreatingMarche, setIsCreatingMarche] = useState(false);
   const [createPosition, setCreatePosition] = useState<{ lat: number; lng: number } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Cadastre "tap-to-add" mode (click on the parcel to instantly drop a new step)
+  const [isCadastreTapMode, setIsCadastreTapMode] = useState(false);
 
   // Waypoints (intermediate route points)
   const { data: waypoints = [] } = useExplorationWaypoints(marcheEventId);
@@ -710,6 +727,26 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     setDrawerOpen(true);
   }, [createPosition]);
 
+  // Cadastre tap-to-add: handle map clicks while in tap mode
+  const handleCadastreTap = useCallback((lat: number, lng: number) => {
+    if (!userCanCreate || !explorationId) return;
+    setCreatePosition({ lat, lng });
+    setIsCreatingMarche(true);
+    setIsCadastreTapMode(false);
+    setDrawerOpen(true);
+  }, [userCanCreate, explorationId]);
+
+  // Auto-exit tap mode when leaving cadastre view, and listen Escape to cancel
+  useEffect(() => {
+    if (mapStyle !== 'cadastre' && isCadastreTapMode) setIsCadastreTapMode(false);
+  }, [mapStyle, isCadastreTapMode]);
+  useEffect(() => {
+    if (!isCadastreTapMode) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsCadastreTapMode(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isCadastreTapMode]);
+
   if (geoMarches.length === 0) {
     return (
       <motion.div
@@ -1046,6 +1083,11 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           />
         )}
 
+        {/* Cadastre tap-to-add: capture next click as new step */}
+        {isCadastreTapMode && mapStyle === 'cadastre' && !isCreatingMarche && (
+          <CadastreTapCapture onPick={handleCadastreTap} />
+        )}
+
         {/* Weather stations layer */}
         {mapLayers.weatherStations !== 'off' && (
           <WeatherStationsLayer
@@ -1167,6 +1209,31 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
       {/* Map style toggle */}
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
+
+      {/* Cadastre tap-to-add: pill button shown only in Cadastre view for curators */}
+      {mapStyle === 'cadastre' && userCanCreate && explorationId && !isCreatingMarche && (
+        <button
+          onClick={() => setIsCadastreTapMode(v => !v)}
+          className={`absolute top-16 right-4 z-[1000] flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold shadow-lg backdrop-blur-xl border transition-all ${
+            isCadastreTapMode
+              ? 'bg-amber-500/90 hover:bg-amber-500 border-amber-300/50 text-white animate-pulse'
+              : 'bg-emerald-700/90 hover:bg-emerald-700 border-emerald-400/40 text-white'
+          }`}
+          title={isCadastreTapMode ? 'Échap pour annuler' : 'Cliquer sur la parcelle pour poser un nouveau point'}
+        >
+          {isCadastreTapMode ? (
+            <>
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Cliquez sur la parcelle… (Échap)</span>
+            </>
+          ) : (
+            <>
+              <Plus className="w-3.5 h-3.5" />
+              <span>Ajouter un point</span>
+            </>
+          )}
+        </button>
+      )}
 
       {/* Create-marche top banner (Ambassadeur / Sentinelle only, in create mode) */}
       <AnimatePresence>
