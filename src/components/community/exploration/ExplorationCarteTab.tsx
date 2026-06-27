@@ -1083,6 +1083,11 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           />
         )}
 
+        {/* Cadastre tap-to-add: capture next click as new step */}
+        {isCadastreTapMode && mapStyle === 'cadastre' && !isCreatingMarche && (
+          <CadastreTapCapture onPick={handleCadastreTap} />
+        )}
+
         {/* Weather stations layer */}
         {mapLayers.weatherStations !== 'off' && (
           <WeatherStationsLayer
