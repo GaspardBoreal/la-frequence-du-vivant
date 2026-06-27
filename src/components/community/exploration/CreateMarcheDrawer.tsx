@@ -152,22 +152,39 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh]">
+      <DrawerContent className="max-h-[92vh] border-t border-amber-500/20">
         <div className="mx-auto w-full max-w-md">
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              Nouvelle marche
-            </DrawerTitle>
-            <DrawerDescription className="text-xs">
-              Créez une marche à l'emplacement choisi sur la carte.
-            </DrawerDescription>
+          {/* Header refondu */}
+          <DrawerHeader className="px-6 pt-5 pb-4 border-b border-border/60">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <DrawerTitle className="text-xl font-bold tracking-tight flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  Nouvelle marche
+                </DrawerTitle>
+                <DrawerDescription className="text-xs text-muted-foreground">
+                  Créez une étape à l'emplacement choisi sur la carte.
+                </DrawerDescription>
+              </div>
+            </div>
+
+            {/* Pill statut GPS — séparée du titre */}
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-500 text-[11px] font-medium w-fit">
+              <MapPin className="w-3 h-3" />
+              <span>Repère posé</span>
+              <span className="font-mono text-amber-400/90 tabular-nums">
+                {position
+                  ? `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`
+                  : '—'}
+              </span>
+            </div>
           </DrawerHeader>
 
-          <div className="px-4 pb-4 space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="marche-nom" className="text-xs font-medium">
-                Nom de la marche <span className="text-destructive">*</span>
+          {/* Corps aéré */}
+          <div className="px-6 py-5 space-y-5 overflow-y-auto max-h-[58vh]">
+            <div className="space-y-2">
+              <Label htmlFor="marche-nom" className="text-sm font-semibold text-foreground">
+                Nom de l'étape <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="marche-nom"
@@ -176,43 +193,46 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
                 placeholder="Ex. Boucle des prairies humides"
                 autoFocus
                 disabled={submitting}
+                className="bg-muted/40 border-border focus-visible:ring-amber-500/40 focus-visible:border-amber-500/60"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="marche-ville" className="text-xs font-medium">Ville</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="marche-ville" className="text-sm font-semibold text-foreground">Ville</Label>
                 <Input
                   id="marche-ville"
                   value={ville}
                   onChange={(e) => setVille(e.target.value)}
                   disabled={submitting}
+                  className="bg-muted/40 border-border focus-visible:ring-amber-500/40 focus-visible:border-amber-500/60"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="marche-date" className="text-xs font-medium">Date</Label>
+              <div className="space-y-2">
+                <Label htmlFor="marche-date" className="text-sm font-semibold text-foreground">Date</Label>
                 <Input
                   id="marche-date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   disabled={submitting}
+                  className="bg-muted/40 border-border focus-visible:ring-amber-500/40 focus-visible:border-amber-500/60"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="marche-desc" className="text-xs font-medium">
-                Description courte <span className="text-muted-foreground font-normal">(optionnel)</span>
+            <div className="space-y-2">
+              <Label htmlFor="marche-desc" className="text-sm font-semibold text-foreground">
+                Description courte <span className="text-muted-foreground font-normal text-xs">(optionnel)</span>
               </Label>
               <Textarea
                 id="marche-desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value.slice(0, 200))}
                 placeholder="Ex. Massif est, lisière bordée d'arbres mellifères"
-                rows={2}
+                rows={3}
                 disabled={submitting}
-                className="resize-none text-sm"
+                className="resize-none text-sm bg-muted/40 border-border focus-visible:ring-amber-500/40 focus-visible:border-amber-500/60"
               />
               <div className="text-[10px] text-muted-foreground text-right tabular-nums">
                 {description.length}/200
@@ -221,13 +241,15 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
 
             <label
               htmlFor="collect-bio"
-              className="flex items-center justify-between gap-3 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-2.5 cursor-pointer"
+              className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-3 cursor-pointer hover:bg-emerald-500/10 transition-colors"
             >
-              <div className="flex items-center gap-2">
-                <Leaf className="w-4 h-4 text-emerald-500" />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                  <Leaf className="w-4 h-4 text-emerald-400" />
+                </div>
                 <div>
-                  <div className="text-xs font-semibold text-foreground">Collecter la biodiversité</div>
-                  <div className="text-[10px] text-muted-foreground">Lance une collecte iNaturalist autour du point.</div>
+                  <div className="text-sm font-semibold text-foreground">Collecter la biodiversité</div>
+                  <div className="text-[11px] text-muted-foreground">Lance une collecte iNaturalist autour du point.</div>
                 </div>
               </div>
               <Switch
@@ -238,57 +260,46 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
               />
             </label>
 
-            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-              <div className="flex items-center gap-2 text-xs text-foreground">
-                <MapPin className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="font-medium">Position GPS</span>
-              </div>
-              <div className="mt-1 font-mono text-[11px] text-muted-foreground tabular-nums">
-                {position
-                  ? `${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`
-                  : '—'}
-              </div>
-              <p className="mt-1.5 text-[10px] text-muted-foreground">
-                Glissez le repère sur la carte pour ajuster.
-              </p>
-            </div>
-
             {(explorationName || marcheEventTitle) && (
-              <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 px-3 py-2 text-[11px] text-foreground/80">
+              <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 px-4 py-2.5 text-[11px] text-foreground/80 leading-relaxed">
                 Cette marche sera ajoutée à
                 {explorationName && (
-                  <> l'exploration <strong>{explorationName}</strong></>
+                  <> l'exploration <strong className="text-emerald-300">{explorationName}</strong></>
                 )}
                 {marcheEventTitle && (
-                  <> et liée à l'événement <strong>{marcheEventTitle}</strong></>
+                  <> et liée à l'événement <strong className="text-emerald-300">{marcheEventTitle}</strong></>
                 )}
                 .
               </div>
             )}
           </div>
 
-          <DrawerFooter className="pt-0">
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting || !nom.trim() || !position}
-              className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Création…
-                </>
-              ) : (
-                'Créer la marche'
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={submitting}
-            >
-              Annuler
-            </Button>
+          {/* Footer sticky — actions contrastées */}
+          <DrawerFooter className="px-6 py-4 pt-3 border-t border-border/60 bg-background/60 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={submitting}
+                className="flex-1 border-border text-foreground/80 hover:bg-muted/50"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting || !nom.trim() || !position}
+                className="flex-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold shadow-lg shadow-amber-500/20"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Création…
+                  </>
+                ) : (
+                  'Créer l\'étape'
+                )}
+              </Button>
+            </div>
           </DrawerFooter>
         </div>
       </DrawerContent>
@@ -297,3 +308,4 @@ const CreateMarcheDrawer: React.FC<CreateMarcheDrawerProps> = ({
 };
 
 export default CreateMarcheDrawer;
+
