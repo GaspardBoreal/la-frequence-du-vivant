@@ -408,7 +408,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const renderSpeciesGrid = (list: BiodiversitySpecies[]) => (
     <motion.div
       layout
-      className={`grid gap-3 ${viewMode === 'gallery' ? galleryGridCols : listGridCols}`}
+      className={`grid gap-3 ${displayMode === 'gallery' ? galleryGridCols : listGridCols}`}
       transition={{ layout: { duration: 0.45, ease: [0.32, 0.72, 0, 1] } }}
     >
       <AnimatePresence initial={false}>
@@ -425,7 +425,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
               className="relative"
               data-focus-id={`species:${sp.scientificName}`}
             >
-              {viewMode === 'gallery' ? (
+              {displayMode === 'gallery' ? (
                 <SpeciesGalleryCard
                   species={sp}
                   onClick={setSelectedSpecies}
