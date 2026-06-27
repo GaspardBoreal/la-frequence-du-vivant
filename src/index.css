@@ -833,6 +833,10 @@
   border-radius: 12px !important;
 }
 .cadastre-parcel-popup .leaflet-popup-content { margin: 0 !important; }
+
+/* Cadastre tap-to-add: garder le réticule même au survol des parcelles */
+.leaflet-container .cadastre-tap-cursor,
+.leaflet-container .cadastre-tap-cursor path { cursor: crosshair !important; }
 .cadastre-parcel-popup .leaflet-popup-tip { background: rgba(0,0,0,0.85) !important; }
 .cadastre-parcel-popup .leaflet-popup-close-button {
   top: 6px !important;
