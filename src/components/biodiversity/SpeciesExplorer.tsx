@@ -436,11 +436,13 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
                   translation={translationMap.get(sp.scientificName)}
                 />
               )}
-              <MarcheurSpeciesTagDots
-                scientificName={sp.scientificName}
-                tags={spTags}
-                overlay
-              />
+              {displayMode === 'list' && (
+                <MarcheurSpeciesTagDots
+                  scientificName={sp.scientificName}
+                  tags={spTags}
+                  overlay
+                />
+              )}
             </motion.div>
           );
         })}
