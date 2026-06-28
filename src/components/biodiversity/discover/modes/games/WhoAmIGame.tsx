@@ -12,8 +12,10 @@ import {
   Flag,
 } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
-import { pickWithPhotos, displayName, shuffle, hasPhoto } from './gameUtils';
+import { pickWithPhotos, displayName, shuffle, hasPhoto, photoUrl } from './gameUtils';
 import MysteryFrame, { type MysteryMode, type RevealLevel } from './MysteryFrame';
+import ZoomLoupeButton from './ZoomLoupeButton';
+import ZoomLightbox from './ZoomLightbox';
 import WhoAmIOnboarding, { hasSeenWhoAmIOnboarding } from './WhoAmIOnboarding';
 import {
   getKingdomHint,
@@ -51,6 +53,8 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
   const [hintLevel, setHintLevel] = useState<HintLevel>(0);
   const [hintToast, setHintToast] = useState<string | null>(null);
   const [confetti, setConfetti] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  useEffect(() => { setZoomOpen(false); }, [round]);
 
   const eligible = useMemo(
     () => species.filter((s) => hasPhoto(s, photoBy)),
@@ -208,6 +212,12 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
               mode={mode}
               revealLevel={revealLevel}
             />
+            {/* Loupe : disponible uniquement après la réponse (sinon ce serait tricher) */}
+            {reveal && (
+              <ZoomLoupeButton onActivate={() => setZoomOpen(true)} alwaysVisible />
+            )}
+
+
 
             {/* Halo cinématique sur bonne réponse */}
             <AnimatePresence>
@@ -382,6 +392,14 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
           })}
         </motion.div>
       </div>
+
+      <ZoomLightbox
+        open={zoomOpen}
+        onOpenChange={setZoomOpen}
+        src={photoUrl(target, photoBy)}
+        alt={displayName(target)}
+        caption={<>{displayName(target)} <em className="opacity-75 text-base">({target.scientificName})</em></>}
+      />
     </div>
   );
 };

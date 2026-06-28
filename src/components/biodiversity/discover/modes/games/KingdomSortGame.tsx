@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCw, LifeBuoy } from 'lucide-react';
 import {
@@ -15,9 +15,11 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
-import { pickWithPhotos, displayName, shuffle } from './gameUtils';
+import { pickWithPhotos, displayName, shuffle, photoUrl } from './gameUtils';
 import GameCardImage from './GameCardImage';
 import KingdomSortOnboarding, { useKingdomSortOnboarding } from './KingdomSortOnboarding';
+import ZoomLoupeButton from './ZoomLoupeButton';
+import ZoomLightbox from './ZoomLightbox';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -41,7 +43,8 @@ const DraggableCard: React.FC<{
   photoBy: Map<string, string>;
   selected: boolean;
   onTap: () => void;
-}> = ({ s, photoBy, selected, onTap }) => {
+  onZoom: () => void;
+}> = ({ s, photoBy, selected, onTap, onZoom }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: s.id });
   return (
     <motion.div
@@ -56,7 +59,7 @@ const DraggableCard: React.FC<{
       }}
       whileHover={{ scale: 1.03 }}
       animate={selected ? { scale: 1.08, y: -4 } : { scale: 1, y: 0 }}
-      className={`w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 bg-white shadow-[3px_3px_0_rgba(59,42,26,0.15)] relative touch-none select-none ${
+      className={`group w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 bg-white shadow-[3px_3px_0_rgba(59,42,26,0.15)] relative touch-none select-none ${
         selected
           ? 'border-amber-500 ring-4 ring-amber-300/70'
           : 'border-[#3B2A1A]/20'
@@ -69,6 +72,7 @@ const DraggableCard: React.FC<{
       <div className="absolute bottom-0 inset-x-0 text-[10px] bg-black/55 text-white px-1 py-0.5 truncate text-center pointer-events-none">
         {displayName(s)}
       </div>
+      <ZoomLoupeButton position="top-left" onActivate={onZoom} />
     </motion.div>
   );
 };
@@ -110,7 +114,10 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [zoomCard, setZoomCard] = useState<BiodiversitySpecies | null>(null);
   const onboarding = useKingdomSortOnboarding();
+
+  useEffect(() => { setZoomCard(null); }, [round]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -221,6 +228,7 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
                 photoBy={photoBy}
                 selected={selectedId === s.id}
                 onTap={() => onTapCard(s)}
+                onZoom={() => setZoomCard(s)}
               />
             ))
           )}
@@ -289,6 +297,14 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ZoomLightbox
+        open={!!zoomCard}
+        onOpenChange={(o) => { if (!o) setZoomCard(null); }}
+        src={zoomCard ? photoUrl(zoomCard, photoBy) : undefined}
+        alt={zoomCard ? displayName(zoomCard) : ''}
+        caption={zoomCard ? <>{displayName(zoomCard)} <em className="opacity-75 text-base">({zoomCard.scientificName})</em></> : null}
+      />
     </div>
   );
 };

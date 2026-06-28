@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCw, Trophy, Leaf, Loader2, HelpCircle, Sparkles } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
-import { pickWithPhotos, displayName, shuffle, hasPhoto } from './gameUtils';
+import { pickWithPhotos, displayName, shuffle, hasPhoto, photoUrl } from './gameUtils';
 import GameCardImage from './GameCardImage';
 import MemoryOnboarding, { hasSeenMemoryOnboarding } from './MemoryOnboarding';
+import ZoomLoupeButton from './ZoomLoupeButton';
+import ZoomLightbox from './ZoomLightbox';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -35,6 +37,11 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
   const [flipped, setFlipped] = useState<string[]>([]);
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [moves, setMoves] = useState(0);
+  const [zoomCard, setZoomCard] = useState<BiodiversitySpecies | null>(null);
+
+
+  // Reset lightbox quand la manche change
+  useEffect(() => { setZoomCard(null); }, [round]);
 
   // Tirage (uniquement quand prêt et non commencé) + re-tirage tant que possible
   useEffect(() => {
@@ -170,10 +177,13 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
           const isOpen = flipped.includes(c.id) || matched.has(c.key);
           const isMatched = matched.has(c.key);
           return (
-            <button
+            <div
               key={c.id}
+              role="button"
+              tabIndex={0}
               onClick={() => handleFlip(c)}
-              className="relative aspect-[3/4] [perspective:1000px]"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFlip(c); } }}
+              className="group relative aspect-[3/4] [perspective:1000px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-2xl"
             >
               <motion.div
                 animate={{ rotateY: isOpen ? 180 : 0, scale: isMatched ? 0.96 : 1 }}
@@ -213,9 +223,14 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
                   )}
                 </div>
               </motion.div>
-            </button>
+              {/* Loupe : visible uniquement quand la face photo est révélée */}
+              {isOpen && c.type === 'photo' && (
+                <ZoomLoupeButton onActivate={() => setZoomCard(c.s)} alwaysVisible />
+              )}
+            </div>
           );
         })}
+
       </motion.div>
 
       {/* Toast match */}
@@ -246,6 +261,14 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
           </div>
         </motion.div>
       )}
+
+      <ZoomLightbox
+        open={!!zoomCard}
+        onOpenChange={(o) => { if (!o) setZoomCard(null); }}
+        src={zoomCard ? photoUrl(zoomCard, photoBy) : undefined}
+        alt={zoomCard ? displayName(zoomCard) : ''}
+        caption={zoomCard ? <>{displayName(zoomCard)} <em className="opacity-75 text-base">({zoomCard.scientificName})</em></> : null}
+      />
     </div>
   );
 };

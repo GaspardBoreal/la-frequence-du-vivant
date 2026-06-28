@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { RotateCw, Check, X } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
-import { pickWithPhotos, displayName, shuffle } from './gameUtils';
+import { pickWithPhotos, displayName, shuffle, photoUrl } from './gameUtils';
 import GameCardImage from './GameCardImage';
+import ZoomLoupeButton from './ZoomLoupeButton';
+import ZoomLightbox from './ZoomLightbox';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -14,6 +16,10 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
   const [round, setRound] = useState(0);
   const [score, setScore] = useState({ ok: 0, ko: 0 });
   const [reveal, setReveal] = useState<null | { correct: boolean; pickedId: string }>(null);
+  const [zoomOpen, setZoomOpen] = useState(false);
+
+  // Reset lightbox à chaque nouvelle manche
+  useEffect(() => { setZoomOpen(false); }, [round]);
 
   const { target, options, zoom } = useMemo(() => {
     const picks = pickWithPhotos(species, photoBy, 4);
@@ -44,7 +50,7 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        <div className="relative aspect-square rounded-3xl overflow-hidden border-2 border-[#3B2A1A]/20 bg-white shadow-[6px_6px_0_rgba(59,42,26,0.15)]">
+        <div className="group relative aspect-square rounded-3xl overflow-hidden border-2 border-[#3B2A1A]/20 bg-white shadow-[6px_6px_0_rgba(59,42,26,0.15)]">
           <GameCardImage
             species={target}
             photoBy={photoBy}
@@ -55,7 +61,9 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
           <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-sky-200/90 text-sky-900" style={{ fontFamily: '"Caveat", cursive', fontSize: 22 }}>
             Devine en gros plan
           </div>
+          <ZoomLoupeButton onActivate={() => setZoomOpen(true)} alwaysVisible />
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           {options.map((o) => {
             const picked = reveal?.pickedId === o.id;
@@ -81,6 +89,33 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
           })}
         </div>
       </div>
+
+      <ZoomLightbox
+        open={zoomOpen}
+        onOpenChange={setZoomOpen}
+        renderImage={({ className }) => {
+          const url = photoUrl(target, photoBy);
+          if (!url) return null;
+          // Avant la réponse: on garde le cadrage du détail (anti-spoiler).
+          // Après la réponse: image complète.
+          return reveal ? (
+            <img src={url} alt={displayName(target)} draggable={false} className={className} />
+          ) : (
+            <div className="w-[88vmin] h-[88vmin] max-w-[96vw] max-h-[88dvh] overflow-hidden rounded-2xl">
+              <img
+                src={url}
+                alt="détail"
+                draggable={false}
+                className="w-full h-full object-cover select-none"
+                style={{ transform: `scale(${zoom.zoomVal})`, transformOrigin: `${zoom.cx}% ${zoom.cy}%` }}
+              />
+            </div>
+          );
+        }}
+        caption={reveal ? <>{displayName(target)} <em className="opacity-75 text-base">({target.scientificName})</em></> : 'Espèce mystère — devine sans tricher 😉'}
+        notice={!reveal ? 'Réponds pour voir la photo entière' : undefined}
+        initialScale={1}
+      />
     </div>
   );
 };
