@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { createPortal } from 'react-dom';
 import {
   TransformWrapper,
   TransformComponent,
@@ -40,6 +39,12 @@ const ZoomLightbox: React.FC<Props> = ({
   notice,
   initialScale = 1,
 }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Bloque le scroll body pendant l'ouverture
   useEffect(() => {
     if (!open) return;
@@ -52,60 +57,96 @@ const ZoomLightbox: React.FC<Props> = ({
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
   const portalContainer = useFullscreenPortalTarget();
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        container={portalContainer}
-        aria-describedby={undefined}
-        className="max-w-none w-screen h-[100dvh] sm:h-screen p-0 bg-black/90 backdrop-blur-sm border-0 rounded-none sm:rounded-none [&>button]:hidden"
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      handleClose();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [handleClose, open]);
+
+  if (!open || !mounted) return null;
+
+  const target = portalContainer ?? document.body;
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Zoom sur la photo ${alt}`}
+      data-zoom-lightbox="true"
+      className="fixed inset-0 z-[3000] bg-black/90 backdrop-blur-sm"
+      style={{ touchAction: 'none', overscrollBehavior: 'contain' }}
+      onPointerDown={stopZoomPropagation}
+      onPointerUp={stopZoomPropagation}
+      onMouseDown={stopZoomPropagation}
+      onTouchStart={stopZoomPropagation}
+      onClick={stopZoomPropagation}
+    >
+      <div
+        className="relative w-full h-[100dvh] sm:h-screen flex items-center justify-center"
+        onWheel={stopZoomPropagation}
       >
-        <VisuallyHidden asChild>
-          <DialogTitle>Zoom sur la photo {alt}</DialogTitle>
-        </VisuallyHidden>
-        <div
-          className="relative w-full h-full flex items-center justify-center"
-          onWheel={(e) => e.stopPropagation()}
+        <ZoomErrorBoundary onError={handleClose}>
+          <ZoomInner
+            src={safeSrc}
+            alt={alt}
+            renderImage={renderImage}
+            initialScale={initialScale}
+            onClose={handleClose}
+          />
+        </ZoomErrorBoundary>
+
+        {/* Bandeau légende (top) */}
+        {(caption || notice) && (
+          <div className="pointer-events-none absolute top-0 inset-x-0 p-3 sm:p-4 flex flex-col items-center gap-1 text-center">
+            {notice && (
+              <div className="pointer-events-auto px-3 py-1 rounded-full bg-amber-200/95 text-amber-900 border border-amber-400/60 shadow text-sm"
+                style={{ fontFamily: '"Patrick Hand", sans-serif' }}>
+                {notice}
+              </div>
+            )}
+            {caption && (
+              <div className="pointer-events-auto px-3 py-1.5 rounded-2xl bg-black/55 text-white"
+                style={{ fontFamily: '"Caveat", cursive', fontSize: 22 }}>
+                {caption}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Croix */}
+        <button
+          onPointerDown={stopZoomEvent}
+          onPointerUp={stopZoomEvent}
+          onMouseDown={stopZoomEvent}
+          onTouchStart={stopZoomEvent}
+          onClick={(event) => {
+            stopZoomEvent(event);
+            handleClose();
+          }}
+          aria-label="Fermer le zoom"
+          className="absolute top-3 right-3 z-20 inline-flex items-center justify-center w-11 h-11 rounded-full bg-white/85 hover:bg-white text-[#3B2A1A] shadow"
         >
-          <ZoomErrorBoundary onError={handleClose}>
-            <ZoomInner
-              src={safeSrc}
-              alt={alt}
-              renderImage={renderImage}
-              initialScale={initialScale}
-              onClose={handleClose}
-            />
-          </ZoomErrorBoundary>
-
-          {/* Bandeau légende (top) */}
-          {(caption || notice) && (
-            <div className="pointer-events-none absolute top-0 inset-x-0 p-3 sm:p-4 flex flex-col items-center gap-1 text-center">
-              {notice && (
-                <div className="pointer-events-auto px-3 py-1 rounded-full bg-amber-200/95 text-amber-900 border border-amber-400/60 shadow text-sm"
-                  style={{ fontFamily: '"Patrick Hand", sans-serif' }}>
-                  {notice}
-                </div>
-              )}
-              {caption && (
-                <div className="pointer-events-auto px-3 py-1.5 rounded-2xl bg-black/55 text-white"
-                  style={{ fontFamily: '"Caveat", cursive', fontSize: 22 }}>
-                  {caption}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Croix */}
-          <button
-            onClick={handleClose}
-            aria-label="Fermer le zoom"
-            className="absolute top-3 right-3 z-10 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/85 hover:bg-white text-[#3B2A1A] shadow"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+    </div>,
+    target,
   );
+};
+
+const stopZoomPropagation = (event: React.SyntheticEvent) => {
+  event.stopPropagation();
+};
+
+const stopZoomEvent = (event: React.SyntheticEvent) => {
+  event.preventDefault();
+  event.stopPropagation();
 };
 
 interface InnerProps {
@@ -192,16 +233,19 @@ const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = React.memo
   return (
     <div
       className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-white/90 backdrop-blur shadow-lg border border-white/60"
-      onClick={(e) => e.stopPropagation()}
-      onPointerDown={(e) => e.stopPropagation()}
-      onPointerUp={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-      onTouchStart={(e) => e.stopPropagation()}
+      onClick={stopZoomEvent}
+      onPointerDown={stopZoomEvent}
+      onPointerUp={stopZoomEvent}
+      onMouseDown={stopZoomEvent}
+      onTouchStart={stopZoomEvent}
     >
       <button
-        onClick={() => zoomOut(0.4)}
+        onClick={(event) => {
+          stopZoomEvent(event);
+          zoomOut(0.4);
+        }}
         aria-label="Dézoomer"
-        className="w-9 h-9 inline-flex items-center justify-center rounded-full hover:bg-amber-100 text-[#3B2A1A]"
+        className="w-11 h-11 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-full hover:bg-amber-100 text-[#3B2A1A]"
       >
         <Minus className="h-4 w-4" />
       </button>
@@ -210,17 +254,23 @@ const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = React.memo
         {scale.toFixed(1)}×
       </span>
       <button
-        onClick={() => zoomIn(0.4)}
+        onClick={(event) => {
+          stopZoomEvent(event);
+          zoomIn(0.4);
+        }}
         aria-label="Zoomer"
-        className="w-9 h-9 inline-flex items-center justify-center rounded-full hover:bg-amber-100 text-[#3B2A1A]"
+        className="w-11 h-11 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-full hover:bg-amber-100 text-[#3B2A1A]"
       >
         <Plus className="h-4 w-4" />
       </button>
       {isZoomed && (
         <button
-          onClick={() => resetTransform()}
+          onClick={(event) => {
+            stopZoomEvent(event);
+            resetTransform();
+          }}
           aria-label="Réinitialiser le zoom"
-          className="w-9 h-9 inline-flex items-center justify-center rounded-full hover:bg-amber-100 text-[#3B2A1A]"
+          className="w-11 h-11 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-full hover:bg-amber-100 text-[#3B2A1A]"
           title="Réinitialiser"
         >
           <RotateCcw className="h-4 w-4" />
@@ -228,8 +278,11 @@ const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = React.memo
       )}
       <div className="w-px h-5 bg-[#3B2A1A]/15 mx-1" />
       <button
-        onClick={onClose}
-        className="px-3 h-9 inline-flex items-center justify-center rounded-full bg-emerald-200 hover:bg-emerald-300 text-emerald-900 text-sm"
+        onClick={(event) => {
+          stopZoomEvent(event);
+          onClose();
+        }}
+        className="px-4 h-11 sm:h-10 inline-flex items-center justify-center rounded-full bg-emerald-200 hover:bg-emerald-300 text-emerald-900 text-sm"
         style={{ fontFamily: '"Patrick Hand", sans-serif' }}
       >
         Revenir au jeu

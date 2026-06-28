@@ -31,10 +31,12 @@ const ZoomLoupeButton: React.FC<Props> = ({
   label = 'Agrandir la photo',
   className = '',
 }) => {
-  const stop = (e: React.SyntheticEvent) => { e.stopPropagation(); };
-  const handle = (e: React.MouseEvent | React.TouchEvent) => {
+  const stop = (e: React.SyntheticEvent) => {
     e.stopPropagation();
     e.preventDefault();
+  };
+  const handle = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
+    stop(e);
     onActivate();
   };
   return (
@@ -43,14 +45,17 @@ const ZoomLoupeButton: React.FC<Props> = ({
       tabIndex={0}
       aria-label={label}
       data-no-dnd="true"
+      onPointerUp={stop}
       onPointerDown={stop}
       onMouseDown={stop}
+      onMouseUp={stop}
       onTouchStart={stop}
+      onTouchEnd={stop}
       onClick={handle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onActivate(); }
       }}
-      className={`absolute ${POS[position]} z-10 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/75 hover:bg-white text-[#3B2A1A] backdrop-blur shadow-md border border-white/70 cursor-zoom-in transition ${
+      className={`absolute ${POS[position]} z-10 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/75 hover:bg-white text-[#3B2A1A] backdrop-blur shadow-md border border-white/70 cursor-zoom-in transition ${
         alwaysVisible
           ? 'opacity-90'
           : 'opacity-0 group-hover:opacity-95 [@media(hover:none)]:opacity-90'
