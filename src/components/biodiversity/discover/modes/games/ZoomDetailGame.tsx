@@ -93,10 +93,27 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
       <ZoomLightbox
         open={zoomOpen}
         onOpenChange={setZoomOpen}
-        src={photoUrl(target, photoBy)}
-        alt={displayName(target)}
+        renderImage={({ className }) => {
+          const url = photoUrl(target, photoBy);
+          if (!url) return null;
+          // Avant la réponse: on garde le cadrage du détail (anti-spoiler).
+          // Après la réponse: image complète.
+          return reveal ? (
+            <img src={url} alt={displayName(target)} draggable={false} className={className} />
+          ) : (
+            <div className="w-[88vmin] h-[88vmin] max-w-[96vw] max-h-[88dvh] overflow-hidden rounded-2xl">
+              <img
+                src={url}
+                alt="détail"
+                draggable={false}
+                className="w-full h-full object-cover select-none"
+                style={{ transform: `scale(${zoom.zoomVal})`, transformOrigin: `${zoom.cx}% ${zoom.cy}%` }}
+              />
+            </div>
+          );
+        }}
         caption={reveal ? <>{displayName(target)} <em className="opacity-75 text-base">({target.scientificName})</em></> : 'Espèce mystère — devine sans tricher 😉'}
-        notice={!reveal ? 'Réponds avant de voir le nom' : undefined}
+        notice={!reveal ? 'Réponds pour voir la photo entière' : undefined}
         initialScale={1}
       />
     </div>
