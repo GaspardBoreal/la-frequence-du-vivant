@@ -93,10 +93,55 @@ const ZoomLightbox: React.FC<Props> = ({
   );
 };
 
-const ZoomToolbar: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+interface InnerProps {
+  src?: string;
+  alt?: string;
+  renderImage?: (props: { className: string; style?: React.CSSProperties }) => React.ReactNode;
+  initialScale: number;
+  onClose: () => void;
+}
+
+const ZoomInner: React.FC<InnerProps> = ({ src, alt, renderImage, initialScale, onClose }) => {
+  const [scale, setScale] = useState(initialScale);
+  return (
+    <TransformWrapper
+      initialScale={initialScale}
+      minScale={1}
+      maxScale={5}
+      centerOnInit
+      wheel={{ step: 0.2 }}
+      pinch={{ step: 5 }}
+      doubleClick={{ mode: 'toggle', step: 1.8 }}
+      limitToBounds
+      panning={{ velocityDisabled: false }}
+      onTransformed={(_, state) => setScale(state.scale)}
+    >
+      <>
+        <TransformComponent
+          wrapperClass="!w-full !h-full"
+          contentClass="!w-full !h-full flex items-center justify-center"
+        >
+          {renderImage ? (
+            renderImage({
+              className: 'max-w-[96vw] max-h-[88dvh] object-contain select-none',
+            })
+          ) : src ? (
+            <img
+              src={src}
+              alt={alt}
+              draggable={false}
+              className="max-w-[96vw] max-h-[88dvh] object-contain select-none"
+            />
+          ) : null}
+        </TransformComponent>
+        <ZoomToolbar scale={scale} onClose={onClose} />
+      </>
+    </TransformWrapper>
+  );
+};
+
+const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = ({ scale, onClose }) => {
   const { zoomIn, zoomOut, resetTransform } = useControls();
-  const ctx = useTransformContext();
-  const scale = ctx?.transformState?.scale ?? 1;
   const isZoomed = scale > 1.02;
 
   return (
