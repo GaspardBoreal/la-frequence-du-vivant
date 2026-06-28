@@ -174,10 +174,13 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
           const isOpen = flipped.includes(c.id) || matched.has(c.key);
           const isMatched = matched.has(c.key);
           return (
-            <button
+            <div
               key={c.id}
+              role="button"
+              tabIndex={0}
               onClick={() => handleFlip(c)}
-              className="relative aspect-[3/4] [perspective:1000px]"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFlip(c); } }}
+              className="group relative aspect-[3/4] [perspective:1000px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-2xl"
             >
               <motion.div
                 animate={{ rotateY: isOpen ? 180 : 0, scale: isMatched ? 0.96 : 1 }}
@@ -217,9 +220,14 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
                   )}
                 </div>
               </motion.div>
-            </button>
+              {/* Loupe : visible uniquement quand la face photo est révélée */}
+              {isOpen && c.type === 'photo' && (
+                <ZoomLoupeButton onActivate={() => setZoomCard(c.s)} alwaysVisible />
+              )}
+            </div>
           );
         })}
+
       </motion.div>
 
       {/* Toast match */}
