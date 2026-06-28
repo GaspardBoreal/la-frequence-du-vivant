@@ -8,6 +8,7 @@ import {
 } from 'react-zoom-pan-pinch';
 import { Plus, Minus, RotateCcw, X } from 'lucide-react';
 import { safeZoomSrc, computeSafeMaxScale } from './zoomImageSrc';
+import { useFullscreenPortalTarget } from './useFullscreenPortalTarget';
 
 interface Props {
   open: boolean;
@@ -49,10 +50,13 @@ const ZoomLightbox: React.FC<Props> = ({
 
   const safeSrc = useMemo(() => safeZoomSrc(src), [src]);
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
+  const portalContainer = useFullscreenPortalTarget();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        container={portalContainer}
+        aria-describedby={undefined}
         className="max-w-none w-screen h-[100dvh] sm:h-screen p-0 bg-black/90 backdrop-blur-sm border-0 rounded-none sm:rounded-none [&>button]:hidden"
       >
         <VisuallyHidden asChild>
@@ -189,6 +193,10 @@ const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = React.memo
     <div
       className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-white/90 backdrop-blur shadow-lg border border-white/60"
       onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerUp={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <button
         onClick={() => zoomOut(0.4)}
