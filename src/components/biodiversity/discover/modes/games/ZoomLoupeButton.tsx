@@ -45,13 +45,13 @@ const ZoomLoupeButton: React.FC<Props> = ({
       tabIndex={0}
       aria-label={label}
       data-no-dnd="true"
-      onPointerUp={stop}
+      onPointerUp={handle}
       onPointerDown={stop}
       onMouseDown={stop}
       onMouseUp={stop}
       onTouchStart={stop}
       onTouchEnd={stop}
-      onClick={handle}
+      onClick={stop}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onActivate(); }
       }}
