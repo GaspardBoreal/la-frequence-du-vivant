@@ -6015,6 +6015,27 @@ export type Database = {
         }
         Relationships: []
       }
+      species_prospective_2100_cache: {
+        Row: {
+          generated_at: string
+          narrative: string
+          scientific_name: string
+          status: string
+        }
+        Insert: {
+          generated_at?: string
+          narrative: string
+          scientific_name: string
+          status: string
+        }
+        Update: {
+          generated_at?: string
+          narrative?: string
+          scientific_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
       species_thumb_cache: {
         Row: {
           common_name_en: string | null
