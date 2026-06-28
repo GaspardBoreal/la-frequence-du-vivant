@@ -100,7 +100,7 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
                       'border-[#3B2A1A]/20'
                     }`}
                   >
-                    <img src={photoUrl(s, photoBy)} alt="" className="w-full h-full object-cover" />
+                    <GameCardImage species={s} photoBy={photoBy} className="w-full h-full object-cover" />
                   </motion.div>
                 ))}
               </div>
