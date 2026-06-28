@@ -50,7 +50,7 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        <div className="relative aspect-square rounded-3xl overflow-hidden border-2 border-[#3B2A1A]/20 bg-white shadow-[6px_6px_0_rgba(59,42,26,0.15)]">
+        <div className="group relative aspect-square rounded-3xl overflow-hidden border-2 border-[#3B2A1A]/20 bg-white shadow-[6px_6px_0_rgba(59,42,26,0.15)]">
           <GameCardImage
             species={target}
             photoBy={photoBy}
@@ -61,7 +61,9 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
           <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-sky-200/90 text-sky-900" style={{ fontFamily: '"Caveat", cursive', fontSize: 22 }}>
             Devine en gros plan
           </div>
+          <ZoomLoupeButton onActivate={() => setZoomOpen(true)} alwaysVisible />
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           {options.map((o) => {
             const picked = reveal?.pickedId === o.id;
