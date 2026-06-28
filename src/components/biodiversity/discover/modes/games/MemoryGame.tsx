@@ -37,6 +37,8 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
   const [flipped, setFlipped] = useState<string[]>([]);
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [moves, setMoves] = useState(0);
+  const [zoomCard, setZoomCard] = useState<BiodiversitySpecies | null>(null);
+
 
   // Tirage (uniquement quand prêt et non commencé) + re-tirage tant que possible
   useEffect(() => {
