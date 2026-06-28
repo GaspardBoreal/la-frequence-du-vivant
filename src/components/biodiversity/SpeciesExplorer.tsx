@@ -86,9 +86,9 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const [tagFilter, setTagFilter] = useState<TagFilterState>({ labels: [], mode: 'or' });
   const [selectedTrophic, setSelectedTrophic] = useState<Set<TrophicGroup>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'immersion'>(() => {
-  const [discoverOpen, setDiscoverOpen] = useState(false);
     return (localStorage.getItem('species-explorer-view') as 'list' | 'immersion') || 'list';
   });
+  const [discoverOpen, setDiscoverOpen] = useState(false);
 
   const handleViewMode = (mode: 'list' | 'immersion') => {
     setViewMode(mode);
