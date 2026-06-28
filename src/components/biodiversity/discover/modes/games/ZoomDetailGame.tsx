@@ -4,8 +4,10 @@ import { RotateCw, Check, X } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { pickWithPhotos, displayName, shuffle, photoUrl } from './gameUtils';
 import GameCardImage from './GameCardImage';
+import DetailCropImage from './DetailCropImage';
 import ZoomLoupeButton from './ZoomLoupeButton';
 import ZoomLightbox from './ZoomLightbox';
+import { highResDetailSrc } from './zoomImageSrc';
 
 interface Props {
   species: BiodiversitySpecies[];
