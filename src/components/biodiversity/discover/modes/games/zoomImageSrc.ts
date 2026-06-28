@@ -38,3 +38,38 @@ export function computeSafeMaxScale(naturalWidth: number | undefined): number {
   const safe = Math.floor(12000 / naturalWidth);
   return Math.max(2, Math.min(4, safe));
 }
+
+/**
+ * Variante haute résolution pour les jeux qui zooment fortement (crop détail).
+ * Cible ~1024-1600 px : suffisant pour un crop ×3-×4 net, sans risque OOM GPU.
+ *
+ * - iNat : remplace les suffixes `square|thumb|small|medium` par `large.`
+ *   (≈ 1024 px) ; laisse `large.` / `original.` inchangés.
+ * - Supabase Storage : injecte `?width=1600&quality=85` si absent.
+ * - Sinon : URL inchangée.
+ */
+export function highResDetailSrc(url?: string): string | undefined {
+  if (!url) return url;
+  try {
+    if (/static\.inaturalist\.org|inaturalist-open-data/.test(url)) {
+      return url.replace(/\/(square|thumb|small|medium)\./, '/large.');
+    }
+    if (url.includes('/storage/v1/') && !url.includes('width=') && !url.includes('/render/image/')) {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}width=1600&quality=85`;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * Heuristique : l'URL pointe-t-elle vers une vignette basse-résolution ?
+ * Sert à déclencher un rendu dégradé (flou artistique + badge) plutôt que
+ * d'exposer des pixels nus quand aucune HR n'est disponible.
+ */
+export function isLikelyLowRes(url?: string): boolean {
+  if (!url) return true;
+  return /\/(square|thumb|small)\./.test(url);
+}
