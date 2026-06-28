@@ -97,7 +97,7 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
         alt={displayName(target)}
         caption={reveal ? <>{displayName(target)} <em className="opacity-75 text-base">({target.scientificName})</em></> : 'Espèce mystère — devine sans tricher 😉'}
         notice={!reveal ? 'Réponds avant de voir le nom' : undefined}
-        initialScale={zoom.zoomVal}
+        initialScale={1}
       />
     </div>
   );
