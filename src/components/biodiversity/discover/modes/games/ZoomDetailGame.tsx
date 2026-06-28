@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { RotateCw, Check, X } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
-import { pickWithPhotos, displayName, shuffle } from './gameUtils';
+import { pickWithPhotos, displayName, shuffle, photoUrl } from './gameUtils';
 import GameCardImage from './GameCardImage';
+import ZoomLoupeButton from './ZoomLoupeButton';
+import ZoomLightbox from './ZoomLightbox';
 
 interface Props {
   species: BiodiversitySpecies[];
