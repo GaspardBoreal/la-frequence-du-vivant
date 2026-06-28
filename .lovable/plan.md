@@ -1,52 +1,43 @@
-## Diagnostic
+# Plan — Indices progressifs enrichis « Qui suis-je ? »
 
-Le carré noir vient du filtre `filter: brightness(0) contrast(1.2)` appliqué sur `GameCardImage` :
-- Sur une photo JPG « pleine » (pas d'alpha), `brightness(0)` peint **tout** le rectangle en noir → il n'y a pas de silhouette lisible, juste un bloc sombre.
-- Si l'image n'a pas pu se résoudre, `GameCardImage` rend une icône Lucide sur fond pastel ; le même filtre éteint tout → carré noir.
-- Aucun fallback visuel quand l'image est en cours de chargement ou indisponible.
+## Constat
+Aujourd'hui le bouton 💡 propose 2 niveaux d'aide (flou 28 → 14 → puis révélation). Sur des espèces complexes (insectes, champignons, plantes proches), 14 px de flou reste trop opaque et le joueur abandonne. Il faut **plus de paliers**, un **dé-floutage plus généreux**, et des **indices narratifs** complémentaires — sans casser l'équilibre du score.
 
-Résultat : le joueur ne voit rien à deviner.
+## Échelle d'indices — 4 paliers (au lieu de 2)
 
-## Proposition — « Qui suis-je ? » version wahouh
+| Clic | Mode Flou | Mode Œil de serrure | Mode Silhouette | Indice texte manuscrit ajouté | Malus |
+|---|---|---|---|---|---|
+| 0 (départ) | blur 32 px | trou 28 % | contraste max | — | 0 |
+| 1 💡 | blur 18 px | trou 42 % | contraste -1 cran | 🐦 **Règne** révélé (« C'est un oiseau… ») | −0,25 ⭐ |
+| 2 💡💡 | blur 9 px | trou 60 % | contraste -2 crans | 🅿 **Initiale** + nombre de lettres (« P • • • • • • ») | −0,5 ⭐ |
+| 3 💡💡💡 | blur 4 px | trou 78 % | quasi-net | 🌿 **Famille** + 1 trait d'écologie (« Famille des Columbidés, granivore ») | −0,75 ⭐ |
+| 4 💡💡💡💡 | blur 1 px (quasi-net, juste un voile) | trou 92 % | net | 🎯 **2 lettres masquées remplies** (« P I G E • N ») | −1 ⭐ (≈ aveu d'aide max) |
 
-Plutôt qu'une fausse silhouette, je propose un **vrai jeu de révélation progressive** avec 3 modes de mystère sélectionnés automatiquement selon ce qui est disponible pour l'espèce. L'esprit reste manuscrit/papier kraft cohérent avec le Mode Enfant.
+Score final par espèce = max(0, 1 − malus cumulé). Une réussite avec 4 indices vaut donc 0 ⭐ mais reste comptée comme « trouvée » (badge `CheckCircle2` gris au lieu de doré).
 
-### 1. Trois modes de mystère (rotation aléatoire par manche)
+## UX du bouton indice
 
-- **Mosaïque floutée** (par défaut) : la photo est affichée avec `filter: blur(28px) saturate(1.4)` + léger zoom. On voit les **couleurs et formes générales** sans reconnaître l'espèce. Beau, doux, lisible.
-- **Œil de serrure** : un cercle de 35 % du cadre découpe la photo (clip-path), reste du cadre voilé en kraft. On devine via un détail.
-- **Silhouette véritable** : seulement si la photo a un fond clair détectable (heuristique simple sur premier pixel) ; sinon on retombe sur le mode mosaïque.
+- Bouton 💡 transformé en **jauge segmentée 4 crans** (style barre de vie manuscrite, traits Caveat).
+- Chaque clic remplit un cran, affiche brièvement un **toast manuscrit** (« Petit coup de pouce 🌱 ») et déclenche une **micro-animation** : le voile de flou se rétracte avec un effet « buvard qui sèche ».
+- À l'épuisement (4 indices utilisés), le bouton devient **« 🏳 Je donne ma langue au chat »** → révèle la réponse en mode pédagogique, 0 ⭐, mais affiche une fiche découverte mini (nom + 1 phrase écologique).
+- Tooltip permanent : « 4 indices possibles — chaque indice te coûte un peu d'étoile ».
 
-### 2. Bouton « 💡 Donne-moi un indice »
+## Indices texte — d'où viennent-ils
 
-- Premier clic : réduit le flou de 28 → 14 px (ou agrandit l'œil de serrure).
-- Deuxième clic : révèle la 1ʳᵉ lettre du nom + le règne (« 🐦 Oiseau commençant par P… »).
-- Chaque indice utilisé = +0,5 point malus visible (badge « -0,5 ⭐ »).
+Tous dérivés des champs déjà disponibles dans `BiodiversitySpecies` (kingdom, family, commonName, scientificName) + le mapping règne→emoji déjà présent dans `MysteryFrame`. Aucun appel réseau, aucune nouvelle dépendance.
 
-### 3. Révélation cinématique
+Pour le palier 3 (« trait d'écologie »), heuristique locale courte basée sur `family`/`kingdom` (granivore, pollinisateur, saproxylique, héliophile…) avec dictionnaire 20 entrées dans `whoAmIHints.ts`. Fallback générique sinon (« Vit ici, autour de la marche »).
 
-- Bonne réponse : l'image se dé-floute sur 600 ms + halo lumineux doré + **confettis Lucide** (étoiles + feuilles tombantes via framer-motion), bannière manuscrite « Bravo ! C'était bien le **Pigeon ramier** 🕊️ ».
-- Mauvaise réponse : secousse légère, le cadre se teinte en rose pâle, on dé-floute aussi pour que le joueur **mémorise** l'espèce avec sa vraie photo, puis carte juste mise en évidence en vert.
+## Fichiers touchés
 
-### 4. États dégradés robustes
+- `src/components/biodiversity/discover/modes/games/MysteryFrame.tsx` : étendre `revealLevel` de `0|1|2|3` → `0|1|2|3|4|5` (5 = réponse révélée), recalibrer `blurPx` et `keyholeRadius` selon le tableau.
+- `src/components/biodiversity/discover/modes/games/WhoAmIGame.tsx` : 
+  - state `hintLevel` 0..4 + `gaveUp`;
+  - barre segmentée à la place du bouton simple;
+  - calcul du malus dégressif et badge score adapté;
+  - panneau « Indices » affichant la liste cumulée des indices texte déjà débloqués (cartes papier kraft empilées);
+  - état « langue au chat » avec fiche pédagogique.
+- `src/components/biodiversity/discover/modes/games/whoAmIHints.ts` *(nouveau)* : helpers `getKingdomHint`, `getInitialHint`, `getFamilyEcologyHint`, `getRevealedLettersHint` + petit dictionnaire écologie.
+- `src/components/biodiversity/discover/modes/games/WhoAmIOnboarding.tsx` : ajouter une 4ᵉ règle « 4 indices possibles pour les espèces difficiles ».
 
-- Si `GameCardImage` n'arrive **pas** à charger la photo (onError → icône Lucide), on bascule **automatiquement** sur un **mode « Devinette aveugle »** : un cadre kraft avec 3 indices manuscrits empilés (règne emoji + taxon + initiale), pour ne jamais montrer un carré noir.
-- Si moins de 4 espèces avec photo : message manuscrit « Pas assez d'espèces… choisis un autre jeu ».
-
-### 5. UX & lisibilité
-
-- Bandeau consigne permanent au-dessus : « Devine l'espèce mystère parmi les 4 propositions ».
-- Onboarding optionnel (1ʳᵉ partie, `localStorage`) reprenant le pattern du Memory : démo animée flou → net, 3 règles (Observe, Devine, Découvre).
-- Compteur score remplacé par **badges Lucide** (`CheckCircle2` / `XCircle`) — les emojis ✅/❌ ne rendent pas sur ta machine actuelle (cf. capture).
-- Mini animation Ken-Burns lent sur l'image mystère pour donner du vivant.
-
-## Détails techniques
-
-Fichiers touchés :
-- `src/components/biodiversity/discover/modes/games/WhoAmIGame.tsx` : refonte (modes mystère, indices, révélation, états dégradés).
-- `src/components/biodiversity/discover/modes/games/WhoAmIOnboarding.tsx` *(nouveau)* : overlay règle, persistance `localStorage` (`mdv.whoami.onboarding.v1.seen`).
-- `src/components/biodiversity/discover/modes/games/MysteryFrame.tsx` *(nouveau)* : composant cadre mystère qui prend `species`, `photoBy`, `mode` (`'blur' | 'keyhole' | 'silhouette' | 'blind'`), `revealLevel` (0/1/2/3) et gère l'auto-fallback `onError` vers mode aveugle.
-- `src/components/biodiversity/discover/modes/games/GameCardImage.tsx` : exposer `onResolved(success: boolean)` pour permettre l'auto-fallback.
-- Aucune mutation de données, pas de nouvelle requête réseau, pas d'edge function.
-
-Tout reste dans la couche présentation, dans la même direction artistique (Caveat / Patrick Hand, palette papier kraft, ombres décalées).
+Aucune modification de données, edge function, ni schéma. 100 % présentation, cohérent avec la DA manuscrite (Caveat / Patrick Hand, papier kraft, badges Lucide).

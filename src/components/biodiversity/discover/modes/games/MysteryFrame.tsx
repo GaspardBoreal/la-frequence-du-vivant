@@ -6,12 +6,18 @@ import { photoUrl, displayName } from './gameUtils';
 
 export type MysteryMode = 'blur' | 'keyhole' | 'silhouette' | 'blind';
 
+/**
+ * 0 = mystère total
+ * 1..4 = paliers d'indices (dé-flou progressif généreux)
+ * 5 = révélation totale (bonne/mauvaise réponse OU langue au chat)
+ */
+export type RevealLevel = 0 | 1 | 2 | 3 | 4 | 5;
+
 interface Props {
   species: BiodiversitySpecies;
   photoBy: Map<string, string>;
   mode: MysteryMode;
-  /** 0 = max mystère, 1 = un indice, 2 = deux indices, 3 = révélation totale */
-  revealLevel: 0 | 1 | 2 | 3;
+  revealLevel: RevealLevel;
   onBlindFallback?: () => void;
 }
 
@@ -83,18 +89,17 @@ const MysteryFrame: React.FC<Props> = ({ species, photoBy, mode, revealLevel, on
     );
   }
 
-  // Effet visuel selon mode et revealLevel
-  const blurPx =
-    revealLevel >= 3 ? 0 :
-    revealLevel === 2 ? 6 :
-    revealLevel === 1 ? 14 :
-    28;
-
-  const keyholeRadius =
-    revealLevel >= 3 ? 100 :
-    revealLevel === 2 ? 65 :
-    revealLevel === 1 ? 45 :
-    32;
+  // Effet visuel selon mode et revealLevel (paliers 0..5)
+  // Plus le palier monte, plus on aide. 5 = totalement net.
+  const BLUR_BY_LEVEL = [32, 18, 9, 4, 1, 0];
+  const KEYHOLE_BY_LEVEL = [28, 42, 60, 78, 92, 100];
+  const SILHOUETTE_BRIGHTNESS = [0.22, 0.32, 0.45, 0.6, 0.8, 1];
+  const SILHOUETTE_CONTRAST = [4.2, 3.4, 2.6, 1.8, 1.2, 1];
+  const blurPx = BLUR_BY_LEVEL[revealLevel];
+  const keyholeRadius = KEYHOLE_BY_LEVEL[revealLevel];
+  const sBright = SILHOUETTE_BRIGHTNESS[revealLevel];
+  const sContrast = SILHOUETTE_CONTRAST[revealLevel];
+  const isRevealed = revealLevel >= 5;
 
   const baseImg = (
     <img
@@ -110,11 +115,11 @@ const MysteryFrame: React.FC<Props> = ({ species, photoBy, mode, revealLevel, on
     return (
       <div className="relative w-full h-full overflow-hidden bg-amber-50">
         <motion.div
-          animate={{ scale: revealLevel >= 3 ? 1 : 1.15 }}
+          animate={{ scale: isRevealed ? 1 : 1.12 }}
           transition={{ duration: 8, ease: 'easeInOut' }}
           className="absolute inset-0"
           style={{
-            filter: `blur(${blurPx}px) saturate(${revealLevel >= 3 ? 1 : 1.4})`,
+            filter: `blur(${blurPx}px) saturate(${isRevealed ? 1 : 1.35})`,
             transition: 'filter 0.6s ease-out',
           }}
         >
@@ -130,10 +135,9 @@ const MysteryFrame: React.FC<Props> = ({ species, photoBy, mode, revealLevel, on
         <div
           className="absolute inset-0"
           style={{
-            filter:
-              revealLevel >= 3
-                ? 'none'
-                : `contrast(${revealLevel === 0 ? 4 : 3}) brightness(${revealLevel === 0 ? 0.25 : 0.45}) saturate(0)`,
+            filter: isRevealed
+              ? 'none'
+              : `contrast(${sContrast}) brightness(${sBright}) saturate(${revealLevel >= 3 ? 0.6 : 0})`,
             transition: 'filter 0.6s ease-out',
           }}
         >
@@ -155,18 +159,16 @@ const MysteryFrame: React.FC<Props> = ({ species, photoBy, mode, revealLevel, on
         }}
       />
       <motion.div
-        animate={{ scale: revealLevel >= 3 ? 1 : 1.08 }}
+        animate={{ scale: isRevealed ? 1 : 1.06 }}
         transition={{ duration: 6, ease: 'easeInOut' }}
         className="absolute inset-0"
         style={{
-          WebkitMaskImage:
-            revealLevel >= 3
-              ? 'none'
-              : `radial-gradient(circle at 50% 50%, black ${keyholeRadius}%, transparent ${keyholeRadius + 8}%)`,
-          maskImage:
-            revealLevel >= 3
-              ? 'none'
-              : `radial-gradient(circle at 50% 50%, black ${keyholeRadius}%, transparent ${keyholeRadius + 8}%)`,
+          WebkitMaskImage: isRevealed
+            ? 'none'
+            : `radial-gradient(circle at 50% 50%, black ${keyholeRadius}%, transparent ${keyholeRadius + 8}%)`,
+          maskImage: isRevealed
+            ? 'none'
+            : `radial-gradient(circle at 50% 50%, black ${keyholeRadius}%, transparent ${keyholeRadius + 8}%)`,
           transition: 'all 0.6s ease-out',
         }}
       >

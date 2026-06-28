@@ -9,11 +9,18 @@ import {
   Sparkles,
   Leaf,
   Star,
+  Flag,
 } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { pickWithPhotos, displayName, shuffle, hasPhoto } from './gameUtils';
-import MysteryFrame, { type MysteryMode } from './MysteryFrame';
+import MysteryFrame, { type MysteryMode, type RevealLevel } from './MysteryFrame';
 import WhoAmIOnboarding, { hasSeenWhoAmIOnboarding } from './WhoAmIOnboarding';
+import {
+  getKingdomHint,
+  getInitialHint,
+  getFamilyEcologyHint,
+  getRevealedLettersHint,
+} from './whoAmIHints';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -21,14 +28,28 @@ interface Props {
 }
 
 const MODES: MysteryMode[] = ['blur', 'keyhole', 'silhouette'];
+const MAX_HINTS = 4;
+// Malus cumulés (étoiles soustraites) après n indices : 0, 0.25, 0.5, 0.75, 1
+const MALUS: number[] = [0, 0.25, 0.5, 0.75, 1];
+
+type HintLevel = 0 | 1 | 2 | 3 | 4;
+
+const HINT_LABEL: Record<HintLevel, string> = {
+  0: 'Sans indice — 1 ⭐',
+  1: '1 indice — 0,75 ⭐',
+  2: '2 indices — 0,5 ⭐',
+  3: '3 indices — 0,25 ⭐',
+  4: '4 indices — 0 ⭐',
+};
 
 const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
   const seenOnboarding = hasSeenWhoAmIOnboarding();
   const [showOnboarding, setShowOnboarding] = useState(() => !seenOnboarding);
   const [round, setRound] = useState(0);
   const [score, setScore] = useState({ ok: 0, ko: 0, stars: 0 });
-  const [reveal, setReveal] = useState<null | { correct: boolean; pickedId: string }>(null);
-  const [hintLevel, setHintLevel] = useState<0 | 1 | 2>(0);
+  const [reveal, setReveal] = useState<null | { correct: boolean; pickedId: string; gaveUp?: boolean }>(null);
+  const [hintLevel, setHintLevel] = useState<HintLevel>(0);
+  const [hintToast, setHintToast] = useState<string | null>(null);
   const [confetti, setConfetti] = useState(0);
 
   const eligible = useMemo(
@@ -46,7 +67,15 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
   useEffect(() => {
     setHintLevel(0);
     setReveal(null);
+    setHintToast(null);
   }, [round]);
+
+  // Auto-hide toast indices
+  useEffect(() => {
+    if (!hintToast) return;
+    const t = setTimeout(() => setHintToast(null), 1800);
+    return () => clearTimeout(t);
+  }, [hintToast]);
 
   if (showOnboarding) {
     return (
@@ -76,22 +105,44 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
     if (reveal) return;
     const correct = s.id === target.id;
     setReveal({ correct, pickedId: s.id });
-    const gained = correct ? Math.max(0, 1 - hintLevel * 0.5) : 0;
+    const gained = correct ? Math.max(0, 1 - MALUS[hintLevel]) : 0;
     setScore((sc) => ({
       ok: sc.ok + (correct ? 1 : 0),
       ko: sc.ko + (correct ? 0 : 1),
-      stars: +(sc.stars + gained).toFixed(1),
+      stars: +(sc.stars + gained).toFixed(2),
     }));
     if (correct) setConfetti((n) => n + 1);
-    setTimeout(() => { setRound((r) => r + 1); }, 2000);
+    setTimeout(() => { setRound((r) => r + 1); }, 2200);
   };
 
   const askHint = () => {
     if (reveal) return;
-    setHintLevel((h) => (h < 2 ? ((h + 1) as 0 | 1 | 2) : h));
+    if (hintLevel >= MAX_HINTS) return;
+    const next = (hintLevel + 1) as HintLevel;
+    setHintLevel(next);
+    const toasts = [
+      'Petit coup de pouce 🌱',
+      'On t\'aide encore un peu ✨',
+      'Allez, presque… 🌿',
+      'Dernier indice 🔓',
+    ];
+    setHintToast(toasts[next - 1] ?? 'Indice !');
   };
 
-  const revealLevel = reveal ? 3 : hintLevel;
+  const giveUp = () => {
+    if (reveal) return;
+    setReveal({ correct: false, pickedId: '', gaveUp: true });
+    setScore((sc) => ({ ok: sc.ok, ko: sc.ko + 1, stars: sc.stars }));
+    setTimeout(() => { setRound((r) => r + 1); }, 2800);
+  };
+
+  const revealLevel: RevealLevel = reveal ? 5 : (hintLevel as RevealLevel);
+
+  // Indices texte cumulés selon le palier
+  const kingdomHint = getKingdomHint(target);
+  const initialHint = hintLevel >= 2 ? getInitialHint(target) : null;
+  const familyHint = hintLevel >= 3 ? getFamilyEcologyHint(target) : null;
+  const lettersHint = hintLevel >= 4 ? getRevealedLettersHint(target) : null;
 
   return (
     <div className="relative">
@@ -133,7 +184,7 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {/* Cadre mystère */}
         <div className="relative">
           <motion.div
@@ -142,14 +193,20 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.4 }}
             className={`relative aspect-square rounded-3xl overflow-hidden border-2 ${
-              reveal ? (reveal.correct ? 'border-emerald-500 ring-4 ring-emerald-300/50' : 'border-rose-500 ring-4 ring-rose-300/50') : 'border-[#3B2A1A]/20'
+              reveal
+                ? (reveal.correct
+                    ? 'border-emerald-500 ring-4 ring-emerald-300/50'
+                    : reveal.gaveUp
+                      ? 'border-amber-500 ring-4 ring-amber-300/40'
+                      : 'border-rose-500 ring-4 ring-rose-300/50')
+                : 'border-[#3B2A1A]/20'
             } bg-white shadow-[6px_6px_0_rgba(59,42,26,0.15)]`}
           >
             <MysteryFrame
               species={target}
               photoBy={photoBy}
               mode={mode}
-              revealLevel={revealLevel as 0 | 1 | 2 | 3}
+              revealLevel={revealLevel}
             />
 
             {/* Halo cinématique sur bonne réponse */}
@@ -176,9 +233,26 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
               )}
             </AnimatePresence>
 
+            {/* Toast indice */}
+            <AnimatePresence>
+              {hintToast && (
+                <motion.div
+                  initial={{ y: -10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -10, opacity: 0 }}
+                  className="absolute top-3 right-3 px-3 py-1 rounded-full bg-emerald-200/95 text-emerald-900 border border-emerald-400/50 shadow"
+                  style={{ fontFamily: '"Caveat", cursive', fontSize: 20 }}
+                >
+                  {hintToast}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Badge mode */}
             <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-200/90 text-amber-900 shadow" style={{ fontFamily: '"Caveat", cursive', fontSize: 22 }}>
-              {reveal ? (reveal.correct ? 'Bravo !' : 'Raté…') : 'Qui suis-je ?'}
+              {reveal
+                ? (reveal.correct ? 'Bravo !' : reveal.gaveUp ? 'C\'était…' : 'Raté…')
+                : 'Qui suis-je ?'}
             </div>
 
             {/* Légende révélation */}
@@ -198,28 +272,88 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
             </AnimatePresence>
           </motion.div>
 
-          {/* Indices */}
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <button
-              onClick={askHint}
-              disabled={!!reveal || hintLevel >= 2}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-200 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed text-amber-900 border-2 border-amber-300 shadow-[3px_3px_0_rgba(59,42,26,0.15)]"
-              style={{ fontFamily: '"Caveat", cursive', fontSize: 20 }}
-            >
-              <Lightbulb className="h-4 w-4" /> Donne-moi un indice
-            </button>
-            <span className="text-xs text-[#3B2A1A]/60" style={{ fontFamily: '"Patrick Hand", sans-serif' }}>
-              {hintLevel === 0 && 'Sans indice — 1 ⭐'}
-              {hintLevel === 1 && '1 indice utilisé — 0,5 ⭐'}
-              {hintLevel === 2 && '2 indices — 0 ⭐'}
-            </span>
+          {/* Jauge d'indices segmentée */}
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={askHint}
+                disabled={!!reveal || hintLevel >= MAX_HINTS}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-200 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed text-amber-900 border-2 border-amber-300 shadow-[3px_3px_0_rgba(59,42,26,0.15)]"
+                style={{ fontFamily: '"Caveat", cursive', fontSize: 20 }}
+                title="4 indices possibles — chaque indice te coûte un peu d'étoile"
+              >
+                <Lightbulb className="h-4 w-4" />
+                {hintLevel >= MAX_HINTS ? 'Plus d\'indice…' : 'Donne-moi un indice'}
+              </button>
+
+              {/* Segments 4 crans */}
+              <div className="flex items-center gap-1.5" aria-label="Indices utilisés">
+                {Array.from({ length: MAX_HINTS }).map((_, i) => (
+                  <motion.span
+                    key={i}
+                    animate={{
+                      backgroundColor: i < hintLevel ? '#f59e0b' : 'rgba(180, 140, 80, 0.18)',
+                      scale: i === hintLevel - 1 ? [1, 1.35, 1] : 1,
+                    }}
+                    transition={{ duration: 0.4 }}
+                    className="h-2.5 w-6 rounded-full border border-amber-400/40"
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={giveUp}
+                disabled={!!reveal}
+                className="inline-flex items-center gap-1 text-amber-900 px-2.5 py-1 rounded-full bg-white/70 hover:bg-amber-50 border border-amber-300/50 text-sm disabled:opacity-40"
+                style={{ fontFamily: '"Patrick Hand", sans-serif' }}
+              >
+                <Flag className="h-3.5 w-3.5" /> Ma langue au chat
+              </button>
+            </div>
+            <p className="text-xs text-[#3B2A1A]/60 text-right" style={{ fontFamily: '"Patrick Hand", sans-serif' }}>
+              {HINT_LABEL[hintLevel]}
+            </p>
           </div>
+
+          {/* Cartes d'indices manuscrits cumulés */}
+          <AnimatePresence>
+            {hintLevel >= 1 && !reveal && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-3 space-y-2"
+              >
+                {hintLevel >= 1 && (
+                  <HintCard tint="emerald" icon={kingdomHint.emoji}>
+                    C'est {kingdomHint.label}…
+                  </HintCard>
+                )}
+                {initialHint && (
+                  <HintCard tint="amber" icon="🅿">
+                    Commence par <strong className="text-2xl">« {initialHint.initial} »</strong>
+                    <span className="ml-2 text-[#3B2A1A]/60">{initialHint.pattern}</span>
+                  </HintCard>
+                )}
+                {familyHint && (
+                  <HintCard tint="rose" icon="🌿">
+                    Famille des <em>{familyHint.family}</em> — {familyHint.trait}
+                  </HintCard>
+                )}
+                {lettersHint && (
+                  <HintCard tint="sky" icon="🎯">
+                    <span className="text-2xl tracking-widest">{lettersHint}</span>
+                  </HintCard>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Options */}
         <motion.div
           key={`opts-${round}-${reveal?.correct === false ? 'miss' : 'ok'}`}
-          animate={reveal && !reveal.correct ? { x: [0, -6, 6, -4, 4, 0] } : {}}
+          animate={reveal && !reveal.correct && !reveal.gaveUp ? { x: [0, -6, 6, -4, 4, 0] } : {}}
           transition={{ duration: 0.35 }}
           className="grid grid-cols-2 gap-3"
         >
@@ -251,6 +385,25 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
     </div>
   );
 };
+
+const TINTS: Record<string, string> = {
+  emerald: 'bg-emerald-50 border-emerald-300/60 text-emerald-900',
+  amber: 'bg-amber-50 border-amber-300/60 text-amber-900',
+  rose: 'bg-rose-50 border-rose-300/60 text-rose-900',
+  sky: 'bg-sky-50 border-sky-300/60 text-sky-900',
+};
+
+const HintCard: React.FC<{ tint: keyof typeof TINTS | string; icon: string; children: React.ReactNode }> = ({ tint, icon, children }) => (
+  <motion.div
+    initial={{ opacity: 0, x: -8 }}
+    animate={{ opacity: 1, x: 0 }}
+    className={`relative flex items-start gap-3 px-3 py-2 rounded-2xl border-2 shadow-[3px_3px_0_rgba(59,42,26,0.08)] ${TINTS[tint] ?? TINTS.amber}`}
+    style={{ fontFamily: '"Patrick Hand", sans-serif' }}
+  >
+    <span className="text-2xl leading-none">{icon}</span>
+    <div className="text-base leading-snug pt-0.5">{children}</div>
+  </motion.div>
+);
 
 /** Confettis légers feuilles/étoiles tombant du haut. */
 const Confetti: React.FC = () => {
