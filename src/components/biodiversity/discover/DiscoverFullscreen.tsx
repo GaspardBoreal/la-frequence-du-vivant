@@ -25,15 +25,20 @@ const DiscoverFullscreen: React.FC<Props> = ({ open, onClose, species, filtersLa
   const rootRef = useRef<HTMLDivElement>(null);
   const data = useDiscoverData(species, explorationId);
 
-  // Fullscreen API
+  // Fullscreen API — cible le vrai conteneur Découverte, pas documentElement.
+  // Cela évite les conflits entre l'overlay portalé et les sous-overlays (zoom).
   useEffect(() => {
     if (!open) return;
-    const el = document.documentElement;
+    const el = rootRef.current;
+    if (!el) return;
     if (el.requestFullscreen && !document.fullscreenElement) {
       el.requestFullscreen().catch(() => {/* fallback overlay only */});
     }
     const onFsChange = () => {
       if (!document.fullscreenElement && open) {
+        // Si une lightbox zoom est ouverte, on conserve l'expérience Découvrir :
+        // certains navigateurs sortent du fullscreen au premier Esc/tap système.
+        if (document.querySelector('[data-zoom-lightbox="true"]')) return;
         // user pressed Esc on browser fullscreen — close overlay too
         onClose();
       }
@@ -41,7 +46,7 @@ const DiscoverFullscreen: React.FC<Props> = ({ open, onClose, species, filtersLa
     document.addEventListener('fullscreenchange', onFsChange);
     return () => {
       document.removeEventListener('fullscreenchange', onFsChange);
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      if (document.fullscreenElement === el) document.exitFullscreen().catch(() => {});
     };
   }, [open, onClose]);
 

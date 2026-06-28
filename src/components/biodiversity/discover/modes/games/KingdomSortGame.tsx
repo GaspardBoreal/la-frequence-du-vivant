@@ -53,6 +53,7 @@ const DraggableCard: React.FC<{
       {...attributes}
       {...listeners}
       onClick={(e) => {
+        if ((e.target as HTMLElement).closest('[data-no-dnd="true"]')) return;
         // Only treat as tap when no drag occurred
         e.stopPropagation();
         onTap();
@@ -146,6 +147,7 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
   };
 
   const onDragStart = (e: DragStartEvent) => {
+    if (zoomCard) return;
     setActiveId(String(e.active.id));
     vibrate(10);
   };
