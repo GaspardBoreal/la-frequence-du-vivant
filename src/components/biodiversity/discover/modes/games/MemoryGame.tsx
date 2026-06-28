@@ -18,8 +18,9 @@ const MIN_PAIRS = 3;
 
 const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
   const [round, setRound] = useState(0);
-  const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenMemoryOnboarding());
-  const [started, setStarted] = useState(false);
+  const seenOnboarding = hasSeenMemoryOnboarding();
+  const [showOnboarding, setShowOnboarding] = useState(() => !seenOnboarding);
+  const [started, setStarted] = useState(() => seenOnboarding);
   const [lastMatchLabel, setLastMatchLabel] = useState<string | null>(null);
   const [lastMissShake, setLastMissShake] = useState(0);
 
