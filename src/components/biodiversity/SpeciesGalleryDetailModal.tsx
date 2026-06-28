@@ -30,6 +30,7 @@ import SpeciesTrophicPosition from './species-modal/SpeciesTrophicPosition';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import PhenoCtaButton from '@/components/phenologie/PhenoCtaButton';
+import { highResDetailSrc } from '@/components/biodiversity/discover/modes/games/zoomImageSrc';
 
 interface SpeciesGalleryDetailModalProps {
   /** Minimal identity used for hero + queries. `count` may be exact (Synthèse)
