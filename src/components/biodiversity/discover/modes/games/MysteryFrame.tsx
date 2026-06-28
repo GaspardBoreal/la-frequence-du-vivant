@@ -159,18 +159,16 @@ const MysteryFrame: React.FC<Props> = ({ species, photoBy, mode, revealLevel, on
         }}
       />
       <motion.div
-        animate={{ scale: revealLevel >= 3 ? 1 : 1.08 }}
+        animate={{ scale: isRevealed ? 1 : 1.06 }}
         transition={{ duration: 6, ease: 'easeInOut' }}
         className="absolute inset-0"
         style={{
-          WebkitMaskImage:
-            revealLevel >= 3
-              ? 'none'
-              : `radial-gradient(circle at 50% 50%, black ${keyholeRadius}%, transparent ${keyholeRadius + 8}%)`,
-          maskImage:
-            revealLevel >= 3
-              ? 'none'
-              : `radial-gradient(circle at 50% 50%, black ${keyholeRadius}%, transparent ${keyholeRadius + 8}%)`,
+          WebkitMaskImage: isRevealed
+            ? 'none'
+            : `radial-gradient(circle at 50% 50%, black ${keyholeRadius}%, transparent ${keyholeRadius + 8}%)`,
+          maskImage: isRevealed
+            ? 'none'
+            : `radial-gradient(circle at 50% 50%, black ${keyholeRadius}%, transparent ${keyholeRadius + 8}%)`,
           transition: 'all 0.6s ease-out',
         }}
       >
