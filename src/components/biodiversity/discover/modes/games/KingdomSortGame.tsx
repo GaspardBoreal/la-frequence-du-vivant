@@ -63,6 +63,10 @@ const DraggableCard: React.FC<{
         selected
           ? 'border-amber-500 ring-4 ring-amber-300/70'
           : 'border-[#3B2A1A]/20'
+      className={`group w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 bg-white shadow-[3px_3px_0_rgba(59,42,26,0.15)] relative touch-none select-none ${
+        selected
+          ? 'border-amber-500 ring-4 ring-amber-300/70'
+          : 'border-[#3B2A1A]/20'
       } ${isDragging ? 'opacity-30' : 'cursor-grab active:cursor-grabbing'}`}
       role="button"
       aria-pressed={selected}
@@ -72,6 +76,7 @@ const DraggableCard: React.FC<{
       <div className="absolute bottom-0 inset-x-0 text-[10px] bg-black/55 text-white px-1 py-0.5 truncate text-center pointer-events-none">
         {displayName(s)}
       </div>
+      <ZoomLoupeButton position="top-left" onActivate={onZoom} />
     </motion.div>
   );
 };
