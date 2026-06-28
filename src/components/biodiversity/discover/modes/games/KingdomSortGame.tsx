@@ -59,10 +59,6 @@ const DraggableCard: React.FC<{
       }}
       whileHover={{ scale: 1.03 }}
       animate={selected ? { scale: 1.08, y: -4 } : { scale: 1, y: 0 }}
-      className={`w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 bg-white shadow-[3px_3px_0_rgba(59,42,26,0.15)] relative touch-none select-none ${
-        selected
-          ? 'border-amber-500 ring-4 ring-amber-300/70'
-          : 'border-[#3B2A1A]/20'
       className={`group w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 bg-white shadow-[3px_3px_0_rgba(59,42,26,0.15)] relative touch-none select-none ${
         selected
           ? 'border-amber-500 ring-4 ring-amber-300/70'
