@@ -17,12 +17,13 @@ interface Props {
   onClose: () => void;
   species: BiodiversitySpecies[];
   filtersLabel?: string;
+  explorationId?: string;
 }
 
-const DiscoverFullscreen: React.FC<Props> = ({ open, onClose, species, filtersLabel }) => {
+const DiscoverFullscreen: React.FC<Props> = ({ open, onClose, species, filtersLabel, explorationId }) => {
   const [mode, setMode] = React.useState<DiscoverMode>('hub');
   const rootRef = useRef<HTMLDivElement>(null);
-  const data = useDiscoverData(species);
+  const data = useDiscoverData(species, explorationId);
 
   // Fullscreen API
   useEffect(() => {

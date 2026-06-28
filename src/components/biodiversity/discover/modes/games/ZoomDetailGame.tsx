@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { RotateCw, Check, X } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
-import { pickWithPhotos, photoUrl, displayName, shuffle } from './gameUtils';
+import { pickWithPhotos, displayName, shuffle } from './gameUtils';
+import GameCardImage from './GameCardImage';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -44,8 +45,9 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
         <div className="relative aspect-square rounded-3xl overflow-hidden border-2 border-[#3B2A1A]/20 bg-white shadow-[6px_6px_0_rgba(59,42,26,0.15)]">
-          <img
-            src={photoUrl(target, photoBy)}
+          <GameCardImage
+            species={target}
+            photoBy={photoBy}
             alt="détail"
             className="w-full h-full object-cover"
             style={{ transform: `scale(${zoom.zoomVal})`, transformOrigin: `${zoom.cx}% ${zoom.cy}%`, transition: 'transform 0.6s' }}

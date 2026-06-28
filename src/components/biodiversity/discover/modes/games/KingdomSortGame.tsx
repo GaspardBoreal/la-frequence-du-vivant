@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { RotateCw } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
-import { pickWithPhotos, photoUrl, displayName, shuffle } from './gameUtils';
+import { pickWithPhotos, displayName, shuffle } from './gameUtils';
+import GameCardImage from './GameCardImage';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -59,7 +60,7 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
             whileHover={{ scale: 1.05, rotate: -2 }}
             className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-[#3B2A1A]/20 bg-white shadow-[3px_3px_0_rgba(59,42,26,0.15)] cursor-grab active:cursor-grabbing relative"
           >
-            <img src={photoUrl(s, photoBy)} alt="" className="w-full h-full object-cover" />
+            <GameCardImage species={s} photoBy={photoBy} className="w-full h-full object-cover" />
             <div className="absolute bottom-0 inset-x-0 text-[10px] bg-black/55 text-white px-1 py-0.5 truncate text-center">
               {displayName(s)}
             </div>
@@ -99,7 +100,7 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
                       'border-[#3B2A1A]/20'
                     }`}
                   >
-                    <img src={photoUrl(s, photoBy)} alt="" className="w-full h-full object-cover" />
+                    <GameCardImage species={s} photoBy={photoBy} className="w-full h-full object-cover" />
                   </motion.div>
                 ))}
               </div>

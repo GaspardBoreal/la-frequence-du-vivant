@@ -748,6 +748,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
         open={discoverOpen}
         onClose={() => setDiscoverOpen(false)}
         species={filteredSpecies}
+        explorationId={explorationId}
       />
 
       {/* Category tabs + grid */}
