@@ -4,8 +4,10 @@ import { RotateCw, Check, X } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { pickWithPhotos, displayName, shuffle, photoUrl } from './gameUtils';
 import GameCardImage from './GameCardImage';
+import DetailCropImage from './DetailCropImage';
 import ZoomLoupeButton from './ZoomLoupeButton';
 import ZoomLightbox from './ZoomLightbox';
+import { highResDetailSrc } from './zoomImageSrc';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -51,18 +53,32 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
         <div className="group relative aspect-square rounded-3xl overflow-hidden border-2 border-[#3B2A1A]/20 bg-white shadow-[6px_6px_0_rgba(59,42,26,0.15)]">
-          <GameCardImage
-            species={target}
-            photoBy={photoBy}
-            alt="détail"
-            className="w-full h-full object-cover"
-            style={{ transform: `scale(${zoom.zoomVal})`, transformOrigin: `${zoom.cx}% ${zoom.cy}%`, transition: 'transform 0.6s' }}
-          />
+          {(() => {
+            const url = photoUrl(target, photoBy);
+            return url ? (
+              <DetailCropImage
+                url={url}
+                cx={zoom.cx}
+                cy={zoom.cy}
+                zoom={zoom.zoomVal}
+                alt="détail"
+                className="w-full h-full"
+              />
+            ) : (
+              <GameCardImage
+                species={target}
+                photoBy={photoBy}
+                alt="détail"
+                className="w-full h-full object-cover"
+              />
+            );
+          })()}
           <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-sky-200/90 text-sky-900" style={{ fontFamily: '"Caveat", cursive', fontSize: 22 }}>
             Devine en gros plan
           </div>
           <ZoomLoupeButton onActivate={() => setZoomOpen(true)} alwaysVisible />
         </div>
+
 
         <div className="grid grid-cols-2 gap-3">
           {options.map((o) => {
@@ -96,18 +112,23 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
         renderImage={({ className }) => {
           const url = photoUrl(target, photoBy);
           if (!url) return null;
+          const hr = highResDetailSrc(url) || url;
           // Avant la réponse: on garde le cadrage du détail (anti-spoiler).
           // Après la réponse: image complète.
           return reveal ? (
-            <img src={url} alt={displayName(target)} draggable={false} className={className} />
+            <img src={hr} alt={displayName(target)} draggable={false} className={className} />
           ) : (
             <div className="w-[88vmin] h-[88vmin] max-w-[96vw] max-h-[88dvh] overflow-hidden rounded-2xl">
-              <img
-                src={url}
-                alt="détail"
-                draggable={false}
-                className="w-full h-full object-cover select-none"
-                style={{ transform: `scale(${zoom.zoomVal})`, transformOrigin: `${zoom.cx}% ${zoom.cy}%` }}
+              <div
+                aria-label="détail"
+                role="img"
+                className="w-full h-full select-none"
+                style={{
+                  backgroundImage: `url("${hr}")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: `${zoom.zoomVal * 100}%`,
+                  backgroundPosition: `${zoom.cx}% ${zoom.cy}%`,
+                }}
               />
             </div>
           );
