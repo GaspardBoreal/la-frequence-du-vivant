@@ -228,6 +228,7 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
                 photoBy={photoBy}
                 selected={selectedId === s.id}
                 onTap={() => onTapCard(s)}
+                onZoom={() => setZoomCard(s)}
               />
             ))
           )}
