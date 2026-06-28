@@ -4,7 +4,7 @@ import { Hand, Sparkles, X } from 'lucide-react';
 
 interface Props {
   open: boolean;
-  onClose: () => void;
+  onClose: (dontShowAgain: boolean) => void;
 }
 
 const STORAGE_KEY = 'mdv:kingdom-sort:onboarded';
@@ -50,17 +50,14 @@ const KingdomSortOnboarding: React.FC<Props> = ({ open, onClose }) => {
           >
             <button
               type="button"
-              onClick={() => onClose()}
+              onClick={() => onClose(dontShow)}
               className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/60 hover:bg-white flex items-center justify-center text-[#3B2A1A]/70"
               aria-label="Fermer"
             >
               <X className="w-4 h-4" />
             </button>
 
-            <h2
-              className="text-3xl text-[#3B2A1A] mb-1 text-center"
-              style={{ fontFamily: '"Caveat", cursive' }}
-            >
+            <h2 className="text-3xl text-[#3B2A1A] mb-1 text-center" style={{ fontFamily: '"Caveat", cursive' }}>
               Le Tri du Vivant 🌿
             </h2>
             <p
@@ -103,23 +100,12 @@ const KingdomSortOnboarding: React.FC<Props> = ({ open, onClose }) => {
 
             <button
               type="button"
-              onClick={() => onClose()}
+              onClick={() => onClose(dontShow)}
               className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition shadow-[3px_3px_0_rgba(59,42,26,0.2)]"
               style={{ fontFamily: '"Patrick Hand", cursive', fontSize: 20 }}
-              onClickCapture={() => {
-                /* dontShow handled in parent via close */
-              }}
             >
               C'est parti ! 🌱
             </button>
-            {/* hidden interaction: re-emit close with dontShow flag */}
-            <button
-              type="button"
-              className="sr-only"
-              onClick={() => onClose()}
-              aria-hidden
-            />
-            <span className="hidden">{String(dontShow)}</span>
           </motion.div>
         </motion.div>
       )}
