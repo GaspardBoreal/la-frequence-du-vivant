@@ -40,6 +40,9 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
   const [zoomCard, setZoomCard] = useState<BiodiversitySpecies | null>(null);
 
 
+  // Reset lightbox quand la manche change
+  useEffect(() => { setZoomCard(null); }, [round]);
+
   // Tirage (uniquement quand prêt et non commencé) + re-tirage tant que possible
   useEffect(() => {
     if (availableCount < MIN_PAIRS) {
