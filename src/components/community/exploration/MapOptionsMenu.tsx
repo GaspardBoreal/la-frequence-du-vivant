@@ -10,6 +10,7 @@ import {
   ChevronDown,
   X,
   Check,
+  Target,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
