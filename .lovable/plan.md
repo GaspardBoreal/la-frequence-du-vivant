@@ -1,109 +1,66 @@
+## Objectif
 
-# Mode plein écran Découverte
+Rendre les jeux Enfant (Memory en priorité, puis WhoAmI, KingdomSort, ZoomDetail) robustes pour **toute marche** et **tous filtres** : images systématiquement présentes, dégradation maîtrisée, retour utilisateur clair pendant la résolution.
 
-Nouveau bouton **Découvrir** à droite de Galerie/Liste qui ouvre un overlay plein écran (Fullscreen API) présentant les espèces actuellement filtrées sous 3 modes immersifs. Composant mutualisé, réutilisable sur toutes les grilles d'espèces (Biodiversité de la marche, Apprendre, Carnet…).
+## Stratégie : pipeline photo unifié + cascade de sources
 
-## 1. Architecture
+### 1. Étendre `useDiscoverData` à 3 sources (cascade)
 
-```text
-src/components/biodiversity/discover/
-├── DiscoverFullscreen.tsx        # Overlay racine (Fullscreen API + raccourcis + gestes)
-├── DiscoverModeSelector.tsx      # Hub d'accueil : 3 cartes (Enfant / Immersif / Prospectif)
-├── DiscoverHeader.tsx            # Compteur + filtres actifs (chips) + close
-├── modes/
-│   ├── ImmersiveScreensaver.tsx  # Carrousel 4s, ken-burns + morph
-│   ├── KidsMode.tsx              # Hub 4 mini-jeux dessin main
-│   ├── games/
-│   │   ├── MemoryGame.tsx
-│   │   ├── WhoAmIGame.tsx        # Silhouette → 3 propositions
-│   │   ├── KingdomSortGame.tsx   # DnD Faune/Flore/Champignon
-│   │   └── ZoomDetailGame.tsx    # Chasse aux détails
-│   └── Prospective2100.tsx       # Vue futuriste, 4 statuts + IA on-demand
-└── useDiscoverData.ts            # Adapter species[] + filtres actifs (chips lisibles)
-```
+Ordre de priorité par espèce :
+1. **Photos terrain marcheurs** (`useExplorationFieldPhotos` via `SpeciesPhotoModeContext` quand disponible) — toujours présentes sur la marche en cours, instantanées.
+2. **Cache serveur `species_thumb_cache`** (`useSpeciesThumbs`) — iNat/GBIF.
+3. **`species.photos[0]`** — fallback déjà collé à l'objet.
 
-Bouton d'ouverture : nouveau `<DiscoverButton />` rendu à droite de `<SpeciesViewModeToggle />` dans `SpeciesExplorer.tsx`. Le hook `useDiscoverData` reçoit en props la même liste filtrée déjà calculée pour la Galerie, garantissant l'iso-périmètre.
+Sortie enrichie :
+- `photoBy: Map<sciNameLower, string>` (URL résolue, peu importe la source).
+- `withPhoto: BiodiversitySpecies[]` (espèces dont l'URL existe ET a été testée OK en `Image.onload` lazy, ou présumée OK pour source marcheur).
+- `isLoading`, `resolvedCount`, `totalCount` pour piloter le squelette.
+- `eligibleCount` exposé à `KidsMode` pour ajuster `pairsCount`.
 
-## 2. Hub d'accueil (par défaut)
+### 2. Pré-vérification d'image (optionnel mais robuste)
 
-Au passage en fullscreen, écran de sélection plein écran avec 3 grandes cartes animées :
-- **Enfant** — pictos crayonnés, palette papier/aquarelle
-- **Immersif** — vignette parallaxée live
-- **Prospectif 2100** — gradient nuit + horizon
+Petit utilitaire `preloadImages(urls)` qui résout en parallèle via `new Image()` et filtre les URL cassées (timeout 4 s). Stocké dans un `useRef`-cache pour ne pas re-tester. Cela évite définitivement les vignettes vides.
 
-Compteur "N espèces · filtres : Faune (18), Tous observateurs (4)…" en haut. Raccourcis `1` / `2` / `3` pour choisir, `Esc` pour fermer.
+### 3. `MemoryGame` : adaptatif + fallback visuel
 
-## 3. Mode Immersif — « Screensaver »
+- `pairsCount = Math.min(6, Math.max(3, eligibleCount))` ; si `eligibleCount < 3`, afficher un état vide élégant ("Pas assez de photos pour ce jeu — essayez un autre mode ou élargissez les filtres") avec CTA Retour.
+- Pendant `isLoading` (cache en cours de résolution), afficher un **squelette manuscrit** (8 cartes pulsantes + texte Caveat "On prépare les cartes…").
+- Re-calcul de `cards` quand `withPhoto` change (déjà via deps), mais clamp à `pairsCount` final.
+- Remplacer l'emoji 🌱 du dos par un **SVG inline** (feuille stylisée, couleur ambre) → zéro dépendance police emoji.
+- `<img>` avec `onError` qui marque la carte comme « à remplacer » et déclenche un re-tirage local de la paire (1 fois max) → aucune image cassée visible.
 
-- Une espèce plein écran toutes les **4 s**, fade + ken-burns lent (scale 1 → 1.08).
-- Transition cross-fade 600 ms entre espèces.
-- Overlay bas gauche : nom FR (XXL), latin (italic), famille trophique, mini-pill `iNat`/photo marcheur.
-- Barre de progression fine en bas.
-- `Espace` = pause, `←/→` = naviguer, tap = pause/play (mobile).
-- Lecture randomisée stable (seed = hash des IDs) pour cohérence en pause.
+### 4. Mutualiser dans `gameUtils.ts`
 
-## 4. Mode Enfant — 4 mini-jeux dessin main
+- `pickWithPhotos` accepte une **option** `requireResolved=true` (n'utilise que `withPhoto` pré-validé).
+- `photoUrl` cascade marcheur → cache → `s.photos[0]` → placeholder SVG kingdom (réutiliser le mapping de `SpeciesThumb.tsx`).
+- Exporter un composant `<GameCardImage species photoBy />` qui gère `onError` + skeleton + placeholder, utilisé par les 4 jeux pour fiabiliser tout le mode Enfant.
 
-Look & feel : fond papier crème (#FAF6EC), traits crayon (filter SVG `feTurbulence` léger), font *Caveat* + *Patrick Hand* (via `@fontsource`). Animations bouncy `spring(stiffness 240, damping 18)`.
+### 5. Forcer la résolution batch dès l'ouverture du mode Découverte
 
-Hub présentant 4 vignettes dessinées :
-1. **Memory** — paires photo ↔ nom FR (6/8/12 cartes selon nb espèces), retour 3D, compteur de coups.
-2. **Qui suis-je ?** — silhouette générée par `filter: brightness(0) saturate(100%)` sur la photo + 3 propositions (1 bonne + 2 leurres tirés du même royaume).
-3. **Tri Faune/Flore/Champignon** — drag-and-drop `@dnd-kit` de vignettes vers 3 paniers crayonnés.
-4. **Chasse aux détails** — crop aléatoire 15% de la photo plein écran, zoom progressif, 4 propositions.
+Dans `DiscoverFullscreen`, à l'ouverture, appeler explicitement `supabase.functions.invoke('resolve-species-thumb', { body: { scientific_names: [...] } })` en arrière-plan **par lots de 50** sur toutes les espèces filtrées (pas seulement celles affichées au premier écran). Ainsi quand l'utilisateur choisit "Memory", le cache est déjà chaud. Idempotent et déjà rate-limité côté edge.
 
-Chaque jeu : score, étoiles, bouton "Rejouer" / "Mode suivant". Tire **uniquement** dans la liste filtrée (fallback si <4 espèces : message doux "Élargis tes filtres pour jouer").
+### 6. Indicateur de fraîcheur dans `DiscoverModeSelector`
 
-## 5. Mode Prospectif 2100 — Mixte
-
-Look : nuit profonde `#08111F`, accents `cyan-300/amber-300`, grille horizon, particules lentes.
-
-- Heuristique locale instantanée (`src/lib/prospective2100.ts`) calcule un **statut climat 2100** par espèce parmi 4 : Stable / En recul / Migrante / Nouvelle venue. Règles simples basées sur `iconicTaxon` + famille + tags écologiques déjà en base (ex. lépidoptères thermophiles → Nouvelle venue ; amphibiens → En recul).
-- Affichage : grille bento, chaque carte = photo + halo coloré selon statut + 1 phrase générée par règle ("Le Tircis pourrait gagner du terrain au nord…").
-- Bouton **« Approfondir avec l'IA »** par carte → edge function `prospective-2100-species` (Lovable AI / Gemini Flash), réponse mise en cache dans une table `species_prospective_2100_cache` (scientific_name PK, narrative text, status, generated_at). Lecture publique, écriture service_role.
-- Pas d'appel IA automatique : zéro coût sans clic.
-
-## 6. Interactions transverses
-
-- **Fullscreen browser réel** via `document.documentElement.requestFullscreen()` + fallback overlay z-[2000] si refusé.
-- **Raccourcis clavier** : `Esc` ferme, `1/2/3` switch mode, `←/→` navigue, `Espace` pause, `H` retour hub.
-- **Gestes tactiles** : swipe horizontal = mode suivant/précédent, tap = pause, pinch désactivé hors Immersif.
-- **Filtres actifs** affichés en chips lecture seule en haut ; bouton "Modifier les filtres" ferme l'overlay et rend le focus aux filtres.
-- **A11y** : `role="dialog" aria-modal`, focus trap, `aria-label` sur tous les boutons icônes, `prefers-reduced-motion` coupe ken-burns/parallax.
-
-## 7. Données
-
-Source unique : `species[]` déjà filtré passé en prop (mêmes objets que la Galerie). Photos : réutilise `useSpeciesPhoto` + `SpeciesPhotoModeContext` (priorité marcheur → iNat) pour cohérence avec la Galerie.
-
-## 8. Backend (minimal)
-
-Migration unique :
-```sql
-CREATE TABLE public.species_prospective_2100_cache (
-  scientific_name text PRIMARY KEY,
-  status text NOT NULL,           -- 'stable'|'recul'|'migrante'|'nouvelle'
-  narrative text NOT NULL,
-  generated_at timestamptz NOT NULL DEFAULT now()
-);
-GRANT SELECT ON public.species_prospective_2100_cache TO anon, authenticated;
-GRANT ALL ON public.species_prospective_2100_cache TO service_role;
-ALTER TABLE public.species_prospective_2100_cache ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "read all" ON public.species_prospective_2100_cache FOR SELECT USING (true);
-```
-Edge function `prospective-2100-species` : input `{ scientific_name, common_name, iconic_taxon }`, appelle Lovable AI Gateway (Gemini Flash), upsert dans la table.
-
-## 9. Livraison incrémentale
-
-1. Squelette overlay + hub + bouton + Fullscreen API + raccourcis (sans modes).
-2. Mode Immersif Screensaver.
-3. Mode Prospectif (heuristique locale + cartes), edge function + cache + bouton IA.
-4. Mode Enfant : Memory → Qui suis-je → Tri → Chasse.
-5. Polish gestes tactiles, reduced-motion, fallback <4 espèces.
+Petite pastille sur la carte "Enfant" : `X / 43 photos prêtes`. Met en confiance et explique l'attente initiale.
 
 ## Détails techniques
 
-- Aucun changement aux hooks de données existants ; intégration via props.
-- `framer-motion` (déjà installé) pour transitions / layout / spring. `@dnd-kit` déjà présent pour Tri.
-- Fonts crayon via `@fontsource/caveat` et `@fontsource/patrick-hand` (à ajouter).
-- Tokens couleur Enfant (papier crème, encre, aquarelle) ajoutés dans `index.css` sous `.discover-kids` pour ne pas polluer le thème global.
-- Le composant `DiscoverFullscreen` est strictement présentationnel : tout l'état persiste localement (pas de Context global), garbage-collecté à la fermeture.
+**Fichiers modifiés**
+- `src/components/biodiversity/discover/useDiscoverData.ts` — cascade 3 sources + preload + expose `eligibleCount`.
+- `src/components/biodiversity/discover/modes/games/gameUtils.ts` — options et placeholder kingdom.
+- `src/components/biodiversity/discover/modes/games/GameCardImage.tsx` — **nouveau**, mutualise `onError` + skeleton + placeholder SVG.
+- `src/components/biodiversity/discover/modes/games/MemoryGame.tsx` — pairsCount adaptatif, dos SVG, état vide, squelette.
+- `src/components/biodiversity/discover/modes/games/WhoAmIGame.tsx` — utilise `GameCardImage`.
+- `src/components/biodiversity/discover/modes/games/KingdomSortGame.tsx` — idem.
+- `src/components/biodiversity/discover/modes/games/ZoomDetailGame.tsx` — idem.
+- `src/components/biodiversity/discover/DiscoverFullscreen.tsx` — préchauffage edge function à l'ouverture.
+- `src/components/biodiversity/discover/DiscoverModeSelector.tsx` — pastille "photos prêtes".
+
+**Aucune** modification de schéma / migration / RLS. Aucune nouvelle dépendance.
+
+## Validation
+
+1. Marche POITIERS Maison Sous Blossac (43 espèces) → cache initialement vide → squelette puis ≥6 paires d'images réelles.
+2. Marche sans aucun marcheur_observation (cache uniquement) → fonctionne après préchauffage.
+3. Marche filtrée à 2 espèces → message d'état vide propre, pas de jeu cassé.
+4. Tester WhoAmI/KingdomSort/ZoomDetail sur la même marche → toutes images chargées via `GameCardImage`.
