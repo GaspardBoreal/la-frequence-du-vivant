@@ -81,9 +81,10 @@ const WhoAmIOnboarding: React.FC<Props> = ({ open, onStart }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 text-left text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left text-sm">
               <Rule icon={<Eye className="h-5 w-5 text-amber-800" />} text="Observe la silhouette ou les couleurs" />
-              <Rule icon={<Lightbulb className="h-5 w-5 text-emerald-700" />} text="Clique sur « Indice » si tu sèches" />
+              <Rule icon={<Lightbulb className="h-5 w-5 text-emerald-700" />} text="Jusqu'à 4 indices si tu sèches" />
+              <Rule icon={<Sparkles className="h-5 w-5 text-sky-700" />} text="Chaque indice coûte un peu d'étoile" />
               <Rule icon={<Trophy className="h-5 w-5 text-rose-700" />} text="Gagne en devinant sans aide" />
             </div>
 
