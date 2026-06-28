@@ -212,6 +212,12 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
               mode={mode}
               revealLevel={revealLevel}
             />
+            {/* Loupe : disponible uniquement après la réponse (sinon ce serait tricher) */}
+            {reveal && (
+              <ZoomLoupeButton onActivate={() => setZoomOpen(true)} alwaysVisible />
+            )}
+
+
 
             {/* Halo cinématique sur bonne réponse */}
             <AnimatePresence>
