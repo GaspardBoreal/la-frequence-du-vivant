@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import {
   TransformWrapper,
   TransformComponent,
   useControls,
 } from 'react-zoom-pan-pinch';
 import { Plus, Minus, RotateCcw, X } from 'lucide-react';
+import { safeZoomSrc, computeSafeMaxScale } from './zoomImageSrc';
 
 interface Props {
   open: boolean;
@@ -24,8 +26,8 @@ interface Props {
 
 /**
  * Lightbox plein écran avec zoom/pan tactile + souris (react-zoom-pan-pinch).
- * Reset automatique à chaque ouverture (key sur TransformWrapper).
- * Esc / clic hors / croix / bouton « Revenir au jeu » pour fermer.
+ * Robuste mobile/tablette : source bridée, throttle anti-render-loop,
+ * maxScale calculé selon la taille réelle de l'image, error boundary.
  */
 const ZoomLightbox: React.FC<Props> = ({
   open,
@@ -45,21 +47,30 @@ const ZoomLightbox: React.FC<Props> = ({
     return () => { document.body.style.overflow = prev; };
   }, [open]);
 
+  const safeSrc = useMemo(() => safeZoomSrc(src), [src]);
+  const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-none w-screen h-[100dvh] sm:h-screen p-0 bg-black/90 backdrop-blur-sm border-0 rounded-none sm:rounded-none [&>button]:hidden"
-        onClick={() => onOpenChange(false)}
       >
-        <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-          <ZoomInner
-            src={src}
-            alt={alt}
-            renderImage={renderImage}
-            initialScale={initialScale}
-            onClose={() => onOpenChange(false)}
-          />
-
+        <VisuallyHidden asChild>
+          <DialogTitle>Zoom sur la photo {alt}</DialogTitle>
+        </VisuallyHidden>
+        <div
+          className="relative w-full h-full flex items-center justify-center"
+          onWheel={(e) => e.stopPropagation()}
+        >
+          <ZoomErrorBoundary onError={handleClose}>
+            <ZoomInner
+              src={safeSrc}
+              alt={alt}
+              renderImage={renderImage}
+              initialScale={initialScale}
+              onClose={handleClose}
+            />
+          </ZoomErrorBoundary>
 
           {/* Bandeau légende (top) */}
           {(caption || notice) && (
@@ -81,7 +92,7 @@ const ZoomLightbox: React.FC<Props> = ({
 
           {/* Croix */}
           <button
-            onClick={() => onOpenChange(false)}
+            onClick={handleClose}
             aria-label="Fermer le zoom"
             className="absolute top-3 right-3 z-10 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/85 hover:bg-white text-[#3B2A1A] shadow"
           >
@@ -103,18 +114,45 @@ interface InnerProps {
 
 const ZoomInner: React.FC<InnerProps> = ({ src, alt, renderImage, initialScale, onClose }) => {
   const [scale, setScale] = useState(initialScale);
+  const [maxScale, setMaxScale] = useState(4);
+  const rafRef = useRef<number | null>(null);
+  const lastScaleRef = useRef(initialScale);
+
+  // Throttle onTransform via rAF + delta minimal pour éviter les re-renders
+  // cascade qui gèlent l'UI sur tablette.
+  const handleTransform = useCallback((_ref: any, state: any) => {
+    const next = state.scale as number;
+    if (Math.abs(next - lastScaleRef.current) < 0.05) return;
+    lastScaleRef.current = next;
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      setScale(lastScaleRef.current);
+    });
+  }, []);
+
+  useEffect(() => () => {
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  // Garde-fou dynamique : limite maxScale dès qu'on connaît la taille réelle.
+  const handleImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const nw = e.currentTarget.naturalWidth;
+    setMaxScale(computeSafeMaxScale(nw));
+  }, []);
+
   return (
     <TransformWrapper
       initialScale={initialScale}
       minScale={1}
-      maxScale={5}
+      maxScale={maxScale}
       centerOnInit
-      wheel={{ step: 0.2 }}
+      wheel={{ step: 0.15 }}
       pinch={{ step: 5 }}
-      doubleClick={{ mode: 'toggle', step: 1.8 }}
+      doubleClick={{ mode: 'toggle', step: 2 }}
       limitToBounds
-      panning={{ velocityDisabled: false }}
-      onTransform={(_ref: any, state: any) => setScale(state.scale)}
+      panning={{ velocityDisabled: true }}
+      onTransform={handleTransform}
     >
       <>
         <TransformComponent
@@ -130,6 +168,9 @@ const ZoomInner: React.FC<InnerProps> = ({ src, alt, renderImage, initialScale, 
               src={src}
               alt={alt}
               draggable={false}
+              decoding="async"
+              loading="eager"
+              onLoad={handleImgLoad}
               className="max-w-[96vw] max-h-[88dvh] object-contain select-none"
             />
           ) : null}
@@ -140,7 +181,7 @@ const ZoomInner: React.FC<InnerProps> = ({ src, alt, renderImage, initialScale, 
   );
 };
 
-const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = ({ scale, onClose }) => {
+const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = React.memo(({ scale, onClose }) => {
   const { zoomIn, zoomOut, resetTransform } = useControls();
   const isZoomed = scale > 1.02;
 
@@ -187,6 +228,33 @@ const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = ({ scale, 
       </button>
     </div>
   );
-};
+});
+ZoomToolbar.displayName = 'ZoomToolbar';
+
+/** Error boundary local : si rzpp / TransformComponent plante, on ferme
+ *  proprement la lightbox au lieu de cracher tout l'écran. */
+class ZoomErrorBoundary extends React.Component<
+  { onError: () => void; children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(err: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('[ZoomLightbox] crash interne, fermeture sécurisée', err);
+    // Ferme à la frame suivante pour éviter setState pendant render
+    setTimeout(() => this.props.onError(), 0);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="text-white text-center px-6" style={{ fontFamily: '"Patrick Hand", sans-serif' }}>
+          Impossible d'afficher le zoom — retour au jeu…
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default ZoomLightbox;
