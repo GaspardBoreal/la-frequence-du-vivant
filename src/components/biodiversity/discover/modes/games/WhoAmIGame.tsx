@@ -12,8 +12,10 @@ import {
   Flag,
 } from 'lucide-react';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
-import { pickWithPhotos, displayName, shuffle, hasPhoto } from './gameUtils';
+import { pickWithPhotos, displayName, shuffle, hasPhoto, photoUrl } from './gameUtils';
 import MysteryFrame, { type MysteryMode, type RevealLevel } from './MysteryFrame';
+import ZoomLoupeButton from './ZoomLoupeButton';
+import ZoomLightbox from './ZoomLightbox';
 import WhoAmIOnboarding, { hasSeenWhoAmIOnboarding } from './WhoAmIOnboarding';
 import {
   getKingdomHint,
