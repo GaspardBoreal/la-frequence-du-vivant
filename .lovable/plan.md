@@ -1,66 +1,65 @@
-## Objectif
+## Problème observé
 
-Rendre les jeux Enfant (Memory en priorité, puis WhoAmI, KingdomSort, ZoomDetail) robustes pour **toute marche** et **tous filtres** : images systématiquement présentes, dégradation maîtrisée, retour utilisateur clair pendant la résolution.
+Sur POITIERS Maison Sous Blossac, filtré L2+L3 (7 espèces), le Memory affiche 8 cartes identiques sans aucune consigne. L'utilisateur ne sait ni **ce qu'il doit faire**, ni **pourquoi** les cartes restent fermées.
 
-## Stratégie : pipeline photo unifié + cascade de sources
+Deux causes :
+1. **Aucune règle expliquée** avant de jouer — ni titre, ni objectif, ni exemple visuel.
+2. **Démarrage à froid** : les cartes sont rendues même si les photos ne sont pas encore résolues côté cache, donc cliquer ne révèle qu'un nom ou une image cassée, sans appariement possible.
 
-### 1. Étendre `useDiscoverData` à 3 sources (cascade)
+## Solution : un mini onboarding ludique + un démarrage garanti
 
-Ordre de priorité par espèce :
-1. **Photos terrain marcheurs** (`useExplorationFieldPhotos` via `SpeciesPhotoModeContext` quand disponible) — toujours présentes sur la marche en cours, instantanées.
-2. **Cache serveur `species_thumb_cache`** (`useSpeciesThumbs`) — iNat/GBIF.
-3. **`species.photos[0]`** — fallback déjà collé à l'objet.
+### 1. Écran d'accueil « Règle du jeu » (overlay manuscrit, avant la grille)
 
-Sortie enrichie :
-- `photoBy: Map<sciNameLower, string>` (URL résolue, peu importe la source).
-- `withPhoto: BiodiversitySpecies[]` (espèces dont l'URL existe ET a été testée OK en `Image.onload` lazy, ou présumée OK pour source marcheur).
-- `isLoading`, `resolvedCount`, `totalCount` pour piloter le squelette.
-- `eligibleCount` exposé à `KidsMode` pour ajuster `pairsCount`.
+Plein cadre crème, polices Caveat/Patrick Hand déjà chargées. Trois éléments :
 
-### 2. Pré-vérification d'image (optionnel mais robuste)
+- **Titre** : « Le Memory du Vivant ✿ »
+- **Pitch en une phrase** : « Retrouve la **photo** et le **nom** de chaque espèce de la marche. »
+- **Mini démo animée** (2 cartes côte à côte qui se retournent en boucle) montrant : photo ↔ nom → ✓ paire trouvée.
+- **3 picto-règles** alignées en bas, façon carnet :
+  1. 🃏 Clique sur une carte pour la retourner
+  2. 👀 Trouve la paire photo + nom
+  3. 🌿 Gagne en moins de coups possibles
+- Bouton géant **« C'est parti ! »** (vert sauge, ombre portée manuscrite).
+- Petit lien discret « Ne plus afficher » → mémorisé en `localStorage` (`mdv.memory.onboarding.v1.seen`) pour les sessions suivantes.
 
-Petit utilitaire `preloadImages(urls)` qui résout en parallèle via `new Image()` et filtre les URL cassées (timeout 4 s). Stocké dans un `useRef`-cache pour ne pas re-tester. Cela évite définitivement les vignettes vides.
+### 2. Bandeau de consigne permanent au-dessus de la grille
 
-### 3. `MemoryGame` : adaptatif + fallback visuel
+Une fois le jeu lancé, garder une ligne fine type post-it :
+> ✨ Trouve la **photo** et le **nom** qui vont ensemble — il y a {N} paires à reconstituer.
 
-- `pairsCount = Math.min(6, Math.max(3, eligibleCount))` ; si `eligibleCount < 3`, afficher un état vide élégant ("Pas assez de photos pour ce jeu — essayez un autre mode ou élargissez les filtres") avec CTA Retour.
-- Pendant `isLoading` (cache en cours de résolution), afficher un **squelette manuscrit** (8 cartes pulsantes + texte Caveat "On prépare les cartes…").
-- Re-calcul de `cards` quand `withPhoto` change (déjà via deps), mais clamp à `pairsCount` final.
-- Remplacer l'emoji 🌱 du dos par un **SVG inline** (feuille stylisée, couleur ambre) → zéro dépendance police emoji.
-- `<img>` avec `onError` qui marque la carte comme « à remplacer » et déclenche un re-tirage local de la paire (1 fois max) → aucune image cassée visible.
+Et un bouton discret 🛟 « Revoir la règle » qui rouvre l'overlay.
 
-### 4. Mutualiser dans `gameUtils.ts`
+### 3. Démarrage garanti (fix du « 0/6 paires figé »)
 
-- `pickWithPhotos` accepte une **option** `requireResolved=true` (n'utilise que `withPhoto` pré-validé).
-- `photoUrl` cascade marcheur → cache → `s.photos[0]` → placeholder SVG kingdom (réutiliser le mapping de `SpeciesThumb.tsx`).
-- Exporter un composant `<GameCardImage species photoBy />` qui gère `onError` + skeleton + placeholder, utilisé par les 4 jeux pour fiabiliser tout le mode Enfant.
+- **Bloquer le rendu de la grille** tant que `availableCount < pairsCount` OU que les images ne sont pas pré-chargées (`new Image()` avec timeout 3 s, déjà prévu dans le plan précédent mais non câblé).
+- Pendant ce temps, afficher une **scène de chargement narrative** :  
+  *« Les espèces de la marche enfilent leur costume… 🌱 »* + spinner Caveat + progression `X/N photos prêtes`.
+- Une fois prêt, animation de retournement en cascade des dos de cartes (~600 ms) pour amorcer le geste.
 
-### 5. Forcer la résolution batch dès l'ouverture du mode Découverte
+### 4. Feedback de jeu plus parlant
 
-Dans `DiscoverFullscreen`, à l'ouverture, appeler explicitement `supabase.functions.invoke('resolve-species-thumb', { body: { scientific_names: [...] } })` en arrière-plan **par lots de 50** sur toutes les espèces filtrées (pas seulement celles affichées au premier écran). Ainsi quand l'utilisateur choisit "Memory", le cache est déjà chaud. Idempotent et déjà rate-limité côté edge.
+- À la 1ʳᵉ carte retournée : tooltip Caveat « Maintenant, trouve sa paire ! »
+- Match : confettis discrets + nom de l'espèce affiché 1,5 s en grand (« 🎉 Coccinelle à 7 points ! »).
+- Non-match : léger shake + bulle « Pas cette fois, retiens leur place… ».
+- Fin de partie : écran de victoire avec rappel des 6 espèces apprises (photo + nom + petit fait amusant si déjà en base, sinon juste le nom).
 
-### 6. Indicateur de fraîcheur dans `DiscoverModeSelector`
+### 5. État dégradé honnête
 
-Petite pastille sur la carte "Enfant" : `X / 43 photos prêtes`. Met en confiance et explique l'attente initiale.
+Si après préchauffage `availableCount < 3` (cas filtres ultra-restrictifs) :
+- Écran « Pas assez de photos pour ce jeu ici 🌾 »
+- 2 CTA : « Essayer le jeu **Qui suis-je ?** » et « Élargir les niveaux trophiques ».
 
-## Détails techniques
+## Fichiers touchés
 
-**Fichiers modifiés**
-- `src/components/biodiversity/discover/useDiscoverData.ts` — cascade 3 sources + preload + expose `eligibleCount`.
-- `src/components/biodiversity/discover/modes/games/gameUtils.ts` — options et placeholder kingdom.
-- `src/components/biodiversity/discover/modes/games/GameCardImage.tsx` — **nouveau**, mutualise `onError` + skeleton + placeholder SVG.
-- `src/components/biodiversity/discover/modes/games/MemoryGame.tsx` — pairsCount adaptatif, dos SVG, état vide, squelette.
-- `src/components/biodiversity/discover/modes/games/WhoAmIGame.tsx` — utilise `GameCardImage`.
-- `src/components/biodiversity/discover/modes/games/KingdomSortGame.tsx` — idem.
-- `src/components/biodiversity/discover/modes/games/ZoomDetailGame.tsx` — idem.
-- `src/components/biodiversity/discover/DiscoverFullscreen.tsx` — préchauffage edge function à l'ouverture.
-- `src/components/biodiversity/discover/DiscoverModeSelector.tsx` — pastille "photos prêtes".
+- `src/components/biodiversity/discover/modes/games/MemoryGame.tsx` — overlay onboarding, bandeau consigne, gate de démarrage, animations de feedback, écran de victoire.
+- `src/components/biodiversity/discover/modes/games/MemoryOnboarding.tsx` *(nouveau)* — composant overlay règle + démo animée + persistance localStorage.
+- `src/components/biodiversity/discover/modes/games/MemoryFeedback.tsx` *(nouveau, optionnel)* — toasts manuscrits match / fin de partie.
+- `src/components/biodiversity/discover/useDiscoverData.ts` — exposer `isPhotosWarming` et `resolvedCount` / `totalCount` pour piloter la scène de chargement.
 
-**Aucune** modification de schéma / migration / RLS. Aucune nouvelle dépendance.
+Aucune migration, aucune dépendance nouvelle (framer-motion déjà présent).
 
 ## Validation
 
-1. Marche POITIERS Maison Sous Blossac (43 espèces) → cache initialement vide → squelette puis ≥6 paires d'images réelles.
-2. Marche sans aucun marcheur_observation (cache uniquement) → fonctionne après préchauffage.
-3. Marche filtrée à 2 espèces → message d'état vide propre, pas de jeu cassé.
-4. Tester WhoAmI/KingdomSort/ZoomDetail sur la même marche → toutes images chargées via `GameCardImage`.
+1. POITIERS, L2+L3 (7 espèces) : overlay règle → « C'est parti » → scène de chargement → 6 paires jouables avec vraies photos.
+2. Marche filtrée à 2 espèces : écran dégradé avec CTAs alternatifs, jamais de grille figée.
+3. 2ᵉ visite : overlay sauté grâce au localStorage, bouton « Revoir la règle » fonctionnel.
