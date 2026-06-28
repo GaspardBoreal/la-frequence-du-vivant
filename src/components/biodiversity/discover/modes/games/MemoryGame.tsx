@@ -169,9 +169,11 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
 
       <motion.div
         key={lastMissShake}
-        animate={lastMissShake > 0 ? { x: [0, -6, 6, -4, 4, 0] } : {}}
+        animate={lastMissShake > 0 && !zoomCard ? { x: [0, -6, 6, -4, 4, 0] } : {}}
         transition={{ duration: 0.35 }}
         className="grid grid-cols-3 sm:grid-cols-4 gap-3"
+        style={zoomCard ? { visibility: 'hidden' } : undefined}
+        aria-hidden={zoomCard ? true : undefined}
       >
         {cards.map((c) => {
           const isOpen = flipped.includes(c.id) || matched.has(c.key);
