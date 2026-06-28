@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   TransformWrapper,
   TransformComponent,
   useControls,
-  useTransformContext,
 } from 'react-zoom-pan-pinch';
 import { Plus, Minus, RotateCcw, X } from 'lucide-react';
 
