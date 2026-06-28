@@ -6,12 +6,18 @@ import { photoUrl, displayName } from './gameUtils';
 
 export type MysteryMode = 'blur' | 'keyhole' | 'silhouette' | 'blind';
 
+/**
+ * 0 = mystère total
+ * 1..4 = paliers d'indices (dé-flou progressif généreux)
+ * 5 = révélation totale (bonne/mauvaise réponse OU langue au chat)
+ */
+export type RevealLevel = 0 | 1 | 2 | 3 | 4 | 5;
+
 interface Props {
   species: BiodiversitySpecies;
   photoBy: Map<string, string>;
   mode: MysteryMode;
-  /** 0 = max mystère, 1 = un indice, 2 = deux indices, 3 = révélation totale */
-  revealLevel: 0 | 1 | 2 | 3;
+  revealLevel: RevealLevel;
   onBlindFallback?: () => void;
 }
 
