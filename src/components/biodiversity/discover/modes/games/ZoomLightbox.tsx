@@ -8,6 +8,7 @@ import {
 } from 'react-zoom-pan-pinch';
 import { Plus, Minus, RotateCcw, X } from 'lucide-react';
 import { safeZoomSrc, computeSafeMaxScale } from './zoomImageSrc';
+import { useFullscreenPortalTarget } from './useFullscreenPortalTarget';
 
 interface Props {
   open: boolean;
