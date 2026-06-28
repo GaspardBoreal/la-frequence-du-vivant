@@ -30,6 +30,7 @@ const DiscoverFullscreen: React.FC<Props> = ({ open, onClose, species, filtersLa
   useEffect(() => {
     if (!open) return;
     const el = rootRef.current;
+    if (!el) return;
     if (el.requestFullscreen && !document.fullscreenElement) {
       el.requestFullscreen().catch(() => {/* fallback overlay only */});
     }
