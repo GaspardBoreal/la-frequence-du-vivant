@@ -174,6 +174,19 @@ const MapOptionsMenu: React.FC<MapOptionsMenuProps> = ({
               onToggleLayer('showWaypoints');
             }}
           />
+          <LayerRow
+            icon={<Target className="w-4 h-4" strokeWidth={2.5} />}
+            iconClass="bg-emerald-500/20 border-emerald-400/30 text-emerald-200"
+            label="Rayons d'observation"
+            description={layers.showObservationRadii
+              ? "Zone d'écoute de la biodiversité"
+              : 'Halos masqués (carte épurée)'}
+            checked={layers.showObservationRadii}
+            onCheckedChange={() => {
+              haptic();
+              onToggleLayer('showObservationRadii');
+            }}
+          />
           <WeatherStationsRow
             mode={layers.weatherStations}
             radiusKm={layers.weatherStationsRadius}
