@@ -6,8 +6,6 @@ import MemoryGame from './games/MemoryGame';
 import WhoAmIGame from './games/WhoAmIGame';
 import KingdomSortGame from './games/KingdomSortGame';
 import ZoomDetailGame from './games/ZoomDetailGame';
-import '@fontsource/caveat';
-import '@fontsource/patrick-hand';
 
 interface Props {
   species: BiodiversitySpecies[];
