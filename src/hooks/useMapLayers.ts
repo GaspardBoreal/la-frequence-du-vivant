@@ -6,12 +6,14 @@ export interface MapLayersState {
   weatherStations: WeatherStationsMode;
   weatherStationsRadius: number; // km, 40-100
   showWaypoints: boolean;
+  showObservationRadii: boolean;
 }
 
 const DEFAULTS: MapLayersState = {
   weatherStations: 'off',
   weatherStationsRadius: 60,
   showWaypoints: false,
+  showObservationRadii: true,
 };
 
 const storageKey = (explorationId: string) => `mapLayers:${explorationId}`;
@@ -27,6 +29,7 @@ const migrate = (raw: any): MapLayersState => {
   const r = Number(merged.weatherStationsRadius);
   merged.weatherStationsRadius = Number.isFinite(r) && r >= 20 && r <= 200 ? r : 60;
   merged.showWaypoints = Boolean(merged.showWaypoints);
+  merged.showObservationRadii = merged.showObservationRadii === undefined ? true : Boolean(merged.showObservationRadii);
   return merged as MapLayersState;
 };
 
@@ -100,7 +103,8 @@ export const useMapLayers = (explorationId: string | null | undefined) => {
 
   const activeCount =
     (layers.weatherStations !== 'off' ? 1 : 0) +
-    (layers.showWaypoints ? 1 : 0);
+    (layers.showWaypoints ? 1 : 0) +
+    (layers.showObservationRadii ? 0 : 1);
 
   return {
     layers,

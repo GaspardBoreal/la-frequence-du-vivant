@@ -927,7 +927,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         })}
 
         {/* Radius circles per marche (resolved: marche.radius_m → exploration.default_radius_m → 500m) */}
-        {!hideMarcheMarkers && geoMarches.map((marche) => {
+        {mapLayers.showObservationRadii && !hideMarcheMarkers && geoMarches.map((marche) => {
           const radiusM = resolveMarcheRadiusM(marche.id);
           const isOverride = (marcheRadii?.get(marche.id) ?? null) != null;
           return (
