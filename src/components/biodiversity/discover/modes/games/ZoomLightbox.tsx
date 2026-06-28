@@ -193,6 +193,10 @@ const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = React.memo
     <div
       className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-white/90 backdrop-blur shadow-lg border border-white/60"
       onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerUp={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <button
         onClick={() => zoomOut(0.4)}
