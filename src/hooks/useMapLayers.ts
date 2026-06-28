@@ -6,12 +6,14 @@ export interface MapLayersState {
   weatherStations: WeatherStationsMode;
   weatherStationsRadius: number; // km, 40-100
   showWaypoints: boolean;
+  showObservationRadii: boolean;
 }
 
 const DEFAULTS: MapLayersState = {
   weatherStations: 'off',
   weatherStationsRadius: 60,
   showWaypoints: false,
+  showObservationRadii: true,
 };
 
 const storageKey = (explorationId: string) => `mapLayers:${explorationId}`;
