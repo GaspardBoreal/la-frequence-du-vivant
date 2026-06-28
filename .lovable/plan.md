@@ -1,65 +1,52 @@
-## Problème observé
+## Diagnostic
 
-Sur POITIERS Maison Sous Blossac, filtré L2+L3 (7 espèces), le Memory affiche 8 cartes identiques sans aucune consigne. L'utilisateur ne sait ni **ce qu'il doit faire**, ni **pourquoi** les cartes restent fermées.
+Le carré noir vient du filtre `filter: brightness(0) contrast(1.2)` appliqué sur `GameCardImage` :
+- Sur une photo JPG « pleine » (pas d'alpha), `brightness(0)` peint **tout** le rectangle en noir → il n'y a pas de silhouette lisible, juste un bloc sombre.
+- Si l'image n'a pas pu se résoudre, `GameCardImage` rend une icône Lucide sur fond pastel ; le même filtre éteint tout → carré noir.
+- Aucun fallback visuel quand l'image est en cours de chargement ou indisponible.
 
-Deux causes :
-1. **Aucune règle expliquée** avant de jouer — ni titre, ni objectif, ni exemple visuel.
-2. **Démarrage à froid** : les cartes sont rendues même si les photos ne sont pas encore résolues côté cache, donc cliquer ne révèle qu'un nom ou une image cassée, sans appariement possible.
+Résultat : le joueur ne voit rien à deviner.
 
-## Solution : un mini onboarding ludique + un démarrage garanti
+## Proposition — « Qui suis-je ? » version wahouh
 
-### 1. Écran d'accueil « Règle du jeu » (overlay manuscrit, avant la grille)
+Plutôt qu'une fausse silhouette, je propose un **vrai jeu de révélation progressive** avec 3 modes de mystère sélectionnés automatiquement selon ce qui est disponible pour l'espèce. L'esprit reste manuscrit/papier kraft cohérent avec le Mode Enfant.
 
-Plein cadre crème, polices Caveat/Patrick Hand déjà chargées. Trois éléments :
+### 1. Trois modes de mystère (rotation aléatoire par manche)
 
-- **Titre** : « Le Memory du Vivant ✿ »
-- **Pitch en une phrase** : « Retrouve la **photo** et le **nom** de chaque espèce de la marche. »
-- **Mini démo animée** (2 cartes côte à côte qui se retournent en boucle) montrant : photo ↔ nom → ✓ paire trouvée.
-- **3 picto-règles** alignées en bas, façon carnet :
-  1. 🃏 Clique sur une carte pour la retourner
-  2. 👀 Trouve la paire photo + nom
-  3. 🌿 Gagne en moins de coups possibles
-- Bouton géant **« C'est parti ! »** (vert sauge, ombre portée manuscrite).
-- Petit lien discret « Ne plus afficher » → mémorisé en `localStorage` (`mdv.memory.onboarding.v1.seen`) pour les sessions suivantes.
+- **Mosaïque floutée** (par défaut) : la photo est affichée avec `filter: blur(28px) saturate(1.4)` + léger zoom. On voit les **couleurs et formes générales** sans reconnaître l'espèce. Beau, doux, lisible.
+- **Œil de serrure** : un cercle de 35 % du cadre découpe la photo (clip-path), reste du cadre voilé en kraft. On devine via un détail.
+- **Silhouette véritable** : seulement si la photo a un fond clair détectable (heuristique simple sur premier pixel) ; sinon on retombe sur le mode mosaïque.
 
-### 2. Bandeau de consigne permanent au-dessus de la grille
+### 2. Bouton « 💡 Donne-moi un indice »
 
-Une fois le jeu lancé, garder une ligne fine type post-it :
-> ✨ Trouve la **photo** et le **nom** qui vont ensemble — il y a {N} paires à reconstituer.
+- Premier clic : réduit le flou de 28 → 14 px (ou agrandit l'œil de serrure).
+- Deuxième clic : révèle la 1ʳᵉ lettre du nom + le règne (« 🐦 Oiseau commençant par P… »).
+- Chaque indice utilisé = +0,5 point malus visible (badge « -0,5 ⭐ »).
 
-Et un bouton discret 🛟 « Revoir la règle » qui rouvre l'overlay.
+### 3. Révélation cinématique
 
-### 3. Démarrage garanti (fix du « 0/6 paires figé »)
+- Bonne réponse : l'image se dé-floute sur 600 ms + halo lumineux doré + **confettis Lucide** (étoiles + feuilles tombantes via framer-motion), bannière manuscrite « Bravo ! C'était bien le **Pigeon ramier** 🕊️ ».
+- Mauvaise réponse : secousse légère, le cadre se teinte en rose pâle, on dé-floute aussi pour que le joueur **mémorise** l'espèce avec sa vraie photo, puis carte juste mise en évidence en vert.
 
-- **Bloquer le rendu de la grille** tant que `availableCount < pairsCount` OU que les images ne sont pas pré-chargées (`new Image()` avec timeout 3 s, déjà prévu dans le plan précédent mais non câblé).
-- Pendant ce temps, afficher une **scène de chargement narrative** :  
-  *« Les espèces de la marche enfilent leur costume… 🌱 »* + spinner Caveat + progression `X/N photos prêtes`.
-- Une fois prêt, animation de retournement en cascade des dos de cartes (~600 ms) pour amorcer le geste.
+### 4. États dégradés robustes
 
-### 4. Feedback de jeu plus parlant
+- Si `GameCardImage` n'arrive **pas** à charger la photo (onError → icône Lucide), on bascule **automatiquement** sur un **mode « Devinette aveugle »** : un cadre kraft avec 3 indices manuscrits empilés (règne emoji + taxon + initiale), pour ne jamais montrer un carré noir.
+- Si moins de 4 espèces avec photo : message manuscrit « Pas assez d'espèces… choisis un autre jeu ».
 
-- À la 1ʳᵉ carte retournée : tooltip Caveat « Maintenant, trouve sa paire ! »
-- Match : confettis discrets + nom de l'espèce affiché 1,5 s en grand (« 🎉 Coccinelle à 7 points ! »).
-- Non-match : léger shake + bulle « Pas cette fois, retiens leur place… ».
-- Fin de partie : écran de victoire avec rappel des 6 espèces apprises (photo + nom + petit fait amusant si déjà en base, sinon juste le nom).
+### 5. UX & lisibilité
 
-### 5. État dégradé honnête
+- Bandeau consigne permanent au-dessus : « Devine l'espèce mystère parmi les 4 propositions ».
+- Onboarding optionnel (1ʳᵉ partie, `localStorage`) reprenant le pattern du Memory : démo animée flou → net, 3 règles (Observe, Devine, Découvre).
+- Compteur score remplacé par **badges Lucide** (`CheckCircle2` / `XCircle`) — les emojis ✅/❌ ne rendent pas sur ta machine actuelle (cf. capture).
+- Mini animation Ken-Burns lent sur l'image mystère pour donner du vivant.
 
-Si après préchauffage `availableCount < 3` (cas filtres ultra-restrictifs) :
-- Écran « Pas assez de photos pour ce jeu ici 🌾 »
-- 2 CTA : « Essayer le jeu **Qui suis-je ?** » et « Élargir les niveaux trophiques ».
+## Détails techniques
 
-## Fichiers touchés
+Fichiers touchés :
+- `src/components/biodiversity/discover/modes/games/WhoAmIGame.tsx` : refonte (modes mystère, indices, révélation, états dégradés).
+- `src/components/biodiversity/discover/modes/games/WhoAmIOnboarding.tsx` *(nouveau)* : overlay règle, persistance `localStorage` (`mdv.whoami.onboarding.v1.seen`).
+- `src/components/biodiversity/discover/modes/games/MysteryFrame.tsx` *(nouveau)* : composant cadre mystère qui prend `species`, `photoBy`, `mode` (`'blur' | 'keyhole' | 'silhouette' | 'blind'`), `revealLevel` (0/1/2/3) et gère l'auto-fallback `onError` vers mode aveugle.
+- `src/components/biodiversity/discover/modes/games/GameCardImage.tsx` : exposer `onResolved(success: boolean)` pour permettre l'auto-fallback.
+- Aucune mutation de données, pas de nouvelle requête réseau, pas d'edge function.
 
-- `src/components/biodiversity/discover/modes/games/MemoryGame.tsx` — overlay onboarding, bandeau consigne, gate de démarrage, animations de feedback, écran de victoire.
-- `src/components/biodiversity/discover/modes/games/MemoryOnboarding.tsx` *(nouveau)* — composant overlay règle + démo animée + persistance localStorage.
-- `src/components/biodiversity/discover/modes/games/MemoryFeedback.tsx` *(nouveau, optionnel)* — toasts manuscrits match / fin de partie.
-- `src/components/biodiversity/discover/useDiscoverData.ts` — exposer `isPhotosWarming` et `resolvedCount` / `totalCount` pour piloter la scène de chargement.
-
-Aucune migration, aucune dépendance nouvelle (framer-motion déjà présent).
-
-## Validation
-
-1. POITIERS, L2+L3 (7 espèces) : overlay règle → « C'est parti » → scène de chargement → 6 paires jouables avec vraies photos.
-2. Marche filtrée à 2 espèces : écran dégradé avec CTAs alternatifs, jamais de grille figée.
-3. 2ᵉ visite : overlay sauté grâce au localStorage, bouton « Revoir la règle » fonctionnel.
+Tout reste dans la couche présentation, dans la même direction artistique (Caveat / Patrick Hand, palette papier kraft, ombres décalées).
