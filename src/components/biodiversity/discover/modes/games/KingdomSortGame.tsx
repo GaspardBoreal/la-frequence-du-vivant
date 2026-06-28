@@ -114,7 +114,10 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [zoomCard, setZoomCard] = useState<BiodiversitySpecies | null>(null);
   const onboarding = useKingdomSortOnboarding();
+
+  useEffect(() => { setZoomCard(null); }, [round]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
