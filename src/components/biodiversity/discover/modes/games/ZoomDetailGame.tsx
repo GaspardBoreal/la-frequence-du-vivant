@@ -112,18 +112,23 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
         renderImage={({ className }) => {
           const url = photoUrl(target, photoBy);
           if (!url) return null;
+          const hr = highResDetailSrc(url) || url;
           // Avant la réponse: on garde le cadrage du détail (anti-spoiler).
           // Après la réponse: image complète.
           return reveal ? (
-            <img src={url} alt={displayName(target)} draggable={false} className={className} />
+            <img src={hr} alt={displayName(target)} draggable={false} className={className} />
           ) : (
             <div className="w-[88vmin] h-[88vmin] max-w-[96vw] max-h-[88dvh] overflow-hidden rounded-2xl">
-              <img
-                src={url}
-                alt="détail"
-                draggable={false}
-                className="w-full h-full object-cover select-none"
-                style={{ transform: `scale(${zoom.zoomVal})`, transformOrigin: `${zoom.cx}% ${zoom.cy}%` }}
+              <div
+                aria-label="détail"
+                role="img"
+                className="w-full h-full select-none"
+                style={{
+                  backgroundImage: `url("${hr}")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: `${zoom.zoomVal * 100}%`,
+                  backgroundPosition: `${zoom.cx}% ${zoom.cy}%`,
+                }}
               />
             </div>
           );
