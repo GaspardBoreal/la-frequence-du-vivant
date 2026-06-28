@@ -43,7 +43,8 @@ const DraggableCard: React.FC<{
   photoBy: Map<string, string>;
   selected: boolean;
   onTap: () => void;
-}> = ({ s, photoBy, selected, onTap }) => {
+  onZoom: () => void;
+}> = ({ s, photoBy, selected, onTap, onZoom }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: s.id });
   return (
     <motion.div
