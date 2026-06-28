@@ -53,6 +53,8 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
   const [hintLevel, setHintLevel] = useState<HintLevel>(0);
   const [hintToast, setHintToast] = useState<string | null>(null);
   const [confetti, setConfetti] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  useEffect(() => { setZoomOpen(false); }, [round]);
 
   const eligible = useMemo(
     () => species.filter((s) => hasPhoto(s, photoBy)),
