@@ -359,19 +359,27 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                 />
               )}
 
-              {/* Carnet Phéno BBCH — visible uniquement si l'espèce est une culture suivie */}
-              {species && (
-                <PhenoCtaButton
-                  speciesScientificName={species.scientificName}
-                  explorationId={explorationId ?? null}
-                  photoUrl={
-                    gallerySlides.find((s) => s.source === 'marcheur' || s.source === 'citizen')?.url
-                    ?? gallerySlides[0]?.url
-                    ?? photos[0]
-                    ?? null
-                  }
-                />
-              )}
+              {/* Carnet Phéno BBCH — visible uniquement si l'espèce est une culture suivie.
+                  On choisit la meilleure photo source pour l'IA :
+                    1. Photo marcheur la plus récente (résolution maximale via highResDetailSrc)
+                    2. À défaut, citizen, puis 1ʳᵉ slide, puis 1ʳᵉ photo iNat. */}
+              {species && (() => {
+                const bestSlide =
+                  [...gallerySlides]
+                    .filter((s) => s.source === 'marcheur')
+                    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0]
+                  ?? gallerySlides.find((s) => s.source === 'citizen')
+                  ?? gallerySlides[0];
+                const rawUrl = bestSlide?.url ?? photos[0] ?? null;
+                const aiPhotoUrl = rawUrl ? (highResDetailSrc(rawUrl) ?? rawUrl) : null;
+                return (
+                  <PhenoCtaButton
+                    speciesScientificName={species.scientificName}
+                    explorationId={explorationId ?? null}
+                    photoUrl={aiPhotoUrl}
+                  />
+                );
+              })()}
 
 
 
