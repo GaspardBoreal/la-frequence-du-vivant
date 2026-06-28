@@ -52,40 +52,14 @@ const ZoomLightbox: React.FC<Props> = ({
         onClick={() => onOpenChange(false)}
       >
         <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-          <TransformWrapper
-            key={open ? 'open' : 'closed'}
+          <ZoomInner
+            src={src}
+            alt={alt}
+            renderImage={renderImage}
             initialScale={initialScale}
-            minScale={1}
-            maxScale={5}
-            centerOnInit
-            wheel={{ step: 0.2 }}
-            pinch={{ step: 5 }}
-            doubleClick={{ mode: 'toggle', step: 1.8 }}
-            limitToBounds
-            panning={{ velocityDisabled: false }}
-          >
-            <>
-              <TransformComponent
-                wrapperClass="!w-full !h-full"
-                contentClass="!w-full !h-full flex items-center justify-center"
-              >
-                {renderImage ? (
-                  renderImage({
-                    className: 'max-w-[96vw] max-h-[88dvh] object-contain select-none',
-                  })
-                ) : src ? (
-                  <img
-                    src={src}
-                    alt={alt}
-                    draggable={false}
-                    className="max-w-[96vw] max-h-[88dvh] object-contain select-none"
-                  />
-                ) : null}
-              </TransformComponent>
+            onClose={() => onOpenChange(false)}
+          />
 
-              <ZoomToolbar onClose={() => onOpenChange(false)} />
-            </>
-          </TransformWrapper>
 
           {/* Bandeau légende (top) */}
           {(caption || notice) && (
