@@ -5,7 +5,7 @@ import { useSpeciesThumbs } from '@/hooks/useSpeciesThumb';
 /**
  * Adapter qui résout en batch les vignettes (cache species_thumb_cache) pour
  * la liste d'espèces fournie au mode Découverte. Retourne aussi une map
- * scientificName → url, pratique pour les jeux et le screensaver.
+ * scientificName (lower) → url, pratique pour les jeux et le screensaver.
  */
 export function useDiscoverData(species: BiodiversitySpecies[]) {
   const names = useMemo(
@@ -16,9 +16,11 @@ export function useDiscoverData(species: BiodiversitySpecies[]) {
 
   const photoBy = useMemo(() => {
     const m = new Map<string, string>();
-    const list = thumbs.data ?? [];
-    for (const t of list as Array<{ scientific_name: string; photo_url: string | null }>) {
-      if (t.photo_url) m.set(t.scientific_name.toLowerCase(), t.photo_url);
+    const data = thumbs.data as Map<string, { photo_url: string | null; scientific_name: string }> | undefined;
+    if (data) {
+      data.forEach((row, key) => {
+        if (row?.photo_url) m.set(key.toLowerCase(), row.photo_url);
+      });
     }
     // Fallback : photos déjà attachées à species (marcheur)
     for (const s of species) {
