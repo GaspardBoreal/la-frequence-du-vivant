@@ -50,10 +50,13 @@ const ZoomLightbox: React.FC<Props> = ({
 
   const safeSrc = useMemo(() => safeZoomSrc(src), [src]);
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
+  const portalContainer = useFullscreenPortalTarget();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        container={portalContainer}
+        aria-describedby={undefined}
         className="max-w-none w-screen h-[100dvh] sm:h-screen p-0 bg-black/90 backdrop-blur-sm border-0 rounded-none sm:rounded-none [&>button]:hidden"
       >
         <VisuallyHidden asChild>
