@@ -1,43 +1,56 @@
-# Plan — Indices progressifs enrichis « Qui suis-je ? »
+## Problème
 
-## Constat
-Aujourd'hui le bouton 💡 propose 2 niveaux d'aide (flou 28 → 14 → puis révélation). Sur des espèces complexes (insectes, champignons, plantes proches), 14 px de flou reste trop opaque et le joueur abandonne. Il faut **plus de paliers**, un **dé-floutage plus généreux**, et des **indices narratifs** complémentaires — sans casser l'équilibre du score.
+`KingdomSortGame.tsx` utilise l'API **HTML5 Drag-and-Drop natif** (`draggable`, `onDragStart`, `onDrop`, `dataTransfer`). Cette API **n'émet aucun événement tactile** sur iPad / Android : impossible de déplacer une carte au doigt → jeu bloqué sur tablette et mobile.
 
-## Échelle d'indices — 4 paliers (au lieu de 2)
+## Solution : double interaction (drag tactile + tap-to-place)
 
-| Clic | Mode Flou | Mode Œil de serrure | Mode Silhouette | Indice texte manuscrit ajouté | Malus |
-|---|---|---|---|---|---|
-| 0 (départ) | blur 32 px | trou 28 % | contraste max | — | 0 |
-| 1 💡 | blur 18 px | trou 42 % | contraste -1 cran | 🐦 **Règne** révélé (« C'est un oiseau… ») | −0,25 ⭐ |
-| 2 💡💡 | blur 9 px | trou 60 % | contraste -2 crans | 🅿 **Initiale** + nombre de lettres (« P • • • • • • ») | −0,5 ⭐ |
-| 3 💡💡💡 | blur 4 px | trou 78 % | quasi-net | 🌿 **Famille** + 1 trait d'écologie (« Famille des Columbidés, granivore ») | −0,75 ⭐ |
-| 4 💡💡💡💡 | blur 1 px (quasi-net, juste un voile) | trou 92 % | net | 🎯 **2 lettres masquées remplies** (« P I G E • N ») | −1 ⭐ (≈ aveu d'aide max) |
+Je remplace le drag HTML5 par **`@dnd-kit/core`** (déjà utilisé dans le projet pour le planning CRM, donc zéro nouvelle dépendance) avec **`PointerSensor` + `TouchSensor` + `KeyboardSensor`**, et j'ajoute en parallèle un **mode tap** plus naturel sur écran tactile.
 
-Score final par espèce = max(0, 1 − malus cumulé). Une réussite avec 4 indices vaut donc 0 ⭐ mais reste comptée comme « trouvée » (badge `CheckCircle2` gris au lieu de doré).
+### Interactions supportées
 
-## UX du bouton indice
+1. **Drag fluide tactile/souris** (dnd-kit)
+   - `TouchSensor` avec `activationConstraint: { delay: 120, tolerance: 8 }` → évite de bloquer le scroll vertical accidentel.
+   - `PointerSensor` avec `activationConstraint: { distance: 6 }` pour la souris.
+   - `DragOverlay` qui suit le doigt avec légère rotation + ombre portée (effet "carte qu'on soulève").
+   - Drop zones surlignées (anneau émeraude pulsant) quand une carte survole.
 
-- Bouton 💡 transformé en **jauge segmentée 4 crans** (style barre de vie manuscrite, traits Caveat).
-- Chaque clic remplit un cran, affiche brièvement un **toast manuscrit** (« Petit coup de pouce 🌱 ») et déclenche une **micro-animation** : le voile de flou se rétracte avec un effet « buvard qui sèche ».
-- À l'épuisement (4 indices utilisés), le bouton devient **« 🏳 Je donne ma langue au chat »** → révèle la réponse en mode pédagogique, 0 ⭐, mais affiche une fiche découverte mini (nom + 1 phrase écologique).
-- Tooltip permanent : « 4 indices possibles — chaque indice te coûte un peu d'étoile ».
+2. **Tap-to-place (fallback ludique sur tablette)**
+   - 1ᵉʳ tap sur une carte → elle "se soulève" (scale 1.08 + halo doré + petit "Choisis un règne !" en consigne).
+   - 2ᵉ tap sur une zone Faune/Flore/Champignon → la carte y atterrit avec animation.
+   - Tap ailleurs → déselection.
+   - Géré via un état `selectedId` partagé avec dnd-kit (les deux modes coexistent).
 
-## Indices texte — d'où viennent-ils
+3. **Feedback amélioré**
+   - Vibration haptique courte (`navigator.vibrate?.(15)`) au pickup et au drop si supportée.
+   - Animation `framer-motion` layout déjà en place préservée.
+   - Toast manuscrit "🎉 Bien vu !" / shake rose à l'erreur (cohérent avec Memory & Qui suis-je).
 
-Tous dérivés des champs déjà disponibles dans `BiodiversitySpecies` (kingdom, family, commonName, scientificName) + le mapping règne→emoji déjà présent dans `MysteryFrame`. Aucun appel réseau, aucune nouvelle dépendance.
+### Onboarding bref
 
-Pour le palier 3 (« trait d'écologie »), heuristique locale courte basée sur `family`/`kingdom` (granivore, pollinisateur, saproxylique, héliophile…) avec dictionnaire 20 entrées dans `whoAmIHints.ts`. Fallback générique sinon (« Vit ici, autour de la marche »).
+Petit overlay 1ʳᵉ partie (persistance `localStorage` clé `mdv:kingdom-sort:onboarded`) :
+- Titre manuscrit "Le Tri du Vivant 🌿"
+- 2 picto-règles : "Glisse OU touche puis choisis la maison" / "Faune, Flore, Champignon"
+- Bouton "C'est parti !" + case "Ne plus afficher"
+- Bouton 🛟 "Revoir la règle" dans l'en-tête (comme Memory)
 
-## Fichiers touchés
+### Accessibilité
 
-- `src/components/biodiversity/discover/modes/games/MysteryFrame.tsx` : étendre `revealLevel` de `0|1|2|3` → `0|1|2|3|4|5` (5 = réponse révélée), recalibrer `blurPx` et `keyholeRadius` selon le tableau.
-- `src/components/biodiversity/discover/modes/games/WhoAmIGame.tsx` : 
-  - state `hintLevel` 0..4 + `gaveUp`;
-  - barre segmentée à la place du bouton simple;
-  - calcul du malus dégressif et badge score adapté;
-  - panneau « Indices » affichant la liste cumulée des indices texte déjà débloqués (cartes papier kraft empilées);
-  - état « langue au chat » avec fiche pédagogique.
-- `src/components/biodiversity/discover/modes/games/whoAmIHints.ts` *(nouveau)* : helpers `getKingdomHint`, `getInitialHint`, `getFamilyEcologyHint`, `getRevealedLettersHint` + petit dictionnaire écologie.
-- `src/components/biodiversity/discover/modes/games/WhoAmIOnboarding.tsx` : ajouter une 4ᵉ règle « 4 indices possibles pour les espèces difficiles ».
+- `KeyboardSensor` activé → navigation clavier (Tab + Espace + flèches) pour les lecteurs d'écran et clavier physique sur iPad.
+- Zones de dépôt avec `role="region"` + `aria-label` ("Zone Faune, X cartes placées").
 
-Aucune modification de données, edge function, ni schéma. 100 % présentation, cohérent avec la DA manuscrite (Caveat / Patrick Hand, papier kraft, badges Lucide).
+## Fichiers modifiés / créés
+
+- **Refonte** `src/components/biodiversity/discover/modes/games/KingdomSortGame.tsx`
+  - Migration HTML5 DnD → `@dnd-kit/core` (`DndContext`, `useDraggable`, `useDroppable`, `DragOverlay`).
+  - Ajout état `selectedId` pour le mode tap.
+  - Bandeau consigne permanent + bouton revoir la règle.
+- **Nouveau** `src/components/biodiversity/discover/modes/games/KingdomSortOnboarding.tsx`
+  - Overlay règles cohérent avec `MemoryOnboarding` / `WhoAmIOnboarding`.
+
+Aucune logique métier modifiée : règles du jeu, scoring, rejouer, sélection des espèces inchangés.
+
+## Vérification
+
+- Test manuel dans la preview tablette (1024×768) : drag au doigt OK, scroll page non bloqué, tap-to-place OK.
+- Confirmation que `@dnd-kit/core` est déjà installé (`MissionsPlanning.tsx`) → pas d'install.
+- Aucune régression desktop (souris) : `PointerSensor` couvre.
