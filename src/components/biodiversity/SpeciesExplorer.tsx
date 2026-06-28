@@ -727,10 +727,27 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
             <p className="text-sm text-muted-foreground">
               {filteredSpecies.length} espèce{filteredSpecies.length > 1 ? 's' : ''} trouvée{filteredSpecies.length > 1 ? 's' : ''}
             </p>
-            <SpeciesViewModeToggle />
+            <div className="flex items-center gap-2">
+              <SpeciesViewModeToggle />
+              <button
+                type="button"
+                onClick={() => setDiscoverOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white bg-gradient-to-r from-fuchsia-600 via-violet-600 to-cyan-600 hover:from-fuchsia-500 hover:via-violet-500 hover:to-cyan-500 shadow-sm transition"
+                title="Découvrir en plein écran"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">Découvrir</span>
+              </button>
+            </div>
           </div>
         </div>
       </Card>
+
+      <DiscoverFullscreen
+        open={discoverOpen}
+        onClose={() => setDiscoverOpen(false)}
+        species={filteredSpecies}
+      />
 
       {/* Category tabs + grid */}
       <Tabs value={selectedCategory} onValueChange={v => setSelectedCategory(v)} className="w-full">
