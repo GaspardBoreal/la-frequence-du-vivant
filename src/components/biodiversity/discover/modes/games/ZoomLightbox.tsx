@@ -114,7 +114,7 @@ const ZoomInner: React.FC<InnerProps> = ({ src, alt, renderImage, initialScale, 
       doubleClick={{ mode: 'toggle', step: 1.8 }}
       limitToBounds
       panning={{ velocityDisabled: false }}
-      onTransformed={(_ref: any, state: any) => setScale(state.scale)}
+      onTransform={(_ref: any, state: any) => setScale(state.scale)}
     >
       <>
         <TransformComponent
