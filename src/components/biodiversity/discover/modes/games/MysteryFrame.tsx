@@ -89,18 +89,17 @@ const MysteryFrame: React.FC<Props> = ({ species, photoBy, mode, revealLevel, on
     );
   }
 
-  // Effet visuel selon mode et revealLevel
-  const blurPx =
-    revealLevel >= 3 ? 0 :
-    revealLevel === 2 ? 6 :
-    revealLevel === 1 ? 14 :
-    28;
-
-  const keyholeRadius =
-    revealLevel >= 3 ? 100 :
-    revealLevel === 2 ? 65 :
-    revealLevel === 1 ? 45 :
-    32;
+  // Effet visuel selon mode et revealLevel (paliers 0..5)
+  // Plus le palier monte, plus on aide. 5 = totalement net.
+  const BLUR_BY_LEVEL = [32, 18, 9, 4, 1, 0];
+  const KEYHOLE_BY_LEVEL = [28, 42, 60, 78, 92, 100];
+  const SILHOUETTE_BRIGHTNESS = [0.22, 0.32, 0.45, 0.6, 0.8, 1];
+  const SILHOUETTE_CONTRAST = [4.2, 3.4, 2.6, 1.8, 1.2, 1];
+  const blurPx = BLUR_BY_LEVEL[revealLevel];
+  const keyholeRadius = KEYHOLE_BY_LEVEL[revealLevel];
+  const sBright = SILHOUETTE_BRIGHTNESS[revealLevel];
+  const sContrast = SILHOUETTE_CONTRAST[revealLevel];
+  const isRevealed = revealLevel >= 5;
 
   const baseImg = (
     <img
