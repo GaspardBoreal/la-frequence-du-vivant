@@ -1,0 +1,86 @@
+import React, { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { RotateCw, Check, X } from 'lucide-react';
+import type { BiodiversitySpecies } from '@/types/biodiversity';
+import { pickWithPhotos, photoUrl, displayName, shuffle } from './gameUtils';
+
+interface Props {
+  species: BiodiversitySpecies[];
+  photoBy: Map<string, string>;
+}
+
+const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
+  const [round, setRound] = useState(0);
+  const [score, setScore] = useState({ ok: 0, ko: 0 });
+  const [reveal, setReveal] = useState<null | { correct: boolean; pickedId: string }>(null);
+
+  const { target, options, zoom } = useMemo(() => {
+    const picks = pickWithPhotos(species, photoBy, 4);
+    const t = picks[0];
+    const zoomVal = 2.4 + Math.random() * 1.2;
+    const cx = 25 + Math.random() * 50;
+    const cy = 25 + Math.random() * 50;
+    return { target: t, options: shuffle(picks), zoom: { zoomVal, cx, cy } };
+  }, [species, photoBy, round]);
+
+  if (!target) return null;
+
+  const onPick = (s: BiodiversitySpecies) => {
+    if (reveal) return;
+    const correct = s.id === target.id;
+    setReveal({ correct, pickedId: s.id });
+    setScore((sc) => correct ? { ...sc, ok: sc.ok + 1 } : { ...sc, ko: sc.ko + 1 });
+    setTimeout(() => { setReveal(null); setRound((r) => r + 1); }, 1300);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xl" style={{ fontFamily: '"Caveat", cursive' }}>✅ {score.ok} · ❌ {score.ko}</p>
+        <button onClick={() => { setScore({ ok: 0, ko: 0 }); setRound((r) => r + 1); }} className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50">
+          <RotateCw className="h-4 w-4" /> Recommencer
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div className="relative aspect-square rounded-3xl overflow-hidden border-2 border-[#3B2A1A]/20 bg-white shadow-[6px_6px_0_rgba(59,42,26,0.15)]">
+          <img
+            src={photoUrl(target, photoBy)}
+            alt="détail"
+            className="w-full h-full object-cover"
+            style={{ transform: `scale(${zoom.zoomVal})`, transformOrigin: `${zoom.cx}% ${zoom.cy}%`, transition: 'transform 0.6s' }}
+          />
+          <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-sky-200/90 text-sky-900" style={{ fontFamily: '"Caveat", cursive', fontSize: 22 }}>
+            Devine en gros plan
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {options.map((o) => {
+            const picked = reveal?.pickedId === o.id;
+            const isTarget = o.id === target.id;
+            return (
+              <motion.button
+                key={o.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => onPick(o)}
+                className={`relative rounded-2xl p-4 border-2 text-left transition ${
+                  reveal && isTarget ? 'bg-emerald-200 border-emerald-700/30' :
+                  picked && !reveal?.correct ? 'bg-rose-200 border-rose-700/30' :
+                  'bg-white border-[#3B2A1A]/15 hover:bg-amber-50'
+                } shadow-[3px_3px_0_rgba(59,42,26,0.12)]`}
+              >
+                <p className="text-2xl text-[#3B2A1A]" style={{ fontFamily: '"Caveat", cursive', fontWeight: 700 }}>{displayName(o)}</p>
+                <p className="italic text-sm text-[#3B2A1A]/60">{o.scientificName}</p>
+                {reveal && isTarget && <Check className="absolute top-2 right-2 h-5 w-5 text-emerald-700" />}
+                {picked && !reveal?.correct && <X className="absolute top-2 right-2 h-5 w-5 text-rose-700" />}
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ZoomDetailGame;
