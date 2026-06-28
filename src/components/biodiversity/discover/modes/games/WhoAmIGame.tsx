@@ -392,6 +392,14 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
           })}
         </motion.div>
       </div>
+
+      <ZoomLightbox
+        open={zoomOpen}
+        onOpenChange={setZoomOpen}
+        src={photoUrl(target, photoBy)}
+        alt={displayName(target)}
+        caption={<>{displayName(target)} <em className="opacity-75 text-base">({target.scientificName})</em></>}
+      />
     </div>
   );
 };
