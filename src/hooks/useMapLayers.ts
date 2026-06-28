@@ -103,7 +103,8 @@ export const useMapLayers = (explorationId: string | null | undefined) => {
 
   const activeCount =
     (layers.weatherStations !== 'off' ? 1 : 0) +
-    (layers.showWaypoints ? 1 : 0);
+    (layers.showWaypoints ? 1 : 0) +
+    (layers.showObservationRadii ? 0 : 1);
 
   return {
     layers,
