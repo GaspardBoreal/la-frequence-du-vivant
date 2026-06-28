@@ -16,6 +16,10 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
   const [round, setRound] = useState(0);
   const [score, setScore] = useState({ ok: 0, ko: 0 });
   const [reveal, setReveal] = useState<null | { correct: boolean; pickedId: string }>(null);
+  const [zoomOpen, setZoomOpen] = useState(false);
+
+  // Reset lightbox à chaque nouvelle manche
+  useEffect(() => { setZoomOpen(false); }, [round]);
 
   const { target, options, zoom } = useMemo(() => {
     const picks = pickWithPhotos(species, photoBy, 4);
