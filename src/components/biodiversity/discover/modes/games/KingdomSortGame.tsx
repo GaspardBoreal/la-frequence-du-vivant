@@ -297,6 +297,14 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ZoomLightbox
+        open={!!zoomCard}
+        onOpenChange={(o) => { if (!o) setZoomCard(null); }}
+        src={zoomCard ? photoUrl(zoomCard, photoBy) : undefined}
+        alt={zoomCard ? displayName(zoomCard) : ''}
+        caption={zoomCard ? <>{displayName(zoomCard)} <em className="opacity-75 text-base">({zoomCard.scientificName})</em></> : null}
+      />
     </div>
   );
 };
