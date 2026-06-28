@@ -115,11 +115,11 @@ const MysteryFrame: React.FC<Props> = ({ species, photoBy, mode, revealLevel, on
     return (
       <div className="relative w-full h-full overflow-hidden bg-amber-50">
         <motion.div
-          animate={{ scale: revealLevel >= 3 ? 1 : 1.15 }}
+          animate={{ scale: isRevealed ? 1 : 1.12 }}
           transition={{ duration: 8, ease: 'easeInOut' }}
           className="absolute inset-0"
           style={{
-            filter: `blur(${blurPx}px) saturate(${revealLevel >= 3 ? 1 : 1.4})`,
+            filter: `blur(${blurPx}px) saturate(${isRevealed ? 1 : 1.35})`,
             transition: 'filter 0.6s ease-out',
           }}
         >
@@ -135,10 +135,9 @@ const MysteryFrame: React.FC<Props> = ({ species, photoBy, mode, revealLevel, on
         <div
           className="absolute inset-0"
           style={{
-            filter:
-              revealLevel >= 3
-                ? 'none'
-                : `contrast(${revealLevel === 0 ? 4 : 3}) brightness(${revealLevel === 0 ? 0.25 : 0.45}) saturate(0)`,
+            filter: isRevealed
+              ? 'none'
+              : `contrast(${sContrast}) brightness(${sBright}) saturate(${revealLevel >= 3 ? 0.6 : 0})`,
             transition: 'filter 0.6s ease-out',
           }}
         >
