@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCw, LifeBuoy } from 'lucide-react';
 import {
@@ -15,9 +15,11 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
-import { pickWithPhotos, displayName, shuffle } from './gameUtils';
+import { pickWithPhotos, displayName, shuffle, photoUrl } from './gameUtils';
 import GameCardImage from './GameCardImage';
 import KingdomSortOnboarding, { useKingdomSortOnboarding } from './KingdomSortOnboarding';
+import ZoomLoupeButton from './ZoomLoupeButton';
+import ZoomLightbox from './ZoomLightbox';
 
 interface Props {
   species: BiodiversitySpecies[];
