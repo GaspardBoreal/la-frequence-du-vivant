@@ -121,10 +121,10 @@ const ZoomLightbox: React.FC<Props> = ({
 
         {/* Croix */}
         <button
-          onPointerDown={stopZoomEvent}
-          onPointerUp={stopZoomEvent}
-          onMouseDown={stopZoomEvent}
-          onTouchStart={stopZoomEvent}
+          onPointerDown={stopZoomPropagation}
+          onPointerUp={stopZoomPropagation}
+          onMouseDown={stopZoomPropagation}
+          onTouchStart={stopZoomPropagation}
           onClick={(event) => {
             stopZoomEvent(event);
             handleClose();
@@ -233,11 +233,11 @@ const ZoomToolbar: React.FC<{ scale: number; onClose: () => void }> = React.memo
   return (
     <div
       className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-white/90 backdrop-blur shadow-lg border border-white/60"
-      onClick={stopZoomEvent}
-      onPointerDown={stopZoomEvent}
-      onPointerUp={stopZoomEvent}
-      onMouseDown={stopZoomEvent}
-      onTouchStart={stopZoomEvent}
+      onClick={stopZoomPropagation}
+      onPointerDown={stopZoomPropagation}
+      onPointerUp={stopZoomPropagation}
+      onMouseDown={stopZoomPropagation}
+      onTouchStart={stopZoomPropagation}
     >
       <button
         onClick={(event) => {
