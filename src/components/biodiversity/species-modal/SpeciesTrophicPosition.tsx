@@ -6,7 +6,7 @@ import { getLevelMeta } from '@/lib/trophicClassification';
 import { ConstellationTab } from '@/components/community/synthese/trophic/ConstellationTab';
 import { SpiraleTab } from '@/components/community/synthese/trophic/SpiraleTab';
 import { ReseauTab } from '@/components/community/synthese/trophic/ReseauTab';
-import { TrophicFullscreenModal, type TrophicViewKey } from './trophic-fullscreen/TrophicFullscreenModal';
+import { useTrophicFullscreen } from './trophic-fullscreen/TrophicFullscreenProvider';
 import { TrophicSourceBadge } from '@/components/biodiversity/trophic/TrophicSourceBadge';
 
 interface Props {
@@ -30,11 +30,14 @@ export const SpeciesTrophicPosition: React.FC<Props> = ({ scientificName, common
     [chain.stars, scientificName],
   );
   const [view, setView] = useState<ViewKey>('constellation');
-  const [expanded, setExpanded] = useState(false);
+  const { open: openTrophicFullscreen } = useTrophicFullscreen();
 
   if (!star) return null;
   const meta = getLevelMeta(star.group);
   if (!meta) return null;
+
+  const expand = () =>
+    openTrophicFullscreen({ scientificName, commonName, speciesPool, initialView: view });
 
   const renderView = (key: ViewKey, compact: boolean) => {
     const common = {
@@ -99,14 +102,10 @@ export const SpeciesTrophicPosition: React.FC<Props> = ({ scientificName, common
         })}
       </div>
 
-      {/* Mini stage — tap to expand */}
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        className="group relative block w-full overflow-hidden rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
-        aria-label="Agrandir la vue trophique"
-      >
-        <div className="max-h-[280px] overflow-hidden">
+      {/* Mini stage — click background or pill to expand. NOT a <button> to avoid nesting inner buttons. */}
+      <div className="group relative overflow-hidden rounded-xl border border-white/10">
+        {/* Content layer (interactive controls inside stay clickable) */}
+        <div className="relative z-[1] max-h-[280px] overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={view}
@@ -119,26 +118,32 @@ export const SpeciesTrophicPosition: React.FC<Props> = ({ scientificName, common
             </motion.div>
           </AnimatePresence>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full bg-white/15 backdrop-blur text-white">
-          <Maximize2 className="w-3 h-3" />
-          Agrandir
-        </div>
-        <div className="pointer-events-none absolute bottom-2 left-2 text-[10px] text-white/70">
+
+        {/* Background click-to-expand layer (sits behind content but catches empty-space taps) */}
+        <button
+          type="button"
+          onClick={expand}
+          aria-label="Agrandir la vue trophique"
+          className="absolute inset-0 z-0 cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-emerald-400/60 rounded-xl"
+        />
+
+        {/* Gradient + hint (decorative) */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/60 to-transparent z-[2]" />
+        <div className="pointer-events-none absolute bottom-2 left-2 text-[10px] text-white/70 z-[2]">
           {VIEWS.find((v) => v.key === view)?.hint}
         </div>
-      </button>
 
-      {/* Fullscreen modal */}
-      <TrophicFullscreenModal
-        open={expanded}
-        onOpenChange={setExpanded}
-        scientificName={scientificName}
-        commonName={commonName}
-        chain={chain}
-        speciesPool={speciesPool as any}
-        initialView={view as TrophicViewKey}
-      />
+        {/* Real "Agrandir" pill button */}
+        <button
+          type="button"
+          onClick={expand}
+          aria-label="Ouvrir la vue trophique en grand"
+          className="absolute bottom-2 right-2 z-[3] inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur text-white transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
+        >
+          <Maximize2 className="w-3 h-3" />
+          Agrandir
+        </button>
+      </div>
     </div>
   );
 };

@@ -102,6 +102,9 @@ import AgentIA from './pages/AgentIA';
 import AgentIAFiche from './pages/AgentIAFiche';
 import InterregSudoeMdv from './pages/InterregSudoeMdv';
 import ApprendreMarchePage from './pages/ApprendreMarchePage';
+import { TrophicFullscreenProvider } from './components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider';
+
+
 
 
 function App() {
@@ -112,7 +115,9 @@ function App() {
         <LanguageProvider>
           <AudioProvider>
             <BrowserRouter>
+            <TrophicFullscreenProvider>
           <Routes>
+
             <Route path="/" element={<Index />} />
             <Route path="/agent-ia" element={<AgentIA />} />
             <Route path="/agent-ia/fiche" element={<AgentIAFiche />} />
@@ -337,8 +342,10 @@ function App() {
           <AdhesionFab />
           <Toaster position="top-right" />
 
+            </TrophicFullscreenProvider>
             </BrowserRouter>
           </AudioProvider>
+
         </LanguageProvider>
         </ThemeProvider>
       </AuthProvider>
