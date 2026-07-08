@@ -33,6 +33,16 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
     return { target: t, options: shuffle(picks), zoom: { zoomVal, cx, cy } };
   }, [species, photoBy, round]);
 
+  useGameToolbar(
+    <button
+      onClick={() => { setScore({ ok: 0, ko: 0 }); setRound((r) => r + 1); }}
+      className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+    >
+      <RotateCw className="h-4 w-4" /> Recommencer
+    </button>,
+    [],
+  );
+
   if (!target) return null;
 
   const onPick = (s: BiodiversitySpecies) => {
@@ -43,16 +53,6 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
     setTimeout(() => { setReveal(null); setRound((r) => r + 1); }, 1300);
   };
 
-  const resetAll = () => { setScore({ ok: 0, ko: 0 }); setRound((r) => r + 1); };
-  useGameToolbar(
-    <button
-      onClick={resetAll}
-      className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
-    >
-      <RotateCw className="h-4 w-4" /> Recommencer
-    </button>,
-    [],
-  );
 
   return (
     <div>
