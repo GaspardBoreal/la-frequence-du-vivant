@@ -27,6 +27,8 @@ import SpeciesObserversTab from './species-modal/SpeciesObserversTab';
 import SpeciesPhotoCarousel, { type CarouselSlide } from './species-modal/SpeciesPhotoCarousel';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import SpeciesTrophicPosition from './species-modal/SpeciesTrophicPosition';
+import { TrophicFullscreenProvider } from './species-modal/trophic-fullscreen/TrophicFullscreenProvider';
+
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import PhenoCtaButton from '@/components/phenologie/PhenoCtaButton';
@@ -301,7 +303,9 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
               : 'bg-slate-900/98 backdrop-blur-xl border-white/10 text-white p-0 gap-0 w-full sm:!max-w-[620px] h-full flex flex-col overflow-hidden [&>button]:top-3 [&>button]:right-3 [&>button]:z-20 [&>button]:flex [&>button]:h-10 [&>button]:w-10 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:border [&>button]:border-white/15 [&>button]:bg-black/55 [&>button]:p-0 [&>button]:text-white [&>button]:opacity-100 [&>button]:shadow-lg [&>button]:backdrop-blur-md hover:[&>button]:bg-black/70 focus-visible:[&>button]:ring-2 focus-visible:[&>button]:ring-white/40 [&>button_svg]:shrink-0 [&>button_svg]:h-4.5 [&>button_svg]:w-4.5 [&>button_svg]:text-white'
           }
         >
+          <TrophicFullscreenProvider>
           {/* Accessible title (hidden) */}
+
           <VisuallyHidden.Root asChild>
             <SheetTitle>Détails de l'espèce {species.scientificName}</SheetTitle>
           </VisuallyHidden.Root>
@@ -500,8 +504,11 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
               </Button>
             </div>
           )}
+          </TrophicFullscreenProvider>
         </SheetContent>
       </Sheet>
+
+
 
       {/* Lightbox - rendered in portal to avoid z-index conflicts */}
       {showLightbox && hasPhoto && createPortal(
