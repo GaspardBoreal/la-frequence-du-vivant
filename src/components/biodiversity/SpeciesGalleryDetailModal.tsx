@@ -27,6 +27,8 @@ import SpeciesObserversTab from './species-modal/SpeciesObserversTab';
 import SpeciesPhotoCarousel, { type CarouselSlide } from './species-modal/SpeciesPhotoCarousel';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import SpeciesTrophicPosition from './species-modal/SpeciesTrophicPosition';
+import { TrophicFullscreenProvider } from './species-modal/trophic-fullscreen/TrophicFullscreenProvider';
+
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import PhenoCtaButton from '@/components/phenologie/PhenoCtaButton';
