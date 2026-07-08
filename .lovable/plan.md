@@ -1,62 +1,39 @@
-# Fix "Agrandir" + vue trophique fullscreen réutilisable
+# Fix : fullscreen trophique invisible quand ouverte depuis un Sheet/Dialog parent
 
-## 1. Corriger le bug de clic
+## Cause
 
-**Fichier : `src/components/biodiversity/species-modal/SpeciesTrophicPosition.tsx`**
+`TrophicFullscreenProvider` est monté à la racine `App` → sa `Dialog.Portal` est frère du Sheet parent dans le DOM, pas descendant React. Radix applique `hideOthers()` et le focus trap du Sheet sur la fullscreen, et les z-index `z-50` se marchent dessus.
 
-- Remplacer le `<button onClick={() => setExpanded(true)}>` englobant la mini-scène par un `<div className="group relative …">` — plus de `<button>` parent, plus de hoisting HTML.
-- Ajouter un vrai `<button type="button">` **pastille "Agrandir"** positionnée en absolute, `pointer-events-auto`, `z-10`, focus ring, aria-label. C'est ce bouton qui appelle `openTrophicFullscreen(...)`.
-- Ajouter en parallèle un calque cliquable transparent (`absolute inset-0 z-0`) derrière le contenu de la mini-scène pour permettre "tap n'importe où sur le fond" → même action. Le contenu interactif (chips zoom, nœuds) reste au-dessus (`relative z-[1]`) et conserve ses propres interactions.
-- Garder le dégradé bas + hint (`pointer-events-none`), inchangé visuellement.
+## Solution (2 volets)
 
-## 2. Rendre la fullscreen appelable depuis n'importe où
+### A. Monter un provider imbriqué à l'intérieur du Sheet parent
 
-Aujourd'hui `TrophicFullscreenModal` est monté localement dans `SpeciesTrophicPosition`. On extrait ça en **singleton global** pour que la Carte, le drawer espèce (Liste/Carte/Observateurs), Analyse IA, ou tout futur point d'appel puissent l'ouvrir sans re-monter le state.
+**`src/components/biodiversity/SpeciesGalleryDetailModal.tsx`**
+- Importer `TrophicFullscreenProvider`.
+- Wrapper le contenu de `<SheetContent>` avec `<TrophicFullscreenProvider>{...}</TrophicFullscreenProvider>`.
+- Le `useTrophicFullscreen()` de `SpeciesTrophicPosition` (via context) résout alors le provider **le plus proche** (imbriqué), qui monte sa `Dialog.Root` en descendant React du Sheet → Radix reconnaît le nested dialog, désactive proprement le focus trap parent, ne marque plus la fullscreen inerte.
 
-**Nouveau fichier : `src/components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider.tsx`**
+Le provider racine dans `App.tsx` reste en place pour tous les autres points d'appel (Carte, Analyse IA, chatbot…) où aucun Sheet parent n'est ouvert.
 
-- `TrophicFullscreenProvider` : mounted haut niveau (dans `App.tsx` ou juste dans `MonEspaceLayout` pour scoper).
-- Context expose :
-  ```ts
-  openTrophicFullscreen({
-    scientificName: string,
-    commonName?: string | null,
-    speciesPool: TrophicSpeciesInput[],
-    initialView?: 'constellation' | 'spirale' | 'reseau',
-  })
-  closeTrophicFullscreen()
-  ```
-- Le provider monte un unique `<TrophicFullscreenModal open={…} …/>` alimenté par le state courant. `chain` est recalculé via `useTrophicChain(speciesPool)` à l'intérieur (déjà mémoïsé).
-- Hook `useTrophicFullscreen()` = raccourci `useContext(...)` + garde d'erreur claire.
+### B. Empilement au-dessus du Sheet
 
-**Fichier : `src/App.tsx`** (ou racine adéquate)
-- Wrapper l'arbre avec `<TrophicFullscreenProvider>` (au même niveau que `TooltipProvider` / `QueryClientProvider`).
+**`src/components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenModal.tsx`**
+- Passer overlay + content de `z-50` → **`z-[60]`** (Sheet reste à `z-50`). Garantit un rendu au-dessus même si l'ordre DOM change.
 
-**Fichier : `SpeciesTrophicPosition.tsx`**
-- Supprimer `useState(expanded)` et le montage local de `<TrophicFullscreenModal>`.
-- La pastille + calque appellent `openTrophicFullscreen({ scientificName, commonName, speciesPool, initialView: view })`.
+### C. Micro-hardening du bouton Agrandir (facultatif mais utile)
 
-## 3. Points d'appel additionnels (préparés, non ajoutés en dur)
-
-Pour que l'usage soit trivial ailleurs, on documente le pattern dans un mini `README` du dossier `trophic-fullscreen/` :
-
-```tsx
-const { open } = useTrophicFullscreen();
-<button onClick={() => open({ scientificName, speciesPool, initialView: 'reseau' })}>
-  Voir la chaîne trophique
-</button>
-```
-
-Aucun autre écran n'est modifié dans ce lot — le refactor rend simplement l'appel possible en 2 lignes partout (species drawer, carte, Analyse IA `TrophicChainPanel`, chatbot, etc.).
-
-## Détails techniques
-
-- **Zéro régression visuelle** : la mini-scène garde exactement le même rendu (border, gradient, hint, pastille).
-- **A11y** : la pastille devient un vrai `<button>` focusable, `aria-label="Ouvrir la vue trophique en grand"`. Le calque de fond est un `<button>` sr-only-labelled équivalent (`aria-label="Agrandir la vue"`) pour rester utilisable au tap.
-- **Perf** : `speciesPool` peut être volumineux. Le provider ne recalcule `useTrophicChain` que quand un pool est réellement ouvert (state `null` sinon → early return, pas de hook conditionnel : on encapsule dans un sous-composant `<TrophicFullscreenHost pool state />` monté uniquement quand `state !== null`).
-- **Typechecks** : `TrophicViewKey` déjà exporté par `TrophicFullscreenModal`, réutilisé par le provider.
+**`src/components/biodiversity/species-modal/SpeciesTrophicPosition.tsx`**
+- Sur les deux boutons `expand()` (pastille + calque), ajouter `onPointerDown={(e) => e.stopPropagation()}` pour éviter qu'un handler `onPointerDownOutside` d'un ancêtre Radix ne consomme l'événement.
 
 ## Vérification
 
-- Après édition : `tsgo` puis test manuel sur `/mon-espace/exploration/:id` → drawer espèce → clic sur pastille "Agrandir" **et** clic sur zone vide de la constellation → fullscreen s'ouvre avec la bonne vue (constellation / spirale / réseau) préservée.
-- Vérifier que les +/‑ zoom internes fonctionnent toujours (pas de propagation vers le calque).
+1. `tsgo` OK.
+2. Playwright headless : ouvrir `/marches-du-vivant/mon-espace/exploration/:id`, ouvrir un drawer espèce, cliquer sur la pastille « Agrandir » de la mini-scène, screenshot → l'overlay noir de la fullscreen doit couvrir toute la fenêtre avec Constellation/Spirale/Réseau visible en haut.
+3. Vérifier que fermer la fullscreen ne ferme pas le drawer espèce parent (nested dialog OK).
+4. Vérifier depuis un point d'appel hors drawer (pastille dans Analyse IA future) : la fullscreen s'ouvre via le provider racine.
+
+## Fichiers modifiés
+
+- `src/components/biodiversity/SpeciesGalleryDetailModal.tsx` — wrapper `TrophicFullscreenProvider` autour du contenu du Sheet.
+- `src/components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenModal.tsx` — `z-[60]` sur Overlay et Content.
+- `src/components/biodiversity/species-modal/SpeciesTrophicPosition.tsx` — `stopPropagation` sur `onPointerDown` des deux triggers.
