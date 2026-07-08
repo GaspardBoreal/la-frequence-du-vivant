@@ -504,8 +504,11 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
               </Button>
             </div>
           )}
+          </TrophicFullscreenProvider>
         </SheetContent>
       </Sheet>
+
+
 
       {/* Lightbox - rendered in portal to avoid z-index conflicts */}
       {showLightbox && hasPhoto && createPortal(
