@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Compass, Network, Gauge, Globe2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import EcologicalJourneyCarousel from '@/components/biodiversity/EcologicalJourneyCarousel';
 import TrophicChainPanel from '@/components/community/synthese/TrophicChainPanel';
 import TaxonsIndicesPanel from '@/components/community/synthese/TaxonsIndicesPanel';
@@ -21,10 +21,6 @@ interface StepDef {
   short: string;
   title: string;
   subtitle: string;
-  Icon: React.ComponentType<{ className?: string }>;
-  gradient: string;
-  ring: string;
-  glow: string;
 }
 
 const STEPS: StepDef[] = [
@@ -34,10 +30,6 @@ const STEPS: StepDef[] = [
     short: 'Découverte',
     title: 'Partons à la découverte du vivant',
     subtitle: 'Des parcours sensibles révèlent les liens cachés entre les espèces de ce territoire.',
-    Icon: Compass,
-    gradient: 'from-emerald-500/15 via-amber-500/8 to-transparent',
-    ring: 'ring-emerald-500/30',
-    glow: 'bg-emerald-500/20',
   },
   {
     key: 'trophique',
@@ -45,10 +37,6 @@ const STEPS: StepDef[] = [
     short: 'Trophique',
     title: 'La chaîne du vivant',
     subtitle: 'Producteurs, consommateurs, prédateurs, décomposeurs — l’architecture d’un écosystème.',
-    Icon: Network,
-    gradient: 'from-violet-500/15 via-cyan-500/8 to-transparent',
-    ring: 'ring-violet-500/30',
-    glow: 'bg-violet-500/20',
   },
   {
     key: 'indicateurs',
@@ -56,10 +44,6 @@ const STEPS: StepDef[] = [
     short: 'Indicateurs',
     title: 'Lecture écologique du peuplement',
     subtitle: 'Indices, équilibres et signatures qui racontent la santé du milieu.',
-    Icon: Gauge,
-    gradient: 'from-sky-500/15 via-emerald-500/8 to-transparent',
-    ring: 'ring-sky-500/30',
-    glow: 'bg-sky-500/20',
   },
   {
     key: 'origines',
@@ -67,10 +51,6 @@ const STEPS: StepDef[] = [
     short: 'Origines',
     title: 'Voyage vers les origines du vivant',
     subtitle: "D'où viennent ces espèces, qui les a nommées, qui les observe à travers le monde.",
-    Icon: Globe2,
-    gradient: 'from-amber-500/15 via-rose-500/8 to-transparent',
-    ring: 'ring-amber-500/30',
-    glow: 'bg-amber-500/20',
   },
 ];
 
@@ -168,6 +148,22 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
             Module <span className="text-foreground font-semibold">{activeIdx + 1}</span> / {STEPS.length}
           </div>
         </div>
+        {/* Baseline animée : titre + accroche du module actif */}
+        <div className="relative h-4 overflow-hidden mb-1.5">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={STEPS[activeIdx].key}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="text-[11px] sm:text-xs text-muted-foreground truncate leading-4"
+            >
+              <span className="text-foreground/80 font-medium">{STEPS[activeIdx].title}</span>
+              <span className="hidden sm:inline"> · {STEPS[activeIdx].subtitle}</span>
+            </motion.p>
+          </AnimatePresence>
+        </div>
         {/* Progress bar */}
         <div className="h-1 bg-muted/60 rounded-full overflow-hidden">
           <motion.div
@@ -193,10 +189,10 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
               data-step={s.key}
               role="tabpanel"
               aria-label={s.title}
-              className="snap-start shrink-0 w-full px-4 sm:px-2 pt-6 pb-10"
+              className="snap-start shrink-0 w-full px-4 sm:px-2 pt-3 pb-10"
             >
-              <StepHero step={s} />
-              <div className="mt-6">
+              <div>
+
                 {s.key === 'decouverte' && <EcologicalJourneyCarousel explorationId={explorationId} />}
                 {s.key === 'trophique' && (
                   <TrophicChainPanel species={species as any} explorationId={explorationId} />
@@ -254,46 +250,5 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
   );
 };
 
-const StepHero: React.FC<{ step: StepDef }> = ({ step }) => {
-  const { Icon, title, subtitle, gradient, ring, glow, short } = step;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: false, amount: 0.5 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br ${gradient} px-5 py-8 sm:px-8 sm:py-10`}
-    >
-      {/* Background blob */}
-      <div className={`absolute -top-20 -right-20 w-64 h-64 rounded-full ${glow} blur-3xl pointer-events-none`} aria-hidden />
-      <div className={`absolute -bottom-24 -left-16 w-56 h-56 rounded-full ${glow} blur-3xl opacity-60 pointer-events-none`} aria-hidden />
-
-      <div className="relative flex flex-col items-start gap-4">
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/60 backdrop-blur ring-1 ${ring} text-[10px] font-semibold uppercase tracking-wider text-foreground/80`}>
-            <span>{step.emoji}</span> {short}
-          </span>
-        </div>
-
-        <motion.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-background/70 backdrop-blur border border-border/60 flex items-center justify-center shadow-lg`}
-        >
-          <Icon className="w-7 h-7 sm:w-8 sm:h-8 text-foreground" />
-        </motion.div>
-
-        <div className="space-y-2 max-w-xl">
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground leading-tight">
-            {title}
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-            {subtitle}
-          </p>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 
 export default AnalyseIAStepper;

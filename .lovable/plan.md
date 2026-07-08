@@ -1,71 +1,48 @@
 ## Diagnostic
 
-Sur la vue Découverte > Enfant > Tri Vivant, deux barres se superposent verticalement :
+Chaque module de l'onglet **Analyse IA** (`AnalyseIAStepper.tsx`) affiche un gros bloc `StepHero` :
 
 ```text
-[DiscoverHeader absolu z-20 h-14]  ← 🏠  DÉCOUVERTE / 52 espèces … Enfant Immersif 2100 … ✕
-[KidsMode]                          ← ← Choisir un autre jeu           (collé sous, masqué à gauche par « 52 espèces »)
-[KingdomSortGame header]            Score : 8/8                        Règle   Rejouer
-[Consigne]                          Glisse une carte vers sa maison…
+[Pastille catégorie] DÉCOUVERTE / TROPHIQUE / INDICATEURS / ORIGINES
+[Icône flottante 56–64px]
+[Titre H2 24–30px] Partons à la découverte du vivant
+[Sous-titre]        Des parcours sensibles révèlent…
 ```
 
-Le bouton retour est isolé sur sa propre ligne, décalé du couple Règle/Rejouer, et le Score flotte seul au lieu d'accompagner la consigne. La cause est structurelle : le retour vit dans `KidsMode.tsx`, les actions vivent dans chaque jeu (`KingdomSortGame.tsx`, etc.).
+Ce bandeau (~180–220 px) répète ce que le stepper sticky affiche déjà (pastille emoji + nom court) et retarde l'accès au contenu réel — carrousel, chaînes trophiques, indices, flux d'origines.
 
-## Cible visuelle
+## Proposition
+
+Supprimer intégralement `StepHero`, et enrichir légèrement le **header sticky** existant pour ne rien perdre en contexte, tout en gagnant ~200 px de hauteur utile par module.
+
+### Cible visuelle
 
 ```text
-[DiscoverHeader z-20]              🏠  DÉCOUVERTE / 52 espèces …  Enfant Immersif 2100  ✕
-[Sous-barre jeu, sticky pt-16]     ← Choisir un autre jeu                    ⛑ Règle  ↻ Rejouer
-[Bandeau consigne]                 Score : 8/8   ·   Glisse une carte vers sa maison…
-[Corps du jeu]                     ▢ ▢ ▢ ▢
+┌─ sticky header (compact, ~54 px) ─────────────────────────────────────┐
+│  🌿 Découverte  🔗 Trophique  📊 Indicateurs  🌍 Origines   1/4      │
+│  Partons à la découverte du vivant · liens cachés entre espèces      │  ← ligne subtile, animée entre étapes
+│  ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ progress bar            │
+└───────────────────────────────────────────────────────────────────────┘
+[Contenu du module directement, sans bandeau intermédiaire]
 ```
 
-Une seule ligne d'actions, alignée verticalement, retour à gauche, actions du jeu à droite. Le Score fusionne avec la consigne en un ruban unique, éditorial et lisible.
+- Le stepper reste tel quel (pastilles emoji + nom court, déjà présents).
+- Ajout d'une **micro-baseline** sous les pastilles, animée en fondu (`AnimatePresence key=activeIdx`) qui affiche : `{title} · {subtitle-condensé}`. Une seule ligne, `text-xs text-muted-foreground truncate`, ~18 px de haut.
+- Sur mobile (< sm) la baseline se raccourcit à `{title}` seul (le `subtitle` disparaît en `hidden sm:inline`).
+- Progress bar conservée.
 
-## Plan d'implémentation
+### Fichier touché
 
-### 1. Nouveau contexte de « toolbar de jeu »
-Fichier `src/components/biodiversity/discover/modes/games/GameToolbarContext.tsx` (nouveau) :
-- `GameToolbarProvider` expose `setActions(node: ReactNode)` + `actions` state.
-- Hook `useGameToolbar(actions)` : useEffect qui set/reset les actions au mount/unmount.
+`src/components/community/analyse/AnalyseIAStepper.tsx` :
+1. Supprimer l'appel `<StepHero step={s} />` dans le map des sections + supprimer la définition du composant `StepHero` en fin de fichier (et l'`emoji` field devient inutile mais on le garde pour les pastilles du stepper).
+2. Enrichir le header sticky : sous la rangée `[pastilles] [compteur]`, ajouter une baseline animée avec `AnimatePresence`, `key={STEPS[activeIdx].key}`, fade + petit slide.
+3. Retirer les imports Lucide devenus inutiles (`Compass`, `Network`, `Gauge`, `Globe2` si plus utilisés — vérifier avant suppression) ; les `Icon` sur `StepDef` peuvent rester non-utilisés ou être supprimés proprement.
+4. Ajuster le `pt-6` des sections en `pt-3` puisque le hero disparaît.
 
-Permet à chaque jeu de « pousser » ses boutons dans la barre commune sans que `KidsMode` connaisse leur nature.
+### Bénéfice
 
-### 2. `KidsMode.tsx`
-- Wrapper `GameToolbarProvider` autour de la branche `game !== 'menu'`.
-- Remplace le bloc back button actuel par une **sous-barre sticky** :
-  - `sticky top-14 z-10` (pour rester sous le DiscoverHeader h-14),
-  - fond `bg-[#FAF6EC]/85 backdrop-blur-sm`, border-b discrète,
-  - `flex items-center justify-between`, hauteur `h-12`,
-  - gauche : `← Choisir un autre jeu` (style pastille amber existant),
-  - droite : `<GameToolbarSlot />` (consomme le contexte).
-- Ajoute un `pt-2` sous la barre pour aérer le corps du jeu.
+- ~200 px gagnés par module → le contenu (carrousel Découverte, chaînes, indices, flux) apparaît immédiatement sous le stepper.
+- Zéro perte d'info : titre + accroche restent visibles en permanence via la baseline animée.
+- Cohérent avec la sobriété informationnelle du projet (memory Core).
 
-### 3. Refonte des headers de chaque jeu
-Pour les 4 jeux (`KingdomSortGame`, `MemoryGame`, `WhoAmIGame`, `ZoomDetailGame`) :
-- Supprimer l'ancien `<div className="flex items-center justify-between mb-3">` qui contient Score + Règle + Rejouer.
-- Appeler `useGameToolbar(<><RegleBtn/><RejouerBtn/></>)` pour injecter Règle/Rejouer dans la sous-barre commune.
-- Fusionner le Score dans le **bandeau consigne** existant :
-  ```tsx
-  <div className="mb-3 px-3 py-2 rounded-xl bg-white/70 border border-[#3B2A1A]/10 flex items-center justify-center gap-3 flex-wrap">
-    <span className="text-[#3B2A1A]/80" style={{ fontFamily: 'Caveat, cursive', fontSize: 20 }}>
-      Score&nbsp;: <strong>{score}</strong> / {total}
-    </span>
-    <span className="text-[#3B2A1A]/30">·</span>
-    <span style={{ fontFamily: '"Patrick Hand", cursive' }}>{consigne}</span>
-  </div>
-  ```
-- Séparateur `·` pour l'élégance manuscrite.
-
-### 4. Petit détail responsive
-- Sur mobile (< sm) : le Score passe au-dessus de la consigne (flex-col), la sous-barre reste horizontale (retour + actions).
-
-## Fichiers touchés
-- **nouveau** `src/components/biodiversity/discover/modes/games/GameToolbarContext.tsx`
-- `src/components/biodiversity/discover/modes/KidsMode.tsx`
-- `src/components/biodiversity/discover/modes/games/KingdomSortGame.tsx`
-- `src/components/biodiversity/discover/modes/games/MemoryGame.tsx`
-- `src/components/biodiversity/discover/modes/games/WhoAmIGame.tsx`
-- `src/components/biodiversity/discover/modes/games/ZoomDetailGame.tsx`
-
-Aucun changement de logique métier, uniquement composition et présentation.
+Aucun changement de logique métier ni des 4 panels enfants (`EcologicalJourneyCarousel`, `TrophicChainPanel`, `TaxonsIndicesPanel`, `OriginsFluxPanel`).
