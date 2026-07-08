@@ -20,6 +20,7 @@ import GameCardImage from './GameCardImage';
 import KingdomSortOnboarding, { useKingdomSortOnboarding } from './KingdomSortOnboarding';
 import ZoomLoupeButton from './ZoomLoupeButton';
 import ZoomLightbox from './ZoomLightbox';
+import { useGameToolbar } from './GameToolbarContext';
 
 interface Props {
   species: BiodiversitySpecies[];
