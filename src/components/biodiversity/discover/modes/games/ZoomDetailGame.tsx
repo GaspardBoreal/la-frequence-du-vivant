@@ -8,6 +8,7 @@ import DetailCropImage from './DetailCropImage';
 import ZoomLoupeButton from './ZoomLoupeButton';
 import ZoomLightbox from './ZoomLightbox';
 import { highResDetailSrc } from './zoomImageSrc';
+import { useGameToolbar } from './GameToolbarContext';
 
 interface Props {
   species: BiodiversitySpecies[];
