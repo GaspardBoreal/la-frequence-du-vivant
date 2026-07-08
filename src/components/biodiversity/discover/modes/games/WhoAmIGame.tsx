@@ -445,4 +445,26 @@ const Confetti: React.FC = () => {
   );
 };
 
+const WhoAmIToolbarBridge: React.FC<{ onRule: () => void; onReset: () => void }> = ({ onRule, onReset }) => {
+  useGameToolbar(
+    <>
+      <button
+        onClick={onRule}
+        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+        aria-label="Revoir la règle"
+      >
+        <HelpCircle className="h-4 w-4" /> Règle
+      </button>
+      <button
+        onClick={onReset}
+        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+      >
+        <RotateCw className="h-4 w-4" /> Recommencer
+      </button>
+    </>,
+    [onRule, onReset],
+  );
+  return null;
+};
+
 export default WhoAmIGame;
