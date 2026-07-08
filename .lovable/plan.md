@@ -1,47 +1,71 @@
 ## Diagnostic
 
-Sur la carte Syrphe ceinturé, le clic sur **« Approfondir avec l'IA »** échoue systématiquement avec le message générique *« L'IA n'a pas pu répondre. Réessayez plus tard. »*.
+Sur la vue Découverte > Enfant > Tri Vivant, deux barres se superposent verticalement :
 
-Signaux croisés :
-- **Aucun log** pour l'edge function `prospective-2100-species` (jamais atteinte, ou boot KO).
-- **Aucune requête AI Gateway** correspondant au prompt « écologue narratif … horizon 2100 » dans les 7 derniers jours (les 32 appels récents sont tous pour la traduction FR d'espèces).
-- La fonction importe `npm:@supabase/supabase-js@2` alors que **toutes** les autres edge functions du projet utilisent `https://esm.sh/@supabase/supabase-js@2.x` → incohérence qui peut empêcher le boot dans le runtime Deno de Supabase.
-- Le front avale l'erreur réelle (`catch (e)` → message statique), donc l'utilisateur ne voit ni le code HTTP, ni la cause (402 crédits, 429 rate-limit, 500 boot, JSON invalide…).
-- Le parsing JSON est fragile : Gemini renvoie parfois du texte enrobé (```json …```) ou une clé `narrative` vide → le front affiche « L'IA n'a pas pu répondre » alors que l'appel a réussi.
+```text
+[DiscoverHeader absolu z-20 h-14]  ← 🏠  DÉCOUVERTE / 52 espèces … Enfant Immersif 2100 … ✕
+[KidsMode]                          ← ← Choisir un autre jeu           (collé sous, masqué à gauche par « 52 espèces »)
+[KingdomSortGame header]            Score : 8/8                        Règle   Rejouer
+[Consigne]                          Glisse une carte vers sa maison…
+```
 
-## Ce qu'on va corriger (inspirant + robuste)
+Le bouton retour est isolé sur sa propre ligne, décalé du couple Règle/Rejouer, et le Score flotte seul au lieu d'accompagner la consigne. La cause est structurelle : le retour vit dans `KidsMode.tsx`, les actions vivent dans chaque jeu (`KingdomSortGame.tsx`, etc.).
 
-### 1. Réparer l'edge function `prospective-2100-species`
-- Aligner l'import Supabase sur le standard projet : `https://esm.sh/@supabase/supabase-js@2.52.1`.
-- Ajouter des `console.log` structurés (`[prospective-2100] start / cache-hit / ai-call / ai-status / parse-ok`) pour tracer les échecs.
-- Durcir le parsing : accepter les réponses enveloppées ```json …``` (regex de nettoyage) et retomber proprement sur `fallback_status` + narrative heuristique si la clé `narrative` est vide.
-- Retourner des codes HTTP explicites (`402` si crédits épuisés, `429` si rate-limit) en propageant ceux du gateway.
-- Mettre à jour le modèle vers `google/gemini-3-flash-preview` (dernière génération Flash — meilleur ratio qualité/latence, cohérent avec le reste du projet).
+## Cible visuelle
 
-### 2. Front `Prospective2100.tsx` — UX de récupération premium
-- **Message d'erreur contextuel** (au lieu du générique) : distinguer *hors ligne*, *crédits épuisés*, *trop de requêtes*, *IA indisponible*.
-- **Bouton « Réessayer »** dans le bloc d'erreur (au lieu de fermer/rouvrir la fiche).
-- **Fallback narratif enrichi** : si l'IA échoue 2 fois, afficher un encart « Récit heuristique » qui reformule la projection existante avec un ton plus littéraire (déjà en local, aucun appel).
-- **Feedback visuel** pendant le chargement : shimmer sur le bloc IA + bouton avec `Loader2` (déjà présent), plus micro-copy *« L'IA écoute le paysage… »* pour transformer l'attente en promesse.
+```text
+[DiscoverHeader z-20]              🏠  DÉCOUVERTE / 52 espèces …  Enfant Immersif 2100  ✕
+[Sous-barre jeu, sticky pt-16]     ← Choisir un autre jeu                    ⛑ Règle  ↻ Rejouer
+[Bandeau consigne]                 Score : 8/8   ·   Glisse une carte vers sa maison…
+[Corps du jeu]                     ▢ ▢ ▢ ▢
+```
 
-### 3. Cache & télémetrie
-- Le cache `species_prospective_2100_cache` (unique par `scientific_name`) reste tel quel — pas de touche à la table ni à la RLS.
-- On loggue côté edge le `duration_ms` et le `model` utilisé pour permettre un futur onglet admin « Qualité IA 2100 ».
+Une seule ligne d'actions, alignée verticalement, retour à gauche, actions du jeu à droite. Le Score fusionne avec la consigne en un ruban unique, éditorial et lisible.
+
+## Plan d'implémentation
+
+### 1. Nouveau contexte de « toolbar de jeu »
+Fichier `src/components/biodiversity/discover/modes/games/GameToolbarContext.tsx` (nouveau) :
+- `GameToolbarProvider` expose `setActions(node: ReactNode)` + `actions` state.
+- Hook `useGameToolbar(actions)` : useEffect qui set/reset les actions au mount/unmount.
+
+Permet à chaque jeu de « pousser » ses boutons dans la barre commune sans que `KidsMode` connaisse leur nature.
+
+### 2. `KidsMode.tsx`
+- Wrapper `GameToolbarProvider` autour de la branche `game !== 'menu'`.
+- Remplace le bloc back button actuel par une **sous-barre sticky** :
+  - `sticky top-14 z-10` (pour rester sous le DiscoverHeader h-14),
+  - fond `bg-[#FAF6EC]/85 backdrop-blur-sm`, border-b discrète,
+  - `flex items-center justify-between`, hauteur `h-12`,
+  - gauche : `← Choisir un autre jeu` (style pastille amber existant),
+  - droite : `<GameToolbarSlot />` (consomme le contexte).
+- Ajoute un `pt-2` sous la barre pour aérer le corps du jeu.
+
+### 3. Refonte des headers de chaque jeu
+Pour les 4 jeux (`KingdomSortGame`, `MemoryGame`, `WhoAmIGame`, `ZoomDetailGame`) :
+- Supprimer l'ancien `<div className="flex items-center justify-between mb-3">` qui contient Score + Règle + Rejouer.
+- Appeler `useGameToolbar(<><RegleBtn/><RejouerBtn/></>)` pour injecter Règle/Rejouer dans la sous-barre commune.
+- Fusionner le Score dans le **bandeau consigne** existant :
+  ```tsx
+  <div className="mb-3 px-3 py-2 rounded-xl bg-white/70 border border-[#3B2A1A]/10 flex items-center justify-center gap-3 flex-wrap">
+    <span className="text-[#3B2A1A]/80" style={{ fontFamily: 'Caveat, cursive', fontSize: 20 }}>
+      Score&nbsp;: <strong>{score}</strong> / {total}
+    </span>
+    <span className="text-[#3B2A1A]/30">·</span>
+    <span style={{ fontFamily: '"Patrick Hand", cursive' }}>{consigne}</span>
+  </div>
+  ```
+- Séparateur `·` pour l'élégance manuscrite.
+
+### 4. Petit détail responsive
+- Sur mobile (< sm) : le Score passe au-dessus de la consigne (flex-col), la sous-barre reste horizontale (retour + actions).
 
 ## Fichiers touchés
+- **nouveau** `src/components/biodiversity/discover/modes/games/GameToolbarContext.tsx`
+- `src/components/biodiversity/discover/modes/KidsMode.tsx`
+- `src/components/biodiversity/discover/modes/games/KingdomSortGame.tsx`
+- `src/components/biodiversity/discover/modes/games/MemoryGame.tsx`
+- `src/components/biodiversity/discover/modes/games/WhoAmIGame.tsx`
+- `src/components/biodiversity/discover/modes/games/ZoomDetailGame.tsx`
 
-- `supabase/functions/prospective-2100-species/index.ts` — import esm.sh, logs, parsing tolérant, codes HTTP propagés, modèle mis à jour.
-- `src/components/biodiversity/discover/modes/Prospective2100.tsx` — messages d'erreur typés, bouton Réessayer, micro-copy, fallback littéraire local.
-
-## Ce qu'on ne touche pas
-
-- Le heuristique `classifyProspective2100` (déjà exposé comme « PROJECTION 2100 » avant l'appel IA).
-- La table cache et sa migration.
-- Le design général de l'écran (particules, chips, grille) — uniquement le bloc IA de la fiche détail.
-
-## Vérification après implémentation
-
-1. Cliquer « Approfondir avec l'IA » sur Syrphe ceinturé → réponse en ≤ 3 s avec narrative non vide.
-2. Vérifier apparition d'une ligne dans les logs de la edge function.
-3. Vérifier apparition d'un appel `chat_completions` dans AI Gateway avec le prompt écologue narratif.
-4. Simuler échec (couper le réseau) → message clair + bouton Réessayer visible.
+Aucun changement de logique métier, uniquement composition et présentation.

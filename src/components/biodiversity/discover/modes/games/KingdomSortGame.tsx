@@ -20,6 +20,7 @@ import GameCardImage from './GameCardImage';
 import KingdomSortOnboarding, { useKingdomSortOnboarding } from './KingdomSortOnboarding';
 import ZoomLoupeButton from './ZoomLoupeButton';
 import ZoomLightbox from './ZoomLightbox';
+import { useGameToolbar } from './GameToolbarContext';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -176,41 +177,47 @@ const KingdomSortGame: React.FC<Props> = ({ species, photoBy }) => {
   const score = Object.values(feedback).filter((v) => v === 'ok').length;
   const activeSpecies = activeId ? items.find((x) => x.id === activeId) : null;
 
+  useGameToolbar(
+    <>
+      <button
+        onClick={(e) => { e.stopPropagation(); onboarding.reopen(); }}
+        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+        aria-label="Revoir la règle"
+      >
+        <LifeBuoy className="h-4 w-4" /> Règle
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); reset(); }}
+        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+      >
+        <RotateCw className="h-4 w-4" /> Rejouer
+      </button>
+    </>,
+    [onboarding.reopen, reset],
+  );
+
   return (
     <div className="relative" onClick={() => setSelectedId(null)}>
       <KingdomSortOnboarding open={onboarding.open} onClose={onboarding.close} />
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 gap-2">
-        <p className="text-xl" style={{ fontFamily: '"Caveat", cursive' }}>
-          Score : <strong>{score}</strong> / {items.length}
-        </p>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => { e.stopPropagation(); onboarding.reopen(); }}
-            className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
-            aria-label="Revoir la règle"
-          >
-            <LifeBuoy className="h-4 w-4" /> Règle
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); reset(); }}
-            className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
-          >
-            <RotateCw className="h-4 w-4" /> Rejouer
-          </button>
-        </div>
+      {/* Bandeau consigne + score fusionnés */}
+      <div
+        className="mb-3 px-4 py-2.5 rounded-xl bg-white/70 border border-[#3B2A1A]/10 text-[#3B2A1A] flex items-center justify-center gap-3 flex-wrap"
+      >
+        <span
+          className="inline-flex items-baseline gap-1 text-amber-900"
+          style={{ fontFamily: '"Caveat", cursive', fontSize: 22, fontWeight: 700 }}
+        >
+          Score&nbsp;: <strong>{score}</strong>&nbsp;/&nbsp;{items.length}
+        </span>
+        <span className="text-[#3B2A1A]/30 select-none">·</span>
+        <span style={{ fontFamily: '"Patrick Hand", cursive', fontSize: 16 }} className="text-center">
+          {selectedId
+            ? '👉 Touche maintenant la maison où ranger cette carte'
+            : 'Glisse une carte vers sa maison, ou touche-la puis touche la bonne maison.'}
+        </span>
       </div>
 
-      {/* Consigne permanente */}
-      <div
-        className="mb-3 px-3 py-2 rounded-xl bg-white/70 border border-[#3B2A1A]/10 text-[#3B2A1A] text-center"
-        style={{ fontFamily: '"Patrick Hand", cursive', fontSize: 16 }}
-      >
-        {selectedId
-          ? '👉 Touche maintenant la maison où ranger cette carte'
-          : 'Glisse une carte vers sa maison, ou touche-la puis touche la bonne maison.'}
-      </div>
 
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         {/* Items à classer */}

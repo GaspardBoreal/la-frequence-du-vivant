@@ -6,6 +6,7 @@ import MemoryGame from './games/MemoryGame';
 import WhoAmIGame from './games/WhoAmIGame';
 import KingdomSortGame from './games/KingdomSortGame';
 import ZoomDetailGame from './games/ZoomDetailGame';
+import { GameToolbarProvider, GameToolbarSlot } from './games/GameToolbarContext';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -43,54 +44,64 @@ const KidsMode: React.FC<Props> = ({ species, photoBy }) => {
         }}
       />
 
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-8 pt-6 pb-16">
-        {game === 'menu' ? (
-          <>
-            <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-8 sm:mb-12">
-              <p className="text-xs uppercase tracking-[0.3em] text-amber-800/70">Mode enfant</p>
-              <h2 className="mt-2 text-4xl sm:text-6xl" style={{ fontFamily: '"Caveat", cursive', fontWeight: 700 }}>
-                On joue avec le vivant&nbsp;?
-              </h2>
-              <p className="mt-2 text-lg text-amber-900/70">
-                {species.length} espèces de cette aventure t'attendent.
-              </p>
-            </motion.div>
+      {game === 'menu' ? (
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-8 pt-20 pb-16">
+          <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-8 sm:mb-12">
+            <p className="text-xs uppercase tracking-[0.3em] text-amber-800/70">Mode enfant</p>
+            <h2 className="mt-2 text-4xl sm:text-6xl" style={{ fontFamily: '"Caveat", cursive', fontWeight: 700 }}>
+              On joue avec le vivant&nbsp;?
+            </h2>
+            <p className="mt-2 text-lg text-amber-900/70">
+              {species.length} espèces de cette aventure t'attendent.
+            </p>
+          </motion.div>
 
-            {!hasEnough && (
-              <div className="mb-6 text-center text-amber-800 bg-amber-100/70 border border-amber-300/60 rounded-2xl px-4 py-3">
-                Il faut au moins 4 espèces pour jouer. Élargis tes filtres&nbsp;!
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {GAMES.map((g, i) => (
-                <motion.button
-                  key={g.key}
-                  initial={{ y: 24, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.45, delay: 0.1 + i * 0.08, type: 'spring', stiffness: 220, damping: 18 }}
-                  whileHover={{ y: -6, rotate: i % 2 ? 1 : -1 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => hasEnough && setGame(g.key)}
-                  disabled={!hasEnough}
-                  className={`relative ${g.color} rounded-[28px] p-6 text-left shadow-[6px_6px_0_rgba(59,42,26,0.15)] border-2 border-[#3B2A1A]/15 disabled:opacity-50 disabled:cursor-not-allowed`}
-                  style={{ transform: `rotate(${i % 2 ? -1.2 : 1.2}deg)` }}
-                >
-                  <div className="text-5xl mb-3">{g.emoji}</div>
-                  <h3 className="text-2xl leading-tight" style={{ fontFamily: '"Caveat", cursive', fontWeight: 700 }}>{g.title}</h3>
-                  <p className="text-sm text-[#3B2A1A]/70 mt-1">{g.desc}</p>
-                </motion.button>
-              ))}
+          {!hasEnough && (
+            <div className="mb-6 text-center text-amber-800 bg-amber-100/70 border border-amber-300/60 rounded-2xl px-4 py-3">
+              Il faut au moins 4 espèces pour jouer. Élargis tes filtres&nbsp;!
             </div>
-          </>
-        ) : (
-          <div>
-            <button
-              onClick={() => setGame('menu')}
-              className="inline-flex items-center gap-2 text-amber-900 hover:text-amber-700 mb-4 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50"
-            >
-              <ArrowLeft className="h-4 w-4" /> <span className="text-base">Choisir un autre jeu</span>
-            </button>
+          )}
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {GAMES.map((g, i) => (
+              <motion.button
+                key={g.key}
+                initial={{ y: 24, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.45, delay: 0.1 + i * 0.08, type: 'spring', stiffness: 220, damping: 18 }}
+                whileHover={{ y: -6, rotate: i % 2 ? 1 : -1 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => hasEnough && setGame(g.key)}
+                disabled={!hasEnough}
+                className={`relative ${g.color} rounded-[28px] p-6 text-left shadow-[6px_6px_0_rgba(59,42,26,0.15)] border-2 border-[#3B2A1A]/15 disabled:opacity-50 disabled:cursor-not-allowed`}
+                style={{ transform: `rotate(${i % 2 ? -1.2 : 1.2}deg)` }}
+              >
+                <div className="text-5xl mb-3">{g.emoji}</div>
+                <h3 className="text-2xl leading-tight" style={{ fontFamily: '"Caveat", cursive', fontWeight: 700 }}>{g.title}</h3>
+                <p className="text-sm text-[#3B2A1A]/70 mt-1">{g.desc}</p>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <GameToolbarProvider>
+          {/* Sous-barre sticky : retour + actions du jeu alignés sur une seule ligne */}
+          <div
+            className="sticky top-14 z-10 border-b border-[#3B2A1A]/10 backdrop-blur-md"
+            style={{ background: 'rgba(250, 246, 236, 0.82)' }}
+          >
+            <div className="max-w-6xl mx-auto px-4 sm:px-8 h-12 flex items-center justify-between gap-3">
+              <button
+                onClick={() => setGame('menu')}
+                className="inline-flex items-center gap-2 text-amber-900 hover:text-amber-700 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm shadow-[2px_2px_0_rgba(59,42,26,0.08)]"
+              >
+                <ArrowLeft className="h-4 w-4" /> <span>Choisir un autre jeu</span>
+              </button>
+              <GameToolbarSlot className="flex items-center gap-2" />
+            </div>
+          </div>
+
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-8 pt-4 pb-16">
             <AnimatePresence mode="wait">
               <motion.div
                 key={game}
@@ -106,8 +117,8 @@ const KidsMode: React.FC<Props> = ({ species, photoBy }) => {
               </motion.div>
             </AnimatePresence>
           </div>
-        )}
-      </div>
+        </GameToolbarProvider>
+      )}
     </div>
   );
 };

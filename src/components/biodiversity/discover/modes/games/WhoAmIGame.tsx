@@ -23,6 +23,7 @@ import {
   getFamilyEcologyHint,
   getRevealedLettersHint,
 } from './whoAmIHints';
+import { useGameToolbar } from './GameToolbarContext';
 
 interface Props {
   species: BiodiversitySpecies[];
@@ -150,43 +151,33 @@ const WhoAmIGame: React.FC<Props> = ({ species, photoBy }) => {
 
   return (
     <div className="relative">
-      {/* Bandeau consigne */}
+      <WhoAmIToolbarBridge
+        onRule={() => setShowOnboarding(true)}
+        onReset={() => { setScore({ ok: 0, ko: 0, stars: 0 }); setRound((r) => r + 1); }}
+      />
+      {/* Bandeau consigne + score fusionnés */}
       <div
-        className="mb-4 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-amber-100/80 border-2 border-amber-300/60 shadow-[3px_3px_0_rgba(59,42,26,0.08)]"
+        className="mb-4 px-4 py-2.5 rounded-2xl bg-amber-100/80 border-2 border-amber-300/60 shadow-[3px_3px_0_rgba(59,42,26,0.08)] flex items-center justify-center gap-3 flex-wrap"
         style={{ fontFamily: '"Patrick Hand", sans-serif' }}
       >
-        <p className="text-base sm:text-lg text-[#3B2A1A] flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-amber-700 shrink-0" />
-          Devine l'espèce mystère parmi les 4 propositions.
-        </p>
-        <button
-          onClick={() => setShowOnboarding(true)}
-          className="shrink-0 inline-flex items-center gap-1 text-amber-900 hover:text-amber-700 px-2.5 py-1 rounded-full bg-white/70 border border-amber-300/50 text-sm"
-        >
-          <HelpCircle className="h-4 w-4" /> Revoir la règle
-        </button>
-      </div>
-
-      {/* Score */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3 text-xl" style={{ fontFamily: '"Caveat", cursive' }}>
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300/60 text-emerald-800">
+        <div className="flex items-center gap-2" style={{ fontFamily: '"Caveat", cursive', fontSize: 20 }}>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-300/60 text-emerald-800">
             <CheckCircle2 className="h-4 w-4" /> {score.ok}
           </span>
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-100 border border-rose-300/60 text-rose-800">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 border border-rose-300/60 text-rose-800">
             <XCircle className="h-4 w-4" /> {score.ko}
           </span>
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 border border-amber-300/60 text-amber-800">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 border border-amber-300/60 text-amber-800">
             <Star className="h-4 w-4" /> {score.stars}
           </span>
         </div>
-        <button
-          onClick={() => { setScore({ ok: 0, ko: 0, stars: 0 }); setRound((r) => r + 1); }}
-          className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50"
-        >
-          <RotateCw className="h-4 w-4" /> Recommencer
-        </button>
+        <span className="text-[#3B2A1A]/30 select-none">·</span>
+        <p className="text-base sm:text-lg text-[#3B2A1A] flex items-center gap-2 text-center">
+          <Sparkles className="h-4 w-4 text-amber-700 shrink-0" />
+          Devine l'espèce mystère parmi les 4 propositions.
+        </p>
       </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {/* Cadre mystère */}
@@ -452,6 +443,28 @@ const Confetti: React.FC = () => {
       ))}
     </div>
   );
+};
+
+const WhoAmIToolbarBridge: React.FC<{ onRule: () => void; onReset: () => void }> = ({ onRule, onReset }) => {
+  useGameToolbar(
+    <>
+      <button
+        onClick={onRule}
+        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+        aria-label="Revoir la règle"
+      >
+        <HelpCircle className="h-4 w-4" /> Règle
+      </button>
+      <button
+        onClick={onReset}
+        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+      >
+        <RotateCw className="h-4 w-4" /> Recommencer
+      </button>
+    </>,
+    [onRule, onReset],
+  );
+  return null;
 };
 
 export default WhoAmIGame;
