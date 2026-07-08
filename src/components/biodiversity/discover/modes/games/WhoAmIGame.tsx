@@ -23,6 +23,7 @@ import {
   getFamilyEcologyHint,
   getRevealedLettersHint,
 } from './whoAmIHints';
+import { useGameToolbar } from './GameToolbarContext';
 
 interface Props {
   species: BiodiversitySpecies[];
