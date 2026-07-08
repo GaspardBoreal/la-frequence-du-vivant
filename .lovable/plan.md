@@ -1,48 +1,62 @@
-## Diagnostic
+# Fix "Agrandir" + vue trophique fullscreen réutilisable
 
-Chaque module de l'onglet **Analyse IA** (`AnalyseIAStepper.tsx`) affiche un gros bloc `StepHero` :
+## 1. Corriger le bug de clic
 
-```text
-[Pastille catégorie] DÉCOUVERTE / TROPHIQUE / INDICATEURS / ORIGINES
-[Icône flottante 56–64px]
-[Titre H2 24–30px] Partons à la découverte du vivant
-[Sous-titre]        Des parcours sensibles révèlent…
+**Fichier : `src/components/biodiversity/species-modal/SpeciesTrophicPosition.tsx`**
+
+- Remplacer le `<button onClick={() => setExpanded(true)}>` englobant la mini-scène par un `<div className="group relative …">` — plus de `<button>` parent, plus de hoisting HTML.
+- Ajouter un vrai `<button type="button">` **pastille "Agrandir"** positionnée en absolute, `pointer-events-auto`, `z-10`, focus ring, aria-label. C'est ce bouton qui appelle `openTrophicFullscreen(...)`.
+- Ajouter en parallèle un calque cliquable transparent (`absolute inset-0 z-0`) derrière le contenu de la mini-scène pour permettre "tap n'importe où sur le fond" → même action. Le contenu interactif (chips zoom, nœuds) reste au-dessus (`relative z-[1]`) et conserve ses propres interactions.
+- Garder le dégradé bas + hint (`pointer-events-none`), inchangé visuellement.
+
+## 2. Rendre la fullscreen appelable depuis n'importe où
+
+Aujourd'hui `TrophicFullscreenModal` est monté localement dans `SpeciesTrophicPosition`. On extrait ça en **singleton global** pour que la Carte, le drawer espèce (Liste/Carte/Observateurs), Analyse IA, ou tout futur point d'appel puissent l'ouvrir sans re-monter le state.
+
+**Nouveau fichier : `src/components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider.tsx`**
+
+- `TrophicFullscreenProvider` : mounted haut niveau (dans `App.tsx` ou juste dans `MonEspaceLayout` pour scoper).
+- Context expose :
+  ```ts
+  openTrophicFullscreen({
+    scientificName: string,
+    commonName?: string | null,
+    speciesPool: TrophicSpeciesInput[],
+    initialView?: 'constellation' | 'spirale' | 'reseau',
+  })
+  closeTrophicFullscreen()
+  ```
+- Le provider monte un unique `<TrophicFullscreenModal open={…} …/>` alimenté par le state courant. `chain` est recalculé via `useTrophicChain(speciesPool)` à l'intérieur (déjà mémoïsé).
+- Hook `useTrophicFullscreen()` = raccourci `useContext(...)` + garde d'erreur claire.
+
+**Fichier : `src/App.tsx`** (ou racine adéquate)
+- Wrapper l'arbre avec `<TrophicFullscreenProvider>` (au même niveau que `TooltipProvider` / `QueryClientProvider`).
+
+**Fichier : `SpeciesTrophicPosition.tsx`**
+- Supprimer `useState(expanded)` et le montage local de `<TrophicFullscreenModal>`.
+- La pastille + calque appellent `openTrophicFullscreen({ scientificName, commonName, speciesPool, initialView: view })`.
+
+## 3. Points d'appel additionnels (préparés, non ajoutés en dur)
+
+Pour que l'usage soit trivial ailleurs, on documente le pattern dans un mini `README` du dossier `trophic-fullscreen/` :
+
+```tsx
+const { open } = useTrophicFullscreen();
+<button onClick={() => open({ scientificName, speciesPool, initialView: 'reseau' })}>
+  Voir la chaîne trophique
+</button>
 ```
 
-Ce bandeau (~180–220 px) répète ce que le stepper sticky affiche déjà (pastille emoji + nom court) et retarde l'accès au contenu réel — carrousel, chaînes trophiques, indices, flux d'origines.
+Aucun autre écran n'est modifié dans ce lot — le refactor rend simplement l'appel possible en 2 lignes partout (species drawer, carte, Analyse IA `TrophicChainPanel`, chatbot, etc.).
 
-## Proposition
+## Détails techniques
 
-Supprimer intégralement `StepHero`, et enrichir légèrement le **header sticky** existant pour ne rien perdre en contexte, tout en gagnant ~200 px de hauteur utile par module.
+- **Zéro régression visuelle** : la mini-scène garde exactement le même rendu (border, gradient, hint, pastille).
+- **A11y** : la pastille devient un vrai `<button>` focusable, `aria-label="Ouvrir la vue trophique en grand"`. Le calque de fond est un `<button>` sr-only-labelled équivalent (`aria-label="Agrandir la vue"`) pour rester utilisable au tap.
+- **Perf** : `speciesPool` peut être volumineux. Le provider ne recalcule `useTrophicChain` que quand un pool est réellement ouvert (state `null` sinon → early return, pas de hook conditionnel : on encapsule dans un sous-composant `<TrophicFullscreenHost pool state />` monté uniquement quand `state !== null`).
+- **Typechecks** : `TrophicViewKey` déjà exporté par `TrophicFullscreenModal`, réutilisé par le provider.
 
-### Cible visuelle
+## Vérification
 
-```text
-┌─ sticky header (compact, ~54 px) ─────────────────────────────────────┐
-│  🌿 Découverte  🔗 Trophique  📊 Indicateurs  🌍 Origines   1/4      │
-│  Partons à la découverte du vivant · liens cachés entre espèces      │  ← ligne subtile, animée entre étapes
-│  ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ progress bar            │
-└───────────────────────────────────────────────────────────────────────┘
-[Contenu du module directement, sans bandeau intermédiaire]
-```
-
-- Le stepper reste tel quel (pastilles emoji + nom court, déjà présents).
-- Ajout d'une **micro-baseline** sous les pastilles, animée en fondu (`AnimatePresence key=activeIdx`) qui affiche : `{title} · {subtitle-condensé}`. Une seule ligne, `text-xs text-muted-foreground truncate`, ~18 px de haut.
-- Sur mobile (< sm) la baseline se raccourcit à `{title}` seul (le `subtitle` disparaît en `hidden sm:inline`).
-- Progress bar conservée.
-
-### Fichier touché
-
-`src/components/community/analyse/AnalyseIAStepper.tsx` :
-1. Supprimer l'appel `<StepHero step={s} />` dans le map des sections + supprimer la définition du composant `StepHero` en fin de fichier (et l'`emoji` field devient inutile mais on le garde pour les pastilles du stepper).
-2. Enrichir le header sticky : sous la rangée `[pastilles] [compteur]`, ajouter une baseline animée avec `AnimatePresence`, `key={STEPS[activeIdx].key}`, fade + petit slide.
-3. Retirer les imports Lucide devenus inutiles (`Compass`, `Network`, `Gauge`, `Globe2` si plus utilisés — vérifier avant suppression) ; les `Icon` sur `StepDef` peuvent rester non-utilisés ou être supprimés proprement.
-4. Ajuster le `pt-6` des sections en `pt-3` puisque le hero disparaît.
-
-### Bénéfice
-
-- ~200 px gagnés par module → le contenu (carrousel Découverte, chaînes, indices, flux) apparaît immédiatement sous le stepper.
-- Zéro perte d'info : titre + accroche restent visibles en permanence via la baseline animée.
-- Cohérent avec la sobriété informationnelle du projet (memory Core).
-
-Aucun changement de logique métier ni des 4 panels enfants (`EcologicalJourneyCarousel`, `TrophicChainPanel`, `TaxonsIndicesPanel`, `OriginsFluxPanel`).
+- Après édition : `tsgo` puis test manuel sur `/mon-espace/exploration/:id` → drawer espèce → clic sur pastille "Agrandir" **et** clic sur zone vide de la constellation → fullscreen s'ouvre avec la bonne vue (constellation / spirale / réseau) préservée.
+- Vérifier que les +/‑ zoom internes fonctionnent toujours (pas de propagation vers le calque).
