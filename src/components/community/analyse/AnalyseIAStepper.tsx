@@ -189,10 +189,10 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
               data-step={s.key}
               role="tabpanel"
               aria-label={s.title}
-              className="snap-start shrink-0 w-full px-4 sm:px-2 pt-6 pb-10"
+              className="snap-start shrink-0 w-full px-4 sm:px-2 pt-3 pb-10"
             >
-              <StepHero step={s} />
-              <div className="mt-6">
+              <div>
+
                 {s.key === 'decouverte' && <EcologicalJourneyCarousel explorationId={explorationId} />}
                 {s.key === 'trophique' && (
                   <TrophicChainPanel species={species as any} explorationId={explorationId} />
