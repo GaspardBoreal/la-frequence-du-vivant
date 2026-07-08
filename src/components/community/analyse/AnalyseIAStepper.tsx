@@ -30,10 +30,6 @@ const STEPS: StepDef[] = [
     short: 'Découverte',
     title: 'Partons à la découverte du vivant',
     subtitle: 'Des parcours sensibles révèlent les liens cachés entre les espèces de ce territoire.',
-    Icon: Compass,
-    gradient: 'from-emerald-500/15 via-amber-500/8 to-transparent',
-    ring: 'ring-emerald-500/30',
-    glow: 'bg-emerald-500/20',
   },
   {
     key: 'trophique',
@@ -41,10 +37,6 @@ const STEPS: StepDef[] = [
     short: 'Trophique',
     title: 'La chaîne du vivant',
     subtitle: 'Producteurs, consommateurs, prédateurs, décomposeurs — l’architecture d’un écosystème.',
-    Icon: Network,
-    gradient: 'from-violet-500/15 via-cyan-500/8 to-transparent',
-    ring: 'ring-violet-500/30',
-    glow: 'bg-violet-500/20',
   },
   {
     key: 'indicateurs',
@@ -52,10 +44,6 @@ const STEPS: StepDef[] = [
     short: 'Indicateurs',
     title: 'Lecture écologique du peuplement',
     subtitle: 'Indices, équilibres et signatures qui racontent la santé du milieu.',
-    Icon: Gauge,
-    gradient: 'from-sky-500/15 via-emerald-500/8 to-transparent',
-    ring: 'ring-sky-500/30',
-    glow: 'bg-sky-500/20',
   },
   {
     key: 'origines',
@@ -63,10 +51,6 @@ const STEPS: StepDef[] = [
     short: 'Origines',
     title: 'Voyage vers les origines du vivant',
     subtitle: "D'où viennent ces espèces, qui les a nommées, qui les observe à travers le monde.",
-    Icon: Globe2,
-    gradient: 'from-amber-500/15 via-rose-500/8 to-transparent',
-    ring: 'ring-amber-500/30',
-    glow: 'bg-amber-500/20',
   },
 ];
 
