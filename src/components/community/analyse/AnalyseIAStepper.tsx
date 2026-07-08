@@ -250,46 +250,5 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
   );
 };
 
-const StepHero: React.FC<{ step: StepDef }> = ({ step }) => {
-  const { Icon, title, subtitle, gradient, ring, glow, short } = step;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: false, amount: 0.5 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br ${gradient} px-5 py-8 sm:px-8 sm:py-10`}
-    >
-      {/* Background blob */}
-      <div className={`absolute -top-20 -right-20 w-64 h-64 rounded-full ${glow} blur-3xl pointer-events-none`} aria-hidden />
-      <div className={`absolute -bottom-24 -left-16 w-56 h-56 rounded-full ${glow} blur-3xl opacity-60 pointer-events-none`} aria-hidden />
-
-      <div className="relative flex flex-col items-start gap-4">
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/60 backdrop-blur ring-1 ${ring} text-[10px] font-semibold uppercase tracking-wider text-foreground/80`}>
-            <span>{step.emoji}</span> {short}
-          </span>
-        </div>
-
-        <motion.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-background/70 backdrop-blur border border-border/60 flex items-center justify-center shadow-lg`}
-        >
-          <Icon className="w-7 h-7 sm:w-8 sm:h-8 text-foreground" />
-        </motion.div>
-
-        <div className="space-y-2 max-w-xl">
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground leading-tight">
-            {title}
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-            {subtitle}
-          </p>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 
 export default AnalyseIAStepper;
