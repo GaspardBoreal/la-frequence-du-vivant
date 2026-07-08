@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Compass, Network, Gauge, Globe2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import EcologicalJourneyCarousel from '@/components/biodiversity/EcologicalJourneyCarousel';
 import TrophicChainPanel from '@/components/community/synthese/TrophicChainPanel';
 import TaxonsIndicesPanel from '@/components/community/synthese/TaxonsIndicesPanel';
