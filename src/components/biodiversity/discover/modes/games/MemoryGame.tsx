@@ -139,27 +139,12 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
     );
   }
 
-  useGameToolbar(
-    <>
-      <button
-        onClick={() => setShowOnboarding(true)}
-        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
-        aria-label="Revoir la règle"
-      >
-        <HelpCircle className="h-4 w-4" /> Règle
-      </button>
-      <button
-        onClick={() => setRound((r) => r + 1)}
-        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
-      >
-        <RotateCw className="h-4 w-4" /> Rejouer
-      </button>
-    </>,
-    [],
-  );
-
   return (
     <div className="relative">
+      <MemoryToolbarBridge
+        onRule={() => setShowOnboarding(true)}
+        onReset={() => setRound((r) => r + 1)}
+      />
       {/* Bandeau consigne + score fusionnés */}
       <div
         className="mb-4 px-4 py-2.5 rounded-2xl bg-amber-100/80 border-2 border-amber-300/60 shadow-[3px_3px_0_rgba(59,42,26,0.08)] flex items-center justify-center gap-3 flex-wrap"
