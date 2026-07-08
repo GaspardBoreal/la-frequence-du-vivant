@@ -21,10 +21,6 @@ interface StepDef {
   short: string;
   title: string;
   subtitle: string;
-  Icon: React.ComponentType<{ className?: string }>;
-  gradient: string;
-  ring: string;
-  glow: string;
 }
 
 const STEPS: StepDef[] = [
