@@ -43,14 +43,36 @@ const ZoomDetailGame: React.FC<Props> = ({ species, photoBy }) => {
     setTimeout(() => { setReveal(null); setRound((r) => r + 1); }, 1300);
   };
 
+  const resetAll = () => { setScore({ ok: 0, ko: 0 }); setRound((r) => r + 1); };
+  useGameToolbar(
+    <button
+      onClick={resetAll}
+      className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+    >
+      <RotateCw className="h-4 w-4" /> Recommencer
+    </button>,
+    [],
+  );
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xl" style={{ fontFamily: '"Caveat", cursive' }}>✅ {score.ok} · ❌ {score.ko}</p>
-        <button onClick={() => { setScore({ ok: 0, ko: 0 }); setRound((r) => r + 1); }} className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50">
-          <RotateCw className="h-4 w-4" /> Recommencer
-        </button>
+      {/* Bandeau score + consigne fusionnés */}
+      <div
+        className="mb-4 px-4 py-2.5 rounded-2xl bg-sky-100/70 border-2 border-sky-300/60 shadow-[3px_3px_0_rgba(59,42,26,0.08)] flex items-center justify-center gap-3 flex-wrap"
+        style={{ fontFamily: '"Patrick Hand", sans-serif' }}
+      >
+        <span
+          className="inline-flex items-baseline gap-2 text-sky-900"
+          style={{ fontFamily: '"Caveat", cursive', fontSize: 22, fontWeight: 700 }}
+        >
+          ✅ {score.ok}&nbsp;·&nbsp;❌ {score.ko}
+        </span>
+        <span className="text-[#3B2A1A]/30 select-none">·</span>
+        <span className="text-base sm:text-lg text-[#3B2A1A] text-center">
+          Reconnais l'espèce à partir du gros plan.
+        </span>
       </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
         <div className="group relative aspect-square rounded-3xl overflow-hidden border-2 border-[#3B2A1A]/20 bg-white shadow-[6px_6px_0_rgba(59,42,26,0.15)]">
