@@ -210,7 +210,52 @@ const ProspectiveDetail: React.FC<{ card: Card; onClose: () => void }> = ({ card
   const showLiteraryFallback = attempts >= 2 && !aiNarrative;
 
   return (
-...
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: 30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 30, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className={`max-w-xl w-full rounded-2xl overflow-hidden border border-white/10 ring-1 ${a.ring} bg-[#08111F]`}
+      >
+        <div className="relative h-56 sm:h-64">
+          {card.photo ? <img src={card.photo} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-zinc-800" />}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#08111F] via-[#08111F]/40 to-transparent" />
+          <button onClick={onClose} aria-label="Fermer" className="absolute top-3 right-3 h-9 w-9 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center">
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="absolute bottom-3 left-4">
+            <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${a.bg} ${a.text} border border-white/10 backdrop-blur`}>
+              {a.label}
+            </span>
+          </div>
+        </div>
+        <div className="p-5 sm:p-6">
+          <h3 className="text-2xl font-light tracking-tight">{card.s.commonName?.trim() || card.s.scientificName}</h3>
+          <p className="italic text-white/60 text-sm">{card.s.scientificName}</p>
+
+          <div className="mt-4 rounded-lg bg-white/[0.04] border border-white/10 p-4">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-cyan-300/70 mb-2">
+              <Cloud className="h-3.5 w-3.5" /> Projection 2100
+            </div>
+            <p className="text-sm text-white/85 leading-relaxed">{card.narrative}</p>
+          </div>
+
+          {aiNarrative && (
+            <div className="mt-3 rounded-lg bg-fuchsia-500/10 border border-fuchsia-400/20 p-4">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-fuchsia-200 mb-2">
+                <Sparkles className="h-3.5 w-3.5" /> Approfondi par l'IA
+              </div>
+              <p className="text-sm text-white/90 leading-relaxed">{aiNarrative}</p>
+            </div>
+          )}
+
           {aiError && (
             <div className="mt-3 rounded-lg border border-rose-400/30 bg-rose-500/10 p-3">
               <p className="text-xs text-rose-100 leading-relaxed">{aiError}</p>
