@@ -115,7 +115,9 @@ function App() {
         <LanguageProvider>
           <AudioProvider>
             <BrowserRouter>
+            <TrophicFullscreenProvider>
           <Routes>
+
             <Route path="/" element={<Index />} />
             <Route path="/agent-ia" element={<AgentIA />} />
             <Route path="/agent-ia/fiche" element={<AgentIAFiche />} />
