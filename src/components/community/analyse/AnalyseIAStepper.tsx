@@ -148,6 +148,22 @@ const AnalyseIAStepper: React.FC<AnalyseIAStepperProps> = ({ explorationId, spec
             Module <span className="text-foreground font-semibold">{activeIdx + 1}</span> / {STEPS.length}
           </div>
         </div>
+        {/* Baseline animée : titre + accroche du module actif */}
+        <div className="relative h-4 overflow-hidden mb-1.5">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={STEPS[activeIdx].key}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="text-[11px] sm:text-xs text-muted-foreground truncate leading-4"
+            >
+              <span className="text-foreground/80 font-medium">{STEPS[activeIdx].title}</span>
+              <span className="hidden sm:inline"> · {STEPS[activeIdx].subtitle}</span>
+            </motion.p>
+          </AnimatePresence>
+        </div>
         {/* Progress bar */}
         <div className="h-1 bg-muted/60 rounded-full overflow-hidden">
           <motion.div
