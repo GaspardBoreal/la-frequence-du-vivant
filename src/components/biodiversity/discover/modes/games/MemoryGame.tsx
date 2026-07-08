@@ -139,34 +139,46 @@ const MemoryGame: React.FC<Props> = ({ species, photoBy }) => {
     );
   }
 
+  useGameToolbar(
+    <>
+      <button
+        onClick={() => setShowOnboarding(true)}
+        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+        aria-label="Revoir la règle"
+      >
+        <HelpCircle className="h-4 w-4" /> Règle
+      </button>
+      <button
+        onClick={() => setRound((r) => r + 1)}
+        className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50 text-sm"
+      >
+        <RotateCw className="h-4 w-4" /> Rejouer
+      </button>
+    </>,
+    [],
+  );
+
   return (
     <div className="relative">
-      {/* Bandeau consigne permanent */}
+      {/* Bandeau consigne + score fusionnés */}
       <div
-        className="mb-4 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-amber-100/80 border-2 border-amber-300/60 shadow-[3px_3px_0_rgba(59,42,26,0.08)]"
+        className="mb-4 px-4 py-2.5 rounded-2xl bg-amber-100/80 border-2 border-amber-300/60 shadow-[3px_3px_0_rgba(59,42,26,0.08)] flex items-center justify-center gap-3 flex-wrap"
         style={{ fontFamily: '"Patrick Hand", sans-serif' }}
       >
-        <p className="text-base sm:text-lg text-[#3B2A1A] flex items-center gap-2">
+        <span
+          className="inline-flex items-baseline gap-1 text-amber-900"
+          style={{ fontFamily: '"Caveat", cursive', fontSize: 22, fontWeight: 700 }}
+        >
+          Coups&nbsp;: <strong>{moves}</strong>&nbsp;·&nbsp;{matched.size}/{pairsCount} paires
+        </span>
+        <span className="text-[#3B2A1A]/30 select-none">·</span>
+        <p className="text-base sm:text-lg text-[#3B2A1A] flex items-center gap-2 text-center">
           <Sparkles className="h-4 w-4 text-amber-700 shrink-0" />
           Trouve la <strong>photo</strong> et le <strong>nom</strong> qui vont ensemble
           — <strong>{pairsCount}</strong> paires à reconstituer.
         </p>
-        <button
-          onClick={() => setShowOnboarding(true)}
-          className="shrink-0 inline-flex items-center gap-1 text-amber-900 hover:text-amber-700 px-2.5 py-1 rounded-full bg-white/70 border border-amber-300/50 text-sm"
-        >
-          <HelpCircle className="h-4 w-4" /> Revoir la règle
-        </button>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xl" style={{ fontFamily: '"Caveat", cursive' }}>
-          Coups : <strong>{moves}</strong> · {matched.size}/{pairsCount} paires
-        </p>
-        <button onClick={() => setRound((r) => r + 1)} className="inline-flex items-center gap-1 text-amber-900 px-3 py-1.5 rounded-full bg-amber-100/70 border border-amber-300/50">
-          <RotateCw className="h-4 w-4" /> Rejouer
-        </button>
-      </div>
 
       <motion.div
         key={lastMissShake}
