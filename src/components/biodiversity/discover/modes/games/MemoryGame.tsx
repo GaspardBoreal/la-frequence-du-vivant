@@ -7,6 +7,7 @@ import GameCardImage from './GameCardImage';
 import MemoryOnboarding, { hasSeenMemoryOnboarding } from './MemoryOnboarding';
 import ZoomLoupeButton from './ZoomLoupeButton';
 import ZoomLightbox from './ZoomLightbox';
+import { useGameToolbar } from './GameToolbarContext';
 
 interface Props {
   species: BiodiversitySpecies[];
