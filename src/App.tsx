@@ -342,8 +342,10 @@ function App() {
           <AdhesionFab />
           <Toaster position="top-right" />
 
+            </TrophicFullscreenProvider>
             </BrowserRouter>
           </AudioProvider>
+
         </LanguageProvider>
         </ThemeProvider>
       </AuthProvider>
