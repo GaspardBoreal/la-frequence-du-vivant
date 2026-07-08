@@ -122,6 +122,7 @@ export const SpeciesTrophicPosition: React.FC<Props> = ({ scientificName, common
         {/* Background click-to-expand layer (sits behind content but catches empty-space taps) */}
         <button
           type="button"
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={expand}
           aria-label="Agrandir la vue trophique"
           className="absolute inset-0 z-0 cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-emerald-400/60 rounded-xl"
@@ -136,6 +137,7 @@ export const SpeciesTrophicPosition: React.FC<Props> = ({ scientificName, common
         {/* Real "Agrandir" pill button */}
         <button
           type="button"
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={expand}
           aria-label="Ouvrir la vue trophique en grand"
           className="absolute bottom-2 right-2 z-[3] inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur text-white transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
@@ -143,6 +145,7 @@ export const SpeciesTrophicPosition: React.FC<Props> = ({ scientificName, common
           <Maximize2 className="w-3 h-3" />
           Agrandir
         </button>
+
       </div>
     </div>
   );
