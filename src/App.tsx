@@ -117,6 +117,7 @@ function App() {
           <AudioProvider>
             <BrowserRouter>
             <TrophicFullscreenProvider>
+            <DiscoverFullscreenProvider>
           <Routes>
 
             <Route path="/" element={<Index />} />
