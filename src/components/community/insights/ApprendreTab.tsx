@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Sparkles, FlaskConical, Share2, TrendingUp, TreePine, Headphones, BookOpen, Lightbulb, ChevronDown } from 'lucide-react';
+import { GraduationCap, Sparkles, FlaskConical, Share2, TrendingUp, TreePine, Headphones, BookOpen, Lightbulb, ChevronDown, Baby, Rocket, ArrowRight, Maximize2 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { useInsightCards } from '@/hooks/useInsightCards';
 import type { CommunityRoleKey } from '@/hooks/useCommunityProfile';
@@ -12,6 +12,9 @@ import { CATEGORY_CONFIG, getLevelRank } from '@/lib/insightLevels';
 import { LIVING_PILLARS, ROLE_MISSIONS, type LivingPillarKey } from '@/lib/marchesVivantFramework';
 import ValorizationBlock from './ValorizationBlock';
 import CeQueNousAvonsVu from './curation/CeQueNousAvonsVu';
+import { useDiscoverFullscreen } from '@/components/biodiversity/discover/DiscoverFullscreenProvider';
+import type { BiodiversitySpecies } from '@/types/biodiversity';
+import type { DiscoverMode } from '@/components/biodiversity/discover/DiscoverFullscreen';
 
 function getIcon(name: string): React.FC<any> {
   return (LucideIcons as any)[name] || Lightbulb;
