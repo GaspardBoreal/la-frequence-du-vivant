@@ -138,6 +138,7 @@ const ExplorationMarcheurPage: React.FC = () => {
 
   // Background refresh of biodiversity snapshots if older than 2h
   const { isSyncing: isSnapshotSyncing } = useSnapshotsResyncOnView(effectiveExplorationId);
+  const { species: discoverSpecies } = useExplorationDiscoverSpecies(effectiveExplorationId);
 
   // Track page view on mount
   useEffect(() => {
