@@ -18,6 +18,7 @@ import ExplorationCarteTab from './exploration/ExplorationCarteTab';
 import { useAuth } from '@/hooks/useAuth';
 import EventBiodiversityTab from './EventBiodiversityTab';
 import ApprendreTab from './insights/ApprendreTab';
+import { useExplorationDiscoverSpecies } from '@/hooks/useExplorationDiscoverSpecies';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import ChatViewportObserver from '@/components/chatbot/ChatViewportObserver';
 import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
@@ -137,6 +138,7 @@ const ExplorationMarcheurPage: React.FC = () => {
 
   // Background refresh of biodiversity snapshots if older than 2h
   const { isSyncing: isSnapshotSyncing } = useSnapshotsResyncOnView(effectiveExplorationId);
+  const { species: discoverSpecies } = useExplorationDiscoverSpecies(effectiveExplorationId);
 
   // Track page view on mount
   useEffect(() => {
@@ -711,6 +713,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                 userId={userId}
                 initialSubTab={pendingApprendreSub ?? undefined}
                 initialSensory={pendingApprendreSensory ?? undefined}
+                discoverSpecies={discoverSpecies}
               />
             </motion.div>
           )}

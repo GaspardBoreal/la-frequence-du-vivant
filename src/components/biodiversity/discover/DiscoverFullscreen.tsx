@@ -18,10 +18,11 @@ interface Props {
   species: BiodiversitySpecies[];
   filtersLabel?: string;
   explorationId?: string;
+  initialMode?: DiscoverMode;
 }
 
-const DiscoverFullscreen: React.FC<Props> = ({ open, onClose, species, filtersLabel, explorationId }) => {
-  const [mode, setMode] = React.useState<DiscoverMode>('hub');
+const DiscoverFullscreen: React.FC<Props> = ({ open, onClose, species, filtersLabel, explorationId, initialMode }) => {
+  const [mode, setMode] = React.useState<DiscoverMode>(initialMode ?? 'hub');
   const rootRef = useRef<HTMLDivElement>(null);
   const data = useDiscoverData(species, explorationId);
 
@@ -72,8 +73,8 @@ const DiscoverFullscreen: React.FC<Props> = ({ open, onClose, species, filtersLa
 
   // Reset mode quand on rouvre
   useEffect(() => {
-    if (open) setMode('hub');
-  }, [open]);
+    if (open) setMode(initialMode ?? 'hub');
+  }, [open, initialMode]);
 
   // Lock body scroll
   useEffect(() => {

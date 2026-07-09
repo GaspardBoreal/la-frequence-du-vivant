@@ -12,7 +12,7 @@ import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
 import SpeciesGalleryCard from './SpeciesGalleryCard';
 import SpeciesViewModeToggle from './SpeciesViewModeToggle';
 import { useSpeciesViewMode } from '@/contexts/SpeciesViewModeContext';
-import DiscoverFullscreen from './discover/DiscoverFullscreen';
+import { useDiscoverFullscreen } from './discover/DiscoverFullscreenProvider';
 import { Sparkles } from 'lucide-react';
 import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
@@ -88,7 +88,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const [viewMode, setViewMode] = useState<'list' | 'immersion'>(() => {
     return (localStorage.getItem('species-explorer-view') as 'list' | 'immersion') || 'list';
   });
-  const [discoverOpen, setDiscoverOpen] = useState(false);
+  const { openDiscover } = useDiscoverFullscreen();
 
   const handleViewMode = (mode: 'list' | 'immersion') => {
     setViewMode(mode);
@@ -732,7 +732,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
               <SpeciesViewModeToggle />
               <button
                 type="button"
-                onClick={() => setDiscoverOpen(true)}
+                onClick={() => openDiscover({ species: filteredSpecies, explorationId })}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white bg-gradient-to-r from-fuchsia-600 via-violet-600 to-cyan-600 hover:from-fuchsia-500 hover:via-violet-500 hover:to-cyan-500 shadow-sm transition"
                 title="Découvrir en plein écran"
               >
@@ -744,12 +744,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
         </div>
       </Card>
 
-      <DiscoverFullscreen
-        open={discoverOpen}
-        onClose={() => setDiscoverOpen(false)}
-        species={filteredSpecies}
-        explorationId={explorationId}
-      />
+
 
       {/* Category tabs + grid */}
       <Tabs value={selectedCategory} onValueChange={v => setSelectedCategory(v)} className="w-full">
