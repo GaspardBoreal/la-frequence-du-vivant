@@ -40,6 +40,8 @@ interface ApprendreTabProps {
   onNavigateToMarche?: (marcheId: string) => void;
   initialSubTab?: 'decouvertes' | 'apprendre-creer';
   initialSensory?: 'oeil' | 'main' | 'oreille' | 'coeur' | 'palais';
+  /** Espèces prêtes à alimenter le Mode Découverte plein écran (CTA en tête). */
+  discoverSpecies?: BiodiversitySpecies[];
 }
 
 type ApprendreSubTab = 'decouvertes' | 'apprendre-creer';
