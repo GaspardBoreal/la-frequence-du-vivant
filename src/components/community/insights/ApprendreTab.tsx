@@ -136,6 +136,7 @@ const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explo
           explorationId={explorationId}
           totalSpecies={totalSpecies}
           nextLevelKey={nextLevelKey}
+          discoverSpecies={discoverSpecies}
         />
       )}
     </div>
