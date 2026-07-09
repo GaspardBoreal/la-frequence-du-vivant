@@ -171,6 +171,14 @@ const ApprendreCreerContent: React.FC<ApprendreCreerContentProps> = ({
   return (
     <div className="space-y-6">
 
+      {/* CTA « wahou » — Mode Découverte plein écran */}
+      <DiscoverHeroCTA
+        species={discoverSpecies ?? []}
+        explorationId={explorationId}
+      />
+
+
+
       {/* 5 pillars selector */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {LIVING_PILLARS.map(pillar => {
