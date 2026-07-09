@@ -18,6 +18,7 @@ import ExplorationCarteTab from './exploration/ExplorationCarteTab';
 import { useAuth } from '@/hooks/useAuth';
 import EventBiodiversityTab from './EventBiodiversityTab';
 import ApprendreTab from './insights/ApprendreTab';
+import { useExplorationDiscoverSpecies } from '@/hooks/useExplorationDiscoverSpecies';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import ChatViewportObserver from '@/components/chatbot/ChatViewportObserver';
 import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
