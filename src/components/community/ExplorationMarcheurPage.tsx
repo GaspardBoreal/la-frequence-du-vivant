@@ -713,6 +713,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                 userId={userId}
                 initialSubTab={pendingApprendreSub ?? undefined}
                 initialSensory={pendingApprendreSensory ?? undefined}
+                discoverSpecies={discoverSpecies}
               />
             </motion.div>
           )}
