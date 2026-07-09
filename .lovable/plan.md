@@ -1,34 +1,48 @@
-## Problème
+## Diagnostic
 
-Le RPC `get_community_usage_dashboard` échoue systématiquement avec :
-`ERROR: type "app_role" does not exist` (dans `NOT public.has_role(auth.uid(), 'admin'::app_role)`).
+Le problème ne vient pas de l’absence de données : la base contient bien des signaux d’usage et de communauté, notamment :
 
-Ce projet n'utilise pas le pattern `has_role/app_role` documenté — l'admin est vérifié via `public.is_admin_user()` (autres RPC admin du projet). L'erreur est levée avant tout calcul, le hook la remonte, et `UsageDashboard` affiche « Aucune donnée d'usage disponible ».
+- `marcheur_activity_logs` : 11 336 lignes
+- `community_profiles` : 55 profils
+- `marcheur_medias` : 430 médias
+- `marcheur_observations` : 870 observations
+- `marche_participations` : 112 participations
 
-## Correctif
+Le point fragile identifié est la RPC `get_community_usage_dashboard` : elle lève `unauthorized` dès que le contexte SQL n’a pas `auth.uid()`. C’est normal dans certains tests serveur, mais côté interface il faut maintenant distinguer clairement :
 
-**Migration SQL** — remplacer le garde d'entrée du RPC :
+1. erreur d’autorisation réelle ;
+2. réponse RPC vide ou incomplète ;
+3. exception masquée par l’UI en simple “Aucune donnée”.
 
-```sql
--- avant
-IF NOT public.has_role(auth.uid(), 'admin'::app_role) THEN
-  RAISE EXCEPTION 'forbidden';
-END IF;
+## Plan de correction
 
--- après
-IF NOT public.is_admin_user() THEN
-  RAISE EXCEPTION 'forbidden';
-END IF;
-```
+1. **Sécuriser la fonction RPC**
+   - Remplacer le test `is_admin_user()` par un contrôle explicite basé sur `check_is_admin_user(auth.uid())`.
+   - Lever une erreur claire si aucun utilisateur authentifié n’est présent.
+   - Garder la fonction en `SECURITY DEFINER` pour qu’un admin puisse agréger les tables protégées par RLS.
+   - Conserver l’accès uniquement aux utilisateurs authentifiés/admins.
 
-Réémettre la fonction complète via `CREATE OR REPLACE FUNCTION` (mêmes signatures, mêmes `GRANT EXECUTE TO authenticated`, `SECURITY DEFINER`, `SET search_path = public`).
+2. **Rendre la réponse RPC robuste**
+   - Garantir que les champs JSON attendus par le frontend ne soient jamais `null` quand il n’y a pas de résultat sur une sous-section :
+     - `personas: []`
+     - `persona_members: {}`
+     - `bubble: []`
+     - `heatmap: []`
+     - `radar: []`
+     - `top_cities: []`
+     - `daily: []`
+   - Cela évite que le dashboard soit considéré comme vide alors que les KPIs existent.
 
-## Vérification
+3. **Améliorer le hook frontend**
+   - Ne plus afficher “Aucune donnée” pour une erreur RPC.
+   - Ajouter un état d’erreur visible avec le message utile : non connecté, non admin, ou erreur RPC.
+   - Journaliser temporairement l’erreur côté console avec le nom de la RPC pour faciliter la vérification.
 
-1. `SELECT get_community_usage_dashboard(now() - interval '90 days', now())` en tant qu'admin → renvoie le JSON attendu.
-2. Rechargement de `/admin/community` onglet « Usages » → KPIs, Personas, Funnel, Heatmap, Radar et Villes s'affichent.
-3. Bandeau d'erreur : si le JSON est vide (0 log sur la période), afficher « Aucun signal sur cette plage — élargir la période » plutôt que le message générique (petit ajout UX dans `UsageDashboard.tsx`).
+4. **Améliorer l’état vide**
+   - Afficher “Aucune activité sur la période sélectionnée” uniquement si la RPC fonctionne mais que les compteurs sont réellement à zéro.
+   - Ajouter un bouton “Réessayer” et garder le sélecteur 7/30/90/180/365 jours.
 
-## Hors périmètre
-
-Aucun changement sur les composants de visualisation, le hook, ni la structure du payload. Seulement le garde admin du RPC + un message UX plus précis en cas de payload vide.
+5. **Validation**
+   - Vérifier que la RPC retourne un JSON complet pour un admin connecté.
+   - Vérifier dans l’onglet “Usages” que le dashboard affiche les cartes au lieu du message vide.
+   - Si l’utilisateur connecté n’est pas admin, afficher un message d’accès clair au lieu d’un faux état vide.
