@@ -103,6 +103,7 @@ import AgentIAFiche from './pages/AgentIAFiche';
 import InterregSudoeMdv from './pages/InterregSudoeMdv';
 import ApprendreMarchePage from './pages/ApprendreMarchePage';
 import { TrophicFullscreenProvider } from './components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider';
+import { DiscoverFullscreenProvider } from './components/biodiversity/discover/DiscoverFullscreenProvider';
 
 
 
