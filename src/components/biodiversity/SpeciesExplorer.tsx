@@ -12,7 +12,7 @@ import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
 import SpeciesGalleryCard from './SpeciesGalleryCard';
 import SpeciesViewModeToggle from './SpeciesViewModeToggle';
 import { useSpeciesViewMode } from '@/contexts/SpeciesViewModeContext';
-import DiscoverFullscreen from './discover/DiscoverFullscreen';
+import { useDiscoverFullscreen } from './discover/DiscoverFullscreenProvider';
 import { Sparkles } from 'lucide-react';
 import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
