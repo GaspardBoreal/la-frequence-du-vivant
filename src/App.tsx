@@ -60,6 +60,7 @@ import Dordonia from './pages/Dordonia';
 import PublicEpubDownload from './pages/PublicEpubDownload';
 import PublicLivreVivant from './pages/PublicLivreVivant';
 import MarchesDuVivant from './pages/MarchesDuVivant';
+import OffreVdtMdv from './pages/OffreVdtMdv';
 import MarchesDuVivantEntreprises from './pages/MarchesDuVivantEntreprises';
 import MarchesDuVivantAgriculture from './pages/MarchesDuVivantAgriculture';
 import MarchesDuVivantPartenaires from './pages/MarchesDuVivantPartenaires';
@@ -124,6 +125,8 @@ function App() {
             <Route path="/agent-ia" element={<AgentIA />} />
             <Route path="/agent-ia/fiche" element={<AgentIAFiche />} />
             <Route path="/interreg-sudoe-mdv" element={<InterregSudoeMdv />} />
+            <Route path="/offre-VDT-MDV" element={<OffreVdtMdv />} />
+            <Route path="/offre-vdt-mdv" element={<OffreVdtMdv />} />
 
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
