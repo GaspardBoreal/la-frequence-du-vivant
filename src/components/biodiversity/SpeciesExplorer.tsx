@@ -88,7 +88,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   const [viewMode, setViewMode] = useState<'list' | 'immersion'>(() => {
     return (localStorage.getItem('species-explorer-view') as 'list' | 'immersion') || 'list';
   });
-  const [discoverOpen, setDiscoverOpen] = useState(false);
+  const { openDiscover } = useDiscoverFullscreen();
 
   const handleViewMode = (mode: 'list' | 'immersion') => {
     setViewMode(mode);
