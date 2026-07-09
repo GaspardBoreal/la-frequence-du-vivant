@@ -73,8 +73,8 @@ const DiscoverFullscreen: React.FC<Props> = ({ open, onClose, species, filtersLa
 
   // Reset mode quand on rouvre
   useEffect(() => {
-    if (open) setMode('hub');
-  }, [open]);
+    if (open) setMode(initialMode ?? 'hub');
+  }, [open, initialMode]);
 
   // Lock body scroll
   useEffect(() => {
