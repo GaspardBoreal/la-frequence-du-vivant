@@ -6831,6 +6831,10 @@ export type Database = {
         Args: { p_event_id?: string }
         Returns: Json
       }
+      get_community_usage_dashboard: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: Json
+      }
       get_curation_media_context: {
         Args: { p_media_id: string }
         Returns: Json

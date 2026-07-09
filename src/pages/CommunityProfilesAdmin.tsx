@@ -27,6 +27,7 @@ import ProfilsPanel from '@/components/admin/community/ProfilsPanel';
 import NewMarcheurDialog from '@/components/admin/community/NewMarcheurDialog';
 import UnvalidatedRegistrationsTab from '@/components/admin/community/UnvalidatedRegistrationsTab';
 import RecherchesPanel from '@/components/admin/community/RecherchesPanel';
+import UsageDashboard from '@/components/admin/community/usage/UsageDashboard';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   marcheur_en_devenir: { label: 'En devenir', icon: Footprints, color: 'text-muted-foreground' },
@@ -242,6 +243,10 @@ const CommunityProfilesAdmin: React.FC = () => {
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
               Profils
             </TabsTrigger>
+            <TabsTrigger value="usages">
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Usages
+            </TabsTrigger>
             <TabsTrigger value="activites">Activités</TabsTrigger>
             <TabsTrigger value="recherches">Recherches</TabsTrigger>
             <TabsTrigger value="affiliation">Affiliation marcheurs</TabsTrigger>
@@ -406,6 +411,11 @@ const CommunityProfilesAdmin: React.FC = () => {
           {/* ===== PROFILS ===== */}
           <TabsContent value="profils">
             <ProfilsPanel />
+          </TabsContent>
+
+          {/* ===== USAGES ===== */}
+          <TabsContent value="usages">
+            <UsageDashboard />
           </TabsContent>
 
           {/* ===== ACTIVITÉS ===== */}
