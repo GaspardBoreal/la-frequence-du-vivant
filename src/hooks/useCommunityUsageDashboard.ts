@@ -71,6 +71,58 @@ export interface UsageDashboardPayload {
   generated_at: string;
 }
 
+const emptyKpis: UsageKpis = {
+  total_users: 0,
+  dau_7d: 0,
+  wau_30d: 0,
+  mau_90d: 0,
+  with_participation: 0,
+  returning: 0,
+  contributors: 0,
+  adherents: 0,
+  avg_events_30d: 0,
+  avg_contribs: 0,
+};
+
+const emptyFunnel: UsageFunnel = {
+  inscrits: 0,
+  actifs_30d: 0,
+  participants: 0,
+  fideles: 0,
+  contributeurs: 0,
+  adherents: 0,
+};
+
+function getUsageDashboardErrorMessage(error: { message?: string; details?: string | null; code?: string | null }) {
+  const rawMessage = `${error.message ?? ''} ${error.details ?? ''}`.toLowerCase();
+
+  if (rawMessage.includes('not_authenticated') || rawMessage.includes('jwt')) {
+    return 'Session expirée : reconnectez-vous pour consulter les usages.';
+  }
+
+  if (rawMessage.includes('not_admin') || rawMessage.includes('unauthorized') || rawMessage.includes('forbidden')) {
+    return 'Accès réservé aux administrateurs de la communauté.';
+  }
+
+  return 'Impossible de charger les données d’usage pour le moment.';
+}
+
+function normalizeUsageDashboardPayload(payload: Partial<UsageDashboardPayload>): UsageDashboardPayload {
+  return {
+    kpis: { ...emptyKpis, ...(payload.kpis ?? {}) },
+    personas: payload.personas ?? [],
+    persona_members: payload.persona_members ?? {},
+    bubble: payload.bubble ?? [],
+    heatmap: payload.heatmap ?? [],
+    radar: payload.radar ?? [],
+    funnel: { ...emptyFunnel, ...(payload.funnel ?? {}) },
+    top_cities: payload.top_cities ?? [],
+    daily: payload.daily ?? [],
+    range: payload.range ?? { from: '', to: '' },
+    generated_at: payload.generated_at ?? new Date().toISOString(),
+  };
+}
+
 export function useCommunityUsageDashboard(days = 90) {
   return useQuery({
     queryKey: ['community-usage-dashboard', days],
@@ -81,8 +133,21 @@ export function useCommunityUsageDashboard(days = 90) {
         'get_community_usage_dashboard' as never,
         { p_from: from.toISOString(), p_to: to.toISOString() } as never,
       );
-      if (error) throw error;
-      return data as unknown as UsageDashboardPayload;
+      if (error) {
+        console.error('[get_community_usage_dashboard] RPC error', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw new Error(getUsageDashboardErrorMessage(error));
+      }
+
+      if (!data) {
+        throw new Error('La requête d’usage n’a retourné aucune réponse exploitable.');
+      }
+
+      return normalizeUsageDashboardPayload(data as unknown as Partial<UsageDashboardPayload>);
     },
     staleTime: 5 * 60 * 1000,
   });

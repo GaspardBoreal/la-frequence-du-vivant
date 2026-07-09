@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Sparkles, Presentation, RefreshCw } from 'lucide-react';
 import { useCommunityUsageDashboard } from '@/hooks/useCommunityUsageDashboard';
 import SignalVitalHero from './SignalVitalHero';
@@ -15,7 +16,8 @@ import PitchModeOverlay from './PitchModeOverlay';
 export const UsageDashboard: React.FC = () => {
   const [days, setDays] = useState(90);
   const [pitchOpen, setPitchOpen] = useState(false);
-  const { data, isLoading, refetch, isFetching } = useCommunityUsageDashboard(days);
+  const { data, error, isError, isLoading, refetch, isFetching } = useCommunityUsageDashboard(days);
+  const hasNoActivity = Boolean(data && data.kpis.total_users === 0 && data.bubble.length === 0);
 
   if (isLoading) {
     return (
@@ -27,8 +29,31 @@ export const UsageDashboard: React.FC = () => {
     );
   }
 
-  if (!data) {
-    return <Card className="p-8 text-center text-sm text-muted-foreground">Aucune donnée d'usage disponible.</Card>;
+  if (isError) {
+    return (
+      <Alert variant="destructive" className="space-y-3">
+        <AlertTitle>Données d'usage indisponibles</AlertTitle>
+        <AlertDescription className="space-y-3">
+          <p>{error instanceof Error ? error.message : "Impossible de charger les données d'usage pour le moment."}</p>
+          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+            Réessayer
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!data || hasNoActivity) {
+    return (
+      <Card className="p-8 text-center text-sm text-muted-foreground space-y-3">
+        <p>Aucune activité sur la période sélectionnée.</p>
+        <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+          Réessayer
+        </Button>
+      </Card>
+    );
   }
 
   return (
