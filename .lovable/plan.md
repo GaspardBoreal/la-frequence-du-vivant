@@ -1,95 +1,90 @@
-# Refonte du mode Immersif — 3 directions radicales
+# Tableau de bord "Profils d'usage marcheurs"
 
-Le mode Immersif actuel est un simple diaporama Ken-Burns (photo + nom, 4,5s/espèce). C'est joli mais générique : rien ne révèle **la spécificité du vivant collecté sur les points de marche** (géographie, densité, familles, rareté, moment de collecte, marcheur observateur).
+Un nouvel onglet **Usages** dans `/admin/community` (à côté de Profils / Rôles / Activités) qui transforme les logs bruts en une lecture inspirante et actionnable — pour l'animation, les ambassadeurs, le marketing automation, et le pitch mécènes.
 
-Voici **3 partis pris radicalement différents**, ciblant chacun une audience distincte. Une seule sera implémentée après ton choix.
+## Données disponibles (audit)
 
----
+- **`marcheur_activity_logs`** — 11 336 events / 38 users / 3 mois. Types : `tab_switch` (60 %), `session_start`, `page_view`, `media_upload`, `tool_use` + `metadata` jsonb (user_agent, viewport, target).
+- **`marche_participations`** — participations validées (méthode + timestamp).
+- **`community_profiles`** — genre, csp, âge, ville, rôle, statut, `types_marches_interets`, `recherche_prioritaire`, motivations, adhérent, superpouvoir sensoriel.
+- **`marcheur_medias` / `marcheur_observations` / `marcheur_textes` / `marcheur_audio`** — contributions produites.
+- **`search_logs`** — requêtes internes.
+- **`engagement_analytics`** — popups planning/video, messages, réservations.
+- **`adhesion_requests`** — conversion adhérent.
 
-## Direction A — « CATHÉDRALE DU VIVANT » (contemplatif · muséal · grand public premium)
+## Structure du dashboard (une page, 6 blocs)
 
-**Cible :** grand public, financeurs, élus, visiteurs d'exposition. Public qui doit ressentir la **puissance émotionnelle** du corpus.
+### 1. Bandeau "Signal vital" (hero KPI, animé)
+5 compteurs vivants avec spark-lines 30 j :
+- Marcheur·euse·s actif·ve·s 7 j / 30 j / 90 j (DAU-WAU-MAU)
+- Taux de ré-engagement (revient après 1re marche)
+- Taux de conversion visite → participation → contribution → adhérent (funnel)
+- Densité moyenne (events/user/semaine)
+- "Fréquence collective" (index composite : sessions × contributions × diversité d'outils)
 
-**Principe :** transformer l'écran en installation muséale immersive. Une seule espèce à la fois, mais théâtralisée comme dans un planétarium ou une expo Van Gogh immersive.
+### 2. Segmentation RFM/Persona (le cœur)
+Clustering automatique en **6 personas** calculés côté SQL (RPC dédiée) à partir de recency / frequency / contribution / diversity :
+- **Sentinelles actives** — connexion récente + contributions + outils variés
+- **Ambassadeurs latents** — inscrits engagés mais silencieux (pas de contribution 30 j)
+- **Nouvelles graines** — inscrits < 30 j, exploration en cours
+- **Contributeurs passifs** — participent mais ne créent pas de contenu
+- **Explorateurs numériques** — usage app fort, participation terrain faible
+- **Endormis** — 60 j+ sans activité (cible réactivation)
 
-**Mécaniques clés :**
-- Photo plein écran avec **parallaxe multi-couches** (fond flouté zoomé lent + sujet net qui respire).
-- **Halo lumineux réactif** derrière le sujet, teinté par la famille taxonomique (émeraude pour flore, or pour insectes, cyan pour oiseaux, argent pour champignons).
-- **Typographie XXL animée lettre par lettre** (nom vernaculaire) façon générique de film, avec le nom scientifique qui apparaît en filigrane.
-- **Voix off générée** (option, via edge existante `eleven-tts`) qui murmure le nom + la famille (désactivable).
-- **Constellations de points GPS** en overlay minimaliste bas-droit : la carte de la marche s'allume à l'endroit précis où l'espèce a été observée, avec une pulsation.
-- **Chapitrage par « mouvements »** : le carrousel n'est pas plat, il est découpé en actes (« Les Racines », « Les Ailés », « Les Discrets »…) avec des cartons de transition noirs typographiés.
-- **Ambient soundscape** subtil (nappe sonore continue qui module selon le règne).
+Affichage : **matrice bulle** (X = récence, Y = intensité, taille = contributions, couleur = persona), plus liste avec CTA "Exporter segment CSV" / "Créer campagne".
 
-**Ce que ça démontre :** la **densité poétique** et la valeur patrimoniale du corpus. Chaque espèce = un tableau.
+### 3. Parcours-type (Sankey / Flow)
+Diagramme Sankey des trajectoires : `Inscription → 1re marche → Contribution → 2e marche → Adhésion`.
+Met en évidence les points de fuite (ex. 40 % ne reviennent pas après la 1re marche → action ambassadeur).
 
-**Complexité :** ★★★☆☆ (surtout travail de composition et sound design léger).
+### 4. Signature d'usage (Feature Adoption Radar)
+Radar par persona des 8 fonctionnalités clés utilisées (Carnet, Carte, Espèces, Chatbot, Audio, Outils, Quiz, Partage) basé sur `event_target` + `tab_switch`. Montre où concentrer l'onboarding.
 
----
+### 5. Rythmes de vie (Heatmap + saisonnalité)
+- Heatmap 7 × 24 (jour × heure Paris) des connexions → meilleurs créneaux emailing.
+- Barres saisonnalité 12 mois × type d'événement participé.
+- Durée moyenne de session (calculée entre `session_start` et dernier event).
 
-## Direction B — « SCAN VIVANT — DATA IMMERSION » (data-driven · scientifique · disruptif)
+### 6. Territoires & profils sociologiques
+- Carte de France (villes) + taille = # marcheurs actifs + tooltip persona majoritaire.
+- Croisement CSP × âge × persona (heatmap).
+- Top 5 "recherche prioritaire" par persona (mots-clés déclarés à l'inscription).
 
-**Cible :** scientifiques, journalistes, partenaires institutionnels, sentinelles engagées. Public qui veut **comprendre** ce que le corpus révèle du territoire.
+## Actions actionnables intégrées
 
-**Principe :** ne plus montrer *une* espèce mais **la structure entière du vivant collecté**, en flux continu type « bloomberg de la biodiversité ». L'immersion vient de la **densité informationnelle chorégraphiée**, pas de l'esthétisme photo.
+Chaque bloc expose :
+- **Export CSV** (segment / persona / cohorte).
+- **Copier emails** (contact direct ambassadeur).
+- **Générer prompt marketing** (bouton "Suggestion campagne IA" → ouvre le chatbot avec un brief pré-rempli : persona ciblé + angle + CTA).
+- **Pitch mode** (bouton plein écran, typographie XXL, KPIs clés, sans UI admin → pour démo mécènes/clients).
 
-**Mécaniques clés :**
-- **Grille dynamique 5×N** de vignettes photo qui défilent en flux vertical (façon mur de contrôle NASA), 30-50 espèces visibles simultanément.
-- Une vignette est **« happée » toutes les 3s** : elle explose en plein écran avec **fiche data live** :
-  - Chips famille / règne / fonction éco.
-  - **Mini-carte de la marche** avec les waypoints où l'espèce a été vue (pulsation GPS).
-  - **Barre de fréquence** : nombre d'observations vs moyenne du corpus.
-  - **Badge « pionnière »** si observée par ≤2 marcheurs, ou **badge « emblématique »** si dans le top 10 %.
-  - Nom du/des **marcheur(s) contributeur(s)** (initiales anonymisées si besoin).
-- **Compteur global temps réel** en haut : `55 espèces · 12 familles · 8 fonctions écologiques · 3 km parcourus`.
-- **Transitions cinétiques** type Framer Motion `layoutId` (la vignette qui vole depuis la grille vers le plein écran).
-- **Bande sonore data** : clics discrets, pulsations synchronisées aux apparitions.
-- **Timeline horizontale** en bas qui égrène les observations dans l'ordre chronologique de collecte.
+## Architecture technique (concise)
 
-**Ce que ça démontre :** la **rigueur scientifique**, la **couverture territoriale**, le **collectif de marcheurs**. On voit que ce n'est pas une jolie liste, c'est un **inventaire vivant**.
+- **RPC Postgres** `get_community_usage_dashboard(from date, to date)` retournant un JSON structuré (KPIs, personas, sankey_nodes, sankey_links, heatmap, radar). Toute la lourdeur en SQL (CTEs) — un seul aller-retour.
+- **Hook** `useCommunityUsageDashboard(range)` avec React Query (staleTime 5 min).
+- **Composant page** `AdminUsageDashboard.tsx` monté dans un nouvel onglet `Usages` dans `AdminCommunity` (à côté de Profils).
+- **Sous-composants** dans `src/components/admin/community/usage/` :
+  - `SignalVitalHero.tsx` (5 KPIs animés + sparkline recharts)
+  - `PersonaMatrix.tsx` (scatter/bubble recharts + drawer par persona)
+  - `JourneySankey.tsx` (recharts-sankey ou simple d3-sankey)
+  - `FeatureRadar.tsx` (recharts RadarChart)
+  - `RhythmHeatmap.tsx` (grille CSS custom + Framer Motion)
+  - `TerritoryMap.tsx` (réutilise `RichMap` existant + agrégation par ville)
+  - `PitchModeOverlay.tsx` (plein écran, réutilise la lib Framer déjà installée)
+- **Utilitaire persona** `src/lib/marcheurPersonas.ts` — libellés, couleurs, seuils, descriptions FR.
+- **Route** : conserve `/admin/community` avec nouvel onglet ; pas de nouvelle route.
 
-**Complexité :** ★★★★☆ (chorégraphie layout + data fetch enrichis).
+## Ce qu'on livre dans cette itération
 
----
+1. Migration : RPC `get_community_usage_dashboard` (SECURITY DEFINER, admin only via `has_role`).
+2. Hook + types.
+3. Page + 6 sous-composants.
+4. Onglet "Usages" intégré dans l'admin communauté.
+5. Bouton "Mode Pitch" (démo mécènes).
+6. Exports CSV par persona.
 
-## Direction C — « TRAVERSÉE SENSORIELLE » (narratif · immersif profond · gen Z / éducatif)
+## Ce qu'on ne fait PAS ici (itérations suivantes)
 
-**Cible :** jeunes adultes, réseaux sociaux, publics scolaires/lycéens, expériences événementielles (festival, projection). Public qui veut **vivre** la marche, pas la regarder.
-
-**Principe :** on **rejoue la marche** en temps compressé. L'utilisateur devient marcheur : il traverse le parcours GPS, et les espèces **surgissent** au moment et à l'endroit où elles ont été rencontrées.
-
-**Mécaniques clés :**
-- **Fond plein écran = vue carte satellite/relief animée** (Mapbox/MapLibre) qui suit un **travelling GPS** le long du tracé de la marche (2-3 min pour toute la marche).
-- Chaque waypoint = **apparition théâtrale d'une ou plusieurs espèces** :
-  - La photo émerge en 3D depuis le point GPS (effet « pop-up polaroid » avec rotation légère).
-  - Le nom s'écrit à la main (SVG stroke animation).
-  - Halo coloré selon règne, particules ambiantes (feuilles / eau / lucioles selon habitat).
-- **Boussole + horloge** en overlay coin haut : on voit *quand* et *où* dans la marche on est.
-- **Bande verticale gauche** : mini-frise des espèces déjà « rencontrées » qui s'empile.
-- **Vitesse contrôlable** (pause / ×1 / ×2 / rembobinage).
-- **Fin de traversée = mandala final** : toutes les espèces s'organisent en constellation circulaire autour du tracé complet, avec compteur `Vous avez traversé 55 formes de vivant`.
-- **Compatibilité social** : screenshots automatiques exportables du mandala final.
-
-**Ce que ça démontre :** la **spatialité** et le **récit incarné** — la biodiversité **vit à un endroit précis**, pas dans une base abstraite. La marche est une aventure sensible.
-
-**Complexité :** ★★★★★ (nécessite carte animée + timeline GPS synchronisée + intégration waypoints).
-
----
-
-## Tableau récap
-
-| Direction | Émotion dominante | Cible | Force démonstrative | Complexité |
-|---|---|---|---|---|
-| **A · Cathédrale** | contemplation | grand public / mécènes | poésie & valeur patrimoniale | ★★★ |
-| **B · Scan Vivant** | vertige data | scientifiques / presse | rigueur & couverture territoriale | ★★★★ |
-| **C · Traversée** | immersion incarnée | jeunes / événementiel | spatialité & récit de marche | ★★★★★ |
-
----
-
-## Question
-
-**Quelle direction veux-tu que je prototype d'abord ?**
-
-Tu peux aussi en choisir **deux** (elles peuvent coexister comme sous-modes du mode Immersif, avec un mini-sélecteur en entrée).
-
-Une fois ton choix confirmé, je te ferai un plan d'implémentation détaillé (fichiers touchés, hooks nécessaires, ordre de build) avant de coder.
+- Envoi effectif de campagnes emailing (mais on prépare l'export + prompt).
+- Prédictions ML / churn score (on reste sur des seuils explicables).
+- A/B test des CTA.
