@@ -153,11 +153,12 @@ interface ApprendreCreerContentProps {
   explorationId?: string;
   totalSpecies?: number;
   nextLevelKey: CommunityRoleKey | null | undefined;
+  discoverSpecies?: BiodiversitySpecies[];
 }
 
 const ApprendreCreerContent: React.FC<ApprendreCreerContentProps> = ({
   userLevel, activePillar, handlePillarChange, activeAngle, expandedCards, toggleCard,
-  explorationId, totalSpecies, nextLevelKey,
+  explorationId, totalSpecies, nextLevelKey, discoverSpecies,
 }) => {
   const { cards, byCategory, isLoading } = useInsightCards({
     userLevel,
