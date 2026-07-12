@@ -12,6 +12,7 @@ export interface EventsFilters {
   status: EventStatus;
   sort: EventSort;
   share?: EventShareFilter;
+  category?: string; // 'all' | MarcheCategory
 }
 
 export interface PaginatedEventsParams extends EventsFilters {
@@ -25,6 +26,7 @@ export interface MarcheEventRow {
   description: string | null;
   date_marche: string;
   event_type: string | null;
+  category: string | null;
   exploration_id: string | null;
   exploration_name: string | null;
   lieu: string | null;
@@ -49,6 +51,7 @@ const normalize = (f: EventsFilters) => ({
   _type: f.type === 'all' ? null : f.type,
   _status: f.status === 'all' ? null : f.status,
   _share: !f.share || f.share === 'all' ? null : f.share,
+  _category: !f.category || f.category === 'all' ? null : f.category,
 });
 
 export const useMarcheEventsStats = (filters: EventsFilters) =>

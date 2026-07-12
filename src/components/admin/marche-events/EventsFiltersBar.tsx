@@ -2,10 +2,11 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ArrowUpDown, Filter, Sparkles } from 'lucide-react';
+import { Search, ArrowUpDown, Filter, Sparkles, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
+import { MARCHE_CATEGORIES, getMarcheCategoryMeta } from '@/lib/marcheCategories';
 import type { EventsFilters, EventSort, EventStatus, EventShareFilter } from '@/hooks/useMarcheEventsQuery';
 
 interface Props {
@@ -25,6 +26,22 @@ const TypeSelect: React.FC<{ value: string; onChange: (v: string) => void }> = (
       {MARCHE_EVENT_TYPES.map((t) => {
         const m = getMarcheEventTypeMeta(t)!;
         return <SelectItem key={t} value={t}>{m.label}</SelectItem>;
+      })}
+    </SelectContent>
+  </Select>
+);
+
+const CategorySelect: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger className="w-full">
+      <Layers className="h-4 w-4 mr-1 text-muted-foreground shrink-0" />
+      <SelectValue placeholder="Toutes catégories" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">Toutes catégories</SelectItem>
+      {MARCHE_CATEGORIES.map((c) => {
+        const m = getMarcheCategoryMeta(c);
+        return <SelectItem key={c} value={c}>{m.label}</SelectItem>;
       })}
     </SelectContent>
   </Select>
@@ -78,6 +95,7 @@ const ShareSelect: React.FC<{ value: EventShareFilter; onChange: (v: EventShareF
 
 const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) => {
   const share = filters.share ?? 'all';
+  const category = filters.category ?? 'all';
   return (
     <Card className="p-3 sm:p-4 mb-4">
       <div className="flex flex-col gap-3">
@@ -106,6 +124,10 @@ const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) =>
                   <TypeSelect value={filters.type} onChange={(v) => onChange({ type: v })} />
                 </div>
                 <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Catégorie</label>
+                  <CategorySelect value={category} onChange={(v) => onChange({ category: v })} />
+                </div>
+                <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Statut</label>
                   <StatusSelect value={filters.status} onChange={(v) => onChange({ status: v })} />
                 </div>
@@ -123,8 +145,9 @@ const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) =>
         </div>
 
         {/* Desktop: filtres en ligne */}
-        <div className="hidden lg:grid lg:grid-cols-4 gap-3">
+        <div className="hidden lg:grid lg:grid-cols-5 gap-3">
           <TypeSelect value={filters.type} onChange={(v) => onChange({ type: v })} />
+          <CategorySelect value={category} onChange={(v) => onChange({ category: v })} />
           <StatusSelect value={filters.status} onChange={(v) => onChange({ status: v })} />
           <SortSelect value={filters.sort} onChange={(v) => onChange({ sort: v })} />
           <ShareSelect value={share} onChange={(v) => onChange({ share: v })} />

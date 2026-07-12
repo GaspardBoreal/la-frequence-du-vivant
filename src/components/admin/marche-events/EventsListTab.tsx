@@ -26,6 +26,7 @@ import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
+import { getMarcheCategoryMeta } from '@/lib/marcheCategories';
 import PaginationControls from './PaginationControls';
 import {
   useMarcheEventsPaginated,
@@ -137,6 +138,7 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
             const past = isPast(new Date(event.date_marche));
             const count = counts?.[event.id] || 0;
             const typeMeta = getMarcheEventTypeMeta(event.event_type);
+            const catMeta = getMarcheCategoryMeta((event as any).category);
             return (
               <Card
                 key={event.id}
@@ -232,6 +234,10 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                       {typeMeta.shortLabel}
                     </Badge>
                   )}
+                  <Badge variant="outline" className={cn('gap-1 rounded-full px-2 py-0.5', catMeta.badgeClassName)}>
+                    <catMeta.icon className="h-3 w-3" />
+                    {catMeta.shortLabel}
+                  </Badge>
                   {event.lieu && (
                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                       <MapPin className="h-3 w-3" />{event.lieu}

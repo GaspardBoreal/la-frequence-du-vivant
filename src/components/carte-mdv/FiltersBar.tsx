@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Search, SlidersHorizontal, Handshake, Sparkles, X } from 'lucide-react';
 import { CarteMdVFilters, DEFAULT_FILTERS } from '@/hooks/useCarteMdV';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
+import { MARCHE_CATEGORIES, getMarcheCategoryMeta } from '@/lib/marcheCategories';
 import SolVivantOptInDialog from './SolVivantOptInDialog';
 
 interface Props {
@@ -35,6 +36,10 @@ const FiltersBar: React.FC<Props> = ({ filters, onChange, resultCount }) => {
     onChange({ types: filters.types.includes(t) ? filters.types.filter(x => x !== t) : [...filters.types, t] });
   };
 
+  const toggleCategory = (c: string) => {
+    onChange({ categories: filters.categories.includes(c) ? filters.categories.filter(x => x !== c) : [...filters.categories, c] });
+  };
+
   const handleSvToggle = (v: boolean) => {
     if (v && !filters.solVivantEnabled) {
       setSvDialogOpen(true);
@@ -45,6 +50,7 @@ const FiltersBar: React.FC<Props> = ({ filters, onChange, resultCount }) => {
 
   const activeCount = [
     filters.types.length > 0,
+    filters.categories.length > 0,
     filters.season !== DEFAULT_FILTERS.season,
     filters.minSpecies > 0,
     filters.zone !== DEFAULT_FILTERS.zone,
@@ -141,7 +147,7 @@ const FiltersBar: React.FC<Props> = ({ filters, onChange, resultCount }) => {
 
               {activeCount > 0 && (
                 <Button variant="ghost" size="sm" className="w-full"
-                  onClick={() => onChange({ types: [], season: 'all', minSpecies: 0, zone: 'all', needAudio: false, needPhotos: false })}>
+                  onClick={() => onChange({ types: [], categories: [], season: 'all', minSpecies: 0, zone: 'all', needAudio: false, needPhotos: false })}>
                   Réinitialiser les filtres
                 </Button>
               )}
@@ -175,6 +181,36 @@ const FiltersBar: React.FC<Props> = ({ filters, onChange, resultCount }) => {
             <Label htmlFor="sv-toggle" className="text-xs cursor-pointer">Partenaires Sol Vivant</Label>
             <Switch id="sv-toggle" checked={filters.solVivantEnabled} onCheckedChange={handleSvToggle} />
           </div>
+        </div>
+
+        {/* Row 3: category chips */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground mr-1">Catégorie :</span>
+          {MARCHE_CATEGORIES.map((c) => {
+            const meta = getMarcheCategoryMeta(c);
+            const active = filters.categories.includes(c);
+            const Icon = meta.icon;
+            return (
+              <button
+                key={c}
+                onClick={() => toggleCategory(c)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${
+                  active ? meta.chipClassName + ' ring-2 ring-primary/30' : 'border-border bg-background hover:bg-muted'
+                }`}
+              >
+                <Icon className="h-3 w-3" />
+                {meta.shortLabel}
+              </button>
+            );
+          })}
+          {filters.categories.length > 0 && (
+            <button
+              onClick={() => onChange({ categories: [] })}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+            >
+              <X className="h-3 w-3" /> Effacer
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

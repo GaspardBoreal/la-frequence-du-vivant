@@ -11,6 +11,7 @@ export type SeasonFilter = 'all' | 'upcoming' | 'this_month' | 'spring' | 'summe
 export interface CarteMdVFilters {
   search: string;
   types: string[];       // event_type values
+  categories: string[];  // category values
   status: StatusFilter;
   season: SeasonFilter;
   minSpecies: number;    // 0..100
@@ -25,6 +26,7 @@ export interface CarteMdVFilters {
 export const DEFAULT_FILTERS: CarteMdVFilters = {
   search: '',
   types: [],
+  categories: [],
   status: 'all',
   season: 'all',
   minSpecies: 0,
@@ -42,6 +44,7 @@ export interface CarteMdVEvent {
   description: string | null;
   date_marche: string;
   event_type: string | null;
+  category: string | null;
   lieu: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -88,6 +91,7 @@ export function useCarteMdVFilters() {
   const filters: CarteMdVFilters = useMemo(() => ({
     search: params.get('q') ?? '',
     types: params.get('type')?.split(',').filter(Boolean) ?? [],
+    categories: params.get('cat')?.split(',').filter(Boolean) ?? [],
     status: (params.get('status') as StatusFilter) || DEFAULT_FILTERS.status,
     season: (params.get('season') as SeasonFilter) || DEFAULT_FILTERS.season,
     minSpecies: Number(params.get('minSpecies') ?? 0) || 0,
@@ -104,6 +108,7 @@ export function useCarteMdVFilters() {
     const p = new URLSearchParams();
     if (merged.search) p.set('q', merged.search);
     if (merged.types.length) p.set('type', merged.types.join(','));
+    if (merged.categories.length) p.set('cat', merged.categories.join(','));
     if (merged.status !== DEFAULT_FILTERS.status) p.set('status', merged.status);
     if (merged.season !== DEFAULT_FILTERS.season) p.set('season', merged.season);
     if (merged.minSpecies > 0) p.set('minSpecies', String(merged.minSpecies));
@@ -185,6 +190,7 @@ export function applyFilters(events: CarteMdVEvent[], f: CarteMdVFilters): Carte
   const q = f.search.trim().toLowerCase();
   return events.filter((e) => {
     if (f.types.length && (!e.event_type || !f.types.includes(e.event_type))) return false;
+    if (f.categories.length && (!e.category || !f.categories.includes(e.category))) return false;
 
     const eventTime = new Date(e.date_marche).getTime();
     if (f.status === 'upcoming' && eventTime < now) return false;

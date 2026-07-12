@@ -4116,6 +4116,7 @@ export type Database = {
       marche_events: {
         Row: {
           ai_recognition_config: Json | null
+          category: string
           cover_image_url: string | null
           created_at: string
           created_by: string | null
@@ -4144,6 +4145,7 @@ export type Database = {
         }
         Insert: {
           ai_recognition_config?: Json | null
+          category?: string
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -4172,6 +4174,7 @@ export type Database = {
         }
         Update: {
           ai_recognition_config?: Json | null
+          category?: string
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -7004,37 +7007,74 @@ export type Database = {
         Args: { p_date_source?: string; p_exploration_id: string }
         Returns: Json
       }
-      get_marche_events_dashboard_stats: {
-        Args: {
-          _search?: string
-          _share?: string
-          _status?: string
-          _type?: string
-        }
-        Returns: Json
-      }
-      get_marche_events_filtered_all: {
-        Args: {
-          _max?: number
-          _search?: string
-          _share?: string
-          _status?: string
-          _type?: string
-        }
-        Returns: Json
-      }
-      get_marche_events_paginated: {
-        Args: {
-          _limit?: number
-          _offset?: number
-          _search?: string
-          _share?: string
-          _sort?: string
-          _status?: string
-          _type?: string
-        }
-        Returns: Json
-      }
+      get_marche_events_dashboard_stats:
+        | {
+            Args: {
+              _search?: string
+              _share?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _category?: string
+              _search?: string
+              _share?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
+      get_marche_events_filtered_all:
+        | {
+            Args: {
+              _max?: number
+              _search?: string
+              _share?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _category?: string
+              _max?: number
+              _search?: string
+              _share?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
+      get_marche_events_paginated:
+        | {
+            Args: {
+              _limit?: number
+              _offset?: number
+              _search?: string
+              _share?: string
+              _sort?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _category?: string
+              _limit?: number
+              _offset?: number
+              _search?: string
+              _share?: string
+              _sort?: string
+              _status?: string
+              _type?: string
+            }
+            Returns: Json
+          }
       get_marche_species_count: { Args: { p_marche_id: string }; Returns: Json }
       get_marches_for_species: {
         Args: { p_query: string }
@@ -7050,6 +7090,7 @@ export type Database = {
       get_marches_map_events: {
         Args: never
         Returns: {
+          category: string
           cover_image_url: string
           date_marche: string
           description: string

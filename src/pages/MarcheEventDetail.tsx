@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta, type MarcheEventType } from '@/lib/marcheEventTypes';
+import { MARCHE_CATEGORIES, getMarcheCategoryMeta, type MarcheCategory } from '@/lib/marcheCategories';
 import EventBiodiversityTab from '@/components/community/EventBiodiversityTab';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import LivingPathOverview from '@/components/admin/LivingPathOverview';
@@ -39,7 +40,9 @@ const MarcheEventDetail: React.FC = () => {
 
   const [form, setForm] = useState({
     title: '', description: '', date_marche: '', lieu: '',
-    latitude: '', longitude: '', max_participants: '20', exploration_id: '', event_type: 'agroecologique' as MarcheEventType,
+    latitude: '', longitude: '', max_participants: '20', exploration_id: '',
+    event_type: 'agroecologique' as MarcheEventType,
+    category: 'autre' as MarcheCategory,
   });
 
   const [showAddParticipant, setShowAddParticipant] = useState(false);
@@ -76,6 +79,7 @@ const MarcheEventDetail: React.FC = () => {
         max_participants: event.max_participants?.toString() || '20',
         exploration_id: event.exploration_id || '',
         event_type: (event.event_type as MarcheEventType) || 'agroecologique',
+        category: (((event as any).category as MarcheCategory) || 'autre'),
       });
     }
   }, [event]);
@@ -191,6 +195,7 @@ const MarcheEventDetail: React.FC = () => {
         created_by: user?.id || null,
         exploration_id: form.exploration_id || null,
         event_type: form.event_type,
+        category: form.category,
       });
       if (error) throw error;
     },
@@ -208,6 +213,7 @@ const MarcheEventDetail: React.FC = () => {
         max_participants: parseInt(form.max_participants) || 20,
         exploration_id: form.exploration_id || null,
         event_type: form.event_type,
+        category: form.category,
       }).eq('id', id!);
       if (error) throw error;
     },
@@ -407,6 +413,41 @@ const MarcheEventDetail: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Catégorie — obligatoire */}
+            <div className="md:col-span-2">
+              <Label>Catégorie *</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Nature de l'activité — utilisée pour la carte publique et le matching avec les partenaires Sol Vivant.
+              </p>
+              <div className="mt-3 grid gap-2 grid-cols-2 sm:grid-cols-4">
+                {MARCHE_CATEGORIES.map((cat) => {
+                  const meta = getMarcheCategoryMeta(cat);
+                  const Icon = meta.icon;
+                  const isSelected = form.category === cat;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, category: cat }))}
+                      className={cn(
+                        'group flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm',
+                        isSelected ? cn(meta.cardClassName, 'ring-2 ring-primary/30 shadow-sm') : 'border-border bg-card hover:border-primary/20'
+                      )}
+                    >
+                      <div className="flex w-full items-center justify-between">
+                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', meta.iconWrapClassName)}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        {isSelected && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                      </div>
+                      <p className="text-sm font-medium text-foreground">{meta.shortLabel}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div><Label>Lieu</Label><Input value={form.lieu} onChange={e => setForm(f => ({ ...f, lieu: e.target.value }))} /></div>
             <div><Label>Max participants</Label><Input type="number" value={form.max_participants} onChange={e => setForm(f => ({ ...f, max_participants: e.target.value }))} /></div>
             <div><Label>Latitude</Label><Input value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
@@ -497,7 +538,7 @@ const MarcheEventDetail: React.FC = () => {
               <Button onClick={() => createEvent.mutate(undefined, {
                 onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement créé avec succès'); navigate('/admin/marche-events'); },
                 onError: () => toast.error('Erreur lors de la création'),
-              })} disabled={!form.title || !form.date_marche || createEvent.isPending}>
+              })} disabled={!form.title || !form.date_marche || !form.category || createEvent.isPending}>
                 <Plus className="h-4 w-4 mr-2" />Créer l'événement
               </Button>
             ) : (
@@ -505,7 +546,7 @@ const MarcheEventDetail: React.FC = () => {
                 <Button onClick={() => updateEvent.mutate(undefined, {
                   onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); queryClient.invalidateQueries({ queryKey: ['marche-event', id] }); toast.success('Événement mis à jour'); },
                   onError: () => toast.error('Erreur lors de la mise à jour'),
-                })} disabled={!form.title || !form.date_marche || updateEvent.isPending}>
+                })} disabled={!form.title || !form.date_marche || !form.category || updateEvent.isPending}>
                   <Save className="h-4 w-4 mr-2" />Enregistrer
                 </Button>
                 <Button
