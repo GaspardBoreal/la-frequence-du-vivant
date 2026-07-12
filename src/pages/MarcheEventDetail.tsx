@@ -79,6 +79,7 @@ const MarcheEventDetail: React.FC = () => {
         max_participants: event.max_participants?.toString() || '20',
         exploration_id: event.exploration_id || '',
         event_type: (event.event_type as MarcheEventType) || 'agroecologique',
+        category: (((event as any).category as MarcheCategory) || 'autre'),
       });
     }
   }, [event]);
