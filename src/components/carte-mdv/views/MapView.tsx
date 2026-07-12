@@ -120,7 +120,7 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
           {geoEvents.map((e) => {
             const meta = getMarcheEventTypeMeta(e.event_type);
             const size = Math.min(48, 24 + Math.floor((e.species_count ?? 0) / 5));
-            const isJardin = (e as any).category === 'jardin' && e.is_public && e.public_slug;
+            const isJardin = e.category === 'jardin' && e.is_public && e.public_slug;
             const detailUrl = isJardin
               ? `/jardin/${e.public_slug}`
               : e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
