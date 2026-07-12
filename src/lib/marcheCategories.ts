@@ -128,19 +128,52 @@ export const getMarcheCategoryMeta = (value: string | null | undefined): MarcheC
  * Map Partenaires Sol Vivant category labels → our internal MarcheCategory.
  * Priority: most specific agricultural specialty wins; falls back to jardin then autre.
  */
-export function mapSolVivantToCategory(labels: string[] | null | undefined): MarcheCategory {
-  if (!labels || labels.length === 0) return 'autre';
-  const norm = labels
-    .join(' | ')
+/** Map a single Sol Vivant label to our internal category (or null if none). */
+function singleLabelToCategory(label: string): MarcheCategory | null {
+  const norm = label
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
   if (norm.includes('arboricult')) return 'arboriculture';
-  if (norm.includes('vign')) return 'vignoble';
+  if (norm.includes('vign') || norm.includes('viticult')) return 'vignoble';
   if (norm.includes('maraich') || norm.includes('msv')) return 'maraichage';
   if (norm.includes('elevage') || norm.includes('eleveur')) return 'elevage';
-  if (norm.includes('grande culture')) return 'grande_culture';
+  if (norm.includes('cereal') || norm.includes('grande culture')) return 'grande_culture';
   if (norm.includes('jardin')) return 'jardin';
+  return null;
+}
+
+/**
+ * Primary internal category for a Sol Vivant point (marker color / badge).
+ * For filtering, prefer `solVivantMatchesCategories` which respects the
+ * multi-category logic used by gogocarto.
+ */
+export function mapSolVivantToCategory(labels: string[] | null | undefined): MarcheCategory {
+  if (!labels || labels.length === 0) return 'autre';
+  const priority: MarcheCategory[] = ['arboriculture', 'vignoble', 'maraichage', 'elevage', 'grande_culture', 'jardin'];
+  const mapped = new Set<MarcheCategory>();
+  for (const l of labels) {
+    const c = singleLabelToCategory(l);
+    if (c) mapped.add(c);
+  }
+  for (const p of priority) if (mapped.has(p)) return p;
   return 'autre';
+}
+
+/**
+ * True if ANY of the point's raw Sol Vivant labels maps to one of the selected
+ * internal categories. Aligns with gogocarto: a point tagged both "Jardiniers"
+ * and "Maraîchers (MSV)" appears in BOTH the Jardin and Maraîchage filters.
+ */
+export function solVivantMatchesCategories(
+  labels: string[] | null | undefined,
+  selected: Set<string>,
+): boolean {
+  if (!labels || labels.length === 0) return selected.has('autre');
+  for (const l of labels) {
+    const c = singleLabelToCategory(l);
+    if (c && selected.has(c)) return true;
+  }
+  return false;
 }
