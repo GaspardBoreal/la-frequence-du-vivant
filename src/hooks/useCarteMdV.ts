@@ -11,6 +11,7 @@ export type SeasonFilter = 'all' | 'upcoming' | 'this_month' | 'spring' | 'summe
 export interface CarteMdVFilters {
   search: string;
   types: string[];       // event_type values
+  categories: string[];  // category values
   status: StatusFilter;
   season: SeasonFilter;
   minSpecies: number;    // 0..100
