@@ -120,12 +120,17 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
           {geoEvents.map((e) => {
             const meta = getMarcheEventTypeMeta(e.event_type);
             const size = Math.min(48, 24 + Math.floor((e.species_count ?? 0) / 5));
-            const detailUrl = e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
+            const isJardin = (e as any).category === 'jardin' && e.is_public && e.public_slug;
+            const detailUrl = isJardin
+              ? `/jardin/${e.public_slug}`
+              : e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
             const inscriptionUrl = user ? detailUrl : `/marches-du-vivant/connexion?next=${encodeURIComponent(detailUrl)}`;
             const isUpcoming = new Date(e.date_marche).getTime() > Date.now();
             const chip = TYPE_CHIP[e.event_type ?? ''] ?? { bg: '#E7F3F1', text: '#0D6B58', ring: 'rgba(13,107,88,0.15)', label: meta?.shortLabel ?? 'Marche' };
             const ctaHref = isUpcoming ? inscriptionUrl : detailUrl;
-            const ctaLabel = isUpcoming ? (user ? "S'inscrire à la marche" : 'Rejoindre la Fréquence') : "Découvrir l'événement";
+            const ctaLabel = isJardin && !isUpcoming
+              ? '✦ Immersion Jardin'
+              : isUpcoming ? (user ? "S'inscrire à la marche" : 'Rejoindre la Fréquence') : "Découvrir l'événement";
             return (
               <Marker key={e.id} position={[Number(e.latitude), Number(e.longitude)]} icon={makeEventIcon(e.event_type, size)}>
                 <Popup maxWidth={320} minWidth={300} className="carte-mdv-popup" closeButton={false}>
