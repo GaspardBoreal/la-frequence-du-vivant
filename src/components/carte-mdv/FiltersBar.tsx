@@ -147,7 +147,7 @@ const FiltersBar: React.FC<Props> = ({ filters, onChange, resultCount }) => {
 
               {activeCount > 0 && (
                 <Button variant="ghost" size="sm" className="w-full"
-                  onClick={() => onChange({ types: [], season: 'all', minSpecies: 0, zone: 'all', needAudio: false, needPhotos: false })}>
+                  onClick={() => onChange({ types: [], categories: [], season: 'all', minSpecies: 0, zone: 'all', needAudio: false, needPhotos: false })}>
                   Réinitialiser les filtres
                 </Button>
               )}
