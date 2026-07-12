@@ -111,7 +111,7 @@ const MarcheEventsAdmin: React.FC = () => {
 
         {/* Filtres */}
         <EventsFiltersBar
-          filters={{ search, type, status, sort }}
+          filters={{ search, type, status, sort, share, category }}
           onChange={handleFilterChange}
         />
 
