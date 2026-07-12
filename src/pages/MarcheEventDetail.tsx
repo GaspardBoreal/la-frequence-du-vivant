@@ -213,6 +213,7 @@ const MarcheEventDetail: React.FC = () => {
         max_participants: parseInt(form.max_participants) || 20,
         exploration_id: form.exploration_id || null,
         event_type: form.event_type,
+        category: form.category,
       }).eq('id', id!);
       if (error) throw error;
     },
