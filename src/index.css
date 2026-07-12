@@ -861,3 +861,26 @@
   border-color: rgba(255,255,255,0.6) !important;
   transform: scale(1.08);
 }
+
+/* ─── Carte MdV — popup botanique éditorial ─── */
+.carte-mdv-popup .leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 1.5rem !important;
+}
+.carte-mdv-popup .leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  min-width: 300px;
+  line-height: 1.4;
+}
+.carte-mdv-popup .leaflet-popup-tip-container {
+  width: 30px;
+  height: 15px;
+}
+.carte-mdv-popup .leaflet-popup-tip {
+  background: #FAF8F3 !important;
+  box-shadow: 0 8px 24px -8px rgba(13,107,88,0.25) !important;
+}
