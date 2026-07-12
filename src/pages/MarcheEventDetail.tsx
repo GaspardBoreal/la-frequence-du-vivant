@@ -195,6 +195,7 @@ const MarcheEventDetail: React.FC = () => {
         created_by: user?.id || null,
         exploration_id: form.exploration_id || null,
         event_type: form.event_type,
+        category: form.category,
       });
       if (error) throw error;
     },
