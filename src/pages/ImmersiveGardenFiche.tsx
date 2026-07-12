@@ -126,10 +126,13 @@ const ImmersiveGardenFiche: React.FC = () => {
           name="description"
           content={`Immersion stratifiée dans le jardin ${event.title}${event.lieu ? ` à ${event.lieu}` : ''}. Explorez la canopée, les strates herbacées et la rhizosphère.`}
         />
-        <link rel="canonical" href={`https://la-frequence-du-vivant.com/jardin/${event.public_slug}`} />
+        <link rel="canonical" href={`https://la-frequence-du-vivant.com/jardin/${slugOrId}`} />
       </Helmet>
 
       <div className="relative bg-black text-[#f4ecd4] overflow-x-hidden">
+        {/* Aurore dorée qui suit le curseur */}
+        <CursorAurora />
+
         {/* Saison overlay global */}
         <SeasonOverlay season={season} />
 
