@@ -44,6 +44,7 @@ export interface CarteMdVEvent {
   description: string | null;
   date_marche: string;
   event_type: string | null;
+  category: string | null;
   lieu: string | null;
   latitude: number | null;
   longitude: number | null;
