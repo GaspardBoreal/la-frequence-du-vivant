@@ -166,22 +166,14 @@ const ImmersiveGardenFiche: React.FC = () => {
         {/* Saison overlay global */}
         <SeasonOverlay season={season} />
 
-        {/* Retour discret — préserve les filtres de la carte */}
-        <Link
-          to={sibling.backHref}
-          className="fixed top-4 left-4 z-50 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-[#c9a24a]/30 flex items-center justify-center text-[#f4ecd4] hover:bg-black/60 hover:border-[#c9a24a]/60 transition"
-          aria-label="Retour à la carte"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-
-        {/* Navigation prev/next entre jardins filtrés */}
+        {/* Capsule flottante : Retour + prev/next entre jardins filtrés */}
         <GardenSiblingNav
           index={Math.max(0, sibling.index)}
           total={sibling.total}
           categoryLabel={sibling.categoryLabel}
           hasPrev={!!sibling.prevHref}
           hasNext={!!sibling.nextHref}
+          backHref={sibling.backHref}
           onNavigate={triggerTransition}
           onBack={() => navigate(sibling.backHref)}
         />
