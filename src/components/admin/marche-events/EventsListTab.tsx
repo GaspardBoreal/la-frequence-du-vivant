@@ -277,6 +277,53 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
         onOpenChange={(o) => !o && setDuplicateSource(null)}
         source={duplicateSource}
       />
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => {
+          if (!o && !deleteMutation.isPending) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet événement ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  «&nbsp;{deleteTarget.title}&nbsp;» —{' '}
+                  {format(new Date(deleteTarget.date_marche), 'PPP', { locale: fr })}.
+                  <br />
+                  Cette action est définitive et supprimera l'événement ainsi que ses
+                  participations, invités, témoignages et médias associés. Les marcheurs
+                  ne pourront plus y accéder.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>
+              Non, annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!deleteTarget) return;
+                deleteMutation.mutate(deleteTarget.id, {
+                  onSuccess: () => setDeleteTarget(null),
+                });
+              }}
+            >
+              {deleteMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Suppression…</>
+              ) : (
+                <>Oui, supprimer</>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
