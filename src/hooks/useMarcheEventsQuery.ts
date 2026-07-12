@@ -26,6 +26,7 @@ export interface MarcheEventRow {
   description: string | null;
   date_marche: string;
   event_type: string | null;
+  category: string | null;
   exploration_id: string | null;
   exploration_name: string | null;
   lieu: string | null;
