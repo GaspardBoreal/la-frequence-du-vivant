@@ -26,6 +26,7 @@ import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
+import { getMarcheCategoryMeta } from '@/lib/marcheCategories';
 import PaginationControls from './PaginationControls';
 import {
   useMarcheEventsPaginated,
