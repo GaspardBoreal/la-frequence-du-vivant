@@ -884,3 +884,5 @@
   background: #FAF8F3 !important;
   box-shadow: 0 8px 24px -8px rgba(13,107,88,0.25) !important;
 }
+.carte-mdv-popup .leaflet-popup-content a { color: inherit !important; text-decoration: none !important; }
+.carte-mdv-popup .leaflet-popup-content a:hover { text-decoration: none !important; }
