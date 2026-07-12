@@ -208,6 +208,19 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                           <ExternalLink className="h-4 w-4 mr-2" />Voir la page publique
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                        onClick={() =>
+                          setDeleteTarget({
+                            id: event.id,
+                            title: event.title,
+                            date_marche: event.date_marche,
+                          })
+                        }
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />Supprimer
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
