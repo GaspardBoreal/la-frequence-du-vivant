@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
-import { ChevronDown, Compass } from 'lucide-react';
+import { ChevronDown, Compass, Calendar, MapPin, ArrowRight, Leaf } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CarteMdVEvent, SolVivantPoint } from '@/hooks/useCarteMdV';
