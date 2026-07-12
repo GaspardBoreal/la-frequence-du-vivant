@@ -1,14 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useParams, Navigate, Link } from 'react-router-dom';
+import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { Search, Sprout, Bug, Feather, Trees, Worm, Leaf, ArrowRight, ArrowLeft, Sparkles, Sun } from 'lucide-react';
 import { useGardenFiche } from '@/hooks/useGardenFiche';
+import { useSiblingGardenEvents } from '@/hooks/useSiblingGardenEvents';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
 import SeasonOverlay, { type Season } from '@/components/immersive-garden/SeasonOverlay';
 import StratPanel from '@/components/immersive-garden/StratPanel';
 import CursorAurora from '@/components/immersive-garden/CursorAurora';
+import GardenSiblingNav from '@/components/immersive-garden/GardenSiblingNav';
+import GardenTransitionOverlay from '@/components/immersive-garden/GardenTransitionOverlay';
 
 
 const SEASONS: { key: Season; label: string; emoji: string }[] = [
@@ -72,10 +75,14 @@ const SEASON_TINT: Record<Season, string> = {
 
 const ImmersiveGardenFiche: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { event, heroPhotos, metrics, isLoading, notFound } = useGardenFiche(slug);
   const [season, setSeason] = useState<Season>('ete');
   const [flash, setFlash] = useState<{ key: number; color: string; x: number; y: number } | null>(null);
+  const [transition, setTransition] = useState<{ href: string; origin: { x: number; y: number } } | null>(null);
   const reduce = useReducedMotion();
+
+  const sibling = useSiblingGardenEvents(event?.id);
 
   const { scrollYProgress } = useScroll();
   const titleOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
@@ -88,6 +95,29 @@ const ImmersiveGardenFiche: React.FC = () => {
     () => heroPhotos.map((p) => ({ id: p.id, url: p.url })),
     [heroPhotos],
   );
+
+  const triggerTransition = useCallback(
+    (direction: 'prev' | 'next', origin: { x: number; y: number }) => {
+      const href = direction === 'prev' ? sibling.prevHref : sibling.nextHref;
+      const target = direction === 'prev' ? sibling.prev : sibling.next;
+      if (!href) return;
+      // Précharge la cover pour éviter le flash blanc
+      if (target?.cover_image_url) {
+        const img = new Image();
+        img.src = target.cover_image_url;
+      }
+      setTransition({ href, origin });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    [sibling.prev, sibling.next, sibling.prevHref, sibling.nextHref],
+  );
+
+  const handleTransitionDone = useCallback(() => {
+    if (!transition) return;
+    navigate(transition.href);
+    // laisser le temps à la nouvelle route de monter avant de retirer l'overlay
+    setTimeout(() => setTransition(null), 60);
+  }, [transition, navigate]);
 
   if (isLoading) {
     return (
