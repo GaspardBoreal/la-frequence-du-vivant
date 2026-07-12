@@ -120,9 +120,9 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
           {geoEvents.map((e) => {
             const meta = getMarcheEventTypeMeta(e.event_type);
             const size = Math.min(48, 24 + Math.floor((e.species_count ?? 0) / 5));
-            const isJardin = e.category === 'jardin' && e.is_public && e.public_slug;
+            const isJardin = e.category === 'jardin';
             const detailUrl = isJardin
-              ? `/jardin/${e.public_slug}`
+              ? `/jardin/${e.public_slug ?? e.id}`
               : e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
             const inscriptionUrl = user ? detailUrl : `/marches-du-vivant/connexion?next=${encodeURIComponent(detailUrl)}`;
             const isUpcoming = new Date(e.date_marche).getTime() > Date.now();
