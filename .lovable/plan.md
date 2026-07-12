@@ -1,33 +1,32 @@
-## Deux corrections sur la vue Timeline
+## Objectif
 
-### 1. Tri par date (asc ↔ desc, défaut = décroissante)
+Enrichir la popup carte des points "Partenaires Sol Vivant" pour reprendre le langage visuel du bandeau droit (Copie 1) — bandeau lime, label "PARTENAIRE SOL VIVANT", nom en gros, adresse avec pin, catégories en badges lime, CTA "Voir la fiche →".
 
-Dans `src/components/carte-mdv/views/TimelineView.tsx` :
-- Ajouter un état local `sortOrder: 'desc' | 'asc'` (défaut `'desc'`, non persisté — c'est un choix d'affichage local, pas un filtre URL).
-- Trier `sorted` selon `sortOrder`.
-- Ajouter en haut à droite de la vue un petit sélecteur segmenté sobre (2 boutons "Plus récentes d'abord" / "Plus anciennes d'abord") avec `<ToggleGroup>` shadcn ou 2 `<Button variant="ghost">` selon convention du fichier voisin. Icônes `ArrowDownWideNarrow` / `ArrowUpWideNarrow` de lucide.
+## Changement
 
-### 2. Badge « dans N j » aligné à droite du type de marche
+**Fichier modifié :** `src/components/carte-mdv/views/MapView.tsx`
 
-Aujourd'hui, dans `TimelineView.tsx` le badge est en `position:absolute -top-2 left-3` : il flotte hors de la carte et **chevauche** le badge « Éco tourisme » (visible copie d'écran).
+Remplacer la `<Popup>` actuelle des `CircleMarker` Sol Vivant (lignes 216-230) par une carte structurée façon mini-fiche :
 
-Cible : les deux badges sur la **même ligne horizontale** à l'intérieur de la carte, type à gauche, compteur "dans N j" à droite.
+```
+┌─────────────────────────────┐
+│ [Bandeau lime #84cc16]      │
+│  PARTENAIRE SOL VIVANT      │  ← label uppercase blanc semi-opaque
+│  Le Chou et la Fleur        │  ← nom gras blanc, plus grand
+│  📍 9e Rang                 │  ← adresse (street_address) si présente
+├─────────────────────────────┤
+│ [badge lime] Maraîchers…    │  ← catégories (jusqu'à 2)
+│                             │
+│ Voir la fiche →             │  ← bouton pleine largeur, ouvre le Sheet
+└─────────────────────────────┘
+```
 
-Approche : ajouter une prop optionnelle `rightBadge?: React.ReactNode` sur `EventCard`. Dans `EventCard.tsx`, envelopper le badge de type dans un `<div className="flex items-center justify-between gap-2">` :
-- gauche : `<Badge>{type}</Badge>` (existant)
-- droite : `{rightBadge}` s'il est fourni
+Détails :
+- Popup sans padding par défaut (`className="carte-mdv-sv-popup"` + override CSS inline / wrapper `p-0`) — largeur ~260px.
+- Bandeau : `bg-lime-500 text-white px-4 py-3`, mêmes tokens que `SolVivantPointSheet` pour cohérence.
+- Adresse : rendue seulement si `p.street_address` (déjà exposé dans `SolVivantPoint`).
+- Catégories : utiliser `p.categories` (array déjà chargé) plutôt que le seul `p.category` — max 2 badges + " +N" si plus.
+- CTA : bouton compact `w-full` sur fond crème, texte lime foncé, ouvre le Sheet via `setSelectedSvId(p.id)` (comportement actuel conservé).
+- Le clic direct sur le CircleMarker continue d'ouvrir le Sheet en parallèle ; la popup reste une prévisualisation rapide.
 
-Le badge de type est rendu à 2 endroits :
-- ligne 62-67 (cas sans cover image) → wrapper flex
-- ligne 46-51 (cas avec cover image, badge en overlay `absolute left-2 top-2`) → dans ce cas, positionner `rightBadge` en overlay symétrique `absolute right-2 top-2` (déjà utilisé pour "N espèces" — on cumule verticalement avec `top-9` si `species_count > 0`, sinon `top-2`)
-
-Dans `TimelineView.tsx` :
-- Retirer le `<div className="absolute -top-2 left-3 …">`
-- Passer le badge en prop : `<EventCard event={e} rightBadge={daysAway >= 0 && daysAway <= 90 ? <Badge>…</Badge> : null} />`
-- Style du badge : compact, cohérent avec les autres (`rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5` + icône `Clock` optionnelle)
-
-### Fichiers modifiés
-- `src/components/carte-mdv/views/TimelineView.tsx` — tri + toggle + passage prop
-- `src/components/carte-mdv/EventCard.tsx` — prop `rightBadge` + réagencement du wrap du badge de type
-
-Aucun backend, aucun autre écran impacté (la prop est optionnelle).
+Aucune modification backend, aucun autre composant touché.
