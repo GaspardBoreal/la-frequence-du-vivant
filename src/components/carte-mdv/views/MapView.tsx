@@ -321,6 +321,11 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
           {' '}affichés
         </div>
       )}
+
+      <SolVivantPointSheet
+        pointId={selectedSvId}
+        onOpenChange={(o) => !o && setSelectedSvId(null)}
+      />
     </div>
   );
 };
