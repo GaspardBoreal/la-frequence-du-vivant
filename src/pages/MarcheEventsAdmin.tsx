@@ -37,6 +37,7 @@ const MarcheEventsAdmin: React.FC = () => {
   const status = (params.get('status') as EventStatus) ?? 'all';
   const sort = (params.get('sort') as EventSort) ?? 'date_desc';
   const share = (params.get('share') as EventShareFilter) ?? 'all';
+  const category = params.get('cat') ?? 'all';
   const page = Math.max(1, Number(params.get('page') ?? '1'));
   const pageSize = Number(
     params.get('size') ?? (typeof window !== 'undefined' ? localStorage.getItem(PAGE_SIZE_KEY) : null) ?? DEFAULT_PAGE_SIZE
@@ -45,8 +46,8 @@ const MarcheEventsAdmin: React.FC = () => {
   const debouncedSearch = useDebounce(search, 300);
 
   const filters: EventsFilters = useMemo(
-    () => ({ search: debouncedSearch, type, status, sort, share }),
-    [debouncedSearch, type, status, sort, share]
+    () => ({ search: debouncedSearch, type, status, sort, share, category }),
+    [debouncedSearch, type, status, sort, share, category]
   );
 
   const updateParams = (updates: Record<string, string | number | null>, opts?: { resetPage?: boolean }) => {
