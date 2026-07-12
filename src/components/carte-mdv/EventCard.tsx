@@ -15,7 +15,7 @@ interface Props {
   rightBadge?: React.ReactNode;
 }
 
-const EventCard: React.FC<Props> = ({ event, compact = false }) => {
+const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
   const { user } = useAuth();
   const meta = getMarcheEventTypeMeta(event.event_type);
   const date = new Date(event.date_marche);
