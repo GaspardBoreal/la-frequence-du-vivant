@@ -208,6 +208,12 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                       <MapPin className="h-3 w-3" />{event.lieu}
                     </span>
                   )}
+                  {!hasGps(event) && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                      <MapPinOff className="h-3 w-3" />GPS manquant
+                    </span>
+                  )}
+
                   {event.exploration_name && (
                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                       <Compass className="h-3 w-3" />{event.exploration_name}
