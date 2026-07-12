@@ -12,6 +12,7 @@ export interface EventsFilters {
   status: EventStatus;
   sort: EventSort;
   share?: EventShareFilter;
+  category?: string; // 'all' | MarcheCategory
 }
 
 export interface PaginatedEventsParams extends EventsFilters {
