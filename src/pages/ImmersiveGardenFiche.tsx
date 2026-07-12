@@ -74,6 +74,7 @@ const ImmersiveGardenFiche: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { event, heroPhotos, metrics, isLoading, notFound } = useGardenFiche(slug);
   const [season, setSeason] = useState<Season>('ete');
+  const [flash, setFlash] = useState<{ key: number; color: string; x: number; y: number } | null>(null);
   const reduce = useReducedMotion();
 
   const { scrollYProgress } = useScroll();
