@@ -190,6 +190,7 @@ export function applyFilters(events: CarteMdVEvent[], f: CarteMdVFilters): Carte
   const q = f.search.trim().toLowerCase();
   return events.filter((e) => {
     if (f.types.length && (!e.event_type || !f.types.includes(e.event_type))) return false;
+    if (f.categories.length && (!e.category || !f.categories.includes(e.category))) return false;
 
     const eventTime = new Date(e.date_marche).getTime();
     if (f.status === 'upcoming' && eventTime < now) return false;
