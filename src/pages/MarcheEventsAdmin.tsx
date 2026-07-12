@@ -67,6 +67,7 @@ const MarcheEventsAdmin: React.FC = () => {
       status: 'status',
       sort: 'sort',
       share: 'share',
+      category: 'cat',
     };
     const updates: Record<string, string | null> = {};
     Object.entries(next).forEach(([k, v]) => {
