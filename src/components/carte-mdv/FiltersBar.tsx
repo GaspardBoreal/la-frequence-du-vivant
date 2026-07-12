@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Search, SlidersHorizontal, Handshake, Sparkles, X } from 'lucide-react';
 import { CarteMdVFilters, DEFAULT_FILTERS } from '@/hooks/useCarteMdV';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
+import { MARCHE_CATEGORIES, getMarcheCategoryMeta } from '@/lib/marcheCategories';
 import SolVivantOptInDialog from './SolVivantOptInDialog';
 
 interface Props {
