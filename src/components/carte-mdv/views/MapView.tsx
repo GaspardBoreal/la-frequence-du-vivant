@@ -86,7 +86,7 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
           </span>
         )}
       </div>
-      <div className="h-[70vh] min-h-[500px]">
+      <div className="relative h-[70vh] min-h-[500px]">
         <MapContainer center={[46.6, 2.5]} zoom={6} style={{ height: '100%', width: '100%' }}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
