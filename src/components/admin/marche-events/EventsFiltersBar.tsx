@@ -2,10 +2,11 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ArrowUpDown, Filter, Sparkles } from 'lucide-react';
+import { Search, ArrowUpDown, Filter, Sparkles, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
+import { MARCHE_CATEGORIES, getMarcheCategoryMeta } from '@/lib/marcheCategories';
 import type { EventsFilters, EventSort, EventStatus, EventShareFilter } from '@/hooks/useMarcheEventsQuery';
 
 interface Props {
