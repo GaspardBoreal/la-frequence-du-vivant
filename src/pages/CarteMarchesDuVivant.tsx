@@ -79,7 +79,7 @@ const CarteMarchesDuVivant: React.FC = () => {
           <div className="container mx-auto px-4 py-12 text-center max-w-2xl">
             <Sparkles className="h-10 w-10 mx-auto text-primary" />
             <h2 className="mt-4 text-2xl sm:text-3xl font-serif">Envie de marcher avec nous ?</h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-center text-muted-foreground">
               Rejoignez une communauté de marcheurs qui écrivent, observent, écoutent et prennent soin des territoires.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
