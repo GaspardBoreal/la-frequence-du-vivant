@@ -7,9 +7,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink, Sparkles, MapPinOff } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink, Sparkles, MapPinOff, Trash2, Loader2 } from 'lucide-react';
 import DuplicateEventDialog from './DuplicateEventDialog';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -19,6 +30,7 @@ import PaginationControls from './PaginationControls';
 import {
   useMarcheEventsPaginated,
   useParticipationCountsForEvents,
+  useDeleteMarcheEvent,
   type EventsFilters,
 } from '@/hooks/useMarcheEventsQuery';
 import { useEventsPublicVisibility, buildPublicEventUrl } from '@/hooks/usePublicEvent';
