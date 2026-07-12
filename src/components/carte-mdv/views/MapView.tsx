@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { CarteMdVEvent, SolVivantPoint } from '@/hooks/useCarteMdV';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { useAuth } from '@/hooks/useAuth';
+import SolVivantPointSheet from '@/components/carte-mdv/SolVivantPointSheet';
 
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -64,6 +65,7 @@ interface Props {
 const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant }) => {
   const { user } = useAuth();
   const [legendOpen, setLegendOpen] = useState(true);
+  const [selectedSvId, setSelectedSvId] = useState<string | null>(null);
   const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
   const missingCount = events.length - geoEvents.length;
   const eventPositions: [number, number][] = geoEvents.map((e) => [Number(e.latitude), Number(e.longitude)]);
@@ -209,19 +211,21 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
               center={[Number(p.latitude), Number(p.longitude)]}
               radius={7}
               pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#84cc16', fillOpacity: 0.95 }}
+              eventHandlers={{ click: () => setSelectedSvId(p.id) }}
             >
-              <Popup>
-                <div className="space-y-1 min-w-[180px]">
-                  <p className="font-semibold text-sm">{p.name}</p>
-                  {p.category && <Badge variant="outline" className="text-[10px]">{p.category}</Badge>}
-                  {p.street_address && <p className="text-xs text-muted-foreground">{p.street_address}</p>}
-                  {p.website && (
-                    <a href={p.website} target="_blank" rel="noopener noreferrer"
-                       className="text-xs text-primary hover:underline">Site web →</a>
+              <Popup closeButton={false} className="carte-mdv-sv-popup">
+                <div className="min-w-[180px] space-y-1">
+                  <p className="font-semibold text-sm leading-tight">{p.name}</p>
+                  {p.category && (
+                    <Badge variant="outline" className="text-[10px]">{p.category}</Badge>
                   )}
-                  <p className="text-[10px] text-muted-foreground pt-1 border-t mt-1">
-                    Source : Carte Sol Vivant (ODbL)
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSvId(p.id)}
+                    className="text-xs text-primary hover:underline mt-1"
+                  >
+                    Voir la fiche →
+                  </button>
                 </div>
               </Popup>
             </CircleMarker>
@@ -317,6 +321,11 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
           {' '}affichés
         </div>
       )}
+
+      <SolVivantPointSheet
+        pointId={selectedSvId}
+        onOpenChange={(o) => !o && setSelectedSvId(null)}
+      />
     </div>
   );
 };
