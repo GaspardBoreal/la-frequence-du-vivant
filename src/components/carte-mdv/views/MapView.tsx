@@ -26,6 +26,13 @@ const TYPE_COLORS: Record<string, string> = {
   eco_tourisme: '#f59e0b',
 };
 
+const TYPE_CHIP: Record<string, { bg: string; text: string; ring: string; label: string }> = {
+  agroecologique: { bg: '#E7F3F1', text: '#0D6B58', ring: 'rgba(13,107,88,0.15)', label: 'Agroécologique' },
+  eco_poetique:   { bg: '#F3E8FF', text: '#6B21A8', ring: 'rgba(107,33,168,0.18)', label: 'Éco poétique' },
+  eco_tourisme:   { bg: '#FEF3C7', text: '#92400E', ring: 'rgba(146,64,14,0.18)',  label: 'Éco tourisme' },
+};
+
+
 const makeEventIcon = (type: string | null, size: number) => {
   const color = TYPE_COLORS[type ?? ''] ?? '#0d6b58';
   return new L.DivIcon({
