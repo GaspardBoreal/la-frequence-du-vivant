@@ -169,104 +169,105 @@ const EventExportPanel: React.FC = () => {
             }));
           }
 
-          // Biodiversity via exploration → marches → snapshots
+          // Biodiversity : source unique = RPC get_exploration_species_export
+          // (strictement aligné avec Carte/Carnet/Synthèse, dédup par nom
+          // scientifique normalisé + filtre rayon marche + dédup géographique).
           let biodiversity: EventExportData['biodiversity'] = null;
           if ((includeBiodiversity || includeRawBiodiversity) && event.exploration_id) {
-            const { data: exploMarches } = await supabase
-              .from('exploration_marches')
-              .select('marche_id, marche:marches(id, nom_marche, ville, latitude, longitude)')
-              .eq('exploration_id', event.exploration_id);
-
-            const marcheIds = (exploMarches || []).map(em => em.marche_id);
-            // Build marche info lookup
-            const marcheInfoMap = new Map<string, { nom: string; lat: number | null; lng: number | null }>();
-            (exploMarches || []).forEach((em: any) => {
-              marcheInfoMap.set(em.marche_id, {
-                nom: em.marche?.nom_marche || em.marche?.ville || '',
-                lat: em.marche?.latitude || null,
-                lng: em.marche?.longitude || null,
-              });
-            });
-
-            if (marcheIds.length > 0) {
-              const { data: snapshots } = await supabase
-                .from('biodiversity_snapshots')
-                .select('marche_id, species_data')
-                .in('marche_id', marcheIds)
-                .order('created_at', { ascending: false });
-
-              // Deduplicate: latest snapshot per marche
-              const latestByMarche = new Map<string, any>();
-              (snapshots || []).forEach(s => {
-                if (!latestByMarche.has(s.marche_id)) latestByMarche.set(s.marche_id, s);
-              });
-
-              // Build unique species map (same logic as useExplorationBiodiversitySummary)
-              const uniqueSpecies = new Map<string, { name: string; scientificName: string; count: number; kingdom: string }>();
-              // Build raw species list with marche info for raw export
-              const rawSpeciesList: Array<{ name: string; scientificName: string; count: number; kingdom: string; marcheName: string; latitude: number | null; longitude: number | null }> = [];
-
-              for (const snapshot of latestByMarche.values()) {
-                const speciesData = snapshot.species_data as any[];
-                if (!Array.isArray(speciesData)) continue;
-                const mInfo = marcheInfoMap.get(snapshot.marche_id);
-
-                const localCounts = new Map<string, { count: number; species: any }>();
-                speciesData.forEach((sp: any) => {
-                  const sciName = sp.scientificName?.toLowerCase();
-                  if (!sciName) return;
-                  const existing = localCounts.get(sciName);
-                  if (existing) existing.count++;
-                  else localCounts.set(sciName, { count: 1, species: sp });
-                });
-
-                localCounts.forEach(({ count, species }) => {
-                  const name = species.commonName || species.scientificName;
-                  if (!name) return;
-                  const existing = uniqueSpecies.get(name);
-                  if (existing) existing.count += count;
-                  else uniqueSpecies.set(name, {
-                    name,
-                    scientificName: species.scientificName || name,
-                    count,
-                    kingdom: species.kingdom || 'Unknown',
-                  });
-
-                  // Raw entry per marche
-                  rawSpeciesList.push({
-                    name,
-                    scientificName: species.scientificName || name,
-                    count,
-                    kingdom: species.kingdom || 'Unknown',
-                    marcheName: mInfo?.nom || '',
-                    latitude: mInfo?.lat || null,
-                    longitude: mInfo?.lng || null,
-                  });
-                });
-              }
-
-              // Kingdom counts
-              let birds = 0, plants = 0, fungi = 0, others = 0;
-              for (const sp of uniqueSpecies.values()) {
-                if (sp.kingdom === 'Animalia') birds++;
-                else if (sp.kingdom === 'Plantae') plants++;
-                else if (sp.kingdom === 'Fungi') fungi++;
-                else others++;
-              }
-
-              const allSpeciesSorted = Array.from(uniqueSpecies.values())
-                .sort((a, b) => b.count - a.count);
-
-              const topSpecies = allSpeciesSorted.slice(0, 15);
-
-              biodiversity = {
-                totalSpecies: uniqueSpecies.size,
-                speciesByKingdom: { birds, plants, fungi, others },
-                topSpecies,
-                allSpecies: allSpeciesSorted,
-                rawSpeciesPerMarche: rawSpeciesList.sort((a, b) => b.count - a.count),
-              };
+            const { data: rpcData, error: rpcError } = await supabase.rpc(
+              'get_exploration_species_export' as any,
+              { p_exploration_id: event.exploration_id },
+            );
+            if (rpcError) {
+              console.warn('[export] get_exploration_species_export failed', rpcError);
             }
+            const r = (rpcData as any) || {};
+            const rpcSpecies: any[] = Array.isArray(r.species) ? r.species : [];
+            const allSpecies = rpcSpecies.map((s) => ({
+              name: s.common_name || s.sci || '',
+              scientificName: s.sci || '',
+              count: Number(s.obs_count) || 0,
+              kingdom: s.kingdom || 'Unknown',
+              rank: s.rank || undefined,
+              sources: [s.in_snapshot ? 'snapshot' : null, s.in_marcheur ? 'marcheur' : null].filter(Boolean) as string[],
+              firstSeen: s.first_seen || null,
+              lastSeen: s.last_seen || null,
+            }));
+
+            // Observations brutes par marche (opt-in) : lecture directe snapshots
+            // pour préserver les GPS par marche. Volontairement non dédupliqué.
+            let rawSpeciesPerMarche: NonNullable<EventExportData['biodiversity']>['rawSpeciesPerMarche'] = [];
+            if (includeRawBiodiversity) {
+              const { data: exploMarches } = await supabase
+                .from('exploration_marches')
+                .select('marche_id, marche:marches(id, nom_marche, ville, latitude, longitude)')
+                .eq('exploration_id', event.exploration_id);
+
+              const marcheIds = (exploMarches || []).map(em => em.marche_id);
+              const marcheInfoMap = new Map<string, { nom: string; lat: number | null; lng: number | null }>();
+              (exploMarches || []).forEach((em: any) => {
+                marcheInfoMap.set(em.marche_id, {
+                  nom: em.marche?.nom_marche || em.marche?.ville || '',
+                  lat: em.marche?.latitude || null,
+                  lng: em.marche?.longitude || null,
+                });
+              });
+
+              if (marcheIds.length > 0) {
+                const { data: snapshots } = await supabase
+                  .from('biodiversity_snapshots')
+                  .select('marche_id, species_data')
+                  .in('marche_id', marcheIds)
+                  .order('created_at', { ascending: false });
+
+                const latestByMarche = new Map<string, any>();
+                (snapshots || []).forEach(s => {
+                  if (!latestByMarche.has(s.marche_id)) latestByMarche.set(s.marche_id, s);
+                });
+
+                const rawList: NonNullable<EventExportData['biodiversity']>['rawSpeciesPerMarche'] = [];
+                for (const snapshot of latestByMarche.values()) {
+                  const speciesData = snapshot.species_data as any[];
+                  if (!Array.isArray(speciesData)) continue;
+                  const mInfo = marcheInfoMap.get(snapshot.marche_id);
+                  speciesData.forEach((sp: any) => {
+                    const name = sp.commonName || sp.scientificName;
+                    if (!name) return;
+                    rawList!.push({
+                      name,
+                      scientificName: sp.scientificName || name,
+                      count: 1,
+                      kingdom: sp.kingdom || 'Unknown',
+                      marcheName: mInfo?.nom || '',
+                      latitude: mInfo?.lat || null,
+                      longitude: mInfo?.lng || null,
+                    });
+                  });
+                }
+                rawSpeciesPerMarche = rawList;
+              }
+            }
+
+            const kingdoms = r.by_kingdom || {};
+            biodiversity = {
+              totalSpecies: Number(r.total) || 0,
+              speciesByKingdom: {
+                birds: Number(kingdoms.animalia) || 0,
+                plants: Number(kingdoms.plantae) || 0,
+                fungi: Number(kingdoms.fungi) || 0,
+                others: Number(kingdoms.others) || 0,
+              },
+              bySource: r.by_source
+                ? {
+                    snapshots_only: Number(r.by_source.snapshots_only) || 0,
+                    marcheur_only: Number(r.by_source.marcheur_only) || 0,
+                    both: Number(r.by_source.both) || 0,
+                  }
+                : undefined,
+              topSpecies: allSpecies.slice(0, 15),
+              allSpecies,
+              rawSpeciesPerMarche,
+            };
           }
 
           return {
@@ -425,8 +426,8 @@ const EventExportPanel: React.FC = () => {
               { checked: includeEventInfo, setter: setIncludeEventInfo, label: 'Fiche événement', desc: 'Titre, date, lieu, type, coordonnées' },
               { checked: includeParticipants, setter: setIncludeParticipants, label: 'Liste des participants', desc: 'Nom, statut, date d\'inscription' },
               { checked: includeMarches, setter: setIncludeMarches, label: 'Marches associées', desc: 'Étapes, coordonnées, parcours' },
-              { checked: includeBiodiversity, setter: setIncludeBiodiversity, label: 'Synthèse biodiversité', desc: 'Espèces par royaume, top espèces' },
-              { checked: includeRawBiodiversity, setter: setIncludeRawBiodiversity, label: 'Données brutes biodiversité', desc: 'species_data JSON complet (CSV uniquement)' },
+              { checked: includeBiodiversity, setter: setIncludeBiodiversity, label: 'Synthèse biodiversité (dédupliquée)', desc: 'Espèces uniques par royaume, top espèces — aligné Carte/Carnet/Synthèse' },
+              { checked: includeRawBiodiversity, setter: setIncludeRawBiodiversity, label: 'Observations brutes par marche (CSV)', desc: '⚠ Doublons attendus si rayons chevauchants — pour analyse spatiale fine uniquement' },
             ].map(opt => (
               <div key={opt.label} className="flex items-start gap-3">
                 <Checkbox

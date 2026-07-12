@@ -29,6 +29,17 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   eco_tourisme: 'Éco tourisme',
 };
 
+export interface EventExportSpecies {
+  name: string;              // commonName || scientificName
+  scientificName: string;
+  count: number;             // observations dédupliquées géographiquement
+  kingdom: string;
+  rank?: string;
+  sources?: string[];        // ['snapshot','marcheur']
+  firstSeen?: string | null;
+  lastSeen?: string | null;
+}
+
 export interface EventExportData {
   id: string;
   title: string;
@@ -56,8 +67,14 @@ export interface EventExportData {
   biodiversity: {
     totalSpecies: number;
     speciesByKingdom: { birds: number; plants: number; fungi: number; others: number };
-    topSpecies: Array<{ name: string; scientificName: string; count: number; kingdom: string }>;
-    allSpecies?: Array<{ name: string; scientificName: string; count: number; kingdom: string }>;
+    bySource?: { snapshots_only: number; marcheur_only: number; both: number };
+    topSpecies: EventExportSpecies[];
+    allSpecies?: EventExportSpecies[];
+    /**
+     * Observations brutes par marche (export CSV « données brutes »).
+     * Contient volontairement des doublons entre marches à rayons chevauchants —
+     * NE PAS utiliser pour compter les espèces uniques.
+     */
     rawSpeciesPerMarche?: Array<{ name: string; scientificName: string; count: number; kingdom: string; marcheName: string; latitude: number | null; longitude: number | null }>;
   } | null;
 }
@@ -296,16 +313,44 @@ export async function exportEventsToWord(
           heading: HeadingLevel.HEADING_2,
           spacing: { before: 400, after: 200 },
           children: [
-            new TextRun({ text: `Biodiversité — ${bio.totalSpecies} espèces`, size: 24, bold: true, color }),
+            new TextRun({ text: `Biodiversité — ${bio.totalSpecies} espèces uniques`, size: 24, bold: true, color }),
           ],
         }),
         new Paragraph({
-          spacing: { after: 200 },
+          spacing: { after: 120 },
           children: [
             new TextRun({ text: `Faune : ${bio.speciesByKingdom.birds}`, size: 20 }),
             new TextRun({ text: `  ·  Flore : ${bio.speciesByKingdom.plants}`, size: 20 }),
             new TextRun({ text: `  ·  Champignons : ${bio.speciesByKingdom.fungi}`, size: 20 }),
             new TextRun({ text: `  ·  Autres : ${bio.speciesByKingdom.others}`, size: 20 }),
+          ],
+        }),
+      );
+
+      if (bio.bySource) {
+        sections.push(
+          new Paragraph({
+            spacing: { after: 120 },
+            children: [
+              new TextRun({ text: 'Sources : ', bold: true, size: 18, color: '6b7280' }),
+              new TextRun({ text: `${bio.bySource.snapshots_only} iNaturalist uniquement`, size: 18, color: '6b7280' }),
+              new TextRun({ text: `  ·  ${bio.bySource.marcheur_only} marcheurs uniquement`, size: 18, color: '6b7280' }),
+              new TextRun({ text: `  ·  ${bio.bySource.both} confirmées par les deux`, size: 18, color: '6b7280' }),
+            ],
+          }),
+        );
+      }
+
+      sections.push(
+        new Paragraph({
+          spacing: { after: 200 },
+          children: [
+            new TextRun({
+              text: 'Méthodologie : comptage dédupliqué par nom scientifique normalisé (unaccent + lower), filtré par le rayon de chaque marche. Aligné avec la Carte, le Carnet et la Synthèse. Les rayons chevauchants entre marches proches ne créent pas de doublon.',
+              size: 16,
+              italics: true,
+              color: '9ca3af',
+            }),
           ],
         }),
       );
@@ -318,7 +363,7 @@ export async function exportEventsToWord(
           }),
         );
 
-        bio.topSpecies.slice(0, 10).forEach((sp, i) => {
+        bio.topSpecies.slice(0, 15).forEach((sp, i) => {
           sections.push(
             new Paragraph({
               spacing: { after: 40 },
@@ -433,13 +478,16 @@ export function exportEventsToCSV(
     lines.push('');
   }
 
-  // Biodiversity CSV
+  // Biodiversity synthèse CSV (1 ligne = 1 espèce unique dédupliquée)
   if (options.includeBiodiversity) {
-    lines.push('=== BIODIVERSITÉ ===');
-    lines.push('Événement,Type,Espèce,Nom scientifique,Royaume,Observations');
+    lines.push('=== BIODIVERSITÉ (SYNTHÈSE — 1 ligne par espèce unique) ===');
+    lines.push('# Comptage aligné sur la Carte / Carnet / Synthèse (RPC get_exploration_species_export)');
+    lines.push('# Déduplication : nom scientifique normalisé (unaccent + lower), filtré par rayon marche.');
+    lines.push('Événement,Type,Espèce,Nom scientifique,Royaume,Rang,Observations,Sources,Première obs,Dernière obs');
     events.forEach(e => {
       if (e.biodiversity) {
-        e.biodiversity.topSpecies.forEach(sp => {
+        const list = e.biodiversity.allSpecies ?? e.biodiversity.topSpecies;
+        list.forEach(sp => {
           lines.push(
             [
               escapeCSV(e.title),
@@ -447,17 +495,25 @@ export function exportEventsToCSV(
               escapeCSV(sp.name),
               escapeCSV(sp.scientificName),
               escapeCSV(sp.kingdom),
+              escapeCSV(sp.rank || ''),
               sp.count.toString(),
+              escapeCSV((sp.sources || []).join('+')),
+              escapeCSV(sp.firstSeen || ''),
+              escapeCSV(sp.lastSeen || ''),
             ].join(','),
           );
         });
       }
     });
+    lines.push('');
   }
 
-  // Raw biodiversity CSV
+  // Raw biodiversity CSV — observations par marche (doublons attendus si rayons chevauchants)
   if (options.includeRawBiodiversity) {
-    lines.push('=== DONNÉES BRUTES BIODIVERSITÉ ===');
+    lines.push('=== OBSERVATIONS BRUTES PAR MARCHE ===');
+    lines.push('# ⚠ ATTENTION : cette section contient volontairement des doublons.');
+    lines.push('# La même espèce peut apparaître dans plusieurs marches si leurs rayons se chevauchent.');
+    lines.push('# Pour compter les espèces uniques d\'un événement, utilisez la section « SYNTHÈSE » ci-dessus.');
     lines.push('Événement,Type,Marche,Longitude,Latitude,Espèce,Nom scientifique,Royaume,Observations');
     events.forEach(e => {
       if (e.biodiversity?.rawSpeciesPerMarche) {
