@@ -538,7 +538,7 @@ const MarcheEventDetail: React.FC = () => {
               <Button onClick={() => createEvent.mutate(undefined, {
                 onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement créé avec succès'); navigate('/admin/marche-events'); },
                 onError: () => toast.error('Erreur lors de la création'),
-              })} disabled={!form.title || !form.date_marche || createEvent.isPending}>
+              })} disabled={!form.title || !form.date_marche || !form.category || createEvent.isPending}>
                 <Plus className="h-4 w-4 mr-2" />Créer l'événement
               </Button>
             ) : (
@@ -546,7 +546,7 @@ const MarcheEventDetail: React.FC = () => {
                 <Button onClick={() => updateEvent.mutate(undefined, {
                   onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); queryClient.invalidateQueries({ queryKey: ['marche-event', id] }); toast.success('Événement mis à jour'); },
                   onError: () => toast.error('Erreur lors de la mise à jour'),
-                })} disabled={!form.title || !form.date_marche || updateEvent.isPending}>
+                })} disabled={!form.title || !form.date_marche || !form.category || updateEvent.isPending}>
                   <Save className="h-4 w-4 mr-2" />Enregistrer
                 </Button>
                 <Button
