@@ -66,7 +66,16 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
   const [legendOpen, setLegendOpen] = useState(true);
   const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
   const missingCount = events.length - geoEvents.length;
-  const positions: [number, number][] = geoEvents.map((e) => [Number(e.latitude), Number(e.longitude)]);
+  const eventPositions: [number, number][] = geoEvents.map((e) => [Number(e.latitude), Number(e.longitude)]);
+  // Quand peu d'événements ET Sol Vivant actif, on étend le cadrage aux partenaires
+  // pour que l'utilisateur voie effectivement les points qu'il vient d'activer.
+  const svPositions: [number, number][] = (showSolVivant ? solVivantPoints : [])
+    .filter((p) => p.latitude != null && p.longitude != null)
+    .map((p) => [Number(p.latitude), Number(p.longitude)]);
+  const positions: [number, number][] =
+    showSolVivant && geoEvents.length <= 3
+      ? [...eventPositions, ...svPositions]
+      : eventPositions;
 
   const typeCounts = geoEvents.reduce<Record<string, number>>((acc, e) => {
     const k = e.event_type ?? 'autre';
