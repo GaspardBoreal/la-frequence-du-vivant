@@ -166,14 +166,45 @@ const ImmersiveGardenFiche: React.FC = () => {
         {/* Saison overlay global */}
         <SeasonOverlay season={season} />
 
-        {/* Retour discret */}
+        {/* Retour discret — préserve les filtres de la carte */}
         <Link
-          to="/marches-du-vivant/carte-marches-du-vivant"
-          className="fixed top-4 left-4 z-50 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center text-[#f4ecd4] hover:bg-black/60 transition"
+          to={sibling.backHref}
+          className="fixed top-4 left-4 z-50 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-[#c9a24a]/30 flex items-center justify-center text-[#f4ecd4] hover:bg-black/60 hover:border-[#c9a24a]/60 transition"
           aria-label="Retour à la carte"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
+
+        {/* Navigation prev/next entre jardins filtrés */}
+        <GardenSiblingNav
+          index={Math.max(0, sibling.index)}
+          total={sibling.total}
+          categoryLabel={sibling.categoryLabel}
+          hasPrev={!!sibling.prevHref}
+          hasNext={!!sibling.nextHref}
+          onNavigate={triggerTransition}
+          onBack={() => navigate(sibling.backHref)}
+        />
+
+        {/* Overlay portail végétal lors du swap de fiche */}
+        <GardenTransitionOverlay
+          active={!!transition}
+          origin={transition?.origin ?? null}
+          tint={tint}
+          onDone={handleTransitionDone}
+        />
+
+        {/* SEO : liens prev/next */}
+        {sibling.prev && (
+          <Helmet>
+            <link rel="prev" href={`https://la-frequence-du-vivant.com/jardin/${sibling.prev.public_slug ?? sibling.prev.id}`} />
+          </Helmet>
+        )}
+        {sibling.next && (
+          <Helmet>
+            <link rel="next" href={`https://la-frequence-du-vivant.com/jardin/${sibling.next.public_slug ?? sibling.next.id}`} />
+          </Helmet>
+        )}
 
         {/* Indicateur strates */}
         <StratIndicator />
