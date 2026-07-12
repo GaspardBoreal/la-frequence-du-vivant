@@ -378,14 +378,17 @@ const ImmersiveGardenFiche: React.FC = () => {
               })}
             </div>
 
-            <div className="mt-16 flex flex-col items-center gap-6">
+            <div className="mt-16 flex flex-col items-center gap-5">
+              <p className="max-w-xl font-serif italic text-base md:text-lg text-[#f4ecd4]/80 leading-relaxed">
+                Inscrivez-vous pour entrer dans ce jardin et devenir sentinelle du vivant qui l'habite.
+              </p>
               <OrganicButton
                 variant="emerald"
                 pulse
-                href={event.public_slug ? `/m/${event.public_slug}` : '/marches-du-vivant/carte-marches-du-vivant'}
+                href={`/marches-du-vivant/connexion?redirect=${encodeURIComponent(`/jardin/${slugOrId}`)}`}
                 icon={<Sparkles className="w-4 h-4" />}
               >
-                Soutenir ce jardin
+                Rejoindre ce jardin
               </OrganicButton>
               {event.public_slug && (
                 <Link
