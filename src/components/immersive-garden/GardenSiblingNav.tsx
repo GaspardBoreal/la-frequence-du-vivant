@@ -102,7 +102,8 @@ const GardenSiblingNav: React.FC<Props> = ({
           </button>
         </>
       )}
-    </motion.nav>
+      </motion.nav>
+    </div>
   );
 };
 
