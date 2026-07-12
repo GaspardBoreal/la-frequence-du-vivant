@@ -104,6 +104,7 @@ import AgentIA from './pages/AgentIA';
 import AgentIAFiche from './pages/AgentIAFiche';
 import InterregSudoeMdv from './pages/InterregSudoeMdv';
 import ApprendreMarchePage from './pages/ApprendreMarchePage';
+import ImmersiveGardenFiche from './pages/ImmersiveGardenFiche';
 import { TrophicFullscreenProvider } from './components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider';
 import { DiscoverFullscreenProvider } from './components/biodiversity/discover/DiscoverFullscreenProvider';
 
@@ -132,6 +133,7 @@ function App() {
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
             <Route path="/m/:slug" element={<PublicEventPage />} />
+            <Route path="/jardin/:slug" element={<ImmersiveGardenFiche />} />
             <Route path="/apprendre/:slug" element={<ApprendreMarchePage />} />
             
             {/* Nouvelles routes bioacoustiques */}

@@ -24,9 +24,12 @@ const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
     ? Math.max(0, event.max_participants - (event.participants_count ?? 0))
     : null;
 
-  const detailUrl = event.is_public && event.public_slug
-    ? `/m/${event.public_slug}`
-    : `/admin/marche-events/${event.id}`;
+  const isJardin = event.category === 'jardin' && event.is_public && event.public_slug;
+  const detailUrl = isJardin
+    ? `/jardin/${event.public_slug}`
+    : event.is_public && event.public_slug
+      ? `/m/${event.public_slug}`
+      : `/admin/marche-events/${event.id}`;
 
   const inscriptionUrl = user
     ? detailUrl
@@ -144,8 +147,8 @@ const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
           </div>
         )}
         {!isUpcoming && (
-          <Button asChild size="sm" variant="outline" className="w-full">
-            <Link to={detailUrl}>Découvrir cette marche</Link>
+          <Button asChild size="sm" variant={isJardin ? 'default' : 'outline'} className="w-full">
+            <Link to={detailUrl}>{isJardin ? '✦ Immersion Jardin' : 'Découvrir cette marche'}</Link>
           </Button>
         )}
       </div>
