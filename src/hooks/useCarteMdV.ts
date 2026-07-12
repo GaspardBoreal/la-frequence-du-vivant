@@ -169,6 +169,31 @@ export function useSolVivantPoints(enabled: boolean) {
   });
 }
 
+export interface SolVivantPointDetail extends SolVivantPoint {
+  email: string | null;
+  raw: any;
+  external_id: string;
+  external_updated_at: string | null;
+}
+
+export function useSolVivantPointDetail(id: string | null) {
+  return useQuery({
+    queryKey: ['carte-sol-vivant-point-detail', id],
+    enabled: !!id,
+    queryFn: async (): Promise<SolVivantPointDetail | null> => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('carte_sol_vivant_points' as any)
+        .select('id, external_id, name, category, categories, latitude, longitude, street_address, website, email, description, synced_at, external_updated_at, raw')
+        .eq('id', id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as unknown as SolVivantPointDetail | null;
+    },
+    staleTime: 30 * 60_000,
+  });
+}
+
 /* ---------- Filtering ---------- */
 
 function matchSeason(dateISO: string, season: SeasonFilter): boolean {
