@@ -539,6 +539,72 @@ export type Database = {
         }
         Relationships: []
       }
+      carte_sol_vivant_points: {
+        Row: {
+          categories: string[] | null
+          category: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          external_created_at: string | null
+          external_id: string
+          external_updated_at: string | null
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          raw: Json | null
+          source_key: string | null
+          status: number | null
+          street_address: string | null
+          synced_at: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          categories?: string[] | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          external_created_at?: string | null
+          external_id: string
+          external_updated_at?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          raw?: Json | null
+          source_key?: string | null
+          status?: number | null
+          street_address?: string | null
+          synced_at?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          categories?: string[] | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          external_created_at?: string | null
+          external_id?: string
+          external_updated_at?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          raw?: Json | null
+          source_key?: string | null
+          status?: number | null
+          street_address?: string | null
+          synced_at?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       community_affiliate_events: {
         Row: {
           affiliate_link_id: string
@@ -6795,6 +6861,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_carte_mdv_hero_stats: {
+        Args: never
+        Returns: {
+          events_count: number
+          marcheurs_count: number
+          partners_count: number
+          species_count: number
+        }[]
+      }
       get_community_affiliate_admin_stats: {
         Args: never
         Returns: {
@@ -6978,6 +7053,29 @@ export type Database = {
           marche_lieu: string
           marche_title: string
           observation_count: number
+        }[]
+      }
+      get_marches_map_events: {
+        Args: never
+        Returns: {
+          cover_image_url: string
+          date_marche: string
+          description: string
+          event_type: string
+          exploration_id: string
+          exploration_name: string
+          has_audio: boolean
+          has_marcheur_photos: boolean
+          id: string
+          is_public: boolean
+          latitude: number
+          lieu: string
+          longitude: number
+          max_participants: number
+          participants_count: number
+          public_slug: string
+          species_count: number
+          title: string
         }[]
       }
       get_marches_species_counts: {
