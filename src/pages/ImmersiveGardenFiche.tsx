@@ -9,7 +9,7 @@ import OrganicButton from '@/components/immersive-garden/OrganicButton';
 import SeasonOverlay, { type Season } from '@/components/immersive-garden/SeasonOverlay';
 import StratPanel from '@/components/immersive-garden/StratPanel';
 import CursorAurora from '@/components/immersive-garden/CursorAurora';
-import OrganicDivider from '@/components/immersive-garden/OrganicDivider';
+
 
 const SEASONS: { key: Season; label: string; emoji: string }[] = [
   { key: 'printemps', label: 'Printemps', emoji: '🌸' },
