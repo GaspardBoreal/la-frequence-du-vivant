@@ -1,75 +1,63 @@
-## Problème
+## Diagnostic
 
-L'export événement (Word + CSV) affiche **208 espèces** pour Château Boutinet alors que la plateforme (Carte / Carnet / Synthèse) en compte **38**.
+Oui, **389 lignes dans le CSV est normal** — mais c'est aussi le signe que l'export actuel prête à confusion.
 
-Cause racine dans `src/components/admin/EventExportPanel.tsx` (lignes 172-269) :
+Le CSV que tu as exporté ne contient QUE la section `=== OBSERVATIONS BRUTES PAR MARCHE ===` (case « Observations brutes » cochée, case « Synthèse biodiversité » décochée). Cette section liste **1 ligne = 1 espèce × 1 marche** : avec ~38 espèces uniques et ~10 marches aux rayons qui se chevauchent, on obtient logiquement ~380 lignes de doublons géographiques (la même espèce réapparaît sous chaque marche qui la capte).
 
-1. **Dédup faible** : les espèces sont dédupliquées par `commonName || scientificName`. Le même taxon apparaît plusieurs fois si :
-   - le commonName varie (`brambles` vs `Ronces` vs vide → `Rubus`)
-   - le rang taxonomique diffère (`Rubus` genre vs `Rubus ulmifolius` espèce)
-   - accentuation / casse différente
-2. **Rayons chevauchants ignorés** : les marches proches (ex. Yourte + Vigne arrivée Droite à ~100 m) partagent leurs snapshots iNat. Chaque snapshot est compté séparément → double comptage massif.
-3. **Rangs supra-spécifiques comptés comme espèces** : « Dicots (Magnoliopsida) », « Birds (Aves) », « Asteraceae » gonflent le total sans être des espèces.
-4. **Source divergente** : l'export lit directement `biodiversity_snapshots.species_data`, alors que Carte/Carnet/Synthèse consomment la **RPC unifiée `get_exploration_species_count`** (fusion snapshots ∪ marcheur_observations, dédup `lower(unaccent(trim(scientific_name)))`).
+Le Word, lui, s'appuie sur le RPC dédupliqué → 38 espèces, c'est cohérent.
 
-## Solution proposée
+**Deux vrais problèmes UX cependant :**
 
-### 1. Source de vérité unique : brancher l'export sur la RPC unifiée
+1. Quand l'utilisateur décoche « Synthèse » et coche « Brutes », le CSV commence par un avertissement qui renvoie « à la section SYNTHÈSE ci-dessus »… qui n'existe pas dans le fichier.
+2. Un CSV mono-fichier mélange mal 4 sections (Participants / Marches / Synthèse / Brutes). Illisible dans Excel.
 
-Réécrire le bloc biodiversité de `EventExportPanel.tsx` pour :
+## Proposition
 
-- appeler `supabase.rpc('get_exploration_species_count', { p_exploration_id })` — même source que Carte/Carnet/Synthèse
-- utiliser `total`, `by_kingdom`, `species[]` retournés → `totalSpecies`, `speciesByKingdom`, `topSpecies` **strictement alignés** avec le reste de la plateforme
+### 1. Corriger l'export CSV actuel (rapide, haut impact)
 
-Résultat immédiat : l'export affichera **38 espèces · Faune X · Flore Y · Champi Z · Autres W** identiques à la Carte.
+- **Toujours injecter un en-tête « Résumé » en tête de CSV** dès qu'une section biodiversité est exportée, avec les chiffres dédupliqués du RPC :
+  ```
+  === RÉSUMÉ BIODIVERSITÉ ===
+  Événement, Espèces uniques, Faune, Flore, Champignons, Autres, Nb marches, Nb observations brutes
+  Château Boutinet, 38, 12, 24, 2, 0, 10, 380
+  ```
+- **Reformuler l'avertissement de la section brutes** pour ne plus référencer une section absente :
+  ```
+  # ⚠ Cette section contient 380 lignes pour 38 espèces uniques (facteur ×10 dû aux rayons chevauchants).
+  # Pour le compte d'espèces uniques, voir la section RÉSUMÉ en tête de fichier.
+  ```
+- **Ajouter une colonne « Chevauchements »** dans les brutes : nombre de marches où l'espèce apparaît (2, 3, 5…). L'utilisateur voit immédiatement pourquoi il y a autant de lignes.
+- **Ajouter une section `=== CHEVAUCHEMENTS ESPÈCES ×  MARCHES ===**` (matrice compacte) qui liste, par espèce, la liste des marches où elle est captée. Rend le doublonnage lisible au lieu de suspect.
 
-### 2. Enrichir la RPC pour l'export (commonName + observations)
+### 2. Passer d'un CSV mono-fichier à un **XLSX multi-feuilles** (option recommandée)
 
-La RPC actuelle retourne `{ sci, kingdom, in_snapshot, in_marcheur }` sans nom commun ni compte d'observations. Ajouter dans une nouvelle RPC compagnon `get_exploration_species_export(p_exploration_id)` :
+Un vrai `.xlsx` avec `xlsx` (déjà présent dans le projet via `pack-vivant`) :
 
-```
-sci, common_name_fr, kingdom, rank,
-observations_count,           -- nb attributions dédupliquées géographiquement
-first_seen, last_seen,
-sources text[]                -- ['snapshot','marcheur']
-```
+- Feuille **Résumé** : KPIs événement + tableau par marche (nb espèces uniques, nb partagées)
+- Feuille **Participants**
+- Feuille **Marches**
+- Feuille **Biodiversité — Synthèse** (38 lignes dédupliquées, alignée Carte/Carnet)
+- Feuille **Biodiversité — Brutes par marche** (les 380 lignes, avec colonne Chevauchements)
+- Feuille **Chevauchements** (matrice espèce × marches)
 
-Dédup géographique côté SQL : `GROUP BY normalized_sci`, `SUM` sur les attributions **après** dédup par `(observer_login, observed_on, round(lat,4), round(lng,4))` — supprime le double comptage entre marches à rayons chevauchants.
+Bénéfice : chaque section a son onglet, plus aucune confusion, filtrable/triable dans Excel, format pro pour restitution partenaire.
 
-### 3. Filtre rang-espèce optionnel
+### 3. Ajuster la UI du panneau
 
-Ajouter une case à cocher dans le panel : **« Exclure les rangs supra-spécifiques (genre, famille, classe) »** (activée par défaut). Filtre sur `rank IN ('species','subspecies','variety')` ou heuristique 2 mots quand `rank` est nul. Évite les « Birds / Dicots / Asteraceae » gonflants.
-
-### 4. Deux niveaux de CSV, clairement libellés
-
-- **CSV Synthèse** (par défaut) : 1 ligne par espèce unique de l'événement — colonnes : `Espèce, Nom scientifique, Royaume, Rang, Observations, Sources, Première obs, Dernière obs`. Total lignes = 38.
-- **CSV Données brutes** (opt-in, renommé **« Observations brutes par marche »**) : garde le comportement actuel mais avec une bannière en tête de fichier + colonne `⚠ Doublons attendus (rayons chevauchants)` pour éviter toute confusion analytique.
-
-### 5. Rapport Word enrichi
-
-- Bloc « Biodiversité » : conserve `38 espèces · Faune · Flore · Champi · Autres` (RPC)
-- Ajouter une **note méthodo** discrète :
-  > *Comptage dédupliqué par nom scientifique normalisé, aligné avec la Carte et le Carnet. Les rayons d'observations chevauchants entre marches proches ne créent pas de doublon.*
-- Ajouter un mini-tableau **« Sources »** : X depuis snapshots iNat, Y depuis observations marcheurs, Z partagés (from `by_source`)
-
-### 6. Vérification
-
-- Comparer côté UI : ouvrir l'exploration Château Boutinet → nombre affiché dans le bandeau Carte (38) = nombre dans le Word exporté
-- Rejouer l'export CSV Synthèse : ligne count = 38
-- CSV brut conserve les 208 lignes mais avec bannière explicative
+- Renommer le toggle « Observations brutes » → **« Observations brutes par marche (avancé — analyse spatiale) »** avec un badge « 380 lignes attendues » calculé dynamiquement au survol.
+- Ajouter une info-bulle expliquant chevauchement de rayons en 1 phrase.
+- Nouveau toggle **« Format XLSX (recommandé) / CSV »** au-dessus des cases sections.
 
 ## Détails techniques
 
-- **Fichiers modifiés** :
-  - `src/components/admin/EventExportPanel.tsx` — remplacement du bloc biodiversité (lignes 173-269) par appel RPC
-  - `src/utils/eventExportUtils.ts` — nouvelles colonnes CSV, note méthodo Word, section Sources, nouvelle option `includeRawBiodiversity` renommée
-  - `src/integrations/supabase/types.ts` — régénéré par la migration
-- **Nouvelle migration SQL** :
-  - `get_exploration_species_export(p_exploration_id uuid)` — `SECURITY DEFINER`, dédup par `lower(unaccent(trim(scientific_name)))`, sortie JSON `{ species: [...] }` avec compteurs
-  - `GRANT EXECUTE ... TO authenticated`
-- **Pas de changement UI** en dehors du panel admin export
-- **Compatibilité** : la RPC actuelle `get_exploration_species_count` reste inchangée (pas de régression Carte/Carnet)
+**Fichiers touchés :**
 
-## Résumé pour l'utilisateur
+- `src/utils/eventExportUtils.ts` : nouveau bloc `=== RÉSUMÉ BIODIVERSITÉ ===` toujours en tête ; enrichir `rawSpeciesPerMarche` avec `overlapCount` ; nouvelle section `Chevauchements` ; générateur XLSX parallèle au CSV via `xlsx` (`writeFile` multi-sheets).
+- `src/components/admin/EventExportPanel.tsx` : sélecteur format CSV/XLSX, libellés et tooltips enrichis, calcul dynamique du nombre de lignes brutes attendues.
+- Le RPC `get_exploration_species_export` renvoie déjà `by_source` + `species[]` avec `in_snapshot/in_marcheur` → suffisant pour Résumé & Chevauchements sans nouvelle migration SQL.
 
-L'export sera **strictement aligné** sur ce que voit le marcheur dans la Carte/Carnet (38 espèces), grâce à la RPC unifiée déjà en place. Le CSV brut reste disponible pour l'analyse fine (par marche, avec GPS) mais clairement libellé comme tel. Ajout d'un filtre « rang espèce » pour ne pas gonfler avec des taxons supra-spécifiques, et d'une note méthodo dans le Word pour transparence scientifique.
+**Aucune migration SQL nécessaire.** Purement front + utils.
+
+Voie retenue :
+
+**(B) Pro** : (A) + génération XLSX multi-feuilles au choix dans le panneau (recommandé pour restitution partenaires type VDT).

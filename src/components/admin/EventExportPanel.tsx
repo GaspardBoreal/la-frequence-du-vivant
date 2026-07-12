@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getMarcheEventTypeMeta, MARCHE_EVENT_TYPES } from '@/lib/marcheEventTypes';
-import { exportEventsToWord, exportEventsToCSV, type EventExportData, type EventExportOptions } from '@/utils/eventExportUtils';
+import { exportEventsToWord, exportEventsToCSV, exportEventsToXLSX, type EventExportData, type EventExportOptions } from '@/utils/eventExportUtils';
 
 interface MarcheEvent {
   id: string;
@@ -45,7 +45,7 @@ const EventExportPanel: React.FC = () => {
   const [includeRawBiodiversity, setIncludeRawBiodiversity] = useState(false);
 
   // Export format
-  const [exportFormat, setExportFormat] = useState<'word' | 'csv'>('word');
+  const [exportFormat, setExportFormat] = useState<'word' | 'xlsx' | 'csv'>('xlsx');
 
   useEffect(() => {
     loadEvents();
@@ -296,9 +296,12 @@ const EventExportPanel: React.FC = () => {
 
       if (exportFormat === 'word') {
         await exportEventsToWord(exportData, exportOptions);
+      } else if (exportFormat === 'xlsx') {
+        exportEventsToXLSX(exportData, exportOptions);
       } else {
         exportEventsToCSV(exportData, exportOptions);
       }
+
 
       toast.success(`${exportData.length} événement${exportData.length > 1 ? 's' : ''} exporté${exportData.length > 1 ? 's' : ''}`);
     } catch (error) {
@@ -427,7 +430,7 @@ const EventExportPanel: React.FC = () => {
               { checked: includeParticipants, setter: setIncludeParticipants, label: 'Liste des participants', desc: 'Nom, statut, date d\'inscription' },
               { checked: includeMarches, setter: setIncludeMarches, label: 'Marches associées', desc: 'Étapes, coordonnées, parcours' },
               { checked: includeBiodiversity, setter: setIncludeBiodiversity, label: 'Synthèse biodiversité (dédupliquée)', desc: 'Espèces uniques par royaume, top espèces — aligné Carte/Carnet/Synthèse' },
-              { checked: includeRawBiodiversity, setter: setIncludeRawBiodiversity, label: 'Observations brutes par marche (CSV)', desc: '⚠ Doublons attendus si rayons chevauchants — pour analyse spatiale fine uniquement' },
+              { checked: includeRawBiodiversity, setter: setIncludeRawBiodiversity, label: 'Observations brutes par marche (avancé)', desc: '⚠ Doublons attendus si rayons chevauchants — génère aussi une matrice « Chevauchements » lisible. Le Résumé en tête donne toujours les chiffres uniques.' },
             ].map(opt => (
               <div key={opt.label} className="flex items-start gap-3">
                 <Checkbox
@@ -450,7 +453,15 @@ const EventExportPanel: React.FC = () => {
             <CardTitle className="text-lg">Format d'export</CardTitle>
           </CardHeader>
           <CardContent>
-            <RadioGroup value={exportFormat} onValueChange={(v) => setExportFormat(v as 'word' | 'csv')}>
+            <RadioGroup value={exportFormat} onValueChange={(v) => setExportFormat(v as 'word' | 'xlsx' | 'csv')}>
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="xlsx" id="fmt-xlsx" />
+                <Label htmlFor="fmt-xlsx" className="cursor-pointer">
+                  <span className="font-medium">Excel (.xlsx)</span>
+                  <Badge variant="secondary" className="ml-2 text-xs">Recommandé</Badge>
+                  <span className="text-xs text-muted-foreground ml-2">Multi-feuilles : Résumé, Participants, Marches, Synthèse, Brutes, Chevauchements</span>
+                </Label>
+              </div>
               <div className="flex items-center gap-3">
                 <RadioGroupItem value="word" id="fmt-word" />
                 <Label htmlFor="fmt-word" className="cursor-pointer">
@@ -462,10 +473,11 @@ const EventExportPanel: React.FC = () => {
                 <RadioGroupItem value="csv" id="fmt-csv" />
                 <Label htmlFor="fmt-csv" className="cursor-pointer">
                   <span className="font-medium">CSV</span>
-                  <span className="text-xs text-muted-foreground ml-2">Données tabulaires (événements + participants + biodiversité)</span>
+                  <span className="text-xs text-muted-foreground ml-2">Fichier unique — sections empilées avec Résumé en tête</span>
                 </Label>
               </div>
             </RadioGroup>
+
           </CardContent>
         </Card>
 
@@ -482,7 +494,7 @@ const EventExportPanel: React.FC = () => {
                 </div>
                 <Button onClick={handleExport} disabled={exporting} className="gap-2">
                   {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  Exporter en {exportFormat === 'word' ? '.docx' : '.csv'}
+                  Exporter en {exportFormat === 'word' ? '.docx' : exportFormat === 'xlsx' ? '.xlsx' : '.csv'}
                 </Button>
               </div>
             ) : (
