@@ -25,7 +25,7 @@ export interface CarteMdVFilters {
 export const DEFAULT_FILTERS: CarteMdVFilters = {
   search: '',
   types: [],
-  status: 'upcoming',
+  status: 'all',
   season: 'all',
   minSpecies: 0,
   zone: 'all',
