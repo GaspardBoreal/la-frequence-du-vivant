@@ -48,6 +48,7 @@ const Index = () => {
                 <h1 className="font-crimson font-normal leading-tight text-7xl md:text-8xl lg:text-9xl">
                   <span className="text-white">La Fréquence</span><br />
                   <span style={{ color: '#4ade80' }}>du Vivant</span>
+                  <span className="sr-only"> — Bioacoustique, poésie et science participative avec Gaspard Boréal</span>
                 </h1>
                 
                 {/* Sous-titre */}

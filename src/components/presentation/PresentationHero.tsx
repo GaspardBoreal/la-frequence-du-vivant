@@ -126,6 +126,8 @@ export default function PresentationHero() {
                 <button
                   key={index}
                   onClick={() => setCurrentVideo(index)}
+                  aria-label={`Afficher la vidéo ${index + 1}`}
+                  aria-current={index === currentVideo}
                   className={`w-2 h-2 rounded-full transition-all ${
                     index === currentVideo ? 'bg-primary w-8' : 'bg-muted-foreground/30'
                   }`}
