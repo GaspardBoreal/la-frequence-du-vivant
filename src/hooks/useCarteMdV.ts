@@ -72,9 +72,12 @@ export interface SolVivantPoint {
 
 export interface HeroStats {
   events_count: number;
-  species_count: number;
+  marches_count: number;
+  total_km: number;
   marcheurs_count: number;
-  partners_count: number;
+  participations_count: number;
+  species_count: number;
+  computed_at?: string;
 }
 
 /* ---------- Filters state synced with URL ---------- */
@@ -136,10 +139,11 @@ export function useCarteMdVHeroStats() {
     queryFn: async (): Promise<HeroStats> => {
       const { data, error } = await supabase.rpc('get_carte_mdv_hero_stats' as any);
       if (error) throw error;
-      const row = Array.isArray(data) ? data[0] : data;
-      return row ?? { events_count: 0, species_count: 0, marcheurs_count: 0, partners_count: 0 };
+      const row: any = Array.isArray(data) ? data[0] : data;
+      return row ?? { events_count: 0, marches_count: 0, total_km: 0, marcheurs_count: 0, participations_count: 0, species_count: 0 };
     },
     staleTime: 5 * 60_000,
+    refetchOnMount: 'always',
   });
 }
 

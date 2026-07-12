@@ -6861,15 +6861,7 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_carte_mdv_hero_stats: {
-        Args: never
-        Returns: {
-          events_count: number
-          marcheurs_count: number
-          partners_count: number
-          species_count: number
-        }[]
-      }
+      get_carte_mdv_hero_stats: { Args: never; Returns: Json }
       get_community_affiliate_admin_stats: {
         Args: never
         Returns: {
