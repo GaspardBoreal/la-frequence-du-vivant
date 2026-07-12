@@ -91,6 +91,7 @@ export function useCarteMdVFilters() {
   const filters: CarteMdVFilters = useMemo(() => ({
     search: params.get('q') ?? '',
     types: params.get('type')?.split(',').filter(Boolean) ?? [],
+    categories: params.get('cat')?.split(',').filter(Boolean) ?? [],
     status: (params.get('status') as StatusFilter) || DEFAULT_FILTERS.status,
     season: (params.get('season') as SeasonFilter) || DEFAULT_FILTERS.season,
     minSpecies: Number(params.get('minSpecies') ?? 0) || 0,
