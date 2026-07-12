@@ -71,6 +71,7 @@ export interface SolVivantPoint {
   street_address: string | null;
   website: string | null;
   description: string | null;
+  synced_at: string | null;
 }
 
 export interface HeroStats {
