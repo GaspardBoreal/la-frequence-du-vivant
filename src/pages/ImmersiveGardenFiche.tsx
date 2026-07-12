@@ -302,7 +302,16 @@ const ImmersiveGardenFiche: React.FC = () => {
                 return (
                   <button
                     key={s.key}
-                    onClick={() => setSeason(s.key)}
+                    onClick={(e) => {
+                      const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                      setFlash({
+                        key: Date.now(),
+                        color: SEASON_TINT[s.key],
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2,
+                      });
+                      setSeason(s.key);
+                    }}
                     className={`relative px-5 py-3 rounded-full font-serif text-sm transition-all border ${
                       active
                         ? 'bg-[#c9a24a] text-[#1a1408] border-[#c9a24a] shadow-[0_10px_30px_-5px_rgba(201,162,74,0.6)] scale-105'
