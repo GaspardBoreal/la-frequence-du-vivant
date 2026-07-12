@@ -478,13 +478,16 @@ export function exportEventsToCSV(
     lines.push('');
   }
 
-  // Biodiversity CSV
+  // Biodiversity synthèse CSV (1 ligne = 1 espèce unique dédupliquée)
   if (options.includeBiodiversity) {
-    lines.push('=== BIODIVERSITÉ ===');
-    lines.push('Événement,Type,Espèce,Nom scientifique,Royaume,Observations');
+    lines.push('=== BIODIVERSITÉ (SYNTHÈSE — 1 ligne par espèce unique) ===');
+    lines.push('# Comptage aligné sur la Carte / Carnet / Synthèse (RPC get_exploration_species_export)');
+    lines.push('# Déduplication : nom scientifique normalisé (unaccent + lower), filtré par rayon marche.');
+    lines.push('Événement,Type,Espèce,Nom scientifique,Royaume,Rang,Observations,Sources,Première obs,Dernière obs');
     events.forEach(e => {
       if (e.biodiversity) {
-        e.biodiversity.topSpecies.forEach(sp => {
+        const list = e.biodiversity.allSpecies ?? e.biodiversity.topSpecies;
+        list.forEach(sp => {
           lines.push(
             [
               escapeCSV(e.title),
@@ -492,17 +495,25 @@ export function exportEventsToCSV(
               escapeCSV(sp.name),
               escapeCSV(sp.scientificName),
               escapeCSV(sp.kingdom),
+              escapeCSV(sp.rank || ''),
               sp.count.toString(),
+              escapeCSV((sp.sources || []).join('+')),
+              escapeCSV(sp.firstSeen || ''),
+              escapeCSV(sp.lastSeen || ''),
             ].join(','),
           );
         });
       }
     });
+    lines.push('');
   }
 
-  // Raw biodiversity CSV
+  // Raw biodiversity CSV — observations par marche (doublons attendus si rayons chevauchants)
   if (options.includeRawBiodiversity) {
-    lines.push('=== DONNÉES BRUTES BIODIVERSITÉ ===');
+    lines.push('=== OBSERVATIONS BRUTES PAR MARCHE ===');
+    lines.push('# ⚠ ATTENTION : cette section contient volontairement des doublons.');
+    lines.push('# La même espèce peut apparaître dans plusieurs marches si leurs rayons se chevauchent.');
+    lines.push('# Pour compter les espèces uniques d\'un événement, utilisez la section « SYNTHÈSE » ci-dessus.');
     lines.push('Événement,Type,Marche,Longitude,Latitude,Espèce,Nom scientifique,Royaume,Observations');
     events.forEach(e => {
       if (e.biodiversity?.rawSpeciesPerMarche) {
