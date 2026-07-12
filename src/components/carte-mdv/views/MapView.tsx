@@ -139,21 +139,22 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
               <Marker key={e.id} position={[Number(e.latitude), Number(e.longitude)]} icon={makeEventIcon(e.event_type, size)}>
                 <Popup maxWidth={320} minWidth={300} className="carte-mdv-popup" closeButton={false}>
                   <div className="w-[300px] rounded-[1.5rem] bg-[#FAF8F3] overflow-hidden border border-[#0D6B58]/5 shadow-[0_20px_50px_-15px_rgba(13,107,88,0.25)] animate-fade-in">
-                    {/* Header media */}
-                    <div className="relative">
-                      {e.cover_image_url ? (
-                        <img src={e.cover_image_url} alt="" className="w-full h-32 object-cover" />
-                      ) : (
-                        <div
-                          className="w-full h-32"
-                          style={{ background: `linear-gradient(135deg, ${TYPE_COLORS[e.event_type ?? ''] ?? '#0d6b58'}22, ${TYPE_COLORS[e.event_type ?? ''] ?? '#0d6b58'}55)` }}
-                        />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#FAF8F3] via-transparent to-transparent" />
-                    </div>
+                    {/* Header — cover image OR fin filet coloré */}
+                    {e.cover_image_url ? (
+                      <div className="relative">
+                        <img src={e.cover_image_url} alt="" className="w-full h-24 object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#FAF8F3] via-transparent to-transparent" />
+                      </div>
+                    ) : (
+                      <div
+                        className="h-1 w-full"
+                        style={{ background: TYPE_COLORS[e.event_type ?? ''] ?? '#0d6b58' }}
+                      />
+                    )}
 
                     {/* Content */}
-                    <div className="px-5 pb-5 -mt-5 relative">
+                    <div className={`px-5 pb-5 relative ${e.cover_image_url ? '-mt-4' : 'pt-5'}`}>
+
                       {/* Chips */}
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         <span
