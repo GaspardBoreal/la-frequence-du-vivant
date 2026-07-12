@@ -296,9 +296,12 @@ const EventExportPanel: React.FC = () => {
 
       if (exportFormat === 'word') {
         await exportEventsToWord(exportData, exportOptions);
+      } else if (exportFormat === 'xlsx') {
+        exportEventsToXLSX(exportData, exportOptions);
       } else {
         exportEventsToCSV(exportData, exportOptions);
       }
+
 
       toast.success(`${exportData.length} événement${exportData.length > 1 ? 's' : ''} exporté${exportData.length > 1 ? 's' : ''}`);
     } catch (error) {
