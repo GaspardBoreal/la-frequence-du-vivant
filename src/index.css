@@ -93,6 +93,15 @@
     --primary: 142 70% 45%;
     --primary-foreground: 0 0% 100%;
 
+    /* === Catégories marches (dark) === */
+    --category-arboriculture: 96 45% 62%;
+    --category-grande-culture: 40 82% 62%;
+    --category-elevage: 16 70% 65%;
+    --category-maraichage: 145 55% 62%;
+    --category-vignoble: 340 65% 68%;
+    --category-jardin: 330 70% 75%;
+    --category-exploration: 210 60% 68%;
+
     --secondary: 140 28% 18%;
     --secondary-foreground: 45 20% 95%;
 
