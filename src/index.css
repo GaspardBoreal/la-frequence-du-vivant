@@ -17,6 +17,15 @@
     --primary: 165 80% 24%;           /* Émeraude profond #0D6B58 */
     --primary-foreground: 0 0% 100%;
 
+    /* === Catégories marches (light) === */
+    --category-arboriculture: 96 35% 32%;   /* vert olive profond */
+    --category-grande-culture: 40 78% 42%;  /* blé doré */
+    --category-elevage: 16 65% 45%;         /* terre cuite */
+    --category-maraichage: 145 55% 35%;     /* vert frais */
+    --category-vignoble: 340 55% 32%;       /* bordeaux profond */
+    --category-jardin: 330 55% 55%;         /* rose fleuri */
+    --category-exploration: 210 45% 40%;    /* bleu ardoise */
+
     --secondary: 42 20% 92%;          /* Beige subtil */
     --secondary-foreground: 0 0% 20%;
 
