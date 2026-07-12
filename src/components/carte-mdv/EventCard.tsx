@@ -12,6 +12,7 @@ import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 interface Props {
   event: CarteMdVEvent;
   compact?: boolean;
+  rightBadge?: React.ReactNode;
 }
 
 const EventCard: React.FC<Props> = ({ event, compact = false }) => {
