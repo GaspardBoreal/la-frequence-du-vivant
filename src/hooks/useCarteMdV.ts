@@ -108,6 +108,7 @@ export function useCarteMdVFilters() {
     const p = new URLSearchParams();
     if (merged.search) p.set('q', merged.search);
     if (merged.types.length) p.set('type', merged.types.join(','));
+    if (merged.categories.length) p.set('cat', merged.categories.join(','));
     if (merged.status !== DEFAULT_FILTERS.status) p.set('status', merged.status);
     if (merged.season !== DEFAULT_FILTERS.season) p.set('season', merged.season);
     if (merged.minSpecies > 0) p.set('minSpecies', String(merged.minSpecies));
