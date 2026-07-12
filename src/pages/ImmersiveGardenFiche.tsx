@@ -12,6 +12,7 @@ import StratPanel from '@/components/immersive-garden/StratPanel';
 import CursorAurora from '@/components/immersive-garden/CursorAurora';
 import GardenSiblingNav from '@/components/immersive-garden/GardenSiblingNav';
 import GardenTransitionOverlay from '@/components/immersive-garden/GardenTransitionOverlay';
+import SeasonSpeciesCarousel from '@/components/immersive-garden/SeasonSpeciesCarousel';
 
 
 const SEASONS: { key: Season; label: string; emoji: string }[] = [
