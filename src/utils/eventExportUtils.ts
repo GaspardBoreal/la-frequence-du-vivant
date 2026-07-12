@@ -13,8 +13,10 @@ import {
   PageBreak,
 } from 'docx';
 import { saveAs } from 'file-saver';
+import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
 
 // Color mappings for event types (hex without #)
 const EVENT_TYPE_COLORS: Record<string, string> = {
