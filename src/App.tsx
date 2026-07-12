@@ -66,6 +66,7 @@ import MarchesDuVivantAgriculture from './pages/MarchesDuVivantAgriculture';
 import MarchesDuVivantPartenaires from './pages/MarchesDuVivantPartenaires';
 import MarchesDuVivantAssociation from './pages/MarchesDuVivantAssociation';
 import MarchesDuVivantExplorer from './pages/MarchesDuVivantExplorer';
+import CarteMarchesDuVivant from './pages/CarteMarchesDuVivant';
 import CarnetsDeTerrainGalerie from './pages/CarnetsDeTerrainGalerie';
 import CarnetDeTerrain from './pages/CarnetDeTerrain';
 import CrmPipeline from './pages/CrmPipeline';
@@ -147,6 +148,7 @@ function App() {
             <Route path="/marches-du-vivant/partenaires" element={<MarchesDuVivantPartenaires />} />
             <Route path="/marches-du-vivant/association" element={<MarchesDuVivantAssociation />} />
             <Route path="/marches-du-vivant/explorer" element={<MarchesDuVivantExplorer />} />
+            <Route path="/marches-du-vivant/carte-marches-du-vivant" element={<CarteMarchesDuVivant />} />
             <Route path="/marches-du-vivant/carnets-de-terrain" element={<CarnetsDeTerrainGalerie />} />
             <Route path="/marches-du-vivant/carnets-de-terrain/:slug" element={<CarnetDeTerrain />} />
             <Route path="/marches-du-vivant/connexion" element={<MarchesDuVivantConnexion />} />
