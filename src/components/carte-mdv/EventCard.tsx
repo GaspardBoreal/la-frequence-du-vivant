@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Calendar, MapPin, Sprout, Users, Headphones, Camera, Sparkles } from 'lucide-react';
@@ -17,6 +17,7 @@ interface Props {
 
 const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
   const { user } = useAuth();
+  const location = useLocation();
   const meta = getMarcheEventTypeMeta(event.event_type);
   const date = new Date(event.date_marche);
   const isUpcoming = date.getTime() > Date.now();
@@ -25,8 +26,12 @@ const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
     : null;
 
   const isJardin = event.category === 'jardin';
+  // Propager les filtres actifs de la carte vers la fiche Jardin (nav prev/next + retour).
+  const carteQuery = isJardin && location.pathname.includes('carte-marches-du-vivant')
+    ? location.search
+    : '';
   const detailUrl = isJardin
-    ? `/jardin/${event.public_slug ?? event.id}`
+    ? `/jardin/${event.public_slug ?? event.id}${carteQuery}`
     : event.is_public && event.public_slug
       ? `/m/${event.public_slug}`
       : `/admin/marche-events/${event.id}`;
