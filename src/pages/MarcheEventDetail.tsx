@@ -40,7 +40,9 @@ const MarcheEventDetail: React.FC = () => {
 
   const [form, setForm] = useState({
     title: '', description: '', date_marche: '', lieu: '',
-    latitude: '', longitude: '', max_participants: '20', exploration_id: '', event_type: 'agroecologique' as MarcheEventType,
+    latitude: '', longitude: '', max_participants: '20', exploration_id: '',
+    event_type: 'agroecologique' as MarcheEventType,
+    category: 'autre' as MarcheCategory,
   });
 
   const [showAddParticipant, setShowAddParticipant] = useState(false);
