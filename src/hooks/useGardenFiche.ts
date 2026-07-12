@@ -168,9 +168,9 @@ export function useGardenFiche(slug: string | undefined) {
   const seen = new Set<string>();
   const heroPhotos: HeroPhoto[] = [];
   convivialite.forEach((p) => {
-    if (p.photo_url && !seen.has(p.photo_url)) {
-      seen.add(p.photo_url);
-      heroPhotos.push({ id: `conv-${p.id}`, url: p.photo_url });
+    if (p.url && !seen.has(p.url)) {
+      seen.add(p.url);
+      heroPhotos.push({ id: `conv-${p.id}`, url: p.url });
     }
   });
   (stepPhotosQ.data ?? []).forEach((p) => {
