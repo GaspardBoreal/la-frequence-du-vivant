@@ -247,14 +247,31 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
                   <div className="text-muted-foreground italic">Aucun événement affiché</div>
                 )}
                 {showSolVivant && solVivantPoints.length > 0 && (
-                  <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-white/10">
-                    <span
-                      className="inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/80"
-                      style={{ background: '#84cc16' }}
-                      aria-hidden
-                    />
-                    <span className="flex-1">Partenaires Sol Vivant</span>
-                    <span className="text-muted-foreground tabular-nums">{solVivantPoints.length}</span>
+                  <div className="pt-1.5 mt-1.5 border-t border-white/10 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/80"
+                        style={{ background: '#84cc16' }}
+                        aria-hidden
+                      />
+                      <span className="flex-1">Partenaires Sol Vivant</span>
+                      <span className="text-muted-foreground tabular-nums">{solVivantPoints.length}</span>
+                    </div>
+                    <p
+                      className="text-[10px] text-muted-foreground leading-snug pl-4"
+                      title="Un partenaire peut appartenir à plusieurs catégories (ex. Maraîcher + Jardinier). Il est compté dans chaque filtre correspondant — la somme peut dépasser le total unique."
+                    >
+                      Source&nbsp;:{' '}
+                      <a
+                        href="https://cartesolvivant.gogocarto.fr"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-primary"
+                      >
+                        Carte Sol Vivant
+                      </a>
+                      {' '}— multi-catégories
+                    </p>
                   </div>
                 )}
                 <div className="pt-1.5 mt-1.5 border-t border-white/10 flex items-center gap-2 text-[10px] text-muted-foreground">

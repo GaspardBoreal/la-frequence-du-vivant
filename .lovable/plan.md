@@ -1,63 +1,59 @@
-## Problème
+## Diagnostic
 
-Sur `/marches-du-vivant/carte-marches-du-vivant?cat=jardin&sv=1` :
+Notre base contient bien la même source que gogocarto (multi-catégories par point), mais on affiche 60 au lieu de 75 pour "Jardin" à cause d'une simplification côté client.
 
-- Le filtre **Catégorie** est appliqué aux événements (5 marches "Jardin" affichées ✅)
-- Mais les **753 points Partenaires Sol Vivant** s'affichent tous, sans respecter la catégorie active. Sur gogocarto, ne cocher que `Jardins d'insertions` + `Jardiniers` renvoie ~75 points.
+**Vérifié en base (`carte_sol_vivant_points`) :**
 
-## Cause racine
+- Colonne `categories` (tableau, source de vérité gogocarto) :
+  - Jardiniers → **51**
+  - Jardins d'insertions ou pédagogiques → **25**
+  - Total union ≈ **75** ✅ (aligné avec gogocarto : 50 + 25)
+- Colonne `category` (singulière, dérivée) :
+  - Jardiniers → 47, Jardins d'insertions → 16 (≈ 63)
 
-Dans `src/pages/CarteMarchesDuVivant.tsx` :
+**Cause du 60 affiché :** dans `CarteMarchesDuVivant.tsx`, le filtre appelle `mapSolVivantToCategory(p.categories)` qui **ne renvoie qu'une seule catégorie interne par point** (priorité arboriculture > vignoble > maraîchage > élevage > grande_culture > jardin). Un point taggué à la fois "Jardiniers" et "Maraîchers (MSV)" est donc classé `maraichage` et **disparaît du filtre Jardin**. Résultat : 60 au lieu de 75.
 
-```tsx
-const { data: solPoints = [] } = useSolVivantPoints(filters.solVivantEnabled);
-...
-<MapView ... solVivantPoints={solPoints} ... />
-```
+C'est gogocarto qui a la bonne valeur : **75**.
 
-Les points Sol Vivant sont passés bruts à `MapView`. `applyFilters` ne s'applique qu'aux `events`. Résultat : chaque point est rendu quelle que soit la catégorie.
+## Correction proposée
 
-L'utilitaire `mapSolVivantToCategory(labels)` existe déjà dans `src/lib/marcheCategories.ts` (map `Arboriculteurs → arboriculture`, `Jardiniers → jardin`, `Maraîchers/MSV → maraichage`, etc.), mais n'est jamais utilisé côté carte.
+Aligner strictement notre filtre sur la logique gogocarto : un point appartient à une catégorie si **au moins une** de ses étiquettes source y correspond (union, pas classification unique).
 
-## Correction
+### 1. `src/lib/marcheCategories.ts`
+Ajouter une fonction `solVivantMatchesCategories(labels, selectedCats)` qui, pour chaque label brut du point, calcule sa catégorie interne (même logique que `mapSolVivantToCategory` mais appliquée label par label) et renvoie `true` dès qu'une catégorie interne du point est dans `selectedCats`.
 
-### 1. Filtrer les points Sol Vivant par catégorie active (`CarteMarchesDuVivant.tsx`)
+Conserver `mapSolVivantToCategory` (utilisée ailleurs pour la couleur "primaire"), mais l'extraire d'une helper `singleLabelToCategory` réutilisée par les deux fonctions — une seule table de correspondance.
 
-Ajouter un `useMemo` qui applique `mapSolVivantToCategory(point.categories)` et ne garde que les points dont la catégorie interne appartient à `filters.categories` (quand cette liste est non vide). Si `filters.categories` est vide → afficher tous les points (comportement actuel).
-
+### 2. `src/pages/CarteMarchesDuVivant.tsx`
+Remplacer dans `filteredSolPoints` :
 ```ts
-const filteredSolPoints = useMemo(() => {
-  if (!filters.solVivantEnabled) return [];
-  if (filters.categories.length === 0) return solPoints;
-  const set = new Set(filters.categories);
-  return solPoints.filter(p => set.has(mapSolVivantToCategory(p.categories)));
-}, [solPoints, filters.solVivantEnabled, filters.categories]);
+return solPoints.filter((p) => set.has(mapSolVivantToCategory(p.categories)));
+```
+par :
+```ts
+return solPoints.filter((p) => solVivantMatchesCategories(p.categories, set));
 ```
 
-Passer `filteredSolPoints` à `MapView`.
+Résultat attendu avec filtre "Jardin" seul : **75** points (51 Jardiniers ∪ 25 Jardins d'insertions, dédupliqués par id).
 
-### 2. Recolorer/relabeler la légende par catégorie interne (`MapView.tsx`)
+### 3. Rassurer visuellement les visiteurs (légende `MapView`)
 
-Actuellement la légende affiche « Partenaires Sol Vivant 753 » en vert unique. Étendre pour :
+Dans la légende Sol Vivant, sous le compteur, afficher un lien discret :
+> _Source : [Carte Sol Vivant](https://cartesolvivant.gogocarto.fr) — synchronisée quotidiennement_
 
-- Utiliser le **compte réel affiché** (`solVivantPoints.length` après filtrage).
-- Quand `filters.categories` restreint (info portée via le compte reçu), afficher le libellé au singulier de la catégorie active : ex. « Partenaires Sol Vivant · Jardin 74 ».
-- Colorer les points Sol Vivant avec la couleur sémantique de leur catégorie interne (via `getMarcheCategoryMeta(mapSolVivantToCategory(...)).iconWrapClassName` traduit en couleur hex/HSL) au lieu du vert générique. Ainsi un point Jardin Sol Vivant partage la même couleur qu'une marche Jardin.
+Et un tooltip "?" expliquant :
+> "Un partenaire peut appartenir à plusieurs catégories (ex. Maraîcher + Jardinier). Il est compté dans chaque filtre auquel il correspond."
 
-Aucune requête réseau supplémentaire ; le filtrage est purement client sur les 753 points déjà chargés (léger).
+Ainsi, même si un visiteur compare filtre par filtre (Jardin=75, Maraîchage=577, etc.) la somme peut dépasser le total unique — c'est cohérent avec gogocarto.
 
-### 3. Aucun changement backend
+### 4. (Optionnel, non bloquant)
 
-Pas de migration nécessaire. `carte_sol_vivant_points.categories` est déjà exposé et suffit.
+Job de synchro `sync-carte-sol-vivant` : vérifier que les 62 points avec `category IS NULL` ont bien leur `categories[]` peuplé (c'est le cas d'après les stats). Si oui, on peut à terme déprécier la colonne `category` singulière côté lecture — mais **hors périmètre de ce fix**.
 
 ## Fichiers touchés
 
-- `src/pages/CarteMarchesDuVivant.tsx` — filtrage `filteredSolPoints` + passage à `MapView`.
-- `src/components/carte-mdv/views/MapView.tsx` — couleur par catégorie interne + count/label légende dynamiques.
+- `src/lib/marcheCategories.ts` — refacto + `solVivantMatchesCategories`
+- `src/pages/CarteMarchesDuVivant.tsx` — nouveau filtre union
+- `src/components/carte-mdv/views/MapView.tsx` — mention source + tooltip dans légende
 
-## Vérification
-
-1. `?cat=jardin&sv=1` → n ≈ 50–80 points verts/tons "jardin", plus les 5 marches Jardin.
-2. `?cat=arboriculture&sv=1` → uniquement points Arboriculteurs.
-3. `?sv=1` seul (sans `cat`) → 753 points (comportement inchangé).
-4. Multi-cat `?cat=jardin,maraichage&sv=1` → union des deux mappings.
+Aucune migration DB, aucun changement d'edge function.

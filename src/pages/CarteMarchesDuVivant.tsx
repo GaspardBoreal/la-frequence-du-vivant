@@ -18,7 +18,7 @@ import {
   useSolVivantPoints,
   applyFilters,
 } from '@/hooks/useCarteMdV';
-import { mapSolVivantToCategory } from '@/lib/marcheCategories';
+import { solVivantMatchesCategories } from '@/lib/marcheCategories';
 
 const CarteMarchesDuVivant: React.FC = () => {
   const { filters, update } = useCarteMdVFilters();
@@ -31,7 +31,7 @@ const CarteMarchesDuVivant: React.FC = () => {
     if (!filters.solVivantEnabled) return [];
     if (filters.categories.length === 0) return solPoints;
     const set = new Set(filters.categories);
-    return solPoints.filter((p) => set.has(mapSolVivantToCategory(p.categories)));
+    return solPoints.filter((p) => solVivantMatchesCategories(p.categories, set));
   }, [solPoints, filters.solVivantEnabled, filters.categories]);
 
   return (
