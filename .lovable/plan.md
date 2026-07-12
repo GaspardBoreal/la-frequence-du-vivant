@@ -1,63 +1,117 @@
-## Diagnostic
 
-Oui, **389 lignes dans le CSV est normal** — mais c'est aussi le signe que l'export actuel prête à confusion.
+# Carte des Marches du Vivant — page inspirationnelle
 
-Le CSV que tu as exporté ne contient QUE la section `=== OBSERVATIONS BRUTES PAR MARCHE ===` (case « Observations brutes » cochée, case « Synthèse biodiversité » décochée). Cette section liste **1 ligne = 1 espèce × 1 marche** : avec ~38 espèces uniques et ~10 marches aux rayons qui se chevauchent, on obtient logiquement ~380 lignes de doublons géographiques (la même espèce réapparaît sous chaque marche qui la capte).
+Une page publique immersive combinant **nos événements** (source de vérité) avec, en option, les **points partenaires Carte Sol Vivant** (~940 acteurs MSV), pensée pour convertir un visiteur curieux en marcheur inscrit.
 
-Le Word, lui, s'appuie sur le RPC dédupliqué → 38 espèces, c'est cohérent.
+**Route :** `/marches-du-vivant/carte-marches-du-vivant` (publique, SEO-ready)
 
-**Deux vrais problèmes UX cependant :**
+---
 
-1. Quand l'utilisateur décoche « Synthèse » et coche « Brutes », le CSV commence par un avertissement qui renvoie « à la section SYNTHÈSE ci-dessus »… qui n'existe pas dans le fichier.
-2. Un CSV mono-fichier mélange mal 4 sections (Participants / Marches / Synthèse / Brutes). Illisible dans Excel.
+## 1. Structure de la page
 
-## Proposition
+```text
+┌───────────────────────────────────────────────────────────┐
+│  HERO : "Explorez la carte du vivant en France"           │
+│  Compteurs live : X marches · Y espèces · Z marcheurs     │
+│  CTA principal : Rejoindre la communauté                  │
+├───────────────────────────────────────────────────────────┤
+│  BARRE : Recherche globale + Filtres + Sélecteur de vue   │
+├───────────────────────────────────────────────────────────┤
+│  VUE ACTIVE (Carte | Timeline | Mur du Vivant |           │
+│              Constellation | Liste)                       │
+├───────────────────────────────────────────────────────────┤
+│  BLOC PARTAGE + CTA final "Créer mon compte marcheur"     │
+└───────────────────────────────────────────────────────────┘
+```
 
-### 1. Corriger l'export CSV actuel (rapide, haut impact)
+## 2. Filtres (barre unifiée, sticky)
 
-- **Toujours injecter un en-tête « Résumé » en tête de CSV** dès qu'une section biodiversité est exportée, avec les chiffres dédupliqués du RPC :
-  ```
-  === RÉSUMÉ BIODIVERSITÉ ===
-  Événement, Espèces uniques, Faune, Flore, Champignons, Autres, Nb marches, Nb observations brutes
-  Château Boutinet, 38, 12, 24, 2, 0, 10, 380
-  ```
-- **Reformuler l'avertissement de la section brutes** pour ne plus référencer une section absente :
-  ```
-  # ⚠ Cette section contient 380 lignes pour 38 espèces uniques (facteur ×10 dû aux rayons chevauchants).
-  # Pour le compte d'espèces uniques, voir la section RÉSUMÉ en tête de fichier.
-  ```
-- **Ajouter une colonne « Chevauchements »** dans les brutes : nombre de marches où l'espèce apparaît (2, 3, 5…). L'utilisateur voit immédiatement pourquoi il y a autant de lignes.
-- **Ajouter une section `=== CHEVAUCHEMENTS ESPÈCES ×  MARCHES ===**` (matrice compacte) qui liste, par espèce, la liste des marches où elle est captée. Rend le doublonnage lisible au lieu de suspect.
+- **Recherche globale** — réutilise `useGlobalSearch` (espèces, marches, événements, marcheurs, textes)
+- **Type d'événement** — Agroécologique / Éco-poétique / Éco-tourisme (chips colorées existantes)
+- **Statut** — À venir / Passées / Toutes
+- **🌿 Richesse biodiversité** — slider 0 → 100+ espèces (basé sur `get_exploration_species_count`)
+- **📅 Période / Saison** — Prochaines · Ce mois · Printemps · Été · Automne · Hiver
+- **⚪ Zone blanche vs documentée** — toggle 3 états (Toutes / Pionnières / Documentées) exploitant les snapshots existants
+- **🎧 Immersion sensorielle** — filtre "audio disponible" et/ou "photos marcheurs"
+- **🤝 Partenaires Sol Vivant** — toggle **OFF par défaut**, avec un panneau explicatif au premier clic : *"Carte Sol Vivant recense 940+ acteurs français du Maraîchage Sol Vivant (MSV). Activez pour visualiser ensemble marches et partenaires du sol vivant."* + lien vers cartesolvivant.gogocarto.fr. Une fois activé, sous-filtres par catégorie GoGoCarto (Maraîchers, Céréaliers, Éleveurs, Arboriculteurs, etc.).
 
-### 2. Passer d'un CSV mono-fichier à un **XLSX multi-feuilles** (option recommandée)
+## 3. Vues (sélecteur segmenté)
 
-Un vrai `.xlsx` avec `xlsx` (déjà présent dans le projet via `pack-vivant`) :
+- **🗺️ Carte** (défaut) — RichMap réutilisé. Marqueurs MdV colorés par type d'événement, taille = richesse biodiv. Marqueurs Sol Vivant en icônes GoGoCarto natives. Clustering intelligent au dézoom. Popup riche avec photo hero + mini-stats + CTA inscription.
+- **📅 Timeline immersive** — Horizontal scroll des prochaines marches. Chaque carte = photo hero plein cadre + compte à rebours + lieu + type + CTA "Réserver". Autoplay doux, snap au scroll.
+- **🖼️ Mur du Vivant** — Masonry des plus belles photos marcheurs/observations, chaque tuile cliquable ouvre un drawer "espèce / marche source" + CTA rejoindre la marche.
+- **✨ Constellation d'espèces** — Canvas SVG animé : chaque marche = étoile pulsante dont le rayon = nb d'espèces, liens filiformes entre marches partageant des espèces. Clic → fiche marche.
+- **📋 Liste éditoriale** — Cards triées date/proximité, filtrables, sobre pour pragmatiques.
 
-- Feuille **Résumé** : KPIs événement + tableau par marche (nb espèces uniques, nb partagées)
-- Feuille **Participants**
-- Feuille **Marches**
-- Feuille **Biodiversité — Synthèse** (38 lignes dédupliquées, alignée Carte/Carnet)
-- Feuille **Biodiversité — Brutes par marche** (les 380 lignes, avec colonne Chevauchements)
-- Feuille **Chevauchements** (matrice espèce × marches)
+Toutes les vues partagent le **même state de filtres** (contexte React).
 
-Bénéfice : chaque section a son onglet, plus aucune confusion, filtrable/triable dans Excel, format pro pour restitution partenaire.
+## 4. CTA contextuels
 
-### 3. Ajuster la UI du panneau
+- **CTA global (hero + footer sticky mobile)** : "Rejoindre la communauté des marcheurs" → `/mon-espace` (ou signup).
+- **CTA par fiche événement (dans popups, cards, timeline)** : détection **auto session Supabase** :
+  - Connecté : bouton vert *"S'inscrire à cette marche"* → flow inscription 1-clic existant.
+  - Non connecté : bouton *"Créer mon compte pour rejoindre"* + micro-texte *"Déjà marcheur ? Se connecter"*.
+- Badge discret *"3 places restantes"* / *"Complet"* selon `marche_participations` count vs `max_participants`.
 
-- Renommer le toggle « Observations brutes » → **« Observations brutes par marche (avancé — analyse spatiale) »** avec un badge « 380 lignes attendues » calculé dynamiquement au survol.
-- Ajouter une info-bulle expliquant chevauchement de rayons en 1 phrase.
-- Nouveau toggle **« Format XLSX (recommandé) / CSV »** au-dessus des cases sections.
+## 5. Partage riche
 
-## Détails techniques
+- Bouton **Partager** flottant en haut à droite avec 3 actions :
+  1. **Copier lien** (avec query params reflétant les filtres actifs → deep-linkable)
+  2. **Web Share API** natif (mobile) + fallback boutons WhatsApp / Email / LinkedIn
+  3. **Télécharger l'affiche** → génère une image OG dynamique de la sélection courante
+- **OG image dynamique par événement** : edge function `generate-event-og-image` produisant une image 1200×630 (photo hero + titre + date + lieu + logo + "X espèces déjà observées"). Meta tags `og:*` gérés via `react-helmet-async` par fiche événement.
 
-**Fichiers touchés :**
+## 6. Architecture technique
 
-- `src/utils/eventExportUtils.ts` : nouveau bloc `=== RÉSUMÉ BIODIVERSITÉ ===` toujours en tête ; enrichir `rawSpeciesPerMarche` avec `overlapCount` ; nouvelle section `Chevauchements` ; générateur XLSX parallèle au CSV via `xlsx` (`writeFile` multi-sheets).
-- `src/components/admin/EventExportPanel.tsx` : sélecteur format CSV/XLSX, libellés et tooltips enrichis, calcul dynamique du nombre de lignes brutes attendues.
-- Le RPC `get_exploration_species_export` renvoie déjà `by_source` + `species[]` avec `in_snapshot/in_marcheur` → suffisant pour Résumé & Chevauchements sans nouvelle migration SQL.
+### Backend (Supabase)
 
-**Aucune migration SQL nécessaire.** Purement front + utils.
+- **Table `carte_sol_vivant_points`** — cache local des points GoGoCarto (id externe, nom, catégorie, lat, lng, tags, adresse, url source, updated_at). RLS public read.
+- **Edge function `sync-carte-sol-vivant`** — fetch `https://cartesolvivant.gogocarto.fr/api/elements.json`, upsert dans la table, log dans `data_collection_logs`. **Cron pg_cron quotidien (03:00 UTC)**.
+- **RPC `get_marches_map_events`** — retourne les événements filtrés + agrégats biodiv (nb espèces via `get_exploration_species_count`), coords GPS, photo hero, participants count. Public.
+- **Edge function `generate-event-og-image`** — SVG/Satori → PNG, cache par event_id + updated_at.
 
-Voie retenue :
+### Frontend
 
-**(B) Pro** : (A) + génération XLSX multi-feuilles au choix dans le panneau (recommandé pour restitution partenaires type VDT).
+- `src/pages/CarteMarchesDuVivant.tsx` — page racine + Helmet SEO
+- `src/components/carte-mdv/` :
+  - `CarteMdVHero.tsx` (compteurs live)
+  - `CarteMdVFiltersBar.tsx` (sticky, mobile drawer)
+  - `CarteMdVViewSwitcher.tsx` (segmented control)
+  - `views/MapView.tsx` (RichMap + calques MdV + calque Sol Vivant conditionnel)
+  - `views/TimelineView.tsx`
+  - `views/MurDuVivantView.tsx`
+  - `views/ConstellationView.tsx` (SVG + framer-motion)
+  - `views/ListView.tsx`
+  - `EventCard.tsx` (CTA inscription session-aware, badge places)
+  - `SolVivantOptInPanel.tsx` (modal d'explication au premier toggle)
+  - `SharePanel.tsx` (Web Share API + copie lien deep-linkable)
+- `src/hooks/` :
+  - `useCarteMdVFilters.ts` (state + sync URL query params)
+  - `useCarteMdVEvents.ts` (React Query, RPC)
+  - `useCarteSolVivantPoints.ts` (React Query, table locale, enabled si toggle ON)
+- Ajout entrée nav dans le hub Marches du Vivant existant.
+
+## 7. Détails UX & wahouh
+
+- Skeleton élégant pendant chargement (silhouette de carte + shimmer)
+- Animation d'entrée : marqueurs qui *poussent* à l'apparition (framer-motion `scale` + `easeOutBack`)
+- Deep-linking complet : chaque combinaison filtres + vue = URL partageable
+- Compteur *"12 marches à venir près de vous"* si géoloc autorisée
+- Micro-copy poétique fidèle à la charte (Papier Crème / Forêt Émeraude)
+- Responsive mobile-first : bottom sheet pour filtres, vue par défaut Timeline sur mobile (plus digeste que carte)
+- SEO : title/description/JSON-LD (Event schema par événement), sitemap-friendly
+
+## 8. Livraison en 4 étapes
+
+1. **Backend** : migration `carte_sol_vivant_points` + RPC `get_marches_map_events` + edge `sync-carte-sol-vivant` + cron
+2. **Squelette page + Carte + Filtres + Recherche** (MVP fonctionnel)
+3. **3 vues additionnelles** (Timeline, Mur, Constellation, Liste)
+4. **OG image dynamique + partage riche + polish animations**
+
+## Points techniques à noter
+
+- L'API GoGoCarto `/api/elements.json` renvoie GeoJSON-like. À valider : pagination éventuelle et champ `categories` exact. La sync se fera en 1 fetch complet (~940 points, léger).
+- Aucun impact sur les URLs existantes ni sur la logique métier des inscriptions (réutilisation des flows).
+- La détection de session utilise déjà `useAuth()` — pas de nouvelle infra auth.
+- La constellation utilise SVG (pas Canvas WebGL) pour rester léger et accessible.
+
