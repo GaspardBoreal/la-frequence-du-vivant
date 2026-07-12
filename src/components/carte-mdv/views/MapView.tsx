@@ -65,6 +65,7 @@ interface Props {
 const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant }) => {
   const { user } = useAuth();
   const [legendOpen, setLegendOpen] = useState(true);
+  const [selectedSvId, setSelectedSvId] = useState<string | null>(null);
   const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
   const missingCount = events.length - geoEvents.length;
   const eventPositions: [number, number][] = geoEvents.map((e) => [Number(e.latitude), Number(e.longitude)]);
