@@ -18,6 +18,7 @@ import {
   useSolVivantPoints,
   applyFilters,
 } from '@/hooks/useCarteMdV';
+import { mapSolVivantToCategory } from '@/lib/marcheCategories';
 
 const CarteMarchesDuVivant: React.FC = () => {
   const { filters, update } = useCarteMdVFilters();
@@ -25,6 +26,13 @@ const CarteMarchesDuVivant: React.FC = () => {
   const { data: solPoints = [] } = useSolVivantPoints(filters.solVivantEnabled);
 
   const filtered = useMemo(() => applyFilters(events, filters), [events, filters]);
+
+  const filteredSolPoints = useMemo(() => {
+    if (!filters.solVivantEnabled) return [];
+    if (filters.categories.length === 0) return solPoints;
+    const set = new Set(filters.categories);
+    return solPoints.filter((p) => set.has(mapSolVivantToCategory(p.categories)));
+  }, [solPoints, filters.solVivantEnabled, filters.categories]);
 
   return (
     <>
@@ -56,7 +64,7 @@ const CarteMarchesDuVivant: React.FC = () => {
           ) : (
             <>
               {filters.view === 'map' && (
-                <MapView events={filtered} solVivantPoints={solPoints} showSolVivant={filters.solVivantEnabled} />
+                <MapView events={filtered} solVivantPoints={filteredSolPoints} showSolVivant={filters.solVivantEnabled} />
               )}
               {filters.view === 'timeline' && <TimelineView events={filtered} />}
               {filters.view === 'wall' && <MurDuVivantView events={filtered} />}
