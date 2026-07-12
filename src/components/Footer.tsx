@@ -69,7 +69,7 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
           <div className="space-y-4">
             {isMarches ? (
               <Link
-                to="/marches-du-vivant"
+                to="/marches-du-vivant/carte-marches-du-vivant"
                 onClick={() => {
                   setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
                 }}
