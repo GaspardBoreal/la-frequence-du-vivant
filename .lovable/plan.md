@@ -1,77 +1,62 @@
+# Carrousel saisonnier — Noms FR + Lightbox immersif
 
-## Objectif
+Deux évolutions du composant `src/components/immersive-garden/SeasonSpeciesCarousel.tsx` (aucun autre fichier touché).
 
-Sous la rangée de boutons saisons de la section « Le jardin change de peau » (`ImmersiveGardenFiche.tsx`), afficher un carrousel immersif des espèces réellement observées sur ce jardin pendant la saison sélectionnée, avec les vraies photos terrain (comme l'onglet « Taxons observés » de l'app marcheur).
+## 1. Noms français cohérents avec l'app marcheurs
 
-## Comportement
+L'onglet Biodiversité → Taxons observés (`EventBiodiversityTab.tsx`) affiche les noms via `<SpeciesName />`, qui délègue à `useFrenchSpeciesNamesAuto` — cache DB `species_translations` + auto-traduction en tâche de fond, avec fade doux quand le nom FR arrive.
 
-- Le carrousel apparaît sous la saison active, avec une transition douce à chaque changement (fade + scale + petit stagger sur les vignettes).
-- **8 vignettes max par page**, pagination Précédent / Suivant si > 8 espèces éligibles.
-- Chaque vignette : photo carrée (ratio 1:1, coins arrondis, ring doré), nom vernaculaire + nom scientifique italique en dessous, badge discret « N obs » en overlay bas-droite.
-- Hover / tap : léger zoom + halo saisonnier (couleur `SEASON_TINT[season]`).
-- Animation d'apparition : chaque tuile arrive avec un delay stagger (~40 ms) via `AnimatePresence` + `motion` (fade-up + blur-in).
-- Si aucune espèce pour la saison : petit message poétique italique « Aucune trace observée en <saison> — le jardin garde son secret ».
-- Le CTA « Rejoindre ce jardin » reste sous le carrousel.
+Actuellement le carrousel affiche `sp.commonName` brut (souvent EN, ex. « Common Ivy » au lieu de « Lierre grimpant »).
 
-## Découpage saisons
+Correctif :
+- Remplacer le bloc `<div className="text-[#f4ecd4] text-xs md:text-sm …">{sp.commonName}</div>` + ligne italique scientifique par un simple :
+  ```tsx
+  <SpeciesName
+    scientificName={sp.scientificName}
+    commonName={sp.commonName}
+    showScientific
+    size="sm"
+    truncate
+    className="[&_span:first-child]:text-[#f4ecd4] [&_span:last-child]:text-[#f4ecd4]/60"
+    scientificClassName="font-serif"
+  />
+  ```
+- Le composant gère déjà : fallback instantané → swap FR fade 200 ms → jamais de blanc. Même comportement visuel que la liste des Taxons observés côté marcheur.
 
-Filtre sur `attribution.date` (déjà utilisé par `useSpeciesFilteredByPeriod`) :
+## 2. Lightbox plein page cliquable, navigation prev/next
 
-- Printemps : mois 3-5
-- Été : mois 6-8
-- Automne : mois 9-11
-- Hiver : mois 12, 1, 2
+Ajouter un mode plein écran sur toute la liste `eligible` (pas seulement la page courante — l'utilisateur peut donc parcourir toutes les espèces de la saison sans quitter le lightbox).
 
-Peu importe l'année : on regroupe toutes les observations du jardin dont le mois tombe dans la fenêtre.
+Comportement :
+- Clic sur une vignette → ouvre un overlay `fixed inset-0 z-[100]` avec `AnimatePresence`.
+- Fond noir 92 % + backdrop-blur, halo saisonnier radial subtil derrière la photo.
+- Image centrée `max-h-[85vh] max-w-[92vw] object-contain`, arrivée `scale 0.9→1 + fade` (spring doux).
+- Sous l'image, carte texte compacte : `<SpeciesName showScientific size="lg" />` + badge « N obs en <saison> ».
+- Boutons flèches ‹ / › (grands, ronds, glassmorphism `bg-white/10 backdrop-blur border-white/20`) positionnés `left-4 / right-4 top-1/2`. Bouton fermer × en haut à droite.
+- Compteur discret en bas centre : `12 / 47 · <saison>`.
+- **Clavier** : `←` prev, `→` next, `Esc` ferme (via `useEffect` window listener actif seulement quand ouvert).
+- **Swipe mobile** : `motion.div` avec `drag="x"` + `onDragEnd` seuil ±60 px pour prev/next.
+- **Preload** : précharge silencieusement `eligible[i-1]` et `eligible[i+1]` (nouvelles `Image()`) pour transition instantanée.
+- **Focus trap léger** : `role="dialog" aria-modal="true" aria-label="Espèce en grand"`.
 
-## Sources de données (réutilisation stricte de l'existant)
+## Détail technique
 
-- `useExplorationSpeciesPool(event.exploration_id)` → liste `BiodiversitySpecies[]` avec `attributions[]` (chaque attribution a `date`).
-- `useDiscoverData(species, explorationId)` → map `photoBy` (cascade photos terrain marcheurs → snapshot → cache `species_thumb_cache` iNat/GBIF). C'est exactement ce que fait déjà l'onglet Taxons dans le mode Découverte.
-- `<SpeciesThumb />` en fallback vignette si aucune photo terrain (pastille iNat / kingdom picto).
-
-Aucune requête ajoutée, aucune migration, aucun edge function.
-
-## Fichiers touchés
-
-1. **Nouveau** `src/components/immersive-garden/SeasonSpeciesCarousel.tsx`
-   - Props : `explorationId: string | null`, `season: Season`, `tint: string`.
-   - Utilise `useExplorationSpeciesPool` + `useDiscoverData`.
-   - Filtre par mois d'attribution, trie par nombre d'obs desc, pagine par 8.
-   - Rend la grille (4 cols desktop, 2 mobile) avec `motion` + `AnimatePresence` (key = `${season}-${page}` pour re-anim à chaque changement).
-
-2. **Édition** `src/pages/ImmersiveGardenFiche.tsx`
-   - Insère `<SeasonSpeciesCarousel />` entre la rangée de boutons saisons (ligne ~379) et le bloc CTA (ligne ~381).
-
-## Technique — extrait clé
-
-```tsx
-const SEASON_MONTHS: Record<Season, number[]> = {
-  printemps: [3, 4, 5],
-  ete: [6, 7, 8],
-  automne: [9, 10, 11],
-  hiver: [12, 1, 2],
-};
-
-const eligible = useMemo(() => {
-  const months = new Set(SEASON_MONTHS[season]);
-  return species
-    .map((sp) => {
-      const kept = (sp.attributions || []).filter((a) => {
-        const d = new Date(a.date);
-        return !isNaN(d.getTime()) && months.has(d.getMonth() + 1);
-      });
-      return kept.length ? { ...sp, attributions: kept, observations: kept.length } : null;
-    })
-    .filter(Boolean)
-    .sort((a, b) => b!.observations - a!.observations);
-}, [species, season]);
+État ajouté :
+```ts
+const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 ```
 
-Pagination par tranches de 8 avec deux boutons ronds « ‹ / › » stylés cohérents avec les boutons saisons.
+Chaque vignette devient un `<button>` accessible (`aria-label={\`Voir \${displayName} en grand\`}`). L'index passé est l'index dans `eligible` (pas dans `slice`), calculé `currentPage * PAGE_SIZE + idx`.
+
+Nouveau sous-composant local `<Lightbox />` (dans le même fichier pour rester atomique) :
+- Reçoit `species: SpeciesItem[]`, `index`, `onIndexChange`, `onClose`, `resolvePhoto`, `tint`, `season`.
+- Utilise `<SpeciesName />` pour le titre — cohérence FR garantie même en plein écran.
+- Utilise `framer-motion` déjà importé, ajout de `useEffect` pour clavier + preload.
+
+Aucun changement dans : `useGardenFiche`, `ImmersiveGardenFiche.tsx`, hooks de données, DB, edge functions.
 
 ## Hors périmètre
 
-- Pas de modification du hook `useGardenFiche`, ni du schéma DB.
-- Pas de changement du CTA « Rejoindre ce jardin ».
-- Pas d'ouverture de drawer espèce (juste affichage) — peut être ajouté plus tard si souhaité.
+- Pas de zoom pinch/pan dans le lightbox (photo statique object-contain).
+- Pas de partage social depuis le lightbox.
+- Pas d'ouverture du drawer espèce complet (peut être ajouté ultérieurement — reste un simple visualiseur immersif).
