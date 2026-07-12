@@ -72,9 +72,12 @@ export interface SolVivantPoint {
 
 export interface HeroStats {
   events_count: number;
-  species_count: number;
+  marches_count: number;
+  total_km: number;
   marcheurs_count: number;
-  partners_count: number;
+  participations_count: number;
+  species_count: number;
+  computed_at?: string;
 }
 
 /* ---------- Filters state synced with URL ---------- */
