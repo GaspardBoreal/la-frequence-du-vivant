@@ -1,74 +1,89 @@
-## Diagnostic
+## Nouvelle qualification « Catégorie » sur les marches
 
-Deux fonctions calculent le nombre d'espèces d'une même marche mais avec des règles différentes :
+### 1. Modèle de données
 
-- **Vue exploration (Synthèse) → 38 espèces**  
-  Utilise la RPC canonique `get_exploration_species_count(exploration_id)` :
-  - respecte le rayon per-marche (override marche > défaut exploration > 500 m),
-  - filtre les attributions par Haversine,
-  - déduplique par nom scientifique normalisé (NFD/unaccent/lower),
-  - fusionne `biodiversity_snapshots` ∪ `marcheur_observations`.
+Nouvelle colonne `category` sur `public.marche_events` :
 
-- **Carte des Marches du Vivant → 184 espèces**  
-  Utilise `get_marches_map_events()` qui fait :
-  ```sql
-  MAX(bs.total_species) FROM biodiversity_snapshots
-  ```
-  Aucun filtre rayon, aucune dedup alias, aucune fusion marcheur. Résultat gonflé (184 = total brut d'un snapshot iNat).
+- Type : `text NOT NULL` avec `CHECK` sur l'enum applicatif.
+- Valeurs autorisées : `arboriculture`, `grande_culture`, `elevage`, `maraichage`, `vignoble`, `jardin`, `exploration`, `autre`.
+- Backfill : tous les événements existants passent à `autre` (valeur neutre) pour respecter le `NOT NULL`, ajustables ensuite dans l'admin.
+- Index B-tree sur `category` pour le filtre.
 
-Bref : la carte lit le compteur brut du snapshot, l'exploration lit le compteur canonique dédupliqué. **La valeur juste est 38.**
+Les RPC impactées (`get_marche_events_paginated`, `get_marche_events_filtered_all`, `get_marches_map_events`, `get_marche_events_dashboard_stats`) renvoient la nouvelle colonne + acceptent un paramètre optionnel `category_filter text` (NULL = toutes). Aucune casse pour les appelants existants (paramètre par défaut NULL).
 
-Deux mémoires du projet imposent d'ailleurs cette RPC comme source unique :
-- `mem://technical/biodiversity/unified-species-count-rpc` — "RPC `get_exploration_species_count` : source unique Carnet/Carte/Synthèse"
-- `mem://technical/biodiversity/global-count-consistency-logic` — dedup stricte pour les stats
+### 2. Mapping Partenaires Sol Vivant → nos catégories
 
-## Correction proposée
+Ajout d'un utilitaire pur `src/lib/marcheCategories.ts` centralisant :
 
-Factoriser sur la RPC canonique déjà existante (`get_exploration_species_count`) — pas de nouvelle fonction, pas de code frontend touché.
+- Liste des 8 catégories + libellé FR + icône Lucide + couleur token.
+- Fonction `mapSolVivantToCategory(labels: string[]): MarcheCategory` avec règles prioritaires (première correspondance gagne) :
 
-### Migration unique
-
-Réécrire `public.get_marches_map_events()` pour que `species_count` provienne de la RPC canonique au niveau de chaque event :
-
-```sql
-COALESCE((
-  (public.get_exploration_species_count(me.exploration_id) ->> 'total')::int
-), 0) AS species_count
+```text
+contient "Arboriculteur"                → arboriculture
+contient "Vign"                         → vignoble
+contient "Maraîcher" ou "MSV"           → maraichage
+contient "Élevage" / "Éleveur"          → elevage
+contient "Grande culture"               → grande_culture
+contient "Jardinier" (seul ou combiné)  → jardin
+contient "toutes_categories"            → autre
+contient "Organisation" / "Association" → autre
+défaut                                  → autre
 ```
 
-- Événements sans `exploration_id` → 0 (comme aujourd'hui).
-- Le comptage reste per-exploration (cohérent avec le fait qu'un event affiche la biodiv de son exploration parente, comme dans la Synthèse). C'est exactement le nombre que voit l'utilisateur en ouvrant l'event.
-- `get_carte_mdv_hero_stats()` continue de sommer `species_count` de cette RPC → devient automatiquement cohérent (plus de double compte artificiel).
+Priorité justifiée : les combinaisons Sol Vivant (« Jardiniers, Maraîchers (MSV) », « Maraîchers (MSV), Accueil stagiaire, Arboriculteurs… ») sont résolues en gardant la spécialité agricole la plus caractéristique avant de retomber sur « jardin » puis « autre ». Cette fonction sera réutilisée côté sync Sol Vivant si l'on affiche une pastille catégorie sur les points partenaires, et pour tout futur import automatique.
 
-### Impact
+### 3. Admin — `MarcheEventDetail` (fiche)
 
-- Popup carte, `EventCard`, `ConstellationView`, filtre `minSpecies`, tailles de marqueurs → toutes ces surfaces consomment `species_count` du même champ, donc alignées d'un coup.
-- Hero stats de la carte MdV : baisseront mécaniquement pour refléter la réalité dédupliquée. C'est le comportement souhaité par la mémoire "source unique".
-- Zéro changement TSX.
+Nouveau bloc **Catégorie \*** inséré entre la grille « Type de marche » et la ligne Lieu / Max participants.
 
-### Perf
+- Composant `CategoryPicker` : grille responsive 4 col desktop / 2 col mobile, mêmes styles que le picker de type (carte cliquable avec icône + label, badge « Sélectionné », anneau vert `ring-primary/30`, background token `bg-card`).
+- Validation : `category` obligatoire → `Save` désactivé + toast si vide, message d'aide sous la grille.
+- Persistance : ajout dans `initialForm`, dans `insert()` et `update()`, et dans le reset après duplicate.
 
-`get_exploration_species_count` est déjà `STABLE`. Appelé une fois par event dans le `SELECT`. Si les explorations sont peu nombreuses (cas actuel), OK. Sinon on peut envelopper dans un CTE `LATERAL` par exploration distincte pour ne l'exécuter qu'une fois par exploration :
+### 4. Admin — `EventsFiltersBar` (copie 2)
 
-```sql
-WITH expl AS (
-  SELECT DISTINCT exploration_id FROM public.marche_events WHERE exploration_id IS NOT NULL
-),
-expl_counts AS (
-  SELECT exploration_id,
-         (public.get_exploration_species_count(exploration_id) ->> 'total')::int AS species_count
-  FROM expl
-)
-SELECT ..., COALESCE(ec.species_count, 0), ...
-FROM public.marche_events me
-LEFT JOIN public.explorations e ON e.id = me.exploration_id
-LEFT JOIN expl_counts ec ON ec.exploration_id = me.exploration_id;
+Nouveau `Select` compact « Toutes catégories » ajouté sur la 2e ligne de filtres, aligné avec les autres (Type / Statuts / Tri / Partage). Sur mobile → il repasse en dessous naturellement grâce au `flex-wrap` existant. La valeur est propagée via `useMarcheEventsQuery` (ajout du champ `category` à `EventsFilters`, URL param `?cat=`), réinitialise la pagination.
+
+### 5. Public — `carte-marches-du-vivant` FiltersBar (copie 3)
+
+- Ajout d'une rangée de « chips » sous la rangée Type, préfixée `Catégorie :`, avec les 8 puces (icône + label court), même style que les chips Type (bordure, `ring-primary/30` si actif).
+- `CarteMdVFilters` gagne `categories: string[]` (multi-sélection cohérent avec `types`).
+- `applyFilters` filtre localement `events` sur `categories.length === 0 || categories.includes(e.category)`.
+- Ordre visuel dans le bandeau : `Type` → `Catégorie` → toggle `Partenaires Sol Vivant` (inchangé). Compteur « X marches » et bouton Reset couvrent la nouvelle dimension.
+
+### 6. Design tokens
+
+Palette catégorie (via CSS vars dans `index.css`, jamais de couleurs hardcodées) :
+
+```text
+arboriculture  → --category-arboriculture (vert olive)
+grande_culture → --category-grande-culture (blé doré)
+elevage        → --category-elevage (terre cuite)
+maraichage     → --category-maraichage (vert frais)
+vignoble       → --category-vignoble (bordeaux profond)
+jardin         → --category-jardin (rose pâle)
+exploration    → --category-exploration (bleu ardoise)
+autre          → --category-autre (muted)
 ```
 
-Je pars sur cette forme (une seule évaluation par exploration).
+Icônes Lucide : `TreePine`, `Wheat`, `Beef`, `Sprout`, `Grape`, `Flower2`, `Compass`, `MoreHorizontal`.
 
-## Résumé
+### 7. Fichiers touchés
 
-1. Migration : réécrit `get_marches_map_events()` pour utiliser `get_exploration_species_count` (CTE par exploration).
-2. Aucune modification frontend.
-3. Résultat : carte MdV et vue exploration afficheront **strictement le même nombre** (38 pour Château Boutinet).
+- Migration SQL : colonne + check + index + refactor des 4 RPC pour retourner/filtrer `category`.
+- `src/lib/marcheCategories.ts` (nouveau) — enum, meta, mapper Sol Vivant.
+- `src/index.css` — tokens couleurs catégorie.
+- `src/pages/MarcheEventDetail.tsx` — champ obligatoire + picker.
+- `src/hooks/useMarcheEventsQuery.ts` — type `EventsFilters` + params RPC + `category` sur `MarcheEventListItem`.
+- `src/components/admin/marche-events/EventsFiltersBar.tsx` — Select catégorie.
+- `src/pages/MarcheEventsAdmin.tsx` — URL param `cat`.
+- `src/components/admin/marche-events/EventsListTab.tsx` + `EventsMapTab.tsx` — pastille catégorie discrète à côté du type.
+- `src/hooks/useCarteMdV.ts` — champ `categories`, `applyFilters`, requête RPC.
+- `src/components/carte-mdv/FiltersBar.tsx` — rangée chips catégorie.
+
+### 8. Compatibilité & robustesse
+
+- Défaut `autre` sur l'existant → aucun événement invisible.
+- Paramètres RPC nullables → aucune régression pour les appelants qui ne passent pas encore le filtre.
+- Fonction `mapSolVivantToCategory` unitaire, pure, testable, réutilisable pour la synchro automatique ultérieure.
+- Aucune modification des URLs publiques ; nouveaux query params optionnels uniquement.
