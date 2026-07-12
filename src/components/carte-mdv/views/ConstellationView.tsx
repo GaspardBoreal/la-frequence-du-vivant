@@ -81,7 +81,9 @@ const ConstellationView: React.FC<{ events: CarteMdVEvent[] }> = ({ events }) =>
         const e = events.find((x) => x.id === hovered);
         if (!e) return null;
         const meta = getMarcheEventTypeMeta(e.event_type);
-        const detailUrl = e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
+        const detailUrl = e.category === 'jardin' && e.is_public && e.public_slug
+          ? `/jardin/${e.public_slug}`
+          : e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
         return (
           <div className="absolute top-3 left-3 right-3 sm:right-auto sm:max-w-sm rounded-lg bg-background/95 backdrop-blur border border-border p-3 shadow-lg pointer-events-auto">
             <p className="font-semibold text-sm">{e.title}</p>
