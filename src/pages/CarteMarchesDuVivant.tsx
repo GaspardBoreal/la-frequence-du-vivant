@@ -18,6 +18,7 @@ import {
   useSolVivantPoints,
   applyFilters,
 } from '@/hooks/useCarteMdV';
+import { mapSolVivantToCategory } from '@/lib/marcheCategories';
 
 const CarteMarchesDuVivant: React.FC = () => {
   const { filters, update } = useCarteMdVFilters();
