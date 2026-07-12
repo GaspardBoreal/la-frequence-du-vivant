@@ -1,70 +1,74 @@
-## Objectif
+## Diagnostic
 
-Fusionner les KPI de `/admin/marche-events` dans le hero de `/marches-du-vivant/carte-marches-du-vivant`, avec un design premium et un affichage progressif animé.
+Deux fonctions calculent le nombre d'espèces d'une même marche mais avec des règles différentes :
 
-## KPI cibles (2 rangées de 3)
+- **Vue exploration (Synthèse) → 38 espèces**  
+  Utilise la RPC canonique `get_exploration_species_count(exploration_id)` :
+  - respecte le rayon per-marche (override marche > défaut exploration > 500 m),
+  - filtre les attributions par Haversine,
+  - déduplique par nom scientifique normalisé (NFD/unaccent/lower),
+  - fusionne `biodiversity_snapshots` ∪ `marcheur_observations`.
 
-**Rangée 1 — Le terrain**
-- 17 Marches (marche_events géolocalisés)
-- 87 Points d'observations (marches associées, distinctes)
-- 617 km parcourus (somme distances)
+- **Carte des Marches du Vivant → 184 espèces**  
+  Utilise `get_marches_map_events()` qui fait :
+  ```sql
+  MAX(bs.total_species) FROM biodiversity_snapshots
+  ```
+  Aucun filtre rayon, aucune dedup alias, aucune fusion marcheur. Résultat gonflé (184 = total brut d'un snapshot iNat).
 
-**Rangée 2 — Le vivant**
-- 56 Marcheurs actifs (community_profiles)
-- 124 Participations (participations validées)
-- 11 422 Espèces recensées (recalculé, voir plus bas)
+Bref : la carte lit le compteur brut du snapshot, l'exploration lit le compteur canonique dédupliqué. **La valeur juste est 38.**
 
-Le compteur `753 Partenaires Sol Vivant` disparaît du hero (la couche Sol Vivant reste activable dans les filtres).
+Deux mémoires du projet imposent d'ailleurs cette RPC comme source unique :
+- `mem://technical/biodiversity/unified-species-count-rpc` — "RPC `get_exploration_species_count` : source unique Carnet/Carte/Synthèse"
+- `mem://technical/biodiversity/global-count-consistency-logic` — dedup stricte pour les stats
 
-## Correction du compteur Espèces
+## Correction proposée
 
-Actuellement `get_carte_mdv_hero_stats` fait `SUM(MAX(total_species) per marche_id)` sur `biodiversity_snapshots`. Le résultat peut inclure des doublons entre snapshots multiples d'une même marche et n'est pas aligné avec le compteur par événement affiché ailleurs.
+Factoriser sur la RPC canonique déjà existante (`get_exploration_species_count`) — pas de nouvelle fonction, pas de code frontend touché.
 
-Nouvelle logique : réutiliser la source qui alimente déjà chaque carte événement — la RPC `get_marches_map_events` renvoie `species_count` par événement (dédoublonné par scientificName au sein de l'événement). Le total = `SUM(species_count)` sur tous les événements retournés. Ainsi le hero est **strictement égal à la somme visible sur les cartes événements**, sans doublon intra-événement.
+### Migration unique
 
-## Migration Supabase
+Réécrire `public.get_marches_map_events()` pour que `species_count` provienne de la RPC canonique au niveau de chaque event :
 
-Recréer `get_carte_mdv_hero_stats()` retournant 6 champs :
-`events_count`, `marches_count`, `total_km`, `marcheurs_count`, `participations_count`, `species_count`, `computed_at`.
+```sql
+COALESCE((
+  (public.get_exploration_species_count(me.exploration_id) ->> 'total')::int
+), 0) AS species_count
+```
 
-- `events_count` : `COUNT(*) FROM marche_events WHERE latitude IS NOT NULL`
-- `marches_count` : `COUNT(DISTINCT marche_id) FROM exploration_waypoints` liés aux marche_events (même logique que le KPI admin)
-- `total_km` : même calcul que `get_marche_events_dashboard_stats.total_km`
-- `marcheurs_count` : `COUNT(*) FROM community_profiles`
-- `participations_count` : `COUNT(*) FROM marche_participations WHERE validated_at IS NOT NULL`
-- `species_count` : `SELECT SUM(species_count) FROM public.get_marches_map_events()`
+- Événements sans `exploration_id` → 0 (comme aujourd'hui).
+- Le comptage reste per-exploration (cohérent avec le fait qu'un event affiche la biodiv de son exploration parente, comme dans la Synthèse). C'est exactement le nombre que voit l'utilisateur en ouvrant l'event.
+- `get_carte_mdv_hero_stats()` continue de sommer `species_count` de cette RPC → devient automatiquement cohérent (plus de double compte artificiel).
 
-SECURITY DEFINER, GRANT EXECUTE TO anon, authenticated.
+### Impact
 
-## Frontend
+- Popup carte, `EventCard`, `ConstellationView`, filtre `minSpecies`, tailles de marqueurs → toutes ces surfaces consomment `species_count` du même champ, donc alignées d'un coup.
+- Hero stats de la carte MdV : baisseront mécaniquement pour refléter la réalité dédupliquée. C'est le comportement souhaité par la mémoire "source unique".
+- Zéro changement TSX.
 
-### `src/hooks/useCarteMdV.ts`
-- Étendre `HeroStats` avec les nouveaux champs, retirer `partners_count`.
-- `useCarteMdVHeroStats` conserve staleTime 5 min.
+### Perf
 
-### `src/components/carte-mdv/CarteMdVHero.tsx` — redesign wow
+`get_exploration_species_count` est déjà `STABLE`. Appelé une fois par event dans le `SELECT`. Si les explorations sont peu nombreuses (cas actuel), OK. Sinon on peut envelopper dans un CTE `LATERAL` par exploration distincte pour ne l'exécuter qu'une fois par exploration :
 
-Layout : bloc hero conservé (titre + accroche + CTA), puis **grille 2×3** de KPI-cards en dessous.
+```sql
+WITH expl AS (
+  SELECT DISTINCT exploration_id FROM public.marche_events WHERE exploration_id IS NOT NULL
+),
+expl_counts AS (
+  SELECT exploration_id,
+         (public.get_exploration_species_count(exploration_id) ->> 'total')::int AS species_count
+  FROM expl
+)
+SELECT ..., COALESCE(ec.species_count, 0), ...
+FROM public.marche_events me
+LEFT JOIN public.explorations e ON e.id = me.exploration_id
+LEFT JOIN expl_counts ec ON ec.exploration_id = me.exploration_id;
+```
 
-Chaque card :
-- Fond `bg-card/40 backdrop-blur-xl` + bordure `border-primary/10` + halo radial `bg-[radial-gradient(...)]` en hover.
-- Icône Lucide dans une pastille circulaire teintée (Footprints, MapPin, Route, Users, CheckCircle2, Sparkles) — teintes cohérentes avec le thème Forêt Émeraude / Papier Crème.
-- Valeur numérique en `text-3xl sm:text-4xl font-serif tabular-nums`, avec **count-up animé** (0 → valeur finale sur 1,2 s, easing `easeOutCubic`, via `requestAnimationFrame`, formatage `Intl.NumberFormat('fr-FR')`).
-- Label court + sous-label discret (ex: « Points d'observations » / « marches associées »).
-- Animation d'entrée : `opacity 0 → 1` + `translateY 8px → 0`, **stagger 80 ms par card** via délai CSS, déclenchement dès que la data est chargée (skeleton pulse tant que `isLoading`).
-- Séparation visuelle discrète entre les 2 rangées : label chapô « Le terrain » / « Le vivant » en `text-xs uppercase tracking-widest text-muted-foreground`.
+Je pars sur cette forme (une seule évaluation par exploration).
 
-Skeleton : chaque card affiche un `<div className="h-8 w-16 bg-muted/40 rounded animate-pulse" />` à la place de la valeur tant que `isLoading`, pour que le hero apparaisse instantanément sans layout shift, puis les chiffres s'animent au chargement.
+## Résumé
 
-### Aucun autre écran modifié
-`ScienceCounters`, `ProofBar`, `AgentIA` restent branchés sur `usePublicGlobalStats` (source séparée, cf. mémoire dédiée).
-
-## Fichiers touchés
-
-- Migration SQL : redéfinition `get_carte_mdv_hero_stats`
-- `src/hooks/useCarteMdV.ts` — type `HeroStats`
-- `src/components/carte-mdv/CarteMdVHero.tsx` — nouveau design + count-up
-
-## Hors scope
-
-Modification de `usePublicGlobalStats`, du bandeau admin `EventsKpiBanner`, ou de la couche Sol Vivant.
+1. Migration : réécrit `get_marches_map_events()` pour utiliser `get_exploration_species_count` (CTE par exploration).
+2. Aucune modification frontend.
+3. Résultat : carte MdV et vue exploration afficheront **strictement le même nombre** (38 pour Château Boutinet).
