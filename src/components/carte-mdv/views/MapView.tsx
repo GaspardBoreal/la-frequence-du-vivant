@@ -103,7 +103,7 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
             </CircleMarker>
           ))}
 
-          {events.map((e) => {
+          {geoEvents.map((e) => {
             const meta = getMarcheEventTypeMeta(e.event_type);
             const size = Math.min(48, 24 + Math.floor((e.species_count ?? 0) / 5));
             const detailUrl = e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
