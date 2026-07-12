@@ -54,10 +54,22 @@ interface Props {
 
 const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant }) => {
   const { user } = useAuth();
-  const positions: [number, number][] = events.map((e) => [Number(e.latitude), Number(e.longitude)]);
+  const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
+  const missingCount = events.length - geoEvents.length;
+  const positions: [number, number][] = geoEvents.map((e) => [Number(e.latitude), Number(e.longitude)]);
 
   return (
     <div className="rounded-xl overflow-hidden border border-border">
+      <div className="px-4 py-2 text-xs bg-muted/40 border-b border-border flex items-center justify-between gap-2">
+        <span>
+          <strong>{geoEvents.length}</strong> événement{geoEvents.length > 1 ? 's' : ''} géolocalisé{geoEvents.length > 1 ? 's' : ''} sur {events.length}
+        </span>
+        {missingCount > 0 && (
+          <span className="text-muted-foreground">
+            {missingCount} sans coordonnées — visibles dans les autres vues
+          </span>
+        )}
+      </div>
       <div className="h-[70vh] min-h-[500px]">
         <MapContainer center={[46.6, 2.5]} zoom={6} style={{ height: '100%', width: '100%' }}>
           <TileLayer
@@ -65,6 +77,7 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <FitBounds positions={positions} />
+
 
           {showSolVivant && solVivantPoints.map((p) => (
             <CircleMarker
@@ -90,7 +103,7 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
             </CircleMarker>
           ))}
 
-          {events.map((e) => {
+          {geoEvents.map((e) => {
             const meta = getMarcheEventTypeMeta(e.event_type);
             const size = Math.min(48, 24 + Math.floor((e.species_count ?? 0) / 5));
             const detailUrl = e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
