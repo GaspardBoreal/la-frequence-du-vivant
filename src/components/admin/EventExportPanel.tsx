@@ -453,7 +453,15 @@ const EventExportPanel: React.FC = () => {
             <CardTitle className="text-lg">Format d'export</CardTitle>
           </CardHeader>
           <CardContent>
-            <RadioGroup value={exportFormat} onValueChange={(v) => setExportFormat(v as 'word' | 'csv')}>
+            <RadioGroup value={exportFormat} onValueChange={(v) => setExportFormat(v as 'word' | 'xlsx' | 'csv')}>
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="xlsx" id="fmt-xlsx" />
+                <Label htmlFor="fmt-xlsx" className="cursor-pointer">
+                  <span className="font-medium">Excel (.xlsx)</span>
+                  <Badge variant="secondary" className="ml-2 text-xs">Recommandé</Badge>
+                  <span className="text-xs text-muted-foreground ml-2">Multi-feuilles : Résumé, Participants, Marches, Synthèse, Brutes, Chevauchements</span>
+                </Label>
+              </div>
               <div className="flex items-center gap-3">
                 <RadioGroupItem value="word" id="fmt-word" />
                 <Label htmlFor="fmt-word" className="cursor-pointer">
@@ -465,10 +473,11 @@ const EventExportPanel: React.FC = () => {
                 <RadioGroupItem value="csv" id="fmt-csv" />
                 <Label htmlFor="fmt-csv" className="cursor-pointer">
                   <span className="font-medium">CSV</span>
-                  <span className="text-xs text-muted-foreground ml-2">Données tabulaires (événements + participants + biodiversité)</span>
+                  <span className="text-xs text-muted-foreground ml-2">Fichier unique — sections empilées avec Résumé en tête</span>
                 </Label>
               </div>
             </RadioGroup>
+
           </CardContent>
         </Card>
 
