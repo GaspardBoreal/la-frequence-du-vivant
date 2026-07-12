@@ -46,16 +46,17 @@ const GardenSiblingNav: React.FC<Props> = ({
   const showCounter = total > 1;
 
   return (
-    <motion.nav
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 pl-2 pr-2 py-1.5
-                 rounded-full bg-black/45 backdrop-blur-xl border border-[#c9a24a]/35
-                 shadow-[0_10px_40px_-12px_rgba(201,162,74,0.35)]
-                 hover:border-[#c9a24a]/55 hover:shadow-[0_14px_50px_-10px_rgba(201,162,74,0.5)] transition"
-      aria-label="Navigation entre jardins"
-    >
+    <div className="fixed top-4 inset-x-0 z-50 flex justify-center pointer-events-none px-4">
+      <motion.nav
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-auto flex items-center gap-1 pl-2 pr-2 py-1.5
+                   rounded-full bg-black/45 backdrop-blur-xl border border-[#c9a24a]/35
+                   shadow-[0_10px_40px_-12px_rgba(201,162,74,0.35)]
+                   hover:border-[#c9a24a]/55 hover:shadow-[0_14px_50px_-10px_rgba(201,162,74,0.5)] transition"
+        aria-label="Navigation entre jardins"
+      >
       <Link
         to={backHref}
         className="group flex items-center gap-2 h-8 pl-2.5 pr-3 rounded-full text-[#f4ecd4]
