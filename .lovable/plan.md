@@ -1,101 +1,75 @@
+## Problème
 
-# Page `/offre-VDT-MDV` — Argumentaire commercial « wahouhh »
+L'export événement (Word + CSV) affiche **208 espèces** pour Château Boutinet alors que la plateforme (Carte / Carnet / Synthèse) en compte **38**.
 
-## Contexte
+Cause racine dans `src/components/admin/EventExportPanel.tsx` (lignes 172-269) :
 
-Ver de Terre Production (VDT) lance une formation e-learning **« À la racine du paysage : diagnostiquer et valoriser la santé des sols en paysage »** (agroécologie paysagère, MSV, GIEP, résilience climatique). Cible : **paysagistes concepteurs, chargés d'affaire, bureaux d'études, collectivités**. Enjeu : sensibiliser le client au vivant, vendre le temps long, prouver l'intérêt économique du sol vivant.
+1. **Dédup faible** : les espèces sont dédupliquées par `commonName || scientificName`. Le même taxon apparaît plusieurs fois si :
+   - le commonName varie (`brambles` vs `Ronces` vs vide → `Rubus`)
+   - le rang taxonomique diffère (`Rubus` genre vs `Rubus ulmifolius` espèce)
+   - accentuation / casse différente
+2. **Rayons chevauchants ignorés** : les marches proches (ex. Yourte + Vigne arrivée Droite à ~100 m) partagent leurs snapshots iNat. Chaque snapshot est compté séparément → double comptage massif.
+3. **Rangs supra-spécifiques comptés comme espèces** : « Dicots (Magnoliopsida) », « Birds (Aves) », « Asteraceae » gonflent le total sans être des espèces.
+4. **Source divergente** : l'export lit directement `biodiversity_snapshots.species_data`, alors que Carte/Carnet/Synthèse consomment la **RPC unifiée `get_exploration_species_count`** (fusion snapshots ∪ marcheur_observations, dédup `lower(unaccent(trim(scientific_name)))`).
 
-Objectif de la page : démontrer en une page unique, très visuelle, que **Les Marches du Vivant (MDV) est LE compagnon digital + IA qui prolonge, incarne et opérationnalise la formation VDT sur le terrain**.
+## Solution proposée
 
-## Structure de la page (public, sans auth, mobile-first)
+### 1. Source de vérité unique : brancher l'export sur la RPC unifiée
 
-Route publique `/offre-VDT-MDV` — ajoutée dans `App.tsx`, SEO propre (title/description/OG).
+Réécrire le bloc biodiversité de `EventExportPanel.tsx` pour :
 
-### 1. Hero — « De la salle e-learning au terrain vivant »
-- Logo VDT × MDV, baseline : *« Le prolongement digital & IA de votre formation Agroécologie Paysagère »*.
-- Mention discrète : « Proposition confidentielle — Ver de Terre Production ».
-- CTA doux : « Découvrir la démonstration ».
+- appeler `supabase.rpc('get_exploration_species_count', { p_exploration_id })` — même source que Carte/Carnet/Synthèse
+- utiliser `total`, `by_kingdom`, `species[]` retournés → `totalSpecies`, `speciesByKingdom`, `topSpecies` **strictement alignés** avec le reste de la plateforme
 
-### 2. Bandeau preuves live (données réelles)
-Réutilise `usePublicGlobalStats` (source de vérité déjà branchée sur `/agent-ia`, `/marches-du-vivant`) :
-- Espèces tracées · Domaines documentés · Marches organisées · Marcheurs · Observations citoyennes · Photos collectées.
-- Compteurs animés (pattern `AnimatedStat` / `ProofBar` existants).
-- Badge « Données certifiées GBIF ».
+Résultat immédiat : l'export affichera **38 espèces · Faune X · Flore Y · Champi Z · Autres W** identiques à la Carte.
 
-### 3. Miroir des objectifs VDT → réponse MDV
-Grille 4 cartes qui reprennent **mot pour mot** les objectifs de la formation VDT et y répondent avec une capacité MDV concrète :
+### 2. Enrichir la RPC pour l'export (commonName + observations)
 
-| Objectif VDT | Réponse MDV |
-|---|---|
-| Diagnostic rapide (tests terrain, bio-indicatrices) | **Marche diagnostic géolocalisée + IA d'identification d'espèces** (iNaturalist + GBIF) → herbier vivant instantané du site |
-| Argumentaire commercial technico-économique | **Pack Vivant exportable** (PDF + Excel + GeoJSON + KML) → livrable RSE opposable pour le client |
-| Conception résiliente & nourricière | **Fréquence du Vivant** (score biodiversité + fonctions écologiques) → aide à la palette végétale résiliente |
-| Pérennité & suivi MSV | **Snapshots datés + réverbérations saisonnières** → suivi longitudinal du site avant/après aménagement |
+La RPC actuelle retourne `{ sci, kingdom, in_snapshot, in_marcheur }` sans nom commun ni compte d'observations. Ajouter dans une nouvelle RPC compagnon `get_exploration_species_export(p_exploration_id)` :
 
-### 4. Démonstration visuelle — captures d'écran
-Section « La plateforme en action » avec captures réelles (routes existantes) :
-- Carte biodiversité d'une marche (`/m/:slug`)
-- Drawer espèce avec photos marcheurs + iNat + fonctions écologiques
-- Fiche Fréquence du Vivant (score + critères)
-- Pack Vivant / export RSE
-- Chatbot IA contextuel (aware du périmètre affiché)
+```
+sci, common_name_fr, kingdom, rank,
+observations_count,           -- nb attributions dédupliquées géographiquement
+first_seen, last_seen,
+sources text[]                -- ['snapshot','marcheur']
+```
 
-**Méthode capture** : screenshots via Playwright headless sur le preview local, sauvés en `src/assets/offre-vdt/*.jpg` (fichiers versionnés). Fallback : références visuelles stylisées si un rendu n'est pas satisfaisant.
+Dédup géographique côté SQL : `GROUP BY normalized_sci`, `SUM` sur les attributions **après** dédup par `(observer_login, observed_on, round(lat,4), round(lng,4))` — supprime le double comptage entre marches à rayons chevauchants.
 
-### 5. Le « + » IA disruptif
-Trois blocs qui font la différence :
-- **IA d'identification & classification** : iconic_taxon + 12 tags écologiques auto (mellifère, fixateur azote, arbre pionnier…) → l'apprenant/paysagiste voit *quelle fonction* joue chaque espèce sur son site.
-- **Chatbot géo-contextuel** : voit l'écran filtré, la marche, les waypoints → répond « quelle vivace planter ici sachant que le sol accueille déjà X, Y, Z ? ».
-- **Diagnostic 5km automatique** (moteur Dordonia) : rapport biodiversité instantané autour d'une parcelle client — argument commercial imparable en RDV.
+### 3. Filtre rang-espèce optionnel
 
-### 6. Cas d'usage terrain — parcours paysagiste
-Storyboard 5 étapes illustrées :
-1. Avant RDV client → diagnostic 5km auto.
-2. Sur site → marche géolocalisée, photos = observations.
-3. Restitution → Pack Vivant PDF au client.
-4. Conception → palette végétale nourrie par les fonctions écologiques observées.
-5. Suivi → snapshots saisonniers = preuve MSV dans le temps.
+Ajouter une case à cocher dans le panel : **« Exclure les rangs supra-spécifiques (genre, famille, classe) »** (activée par défaut). Filtre sur `rank IN ('species','subspecies','variety')` ou heuristique 2 mots quand `rank` est nul. Évite les « Birds / Dicots / Asteraceae » gonflants.
 
-### 7. Chiffres clés « wahouhh »
-Reprise `usePublicGlobalStats` en gros formats + trois métriques qualitatives :
-- 3 sources scientifiques fusionnées (GBIF, iNaturalist, observations marcheurs).
-- 12 fonctions écologiques auto-classifiées.
-- Export multi-format (PDF, Excel, CSV, GeoJSON, KML).
+### 4. Deux niveaux de CSV, clairement libellés
 
-### 8. Modèle de collaboration proposé VDT × MDV
-Trois pistes concrètes, sobres :
-- **Module complémentaire** : accès MDV offert aux stagiaires VDT (parcours terrain).
-- **Co-marquage** : marches diagnostic labellisées « VDT × MDV » sur territoires pilotes.
-- **OAD digital** : intégration du livrable OAD (matrices diagnostic sol, herbier bio-indicatrices) dans la plateforme MDV.
+- **CSV Synthèse** (par défaut) : 1 ligne par espèce unique de l'événement — colonnes : `Espèce, Nom scientifique, Royaume, Rang, Observations, Sources, Première obs, Dernière obs`. Total lignes = 38.
+- **CSV Données brutes** (opt-in, renommé **« Observations brutes par marche »**) : garde le comportement actuel mais avec une bannière en tête de fichier + colonne `⚠ Doublons attendus (rayons chevauchants)` pour éviter toute confusion analytique.
 
-### 9. Closing
-Citation manifeste + CTA `mailto:` vers le contact commercial MDV + lien discret vers `/marches-du-vivant`.
+### 5. Rapport Word enrichi
 
-## Design
+- Bloc « Biodiversité » : conserve `38 espèces · Faune · Flore · Champi · Autres` (RPC)
+- Ajouter une **note méthodo** discrète :
+  > *Comptage dédupliqué par nom scientifique normalisé, aligné avec la Carte et le Carnet. Les rayons d'observations chevauchants entre marches proches ne créent pas de doublon.*
+- Ajouter un mini-tableau **« Sources »** : X depuis snapshots iNat, Y depuis observations marcheurs, Z partagés (from `by_source`)
 
-Respect strict du design system existant (thème sombre Forêt Émeraude par défaut, glassmorphism, tokens sémantiques `--primary`, `--accent`, dégradés emerald/lime déjà utilisés dans `ProofBar` et `AnimatedStat`). Aucune couleur hardcodée. Fonts : Crimson (titres) + sans (body) — cohérent avec `AnimatedStat`.
+### 6. Vérification
 
-Ton : sobriété informationnelle (memory `sobriete-informationnelle`), un seul KPI dominant par bloc, respirations généreuses, animations `framer-motion` déjà en place.
+- Comparer côté UI : ouvrir l'exploration Château Boutinet → nombre affiché dans le bandeau Carte (38) = nombre dans le Word exporté
+- Rejouer l'export CSV Synthèse : ligne count = 38
+- CSV brut conserve les 208 lignes mais avec bannière explicative
 
 ## Détails techniques
 
-- **Fichiers créés** :
-  - `src/pages/OffreVdtMdv.tsx` (page complète, sections en composants internes).
-  - `src/assets/offre-vdt/hero.jpg` + 4-5 captures d'écran (générées via Playwright sur le preview).
 - **Fichiers modifiés** :
-  - `src/App.tsx` : ajout de la route publique `/offre-VDT-MDV`.
-  - `index.html` : rien (SEO géré via `react-helmet-async` déjà présent, ou balises statiques dans la page).
-- **Réutilisation** : `usePublicGlobalStats`, `AnimatedStat`, `ProofBar` (ou style dérivé), `motion` / `useInView`.
-- **Pas de backend, pas de migration, pas d'edge function.** Page 100% frontend qui consomme la RPC publique déjà en place.
+  - `src/components/admin/EventExportPanel.tsx` — remplacement du bloc biodiversité (lignes 173-269) par appel RPC
+  - `src/utils/eventExportUtils.ts` — nouvelles colonnes CSV, note méthodo Word, section Sources, nouvelle option `includeRawBiodiversity` renommée
+  - `src/integrations/supabase/types.ts` — régénéré par la migration
+- **Nouvelle migration SQL** :
+  - `get_exploration_species_export(p_exploration_id uuid)` — `SECURITY DEFINER`, dédup par `lower(unaccent(trim(scientific_name)))`, sortie JSON `{ species: [...] }` avec compteurs
+  - `GRANT EXECUTE ... TO authenticated`
+- **Pas de changement UI** en dehors du panel admin export
+- **Compatibilité** : la RPC actuelle `get_exploration_species_count` reste inchangée (pas de régression Carte/Carnet)
 
-## Hors périmètre
+## Résumé pour l'utilisateur
 
-- Pas de nouveau système d'auth, pas de formulaire de contact backend (juste `mailto:`).
-- Pas de modification des pages `/marches-du-vivant` ou `/agent-ia`.
-- Pas de génération PDF côté serveur (la page elle-même est le pitch).
-
-## QA
-
-- Vérifier build TS + rendu Playwright de `/offre-VDT-MDV` en mobile 375px et desktop 1440px.
-- Vérifier chargement des stats publiques (network `get_public_global_stats`).
-- Vérifier qu'aucune couleur hardcodée n'est introduite (grep `text-white|bg-black|#[0-9a-f]{6}` sur le nouveau fichier).
+L'export sera **strictement aligné** sur ce que voit le marcheur dans la Carte/Carnet (38 espèces), grâce à la RPC unifiée déjà en place. Le CSV brut reste disponible pour l'analyse fine (par marche, avec GPS) mais clairement libellé comme tel. Ajout d'un filtre « rang espèce » pour ne pas gonfler avec des taxons supra-spécifiques, et d'une note méthodo dans le Word pour transparence scientifique.
