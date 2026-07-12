@@ -1,59 +1,46 @@
 ## Diagnostic
 
-Notre base contient bien la même source que gogocarto (multi-catégories par point), mais on affiche 60 au lieu de 75 pour "Jardin" à cause d'une simplification côté client.
+Le 76 affiché **n'est pas un bug** : c'est bien l'union exacte de notre base.
 
-**Vérifié en base (`carte_sol_vivant_points`) :**
+Vérifié sur `carte_sol_vivant_points` :
 
-- Colonne `categories` (tableau, source de vérité gogocarto) :
-  - Jardiniers → **51**
-  - Jardins d'insertions ou pédagogiques → **25**
-  - Total union ≈ **75** ✅ (aligné avec gogocarto : 50 + 25)
-- Colonne `category` (singulière, dérivée) :
-  - Jardiniers → 47, Jardins d'insertions → 16 (≈ 63)
+- Jardiniers → **51** (gogocarto sidebar : 50)
+- Jardins d'insertions ou pédagogiques → **25** (identique)
+- Chevauchement entre les deux tags → **0**
+- Union = **51 + 25 = 76** ✅
 
-**Cause du 60 affiché :** dans `CarteMarchesDuVivant.tsx`, le filtre appelle `mapSolVivantToCategory(p.categories)` qui **ne renvoie qu'une seule catégorie interne par point** (priorité arboriculture > vignoble > maraîchage > élevage > grande_culture > jardin). Un point taggué à la fois "Jardiniers" et "Maraîchers (MSV)" est donc classé `maraichage` et **disparaît du filtre Jardin**. Résultat : 60 au lieu de 75.
+Aucun doublon détecté (ni par nom, ni par coordonnées). Nous avons **1 point Jardinier de plus que la sidebar gogocarto**. Causes probables :
 
-C'est gogocarto qui a la bonne valeur : **75**.
+1. Sidebar gogocarto en cache/retard sur ses propres données.
+2. Notre dernière synchro plus récente que ce que gogocarto affiche.
+3. Un delete côté gogocarto non encore propagé chez nous.
 
-## Correction proposée
+Mon chiffre « 75 » du message précédent venait des captures d'écran gogocarto, pas de notre base. **La légende 76 est donc factuellement correcte** — le vrai souci est la *promesse implicite* d'égalité stricte avec gogocarto qui inquiète le visiteur.
 
-Aligner strictement notre filtre sur la logique gogocarto : un point appartient à une catégorie si **au moins une** de ses étiquettes source y correspond (union, pas classification unique).
+## Correction
 
-### 1. `src/lib/marcheCategories.ts`
-Ajouter une fonction `solVivantMatchesCategories(labels, selectedCats)` qui, pour chaque label brut du point, calcule sa catégorie interne (même logique que `mapSolVivantToCategory` mais appliquée label par label) et renvoie `true` dès qu'une catégorie interne du point est dans `selectedCats`.
+### 1. Reformuler la légende (`src/components/carte-mdv/views/MapView.tsx`)
 
-Conserver `mapSolVivantToCategory` (utilisée ailleurs pour la couleur "primaire"), mais l'extraire d'une helper `singleLabelToCategory` réutilisée par les deux fonctions — une seule table de correspondance.
+Remplacer :
+> Source : Carte Sol Vivant — multi-catégories
 
-### 2. `src/pages/CarteMarchesDuVivant.tsx`
-Remplacer dans `filteredSolPoints` :
-```ts
-return solPoints.filter((p) => set.has(mapSolVivantToCategory(p.categories)));
-```
-par :
-```ts
-return solPoints.filter((p) => solVivantMatchesCategories(p.categories, set));
-```
+Par :
+> Source : [Carte Sol Vivant](https://cartesolvivant.gogocarto.fr) — mise à jour le JJ/MM/AAAA
 
-Résultat attendu avec filtre "Jardin" seul : **75** points (51 Jardiniers ∪ 25 Jardins d'insertions, dédupliqués par id).
+Tooltip enrichi :
+> « Un partenaire peut appartenir à plusieurs catégories : il est compté dans chaque filtre correspondant. Les totaux peuvent différer de 1 ou 2 points par rapport à la sidebar gogocarto, selon la fraîcheur de chaque source. »
 
-### 3. Rassurer visuellement les visiteurs (légende `MapView`)
+### 2. Exposer la date de dernière synchro (`src/hooks/useCarteMdV.ts`)
 
-Dans la légende Sol Vivant, sous le compteur, afficher un lien discret :
-> _Source : [Carte Sol Vivant](https://cartesolvivant.gogocarto.fr) — synchronisée quotidiennement_
+Ajouter `updated_at` au `SELECT` de `useSolVivantPoints` (déjà présent en base). Puis côté `MapView`, calculer `Math.max(...points.map(p => new Date(p.updated_at).getTime()))` pour afficher la date la plus récente.
 
-Et un tooltip "?" expliquant :
-> "Un partenaire peut appartenir à plusieurs catégories (ex. Maraîcher + Jardinier). Il est compté dans chaque filtre auquel il correspond."
+### 3. Fiabiliser la synchro (post-implémentation)
 
-Ainsi, même si un visiteur compare filtre par filtre (Jardin=75, Maraîchage=577, etc.) la somme peut dépasser le total unique — c'est cohérent avec gogocarto.
-
-### 4. (Optionnel, non bloquant)
-
-Job de synchro `sync-carte-sol-vivant` : vérifier que les 62 points avec `category IS NULL` ont bien leur `categories[]` peuplé (c'est le cas d'après les stats). Si oui, on peut à terme déprécier la colonne `category` singulière côté lecture — mais **hors périmètre de ce fix**.
+Déclencher manuellement `sync-carte-sol-vivant` après le déploiement. Si gogocarto est effectivement passé à 50 Jardiniers, notre point excédentaire disparaîtra ; sinon on saura que la sidebar gogocarto est en retard, et l'écart de 1 restera légitime et documenté.
 
 ## Fichiers touchés
 
-- `src/lib/marcheCategories.ts` — refacto + `solVivantMatchesCategories`
-- `src/pages/CarteMarchesDuVivant.tsx` — nouveau filtre union
-- `src/components/carte-mdv/views/MapView.tsx` — mention source + tooltip dans légende
+- `src/hooks/useCarteMdV.ts` — ajouter `updated_at` dans `SolVivantPoint` + SELECT
+- `src/components/carte-mdv/views/MapView.tsx` — reformulation légende + date + tooltip
 
-Aucune migration DB, aucun changement d'edge function.
+Aucune migration DB, aucun changement d'edge function côté code (juste une exécution manuelle après coup).
