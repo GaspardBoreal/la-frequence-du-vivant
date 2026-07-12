@@ -51,6 +51,7 @@ const normalize = (f: EventsFilters) => ({
   _type: f.type === 'all' ? null : f.type,
   _status: f.status === 'all' ? null : f.status,
   _share: !f.share || f.share === 'all' ? null : f.share,
+  _category: !f.category || f.category === 'all' ? null : f.category,
 });
 
 export const useMarcheEventsStats = (filters: EventsFilters) =>
