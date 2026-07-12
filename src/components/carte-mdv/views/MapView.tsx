@@ -194,14 +194,16 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
                         )}
                       </div>
 
-                      {/* CTA */}
+                      {/* CTA — teinté par type d'événement */}
                       <Link
                         to={ctaHref}
-                        className="group relative w-full overflow-hidden bg-[#0D6B58] hover:bg-[#084A3D] text-[#FAF8F3] py-3 rounded-2xl font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-[#0D6B58]/20 active:scale-[0.97] flex items-center justify-center gap-2 no-underline"
+                        style={{ backgroundColor: chip.text, color: '#FAF8F3', boxShadow: `0 10px 25px -10px ${chip.text}` }}
+                        className="group relative w-full overflow-hidden py-3 rounded-2xl font-semibold text-sm transition-all duration-300 hover:brightness-110 active:scale-[0.97] flex items-center justify-center gap-2 no-underline"
                       >
                         <span>{ctaLabel}</span>
                         <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                       </Link>
+
                     </div>
                   </div>
                 </Popup>
