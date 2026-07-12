@@ -426,8 +426,8 @@ const EventExportPanel: React.FC = () => {
               { checked: includeEventInfo, setter: setIncludeEventInfo, label: 'Fiche événement', desc: 'Titre, date, lieu, type, coordonnées' },
               { checked: includeParticipants, setter: setIncludeParticipants, label: 'Liste des participants', desc: 'Nom, statut, date d\'inscription' },
               { checked: includeMarches, setter: setIncludeMarches, label: 'Marches associées', desc: 'Étapes, coordonnées, parcours' },
-              { checked: includeBiodiversity, setter: setIncludeBiodiversity, label: 'Synthèse biodiversité', desc: 'Espèces par royaume, top espèces' },
-              { checked: includeRawBiodiversity, setter: setIncludeRawBiodiversity, label: 'Données brutes biodiversité', desc: 'species_data JSON complet (CSV uniquement)' },
+              { checked: includeBiodiversity, setter: setIncludeBiodiversity, label: 'Synthèse biodiversité (dédupliquée)', desc: 'Espèces uniques par royaume, top espèces — aligné Carte/Carnet/Synthèse' },
+              { checked: includeRawBiodiversity, setter: setIncludeRawBiodiversity, label: 'Observations brutes par marche (CSV)', desc: '⚠ Doublons attendus si rayons chevauchants — pour analyse spatiale fine uniquement' },
             ].map(opt => (
               <div key={opt.label} className="flex items-start gap-3">
                 <Checkbox
