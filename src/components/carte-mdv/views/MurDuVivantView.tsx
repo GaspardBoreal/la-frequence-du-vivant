@@ -88,8 +88,8 @@ const MurDuVivantView: React.FC<Props> = ({ events }) => {
         {photos.map((p) => {
           const ev = findEventForPhoto(p);
           const to = ev
-            ? (ev.category === 'jardin' && ev.is_public && ev.public_slug
-                ? `/jardin/${ev.public_slug}`
+            ? (ev.category === 'jardin'
+                ? `/jardin/${ev.public_slug ?? ev.id}`
                 : ev.is_public && ev.public_slug ? `/m/${ev.public_slug}` : `/admin/marche-events/${ev.id}`)
             : '#';
           const src = p.url_fichier || p.external_url || '';

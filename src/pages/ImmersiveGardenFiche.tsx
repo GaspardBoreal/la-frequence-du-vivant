@@ -1,13 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, Navigate, Link } from 'react-router-dom';
-import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { Search, Sprout, Bug, Feather, Trees, Worm, Leaf, ArrowRight, ArrowLeft, Sparkles, Sun } from 'lucide-react';
 import { useGardenFiche } from '@/hooks/useGardenFiche';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
 import SeasonOverlay, { type Season } from '@/components/immersive-garden/SeasonOverlay';
 import StratPanel from '@/components/immersive-garden/StratPanel';
+import CursorAurora from '@/components/immersive-garden/CursorAurora';
+
 
 const SEASONS: { key: Season; label: string; emoji: string }[] = [
   { key: 'printemps', label: 'Printemps', emoji: '🌸' },
@@ -72,6 +74,7 @@ const ImmersiveGardenFiche: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { event, heroPhotos, metrics, isLoading, notFound } = useGardenFiche(slug);
   const [season, setSeason] = useState<Season>('ete');
+  const [flash, setFlash] = useState<{ key: number; color: string; x: number; y: number } | null>(null);
   const reduce = useReducedMotion();
 
   const { scrollYProgress } = useScroll();
@@ -98,11 +101,13 @@ const ImmersiveGardenFiche: React.FC = () => {
     return <Navigate to="/marches-du-vivant/carte-marches-du-vivant" replace />;
   }
 
-  // Événement non-jardin → route classique
+  // Événement non-jardin → route classique (slug si publié, sinon admin)
   if (event.category !== 'jardin') {
-    return <Navigate to={`/m/${event.public_slug}`} replace />;
+    const fallback = event.public_slug ? `/m/${event.public_slug}` : `/admin/marche-events/${event.id}`;
+    return <Navigate to={fallback} replace />;
   }
 
+  const slugOrId = event.public_slug ?? event.id;
   const tint = SEASON_TINT[season];
 
   const m = metrics ?? {
@@ -121,10 +126,13 @@ const ImmersiveGardenFiche: React.FC = () => {
           name="description"
           content={`Immersion stratifiée dans le jardin ${event.title}${event.lieu ? ` à ${event.lieu}` : ''}. Explorez la canopée, les strates herbacées et la rhizosphère.`}
         />
-        <link rel="canonical" href={`https://la-frequence-du-vivant.com/jardin/${event.public_slug}`} />
+        <link rel="canonical" href={`https://la-frequence-du-vivant.com/jardin/${slugOrId}`} />
       </Helmet>
 
       <div className="relative bg-black text-[#f4ecd4] overflow-x-hidden">
+        {/* Aurore dorée qui suit le curseur */}
+        <CursorAurora />
+
         {/* Saison overlay global */}
         <SeasonOverlay season={season} />
 
@@ -159,7 +167,7 @@ const ImmersiveGardenFiche: React.FC = () => {
               <Leaf className="w-3 h-3" /> Jardin des Marches du Vivant
             </div>
             <h1 className="font-serif italic text-4xl md:text-6xl lg:text-7xl leading-[1.05] text-[#f4ecd4] drop-shadow-[0_4px_20px_rgba(0,0,0,0.6)] max-w-4xl">
-              {event.title}
+              <RevealText text={event.title} />
             </h1>
             {event.lieu && (
               <p className="mt-4 text-sm md:text-base text-[#f4ecd4]/75 tracking-wide">
@@ -294,7 +302,16 @@ const ImmersiveGardenFiche: React.FC = () => {
                 return (
                   <button
                     key={s.key}
-                    onClick={() => setSeason(s.key)}
+                    onClick={(e) => {
+                      const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                      setFlash({
+                        key: Date.now(),
+                        color: SEASON_TINT[s.key],
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2,
+                      });
+                      setSeason(s.key);
+                    }}
                     className={`relative px-5 py-3 rounded-full font-serif text-sm transition-all border ${
                       active
                         ? 'bg-[#c9a24a] text-[#1a1408] border-[#c9a24a] shadow-[0_10px_30px_-5px_rgba(201,162,74,0.6)] scale-105'
@@ -332,8 +349,52 @@ const ImmersiveGardenFiche: React.FC = () => {
             Marches du Vivant · Immersion stratifiée
           </div>
         </section>
+
+        {/* Flash coloré au changement de saison */}
+        <AnimatePresence>
+          {flash && (
+            <motion.div
+              key={flash.key}
+              onAnimationComplete={() => setFlash(null)}
+              initial={{ scale: 0, opacity: 0.9 }}
+              animate={{ scale: 40, opacity: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
+              className="fixed pointer-events-none z-[60] rounded-full mix-blend-screen"
+              style={{
+                left: flash.x - 40,
+                top: flash.y - 40,
+                width: 80,
+                height: 80,
+                background: `radial-gradient(circle, ${flash.color}, transparent 70%)`,
+              }}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </>
+  );
+};
+
+/** Titre révélé mot par mot avec léger blur → clarté. */
+const RevealText: React.FC<{ text: string }> = ({ text }) => {
+  const reduce = useReducedMotion();
+  if (reduce) return <>{text}</>;
+  const words = text.split(' ');
+  return (
+    <span className="inline-block">
+      {words.map((w, i) => (
+        <motion.span
+          key={i}
+          className="inline-block mr-[0.25em]"
+          initial={{ opacity: 0, y: 30, filter: 'blur(12px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.9, delay: 0.15 + i * 0.09, ease: [0.19, 1, 0.22, 1] }}
+        >
+          {w}
+        </motion.span>
+      ))}
+    </span>
   );
 };
 

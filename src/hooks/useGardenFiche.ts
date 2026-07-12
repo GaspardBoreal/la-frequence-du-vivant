@@ -33,18 +33,19 @@ export interface StrataMetrics {
   carbon: 'Faible' | 'Moyen' | 'Élevé';
 }
 
-function useGardenEvent(slug: string | undefined) {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function useGardenEvent(slugOrId: string | undefined) {
   return useQuery({
-    queryKey: ['garden-event', slug],
-    enabled: !!slug,
+    queryKey: ['garden-event', slugOrId],
+    enabled: !!slugOrId,
     queryFn: async (): Promise<GardenEvent | null> => {
-      if (!slug) return null;
-      const { data, error } = await (supabase as any)
+      if (!slugOrId) return null;
+      const isUuid = UUID_RE.test(slugOrId);
+      const q = (supabase as any)
         .from('marche_events')
-        .select('id,title,description,date_marche,lieu,latitude,longitude,cover_image_url,event_type,category,exploration_id,public_slug,is_public')
-        .eq('public_slug', slug)
-        .eq('is_public', true)
-        .maybeSingle();
+        .select('id,title,description,date_marche,lieu,latitude,longitude,cover_image_url,event_type,category,exploration_id,public_slug,is_public');
+      const { data, error } = await (isUuid ? q.eq('id', slugOrId) : q.eq('public_slug', slugOrId)).maybeSingle();
       if (error) throw error;
       return (data ?? null) as GardenEvent | null;
     },
