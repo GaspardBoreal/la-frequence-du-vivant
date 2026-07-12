@@ -11,14 +11,21 @@ interface SEOHeadProps {
   canonicalUrl?: string;
 }
 
+const SITE_ORIGIN = 'https://la-frequence-du-vivant.com';
+const DEFAULT_OG = `${SITE_ORIGIN}/og-image.jpg`;
+
 const SEOHead: React.FC<SEOHeadProps> = ({
-  title = "La Fréquence du Vivant – Observatoire Poésie, Art & IA | Gaspard Boréal",
-  description = "Observatoire des Mondes Hybrides (2025–2037) : poésie contemporaine, art & IA, transition agroécologique par Gaspard Boréal.",
-  keywords = "bioacoustique poétique, géopoétique augmentée, marches techno-sensibles, poésie prospective, art-IA-vivant, transition agroécologique littéraire, Gaspard Boréal, observatoire poétique hybride, fréquences du vivant",
-  author = "Gaspard Boréal",
-  ogImage = "/og-image.jpg",
-  canonicalUrl = "https://la-frequence-du-vivant.lovable.app"
+  title = 'La Fréquence du Vivant — Bioacoustique & Poésie',
+  description = 'Observatoire poétique de Gaspard Boréal : bioacoustique, art & IA, transition agroécologique.',
+  keywords = 'bioacoustique poétique, géopoétique, marches techno-sensibles, Gaspard Boréal, fréquences du vivant',
+  author = 'Gaspard Boréal',
+  ogImage,
+  canonicalUrl = `${SITE_ORIGIN}/`,
 }) => {
+  const resolvedOg = ogImage
+    ? (ogImage.startsWith('http') ? ogImage : `${SITE_ORIGIN}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`)
+    : DEFAULT_OG;
+
   return (
     <Helmet>
       <title>{title}</title>
@@ -26,43 +33,35 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       <meta name="keywords" content={keywords} />
       <meta name="author" content={author} />
       <meta name="robots" content="index, follow" />
-      
+
       {/* Open Graph */}
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={ogImage} />
+      <meta property="og:image" content={resolvedOg} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:type" content="website" />
       <meta property="og:site_name" content="La Fréquence du Vivant" />
-      
-      {/* Twitter Card */}
+
+      {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={ogImage} />
-      
-      {/* Canonical URL */}
+      <meta name="twitter:image" content={resolvedOg} />
+
       <link rel="canonical" href={canonicalUrl} />
-      
-      {/* Hreflang for cross-site SEO */}
-      <link rel="alternate" hrefLang="fr" href="https://la-frequence-du-vivant.lovable.app" />
-      <link rel="alternate" hrefLang="fr" href="https://www.gaspardboreal.com" />
-      
-      {/* Schema.org structured data */}
+
       <script type="application/ld+json">
         {JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "CreativeWork",
-          "name": "La Fréquence du Vivant",
-          "author": {
-            "@type": "Person",
-            "name": "Gaspard Boréal",
-            "url": "https://www.gaspardboreal.com"
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'La Fréquence du Vivant',
+          url: SITE_ORIGIN + '/',
+          inLanguage: 'fr',
+          author: {
+            '@type': 'Person',
+            name: 'Gaspard Boréal',
+            url: 'https://www.gaspardboreal.com',
           },
-          "description": description,
-          "url": canonicalUrl,
-          "genre": ["Poésie contemporaine", "Art numérique", "Bioacoustique"],
-          "keywords": keywords
         })}
       </script>
     </Helmet>

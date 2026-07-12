@@ -1,0 +1,28 @@
+# La Fréquence du Vivant
+
+> Observatoire poétique de Gaspard Boréal : bioacoustique, marches techno-sensibles, art & IA, science participative et transition agroécologique.
+
+La Fréquence du Vivant relie poésie contemporaine, bioacoustique et science citoyenne. Les Marches du Vivant sont des explorations sensibles où marcheuses et marcheurs mesurent la biodiversité d'un territoire tout en écrivant, écoutant et photographiant le vivant.
+
+## Pages
+
+- [Accueil](/): Portail principal — bioacoustique, poésie, fréquences du vivant.
+- [Marches du Vivant](/marches-du-vivant): Programme de marches sensibles et de science participative.
+- [Carte des Marches](/marches-du-vivant/carte-marches-du-vivant): Carte interactive des marches en France.
+- [Explorer les marches](/marches-du-vivant/explorer): Découvrir marches passées et à venir.
+- [Carnets de terrain](/marches-du-vivant/carnets-de-terrain): Récits et observations issus des marches.
+- [Entreprises](/marches-du-vivant/entreprises): Offre pour organisations et employeurs.
+- [Agriculture](/marches-du-vivant/agriculture): Volet agroécologique et sol vivant.
+- [Association](/marches-du-vivant/association): Cadre associatif et gouvernance.
+- [Partenaires](/marches-du-vivant/partenaires): Réseau et partenaires du projet.
+- [Marches techno-sensibles](/marches-techno-sensibles): Archives sensorielles des marches.
+- [Bioacoustique poétique](/bioacoustique-poetique): Écoute et création sonore du vivant.
+- [Explorations sensibles](/explorations-sensibles): Explorations narratives et géopoétiques.
+- [Dordonia](/dordonia): Constitution poétique d'un bassin-versant.
+- [Matériel pédagogique](/materiel-pedagogique): Ressources pour éducateurs.
+- [Galerie Fleuve](/galerie-fleuve): Livre vivant et traversées.
+- [Agent IA](/agent-ia): Compagnon IA du projet.
+
+## Optional
+
+- [Explorations](/explorations): Index des explorations en cours.
