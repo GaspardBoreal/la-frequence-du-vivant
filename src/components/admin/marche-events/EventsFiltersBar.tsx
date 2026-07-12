@@ -95,6 +95,7 @@ const ShareSelect: React.FC<{ value: EventShareFilter; onChange: (v: EventShareF
 
 const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) => {
   const share = filters.share ?? 'all';
+  const category = filters.category ?? 'all';
   return (
     <Card className="p-3 sm:p-4 mb-4">
       <div className="flex flex-col gap-3">
@@ -123,6 +124,10 @@ const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) =>
                   <TypeSelect value={filters.type} onChange={(v) => onChange({ type: v })} />
                 </div>
                 <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Catégorie</label>
+                  <CategorySelect value={category} onChange={(v) => onChange({ category: v })} />
+                </div>
+                <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Statut</label>
                   <StatusSelect value={filters.status} onChange={(v) => onChange({ status: v })} />
                 </div>
@@ -140,8 +145,9 @@ const EventsFiltersBar: React.FC<Props> = ({ filters, onChange, totalLabel }) =>
         </div>
 
         {/* Desktop: filtres en ligne */}
-        <div className="hidden lg:grid lg:grid-cols-4 gap-3">
+        <div className="hidden lg:grid lg:grid-cols-5 gap-3">
           <TypeSelect value={filters.type} onChange={(v) => onChange({ type: v })} />
+          <CategorySelect value={category} onChange={(v) => onChange({ category: v })} />
           <StatusSelect value={filters.status} onChange={(v) => onChange({ status: v })} />
           <SortSelect value={filters.sort} onChange={(v) => onChange({ sort: v })} />
           <ShareSelect value={share} onChange={(v) => onChange({ share: v })} />
