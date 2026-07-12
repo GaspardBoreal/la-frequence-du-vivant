@@ -64,7 +64,7 @@ const CarteMarchesDuVivant: React.FC = () => {
           ) : (
             <>
               {filters.view === 'map' && (
-                <MapView events={filtered} solVivantPoints={solPoints} showSolVivant={filters.solVivantEnabled} />
+                <MapView events={filtered} solVivantPoints={filteredSolPoints} showSolVivant={filters.solVivantEnabled} />
               )}
               {filters.view === 'timeline' && <TimelineView events={filtered} />}
               {filters.view === 'wall' && <MurDuVivantView events={filtered} />}
