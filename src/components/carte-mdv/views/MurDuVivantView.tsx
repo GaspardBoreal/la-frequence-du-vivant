@@ -11,8 +11,10 @@ interface Props {
 
 interface Photo {
   id: string;
-  url_supabase: string | null;
+  url_fichier: string | null;
+  external_url: string | null;
   marche_id: string | null;
+  marche_event_id: string | null;
   description: string | null;
 }
 
@@ -35,13 +37,14 @@ const MurDuVivantView: React.FC<Props> = ({ events }) => {
 
       const { data, error } = await supabase
         .from('marcheur_medias')
-        .select('id, url_supabase, marche_id, description')
+        .select('id, url_fichier, external_url, marche_id, marche_event_id, description, type_media, is_public')
         .in('marche_id', marcheIds)
-        .not('url_supabase', 'is', null)
+        .eq('type_media', 'photo')
+        .eq('is_public', true)
         .limit(60)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Photo[];
+      return ((data ?? []) as any[]).filter((p) => p.url_fichier || p.external_url) as Photo[];
     },
     staleTime: 5 * 60_000,
   });
@@ -52,9 +55,8 @@ const MurDuVivantView: React.FC<Props> = ({ events }) => {
     return map;
   }, [events]);
 
-  const findEventForMarche = (marcheId: string | null): CarteMdVEvent | undefined => {
-    if (!marcheId) return undefined;
-    // Approx: pick first event of the exploration containing this marche
+  const findEventForPhoto = (p: Photo): CarteMdVEvent | undefined => {
+    if (p.marche_event_id) return events.find((e) => e.id === p.marche_event_id);
     return events[0];
   };
 
