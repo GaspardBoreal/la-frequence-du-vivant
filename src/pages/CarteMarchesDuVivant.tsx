@@ -27,6 +27,13 @@ const CarteMarchesDuVivant: React.FC = () => {
 
   const filtered = useMemo(() => applyFilters(events, filters), [events, filters]);
 
+  const filteredSolPoints = useMemo(() => {
+    if (!filters.solVivantEnabled) return [];
+    if (filters.categories.length === 0) return solPoints;
+    const set = new Set(filters.categories);
+    return solPoints.filter((p) => set.has(mapSolVivantToCategory(p.categories)));
+  }, [solPoints, filters.solVivantEnabled, filters.categories]);
+
   return (
     <>
       <Helmet>
