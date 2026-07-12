@@ -71,6 +71,7 @@ export interface SolVivantPoint {
   street_address: string | null;
   website: string | null;
   description: string | null;
+  synced_at: string | null;
 }
 
 export interface HeroStats {
@@ -159,7 +160,7 @@ export function useSolVivantPoints(enabled: boolean) {
     queryFn: async (): Promise<SolVivantPoint[]> => {
       const { data, error } = await supabase
         .from('carte_sol_vivant_points' as any)
-        .select('id, external_id, name, category, categories, latitude, longitude, street_address, website, description')
+        .select('id, external_id, name, category, categories, latitude, longitude, street_address, website, description, synced_at')
         .limit(2000);
       if (error) throw error;
       return (data ?? []) as unknown as SolVivantPoint[];

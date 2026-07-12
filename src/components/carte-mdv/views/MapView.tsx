@@ -246,34 +246,43 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
                 {legendItems.length === 0 && (
                   <div className="text-muted-foreground italic">Aucun événement affiché</div>
                 )}
-                {showSolVivant && solVivantPoints.length > 0 && (
-                  <div className="pt-1.5 mt-1.5 border-t border-white/10 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/80"
-                        style={{ background: '#84cc16' }}
-                        aria-hidden
-                      />
-                      <span className="flex-1">Partenaires Sol Vivant</span>
-                      <span className="text-muted-foreground tabular-nums">{solVivantPoints.length}</span>
-                    </div>
-                    <p
-                      className="text-[10px] text-muted-foreground leading-snug pl-4"
-                      title="Un partenaire peut appartenir à plusieurs catégories (ex. Maraîcher + Jardinier). Il est compté dans chaque filtre correspondant — la somme peut dépasser le total unique."
-                    >
-                      Source&nbsp;:{' '}
-                      <a
-                        href="https://cartesolvivant.gogocarto.fr"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline hover:text-primary"
+                {showSolVivant && solVivantPoints.length > 0 && (() => {
+                  const lastSyncTs = solVivantPoints.reduce((max, p) => {
+                    const t = p.synced_at ? new Date(p.synced_at).getTime() : 0;
+                    return t > max ? t : max;
+                  }, 0);
+                  const lastSyncLabel = lastSyncTs
+                    ? format(new Date(lastSyncTs), 'd MMM yyyy', { locale: fr })
+                    : null;
+                  return (
+                    <div className="pt-1.5 mt-1.5 border-t border-white/10 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/80"
+                          style={{ background: '#84cc16' }}
+                          aria-hidden
+                        />
+                        <span className="flex-1">Partenaires Sol Vivant</span>
+                        <span className="text-muted-foreground tabular-nums">{solVivantPoints.length}</span>
+                      </div>
+                      <p
+                        className="text-[10px] text-muted-foreground leading-snug pl-4"
+                        title="Un partenaire peut appartenir à plusieurs catégories : il est compté dans chaque filtre correspondant. Les totaux peuvent différer de 1 ou 2 points par rapport à la sidebar gogocarto, selon la fraîcheur de chaque source."
                       >
-                        Carte Sol Vivant
-                      </a>
-                      {' '}— multi-catégories
-                    </p>
-                  </div>
-                )}
+                        Source&nbsp;:{' '}
+                        <a
+                          href="https://cartesolvivant.gogocarto.fr"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-primary"
+                        >
+                          Carte Sol Vivant
+                        </a>
+                        {lastSyncLabel ? <> — maj le {lastSyncLabel}</> : null}
+                      </p>
+                    </div>
+                  );
+                })()}
                 <div className="pt-1.5 mt-1.5 border-t border-white/10 flex items-center gap-2 text-[10px] text-muted-foreground">
                   <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-foreground/10 text-[9px]">+</span>
                   <span>Taille = richesse d'espèces</span>
