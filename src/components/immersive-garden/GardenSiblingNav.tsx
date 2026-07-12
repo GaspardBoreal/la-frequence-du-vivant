@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Leaf } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 
 interface Props {
   index: number;
@@ -8,28 +9,27 @@ interface Props {
   categoryLabel: string;
   hasPrev: boolean;
   hasNext: boolean;
+  backHref: string;
   onNavigate: (direction: 'prev' | 'next', origin: { x: number; y: number }) => void;
   onBack: () => void;
 }
 
-const btnBase =
-  'group pointer-events-auto relative flex items-center justify-center w-14 h-14 rounded-full ' +
-  'bg-black/40 backdrop-blur-md border border-[#c9a24a]/40 text-[#f4ecd4] ' +
-  'shadow-[0_10px_40px_-10px_rgba(201,162,74,0.5)] transition ' +
-  'hover:bg-black/60 hover:border-[#c9a24a] hover:scale-105 ' +
-  'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100';
+const chevronBase =
+  'group relative flex items-center justify-center w-8 h-8 rounded-full text-[#f4ecd4] ' +
+  'transition hover:bg-[#c9a24a]/20 hover:text-[#f8e3a8] ' +
+  'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent';
 
 const GardenSiblingNav: React.FC<Props> = ({
-  index, total, categoryLabel, hasPrev, hasNext, onNavigate, onBack,
+  index, total, categoryLabel, hasPrev, hasNext, backHref, onNavigate, onBack,
 }) => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const t = document.activeElement?.tagName;
       if (t === 'INPUT' || t === 'TEXTAREA') return;
       if (e.key === 'ArrowLeft' && hasPrev) {
-        onNavigate('prev', { x: 80, y: window.innerHeight / 2 });
+        onNavigate('prev', { x: window.innerWidth / 2 - 40, y: 40 });
       } else if (e.key === 'ArrowRight' && hasNext) {
-        onNavigate('next', { x: window.innerWidth - 80, y: window.innerHeight / 2 });
+        onNavigate('next', { x: window.innerWidth / 2 + 40, y: 40 });
       } else if (e.key === 'Escape') {
         onBack();
       }
@@ -38,51 +38,70 @@ const GardenSiblingNav: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', handler);
   }, [hasPrev, hasNext, onNavigate, onBack]);
 
-  if (total <= 1) return null;
-
   const handleClick = (dir: 'prev' | 'next') => (e: React.MouseEvent<HTMLButtonElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     onNavigate(dir, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
   };
 
+  const showCounter = total > 1;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
+    <motion.nav
+      initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.6, duration: 0.8 }}
-      className="fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex items-center justify-between px-4 md:px-8"
+      transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 pl-2 pr-2 py-1.5
+                 rounded-full bg-black/45 backdrop-blur-xl border border-[#c9a24a]/35
+                 shadow-[0_10px_40px_-12px_rgba(201,162,74,0.35)]
+                 hover:border-[#c9a24a]/55 hover:shadow-[0_14px_50px_-10px_rgba(201,162,74,0.5)] transition"
+      aria-label="Navigation entre jardins"
     >
-      <button
-        type="button"
-        onClick={handleClick('prev')}
-        disabled={!hasPrev}
-        aria-label="Jardin précédent"
-        className={btnBase}
+      <Link
+        to={backHref}
+        className="group flex items-center gap-2 h-8 pl-2.5 pr-3 rounded-full text-[#f4ecd4]
+                   hover:bg-[#c9a24a]/15 hover:text-[#f8e3a8] transition"
+        aria-label="Retour à la carte"
       >
-        <ChevronLeft className="w-6 h-6" />
-        <span className="absolute inset-0 rounded-full ring-1 ring-[#c9a24a]/20 group-hover:ring-[#c9a24a]/70 transition" />
-      </button>
+        <ArrowLeft className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline font-serif text-[11px] tracking-[0.22em] uppercase">
+          Retour
+        </span>
+      </Link>
 
-      <div className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 backdrop-blur-md border border-[#c9a24a]/30 text-[#f4ecd4] text-xs tracking-[0.25em] uppercase font-serif italic shadow-[0_10px_30px_-10px_rgba(0,0,0,0.7)]">
-        <Leaf className="w-3.5 h-3.5 text-[#c9a24a]" />
-        <span className="text-[#c9a24a] font-bold not-italic">{index + 1}</span>
-        <span className="opacity-50">/</span>
-        <span className="opacity-80 not-italic">{total}</span>
-        <span className="opacity-40">·</span>
-        <span className="opacity-90">{categoryLabel}</span>
-      </div>
+      {showCounter && (
+        <>
+          <span aria-hidden className="mx-1 h-5 w-px bg-[#c9a24a]/25" />
 
-      <button
-        type="button"
-        onClick={handleClick('next')}
-        disabled={!hasNext}
-        aria-label="Jardin suivant"
-        className={btnBase}
-      >
-        <ChevronRight className="w-6 h-6" />
-        <span className="absolute inset-0 rounded-full ring-1 ring-[#c9a24a]/20 group-hover:ring-[#c9a24a]/70 transition" />
-      </button>
-    </motion.div>
+          <button
+            type="button"
+            onClick={handleClick('prev')}
+            disabled={!hasPrev}
+            aria-label="Jardin précédent"
+            className={chevronBase}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-baseline gap-1.5 px-2 font-serif italic text-[11px] tracking-[0.22em] uppercase text-[#f4ecd4]/85 whitespace-nowrap">
+            <span className="text-[#c9a24a] font-bold not-italic">{index + 1}</span>
+            <span className="opacity-40">/</span>
+            <span className="opacity-70 not-italic">{total}</span>
+            <span className="opacity-30 mx-0.5">·</span>
+            <span className="opacity-90">{categoryLabel}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleClick('next')}
+            disabled={!hasNext}
+            aria-label="Jardin suivant"
+            className={chevronBase}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </>
+      )}
+    </motion.nav>
   );
 };
 
