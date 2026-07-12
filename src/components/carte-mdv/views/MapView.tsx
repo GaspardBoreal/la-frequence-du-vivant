@@ -66,7 +66,16 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
   const [legendOpen, setLegendOpen] = useState(true);
   const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
   const missingCount = events.length - geoEvents.length;
-  const positions: [number, number][] = geoEvents.map((e) => [Number(e.latitude), Number(e.longitude)]);
+  const eventPositions: [number, number][] = geoEvents.map((e) => [Number(e.latitude), Number(e.longitude)]);
+  // Quand peu d'événements ET Sol Vivant actif, on étend le cadrage aux partenaires
+  // pour que l'utilisateur voie effectivement les points qu'il vient d'activer.
+  const svPositions: [number, number][] = (showSolVivant ? solVivantPoints : [])
+    .filter((p) => p.latitude != null && p.longitude != null)
+    .map((p) => [Number(p.latitude), Number(p.longitude)]);
+  const positions: [number, number][] =
+    showSolVivant && geoEvents.length <= 3
+      ? [...eventPositions, ...svPositions]
+      : eventPositions;
 
   const typeCounts = geoEvents.reduce<Record<string, number>>((acc, e) => {
     const k = e.event_type ?? 'autre';
@@ -102,29 +111,9 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
           <FitBounds positions={positions} />
 
 
-          {showSolVivant && solVivantPoints.map((p) => (
-            <CircleMarker
-              key={`sv-${p.id}`}
-              center={[Number(p.latitude), Number(p.longitude)]}
-              radius={5}
-              pathOptions={{ color: '#84cc16', fillColor: '#84cc16', fillOpacity: 0.6, weight: 1 }}
-            >
-              <Popup>
-                <div className="space-y-1 min-w-[180px]">
-                  <p className="font-semibold text-sm">{p.name}</p>
-                  {p.category && <Badge variant="outline" className="text-[10px]">{p.category}</Badge>}
-                  {p.street_address && <p className="text-xs text-muted-foreground">{p.street_address}</p>}
-                  {p.website && (
-                    <a href={p.website} target="_blank" rel="noopener noreferrer"
-                       className="text-xs text-primary hover:underline">Site web →</a>
-                  )}
-                  <p className="text-[10px] text-muted-foreground pt-1 border-t mt-1">
-                    Source : Carte Sol Vivant (ODbL)
-                  </p>
-                </div>
-              </Popup>
-            </CircleMarker>
-          ))}
+          {/* Sol Vivant : rendus APRÈS les marches (voir plus bas) pour rester au-dessus */}
+
+
 
           {geoEvents.map((e) => {
             const meta = getMarcheEventTypeMeta(e.event_type);
@@ -211,6 +200,32 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
               </Marker>
             );
           })}
+
+          {/* Partenaires Sol Vivant — rendus en DERNIER pour rester au-dessus des marqueurs de marche
+              (Leaflet empile dans l'ordre d'ajout). Halo blanc + rayon 7 pour visibilité. */}
+          {showSolVivant && solVivantPoints.map((p) => (
+            <CircleMarker
+              key={`sv-${p.id}`}
+              center={[Number(p.latitude), Number(p.longitude)]}
+              radius={7}
+              pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#84cc16', fillOpacity: 0.95 }}
+            >
+              <Popup>
+                <div className="space-y-1 min-w-[180px]">
+                  <p className="font-semibold text-sm">{p.name}</p>
+                  {p.category && <Badge variant="outline" className="text-[10px]">{p.category}</Badge>}
+                  {p.street_address && <p className="text-xs text-muted-foreground">{p.street_address}</p>}
+                  {p.website && (
+                    <a href={p.website} target="_blank" rel="noopener noreferrer"
+                       className="text-xs text-primary hover:underline">Site web →</a>
+                  )}
+                  <p className="text-[10px] text-muted-foreground pt-1 border-t mt-1">
+                    Source : Carte Sol Vivant (ODbL)
+                  </p>
+                </div>
+              </Popup>
+            </CircleMarker>
+          ))}
         </MapContainer>
 
 

@@ -1,46 +1,42 @@
 ## Diagnostic
 
-Le 76 affiché **n'est pas un bug** : c'est bien l'union exacte de notre base.
+Les 2 vignobles existent bien en base avec coordonnées valides :
+- SCEA Les Joualles de Cormeil-Figeac (44.906, −0.190) — Saint-Émilion
+- La terre de Pauline (43.585, 6.097) — Var
 
-Vérifié sur `carte_sol_vivant_points` :
+Ils sont rendus par Leaflet mais invisibles à l'œil pour 3 raisons cumulées :
 
-- Jardiniers → **51** (gogocarto sidebar : 50)
-- Jardins d'insertions ou pédagogiques → **25** (identique)
-- Chevauchement entre les deux tags → **0**
-- Union = **51 + 25 = 76** ✅
+### 1. Ordre d'empilage : Sol Vivant *sous* les marches
+Dans `MapView.tsx`, le bloc `solVivantPoints.map(...)` est déclaré **avant** `geoEvents.map(...)`. Leaflet empile dans l'ordre d'ajout (dernier au-dessus), donc le CircleMarker de 5 px de SCEA Les Joualles est **totalement recouvert** par le gros marker orange "Éco tourisme" (~32 px) sur Bordeaux.
 
-Aucun doublon détecté (ni par nom, ni par coordonnées). Nous avons **1 point Jardinier de plus que la sidebar gogocarto**. Causes probables :
+### 2. Trop petits et peu contrastés
+`radius={5}` sans halo blanc, lime clair (#84cc16) sur fond OSM → le point Provence est quasi invisible.
 
-1. Sidebar gogocarto en cache/retard sur ses propres données.
-2. Notre dernière synchro plus récente que ce que gogocarto affiche.
-3. Un delete côté gogocarto non encore propagé chez nous.
+### 3. FitBounds ignore les Sol Vivant
+`FitBounds` cadre uniquement sur `geoEvents`. Quand peu d'événements et éloignés, la carte peut cadrer une zone sans aucun partenaire visible.
 
-Mon chiffre « 75 » du message précédent venait des captures d'écran gogocarto, pas de notre base. **La légende 76 est donc factuellement correcte** — le vrai souci est la *promesse implicite* d'égalité stricte avec gogocarto qui inquiète le visiteur.
+## Correction (frontend only)
 
-## Correction
+Dans `src/components/carte-mdv/views/MapView.tsx` :
 
-### 1. Reformuler la légende (`src/components/carte-mdv/views/MapView.tsx`)
+### 1. Inverser l'ordre de rendu
+Placer `solVivantPoints.map(...)` **après** `geoEvents.map(...)`. L'utilisateur vient d'activer explicitement le toggle Sol Vivant → il attend de les voir prioritairement quand il y a chevauchement.
 
-Remplacer :
-> Source : Carte Sol Vivant — multi-catégories
+### 2. Rendre les points visibles
+```tsx
+<CircleMarker
+  radius={7}
+  pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#84cc16', fillOpacity: 0.95 }}
+/>
+```
+Halo blanc + fill quasi opaque = visibilité claire même à proximité d'un marker événement.
 
-Par :
-> Source : [Carte Sol Vivant](https://cartesolvivant.gogocarto.fr) — mise à jour le JJ/MM/AAAA
+### 3. FitBounds intelligent
+Inclure les Sol Vivant dans les `positions` passées à `FitBounds` **quand** `showSolVivant` est actif ET `geoEvents.length <= 3`. Ainsi "Vignoble + Sol Vivant" cadre auto sur Bordeaux + Provence.
+Sinon (beaucoup d'événements), garder le cadrage événements pour ne pas dézoomer.
 
-Tooltip enrichi :
-> « Un partenaire peut appartenir à plusieurs catégories : il est compté dans chaque filtre correspondant. Les totaux peuvent différer de 1 ou 2 points par rapport à la sidebar gogocarto, selon la fraîcheur de chaque source. »
+## Fichier touché
 
-### 2. Exposer la date de dernière synchro (`src/hooks/useCarteMdV.ts`)
+- `src/components/carte-mdv/views/MapView.tsx` — 3 modifications ciblées
 
-Ajouter `updated_at` au `SELECT` de `useSolVivantPoints` (déjà présent en base). Puis côté `MapView`, calculer `Math.max(...points.map(p => new Date(p.updated_at).getTime()))` pour afficher la date la plus récente.
-
-### 3. Fiabiliser la synchro (post-implémentation)
-
-Déclencher manuellement `sync-carte-sol-vivant` après le déploiement. Si gogocarto est effectivement passé à 50 Jardiniers, notre point excédentaire disparaîtra ; sinon on saura que la sidebar gogocarto est en retard, et l'écart de 1 restera légitime et documenté.
-
-## Fichiers touchés
-
-- `src/hooks/useCarteMdV.ts` — ajouter `updated_at` dans `SolVivantPoint` + SELECT
-- `src/components/carte-mdv/views/MapView.tsx` — reformulation légende + date + tooltip
-
-Aucune migration DB, aucun changement d'edge function côté code (juste une exécution manuelle après coup).
+Aucune migration, aucun autre fichier.
