@@ -160,7 +160,59 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
             );
           })}
         </MapContainer>
+
+        {/* Légende flottante — boussole d'atlas */}
+        <div className="absolute bottom-4 left-4 z-[1000] pointer-events-none">
+          <div className="pointer-events-auto rounded-xl border border-white/15 bg-background/70 backdrop-blur-md shadow-lg overflow-hidden text-foreground animate-fade-in">
+            <button
+              type="button"
+              onClick={() => setLegendOpen((v) => !v)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium uppercase tracking-wider hover:bg-foreground/5 transition-colors"
+              aria-expanded={legendOpen}
+            >
+              <Compass className="h-3.5 w-3.5 text-primary" />
+              <span>Légende</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 ml-auto transition-transform ${legendOpen ? '' : '-rotate-90'}`}
+              />
+            </button>
+            {legendOpen && (
+              <div className="px-3 pb-3 pt-1 space-y-1.5 text-xs min-w-[180px] border-t border-white/10">
+                {legendItems.map((it) => (
+                  <div key={it.key} className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-3 w-3 rounded-full ring-2 ring-white/80 shadow"
+                      style={{ background: it.color }}
+                      aria-hidden
+                    />
+                    <span className="flex-1">{it.label}</span>
+                    <span className="text-muted-foreground tabular-nums">{it.count}</span>
+                  </div>
+                ))}
+                {legendItems.length === 0 && (
+                  <div className="text-muted-foreground italic">Aucun événement affiché</div>
+                )}
+                {showSolVivant && solVivantPoints.length > 0 && (
+                  <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-white/10">
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/80"
+                      style={{ background: '#84cc16' }}
+                      aria-hidden
+                    />
+                    <span className="flex-1">Partenaires Sol Vivant</span>
+                    <span className="text-muted-foreground tabular-nums">{solVivantPoints.length}</span>
+                  </div>
+                )}
+                <div className="pt-1.5 mt-1.5 border-t border-white/10 flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-foreground/10 text-[9px]">+</span>
+                  <span>Taille = richesse d'espèces</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
       {showSolVivant && solVivantPoints.length > 0 && (
         <div className="px-4 py-2 text-xs bg-muted/40 border-t border-border flex items-center gap-2">
           <span className="inline-block h-2 w-2 rounded-full bg-lime-500" />
