@@ -167,7 +167,7 @@ const ImmersiveGardenFiche: React.FC = () => {
               <Leaf className="w-3 h-3" /> Jardin des Marches du Vivant
             </div>
             <h1 className="font-serif italic text-4xl md:text-6xl lg:text-7xl leading-[1.05] text-[#f4ecd4] drop-shadow-[0_4px_20px_rgba(0,0,0,0.6)] max-w-4xl">
-              {event.title}
+              <RevealText text={event.title} />
             </h1>
             {event.lieu && (
               <p className="mt-4 text-sm md:text-base text-[#f4ecd4]/75 tracking-wide">
