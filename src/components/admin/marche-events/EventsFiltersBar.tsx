@@ -31,6 +31,22 @@ const TypeSelect: React.FC<{ value: string; onChange: (v: string) => void }> = (
   </Select>
 );
 
+const CategorySelect: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger className="w-full">
+      <Layers className="h-4 w-4 mr-1 text-muted-foreground shrink-0" />
+      <SelectValue placeholder="Toutes catégories" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">Toutes catégories</SelectItem>
+      {MARCHE_CATEGORIES.map((c) => {
+        const m = getMarcheCategoryMeta(c);
+        return <SelectItem key={c} value={c}>{m.label}</SelectItem>;
+      })}
+    </SelectContent>
+  </Select>
+);
+
 const StatusSelect: React.FC<{ value: EventStatus; onChange: (v: EventStatus) => void }> = ({ value, onChange }) => (
   <Select value={value} onValueChange={(v) => onChange(v as EventStatus)}>
     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
