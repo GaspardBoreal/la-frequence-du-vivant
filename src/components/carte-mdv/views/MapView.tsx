@@ -56,9 +56,23 @@ interface Props {
 
 const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant }) => {
   const { user } = useAuth();
+  const [legendOpen, setLegendOpen] = useState(true);
   const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
   const missingCount = events.length - geoEvents.length;
   const positions: [number, number][] = geoEvents.map((e) => [Number(e.latitude), Number(e.longitude)]);
+
+  const typeCounts = geoEvents.reduce<Record<string, number>>((acc, e) => {
+    const k = e.event_type ?? 'autre';
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const legendItems: { key: string; color: string; label: string; count: number }[] = [
+    { key: 'agroecologique', color: '#10b981', label: 'Agroécologique', count: typeCounts.agroecologique ?? 0 },
+    { key: 'eco_poetique', color: '#a855f7', label: 'Éco poétique', count: typeCounts.eco_poetique ?? 0 },
+    { key: 'eco_tourisme', color: '#f59e0b', label: 'Éco tourisme', count: typeCounts.eco_tourisme ?? 0 },
+  ].filter((it) => it.count > 0);
+
 
   return (
     <div className="rounded-xl overflow-hidden border border-border">
