@@ -136,8 +136,7 @@ const CarteMdVHero: React.FC = () => {
           </h1>
           <p className="mt-4 text-base sm:text-lg text-muted-foreground max-w-2xl">
             Chaque marche est une lecture sensible d'un territoire. Ici, retrouvez les prochaines
-            marches à rejoindre, les espèces déjà rencontrées et — en option — les acteurs
-            partenaires du sol vivant partout en France.
+            marches à rejoindre, les espèces déjà rencontrées
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
