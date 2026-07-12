@@ -414,10 +414,34 @@ export function exportEventsToCSV(
 ): void {
   const lines: string[] = [];
 
+  // ── RÉSUMÉ toujours en tête dès qu'une section biodiversité est demandée ──
+  if (options.includeBiodiversity || options.includeRawBiodiversity) {
+    lines.push('=== RÉSUMÉ BIODIVERSITÉ (chiffres dédupliqués — source unique RPC get_exploration_species_export) ===');
+    lines.push('Événement,Type,Espèces uniques,Faune (Animalia),Flore (Plantae),Champignons (Fungi),Autres,Nb marches,Nb observations brutes');
+    events.forEach(e => {
+      const b = e.biodiversity;
+      const rawCount = b?.rawSpeciesPerMarche?.length ?? 0;
+      lines.push(
+        [
+          escapeCSV(e.title),
+          escapeCSV(getTypeLabel(e.event_type)),
+          (b?.totalSpecies ?? 0).toString(),
+          (b?.speciesByKingdom.birds ?? 0).toString(),
+          (b?.speciesByKingdom.plants ?? 0).toString(),
+          (b?.speciesByKingdom.fungi ?? 0).toString(),
+          (b?.speciesByKingdom.others ?? 0).toString(),
+          e.marches.length.toString(),
+          rawCount.toString(),
+        ].join(','),
+      );
+    });
+    lines.push('');
+  }
+
   // Events CSV
   if (options.includeEventInfo) {
     lines.push('=== ÉVÉNEMENTS ===');
-    lines.push('Titre,Type,Date,Lieu,Latitude,Longitude,Participants,Espèces');
+    lines.push('Titre,Type,Date,Lieu,Latitude,Longitude,Participants,Espèces uniques');
     events.forEach(e => {
       lines.push(
         [
@@ -482,7 +506,7 @@ export function exportEventsToCSV(
 
   // Biodiversity synthèse CSV (1 ligne = 1 espèce unique dédupliquée)
   if (options.includeBiodiversity) {
-    lines.push('=== BIODIVERSITÉ (SYNTHÈSE — 1 ligne par espèce unique) ===');
+    lines.push('=== BIODIVERSITÉ — SYNTHÈSE (1 ligne par espèce unique) ===');
     lines.push('# Comptage aligné sur la Carte / Carnet / Synthèse (RPC get_exploration_species_export)');
     lines.push('# Déduplication : nom scientifique normalisé (unaccent + lower), filtré par rayon marche.');
     lines.push('Événement,Type,Espèce,Nom scientifique,Royaume,Rang,Observations,Sources,Première obs,Dernière obs');
@@ -510,31 +534,77 @@ export function exportEventsToCSV(
     lines.push('');
   }
 
-  // Raw biodiversity CSV — observations par marche (doublons attendus si rayons chevauchants)
+  // Raw biodiversity CSV — observations par marche + colonne Chevauchements
   if (options.includeRawBiodiversity) {
     lines.push('=== OBSERVATIONS BRUTES PAR MARCHE ===');
-    lines.push('# ⚠ ATTENTION : cette section contient volontairement des doublons.');
-    lines.push('# La même espèce peut apparaître dans plusieurs marches si leurs rayons se chevauchent.');
-    lines.push('# Pour compter les espèces uniques d\'un événement, utilisez la section « SYNTHÈSE » ci-dessus.');
-    lines.push('Événement,Type,Marche,Longitude,Latitude,Espèce,Nom scientifique,Royaume,Observations');
     events.forEach(e => {
-      if (e.biodiversity?.rawSpeciesPerMarche) {
-        e.biodiversity.rawSpeciesPerMarche.forEach(sp => {
-          lines.push(
-            [
-              escapeCSV(e.title),
-              escapeCSV(getTypeLabel(e.event_type)),
-              escapeCSV(sp.marcheName),
-              sp.longitude?.toString() || '',
-              sp.latitude?.toString() || '',
-              escapeCSV(sp.name),
-              escapeCSV(sp.scientificName),
-              escapeCSV(sp.kingdom),
-              sp.count.toString(),
-            ].join(','),
-          );
-        });
-      }
+      const unique = e.biodiversity?.totalSpecies ?? 0;
+      const raw = e.biodiversity?.rawSpeciesPerMarche?.length ?? 0;
+      const factor = unique > 0 ? (raw / unique).toFixed(1) : '—';
+      lines.push(`# ⚠ ${e.title} : ${raw} lignes pour ${unique} espèces uniques (facteur ×${factor} dû aux rayons chevauchants).`);
+    });
+    lines.push('# Pour le compte d\'espèces uniques d\'un événement, voir la section « RÉSUMÉ BIODIVERSITÉ » en tête de fichier.');
+    lines.push('Événement,Type,Marche,Longitude,Latitude,Espèce,Nom scientifique,Royaume,Observations,Chevauchements (marches)');
+    events.forEach(e => {
+      const raws = e.biodiversity?.rawSpeciesPerMarche ?? [];
+      // Compute overlap: count how many distinct marches each species appears in for this event
+      const marchesBySci = new Map<string, Set<string>>();
+      raws.forEach(sp => {
+        const key = (sp.scientificName || sp.name || '').toLowerCase().trim();
+        if (!key) return;
+        if (!marchesBySci.has(key)) marchesBySci.set(key, new Set());
+        marchesBySci.get(key)!.add(sp.marcheName || '');
+      });
+      raws.forEach(sp => {
+        const key = (sp.scientificName || sp.name || '').toLowerCase().trim();
+        const overlap = marchesBySci.get(key)?.size ?? 1;
+        lines.push(
+          [
+            escapeCSV(e.title),
+            escapeCSV(getTypeLabel(e.event_type)),
+            escapeCSV(sp.marcheName),
+            sp.longitude?.toString() || '',
+            sp.latitude?.toString() || '',
+            escapeCSV(sp.name),
+            escapeCSV(sp.scientificName),
+            escapeCSV(sp.kingdom),
+            sp.count.toString(),
+            overlap.toString(),
+          ].join(','),
+        );
+      });
+    });
+    lines.push('');
+
+    // Chevauchements — matrice compacte espèce → liste marches
+    lines.push('=== CHEVAUCHEMENTS ESPÈCES × MARCHES ===');
+    lines.push('# Une ligne par espèce : liste des marches où elle est captée dans le rayon d\'observation.');
+    lines.push('Événement,Type,Espèce,Nom scientifique,Royaume,Nb marches,Marches (liste)');
+    events.forEach(e => {
+      const raws = e.biodiversity?.rawSpeciesPerMarche ?? [];
+      const grouped = new Map<string, { name: string; sci: string; kingdom: string; marches: Set<string> }>();
+      raws.forEach(sp => {
+        const key = (sp.scientificName || sp.name || '').toLowerCase().trim();
+        if (!key) return;
+        if (!grouped.has(key)) {
+          grouped.set(key, { name: sp.name, sci: sp.scientificName, kingdom: sp.kingdom, marches: new Set() });
+        }
+        grouped.get(key)!.marches.add(sp.marcheName || '');
+      });
+      const rows = Array.from(grouped.values()).sort((a, b) => b.marches.size - a.marches.size);
+      rows.forEach(row => {
+        lines.push(
+          [
+            escapeCSV(e.title),
+            escapeCSV(getTypeLabel(e.event_type)),
+            escapeCSV(row.name),
+            escapeCSV(row.sci),
+            escapeCSV(row.kingdom),
+            row.marches.size.toString(),
+            escapeCSV(Array.from(row.marches).join(' | ')),
+          ].join(','),
+        );
+      });
     });
     lines.push('');
   }
@@ -543,3 +613,211 @@ export function exportEventsToCSV(
   const fileName = `Rapport_Evenements_${format(new Date(), 'yyyy-MM-dd')}.csv`;
   saveAs(blob, fileName);
 }
+
+// ============================================================================
+// XLSX EXPORT (multi-sheets — recommandé pour restitution partenaires)
+// ============================================================================
+
+export function exportEventsToXLSX(
+  events: EventExportData[],
+  options: EventExportOptions,
+): void {
+  const wb = XLSX.utils.book_new();
+
+  // ── Feuille RÉSUMÉ ──
+  if (options.includeBiodiversity || options.includeRawBiodiversity || options.includeEventInfo) {
+    const rows: (string | number)[][] = [];
+    rows.push([
+      'Événement', 'Type', 'Date', 'Lieu',
+      'Participants', 'Nb marches',
+      'Espèces uniques', 'Faune (Animalia)', 'Flore (Plantae)', 'Champignons (Fungi)', 'Autres',
+      'Observations brutes', 'Facteur chevauchement',
+    ]);
+    events.forEach(e => {
+      const b = e.biodiversity;
+      const unique = b?.totalSpecies ?? 0;
+      const raw = b?.rawSpeciesPerMarche?.length ?? 0;
+      const factor = unique > 0 ? Number((raw / unique).toFixed(2)) : 0;
+      rows.push([
+        e.title,
+        getTypeLabel(e.event_type),
+        formatEventDate(e.date_marche),
+        e.lieu || '',
+        e.participants.length,
+        e.marches.length,
+        unique,
+        b?.speciesByKingdom.birds ?? 0,
+        b?.speciesByKingdom.plants ?? 0,
+        b?.speciesByKingdom.fungi ?? 0,
+        b?.speciesByKingdom.others ?? 0,
+        raw,
+        factor,
+      ]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 42 }, { wch: 16 }, { wch: 14 }, { wch: 24 },
+      { wch: 12 }, { wch: 10 },
+      { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 18 }, { wch: 10 },
+      { wch: 18 }, { wch: 20 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Résumé');
+  }
+
+  // ── Feuille PARTICIPANTS ──
+  if (options.includeParticipants) {
+    const rows: (string | number)[][] = [['Événement', 'Type', 'Prénom', 'Nom', 'Date inscription', 'Statut']];
+    events.forEach(e => {
+      e.participants.forEach(p => {
+        rows.push([
+          e.title,
+          getTypeLabel(e.event_type),
+          p.prenom,
+          p.nom,
+          formatEventDate(p.created_at),
+          p.validated_at ? 'Présent' : 'Inscrit',
+        ]);
+      });
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 42 }, { wch: 16 }, { wch: 16 }, { wch: 20 }, { wch: 18 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Participants');
+  }
+
+  // ── Feuille MARCHES ──
+  if (options.includeMarches) {
+    const rows: (string | number)[][] = [['Événement', 'Type', 'Ordre', 'Nom marche', 'Ville', 'Latitude', 'Longitude', 'Présentation', 'En détail']];
+    events.forEach(e => {
+      e.marches.forEach((m, i) => {
+        rows.push([
+          e.title,
+          getTypeLabel(e.event_type),
+          i + 1,
+          m.nom_marche || '',
+          m.ville,
+          m.latitude ?? '',
+          m.longitude ?? '',
+          stripHtml(m.descriptif_court),
+          stripHtml(m.descriptif_long),
+        ]);
+      });
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 42 }, { wch: 16 }, { wch: 6 }, { wch: 28 }, { wch: 20 },
+      { wch: 12 }, { wch: 12 }, { wch: 40 }, { wch: 60 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Marches');
+  }
+
+  // ── Feuille BIODIVERSITÉ — SYNTHÈSE (dédupliquée) ──
+  if (options.includeBiodiversity) {
+    const rows: (string | number)[][] = [[
+      'Événement', 'Type', 'Espèce', 'Nom scientifique', 'Royaume', 'Rang',
+      'Observations', 'Sources', 'Première obs', 'Dernière obs',
+    ]];
+    events.forEach(e => {
+      const list = e.biodiversity?.allSpecies ?? e.biodiversity?.topSpecies ?? [];
+      list.forEach(sp => {
+        rows.push([
+          e.title,
+          getTypeLabel(e.event_type),
+          sp.name,
+          sp.scientificName,
+          sp.kingdom,
+          sp.rank || '',
+          sp.count,
+          (sp.sources || []).join('+'),
+          sp.firstSeen || '',
+          sp.lastSeen || '',
+        ]);
+      });
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 42 }, { wch: 16 }, { wch: 32 }, { wch: 32 }, { wch: 12 }, { wch: 14 },
+      { wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 14 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Biodiversité — Synthèse');
+  }
+
+  // ── Feuille BIODIVERSITÉ — BRUTES + feuille CHEVAUCHEMENTS ──
+  if (options.includeRawBiodiversity) {
+    // Raw
+    const rawRows: (string | number)[][] = [[
+      'Événement', 'Type', 'Marche', 'Longitude', 'Latitude',
+      'Espèce', 'Nom scientifique', 'Royaume', 'Observations', 'Chevauchements (marches)',
+    ]];
+    // Overlap matrix
+    const overlapRows: (string | number)[][] = [[
+      'Événement', 'Type', 'Espèce', 'Nom scientifique', 'Royaume', 'Nb marches', 'Marches (liste)',
+    ]];
+
+    events.forEach(e => {
+      const raws = e.biodiversity?.rawSpeciesPerMarche ?? [];
+      const marchesBySci = new Map<string, Set<string>>();
+      raws.forEach(sp => {
+        const key = (sp.scientificName || sp.name || '').toLowerCase().trim();
+        if (!key) return;
+        if (!marchesBySci.has(key)) marchesBySci.set(key, new Set());
+        marchesBySci.get(key)!.add(sp.marcheName || '');
+      });
+      raws.forEach(sp => {
+        const key = (sp.scientificName || sp.name || '').toLowerCase().trim();
+        const overlap = marchesBySci.get(key)?.size ?? 1;
+        rawRows.push([
+          e.title,
+          getTypeLabel(e.event_type),
+          sp.marcheName,
+          sp.longitude ?? '',
+          sp.latitude ?? '',
+          sp.name,
+          sp.scientificName,
+          sp.kingdom,
+          sp.count,
+          overlap,
+        ]);
+      });
+
+      const grouped = new Map<string, { name: string; sci: string; kingdom: string; marches: Set<string> }>();
+      raws.forEach(sp => {
+        const key = (sp.scientificName || sp.name || '').toLowerCase().trim();
+        if (!key) return;
+        if (!grouped.has(key)) {
+          grouped.set(key, { name: sp.name, sci: sp.scientificName, kingdom: sp.kingdom, marches: new Set() });
+        }
+        grouped.get(key)!.marches.add(sp.marcheName || '');
+      });
+      Array.from(grouped.values())
+        .sort((a, b) => b.marches.size - a.marches.size)
+        .forEach(row => {
+          overlapRows.push([
+            e.title,
+            getTypeLabel(e.event_type),
+            row.name,
+            row.sci,
+            row.kingdom,
+            row.marches.size,
+            Array.from(row.marches).join(' | '),
+          ]);
+        });
+    });
+
+    const wsRaw = XLSX.utils.aoa_to_sheet(rawRows);
+    wsRaw['!cols'] = [
+      { wch: 42 }, { wch: 16 }, { wch: 24 }, { wch: 14 }, { wch: 14 },
+      { wch: 28 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 20 },
+    ];
+    XLSX.utils.book_append_sheet(wb, wsRaw, 'Biodiversité — Brutes');
+
+    const wsOverlap = XLSX.utils.aoa_to_sheet(overlapRows);
+    wsOverlap['!cols'] = [
+      { wch: 42 }, { wch: 16 }, { wch: 28 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 80 },
+    ];
+    XLSX.utils.book_append_sheet(wb, wsOverlap, 'Chevauchements');
+  }
+
+  const fileName = `Rapport_Evenements_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+}
+
