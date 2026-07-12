@@ -101,11 +101,13 @@ const ImmersiveGardenFiche: React.FC = () => {
     return <Navigate to="/marches-du-vivant/carte-marches-du-vivant" replace />;
   }
 
-  // Événement non-jardin → route classique
+  // Événement non-jardin → route classique (slug si publié, sinon admin)
   if (event.category !== 'jardin') {
-    return <Navigate to={`/m/${event.public_slug}`} replace />;
+    const fallback = event.public_slug ? `/m/${event.public_slug}` : `/admin/marche-events/${event.id}`;
+    return <Navigate to={fallback} replace />;
   }
 
+  const slugOrId = event.public_slug ?? event.id;
   const tint = SEASON_TINT[season];
 
   const m = metrics ?? {
