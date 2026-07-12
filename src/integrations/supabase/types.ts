@@ -6925,6 +6925,10 @@ export type Database = {
         Args: { p_exploration_id: string }
         Returns: Json
       }
+      get_exploration_species_export: {
+        Args: { p_exploration_id: string }
+        Returns: Json
+      }
       get_exploration_species_pool: {
         Args: { p_exploration_id: string }
         Returns: Json
