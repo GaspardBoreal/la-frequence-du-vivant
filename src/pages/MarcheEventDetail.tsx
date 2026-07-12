@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta, type MarcheEventType } from '@/lib/marcheEventTypes';
+import { MARCHE_CATEGORIES, getMarcheCategoryMeta, type MarcheCategory } from '@/lib/marcheCategories';
 import EventBiodiversityTab from '@/components/community/EventBiodiversityTab';
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import LivingPathOverview from '@/components/admin/LivingPathOverview';
