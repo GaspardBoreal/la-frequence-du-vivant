@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getMarcheEventTypeMeta, MARCHE_EVENT_TYPES } from '@/lib/marcheEventTypes';
-import { exportEventsToWord, exportEventsToCSV, type EventExportData, type EventExportOptions } from '@/utils/eventExportUtils';
+import { exportEventsToWord, exportEventsToCSV, exportEventsToXLSX, type EventExportData, type EventExportOptions } from '@/utils/eventExportUtils';
 
 interface MarcheEvent {
   id: string;
