@@ -183,6 +183,36 @@ const FiltersBar: React.FC<Props> = ({ filters, onChange, resultCount }) => {
           </div>
         </div>
 
+        {/* Row 3: category chips */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground mr-1">Catégorie :</span>
+          {MARCHE_CATEGORIES.map((c) => {
+            const meta = getMarcheCategoryMeta(c);
+            const active = filters.categories.includes(c);
+            const Icon = meta.icon;
+            return (
+              <button
+                key={c}
+                onClick={() => toggleCategory(c)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${
+                  active ? meta.chipClassName + ' ring-2 ring-primary/30' : 'border-border bg-background hover:bg-muted'
+                }`}
+              >
+                <Icon className="h-3 w-3" />
+                {meta.shortLabel}
+              </button>
+            );
+          })}
+          {filters.categories.length > 0 && (
+            <button
+              onClick={() => onChange({ categories: [] })}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+            >
+              <X className="h-3 w-3" /> Effacer
+            </button>
+          )}
+        </div>
+
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Sparkles className="h-3 w-3 text-primary" />
           <span><strong className="text-foreground">{resultCount}</strong> marches correspondent à vos filtres</span>
