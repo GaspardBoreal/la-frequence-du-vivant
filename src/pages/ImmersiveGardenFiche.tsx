@@ -12,6 +12,7 @@ import StratPanel from '@/components/immersive-garden/StratPanel';
 import CursorAurora from '@/components/immersive-garden/CursorAurora';
 import GardenSiblingNav from '@/components/immersive-garden/GardenSiblingNav';
 import GardenTransitionOverlay from '@/components/immersive-garden/GardenTransitionOverlay';
+import SeasonSpeciesCarousel from '@/components/immersive-garden/SeasonSpeciesCarousel';
 
 
 const SEASONS: { key: Season; label: string; emoji: string }[] = [
@@ -377,6 +378,13 @@ const ImmersiveGardenFiche: React.FC = () => {
                 );
               })}
             </div>
+
+            {/* Carrousel espèces saisonnier — vraies photos terrain + iNat */}
+            <SeasonSpeciesCarousel
+              explorationId={event.exploration_id}
+              season={season}
+              tint={tint}
+            />
 
             <div className="mt-16 flex flex-col items-center gap-5">
               <p className="max-w-xl font-serif italic text-base md:text-lg text-[#f4ecd4]/80 leading-relaxed">
