@@ -12,9 +12,10 @@ import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 interface Props {
   event: CarteMdVEvent;
   compact?: boolean;
+  rightBadge?: React.ReactNode;
 }
 
-const EventCard: React.FC<Props> = ({ event, compact = false }) => {
+const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
   const { user } = useAuth();
   const meta = getMarcheEventTypeMeta(event.event_type);
   const date = new Date(event.date_marche);
@@ -55,15 +56,25 @@ const EventCard: React.FC<Props> = ({ event, compact = false }) => {
               {event.species_count} espèces
             </div>
           )}
+          {rightBadge && (
+            <div className={`absolute right-2 ${event.species_count > 0 ? 'top-11' : 'top-2'}`}>
+              {rightBadge}
+            </div>
+          )}
         </div>
       )}
 
       <div className="p-4 space-y-3">
-        {!event.cover_image_url && meta && (
-          <Badge className={meta.badgeClassName}>
-            <meta.icon className="mr-1 h-3 w-3" />
-            {meta.shortLabel}
-          </Badge>
+        {!event.cover_image_url && (
+          <div className="flex items-center justify-between gap-2 min-h-[22px]">
+            {meta ? (
+              <Badge className={meta.badgeClassName}>
+                <meta.icon className="mr-1 h-3 w-3" />
+                {meta.shortLabel}
+              </Badge>
+            ) : <span />}
+            {rightBadge}
+          </div>
         )}
 
         <div>
