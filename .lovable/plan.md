@@ -1,55 +1,41 @@
 ## Objectif
 
-Retravailler la barre de navigation flottante des fiches Jardin :
-- Supprimer les gros chevrons bas-gauche / bas-droit.
-- Regrouper **Retour · ‹ · n/total · Catégorie · ›** dans une **capsule flottante unique**, centrée en haut de la page (`top-4`), à la même hauteur que l'ancienne flèche retour.
-- Remplacer le petit rond « flèche retour » par un **bouton texte « ← Retour »** intégré à cette capsule.
-- Chevrons prev/next **plus petits** (32 px), fondus dans la capsule glass/or.
+Sur les fiches Jardin immersives (`/jardin/:slug`), retirer le bouton flottant "Rejoindre la Fréquence" et remplacer la copie du CTA final par un message court et inspirant invitant à s'inscrire pour découvrir le jardin et participer à la mesure de la biodiversité.
 
-## UX cible
+## Changements
 
-Une seule capsule `top-4 left-1/2 -translate-x-1/2 z-50`, verre foncé + bordure or, très fine et élégante :
+### 1. Masquer le FAB "Rejoindre la Fréquence"
 
-```text
-┌──────────────────────────────────────────────────────────┐
-│  ← Retour   │   ‹   3 / 12 · Jardin   ›                 │
-└──────────────────────────────────────────────────────────┘
-```
+Fichier : `src/components/adhesion/AdhesionFab.tsx`
 
-- Séparateur vertical fin `bg-[#c9a24a]/25` entre « Retour » et le bloc prev/next.
-- « Retour » : icône `ArrowLeft` + label « Retour » (masqué sous 380 px → icône seule), hover → glow doré.
-- Chevrons : boutons ronds 32 px, `bg-transparent hover:bg-[#c9a24a]/15`, désactivés en bout de liste (opacité 30 %, curseur interdit).
-- Compteur central : `n / total · Catégorie`, typographie serif italique, chiffre courant en `#c9a24a` bold.
-- Si `total ≤ 1` → chevrons + compteur masqués, capsule ne montre que « Retour ».
-- Raccourcis clavier `←` / `→` / `Esc` inchangés.
-- Animation d'apparition douce (`opacity + y`), halo doré subtil au survol de la capsule entière.
+Ajouter `/jardin/` à la liste `hideOn` (déjà utilisée pour Carte des Marches, admin, etc.). Le bouton flottant disparaîtra automatiquement sur toutes les fiches jardin.
 
-## Style (design)
+### 2. Adapter la copie du CTA final (Section 3, "Matrice saisonnière")
 
-- Fond : `bg-black/45 backdrop-blur-xl`.
-- Bordure : `border border-[#c9a24a]/35`, `rounded-full`.
-- Ombre : `shadow-[0_10px_40px_-12px_rgba(201,162,74,0.35)]`.
-- Hauteur cible : ~40 px (au lieu de 56 px pour les gros chevrons actuels), même axe vertical que l'ancien bouton retour (`top-4`).
-- Padding : `pl-2 pr-3 py-1.5`.
-- Typo compteur : `font-serif italic text-xs tracking-[0.22em] uppercase`.
-- Toute la capsule respire la même palette or/nuit que le reste de la fiche jardin.
+Fichier : `src/pages/ImmersiveGardenFiche.tsx` (lignes ~381-398)
 
-## Fichiers touchés
+Actuellement la section se termine par un bouton "Soutenir ce jardin" pointant vers `/m/:slug` ou la carte.
 
-### `src/components/immersive-garden/GardenSiblingNav.tsx` (refonte complète)
-- Nouvelle prop : `backHref: string` (remplace `onBack` en Link direct pour préserver le comportement navigateur ; on garde `onBack` pour la touche `Esc`).
-- Structure : `<motion.nav>` unique, `fixed top-4 left-1/2 -translate-x-1/2`, contenu = `[Link Retour] | [Prev] [Compteur] [Next]`.
-- Chevrons 32 px, sans halo lourd.
-- Compteur masqué quand `total ≤ 1`, mais la capsule reste (juste « Retour »).
-- Conserve la gestion clavier existante.
+Nouvelle proposition :
 
-### `src/pages/ImmersiveGardenFiche.tsx`
-- Supprimer le `<Link>` « retour discret » (lignes 169-176).
-- Passer `backHref={sibling.backHref}` au `<GardenSiblingNav>` (en plus de `onBack` pour `Esc`).
-- Aucune autre modification (transitions, hooks, overlay inchangés).
+- **Titre inchangé** : "Le jardin change de peau" reste
+- **Ajout d'un bloc CTA sous le sélecteur de saisons** avec :
+  - Une phrase courte et inspirante, par exemple :
+    > *"Inscrivez-vous pour entrer dans ce jardin et devenir sentinelle du vivant qui l'habite."*
+  - Bouton primaire "Rejoindre ce jardin" → `/marches-du-vivant/connexion?redirect=/jardin/<slug>`
+  - Lien secondaire discret conservé : "Voir la fiche événement classique"
 
-## Hors scope
+Le bouton "Soutenir ce jardin" existant est remplacé par ce nouveau CTA d'inscription (plus aligné avec l'intention pédagogique).
 
-- Pas de changement des transitions (`GardenTransitionOverlay`) ni du hook `useSiblingGardenEvents`.
-- Pas de refonte de la fiche, du carrousel ni des autres composants.
-- Aucun changement backend.
+### Détails techniques
+
+- La liste `hideOn` dans `AdhesionFab.tsx` fait un `startsWith`, donc `/jardin/` couvre toutes les fiches.
+- Le nouveau CTA réutilise `OrganicButton` variant `emerald` déjà présent, plus un `<p>` en `font-serif italic` couleur `#f4ecd4/80` pour la copie.
+- Aucun changement de route, aucun changement de données.
+
+## Copie proposée (à valider)
+
+- Phrase : *"Inscrivez-vous pour entrer dans ce jardin et devenir sentinelle du vivant qui l'habite."*
+- Bouton : *"Rejoindre ce jardin"*
+
+Dis-moi si tu veux ajuster la formulation avant que j'implémente.
