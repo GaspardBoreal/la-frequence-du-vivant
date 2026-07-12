@@ -36,6 +36,15 @@ const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const invalidateEventsLists = () => {
+    queryClient.invalidateQueries({ queryKey: ['marche-events-paginated'] });
+    queryClient.invalidateQueries({ queryKey: ['marche-events-all'] });
+    queryClient.invalidateQueries({ queryKey: ['marche-events-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['marche-events-dashboard-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['marches-map-events'] });
+    queryClient.invalidateQueries({ queryKey: ['events-public-visibility'] });
+    if (id) queryClient.invalidateQueries({ queryKey: ['marche-event', id] });
+  };
   const isNew = id === 'nouveau';
 
   const [form, setForm] = useState({
