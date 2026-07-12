@@ -1,117 +1,70 @@
+## Diagnostic
 
-# Carte des Marches du Vivant — page inspirationnelle
+Requête directe en base :
 
-Une page publique immersive combinant **nos événements** (source de vérité) avec, en option, les **points partenaires Carte Sol Vivant** (~940 acteurs MSV), pensée pour convertir un visiteur curieux en marcheur inscrit.
 
-**Route :** `/marches-du-vivant/carte-marches-du-vivant` (publique, SEO-ready)
+| Métrique                     | Valeur |
+| ---------------------------- | ------ |
+| Total marche_events          | **17** |
+| Avec coordonnées lat/lon     | **12** |
+| À venir (date ≥ aujourd'hui) | **2**  |
+| Géolocalisés ET à venir      | **2**  |
 
----
 
-## 1. Structure de la page
+Deux causes se combinent :
 
-```text
-┌───────────────────────────────────────────────────────────┐
-│  HERO : "Explorez la carte du vivant en France"           │
-│  Compteurs live : X marches · Y espèces · Z marcheurs     │
-│  CTA principal : Rejoindre la communauté                  │
-├───────────────────────────────────────────────────────────┤
-│  BARRE : Recherche globale + Filtres + Sélecteur de vue   │
-├───────────────────────────────────────────────────────────┤
-│  VUE ACTIVE (Carte | Timeline | Mur du Vivant |           │
-│              Constellation | Liste)                       │
-├───────────────────────────────────────────────────────────┤
-│  BLOC PARTAGE + CTA final "Créer mon compte marcheur"     │
-└───────────────────────────────────────────────────────────┘
-```
+### Cause n°1 — Filtre "à venir" par défaut (impact majeur)
 
-## 2. Filtres (barre unifiée, sticky)
+Dans `src/hooks/useCarteMdV.ts`, `DEFAULT_FILTERS.status = 'upcoming'`. Résultat : sur les 12 événements géolocalisés, **10 sont passés** (2025 → juillet 2026) et sont masqués. Seuls les 2 événements de septembre 2026 restent → **2 marqueurs sur la carte**.
 
-- **Recherche globale** — réutilise `useGlobalSearch` (espèces, marches, événements, marcheurs, textes)
-- **Type d'événement** — Agroécologique / Éco-poétique / Éco-tourisme (chips colorées existantes)
-- **Statut** — À venir / Passées / Toutes
-- **🌿 Richesse biodiversité** — slider 0 → 100+ espèces (basé sur `get_exploration_species_count`)
-- **📅 Période / Saison** — Prochaines · Ce mois · Printemps · Été · Automne · Hiver
-- **⚪ Zone blanche vs documentée** — toggle 3 états (Toutes / Pionnières / Documentées) exploitant les snapshots existants
-- **🎧 Immersion sensorielle** — filtre "audio disponible" et/ou "photos marcheurs"
-- **🤝 Partenaires Sol Vivant** — toggle **OFF par défaut**, avec un panneau explicatif au premier clic : *"Carte Sol Vivant recense 940+ acteurs français du Maraîchage Sol Vivant (MSV). Activez pour visualiser ensemble marches et partenaires du sol vivant."* + lien vers cartesolvivant.gogocarto.fr. Une fois activé, sous-filtres par catégorie GoGoCarto (Maraîchers, Céréaliers, Éleveurs, Arboriculteurs, etc.).
+### Cause n°2 — RPC exclut les événements sans coordonnées
 
-## 3. Vues (sélecteur segmenté)
+`get_marches_map_events()` contient `WHERE me.latitude IS NOT NULL AND me.longitude IS NOT NULL`. Les 5 événements sans GPS ne remontent jamais, donc :
 
-- **🗺️ Carte** (défaut) — RichMap réutilisé. Marqueurs MdV colorés par type d'événement, taille = richesse biodiv. Marqueurs Sol Vivant en icônes GoGoCarto natives. Clustering intelligent au dézoom. Popup riche avec photo hero + mini-stats + CTA inscription.
-- **📅 Timeline immersive** — Horizontal scroll des prochaines marches. Chaque carte = photo hero plein cadre + compte à rebours + lieu + type + CTA "Réserver". Autoplay doux, snap au scroll.
-- **🖼️ Mur du Vivant** — Masonry des plus belles photos marcheurs/observations, chaque tuile cliquable ouvre un drawer "espèce / marche source" + CTA rejoindre la marche.
-- **✨ Constellation d'espèces** — Canvas SVG animé : chaque marche = étoile pulsante dont le rayon = nb d'espèces, liens filiformes entre marches partageant des espèces. Clic → fiche marche.
-- **📋 Liste éditoriale** — Cards triées date/proximité, filtrables, sobre pour pragmatiques.
+- Le compteur "12 événement(s)" est plafonné à 12 alors que l'admin en voit 17
+- Impossible de les afficher dans Liste / Timeline / Mur / Constellation (vues non cartographiques)
 
-Toutes les vues partagent le **même state de filtres** (contexte React).
+### Cause n°3 — 5 événements sans GPS en base
 
-## 4. CTA contextuels
 
-- **CTA global (hero + footer sticky mobile)** : "Rejoindre la communauté des marcheurs" → `/mon-espace` (ou signup).
-- **CTA par fiche événement (dans popups, cards, timeline)** : détection **auto session Supabase** :
-  - Connecté : bouton vert *"S'inscrire à cette marche"* → flow inscription 1-clic existant.
-  - Non connecté : bouton *"Créer mon compte pour rejoindre"* + micro-texte *"Déjà marcheur ? Se connecter"*.
-- Badge discret *"3 places restantes"* / *"Complet"* selon `marche_participations` count vs `max_participants`.
+| #   | Titre                              | Lieu texte        | Géocodable ?  |
+| --- | ---------------------------------- | ----------------- | ------------- |
+| 1   | DEVIAT "Jardin Monde…"             | DEVIAT            | Oui           |
+| 2   | Les Arbres Gardiens                | Dordogne          | Oui (approx.) |
+| 3   | DEVIAT "Marcher sur un sol…" 5 km  | DEVIAT - Charente | Oui           |
+| 4   | DEVIAT "Marcher sur un sol…" 10 km | DEVIAT - Charente | Oui           |
+| 5   | TAMNIES en liberté                 | *(aucun lieu)*    | Non           |
 
-## 5. Partage riche
 
-- Bouton **Partager** flottant en haut à droite avec 3 actions :
-  1. **Copier lien** (avec query params reflétant les filtres actifs → deep-linkable)
-  2. **Web Share API** natif (mobile) + fallback boutons WhatsApp / Email / LinkedIn
-  3. **Télécharger l'affiche** → génère une image OG dynamique de la sélection courante
-- **OG image dynamique par événement** : edge function `generate-event-og-image` produisant une image 1200×630 (photo hero + titre + date + lieu + logo + "X espèces déjà observées"). Meta tags `og:*` gérés via `react-helmet-async` par fiche événement.
+## Plan de correction
 
-## 6. Architecture technique
+### 1. RPC : ne plus exclure les événements sans GPS
 
-### Backend (Supabase)
+Migration sur `get_marches_map_events()` : retirer la clause `WHERE latitude IS NOT NULL`. La carte filtrera côté client (`e.latitude != null`), tandis que Liste / Timeline / Mur / Constellation afficheront **tous** les événements.
 
-- **Table `carte_sol_vivant_points`** — cache local des points GoGoCarto (id externe, nom, catégorie, lat, lng, tags, adresse, url source, updated_at). RLS public read.
-- **Edge function `sync-carte-sol-vivant`** — fetch `https://cartesolvivant.gogocarto.fr/api/elements.json`, upsert dans la table, log dans `data_collection_logs`. **Cron pg_cron quotidien (03:00 UTC)**.
-- **RPC `get_marches_map_events`** — retourne les événements filtrés + agrégats biodiv (nb espèces via `get_exploration_species_count`), coords GPS, photo hero, participants count. Public.
-- **Edge function `generate-event-og-image`** — SVG/Satori → PNG, cache par event_id + updated_at.
+### 2. Filtres par défaut plus inclusifs
 
-### Frontend
+Dans `useCarteMdV.ts` :
 
-- `src/pages/CarteMarchesDuVivant.tsx` — page racine + Helmet SEO
-- `src/components/carte-mdv/` :
-  - `CarteMdVHero.tsx` (compteurs live)
-  - `CarteMdVFiltersBar.tsx` (sticky, mobile drawer)
-  - `CarteMdVViewSwitcher.tsx` (segmented control)
-  - `views/MapView.tsx` (RichMap + calques MdV + calque Sol Vivant conditionnel)
-  - `views/TimelineView.tsx`
-  - `views/MurDuVivantView.tsx`
-  - `views/ConstellationView.tsx` (SVG + framer-motion)
-  - `views/ListView.tsx`
-  - `EventCard.tsx` (CTA inscription session-aware, badge places)
-  - `SolVivantOptInPanel.tsx` (modal d'explication au premier toggle)
-  - `SharePanel.tsx` (Web Share API + copie lien deep-linkable)
-- `src/hooks/` :
-  - `useCarteMdVFilters.ts` (state + sync URL query params)
-  - `useCarteMdVEvents.ts` (React Query, RPC)
-  - `useCarteSolVivantPoints.ts` (React Query, table locale, enabled si toggle ON)
-- Ajout entrée nav dans le hub Marches du Vivant existant.
+- `DEFAULT_FILTERS.status`: `'upcoming'` → `'all'` (17 événements visibles d'entrée)
+- Ajouter dans `FiltersBar` un badge/indicateur discret "17 événements · 2 à venir · 15 passés"
 
-## 7. Détails UX & wahouh
+### 3. MapView : compteur + panneau "sans localisation"
 
-- Skeleton élégant pendant chargement (silhouette de carte + shimmer)
-- Animation d'entrée : marqueurs qui *poussent* à l'apparition (framer-motion `scale` + `easeOutBack`)
-- Deep-linking complet : chaque combinaison filtres + vue = URL partageable
-- Compteur *"12 marches à venir près de vous"* si géoloc autorisée
-- Micro-copy poétique fidèle à la charte (Papier Crème / Forêt Émeraude)
-- Responsive mobile-first : bottom sheet pour filtres, vue par défaut Timeline sur mobile (plus digeste que carte)
-- SEO : title/description/JSON-LD (Event schema par événement), sitemap-friendly
+- Compteur "X géolocalisés sur Y" reflète les événements *filtrés* (pas le total brut)
+- Petit encart sous la carte listant les événements sans coordonnées avec lien vers l'admin pour les compléter (visible admin uniquement)
 
-## 8. Livraison en 4 étapes
+### 4. Backfill géocodage (optionnel, à confirmer)
 
-1. **Backend** : migration `carte_sol_vivant_points` + RPC `get_marches_map_events` + edge `sync-carte-sol-vivant` + cron
-2. **Squelette page + Carte + Filtres + Recherche** (MVP fonctionnel)
-3. **3 vues additionnelles** (Timeline, Mur, Constellation, Liste)
-4. **OG image dynamique + partage riche + polish animations**
+Créer une edge function `geocode-marche-events` qui appelle Google Maps Geocoding via le connecteur pour les 4 événements ayant un `lieu` texte. À déclencher manuellement depuis l'admin (bouton "Géocoder les marches sans GPS"). Le 5ᵉ événement (TAMNIES sans lieu) reste à compléter manuellement.
 
-## Points techniques à noter
+## Détails techniques
 
-- L'API GoGoCarto `/api/elements.json` renvoie GeoJSON-like. À valider : pagination éventuelle et champ `categories` exact. La sync se fera en 1 fetch complet (~940 points, léger).
-- Aucun impact sur les URLs existantes ni sur la logique métier des inscriptions (réutilisation des flows).
-- La détection de session utilise déjà `useAuth()` — pas de nouvelle infra auth.
-- La constellation utilise SVG (pas Canvas WebGL) pour rester léger et accessible.
+- **Migration** : `CREATE OR REPLACE FUNCTION public.get_marches_map_events()` sans `WHERE lat/lon NOT NULL`.
+- **Frontend** : `MapView` filtre `events.filter(e => e.latitude && e.longitude)` ; les autres vues consomment `filtered` tel quel.
+- **Types** : `CarteMdVEvent.latitude/longitude` deviennent `number | null`.
+- **FiltersBar** : sélecteur "Statut" reste, seul le défaut change.
 
+## Question ouverte
+
+je compléte manuellement les 5 coordonnées dans l'admin
