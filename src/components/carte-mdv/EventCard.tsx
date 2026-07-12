@@ -147,8 +147,8 @@ const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
           </div>
         )}
         {!isUpcoming && (
-          <Button asChild size="sm" variant="outline" className="w-full">
-            <Link to={detailUrl}>Découvrir cette marche</Link>
+          <Button asChild size="sm" variant={isJardin ? 'default' : 'outline'} className="w-full">
+            <Link to={detailUrl}>{isJardin ? '✦ Immersion Jardin' : 'Découvrir cette marche'}</Link>
           </Button>
         )}
       </div>
