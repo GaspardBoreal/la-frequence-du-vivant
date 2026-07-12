@@ -413,6 +413,41 @@ const MarcheEventDetail: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Catégorie — obligatoire */}
+            <div className="md:col-span-2">
+              <Label>Catégorie *</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Nature de l'activité — utilisée pour la carte publique et le matching avec les partenaires Sol Vivant.
+              </p>
+              <div className="mt-3 grid gap-2 grid-cols-2 sm:grid-cols-4">
+                {MARCHE_CATEGORIES.map((cat) => {
+                  const meta = getMarcheCategoryMeta(cat);
+                  const Icon = meta.icon;
+                  const isSelected = form.category === cat;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, category: cat }))}
+                      className={cn(
+                        'group flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm',
+                        isSelected ? cn(meta.cardClassName, 'ring-2 ring-primary/30 shadow-sm') : 'border-border bg-card hover:border-primary/20'
+                      )}
+                    >
+                      <div className="flex w-full items-center justify-between">
+                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', meta.iconWrapClassName)}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        {isSelected && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                      </div>
+                      <p className="text-sm font-medium text-foreground">{meta.shortLabel}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div><Label>Lieu</Label><Input value={form.lieu} onChange={e => setForm(f => ({ ...f, lieu: e.target.value }))} /></div>
             <div><Label>Max participants</Label><Input type="number" value={form.max_participants} onChange={e => setForm(f => ({ ...f, max_participants: e.target.value }))} /></div>
             <div><Label>Latitude</Label><Input value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
