@@ -43,8 +43,8 @@ export interface CarteMdVEvent {
   date_marche: string;
   event_type: string | null;
   lieu: string | null;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   cover_image_url: string | null;
   max_participants: number | null;
   is_public: boolean | null;
