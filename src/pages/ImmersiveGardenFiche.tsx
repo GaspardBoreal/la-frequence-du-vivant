@@ -349,8 +349,52 @@ const ImmersiveGardenFiche: React.FC = () => {
             Marches du Vivant · Immersion stratifiée
           </div>
         </section>
+
+        {/* Flash coloré au changement de saison */}
+        <AnimatePresence>
+          {flash && (
+            <motion.div
+              key={flash.key}
+              onAnimationComplete={() => setFlash(null)}
+              initial={{ scale: 0, opacity: 0.9 }}
+              animate={{ scale: 40, opacity: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
+              className="fixed pointer-events-none z-[60] rounded-full mix-blend-screen"
+              style={{
+                left: flash.x - 40,
+                top: flash.y - 40,
+                width: 80,
+                height: 80,
+                background: `radial-gradient(circle, ${flash.color}, transparent 70%)`,
+              }}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </>
+  );
+};
+
+/** Titre révélé mot par mot avec léger blur → clarté. */
+const RevealText: React.FC<{ text: string }> = ({ text }) => {
+  const reduce = useReducedMotion();
+  if (reduce) return <>{text}</>;
+  const words = text.split(' ');
+  return (
+    <span className="inline-block">
+      {words.map((w, i) => (
+        <motion.span
+          key={i}
+          className="inline-block mr-[0.25em]"
+          initial={{ opacity: 0, y: 30, filter: 'blur(12px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.9, delay: 0.15 + i * 0.09, ease: [0.19, 1, 0.22, 1] }}
+        >
+          {w}
+        </motion.span>
+      ))}
+    </span>
   );
 };
 
