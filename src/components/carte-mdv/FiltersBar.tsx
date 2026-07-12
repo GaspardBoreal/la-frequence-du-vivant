@@ -36,6 +36,10 @@ const FiltersBar: React.FC<Props> = ({ filters, onChange, resultCount }) => {
     onChange({ types: filters.types.includes(t) ? filters.types.filter(x => x !== t) : [...filters.types, t] });
   };
 
+  const toggleCategory = (c: string) => {
+    onChange({ categories: filters.categories.includes(c) ? filters.categories.filter(x => x !== c) : [...filters.categories, c] });
+  };
+
   const handleSvToggle = (v: boolean) => {
     if (v && !filters.solVivantEnabled) {
       setSvDialogOpen(true);
@@ -46,6 +50,7 @@ const FiltersBar: React.FC<Props> = ({ filters, onChange, resultCount }) => {
 
   const activeCount = [
     filters.types.length > 0,
+    filters.categories.length > 0,
     filters.season !== DEFAULT_FILTERS.season,
     filters.minSpecies > 0,
     filters.zone !== DEFAULT_FILTERS.zone,
