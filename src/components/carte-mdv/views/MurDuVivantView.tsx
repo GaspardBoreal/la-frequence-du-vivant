@@ -86,12 +86,13 @@ const MurDuVivantView: React.FC<Props> = ({ events }) => {
       </p>
       <div className="columns-2 sm:columns-3 md:columns-4 gap-3 space-y-3">
         {photos.map((p) => {
-          const ev = findEventForMarche(p.marche_id);
+          const ev = findEventForPhoto(p);
           const to = ev ? (ev.is_public && ev.public_slug ? `/m/${ev.public_slug}` : `/admin/marche-events/${ev.id}`) : '#';
+          const src = p.url_fichier || p.external_url || '';
           return (
             <Link key={p.id} to={to}
               className="group relative block break-inside-avoid overflow-hidden rounded-lg border border-border">
-              <img src={p.url_supabase!} alt={p.description ?? ''} loading="lazy"
+              <img src={src} alt={p.description ?? ''} loading="lazy"
                 className="w-full object-cover transition-transform group-hover:scale-105" />
               {ev && (
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
