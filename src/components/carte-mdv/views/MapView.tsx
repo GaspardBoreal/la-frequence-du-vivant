@@ -200,6 +200,32 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
               </Marker>
             );
           })}
+
+          {/* Partenaires Sol Vivant — rendus en DERNIER pour rester au-dessus des marqueurs de marche
+              (Leaflet empile dans l'ordre d'ajout). Halo blanc + rayon 7 pour visibilité. */}
+          {showSolVivant && solVivantPoints.map((p) => (
+            <CircleMarker
+              key={`sv-${p.id}`}
+              center={[Number(p.latitude), Number(p.longitude)]}
+              radius={7}
+              pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#84cc16', fillOpacity: 0.95 }}
+            >
+              <Popup>
+                <div className="space-y-1 min-w-[180px]">
+                  <p className="font-semibold text-sm">{p.name}</p>
+                  {p.category && <Badge variant="outline" className="text-[10px]">{p.category}</Badge>}
+                  {p.street_address && <p className="text-xs text-muted-foreground">{p.street_address}</p>}
+                  {p.website && (
+                    <a href={p.website} target="_blank" rel="noopener noreferrer"
+                       className="text-xs text-primary hover:underline">Site web →</a>
+                  )}
+                  <p className="text-[10px] text-muted-foreground pt-1 border-t mt-1">
+                    Source : Carte Sol Vivant (ODbL)
+                  </p>
+                </div>
+              </Popup>
+            </CircleMarker>
+          ))}
         </MapContainer>
 
 
