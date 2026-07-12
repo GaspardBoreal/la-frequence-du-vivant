@@ -76,6 +76,10 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
   const [duplicateSource, setDuplicateSource] = useState<
     { id: string; title: string; date_marche: string } | null
   >(null);
+  const [deleteTarget, setDeleteTarget] = useState<
+    { id: string; title: string; date_marche: string } | null
+  >(null);
+  const deleteMutation = useDeleteMarcheEvent();
 
 
   return (
