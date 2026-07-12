@@ -7,9 +7,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink, Sparkles, MapPinOff } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink, Sparkles, MapPinOff, Trash2, Loader2 } from 'lucide-react';
 import DuplicateEventDialog from './DuplicateEventDialog';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -19,6 +30,7 @@ import PaginationControls from './PaginationControls';
 import {
   useMarcheEventsPaginated,
   useParticipationCountsForEvents,
+  useDeleteMarcheEvent,
   type EventsFilters,
 } from '@/hooks/useMarcheEventsQuery';
 import { useEventsPublicVisibility, buildPublicEventUrl } from '@/hooks/usePublicEvent';
@@ -64,6 +76,10 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
   const [duplicateSource, setDuplicateSource] = useState<
     { id: string; title: string; date_marche: string } | null
   >(null);
+  const [deleteTarget, setDeleteTarget] = useState<
+    { id: string; title: string; date_marche: string } | null
+  >(null);
+  const deleteMutation = useDeleteMarcheEvent();
 
 
   return (
@@ -192,6 +208,19 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                           <ExternalLink className="h-4 w-4 mr-2" />Voir la page publique
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                        onClick={() =>
+                          setDeleteTarget({
+                            id: event.id,
+                            title: event.title,
+                            date_marche: event.date_marche,
+                          })
+                        }
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />Supprimer
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -248,6 +277,53 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
         onOpenChange={(o) => !o && setDuplicateSource(null)}
         source={duplicateSource}
       />
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => {
+          if (!o && !deleteMutation.isPending) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet événement ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  «&nbsp;{deleteTarget.title}&nbsp;» —{' '}
+                  {format(new Date(deleteTarget.date_marche), 'PPP', { locale: fr })}.
+                  <br />
+                  Cette action est définitive et supprimera l'événement ainsi que ses
+                  participations, invités, témoignages et médias associés. Les marcheurs
+                  ne pourront plus y accéder.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>
+              Non, annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!deleteTarget) return;
+                deleteMutation.mutate(deleteTarget.id, {
+                  onSuccess: () => setDeleteTarget(null),
+                });
+              }}
+            >
+              {deleteMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Suppression…</>
+              ) : (
+                <>Oui, supprimer</>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

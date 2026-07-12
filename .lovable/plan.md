@@ -1,38 +1,46 @@
 ## Objectif
 
-Ajouter, à droite du bandeau « Visibilité publique » de l'onglet Liste de `/admin/marche-events`, un filtre « Coordonnées GPS » pour isoler rapidement les événements sans GPS (à géocoder / compléter).
+Permettre la suppression d'un événement depuis `/admin/marche-events` (onglet Liste) avec confirmation explicite Oui/Non.
 
-## UI proposée
+## UI
 
-Sur la même ligne que « Visibilité publique : Tous / Publics / Privés », ajouter un second groupe :
+Dans le menu `⋮` (DropdownMenu) de chaque carte événement (`EventsListTab.tsx`), ajouter en dernière position :
 
-```text
-📍 GPS :  [ Tous ] [ Avec GPS ] [ Sans GPS (n) ]
+- Séparateur
+- Item **« Supprimer »** en rouge (icône `Trash2`, `text-destructive`)
+
+Au clic, ouverture d'un `<AlertDialog>` (shadcn, déjà présent) :
+
+```
+Titre    : « Supprimer cet événement ? »
+Corps    : « "{titre}" — {date formatée}.
+            Cette action est définitive et supprimera l'événement
+            ainsi que ses participations, invités, témoignages et
+            médias associés. Les marcheurs ne pourront plus y accéder. »
+Boutons  : [ Non, annuler ]   [ Oui, supprimer ]  (destructive)
 ```
 
-- Séparateur visuel discret (`<span className="mx-2 h-4 w-px bg-border" />`) entre les deux groupes.
-- Le badge « Sans GPS » affiche le nombre d'événements sans coordonnées dans la page courante (badge compteur si > 0, sinon simple libellé).
-- Sur mobile, le second groupe passe à la ligne (déjà géré par `flex-wrap` existant).
-- Pastille rouge discrète sur les cartes d'événements sans GPS : `<span>⚠ GPS manquant</span>` à côté du lieu, pour repérer d'un coup d'œil.
+Pendant la suppression : bouton en état loading (spinner), boutons désactivés. Toast succès/erreur à la fin.
 
-## Comportement
+## Comportement / données
 
-- Nouvel état local `gpsFilter: 'all' | 'with' | 'without'` dans `EventsListTab.tsx`.
-- Le filtre s'applique côté client sur `allRows` (comme `publicFilter`), en combinant les deux :
-  - `with` → `r.latitude != null && r.longitude != null`
-  - `without` → `r.latitude == null || r.longitude == null`
-- Le compteur « Sans GPS (n) » se calcule via `useMemo` sur `allRows`.
-- Aucun changement backend, RPC, ou schéma.
+- Nouveau hook `useDeleteMarcheEvent()` (mutation React Query) dans `src/hooks/useMarcheEventsQuery.ts` :
+  - `await supabase.from('marche_events').delete().eq('id', id)`
+  - Sur succès : invalider `['marche-events-paginated']`, `['marche-events-dashboard-stats']`, `['marche-events-filtered-all']`, `['events-public-visibility']`, toast `"Événement supprimé"`.
+  - Sur erreur : toast destructive avec le message Postgres (utile si RLS bloque ou FK manquante).
+- Les tables enfants avec `ON DELETE CASCADE` sur `marche_events.id` disparaissent automatiquement. Pour celles sans cascade, la mutation renverra l'erreur PostgREST correspondante — le toast la remonte pour qu'on puisse ajuster ensuite (aucune migration dans ce lot, pour rester sur du frontend/presentation comme demandé).
 
-## Fichier modifié
+## Sécurité
 
-- `src/components/admin/marche-events/EventsListTab.tsx` uniquement :
-  - Ajouter l'état `gpsFilter`.
-  - Ajouter le second groupe de boutons dans le bandeau existant (ligne 59-74).
-  - Étendre le `useMemo` `rows` pour combiner `publicFilter` + `gpsFilter`.
-  - Ajouter la pastille « GPS manquant » dans la carte événement (près de `MapPin`).
+- La page est déjà protégée admin. La policy DELETE existante sur `marche_events` s'applique (rôle admin via `has_role`). Aucun changement RLS.
+
+## Fichiers touchés
+
+- `src/hooks/useMarcheEventsQuery.ts` — ajout du hook `useDeleteMarcheEvent`.
+- `src/components/admin/marche-events/EventsListTab.tsx` — item « Supprimer » + `AlertDialog` + état local `deleteTarget`.
 
 ## Hors scope
 
-- Pas de modification de la carte publique `/marches-du-vivant/carte-marches-du-vivant` (déjà traitée).
-- Pas de géocodage automatique (le user a choisi la saisie manuelle).
+- Suppression en masse.
+- Corbeille / soft-delete.
+- Migration SQL de cascades manquantes (à traiter si un toast d'erreur apparaît en pratique).

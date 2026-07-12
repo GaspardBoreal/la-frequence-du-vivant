@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 export type EventStatus = 'all' | 'upcoming' | 'past';
@@ -116,3 +117,27 @@ export const useParticipationCountsForEvents = (eventIds: string[]) =>
     enabled: eventIds.length > 0,
     staleTime: 30_000,
   });
+
+export const useDeleteMarcheEvent = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('marche_events').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      toast.success('Événement supprimé');
+      qc.invalidateQueries({ queryKey: ['marche-events-paginated'] });
+      qc.invalidateQueries({ queryKey: ['marche-events-filtered-all'] });
+      qc.invalidateQueries({ queryKey: ['marche-events-dashboard-stats'] });
+      qc.invalidateQueries({ queryKey: ['events-public-visibility'] });
+    },
+    onError: (err: any) => {
+      toast.error('Suppression impossible', {
+        description: err?.message ?? 'Erreur inconnue',
+      });
+    },
+  });
+};
+
