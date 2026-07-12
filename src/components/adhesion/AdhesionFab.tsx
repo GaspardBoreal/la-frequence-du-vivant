@@ -27,6 +27,7 @@ export const AdhesionFab: React.FC = () => {
     '/admin',
     '/crm',
     '/adhesion', // page dédiée déjà avec le formulaire
+    '/marches-du-vivant/carte-marches-du-vivant',
   ];
   if (hideOn.some((p) => location.pathname.startsWith(p))) return null;
 
