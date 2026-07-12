@@ -26,11 +26,15 @@ export interface StrataMetrics {
   fungi: number;
   others: number;
   total: number;
-  // qualitative derivations
-  mycorhization: number;   // 0-100 %
-  pollinators: number;     // 0-100 %
-  microfauna: number;      // 0-100 %
+  mycorhization: number;
+  pollinators: number;
+  microfauna: number;
   carbon: 'Faible' | 'Moyen' | 'Élevé';
+}
+
+export interface HeroPhoto {
+  id: string;
+  url: string;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -76,9 +80,8 @@ function useStrataMetrics(eventId: string | undefined) {
         return acc;
       }, { birds: 0, plants: 0, fungi: 0, others: 0, total: 0 });
 
-      const trees = Math.round(agg.plants * 0.35);           // proxy strate arborée
-      const insects = Math.round(agg.others * 0.6);          // majoritairement insectes dans "others"
-      const pollinators = Math.min(100, Math.round((insects / Math.max(15, insects)) * 100 * (insects > 0 ? 1 : 0)));
+      const trees = Math.round(agg.plants * 0.35);
+      const insects = Math.round(agg.others * 0.6);
       const mycorhization = Math.min(100, agg.fungi * 12);
       const microfauna = Math.min(100, agg.others * 6);
       const carbon: StrataMetrics['carbon'] =
@@ -101,19 +104,87 @@ function useStrataMetrics(eventId: string | undefined) {
   });
 }
 
+/**
+ * Aggregate photos from the "Voir" tab of every step of the event:
+ *  - marche_photos (official curated per step)
+ *  - marcheur_medias (walker contributions, type_media = 'photo')
+ */
+function useGardenStepPhotos(eventId: string | undefined, explorationId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['garden-step-photos', eventId, explorationId],
+    enabled: !!eventId,
+    queryFn: async (): Promise<HeroPhoto[]> => {
+      const result: HeroPhoto[] = [];
+
+      // 1) Resolve step ids (marches) via exploration_marches when we have an exploration_id.
+      let marcheIds: string[] = [];
+      if (explorationId) {
+        const { data: em } = await (supabase as any)
+          .from('exploration_marches')
+          .select('marche_id')
+          .eq('exploration_id', explorationId);
+        marcheIds = (em || []).map((r: any) => r.marche_id).filter(Boolean);
+      }
+
+      // 2) marche_photos (official) for those steps
+      if (marcheIds.length > 0) {
+        const { data: mp } = await (supabase as any)
+          .from('marche_photos')
+          .select('id, url_supabase')
+          .in('marche_id', marcheIds)
+          .order('ordre', { ascending: true });
+        (mp || []).forEach((p: any) => {
+          if (p.url_supabase) result.push({ id: `mp-${p.id}`, url: p.url_supabase });
+        });
+      }
+
+      // 3) marcheur_medias (walker photos) scoped to the event
+      const { data: mm } = await (supabase as any)
+        .from('marcheur_medias')
+        .select('id, url_fichier, type_media')
+        .eq('marche_event_id', eventId!)
+        .eq('type_media', 'photo')
+        .order('created_at', { ascending: false })
+        .limit(120);
+      (mm || []).forEach((m: any) => {
+        if (m.url_fichier) result.push({ id: `mm-${m.id}`, url: m.url_fichier });
+      });
+
+      return result;
+    },
+  });
+}
+
 export function useGardenFiche(slug: string | undefined) {
   const eventQ = useGardenEvent(slug);
   const event = eventQ.data;
   const photosQ = useConvivialitePhotos(event?.exploration_id ?? undefined);
+  const stepPhotosQ = useGardenStepPhotos(event?.id, event?.exploration_id);
   const metricsQ = useStrataMetrics(event?.id);
 
-  const heroPhotos: ConvivialitePhoto[] = (photosQ.data ?? []).filter((p) => !p.is_hidden);
+  const convivialite: ConvivialitePhoto[] = (photosQ.data ?? []).filter((p) => !p.is_hidden);
+
+  // Merge & dedupe by URL, then shuffle-ready ordered list (Convivialité first for warmth).
+  const seen = new Set<string>();
+  const heroPhotos: HeroPhoto[] = [];
+  convivialite.forEach((p) => {
+    if (p.photo_url && !seen.has(p.photo_url)) {
+      seen.add(p.photo_url);
+      heroPhotos.push({ id: `conv-${p.id}`, url: p.photo_url });
+    }
+  });
+  (stepPhotosQ.data ?? []).forEach((p) => {
+    if (p.url && !seen.has(p.url)) {
+      seen.add(p.url);
+      heroPhotos.push(p);
+    }
+  });
 
   return {
     event,
     heroPhotos,
     metrics: metricsQ.data,
-    isLoading: eventQ.isLoading || photosQ.isLoading || metricsQ.isLoading,
+    isLoading: eventQ.isLoading || photosQ.isLoading || stepPhotosQ.isLoading || metricsQ.isLoading,
     notFound: !eventQ.isLoading && !event,
   };
 }
