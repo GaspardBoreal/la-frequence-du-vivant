@@ -36,6 +36,15 @@ const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const invalidateEventsLists = () => {
+    queryClient.invalidateQueries({ queryKey: ['marche-events-paginated'] });
+    queryClient.invalidateQueries({ queryKey: ['marche-events-all'] });
+    queryClient.invalidateQueries({ queryKey: ['marche-events-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['marche-events-dashboard-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['marches-map-events'] });
+    queryClient.invalidateQueries({ queryKey: ['events-public-visibility'] });
+    if (id) queryClient.invalidateQueries({ queryKey: ['marche-event', id] });
+  };
   const isNew = id === 'nouveau';
 
   const [form, setForm] = useState({
@@ -534,9 +543,10 @@ const MarcheEventDetail: React.FC = () => {
           </div>
 
           <div className="flex gap-3 mt-6">
+            {(() => null)()}
             {isNew ? (
               <Button onClick={() => createEvent.mutate(undefined, {
-                onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement créé avec succès'); navigate('/admin/marche-events'); },
+                onSuccess: () => { invalidateEventsLists(); toast.success('Événement créé avec succès'); navigate('/admin/marche-events'); },
                 onError: () => toast.error('Erreur lors de la création'),
               })} disabled={!form.title || !form.date_marche || !form.category || createEvent.isPending}>
                 <Plus className="h-4 w-4 mr-2" />Créer l'événement
@@ -544,7 +554,7 @@ const MarcheEventDetail: React.FC = () => {
             ) : (
               <>
                 <Button onClick={() => updateEvent.mutate(undefined, {
-                  onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); queryClient.invalidateQueries({ queryKey: ['marche-event', id] }); toast.success('Événement mis à jour'); },
+                  onSuccess: () => { invalidateEventsLists(); toast.success('Événement mis à jour'); },
                   onError: () => toast.error('Erreur lors de la mise à jour'),
                 })} disabled={!form.title || !form.date_marche || !form.category || updateEvent.isPending}>
                   <Save className="h-4 w-4 mr-2" />Enregistrer
@@ -552,7 +562,7 @@ const MarcheEventDetail: React.FC = () => {
                 <Button
                   variant="destructive"
                   onClick={() => { if (confirm('Supprimer cet événement ?')) deleteEvent.mutate(undefined, {
-                    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement supprimé'); navigate('/admin/marche-events'); },
+                    onSuccess: () => { invalidateEventsLists(); toast.success('Événement supprimé'); navigate('/admin/marche-events'); },
                   }); }}
                   disabled={deleteEvent.isPending}
                 >

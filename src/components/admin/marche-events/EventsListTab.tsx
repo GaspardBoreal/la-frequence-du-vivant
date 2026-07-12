@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { htmlToPlainText } from '@/lib/htmlToPlainText';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -259,7 +260,7 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                   </span>
                 </div>
                 {event.description && (
-                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{event.description}</p>
+                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{htmlToPlainText(event.description)}</p>
                 )}
               </Card>
             );
