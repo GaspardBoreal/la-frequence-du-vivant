@@ -313,16 +313,44 @@ export async function exportEventsToWord(
           heading: HeadingLevel.HEADING_2,
           spacing: { before: 400, after: 200 },
           children: [
-            new TextRun({ text: `Biodiversité — ${bio.totalSpecies} espèces`, size: 24, bold: true, color }),
+            new TextRun({ text: `Biodiversité — ${bio.totalSpecies} espèces uniques`, size: 24, bold: true, color }),
           ],
         }),
         new Paragraph({
-          spacing: { after: 200 },
+          spacing: { after: 120 },
           children: [
             new TextRun({ text: `Faune : ${bio.speciesByKingdom.birds}`, size: 20 }),
             new TextRun({ text: `  ·  Flore : ${bio.speciesByKingdom.plants}`, size: 20 }),
             new TextRun({ text: `  ·  Champignons : ${bio.speciesByKingdom.fungi}`, size: 20 }),
             new TextRun({ text: `  ·  Autres : ${bio.speciesByKingdom.others}`, size: 20 }),
+          ],
+        }),
+      );
+
+      if (bio.bySource) {
+        sections.push(
+          new Paragraph({
+            spacing: { after: 120 },
+            children: [
+              new TextRun({ text: 'Sources : ', bold: true, size: 18, color: '6b7280' }),
+              new TextRun({ text: `${bio.bySource.snapshots_only} iNaturalist uniquement`, size: 18, color: '6b7280' }),
+              new TextRun({ text: `  ·  ${bio.bySource.marcheur_only} marcheurs uniquement`, size: 18, color: '6b7280' }),
+              new TextRun({ text: `  ·  ${bio.bySource.both} confirmées par les deux`, size: 18, color: '6b7280' }),
+            ],
+          }),
+        );
+      }
+
+      sections.push(
+        new Paragraph({
+          spacing: { after: 200 },
+          children: [
+            new TextRun({
+              text: 'Méthodologie : comptage dédupliqué par nom scientifique normalisé (unaccent + lower), filtré par le rayon de chaque marche. Aligné avec la Carte, le Carnet et la Synthèse. Les rayons chevauchants entre marches proches ne créent pas de doublon.',
+              size: 16,
+              italics: true,
+              color: '9ca3af',
+            }),
           ],
         }),
       );
@@ -335,7 +363,7 @@ export async function exportEventsToWord(
           }),
         );
 
-        bio.topSpecies.slice(0, 10).forEach((sp, i) => {
+        bio.topSpecies.slice(0, 15).forEach((sp, i) => {
           sections.push(
             new Paragraph({
               spacing: { after: 40 },
