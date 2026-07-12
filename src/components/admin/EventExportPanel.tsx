@@ -45,7 +45,7 @@ const EventExportPanel: React.FC = () => {
   const [includeRawBiodiversity, setIncludeRawBiodiversity] = useState(false);
 
   // Export format
-  const [exportFormat, setExportFormat] = useState<'word' | 'csv'>('word');
+  const [exportFormat, setExportFormat] = useState<'word' | 'xlsx' | 'csv'>('xlsx');
 
   useEffect(() => {
     loadEvents();
