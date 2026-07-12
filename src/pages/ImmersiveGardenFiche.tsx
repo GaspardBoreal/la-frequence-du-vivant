@@ -337,28 +337,26 @@ const ImmersiveGardenFiche: React.FC = () => {
   );
 };
 
-const StratIndicator: React.FC = () => {
+const IndicatorDot: React.FC<{ label: string; start: number }> = ({ label, start }) => {
   const { scrollYProgress } = useScroll();
-  const labels = ['Canopée', 'Arbustive', 'Rhizosphère', 'Saisons'];
+  const end = start + 0.25;
+  const opacity = useTransform(scrollYProgress, [start, end - 0.01, end], [0.35, 1, 0.35]);
+  const scale = useTransform(scrollYProgress, [start, (start + end) / 2, end], [1, 1.6, 1]);
   return (
-    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col gap-4">
-      {labels.map((label, i) => {
-        const start = i * 0.25;
-        const end = start + 0.25;
-        const opacity = useTransform(scrollYProgress, [start, end - 0.01, end], [0.35, 1, 0.35]);
-        const scale = useTransform(scrollYProgress, [start, (start + end) / 2, end], [1, 1.6, 1]);
-        return (
-          <motion.div key={label} className="flex items-center gap-3 justify-end">
-            <span className="text-[10px] tracking-[0.25em] uppercase text-[#f4ecd4]/70 font-serif italic">{label}</span>
-            <motion.span
-              className="block w-1.5 h-1.5 rounded-full bg-[#c9a24a]"
-              style={{ opacity, scale }}
-            />
-          </motion.div>
-        );
-      })}
-    </div>
+    <motion.div className="flex items-center gap-3 justify-end">
+      <span className="text-[10px] tracking-[0.25em] uppercase text-[#f4ecd4]/70 font-serif italic">{label}</span>
+      <motion.span className="block w-1.5 h-1.5 rounded-full bg-[#c9a24a]" style={{ opacity, scale }} />
+    </motion.div>
   );
 };
+
+const StratIndicator: React.FC = () => (
+  <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col gap-4">
+    <IndicatorDot label="Canopée" start={0} />
+    <IndicatorDot label="Arbustive" start={0.25} />
+    <IndicatorDot label="Rhizosphère" start={0.5} />
+    <IndicatorDot label="Saisons" start={0.75} />
+  </div>
+);
 
 export default ImmersiveGardenFiche;
