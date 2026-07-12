@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink, Sparkles } from 'lucide-react';
+import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink, Sparkles, MapPinOff } from 'lucide-react';
 import DuplicateEventDialog from './DuplicateEventDialog';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
