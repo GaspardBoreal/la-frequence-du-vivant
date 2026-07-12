@@ -29,6 +29,17 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   eco_tourisme: 'Éco tourisme',
 };
 
+export interface EventExportSpecies {
+  name: string;              // commonName || scientificName
+  scientificName: string;
+  count: number;             // observations dédupliquées géographiquement
+  kingdom: string;
+  rank?: string;
+  sources?: string[];        // ['snapshot','marcheur']
+  firstSeen?: string | null;
+  lastSeen?: string | null;
+}
+
 export interface EventExportData {
   id: string;
   title: string;
@@ -56,8 +67,14 @@ export interface EventExportData {
   biodiversity: {
     totalSpecies: number;
     speciesByKingdom: { birds: number; plants: number; fungi: number; others: number };
-    topSpecies: Array<{ name: string; scientificName: string; count: number; kingdom: string }>;
-    allSpecies?: Array<{ name: string; scientificName: string; count: number; kingdom: string }>;
+    bySource?: { snapshots_only: number; marcheur_only: number; both: number };
+    topSpecies: EventExportSpecies[];
+    allSpecies?: EventExportSpecies[];
+    /**
+     * Observations brutes par marche (export CSV « données brutes »).
+     * Contient volontairement des doublons entre marches à rayons chevauchants —
+     * NE PAS utiliser pour compter les espèces uniques.
+     */
     rawSpeciesPerMarche?: Array<{ name: string; scientificName: string; count: number; kingdom: string; marcheName: string; latitude: number | null; longitude: number | null }>;
   } | null;
 }
