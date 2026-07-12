@@ -1,13 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, Navigate, Link } from 'react-router-dom';
-import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { Search, Sprout, Bug, Feather, Trees, Worm, Leaf, ArrowRight, ArrowLeft, Sparkles, Sun } from 'lucide-react';
 import { useGardenFiche } from '@/hooks/useGardenFiche';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
 import SeasonOverlay, { type Season } from '@/components/immersive-garden/SeasonOverlay';
 import StratPanel from '@/components/immersive-garden/StratPanel';
+import CursorAurora from '@/components/immersive-garden/CursorAurora';
+import OrganicDivider from '@/components/immersive-garden/OrganicDivider';
 
 const SEASONS: { key: Season; label: string; emoji: string }[] = [
   { key: 'printemps', label: 'Printemps', emoji: '🌸' },
