@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { CarteMdVEvent, SolVivantPoint } from '@/hooks/useCarteMdV';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { useAuth } from '@/hooks/useAuth';
+import SolVivantPointSheet from '@/components/carte-mdv/SolVivantPointSheet';
 
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
