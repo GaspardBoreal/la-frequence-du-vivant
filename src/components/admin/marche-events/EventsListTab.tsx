@@ -138,6 +138,7 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
             const past = isPast(new Date(event.date_marche));
             const count = counts?.[event.id] || 0;
             const typeMeta = getMarcheEventTypeMeta(event.event_type);
+            const catMeta = getMarcheCategoryMeta((event as any).category);
             return (
               <Card
                 key={event.id}
