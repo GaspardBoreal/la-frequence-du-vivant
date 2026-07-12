@@ -1,46 +1,70 @@
 ## Objectif
 
-Permettre la suppression d'un événement depuis `/admin/marche-events` (onglet Liste) avec confirmation explicite Oui/Non.
+Fusionner les KPI de `/admin/marche-events` dans le hero de `/marches-du-vivant/carte-marches-du-vivant`, avec un design premium et un affichage progressif animé.
 
-## UI
+## KPI cibles (2 rangées de 3)
 
-Dans le menu `⋮` (DropdownMenu) de chaque carte événement (`EventsListTab.tsx`), ajouter en dernière position :
+**Rangée 1 — Le terrain**
+- 17 Marches (marche_events géolocalisés)
+- 87 Points d'observations (marches associées, distinctes)
+- 617 km parcourus (somme distances)
 
-- Séparateur
-- Item **« Supprimer »** en rouge (icône `Trash2`, `text-destructive`)
+**Rangée 2 — Le vivant**
+- 56 Marcheurs actifs (community_profiles)
+- 124 Participations (participations validées)
+- 11 422 Espèces recensées (recalculé, voir plus bas)
 
-Au clic, ouverture d'un `<AlertDialog>` (shadcn, déjà présent) :
+Le compteur `753 Partenaires Sol Vivant` disparaît du hero (la couche Sol Vivant reste activable dans les filtres).
 
-```
-Titre    : « Supprimer cet événement ? »
-Corps    : « "{titre}" — {date formatée}.
-            Cette action est définitive et supprimera l'événement
-            ainsi que ses participations, invités, témoignages et
-            médias associés. Les marcheurs ne pourront plus y accéder. »
-Boutons  : [ Non, annuler ]   [ Oui, supprimer ]  (destructive)
-```
+## Correction du compteur Espèces
 
-Pendant la suppression : bouton en état loading (spinner), boutons désactivés. Toast succès/erreur à la fin.
+Actuellement `get_carte_mdv_hero_stats` fait `SUM(MAX(total_species) per marche_id)` sur `biodiversity_snapshots`. Le résultat peut inclure des doublons entre snapshots multiples d'une même marche et n'est pas aligné avec le compteur par événement affiché ailleurs.
 
-## Comportement / données
+Nouvelle logique : réutiliser la source qui alimente déjà chaque carte événement — la RPC `get_marches_map_events` renvoie `species_count` par événement (dédoublonné par scientificName au sein de l'événement). Le total = `SUM(species_count)` sur tous les événements retournés. Ainsi le hero est **strictement égal à la somme visible sur les cartes événements**, sans doublon intra-événement.
 
-- Nouveau hook `useDeleteMarcheEvent()` (mutation React Query) dans `src/hooks/useMarcheEventsQuery.ts` :
-  - `await supabase.from('marche_events').delete().eq('id', id)`
-  - Sur succès : invalider `['marche-events-paginated']`, `['marche-events-dashboard-stats']`, `['marche-events-filtered-all']`, `['events-public-visibility']`, toast `"Événement supprimé"`.
-  - Sur erreur : toast destructive avec le message Postgres (utile si RLS bloque ou FK manquante).
-- Les tables enfants avec `ON DELETE CASCADE` sur `marche_events.id` disparaissent automatiquement. Pour celles sans cascade, la mutation renverra l'erreur PostgREST correspondante — le toast la remonte pour qu'on puisse ajuster ensuite (aucune migration dans ce lot, pour rester sur du frontend/presentation comme demandé).
+## Migration Supabase
 
-## Sécurité
+Recréer `get_carte_mdv_hero_stats()` retournant 6 champs :
+`events_count`, `marches_count`, `total_km`, `marcheurs_count`, `participations_count`, `species_count`, `computed_at`.
 
-- La page est déjà protégée admin. La policy DELETE existante sur `marche_events` s'applique (rôle admin via `has_role`). Aucun changement RLS.
+- `events_count` : `COUNT(*) FROM marche_events WHERE latitude IS NOT NULL`
+- `marches_count` : `COUNT(DISTINCT marche_id) FROM exploration_waypoints` liés aux marche_events (même logique que le KPI admin)
+- `total_km` : même calcul que `get_marche_events_dashboard_stats.total_km`
+- `marcheurs_count` : `COUNT(*) FROM community_profiles`
+- `participations_count` : `COUNT(*) FROM marche_participations WHERE validated_at IS NOT NULL`
+- `species_count` : `SELECT SUM(species_count) FROM public.get_marches_map_events()`
+
+SECURITY DEFINER, GRANT EXECUTE TO anon, authenticated.
+
+## Frontend
+
+### `src/hooks/useCarteMdV.ts`
+- Étendre `HeroStats` avec les nouveaux champs, retirer `partners_count`.
+- `useCarteMdVHeroStats` conserve staleTime 5 min.
+
+### `src/components/carte-mdv/CarteMdVHero.tsx` — redesign wow
+
+Layout : bloc hero conservé (titre + accroche + CTA), puis **grille 2×3** de KPI-cards en dessous.
+
+Chaque card :
+- Fond `bg-card/40 backdrop-blur-xl` + bordure `border-primary/10` + halo radial `bg-[radial-gradient(...)]` en hover.
+- Icône Lucide dans une pastille circulaire teintée (Footprints, MapPin, Route, Users, CheckCircle2, Sparkles) — teintes cohérentes avec le thème Forêt Émeraude / Papier Crème.
+- Valeur numérique en `text-3xl sm:text-4xl font-serif tabular-nums`, avec **count-up animé** (0 → valeur finale sur 1,2 s, easing `easeOutCubic`, via `requestAnimationFrame`, formatage `Intl.NumberFormat('fr-FR')`).
+- Label court + sous-label discret (ex: « Points d'observations » / « marches associées »).
+- Animation d'entrée : `opacity 0 → 1` + `translateY 8px → 0`, **stagger 80 ms par card** via délai CSS, déclenchement dès que la data est chargée (skeleton pulse tant que `isLoading`).
+- Séparation visuelle discrète entre les 2 rangées : label chapô « Le terrain » / « Le vivant » en `text-xs uppercase tracking-widest text-muted-foreground`.
+
+Skeleton : chaque card affiche un `<div className="h-8 w-16 bg-muted/40 rounded animate-pulse" />` à la place de la valeur tant que `isLoading`, pour que le hero apparaisse instantanément sans layout shift, puis les chiffres s'animent au chargement.
+
+### Aucun autre écran modifié
+`ScienceCounters`, `ProofBar`, `AgentIA` restent branchés sur `usePublicGlobalStats` (source séparée, cf. mémoire dédiée).
 
 ## Fichiers touchés
 
-- `src/hooks/useMarcheEventsQuery.ts` — ajout du hook `useDeleteMarcheEvent`.
-- `src/components/admin/marche-events/EventsListTab.tsx` — item « Supprimer » + `AlertDialog` + état local `deleteTarget`.
+- Migration SQL : redéfinition `get_carte_mdv_hero_stats`
+- `src/hooks/useCarteMdV.ts` — type `HeroStats`
+- `src/components/carte-mdv/CarteMdVHero.tsx` — nouveau design + count-up
 
 ## Hors scope
 
-- Suppression en masse.
-- Corbeille / soft-delete.
-- Migration SQL de cascades manquantes (à traiter si un toast d'erreur apparaît en pratique).
+Modification de `usePublicGlobalStats`, du bandeau admin `EventsKpiBanner`, ou de la couche Sol Vivant.
