@@ -494,7 +494,7 @@ const EventExportPanel: React.FC = () => {
                 </div>
                 <Button onClick={handleExport} disabled={exporting} className="gap-2">
                   {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  Exporter en {exportFormat === 'word' ? '.docx' : '.csv'}
+                  Exporter en {exportFormat === 'word' ? '.docx' : exportFormat === 'xlsx' ? '.xlsx' : '.csv'}
                 </Button>
               </div>
             ) : (
