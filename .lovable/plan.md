@@ -1,70 +1,38 @@
-## Diagnostic
+## Objectif
 
-Requête directe en base :
+Ajouter, à droite du bandeau « Visibilité publique » de l'onglet Liste de `/admin/marche-events`, un filtre « Coordonnées GPS » pour isoler rapidement les événements sans GPS (à géocoder / compléter).
 
+## UI proposée
 
-| Métrique                     | Valeur |
-| ---------------------------- | ------ |
-| Total marche_events          | **17** |
-| Avec coordonnées lat/lon     | **12** |
-| À venir (date ≥ aujourd'hui) | **2**  |
-| Géolocalisés ET à venir      | **2**  |
+Sur la même ligne que « Visibilité publique : Tous / Publics / Privés », ajouter un second groupe :
 
+```text
+📍 GPS :  [ Tous ] [ Avec GPS ] [ Sans GPS (n) ]
+```
 
-Deux causes se combinent :
+- Séparateur visuel discret (`<span className="mx-2 h-4 w-px bg-border" />`) entre les deux groupes.
+- Le badge « Sans GPS » affiche le nombre d'événements sans coordonnées dans la page courante (badge compteur si > 0, sinon simple libellé).
+- Sur mobile, le second groupe passe à la ligne (déjà géré par `flex-wrap` existant).
+- Pastille rouge discrète sur les cartes d'événements sans GPS : `<span>⚠ GPS manquant</span>` à côté du lieu, pour repérer d'un coup d'œil.
 
-### Cause n°1 — Filtre "à venir" par défaut (impact majeur)
+## Comportement
 
-Dans `src/hooks/useCarteMdV.ts`, `DEFAULT_FILTERS.status = 'upcoming'`. Résultat : sur les 12 événements géolocalisés, **10 sont passés** (2025 → juillet 2026) et sont masqués. Seuls les 2 événements de septembre 2026 restent → **2 marqueurs sur la carte**.
+- Nouvel état local `gpsFilter: 'all' | 'with' | 'without'` dans `EventsListTab.tsx`.
+- Le filtre s'applique côté client sur `allRows` (comme `publicFilter`), en combinant les deux :
+  - `with` → `r.latitude != null && r.longitude != null`
+  - `without` → `r.latitude == null || r.longitude == null`
+- Le compteur « Sans GPS (n) » se calcule via `useMemo` sur `allRows`.
+- Aucun changement backend, RPC, ou schéma.
 
-### Cause n°2 — RPC exclut les événements sans coordonnées
+## Fichier modifié
 
-`get_marches_map_events()` contient `WHERE me.latitude IS NOT NULL AND me.longitude IS NOT NULL`. Les 5 événements sans GPS ne remontent jamais, donc :
+- `src/components/admin/marche-events/EventsListTab.tsx` uniquement :
+  - Ajouter l'état `gpsFilter`.
+  - Ajouter le second groupe de boutons dans le bandeau existant (ligne 59-74).
+  - Étendre le `useMemo` `rows` pour combiner `publicFilter` + `gpsFilter`.
+  - Ajouter la pastille « GPS manquant » dans la carte événement (près de `MapPin`).
 
-- Le compteur "12 événement(s)" est plafonné à 12 alors que l'admin en voit 17
-- Impossible de les afficher dans Liste / Timeline / Mur / Constellation (vues non cartographiques)
+## Hors scope
 
-### Cause n°3 — 5 événements sans GPS en base
-
-
-| #   | Titre                              | Lieu texte        | Géocodable ?  |
-| --- | ---------------------------------- | ----------------- | ------------- |
-| 1   | DEVIAT "Jardin Monde…"             | DEVIAT            | Oui           |
-| 2   | Les Arbres Gardiens                | Dordogne          | Oui (approx.) |
-| 3   | DEVIAT "Marcher sur un sol…" 5 km  | DEVIAT - Charente | Oui           |
-| 4   | DEVIAT "Marcher sur un sol…" 10 km | DEVIAT - Charente | Oui           |
-| 5   | TAMNIES en liberté                 | *(aucun lieu)*    | Non           |
-
-
-## Plan de correction
-
-### 1. RPC : ne plus exclure les événements sans GPS
-
-Migration sur `get_marches_map_events()` : retirer la clause `WHERE latitude IS NOT NULL`. La carte filtrera côté client (`e.latitude != null`), tandis que Liste / Timeline / Mur / Constellation afficheront **tous** les événements.
-
-### 2. Filtres par défaut plus inclusifs
-
-Dans `useCarteMdV.ts` :
-
-- `DEFAULT_FILTERS.status`: `'upcoming'` → `'all'` (17 événements visibles d'entrée)
-- Ajouter dans `FiltersBar` un badge/indicateur discret "17 événements · 2 à venir · 15 passés"
-
-### 3. MapView : compteur + panneau "sans localisation"
-
-- Compteur "X géolocalisés sur Y" reflète les événements *filtrés* (pas le total brut)
-- Petit encart sous la carte listant les événements sans coordonnées avec lien vers l'admin pour les compléter (visible admin uniquement)
-
-### 4. Backfill géocodage (optionnel, à confirmer)
-
-Créer une edge function `geocode-marche-events` qui appelle Google Maps Geocoding via le connecteur pour les 4 événements ayant un `lieu` texte. À déclencher manuellement depuis l'admin (bouton "Géocoder les marches sans GPS"). Le 5ᵉ événement (TAMNIES sans lieu) reste à compléter manuellement.
-
-## Détails techniques
-
-- **Migration** : `CREATE OR REPLACE FUNCTION public.get_marches_map_events()` sans `WHERE lat/lon NOT NULL`.
-- **Frontend** : `MapView` filtre `events.filter(e => e.latitude && e.longitude)` ; les autres vues consomment `filtered` tel quel.
-- **Types** : `CarteMdVEvent.latitude/longitude` deviennent `number | null`.
-- **FiltersBar** : sélecteur "Statut" reste, seul le défaut change.
-
-## Question ouverte
-
-je compléte manuellement les 5 coordonnées dans l'admin
+- Pas de modification de la carte publique `/marches-du-vivant/carte-marches-du-vivant` (déjà traitée).
+- Pas de géocodage automatique (le user a choisi la saisie manuelle).

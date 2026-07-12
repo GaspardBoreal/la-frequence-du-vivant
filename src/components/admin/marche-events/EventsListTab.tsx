@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink, Sparkles } from 'lucide-react';
+import { CalendarDays, MapPin, Compass, Users, MoreVertical, Eye, Pencil, Copy, Globe2, ExternalLink, Sparkles, MapPinOff } from 'lucide-react';
 import DuplicateEventDialog from './DuplicateEventDialog';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -24,6 +24,7 @@ import {
 import { useEventsPublicVisibility, buildPublicEventUrl } from '@/hooks/usePublicEvent';
 
 type PublicFilter = 'all' | 'public' | 'private';
+type GpsFilter = 'all' | 'with' | 'without';
 
 interface Props {
   filters: EventsFilters;
@@ -33,6 +34,9 @@ interface Props {
   onPageSizeChange: (s: number) => void;
 }
 
+const hasGps = (r: { latitude: number | null; longitude: number | null }) =>
+  r.latitude != null && r.longitude != null;
+
 const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange, onPageSizeChange }) => {
   const navigate = useNavigate();
   const { data, isLoading, isFetching } = useMarcheEventsPaginated({ ...filters, page, pageSize });
@@ -41,13 +45,22 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
   const { data: counts } = useParticipationCountsForEvents(allRows.map((r) => r.id));
   const { data: visibility } = useEventsPublicVisibility(allRows.map((r) => r.id));
   const [publicFilter, setPublicFilter] = useState<PublicFilter>('all');
+  const [gpsFilter, setGpsFilter] = useState<GpsFilter>('all');
+  const missingGpsCount = useMemo(
+    () => allRows.filter((r) => !hasGps(r)).length,
+    [allRows]
+  );
   const rows = useMemo(() => {
-    if (publicFilter === 'all') return allRows;
     return allRows.filter((r) => {
-      const isPub = !!visibility?.[r.id]?.is_public;
-      return publicFilter === 'public' ? isPub : !isPub;
+      if (publicFilter !== 'all') {
+        const isPub = !!visibility?.[r.id]?.is_public;
+        if (publicFilter === 'public' ? !isPub : isPub) return false;
+      }
+      if (gpsFilter === 'with' && !hasGps(r)) return false;
+      if (gpsFilter === 'without' && hasGps(r)) return false;
+      return true;
     });
-  }, [allRows, publicFilter, visibility]);
+  }, [allRows, publicFilter, gpsFilter, visibility]);
   const [duplicateSource, setDuplicateSource] = useState<
     { id: string; title: string; date_marche: string } | null
   >(null);
@@ -55,7 +68,7 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
 
   return (
     <div>
-      {/* Filtre visibilité publique */}
+      {/* Filtres visibilité + GPS */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
           <Globe2 className="h-3.5 w-3.5" /> Visibilité publique :
@@ -71,7 +84,30 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
             {v === 'all' ? 'Tous' : v === 'public' ? 'Publics' : 'Privés'}
           </Button>
         ))}
+
+        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+
+        <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+          <MapPin className="h-3.5 w-3.5" /> GPS :
+        </span>
+        {(['all', 'with', 'without'] as GpsFilter[]).map((v) => (
+          <Button
+            key={v}
+            size="sm"
+            variant={gpsFilter === v ? 'default' : 'outline'}
+            className="h-7 px-2.5 text-xs rounded-full inline-flex items-center gap-1"
+            onClick={() => setGpsFilter(v)}
+          >
+            {v === 'all' ? 'Tous' : v === 'with' ? 'Avec GPS' : 'Sans GPS'}
+            {v === 'without' && missingGpsCount > 0 && (
+              <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px] rounded-full bg-amber-500/20 text-amber-500 border-0">
+                {missingGpsCount}
+              </Badge>
+            )}
+          </Button>
+        ))}
       </div>
+
 
       {isLoading ? (
         <div className="space-y-3">
@@ -172,6 +208,12 @@ const EventsListTab: React.FC<Props> = ({ filters, page, pageSize, onPageChange,
                       <MapPin className="h-3 w-3" />{event.lieu}
                     </span>
                   )}
+                  {!hasGps(event) && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                      <MapPinOff className="h-3 w-3" />GPS manquant
+                    </span>
+                  )}
+
                   {event.exploration_name && (
                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                       <Compass className="h-3 w-3" />{event.exploration_name}
