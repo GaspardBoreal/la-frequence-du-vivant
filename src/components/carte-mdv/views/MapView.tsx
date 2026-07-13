@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, Compass, Calendar, MapPin, ArrowRight, Leaf } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,8 +64,12 @@ interface Props {
 
 const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant }) => {
   const { user } = useAuth();
+  const location = useLocation();
   const [legendOpen, setLegendOpen] = useState(true);
   const [selectedSvId, setSelectedSvId] = useState<string | null>(null);
+  const carteParams = new URLSearchParams(location.search);
+  carteParams.set('tab', 'carte');
+  const carteQuery = `?${carteParams.toString()}`;
   const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
   const missingCount = events.length - geoEvents.length;
   const eventPositions: [number, number][] = geoEvents.map((e) => [Number(e.latitude), Number(e.longitude)]);
@@ -122,7 +126,7 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
             const size = Math.min(48, 24 + Math.floor((e.species_count ?? 0) / 5));
             const isJardin = e.category === 'jardin';
             const detailUrl = isJardin
-              ? `/jardin/${e.public_slug ?? e.id}`
+              ? `/jardin/${e.public_slug ?? e.id}${carteQuery}`
               : e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
             const inscriptionUrl = user ? detailUrl : `/marches-du-vivant/connexion?next=${encodeURIComponent(detailUrl)}`;
             const isUpcoming = new Date(e.date_marche).getTime() > Date.now();

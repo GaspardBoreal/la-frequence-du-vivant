@@ -69,8 +69,9 @@ export function useSiblingGardenEvents(currentEventId: string | undefined): Sibl
     [list, currentEventId],
   );
 
-  const search = params.toString();
-  const suffix = search ? `?${search}` : '';
+  const returnParams = new URLSearchParams(params);
+  returnParams.set('tab', 'carte');
+  const suffix = `?${returnParams.toString()}`;
 
   const prev = index > 0 ? list[index - 1] : null;
   const next = index >= 0 && index < list.length - 1 ? list[index + 1] : null;

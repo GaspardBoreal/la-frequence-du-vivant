@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { CarteMdVEvent } from '@/hooks/useCarteMdV';
 import { Image as ImageIcon } from 'lucide-react';
@@ -19,6 +19,10 @@ interface Photo {
 }
 
 const MurDuVivantView: React.FC<Props> = ({ events }) => {
+  const location = useLocation();
+  const carteParams = new URLSearchParams(location.search);
+  carteParams.set('tab', 'carte');
+  const carteQuery = `?${carteParams.toString()}`;
   const explorationIds = useMemo(
     () => [...new Set(events.map((e) => e.exploration_id).filter(Boolean))] as string[],
     [events]
@@ -89,7 +93,7 @@ const MurDuVivantView: React.FC<Props> = ({ events }) => {
           const ev = findEventForPhoto(p);
           const to = ev
             ? (ev.category === 'jardin'
-                ? `/jardin/${ev.public_slug ?? ev.id}`
+                ? `/jardin/${ev.public_slug ?? ev.id}${carteQuery}`
                 : ev.is_public && ev.public_slug ? `/m/${ev.public_slug}` : `/admin/marche-events/${ev.id}`)
             : '#';
           const src = p.url_fichier || p.external_url || '';
