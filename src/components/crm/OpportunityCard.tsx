@@ -184,9 +184,15 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
           )}
         </div>
 
-        {/* Jalons process */}
-        <div className="pt-1">
+        {/* Jalons process + docs */}
+        <div className="pt-1 flex items-center gap-2 flex-wrap">
           <OpportunityActionsBadges value={opportunity.actions_realisees} size="xs" />
+          <div onClick={(e) => e.stopPropagation()}>
+            <OpportunityDocsPopover
+              opportunityId={opportunity.id}
+              onOpenFull={() => onEdit?.(opportunity)}
+            />
+          </div>
         </div>
 
         {/* Source */}
