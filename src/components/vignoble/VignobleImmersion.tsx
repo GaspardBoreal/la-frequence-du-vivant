@@ -58,7 +58,6 @@ const CHAPTERS = [
   { id: 'pepites',   label: 'Rencontres' },
   { id: 'vigne-mouton', label: 'Vigne & Mouton' },
   { id: 'story',     label: 'Millésime' },
-  { id: 'vin',       label: 'La Bouteille' },
   { id: 'rejoindre', label: 'Rejoindre' },
 ] as const;
 
