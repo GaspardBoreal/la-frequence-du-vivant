@@ -34,9 +34,8 @@ export const OpportunityDocsPopover: React.FC<Props> = ({ opportunityId, onOpenF
     window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const stop = (e: React.MouseEvent) => {
+  const stop = (e: React.MouseEvent | React.PointerEvent) => {
     e.stopPropagation();
-    e.preventDefault();
   };
 
   return (
