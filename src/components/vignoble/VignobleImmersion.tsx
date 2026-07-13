@@ -1,18 +1,20 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  Calendar, MapPin, Grape, Sprout, Leaf, ChevronDown, ChevronRight,
-  BookOpen, Eye, Users, Wine, Share2, Sparkles, Info, ArrowRight,
+  Calendar, MapPin, Grape, Sprout, Leaf, ChevronDown, ChevronRight, ChevronLeft,
+  BookOpen, Eye, Users, Wine, Share2, Sparkles, Info, ArrowRight, Camera,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type {
-  PublicEvent, PublicEventStats, PublicBiodiversity, PublicSpecies,
+import {
+  usePublicEventMedias,
+  type PublicEvent, type PublicEventStats, type PublicBiodiversity, type PublicSpecies, type PublicMedia,
 } from '@/hooks/usePublicEvent';
+import { useExplorationSpeciesCount } from '@/hooks/useExplorationSpeciesCount';
 import { getVerdict, TONE_STYLES, type VignobleAxis } from '@/lib/vignobleVerdicts';
 import { SpeciesName } from '@/components/species/SpeciesName';
 
@@ -56,7 +58,6 @@ const CHAPTERS = [
   { id: 'pepites',   label: 'Rencontres' },
   { id: 'vigne-mouton', label: 'Vigne & Mouton' },
   { id: 'story',     label: 'Millésime' },
-  { id: 'vin',       label: 'La Bouteille' },
   { id: 'rejoindre', label: 'Rejoindre' },
 ] as const;
 
@@ -317,42 +318,50 @@ const VignobleHero: React.FC<{ event: PublicEvent; onShare: () => void }> = ({ e
 /* ─────────────────────────────────────────────────────────────────
  *  ACTE 1 — Domaine en chiffres (bandeau or)
  * ────────────────────────────────────────────────────────────── */
-const DomaineChiffres: React.FC<{ stats: PublicEventStats | null | undefined; biodiversity: PublicBiodiversity | null | undefined; event: PublicEvent }> = ({ stats, biodiversity, event }) => (
-  <section id="domaine" className="py-24 px-6">
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-14">
-        <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
-          Chapitre I
-        </span>
-        <h2 className="font-vignoble text-4xl md:text-5xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
-          Le Domaine
-        </h2>
-      </div>
-
-      <div className="border-y-2 border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-paper-warm)/0.6)] py-8 px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <ChiffreCell value={biodiversity?.species_count ?? 0} label="Espèces recensées" />
-          <ChiffreCell value={stats?.marcheurs_count ?? 0} label="Marcheurs" />
-          <ChiffreCell value={stats?.observations_count ?? 0} label="Observations" />
-          <ChiffreCell value={biodiversity?.biodiversity_index ? Math.round(biodiversity.biodiversity_index * 10) / 10 : '—'} label="Indice biodiversité" />
+const DomaineChiffres: React.FC<{
+  stats: PublicEventStats | null | undefined;
+  biodiversity: PublicBiodiversity | null | undefined;
+  event: PublicEvent;
+  unifiedSpeciesCount?: number | null;
+}> = ({ stats, biodiversity, event, unifiedSpeciesCount }) => {
+  const speciesValue = unifiedSpeciesCount ?? biodiversity?.species_count ?? 0;
+  return (
+    <section id="domaine" className="py-24 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-14">
+          <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
+            Chapitre I
+          </span>
+          <h2 className="font-vignoble text-4xl md:text-5xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
+            Le Domaine
+          </h2>
         </div>
-      </div>
 
-      {event.organisateur?.description && (
-        <div className="mt-12 max-w-3xl mx-auto">
-          <p className="font-vignoble italic text-lg md:text-xl leading-relaxed text-[hsl(var(--vignoble-ink)/0.85)] text-center">
-            « {event.organisateur.description} »
-          </p>
-          {event.organisateur.nom && (
-            <p className="mt-4 text-center text-xs uppercase tracking-[0.35em] text-[hsl(var(--vignoble-wine))]">
-              — {event.organisateur.nom}
+        <div className="border-y-2 border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-paper-warm)/0.6)] py-8 px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <ChiffreCell value={speciesValue} label="Espèces recensées" />
+            <ChiffreCell value={stats?.marcheurs_count ?? 0} label="Marcheurs" />
+            <ChiffreCell value={stats?.observations_count ?? 0} label="Observations" />
+            <ChiffreCell value={biodiversity?.biodiversity_index ? Math.round(biodiversity.biodiversity_index * 10) / 10 : '—'} label="Indice biodiversité" />
+          </div>
+        </div>
+
+        {event.organisateur?.description && (
+          <div className="mt-12 max-w-3xl mx-auto">
+            <p className="font-vignoble italic text-lg md:text-xl leading-relaxed text-[hsl(var(--vignoble-ink)/0.85)] text-center">
+              « {event.organisateur.description} »
             </p>
-          )}
-        </div>
-      )}
-    </div>
-  </section>
-);
+            {event.organisateur.nom && (
+              <p className="mt-4 text-center text-xs uppercase tracking-[0.35em] text-[hsl(var(--vignoble-wine))]">
+                — {event.organisateur.nom}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 const ChiffreCell: React.FC<{ value: number | string; label: string }> = ({ value, label }) => (
   <div>
@@ -366,8 +375,189 @@ const ChiffreCell: React.FC<{ value: number | string; label: string }> = ({ valu
 );
 
 /* ─────────────────────────────────────────────────────────────────
- *  ACTE 2 — Pépites : les rencontres
+ *  Album du Domaine — carrousel photos (marcheurs · convivialité · waypoints)
  * ────────────────────────────────────────────────────────────── */
+const AlbumDomaineCarousel: React.FC<{ slug: string }> = ({ slug }) => {
+  const { data: medias } = usePublicEventMedias(slug);
+  const reduce = useReducedMotion();
+
+  const photos = useMemo<PublicMedia[]>(
+    () => (medias ?? []).filter((m) => m.type_media === 'photo' && (m.url_fichier || m.external_url)),
+    [medias],
+  );
+
+  // Responsive tuiles par page
+  const [perPage, setPerPage] = useState(4);
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth;
+      setPerPage(w < 640 ? 1 : w < 1024 ? 2 : 4);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
+
+  const pages = useMemo(() => {
+    const out: PublicMedia[][] = [];
+    for (let i = 0; i < photos.length; i += perPage) out.push(photos.slice(i, i + perPage));
+    return out;
+  }, [photos, perPage]);
+
+  const [page, setPage] = useState(0);
+  const [flashKey, setFlashKey] = useState(0);
+  useEffect(() => { setPage(0); }, [perPage]);
+
+  useEffect(() => {
+    if (pages.length <= 1) return;
+    const t = setInterval(() => {
+      setPage((p) => (p + 1) % pages.length);
+      setFlashKey((k) => k + 1);
+    }, 4500);
+    return () => clearInterval(t);
+  }, [pages.length]);
+
+  if (photos.length === 0) return null;
+
+  const current = pages[page] ?? [];
+  const goto = (n: number) => { setPage(((n % pages.length) + pages.length) % pages.length); setFlashKey((k) => k + 1); };
+
+  return (
+    <section id="album" className="py-20 px-6 bg-[hsl(var(--vignoble-ink))] text-[hsl(var(--vignoble-paper))] relative overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-30 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at 20% 20%, hsl(var(--vignoble-wine)/0.55), transparent 55%), radial-gradient(ellipse at 80% 80%, hsl(var(--vignoble-gold)/0.18), transparent 60%)' }}
+        aria-hidden
+      />
+
+      <div className="max-w-6xl mx-auto relative">
+        <div className="text-center mb-10">
+          <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-gold))]">
+            Album du domaine
+          </span>
+          <h2 className="font-vignoble text-3xl md:text-4xl font-medium mt-3 text-[hsl(var(--vignoble-paper))]">
+            Ce que les marcheurs ont vu
+          </h2>
+          <div className="mx-auto mt-4 w-16 h-[1px] bg-[hsl(var(--vignoble-gold))]" />
+        </div>
+
+        <div className="relative group">
+          <div className="relative overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={page}
+                initial={reduce ? { opacity: 0 } : { opacity: 0, x: 60 }}
+                animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, x: -60 }}
+                transition={{ duration: reduce ? 0.4 : 0.75, ease: [0.19, 1, 0.22, 1] }}
+                className={cn(
+                  'grid gap-4',
+                  perPage === 1 ? 'grid-cols-1' : perPage === 2 ? 'grid-cols-2' : 'grid-cols-4',
+                )}
+              >
+                {current.map((m, i) => {
+                  const url = (m.url_fichier || m.external_url)!;
+                  const dy = reduce ? 0 : (i % 2 === 0 ? -4 : 4);
+                  return (
+                    <motion.figure
+                      key={m.id}
+                      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
+                      animate={reduce ? { opacity: 1 } : { opacity: 1, y: dy, scale: 1 }}
+                      transition={{ duration: 0.7, delay: i * 0.09, ease: [0.19, 1, 0.22, 1] }}
+                      className="relative overflow-hidden aspect-[4/5] border border-[hsl(var(--vignoble-gold)/0.55)] shadow-[0_20px_45px_-20px_hsl(var(--vignoble-ink)/0.9)]"
+                    >
+                      <motion.img
+                        src={url}
+                        alt={m.titre || 'Photo du domaine'}
+                        loading="lazy"
+                        initial={{ scale: 1.05 }}
+                        animate={reduce ? { scale: 1.05 } : { scale: 1.14 }}
+                        transition={{ duration: 4.5, ease: 'linear' }}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        draggable={false}
+                      />
+                      <div className="absolute inset-x-0 top-0 h-[1px] vignoble-gold-rule opacity-80" />
+                      <figcaption className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-[hsl(var(--vignoble-ink)/0.85)] via-[hsl(var(--vignoble-ink)/0.35)] to-transparent">
+                        <div className="font-vignoble italic text-[11px] text-[hsl(var(--vignoble-paper)/0.95)] leading-snug">
+                          {m.author_name ? <>— {m.author_name}</> : <>— Marcheur du domaine</>}
+                        </div>
+                        {m.titre && (
+                          <div className="text-[9px] uppercase tracking-[0.3em] text-[hsl(var(--vignoble-gold))] mt-1 truncate">
+                            {m.titre}
+                          </div>
+                        )}
+                      </figcaption>
+                    </motion.figure>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Flash doré au changement */}
+            {!reduce && (
+              <AnimatePresence>
+                <motion.div
+                  key={`flash-${flashKey}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 0.45, 0] }}
+                  transition={{ duration: 0.4, times: [0, 0.25, 1], ease: 'easeOut' }}
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background: 'radial-gradient(ellipse at center, hsl(var(--vignoble-gold)/0.9) 0%, transparent 65%)',
+                    mixBlendMode: 'screen',
+                  }}
+                />
+              </AnimatePresence>
+            )}
+          </div>
+
+          {/* Chevrons */}
+          {pages.length > 1 && (
+            <>
+              <button
+                onClick={() => goto(page - 1)}
+                aria-label="Précédent"
+                className="absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-ink)/0.6)] backdrop-blur-md text-[hsl(var(--vignoble-gold))] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => goto(page + 1)}
+                aria-label="Suivant"
+                className="absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-ink)/0.6)] backdrop-blur-md text-[hsl(var(--vignoble-gold))] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Pastilles progression */}
+        {pages.length > 1 && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            {pages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goto(i)}
+                aria-label={`Aller à la planche ${i + 1}`}
+                className={cn(
+                  'h-[3px] transition-all duration-500',
+                  i === page ? 'w-8 bg-[hsl(var(--vignoble-gold))]' : 'w-3 bg-[hsl(var(--vignoble-paper)/0.35)] hover:bg-[hsl(var(--vignoble-paper)/0.6)]',
+                )}
+              />
+            ))}
+          </div>
+        )}
+
+        <p className="mt-6 text-center font-vignoble italic text-[11px] uppercase tracking-[0.35em] text-[hsl(var(--vignoble-paper)/0.55)]">
+          {photos.length} planche{photos.length > 1 ? 's' : ''} · marcheurs & points de marche
+        </p>
+      </div>
+    </section>
+  );
+};
+
+
 const PepitesGrid: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
   const pepites = useMemo(() => {
     return [...species]
@@ -393,35 +583,35 @@ const PepitesGrid: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {pepites.map((s, i) => (
             <motion.article
               key={s.scientific_name}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
+              transition={{ duration: 0.6, delay: i * 0.08 }}
               className="group relative bg-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-ink)/0.08)] shadow-[0_1px_0_hsl(var(--vignoble-gold))] overflow-hidden"
             >
-              <div className="aspect-[3/4] overflow-hidden bg-[hsl(var(--vignoble-ink)/0.08)]">
+              <div className="aspect-square overflow-hidden bg-[hsl(var(--vignoble-ink)/0.08)]">
                 <img
                   src={s.photo_url!}
                   alt={s.common_name || s.scientific_name}
                   loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
-              <div className="p-5 relative">
-                <div className="absolute -top-3 left-5 right-5 h-[1px] vignoble-gold-rule" />
-                <div className="text-[9px] uppercase tracking-[0.35em] text-[hsl(var(--vignoble-gold))]">
-                  N° {String(i + 1).padStart(2, '0')}
-                </div>
-                <h3 className="mt-2 font-vignoble text-xl font-medium text-[hsl(var(--vignoble-ink))] leading-tight">
-                  <SpeciesName scientificName={s.scientific_name} commonName={s.common_name} />
-                </h3>
-                <p className="mt-1 font-vignoble italic text-xs text-[hsl(var(--vignoble-ink)/0.55)]">
-                  {s.scientific_name}
-                </p>
+              <div className="p-3 relative">
+                <div className="absolute -top-[1px] left-3 right-3 h-[1px] vignoble-gold-rule" />
+                <SpeciesName
+                  scientificName={s.scientific_name}
+                  commonName={s.common_name}
+                  size="sm"
+                  truncate
+                  showScientific
+                  scientificClassName="text-[10px] italic text-[hsl(var(--vignoble-ink)/0.55)]"
+                  className="font-vignoble text-[hsl(var(--vignoble-ink))]"
+                />
               </div>
             </motion.article>
           ))}
@@ -668,90 +858,9 @@ const MillesimeStory: React.FC<{ event: PublicEvent }> = ({ event }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────
- *  ACTE 5 — La bouteille (bascule vente directe)
+ *  ACTE 5 — Rejoindre (bouteille supprimée)
  * ────────────────────────────────────────────────────────────── */
-const BouteilleCTA: React.FC<{ event: PublicEvent; species: PublicSpecies[] }> = ({ event, species }) => {
-  const pepite = species.find((s) => s.photo_url) ?? species[0];
 
-  return (
-    <section id="vin" className="py-24 px-6">
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-        {/* Bouteille SVG */}
-        <div className="relative flex justify-center order-2 md:order-1">
-          <svg viewBox="0 0 140 400" className="w-40 h-auto drop-shadow-[0_20px_40px_hsl(var(--vignoble-ink)/0.35)]">
-            <defs>
-              <linearGradient id="bottleGlass" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="hsl(var(--vignoble-wine))" stopOpacity="0.95" />
-                <stop offset="45%" stopColor="hsl(var(--vignoble-ink))" />
-                <stop offset="100%" stopColor="hsl(var(--vignoble-wine))" stopOpacity="0.85" />
-              </linearGradient>
-            </defs>
-            {/* Bottle silhouette */}
-            <path
-              d="M55 10 L85 10 L85 90 Q85 100 90 108 Q112 130 112 180 L112 380 Q112 390 102 390 L38 390 Q28 390 28 380 L28 180 Q28 130 50 108 Q55 100 55 90 Z"
-              fill="url(#bottleGlass)"
-            />
-            {/* Cap */}
-            <rect x="52" y="10" width="36" height="24" fill="hsl(var(--vignoble-gold))" opacity="0.9" />
-            {/* Label */}
-            <rect x="32" y="200" width="76" height="140" fill="hsl(var(--vignoble-paper))" />
-            <rect x="32" y="200" width="76" height="4" fill="hsl(var(--vignoble-gold))" />
-            <rect x="32" y="336" width="76" height="4" fill="hsl(var(--vignoble-gold))" />
-            {/* Label text */}
-            <text x="70" y="235" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontStyle="italic" fontSize="9" fill="hsl(var(--vignoble-wine))" letterSpacing="2">
-              GRAND CRU DU VIVANT
-            </text>
-            <text x="70" y="270" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontSize="12" fill="hsl(var(--vignoble-ink))" fontWeight="500">
-              {(event.organisateur?.nom || event.title).slice(0, 18)}
-            </text>
-            <line x1="50" y1="285" x2="90" y2="285" stroke="hsl(var(--vignoble-gold))" strokeWidth="0.5" />
-            <text x="70" y="308" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontStyle="italic" fontSize="7" fill="hsl(var(--vignoble-ink))" opacity="0.7">
-              {pepite?.common_name || pepite?.scientific_name || 'certifié GBIF'}
-            </text>
-            <text x="70" y="322" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontSize="7" fill="hsl(var(--vignoble-wine))" letterSpacing="1.5">
-              {format(new Date(event.date_marche), 'yyyy')}
-            </text>
-          </svg>
-        </div>
-
-        <div className="order-1 md:order-2">
-          <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
-            Chapitre V
-          </span>
-          <h2 className="font-vignoble text-4xl md:text-5xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
-            Emporter le vivant
-          </h2>
-          <div className="mt-6 w-16 h-[1px] bg-[hsl(var(--vignoble-gold))]" />
-          <p className="mt-6 font-vignoble italic text-xl leading-relaxed text-[hsl(var(--vignoble-ink)/0.85)]">
-            « L'étiquette doit faire rêver. » Chaque bouteille du domaine porte
-            un fragment vivant de la marche — {pepite?.common_name || 'une présence rare'} au verso,
-            date de récolte au recto.
-          </p>
-          <p className="mt-4 text-sm text-[hsl(var(--vignoble-ink)/0.7)] leading-relaxed">
-            La vente directe multiplie par 12 à 15 la valeur au litre par rapport au circuit coopératif.
-            Repartez avec la fréquence de ce vignoble en cave.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" className="bg-[hsl(var(--vignoble-wine))] hover:bg-[hsl(var(--vignoble-wine)/0.85)] text-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-gold))] rounded-none px-8 h-12 font-vignoble tracking-[0.15em] uppercase text-sm">
-              <Wine className="h-4 w-4 mr-2" />
-              Réserver une caisse
-            </Button>
-            {event.organisateur?.site_web && (
-              <a href={event.organisateur.site_web} target="_blank" rel="noreferrer">
-                <Button size="lg" variant="outline" className="border-[hsl(var(--vignoble-ink))] bg-transparent hover:bg-[hsl(var(--vignoble-ink)/0.05)] text-[hsl(var(--vignoble-ink))] rounded-none px-8 h-12 font-vignoble tracking-[0.15em] uppercase text-sm">
-                  Visiter le domaine
-                </Button>
-              </a>
-            )}
-          </div>
-          <div className="mt-6">
-            <DoubleReadPill>Argument étiquette · vente directe</DoubleReadPill>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
 
 /* ─────────────────────────────────────────────────────────────────
  *  ACTE 6 — Rejoindre
@@ -762,7 +871,7 @@ const RejoindreSection: React.FC<{ event: PublicEvent; slug: string }> = ({ even
     <section id="rejoindre" className="py-24 px-6 bg-gradient-to-b from-[hsl(var(--vignoble-paper))] to-[hsl(var(--vignoble-paper-warm))]">
       <div className="max-w-3xl mx-auto text-center">
         <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
-          Chapitre VI
+          Chapitre V
         </span>
         <h2 className="font-vignoble text-5xl md:text-6xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
           Marcher ce vignoble
@@ -807,6 +916,8 @@ const RejoindreSection: React.FC<{ event: PublicEvent; slug: string }> = ({ even
 const VignobleImmersion: React.FC<Props> = ({ event, stats, biodiversity, slug, onShare }) => {
   const [activeChapter, setActiveChapter] = useState<string>('ouverture');
   const species = biodiversity?.species ?? [];
+  const { data: speciesCountData } = useExplorationSpeciesCount(event.exploration_id);
+  const unifiedSpeciesCount = speciesCountData?.total ?? null;
 
   // Simple scroll-spy
   React.useEffect(() => {
@@ -830,16 +941,15 @@ const VignobleImmersion: React.FC<Props> = ({ event, stats, biodiversity, slug, 
 
       <VignobleHero event={event} onShare={onShare} />
       <OrnamentalDivider label="I · Le Domaine" />
-      <DomaineChiffres stats={stats} biodiversity={biodiversity} event={event} />
+      <DomaineChiffres stats={stats} biodiversity={biodiversity} event={event} unifiedSpeciesCount={unifiedSpeciesCount} />
+      <AlbumDomaineCarousel slug={slug} />
       <OrnamentalDivider label="II · Rencontres" />
       <PepitesGrid species={species} />
       <OrnamentalDivider label="III · Vigne & Mouton" />
       <FicheVigneMouton species={species} />
       <OrnamentalDivider label="IV · Millésime" />
       <MillesimeStory event={event} />
-      <OrnamentalDivider label="V · La Bouteille" />
-      <BouteilleCTA event={event} species={species} />
-      <OrnamentalDivider label="VI · Rejoindre" />
+      <OrnamentalDivider label="V · Rejoindre" />
       <RejoindreSection event={event} slug={slug} />
 
       {/* Footer signature */}
