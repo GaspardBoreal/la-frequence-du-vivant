@@ -108,6 +108,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   return (
+    <OpportunityDocsIndexProvider>
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
