@@ -142,6 +142,10 @@ const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
               <Button asChild size="sm" className="flex-1">
                 <Link to={inscriptionUrl}>S'inscrire à cette marche</Link>
               </Button>
+            ) : isPubliclyBrowsable ? (
+              <Button asChild size="sm" className="flex-1">
+                <Link to={detailUrl}>Découvrir & rejoindre</Link>
+              </Button>
             ) : (
               <div className="flex-1 space-y-1">
                 <Button asChild size="sm" className="w-full">
