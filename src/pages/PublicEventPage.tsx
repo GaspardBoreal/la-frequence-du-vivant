@@ -36,6 +36,7 @@ import PratiquesEmblematiquesDialog from '@/components/public-event/PratiquesEmb
 import PaysagesSonoresDialog from '@/components/public-event/PaysagesSonoresDialog';
 import { useEventScenography, useEventScenographyData } from '@/hooks/useScenography';
 import ScenographyRuntime from '@/components/scenography/ScenographyRuntime';
+import VignobleImmersion from '@/components/vignoble/VignobleImmersion';
 
 const SITE = 'https://la-frequence-du-vivant.com';
 
@@ -198,6 +199,33 @@ const PublicEventPage: React.FC = () => {
 
   const hasGeo = event.latitude != null && event.longitude != null;
   const geoObs = biodiversity?.observations_geo ?? [];
+
+  // ═══ IMMERSION VIGNOBLE — template dédié cat=vignoble ═══
+  if (event.category === 'vignoble' && slug) {
+    return (
+      <>
+        <Helmet>
+          <title>{event.title} — Grand Cru du Vivant</title>
+          <meta name="description" content={description} />
+          <link rel="canonical" href={url} />
+          <meta property="og:title" content={event.title} />
+          <meta property="og:description" content={description} />
+          <meta property="og:type" content="article" />
+          <meta property="og:url" content={url} />
+          {event.cover_image_url && <meta property="og:image" content={event.cover_image_url} />}
+          <meta name="twitter:card" content="summary_large_image" />
+          <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+        </Helmet>
+        <VignobleImmersion
+          event={event}
+          stats={stats}
+          biodiversity={biodiversity}
+          slug={slug}
+          onShare={() => share('copy')}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

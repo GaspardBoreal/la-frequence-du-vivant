@@ -58,6 +58,7 @@ export interface PublicEvent {
   latitude: number | null;
   longitude: number | null;
   event_type: string;
+  category: string | null;
   cover_image_url: string | null;
   public_slug: string;
   published_at: string;
