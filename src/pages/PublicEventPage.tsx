@@ -36,6 +36,7 @@ import PratiquesEmblematiquesDialog from '@/components/public-event/PratiquesEmb
 import PaysagesSonoresDialog from '@/components/public-event/PaysagesSonoresDialog';
 import { useEventScenography, useEventScenographyData } from '@/hooks/useScenography';
 import ScenographyRuntime from '@/components/scenography/ScenographyRuntime';
+import VignobleImmersion from '@/components/vignoble/VignobleImmersion';
 
 const SITE = 'https://la-frequence-du-vivant.com';
 
