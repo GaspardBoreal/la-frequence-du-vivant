@@ -1,99 +1,55 @@
-## Diagnostic
+# Plan — Acte I Vignoble : chiffres, photos et pépites
 
-Le screenshot montre le Hero de l'immersion Vignoble **quasi-vide** : titre invisible, méta invisible, second CTA fantôme, scroll cue absent. Seuls survivent le cartouche « GRAND CRU DU VIVANT », le filet or et le bouton bordeaux « MARCHER CE VIGNOBLE ».
+Scope strict : `src/components/vignoble/VignobleImmersion.tsx` (+ un petit hook photos réutilisant les RPC existantes). Aucun autre acte touché.
 
-### Cause racine (bug de contraste)
+## 1 · Corriger le compte d'espèces (208 → 38)
 
-`VignobleHero` utilise `min-h-screen` + `justify-end` avec un gradient vertical `ink → wine → paper` (crème). Tout le texte du hero est en `text-[hsl(var(--vignoble-paper))]` (crème) mais **le contenu est ancré en bas du hero**, là où le gradient est déjà arrivé à `paper` : on affiche donc du crème sur du crème. La photo de couverture n'existe pas pour Château Boutinet → c'est la branche `else` (gradient sans image) qui s'applique, et elle finit en crème.
+**Cause** : `DomaineChiffres` lit `biodiversity.species_count` (RPC `get_public_event_biodiversity` = 208, inclut tous les snapshots iNat élargis). L'événement admin/exploration affiche 38 via la RPC unifiée `get_exploration_species_count` (mem : *unified-species-count-rpc*, source de vérité).
 
-Symptômes visibles :
-- H1 → invisible (paper sur paper)
-- Ligne date/lieu → invisible
-- Bouton « Explorer le domaine » (variant outline transparent + texte paper) → invisible
-- Pills Top-bar → uniquement le contour or reste
-- Le "Sept chapitres" en bas → invisible
+**Fix** : dans `VignobleImmersion` on récupère `event.exploration_id` et on branche `useExplorationSpeciesCount(explorationId)` (hook déjà existant, même code que l'événement). On passe `unifiedCount = data?.total ?? biodiversity?.species_count` à `DomaineChiffres`.
+- « Espèces recensées » → `unifiedCount` (38 attendu)
+- « Observations » reste `stats.observations_count`
+- Aucun changement backend.
 
-Le bouton « Marcher ce vignoble » est le seul lisible car il a son propre fond bordeaux plein.
+## 2 · Rendu net des pépites (« Ce que vous rencontrerez »)
 
-### Cause secondaire (design)
+**Cause** : `PepitesGrid` utilise `aspect-[3/4]` étiré + `object-cover` sur les vignettes iNat 200 px → flou. Le rendu événement (`PublicEventPage`, section Taxons observés) utilise `aspect-square` en grille 4 col.
 
-Sans photo de couverture, le hero se rabat sur un simple gradient monotone. Pas de « wahouh » : aucun ornement structurant, aucune signature Terroir Noble. On voit littéralement un aplat crème.
+**Fix** : aligner exactement le rendu événement :
+- `aspect-square` au lieu de `3/4`
+- garder `object-cover` + `group-hover:scale-105`
+- carte plus compacte (padding réduit), typo restant vignoble
+- retirer le badge « N° 01 » (bruit) — remplacer par un mince filet or
 
----
+## 3 · Nouveau bloc « Album du domaine » (photos wahouhh)
 
-## Plan — Refonte du Hero Vignoble « Cellier Noble »
+Insertion **entre `DomaineChiffres` et `PepitesGrid`** (dans Chapitre I, sans nouveau chapitre).
 
-Une seule intervention, **scopée au composant `VignobleHero`** dans `src/components/vignoble/VignobleImmersion.tsx` (+ quelques tokens/keyframes dans `src/index.css`). Aucune refonte des autres actes.
+**Source données** : `usePublicEventMedias(slug)` (déjà présent, RPC `get_public_event_medias`, retourne les photos marcheurs = convivialité + points de marche). Filtrer `type_media === 'photo'`.
 
-### 1. Fond « Terroir Noble » plein-cadre (fix contraste)
+**Composant** `AlbumDomaineCarousel` :
+- Défilement **par paquets de 4** (4 tuiles visibles simultanément desktop, 2 tablet, 1 mobile, avec `snap-x snap-mandatory`).
+- Auto-rotation toutes 4,5 s : slide horizontal en `translateX` avec easing `[0.19,1,0.22,1]` (Framer Motion `AnimatePresence` custom, style KenBurns doux sur chaque tuile).
+- Chaque tuile : `aspect-[4/5]` sépia doré au repos, saturation pleine + zoom Ken Burns 1.0→1.08 au hover et pendant sa fenêtre active.
+- Cadre : bordure or 1 px + filet supérieur `vignoble-gold-rule`, cartouche italique en bas « — nom auteur · date » sur voile ink/60.
+- Contrôles : chevrons or ronds latéraux (opacity 0 → 100 au hover section), pastilles de progression en bas (1 pastille par paquet de 4), respect `prefers-reduced-motion` (fondu simple, pas de zoom).
+- Effet « wahouhh » : au changement de paquet, léger flash doré (`radial-gradient` mix-blend screen, 350 ms) inspiré de `KenBurnsCarousel` existant, et parallax subtil (chaque tuile décale de ±4 px selon son index).
 
-Remplacer le gradient qui vire au crème par un **fond ink profond stable** sur toute la hauteur du hero, avec :
-- Un halo radial `wine` diffus derrière le titre (spotlight théâtral).
-- Une **texture grain SVG** subtile (`opacity: 0.06`) en overlay pour la matière papier/lithographie.
-- Un **filet or continu** en haut ET en bas du hero (double liseré éditorial).
-- Une **transition « fondu vers paper »** dédiée sur les 96px finaux uniquement, pour raccorder proprement au chapitre I sans manger le contenu.
+## 4 · Supprimer Acte V « La bouteille »
 
-Résultat : texte crème garanti lisible partout dans le hero.
+- Retirer `<BouteilleCTA>` + son `<OrnamentalDivider label="V · La Bouteille" />` dans le layout racine.
+- Retirer la fonction `BouteilleCTA` et l'entrée V dans `CHAPTERS` (pour que le scroll-spy et la barre de progression restent cohérents).
+- Renuméroter « Rejoindre » de Chapitre VI → Chapitre V dans le texte affiché (label seul, `id="rejoindre"` inchangé pour ne pas casser les ancres).
 
-### 2. Composition « Cartel de Grand Cru »
+## Livrables techniques
 
-Centrer verticalement (`justify-center`) et structurer en 6 lignes rythmées :
+| Fichier | Changement |
+|---|---|
+| `src/components/vignoble/VignobleImmersion.tsx` | 1) import `useExplorationSpeciesCount`, prop count vers `DomaineChiffres`. 2) `PepitesGrid` aspect-square. 3) Nouveau `AlbumDomaineCarousel` (interne). 4) Suppression `BouteilleCTA` + divider + renum chapitre. |
+| `src/hooks/usePublicEvent.ts` | Aucun. `usePublicEventMedias` déjà en place. |
 
-```text
-                    ✦  ACTE I / VII  ✦          ← numérotation romaine or, tracking large
-              ┌─── GRAND CRU DU VIVANT ───┐     ← cartouche existant, agrandi
-              
-                    Château Boutinet
-              LE VIGNOBLE VIVANT             ← H1 en 2 lignes, Cormorant italic sur ligne 1
-                                                romain sur ligne 2, très gros (clamp 3-7rem)
-                    ── filet or ──
-                    
-              26 SEPTEMBRE 2026 · BERGERAC    ← petite capitale espacée, séparateur ·
-              
-           [ MARCHER CE VIGNOBLE → ]   [ Explorer le domaine ]
-                                                ← 2e CTA passe en ghost avec bord or +
-                                                  fond ink/40 backdrop-blur (visible)
-```
-
-### 3. Sceau de cire (signature visuelle « wahouh »)
-
-Coin supérieur droit, en overlay absolu : un **médaillon SVG « sceau de cire »** de 120px, cerclé or, gravé « BOUTINET · 2026 · VIVANT » en circulaire, avec une grappe stylisée au centre. Rotation légère (-8°), ombre douce. Animation d'entrée : scale 0.6 → 1 + fade sur 900ms.
-
-### 4. Colonne décorative de vigne (côté gauche desktop)
-
-Sur `lg:`+ uniquement : une **branche de vigne SVG verticale** (feuilles + vrilles) le long du bord gauche, opacité 0.18, or pâle, qui s'anime au scroll (parallax léger). Purement décorative, `aria-hidden`.
-
-### 5. Numérotation romaine « ACTE I / VII »
-
-Au-dessus du cartouche, en très petites capitales or espacées, remplace le « Sept chapitres » du bas. Renforce la narration en 7 actes déjà en place et cohérent avec `ChapterProgress`.
-
-### 6. Scroll cue repensé
-
-En bas centre : filet or vertical animé (24px → 48px en boucle) + label italique « Descendre au domaine ». Cohérent avec l'écriture éditoriale.
-
-### 7. Micro-motion
-
-- Titre : mask reveal ligne par ligne (clip-path inset 0 100% 0 0 → 0 0 0 0), 900ms ease-out, décalé.
-- Filet or : dessin left-to-right sur 700ms après le titre.
-- Sceau : scale/rotation en dernier (1.4s delay).
-- Respect de `prefers-reduced-motion` : tout devient fade simple.
-
-### 8. Fallback photo de couverture
-
-Quand `event.cover_image_url` **est** défini : on garde la logique image + parallax existante, mais on assombrit davantage (overlay `ink/85`) pour préserver la même lisibilité crème que le mode « no-image ». Le sceau + la vigne restent visibles par-dessus.
-
----
-
-## Fichiers touchés
-
-- `src/components/vignoble/VignobleImmersion.tsx` — refonte du composant `VignobleHero` uniquement (les 6 actes suivants et `ChapterProgress` sont intouchés).
-- `src/index.css` — ajout de 3 utilitaires : `.vignoble-grain` (texture SVG data-uri), `.vignoble-hero-bg` (fond composite ink + halo wine radial), keyframes `vignoble-scroll-cue` et `vignoble-title-reveal`.
-
-Aucune modif backend, aucune modif de données, aucune régression sur les autres marches (le composant n'est monté que pour `category === 'vignoble'`).
+Aucune migration SQL, aucune nouvelle RPC, aucun nouveau bucket.
 
 ## Vérification
 
-- Ouvrir `/m/chateau-boutinet-le-vignoble-vivant-2026-09-26` : titre, date/lieu, les deux CTA et le scroll cue doivent être **immédiatement lisibles**.
-- Sceau de cire visible en haut-droite avec animation d'entrée.
-- Branche de vigne perceptible sur desktop uniquement.
-- Le raccord avec le chapitre I (« Le Domaine ») reste doux (fondu 96px).
+- Playwright : charger `/m/chateau-boutinet-…`, screenshot Acte I, vérifier `38` sous « Espèces recensées », présence du carrousel avec 4 tuiles nettes, absence totale du bloc bouteille, netteté des pépites.
