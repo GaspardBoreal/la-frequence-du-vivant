@@ -1785,6 +1785,59 @@ export type Database = {
           },
         ]
       }
+      crm_opportunity_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          indexed_for_rag: boolean
+          label: string | null
+          mime_type: string | null
+          opportunity_id: string
+          rag_indexed_at: string | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          indexed_for_rag?: boolean
+          label?: string | null
+          mime_type?: string | null
+          opportunity_id: string
+          rag_indexed_at?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          indexed_for_rag?: boolean
+          label?: string | null
+          mime_type?: string | null
+          opportunity_id?: string
+          rag_indexed_at?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_opportunity_documents_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_opportunity_history: {
         Row: {
           action_type: string
