@@ -1,38 +1,27 @@
-import React, { useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles } from 'lucide-react';
-import CarteMdVHero from '@/components/carte-mdv/CarteMdVHero';
-import FiltersBar from '@/components/carte-mdv/FiltersBar';
-import ViewSwitcher from '@/components/carte-mdv/ViewSwitcher';
-import SharePanel from '@/components/carte-mdv/SharePanel';
-import MapView from '@/components/carte-mdv/views/MapView';
-import TimelineView from '@/components/carte-mdv/views/TimelineView';
-import ListView from '@/components/carte-mdv/views/ListView';
-import MurDuVivantView from '@/components/carte-mdv/views/MurDuVivantView';
-import ConstellationView from '@/components/carte-mdv/views/ConstellationView';
-import {
-  useCarteMdVFilters,
-  useCarteMdVEvents,
-  useSolVivantPoints,
-  applyFilters,
-} from '@/hooks/useCarteMdV';
-import { solVivantMatchesCategories } from '@/lib/marcheCategories';
+import { useSearchParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import CarteTabs, { type CarteTabKey } from '@/components/carte-mdv/CarteTabs';
+import SouffleTab from '@/components/carte-mdv/tabs/SouffleTab';
+import CarteTab from '@/components/carte-mdv/tabs/CarteTab';
+import EnsembleTab from '@/components/carte-mdv/tabs/EnsembleTab';
+import FinalCTA from '@/components/carte-mdv/FinalCTA';
+
+const VALID: CarteTabKey[] = ['souffle', 'carte', 'ensemble'];
 
 const CarteMarchesDuVivant: React.FC = () => {
-  const { filters, update } = useCarteMdVFilters();
-  const { data: events = [], isLoading } = useCarteMdVEvents();
-  const { data: solPoints = [] } = useSolVivantPoints(filters.solVivantEnabled);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const raw = searchParams.get('tab') as CarteTabKey | null;
+  const tab: CarteTabKey = raw && VALID.includes(raw) ? raw : 'souffle';
 
-  const filtered = useMemo(() => applyFilters(events, filters), [events, filters]);
-
-  const filteredSolPoints = useMemo(() => {
-    if (!filters.solVivantEnabled) return [];
-    if (filters.categories.length === 0) return solPoints;
-    const set = new Set(filters.categories);
-    return solPoints.filter((p) => solVivantMatchesCategories(p.categories, set));
-  }, [solPoints, filters.solVivantEnabled, filters.categories]);
+  const setTab = useCallback((next: CarteTabKey) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === 'souffle') params.delete('tab'); else params.set('tab', next);
+    setSearchParams(params, { replace: false });
+    // Scroll to top of content
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [searchParams, setSearchParams]);
 
   return (
     <>
@@ -47,54 +36,23 @@ const CarteMarchesDuVivant: React.FC = () => {
       </Helmet>
 
       <div className="min-h-screen bg-background">
-        <CarteMdVHero />
+        <CarteTabs value={tab} onChange={setTab} />
 
-        <FiltersBar filters={filters} onChange={update} resultCount={filtered.length} />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          >
+            {tab === 'souffle' && <SouffleTab />}
+            {tab === 'carte' && <CarteTab />}
+            {tab === 'ensemble' && <EnsembleTab />}
+          </motion.div>
+        </AnimatePresence>
 
-        <div className="flex items-center justify-between container mx-auto px-4 pt-2">
-          <ViewSwitcher value={filters.view} onChange={(v) => update({ view: v })} />
-          <div className="pt-4">
-            <SharePanel />
-          </div>
-        </div>
-
-        <main className="container mx-auto px-4 py-6">
-          {isLoading ? (
-            <div className="h-[60vh] rounded-xl bg-muted animate-pulse" />
-          ) : (
-            <>
-              {filters.view === 'map' && (
-                <MapView events={filtered} solVivantPoints={filteredSolPoints} showSolVivant={filters.solVivantEnabled} />
-              )}
-              {filters.view === 'timeline' && <TimelineView events={filtered} />}
-              {filters.view === 'wall' && <MurDuVivantView events={filtered} />}
-              {filters.view === 'constellation' && <ConstellationView events={filtered} />}
-              {filters.view === 'list' && <ListView events={filtered} />}
-            </>
-          )}
-        </main>
-
-        {/* Final CTA */}
-        <section className="border-t border-border bg-gradient-to-br from-primary/5 to-secondary/10">
-          <div className="container mx-auto px-4 py-12 text-center max-w-2xl">
-            <Sparkles className="h-10 w-10 mx-auto text-primary" />
-            <h2 className="mt-4 text-2xl sm:text-3xl font-serif">Envie de marcher avec nous ?</h2>
-            <p className="mt-3 text-center text-muted-foreground">
-              Rejoignez une communauté de marcheurs qui&nbsp;observent,&nbsp;écoutent,&nbsp;écrivent&nbsp;et prennent soin des territoires.
-            </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Button asChild size="lg">
-                <Link to="/marches-du-vivant/connexion">
-                  Créer mon compte marcheur
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link to="/marches-du-vivant">En savoir plus</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
+        <FinalCTA />
       </div>
     </>
   );
