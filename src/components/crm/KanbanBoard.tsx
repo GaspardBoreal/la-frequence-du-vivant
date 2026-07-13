@@ -151,5 +151,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         )}
       </DragOverlay>
     </DndContext>
+    </OpportunityDocsIndexProvider>
   );
 };
