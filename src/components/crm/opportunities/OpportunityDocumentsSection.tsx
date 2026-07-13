@@ -1,8 +1,9 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Eye, Trash2, Upload, FileText, FileImage, FileSpreadsheet, File as FileIcon, Loader2 } from 'lucide-react';
+import { Eye, Trash2, Upload, Loader2 } from 'lucide-react';
 import { useOpportunityDocuments, type OpportunityDocument } from '@/hooks/useOpportunityDocuments';
+import { iconFor, formatSize } from '@/lib/crmDocIcon';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,22 +20,6 @@ interface Props {
   opportunityId: string;
 }
 
-function iconFor(mime: string | null, name: string) {
-  const m = (mime || '').toLowerCase();
-  const n = name.toLowerCase();
-  if (m.startsWith('image/')) return FileImage;
-  if (m.includes('pdf') || n.endsWith('.pdf')) return FileText;
-  if (m.includes('sheet') || m.includes('excel') || /\.(xlsx?|csv)$/.test(n)) return FileSpreadsheet;
-  if (m.includes('word') || /\.docx?$/.test(n)) return FileText;
-  return FileIcon;
-}
-
-function formatSize(bytes: number | null) {
-  if (!bytes && bytes !== 0) return '';
-  if (bytes < 1024) return `${bytes} o`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-}
 
 export const OpportunityDocumentsSection: React.FC<Props> = ({ opportunityId }) => {
   const { documents, isLoading, uploadDocument, deleteDocument, openDocument } =

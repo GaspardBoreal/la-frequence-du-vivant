@@ -16,6 +16,7 @@ import { OpportunityCard } from './OpportunityCard';
 import { PipelineNavigator } from './PipelineNavigator';
 import { KANBAN_COLUMNS, type CrmOpportunity, type OpportunityStatus } from '@/types/crm';
 import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
+import { OpportunityDocsIndexProvider } from '@/hooks/useOpportunitiesDocumentsIndex';
 
 interface KanbanBoardProps {
   onEditOpportunity?: (opportunity: CrmOpportunity) => void;
@@ -107,6 +108,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   return (
+    <OpportunityDocsIndexProvider>
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
@@ -149,5 +151,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         )}
       </DragOverlay>
     </DndContext>
+    </OpportunityDocsIndexProvider>
   );
 };
