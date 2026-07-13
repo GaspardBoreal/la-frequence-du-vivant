@@ -1,62 +1,65 @@
-# Carrousel saisonnier — Noms FR + Lightbox immersif
 
-Deux évolutions du composant `src/components/immersive-garden/SeasonSpeciesCarousel.tsx` (aucun autre fichier touché).
+# Restructurer la page Carte des Marches du Vivant en 3 onglets
 
-## 1. Noms français cohérents avec l'app marcheurs
+Transformer la page `/marches-du-vivant/carte-marches-du-vivant` en une expérience navigable avec 3 sous-menus (tabs), mobile-first et inspirants.
 
-L'onglet Biodiversité → Taxons observés (`EventBiodiversityTab.tsx`) affiche les noms via `<SpeciesName />`, qui délègue à `useFrenchSpeciesNamesAuto` — cache DB `species_translations` + auto-traduction en tâche de fond, avec fade doux quand le nom FR arrive.
+## Architecture des onglets
 
-Actuellement le carrousel affiche `sp.commonName` brut (souvent EN, ex. « Common Ivy » au lieu de « Lierre grimpant »).
+Barre de navigation sticky sous le titre principal (glassmorphism, icônes + labels, pastilles animées, scroll horizontal sur mobile).
 
-Correctif :
-- Remplacer le bloc `<div className="text-[#f4ecd4] text-xs md:text-sm …">{sp.commonName}</div>` + ligne italique scientifique par un simple :
-  ```tsx
-  <SpeciesName
-    scientificName={sp.scientificName}
-    commonName={sp.commonName}
-    showScientific
-    size="sm"
-    truncate
-    className="[&_span:first-child]:text-[#f4ecd4] [&_span:last-child]:text-[#f4ecd4]/60"
-    scientificClassName="font-serif"
-  />
-  ```
-- Le composant gère déjà : fallback instantané → swap FR fade 200 ms → jamais de blanc. Même comportement visuel que la liste des Taxons observés côté marcheur.
+### Onglet 1 — « Le Souffle du Vivant » (par défaut)
+Titre inspirant proposé : **« Le Souffle du Vivant »** — sous-titre : *Ce que nos marches racontent, en chiffres vivants.*
 
-## 2. Lightbox plein page cliquable, navigation prev/next
+Contenu : le hero actuel (KPI cards « Le terrain » + « Le vivant »).
 
-Ajouter un mode plein écran sur toute la liste `eligible` (pas seulement la page courante — l'utilisateur peut donc parcourir toutes les espèces de la saison sans quitter le lightbox).
+### Onglet 2 — « Carte & Agenda »
+Contenu : tout le bloc actuel de recherche/exploration :
+- FiltersBar (recherche marche, lieu, catégories)
+- ViewSwitcher (Carte / Timeline / Mur / Constellation / Liste)
+- SharePanel
+- Vues actives (MapView, TimelineView, etc.)
 
-Comportement :
-- Clic sur une vignette → ouvre un overlay `fixed inset-0 z-[100]` avec `AnimatePresence`.
-- Fond noir 92 % + backdrop-blur, halo saisonnier radial subtil derrière la photo.
-- Image centrée `max-h-[85vh] max-w-[92vw] object-contain`, arrivée `scale 0.9→1 + fade` (spring doux).
-- Sous l'image, carte texte compacte : `<SpeciesName showScientific size="lg" />` + badge « N obs en <saison> ».
-- Boutons flèches ‹ / › (grands, ronds, glassmorphism `bg-white/10 backdrop-blur border-white/20`) positionnés `left-4 / right-4 top-1/2`. Bouton fermer × en haut à droite.
-- Compteur discret en bas centre : `12 / 47 · <saison>`.
-- **Clavier** : `←` prev, `→` next, `Esc` ferme (via `useEffect` window listener actif seulement quand ouvert).
-- **Swipe mobile** : `motion.div` avec `drag="x"` + `onDragEnd` seuil ±60 px pour prev/next.
-- **Preload** : précharge silencieusement `eligible[i-1]` et `eligible[i+1]` (nouvelles `Image()`) pour transition instantanée.
-- **Focus trap léger** : `role="dialog" aria-modal="true" aria-label="Espèce en grand"`.
+### Onglet 3 — « Marcher Ensemble »
+Titre : **« Marcher Ensemble »** — deux publics, une même invitation.
 
-## Détail technique
+Deux sections plein écran :
 
-État ajouté :
-```ts
-const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-```
+**a) Pour les marcheurs — « La joie de marcher à plusieurs »**
+- Galerie mosaïque asymétrique (bento) avec les 10 photos fournies (`Marcheurs_01` à `12`), effets parallax léger + hover zoom
+- 3 mini-témoignages / verbes d'action : *Observer · Écouter · S'émerveiller*
+- CTA : « Rejoindre la communauté »
 
-Chaque vignette devient un `<button>` accessible (`aria-label={\`Voir \${displayName} en grand\`}`). L'index passé est l'index dans `eligible` (pas dans `slice`), calculé `currentPage * PAGE_SIZE + idx`.
+**b) Pour les propriétaires de lieux — « Ouvrez votre territoire au Vivant »**
+- Bloc split-screen : photo (racines Marcheurs_07 ou plantation Marcheurs_05) + texte
+- 3 bénéfices en pictos : *Valoriser · Documenter · Rassembler*
+- CTA : « Référencer mon lieu »
 
-Nouveau sous-composant local `<Lightbox />` (dans le même fichier pour rester atomique) :
-- Reçoit `species: SpeciesItem[]`, `index`, `onIndexChange`, `onClose`, `resolvePhoto`, `tint`, `season`.
-- Utilise `<SpeciesName />` pour le titre — cohérence FR garantie même en plein écran.
-- Utilise `framer-motion` déjà importé, ajout de `useEffect` pour clavier + preload.
+## Bloc final commun (sur les 3 onglets)
 
-Aucun changement dans : `useGardenFiche`, `ImmersiveGardenFiche.tsx`, hooks de données, DB, edge functions.
+Reprendre le bloc CTA existant en bas de page, inchangé :
 
-## Hors périmètre
+> **Envie de marcher avec nous ?**  
+> Rejoignez une communauté de marcheurs qui observent, écoutent, écrivent et prennent soin des territoires.
+>
+> [Créer mon compte marcheur] [En savoir plus]
 
-- Pas de zoom pinch/pan dans le lightbox (photo statique object-contain).
-- Pas de partage social depuis le lightbox.
-- Pas d'ouverture du drawer espèce complet (peut être ajouté ultérieurement — reste un simple visualiseur immersif).
+## Détails design (mobile-first, wahouh)
+
+- Tabs : composant custom sticky top, fond `bg-background/70 backdrop-blur-xl`, indicator animé (motion layoutId), scroll snap sur mobile
+- Transitions entre onglets : `AnimatePresence` fade + slide-up 12px
+- URL synchronisée via `?tab=souffle|carte|ensemble` (préserve deep-linking et partage)
+- Onglet 3 : arrière-plans gradient organiques, images en `aspect-[4/5]` sur mobile, grid bento sur desktop
+- Aucun changement de logique métier — pur refactor présentation
+
+## Détails techniques
+
+- **Upload des 10 photos via `lovable-assets`** depuis `/mnt/user-uploads/Marcheurs_*.{jpeg,jpg}` → pointeurs JSON dans `src/assets/marcheurs/`
+- Nouveau fichier `src/components/carte-mdv/CarteTabs.tsx` (barre onglets sticky animée)
+- Nouveau fichier `src/components/carte-mdv/tabs/SouffleTab.tsx` — wrapper hero actuel + titre inspirant
+- Nouveau fichier `src/components/carte-mdv/tabs/CarteTab.tsx` — bloc filtres + ViewSwitcher + views (extrait de la page actuelle)
+- Nouveau fichier `src/components/carte-mdv/tabs/EnsembleTab.tsx` — galerie marcheurs + bloc propriétaires
+- Nouveau fichier `src/components/carte-mdv/FinalCTA.tsx` — bloc « Envie de marcher avec nous ? » factorisé
+- Refonte de `src/pages/CarteMarchesDuVivant.tsx` : lecture `?tab=`, layout tabs + FinalCTA commun
+- SEO : Helmet inchangé (même URL canonique)
+
+Aucune modification backend, hooks, ou logique de données.
