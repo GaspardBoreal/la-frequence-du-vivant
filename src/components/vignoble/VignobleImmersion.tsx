@@ -858,90 +858,9 @@ const MillesimeStory: React.FC<{ event: PublicEvent }> = ({ event }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────
- *  ACTE 5 — La bouteille (bascule vente directe)
+ *  ACTE 5 — Rejoindre (bouteille supprimée)
  * ────────────────────────────────────────────────────────────── */
-const BouteilleCTA: React.FC<{ event: PublicEvent; species: PublicSpecies[] }> = ({ event, species }) => {
-  const pepite = species.find((s) => s.photo_url) ?? species[0];
 
-  return (
-    <section id="vin" className="py-24 px-6">
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-        {/* Bouteille SVG */}
-        <div className="relative flex justify-center order-2 md:order-1">
-          <svg viewBox="0 0 140 400" className="w-40 h-auto drop-shadow-[0_20px_40px_hsl(var(--vignoble-ink)/0.35)]">
-            <defs>
-              <linearGradient id="bottleGlass" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="hsl(var(--vignoble-wine))" stopOpacity="0.95" />
-                <stop offset="45%" stopColor="hsl(var(--vignoble-ink))" />
-                <stop offset="100%" stopColor="hsl(var(--vignoble-wine))" stopOpacity="0.85" />
-              </linearGradient>
-            </defs>
-            {/* Bottle silhouette */}
-            <path
-              d="M55 10 L85 10 L85 90 Q85 100 90 108 Q112 130 112 180 L112 380 Q112 390 102 390 L38 390 Q28 390 28 380 L28 180 Q28 130 50 108 Q55 100 55 90 Z"
-              fill="url(#bottleGlass)"
-            />
-            {/* Cap */}
-            <rect x="52" y="10" width="36" height="24" fill="hsl(var(--vignoble-gold))" opacity="0.9" />
-            {/* Label */}
-            <rect x="32" y="200" width="76" height="140" fill="hsl(var(--vignoble-paper))" />
-            <rect x="32" y="200" width="76" height="4" fill="hsl(var(--vignoble-gold))" />
-            <rect x="32" y="336" width="76" height="4" fill="hsl(var(--vignoble-gold))" />
-            {/* Label text */}
-            <text x="70" y="235" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontStyle="italic" fontSize="9" fill="hsl(var(--vignoble-wine))" letterSpacing="2">
-              GRAND CRU DU VIVANT
-            </text>
-            <text x="70" y="270" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontSize="12" fill="hsl(var(--vignoble-ink))" fontWeight="500">
-              {(event.organisateur?.nom || event.title).slice(0, 18)}
-            </text>
-            <line x1="50" y1="285" x2="90" y2="285" stroke="hsl(var(--vignoble-gold))" strokeWidth="0.5" />
-            <text x="70" y="308" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontStyle="italic" fontSize="7" fill="hsl(var(--vignoble-ink))" opacity="0.7">
-              {pepite?.common_name || pepite?.scientific_name || 'certifié GBIF'}
-            </text>
-            <text x="70" y="322" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontSize="7" fill="hsl(var(--vignoble-wine))" letterSpacing="1.5">
-              {format(new Date(event.date_marche), 'yyyy')}
-            </text>
-          </svg>
-        </div>
-
-        <div className="order-1 md:order-2">
-          <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
-            Chapitre V
-          </span>
-          <h2 className="font-vignoble text-4xl md:text-5xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
-            Emporter le vivant
-          </h2>
-          <div className="mt-6 w-16 h-[1px] bg-[hsl(var(--vignoble-gold))]" />
-          <p className="mt-6 font-vignoble italic text-xl leading-relaxed text-[hsl(var(--vignoble-ink)/0.85)]">
-            « L'étiquette doit faire rêver. » Chaque bouteille du domaine porte
-            un fragment vivant de la marche — {pepite?.common_name || 'une présence rare'} au verso,
-            date de récolte au recto.
-          </p>
-          <p className="mt-4 text-sm text-[hsl(var(--vignoble-ink)/0.7)] leading-relaxed">
-            La vente directe multiplie par 12 à 15 la valeur au litre par rapport au circuit coopératif.
-            Repartez avec la fréquence de ce vignoble en cave.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" className="bg-[hsl(var(--vignoble-wine))] hover:bg-[hsl(var(--vignoble-wine)/0.85)] text-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-gold))] rounded-none px-8 h-12 font-vignoble tracking-[0.15em] uppercase text-sm">
-              <Wine className="h-4 w-4 mr-2" />
-              Réserver une caisse
-            </Button>
-            {event.organisateur?.site_web && (
-              <a href={event.organisateur.site_web} target="_blank" rel="noreferrer">
-                <Button size="lg" variant="outline" className="border-[hsl(var(--vignoble-ink))] bg-transparent hover:bg-[hsl(var(--vignoble-ink)/0.05)] text-[hsl(var(--vignoble-ink))] rounded-none px-8 h-12 font-vignoble tracking-[0.15em] uppercase text-sm">
-                  Visiter le domaine
-                </Button>
-              </a>
-            )}
-          </div>
-          <div className="mt-6">
-            <DoubleReadPill>Argument étiquette · vente directe</DoubleReadPill>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
 
 /* ─────────────────────────────────────────────────────────────────
  *  ACTE 6 — Rejoindre
