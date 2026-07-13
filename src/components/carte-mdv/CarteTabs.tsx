@@ -19,7 +19,11 @@ interface Props {
 const CarteTabs: React.FC<Props> = ({ value, onChange }) => (
   <div className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
     <div className="container mx-auto px-4">
-      <div className="flex gap-1 overflow-x-auto no-scrollbar snap-x snap-mandatory py-2">
+      <div
+        className="flex gap-1 overflow-x-auto snap-x snap-mandatory py-2 [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: 'none' }}
+      >
+
         {TABS.map(({ key, label, short, icon: Icon }) => {
           const active = key === value;
           return (
