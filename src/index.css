@@ -912,3 +912,34 @@
 }
 .carte-mdv-popup .leaflet-popup-content a { color: inherit !important; text-decoration: none !important; }
 .carte-mdv-popup .leaflet-popup-content a:hover { text-decoration: none !important; }
+
+/* ─── Immersion Vignoble — Terroir noble ─── */
+.font-vignoble {
+  font-family: 'Cormorant Garamond', 'Libre Baskerville', Georgia, serif;
+  font-feature-settings: "liga" 1, "dlig" 1, "swsh" 1;
+}
+.vignoble-scope {
+  background: hsl(var(--vignoble-paper));
+  color: hsl(var(--vignoble-ink));
+}
+.vignoble-scope ::selection { background: hsl(var(--vignoble-gold) / 0.35); }
+.vignoble-drop-cap::first-letter {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 500;
+  float: left;
+  font-size: 4.5em;
+  line-height: 0.85;
+  padding: 0.15em 0.12em 0 0;
+  color: hsl(var(--vignoble-wine));
+}
+.vignoble-gold-rule {
+  background: linear-gradient(90deg, transparent, hsl(var(--vignoble-gold)) 20%, hsl(var(--vignoble-gold)) 80%, transparent);
+  height: 1px;
+}
+.vignoble-scope .prose { color: hsl(var(--vignoble-ink) / 0.86); }
+.vignoble-scope .prose strong { color: hsl(var(--vignoble-wine)); }
+@keyframes vignoble-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
+}
+.vignoble-pulse { animation: vignoble-glow 3.6s ease-in-out infinite; }
