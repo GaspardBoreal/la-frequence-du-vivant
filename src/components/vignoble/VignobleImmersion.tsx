@@ -871,7 +871,7 @@ const RejoindreSection: React.FC<{ event: PublicEvent; slug: string }> = ({ even
     <section id="rejoindre" className="py-24 px-6 bg-gradient-to-b from-[hsl(var(--vignoble-paper))] to-[hsl(var(--vignoble-paper-warm))]">
       <div className="max-w-3xl mx-auto text-center">
         <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
-          Chapitre VI
+          Chapitre V
         </span>
         <h2 className="font-vignoble text-5xl md:text-6xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
           Marcher ce vignoble
