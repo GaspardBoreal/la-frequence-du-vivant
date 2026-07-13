@@ -1,18 +1,20 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  Calendar, MapPin, Grape, Sprout, Leaf, ChevronDown, ChevronRight,
-  BookOpen, Eye, Users, Wine, Share2, Sparkles, Info, ArrowRight,
+  Calendar, MapPin, Grape, Sprout, Leaf, ChevronDown, ChevronRight, ChevronLeft,
+  BookOpen, Eye, Users, Wine, Share2, Sparkles, Info, ArrowRight, Camera,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type {
-  PublicEvent, PublicEventStats, PublicBiodiversity, PublicSpecies,
+import {
+  usePublicEventMedias,
+  type PublicEvent, type PublicEventStats, type PublicBiodiversity, type PublicSpecies, type PublicMedia,
 } from '@/hooks/usePublicEvent';
+import { useExplorationSpeciesCount } from '@/hooks/useExplorationSpeciesCount';
 import { getVerdict, TONE_STYLES, type VignobleAxis } from '@/lib/vignobleVerdicts';
 import { SpeciesName } from '@/components/species/SpeciesName';
 
