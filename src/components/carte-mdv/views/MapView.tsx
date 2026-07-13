@@ -128,7 +128,10 @@ const MapView: React.FC<Props> = ({ events, solVivantPoints = [], showSolVivant 
             const detailUrl = isJardin
               ? `/jardin/${e.public_slug ?? e.id}${carteQuery}`
               : e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
-            const inscriptionUrl = user ? detailUrl : `/marches-du-vivant/connexion?next=${encodeURIComponent(detailUrl)}`;
+            const isPubliclyBrowsable = isJardin || (e.is_public && !!e.public_slug);
+            const inscriptionUrl = user || isPubliclyBrowsable
+              ? detailUrl
+              : `/marches-du-vivant/connexion?next=${encodeURIComponent(detailUrl)}`;
             const isUpcoming = new Date(e.date_marche).getTime() > Date.now();
             const chip = TYPE_CHIP[e.event_type ?? ''] ?? { bg: '#E7F3F1', text: '#0D6B58', ring: 'rgba(13,107,88,0.15)', label: meta?.shortLabel ?? 'Marche' };
             const ctaHref = isUpcoming ? inscriptionUrl : detailUrl;

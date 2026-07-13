@@ -38,7 +38,10 @@ const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
       ? `/m/${event.public_slug}`
       : `/admin/marche-events/${event.id}`;
 
-  const inscriptionUrl = user
+  // Fiche publique (/m/:slug) et Jardin sont accessibles sans compte : on y envoie directement.
+  // Pour un événement non-public (fallback /admin/...), on garde la porte connexion.
+  const isPubliclyBrowsable = isJardin || (event.is_public && !!event.public_slug);
+  const inscriptionUrl = user || isPubliclyBrowsable
     ? detailUrl
     : `/marches-du-vivant/connexion?next=${encodeURIComponent(detailUrl)}`;
 
@@ -138,6 +141,10 @@ const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
             {user ? (
               <Button asChild size="sm" className="flex-1">
                 <Link to={inscriptionUrl}>S'inscrire à cette marche</Link>
+              </Button>
+            ) : isPubliclyBrowsable ? (
+              <Button asChild size="sm" className="flex-1">
+                <Link to={detailUrl}>Découvrir & rejoindre</Link>
               </Button>
             ) : (
               <div className="flex-1 space-y-1">
