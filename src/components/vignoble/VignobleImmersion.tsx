@@ -916,6 +916,8 @@ const RejoindreSection: React.FC<{ event: PublicEvent; slug: string }> = ({ even
 const VignobleImmersion: React.FC<Props> = ({ event, stats, biodiversity, slug, onShare }) => {
   const [activeChapter, setActiveChapter] = useState<string>('ouverture');
   const species = biodiversity?.species ?? [];
+  const { data: speciesCountData } = useExplorationSpeciesCount(event.exploration_id);
+  const unifiedSpeciesCount = speciesCountData?.total ?? null;
 
   // Simple scroll-spy
   React.useEffect(() => {
@@ -939,16 +941,15 @@ const VignobleImmersion: React.FC<Props> = ({ event, stats, biodiversity, slug, 
 
       <VignobleHero event={event} onShare={onShare} />
       <OrnamentalDivider label="I · Le Domaine" />
-      <DomaineChiffres stats={stats} biodiversity={biodiversity} event={event} />
+      <DomaineChiffres stats={stats} biodiversity={biodiversity} event={event} unifiedSpeciesCount={unifiedSpeciesCount} />
+      <AlbumDomaineCarousel slug={slug} />
       <OrnamentalDivider label="II · Rencontres" />
       <PepitesGrid species={species} />
       <OrnamentalDivider label="III · Vigne & Mouton" />
       <FicheVigneMouton species={species} />
       <OrnamentalDivider label="IV · Millésime" />
       <MillesimeStory event={event} />
-      <OrnamentalDivider label="V · La Bouteille" />
-      <BouteilleCTA event={event} species={species} />
-      <OrnamentalDivider label="VI · Rejoindre" />
+      <OrnamentalDivider label="V · Rejoindre" />
       <RejoindreSection event={event} slug={slug} />
 
       {/* Footer signature */}
