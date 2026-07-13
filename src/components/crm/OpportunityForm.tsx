@@ -537,6 +537,12 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
               />
             </div>
 
+            {isEditing && opportunity?.id && (
+              <div className="border-t pt-4">
+                <OpportunityDocumentsSection opportunityId={opportunity.id} />
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Annuler
