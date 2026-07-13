@@ -1,38 +1,34 @@
 ## Problème
 
-Sur la carte des Marches du Vivant, cliquer sur « Rejoindre la Fréquence » (vignette / popup carte) d'un événement **public** (comme Château Boutinet) redirige vers `/marches-du-vivant/connexion?next=/m/...` alors que la fiche `/m/:slug` est **publique** et pensée pour la découverte grand public (immersion Vignoble incluse).
+Sur `/m/chateau-boutinet-…`, la page affiche **« Page introuvable »**. La RPC `get_public_event(_slug)` renvoie NULL car elle plante silencieusement à l'exécution :
+
+```
+ERROR: 42P01: relation "public.marche_event_organisateurs" does not exist
+```
 
 ## Cause
 
-Dans `EventCard.tsx` et `MapView.tsx`, le CTA principal des marches à venir construit l'URL comme :
+La dernière migration `20260713070025_*.sql` (créée pour exposer `category` au front Vignoble) a introduit un sous-select qui joint une table inventée `public.marche_event_organisateurs` :
 
-```ts
-const inscriptionUrl = user ? detailUrl : `/marches-du-vivant/connexion?next=…`;
+```sql
+FROM public.marche_event_organisateurs meo
+JOIN public.organisateurs o ON o.id = meo.organisateur_id
 ```
 
-Ce raccourci part du principe qu'il faut être connecté pour « rejoindre ». Or `/m/:slug` est publique : forcer la connexion casse le funnel d'attractivité (le visiteur ne voit jamais la fiche immersive avant de devoir créer un compte).
+Cette table n'existe pas. Le lien organisateur ↔ marche_events n'existe pas non plus : seule la table legacy `marches` porte `organisateur_id`, pas `marche_events`. L'ancienne version de la RPC référençait `e.organisateur_id` sur `marche_events`, colonne également absente aujourd'hui — donc l'organisateur n'a jamais été réellement remonté pour les marches publiques `marche_events`, et le champ était toujours NULL côté front.
 
-## Correctif proposé
+Résultat : dès que le front appelle `get_public_event` pour Château Boutinet, PostgreSQL lève l'erreur, `_result` reste NULL, `PublicEventPage` affiche « Page introuvable ».
 
-Dissocier **découverte publique** et **inscription**. Le clic sur la vignette doit d'abord ouvrir la fiche publique ; l'inscription (auth requise) se fait *depuis* la fiche.
+## Correctif
 
-### 1. `src/components/carte-mdv/EventCard.tsx`
+Une seule migration SQL, `CREATE OR REPLACE FUNCTION public.get_public_event(_slug text)`, qui :
 
-- Pour un événement public (`event.is_public && event.public_slug`, non-jardin), le CTA principal des marches à venir devient un lien direct vers `/m/:slug`, libellé **« Découvrir & rejoindre »** (visiteurs anonymes) ou **« S'inscrire à cette marche »** (connectés, comme aujourd'hui).
-- Retirer la ligne secondaire « Déjà marcheur ? Se connecter » pour les événements publics (redondante — la fiche propose l'entrée).
-- Comportement inchangé pour les événements non-publics (fallback `/admin/...`) et Jardin.
+1. Conserve tous les champs actuels **y compris `category`** (indispensable pour déclencher `VignobleImmersion`).
+2. Retire le sous-select cassé et renvoie `'organisateur', NULL` (comportement effectif déjà observé côté front, aucune régression UI).
+3. Ne touche ni aux GRANTs (déjà en place) ni aux autres RPC (`get_public_event_stats`, `_biodiversity`, `_marcheurs`, …).
 
-### 2. `src/components/carte-mdv/views/MapView.tsx`
+Aucun changement front ni type nécessaire : `PublicEvent.organisateur` est déjà typé optionnel/nullable.
 
-- Même logique dans la popup carte : pour un événement public à venir, `ctaHref = detailUrl` (pas `inscriptionUrl`) et libellé **« Rejoindre la Fréquence »** conservé (déjà attractif).
-- Le passage par `/connexion?next=…` reste uniquement pour les événements non-publics à venir (accès admin réservé).
+## Vérification
 
-### 3. Aucune modif backend, aucune modif de `/m/:slug`
-
-La fiche publique (`PublicEventPage` / `VignobleImmersion`) reste inchangée : elle contient déjà son propre CTA d'inscription (« Préparer sa marche »). Si besoin d'un futur bouton « S'inscrire à cette marche » côté fiche qui déclenche la connexion, ce sera un ajout séparé.
-
-## Résultat UX
-
-- Anonyme clique « Rejoindre la Fréquence » sur la carte → **atterrit sur la fiche immersive Château Boutinet** (Terroir Noble, 7 actes).
-- Depuis la fiche, s'il veut réserver, il utilise le CTA d'inscription qui, lui, peut demander la connexion.
-- Marcheur déjà connecté : parcours inchangé (S'inscrire direct).
+Après migration, `SELECT public.get_public_event('chateau-boutinet-le-vignoble-vivant-2026-09-26')` doit renvoyer un JSON non nul avec `"category": "vignoble"`, et la page `/m/chateau-boutinet-…` doit charger l'immersion Terroir Noble.
