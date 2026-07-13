@@ -23,6 +23,14 @@
     --category-elevage: 16 65% 45%;         /* terre cuite */
     --category-maraichage: 145 55% 35%;     /* vert frais */
     --category-vignoble: 340 55% 32%;       /* bordeaux profond */
+
+    /* === Palette "Terroir noble" — template Immersion Vignoble === */
+    --vignoble-ink: 18 55% 9%;              /* #2b1810 bordeaux profond */
+    --vignoble-wine: 0 42% 30%;             /* #6b2c2c lie-de-vin */
+    --vignoble-gold: 46 55% 54%;            /* #c9a84c or antique */
+    --vignoble-gold-soft: 46 55% 68%;       /* or clair */
+    --vignoble-paper: 46 46% 90%;           /* #f0ead6 papier crème */
+    --vignoble-paper-warm: 40 40% 84%;      /* papier ombré */
     --category-jardin: 330 55% 55%;         /* rose fleuri */
     --category-exploration: 210 45% 40%;    /* bleu ardoise */
 
