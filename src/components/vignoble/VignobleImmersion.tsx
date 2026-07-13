@@ -375,8 +375,189 @@ const ChiffreCell: React.FC<{ value: number | string; label: string }> = ({ valu
 );
 
 /* ─────────────────────────────────────────────────────────────────
- *  ACTE 2 — Pépites : les rencontres
+ *  Album du Domaine — carrousel photos (marcheurs · convivialité · waypoints)
  * ────────────────────────────────────────────────────────────── */
+const AlbumDomaineCarousel: React.FC<{ slug: string }> = ({ slug }) => {
+  const { data: medias } = usePublicEventMedias(slug);
+  const reduce = useReducedMotion();
+
+  const photos = useMemo<PublicMedia[]>(
+    () => (medias ?? []).filter((m) => m.type_media === 'photo' && (m.url_fichier || m.external_url)),
+    [medias],
+  );
+
+  // Responsive tuiles par page
+  const [perPage, setPerPage] = useState(4);
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth;
+      setPerPage(w < 640 ? 1 : w < 1024 ? 2 : 4);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
+
+  const pages = useMemo(() => {
+    const out: PublicMedia[][] = [];
+    for (let i = 0; i < photos.length; i += perPage) out.push(photos.slice(i, i + perPage));
+    return out;
+  }, [photos, perPage]);
+
+  const [page, setPage] = useState(0);
+  const [flashKey, setFlashKey] = useState(0);
+  useEffect(() => { setPage(0); }, [perPage]);
+
+  useEffect(() => {
+    if (pages.length <= 1) return;
+    const t = setInterval(() => {
+      setPage((p) => (p + 1) % pages.length);
+      setFlashKey((k) => k + 1);
+    }, 4500);
+    return () => clearInterval(t);
+  }, [pages.length]);
+
+  if (photos.length === 0) return null;
+
+  const current = pages[page] ?? [];
+  const goto = (n: number) => { setPage(((n % pages.length) + pages.length) % pages.length); setFlashKey((k) => k + 1); };
+
+  return (
+    <section id="album" className="py-20 px-6 bg-[hsl(var(--vignoble-ink))] text-[hsl(var(--vignoble-paper))] relative overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-30 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at 20% 20%, hsl(var(--vignoble-wine)/0.55), transparent 55%), radial-gradient(ellipse at 80% 80%, hsl(var(--vignoble-gold)/0.18), transparent 60%)' }}
+        aria-hidden
+      />
+
+      <div className="max-w-6xl mx-auto relative">
+        <div className="text-center mb-10">
+          <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-gold))]">
+            Album du domaine
+          </span>
+          <h2 className="font-vignoble text-3xl md:text-4xl font-medium mt-3 text-[hsl(var(--vignoble-paper))]">
+            Ce que les marcheurs ont vu
+          </h2>
+          <div className="mx-auto mt-4 w-16 h-[1px] bg-[hsl(var(--vignoble-gold))]" />
+        </div>
+
+        <div className="relative group">
+          <div className="relative overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={page}
+                initial={reduce ? { opacity: 0 } : { opacity: 0, x: 60 }}
+                animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, x: -60 }}
+                transition={{ duration: reduce ? 0.4 : 0.75, ease: [0.19, 1, 0.22, 1] }}
+                className={cn(
+                  'grid gap-4',
+                  perPage === 1 ? 'grid-cols-1' : perPage === 2 ? 'grid-cols-2' : 'grid-cols-4',
+                )}
+              >
+                {current.map((m, i) => {
+                  const url = (m.url_fichier || m.external_url)!;
+                  const dy = reduce ? 0 : (i % 2 === 0 ? -4 : 4);
+                  return (
+                    <motion.figure
+                      key={m.id}
+                      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
+                      animate={reduce ? { opacity: 1 } : { opacity: 1, y: dy, scale: 1 }}
+                      transition={{ duration: 0.7, delay: i * 0.09, ease: [0.19, 1, 0.22, 1] }}
+                      className="relative overflow-hidden aspect-[4/5] border border-[hsl(var(--vignoble-gold)/0.55)] shadow-[0_20px_45px_-20px_hsl(var(--vignoble-ink)/0.9)]"
+                    >
+                      <motion.img
+                        src={url}
+                        alt={m.titre || 'Photo du domaine'}
+                        loading="lazy"
+                        initial={{ scale: 1.05 }}
+                        animate={reduce ? { scale: 1.05 } : { scale: 1.14 }}
+                        transition={{ duration: 4.5, ease: 'linear' }}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        draggable={false}
+                      />
+                      <div className="absolute inset-x-0 top-0 h-[1px] vignoble-gold-rule opacity-80" />
+                      <figcaption className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-[hsl(var(--vignoble-ink)/0.85)] via-[hsl(var(--vignoble-ink)/0.35)] to-transparent">
+                        <div className="font-vignoble italic text-[11px] text-[hsl(var(--vignoble-paper)/0.95)] leading-snug">
+                          {m.author_name ? <>— {m.author_name}</> : <>— Marcheur du domaine</>}
+                        </div>
+                        {m.titre && (
+                          <div className="text-[9px] uppercase tracking-[0.3em] text-[hsl(var(--vignoble-gold))] mt-1 truncate">
+                            {m.titre}
+                          </div>
+                        )}
+                      </figcaption>
+                    </motion.figure>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Flash doré au changement */}
+            {!reduce && (
+              <AnimatePresence>
+                <motion.div
+                  key={`flash-${flashKey}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 0.45, 0] }}
+                  transition={{ duration: 0.4, times: [0, 0.25, 1], ease: 'easeOut' }}
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background: 'radial-gradient(ellipse at center, hsl(var(--vignoble-gold)/0.9) 0%, transparent 65%)',
+                    mixBlendMode: 'screen',
+                  }}
+                />
+              </AnimatePresence>
+            )}
+          </div>
+
+          {/* Chevrons */}
+          {pages.length > 1 && (
+            <>
+              <button
+                onClick={() => goto(page - 1)}
+                aria-label="Précédent"
+                className="absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-ink)/0.6)] backdrop-blur-md text-[hsl(var(--vignoble-gold))] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => goto(page + 1)}
+                aria-label="Suivant"
+                className="absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-ink)/0.6)] backdrop-blur-md text-[hsl(var(--vignoble-gold))] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Pastilles progression */}
+        {pages.length > 1 && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            {pages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goto(i)}
+                aria-label={`Aller à la planche ${i + 1}`}
+                className={cn(
+                  'h-[3px] transition-all duration-500',
+                  i === page ? 'w-8 bg-[hsl(var(--vignoble-gold))]' : 'w-3 bg-[hsl(var(--vignoble-paper)/0.35)] hover:bg-[hsl(var(--vignoble-paper)/0.6)]',
+                )}
+              />
+            ))}
+          </div>
+        )}
+
+        <p className="mt-6 text-center font-vignoble italic text-[11px] uppercase tracking-[0.35em] text-[hsl(var(--vignoble-paper)/0.55)]">
+          {photos.length} planche{photos.length > 1 ? 's' : ''} · marcheurs & points de marche
+        </p>
+      </div>
+    </section>
+  );
+};
+
+
 const PepitesGrid: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
   const pepites = useMemo(() => {
     return [...species]
