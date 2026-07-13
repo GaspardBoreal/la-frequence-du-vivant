@@ -402,35 +402,35 @@ const PepitesGrid: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {pepites.map((s, i) => (
             <motion.article
               key={s.scientific_name}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
+              transition={{ duration: 0.6, delay: i * 0.08 }}
               className="group relative bg-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-ink)/0.08)] shadow-[0_1px_0_hsl(var(--vignoble-gold))] overflow-hidden"
             >
-              <div className="aspect-[3/4] overflow-hidden bg-[hsl(var(--vignoble-ink)/0.08)]">
+              <div className="aspect-square overflow-hidden bg-[hsl(var(--vignoble-ink)/0.08)]">
                 <img
                   src={s.photo_url!}
                   alt={s.common_name || s.scientific_name}
                   loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
-              <div className="p-5 relative">
-                <div className="absolute -top-3 left-5 right-5 h-[1px] vignoble-gold-rule" />
-                <div className="text-[9px] uppercase tracking-[0.35em] text-[hsl(var(--vignoble-gold))]">
-                  N° {String(i + 1).padStart(2, '0')}
-                </div>
-                <h3 className="mt-2 font-vignoble text-xl font-medium text-[hsl(var(--vignoble-ink))] leading-tight">
-                  <SpeciesName scientificName={s.scientific_name} commonName={s.common_name} />
-                </h3>
-                <p className="mt-1 font-vignoble italic text-xs text-[hsl(var(--vignoble-ink)/0.55)]">
-                  {s.scientific_name}
-                </p>
+              <div className="p-3 relative">
+                <div className="absolute -top-[1px] left-3 right-3 h-[1px] vignoble-gold-rule" />
+                <SpeciesName
+                  scientificName={s.scientific_name}
+                  commonName={s.common_name}
+                  size="sm"
+                  truncate
+                  showScientific
+                  scientificClassName="text-[10px] italic text-[hsl(var(--vignoble-ink)/0.55)]"
+                  className="font-vignoble text-[hsl(var(--vignoble-ink))]"
+                />
               </div>
             </motion.article>
           ))}
