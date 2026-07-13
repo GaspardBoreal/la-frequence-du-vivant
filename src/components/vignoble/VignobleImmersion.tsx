@@ -107,11 +107,23 @@ const VignobleHero: React.FC<{ event: PublicEvent; onShare: () => void }> = ({ e
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 500], [0, 100]);
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0.25]);
-  const dateLabel = format(new Date(event.date_marche), 'PPP', { locale: fr });
+  const vineY = useTransform(scrollY, [0, 600], [0, -60]);
+  const dateLabel = format(new Date(event.date_marche), 'PPP', { locale: fr }).toUpperCase();
+
+  // Split title in 2 lignes propres pour la composition « cartel »
+  const titleWords = (event.title || '').split(/\s+/);
+  const cut = Math.max(1, Math.min(titleWords.length - 1, Math.ceil(titleWords.length / 2)));
+  const line1 = titleWords.slice(0, cut).join(' ');
+  const line2 = titleWords.slice(cut).join(' ');
 
   return (
-    <header id="ouverture" ref={heroRef} className="relative overflow-hidden min-h-screen flex flex-col">
-      {event.cover_image_url ? (
+    <header
+      id="ouverture"
+      ref={heroRef}
+      className="relative overflow-hidden min-h-screen flex flex-col vignoble-hero-bg"
+    >
+      {/* Photo de couverture (si présente) — overlay renforcé pour préserver contraste */}
+      {event.cover_image_url && (
         <>
           <motion.img
             src={event.cover_image_url}
@@ -120,42 +132,95 @@ const VignobleHero: React.FC<{ event: PublicEvent; onShare: () => void }> = ({ e
             style={{ y: heroY, opacity: heroOpacity }}
             className="absolute inset-0 w-full h-[115%] object-cover -z-20"
           />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[hsl(var(--vignoble-ink)/0.75)] via-[hsl(var(--vignoble-ink)/0.55)] to-[hsl(var(--vignoble-paper))]" aria-hidden />
+          <div
+            className="absolute inset-0 -z-10 bg-[hsl(var(--vignoble-ink)/0.82)]"
+            aria-hidden
+          />
         </>
-      ) : (
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[hsl(var(--vignoble-ink))] via-[hsl(var(--vignoble-wine))] to-[hsl(var(--vignoble-paper))]" aria-hidden />
       )}
 
+      {/* Grain lithographique */}
+      <div className="absolute inset-0 vignoble-grain pointer-events-none" aria-hidden />
+
+      {/* Branche de vigne décorative (desktop) */}
+      <motion.svg
+        aria-hidden
+        style={{ y: vineY }}
+        viewBox="0 0 120 900"
+        className="hidden lg:block absolute left-4 top-0 h-full w-24 opacity-[0.22] text-[hsl(var(--vignoble-gold-soft))] pointer-events-none"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.1"
+      >
+        <path d="M60 0 C 50 120, 72 220, 58 340 S 46 560, 62 700 S 54 840, 60 900" />
+        {[80, 190, 310, 430, 560, 690, 810].map((y, i) => (
+          <g key={i} transform={`translate(${i % 2 === 0 ? 40 : 74}, ${y})`}>
+            <path d={`M0 0 C ${i % 2 === 0 ? -18 : 18} -8, ${i % 2 === 0 ? -22 : 22} 8, 0 18 Z`} fill="currentColor" opacity="0.55" />
+            <circle cx={i % 2 === 0 ? -6 : 6} cy="24" r="3" fill="currentColor" opacity="0.8" />
+            <circle cx={i % 2 === 0 ? -12 : 12} cy="30" r="3" fill="currentColor" opacity="0.7" />
+            <circle cx={i % 2 === 0 ? 0 : 0} cy="32" r="3" fill="currentColor" opacity="0.75" />
+          </g>
+        ))}
+      </motion.svg>
+
+      {/* Sceau de cire — coin haut-droit */}
+      <div className="absolute top-24 right-6 md:right-12 z-10 vignoble-seal-in pointer-events-none" aria-hidden>
+        <svg viewBox="0 0 140 140" className="w-24 h-24 md:w-32 md:h-32 drop-shadow-[0_8px_16px_rgba(0,0,0,0.45)]">
+          <defs>
+            <radialGradient id="wax" cx="50%" cy="45%" r="60%">
+              <stop offset="0%" stopColor="hsl(var(--vignoble-wine))" stopOpacity="1" />
+              <stop offset="70%" stopColor="hsl(18 55% 14%)" stopOpacity="1" />
+              <stop offset="100%" stopColor="hsl(18 55% 6%)" stopOpacity="1" />
+            </radialGradient>
+            <path id="sealCircle" d="M 70,70 m -48,0 a 48,48 0 1,1 96,0 a 48,48 0 1,1 -96,0" />
+          </defs>
+          <circle cx="70" cy="70" r="62" fill="url(#wax)" />
+          <circle cx="70" cy="70" r="58" fill="none" stroke="hsl(var(--vignoble-gold))" strokeWidth="0.8" opacity="0.9" />
+          <circle cx="70" cy="70" r="50" fill="none" stroke="hsl(var(--vignoble-gold))" strokeWidth="0.5" opacity="0.6" strokeDasharray="1 3" />
+          <text fill="hsl(var(--vignoble-gold-soft))" fontSize="8.5" letterSpacing="3" fontFamily="'Cormorant Garamond', serif" fontStyle="italic">
+            <textPath href="#sealCircle" startOffset="0">· GRAND CRU · DU VIVANT · MMXXVI ·</textPath>
+          </text>
+          {/* grappe centrale */}
+          <g transform="translate(70 70)" fill="hsl(var(--vignoble-gold))">
+            <circle cx="-6" cy="0" r="3" />
+            <circle cx="6" cy="0" r="3" />
+            <circle cx="0" cy="-4" r="3" />
+            <circle cx="-3" cy="6" r="3" />
+            <circle cx="3" cy="6" r="3" />
+            <circle cx="0" cy="12" r="3" />
+            <path d="M0 -8 C -2 -14, 4 -16, 6 -20" stroke="hsl(var(--vignoble-gold-soft))" strokeWidth="0.8" fill="none" />
+          </g>
+        </svg>
+      </div>
+
       {/* Top bar */}
-      <div className="max-w-6xl w-full mx-auto px-6 pt-6 flex items-center justify-between gap-3">
+      <div className="relative z-20 max-w-6xl w-full mx-auto px-6 pt-8 flex items-center justify-between gap-3">
         <Link
           to="/marches-du-vivant"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs backdrop-blur-md bg-[hsl(var(--vignoble-paper)/0.15)] border border-[hsl(var(--vignoble-gold)/0.4)] text-[hsl(var(--vignoble-paper))] hover:bg-[hsl(var(--vignoble-paper)/0.25)] transition"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs backdrop-blur-md bg-[hsl(var(--vignoble-ink)/0.55)] border border-[hsl(var(--vignoble-gold)/0.55)] text-[hsl(var(--vignoble-paper))] hover:bg-[hsl(var(--vignoble-ink)/0.75)] transition"
         >
           <ChevronRight className="h-3 w-3 rotate-180" />
           Les Marches du Vivant
         </Link>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onShare}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs backdrop-blur-md bg-[hsl(var(--vignoble-paper)/0.15)] border border-[hsl(var(--vignoble-gold)/0.4)] text-[hsl(var(--vignoble-paper))] hover:bg-[hsl(var(--vignoble-paper)/0.25)] transition"
-          >
-            <Share2 className="h-3 w-3" />
-            <span className="hidden sm:inline">Partager</span>
-          </button>
-        </div>
+        <button
+          onClick={onShare}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs backdrop-blur-md bg-[hsl(var(--vignoble-ink)/0.55)] border border-[hsl(var(--vignoble-gold)/0.55)] text-[hsl(var(--vignoble-paper))] hover:bg-[hsl(var(--vignoble-ink)/0.75)] transition"
+        >
+          <Share2 className="h-3 w-3" />
+          <span className="hidden sm:inline">Partager</span>
+        </button>
       </div>
 
-      {/* Centerpiece */}
-      <div className="flex-1 max-w-6xl w-full mx-auto px-6 pb-24 flex flex-col justify-end">
-        <motion.div
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-          className="space-y-8"
-        >
-          {/* Cartouche doré */}
-          <div className="inline-flex items-center gap-3 px-5 py-2 border-y border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-ink)/0.35)] backdrop-blur-sm">
+      {/* Cartel centré */}
+      <div className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-6 flex flex-col justify-center items-center text-center">
+        <div className="space-y-8">
+          {/* Numérotation romaine */}
+          <div className="font-vignoble italic text-[10px] uppercase tracking-[0.55em] text-[hsl(var(--vignoble-gold))]">
+            ✦ &nbsp;Acte I / VII&nbsp; ✦
+          </div>
+
+          {/* Cartouche */}
+          <div className="inline-flex items-center gap-3 px-6 py-2.5 border-y border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-ink)/0.55)] backdrop-blur-sm">
             <Grape className="h-4 w-4 text-[hsl(var(--vignoble-gold))]" />
             <span className="font-vignoble italic text-xs uppercase tracking-[0.5em] text-[hsl(var(--vignoble-paper))]">
               Grand Cru du Vivant
@@ -163,56 +228,91 @@ const VignobleHero: React.FC<{ event: PublicEvent; onShare: () => void }> = ({ e
             <Grape className="h-4 w-4 text-[hsl(var(--vignoble-gold))]" />
           </div>
 
+          {/* H1 en 2 lignes */}
           <h1
-            className="font-vignoble font-medium text-[hsl(var(--vignoble-paper))] tracking-tight leading-[0.9]"
-            style={{ fontSize: 'clamp(2.75rem, 9vw, 6.5rem)' }}
+            className="font-vignoble font-medium text-[hsl(var(--vignoble-paper))] tracking-tight leading-[0.95]"
+            style={{ fontSize: 'clamp(2.5rem, 8vw, 6rem)' }}
           >
-            {event.title}
+            {line1 && (
+              <span className="block italic vignoble-title-reveal" style={{ animationDelay: '150ms' }}>
+                {line1}
+              </span>
+            )}
+            {line2 && (
+              <span
+                className="block uppercase tracking-[0.02em] vignoble-title-reveal"
+                style={{
+                  animationDelay: '450ms',
+                  fontSize: '0.72em',
+                  color: 'hsl(var(--vignoble-gold-soft))',
+                }}
+              >
+                {line2}
+              </span>
+            )}
           </h1>
 
           {/* Filet or */}
-          <div className="w-24 h-[2px] bg-[hsl(var(--vignoble-gold))]" />
+          <div className="mx-auto w-32 h-[2px] bg-[hsl(var(--vignoble-gold))] vignoble-rule-draw" />
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[hsl(var(--vignoble-paper)/0.9)]">
-            <span className="inline-flex items-center gap-2 font-vignoble italic text-lg">
-              <Calendar className="h-4 w-4 text-[hsl(var(--vignoble-gold))]" />{dateLabel}
+          {/* Meta */}
+          <div className="flex flex-wrap justify-center items-center gap-x-5 gap-y-2 text-[hsl(var(--vignoble-paper)/0.92)] text-[11px] tracking-[0.35em] uppercase">
+            <span className="inline-flex items-center gap-2">
+              <Calendar className="h-3.5 w-3.5 text-[hsl(var(--vignoble-gold))]" />
+              {dateLabel}
             </span>
             {event.lieu && (
-              <span className="inline-flex items-center gap-2 font-vignoble italic text-lg">
-                <MapPin className="h-4 w-4 text-[hsl(var(--vignoble-gold))]" />{event.lieu}
-              </span>
+              <>
+                <span className="text-[hsl(var(--vignoble-gold))]">·</span>
+                <span className="inline-flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-[hsl(var(--vignoble-gold))]" />
+                  {event.lieu}
+                </span>
+              </>
             )}
           </div>
 
           {/* CTA double */}
-          <div className="flex flex-wrap gap-3 pt-4">
+          <div className="flex flex-wrap justify-center gap-3 pt-6">
             <a href="#rejoindre">
-              <Button size="lg" className="bg-[hsl(var(--vignoble-wine))] hover:bg-[hsl(var(--vignoble-wine)/0.85)] text-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-gold))] rounded-none px-8 h-12 font-vignoble tracking-[0.15em] uppercase text-sm">
+              <Button
+                size="lg"
+                className="bg-[hsl(var(--vignoble-wine))] hover:bg-[hsl(var(--vignoble-wine)/0.85)] text-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-gold))] rounded-none px-8 h-12 font-vignoble tracking-[0.2em] uppercase text-xs shadow-[0_10px_30px_-10px_hsl(var(--vignoble-wine))]"
+              >
                 Marcher ce vignoble
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </a>
             <a href="#domaine">
-              <Button size="lg" variant="outline" className="border-[hsl(var(--vignoble-gold))] bg-transparent hover:bg-[hsl(var(--vignoble-gold)/0.15)] text-[hsl(var(--vignoble-paper))] rounded-none px-8 h-12 font-vignoble tracking-[0.15em] uppercase text-sm">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-ink)/0.55)] backdrop-blur-sm hover:bg-[hsl(var(--vignoble-gold)/0.15)] text-[hsl(var(--vignoble-paper))] rounded-none px-8 h-12 font-vignoble tracking-[0.2em] uppercase text-xs"
+              >
                 Explorer le domaine
               </Button>
             </a>
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 0.6 }}
-          className="mt-16 flex flex-col items-center gap-2 text-[hsl(var(--vignoble-paper)/0.7)]"
-        >
-          <span className="font-vignoble italic text-[10px] uppercase tracking-[0.4em]">Sept chapitres</span>
-          <ChevronDown className="h-4 w-4 animate-bounce" />
-        </motion.div>
+        </div>
       </div>
+
+      {/* Scroll cue */}
+      <div className="relative z-10 pb-10 flex flex-col items-center gap-3 text-[hsl(var(--vignoble-paper)/0.75)]">
+        <span className="font-vignoble italic text-[10px] uppercase tracking-[0.45em]">
+          Descendre au domaine
+        </span>
+        <span className="block w-[1px] h-10 bg-[hsl(var(--vignoble-gold))] vignoble-scroll-cue" />
+      </div>
+
+      {/* Fondu de raccord vers le paper de l'acte I */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-24 vignoble-hero-fade-bottom pointer-events-none"
+        aria-hidden
+      />
     </header>
   );
 };
+
 
 /* ─────────────────────────────────────────────────────────────────
  *  ACTE 1 — Domaine en chiffres (bandeau or)
