@@ -1,52 +1,109 @@
-## Objectif
+# Immersion Vignoble — Template public /m/:slug
 
-Rendre les documents visibles et accessibles directement depuis la vignette d'une opportunité dans le Kanban `admin/crm/pipeline`, sans avoir à ouvrir la fiche.
+Un template dédié à la catégorie **vignoble** pour les pages publiques de marches, appliqué en premier à Château Boutinet puis réplicable (Rioublanc…). Double lecture 50/50 : séduire le marcheur ET servir le vigneron dans la même page.
 
-## Ce qu'on ajoute
+## Palette & signature (Terroir noble)
 
-### 1. Badge « Documents » sur `OpportunityCard`
+Tokens sémantiques ajoutés à `index.css` + variante `.theme-vignoble` :
+- `--vignoble-ink` `#2b1810` (bordeaux profond, fonds nocturnes)
+- `--vignoble-wine` `#6b2c2c` (lie-de-vin, accents structurants)
+- `--vignoble-gold` `#c9a84c` (or antique, filets & chiffres clés)
+- `--vignoble-paper` `#f0ead6` (papier crème, fond dominant)
+- Typo : **Cormorant Garamond** (titres, italique éditorial) + **Inter** (courant) — cohérent avec l'existant.
 
-Sur chaque vignette, si l'opportunité a ≥ 1 document :
-- Une petite pastille discrète (icône `FileText` + compteur, ex. `📄 2`) intégrée dans la ligne des jalons/infos, cohérente avec le style existant (Badge shadcn, taille `xs`).
-- Clic sur la pastille (stopPropagation pour ne pas déclencher l'édition) → ouvre un **popover** compact ancré à la pastille.
+Motif signature : **filet doré fin + capitale ornée** en début de chapitre (codes étiquette grand cru), séparateurs organiques (branche de vigne SVG) entre sections.
 
-### 2. Popover « Documents » depuis la vignette
+## Structure de la page (scroll narratif, 7 actes)
 
-Contenu du popover :
-- En-tête : « Documents (N) »
-- Liste condensée (max 5 visibles, scroll au-delà) — pour chaque doc :
-  - icône mime (PDF/image/xlsx/…) 
-  - nom tronqué + taille
-  - bouton œil → ouvre le doc via signed URL (`openDocument`)
-  - bouton télécharger → même signed URL avec attribut `download`
-- Footer : lien « Gérer les documents » qui ouvre la fiche opportunité (déclenche `onEdit`) — permet upload/suppression comme aujourd'hui.
+```text
+┌─────────────────────────────────────────────────┐
+│ ACTE 0 — CARTEL D'OUVERTURE (hero pleine hauteur)│
+│  Photo pleine largeur des vignes                 │
+│  Cartouche doré : "Château Boutinet · Villegouge"│
+│  Titre Cormorant XL · date marche 26/09/2026     │
+│  Double CTA : [S'inscrire] [Écouter le domaine]  │
+│  Indice discret : ↓ 6 chapitres                  │
+├─────────────────────────────────────────────────┤
+│ ACTE 1 — LE DOMAINE EN CHIFFRES                  │
+│  Bandeau or : 28 ha · 8 vignes · 10 forêt ·      │
+│  10 prairies · 50 brebis South Down · bio 2020   │
+│  Mini-carte parcellaire stylisée (SVG)           │
+├─────────────────────────────────────────────────┤
+│ ACTE 2 — CE QUE VOUS ALLEZ RENCONTRER (marcheur) │
+│  Grille éditoriale 4 vignettes "pépites" :       │
+│  Brebis South Down · Grand capricorne ·          │
+│  Cerf-volant · Orchidées du tertre de Touille    │
+│  Chaque vignette : illustration + micro-récit    │
+├─────────────────────────────────────────────────┤
+│ ACTE 3 — LA FICHE VIGNE/MOUTON (double lecture)  │
+│  Composant phare — inventaire faune-flore avec   │
+│  toggle Vigne ↔ Mouton. Chaque espèce = ligne    │
+│  éditoriale (nom vernaculaire XL + scientifique) │
+│  + 2 pastilles : "Bon pour la vigne" ↔ "À        │
+│  surveiller" ; idem côté brebis.                 │
+│  38 espèces GBIF déjà en base.                   │
+│  Encart discret "Données certifiées GBIF"        │
+├─────────────────────────────────────────────────┤
+│ ACTE 4 — LA STORY DU MILLÉSIME                   │
+│  Long-form éditorial : Jérôme & Nathalie, la     │
+│  bascule bio, les brebis, les aléas climatiques. │
+│  Citations en italique doré pleine largeur.      │
+├─────────────────────────────────────────────────┤
+│ ACTE 5 — LE VIN (bascule vente directe)          │
+│  Bouteille 3D légère (image) + étiquette         │
+│  générée depuis les pépites de l'acte 2.         │
+│  CTA discret : "Emporter une bouteille après     │
+│  la marche" (préparation P4 storytelling).       │
+├─────────────────────────────────────────────────┤
+│ ACTE 6 — REJOINDRE LA MARCHE                     │
+│  Bloc inscription + infos pratiques + carte      │
+│  d'accès. Rappel jauge/date.                     │
+└─────────────────────────────────────────────────┘
+```
 
-Pas d'ajout/suppression depuis la vignette (reste dans la fiche, plus sûr) — la vignette est un accès *lecture rapide*.
+Une **barre de progression verticale dorée** à droite (6 chapitres) sert de sommaire cliquable — codes livre-objet, pas dashboard.
 
-### 3. Données
+## Composant phare : `<FicheVigneMouton />`
 
-Deux options, on choisit l'option **A** (perf) :
+Réutilisable pour tous les clients viticoles. Colonne unique :
+- En-tête : toggle segmenté **Vigne · Mouton · Les deux** (état par défaut : Les deux).
+- Filtres eco-tags secondaires (auxiliaire, ravageur, pollinisateur, mellifère…) issus du système existant `species_eco_tags_kb`.
+- Chaque espèce : ligne éditoriale (vignette carrée + nom FR grand + latin italique + 2 chips utilité) ; clic → drawer avec photo, description, source GBIF, observations locales datées.
+- Micro-visualisation : mini barre stackée par eco-fonction en haut ("sur 38 espèces : 12 auxiliaires, 6 pollinisateurs…") — sert la démo P2 sans sur-promettre.
 
-**A. Compter/lister via une seule requête agrégée sur le Kanban** — nouveau hook `useOpportunitiesDocumentsIndex()` qui fait un `select('opportunity_id, id, file_name, file_path, file_size, mime_type, created_at').in('opportunity_id', ids)` une seule fois pour toutes les opportunités visibles, puis expose une map `{ [opportunityId]: OpportunityDocument[] }`. Utilisé par `OpportunityCard` pour connaître le count et alimenter le popover sans N requêtes.
+## Double lecture assumée (50/50)
 
-Réutilisation de `openDocument` (signed URL) via un petit helper partagé extrait de `useOpportunityDocuments` (`getSignedUrl(path)`).
+Signaux visuels différenciés pour ne pas casser l'immersion marcheur :
+- **Trace marcheur** : Cormorant, images pleines, verticalité éditoriale.
+- **Trace vigneron / preuve** : petits filets or + micro-typo bas-de-casse en aparté ("Données certifiées GBIF", "Utile dossier HVE", "Argument étiquette"). Une **pastille or 🥂** dans la marge marque les blocs à double valeur — pédagogique sans être intrusif.
 
-### 4. Design
+## Détails techniques
 
-- Pastille : `Badge variant="secondary"` compact avec icône `FileText` + chiffre, hover subtil (couleur primary), placée dans la rangée « Additional Info » à droite du budget, ou juste sous les jalons pour rester visible.
-- Popover : `w-80`, padding compact, séparateurs légers, cohérent avec le thème (Papier Crème / Forêt Émeraude).
-- Icônes mime réutilisées de `OpportunityDocumentsSection` (extraction dans un util partagé `crmDocIcon.ts`).
+- Nouvelle route resolver : `MarcheDetail` détecte `marche.category === 'vignoble'` (ou tag) et bascule sur le layout `VignobleImmersionLayout` au lieu du layout générique. Fallback = layout actuel.
+- Nouveaux fichiers :
+  - `src/pages/vignoble/VignobleImmersionLayout.tsx`
+  - `src/components/vignoble/VignobleHero.tsx`
+  - `src/components/vignoble/DomaineChiffres.tsx`
+  - `src/components/vignoble/PepitesGrid.tsx`
+  - `src/components/vignoble/FicheVigneMouton.tsx` (composant phare, réutilisable)
+  - `src/components/vignoble/MillesimeStory.tsx`
+  - `src/components/vignoble/BouteilleCTA.tsx`
+  - `src/components/vignoble/ChapterProgress.tsx` (barre verticale dorée)
+  - `src/components/vignoble/OrnementalDivider.tsx` (branche vigne SVG)
+- Tokens `--vignoble-*` ajoutés dans `src/index.css`, mappés Tailwind dans `tailwind.config.ts`.
+- Données : réutilise `useMarcheEditorial` + `useExplorationSpeciesCount` + KB eco-tags existants ; ajout d'un champ optionnel `marche.metadata.pepites: string[]` (jusqu'à 4 espèces mises en avant, éditables admin).
+- Progressive enhancement : la page reste lisible sans JS (SSR-ready) — les toggles sont progressive-enhanced.
 
-## Fichiers touchés
+## Ce que ce plan NE fait PAS
 
-- `src/hooks/useOpportunitiesDocumentsIndex.ts` (nouveau) — requête agrégée + map par opportunité.
-- `src/hooks/useOpportunityDocuments.ts` — expose un helper `getSignedUrl` réutilisable (petit refactor, comportement inchangé).
-- `src/lib/crmDocIcon.ts` (nouveau) — `iconFor(mime, name)` + `formatSize` partagés.
-- `src/components/crm/opportunities/OpportunityDocumentsSection.tsx` — utilise le util partagé (dédup).
-- `src/components/crm/opportunities/OpportunityDocsPopover.tsx` (nouveau) — pastille + popover décrits ci-dessus.
-- `src/components/crm/OpportunityCard.tsx` — intègre `<OpportunityDocsPopover opportunityId={...} onOpenFull={() => onEdit?.(opportunity)} />`.
-- Composant parent du Kanban (là où sont mappées les cartes) — appel unique de `useOpportunitiesDocumentsIndex(allIds)` et passage via un contexte léger ou prop `docsMap` à la carte pour éviter N requêtes. (Sinon fallback : chaque carte fetch, acceptable si volumes < 100.)
+- Pas de génération PDF HVE/PAC (= P3, projet séparé).
+- Pas de PSE Carbone (= P6).
+- Pas de mécanique ferme pédagogique (= P5).
+- Pas de nouveau schéma BDD lourd — juste un champ metadata pour les pépites.
 
-## Étape 2 (RAG) — inchangée
+## Livraison
 
-Aucun impact ; les colonnes `indexed_for_rag` / `rag_indexed_at` restent prêtes.
+1. Tokens + palette Terroir noble.
+2. `FicheVigneMouton` (composant réutilisable, testable isolément).
+3. Layout complet + wiring resolver sur `cat=vignoble`.
+4. Application à Château Boutinet avec les 38 espèces GBIF déjà en base.
