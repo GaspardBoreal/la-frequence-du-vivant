@@ -93,6 +93,7 @@ export function useOpportunityDocuments(opportunityId: string | null | undefined
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: ['crm-opportunity-documents-index'] });
       toast.success('Document supprimé');
     },
     onError: (err: Error) => {
