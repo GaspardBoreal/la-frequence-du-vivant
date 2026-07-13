@@ -40,6 +40,7 @@ import { useOpportunityLinks, type OppLinkedCompany, type OppLinkedContact } fro
 import { OpportunityActionsPicker } from '@/components/crm/opportunities/OpportunityActionsPicker';
 import { ALL_ACTION_CODES, isValidActionCode, type OpportunityActionCode } from '@/lib/crmOpportunityActions';
 import { toast } from 'sonner';
+import { OpportunityDocumentsSection } from '@/components/crm/opportunities/OpportunityDocumentsSection';
 
 const opportunitySchema = z.object({
   titre: z.string().max(250, 'Maximum 250 caractères').optional(),
@@ -535,6 +536,12 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
                 )}
               />
             </div>
+
+            {isEditing && opportunity?.id && (
+              <div className="border-t pt-4">
+                <OpportunityDocumentsSection opportunityId={opportunity.id} />
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
