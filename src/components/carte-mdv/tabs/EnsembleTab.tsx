@@ -17,6 +17,7 @@ import m09 from '@/assets/marcheurs/Marcheurs_09.jpeg.asset.json';
 import m10 from '@/assets/marcheurs/Marcheurs_10.jpeg.asset.json';
 import m11 from '@/assets/marcheurs/Marcheurs_11.jpg.asset.json';
 import m12 from '@/assets/marcheurs/Marcheurs_12.jpg.asset.json';
+import m13 from '@/assets/marcheurs/Marcheurs_13.jpg.asset.json';
 
 // Bento layout : span classes per index (mobile-first single col, then desktop mosaic)
 const BENTO = [
@@ -26,6 +27,7 @@ const BENTO = [
   { asset: m04, alt: 'Observation au pied d\'un vieux chêne', className: 'sm:col-span-2 aspect-[4/3]' },
   { asset: m11, alt: 'Cercle d\'écoute au milieu du pré', className: 'aspect-[4/5]' },
   { asset: m02, alt: 'Marcheurs dispersés dans les champs dorés', className: 'aspect-[4/5]' },
+  { asset: m13, alt: 'Groupe de marcheurs observant le ciel sur un chemin de campagne', className: 'aspect-[4/5]' },
   { asset: m01, alt: 'Marcheurs en lisière de forêt', className: 'sm:col-span-2 aspect-[4/3]' },
   { asset: m09, alt: 'Atelier étudiants autour d\'une table', className: 'aspect-[4/5]' },
 ];
