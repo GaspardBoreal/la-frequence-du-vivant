@@ -318,42 +318,50 @@ const VignobleHero: React.FC<{ event: PublicEvent; onShare: () => void }> = ({ e
 /* ─────────────────────────────────────────────────────────────────
  *  ACTE 1 — Domaine en chiffres (bandeau or)
  * ────────────────────────────────────────────────────────────── */
-const DomaineChiffres: React.FC<{ stats: PublicEventStats | null | undefined; biodiversity: PublicBiodiversity | null | undefined; event: PublicEvent }> = ({ stats, biodiversity, event }) => (
-  <section id="domaine" className="py-24 px-6">
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-14">
-        <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
-          Chapitre I
-        </span>
-        <h2 className="font-vignoble text-4xl md:text-5xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
-          Le Domaine
-        </h2>
-      </div>
-
-      <div className="border-y-2 border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-paper-warm)/0.6)] py-8 px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <ChiffreCell value={biodiversity?.species_count ?? 0} label="Espèces recensées" />
-          <ChiffreCell value={stats?.marcheurs_count ?? 0} label="Marcheurs" />
-          <ChiffreCell value={stats?.observations_count ?? 0} label="Observations" />
-          <ChiffreCell value={biodiversity?.biodiversity_index ? Math.round(biodiversity.biodiversity_index * 10) / 10 : '—'} label="Indice biodiversité" />
+const DomaineChiffres: React.FC<{
+  stats: PublicEventStats | null | undefined;
+  biodiversity: PublicBiodiversity | null | undefined;
+  event: PublicEvent;
+  unifiedSpeciesCount?: number | null;
+}> = ({ stats, biodiversity, event, unifiedSpeciesCount }) => {
+  const speciesValue = unifiedSpeciesCount ?? biodiversity?.species_count ?? 0;
+  return (
+    <section id="domaine" className="py-24 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-14">
+          <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
+            Chapitre I
+          </span>
+          <h2 className="font-vignoble text-4xl md:text-5xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
+            Le Domaine
+          </h2>
         </div>
-      </div>
 
-      {event.organisateur?.description && (
-        <div className="mt-12 max-w-3xl mx-auto">
-          <p className="font-vignoble italic text-lg md:text-xl leading-relaxed text-[hsl(var(--vignoble-ink)/0.85)] text-center">
-            « {event.organisateur.description} »
-          </p>
-          {event.organisateur.nom && (
-            <p className="mt-4 text-center text-xs uppercase tracking-[0.35em] text-[hsl(var(--vignoble-wine))]">
-              — {event.organisateur.nom}
+        <div className="border-y-2 border-[hsl(var(--vignoble-gold))] bg-[hsl(var(--vignoble-paper-warm)/0.6)] py-8 px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <ChiffreCell value={speciesValue} label="Espèces recensées" />
+            <ChiffreCell value={stats?.marcheurs_count ?? 0} label="Marcheurs" />
+            <ChiffreCell value={stats?.observations_count ?? 0} label="Observations" />
+            <ChiffreCell value={biodiversity?.biodiversity_index ? Math.round(biodiversity.biodiversity_index * 10) / 10 : '—'} label="Indice biodiversité" />
+          </div>
+        </div>
+
+        {event.organisateur?.description && (
+          <div className="mt-12 max-w-3xl mx-auto">
+            <p className="font-vignoble italic text-lg md:text-xl leading-relaxed text-[hsl(var(--vignoble-ink)/0.85)] text-center">
+              « {event.organisateur.description} »
             </p>
-          )}
-        </div>
-      )}
-    </div>
-  </section>
-);
+            {event.organisateur.nom && (
+              <p className="mt-4 text-center text-xs uppercase tracking-[0.35em] text-[hsl(var(--vignoble-wine))]">
+                — {event.organisateur.nom}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 const ChiffreCell: React.FC<{ value: number | string; label: string }> = ({ value, label }) => (
   <div>
