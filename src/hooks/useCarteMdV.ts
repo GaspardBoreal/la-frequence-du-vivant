@@ -107,6 +107,8 @@ export function useCarteMdVFilters() {
   const update = useCallback((next: Partial<CarteMdVFilters>) => {
     const merged = { ...filters, ...next };
     const p = new URLSearchParams();
+    const currentTab = params.get('tab');
+    if (currentTab) p.set('tab', currentTab);
     if (merged.search) p.set('q', merged.search);
     if (merged.types.length) p.set('type', merged.types.join(','));
     if (merged.categories.length) p.set('cat', merged.categories.join(','));

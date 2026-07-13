@@ -1,10 +1,15 @@
-## Ajouter Marcheurs_13.jpg au bento « La joie de marcher à plusieurs »
+## Bug: filtres de « Carte & Agenda » perdent le paramètre `?tab=carte`
 
-1. **Upload asset** : `lovable-assets create --file /mnt/user-uploads/Marcheurs_13.jpg --filename Marcheurs_13.jpg > src/assets/marcheurs/Marcheurs_13.jpg.asset.json`
+**Cause** : `useCarteMdVFilters.update()` (src/hooks/useCarteMdV.ts, ~L107-123) construit `new URLSearchParams()` **vide** et n'y remet que les clés de filtres. Le paramètre `tab` disparaît → la page retombe sur son défaut `souffle`.
 
-2. **Éditer `src/components/carte-mdv/tabs/EnsembleTab.tsx`** :
-   - Importer `m13` depuis le nouveau pointeur asset
-   - Ajouter une entrée dans le tableau `BENTO` (photo verticale portrait des marcheurs sur un chemin, un observant le ciel avec son téléphone) avec `aspect-[4/5]` et un alt descriptif : *« Groupe de marcheurs observant le ciel sur un chemin de campagne »*
-   - Placer l'entrée de manière à préserver l'équilibre visuel de la mosaïque (insertion en milieu de séquence pour ne pas casser le rythme des `sm:col-span-2`)
+**Fix (1 ligne)** : préserver `tab` (et par sécurité tout autre paramètre non géré) lors du rebuild.
 
-Aucune autre modification.
+Modifier `update` :
+```ts
+const p = new URLSearchParams();
+const currentTab = params.get('tab');
+if (currentTab) p.set('tab', currentTab);
+// ...suite inchangée
+```
+
+Aucune autre modification. Aucun impact backend.
