@@ -122,7 +122,7 @@ export function useCarteMdVFilters() {
     if (merged.solVivantCategories.length) p.set('svc', merged.solVivantCategories.join(','));
     if (merged.view !== DEFAULT_FILTERS.view) p.set('view', merged.view);
     setParams(p, { replace: true });
-  }, [filters, setParams]);
+  }, [filters, params, setParams]);
 
   return { filters, update };
 }

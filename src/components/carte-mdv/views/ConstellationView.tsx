@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { CarteMdVEvent } from '@/hooks/useCarteMdV';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 
@@ -12,6 +12,10 @@ const TYPE_COLORS: Record<string, string> = {
 
 const ConstellationView: React.FC<{ events: CarteMdVEvent[] }> = ({ events }) => {
   const [hovered, setHovered] = useState<string | null>(null);
+  const location = useLocation();
+  const carteParams = new URLSearchParams(location.search);
+  carteParams.set('tab', 'carte');
+  const carteQuery = `?${carteParams.toString()}`;
   const W = 1000, H = 600;
 
   const stars = useMemo(() => {
@@ -82,7 +86,7 @@ const ConstellationView: React.FC<{ events: CarteMdVEvent[] }> = ({ events }) =>
         if (!e) return null;
         const meta = getMarcheEventTypeMeta(e.event_type);
         const detailUrl = e.category === 'jardin'
-          ? `/jardin/${e.public_slug ?? e.id}`
+          ? `/jardin/${e.public_slug ?? e.id}${carteQuery}`
           : e.is_public && e.public_slug ? `/m/${e.public_slug}` : `/admin/marche-events/${e.id}`;
         return (
           <div className="absolute top-3 left-3 right-3 sm:right-auto sm:max-w-sm rounded-lg bg-background/95 backdrop-blur border border-border p-3 shadow-lg pointer-events-auto">

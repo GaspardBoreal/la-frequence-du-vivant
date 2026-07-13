@@ -27,8 +27,10 @@ const EventCard: React.FC<Props> = ({ event, compact = false, rightBadge }) => {
 
   const isJardin = event.category === 'jardin';
   // Propager les filtres actifs de la carte vers la fiche Jardin (nav prev/next + retour).
+  const carteParams = new URLSearchParams(location.search);
+  carteParams.set('tab', 'carte');
   const carteQuery = isJardin && location.pathname.includes('carte-marches-du-vivant')
-    ? location.search
+    ? `?${carteParams.toString()}`
     : '';
   const detailUrl = isJardin
     ? `/jardin/${event.public_slug ?? event.id}${carteQuery}`
