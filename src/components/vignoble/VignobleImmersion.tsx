@@ -12,12 +12,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   usePublicEventMedias,
-  type PublicEvent, type PublicEventStats, type PublicBiodiversity, type PublicSpecies, type PublicMedia,
+  type PublicEvent, type PublicEventStats, type PublicBiodiversity, type PublicMedia,
 } from '@/hooks/usePublicEvent';
 import { useExplorationSpeciesCount } from '@/hooks/useExplorationSpeciesCount';
+import { useExplorationSpeciesPool } from '@/hooks/useExplorationSpeciesPool';
 import { getVerdict, TONE_STYLES, type VignobleAxis } from '@/lib/vignobleVerdicts';
 import { SpeciesName } from '@/components/species/SpeciesName';
-import { SpeciesThumb } from '@/components/species/SpeciesThumb';
 
 interface Props {
   event: PublicEvent;
@@ -26,6 +26,16 @@ interface Props {
   slug: string;
   onShare: () => void;
 }
+
+type VignobleSpecies = {
+  scientific_name: string;
+  common_name: string | null;
+  display_name: string;
+  iconic_taxon: string | null;
+  kingdom: string | null;
+  photo_url: string | null;
+  observations_count: number;
+};
 
 /* ─────────────────────────────────────────────────────────────────
  *  Ornement — filet doré + branche de vigne stylisée
@@ -324,8 +334,10 @@ const DomaineChiffres: React.FC<{
   biodiversity: PublicBiodiversity | null | undefined;
   event: PublicEvent;
   unifiedSpeciesCount?: number | null;
-}> = ({ stats, biodiversity, event, unifiedSpeciesCount }) => {
+  unifiedObservationsCount?: number | null;
+}> = ({ stats, biodiversity, event, unifiedSpeciesCount, unifiedObservationsCount }) => {
   const speciesValue = unifiedSpeciesCount ?? biodiversity?.species_count ?? 0;
+  const observationsValue = unifiedObservationsCount ?? stats?.observations_count ?? 0;
   return (
     <section id="domaine" className="py-24 px-6">
       <div className="max-w-6xl mx-auto">
@@ -342,7 +354,7 @@ const DomaineChiffres: React.FC<{
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <ChiffreCell value={speciesValue} label="Espèces recensées" />
             <ChiffreCell value={stats?.marcheurs_count ?? 0} label="Marcheurs" />
-            <ChiffreCell value={stats?.observations_count ?? 0} label="Observations" />
+            <ChiffreCell value={observationsValue} label="Observations" />
             <ChiffreCell value={biodiversity?.biodiversity_index ? Math.round(biodiversity.biodiversity_index * 10) / 10 : '—'} label="Indice biodiversité" />
           </div>
         </div>
@@ -559,7 +571,7 @@ const AlbumDomaineCarousel: React.FC<{ slug: string }> = ({ slug }) => {
 };
 
 
-const PepitesGrid: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
+const PepitesGrid: React.FC<{ species: VignobleSpecies[] }> = ({ species }) => {
   const reduce = useReducedMotion();
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [perPage, setPerPage] = useState(4);
@@ -676,15 +688,22 @@ const PepitesGrid: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
                           transition={{ duration: 0.5, delay: i * 0.06 }}
                           className="group relative bg-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-ink)/0.08)] shadow-[0_1px_0_hsl(var(--vignoble-gold))] overflow-hidden"
                         >
-                          <div className="aspect-square overflow-hidden bg-[hsl(var(--vignoble-ink)/0.06)]">
-                            <SpeciesThumb
-                              scientificName={s.scientific_name}
-                              commonName={s.common_name}
-                              kingdom={(s as any).kingdom}
-                              localPhoto={s.photo_url}
-                              size="lg"
-                              className="w-full h-full !rounded-none"
-                            />
+                          <div className="aspect-square overflow-hidden bg-[hsl(var(--vignoble-ink)/0.06)] relative">
+                            {s.photo_url ? (
+                              <motion.img
+                                src={s.photo_url}
+                                alt={s.display_name || s.common_name || s.scientific_name}
+                                loading="lazy"
+                                className="absolute inset-0 w-full h-full object-cover"
+                                whileHover={reduce ? undefined : { scale: 1.06 }}
+                                transition={{ duration: 0.7, ease: [0.19, 1, 0.22, 1] }}
+                              />
+                            ) : (
+                              <div className="absolute inset-0 grid place-items-center text-[hsl(var(--vignoble-ink)/0.3)]">
+                                <Leaf className="h-10 w-10" />
+                              </div>
+                            )}
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[hsl(var(--vignoble-ink)/0.38)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                           <div className="p-3 relative">
                             <div className="absolute -top-[1px] left-3 right-3 h-[1px] vignoble-gold-rule" />
@@ -765,7 +784,7 @@ const PepitesGrid: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
 /* ─────────────────────────────────────────────────────────────────
  *  ACTE 3 — Fiche croisée Vigne / Mouton (composant phare)
  * ────────────────────────────────────────────────────────────── */
-const FicheVigneMouton: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
+const FicheVigneMouton: React.FC<{ species: VignobleSpecies[] }> = ({ species }) => {
   const [axis, setAxis] = useState<VignobleAxis | 'both'>('both');
   const [taxonFilter, setTaxonFilter] = useState<string | null>(null);
 
@@ -1056,9 +1075,21 @@ const RejoindreSection: React.FC<{ event: PublicEvent; slug: string }> = ({ even
  * ────────────────────────────────────────────────────────────── */
 const VignobleImmersion: React.FC<Props> = ({ event, stats, biodiversity, slug, onShare }) => {
   const [activeChapter, setActiveChapter] = useState<string>('ouverture');
-  const species = biodiversity?.species ?? [];
   const { data: speciesCountData } = useExplorationSpeciesCount(event.exploration_id);
-  const unifiedSpeciesCount = speciesCountData?.total ?? null;
+  const { data: speciesPool = [] } = useExplorationSpeciesPool(event.exploration_id);
+  const unifiedSpeciesCount = speciesCountData?.total ?? (speciesPool.length || null);
+  const unifiedObservationsCount = speciesPool.length
+    ? speciesPool.reduce((sum, s) => sum + (s.count || 0), 0)
+    : null;
+  const species = useMemo<VignobleSpecies[]>(() => speciesPool.map((s) => ({
+    scientific_name: s.scientificName || s.key,
+    common_name: s.commonNameFr || s.commonName,
+    display_name: s.displayName || s.commonNameFr || s.commonName || s.scientificName || s.key,
+    iconic_taxon: s.group,
+    kingdom: s.group,
+    photo_url: s.imageUrl,
+    observations_count: s.count || 0,
+  })), [speciesPool]);
 
   // Simple scroll-spy
   React.useEffect(() => {
@@ -1082,7 +1113,7 @@ const VignobleImmersion: React.FC<Props> = ({ event, stats, biodiversity, slug, 
 
       <VignobleHero event={event} onShare={onShare} />
       <OrnamentalDivider label="I · Le Domaine" />
-      <DomaineChiffres stats={stats} biodiversity={biodiversity} event={event} unifiedSpeciesCount={unifiedSpeciesCount} />
+      <DomaineChiffres stats={stats} biodiversity={biodiversity} event={event} unifiedSpeciesCount={unifiedSpeciesCount} unifiedObservationsCount={unifiedObservationsCount} />
       <AlbumDomaineCarousel slug={slug} />
       <OrnamentalDivider label="II · Rencontres" />
       <PepitesGrid species={species} />
