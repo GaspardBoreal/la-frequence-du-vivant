@@ -179,12 +179,36 @@ const ImmersiveGardenFiche: React.FC = () => {
   const ogImage = event.cover_image_url
     ? (event.cover_image_url.startsWith('http') ? event.cover_image_url : `https://la-frequence-du-vivant.com${event.cover_image_url.startsWith('/') ? '' : '/'}${event.cover_image_url}`)
     : 'https://la-frequence-du-vivant.com/og-image.jpg';
+  // Variantes orthographiques (ex : Deviat / Déviat) pour capter les deux requêtes
+  // sans dupliquer d'URL. La forme officielle INSEE reste canonique.
+  const LIEU_SPELLING_VARIANTS: Record<string, string[]> = {
+    'Deviat': ['Déviat'],
+    'Déviat': ['Deviat'],
+  };
+  const lieuVariants = event.lieu ? (LIEU_SPELLING_VARIANTS[event.lieu] ?? []) : [];
+  const lieuSpellingsInline = lieuVariants.length
+    ? ` (aussi orthographié ${lieuVariants.join(', ')})`
+    : '';
+
   const seoTitle = `${event.lieu ?? 'Jardin'} — ${event.title} | La Fréquence du Vivant`;
-  const seoDescription = `${event.lieu ? `À ${event.lieu}, ` : ''}immersion sensible dans le jardin ${event.title} : canopée, strates herbacées, rhizosphère et biodiversité observée par les marcheurs.`;
+  const seoDescription = `${event.lieu ? `À ${event.lieu}${lieuSpellingsInline}, ` : ''}immersion sensible dans le jardin ${event.title} : canopée, strates herbacées, rhizosphère et biodiversité observée par les marcheurs.`;
+  const keywordsBase = [
+    event.lieu,
+    ...lieuVariants,
+    event.lieu ? `jardin ${event.lieu}` : null,
+    ...lieuVariants.map((v) => `jardin ${v}`),
+    event.lieu ? `biodiversité ${event.lieu}` : null,
+    event.title,
+    'Marches du Vivant',
+    'La Fréquence du Vivant',
+  ].filter(Boolean);
   const placeSchema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Place',
     name: `Jardin ${event.title}${event.lieu ? ` — ${event.lieu}` : ''}`,
+    ...(lieuVariants.length
+      ? { alternateName: lieuVariants.map((v) => `Jardin ${event.title} — ${v}`) }
+      : {}),
     description: seoDescription,
     url: canonicalUrl,
     image: ogImage,
