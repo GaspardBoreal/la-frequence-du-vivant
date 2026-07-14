@@ -132,7 +132,7 @@ const KenBurnsCarousel: React.FC<Props> = ({ photos, fallback, intervalMs = 1900
           <img
             src={current.url}
             alt=""
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover brightness-125 saturate-110"
             draggable={false}
             onError={() => {
               setFailedUrls((prev) => {
@@ -165,10 +165,10 @@ const KenBurnsCarousel: React.FC<Props> = ({ photos, fallback, intervalMs = 1900
       )}
 
       {/* Vignette + dégradé pour lisibilité */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/70 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/45 pointer-events-none" />
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)' }}
+        style={{ background: 'radial-gradient(ellipse at center, transparent 46%, rgba(0,0,0,0.34) 100%)' }}
       />
     </div>
   );
