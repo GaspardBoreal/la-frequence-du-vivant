@@ -1,13 +1,17 @@
-## Compris
+## Objectif
 
-Section Rhizosphère : le `StratPanel` est à gauche, donc c'est le **bloc texte de droite** ("Strate 2 — Rhizosphère" / "Le silence fertile des racines" / paragraphe) qui chevauche l'index vertical. Il faut que ce bloc passe lui aussi au-dessus de l'index quand on arrive dessus.
+Centrer les 3 colonnes de liens (**L'association** / **Explorer les Marches** / **Administration**) dans le footer variant `marches`, sur les pages `/marches-du-vivant`, `/marches-du-vivant/entreprises`, `/marches-du-vivant/explorer`, `/marches-du-vivant/association`.
 
-## Correction
+## Changement
 
-Modification unique dans `src/pages/ImmersiveGardenFiche.tsx`, section 2 (l.316-333) : ajouter `relative z-30` au `motion.div` du bloc texte de droite, comme on l'a fait pour `StratPanel`. Ainsi le titre et le paragraphe recouvrent l'index (`z-20`) au lieu de le voir traverser le texte.
+Fichier : `src/components/Footer.tsx`
 
-Aucun autre changement.
+Dans le variant `isMarches`, ajouter le centrage du texte sur chaque colonne :
+- Ajouter `text-center` sur les 3 `<div className="space-y-4">` (uniquement quand `isMarches === true`)
+- Retirer/neutraliser les alignements `text-center sm:text-left` hérités du variant par défaut, non pertinents ici
+
+Le variant par défaut (page d'accueil, etc.) reste inchangé.
 
 ## Vérification
 
-Screenshot Playwright de la section Rhizosphère pour confirmer que l'index n'apparaît plus par-dessus le titre italique.
+Screenshot Playwright de `/marches-du-vivant` pour confirmer que les 3 titres de colonnes du footer sont centrés horizontalement dans leur colonne.

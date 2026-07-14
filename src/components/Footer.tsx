@@ -15,7 +15,8 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Écosystème / Association */}
-          <div className="space-y-4">
+          <div className={`space-y-4 ${isMarches ? 'text-center' : ''}`}>
+
             {isMarches ? (
               <Link
                 to="/marches-du-vivant/association"
@@ -66,7 +67,8 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
           </div>
 
           {/* Explorer les Marches / fréquences */}
-          <div className="space-y-4">
+          <div className={`space-y-4 ${isMarches ? 'text-center' : ''}`}>
+
             {isMarches ? (
               <Link
                 to="/marches-du-vivant/carte-marches-du-vivant"
@@ -130,7 +132,7 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
           </div>
 
           {/* Ressources / Administration */}
-          <div className="space-y-4">
+          <div className={`space-y-4 ${isMarches ? 'text-center' : ''}`}>
             {isMarches ? (
               <Link
                 to="/access-admin-gb2025"
