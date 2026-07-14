@@ -89,16 +89,29 @@ const MarchesDuVivantEntreprises = () => {
   return (
     <>
       <Helmet>
-        <title>Formations Qualiopi RSE Biodiversité - Les Marches du Vivant</title>
-        <meta 
-          name="description" 
-          content="5 formations certifiées Qualiopi pour entreprises. Data RSE opposable CSRD, bioacoustique, IA et vivant. Team building scientifique en Nouvelle-Aquitaine." 
-        />
-        <meta 
-          name="keywords" 
-          content="formation Qualiopi RSE, biodiversité entreprise, CSRD indicateurs, bioacoustique leadership, team building nature Dordogne" 
-        />
+        <title>Marches du Vivant pour entreprises — team building biodiversité & RSE</title>
+        <meta name="description" content="Séminaires dirigeants, team building biodiversité et immersions RSE : les Marches du Vivant pour entreprises, animées par Gaspard Boréal." />
+        <meta name="keywords" content="marches du vivant entreprises, team building biodiversité, séminaire RSE, bioacoustique entreprise, Qualiopi, Nouvelle-Aquitaine, Occitanie, Bretagne" />
         <link rel="canonical" href="https://la-frequence-du-vivant.com/marches-du-vivant/entreprises" />
+        <meta property="og:title" content="Marches du Vivant pour entreprises — team building biodiversité & RSE" />
+        <meta property="og:description" content="Séminaires dirigeants, team building biodiversité et immersions RSE animées par Gaspard Boréal." />
+        <meta property="og:url" content="https://la-frequence-du-vivant.com/marches-du-vivant/entreprises" />
+        <meta property="og:type" content="website" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Service",
+          "name": "Marches du Vivant pour entreprises",
+          "serviceType": "Team building biodiversité",
+          "provider": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" },
+          "areaServed": [
+            { "@type": "AdministrativeArea", "name": "Charente" },
+            { "@type": "AdministrativeArea", "name": "Nouvelle-Aquitaine" },
+            { "@type": "AdministrativeArea", "name": "Occitanie" },
+            { "@type": "AdministrativeArea", "name": "Pays de la Loire" },
+            { "@type": "AdministrativeArea", "name": "Bretagne" }
+          ],
+          "offers": { "@type": "Offer", "priceCurrency": "EUR", "url": "https://la-frequence-du-vivant.com/marches-du-vivant/entreprises", "availability": "https://schema.org/InStock" }
+        })}</script>
       </Helmet>
 
       <div className="min-h-screen bg-background">

@@ -117,16 +117,25 @@ const MarchesDuVivantAssociation = () => {
   return (
     <>
       <Helmet>
-        <title>Rejoindre Les Marches du Vivant - Devenir Ambassadeur</title>
-        <meta 
-          name="description" 
-          content="Devenez ambassadeur des Marches du Vivant. Science participative, bioacoustique et nouveaux récits territoriaux. Rejoignez notre communauté." 
-        />
-        <meta 
-          name="keywords" 
-          content="association biodiversité, ambassadeur nature, science participative, communauté vivant, bénévolat écologie" 
-        />
+        <title>L'association La Fréquence du Vivant — porteuse des Marches du Vivant</title>
+        <meta name="description" content="La Fréquence du Vivant, association loi 1901 présidée par Laurent Tripied (Gaspard Boréal), qui porte les Marches du Vivant." />
+        <meta name="keywords" content="association Fréquence du Vivant, loi 1901, Laurent Tripied, Gaspard Boréal, marches du vivant, adhérer" />
         <link rel="canonical" href="https://la-frequence-du-vivant.com/marches-du-vivant/association" />
+        <meta property="og:title" content="L'association La Fréquence du Vivant" />
+        <meta property="og:description" content="Association loi 1901 porteuse des Marches du Vivant. Présidée par Laurent Tripied (Gaspard Boréal)." />
+        <meta property="og:url" content="https://la-frequence-du-vivant.com/marches-du-vivant/association" />
+        <meta property="og:type" content="website" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "NGO",
+          "name": "La Fréquence du Vivant",
+          "url": "https://la-frequence-du-vivant.com/",
+          "logo": "https://la-frequence-du-vivant.com/favicon.png",
+          "description": "Association loi 1901 porteuse des Marches du Vivant, immersions territoriales mêlant bioacoustique, science participative et prose poétique.",
+          "founder": { "@type": "Person", "name": "Laurent Tripied", "alternateName": "Gaspard Boréal", "url": "https://www.gaspardboreal.com" },
+          "areaServed": ["Charente", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Bretagne"],
+          "sameAs": ["https://www.gaspardboreal.com", "https://bziiit.com", "https://piloterra.fr"]
+        })}</script>
       </Helmet>
 
       <div className="min-h-screen bg-background">
