@@ -9,7 +9,38 @@
   background: hsl(var(--bk-bg));
   color: hsl(var(--bk-fg));
   font-family: var(--bk-font-body), system-ui, -apple-system, sans-serif;
+
+  /* === Repeint le design system Lovable avec les tokens partenaire ===
+     Tous les composants shadcn (`bg-background`, `text-foreground`, `bg-card`,
+     `text-primary`, `bg-muted`, `bg-secondary`, `border`) héritent du kit
+     sans devoir toucher un seul composant. */
+  --background: var(--bk-bg);
+  --foreground: var(--bk-fg);
+  --card: var(--bk-surface);
+  --card-foreground: var(--bk-surface-fg);
+  --popover: var(--bk-surface);
+  --popover-foreground: var(--bk-surface-fg);
+  --primary: var(--bk-accent);
+  --primary-foreground: var(--bk-accent-fg);
+  --secondary: var(--bk-surface);
+  --secondary-foreground: var(--bk-surface-fg);
+  --muted: var(--bk-surface);
+  --muted-foreground: var(--bk-fg);
+  --accent: var(--bk-accent);
+  --accent-foreground: var(--bk-accent-fg);
+  --border: var(--bk-fg);
+  --input: var(--bk-fg);
+  --ring: var(--bk-accent);
 }
+
+/* Titres du partenaire — appliqués globalement dans le scope Brand Kit. */
+[data-brand-kit] h1,
+[data-brand-kit] h2,
+[data-brand-kit] h3 {
+  font-family: var(--bk-font-display), 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
 
 /* Titres du partenaire (h1/h2/h3) sur les éléments non stylés à la source. */
 [data-brand-kit] .bk-display {
