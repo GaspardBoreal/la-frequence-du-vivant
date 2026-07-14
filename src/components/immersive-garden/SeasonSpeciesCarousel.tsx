@@ -139,6 +139,11 @@ const SeasonSpeciesCarousel: React.FC<Props> = ({ explorationId, season, tint })
     setLightboxIdx(null);
   }, [season]);
 
+  // Total canonique de l'exploration — même source que l'app Marcheurs
+  // (Carnet, Carte, Synthèse) via la RPC unifiée get_exploration_species_count.
+  const speciesCountQ = useExplorationSpeciesCount(explorationId ?? null);
+  const totalExploration = speciesCountQ.data?.total;
+
   const totalPages = Math.max(1, Math.ceil(eligible.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages - 1);
   const slice = eligible.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE);
