@@ -462,23 +462,16 @@ const RevealText: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-const IndicatorDot: React.FC<{ label: string; start: number; fadeDuringActive?: boolean }> = ({ label, start, fadeDuringActive }) => {
+const IndicatorDot: React.FC<{ label: string; start: number; labelOpacity?: MotionValue<number> | number }> = ({ label, start, labelOpacity }) => {
   const { scrollYProgress } = useScroll();
-  const reduce = useReducedMotion();
   const end = start + 0.25;
   const opacity = useTransform(scrollYProgress, [start, end - 0.01, end], [0.35, 1, 0.35]);
   const scale = useTransform(scrollYProgress, [start, (start + end) / 2, end], [1, 1.6, 1]);
-  const labelOpacity = useTransform(
-    scrollYProgress,
-    [Math.max(0, start - 0.02), start, end, Math.min(1, end + 0.02)],
-    [1, 0.05, 0.05, 1]
-  );
   return (
     <div className="flex items-center gap-3 justify-end">
       <motion.span
         className="text-[10px] tracking-[0.25em] uppercase text-[#f4ecd4]/70 font-serif italic"
-        style={fadeDuringActive && !reduce ? { opacity: labelOpacity } : undefined}
-        transition={{ duration: 0.4 }}
+        style={labelOpacity !== undefined ? { opacity: labelOpacity } : undefined}
       >
         {label}
       </motion.span>
@@ -487,14 +480,20 @@ const IndicatorDot: React.FC<{ label: string; start: number; fadeDuringActive?: 
   );
 };
 
-const StratIndicator: React.FC = () => (
-  <div className="fixed right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-4">
-    <IndicatorDot label="Canopée" start={0} />
-    <IndicatorDot label="Arbustive" start={0.25} />
-    <IndicatorDot label="Rhizosphère" start={0.5} fadeDuringActive />
-    <IndicatorDot label="Saisons" start={0.75} />
-  </div>
-);
+const StratIndicator: React.FC = () => {
+  const { scrollYProgress } = useScroll();
+  const reduce = useReducedMotion();
+  const labelsOpacity = useTransform(scrollYProgress, [0.48, 0.5, 0.75, 0.77], [1, 0, 0, 1]);
+  const labelOpacity = reduce ? 1 : labelsOpacity;
+  return (
+    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-4">
+      <IndicatorDot label="Canopée" start={0} labelOpacity={labelOpacity} />
+      <IndicatorDot label="Arbustive" start={0.25} labelOpacity={labelOpacity} />
+      <IndicatorDot label="Rhizosphère" start={0.5} labelOpacity={labelOpacity} />
+      <IndicatorDot label="Saisons" start={0.75} labelOpacity={labelOpacity} />
+    </div>
+  );
+};
 
 
 
