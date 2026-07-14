@@ -383,6 +383,30 @@ const MarchesDuVivant = () => {
         {/* Compteurs Science Participative */}
         <ScienceCounters className="border-t border-border/20" />
 
+        {/* FAQ SEO — Marches du Vivant */}
+        <section className="py-16 px-6 border-t border-border/20" aria-labelledby="faq-mdv">
+          <div className="max-w-3xl mx-auto">
+            <h2 id="faq-mdv" className="font-crimson text-3xl text-foreground mb-8 text-center">Questions fréquentes sur les Marches du Vivant</h2>
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-crimson text-xl text-foreground mb-2">Qu'est-ce qu'une marche du vivant ?</h3>
+                <p className="text-muted-foreground">Une marche du vivant est une immersion territoriale à pied qui combine marche sensible, bioacoustique, science participative et prose poétique. Chaque marche du vivant produit à la fois une donnée écologique opposable et un récit géopoétique du territoire traversé.</p>
+              </div>
+              <div>
+                <h3 className="font-crimson text-xl text-foreground mb-2">Où vivre les Marches du Vivant ?</h3>
+                <p className="text-muted-foreground">Les Marches du Vivant se déploient en Charente, en Nouvelle-Aquitaine, en Occitanie, en Pays de la Loire et en Bretagne, avec des points de départ ancrés dans les territoires ruraux et péri-urbains.</p>
+              </div>
+              <div>
+                <h3 className="font-crimson text-xl text-foreground mb-2">Qui porte les Marches du Vivant ?</h3>
+                <p className="text-muted-foreground">Les Marches du Vivant sont portées par l'association <Link to="/marches-du-vivant/association" className="text-emerald-400 underline">La Fréquence du Vivant</Link> (loi 1901), présidée par Laurent Tripied et animées par Gaspard Boréal.</p>
+              </div>
+              <div>
+                <h3 className="font-crimson text-xl text-foreground mb-2">Comment participer à une marche du vivant ?</h3>
+                <p className="text-muted-foreground">Vous pouvez <Link to="/marches-du-vivant/explorer" className="text-emerald-400 underline">explorer les marches à venir</Link>, solliciter un format <Link to="/marches-du-vivant/entreprises" className="text-emerald-400 underline">entreprise</Link>, ou <Link to="/marches-du-vivant/association" className="text-emerald-400 underline">adhérer à l'association</Link>.</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <Footer variant="marches" />
       </div>
