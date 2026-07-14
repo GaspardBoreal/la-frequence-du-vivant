@@ -17,6 +17,7 @@ import {
 import { useExplorationSpeciesCount } from '@/hooks/useExplorationSpeciesCount';
 import { getVerdict, TONE_STYLES, type VignobleAxis } from '@/lib/vignobleVerdicts';
 import { SpeciesName } from '@/components/species/SpeciesName';
+import { SpeciesThumb } from '@/components/species/SpeciesThumb';
 
 interface Props {
   event: PublicEvent;
@@ -559,63 +560,203 @@ const AlbumDomaineCarousel: React.FC<{ slug: string }> = ({ slug }) => {
 
 
 const PepitesGrid: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
-  const pepites = useMemo(() => {
-    return [...species]
-      .filter((s) => s.photo_url)
-      .sort((a, b) => (b.observations_count ?? 0) - (a.observations_count ?? 0))
-      .slice(0, 4);
-  }, [species]);
+  const reduce = useReducedMotion();
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [perPage, setPerPage] = useState(4);
+  const [page, setPage] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [flashKey, setFlashKey] = useState(0);
 
-  if (pepites.length === 0) return null;
+  const ordered = useMemo(
+    () => [...species].sort((a, b) => (b.observations_count ?? 0) - (a.observations_count ?? 0)),
+    [species],
+  );
+
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth;
+      setPerPage(w >= 1024 ? 4 : w >= 640 ? 2 : 1);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
+
+  const pageCount = Math.max(1, Math.ceil(ordered.length / perPage));
+
+  useEffect(() => {
+    if (page >= pageCount) setPage(0);
+  }, [pageCount, page]);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollTo({ left: page * el.clientWidth, behavior: 'smooth' });
+    setFlashKey((k) => k + 1);
+  }, [page, perPage]);
+
+  useEffect(() => {
+    if (reduce || paused || pageCount <= 1) return;
+    const t = setInterval(() => setPage((p) => (p + 1) % pageCount), 6000);
+    return () => clearInterval(t);
+  }, [reduce, paused, pageCount]);
+
+  if (ordered.length === 0) return null;
+
+  const go = (delta: number) => setPage((p) => (p + delta + pageCount) % pageCount);
 
   return (
     <section id="pepites" className="py-24 px-6 bg-[hsl(var(--vignoble-paper-warm)/0.35)]">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-14">
-          <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
-            Chapitre II
-          </span>
-          <h2 className="font-vignoble text-4xl md:text-5xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
-            Ce que vous rencontrerez
-          </h2>
-          <p className="mt-3 font-vignoble italic text-lg text-[hsl(var(--vignoble-ink)/0.7)] max-w-xl mx-auto">
-            Quatre présences vivantes de ce domaine, choisies pour la marche.
-          </p>
+        <div className="flex items-end justify-between gap-6 mb-10">
+          <div className="text-center flex-1">
+            <span className="font-vignoble italic text-[10px] uppercase tracking-[0.5em] text-[hsl(var(--vignoble-wine))]">
+              Chapitre II
+            </span>
+            <h2 className="font-vignoble text-4xl md:text-5xl font-medium mt-3 text-[hsl(var(--vignoble-ink))]">
+              Ce que vous rencontrerez
+            </h2>
+            <p className="mt-3 font-vignoble italic text-lg text-[hsl(var(--vignoble-ink)/0.7)] max-w-xl mx-auto">
+              Les {ordered.length} présences vivantes de ce domaine, à rencontrer pas à pas.
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {pepites.map((s, i) => (
-            <motion.article
-              key={s.scientific_name}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.6, delay: i * 0.08 }}
-              className="group relative bg-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-ink)/0.08)] shadow-[0_1px_0_hsl(var(--vignoble-gold))] overflow-hidden"
-            >
-              <div className="aspect-square overflow-hidden bg-[hsl(var(--vignoble-ink)/0.08)]">
-                <img
-                  src={s.photo_url!}
-                  alt={s.common_name || s.scientific_name}
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-              </div>
-              <div className="p-3 relative">
-                <div className="absolute -top-[1px] left-3 right-3 h-[1px] vignoble-gold-rule" />
-                <SpeciesName
-                  scientificName={s.scientific_name}
-                  commonName={s.common_name}
-                  size="sm"
-                  truncate
-                  showScientific
-                  scientificClassName="text-[10px] italic text-[hsl(var(--vignoble-ink)/0.55)]"
-                  className="font-vignoble text-[hsl(var(--vignoble-ink))]"
-                />
-              </div>
-            </motion.article>
-          ))}
+        <div
+          className="relative"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          {/* Boutons navigation */}
+          {pageCount > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => go(-1)}
+                aria-label="Espèces précédentes"
+                className="absolute z-20 left-0 top-1/2 -translate-y-1/2 -translate-x-2 lg:-translate-x-6 w-11 h-11 rounded-full bg-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-gold)/0.6)] shadow-[0_6px_20px_-8px_hsl(var(--vignoble-ink)/0.5)] flex items-center justify-center text-[hsl(var(--vignoble-ink))] hover:bg-[hsl(var(--vignoble-gold)/0.15)] transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => go(1)}
+                aria-label="Espèces suivantes"
+                className="absolute z-20 right-0 top-1/2 -translate-y-1/2 translate-x-2 lg:translate-x-6 w-11 h-11 rounded-full bg-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-gold)/0.6)] shadow-[0_6px_20px_-8px_hsl(var(--vignoble-ink)/0.5)] flex items-center justify-center text-[hsl(var(--vignoble-ink))] hover:bg-[hsl(var(--vignoble-gold)/0.15)] transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
+
+          {/* Piste */}
+          <div
+            ref={trackRef}
+            className="overflow-x-auto snap-x snap-mandatory scrollbar-none"
+            style={{ scrollbarWidth: 'none' }}
+          >
+            <div className="flex">
+              {Array.from({ length: pageCount }).map((_, pi) => {
+                const slice = ordered.slice(pi * perPage, pi * perPage + perPage);
+                return (
+                  <div key={pi} className="flex-none w-full snap-start">
+                    <div
+                      className={cn(
+                        'grid gap-4',
+                        perPage === 1 && 'grid-cols-1',
+                        perPage === 2 && 'grid-cols-2',
+                        perPage === 4 && 'grid-cols-4',
+                      )}
+                    >
+                      {slice.map((s, i) => (
+                        <motion.article
+                          key={s.scientific_name}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5, delay: i * 0.06 }}
+                          className="group relative bg-[hsl(var(--vignoble-paper))] border border-[hsl(var(--vignoble-ink)/0.08)] shadow-[0_1px_0_hsl(var(--vignoble-gold))] overflow-hidden"
+                        >
+                          <div className="aspect-square overflow-hidden bg-[hsl(var(--vignoble-ink)/0.06)]">
+                            <SpeciesThumb
+                              scientificName={s.scientific_name}
+                              commonName={s.common_name}
+                              kingdom={(s as any).kingdom}
+                              localPhoto={s.photo_url}
+                              size="lg"
+                              className="w-full h-full !rounded-none"
+                            />
+                          </div>
+                          <div className="p-3 relative">
+                            <div className="absolute -top-[1px] left-3 right-3 h-[1px] vignoble-gold-rule" />
+                            <SpeciesName
+                              scientificName={s.scientific_name}
+                              commonName={s.common_name}
+                              size="sm"
+                              truncate
+                              showScientific
+                              scientificClassName="text-[10px] italic text-[hsl(var(--vignoble-ink)/0.55)]"
+                              className="font-vignoble text-[hsl(var(--vignoble-ink))]"
+                            />
+                          </div>
+                        </motion.article>
+                      ))}
+                      {/* Fillers pour préserver la grille sur dernière page */}
+                      {slice.length < perPage &&
+                        Array.from({ length: perPage - slice.length }).map((_, k) => (
+                          <div key={`f-${k}`} aria-hidden />
+                        ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Flash doré sur transition */}
+          {!reduce && (
+            <AnimatePresence>
+              <motion.div
+                key={`vf-${flashKey}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.35, 0] }}
+                transition={{ duration: 0.5, times: [0, 0.3, 1] }}
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    'radial-gradient(ellipse at center, hsl(var(--vignoble-gold)/0.5) 0%, transparent 60%)',
+                  mixBlendMode: 'screen',
+                }}
+              />
+            </AnimatePresence>
+          )}
         </div>
+
+        {/* Indicateurs + compteur */}
+        {pageCount > 1 && (
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-2">
+              {Array.from({ length: pageCount }).map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setPage(i)}
+                  aria-label={`Page ${i + 1}`}
+                  className={cn(
+                    'h-[2px] transition-all duration-500',
+                    i === page
+                      ? 'w-10 bg-[hsl(var(--vignoble-gold))]'
+                      : 'w-5 bg-[hsl(var(--vignoble-ink)/0.2)] hover:bg-[hsl(var(--vignoble-ink)/0.4)]',
+                  )}
+                />
+              ))}
+            </div>
+            <span className="font-vignoble italic text-[11px] uppercase tracking-[0.4em] text-[hsl(var(--vignoble-ink)/0.55)]">
+              {String((page + 1) * perPage < ordered.length ? (page + 1) * perPage : ordered.length).padStart(2, '0')}
+              {' / '}
+              {String(ordered.length).padStart(2, '0')}
+            </span>
+          </div>
+        )}
       </div>
     </section>
   );

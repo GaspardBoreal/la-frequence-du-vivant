@@ -1,55 +1,33 @@
-# Plan — Acte I Vignoble : chiffres, photos et pépites
+# Chapitre II « Ce que vous rencontrerez » — carrousel toutes espèces
 
-Scope strict : `src/components/vignoble/VignobleImmersion.tsx` (+ un petit hook photos réutilisant les RPC existantes). Aucun autre acte touché.
+## Diagnostic
+Dans `src/components/vignoble/VignobleImmersion.tsx` (composant `PepitesGrid`, lignes 561-622) :
 
-## 1 · Corriger le compte d'espèces (208 → 38)
+1. **Images floues** : la grille utilise directement `s.photo_url` (thumbnail iNat basse résolution renvoyé par la RPC publique) dans un `<img>` brut. La vue « Biodiversité → Taxons observés » de l'app passe elle par `<SpeciesThumb />` (composant unifié → `useSpeciesThumb` → cache serveur `species_thumb_cache` avec cascade iNat/GBIF net + attribution + pictogramme fallback fin par `iconic_taxon`). C'est la même source de vérité visuelle que le reste de l'app.
+2. **Seulement 4 espèces figées** : `.filter(photo_url).slice(0, 4)` — les visiteurs ne voient qu'une fraction des espèces réellement rencontrables. Pas de bouton pour parcourir le reste.
 
-**Cause** : `DomaineChiffres` lit `biodiversity.species_count` (RPC `get_public_event_biodiversity` = 208, inclut tous les snapshots iNat élargis). L'événement admin/exploration affiche 38 via la RPC unifiée `get_exploration_species_count` (mem : *unified-species-count-rpc*, source de vérité).
+## Ce que je propose
 
-**Fix** : dans `VignobleImmersion` on récupère `event.exploration_id` et on branche `useExplorationSpeciesCount(explorationId)` (hook déjà existant, même code que l'événement). On passe `unifiedCount = data?.total ?? biodiversity?.species_count` à `DomaineChiffres`.
-- « Espèces recensées » → `unifiedCount` (38 attendu)
-- « Observations » reste `stats.observations_count`
-- Aucun changement backend.
+### 1. Rendu vignette identique à l'app
+- Remplacer le `<img src={s.photo_url}>` brut par `<SpeciesThumb scientificName={s.scientific_name} commonName={s.common_name} kingdom={s.kingdom} localPhoto={s.photo_url} size="lg" />` dans une tuile carrée `aspect-square` (comme actuellement, mais en délégant la source photo au cache serveur → résolution nette, source labellisée iNat/GBIF, fallback pictogramme cohérent avec Taxons observés).
+- Garder l'habillage éditorial « Cellier Noble » : cadre papier, filet doré, `SpeciesName` avec italique scientifique dessous.
+- Ne plus filtrer sur `photo_url` : toutes les espèces sont éligibles (SpeciesThumb gère élégamment le fallback).
 
-## 2 · Rendu net des pépites (« Ce que vous rencontrerez »)
+### 2. Carrousel navigable — toutes les espèces
+- Trier par `observations_count` desc puis afficher **par pages de 4** (1/2/4 selon breakpoint : 1 mobile, 2 tablet, 4 desktop).
+- Piste horizontale `flex snap-x snap-mandatory` avec chaque « page de 4 » en `snap-start`, scroll fluide.
+- Auto-rotation douce (6 s, pausée au hover / `prefers-reduced-motion`), avec micro flash doré à la transition (réutilise le vocabulaire visuel du `AlbumDomaineCarousel`).
+- **Boutons de navigation visibles et design** : deux boutons circulaires ivoire à filet doré (`border-[hsl(var(--vignoble-gold)/0.6)]`, icônes `ChevronLeft/Right` de lucide), placés au niveau du titre à droite + en overlay sur les côtés de la piste (desktop). Compteur discret « 04 / 32 » façon cartel.
+- Indicateur de pages : petits filets dorés cliquables sous la piste (une barre par page, active = pleine largeur).
+- Sous-titre passe de « Quatre présences vivantes… » à « Les N présences vivantes de ce domaine, à rencontrer pas à pas. »
 
-**Cause** : `PepitesGrid` utilise `aspect-[3/4]` étiré + `object-cover` sur les vignettes iNat 200 px → flou. Le rendu événement (`PublicEventPage`, section Taxons observés) utilise `aspect-square` en grille 4 col.
+### 3. Périmètre
+- **Seul fichier touché** : `src/components/vignoble/VignobleImmersion.tsx` (remplacement de `PepitesGrid`).
+- Aucune modif backend/RPC, aucun autre chapitre touché.
 
-**Fix** : aligner exactement le rendu événement :
-- `aspect-square` au lieu de `3/4`
-- garder `object-cover` + `group-hover:scale-105`
-- carte plus compacte (padding réduit), typo restant vignoble
-- retirer le badge « N° 01 » (bruit) — remplacer par un mince filet or
-
-## 3 · Nouveau bloc « Album du domaine » (photos wahouhh)
-
-Insertion **entre `DomaineChiffres` et `PepitesGrid`** (dans Chapitre I, sans nouveau chapitre).
-
-**Source données** : `usePublicEventMedias(slug)` (déjà présent, RPC `get_public_event_medias`, retourne les photos marcheurs = convivialité + points de marche). Filtrer `type_media === 'photo'`.
-
-**Composant** `AlbumDomaineCarousel` :
-- Défilement **par paquets de 4** (4 tuiles visibles simultanément desktop, 2 tablet, 1 mobile, avec `snap-x snap-mandatory`).
-- Auto-rotation toutes 4,5 s : slide horizontal en `translateX` avec easing `[0.19,1,0.22,1]` (Framer Motion `AnimatePresence` custom, style KenBurns doux sur chaque tuile).
-- Chaque tuile : `aspect-[4/5]` sépia doré au repos, saturation pleine + zoom Ken Burns 1.0→1.08 au hover et pendant sa fenêtre active.
-- Cadre : bordure or 1 px + filet supérieur `vignoble-gold-rule`, cartouche italique en bas « — nom auteur · date » sur voile ink/60.
-- Contrôles : chevrons or ronds latéraux (opacity 0 → 100 au hover section), pastilles de progression en bas (1 pastille par paquet de 4), respect `prefers-reduced-motion` (fondu simple, pas de zoom).
-- Effet « wahouhh » : au changement de paquet, léger flash doré (`radial-gradient` mix-blend screen, 350 ms) inspiré de `KenBurnsCarousel` existant, et parallax subtil (chaque tuile décale de ±4 px selon son index).
-
-## 4 · Supprimer Acte V « La bouteille »
-
-- Retirer `<BouteilleCTA>` + son `<OrnamentalDivider label="V · La Bouteille" />` dans le layout racine.
-- Retirer la fonction `BouteilleCTA` et l'entrée V dans `CHAPTERS` (pour que le scroll-spy et la barre de progression restent cohérents).
-- Renuméroter « Rejoindre » de Chapitre VI → Chapitre V dans le texte affiché (label seul, `id="rejoindre"` inchangé pour ne pas casser les ancres).
-
-## Livrables techniques
-
-| Fichier | Changement |
-|---|---|
-| `src/components/vignoble/VignobleImmersion.tsx` | 1) import `useExplorationSpeciesCount`, prop count vers `DomaineChiffres`. 2) `PepitesGrid` aspect-square. 3) Nouveau `AlbumDomaineCarousel` (interne). 4) Suppression `BouteilleCTA` + divider + renum chapitre. |
-| `src/hooks/usePublicEvent.ts` | Aucun. `usePublicEventMedias` déjà en place. |
-
-Aucune migration SQL, aucune nouvelle RPC, aucun nouveau bucket.
-
-## Vérification
-
-- Playwright : charger `/m/chateau-boutinet-…`, screenshot Acte I, vérifier `38` sous « Espèces recensées », présence du carrousel avec 4 tuiles nettes, absence totale du bloc bouteille, netteté des pépites.
+## Détails techniques
+- Nouveau sous-composant `PepitesCarousel` interne au fichier.
+- État : `page` (0-indexed), `pageCount = Math.ceil(species.length / perPage)`, `perPage` dérivé via `useMediaQuery` (ou simple `matchMedia` + resize) → 1 / 2 / 4.
+- Scroll via `ref.current.scrollTo({ left: page * ref.current.clientWidth, behavior: 'smooth' })`.
+- Auto-rotation : `useEffect` + `setInterval(6000)`, clear au hover (`onMouseEnter/Leave`) et si `useReducedMotion()`.
+- Vérification Playwright : screenshot desktop + mobile sur `/m/chateau-boutinet-le-vignoble-vivant-2026-09-26#pepites`, contrôle netteté vignettes + boutons visibles + navigation fonctionnelle.
