@@ -1,51 +1,56 @@
 ## Diagnostic
 
-Le Brand Kit fonctionne **partiellement** : la pastille signature "Boutinet · Villegouge · Fronsadais · Gironde" en haut à gauche est bien injectée par notre wrapper — c'est la seule chose que vous voyez de nouveau. Mais **tout le reste de la page** (fond bordeaux, titres crème, CTA rouge, sceau doré) provient d'une **scénographie custom TSX** stockée en base pour cet événement (mémoire *per-event-scenography-system*), et cette scénographie est exécutée dans une **iframe sandboxée** (`ScenographyRuntime`).
+**PB 1 · Brand Kit invisible sur Boutinet**
+La scénographie custom de cet event est un composant TSX qui applique ses propres fonds (bordeaux plein écran via `<div class="bg-…">` et styles inline) DANS le body de l'iframe. Mon override CSS !important cible `html/body/#root` — les `<div>` de la scéno passent au-dessus. Résultat : seule la pastille (rendue dans le document parent) change, la scéno reste identique.
 
-Or les variables CSS `--bk-*`, les Google Fonts (Allura/Cormorant/Montserrat) et les classes `bk-*` sont injectées dans le **document parent** → elles ne franchissent jamais la frontière de l'iframe. Résultat : la scénographie continue de rendre ses propres couleurs/fontes en total isolement.
+**Direction validée : A — forcer la palette diurne sage/ambre.** Cela signifie renoncer à la scéno bordeaux nuit sur ce cas précis.
 
-D'où l'impression "aucun changement".
+**PB 2 · Images vides Hero + Hero Strate 1 sur fiche Jardin (`/jardin/:slug`)**
+Le carousel `KenBurnsCarousel` reçoit `heroPhotos` = union de :
+- convivialité (via `exploration_id`)
+- `marche_photos` des `exploration_marches`
+- `marcheur_medias` de l'event.
 
-## Correction — 2 axes
+Si l'event Jardin n'a pas d'`exploration_id` valide ET pas de `marcheur_medias`, `heroPhotos = []` → carousel tombe sur `fallback = event.cover_image_url`. Si `cover_image_url` est null → placeholder gradient emerald (image manquante perçue).
 
-### Axe 1 · Faire pénétrer le Brand Kit dans l'iframe scénographie *(fix immédiat, générique, réutilisable pour tous les futurs partenaires)*
+Manque probable : `marche_events.cover_image_url` non renseigné + aucune contribution marcheur. Le hook ne va JAMAIS chercher les photos directement liées à l'event via `marche_id = event.id` sans passer par `exploration_marches`.
 
-1. **`useEventBrandKit`** exposé aussi dans `MarcheEventDetail.tsx` (page qui monte `ScenographyRuntime`), et passé au runtime via une nouvelle prop `brand?: BrandKit | null`.
-2. **`ScenographyRuntime`** transmet ce `brand` à `buildScenographyHtml(...)`.
-3. **`scenographyRuntimeHtml.ts`** — quand un `brand` est fourni :
-   - injecte le `<link>` Google Fonts du kit dans le `<head>` de l'iframe ;
-   - injecte un `<style>` qui :
-     - déclare `:root { --bk-bg, --bk-fg, --bk-accent, --bk-accent-fg, --bk-surface, --bk-grad-a, --bk-grad-b, --bk-font-logotype, --bk-font-display, --bk-font-body }` ;
-     - repeint `html, body` avec `background: hsl(var(--bk-bg))`, `color: hsl(var(--bk-fg))`, `font-family: var(--bk-font-body)` ;
-     - applique `var(--bk-font-display)` aux `h1, h2, h3, .font-serif, .font-display` ;
-     - ajoute une classe utilitaire `.bk-accent { color: hsl(var(--bk-accent)) }` et `.bk-cta` (même définition que le CSS parent).
-   - expose `window.Scenography.brand = { palette, fonts, tagline, partner, socials }` pour que les scénographies existantes ou futures puissent l'utiliser explicitement.
-4. **Signature + footer** restent rendus dans le document parent (position: fixed) au-dessus de l'iframe — déjà OK, il faudra juste s'assurer qu'ils apparaissent aussi sur `MarcheEventDetail` (là où l'iframe vit) et pas uniquement `PublicEventPage`.
+## Fix 1 · Boutinet — bypass scénographie sous Brand Kit
 
-Impact visuel immédiat sur Boutinet : fond sauge tendre, titres en Cormorant Garamond, corps en Montserrat, logotype scripté Allura, accent orange chaud sur les liens/CTA. Sans toucher le code de la scénographie.
+**Approche pragmatique :** quand `brand_kit_enabled = true` sur un event, la page publique court-circuite la scénographie et rend la fiche classique `PublicEventPageInner`, qui utilise le design system Lovable (`hsl(var(--…))`) — parfaitement repeinte par les tokens `--bk-*` déjà en place.
 
-### Axe 2 · Scénographie Château Boutinet dédiée *(disruption créative, optionnelle, phase 2)*
+**Étapes :**
+1. `PublicEventPage.tsx` — la condition d'affichage scéno devient :
+   ```ts
+   if (sceno && sceno.scenography_code && !scenoBypassed && !brandKitInner)
+   ```
+   → si un Brand Kit est actif, on saute la scéno.
+2. Vérifier que `PublicEventPageInner` (fiche classique) rend bien avec la palette sauge (via variables `--bk-*` déjà injectées par `BrandKitProvider`). Ajouter au besoin quelques mappings dans `src/styles/brand-kit.css` pour que les composants `bg-background` / `text-foreground` de la page classique héritent des tokens Boutinet (via un sélecteur `[data-brand-kit] { --background: var(--bk-bg); --foreground: var(--bk-fg); --card: var(--bk-surface); --primary: var(--bk-accent); }`).
+3. Toujours afficher `<BrandSignatureBadge />` en haut à gauche + `<BrandFooterSignature />` en bas. La scéno bordeaux reste accessible via un bouton discret "Voir en mode nuit" (opt-in), non prioritaire.
 
-Créer une scénographie TSX signature "vignoble vivant" en s'inspirant des codes chateauboutinet.fr :
-- Fond sauge tendre `#D4E5C4`, texture papier vergé.
-- Hero : logotype scripté *Boutinet* énorme + rondelle orange organique (CTA blob) qui pulse doucement.
-- Bandeau ambre→or (composant `BrandDivider`) en séparateur entre les 7 actes.
-- Grille de certifications (Bio, Best of Wine Tourism…) via `BrandBadges`.
-- Micro-animations "grappe de raisin" au scroll, palette photos sépia-vert.
+Résultat visuel Boutinet immédiat : fond sauge, titres Cormorant, corps Montserrat, CTAs orange blob, certifs Bio/Best of Wine Tourism, footer partenaire.
 
-À stocker en base via l'admin Scénographie (onglet existant), preset copiable pour d'autres domaines viticoles.
+## Fix 2 · Images Hero Jardin — élargir les sources
 
-## Fichiers touchés (Axe 1 uniquement, à valider)
+Dans `useGardenFiche.ts` / `useGardenStepPhotos` :
 
-- `src/components/scenography/ScenographyRuntime.tsx` — nouvelle prop `brand`, passée à `buildScenographyHtml`.
-- `src/components/scenography/scenographyRuntimeHtml.ts` — injection conditionnelle fonts + style + `window.Scenography.brand`.
-- `src/pages/MarcheEventDetail.tsx` — appel `useEventBrandKit(slug)` + wrap dans `BrandKitProvider` + `<BrandSignatureBadge />` + `<BrandFooterSignature />` + passage de `brand` au runtime.
-- (`src/pages/PublicEventPage.tsx` déjà OK ; la même approche s'y appliquera si un jour cette page monte aussi le runtime.)
+1. **Requête directe `marche_photos` par `marche_id = event.id`** (pas seulement via `exploration_marches`) — beaucoup d'events autonomes n'ont pas de mapping exploration.
+2. **Ajouter `event.cover_image_url` en tête de `heroPhotos`** (au lieu de fallback seul) → au moins 1 image visible même si aucune contribution.
+3. **Fallback iNat** : si toujours vide, tirer 3–5 photos des `biodiversity_snapshots` de l'event (colonne `photo_url` ou équivalent iconique) — les fiches jardin ont toujours au moins des observations iNat.
+4. Passer `heroPhotoList` complet (pas `.slice(0,3)`) au 2ᵉ carousel "Strate 1" ligne 278, pour éviter le cas où `slice(0,3)` renvoie une liste vide alors que la source en a d'autres. Ou mieux : `heroPhotoList.slice(0,3).length ? heroPhotoList.slice(0,3) : heroPhotoList`.
 
-Aucune migration SQL. Aucun changement de policy. Rétro-compatible : sans `brand_kit_enabled`, `brand === null` → runtime inchangé.
+Pas de migration SQL nécessaire — RLS `marche_photos` autorise déjà anon read pour events publics (à vérifier vite fait). Si non, ajouter policy anon read scopée `marche_events.is_public = true`.
 
-## Étapes après validation
+## Fichiers touchés
 
-1. Implémenter Axe 1 (≈ 4 fichiers, ~60 lignes).
-2. Vérifier visuellement `/m/chateau-boutinet-le-vignoble-vivant-2026-09-26` via Playwright (screenshot avant/après).
-3. Vous demander si vous voulez enchaîner sur l'Axe 2 (scénographie dédiée Boutinet).
+- `src/pages/PublicEventPage.tsx` — condition scéno bypass si brand kit.
+- `src/styles/brand-kit.css` — mapping vars Lovable → vars Brand Kit pour repeindre la fiche classique.
+- `src/hooks/useGardenFiche.ts` — élargir sources hero + fallback cover.
+- (Optionnel) 1 policy RLS si `marche_photos` bloquée anon.
+
+## Vérif après build
+
+- `/m/chateau-boutinet-le-vignoble-vivant-2026-09-26` → fiche classique sauge/ambre, plus la scéno bordeaux.
+- `/jardin/<slug-jardin-en-echec>` → Hero et Strate 1 remplis (au minimum cover event).
+
+URL Jardin exacte à me communiquer si le fix ne suffit pas (je pourrais avoir besoin de déboguer l'event précis).
