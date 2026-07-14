@@ -1,18 +1,13 @@
 ## Compris
 
-Remettre l'index vertical à droite (position d'origine), mais garantir que chaque `StratPanel` ("Panneau vivant") passe **au-dessus** de l'index quand il croise sa zone — pour que les pastilles disparaissent proprement derrière le panneau au lieu de flotter par-dessus.
+Section Rhizosphère : le `StratPanel` est à gauche, donc c'est le **bloc texte de droite** ("Strate 2 — Rhizosphère" / "Le silence fertile des racines" / paragraphe) qui chevauche l'index vertical. Il faut que ce bloc passe lui aussi au-dessus de l'index quand on arrive dessus.
 
 ## Correction
 
-Modification unique dans `src/pages/ImmersiveGardenFiche.tsx` :
+Modification unique dans `src/pages/ImmersiveGardenFiche.tsx`, section 2 (l.316-333) : ajouter `relative z-30` au `motion.div` du bloc texte de droite, comme on l'a fait pour `StratPanel`. Ainsi le titre et le paragraphe recouvrent l'index (`z-20`) au lieu de le voir traverser le texte.
 
-1. **`StratIndicator` (l.478-485)** : repasser à `right-4`, retirer le fond flouté ajouté précédemment, et laisser `z-20` (bas dans la pile).
-2. **`IndicatorDot`** : rétablir `justify-end` et l'ordre label → pastille.
-3. **`StratPanel`** (`src/components/immersive-garden/StratPanel.tsx`) : ajouter `relative z-30` au conteneur `motion.div` racine, de sorte que le panneau (déjà `backdrop-blur-xl`) passe au-dessus de l'index `z-20` dès qu'il chevauche sa zone.
-
-Aucun changement de logique, de données ou de backend.
+Aucun autre changement.
 
 ## Vérification
 
-- Rechargement `/jardin/dbaf6db0-...` en desktop.
-- Screenshots Playwright aux 3 sections (Canopée, Arbustive, Rhizosphère) pour confirmer : l'index est à droite, mais masqué par le Panneau vivant sur les sections 1 et 2.
+Screenshot Playwright de la section Rhizosphère pour confirmer que l'index n'apparaît plus par-dessus le titre italique.
