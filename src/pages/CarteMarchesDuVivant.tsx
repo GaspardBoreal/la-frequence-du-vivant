@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import CarteTabs, { type CarteTabKey } from '@/components/carte-mdv/CarteTabs';
 import SouffleTab from '@/components/carte-mdv/tabs/SouffleTab';
 import CarteTab from '@/components/carte-mdv/tabs/CarteTab';
 import EnsembleTab from '@/components/carte-mdv/tabs/EnsembleTab';
 import FinalCTA from '@/components/carte-mdv/FinalCTA';
+import Footer from '@/components/Footer';
+import PublicTopBar from '@/components/layout/PublicTopBar';
 
 const VALID: CarteTabKey[] = ['souffle', 'carte', 'ensemble'];
 
@@ -40,6 +43,15 @@ const CarteMarchesDuVivant: React.FC = () => {
       </Helmet>
 
       <div className="min-h-screen bg-background">
+        <PublicTopBar
+          tone="dark"
+          leftSlot={
+            <Link to="/marches-du-vivant" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
+              <ArrowLeft className="w-4 h-4" />
+              <span>Marches du Vivant</span>
+            </Link>
+          }
+        />
         <CarteTabs value={tab} onChange={setTab} />
 
         <AnimatePresence mode="wait">
@@ -57,6 +69,7 @@ const CarteMarchesDuVivant: React.FC = () => {
         </AnimatePresence>
 
         <FinalCTA />
+        <Footer variant="marches" />
       </div>
     </>
   );
