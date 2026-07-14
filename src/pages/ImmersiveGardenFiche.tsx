@@ -273,7 +273,7 @@ const ImmersiveGardenFiche: React.FC = () => {
         </section>
 
         {/* ============ SECTION 1 : ARBUSTIVE & HERBACÉE ============ */}
-        <section ref={rhizosphereSectionRef} className="relative min-h-screen py-24 px-6 md:px-12">
+        <section className="relative min-h-screen py-24 px-6 md:px-12">
           <div className="absolute inset-0 opacity-70">
             <KenBurnsCarousel photos={heroPhotoList.slice(0, 3)} fallback={cover} intervalMs={9000} />
           </div>
@@ -314,7 +314,7 @@ const ImmersiveGardenFiche: React.FC = () => {
         </section>
 
         {/* ============ SECTION 2 : RHIZOSPHÈRE ============ */}
-        <section className="relative min-h-screen py-24 px-6 md:px-12">
+        <section ref={rhizosphereSectionRef} className="relative min-h-screen py-24 px-6 md:px-12">
           <div className="absolute inset-0">
             <RhizosphereSVG tint={tint} />
           </div>
