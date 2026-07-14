@@ -80,8 +80,9 @@ export const SpeciesPhotoModeProvider: React.FC<ProviderProps> = ({
 
   // Init / sync : préférence persistée OU défaut = marcheur si photos terrain.
   useEffect(() => {
-    if (!storageKey) return;
-    const stored = localStorage.getItem(storageKey) as SpeciesPhotoMode | null;
+    const stored = storageKey
+      ? (localStorage.getItem(storageKey) as SpeciesPhotoMode | null)
+      : null;
     if (stored === 'marcheur' || stored === 'inaturalist') {
       setModeState(stored);
     } else if (hasFieldPhotos) {
