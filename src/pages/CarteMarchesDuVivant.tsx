@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import CarteTabs, { type CarteTabKey } from '@/components/carte-mdv/CarteTabs';
 import SouffleTab from '@/components/carte-mdv/tabs/SouffleTab';
 import CarteTab from '@/components/carte-mdv/tabs/CarteTab';
 import EnsembleTab from '@/components/carte-mdv/tabs/EnsembleTab';
 import FinalCTA from '@/components/carte-mdv/FinalCTA';
+import Footer from '@/components/Footer';
+import PublicTopBar from '@/components/layout/PublicTopBar';
 
 const VALID: CarteTabKey[] = ['souffle', 'carte', 'ensemble'];
 
