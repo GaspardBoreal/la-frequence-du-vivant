@@ -112,7 +112,9 @@ const PublicEventPageInner: React.FC = () => {
   };
 
   // === Scenography mode (early return) ===
-  if (sceno && sceno.scenography_code && !scenoBypassed) {
+  // Sous Brand Kit actif, on court-circuite la scéno custom : la fiche classique
+  // se laisse repeindre par les tokens partenaire — visuel Boutinet immédiat.
+  if (sceno && sceno.scenography_code && !scenoBypassed && !brandKitInner) {
     const title = sceno.scenography_title || sceno.title || 'Marche du vivant';
     const description = (sceno.description || '').replace(/<[^>]+>/g, ' ').slice(0, 160);
     const shareUrl = slug ? `${SITE}/m/${slug}` : SITE;
