@@ -232,7 +232,7 @@ const ImmersiveGardenFiche: React.FC = () => {
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
-        <meta name="keywords" content={`${event.lieu ?? ''}, jardin ${event.lieu ?? ''}, biodiversité ${event.lieu ?? ''}, ${event.title}, Marches du Vivant, La Fréquence du Vivant`} />
+        <meta name="keywords" content={keywordsBase.join(', ')} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:title" content={seoTitle} />
         <meta property="og:description" content={seoDescription} />
