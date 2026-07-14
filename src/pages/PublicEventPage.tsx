@@ -34,6 +34,7 @@ import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { cn } from '@/lib/utils';
 import PratiquesEmblematiquesDialog from '@/components/public-event/PratiquesEmblematiquesDialog';
 import PaysagesSonoresDialog from '@/components/public-event/PaysagesSonoresDialog';
+import PublicEventSpeciesGrid from '@/components/public-event/PublicEventSpeciesGrid';
 import { useEventScenography, useEventScenographyData } from '@/hooks/useScenography';
 import ScenographyRuntime from '@/components/scenography/ScenographyRuntime';
 import VignobleImmersion from '@/components/vignoble/VignobleImmersion';
