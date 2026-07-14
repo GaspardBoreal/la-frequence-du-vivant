@@ -132,7 +132,7 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
           </div>
 
           {/* Ressources / Administration */}
-          <div className="space-y-4">
+          <div className={`space-y-4 ${isMarches ? 'text-center' : ''}`}>
             {isMarches ? (
               <Link
                 to="/access-admin-gb2025"
