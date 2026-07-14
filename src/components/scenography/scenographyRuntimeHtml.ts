@@ -15,11 +15,73 @@
  * The code MUST define and export a default function component named `Scenography`.
  */
 
-export function buildScenographyHtml(opts: { compiledCode: string; nonceTitle: string }): string {
-  const { compiledCode, nonceTitle } = opts;
+import type { BrandKit } from '@/lib/brandKits/types';
+
+export function buildScenographyHtml(opts: { compiledCode: string; nonceTitle: string; brand?: BrandKit | null }): string {
+  const { compiledCode, nonceTitle, brand } = opts;
   const safeTitle = nonceTitle.replace(/[<>"'&]/g, (c) =>
     ({ '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;' }[c]!)
   );
+
+  // === Brand Kit injection (when the event has an active partner kit) ===
+  // We repaint the sandbox iframe with the partner tokens/fonts so existing
+  // scenographies inherit the partner identity without any code change.
+  const brandFontsLink = brand
+    ? `<link rel="stylesheet" href="${brand.fonts.googleFontsHref.replace(/"/g, '&quot;')}" />`
+    : '';
+  const brandStyle = brand
+    ? `<style id="brand-kit-override">
+  :root {
+    --bk-bg: ${brand.palette.background};
+    --bk-fg: ${brand.palette.foreground};
+    --bk-accent: ${brand.palette.accent};
+    --bk-accent-fg: ${brand.palette.accentForeground};
+    --bk-surface: ${brand.palette.surface};
+    --bk-surface-fg: ${brand.palette.surfaceForeground};
+    --bk-grad-a: ${brand.palette.signatureGradient[0]};
+    --bk-grad-b: ${brand.palette.signatureGradient[1]};
+    --bk-font-logotype: '${brand.fonts.logotype}';
+    --bk-font-display: '${brand.fonts.display}';
+    --bk-font-body: '${brand.fonts.body}';
+  }
+  html, body, #root {
+    background: hsl(var(--bk-bg)) !important;
+    color: hsl(var(--bk-fg)) !important;
+    font-family: var(--bk-font-body), ui-sans-serif, system-ui, sans-serif !important;
+  }
+  h1, h2, h3, .font-serif, .font-display {
+    font-family: var(--bk-font-display), 'Cormorant Garamond', Georgia, serif !important;
+    letter-spacing: -0.01em;
+  }
+  .bk-logotype { font-family: var(--bk-font-logotype), 'Allura', cursive !important; }
+  .bk-accent { color: hsl(var(--bk-accent)) !important; }
+  .bk-cta {
+    background: radial-gradient(circle at 30% 30%, hsl(var(--bk-accent) / .95), hsl(var(--bk-accent)) 70%);
+    color: hsl(var(--bk-accent-fg));
+    border: none;
+    padding: .9rem 1.5rem;
+    border-radius: ${brand.ctaShape === 'blob' ? '50% 46% 52% 48% / 48% 52% 46% 54%' : brand.ctaShape === 'pill' ? '9999px' : '14px'};
+    box-shadow: 0 12px 28px -8px hsl(var(--bk-accent) / .55);
+  }
+  .bk-divider {
+    height: 88px;
+    background: linear-gradient(90deg, hsl(var(--bk-grad-a)), hsl(var(--bk-grad-b)));
+  }
+</style>`
+    : '';
+  const brandGlobal = brand
+    ? `<script>window.__SCENO_BRAND__ = ${JSON.stringify({
+        slug: brand.slug,
+        partner: brand.partner,
+        tagline: brand.tagline ?? null,
+        palette: brand.palette,
+        fonts: { logotype: brand.fonts.logotype, display: brand.fonts.display, body: brand.fonts.body },
+        ctaShape: brand.ctaShape,
+        badges: brand.badges ?? [],
+        socials: brand.socials ?? {},
+      }).replace(/</g, '\\u003c')};</script>`
+    : '';
+
 
   return `<!doctype html>
 <html lang="fr">
@@ -50,8 +112,12 @@ export function buildScenographyHtml(opts: { compiledCode: string; nonceTitle: s
     font-size: 13px; white-space: pre-wrap; overflow: auto;
   }
 </style>
+${brandFontsLink}
+${brandStyle}
+${brandGlobal}
 </head>
 <body>
+
 <div id="root"></div>
 
 <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
@@ -116,6 +182,7 @@ export function buildScenographyHtml(opts: { compiledCode: string; nonceTitle: s
     window.Scenography = {
       helpers: { useScrollProgress, useMousePos, lerp, clamp, hashColor },
       data: null,
+      brand: window.__SCENO_BRAND__ || null,
     };
   })();
 </script>

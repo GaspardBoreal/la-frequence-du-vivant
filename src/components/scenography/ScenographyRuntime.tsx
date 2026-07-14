@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as Babel from '@babel/standalone';
 import { buildScenographyHtml } from './scenographyRuntimeHtml';
 import type { ScenographyData } from '@/hooks/useScenography';
+import type { BrandKit } from '@/lib/brandKits/types';
 
 interface Props {
   code: string;
@@ -14,6 +15,8 @@ interface Props {
   showExit?: boolean;
   /** Click handler for the exit/fallback button. */
   onExit?: () => void;
+  /** Optional brand kit — repaints the sandbox iframe with partner tokens/fonts. */
+  brand?: BrandKit | null;
 }
 
 /**
@@ -28,6 +31,7 @@ const ScenographyRuntime: React.FC<Props> = ({
   onError,
   showExit = true,
   onExit,
+  brand,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,8 +76,8 @@ const ScenographyRuntime: React.FC<Props> = ({
   }, [code]);
 
   const html = useMemo(
-    () => (compiled.error ? null : buildScenographyHtml({ compiledCode: compiled.code, nonceTitle: title })),
-    [compiled, title]
+    () => (compiled.error ? null : buildScenographyHtml({ compiledCode: compiled.code, nonceTitle: title, brand: brand ?? null })),
+    [compiled, title, brand]
   );
 
   // Post data once iframe boots

@@ -71,6 +71,7 @@ const PublicEventPageInner: React.FC = () => {
   const [scenoBypassed, setScenoBypassed] = useState(false);
   const { data: sceno } = useEventScenography(slug);
   const { data: scenoData } = useEventScenographyData(slug, !!sceno && !scenoBypassed);
+  const { data: brandKitInner } = useEventBrandKit(slug);
 
   const { data: event, isLoading, error } = usePublicEvent(slug);
   const { data: stats } = usePublicEventStats(slug);
@@ -133,6 +134,7 @@ const PublicEventPageInner: React.FC = () => {
           data={scenoData ?? {}}
           title={title}
           onExit={() => setScenoBypassed(true)}
+          brand={brandKitInner ?? null}
         />
         {slug && (
           <Link
