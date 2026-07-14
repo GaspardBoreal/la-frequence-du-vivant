@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Leaf, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationFieldPhotos, normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
 import { useSpeciesThumbs } from '@/hooks/useSpeciesThumb';
+import { useExplorationSpeciesCount } from '@/hooks/useExplorationSpeciesCount';
 import { SpeciesName } from '@/components/species/SpeciesName';
 import type { Season } from './SeasonOverlay';
 
