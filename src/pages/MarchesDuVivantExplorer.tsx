@@ -196,8 +196,26 @@ const MarchesDuVivantExplorer = () => {
   return (
     <>
       <Helmet>
-        <title>Devenez Marcheur du Vivant — Les Marches du Vivant</title>
-        <meta name="description" content="Marchez, écoutez, témoignez. Rejoignez gratuitement les Marcheurs du Vivant et contribuez à la connaissance de la biodiversité." />
+        <title>Explorer les Marches du Vivant — Charente, Nouvelle-Aquitaine, Occitanie, Pays de la Loire, Bretagne</title>
+        <meta name="description" content="Carte et parcours des Marches du Vivant région par région : Charente, Nouvelle-Aquitaine, Occitanie, Pays de la Loire, Bretagne." />
+        <meta name="keywords" content="explorer marches du vivant, marche du vivant Charente, marche du vivant Bretagne, marche du vivant Occitanie, Nouvelle-Aquitaine, Pays de la Loire" />
+        <link rel="canonical" href="https://la-frequence-du-vivant.com/marches-du-vivant/explorer" />
+        <meta property="og:title" content="Explorer les Marches du Vivant" />
+        <meta property="og:description" content="Carte et parcours région par région : Charente, Nouvelle-Aquitaine, Occitanie, Pays de la Loire, Bretagne." />
+        <meta property="og:url" content="https://la-frequence-du-vivant.com/marches-du-vivant/explorer" />
+        <meta property="og:type" content="website" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "name": "Régions couvertes par les Marches du Vivant",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "item": { "@type": "Place", "name": "Charente", "address": { "@type": "PostalAddress", "addressRegion": "Nouvelle-Aquitaine", "addressCountry": "FR" } } },
+            { "@type": "ListItem", "position": 2, "item": { "@type": "Place", "name": "Nouvelle-Aquitaine", "address": { "@type": "PostalAddress", "addressRegion": "Nouvelle-Aquitaine", "addressCountry": "FR" } } },
+            { "@type": "ListItem", "position": 3, "item": { "@type": "Place", "name": "Occitanie", "address": { "@type": "PostalAddress", "addressRegion": "Occitanie", "addressCountry": "FR" } } },
+            { "@type": "ListItem", "position": 4, "item": { "@type": "Place", "name": "Pays de la Loire", "address": { "@type": "PostalAddress", "addressRegion": "Pays de la Loire", "addressCountry": "FR" } } },
+            { "@type": "ListItem", "position": 5, "item": { "@type": "Place", "name": "Bretagne", "address": { "@type": "PostalAddress", "addressRegion": "Bretagne", "addressCountry": "FR" } } }
+          ]
+        })}</script>
       </Helmet>
 
       <div className="min-h-screen print-plaquette" style={{ background: 'linear-gradient(180deg, #fefdfb 0%, #f8f6f0 30%, #fefdfb 60%, #f5f3ed 100%)' }}>
