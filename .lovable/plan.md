@@ -1,42 +1,19 @@
-## Plan de correction
+## Problème
 
-1. **Remplacer la source de données espèces du template vignoble**
-   - Ne plus alimenter “Ce que vous rencontrerez” avec `get_public_event_biodiversity`, qui renvoie actuellement 208 espèces hors filtre rayon.
-   - Utiliser le pool unifié `useExplorationSpeciesPool(event.exploration_id)`, déjà aligné avec `get_exploration_species_count` et la vue Exploration → Biodiversité → Taxons observés.
-   - Résultat attendu : le titre et le carrousel affichent les **38 espèces réelles dans le rayon d’observation**.
+Sur la fiche jardin (`/jardin/:slug`), l'index vertical de navigation (Canopée / Arbustive / Rhizosphère / Saisons) est positionné en `fixed right-4 z-40`. Le "Panneau vivant" (composant `StratPanel`) de la Strate 1 est aligné à droite (`md:justify-self-end`) avec `backdrop-blur-xl`. Résultat : à mi-scroll, les pastilles de l'index chevauchent le panneau — elles restent visibles par-dessus au lieu de glisser proprement dessous (ou d'être décalées), ce qui casse la lecture du panneau.
 
-2. **Aligner les chiffres de la section “Le Domaine”**
-   - Garder le compteur espèces sur `useExplorationSpeciesCount`.
-   - Remplacer le compteur “Observations” par la somme des observations du pool filtré, au lieu du total public global qui inclut les espèces hors rayon.
-   - Ajouter un état de chargement propre si le pool n’est pas encore disponible.
+## Correction proposée
 
-3. **Refaire les cartes espèces avec la même qualité visuelle que Taxons observés**
-   - Construire les cartes à partir du pool unifié : nom scientifique, nom commun/français, groupe, nombre d’observations, image résolue.
-   - Utiliser l’image `imageUrl` issue de la même cascade que l’app : photo marcheur prioritaire, puis photo iNat attribuée, puis photo iNat de référence.
-   - Agrandir la photo dans la tuile pour supprimer l’effet “petite vignette perdue dans une grande carte”.
+Modification uniquement dans `src/pages/ImmersiveGardenFiche.tsx`, composant `StratIndicator` (l.478-485) :
 
-4. **Rendre les photos marcheurs visibles dans l’expérience vignoble**
-   - Étendre `AlbumDomaineCarousel` pour intégrer aussi les photos de convivialité (`exploration_convivialite_photos`) en plus des `marcheur_medias` publics.
-   - Dédupliquer les URLs et afficher une attribution marcheur quand disponible.
-   - Résultat attendu : les **photos réelles prises par les marcheurs** apparaissent dans l’album du domaine.
+1. **Déplacer l'index vertical à gauche** (`left-4` au lieu de `right-4`) pour éviter toute collision avec les `StratPanel` alignés à droite. Inverser l'ordre des dots (`flex-row` inversé) : pastille à gauche, label à droite, aligné `justify-start`.
+2. **Descendre le z-index** de `z-40` à `z-20`, sous le z implicite des panneaux, pour que — si un panneau finit malgré tout par croiser la zone — l'index passe proprement dessous plutôt que de flotter au-dessus.
+3. Ajouter un léger fond flouté sur chaque ligne (`bg-black/20 backdrop-blur-sm rounded-full px-2 py-1`) pour rester lisible sur les fonds clairs de la section Canopée.
 
-5. **Garder le carrousel mais le rendre plus lisible**
-   - Conserver le défilement par paquet de 4 sur desktop, 2 tablette, 1 mobile.
-   - Garder les boutons visibles, avec compteur exact `04 / 38`, indicateurs et pause au survol.
-   - Préserver l’effet “wahou” sans casser la sobriété : photo pleine tuile, léger zoom, voile doré discret, contraste amélioré.
-
-## Fichiers concernés
-
-- `src/components/vignoble/VignobleImmersion.tsx`
-  - Source espèces corrigée vers `useExplorationSpeciesPool`.
-  - Compteurs corrigés.
-  - Album enrichi avec convivialité.
-  - Cartes espèces agrandies et alignées sur le rendu Taxons observés.
+Aucune modification du `StratPanel` ni du reste de la page. Aucun changement backend.
 
 ## Vérification
 
-- Vérifier la page `/m/chateau-boutinet-le-vignoble-vivant-2026-09-26#pepites`.
-- Confirmer visuellement :
-  - “Ce que vous rencontrerez” affiche 38, pas 208.
-  - Les cartes montrent des photos pleine largeur/hauteur.
-  - L’album montre les photos réelles marcheurs + convivialité.
+- Rechargement de `/jardin/dbaf6db0-...` en desktop.
+- Scroll manuel : l'index reste ancré à gauche, les 3 `StratPanel` (droite/gauche/droite) ne sont plus chevauchés.
+- Screenshot Playwright aux 4 seuils de scroll (0, 25 %, 50 %, 75 %) pour confirmer visuellement.
