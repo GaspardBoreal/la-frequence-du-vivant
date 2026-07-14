@@ -51,16 +51,28 @@ const STORAGE_PREFIX = 'species-photo-mode:';
 
 interface ProviderProps {
   explorationId?: string;
+  /** Optional pre-built map of field photos indexed by normalized scientific name.
+   *  When provided, bypasses the `useExplorationFieldPhotos` query — useful for
+   *  contexts (e.g. the public event page `/m/:slug`) that already have the
+   *  walker photos loaded via a different RPC/hook. */
+  fieldPhotosOverride?: Map<string, MarcheurSpeciesPhoto[]>;
   children: ReactNode;
 }
 
 export const SpeciesPhotoModeProvider: React.FC<ProviderProps> = ({
   explorationId,
+  fieldPhotosOverride,
   children,
 }) => {
-  const { data, isLoading } = useExplorationFieldPhotos(explorationId);
-  const fieldPhotos = data?.byScientificName ?? new Map();
-  const hasFieldPhotos = !!data?.hasAny;
+  const { data, isLoading: queryLoading } = useExplorationFieldPhotos(
+    fieldPhotosOverride ? undefined : explorationId,
+  );
+
+  const fieldPhotos = fieldPhotosOverride ?? data?.byScientificName ?? new Map();
+  const hasFieldPhotos = fieldPhotosOverride
+    ? fieldPhotosOverride.size > 0
+    : !!data?.hasAny;
+  const isLoading = fieldPhotosOverride ? false : queryLoading;
 
   const storageKey = explorationId ? `${STORAGE_PREFIX}${explorationId}` : null;
 
@@ -68,8 +80,9 @@ export const SpeciesPhotoModeProvider: React.FC<ProviderProps> = ({
 
   // Init / sync : préférence persistée OU défaut = marcheur si photos terrain.
   useEffect(() => {
-    if (!storageKey) return;
-    const stored = localStorage.getItem(storageKey) as SpeciesPhotoMode | null;
+    const stored = storageKey
+      ? (localStorage.getItem(storageKey) as SpeciesPhotoMode | null)
+      : null;
     if (stored === 'marcheur' || stored === 'inaturalist') {
       setModeState(stored);
     } else if (hasFieldPhotos) {
