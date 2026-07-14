@@ -81,6 +81,7 @@ export const RichMap: React.FC<RichMapProps> = ({
   scrollWheelZoom = true,
   onMarcheVisibilityChange,
 }) => {
+  const mapId = useId();
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
   const [markersVisible, setMarkersVisible] = useState<boolean>(
     marcheRoute?.renderMarkers !== false,
