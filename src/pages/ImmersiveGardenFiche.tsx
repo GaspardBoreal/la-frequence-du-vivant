@@ -464,12 +464,25 @@ const RevealText: React.FC<{ text: string }> = ({ text }) => {
 
 const IndicatorDot: React.FC<{ label: string; start: number }> = ({ label, start }) => {
   const { scrollYProgress } = useScroll();
+  const reduce = useReducedMotion();
   const end = start + 0.25;
   const opacity = useTransform(scrollYProgress, [start, end - 0.01, end], [0.35, 1, 0.35]);
   const scale = useTransform(scrollYProgress, [start, (start + end) / 2, end], [1, 1.6, 1]);
+  // Label s'estompe pendant que sa strate est active, pour libérer la lecture du texte de la section
+  const labelOpacity = useTransform(
+    scrollYProgress,
+    [Math.max(0, start - 0.02), start, end, Math.min(1, end + 0.02)],
+    [1, 0.05, 0.05, 1]
+  );
   return (
     <motion.div className="flex items-center gap-3 justify-end">
-      <span className="text-[10px] tracking-[0.25em] uppercase text-[#f4ecd4]/70 font-serif italic">{label}</span>
+      <motion.span
+        className="text-[10px] tracking-[0.25em] uppercase text-[#f4ecd4]/70 font-serif italic"
+        style={reduce ? undefined : { opacity: labelOpacity }}
+        transition={{ duration: 0.4 }}
+      >
+        {label}
+      </motion.span>
       <motion.span className="block w-1.5 h-1.5 rounded-full bg-[#c9a24a]" style={{ opacity, scale }} />
     </motion.div>
   );

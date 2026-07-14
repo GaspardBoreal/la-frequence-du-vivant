@@ -1,56 +1,34 @@
 ## Objectif
+Résoudre le chevauchement entre le bloc « STRATE 2 — RHIZOSPHÈRE / Le silence fertile des racines » et l'index latéral droit, sans bouger l'index.
 
-Sur les fiches jardin publiques (`/jardin/:slug`), le compteur du carrousel saisonnier doit exposer les **deux nombres** :
+## Principe retenu
+L'index reste à sa position. Ses **labels** (Canopée, Arbustive, Rhizosphère, Saisons) s'estompent quand leur strate est **active** à l'écran — seuls les points restent visibles. À la sortie de la strate, les labels réapparaissent en fondu. Cela libère la lecture du titre sans supprimer le repère.
 
-- **N vues cette saison** — comptage saisonnier actuel (déjà calculé côté carrousel).
-- **T au total** — total unique d'espèces de l'exploration, **strictement identique** à celui affiché dans l'app Marcheurs (Carnet, Carte, Synthèse).
+## Implémentation
 
-Le total doit venir de la **même source de vérité** que l'app Marcheurs : le hook `useExplorationSpeciesCount` (RPC `get_exploration_species_count`, fusion `biodiversity_snapshots ∪ marcheur_observations` avec dédup NFD).
+**Fichier : `src/pages/ImmersiveGardenFiche.tsx`**
 
-## Diagnostic
+1. `IndicatorDot` — ajouter une prop `end` (fin de plage active) et calculer une opacité de label distincte :
+   - `labelOpacity` = 1 hors de `[start, end]`, ~0.05 dedans (via `useTransform` sur le scrollYProgress déjà utilisé).
+   - Le point garde son animation actuelle (opacity/scale existantes).
+   - Appliquer `labelOpacity` sur le `<span>` du label uniquement.
 
-- Aujourd'hui, `SeasonSpeciesCarousel` calcule `eligible.length` à partir de `get_exploration_species_pool` filtré sur les mois de la saison. C'est pour ça que DEVIAT affiche 108 (été) au lieu de 215 (total marcheur), et que les écarts varient selon la répartition temporelle des observations.
-- `useExplorationSpeciesCount` est déjà le canal unifié utilisé partout côté marcheur — on le branche tel quel, aucune duplication de logique.
+2. `StratIndicator` — passer les plages :
+   - Canopée `start=0 end=0.25`
+   - Arbustive `start=0.25 end=0.5`
+   - Rhizosphère `start=0.5 end=0.75`
+   - Saisons `start=0.75 end=1`
 
-## Changements
+3. Transition douce : `transition: { duration: 0.4 }` sur le span label (via `motion.span`), pour éviter un flash.
 
-### 1. `src/components/immersive-garden/SeasonSpeciesCarousel.tsx`
-
-- Importer `useExplorationSpeciesCount` depuis `@/hooks/useExplorationSpeciesCount`.
-- Appeler `useExplorationSpeciesCount(explorationId)` en tête du composant.
-- Remplacer le bloc compteur actuel :
-
-```text
-{currentPage + 1} / {totalPages}  ·  {eligible.length} espèces
-```
-
-par :
-
-```text
-{currentPage + 1} / {totalPages}
-·  {eligible.length} vues en {SEASON_LABEL[season]}
-·  {totalExploration} au total
-```
-
-  - `totalExploration = speciesCountQ.data?.total ?? eligible.length` (fallback prudent tant que la RPC charge).
-  - Garder la typographie/hiérarchie existante (`text-[#f4ecd4]/60`, séparateurs `·`).
-- Afficher le total même quand `totalPages === 1` (petit bandeau compact sous la grille) pour que le nombre canonique soit toujours visible, y compris sur les petites explorations où la pagination est masquée.
-
-### 2. Aucune autre modification
-
-- Pas de changement de RPC, pas de migration.
-- Pas de touche au filtre saisonnier (le carrousel continue de ne montrer que les espèces observées dans la saison courante — c'est intentionnel côté design).
-- Aucune modification des pages/hooks de l'app Marcheurs.
-
-## Vérification
-
-- Playwright sur `/jardin/<slug-DEVIAT>` : screenshot du compteur, confirmer format `X vues en <saison> · 215 au total`.
-- Comparer visuellement avec la valeur du Carnet marcheur pour la même exploration (déjà 215).
-- Vérifier aussi sur Patio ISEG (attendu 22) et Fleurs de Bobo (attendu 25).
-- Confirmer qu'aucune régression de mise en page n'apparaît sur mobile (le compteur reste sur une ligne ou wrap proprement).
+4. Accessibilité / reduced motion : si `useReducedMotion()` est vrai, garder les labels à opacité 1 (pas de masquage animé).
 
 ## Détails techniques
+- Réutiliser le `useScroll` déjà présent dans `IndicatorDot` (pas de nouveau listener).
+- `useTransform(scrollYProgress, [start-0.02, start, end, end+0.02], [1, 0.05, 0.05, 1])` pour un fondu net mais non brutal.
+- Aucun changement sur le bloc texte de la section Rhizosphère (z-index, marges, largeur inchangés).
+- Aucun impact sur les autres sections ni sur le layout mobile (index déjà `hidden md:flex`).
 
-- `useExplorationSpeciesCount` respecte déjà `staleTime: 30s` + invalidation react-query ; pas besoin d'activer `realtime` sur cette vue publique.
-- Le hook renvoie `{ total, by_kingdom, by_source, species[] }` — on n'utilise ici que `total`.
-- Fallback UI : si `speciesCountQ.isLoading`, on affiche `eligible.length` seul pour éviter un "0 au total" temporaire.
+## Hors scope
+- Ne pas modifier la position, la taille ou la couleur de l'index.
+- Ne pas toucher au contenu ni à la mise en page du bloc titre Rhizosphère.
