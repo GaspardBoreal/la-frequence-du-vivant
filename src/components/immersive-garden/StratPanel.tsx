@@ -24,7 +24,7 @@ const StratPanel: React.FC<Props> = ({ title, subtitle, gauges, accent = '#c9a24
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: '-20%' }}
       transition={{ duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
-      className="relative rounded-[2rem] p-6 md:p-7 border border-white/15 bg-black/40 backdrop-blur-xl shadow-[0_25px_60px_-20px_rgba(0,0,0,0.6)] max-w-sm w-full"
+      className="relative z-30 rounded-[2rem] p-6 md:p-7 border border-white/15 bg-black/40 backdrop-blur-xl shadow-[0_25px_60px_-20px_rgba(0,0,0,0.6)] max-w-sm w-full"
       style={{ borderColor: `${accent}55` }}
     >
       <div className="flex items-start justify-between gap-3 mb-4">
