@@ -1,45 +1,82 @@
-Diagnostic clair
+# Plan — Aligner l'affichage des espèces sur /m/:slug avec « Mon Espace → Taxons observés »
 
-1. Boutinet `/m/chateau-boutinet-le-vignoble-vivant-2026-09-26`
-- Ce qui s'affiche n'est plus la scéno iframe, c'est le template dédié `VignobleImmersion`.
-- Le Brand Kit est bien détecté en base (`brand_kit_enabled=true`, `brand_kit_slug=chateau_boutinet`), mais `VignobleImmersion` utilise ses propres variables `--vignoble-*` + un fond hero hardcodé bordeaux/noir.
-- Résultat : seul le badge Boutinet en haut change, mais toute la scène reste “Grand Cru” sombre.
+## Diagnostic
 
-2. Jardin `/jardin/dbaf6db0-3a0a-4823-9a50-ec0c324ccaea`
-- L'événement Jardin a `cover_image_url = null` et `is_public = false`.
-- Il y a pourtant 36 photos dans `marcheur_medias`, toutes `is_public=true`.
-- Mais la règle RLS actuelle autorise les visiteurs anonymes à lire ces photos seulement si l'événement parent est `is_public=true`.
-- Donc la fiche Jardin charge l'événement par ID, mais les images sont bloquées côté lecture publique : hero + strate 1 restent sur fond vide.
+Aujourd'hui, sur `/m/:slug` (page publique d'un événement), la grille des espèces est **rendue de façon ad-hoc dans `src/pages/PublicEventPage.tsx` (lignes 454-487)** :
 
-Plan de correction efficace
+- balise `<img src={sp.photo_url}>` brute, sans cascade « photo terrain marcheur → iNaturalist »,
+- pas d'état de chargement, pas de gestion d'erreur d'image,
+- pas de badge source (📸 marcheur / iNat),
+- pas de toggle « Photos marcheurs ↔ iNat »,
+- pas de fiche espèce cliquable.
 
-1. Corriger Boutinet sans réécrire toute la scène
-- Dans `brand-kit.css`, ajouter un override spécifique : `[data-brand-kit='chateau_boutinet']`.
-- Mapper les variables `--vignoble-*` vers la palette Boutinet : sauge, crème, ambre/orange.
-- Surcharger `.vignoble-hero-bg` sous Brand Kit pour remplacer le fond bordeaux/noir par un fond diurne sauge/ambre.
-- Surcharger les overlays très sombres du hero Vignoble pour que la scène devienne réellement claire.
-- Garder la structure premium existante, mais repeinte en “Boutinet diurne”.
+Dans Mon Espace → Biodiversité → **Taxons observés**, la même grille utilise déjà un composant **partagé, haute qualité** :
+`SpeciesExplorer` → `SpeciesGalleryCard` (photo terrain prioritaire, fallback iNat, overlay dégradé, badge source, ouverture drawer), piloté par le contexte `SpeciesPhotoModeContext` (toggle marcheur/iNat).
 
-2. Corriger Jardin à la source, sans rendre l'événement entièrement public
-- Ajouter une RPC Supabase `get_garden_hero_photos(_event_id uuid)` en `SECURITY DEFINER`.
-- Cette RPC retournera uniquement des images déjà publiques :
-  - `marcheur_medias` où `type_media='photo'` et `is_public=true`, via `url_fichier` ou `external_url` ;
-  - `marche_photos` officielles si présentes ;
-  - éventuellement `exploration_convivialite_photos` non masquées si l'exploration est liée.
-- Elle ne rendra pas les données privées publiques : seulement les URLs de photos marquées publiques.
+Le problème est donc **exclusivement de la duplication de code** : on a réécrit à la main, en moins bien, ce que fournit déjà `SpeciesGalleryCard`.
 
-3. Adapter `useGardenFiche`
-- Remplacer le fallback fragile par l'appel à cette RPC pour le hero.
-- Conserver `cover_image_url` en premier si un jour il existe.
-- Inclure `external_url` en fallback, pas seulement `url_fichier`.
-- Dédupliquer les URLs.
+## Objectif
 
-4. Durcir l'affichage image
-- Dans `KenBurnsCarousel`, si une image échoue au chargement, passer automatiquement à la suivante au lieu d'afficher une scène vide.
-- Pour la Strate 1, ne jamais passer un tableau vide issu de `slice(0, 3)` : utiliser la liste complète si nécessaire.
+Sur `/m/:slug`, réutiliser **strictement** les composants Mon Espace pour la section « Espèces observées » :
+1. cartes `SpeciesGalleryCard` (aspect-carré, cascade photo, overlay, badge source, chargement / erreur),
+2. toggle « Photos marcheurs ↔ iNaturalist » visible aussi pour les visiteurs publics,
+3. clic → ouverture de la fiche espèce (drawer déjà utilisé dans Mon Espace).
 
-Validation après implémentation
+Aucune régression sur la mise en page globale de la page publique (hero, autres onglets, footer inchangés).
 
-- Vérifier `/m/chateau-boutinet-le-vignoble-vivant-2026-09-26` : le hero doit passer en palette sauge/ambre Boutinet, plus de grand fond bordeaux dominant.
-- Vérifier `/jardin/dbaf6db0-3a0a-4823-9a50-ec0c324ccaea?tab=carte&cat=jardin` : le hero haut et la strate 1 doivent afficher les photos marcheurs.
-- Vérifier qu'aucune photo non publique n'est exposée.
+## Étapes
+
+### 1. Adapter les données publiques au format attendu par `SpeciesGalleryCard`
+
+`SpeciesGalleryCard` attend un objet espèce type Mon Espace (`scientificName`, `kingdom`, `observationCount`, etc.), alors que `usePublicEventBiodiversity` renvoie `{ scientific_name, common_name, photo_url, observations_count, has_walker_observation }` (voir `src/hooks/usePublicEvent.ts`).
+
+→ Créer un petit **adapter pur** (`src/components/public-event/adaptPublicSpecies.ts`) qui convertit le format public vers le format attendu par `SpeciesGalleryCard`, en préservant `photo_url` comme photo terrain candidate quand `has_walker_observation` est vrai. Zéro logique métier ajoutée, juste un mapping de champs.
+
+### 2. Nouveau composant `PublicEventSpeciesGrid`
+
+Fichier : `src/components/public-event/PublicEventSpeciesGrid.tsx`
+
+- Reçoit `species: PublicEventBiodiversitySpecies[]` en prop.
+- Enveloppe le rendu dans `<SpeciesPhotoModeProvider>` (contexte du toggle) pour que la page publique soit **autonome** vis-à-vis de Mon Espace.
+- Affiche en en-tête le composant toggle existant (`SpeciesPhotoModeToggle` ou équivalent utilisé dans Mon Espace) — même look, même libellés.
+- Rend la grille `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` et map chaque item vers `<SpeciesGalleryCard species={adapted} onClick={openDrawer} />`.
+- Gère l'état `selectedSpecies` local et monte `SpeciesDetailDrawer` (le même que Mon Espace) en mode lecture publique.
+
+### 3. Remplacement dans `PublicEventPage.tsx`
+
+- Retirer les lignes 454-487 (grille inline + import `Leaf` si plus utilisé).
+- Insérer `<PublicEventSpeciesGrid species={biodiversity.species} />` à la même place.
+- Conserver le titre de section, le compteur d'espèces et le lien « voir plus » existants.
+
+### 4. Vérifications avant / après
+
+- Vérifier que `SpeciesPhotoModeContext`, `useSpeciesPhoto`, `SpeciesGalleryCard` et `SpeciesDetailDrawer` **n'ont aucune dépendance à `useAuth`** (sinon les envelopper d'un fallback lecture-seule). Si une dépendance auth existe, court-circuiter proprement côté visiteur anonyme (mode « lecture publique »).
+- Vérifier que les photos terrain marcheurs restent accessibles sans session (RLS des buckets `marcheur_media`). Si non : soit exposer via URL publique déjà générée côté RPC, soit ne montrer que iNat pour les visiteurs non connectés.
+- Test manuel sur `/m/laboratoire-a-ciel-ouvert-biodiversite-sols-vivants-2026-07-07` : grille identique visuellement à Mon Espace, toggle fonctionnel, drawer ouvrable.
+
+## Détails techniques
+
+- **Fichiers créés** :
+  - `src/components/public-event/PublicEventSpeciesGrid.tsx` (composant orchestrateur)
+  - `src/components/public-event/adaptPublicSpecies.ts` (adapter de type)
+- **Fichiers modifiés** :
+  - `src/pages/PublicEventPage.tsx` (retire ~35 lignes ad-hoc, ajoute 1 import + 1 balise)
+- **Fichiers réutilisés tels quels (aucune modification)** :
+  - `src/components/biodiversity/SpeciesGalleryCard.tsx`
+  - `src/contexts/SpeciesPhotoModeContext.tsx` + toggle associé
+  - `src/hooks/useSpeciesPhoto.ts`
+  - `SpeciesDetailDrawer` (celui utilisé par `SpeciesExplorer`)
+- **Pas de changement** : `usePublicEventBiodiversity`, RPC Supabase, RLS, edge functions, autres onglets de la page publique, header/footer.
+
+## Résultat attendu
+
+Le visiteur public d'un événement voit **exactement** la même qualité de vignettes que le marcheur connecté dans son espace :
+
+- photo terrain marcheur affichée en priorité quand elle existe,
+- sinon photo de référence iNaturalist,
+- badge source discret,
+- overlay dégradé au survol,
+- toggle « Photos marcheurs ↔ iNaturalist »,
+- clic → fiche espèce détaillée.
+
+Et surtout : **une seule source de vérité** pour ce composant, mainenu à un seul endroit (`SpeciesGalleryCard`).
