@@ -125,6 +125,7 @@ export const RichMap: React.FC<RichMapProps> = ({
 
   return (
     <div
+      ref={wrapperRef}
       className={`relative w-full ${className}`}
       style={{ height }}
     >
@@ -139,7 +140,6 @@ export const RichMap: React.FC<RichMapProps> = ({
         }
       `}</style>
       <MapContainer
-        key={mapId}
         center={center}
         zoom={zoom}
         scrollWheelZoom={scrollWheelZoom}
