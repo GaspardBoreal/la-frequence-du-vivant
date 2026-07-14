@@ -451,45 +451,13 @@ const PublicEventPageInner: React.FC = () => {
               </Card>
             )}
 
-            {/* Species grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {biodiversity.species.slice(0, 24).map((sp) => (
-                <Card key={sp.scientific_name} className="overflow-hidden group">
-                  {sp.photo_url ? (
-                    <div className="aspect-square overflow-hidden bg-muted">
-                      <img
-                        src={sp.photo_url}
-                        alt={sp.scientific_name}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </div>
-                  ) : (
-                    <div className="aspect-square bg-gradient-to-br from-emerald-500/10 to-amber-500/10 grid place-items-center">
-                      <Leaf className="h-8 w-8 text-muted-foreground/40" />
-                    </div>
-                  )}
-                  <div className="p-2.5">
-                    <SpeciesName
-                      scientificName={sp.scientific_name}
-                      commonName={sp.common_name}
-                      size="sm"
-                      truncate
-                      showScientific
-                      scientificClassName="text-[10px]"
-                    />
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {sp.observations_count} obs.{sp.has_walker_observation ? ' · 🥾' : ''}
-                    </p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-            {biodiversity.species_count > 24 && (
-              <p className="text-xs text-center text-muted-foreground mt-3">
-                + {biodiversity.species_count - 24} autres espèces observées
-              </p>
-            )}
+            {/* Species grid — réutilise le rendu « Mon Espace → Taxons observés »
+                (SpeciesGalleryCard + toggle marcheurs/iNat + fiche espèce détaillée) */}
+            <PublicEventSpeciesGrid
+              species={biodiversity.species}
+              totalCount={biodiversity.species_count}
+              limit={24}
+            />
           </section>
         )}
 
