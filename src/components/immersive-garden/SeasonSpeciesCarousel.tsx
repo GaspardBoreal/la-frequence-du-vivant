@@ -284,8 +284,8 @@ const SeasonSpeciesCarousel: React.FC<Props> = ({ explorationId, season, tint })
                 })}
               </div>
 
-              {totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-center gap-4">
+              <div className="mt-6 flex items-center justify-center gap-4 flex-wrap">
+                {totalPages > 1 && (
                   <button
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={currentPage === 0}
@@ -294,11 +294,23 @@ const SeasonSpeciesCarousel: React.FC<Props> = ({ explorationId, season, tint })
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <div className="text-[11px] tracking-[0.25em] uppercase text-[#f4ecd4]/60">
-                    {currentPage + 1} / {totalPages}
-                    <span className="mx-2 text-[#f4ecd4]/25">·</span>
-                    {eligible.length} espèces
-                  </div>
+                )}
+                <div className="text-[11px] tracking-[0.25em] uppercase text-[#f4ecd4]/60 text-center">
+                  {totalPages > 1 && (
+                    <>
+                      {currentPage + 1} / {totalPages}
+                      <span className="mx-2 text-[#f4ecd4]/25">·</span>
+                    </>
+                  )}
+                  {eligible.length} vues en {SEASON_LABEL[season]}
+                  {typeof totalExploration === 'number' && totalExploration > 0 && (
+                    <>
+                      <span className="mx-2 text-[#f4ecd4]/25">·</span>
+                      {totalExploration} au total
+                    </>
+                  )}
+                </div>
+                {totalPages > 1 && (
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                     disabled={currentPage >= totalPages - 1}
@@ -307,8 +319,8 @@ const SeasonSpeciesCarousel: React.FC<Props> = ({ explorationId, season, tint })
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </>
           )}
         </motion.div>
