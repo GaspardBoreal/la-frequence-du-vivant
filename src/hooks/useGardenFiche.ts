@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useConvivialitePhotos, type ConvivialitePhoto } from '@/hooks/useConvivialitePhotos';
 
 export interface GardenEvent {
   id: string;
@@ -35,6 +34,12 @@ export interface StrataMetrics {
 export interface HeroPhoto {
   id: string;
   url: string;
+}
+
+interface GardenHeroPhotoRow {
+  id: string;
+  url: string;
+  source: string;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -105,52 +110,23 @@ function useStrataMetrics(eventId: string | undefined) {
 }
 
 /**
- * Aggregate photos from the "Voir" tab of every step of the event:
- *  - marche_photos (official curated per step)
- *  - marcheur_medias (walker contributions, type_media = 'photo')
+ * Photos publiques d'une fiche Jardin. On passe par une RPC SECURITY DEFINER
+ * pour permettre l'affichage des médias publics d'un Jardin consulté par ID,
+ * sans rendre tout l'évènement public ni ouvrir la table marcheur_medias.
  */
-function useGardenStepPhotos(eventId: string | undefined, explorationId: string | null | undefined) {
+function useGardenHeroPhotos(eventId: string | undefined) {
   return useQuery({
-    queryKey: ['garden-step-photos', eventId, explorationId],
+    queryKey: ['garden-hero-photos', eventId],
     enabled: !!eventId,
     queryFn: async (): Promise<HeroPhoto[]> => {
-      const result: HeroPhoto[] = [];
-
-      // 1) Resolve step ids (marches) via exploration_marches when we have an exploration_id.
-      let marcheIds: string[] = [];
-      if (explorationId) {
-        const { data: em } = await (supabase as any)
-          .from('exploration_marches')
-          .select('marche_id')
-          .eq('exploration_id', explorationId);
-        marcheIds = (em || []).map((r: any) => r.marche_id).filter(Boolean);
-      }
-
-      // 2) marche_photos (official) for those steps
-      if (marcheIds.length > 0) {
-        const { data: mp } = await (supabase as any)
-          .from('marche_photos')
-          .select('id, url_supabase')
-          .in('marche_id', marcheIds)
-          .order('ordre', { ascending: true });
-        (mp || []).forEach((p: any) => {
-          if (p.url_supabase) result.push({ id: `mp-${p.id}`, url: p.url_supabase });
-        });
-      }
-
-      // 3) marcheur_medias (walker photos) scoped to the event
-      const { data: mm } = await (supabase as any)
-        .from('marcheur_medias')
-        .select('id, url_fichier, type_media')
-        .eq('marche_event_id', eventId!)
-        .eq('type_media', 'photo')
-        .order('created_at', { ascending: false })
-        .limit(120);
-      (mm || []).forEach((m: any) => {
-        if (m.url_fichier) result.push({ id: `mm-${m.id}`, url: m.url_fichier });
+      if (!eventId) return [];
+      const { data, error } = await (supabase as any).rpc('get_garden_hero_photos', {
+        _event_id: eventId,
       });
-
-      return result;
+      if (error) throw error;
+      return ((data ?? []) as GardenHeroPhotoRow[])
+        .filter((p) => p.url)
+        .map((p) => ({ id: p.id, url: p.url }));
     },
   });
 }
@@ -158,15 +134,10 @@ function useGardenStepPhotos(eventId: string | undefined, explorationId: string 
 export function useGardenFiche(slug: string | undefined) {
   const eventQ = useGardenEvent(slug);
   const event = eventQ.data;
-  const photosQ = useConvivialitePhotos(event?.exploration_id ?? undefined);
-  const stepPhotosQ = useGardenStepPhotos(event?.id, event?.exploration_id);
+  const heroPhotosQ = useGardenHeroPhotos(event?.id);
   const metricsQ = useStrataMetrics(event?.id);
 
-  const convivialite: ConvivialitePhoto[] = (photosQ.data ?? []).filter((p) => !p.is_hidden);
-
-  // Merge & dedupe by URL. Ordre : cover event → convivialité → step photos → marcheur.
-  // On préfixe cover_image_url pour garantir au moins UNE image visible dans le
-  // Hero même quand un event Jardin n'a ni exploration liée, ni contribution.
+  // Merge & dedupe by URL. Ordre : cover event → RPC publique Jardin.
   const seen = new Set<string>();
   const heroPhotos: HeroPhoto[] = [];
 
@@ -174,13 +145,7 @@ export function useGardenFiche(slug: string | undefined) {
     seen.add(event.cover_image_url);
     heroPhotos.push({ id: `cover-${event.id}`, url: event.cover_image_url });
   }
-  convivialite.forEach((p) => {
-    if (p.url && !seen.has(p.url)) {
-      seen.add(p.url);
-      heroPhotos.push({ id: `conv-${p.id}`, url: p.url });
-    }
-  });
-  (stepPhotosQ.data ?? []).forEach((p) => {
+  (heroPhotosQ.data ?? []).forEach((p) => {
     if (p.url && !seen.has(p.url)) {
       seen.add(p.url);
       heroPhotos.push(p);
@@ -191,7 +156,7 @@ export function useGardenFiche(slug: string | undefined) {
     event,
     heroPhotos,
     metrics: metricsQ.data,
-    isLoading: eventQ.isLoading || photosQ.isLoading || stepPhotosQ.isLoading || metricsQ.isLoading,
+    isLoading: eventQ.isLoading || heroPhotosQ.isLoading || metricsQ.isLoading,
     notFound: !eventQ.isLoading && !event,
   };
 }

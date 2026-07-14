@@ -37,46 +37,55 @@ const KenBurnsCarousel: React.FC<Props> = ({ photos, fallback, intervalMs = 1900
 
   const [idx, setIdx] = useState(0);
   const [flashKey, setFlashKey] = useState(0);
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(() => new Set());
   const effectiveInterval = reduce ? 4000 : intervalMs;
+  const visibleList = useMemo(
+    () => list.filter((item) => !failedUrls.has(item.url)),
+    [list, failedUrls],
+  );
 
   const motionParams = useMemo(() => {
-    return list.map(() => ({
+    return visibleList.map(() => ({
       x: Math.random() * 8 - 4,
       y: Math.random() * 8 - 4,
       hue: Math.random() * 12 - 6,
       origin: ORIGINS[Math.floor(Math.random() * ORIGINS.length)],
     }));
-  }, [list]);
+  }, [visibleList]);
+
+  useEffect(() => {
+    setIdx(0);
+  }, [visibleList.length]);
 
   // Preload next two images
   useEffect(() => {
-    if (list.length < 2) return;
+    if (visibleList.length < 2) return;
     [1, 2].forEach((offset) => {
-      const next = list[(idx + offset) % list.length];
+      const next = visibleList[(idx + offset) % visibleList.length];
       if (next) {
         const img = new Image();
         img.src = next.url;
       }
     });
-  }, [idx, list]);
+  }, [idx, visibleList]);
 
   useEffect(() => {
-    if (list.length <= 1) return;
+    if (visibleList.length <= 1) return;
     const t = setInterval(() => {
-      setIdx((i) => (i + 1) % list.length);
+      setIdx((i) => (i + 1) % visibleList.length);
       setFlashKey((k) => k + 1);
     }, effectiveInterval);
     return () => clearInterval(t);
-  }, [list.length, effectiveInterval]);
+  }, [visibleList.length, effectiveInterval]);
 
-  if (list.length === 0) {
+  if (visibleList.length === 0) {
     return (
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-950 to-stone-950" />
     );
   }
 
-  const safeIdx = list.length > 0 ? idx % list.length : 0;
-  const current = list[safeIdx];
+  const safeIdx = visibleList.length > 0 ? idx % visibleList.length : 0;
+  const current = visibleList[safeIdx];
   if (!current) {
     return (
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-950 to-stone-950" />
@@ -125,6 +134,15 @@ const KenBurnsCarousel: React.FC<Props> = ({ photos, fallback, intervalMs = 1900
             alt=""
             className="w-full h-full object-cover"
             draggable={false}
+            onError={() => {
+              setFailedUrls((prev) => {
+                if (prev.has(current.url)) return prev;
+                const next = new Set(prev);
+                next.add(current.url);
+                return next;
+              });
+              setIdx((i) => (visibleList.length > 1 ? (i + 1) % visibleList.length : 0));
+            }}
           />
         </motion.div>
       </AnimatePresence>

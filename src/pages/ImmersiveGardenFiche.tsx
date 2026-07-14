@@ -118,6 +118,10 @@ const ImmersiveGardenFiche: React.FC = () => {
     () => heroPhotos.map((p) => ({ id: p.id, url: p.url })),
     [heroPhotos],
   );
+  const strataOnePhotos = useMemo(() => {
+    const firstPhotos = heroPhotoList.slice(0, 3);
+    return firstPhotos.length > 0 ? firstPhotos : heroPhotoList;
+  }, [heroPhotoList]);
 
   const triggerTransition = useCallback(
     (direction: 'prev' | 'next', origin: { x: number; y: number }) => {
@@ -275,7 +279,7 @@ const ImmersiveGardenFiche: React.FC = () => {
         {/* ============ SECTION 1 : ARBUSTIVE & HERBACÉE ============ */}
         <section className="relative min-h-screen py-24 px-6 md:px-12">
           <div className="absolute inset-0 opacity-70">
-            <KenBurnsCarousel photos={heroPhotoList.slice(0, 3)} fallback={cover} intervalMs={9000} />
+            <KenBurnsCarousel photos={strataOnePhotos} fallback={cover} intervalMs={9000} />
           </div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-emerald-950/60 to-black/80" />
 
