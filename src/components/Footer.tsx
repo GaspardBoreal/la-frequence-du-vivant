@@ -67,7 +67,8 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
           </div>
 
           {/* Explorer les Marches / fréquences */}
-          <div className="space-y-4">
+          <div className={`space-y-4 ${isMarches ? 'text-center' : ''}`}>
+
             {isMarches ? (
               <Link
                 to="/marches-du-vivant/carte-marches-du-vivant"
