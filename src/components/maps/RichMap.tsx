@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useId } from 'react';
 import { MapContainer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import DynamicTileLayer from './DynamicTileLayer';
@@ -81,6 +81,7 @@ export const RichMap: React.FC<RichMapProps> = ({
   scrollWheelZoom = true,
   onMarcheVisibilityChange,
 }) => {
+  const mapId = useId();
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
   const [markersVisible, setMarkersVisible] = useState<boolean>(
     marcheRoute?.renderMarkers !== false,
@@ -126,6 +127,7 @@ export const RichMap: React.FC<RichMapProps> = ({
         }
       `}</style>
       <MapContainer
+        key={mapId}
         center={center}
         zoom={zoom}
         scrollWheelZoom={scrollWheelZoom}
