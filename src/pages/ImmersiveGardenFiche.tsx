@@ -93,6 +93,26 @@ const ImmersiveGardenFiche: React.FC = () => {
   const heroScale = useTransform(scrollYProgress, [0, 0.25], [1, 1.15]);
   const heroDim = useTransform(scrollYProgress, [0.15, 0.45], [0, 1]);
 
+  useEffect(() => {
+    const updateIndexLabelsVisibility = () => {
+      const section = rhizosphereSectionRef.current;
+      if (!section) return;
+
+      const rect = section.getBoundingClientRect();
+      const viewportMiddle = window.innerHeight / 2;
+      setHideIndexLabels(rect.top <= viewportMiddle && rect.bottom >= viewportMiddle);
+    };
+
+    updateIndexLabelsVisibility();
+    window.addEventListener('scroll', updateIndexLabelsVisibility, { passive: true });
+    window.addEventListener('resize', updateIndexLabelsVisibility);
+
+    return () => {
+      window.removeEventListener('scroll', updateIndexLabelsVisibility);
+      window.removeEventListener('resize', updateIndexLabelsVisibility);
+    };
+  }, []);
+
   const cover = event?.cover_image_url ?? null;
   const heroPhotoList = useMemo(
     () => heroPhotos.map((p) => ({ id: p.id, url: p.url })),
@@ -150,26 +170,6 @@ const ImmersiveGardenFiche: React.FC = () => {
 
   const fallbackDisplay = (raw: number, formatted?: string) =>
     raw === 0 ? 'En cours' : (formatted ?? String(raw));
-
-  useEffect(() => {
-    const updateIndexLabelsVisibility = () => {
-      const section = rhizosphereSectionRef.current;
-      if (!section) return;
-
-      const rect = section.getBoundingClientRect();
-      const viewportMiddle = window.innerHeight / 2;
-      setHideIndexLabels(rect.top <= viewportMiddle && rect.bottom >= viewportMiddle);
-    };
-
-    updateIndexLabelsVisibility();
-    window.addEventListener('scroll', updateIndexLabelsVisibility, { passive: true });
-    window.addEventListener('resize', updateIndexLabelsVisibility);
-
-    return () => {
-      window.removeEventListener('scroll', updateIndexLabelsVisibility);
-      window.removeEventListener('resize', updateIndexLabelsVisibility);
-    };
-  }, []);
 
   return (
     <>
