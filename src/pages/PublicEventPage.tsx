@@ -423,7 +423,7 @@ const PublicEventPageInner: React.FC = () => {
                     center={[event.latitude!, event.longitude!]}
                     zoom={14}
                     height="100%"
-                    controls={{ zoom: true, style: true, geolocate: false }}
+                    controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
                     scrollWheelZoom={false}
                   >
                     {geoObs.slice(0, 200).map((o, i) => (
