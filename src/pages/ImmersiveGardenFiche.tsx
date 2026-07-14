@@ -318,7 +318,7 @@ const ImmersiveGardenFiche: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-15%' }}
               transition={{ duration: 0.9 }}
-              className="md:justify-self-end md:text-right"
+              className="relative z-30 md:justify-self-end md:text-right"
             >
               <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#c9d97a] mb-3 md:justify-end flex items-center gap-2">
                 <Worm className="w-3.5 h-3.5" /> Strate 2 — Rhizosphère
