@@ -1,19 +1,18 @@
-## Problème
+## Compris
 
-Sur la fiche jardin (`/jardin/:slug`), l'index vertical de navigation (Canopée / Arbustive / Rhizosphère / Saisons) est positionné en `fixed right-4 z-40`. Le "Panneau vivant" (composant `StratPanel`) de la Strate 1 est aligné à droite (`md:justify-self-end`) avec `backdrop-blur-xl`. Résultat : à mi-scroll, les pastilles de l'index chevauchent le panneau — elles restent visibles par-dessus au lieu de glisser proprement dessous (ou d'être décalées), ce qui casse la lecture du panneau.
+Remettre l'index vertical à droite (position d'origine), mais garantir que chaque `StratPanel` ("Panneau vivant") passe **au-dessus** de l'index quand il croise sa zone — pour que les pastilles disparaissent proprement derrière le panneau au lieu de flotter par-dessus.
 
-## Correction proposée
+## Correction
 
-Modification uniquement dans `src/pages/ImmersiveGardenFiche.tsx`, composant `StratIndicator` (l.478-485) :
+Modification unique dans `src/pages/ImmersiveGardenFiche.tsx` :
 
-1. **Déplacer l'index vertical à gauche** (`left-4` au lieu de `right-4`) pour éviter toute collision avec les `StratPanel` alignés à droite. Inverser l'ordre des dots (`flex-row` inversé) : pastille à gauche, label à droite, aligné `justify-start`.
-2. **Descendre le z-index** de `z-40` à `z-20`, sous le z implicite des panneaux, pour que — si un panneau finit malgré tout par croiser la zone — l'index passe proprement dessous plutôt que de flotter au-dessus.
-3. Ajouter un léger fond flouté sur chaque ligne (`bg-black/20 backdrop-blur-sm rounded-full px-2 py-1`) pour rester lisible sur les fonds clairs de la section Canopée.
+1. **`StratIndicator` (l.478-485)** : repasser à `right-4`, retirer le fond flouté ajouté précédemment, et laisser `z-20` (bas dans la pile).
+2. **`IndicatorDot`** : rétablir `justify-end` et l'ordre label → pastille.
+3. **`StratPanel`** (`src/components/immersive-garden/StratPanel.tsx`) : ajouter `relative z-30` au conteneur `motion.div` racine, de sorte que le panneau (déjà `backdrop-blur-xl`) passe au-dessus de l'index `z-20` dès qu'il chevauche sa zone.
 
-Aucune modification du `StratPanel` ni du reste de la page. Aucun changement backend.
+Aucun changement de logique, de données ou de backend.
 
 ## Vérification
 
-- Rechargement de `/jardin/dbaf6db0-...` en desktop.
-- Scroll manuel : l'index reste ancré à gauche, les 3 `StratPanel` (droite/gauche/droite) ne sont plus chevauchés.
-- Screenshot Playwright aux 4 seuils de scroll (0, 25 %, 50 %, 75 %) pour confirmer visuellement.
+- Rechargement `/jardin/dbaf6db0-...` en desktop.
+- Screenshots Playwright aux 3 sections (Canopée, Arbustive, Rhizosphère) pour confirmer : l'index est à droite, mais masqué par le Panneau vivant sur les sections 1 et 2.
