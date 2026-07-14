@@ -1,34 +1,28 @@
 ## Objectif
-Résoudre le chevauchement entre le bloc « STRATE 2 — RHIZOSPHÈRE / Le silence fertile des racines » et l'index latéral droit, sans bouger l'index.
-
-## Principe retenu
-L'index reste à sa position. Ses **labels** (Canopée, Arbustive, Rhizosphère, Saisons) s'estompent quand leur strate est **active** à l'écran — seuls les points restent visibles. À la sortie de la strate, les labels réapparaissent en fondu. Cela libère la lecture du titre sans supprimer le repère.
+Remplacer l'index latéral texte + point par un **index minimal : 4 points dorés seuls**, avec le label affiché uniquement au survol (desktop) ou au tap (mobile) via un tooltip. Plus aucune collision possible avec les textes des sections.
 
 ## Implémentation
 
 **Fichier : `src/pages/ImmersiveGardenFiche.tsx`**
 
-1. `IndicatorDot` — ajouter une prop `end` (fin de plage active) et calculer une opacité de label distincte :
-   - `labelOpacity` = 1 hors de `[start, end]`, ~0.05 dedans (via `useTransform` sur le scrollYProgress déjà utilisé).
-   - Le point garde son animation actuelle (opacity/scale existantes).
-   - Appliquer `labelOpacity` sur le `<span>` du label uniquement.
+1. **`IndicatorDot`** — simplifier :
+   - Supprimer le `<span>` label toujours visible et la logique `labelOpacity`.
+   - Conserver l'animation existante du point (opacity/scale selon `scrollYProgress`).
+   - Wrapper le point dans un conteneur `group relative` avec zone de hit élargie (`p-2 -m-2`) pour le survol.
+   - Ajouter un tooltip label en position absolue à **gauche du point** (`right-full mr-3`), affiché via `opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity`.
+   - Style tooltip : `text-[10px] tracking-[0.25em] uppercase text-[#f4ecd4]/90 font-serif italic whitespace-nowrap`, léger fond `bg-black/40 backdrop-blur-sm px-2 py-1 rounded`, `pointer-events-none`.
+   - Ajouter `aria-label={label}` et `tabIndex={0}` sur le bouton pour l'accessibilité clavier.
 
-2. `StratIndicator` — passer les plages :
-   - Canopée `start=0 end=0.25`
-   - Arbustive `start=0.25 end=0.5`
-   - Rhizosphère `start=0.5 end=0.75`
-   - Saisons `start=0.75 end=1`
+2. **`StratIndicator`** — inchangé structurellement : conteneur fixe, gap resserré (`gap-5` pour aérer les points seuls), même position `right-4 top-1/2 -translate-y-1/2`.
 
-3. Transition douce : `transition: { duration: 0.4 }` sur le span label (via `motion.span`), pour éviter un flash.
+3. **Mobile** — comportement identique à aujourd'hui : `hidden md:flex` (index desktop uniquement).
 
-4. Accessibilité / reduced motion : si `useReducedMotion()` est vrai, garder les labels à opacité 1 (pas de masquage animé).
-
-## Détails techniques
-- Réutiliser le `useScroll` déjà présent dans `IndicatorDot` (pas de nouveau listener).
-- `useTransform(scrollYProgress, [start-0.02, start, end, end+0.02], [1, 0.05, 0.05, 1])` pour un fondu net mais non brutal.
-- Aucun changement sur le bloc texte de la section Rhizosphère (z-index, marges, largeur inchangés).
-- Aucun impact sur les autres sections ni sur le layout mobile (index déjà `hidden md:flex`).
+## Détails visuels
+- Point actif : opacité 1 + scale 1.6 (déjà en place).
+- Point inactif : opacité 0.35.
+- Tooltip apparaît à ~150ms, disparaît à ~200ms (transition douce).
+- Fond du tooltip discret pour rester lisible sur fond clair ou sombre.
 
 ## Hors scope
-- Ne pas modifier la position, la taille ou la couleur de l'index.
-- Ne pas toucher au contenu ni à la mise en page du bloc titre Rhizosphère.
+- Ne pas modifier le contenu ni la mise en page des sections.
+- Ne pas ajouter de librairie de tooltip (implémentation Tailwind pure).
