@@ -134,6 +134,7 @@ const PublicEventPageInner: React.FC = () => {
           data={scenoData ?? {}}
           title={title}
           onExit={() => setScenoBypassed(true)}
+          brand={brandKitInner ?? null}
         />
         {slug && (
           <Link
