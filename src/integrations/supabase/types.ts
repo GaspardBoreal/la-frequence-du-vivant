@@ -7069,6 +7069,14 @@ export type Database = {
         Args: { p_date_source?: string; p_exploration_id: string }
         Returns: Json
       }
+      get_garden_hero_photos: {
+        Args: { _event_id: string }
+        Returns: {
+          id: string
+          source: string
+          url: string
+        }[]
+      }
       get_marche_events_dashboard_stats:
         | {
             Args: {
