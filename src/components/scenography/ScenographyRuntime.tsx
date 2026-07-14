@@ -31,6 +31,7 @@ const ScenographyRuntime: React.FC<Props> = ({
   onError,
   showExit = true,
   onExit,
+  brand,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [error, setError] = useState<string | null>(null);
