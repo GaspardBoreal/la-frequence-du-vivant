@@ -1,57 +1,57 @@
 ## Objectif
 
-Faire remonter la fiche jardin **Déviat** (`/jardin/deviat-jardin-monde-du-11-03-26-a-aujourd-hui-2026-06-30`) quand on tape « DEVIAT » sur Google et dans les IA génératives (ChatGPT, Claude, Gemini, Perplexity, Mistral).
+Capturer les deux orthographes « **Deviat** » (officielle INSEE) et « **Déviat** » (usage courant avec accent) sans dupliquer de page ni diluer le signal SEO.
 
-## Constat
+## Stratégie recommandée : orthographe officielle en canonique + variante en signaux secondaires
 
-La page `ImmersiveGardenFiche.tsx` a déjà `<title>`, `description`, `canonical` — mais :
+Google et les IA génératives gèrent très bien les variantes accentuées **à condition** que les deux formes apparaissent dans le contenu indexable. La meilleure pratique est :
 
-- Le mot **« Déviat »** n'apparaît pas en H1 texte (tout est carrousel + animations).
-- Aucun **JSON-LD** (Place / Event / BreadcrumbList) → invisible pour les moteurs et IA.
-- Pas d'`og:image` / `og:url` / `twitter:card` → previews sociaux vides.
-- La page n'est **pas listée dans `sitemap.xml**` ni `**public/llms.txt**` (le fichier que ChatGPT/Perplexity/Claude scannent pour découvrir un site).
-- Le title est générique `"Jardin — {titre} | Marches du Vivant"` : « Déviat » est noyé au milieu, pas en tête.
+- **Une seule URL, un seul `<title>`, un seul H1 canonique** → évite la cannibalisation.
+- **Les deux orthographes présentes dans le corps sémantique** (description, keywords, JSON-LD `alternateName`, `llms.txt`) → capture les deux requêtes.
 
-## Correctifs (ciblés, rapides, à fort impact)
+### Choix de la forme canonique : **Deviat** (sans accent)
 
-### 1. `src/pages/ImmersiveGardenFiche.tsx` — enrichir le `<Helmet>`
+Raisons :
+1. C'est l'orthographe **officielle INSEE / La Poste / cadastre** (commune de Deviat, 16250, Charente).
+2. Google Maps, Wikipédia FR et OpenStreetMap utilisent « Deviat ».
+3. Les moteurs matchent automatiquement les variantes diacritiques (« Déviat » → « Deviat » et inverse), donc mettre la forme officielle en canonique ne perd **aucun trafic** sur la variante accentuée.
+4. Cela évite qu'un journaliste ou une IA relaie une forme fautive comme référence.
 
-- **Title orienté ville** : ``${event.lieu ?? ''} — Jardin ${event.title} | La Fréquence du Vivant`` (met la commune en premier → match direct sur « Deviat »).
-- Ajouter `og:title`, `og:description`, `og:type=article`, `og:url`, `og:image` (première photo hero absolue), `twitter:card=summary_large_image`.
-- Ajouter un `**keywords**` léger : `Deviat, jardin, biodiversité, Charente, Marches du Vivant`.
-- Injecter un **JSON-LD `Place` + `BreadcrumbList**` avec `name`, `address.addressLocality = event.lieu`, `geo.latitude/longitude`, `url` canonique, `image`. C'est ce que Google + Perplexity + Gemini lisent en priorité.
-- Ajouter un H1 **texte réel** invisible visuellement mais présent dans le DOM (`<h1 className="sr-only">Jardin de Deviat — {event.title}</h1>`) pour donner un signal fort aux crawlers sans casser le design immersif.
+## Correctifs ciblés
 
-### 2. `scripts/generate-sitemap.ts` (ou création si absent)
+### 1. `public/llms.txt`
 
-- Ajouter une entrée **par jardin publié** : fetch Supabase des events `category = 'jardin'` avec `public_slug`, générer `/jardin/{slug}` avec `changefreq: monthly`, `priority: 0.8`. Sans ça, Google ne découvre pas la page.
+Remplacer « Jardin de Déviat » par « **Jardin de Deviat** » et **ajouter la variante** dans la description :
 
-### 3. `public/llms.txt`
+```
+- [Jardin de Deviat (Charente)](/jardin/deviat-…): jardin-monde à Deviat (aussi orthographié Déviat) en Charente (16250)…
+```
 
-- Ajouter une section **« Jardins du Vivant »** listant les jardins publiés (au moins Déviat), format :
-  ```
-  - [Jardin de Deviat](/jardin/deviat-jardin-monde-du-11-03-26-a-aujourd-hui-2026-06-30): jardin-monde en Charente, biodiversité observée, immersion sensible.
-  ```
-  Ce fichier est le canal direct pour ChatGPT, Claude, Perplexity.
+Bénéfice : ChatGPT/Claude/Perplexity voient les deux formes dans le même bloc et associent l'URL aux deux requêtes.
 
-### 4. `public/robots.txt`
+### 2. `src/pages/ImmersiveGardenFiche.tsx`
 
-- Vérifier qu'il ne bloque pas `/jardin/*` (à confirmer d'un coup d'œil, sinon rien à faire).
+- **`<title>`** et **H1 sr-only** : garder « Deviat » (forme officielle).
+- **`<meta name="description">`** : inclure la formule *« Jardin de Deviat (aussi écrit Déviat), Charente »* → capture les deux dans les SERP.
+- **`<meta name="keywords">`** : `Deviat, Déviat, jardin, biodiversité, Charente, 16250, Marches du Vivant`.
+- **JSON-LD `Place`** : ajouter `"alternateName": ["Jardin de Déviat", "Jardin-monde de Deviat"]` → Google Knowledge Graph enregistre officiellement les deux variantes comme désignations valides de la même entité.
+
+### 3. `public/sitemap.xml`
+
+Aucun changement — une seule URL canonique reste la bonne pratique.
+
+## Ce qu'il ne faut PAS faire
+
+- ❌ Créer une seconde URL `/jardin/deviat-accent` ou une redirection dédiée → duplication de contenu.
+- ❌ Répéter « Deviat/Déviat » de manière artificielle dans les titres → keyword stuffing pénalisé.
+- ❌ Mettre « Déviat » en canonique → contredit les sources officielles et affaiblit la crédibilité pour les IA qui vérifient contre Wikidata/INSEE.
 
 ## Résultat attendu
 
-- Google indexe `/jardin/deviat-…` en 3–10 jours (via sitemap + JSON-LD Place avec `addressLocality: Déviat`).
-- ChatGPT / Perplexity / Claude découvrent la page dès leur prochain crawl via `llms.txt`.
-- Requête « Deviat jardin » ou « Deviat biodiversité » → la fiche remonte car « Deviat » est en `<title>`, H1, JSON-LD, breadcrumb et description.
+- Requête Google « Deviat » **et** « Déviat » → même page remonte.
+- ChatGPT/Perplexity citent la page quelle que soit l'orthographe employée par l'utilisateur.
+- L'entité Knowledge Graph enregistre « Deviat » comme nom principal et « Déviat » comme `alternateName`, ce qui renforce la fiche à long terme.
 
-## Détails techniques
+## Périmètre
 
-- Aucun changement backend / RLS : les données jardin sont déjà publiques (RPC `get_public_marche_event`).
-- Le hook `useCarteMdVEvents` sert déjà de source pour lister les jardins → réutilisable dans `generate-sitemap.ts` via un `select` direct Supabase côté script Node.
-- L'image `og:image` doit être une URL absolue `https://` : utiliser `event.cover_url` ou la 1ʳᵉ photo hero, préfixer `https://la-frequence-du-vivant.com` si relative.
-- Rappeler à l'utilisateur qu'après publication il devra soumettre le sitemap dans Google Search Console pour accélérer l'indexation (24-72h au lieu de 1-2 semaines).
-
-## Périmètre exclu
-
-- Pas de refonte du design ni du composant `Helmet` global — juste enrichissement local.
-- Pas de nouvelle page — Déviat existe déjà, on la rend seulement crawlable.
+3 fichiers touchés, ~10 lignes modifiées. Aucun changement structurel ni backend.
