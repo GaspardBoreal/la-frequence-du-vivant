@@ -112,8 +112,12 @@ export function buildScenographyHtml(opts: { compiledCode: string; nonceTitle: s
     font-size: 13px; white-space: pre-wrap; overflow: auto;
   }
 </style>
+${brandFontsLink}
+${brandStyle}
+${brandGlobal}
 </head>
 <body>
+
 <div id="root"></div>
 
 <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
