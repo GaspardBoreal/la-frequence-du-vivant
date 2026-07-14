@@ -81,7 +81,19 @@ export const RichMap: React.FC<RichMapProps> = ({
   scrollWheelZoom = true,
   onMarcheVisibilityChange,
 }) => {
-  const mapId = useId();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  // Cleanup leaflet's internal _leaflet_id on any container the component
+  // rendered — needed under React.StrictMode / HMR with react-leaflet v3
+  // to avoid "Map container is already initialized." on re-mount.
+  useEffect(() => {
+    return () => {
+      const nodes = wrapperRef.current?.querySelectorAll('.leaflet-container');
+      nodes?.forEach((n) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (n as any)._leaflet_id;
+      });
+    };
+  }, []);
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
   const [markersVisible, setMarkersVisible] = useState<boolean>(
     marcheRoute?.renderMarkers !== false,
