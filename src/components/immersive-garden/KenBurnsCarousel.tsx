@@ -75,8 +75,14 @@ const KenBurnsCarousel: React.FC<Props> = ({ photos, fallback, intervalMs = 1900
     );
   }
 
-  const current = list[idx];
-  const params = motionParams[idx] ?? { x: 0, y: 0, hue: 0, origin: '50% 50%' };
+  const safeIdx = list.length > 0 ? idx % list.length : 0;
+  const current = list[safeIdx];
+  if (!current) {
+    return (
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-950 to-stone-950" />
+    );
+  }
+  const params = motionParams[safeIdx] ?? { x: 0, y: 0, hue: 0, origin: '50% 50%' };
   const zoomDuration = effectiveInterval / 1000 + 0.9;
 
   return (
