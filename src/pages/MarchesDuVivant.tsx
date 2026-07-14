@@ -13,16 +13,45 @@ const MarchesDuVivant = () => {
   return (
     <>
       <Helmet>
-        <title>Les Marches du Vivant - Biodiversité, Science Participative, Team Building & Exploration Gamifiée</title>
-        <meta 
-          name="description" 
-          content="Science participative, formations Qualiopi, team building bioacoustique et exploration gamifiée en Nouvelle-Aquitaine. Entreprises, grand public et association. Reconnectez-vous au vivant." 
-        />
-        <meta 
-          name="keywords" 
-          content="team building scientifique, bioacoustique entreprise, formation Qualiopi RSE, séminaire biodiversité, Dordogne, science participative, gamification, zones blanches, classement marcheurs, exploration" 
-        />
+        <title>Les Marches du Vivant — immersions territoriales | La Fréquence du Vivant</title>
+        <meta name="description" content="Les Marches du Vivant : immersions territoriales mêlant marche sensible, bioacoustique, IA frugale et prose poétique en Charente, Nouvelle-Aquitaine, Occitanie, Pays de la Loire et Bretagne." />
+        <meta name="keywords" content="marches du vivant, marche du vivant, les marches du vivant, bioacoustique, science participative, Charente, Nouvelle-Aquitaine, Occitanie, Pays de la Loire, Bretagne" />
         <link rel="canonical" href="https://la-frequence-du-vivant.com/marches-du-vivant" />
+        <meta property="og:title" content="Les Marches du Vivant — immersions territoriales" />
+        <meta property="og:description" content="Immersions territoriales mêlant marche sensible, bioacoustique, IA frugale et prose poétique. Charente, Nouvelle-Aquitaine, Occitanie, Pays de la Loire, Bretagne." />
+        <meta property="og:url" content="https://la-frequence-du-vivant.com/marches-du-vivant" />
+        <meta property="og:type" content="website" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "name": "Les Marches du Vivant — régions couvertes",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "item": { "@type": "Event", "name": "Marches du Vivant en Charente", "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", "eventStatus": "https://schema.org/EventScheduled", "location": { "@type": "Place", "name": "Charente", "address": { "@type": "PostalAddress", "addressRegion": "Nouvelle-Aquitaine", "addressCountry": "FR" } }, "organizer": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } } },
+            { "@type": "ListItem", "position": 2, "item": { "@type": "Event", "name": "Marches du Vivant en Nouvelle-Aquitaine", "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", "eventStatus": "https://schema.org/EventScheduled", "location": { "@type": "Place", "name": "Nouvelle-Aquitaine", "address": { "@type": "PostalAddress", "addressRegion": "Nouvelle-Aquitaine", "addressCountry": "FR" } }, "organizer": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } } },
+            { "@type": "ListItem", "position": 3, "item": { "@type": "Event", "name": "Marches du Vivant en Occitanie", "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", "eventStatus": "https://schema.org/EventScheduled", "location": { "@type": "Place", "name": "Occitanie", "address": { "@type": "PostalAddress", "addressRegion": "Occitanie", "addressCountry": "FR" } }, "organizer": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } } },
+            { "@type": "ListItem", "position": 4, "item": { "@type": "Event", "name": "Marches du Vivant en Pays de la Loire", "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", "eventStatus": "https://schema.org/EventScheduled", "location": { "@type": "Place", "name": "Pays de la Loire", "address": { "@type": "PostalAddress", "addressRegion": "Pays de la Loire", "addressCountry": "FR" } }, "organizer": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } } },
+            { "@type": "ListItem", "position": 5, "item": { "@type": "Event", "name": "Marches du Vivant en Bretagne", "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", "eventStatus": "https://schema.org/EventScheduled", "location": { "@type": "Place", "name": "Bretagne", "address": { "@type": "PostalAddress", "addressRegion": "Bretagne", "addressCountry": "FR" } }, "organizer": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } } }
+          ]
+        })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "La Fréquence du Vivant",
+          "url": "https://la-frequence-du-vivant.com/",
+          "logo": "https://la-frequence-du-vivant.com/favicon.png",
+          "sameAs": ["https://www.gaspardboreal.com", "https://bziiit.com", "https://piloterra.fr"]
+        })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            { "@type": "Question", "name": "Qu'est-ce qu'une Marche du Vivant ?", "acceptedAnswer": { "@type": "Answer", "text": "Une Marche du Vivant est une immersion territoriale à pied qui combine marche sensible, bioacoustique, science participative et prose poétique. Chaque marche produit à la fois une donnée écologique et un récit." } },
+            { "@type": "Question", "name": "Où se déroulent les Marches du Vivant ?", "acceptedAnswer": { "@type": "Answer", "text": "Les Marches du Vivant se déploient en Charente, en Nouvelle-Aquitaine, en Occitanie, en Pays de la Loire et en Bretagne, avec des points de départ ancrés dans les territoires ruraux et péri-urbains." } },
+            { "@type": "Question", "name": "Qui organise les Marches du Vivant ?", "acceptedAnswer": { "@type": "Answer", "text": "Les Marches du Vivant sont portées par l'association La Fréquence du Vivant (loi 1901), présidée par Laurent Tripied et animées par Gaspard Boréal." } },
+            { "@type": "Question", "name": "Comment participer à une marche du vivant ?", "acceptedAnswer": { "@type": "Answer", "text": "Vous pouvez explorer les marches à venir sur la page Explorer, contacter l'association pour un format entreprise, ou adhérer pour rejoindre la communauté des marcheurs." } },
+            { "@type": "Question", "name": "Les Marches du Vivant sont-elles ouvertes aux entreprises ?", "acceptedAnswer": { "@type": "Answer", "text": "Oui, un format dédié team building biodiversité et séminaires dirigeants existe, avec des indicateurs RSE opposables et des restitutions cartographiées." } }
+          ]
+        })}</script>
       </Helmet>
 
       <div className="min-h-screen bg-background">
