@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as Babel from '@babel/standalone';
 import { buildScenographyHtml } from './scenographyRuntimeHtml';
 import type { ScenographyData } from '@/hooks/useScenography';
+import type { BrandKit } from '@/lib/brandKits/types';
 
 interface Props {
   code: string;
@@ -14,6 +15,8 @@ interface Props {
   showExit?: boolean;
   /** Click handler for the exit/fallback button. */
   onExit?: () => void;
+  /** Optional brand kit — repaints the sandbox iframe with partner tokens/fonts. */
+  brand?: BrandKit | null;
 }
 
 /**
