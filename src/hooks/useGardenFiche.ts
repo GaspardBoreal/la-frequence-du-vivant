@@ -164,9 +164,16 @@ export function useGardenFiche(slug: string | undefined) {
 
   const convivialite: ConvivialitePhoto[] = (photosQ.data ?? []).filter((p) => !p.is_hidden);
 
-  // Merge & dedupe by URL, then shuffle-ready ordered list (Convivialité first for warmth).
+  // Merge & dedupe by URL. Ordre : cover event → convivialité → step photos → marcheur.
+  // On préfixe cover_image_url pour garantir au moins UNE image visible dans le
+  // Hero même quand un event Jardin n'a ni exploration liée, ni contribution.
   const seen = new Set<string>();
   const heroPhotos: HeroPhoto[] = [];
+
+  if (event?.cover_image_url && !seen.has(event.cover_image_url)) {
+    seen.add(event.cover_image_url);
+    heroPhotos.push({ id: `cover-${event.id}`, url: event.cover_image_url });
+  }
   convivialite.forEach((p) => {
     if (p.url && !seen.has(p.url)) {
       seen.add(p.url);
