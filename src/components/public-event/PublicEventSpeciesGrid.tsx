@@ -2,7 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import type { PublicSpecies } from '@/hooks/usePublicEvent';
-import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
+import {
+  SpeciesPhotoModeProvider,
+  useSpeciesPhotoMode,
+} from '@/contexts/SpeciesPhotoModeContext';
+import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
 import SpeciesPhotoModeToggle from '@/components/biodiversity/SpeciesPhotoModeToggle';
 import SpeciesGalleryCard from '@/components/biodiversity/SpeciesGalleryCard';
 import SpeciesGalleryDetailModal from '@/components/biodiversity/SpeciesGalleryDetailModal';
@@ -17,6 +21,10 @@ interface Props {
   totalCount: number;
   /** Nb max d'espèces affichées en grille (défaut 24). */
   limit?: number;
+  /** Exploration liée à l'événement : permet de charger les photos terrain
+   *  marcheurs pleine résolution via `useExplorationFieldPhotos` (même hook
+   *  que Mon Espace → Biodiversité → Taxons observés). */
+  explorationId?: string | null;
 }
 
 /**
@@ -24,42 +32,36 @@ interface Props {
  *
  * Réutilise strictement les composants « Mon Espace → Biodiversité →
  * Taxons observés » (`SpeciesGalleryCard`, `SpeciesPhotoModeToggle`,
- * `SpeciesGalleryDetailModal`) pour garantir une expérience identique :
- *  - photo terrain marcheur prioritaire, fallback iNaturalist,
- *  - toggle « Photos marcheurs ↔ iNaturalist »,
- *  - overlay au survol, badge source, gestion loading/erreur,
- *  - clic → fiche espèce détaillée (photo + trophie + audio).
+ * `SpeciesGalleryDetailModal`) pour garantir une expérience identique.
  *
- * Le provider `SpeciesPhotoModeProvider` reçoit ici une Map pré-construite
- * (`fieldPhotosOverride`) au lieu de charger via `exploration_id`, ce qui
- * évite toute dépendance à une session authentifiée.
+ * Stratégie photo :
+ *  - Si un `explorationId` est disponible, le provider utilise
+ *    `useExplorationFieldPhotos` : URLs marcheurs pleine résolution issues
+ *    du storage + URLs iNat upgradées de `square` → `medium`.
+ *  - Sinon, fallback backward-compat : Map pré-construite depuis les
+ *    `PublicSpecies.photo_url` du RPC public.
  */
-const PublicEventSpeciesGrid: React.FC<Props> = ({
-  species,
-  totalCount,
-  limit = 24,
-}) => {
-  const fieldPhotosMap = useMemo(() => buildPublicFieldPhotosMap(species), [species]);
-
-  const displayed = useMemo(
-    () => species.slice(0, limit).map(adaptPublicSpeciesToBiodiversity),
-    [species, limit],
-  );
-
-  const photoModeCounts = useMemo(
-    () => ({
-      marcheur: species
-        .slice(0, limit)
-        .filter((s) => s.has_walker_observation && !!s.photo_url).length,
-      inaturalist: displayed.length,
-    }),
-    [species, limit, displayed.length],
-  );
-
+const InnerGrid: React.FC<{
+  displayed: BiodiversitySpecies[];
+  totalDisplayedInat: number;
+  totalCount: number;
+  limit: number;
+}> = ({ displayed, totalDisplayedInat, totalCount, limit }) => {
+  const { fieldPhotos } = useSpeciesPhotoMode();
   const [selected, setSelected] = useState<BiodiversitySpecies | null>(null);
 
+  const photoModeCounts = useMemo(() => {
+    let marcheur = 0;
+    for (const sp of displayed) {
+      if ((fieldPhotos.get(normalizeSpeciesKey(sp.scientificName)) || []).length > 0) {
+        marcheur += 1;
+      }
+    }
+    return { marcheur, inaturalist: totalDisplayedInat };
+  }, [displayed, fieldPhotos, totalDisplayedInat]);
+
   return (
-    <SpeciesPhotoModeProvider fieldPhotosOverride={fieldPhotosMap}>
+    <>
       <div className="space-y-3">
         <SpeciesPhotoModeToggle counts={photoModeCounts} />
 
@@ -105,6 +107,38 @@ const PublicEventSpeciesGrid: React.FC<Props> = ({
         }
         isOpen={!!selected}
         onClose={() => setSelected(null)}
+      />
+    </>
+  );
+};
+
+const PublicEventSpeciesGrid: React.FC<Props> = ({
+  species,
+  totalCount,
+  limit = 24,
+  explorationId,
+}) => {
+  const displayed = useMemo(
+    () => species.slice(0, limit).map(adaptPublicSpeciesToBiodiversity),
+    [species, limit],
+  );
+
+  // Fallback map — utilisée uniquement si aucun explorationId n'est fourni.
+  const fallbackFieldPhotos = useMemo(
+    () => (explorationId ? undefined : buildPublicFieldPhotosMap(species)),
+    [species, explorationId],
+  );
+
+  return (
+    <SpeciesPhotoModeProvider
+      explorationId={explorationId || undefined}
+      fieldPhotosOverride={fallbackFieldPhotos}
+    >
+      <InnerGrid
+        displayed={displayed}
+        totalDisplayedInat={displayed.length}
+        totalCount={totalCount}
+        limit={limit}
       />
     </SpeciesPhotoModeProvider>
   );
