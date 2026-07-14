@@ -17,6 +17,7 @@ import {
 import { useExplorationSpeciesCount } from '@/hooks/useExplorationSpeciesCount';
 import { getVerdict, TONE_STYLES, type VignobleAxis } from '@/lib/vignobleVerdicts';
 import { SpeciesName } from '@/components/species/SpeciesName';
+import { SpeciesThumb } from '@/components/species/SpeciesThumb';
 
 interface Props {
   event: PublicEvent;
