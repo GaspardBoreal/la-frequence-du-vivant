@@ -127,6 +127,7 @@ export const RichMap: React.FC<RichMapProps> = ({
         }
       `}</style>
       <MapContainer
+        key={mapId}
         center={center}
         zoom={zoom}
         scrollWheelZoom={scrollWheelZoom}
