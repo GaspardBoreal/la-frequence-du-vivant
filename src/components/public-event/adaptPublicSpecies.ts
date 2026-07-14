@@ -54,7 +54,8 @@ export const adaptPublicSpeciesToBiodiversity = (
   photoData: upgraded ? { url: upgraded, source: 'inaturalist' } : undefined,
   source: 'inaturalist',
   attributions: [],
-});
+  };
+};
 
 /**
  * Construit la Map de photos terrain « marcheurs » attendue par
