@@ -458,7 +458,9 @@ const PublicEventPageInner: React.FC = () => {
               species={biodiversity.species}
               totalCount={biodiversity.species_count}
               limit={24}
+              explorationId={event.exploration_id}
             />
+
           </section>
         )}
 

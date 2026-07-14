@@ -1,82 +1,30 @@
-# Plan — Aligner l'affichage des espèces sur /m/:slug avec « Mon Espace → Taxons observés »
+## Problème
 
-## Diagnostic
+Sur `/m/:slug`, les photos "marcheurs" sont floues alors qu'elles sont nettes dans Mon Espace → Biodiversité → Taxons observés.
 
-Aujourd'hui, sur `/m/:slug` (page publique d'un événement), la grille des espèces est **rendue de façon ad-hoc dans `src/pages/PublicEventPage.tsx` (lignes 454-487)** :
+**Cause racine** : `PublicEventSpeciesGrid` construit une Map de photos terrain à partir du RPC public (`PublicSpecies.photo_url`), qui ne contient qu'**une seule URL par espèce**, souvent en résolution vignette (issue de `species_thumb_cache` ou d'un snapshot iNat en `square`). L'app Marcheurs, elle, appelle `useExplorationFieldPhotos(explorationId)` qui lit **directement** `marcheur_observations.photo_url` (résolution originale du storage) et upgrade les URLs iNat de `square` → `medium`.
 
-- balise `<img src={sp.photo_url}>` brute, sans cascade « photo terrain marcheur → iNaturalist »,
-- pas d'état de chargement, pas de gestion d'erreur d'image,
-- pas de badge source (📸 marcheur / iNat),
-- pas de toggle « Photos marcheurs ↔ iNat »,
-- pas de fiche espèce cliquable.
+## Correctif (frontend uniquement, factorisation stricte)
 
-Dans Mon Espace → Biodiversité → **Taxons observés**, la même grille utilise déjà un composant **partagé, haute qualité** :
-`SpeciesExplorer` → `SpeciesGalleryCard` (photo terrain prioritaire, fallback iNat, overlay dégradé, badge source, ouverture drawer), piloté par le contexte `SpeciesPhotoModeContext` (toggle marcheur/iNat).
+Réutiliser exactement le même hook que l'app Marcheurs sur la page publique, puisque `PublicEvent.exploration_id` est déjà disponible.
 
-Le problème est donc **exclusivement de la duplication de code** : on a réécrit à la main, en moins bien, ce que fournit déjà `SpeciesGalleryCard`.
+### 1. `src/components/public-event/PublicEventSpeciesGrid.tsx`
+- Ajouter prop `explorationId?: string | null`.
+- Supprimer la construction et le passage de `fieldPhotosOverride` (photos terrain basse résolution).
+- Passer `explorationId` directement à `<SpeciesPhotoModeProvider explorationId={…}>` → le provider utilisera `useExplorationFieldPhotos`, exactement comme dans Mon Espace, avec les URLs pleine résolution du storage marcheur + upgrade `square→medium` pour iNat.
+- Conserver `buildPublicFieldPhotosMap` en fallback uniquement si `explorationId` est absent (rare, backward-compat).
+- Recalculer `photoModeCounts.marcheur` à partir de la Map réelle du provider (via `useSpeciesPhotoMode`) au lieu du flag `has_walker_observation` du RPC. Extraire un petit sous-composant interne `<Grid>` pour pouvoir consommer le contexte.
 
-## Objectif
+### 2. `src/components/public-event/adaptPublicSpecies.ts`
+- Dans `adaptPublicSpeciesToBiodiversity`, upgrader l'URL iNat de fallback (`photo_url`) en remplaçant `/square.` par `/medium.` (même règle que `useExplorationFieldPhotos`) pour que la vignette iNat soit également nette quand aucune photo marcheur n'existe.
 
-Sur `/m/:slug`, réutiliser **strictement** les composants Mon Espace pour la section « Espèces observées » :
-1. cartes `SpeciesGalleryCard` (aspect-carré, cascade photo, overlay, badge source, chargement / erreur),
-2. toggle « Photos marcheurs ↔ iNaturalist » visible aussi pour les visiteurs publics,
-3. clic → ouverture de la fiche espèce (drawer déjà utilisé dans Mon Espace).
+### 3. `src/pages/PublicEventPage.tsx`
+- Passer `explorationId={event.exploration_id}` à `<PublicEventSpeciesGrid>`.
 
-Aucune régression sur la mise en page globale de la page publique (hero, autres onglets, footer inchangés).
+## Détail technique
 
-## Étapes
-
-### 1. Adapter les données publiques au format attendu par `SpeciesGalleryCard`
-
-`SpeciesGalleryCard` attend un objet espèce type Mon Espace (`scientificName`, `kingdom`, `observationCount`, etc.), alors que `usePublicEventBiodiversity` renvoie `{ scientific_name, common_name, photo_url, observations_count, has_walker_observation }` (voir `src/hooks/usePublicEvent.ts`).
-
-→ Créer un petit **adapter pur** (`src/components/public-event/adaptPublicSpecies.ts`) qui convertit le format public vers le format attendu par `SpeciesGalleryCard`, en préservant `photo_url` comme photo terrain candidate quand `has_walker_observation` est vrai. Zéro logique métier ajoutée, juste un mapping de champs.
-
-### 2. Nouveau composant `PublicEventSpeciesGrid`
-
-Fichier : `src/components/public-event/PublicEventSpeciesGrid.tsx`
-
-- Reçoit `species: PublicEventBiodiversitySpecies[]` en prop.
-- Enveloppe le rendu dans `<SpeciesPhotoModeProvider>` (contexte du toggle) pour que la page publique soit **autonome** vis-à-vis de Mon Espace.
-- Affiche en en-tête le composant toggle existant (`SpeciesPhotoModeToggle` ou équivalent utilisé dans Mon Espace) — même look, même libellés.
-- Rend la grille `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` et map chaque item vers `<SpeciesGalleryCard species={adapted} onClick={openDrawer} />`.
-- Gère l'état `selectedSpecies` local et monte `SpeciesDetailDrawer` (le même que Mon Espace) en mode lecture publique.
-
-### 3. Remplacement dans `PublicEventPage.tsx`
-
-- Retirer les lignes 454-487 (grille inline + import `Leaf` si plus utilisé).
-- Insérer `<PublicEventSpeciesGrid species={biodiversity.species} />` à la même place.
-- Conserver le titre de section, le compteur d'espèces et le lien « voir plus » existants.
-
-### 4. Vérifications avant / après
-
-- Vérifier que `SpeciesPhotoModeContext`, `useSpeciesPhoto`, `SpeciesGalleryCard` et `SpeciesDetailDrawer` **n'ont aucune dépendance à `useAuth`** (sinon les envelopper d'un fallback lecture-seule). Si une dépendance auth existe, court-circuiter proprement côté visiteur anonyme (mode « lecture publique »).
-- Vérifier que les photos terrain marcheurs restent accessibles sans session (RLS des buckets `marcheur_media`). Si non : soit exposer via URL publique déjà générée côté RPC, soit ne montrer que iNat pour les visiteurs non connectés.
-- Test manuel sur `/m/laboratoire-a-ciel-ouvert-biodiversite-sols-vivants-2026-07-07` : grille identique visuellement à Mon Espace, toggle fonctionnel, drawer ouvrable.
-
-## Détails techniques
-
-- **Fichiers créés** :
-  - `src/components/public-event/PublicEventSpeciesGrid.tsx` (composant orchestrateur)
-  - `src/components/public-event/adaptPublicSpecies.ts` (adapter de type)
-- **Fichiers modifiés** :
-  - `src/pages/PublicEventPage.tsx` (retire ~35 lignes ad-hoc, ajoute 1 import + 1 balise)
-- **Fichiers réutilisés tels quels (aucune modification)** :
-  - `src/components/biodiversity/SpeciesGalleryCard.tsx`
-  - `src/contexts/SpeciesPhotoModeContext.tsx` + toggle associé
-  - `src/hooks/useSpeciesPhoto.ts`
-  - `SpeciesDetailDrawer` (celui utilisé par `SpeciesExplorer`)
-- **Pas de changement** : `usePublicEventBiodiversity`, RPC Supabase, RLS, edge functions, autres onglets de la page publique, header/footer.
+- **RLS** : `marcheur_observations`, `exploration_marches`, `exploration_marcheurs`, `biodiversity_snapshots` sont déjà lus par le hook depuis Mon Espace côté user connecté. Vérifier rapidement que ces tables ont bien une policy `SELECT` publique/anon pour un événement publié ; sinon, le hook ne trouvera rien côté public et il faudra soit ajouter des policies dédiées `exploration.is_public`, soit créer un RPC public équivalent. **À valider avant l'implémentation** — si RLS bloque, on tombe sur le plan B : nouveau RPC `get_public_event_field_photos(_event_id)` renvoyant la même forme `MarcheurSpeciesPhoto[]` par espèce, appelé via un `fieldPhotosOverride` toujours branché.
 
 ## Résultat attendu
 
-Le visiteur public d'un événement voit **exactement** la même qualité de vignettes que le marcheur connecté dans son espace :
-
-- photo terrain marcheur affichée en priorité quand elle existe,
-- sinon photo de référence iNaturalist,
-- badge source discret,
-- overlay dégradé au survol,
-- toggle « Photos marcheurs ↔ iNaturalist »,
-- clic → fiche espèce détaillée.
-
-Et surtout : **une seule source de vérité** pour ce composant, mainenu à un seul endroit (`SpeciesGalleryCard`).
+Grille publique = grille Mon Espace : mêmes composants, mêmes URLs, même netteté, toggle Marcheurs/iNat avec compteurs exacts.

@@ -34,9 +34,14 @@ const kingdomFromIconic = (
  * les composants gèrent déjà les cas où `attributions`, `family`, etc.
  * sont absents.
  */
+const upgradeInatUrl = (url: string): string =>
+  url.replace('/square.', '/medium.').replace('/square.jpg', '/medium.jpg');
+
 export const adaptPublicSpeciesToBiodiversity = (
   sp: PublicSpecies,
-): BiodiversitySpecies => ({
+): BiodiversitySpecies => {
+  const upgraded = sp.photo_url ? upgradeInatUrl(sp.photo_url) : undefined;
+  return {
   id: sp.scientific_name,
   scientificName: sp.scientific_name,
   commonName: sp.common_name || '',
@@ -45,13 +50,12 @@ export const adaptPublicSpeciesToBiodiversity = (
   iconicTaxon: sp.iconic_taxon || undefined,
   observations: sp.observations_count,
   lastSeen: '',
-  photos: sp.photo_url ? [sp.photo_url] : undefined,
-  photoData: sp.photo_url
-    ? { url: sp.photo_url, source: 'inaturalist' }
-    : undefined,
+  photos: upgraded ? [upgraded] : undefined,
+  photoData: upgraded ? { url: upgraded, source: 'inaturalist' } : undefined,
   source: 'inaturalist',
   attributions: [],
-});
+  };
+};
 
 /**
  * Construit la Map de photos terrain « marcheurs » attendue par
