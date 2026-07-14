@@ -680,7 +680,7 @@ const PepitesGrid: React.FC<{ species: PublicSpecies[] }> = ({ species }) => {
                             <SpeciesThumb
                               scientificName={s.scientific_name}
                               commonName={s.common_name}
-                              kingdom={s.kingdom}
+                              kingdom={(s as any).kingdom}
                               localPhoto={s.photo_url}
                               size="lg"
                               className="w-full h-full !rounded-none"
