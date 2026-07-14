@@ -175,16 +175,59 @@ const ImmersiveGardenFiche: React.FC = () => {
   const fallbackDisplay = (raw: number, formatted?: string) =>
     raw === 0 ? 'En cours' : (formatted ?? String(raw));
 
+  const canonicalUrl = `https://la-frequence-du-vivant.com/jardin/${slugOrId}`;
+  const ogImage = event.cover_image_url
+    ? (event.cover_image_url.startsWith('http') ? event.cover_image_url : `https://la-frequence-du-vivant.com${event.cover_image_url.startsWith('/') ? '' : '/'}${event.cover_image_url}`)
+    : 'https://la-frequence-du-vivant.com/og-image.jpg';
+  const seoTitle = `${event.lieu ?? 'Jardin'} — ${event.title} | La Fréquence du Vivant`;
+  const seoDescription = `${event.lieu ? `À ${event.lieu}, ` : ''}immersion sensible dans le jardin ${event.title} : canopée, strates herbacées, rhizosphère et biodiversité observée par les marcheurs.`;
+  const placeSchema: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Place',
+    name: `Jardin ${event.title}${event.lieu ? ` — ${event.lieu}` : ''}`,
+    description: seoDescription,
+    url: canonicalUrl,
+    image: ogImage,
+    ...(event.lieu ? { address: { '@type': 'PostalAddress', addressLocality: event.lieu, addressCountry: 'FR' } } : {}),
+    ...(event.latitude != null && event.longitude != null
+      ? { geo: { '@type': 'GeoCoordinates', latitude: event.latitude, longitude: event.longitude } }
+      : {}),
+  };
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Marches du Vivant', item: 'https://la-frequence-du-vivant.com/marches-du-vivant' },
+      { '@type': 'ListItem', position: 2, name: 'Carte des jardins', item: 'https://la-frequence-du-vivant.com/marches-du-vivant/carte-marches-du-vivant' },
+      { '@type': 'ListItem', position: 3, name: event.lieu ? `Jardin de ${event.lieu}` : event.title, item: canonicalUrl },
+    ],
+  };
+
   return (
     <>
       <Helmet>
-        <title>{`Jardin — ${event.title} | Marches du Vivant`}</title>
-        <meta
-          name="description"
-          content={`Immersion stratifiée dans le jardin ${event.title}${event.lieu ? ` à ${event.lieu}` : ''}. Explorez la canopée, les strates herbacées et la rhizosphère.`}
-        />
-        <link rel="canonical" href={`https://la-frequence-du-vivant.com/jardin/${slugOrId}`} />
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <meta name="keywords" content={`${event.lieu ?? ''}, jardin ${event.lieu ?? ''}, biodiversité ${event.lieu ?? ''}, ${event.title}, Marches du Vivant, La Fréquence du Vivant`} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:site_name" content="La Fréquence du Vivant" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+        <meta name="twitter:image" content={ogImage} />
+        <script type="application/ld+json">{JSON.stringify(placeSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
       </Helmet>
+
+      {/* H1 sémantique pour crawlers (le H1 visuel utilise RevealText qui fragmente le texte) */}
+      <h1 className="sr-only">
+        {event.lieu ? `Jardin de ${event.lieu} — ${event.title}` : event.title}
+      </h1>
 
       <div className="relative bg-black text-[#f4ecd4] overflow-x-hidden">
         {/* Aurore dorée qui suit le curseur */}
