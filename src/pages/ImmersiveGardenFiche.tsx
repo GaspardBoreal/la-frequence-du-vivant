@@ -462,28 +462,36 @@ const RevealText: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-const IndicatorDot: React.FC<{ label: string; start: number }> = ({ label, start }) => {
+const IndicatorDot: React.FC<{ label: string; start: number; fadeDuringActive?: boolean }> = ({ label, start, fadeDuringActive }) => {
   const { scrollYProgress } = useScroll();
+  const reduce = useReducedMotion();
   const end = start + 0.25;
   const opacity = useTransform(scrollYProgress, [start, end - 0.01, end], [0.35, 1, 0.35]);
   const scale = useTransform(scrollYProgress, [start, (start + end) / 2, end], [1, 1.6, 1]);
+  const labelOpacity = useTransform(
+    scrollYProgress,
+    [Math.max(0, start - 0.02), start, end, Math.min(1, end + 0.02)],
+    [1, 0.05, 0.05, 1]
+  );
   return (
-    <div className="group relative flex items-center justify-end p-2 -m-2" tabIndex={0} aria-label={label}>
-      <span
-        className="pointer-events-none absolute right-full mr-3 px-2 py-1 rounded bg-black/40 backdrop-blur-sm text-[10px] tracking-[0.25em] uppercase text-[#f4ecd4]/90 font-serif italic whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:opacity-100 group-focus-within:translate-x-0 transition-all duration-200"
+    <div className="flex items-center gap-3 justify-end">
+      <motion.span
+        className="text-[10px] tracking-[0.25em] uppercase text-[#f4ecd4]/70 font-serif italic"
+        style={fadeDuringActive && !reduce ? { opacity: labelOpacity } : undefined}
+        transition={{ duration: 0.4 }}
       >
         {label}
-      </span>
+      </motion.span>
       <motion.span className="block w-1.5 h-1.5 rounded-full bg-[#c9a24a]" style={{ opacity, scale }} />
     </div>
   );
 };
 
 const StratIndicator: React.FC = () => (
-  <div className="fixed right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-5">
+  <div className="fixed right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-4">
     <IndicatorDot label="Canopée" start={0} />
     <IndicatorDot label="Arbustive" start={0.25} />
-    <IndicatorDot label="Rhizosphère" start={0.5} />
+    <IndicatorDot label="Rhizosphère" start={0.5} fadeDuringActive />
     <IndicatorDot label="Saisons" start={0.75} />
   </div>
 );
