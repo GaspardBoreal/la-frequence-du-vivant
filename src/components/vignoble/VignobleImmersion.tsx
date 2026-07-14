@@ -4,10 +4,9 @@ import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } fr
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  Calendar, MapPin, Grape, Sprout, Leaf, ChevronDown, ChevronRight, ChevronLeft,
-  BookOpen, Eye, Users, Wine, Share2, Sparkles, Info, ArrowRight, Camera,
+  Calendar, MapPin, Grape, Sprout, Leaf, ChevronRight, ChevronLeft,
+  BookOpen, Share2, Sparkles, Info, ArrowRight,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
