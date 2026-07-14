@@ -342,10 +342,10 @@ const ImmersiveGardenFiche: React.FC = () => {
             <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#c9a24a] mb-3 flex items-center justify-center gap-2">
               <Sun className="w-3.5 h-3.5" /> Matrice d'évolution saisonnière
             </div>
-            <h2 className="font-serif italic text-3xl md:text-5xl leading-tight text-[#f4ecd4]">
+            <h2 className="font-serif italic text-3xl md:text-5xl leading-tight text-[#f4ecd4] text-center">
               Le jardin change de peau
             </h2>
-            <p className="mt-4 text-[#f4ecd4]/70">
+            <p className="mt-4 text-[#f4ecd4]/70 text-center">
               Déplacez le curseur. La lumière, la palette et l'air respirent avec la saison.
             </p>
 
