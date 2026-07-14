@@ -76,8 +76,8 @@ const ScenographyRuntime: React.FC<Props> = ({
   }, [code]);
 
   const html = useMemo(
-    () => (compiled.error ? null : buildScenographyHtml({ compiledCode: compiled.code, nonceTitle: title })),
-    [compiled, title]
+    () => (compiled.error ? null : buildScenographyHtml({ compiledCode: compiled.code, nonceTitle: title, brand: brand ?? null })),
+    [compiled, title, brand]
   );
 
   // Post data once iframe boots
