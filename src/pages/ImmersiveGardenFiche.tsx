@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion, type MotionValue } from 'framer-motion';
 import { Search, Sprout, Bug, Feather, Trees, Worm, Leaf, ArrowRight, ArrowLeft, Sparkles, Sun } from 'lucide-react';
 import { useGardenFiche } from '@/hooks/useGardenFiche';
 import { useSiblingGardenEvents } from '@/hooks/useSiblingGardenEvents';
