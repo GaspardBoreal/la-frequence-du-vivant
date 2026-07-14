@@ -402,7 +402,7 @@ const MarchesDuVivant = () => {
               </div>
               <div>
                 <h3 className="font-crimson text-xl text-foreground mb-2">Comment participer à une marche du vivant ?</h3>
-                <p className="text-muted-foreground">Vous pouvez <Link to="/marches-du-vivant/explorer" className="text-emerald-400 underline">explorer les marches à venir</Link>, solliciter un format <Link to="/marches-du-vivant/entreprises" className="text-emerald-400 underline">entreprise</Link>, ou <Link to="/marches-du-vivant/association" className="text-emerald-400 underline">adhérer à l'association</Link>.</p>
+                <p className="text-muted-foreground">Vous pouvez <Link to="/marches-du-vivant/carte-marches-du-vivant?tab=carte" className="text-emerald-400 underline">explorer les marches à venir</Link>, solliciter un format <Link to="/marches-du-vivant/entreprises" className="text-emerald-400 underline">entreprise</Link>, ou <Link to="/marches-du-vivant/association" className="text-emerald-400 underline">adhérer à l'association</Link>.</p>
               </div>
             </div>
           </div>
