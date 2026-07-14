@@ -15,7 +15,8 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Écosystème / Association */}
-          <div className="space-y-4">
+          <div className={`space-y-4 ${isMarches ? 'text-center' : ''}`}>
+
             {isMarches ? (
               <Link
                 to="/marches-du-vivant/association"
