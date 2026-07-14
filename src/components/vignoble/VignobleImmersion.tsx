@@ -485,11 +485,11 @@ const AlbumDomaineCarousel: React.FC<{ slug: string }> = ({ slug }) => {
                         initial={{ scale: 1.05 }}
                         animate={reduce ? { scale: 1.05 } : { scale: 1.14 }}
                         transition={{ duration: 4.5, ease: 'linear' }}
-                        className="absolute inset-0 w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-cover brightness-[1.08] saturate-[1.06]"
                         draggable={false}
                       />
                       <div className="absolute inset-x-0 top-0 h-[1px] vignoble-gold-rule opacity-80" />
-                      <figcaption className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-[hsl(var(--vignoble-ink)/0.85)] via-[hsl(var(--vignoble-ink)/0.35)] to-transparent">
+                      <figcaption className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-[hsl(var(--vignoble-ink)/0.78)] via-[hsl(var(--vignoble-ink)/0.22)] to-transparent">
                         <div className="font-vignoble italic text-[11px] text-[hsl(var(--vignoble-paper)/0.95)] leading-snug">
                           {m.author_name ? <>— {m.author_name}</> : <>— Marcheur du domaine</>}
                         </div>
