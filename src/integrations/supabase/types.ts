@@ -4169,6 +4169,9 @@ export type Database = {
       marche_events: {
         Row: {
           ai_recognition_config: Json | null
+          brand_kit_enabled: boolean
+          brand_kit_overrides: Json
+          brand_kit_slug: string | null
           category: string
           cover_image_url: string | null
           created_at: string
@@ -4198,6 +4201,9 @@ export type Database = {
         }
         Insert: {
           ai_recognition_config?: Json | null
+          brand_kit_enabled?: boolean
+          brand_kit_overrides?: Json
+          brand_kit_slug?: string | null
           category?: string
           cover_image_url?: string | null
           created_at?: string
@@ -4227,6 +4233,9 @@ export type Database = {
         }
         Update: {
           ai_recognition_config?: Json | null
+          brand_kit_enabled?: boolean
+          brand_kit_overrides?: Json
+          brand_kit_slug?: string | null
           category?: string
           cover_image_url?: string | null
           created_at?: string
