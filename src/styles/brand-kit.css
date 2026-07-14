@@ -1,0 +1,142 @@
+/**
+ * Brand Kit — variables CSS scopées + utilitaires.
+ * Toutes les vars sont préfixées --bk-* et déclarées sur [data-brand-kit].
+ * Rien ne fuit hors du wrapper.
+ */
+
+[data-brand-kit] {
+  /* Fond de page repeint avec l'accent du partenaire. */
+  background: hsl(var(--bk-bg));
+  color: hsl(var(--bk-fg));
+  font-family: var(--bk-font-body), system-ui, -apple-system, sans-serif;
+}
+
+/* Titres du partenaire (h1/h2/h3) sur les éléments non stylés à la source. */
+[data-brand-kit] .bk-display {
+  font-family: var(--bk-font-display), serif;
+  letter-spacing: -0.01em;
+}
+
+[data-brand-kit] .bk-logotype {
+  font-family: var(--bk-font-logotype), 'Great Vibes', cursive;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.005em;
+}
+
+/* CTA blob — rondelle organique orange (signature Château Boutinet). */
+[data-brand-kit] .bk-cta {
+  --bk-cta-bg: hsl(var(--bk-accent));
+  --bk-cta-fg: hsl(var(--bk-accent-fg));
+  background: radial-gradient(circle at 30% 30%, hsl(var(--bk-accent) / 0.95), hsl(var(--bk-accent) / 1) 70%);
+  color: var(--bk-cta-fg);
+  border: none;
+  box-shadow:
+    0 12px 28px -8px hsl(var(--bk-accent) / 0.55),
+    inset 0 -3px 8px hsl(0 0% 0% / 0.12);
+  transition: transform .35s cubic-bezier(.19,1,.22,1), box-shadow .35s;
+}
+[data-brand-kit] .bk-cta:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow:
+    0 18px 40px -8px hsl(var(--bk-accent) / 0.7),
+    inset 0 -3px 8px hsl(0 0% 0% / 0.15);
+}
+
+[data-brand-kit][data-cta-shape='blob'] .bk-cta {
+  border-radius: 50% 46% 52% 48% / 48% 52% 46% 54%;
+  aspect-ratio: 1;
+  padding: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: 600;
+}
+[data-brand-kit][data-cta-shape='pill']  .bk-cta { border-radius: 9999px; padding: 0.9rem 1.75rem; }
+[data-brand-kit][data-cta-shape='rounded'] .bk-cta { border-radius: 14px; padding: 0.9rem 1.5rem; }
+
+/* Divider signature — dégradé ambre→or. */
+.bk-divider {
+  position: relative;
+  width: 100%;
+  height: 88px;
+  background: linear-gradient(90deg, hsl(var(--bk-grad-a)), hsl(var(--bk-grad-b)));
+}
+.bk-divider svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* Cartouche certifications. */
+.bk-badges {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 1rem 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  background: hsl(var(--bk-surface) / 0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid hsl(var(--bk-fg) / 0.08);
+}
+.bk-badges__item {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-size: 0.75rem; font-weight: 500;
+  color: hsl(var(--bk-surface-fg));
+}
+.bk-badges__item img { height: 28px; width: auto; object-fit: contain; }
+
+/* Signature flottante (logotype scripté + tagline) — coin haut-droit fixed. */
+.bk-signature-badge {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.9rem 0.5rem 0.75rem;
+  border-radius: 9999px;
+  background: hsl(var(--bk-surface) / 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid hsl(var(--bk-accent) / 0.35);
+  color: hsl(var(--bk-surface-fg));
+  box-shadow: 0 10px 30px -12px hsl(0 0% 0% / 0.35);
+  text-decoration: none;
+  transition: transform .3s ease;
+}
+.bk-signature-badge:hover { transform: translateY(-1px); }
+.bk-signature-badge__mark {
+  font-family: var(--bk-font-logotype), cursive;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: hsl(var(--bk-accent));
+}
+.bk-signature-badge__tagline {
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* Footer signature. */
+.bk-footer-signature {
+  margin-top: 3rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  border-top: 1px solid hsl(var(--bk-fg) / 0.1);
+  background: hsl(var(--bk-surface) / 0.4);
+}
+.bk-footer-signature .bk-partner {
+  font-family: var(--bk-font-logotype), cursive;
+  font-size: 2rem;
+  color: hsl(var(--bk-accent));
+  line-height: 1;
+}
+.bk-footer-signature .bk-socials {
+  margin-top: 1rem;
+  display: inline-flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+  font-size: 0.85rem;
+}
+.bk-footer-signature .bk-socials a {
+  color: hsl(var(--bk-fg) / 0.75);
+  text-decoration: none;
+  border-bottom: 1px dotted hsl(var(--bk-accent) / 0.5);
+}
+.bk-footer-signature .bk-socials a:hover { color: hsl(var(--bk-accent)); }
