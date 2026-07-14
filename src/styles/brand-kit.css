@@ -41,6 +41,52 @@
   letter-spacing: -0.01em;
 }
 
+/* Château Boutinet × Immersion Vignoble — force la palette diurne sauge/ambre
+   sur le template Vignoble, qui possède ses propres tokens --vignoble-*. */
+[data-brand-kit='chateau_boutinet'] .vignoble-scope {
+  --vignoble-ink: var(--bk-fg);
+  --vignoble-wine: var(--bk-accent);
+  --vignoble-gold: var(--bk-grad-b);
+  --vignoble-gold-soft: var(--bk-accent);
+  --vignoble-paper: var(--bk-surface);
+  --vignoble-paper-warm: var(--bk-bg);
+  background: hsl(var(--bk-bg));
+  color: hsl(var(--bk-fg));
+}
+
+[data-brand-kit='chateau_boutinet'] .vignoble-hero-bg {
+  background:
+    radial-gradient(ellipse 70% 52% at 50% 42%, hsl(var(--bk-surface) / 0.82), transparent 72%),
+    radial-gradient(ellipse 48% 34% at 18% 16%, hsl(var(--bk-accent) / 0.18), transparent 70%),
+    linear-gradient(180deg, hsl(var(--bk-bg)) 0%, hsl(var(--bk-surface)) 62%, hsl(var(--bk-bg)) 100%) !important;
+}
+
+[data-brand-kit='chateau_boutinet'] .vignoble-hero-bg > [class*='-z-10'] {
+  background: hsl(var(--bk-bg) / 0.28) !important;
+}
+
+[data-brand-kit='chateau_boutinet'] .vignoble-hero-bg h1,
+[data-brand-kit='chateau_boutinet'] .vignoble-hero-bg h1 span,
+[data-brand-kit='chateau_boutinet'] .vignoble-hero-bg [class*='text-[hsl(var(--vignoble-paper'] {
+  color: hsl(var(--bk-fg)) !important;
+  text-shadow: none !important;
+}
+
+[data-brand-kit='chateau_boutinet'] .vignoble-hero-bg .vignoble-grain {
+  mix-blend-mode: multiply;
+  opacity: 0.08;
+}
+
+[data-brand-kit='chateau_boutinet'] .vignoble-hero-bg::before,
+[data-brand-kit='chateau_boutinet'] .vignoble-hero-bg::after {
+  background: linear-gradient(90deg, transparent, hsl(var(--bk-accent) / 0.85) 18%, hsl(var(--bk-grad-b)) 50%, hsl(var(--bk-accent) / 0.85) 82%, transparent) !important;
+}
+
+[data-brand-kit='chateau_boutinet'] .vignoble-seal-in {
+  opacity: 0.72;
+  filter: sepia(0.2) saturate(0.85) brightness(1.08);
+}
+
 
 /* Titres du partenaire (h1/h2/h3) sur les éléments non stylés à la source. */
 [data-brand-kit] .bk-display {
