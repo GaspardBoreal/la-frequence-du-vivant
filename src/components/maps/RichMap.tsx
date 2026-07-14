@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useId } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MapContainer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import DynamicTileLayer from './DynamicTileLayer';
@@ -81,7 +81,19 @@ export const RichMap: React.FC<RichMapProps> = ({
   scrollWheelZoom = true,
   onMarcheVisibilityChange,
 }) => {
-  const mapId = useId();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  // Cleanup leaflet's internal _leaflet_id on any container the component
+  // rendered — needed under React.StrictMode / HMR with react-leaflet v3
+  // to avoid "Map container is already initialized." on re-mount.
+  useEffect(() => {
+    return () => {
+      const nodes = wrapperRef.current?.querySelectorAll('.leaflet-container');
+      nodes?.forEach((n) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (n as any)._leaflet_id;
+      });
+    };
+  }, []);
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
   const [markersVisible, setMarkersVisible] = useState<boolean>(
     marcheRoute?.renderMarkers !== false,
@@ -113,6 +125,7 @@ export const RichMap: React.FC<RichMapProps> = ({
 
   return (
     <div
+      ref={wrapperRef}
       className={`relative w-full ${className}`}
       style={{ height }}
     >
@@ -127,7 +140,6 @@ export const RichMap: React.FC<RichMapProps> = ({
         }
       `}</style>
       <MapContainer
-        key={mapId}
         center={center}
         zoom={zoom}
         scrollWheelZoom={scrollWheelZoom}
