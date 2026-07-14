@@ -37,6 +37,12 @@ import PaysagesSonoresDialog from '@/components/public-event/PaysagesSonoresDial
 import { useEventScenography, useEventScenographyData } from '@/hooks/useScenography';
 import ScenographyRuntime from '@/components/scenography/ScenographyRuntime';
 import VignobleImmersion from '@/components/vignoble/VignobleImmersion';
+import { useEventBrandKit } from '@/hooks/useEventBrandKit';
+import { BrandKitProvider } from '@/components/brand-kit/BrandKitProvider';
+import { BrandSignatureBadge } from '@/components/brand-kit/BrandSignatureBadge';
+import { BrandFooterSignature } from '@/components/brand-kit/BrandFooterSignature';
+import { BrandDivider } from '@/components/brand-kit/BrandDivider';
+import { BrandBadges } from '@/components/brand-kit/BrandBadges';
 
 const SITE = 'https://la-frequence-du-vivant.com';
 
@@ -57,7 +63,7 @@ const taxonColor = (taxon: string | null) => {
   return '#6366f1';
 };
 
-const PublicEventPage: React.FC = () => {
+const PublicEventPageInner: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   useLogPublicEventView(slug);
 
@@ -728,5 +734,24 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, tone, onC
   }
   return <div className={baseClass}>{inner}</div>;
 };
+
+/**
+ * Wrapper : applique le Brand Kit (habillage partenaire) autour de la page.
+ * Sans kit actif → rendu identique. Avec kit → tokens CSS + fontes + signature.
+ */
+const PublicEventPage: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const { data: brandKit } = useEventBrandKit(slug);
+  return (
+    <BrandKitProvider kit={brandKit ?? null}>
+      {brandKit && <BrandSignatureBadge />}
+      <PublicEventPageInner />
+      {brandKit && <BrandFooterSignature />}
+    </BrandKitProvider>
+  );
+};
+
+// Re-exports pour usage ponctuel dans le corps de la page.
+export { BrandDivider, BrandBadges };
 
 export default PublicEventPage;
