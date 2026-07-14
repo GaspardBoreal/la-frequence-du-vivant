@@ -182,6 +182,7 @@ ${brandGlobal}
     window.Scenography = {
       helpers: { useScrollProgress, useMousePos, lerp, clamp, hashColor },
       data: null,
+      brand: window.__SCENO_BRAND__ || null,
     };
   })();
 </script>
