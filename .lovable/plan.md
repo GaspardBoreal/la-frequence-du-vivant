@@ -1,30 +1,43 @@
 ## Problème
 
-Sur `/m/:slug`, les photos "marcheurs" sont floues alors qu'elles sont nettes dans Mon Espace → Biodiversité → Taxons observés.
+Sur la page publique `/m/:slug`, la vue **Cadastre** affiche bien la tuile Etalab, mais les **parcelles** ne s'affichent pas (pas de contours cliquables, pas de popup INSEE/section/n°) comme dans Mon Espace → Carte → Cadastre.
 
-**Cause racine** : `PublicEventSpeciesGrid` construit une Map de photos terrain à partir du RPC public (`PublicSpecies.photo_url`), qui ne contient qu'**une seule URL par espèce**, souvent en résolution vignette (issue de `species_thumb_cache` ou d'un snapshot iNat en `square`). L'app Marcheurs, elle, appelle `useExplorationFieldPhotos(explorationId)` qui lit **directement** `marcheur_observations.photo_url` (résolution originale du storage) et upgrade les URLs iNat de `square` → `medium`.
+**Cause racine** dans `src/components/maps/RichMap.tsx` :
+```ts
+{controls.cadastre && mapStyle === 'cadastre' && cadastrePoints.length > 0 && (
+  <CadastreLayer points={cadastrePoints} enabled />
+)}
+```
+et
+```ts
+const cadastrePoints = useMemo(() => {
+  if (!marcheRoute) return [];
+  return marcheRoute.steps…
+}, [marcheRoute]);
+```
 
-## Correctif (frontend uniquement, factorisation stricte)
+Sur la page publique :
+1. `controls={{ zoom: true, style: true, geolocate: false }}` — `cadastre` est absent donc `false` par défaut → `<CadastreLayer>` jamais monté.
+2. Aucun `marcheRoute` n'est passé → `cadastrePoints` est vide de toute façon.
 
-Réutiliser exactement le même hook que l'app Marcheurs sur la page publique, puisque `PublicEvent.exploration_id` est déjà disponible.
+Résultat : seule la tuile fond cadastre s'affiche, sans le composant `CadastreLayer` qui fetch les parcelles autour des points et gère leur rendu/interaction (comme sur `ExplorationCarteTab`).
 
-### 1. `src/components/public-event/PublicEventSpeciesGrid.tsx`
-- Ajouter prop `explorationId?: string | null`.
-- Supprimer la construction et le passage de `fieldPhotosOverride` (photos terrain basse résolution).
-- Passer `explorationId` directement à `<SpeciesPhotoModeProvider explorationId={…}>` → le provider utilisera `useExplorationFieldPhotos`, exactement comme dans Mon Espace, avec les URLs pleine résolution du storage marcheur + upgrade `square→medium` pour iNat.
-- Conserver `buildPublicFieldPhotosMap` en fallback uniquement si `explorationId` est absent (rare, backward-compat).
-- Recalculer `photoModeCounts.marcheur` à partir de la Map réelle du provider (via `useSpeciesPhotoMode`) au lieu du flag `has_walker_observation` du RPC. Extraire un petit sous-composant interne `<Grid>` pour pouvoir consommer le contexte.
+## Correctif (frontend, factorisation, aucune nouvelle logique)
 
-### 2. `src/components/public-event/adaptPublicSpecies.ts`
-- Dans `adaptPublicSpeciesToBiodiversity`, upgrader l'URL iNat de fallback (`photo_url`) en remplaçant `/square.` par `/medium.` (même règle que `useExplorationFieldPhotos`) pour que la vignette iNat soit également nette quand aucune photo marcheur n'existe.
+### 1. `src/components/maps/RichMap.tsx`
+- Étendre `cadastrePoints` avec un **fallback** : si `marcheRoute` est absent ou vide, utiliser `center` comme point unique (`[{ id: 'center', lat: center[0], lng: center[1] }]`). Cela garantit que la couche cadastre a toujours au moins un point pivot pour charger les parcelles autour de la vue, quel que soit le contexte d'appel.
+- Assouplir la garde de rendu : `{controls.cadastre && mapStyle === 'cadastre' && cadastrePoints.length > 0 && (…)}` — la garde reste identique, seul l'input est enrichi.
 
-### 3. `src/pages/PublicEventPage.tsx`
-- Passer `explorationId={event.exploration_id}` à `<PublicEventSpeciesGrid>`.
+### 2. `src/pages/PublicEventPage.tsx`
+- Passer `controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}` à `<RichMap>` de la section carte pour activer le toggle Cadastre et le `CadastreLayer` associé.
+- Ne rien changer d'autre : `event.latitude` / `event.longitude` servent déjà de `center`, ils alimenteront le fallback ci-dessus.
 
 ## Détail technique
 
-- **RLS** : `marcheur_observations`, `exploration_marches`, `exploration_marcheurs`, `biodiversity_snapshots` sont déjà lus par le hook depuis Mon Espace côté user connecté. Vérifier rapidement que ces tables ont bien une policy `SELECT` publique/anon pour un événement publié ; sinon, le hook ne trouvera rien côté public et il faudra soit ajouter des policies dédiées `exploration.is_public`, soit créer un RPC public équivalent. **À valider avant l'implémentation** — si RLS bloque, on tombe sur le plan B : nouveau RPC `get_public_event_field_photos(_event_id)` renvoyant la même forme `MarcheurSpeciesPhoto[]` par espèce, appelé via un `fieldPhotosOverride` toujours branché.
+- `CadastreLayer` (déjà réutilisé par `ExplorationCarteTab`) prend en charge : fetch des parcelles autour de chaque `point`, rendu polygonal, popup INSEE/section/numéro, styles adaptés au fond `cadastre`. Aucun changement à ce composant.
+- Aucune prop `previewGeometry` / `tapMode` : la page publique reste read-only, pas de création de marche ni de saisie GPS.
+- Pas d'impact backend / RLS : `CadastreLayer` interroge l'API Etalab publique (via `cadastre-proxy` déjà en place).
 
 ## Résultat attendu
 
-Grille publique = grille Mon Espace : mêmes composants, mêmes URLs, même netteté, toggle Marcheurs/iNat avec compteurs exacts.
+Vue publique `/m/:slug` → onglet Cadastre : les parcelles apparaissent en surimpression comme dans Mon Espace, cliquables, avec les popups d'infos parcellaires standard.

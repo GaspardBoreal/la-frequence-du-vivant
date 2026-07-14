@@ -92,11 +92,19 @@ export const RichMap: React.FC<RichMapProps> = ({
   };
 
   const cadastrePoints = useMemo(() => {
-    if (!marcheRoute) return [];
-    return marcheRoute.steps
-      .filter((s) => s.latitude != null && s.longitude != null)
-      .map((s) => ({ id: s.id, lat: s.latitude, lng: s.longitude, label: s.label || undefined }));
-  }, [marcheRoute]);
+    const fromRoute = marcheRoute
+      ? marcheRoute.steps
+          .filter((s) => s.latitude != null && s.longitude != null)
+          .map((s) => ({ id: s.id, lat: s.latitude, lng: s.longitude, label: s.label || undefined }))
+      : [];
+    if (fromRoute.length > 0) return fromRoute;
+    // Fallback : centre de la carte comme point pivot unique pour que
+    // CadastreLayer puisse charger les parcelles alentour même sans marcheRoute.
+    if (center && center.length === 2) {
+      return [{ id: 'center', lat: center[0], lng: center[1] }];
+    }
+    return [];
+  }, [marcheRoute, center]);
 
   const weatherMarches = useMemo(() => {
     if (!marcheRoute) return [];
