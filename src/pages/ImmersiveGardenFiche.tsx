@@ -468,21 +468,22 @@ const IndicatorDot: React.FC<{ label: string; start: number }> = ({ label, start
   const opacity = useTransform(scrollYProgress, [start, end - 0.01, end], [0.35, 1, 0.35]);
   const scale = useTransform(scrollYProgress, [start, (start + end) / 2, end], [1, 1.6, 1]);
   return (
-    <motion.div className="flex items-center gap-3 justify-start bg-black/25 backdrop-blur-sm rounded-full px-2.5 py-1">
-      <motion.span className="block w-1.5 h-1.5 rounded-full bg-[#c9a24a]" style={{ opacity, scale }} />
+    <motion.div className="flex items-center gap-3 justify-end">
       <span className="text-[10px] tracking-[0.25em] uppercase text-[#f4ecd4]/70 font-serif italic">{label}</span>
+      <motion.span className="block w-1.5 h-1.5 rounded-full bg-[#c9a24a]" style={{ opacity, scale }} />
     </motion.div>
   );
 };
 
 const StratIndicator: React.FC = () => (
-  <div className="fixed left-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-4">
+  <div className="fixed right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-4">
     <IndicatorDot label="Canopée" start={0} />
     <IndicatorDot label="Arbustive" start={0.25} />
     <IndicatorDot label="Rhizosphère" start={0.5} />
     <IndicatorDot label="Saisons" start={0.75} />
   </div>
 );
+
 
 
 export default ImmersiveGardenFiche;
