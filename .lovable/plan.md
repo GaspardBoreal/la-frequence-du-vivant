@@ -1,25 +1,77 @@
-## Objectif
-Masquer les labels de **tous** les points de l'index (pas seulement Rhizosphère) pendant la lecture de la **Strate 2**, puis les faire réapparaître dès qu'on en sort. Les points (dots) restent visibles en permanence.
+## Diagnostic
 
-## Constat
-Aujourd'hui seul le label « Rhizosphère » s'efface (prop `fadeDuringActive` posé uniquement sur ce dot). La capture montre que « CANOPÉE », « ARBUSTIVE » et « SAISONS » restent visibles et chevauchent le titre "Le silence fertile des racines".
+Sur `/m/:slug` (page Jardin publique), le hook `useGardenFiche` agrège 3 sources de photos :
 
-## Implémentation (fichier : `src/pages/ImmersiveGardenFiche.tsx`)
+| Source | Table | Politique SELECT actuelle | Visible anon ? |
+|---|---|---|---|
+| Officielles curées | `marche_photos` | `USING (true)` pour `public` | ✅ Oui |
+| Marcheurs (contributions) | `marcheur_medias` | `TO authenticated` uniquement | ❌ **Non** |
+| Convivialité (mur) | `exploration_convivialite_photos` | `TO authenticated` uniquement | ❌ **Non** |
 
-1. **Remonter le fade au niveau du conteneur `StratIndicator`** :
-   - Calculer une seule `labelsOpacity` via `useTransform(scrollYProgress, [0.48, 0.5, 0.75, 0.77], [1, 0, 0, 1])`.
-   - Respecter `useReducedMotion()` → opacité fixe à 1.
-   - Wrapper chaque label dans un `motion.div` (ou passer l'opacité via un contexte / prop partagée) qui applique cette opacité commune. Les dots ne sont pas affectés.
+Résultat : un visiteur non connecté ne récupère que le petit lot `marche_photos`. Toute la matière visuelle (photos marcheurs + mur convivialité) est vide → l'événement Jardin paraît sans images. Les utilisateurs connectés (marcheur / admin) voient tout normalement, ce qui correspond exactement au symptôme rapporté.
 
-2. **Simplifier `IndicatorDot`** :
-   - Supprimer la prop `fadeDuringActive` et la logique `labelOpacity` locale.
-   - Accepter une prop `labelStyle?: MotionStyle` (ou lire l'opacité via contexte) appliquée uniquement au `<span>` label.
-   - Conserver l'animation `opacity` / `scale` du dot inchangée.
+Vérifié en base :
+- `marcheur_medias` : SELECT `((user_id = auth.uid()) OR (is_public = true))` mais restreint à `{authenticated}` → même `is_public = true` est bloqué pour anon.
+- `exploration_convivialite_photos` : SELECT dépend de `can_view_exploration_convivialite(auth.uid(), …)` → toujours false pour anon.
 
-3. **`StratIndicator`** :
-   - Passer la même `labelsOpacity` aux 4 `IndicatorDot` (Canopée, Arbustive, Rhizosphère, Saisons).
-   - Garder `z-20` pour rester sous les `StratPanel` (z-30).
+Les URLs des fichiers dans Storage sont publiques ; c'est bien la lecture des lignes de métadonnées qui bloque.
 
-## Hors scope
-- Pas de modification des sections, `StratPanel`, ni du positionnement de l'index.
-- Pas de nouvelle librairie.
+## Correctif (une seule migration)
+
+Ajouter des policies **SELECT pour `anon`** strictement scopées aux contenus déjà publics :
+
+### 1. `marcheur_medias` — lecture anon
+
+```sql
+CREATE POLICY "Public can view public medias on public events"
+ON public.marcheur_medias
+FOR SELECT
+TO anon
+USING (
+  is_public = true
+  AND EXISTS (
+    SELECT 1 FROM public.marche_events me
+    WHERE me.id = marcheur_medias.marche_event_id
+      AND me.is_public = true
+  )
+);
+
+GRANT SELECT ON public.marcheur_medias TO anon;
+```
+
+Condition : le média est marqué public **et** rattaché à un event lui-même publié (`marche_events.is_public = true`). Aucune fuite sur des marches non publiées.
+
+### 2. `exploration_convivialite_photos` — lecture anon
+
+```sql
+CREATE POLICY "Public can view convivialite on public explorations"
+ON public.exploration_convivialite_photos
+FOR SELECT
+TO anon
+USING (
+  is_hidden = false
+  AND EXISTS (
+    SELECT 1
+    FROM public.explorations e
+    JOIN public.marche_events me ON me.exploration_id = e.id
+    WHERE e.id = exploration_convivialite_photos.exploration_id
+      AND me.is_public = true
+  )
+);
+
+GRANT SELECT ON public.exploration_convivialite_photos TO anon;
+```
+
+Condition : photo non cachée + au moins un event public rattaché à l'exploration. Reflète la logique déjà utilisée par la page publique `/m/:slug`.
+
+## Vérification post-fix
+
+1. En navigation privée (déconnecté), ouvrir `/m/chateau-boutinet-le-vignoble-vivant-2026-09-26` → les visuels marcheurs et le mur convivialité doivent apparaître comme pour un utilisateur connecté.
+2. Vérifier qu'un event `is_public = false` n'expose rien (`SELECT` retournant 0 pour anon).
+3. Playwright headless : capturer l'écran Jardin section Canopée + Rhizosphère avant/après pour valider visuellement.
+
+## Ce que je ne touche pas
+
+- Aucune modif code React (le bug est 100 % côté data-access).
+- Pas de changement sur les policies `authenticated` existantes.
+- Pas d'exposition des tables `marche_participations`, `event_invited_readers`, `community_profiles`, etc.
