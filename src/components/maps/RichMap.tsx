@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { MapContainer } from 'react-leaflet';
+import React, { useState, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
+import SafeMapContainer from './SafeMapContainer';
 import DynamicTileLayer from './DynamicTileLayer';
 import MapStyleToggle from './MapStyleToggle';
 import type { MapStyle } from './mapStyles';
@@ -81,19 +81,6 @@ export const RichMap: React.FC<RichMapProps> = ({
   scrollWheelZoom = true,
   onMarcheVisibilityChange,
 }) => {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  // Cleanup leaflet's internal _leaflet_id on any container the component
-  // rendered — needed under React.StrictMode / HMR with react-leaflet v3
-  // to avoid "Map container is already initialized." on re-mount.
-  useEffect(() => {
-    return () => {
-      const nodes = wrapperRef.current?.querySelectorAll('.leaflet-container');
-      nodes?.forEach((n) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        delete (n as any)._leaflet_id;
-      });
-    };
-  }, []);
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
   const [markersVisible, setMarkersVisible] = useState<boolean>(
     marcheRoute?.renderMarkers !== false,
@@ -125,7 +112,6 @@ export const RichMap: React.FC<RichMapProps> = ({
 
   return (
     <div
-      ref={wrapperRef}
       className={`relative w-full ${className}`}
       style={{ height }}
     >
@@ -139,7 +125,7 @@ export const RichMap: React.FC<RichMapProps> = ({
           border: none !important;
         }
       `}</style>
-      <MapContainer
+      <SafeMapContainer
         center={center}
         zoom={zoom}
         scrollWheelZoom={scrollWheelZoom}
@@ -179,7 +165,7 @@ export const RichMap: React.FC<RichMapProps> = ({
 
         {/* Business markers / overlays */}
         {children}
-      </MapContainer>
+      </SafeMapContainer>
 
       {controls.style && <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />}
       {controls.marcheRouteVisibility && marcheRoute && marcheRoute.steps.length > 0 && (
