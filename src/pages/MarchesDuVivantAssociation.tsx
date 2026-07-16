@@ -115,6 +115,7 @@ const parcoursAmbassadeur = [
 ];
 
 const MarchesDuVivantAssociation = () => {
+  const [adhesionOpen, setAdhesionOpen] = useState(false);
   return (
     <>
       <Helmet>
