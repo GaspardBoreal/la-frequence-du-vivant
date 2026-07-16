@@ -52,9 +52,12 @@ const ROLE_GLOW: Record<CommunityRoleKey, string> = {
 };
 
 const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
-  profile, email, role, totalFrequences, onSignOut, onProfileUpdated,
+  profile, email, role, totalFrequences,
+  marchesCount, formationValidee, certificationValidee, pendingCount,
+  onSignOut, onProfileUpdated,
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [progressionOpen, setProgressionOpen] = useState(false);
   const initials = `${profile.prenom[0] || ''}${profile.nom[0] || ''}`.toUpperCase();
 
   return (
