@@ -249,6 +249,10 @@ const MarchesDuVivantMonEspace = () => {
           email={user.email || ''}
           role={role}
           totalFrequences={totalFrequences}
+          marchesCount={profile.marches_count ?? 0}
+          formationValidee={!!profile.formation_validee}
+          certificationValidee={!!profile.certification_validee}
+          pendingCount={pendingCount}
           onSignOut={signOut}
           onProfileUpdated={() => refreshProfile()}
         />
