@@ -112,6 +112,16 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
         onSignOut={onSignOut}
         onProfileUpdated={onProfileUpdated}
       />
+
+      <ProgressionSheet
+        open={progressionOpen}
+        onOpenChange={setProgressionOpen}
+        role={role}
+        marchesCount={marchesCount}
+        formationValidee={formationValidee}
+        certificationValidee={certificationValidee}
+        pendingCount={pendingCount}
+      />
     </>
   );
 };
