@@ -76,7 +76,14 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
               {initials}
             </motion.div>
             <div className="flex-1 min-w-0">
-              <RoleBadge role={role} size="sm" darkMode />
+              <button
+                type="button"
+                onClick={() => setProgressionOpen(true)}
+                aria-label="Voir votre progression"
+                className="inline-flex rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:opacity-90 transition-opacity"
+              >
+                <RoleBadge role={role} size="sm" darkMode />
+              </button>
             </div>
             <HeaderSearchTrigger scope="global" />
             <motion.div
