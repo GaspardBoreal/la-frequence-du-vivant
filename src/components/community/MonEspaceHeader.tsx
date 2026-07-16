@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import RoleBadge from './RoleBadge';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import MonEspaceSettings from './MonEspaceSettings';
+import ProgressionSheet from './ProgressionSheet';
 import HeaderSearchTrigger from '@/components/search/HeaderSearchTrigger';
 
 interface CommunityProfile {
@@ -34,6 +35,10 @@ interface MonEspaceHeaderProps {
   email: string;
   role: CommunityRoleKey;
   totalFrequences: number;
+  marchesCount: number;
+  formationValidee: boolean;
+  certificationValidee: boolean;
+  pendingCount: number;
   onSignOut: () => void;
   onProfileUpdated: () => void;
 }
@@ -47,9 +52,12 @@ const ROLE_GLOW: Record<CommunityRoleKey, string> = {
 };
 
 const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
-  profile, email, role, totalFrequences, onSignOut, onProfileUpdated,
+  profile, email, role, totalFrequences,
+  marchesCount, formationValidee, certificationValidee, pendingCount,
+  onSignOut, onProfileUpdated,
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [progressionOpen, setProgressionOpen] = useState(false);
   const initials = `${profile.prenom[0] || ''}${profile.nom[0] || ''}`.toUpperCase();
 
   return (
@@ -68,7 +76,14 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
               {initials}
             </motion.div>
             <div className="flex-1 min-w-0">
-              <RoleBadge role={role} size="sm" darkMode />
+              <button
+                type="button"
+                onClick={() => setProgressionOpen(true)}
+                aria-label="Voir votre progression"
+                className="inline-flex rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:opacity-90 transition-opacity"
+              >
+                <RoleBadge role={role} size="sm" darkMode />
+              </button>
             </div>
             <HeaderSearchTrigger scope="global" />
             <motion.div
@@ -96,6 +111,16 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
         role={role}
         onSignOut={onSignOut}
         onProfileUpdated={onProfileUpdated}
+      />
+
+      <ProgressionSheet
+        open={progressionOpen}
+        onOpenChange={setProgressionOpen}
+        role={role}
+        marchesCount={marchesCount}
+        formationValidee={formationValidee}
+        certificationValidee={certificationValidee}
+        pendingCount={pendingCount}
       />
     </>
   );
