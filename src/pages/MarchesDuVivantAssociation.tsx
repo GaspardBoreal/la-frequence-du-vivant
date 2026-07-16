@@ -435,6 +435,8 @@ const MarchesDuVivantAssociation = () => {
 
         <Footer variant="marches" />
       </div>
+
+      <AdhesionDialog open={adhesionOpen} onOpenChange={setAdhesionOpen} />
     </>
   );
 };
