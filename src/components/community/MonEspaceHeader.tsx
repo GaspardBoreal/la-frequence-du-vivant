@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import RoleBadge from './RoleBadge';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import MonEspaceSettings from './MonEspaceSettings';
+import ProgressionSheet from './ProgressionSheet';
 import HeaderSearchTrigger from '@/components/search/HeaderSearchTrigger';
 
 interface CommunityProfile {
