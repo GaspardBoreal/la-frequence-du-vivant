@@ -176,6 +176,17 @@ const MarchesDuVivantAssociation = () => {
                 Une association pour reconnecter l'ensemble des générations au vivant, 
                 née de La Comédie des Mondes Hybrides.
               </p>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAdhesionOpen(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Rejoindre l'association
+                </button>
+              </div>
             </motion.div>
           </div>
         </section>
