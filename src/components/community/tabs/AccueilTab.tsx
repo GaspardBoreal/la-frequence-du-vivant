@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { motion } from 'framer-motion';
 import FrequenceWave from '../FrequenceWave';
 import ProgressionCard from '../ProgressionCard';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
