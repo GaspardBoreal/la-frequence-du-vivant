@@ -35,6 +35,10 @@ interface MonEspaceHeaderProps {
   email: string;
   role: CommunityRoleKey;
   totalFrequences: number;
+  marchesCount: number;
+  formationValidee: boolean;
+  certificationValidee: boolean;
+  pendingCount: number;
   onSignOut: () => void;
   onProfileUpdated: () => void;
 }
