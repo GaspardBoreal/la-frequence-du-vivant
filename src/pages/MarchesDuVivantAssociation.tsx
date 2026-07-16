@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PublicTopBar from '@/components/layout/PublicTopBar';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight, Footprints, Eye, Shield } from 'lucide-react';
+import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight, Footprints, Eye, Shield, Sparkles } from 'lucide-react';
 import Footer from '@/components/Footer';
+import AdhesionDialog from '@/components/adhesion/AdhesionDialog';
 import ContributeurCard, { ContributeurData } from '@/components/marches-vivant/ContributeurCard';
 import ScienceCounters from '@/components/marches-vivant/ScienceCounters';
 import {
@@ -114,6 +115,7 @@ const parcoursAmbassadeur = [
 ];
 
 const MarchesDuVivantAssociation = () => {
+  const [adhesionOpen, setAdhesionOpen] = useState(false);
   return (
     <>
       <Helmet>
@@ -174,6 +176,17 @@ const MarchesDuVivantAssociation = () => {
                 Une association pour reconnecter l'ensemble des générations au vivant, 
                 née de La Comédie des Mondes Hybrides.
               </p>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAdhesionOpen(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Rejoindre l'association
+                </button>
+              </div>
             </motion.div>
           </div>
         </section>
@@ -422,6 +435,8 @@ const MarchesDuVivantAssociation = () => {
 
         <Footer variant="marches" />
       </div>
+
+      <AdhesionDialog open={adhesionOpen} onOpenChange={setAdhesionOpen} />
     </>
   );
 };

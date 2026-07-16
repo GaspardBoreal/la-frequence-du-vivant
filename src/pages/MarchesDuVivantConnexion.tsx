@@ -65,6 +65,11 @@ const MarchesDuVivantConnexion = () => {
   } | null>(null);
 
   useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'register') {
+      setMode('register');
+    }
+
     const affiliateToken = searchParams.get('affiliate');
     if (affiliateToken) {
       storeAffiliateToken(affiliateToken);
