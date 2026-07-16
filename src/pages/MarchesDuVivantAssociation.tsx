@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PublicTopBar from '@/components/layout/PublicTopBar';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight, Footprints, Eye, Shield } from 'lucide-react';
+import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight, Footprints, Eye, Shield, Sparkles } from 'lucide-react';
 import Footer from '@/components/Footer';
+import AdhesionDialog from '@/components/adhesion/AdhesionDialog';
 import ContributeurCard, { ContributeurData } from '@/components/marches-vivant/ContributeurCard';
 import ScienceCounters from '@/components/marches-vivant/ScienceCounters';
 import {
