@@ -501,7 +501,7 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const qrPad = qrSize * 0.14;
   const qrRect: Rect = { x: qx - qrPad, y: qy - qrPad, w: qrSize + qrPad * 2, h: qrSize + qrPad * 2 };
 
-  try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant, qrRect); }
+  try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant, qrRect, !!opts.ctaEnabled); }
   catch (e) { console.warn('[wallpaper] signature failed', e); }
 
   try {
