@@ -74,7 +74,9 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
     if (!hasSource) return;
     setDownloading(true);
     try {
-      const qrTarget = proposal.event?.slug
+      const qrTarget = proposal.ctaEnabled
+        ? 'https://la-frequence-du-vivant.com/marches-du-vivant/connexion?tab=register'
+        : proposal.event?.slug
         ? `https://la-frequence-du-vivant.com/m/${proposal.event.slug}`
         : proposal.theme === 'frequence'
         ? 'https://la-frequence-du-vivant.com'
