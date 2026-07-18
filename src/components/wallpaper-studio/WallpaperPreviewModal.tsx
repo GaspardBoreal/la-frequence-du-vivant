@@ -93,6 +93,7 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
         seed: proposal.seed,
         variant: proposal.variant,
         titleScale: proposal.titleScale,
+        ctaEnabled: proposal.ctaEnabled,
       });
       const blob = await canvasToBlob(canvas, 'image/jpeg', 0.93);
       const label = proposal.theme === 'frequence' ? 'frequence-du-vivant' : 'marches-du-vivant';
