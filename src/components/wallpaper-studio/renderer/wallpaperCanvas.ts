@@ -661,8 +661,17 @@ function drawCommunityCta(
 
     const edgeX = Math.round(w * 0.03);
     const edgeY = Math.round(h * 0.03);
-    // Candidate anchors covering the whole canvas — CTA never over image.
+    // Priorité 1 : safe zone du CTA (garantie sans image).
+    const szCandidates: Array<{ x: number; y: number }> = safeZone
+      ? [
+          { x: safeZone.x + edgeX, y: safeZone.y + (safeZone.h - plaqueH) / 2 },
+          { x: safeZone.x + edgeX, y: safeZone.y + safeZone.h - plaqueH - edgeY * 0.3 },
+          { x: safeZone.x + (safeZone.w - plaqueW) / 2, y: safeZone.y + (safeZone.h - plaqueH) / 2 },
+        ]
+      : [];
+    // Candidats de secours (coins et milieux).
     const candidates: Array<{ x: number; y: number }> = [
+      ...szCandidates,
       { x: edgeX, y: h - edgeY - plaqueH },                    // bottom-left
       { x: w - edgeX - plaqueW, y: h - edgeY - plaqueH },      // bottom-right
       { x: (w - plaqueW) / 2, y: h - edgeY - plaqueH },        // bottom-center
@@ -685,10 +694,29 @@ function drawCommunityCta(
     if (chosen) break;
   }
 
-  // Absolute fallback: compact bottom-left, ignore collision (last resort).
+  // Fallback : scan de grille — choisit la position avec le minimum d'overlap.
   if (!chosen) {
-    const m = measureTier(tiers[1]);
-    chosen = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - m.plaqueH, ...m };
+    const m = measureTier(tiers[2]);
+    const { plaqueW, plaqueH } = m;
+    const step = Math.round(Math.min(w, h) * 0.03);
+    let bestPos = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - plaqueH };
+    let bestOverlap = Infinity;
+    const overlapArea = (a: Rect, b: Rect) => {
+      const ox = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+      const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+      return ox * oy;
+    };
+    for (let y = Math.round(h * 0.03); y + plaqueH <= h * 0.97; y += step) {
+      for (let x = Math.round(w * 0.03); x + plaqueW <= w * 0.97; x += step) {
+        const rect: Rect = { x, y, w: plaqueW, h: plaqueH };
+        let total = 0;
+        for (const o of obstacles) total += overlapArea(rect, o);
+        if (total < bestOverlap) { bestOverlap = total; bestPos = { x, y }; if (total === 0) break; }
+      }
+      if (bestOverlap === 0) break;
+    }
+    console.warn('[wallpaper] cta grid fallback used, overlap =', bestOverlap);
+    chosen = { x: bestPos.x, y: bestPos.y, ...m };
   }
 
   const { x: plaqueX, y: plaqueY, plaqueW, plaqueH, ctaSize, subSize, brandSize, padX, padY, dotR, gap } = chosen;
