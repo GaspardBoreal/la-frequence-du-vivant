@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export type Category = 'species' | 'landscape' | 'walkers' | 'territory';
+export type Kingdom = 'all' | 'flora' | 'winged' | 'small_fauna' | 'fungi';
 export type Ambiance = 'dawn' | 'day' | 'dusk' | 'night' | 'any';
 
 export interface PickedPhoto {
