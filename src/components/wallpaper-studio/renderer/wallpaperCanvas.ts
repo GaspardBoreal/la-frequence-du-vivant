@@ -346,7 +346,7 @@ function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: numbe
   const heroR = Math.min(w, h) * 0.16;
 
 
-  const sats: [number, number, number][] = [
+  const rawSats: [number, number, number][] = [
     [w * 0.18, h * 0.22, heroR * 0.55],
     [w * 0.82, h * 0.20, heroR * 0.5],
     [w * 0.15, h * 0.70, heroR * 0.7],
@@ -354,6 +354,16 @@ function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: numbe
     [w * 0.42, h * 0.80, heroR * 0.45],
     [w * 0.68, h * 0.82, heroR * 0.4],
   ];
+  // Reroute les satellites qui tombent dans la safe zone du CTA vers la moitié droite/haute.
+  const sats: [number, number, number][] = rawSats.map(([sx, sy, sr]) => {
+    const bbox = ellipseBBox(sx, sy, sr, sr);
+    if (bboxInSafeZone(bbox, safeZone ?? null)) {
+      const newX = sx < w * 0.5 ? Math.min(w * 0.92 - sr, (safeZone!.x + safeZone!.w) + sr + w * 0.02) : sx;
+      const newY = Math.max(sr + h * 0.04, safeZone!.y - sr - h * 0.02);
+      return [newX, newY, sr];
+    }
+    return [sx, sy, sr];
+  });
   const shuffled = sats.slice(0, Math.min(6, imgs.length - 1));
 
   ctx.save();
