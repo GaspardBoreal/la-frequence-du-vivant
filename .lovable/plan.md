@@ -1,162 +1,52 @@
-## Générateur de fonds d'écran — Matériel Pédagogique
+## Objectif
 
-Ajouter une section **"Studio Fonds d'Écran"** dans `/materiel-pedagogique` : un générateur de wallpapers en mosaïque poétique multi-espèces, avec sélection guidée en 3 étapes, rendu multi-format, téléchargement 1-clic, galerie communautaire, et traçabilité en base.
+Rendre les 4 propositions du Studio Fonds d'écran visuellement très distinctes, avec des compositions plus design que la mosaïque de ronds actuelle, des titres à taille variable, et un fond bien plus riche inspiré des pages Jardin (vagues dorées, particules, halo profond) que la communauté a adoré.
 
-### Parcours utilisateur (3 étapes)
+## Ce qui change
 
-```text
-Étape 1 — THÈME               Étape 2 — PORTÉE              Étape 3 — ANGLE
-┌─────────────────┐           ┌─────────────────┐           ┌──────────────────┐
-│ Fréquence Vivant│           │ Tous événements │           │ Catégorie:       │
-│ Marches Vivant  │           │ Un événement ▼  │           │  Espèce vedette  │
-└─────────────────┘           └─────────────────┘           │  Paysage         │
-                                                            │  Mosaïque marcheurs│
-                                                            │  Empreinte territoire│
-                                                            │ Ambiance:        │
-                                                            │  Aube/Jour/Crép./Nuit│
-                                                            └──────────────────┘
-                                                                    ↓
-                                                          [Générer 4 propositions]
-```
+### 1. Quatre "variantes de composition" (au lieu de 4 seeds identiques)
 
-Puis grille de 4 wallpapers proposés → clic → prévisualisation grand format multi-résolution → téléchargement + partage + tuto installation.
+Dans `wallpaperCanvas.ts`, introduire un paramètre `variant: 'organic' | 'editorial' | 'diptyque' | 'constellation'` et générer chaque proposition avec une variante distincte :
 
-### Composition visuelle (mosaïque poétique)
+- **Organic** — la mosaïque de ronds actuelle (conservée, retravaillée).
+- **Editorial** — 1 grande photo hero plein cadre (côté droit), colonne gauche avec bandeau typographique large, filet doré vertical, 2 petites vignettes rectangulaires arrondies en bas.
+- **Diptyque** — split-screen 60/40 : hero rectangulaire à gauche (mask arrondi asymétrique), à droite trois cartes photo superposées légèrement rotées, titre centré en pied.
+- **Constellation** — hero central petit, 4-6 satellites de tailles très variées reliés par des filets dorés courbes et points lumineux (inspiration Jardin/carte céleste).
 
-Chaque wallpaper = **collage organique 3-5 photos** sur fond dégradé sage/ambre (`#1a3c2a → #87a878 → #e8c07a → #faf8f5`), avec :
-- Photo centrale héroïque (60% surface)
-- 2-4 photos satellites en formes organiques (cercles/blobs) avec ombres douces
-- **Signature bas** : wordmark (Fréquence ou Marches) + nom événement + date + commune + coords GPS en `font-crimson` italique
-- **QR code discret** coin bas-droite (100px) → page publique événement/espèce
-- **Grain papier** subtil sur toute la surface pour la texture "Papier Crème"
+Dans `WallpaperStudio.tsx` (`handleGenerate`), boucler sur les 4 variantes au lieu de 4 seeds neutres.
 
-### Formats générés
-- Desktop 16:9 → 1920×1080, 2560×1440, 3840×2160
-- Ultra-wide 21:9 → 3440×1440
-- Mobile 9:19.5 → 1170×2532
-- Tablette 4:3 → 2048×1536
+### 2. Taille du titre variable
 
-Rendu côté client via `<canvas>` (haute résolution, pas de coût serveur).
+Ajouter `titleScale: 'small' | 'medium' | 'large'` calculé par variante (Editorial → large, Diptyque → medium, Organic → small, Constellation → small). Adapter `wordmark` + panneau signature en conséquence (fontSize proportionnel à `height`, poids et couleur inchangés).
 
-### Sources de photos (déjà en base)
-- `marche_photos` (photos officielles événement)
-- `marcheur_medias` (photos marcheurs, filtrées `is_public=true` + curation)
-- `species_thumb_cache` + `marcheur_observations` (espèces observées, meilleure photo curée)
-- `explorations.cover_image_url` + `marche_events`
+### 3. Fond inspiré des pages Jardin
 
-Sélection intelligente : privilégier photos avec GPS proche, meilleure qualité, diversité taxonomique.
+Réutiliser le vocabulaire visuel du hero Jardin (fond sombre profond + vagues dorées verticales + particules + halo radial chaud). Nouvelle fonction `drawJardinBackdrop(ctx, w, h, palette, rng)` dans `wallpaperCanvas.ts` qui remplace `drawGradient` par défaut :
 
-### Installation "1-clic" par OS
-Dialog tutoriel adaptatif selon `navigator.userAgent` :
-- **Windows** : "Téléchargé → Clic droit → Choisir comme arrière-plan du bureau"
-- **macOS** : "Téléchargé → Clic droit → Définir comme fond d'écran"
-- **iOS** : "Photos → Partager → Utiliser en fond d'écran"
-- **Android** : "Galerie → Menu → Définir comme fond d'écran"
+- Base sombre profonde (nuit dérivée de la palette, pas neutre).
+- 4-6 courbes verticales dorées translucides (Bézier, épaisseur variable, opacité 0.08-0.18).
+- Semis de particules (points + petits traits) pseudo-aléatoires seedés.
+- Halo radial chaud décentré (déjà présent, retravaillé plus intense).
+- Grain final conservé.
 
-Avec micro-illustrations SVG animées par étape.
+Les palettes `dawn/day/dusk/night/any` continuent de piloter la teinte (l'accent doré/émeraude reste, seule la base change de saturation).
 
-### Galerie communautaire publique
-- Sous la section génération : "Fonds créés par la communauté" (12 derniers)
-- Compteur téléchargements par wallpaper
-- Partage LinkedIn/Instagram/WhatsApp pré-rempli avec lien retour vers `/materiel-pedagogique#studio-fonds-ecran`
+### 4. Ajustements mineurs
 
-### Accès
-- **Génération** : ouvert au public (booster viralité SEO/GEO)
-- **Galerie communautaire** : publique en lecture
-- **Compteur téléchargements** : incrémenté anonymement
+- Le panneau signature bas devient plus discret (dégradé plus fin) pour laisser respirer le fond.
+- Bordure/liseré doré très fin sur la variante Editorial pour l'effet magazine.
+- Les 4 tuiles d'aperçu du wizard restent en `aspect-video` — pas de changement UI.
 
-### Design intégré à la page
-Nouvelle section entre "Constellation" et citation de clôture :
-- Bandeau intro poétique (font-crimson, badge sage/ambre)
-- Wizard 3 étapes en cards glassmorphism
-- Grille 4 propositions avec hover reveal + shimmer
-- Preview modal plein écran avec sélecteur résolution
-- Galerie horizontal scroll
+## Fichiers modifiés
 
-## Détails techniques
+- `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts` — ajout `variant` + `titleScale` dans `RenderOptions`, `drawJardinBackdrop`, dispatcher `drawVariant{Organic,Editorial,Diptyque,Constellation}`, refonte panneau signature.
+- `src/components/wallpaper-studio/WallpaperStudio.tsx` — la boucle `handleGenerate` itère sur `['organic','editorial','diptyque','constellation']` et passe `variant` + `titleScale` à `renderWallpaper`.
+- `src/components/wallpaper-studio/WallpaperPreviewModal.tsx` — propage `variant` + `titleScale` de `proposal` vers `renderWallpaper` lors du téléchargement HD, et stocke `variant` dans `wallpaper_generations` (colonne `variant text` — migration légère si non présente, sinon on l'injecte dans le champ `category` existant en secondaire… on préfère l'ajout de colonne).
 
-### Fichiers créés
-- `src/components/wallpaper-studio/WallpaperStudio.tsx` — section wrapper + wizard state
-- `src/components/wallpaper-studio/steps/ThemeStep.tsx` — 2 cartes thème
-- `src/components/wallpaper-studio/steps/ScopeStep.tsx` — tous vs événement + combobox
-- `src/components/wallpaper-studio/steps/AngleStep.tsx` — catégorie + ambiance
-- `src/components/wallpaper-studio/WallpaperPreviewGrid.tsx` — 4 propositions
-- `src/components/wallpaper-studio/WallpaperPreviewModal.tsx` — plein écran + sélecteur résolution + boutons DL/share
-- `src/components/wallpaper-studio/InstallTutorialDialog.tsx` — tutos par OS avec détection UA
-- `src/components/wallpaper-studio/CommunityGallery.tsx` — galerie 12 derniers
-- `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts` — moteur canvas (mosaïque, gradient, texte, QR, grain)
-- `src/components/wallpaper-studio/renderer/photoPicker.ts` — sélection intelligente photos
-- `src/hooks/useWallpaperEvents.ts` — fetch events pour combobox
-- `src/hooks/useWallpaperGeneration.ts` — orchestre pick + render
-- `src/hooks/useCommunityWallpapers.ts` — fetch galerie
-- `src/pages/MaterielPedagogique.tsx` — insertion nouvelle section
+## Migration base
 
-### Base de données (nouvelle table)
+`alter table wallpaper_generations add column if not exists variant text;` — non bloquant, ancienne data reste valide.
 
-```sql
-CREATE TABLE public.wallpaper_generations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-  theme text NOT NULL,             -- 'frequence' | 'marches'
-  scope text NOT NULL,             -- 'all' | 'event'
-  event_id uuid REFERENCES marche_events(id) ON DELETE SET NULL,
-  category text NOT NULL,          -- 'species' | 'landscape' | 'walkers' | 'territory'
-  ambiance text NOT NULL,          -- 'dawn' | 'day' | 'dusk' | 'night'
-  photo_ids jsonb NOT NULL,        -- ids sources utilisées
-  species_names text[],
-  resolution text NOT NULL,        -- '1920x1080' etc.
-  storage_path text,               -- si sauvegardé pour galerie
-  is_public boolean DEFAULT true,
-  download_count int DEFAULT 0,
-  share_count int DEFAULT 0,
-  event_name_snapshot text,
-  event_date_snapshot date,
-  event_commune_snapshot text,
-  event_gps_snapshot jsonb
-);
+## Note
 
-GRANT SELECT ON public.wallpaper_generations TO anon;
-GRANT SELECT, INSERT, UPDATE ON public.wallpaper_generations TO authenticated;
-GRANT ALL ON public.wallpaper_generations TO service_role;
-
-ALTER TABLE public.wallpaper_generations ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "public read gallery" ON public.wallpaper_generations
-  FOR SELECT TO anon, authenticated USING (is_public = true);
-CREATE POLICY "auth insert own" ON public.wallpaper_generations
-  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
-CREATE POLICY "anon insert anonymous" ON public.wallpaper_generations
-  FOR INSERT TO anon WITH CHECK (user_id IS NULL);
-CREATE POLICY "increment counters" ON public.wallpaper_generations
-  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
-```
-
-+ RPC `increment_wallpaper_download(uuid)` et `increment_wallpaper_share(uuid)` en SECURITY DEFINER pour compteurs.
-
-+ Storage bucket public `wallpapers` pour les rendus sauvegardés en galerie.
-
-### Rendu Canvas
-- Un seul render haute résolution 3840×2160, puis re-scale via `canvas.toBlob()` pour autres formats
-- Layout mosaïque : algorithme placement organique déterministe (seed = wallpaper_id) pour reproductibilité
-- QR code via `qrcode` npm
-- Grain papier via noise procedural léger
-- Polices web déjà chargées (Crimson Text, Libre Baskerville)
-
-### QR code
-Cible :
-- Portée événement → `/m/{slug}`
-- Angle espèce → `/m/{slug}#species-{scientific_name}`
-- Sinon → `/marches-du-vivant`
-
-### Sélection photos
-Fonction `pickPhotos({eventId, category, ambiance, count: 5})` :
-1. Query prioritaire selon catégorie (marche_photos > marcheur_medias curés > species)
-2. Filtre ambiance via champ `taken_at` heure (dawn=5-8h, day=8-18h, dusk=18-21h, night=21-5h) — fallback souple si peu de données
-3. Diversité : évite doublons taxonomiques
-4. Fallback iNaturalist si pas assez de photos locales
-
-### Non prévu
-- Pas d'IA générative d'image (uniquement composition de vraies photos)
-- Pas d'upload utilisateur (source = base uniquement)
-- Pas de personnalisation typo/couleurs (charte fixe = identité forte)
+Aucune logique métier back-office impactée : uniquement rendu canvas + wizard front + une colonne optionnelle en base pour traçabilité.
