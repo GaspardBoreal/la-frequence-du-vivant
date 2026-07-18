@@ -104,7 +104,11 @@ const WallpaperStudio: React.FC = () => {
         const { variant, titleScale } = VARIANT_SEQUENCE[i];
         const seed = baseSeed + i * 137;
         try {
-          const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom });
+          const { photos, kingdomShortfall } = await pickPhotosDetailed({ category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom });
+          if (i === 0 && kingdomShortfall && kingdom !== 'all') {
+            const { toast } = await import('sonner');
+            toast.info(`Peu d'observations pour ce règne — mosaïque enrichie avec des scènes du territoire.`);
+          }
           if (photos.length === 0) { noPhotos++; continue; }
           const qrTarget = ctaEnabled
             ? 'https://la-frequence-du-vivant.com/marches-du-vivant/connexion?tab=register'
