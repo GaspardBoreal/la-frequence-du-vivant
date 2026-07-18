@@ -17,6 +17,8 @@ export interface RenderOptions {
   seed: number;
   variant?: Variant;
   titleScale?: TitleScale;
+  ctaEnabled?: boolean;
+  kingdomLabel?: string;
 }
 
 interface Palette {
