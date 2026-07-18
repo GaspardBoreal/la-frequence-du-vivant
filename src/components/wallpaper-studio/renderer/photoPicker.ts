@@ -113,7 +113,19 @@ async function fetchWalkerPhotos(eventId?: string, amb: Ambiance = 'any'): Promi
     .filter((p) => !!p.url);
 }
 
-async function fetchSpeciesPhotos(eventId?: string): Promise<PickedPhoto[]> {
+function matchKingdom(s: any, kingdom: Kingdom): boolean {
+  if (kingdom === 'all') return true;
+  const iconic = String(s.iconicTaxon || s.iconic_taxon || s.iconicTaxonName || '').toLowerCase();
+  const king = String(s.kingdom || '').toLowerCase();
+  const rank = String(s.taxonClass || s.class || '').toLowerCase();
+  if (kingdom === 'flora') return iconic === 'plantae' || king === 'plantae';
+  if (kingdom === 'fungi') return iconic === 'fungi' || king === 'fungi' || iconic === 'protozoa';
+  if (kingdom === 'winged') return iconic === 'aves' || rank === 'aves' || iconic === 'insecta' && /papillon|lepidopt|odonat|hymenopt/i.test(String(s.commonName || s.common_name || s.scientificName || ''));
+  if (kingdom === 'small_fauna') return ['insecta','arachnida','reptilia','amphibia','mollusca','mammalia','actinopterygii'].includes(iconic) || ['reptilia','amphibia','insecta','arachnida'].includes(rank);
+  return true;
+}
+
+async function fetchSpeciesPhotos(eventId?: string, kingdom: Kingdom = 'all'): Promise<PickedPhoto[]> {
   let q = supabase
     .from('biodiversity_snapshots')
     .select('species_data,marche_id')
@@ -133,6 +145,7 @@ async function fetchSpeciesPhotos(eventId?: string): Promise<PickedPhoto[]> {
       const name = s.scientificName || s.scientific_name;
       const url = s.photoUrl || s.photo_url;
       if (!name || !url || seen.has(name)) continue;
+      if (!matchKingdom(s, kingdom)) continue;
       seen.add(name);
       photos.push({
         url: String(url).replace('/square.', '/medium.').replace('/small.', '/medium.'),
@@ -151,18 +164,22 @@ export async function pickPhotos(opts: {
   ambiance: Ambiance;
   eventId?: string;
   count?: number;
+  kingdom?: Kingdom;
 }): Promise<PickedPhoto[]> {
   const count = opts.count ?? 5;
+  const kingdom = opts.kingdom ?? 'all';
   const pools: PickedPhoto[][] = [];
   if (opts.category === 'species') {
-    pools.push(await fetchSpeciesPhotos(opts.eventId));
-    pools.push(await fetchWalkerPhotos(opts.eventId, opts.ambiance));
+    pools.push(await fetchSpeciesPhotos(opts.eventId, kingdom));
+    if (kingdom === 'all') pools.push(await fetchWalkerPhotos(opts.eventId, opts.ambiance));
   } else if (opts.category === 'landscape' || opts.category === 'territory') {
     pools.push(await fetchOfficialPhotos(opts.eventId));
     pools.push(await fetchWalkerPhotos(opts.eventId, opts.ambiance));
+    if (kingdom !== 'all') pools.push(await fetchSpeciesPhotos(opts.eventId, kingdom));
   } else {
     pools.push(await fetchWalkerPhotos(opts.eventId, opts.ambiance));
     pools.push(await fetchOfficialPhotos(opts.eventId));
+    if (kingdom !== 'all') pools.push(await fetchSpeciesPhotos(opts.eventId, kingdom));
   }
   const merged: PickedPhoto[] = [];
   const seen = new Set<string>();
@@ -173,7 +190,16 @@ export async function pickPhotos(opts: {
       merged.push(p);
     }
   }
-  // shuffle deterministically-ish
+  // Fallback: si le filtre règne renvoie < 3, compléter avec le pool général
+  if (merged.length < 3 && kingdom !== 'all') {
+    const general = await fetchSpeciesPhotos(opts.eventId, 'all');
+    for (const p of general) {
+      if (seen.has(p.url)) continue;
+      seen.add(p.url);
+      merged.push(p);
+    }
+  }
   merged.sort(() => Math.random() - 0.5);
   return merged.slice(0, Math.max(count, 3));
 }
+
