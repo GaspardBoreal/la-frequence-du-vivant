@@ -147,11 +147,14 @@ const ODONATA_FAMILIES = new Set([
 ]);
 const POLLINATOR_FAMILIES = new Set(['apidae','vespidae','syrphidae','andrenidae','halictidae','megachilidae','bombyliidae']);
 
+const WINGED_NAME_RE = /papillon|lepidopt|azur[ée]|vulcain|belle[- ]?dame|citron|machaon|paon[- ]?du[- ]?jour|tircis|myrtil|pi[ée]ride|nacr[ée]|robert[- ]?le[- ]?diable|amaryllis|demi[- ]?deuil|flamb[ée]|odonat|libellul|agrion|[aæ]schne|calopteryx|abeille|bourdon|syrphe|hym[ée]nopt/i;
+
 function matchKingdom(s: any, kingdom: Kingdom): boolean {
   if (kingdom === 'all') return true;
   const iconic = String(s.iconicTaxon || s.iconic_taxon || s.iconicTaxonName || '').toLowerCase();
   const king = String(s.kingdom || '').toLowerCase();
   const family = String(s.family || '').toLowerCase();
+  const order = String(s.taxonOrder || s.order || '').toLowerCase();
   const rank = String(s.taxonClass || s.class || '').toLowerCase();
   const name = String(s.commonName || s.common_name || s.scientificName || '').toLowerCase();
 
@@ -159,22 +162,25 @@ function matchKingdom(s: any, kingdom: Kingdom): boolean {
   if (kingdom === 'fungi') return iconic === 'fungi' || king === 'fungi' || iconic === 'protozoa';
   if (kingdom === 'winged') {
     if (iconic === 'aves' || rank === 'aves') return true;
+    if (order === 'lepidoptera' || order === 'odonata') return true;
     if (LEPIDOPTERA_FAMILIES.has(family)) return true;
     if (ODONATA_FAMILIES.has(family)) return true;
     if (POLLINATOR_FAMILIES.has(family)) return true;
-    if (iconic === 'insecta' && /papillon|lepidopt|odonat|libellul|abeille|bourdon|syrphe|hymenopt/i.test(name)) return true;
+    if ((iconic === 'insecta' || rank === 'insecta') && WINGED_NAME_RE.test(name)) return true;
     return false;
   }
   if (kingdom === 'small_fauna') {
     if (['insecta','arachnida','reptilia','amphibia','mollusca','mammalia','actinopterygii'].includes(iconic)) {
       // exclure ce qui appartient à "winged" pour éviter les doublons visuels
       if (iconic === 'insecta' && (LEPIDOPTERA_FAMILIES.has(family) || ODONATA_FAMILIES.has(family) || POLLINATOR_FAMILIES.has(family))) return false;
+      if (iconic === 'insecta' && (order === 'lepidoptera' || order === 'odonata')) return false;
       return true;
     }
     return ['reptilia','amphibia','insecta','arachnida'].includes(rank);
   }
   return true;
 }
+
 
 function extractSpeciesUrl(s: any): string | null {
   const raw =
