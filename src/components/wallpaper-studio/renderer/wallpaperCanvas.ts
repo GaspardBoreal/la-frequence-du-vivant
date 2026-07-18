@@ -270,8 +270,22 @@ function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, img
        [w * 0.60, h * 0.82, heroR * 0.36, heroR * 0.30]];
   for (let i = 1; i < imgs.length && i - 1 < sats.length; i++) {
     const [sx, sy, rx, ry] = sats[i - 1];
-    const jx = sx + (rng() - 0.5) * w * 0.02;
-    const jy = sy + (rng() - 0.5) * h * 0.02;
+    let jx = sx + (rng() - 0.5) * w * 0.02;
+    let jy = sy + (rng() - 0.5) * h * 0.02;
+    // Évite la safe zone du CTA : remonte le satellite si sa bbox y tombe.
+    if (safeZone) {
+      let bbox = ellipseBBox(jx, jy, rx, ry);
+      if (bboxInSafeZone(bbox, safeZone)) {
+        jy = safeZone.y - ry - Math.min(w, h) * 0.02;
+        // Si l'écart pousse hors canvas, réduit le rayon et repositionne.
+        if (jy - ry < h * 0.04) { jy = h * 0.20; }
+        bbox = ellipseBBox(jx, jy, rx, ry);
+        // Si toujours dans safe zone (portrait extrême), décale à droite hors safeZone.
+        if (bboxInSafeZone(bbox, safeZone)) {
+          jx = safeZone.x + safeZone.w + rx + w * 0.02;
+        }
+      }
+    }
     drawImageEllipse(ctx, imgs[i], jx, jy, rx, ry, (rng() - 0.5) * 0.35);
     rects.push(ellipseBBox(jx, jy, rx, ry));
   }
