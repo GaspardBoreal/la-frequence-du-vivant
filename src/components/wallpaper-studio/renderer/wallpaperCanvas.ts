@@ -489,9 +489,6 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     } catch (e) { console.warn('[wallpaper] frame failed', e); }
   }
 
-  try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant); }
-  catch (e) { console.warn('[wallpaper] signature failed', e); }
-
   // QR — plus grand et haute correction pour rester scannable
   const qrSize = Math.round(Math.min(width, height) * 0.11);
   const padX = Math.round(width * 0.045);
@@ -499,6 +496,10 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const qy = height - qrSize - padX * 0.5;
   const qrPad = qrSize * 0.14;
   const qrRect: Rect = { x: qx - qrPad, y: qy - qrPad, w: qrSize + qrPad * 2, h: qrSize + qrPad * 2 };
+
+  try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant, qrRect); }
+  catch (e) { console.warn('[wallpaper] signature failed', e); }
+
   try {
     const qrDataUrl = await QRCode.toDataURL(qrTarget, {
       margin: 2,
@@ -514,6 +515,7 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     }
 
   } catch (e) { console.warn('[wallpaper] qr failed', e); }
+
 
 
   if (opts.ctaEnabled) {
