@@ -381,7 +381,9 @@ function drawSignature(
   pal: Palette,
   titleScale: TitleScale,
   variant: Variant,
+  qrRect?: Rect,
 ) {
+
   const panelH = Math.round(h * 0.13);
   const panelY = h - panelH;
   const grad = ctx.createLinearGradient(0, panelY, 0, h);
