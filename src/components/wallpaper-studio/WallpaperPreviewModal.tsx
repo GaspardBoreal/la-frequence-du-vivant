@@ -59,7 +59,8 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
           event_date_snapshot: proposal.event?.date ?? null,
           event_commune_snapshot: proposal.event?.commune ?? null,
           event_gps_snapshot: proposal.event ? { lat: proposal.event.lat, lng: proposal.event.lng } : null,
-        }).select('id').maybeSingle();
+          variant: proposal.variant ?? null,
+        } as never).select('id').maybeSingle();
         if (!error && data?.id) setSavedId(data.id);
       } catch {}
     })();
