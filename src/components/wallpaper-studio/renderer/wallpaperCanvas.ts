@@ -292,10 +292,10 @@ function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, img
   return rects;
 }
 
-function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette): Rect[] {
+function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, safeZone?: Rect | null): Rect[] {
   const rects: Rect[] = [];
   const heroW = w * 0.58;
-  const heroH = h * 0.78;
+  const heroH = safeZone ? h * 0.68 : h * 0.78;
   const heroX = w - heroW - w * 0.04;
   const heroY = h * 0.06;
   if (imgs[0]) { drawImageRoundedRect(ctx, imgs[0], heroX, heroY, heroW, heroH, Math.min(heroW, heroH) * 0.04); rects.push({ x: heroX, y: heroY, w: heroW, h: heroH }); }
@@ -304,17 +304,20 @@ function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, i
   ctx.fillRect(heroX - w * 0.018, heroY + heroH * 0.15, Math.max(2, w * 0.0025), heroH * 0.7);
 
   const thumbW = w * 0.24;
-  const thumbH = h * 0.22;
+  const thumbH = safeZone ? h * 0.18 : h * 0.22;
   const thumbX = w * 0.05;
-  if (imgs[1]) { drawImageRoundedRect(ctx, imgs[1], thumbX, h * 0.42, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: h * 0.42, w: thumbW, h: thumbH }); }
-  if (imgs[2]) { drawImageRoundedRect(ctx, imgs[2], thumbX, h * 0.42 + thumbH + h * 0.03, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: h * 0.42 + thumbH + h * 0.03, w: thumbW, h: thumbH }); }
+  const thumbY1 = safeZone ? h * 0.30 : h * 0.42;
+  if (imgs[1]) { drawImageRoundedRect(ctx, imgs[1], thumbX, thumbY1, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: thumbY1, w: thumbW, h: thumbH }); }
+  const thumbY2 = thumbY1 + thumbH + h * 0.03;
+  if (imgs[2]) { drawImageRoundedRect(ctx, imgs[2], thumbX, thumbY2, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: thumbY2, w: thumbW, h: thumbH }); }
   return rects;
 }
 
-function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[]): Rect[] {
+function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], safeZone?: Rect | null): Rect[] {
   const rects: Rect[] = [];
-  const leftW = w * 0.52;
-  const leftH = h * 0.82;
+  // Si CTA actif, réduit la carte gauche pour libérer le bas-gauche.
+  const leftW = safeZone ? w * 0.52 : w * 0.52;
+  const leftH = safeZone ? h * 0.68 : h * 0.82;
   const leftX = w * 0.04;
   const leftY = h * 0.05;
   if (imgs[0]) { drawImageRoundedRect(ctx, imgs[0], leftX, leftY, leftW, leftH, Math.min(leftW, leftH) * 0.08); rects.push({ x: leftX, y: leftY, w: leftW, h: leftH }); }
@@ -336,11 +339,12 @@ function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, im
   return rects;
 }
 
-function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, rng: () => number): Rect[] {
+function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, rng: () => number, safeZone?: Rect | null): Rect[] {
   const rects: Rect[] = [];
   const cx = w * 0.5;
   const cy = h * 0.44;
   const heroR = Math.min(w, h) * 0.16;
+
 
   const sats: [number, number, number][] = [
     [w * 0.18, h * 0.22, heroR * 0.55],
