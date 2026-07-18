@@ -86,7 +86,7 @@ async function fetchOfficialPhotos(eventId?: string): Promise<PickedPhoto[]> {
     .from('marche_photos')
     .select('url_supabase,url_originale,titre,metadata')
     .order('ordre', { ascending: true })
-    .limit(80);
+    .limit(300);
   if (marcheId) q = q.eq('marche_id', marcheId);
   const { data } = await q;
   return (data || [])
@@ -101,7 +101,7 @@ async function fetchWalkerPhotos(eventId?: string, amb: Ambiance = 'any'): Promi
     .eq('type_media', 'photo')
     .eq('is_public', true)
     .order('created_at', { ascending: false })
-    .limit(150);
+    .limit(400);
   if (eventId) q = q.eq('marche_event_id', eventId);
   const { data } = await q;
   return (data || [])
@@ -112,6 +112,7 @@ async function fetchWalkerPhotos(eventId?: string, amb: Ambiance = 'any'): Promi
     }))
     .filter((p) => !!p.url);
 }
+
 
 const LEPIDOPTERA_FAMILIES = new Set([
   'nymphalidae','pieridae','papilionidae','lycaenidae','hesperiidae',
@@ -169,7 +170,7 @@ async function fetchSpeciesPhotos(eventId?: string, kingdom: Kingdom = 'all'): P
     .from('biodiversity_snapshots')
     .select('species_data,marche_id')
     .order('snapshot_date', { ascending: false })
-    .limit(20);
+    .limit(60);
   if (eventId) {
     const { data: ev } = await supabase.from('marche_events').select('marche_id').eq('id', eventId).maybeSingle();
     const mid = (ev as any)?.marche_id;
@@ -177,7 +178,7 @@ async function fetchSpeciesPhotos(eventId?: string, kingdom: Kingdom = 'all'): P
   }
   const { data } = await q;
   const photos: PickedPhoto[] = [];
-  const seen = new Set<string>();
+  const seenUrl = new Set<string>();
   let scanned = 0;
   let matched = 0;
   for (const snap of data || []) {
@@ -185,19 +186,29 @@ async function fetchSpeciesPhotos(eventId?: string, kingdom: Kingdom = 'all'): P
     for (const s of species) {
       scanned++;
       const name = s.scientificName || s.scientific_name;
-      const url = extractSpeciesUrl(s);
-      if (!name || !url || seen.has(name)) continue;
+      if (!name) continue;
       if (!matchKingdom(s, kingdom)) continue;
       matched++;
-      seen.add(name);
-      photos.push({
-        url,
-        scientificName: name,
-        attribution: s.commonName || s.common_name,
-      });
-      if (photos.length >= 80) break;
+      // Collecte de TOUTES les photos de l'espèce (photoData + photos[])
+      const urls: string[] = [];
+      if (s.photoData?.url) urls.push(String(s.photoData.url));
+      if (Array.isArray(s.photos)) for (const u of s.photos) if (u) urls.push(String(u));
+      if (s.photoUrl) urls.push(String(s.photoUrl));
+      if (s.photo_url) urls.push(String(s.photo_url));
+      for (const raw of urls) {
+        const url = raw.replace('/square.', '/medium.').replace('/small.', '/medium.');
+        if (seenUrl.has(url)) continue;
+        seenUrl.add(url);
+        photos.push({
+          url,
+          scientificName: name,
+          attribution: s.commonName || s.common_name,
+        });
+        if (photos.length >= 400) break;
+      }
+      if (photos.length >= 400) break;
     }
-    if (photos.length >= 80) break;
+    if (photos.length >= 400) break;
   }
   console.debug('[wallpaper] species pool', { kingdom, scanned, matched, kept: photos.length });
   return photos;
@@ -206,6 +217,7 @@ async function fetchSpeciesPhotos(eventId?: string, kingdom: Kingdom = 'all'): P
 export interface PickResult {
   photos: PickedPhoto[];
   kingdomShortfall: boolean;
+  poolSize: number;
 }
 
 export async function pickPhotos(opts: {
@@ -219,88 +231,131 @@ export async function pickPhotos(opts: {
   return result.photos;
 }
 
+// Mulberry32 — shuffle déterministe par seed
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const a = arr.slice();
+  let s = seed >>> 0;
+  const rand = () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export async function pickPhotosDetailed(opts: {
   category: Category;
   ambiance: Ambiance;
   eventId?: string;
   count?: number;
   kingdom?: Kingdom;
+  excludeUrls?: Set<string>;
+  seed?: number;
 }): Promise<PickResult> {
   const count = opts.count ?? 5;
   const kingdom = opts.kingdom ?? 'all';
+  const excluded = opts.excludeUrls ?? new Set<string>();
+  const seed = opts.seed ?? Date.now();
 
-  const speciesPool = await fetchSpeciesPhotos(opts.eventId, kingdom);
-  const walkerPool = kingdom === 'all' || opts.category !== 'species'
+  const speciesRaw = await fetchSpeciesPhotos(opts.eventId, kingdom);
+  const walkerRaw = kingdom === 'all' || opts.category !== 'species'
     ? await fetchWalkerPhotos(opts.eventId, opts.ambiance)
     : [];
-  const officialPool = opts.category !== 'species'
+  const officialRaw = opts.category !== 'species'
     ? await fetchOfficialPhotos(opts.eventId)
     : [];
 
-  // Ordre de priorité selon la catégorie ET le règne
-  const pools: PickedPhoto[][] = [];
-  if (kingdom !== 'all') {
-    // Le règne domine : les espèces filtrées passent d'abord
-    pools.push(speciesPool);
-    if (opts.category !== 'species') {
-      pools.push(walkerPool, officialPool);
-    }
-  } else if (opts.category === 'species') {
-    pools.push(speciesPool, walkerPool);
-  } else if (opts.category === 'landscape' || opts.category === 'territory') {
-    pools.push(officialPool, walkerPool);
-  } else {
-    pools.push(walkerPool, officialPool);
+  const totalPool = speciesRaw.length + walkerRaw.length + officialRaw.length;
+
+  // Filtre exclusion + shuffle par pool
+  const filter = (arr: PickedPhoto[]) => arr.filter((p) => !excluded.has(p.url));
+  let speciesPool = seededShuffle(filter(speciesRaw), seed);
+  let walkerPool = seededShuffle(filter(walkerRaw), seed + 101);
+  let officialPool = seededShuffle(filter(officialRaw), seed + 211);
+
+  // Si l'exclusion vide un pool essentiel, on relâche pour cette catégorie
+  if (kingdom !== 'all' && speciesPool.length < 3 && speciesRaw.length >= 3) {
+    speciesPool = seededShuffle(speciesRaw, seed);
   }
 
+  // Ordre des pools selon catégorie/règne (priorité au règne quand spécifié)
+  const orderedPools: PickedPhoto[][] = [];
+  if (kingdom !== 'all') {
+    orderedPools.push(speciesPool);
+    if (opts.category !== 'species') orderedPools.push(walkerPool, officialPool);
+  } else if (opts.category === 'species') {
+    orderedPools.push(speciesPool, walkerPool);
+  } else if (opts.category === 'landscape' || opts.category === 'territory') {
+    orderedPools.push(officialPool, walkerPool, speciesPool);
+  } else {
+    orderedPools.push(walkerPool, officialPool, speciesPool);
+  }
+
+  // Round-robin entre pools : 1 espèce, 1 marcheur, 1 officiel, 1 espèce…
   const merged: PickedPhoto[] = [];
   const seen = new Set<string>();
-  for (const pool of pools) {
-    for (const p of pool) {
-      if (seen.has(p.url)) continue;
-      seen.add(p.url);
-      merged.push(p);
+  const seenSpecies = new Set<string>();
+  const cursors = orderedPools.map(() => 0);
+  const target = Math.max(count, 6) * 4; // large marge pour dédup + diversité
+  let guard = 0;
+  while (merged.length < target && guard < 5000) {
+    guard++;
+    let advanced = false;
+    for (let i = 0; i < orderedPools.length; i++) {
+      const pool = orderedPools[i];
+      while (cursors[i] < pool.length) {
+        const p = pool[cursors[i]++];
+        if (seen.has(p.url)) continue;
+        if (p.scientificName && seenSpecies.has(p.scientificName)) continue;
+        seen.add(p.url);
+        if (p.scientificName) seenSpecies.add(p.scientificName);
+        merged.push(p);
+        advanced = true;
+        break;
+      }
+      if (merged.length >= target) break;
     }
+    if (!advanced) break;
   }
 
-  // Détection de pénurie sur le règne demandé
   const kingdomShortfall = kingdom !== 'all' && speciesPool.length < 3;
 
-  if (kingdomShortfall) {
-    // Compléter avec un pool général pour ne pas laisser un canvas vide,
-    // mais on remonte le flag pour prévenir l'utilisateur.
-    const general = await fetchSpeciesPhotos(opts.eventId, 'all');
+  // Fallback si vraiment vide
+  if (merged.length < 3 && kingdom !== 'all') {
+    const general = seededShuffle(await fetchSpeciesPhotos(opts.eventId, 'all'), seed + 313);
     for (const p of general) {
       if (seen.has(p.url)) continue;
+      if (p.scientificName && seenSpecies.has(p.scientificName)) continue;
       seen.add(p.url);
+      if (p.scientificName) seenSpecies.add(p.scientificName);
       merged.push(p);
-    }
-    if (walkerPool.length === 0) {
-      const w = await fetchWalkerPhotos(opts.eventId, opts.ambiance);
-      for (const p of w) {
-        if (seen.has(p.url)) continue;
-        seen.add(p.url);
-        merged.push(p);
-      }
+      if (merged.length >= target) break;
     }
   }
 
-  // Mélange léger tout en gardant les premières photos "règne" en tête
-  const head = merged.slice(0, Math.min(speciesPool.length, count));
-  const tail = merged.slice(head.length).sort(() => Math.random() - 0.5);
-  const final = [...head.sort(() => Math.random() - 0.5), ...tail].slice(0, Math.max(count, 3));
+  const final = merged.slice(0, Math.max(count, 3));
 
   console.debug('[wallpaper] pickPhotos', {
     category: opts.category,
     kingdom,
+    seed,
+    excluded: excluded.size,
     speciesPool: speciesPool.length,
     walkerPool: walkerPool.length,
     officialPool: officialPool.length,
     returned: final.length,
+    totalPool,
     kingdomShortfall,
   });
 
-  return { photos: final, kingdomShortfall };
+  return { photos: final, kingdomShortfall, poolSize: totalPool };
 }
+
 
 

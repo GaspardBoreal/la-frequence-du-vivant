@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wand2, Sparkles, MapPin, Feather, Users, Compass, Sun, Sunrise, Sunset, Moon, Loader2, Check, Leaf, Bird, Bug, Sprout, Globe2, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -81,6 +81,16 @@ const WallpaperStudio: React.FC = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [selected, setSelected] = useState<Proposal | null>(null);
   const [comboOpen, setComboOpen] = useState(false);
+  const [cycleCount, setCycleCount] = useState(0);
+  const [seenCount, setSeenCount] = useState(0);
+  const seenUrlsRef = useRef<Set<string>>(new Set());
+  const lastPoolSizeRef = useRef<number>(0);
+
+  function resetCycles() {
+    seenUrlsRef.current = new Set();
+    setSeenCount(0);
+    setCycleCount(0);
+  }
 
   useEffect(() => {
     fetchEvents().then(setEvents);
@@ -100,16 +110,30 @@ const WallpaperStudio: React.FC = () => {
       const evt = eventId ? await fetchEventById(eventId) : null;
       const baseSeed = Date.now();
       const results: Proposal[] = [];
+      // Auto-reset si le pool est presque épuisé (>80 % vu)
+      if (lastPoolSizeRef.current > 0 && seenUrlsRef.current.size > lastPoolSizeRef.current * 0.8) {
+        seenUrlsRef.current = new Set();
+        setSeenCount(0);
+        setCycleCount(0);
+        const { toast } = await import('sonner');
+        toast.info('Tu as parcouru toutes les vues disponibles — nouveau cycle 🌱');
+      }
       for (let i = 0; i < VARIANT_SEQUENCE.length; i++) {
         const { variant, titleScale } = VARIANT_SEQUENCE[i];
         const seed = baseSeed + i * 137;
         try {
-          const { photos, kingdomShortfall } = await pickPhotosDetailed({ category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom });
+          const { photos, kingdomShortfall, poolSize } = await pickPhotosDetailed({
+            category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom,
+            excludeUrls: seenUrlsRef.current, seed,
+          });
+          if (poolSize > 0) lastPoolSizeRef.current = poolSize;
           if (i === 0 && kingdomShortfall && kingdom !== 'all') {
             const { toast } = await import('sonner');
             toast.info(`Peu d'observations pour ce règne — mosaïque enrichie avec des scènes du territoire.`);
           }
           if (photos.length === 0) { noPhotos++; continue; }
+          // Mémoriser les URLs pour éviter les répétitions au prochain clic
+          photos.forEach((p) => seenUrlsRef.current.add(p.url));
           const qrTarget = ctaEnabled
             ? 'https://la-frequence-du-vivant.com/marches-du-vivant/connexion?tab=register'
             : evt?.slug
@@ -166,8 +190,13 @@ const WallpaperStudio: React.FC = () => {
       toast.error('Erreur inattendue lors de la génération.');
     } finally {
       setGenerating(false);
+      setSeenCount(seenUrlsRef.current.size);
+      setCycleCount((c) => c + 1);
     }
   }
+
+  // Reset le cycle quand l'utilisateur change les paramètres essentiels
+  useEffect(() => { resetCycles(); }, [category, kingdom, eventId, ambiance, scope]);
 
 
 
@@ -395,7 +424,7 @@ const WallpaperStudio: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex justify-center"
+              className="flex flex-col items-center gap-3"
             >
               <Button
                 size="lg"
@@ -405,10 +434,24 @@ const WallpaperStudio: React.FC = () => {
               >
                 {generating ? (
                   <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Composition en cours…</>
+                ) : cycleCount > 0 ? (
+                  <><Wand2 className="w-5 h-5 mr-2" /> Générer 4 nouvelles propositions</>
                 ) : (
                   <><Wand2 className="w-5 h-5 mr-2" /> Générer 4 propositions</>
                 )}
               </Button>
+              {cycleCount > 0 && (
+                <div className="flex items-center gap-3 text-xs text-white/60 font-crimson">
+                  <span>Cycle {cycleCount} · {seenCount} vue{seenCount > 1 ? 's' : ''} déjà explorée{seenCount > 1 ? 's' : ''}</span>
+                  <button
+                    type="button"
+                    onClick={resetCycles}
+                    className="text-amber-300/80 hover:text-amber-200 underline underline-offset-2 transition-colors"
+                  >
+                    ↻ Repartir de zéro
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
 
