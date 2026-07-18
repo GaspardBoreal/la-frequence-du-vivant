@@ -609,6 +609,7 @@ function drawCommunityCta(
   pal: Palette,
   obstacles: Rect[],
   brandLine: string = '',
+  safeZone?: Rect | null,
 ) {
   const isPortrait = h > w;
   const text = 'Rejoignez la communauté des Marcheurs du Vivant';
@@ -618,10 +619,11 @@ function drawCommunityCta(
   ctx.save();
   ctx.textBaseline = 'alphabetic';
 
-  // Try up to two size tiers (normal, compact) to find a slot without image collision.
+  // Trois paliers : normal, compact, ultra-compact — pour trouver un slot sans collision.
   const tiers = [
     { cta: Math.max(14, Math.round(h * (isPortrait ? 0.018 : 0.022))), sub: Math.max(11, Math.round(h * (isPortrait ? 0.012 : 0.014))), padMul: 1.1 },
     { cta: Math.max(12, Math.round(h * (isPortrait ? 0.014 : 0.017))), sub: Math.max(10, Math.round(h * (isPortrait ? 0.010 : 0.012))), padMul: 0.85 },
+    { cta: Math.max(10, Math.round(h * (isPortrait ? 0.012 : 0.014))), sub: Math.max(9,  Math.round(h * (isPortrait ? 0.009 : 0.011))), padMul: 0.7 },
   ];
 
   const margin = Math.round(Math.min(w, h) * 0.012);
