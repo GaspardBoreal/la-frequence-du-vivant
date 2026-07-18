@@ -452,27 +452,31 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const ctx = canvas.getContext('2d')!;
   const pal = PALETTES[ambiance] || PALETTES.any;
 
-  // Rich Jardin-inspired backdrop
-  drawJardinBackdrop(ctx, width, height, pal, rng);
+  try { drawJardinBackdrop(ctx, width, height, pal, rng); }
+  catch (e) { console.warn('[wallpaper] backdrop failed', e); }
 
   const imgs = (await Promise.all(photos.slice(0, 6).map((p) => loadImage(p.url))))
     .filter((x): x is HTMLImageElement => !!x);
 
   if (imgs.length > 0) {
-    if (variant === 'organic') variantOrganic(ctx, width, height, imgs, rng);
-    else if (variant === 'editorial') variantEditorial(ctx, width, height, imgs, pal);
-    else if (variant === 'diptyque') variantDiptyque(ctx, width, height, imgs);
-    else if (variant === 'constellation') variantConstellation(ctx, width, height, imgs, pal, rng);
+    try {
+      if (variant === 'organic') variantOrganic(ctx, width, height, imgs, rng);
+      else if (variant === 'editorial') variantEditorial(ctx, width, height, imgs, pal);
+      else if (variant === 'diptyque') variantDiptyque(ctx, width, height, imgs);
+      else if (variant === 'constellation') variantConstellation(ctx, width, height, imgs, pal, rng);
+    } catch (e) { console.warn('[wallpaper] variant failed', e); }
   }
 
-  // Editorial: subtle gold hairline frame
   if (variant === 'editorial') {
-    ctx.strokeStyle = `${pal.gold}55`;
-    ctx.lineWidth = Math.max(1, height * 0.001);
-    ctx.strokeRect(width * 0.02, height * 0.02, width * 0.96, height * 0.96);
+    try {
+      ctx.strokeStyle = `${pal.gold}55`;
+      ctx.lineWidth = Math.max(1, height * 0.001);
+      ctx.strokeRect(width * 0.02, height * 0.02, width * 0.96, height * 0.96);
+    } catch (e) { console.warn('[wallpaper] frame failed', e); }
   }
 
-  drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant);
+  try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant); }
+  catch (e) { console.warn('[wallpaper] signature failed', e); }
 
   // QR
   const qrSize = Math.round(Math.min(width, height) * 0.06);
@@ -492,16 +496,20 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
       ctx.fillRect(qx - pad, qy - pad, qrSize + pad * 2, qrSize + pad * 2);
       ctx.drawImage(qrImg, qx, qy, qrSize, qrSize);
     }
-  } catch {}
+  } catch (e) { console.warn('[wallpaper] qr failed', e); }
 
-  // Discreet community CTA (optional)
   if (opts.ctaEnabled) {
-    drawCommunityCta(ctx, width, height, pal, variant, qx, qy);
+    try { drawCommunityCta(ctx, width, height, pal, variant, qx, qy); }
+    catch (e) { console.warn('[wallpaper] cta failed', e); }
   }
 
-  drawGrain(ctx, width, height, 10);
+  // Grain (skip silently if canvas is CORS-tainted)
+  try { drawGrain(ctx, width, height, 10); }
+  catch (e) { console.warn('[wallpaper] grain skipped (tainted canvas)', e); }
+
   return canvas;
 }
+
 
 function drawCommunityCta(
   ctx: CanvasRenderingContext2D,
