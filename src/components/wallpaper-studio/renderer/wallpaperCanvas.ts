@@ -237,7 +237,21 @@ type Rect = { x: number; y: number; w: number; h: number };
 const ellipseBBox = (cx: number, cy: number, rx: number, ry: number): Rect =>
   ({ x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 });
 
-function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], rng: () => number): Rect[] {
+/**
+ * Zone réservée au CTA "Rejoignez la communauté" — aucune image n'y est dessinée
+ * quand ctaEnabled=true. Basse-gauche pour laisser QR + titre en bas-droit.
+ */
+export function getCtaSafeZone(w: number, h: number): Rect {
+  const isPortrait = h > w;
+  return isPortrait
+    ? { x: 0, y: h * 0.83, w: w * 0.62, h: h * 0.16 }
+    : { x: 0, y: h * 0.76, w: w * 0.44, h: h * 0.22 };
+}
+
+const bboxInSafeZone = (r: Rect, sz?: Rect | null): boolean =>
+  !!sz && !(r.x + r.w < sz.x || sz.x + sz.w < r.x || r.y + r.h < sz.y || sz.y + sz.h < r.y);
+
+function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], rng: () => number, safeZone?: Rect | null): Rect[] {
   const rects: Rect[] = [];
   const isPortrait = h > w;
   const cx = w * (isPortrait ? 0.5 : 0.42);
