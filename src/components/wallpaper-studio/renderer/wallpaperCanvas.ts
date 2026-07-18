@@ -567,21 +567,37 @@ function drawCommunityCta(
   ];
 
   const margin = Math.round(Math.min(w, h) * 0.012);
-  let chosen: { x: number; y: number; plaqueW: number; plaqueH: number; ctaSize: number; subSize: number; padX: number; padY: number; dotR: number; gap: number } | null = null;
+  const brandUpper = brand ? brand.toUpperCase() : '';
+  let chosen: { x: number; y: number; plaqueW: number; plaqueH: number; ctaSize: number; subSize: number; brandSize: number; padX: number; padY: number; dotR: number; gap: number } | null = null;
 
-  for (const tier of tiers) {
+  const measureTier = (tier: { cta: number; sub: number; padMul: number }) => {
     const ctaSize = tier.cta;
     const subSize = tier.sub;
+    const brandSize = brandUpper ? Math.max(9, Math.round(ctaSize * 0.52)) : 0;
     ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
     const tm = ctx.measureText(text);
     ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
     const sm = ctx.measureText(sub);
+    let bm = 0;
+    if (brandUpper) {
+      ctx.font = `600 ${brandSize}px "Inter", "Libre Baskerville", sans-serif`;
+      // Emulate letter-spacing in width measurement (~0.18em tracking).
+      bm = ctx.measureText(brandUpper).width + brandSize * 0.18 * (brandUpper.length - 1);
+    }
     const padX = Math.round(ctaSize * tier.padMul);
     const padY = Math.round(ctaSize * 0.65);
     const dotR = Math.round(ctaSize * 0.28);
     const gap = Math.round(ctaSize * 0.55);
-    const plaqueW = dotR * 2 + gap + Math.max(tm.width, sm.width) + padX * 2;
-    const plaqueH = ctaSize + subSize * 1.6 + padY * 2;
+    const contentW = Math.max(tm.width, sm.width, bm);
+    const plaqueW = dotR * 2 + gap + contentW + padX * 2;
+    const brandBlockH = brandUpper ? brandSize * 1.6 : 0;
+    const plaqueH = brandBlockH + ctaSize + subSize * 1.6 + padY * 2;
+    return { ctaSize, subSize, brandSize, padX, padY, dotR, gap, plaqueW, plaqueH };
+  };
+
+  for (const tier of tiers) {
+    const m = measureTier(tier);
+    const { plaqueW, plaqueH } = m;
 
     const edgeX = Math.round(w * 0.03);
     const edgeY = Math.round(h * 0.03);
@@ -602,7 +618,7 @@ function drawCommunityCta(
       const rect: Rect = { x: c.x, y: c.y, w: plaqueW, h: plaqueH };
       const collides = obstacles.some((o) => rectsIntersect(rect, o, margin));
       if (!collides) {
-        chosen = { x: c.x, y: c.y, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap };
+        chosen = { x: c.x, y: c.y, ...m };
         break;
       }
     }
@@ -611,23 +627,11 @@ function drawCommunityCta(
 
   // Absolute fallback: compact bottom-left, ignore collision (last resort).
   if (!chosen) {
-    const tier = tiers[1];
-    const ctaSize = tier.cta;
-    const subSize = tier.sub;
-    ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
-    const tm = ctx.measureText(text);
-    ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
-    const sm = ctx.measureText(sub);
-    const padX = Math.round(ctaSize * tier.padMul);
-    const padY = Math.round(ctaSize * 0.65);
-    const dotR = Math.round(ctaSize * 0.28);
-    const gap = Math.round(ctaSize * 0.55);
-    const plaqueW = dotR * 2 + gap + Math.max(tm.width, sm.width) + padX * 2;
-    const plaqueH = ctaSize + subSize * 1.6 + padY * 2;
-    chosen = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - plaqueH, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap };
+    const m = measureTier(tiers[1]);
+    chosen = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - m.plaqueH, ...m };
   }
 
-  const { x: plaqueX, y: plaqueY, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap } = chosen;
+  const { x: plaqueX, y: plaqueY, plaqueW, plaqueH, ctaSize, subSize, brandSize, padX, padY, dotR, gap } = chosen;
 
 
   // Ombre + plaque sombre arrondie
