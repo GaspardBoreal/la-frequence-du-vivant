@@ -510,35 +510,96 @@ function drawCommunityCta(
   variant: Variant,
   qx: number, qy: number,
 ) {
-  const ctaSize = Math.round(h * 0.018);
-  const subSize = Math.round(h * 0.012);
+  const isPortrait = h > w;
+  const ctaSize = Math.max(14, Math.round(h * (isPortrait ? 0.018 : 0.022)));
+  const subSize = Math.max(11, Math.round(h * (isPortrait ? 0.012 : 0.014)));
   const text = 'Rejoignez la communauté des Marcheurs du Vivant';
   const sub = 'la-frequence-du-vivant.com';
+
   ctx.save();
   ctx.textBaseline = 'alphabetic';
-  ctx.font = `italic 500 ${ctaSize}px "Crimson Text", Georgia, serif`;
+
+  ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
   const tm = ctx.measureText(text);
-  const sm = (() => {
-    ctx.font = `300 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
-    return ctx.measureText(sub);
-  })();
+  ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
+  const sm = ctx.measureText(sub);
 
-  // Position: à gauche du QR, aligné verticalement sur son centre
-  const rightLimit = qx - w * 0.015;
-  const cx = rightLimit;
-  const centerY = qy + (h * 0.03);
+  const padX = Math.round(ctaSize * 1.1);
+  const padY = Math.round(ctaSize * 0.65);
+  const dotR = Math.round(ctaSize * 0.28);
+  const gap = Math.round(ctaSize * 0.55);
+  const contentW = dotR * 2 + gap + Math.max(tm.width, sm.width);
+  const contentH = ctaSize + subSize * 1.6;
+  const plaqueW = contentW + padX * 2;
+  const plaqueH = contentH + padY * 2;
 
-  ctx.font = `italic 500 ${ctaSize}px "Crimson Text", Georgia, serif`;
-  ctx.fillStyle = 'rgba(232, 192, 122, 0.82)';
-  ctx.fillText(text, cx - tm.width, centerY);
+  const panelH = Math.round(h * 0.13);
+  const marginBottom = panelH + Math.round(h * 0.015);
+  let plaqueX: number;
+  let plaqueY = h - marginBottom - plaqueH;
 
-  // Ligne dorée fine sous le texte
-  ctx.fillStyle = 'rgba(232, 192, 122, 0.45)';
-  ctx.fillRect(cx - Math.min(tm.width, w * 0.14), centerY + ctaSize * 0.35, Math.min(tm.width, w * 0.14), Math.max(1, h * 0.0015));
+  if (isPortrait) {
+    plaqueX = (w - plaqueW) / 2;
+  } else if (variant === 'editorial') {
+    plaqueX = Math.round(w * 0.05);
+  } else if (variant === 'diptyque') {
+    plaqueX = w - plaqueW - Math.round(w * 0.04);
+  } else {
+    plaqueX = (w - plaqueW) / 2;
+  }
 
-  ctx.font = `300 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
-  ctx.fillStyle = 'rgba(245, 230, 200, 0.6)';
-  ctx.fillText(sub, cx - sm.width, centerY + ctaSize * 1.5);
+  // Anti-collision QR
+  const qrLeft = qx - Math.round(w * 0.015);
+  if (plaqueX + plaqueW > qrLeft && plaqueY + plaqueH > qy - h * 0.01) {
+    plaqueY = qy - plaqueH - Math.round(h * 0.015);
+    if (plaqueX + plaqueW > qrLeft) {
+      plaqueX = Math.max(w * 0.03, qrLeft - plaqueW);
+    }
+  }
+
+  // Ombre + plaque sombre arrondie
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = ctaSize * 1.4;
+  ctx.shadowOffsetY = ctaSize * 0.15;
+  roundedRectPath(ctx, plaqueX, plaqueY, plaqueW, plaqueH, plaqueH * 0.35);
+  ctx.fillStyle = 'rgba(10, 8, 4, 0.64)';
+  ctx.fill();
+  ctx.restore();
+
+  // Liseré doré
+  roundedRectPath(ctx, plaqueX + 0.5, plaqueY + 0.5, plaqueW - 1, plaqueH - 1, plaqueH * 0.35);
+  ctx.strokeStyle = 'rgba(232, 192, 122, 0.45)';
+  ctx.lineWidth = Math.max(1, h * 0.0008);
+  ctx.stroke();
+
+  // Pastille dorée
+  const dotCx = plaqueX + padX + dotR;
+  const dotCy = plaqueY + plaqueH / 2;
+  const halo = ctx.createRadialGradient(dotCx, dotCy, 0, dotCx, dotCy, dotR * 2.6);
+  halo.addColorStop(0, `${pal.gold}cc`);
+  halo.addColorStop(1, 'rgba(232, 192, 122, 0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(dotCx, dotCy, dotR * 2.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = pal.gold;
+  ctx.beginPath();
+  ctx.arc(dotCx, dotCy, dotR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Texte principal (crème lumineuse)
+  const textX = dotCx + dotR + gap;
+  const textY = plaqueY + padY + ctaSize;
+  ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
+  ctx.fillStyle = '#faf3e0';
+  ctx.fillText(text, textX, textY);
+
+  // URL en doré
+  ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
+  ctx.fillStyle = 'rgba(232, 192, 122, 0.92)';
+  ctx.fillText(sub, textX, textY + subSize * 1.4);
+
   ctx.restore();
 }
 
