@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wand2, Sparkles, MapPin, Feather, Users, Compass, Sun, Sunrise, Sunset, Moon, Loader2, Check } from 'lucide-react';
+import { Wand2, Sparkles, MapPin, Feather, Users, Compass, Sun, Sunrise, Sunset, Moon, Loader2, Check, Leaf, Bird, Bug, Sprout, Globe2, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
-import { pickPhotos, fetchEvents, fetchEventById, type EventSnapshot, type PickedPhoto } from './renderer/photoPicker';
+import { pickPhotos, fetchEvents, fetchEventById, type EventSnapshot, type PickedPhoto, type Kingdom } from './renderer/photoPicker';
 import { renderWallpaper, type Theme, type Variant, type TitleScale } from './renderer/wallpaperCanvas';
 import WallpaperPreviewModal from './WallpaperPreviewModal';
 import CommunityGallery from './CommunityGallery';
