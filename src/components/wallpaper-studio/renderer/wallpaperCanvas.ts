@@ -438,16 +438,29 @@ function drawSignature(
   }
   // No date/commune/GPS/tagline — only the event title when an event is selected.
 
-  // Réserver un couloir à droite pour le QR agrandi
-  const qrReserve = Math.round(Math.min(w, h) * 0.11) + Math.round(w * 0.045) * 1.6;
-  const rightX = w - padX - qrReserve;
-  // Aligner la baseline du titre événement avec le bas du QR code
-  const qrBottom = qrRect ? qrRect.y + qrRect.h : panelY - Math.round(h * 0.05) + smallSize;
-  const metaBaseY = event?.title ? qrBottom - smallSize : baseY;
+  // Titre événement : sous le QR, bord droit aligné sur le bord droit du QR
+  const gap = Math.round(h * 0.012);
+  const rightEdge = qrRect ? qrRect.x + qrRect.w : w - padX;
+  const topBelowQr = qrRect ? qrRect.y + qrRect.h + gap : panelY;
+  const maxTextWidth = rightEdge - padX;
   lines.forEach((l, i) => {
-    const m = ctx.measureText(l);
-    ctx.fillText(l, rightX - m.width, metaBaseY + i * smallSize * 1.5);
+    let text = l;
+    let m = ctx.measureText(text);
+    if (m.width > maxTextWidth) {
+      while (text.length > 1 && ctx.measureText(text + '…').width > maxTextWidth) {
+        text = text.slice(0, -1);
+      }
+      text = text + '…';
+      m = ctx.measureText(text);
+    }
+    // halo léger pour lisibilité
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(text, rightEdge - m.width, topBelowQr + i * smallSize * 1.5);
+    ctx.restore();
   });
+
 
 
 }
