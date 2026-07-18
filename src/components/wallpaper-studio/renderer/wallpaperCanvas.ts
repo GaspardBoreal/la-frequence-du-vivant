@@ -432,13 +432,16 @@ function drawSignature(
   }
   // No date/commune/GPS/tagline — only the event title when an event is selected.
 
-  const rightX = w - padX;
-  // Remonter la ligne meta quand le QR agrandi occupe le coin bas-droit
-  const metaBaseY = event?.title ? panelY - smallSize * 1.8 : baseY;
+  // Réserver un couloir à droite pour le QR agrandi
+  const qrReserve = Math.round(Math.min(w, h) * 0.11) + Math.round(w * 0.045) * 1.6;
+  const rightX = w - padX - qrReserve;
+  // Remonter la ligne meta bien au-dessus du QR
+  const metaBaseY = event?.title ? panelY - Math.round(h * 0.05) : baseY;
   lines.forEach((l, i) => {
     const m = ctx.measureText(l);
     ctx.fillText(l, rightX - m.width, metaBaseY + i * smallSize * 1.5);
   });
+
 }
 
 
