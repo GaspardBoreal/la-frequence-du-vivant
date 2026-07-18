@@ -27,6 +27,8 @@ interface Proposal {
   ambiance: Ambiance;
   variant: Variant;
   titleScale: TitleScale;
+  kingdom: Kingdom;
+  ctaEnabled: boolean;
 }
 
 const VARIANT_SEQUENCE: { variant: Variant; titleScale: TitleScale }[] = [
