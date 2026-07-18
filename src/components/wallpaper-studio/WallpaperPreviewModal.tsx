@@ -17,6 +17,8 @@ interface Proposal {
   ambiance: string;
   variant?: Variant;
   titleScale?: TitleScale;
+  kingdom?: string;
+  ctaEnabled?: boolean;
 }
 
 const RESOLUTIONS: { id: string; label: string; w: number; h: number; icon: React.ElementType }[] = [
@@ -60,6 +62,8 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
           event_commune_snapshot: proposal.event?.commune ?? null,
           event_gps_snapshot: proposal.event ? { lat: proposal.event.lat, lng: proposal.event.lng } : null,
           variant: proposal.variant ?? null,
+          kingdom: proposal.kingdom ?? null,
+          cta_enabled: proposal.ctaEnabled ?? false,
         } as never).select('id').maybeSingle();
         if (!error && data?.id) setSavedId(data.id);
       } catch {}
@@ -70,7 +74,9 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
     if (!hasSource) return;
     setDownloading(true);
     try {
-      const qrTarget = proposal.event?.slug
+      const qrTarget = proposal.ctaEnabled
+        ? 'https://la-frequence-du-vivant.com/marches-du-vivant/connexion?tab=register'
+        : proposal.event?.slug
         ? `https://la-frequence-du-vivant.com/m/${proposal.event.slug}`
         : proposal.theme === 'frequence'
         ? 'https://la-frequence-du-vivant.com'
@@ -87,6 +93,7 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
         seed: proposal.seed,
         variant: proposal.variant,
         titleScale: proposal.titleScale,
+        ctaEnabled: proposal.ctaEnabled,
       });
       const blob = await canvasToBlob(canvas, 'image/jpeg', 0.93);
       const label = proposal.theme === 'frequence' ? 'frequence-du-vivant' : 'marches-du-vivant';

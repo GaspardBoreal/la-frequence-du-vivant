@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wand2, Sparkles, MapPin, Feather, Users, Compass, Sun, Sunrise, Sunset, Moon, Loader2, Check } from 'lucide-react';
+import { Wand2, Sparkles, MapPin, Feather, Users, Compass, Sun, Sunrise, Sunset, Moon, Loader2, Check, Leaf, Bird, Bug, Sprout, Globe2, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
-import { pickPhotos, fetchEvents, fetchEventById, type EventSnapshot, type PickedPhoto } from './renderer/photoPicker';
+import { pickPhotos, fetchEvents, fetchEventById, type EventSnapshot, type PickedPhoto, type Kingdom } from './renderer/photoPicker';
 import { renderWallpaper, type Theme, type Variant, type TitleScale } from './renderer/wallpaperCanvas';
 import WallpaperPreviewModal from './WallpaperPreviewModal';
 import CommunityGallery from './CommunityGallery';
@@ -26,6 +27,8 @@ interface Proposal {
   ambiance: Ambiance;
   variant: Variant;
   titleScale: TitleScale;
+  kingdom: Kingdom;
+  ctaEnabled: boolean;
 }
 
 const VARIANT_SEQUENCE: { variant: Variant; titleScale: TitleScale }[] = [
@@ -54,6 +57,14 @@ const AMBIANCES: { id: Ambiance; label: string; icon: React.ElementType }[] = [
   { id: 'night', label: 'Nuit', icon: Moon },
 ];
 
+const KINGDOMS: { id: Kingdom; label: string; icon: React.ElementType; hint: string }[] = [
+  { id: 'all', label: 'Tout le vivant', icon: Globe2, hint: 'Toutes espèces confondues' },
+  { id: 'flora', label: 'Flore', icon: Leaf, hint: 'Plantes, arbres, fleurs' },
+  { id: 'winged', label: 'Faune ailée', icon: Bird, hint: 'Oiseaux & papillons' },
+  { id: 'small_fauna', label: 'Petite faune', icon: Bug, hint: 'Insectes, reptiles, amphibiens' },
+  { id: 'fungi', label: 'Champignons', icon: Sprout, hint: 'Champignons & lichens' },
+];
+
 const PREVIEW_W = 800;
 const PREVIEW_H = 450;
 
@@ -62,8 +73,10 @@ const WallpaperStudio: React.FC = () => {
   const [scope, setScope] = useState<Scope | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [events, setEvents] = useState<EventSnapshot[]>([]);
+  const [kingdom, setKingdom] = useState<Kingdom | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [ambiance, setAmbiance] = useState<Ambiance | null>(null);
+  const [ctaEnabled, setCtaEnabled] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [selected, setSelected] = useState<Proposal | null>(null);
@@ -73,11 +86,12 @@ const WallpaperStudio: React.FC = () => {
     fetchEvents().then(setEvents);
   }, []);
 
-  const canGenerate = theme && scope && (scope === 'all' || eventId) && category && ambiance;
+  const canGenerate = theme && scope && (scope === 'all' || eventId) && kingdom && category && ambiance;
   const selectedEvent = useMemo(() => events.find((e) => e.id === eventId) || null, [events, eventId]);
+  const kingdomLabel = KINGDOMS.find((k) => k.id === kingdom)?.label;
 
   async function handleGenerate() {
-    if (!theme || !category || !ambiance) return;
+    if (!theme || !category || !ambiance || !kingdom) return;
     setGenerating(true);
     setProposals([]);
     try {
@@ -87,9 +101,11 @@ const WallpaperStudio: React.FC = () => {
       for (let i = 0; i < VARIANT_SEQUENCE.length; i++) {
         const { variant, titleScale } = VARIANT_SEQUENCE[i];
         const seed = baseSeed + i * 137;
-        const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 6 });
+        const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom });
         if (photos.length === 0) continue;
-        const qrTarget = evt?.slug
+        const qrTarget = ctaEnabled
+          ? 'https://la-frequence-du-vivant.com/marches-du-vivant/connexion?tab=register'
+          : evt?.slug
           ? `https://la-frequence-du-vivant.com/m/${evt.slug}`
           : theme === 'frequence'
           ? 'https://la-frequence-du-vivant.com'
@@ -106,6 +122,8 @@ const WallpaperStudio: React.FC = () => {
           seed,
           variant,
           titleScale,
+          ctaEnabled,
+          kingdomLabel,
         });
         results.push({
           seed,
@@ -117,6 +135,8 @@ const WallpaperStudio: React.FC = () => {
           ambiance,
           variant,
           titleScale,
+          kingdom,
+          ctaEnabled,
         });
         setProposals([...results]);
       }
@@ -124,6 +144,8 @@ const WallpaperStudio: React.FC = () => {
       setGenerating(false);
     }
   }
+
+
 
   return (
     <section id="studio-fonds-ecran" className="relative z-10 py-16">
@@ -244,9 +266,34 @@ const WallpaperStudio: React.FC = () => {
             </WizardStep>
           )}
 
-          {/* Step 3: Category + Ambiance */}
+          {/* Step 3: Kingdom (règne du vivant) */}
           {theme && scope && (scope === 'all' || eventId) && (
-            <WizardStep number={3} title="Angle & ambiance" active={!category || !ambiance}>
+            <WizardStep number={3} title="Règne du vivant à mettre en lumière" active={!kingdom}>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {KINGDOMS.map((k) => {
+                  const Icon = k.icon;
+                  return (
+                    <button
+                      key={k.id}
+                      onClick={() => setKingdom(k.id)}
+                      className={cn(
+                        'rounded-xl border p-4 text-left transition-all bg-card/40 backdrop-blur-sm hover:bg-card/60',
+                        kingdom === k.id ? 'border-amber-500 ring-2 ring-amber-500/40' : 'border-border/40',
+                      )}
+                    >
+                      <Icon className="w-5 h-5 mb-2 text-emerald-600 dark:text-emerald-400" />
+                      <div className="font-medium text-sm">{k.label}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{k.hint}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </WizardStep>
+          )}
+
+          {/* Step 4: Category + Ambiance */}
+          {theme && scope && (scope === 'all' || eventId) && kingdom && (
+            <WizardStep number={4} title="Angle & ambiance" active={!category || !ambiance}>
               <div className="space-y-6">
                 <div>
                   <div className="text-sm text-muted-foreground mb-2">Catégorie</div>
@@ -296,6 +343,27 @@ const WallpaperStudio: React.FC = () => {
               </div>
             </WizardStep>
           )}
+
+          {/* CTA option */}
+          {canGenerate && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between gap-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-emerald-950/30 to-amber-950/20 backdrop-blur-sm px-5 py-4"
+            >
+              <div className="flex items-start gap-3">
+                <Heart className="w-5 h-5 mt-0.5 text-amber-400" />
+                <div>
+                  <div className="font-crimson italic text-foreground">Inclure un appel discret à la communauté</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    « Rejoignez la communauté des Marcheurs du Vivant » + QR vers l'inscription
+                  </div>
+                </div>
+              </div>
+              <Switch checked={ctaEnabled} onCheckedChange={setCtaEnabled} />
+            </motion.div>
+          )}
+
 
           {/* CTA */}
           {canGenerate && (
@@ -370,6 +438,8 @@ const WallpaperStudio: React.FC = () => {
               ambiance: item.ambiance as Ambiance,
               variant: ((item as { variant?: string }).variant as Variant) ?? 'organic',
               titleScale: 'small',
+              kingdom: ((item as { kingdom?: string }).kingdom as Kingdom) ?? 'all',
+              ctaEnabled: Boolean((item as { cta_enabled?: boolean }).cta_enabled),
             });
           }} />
         </div>

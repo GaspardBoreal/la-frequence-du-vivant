@@ -17,6 +17,8 @@ export interface RenderOptions {
   seed: number;
   variant?: Variant;
   titleScale?: TitleScale;
+  ctaEnabled?: boolean;
+  kingdomLabel?: string;
 }
 
 interface Palette {
@@ -473,8 +475,11 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant);
 
   // QR
+  const qrSize = Math.round(Math.min(width, height) * 0.06);
+  const padX = Math.round(width * 0.045);
+  const qx = width - qrSize - padX * 0.4;
+  const qy = height - qrSize - padX * 0.4;
   try {
-    const qrSize = Math.round(Math.min(width, height) * 0.06);
     const qrDataUrl = await QRCode.toDataURL(qrTarget, {
       margin: 1,
       color: { dark: pal.ink, light: pal.paper },
@@ -482,9 +487,6 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     });
     const qrImg = await loadImage(qrDataUrl);
     if (qrImg) {
-      const padX = Math.round(width * 0.045);
-      const qx = width - qrSize - padX * 0.4;
-      const qy = height - qrSize - padX * 0.4;
       const pad = qrSize * 0.08;
       ctx.fillStyle = pal.paper;
       ctx.fillRect(qx - pad, qy - pad, qrSize + pad * 2, qrSize + pad * 2);
@@ -492,9 +494,54 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     }
   } catch {}
 
+  // Discreet community CTA (optional)
+  if (opts.ctaEnabled) {
+    drawCommunityCta(ctx, width, height, pal, variant, qx, qy);
+  }
+
   drawGrain(ctx, width, height, 10);
   return canvas;
 }
+
+function drawCommunityCta(
+  ctx: CanvasRenderingContext2D,
+  w: number, h: number,
+  pal: Palette,
+  variant: Variant,
+  qx: number, qy: number,
+) {
+  const ctaSize = Math.round(h * 0.018);
+  const subSize = Math.round(h * 0.012);
+  const text = 'Rejoignez la communauté des Marcheurs du Vivant';
+  const sub = 'la-frequence-du-vivant.com';
+  ctx.save();
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `italic 500 ${ctaSize}px "Crimson Text", Georgia, serif`;
+  const tm = ctx.measureText(text);
+  const sm = (() => {
+    ctx.font = `300 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
+    return ctx.measureText(sub);
+  })();
+
+  // Position: à gauche du QR, aligné verticalement sur son centre
+  const rightLimit = qx - w * 0.015;
+  const cx = rightLimit;
+  const centerY = qy + (h * 0.03);
+
+  ctx.font = `italic 500 ${ctaSize}px "Crimson Text", Georgia, serif`;
+  ctx.fillStyle = 'rgba(232, 192, 122, 0.82)';
+  ctx.fillText(text, cx - tm.width, centerY);
+
+  // Ligne dorée fine sous le texte
+  ctx.fillStyle = 'rgba(232, 192, 122, 0.45)';
+  ctx.fillRect(cx - Math.min(tm.width, w * 0.14), centerY + ctaSize * 0.35, Math.min(tm.width, w * 0.14), Math.max(1, h * 0.0015));
+
+  ctx.font = `300 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
+  ctx.fillStyle = 'rgba(245, 230, 200, 0.6)';
+  ctx.fillText(sub, cx - sm.width, centerY + ctaSize * 1.5);
+  ctx.restore();
+}
+
 
 export function canvasToBlob(canvas: HTMLCanvasElement, type = 'image/jpeg', quality = 0.92): Promise<Blob> {
   return new Promise((resolve, reject) => {

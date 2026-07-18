@@ -6433,6 +6433,7 @@ export type Database = {
           ambiance: string
           category: string
           created_at: string
+          cta_enabled: boolean
           download_count: number
           event_commune_snapshot: string | null
           event_date_snapshot: string | null
@@ -6441,6 +6442,7 @@ export type Database = {
           event_name_snapshot: string | null
           id: string
           is_public: boolean
+          kingdom: string | null
           photo_urls: Json
           preview_url: string | null
           resolution: string
@@ -6455,6 +6457,7 @@ export type Database = {
           ambiance: string
           category: string
           created_at?: string
+          cta_enabled?: boolean
           download_count?: number
           event_commune_snapshot?: string | null
           event_date_snapshot?: string | null
@@ -6463,6 +6466,7 @@ export type Database = {
           event_name_snapshot?: string | null
           id?: string
           is_public?: boolean
+          kingdom?: string | null
           photo_urls?: Json
           preview_url?: string | null
           resolution: string
@@ -6477,6 +6481,7 @@ export type Database = {
           ambiance?: string
           category?: string
           created_at?: string
+          cta_enabled?: boolean
           download_count?: number
           event_commune_snapshot?: string | null
           event_date_snapshot?: string | null
@@ -6485,6 +6490,7 @@ export type Database = {
           event_name_snapshot?: string | null
           id?: string
           is_public?: boolean
+          kingdom?: string | null
           photo_urls?: Json
           preview_url?: string | null
           resolution?: string
