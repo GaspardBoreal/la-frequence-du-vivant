@@ -521,59 +521,97 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
 }
 
 
+function rectsIntersect(a: Rect, b: Rect, margin = 0): boolean {
+  return !(
+    a.x + a.w + margin <= b.x ||
+    b.x + b.w + margin <= a.x ||
+    a.y + a.h + margin <= b.y ||
+    b.y + b.h + margin <= a.y
+  );
+}
+
 function drawCommunityCta(
   ctx: CanvasRenderingContext2D,
   w: number, h: number,
   pal: Palette,
-  variant: Variant,
-  qx: number, qy: number,
+  obstacles: Rect[],
 ) {
   const isPortrait = h > w;
-  const ctaSize = Math.max(14, Math.round(h * (isPortrait ? 0.018 : 0.022)));
-  const subSize = Math.max(11, Math.round(h * (isPortrait ? 0.012 : 0.014)));
   const text = 'Rejoignez la communauté des Marcheurs du Vivant';
   const sub = 'la-frequence-du-vivant.com';
 
   ctx.save();
   ctx.textBaseline = 'alphabetic';
 
-  ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
-  const tm = ctx.measureText(text);
-  ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
-  const sm = ctx.measureText(sub);
+  // Try up to two size tiers (normal, compact) to find a slot without image collision.
+  const tiers = [
+    { cta: Math.max(14, Math.round(h * (isPortrait ? 0.018 : 0.022))), sub: Math.max(11, Math.round(h * (isPortrait ? 0.012 : 0.014))), padMul: 1.1 },
+    { cta: Math.max(12, Math.round(h * (isPortrait ? 0.014 : 0.017))), sub: Math.max(10, Math.round(h * (isPortrait ? 0.010 : 0.012))), padMul: 0.85 },
+  ];
 
-  const padX = Math.round(ctaSize * 1.1);
-  const padY = Math.round(ctaSize * 0.65);
-  const dotR = Math.round(ctaSize * 0.28);
-  const gap = Math.round(ctaSize * 0.55);
-  const contentW = dotR * 2 + gap + Math.max(tm.width, sm.width);
-  const contentH = ctaSize + subSize * 1.6;
-  const plaqueW = contentW + padX * 2;
-  const plaqueH = contentH + padY * 2;
+  const margin = Math.round(Math.min(w, h) * 0.012);
+  let chosen: { x: number; y: number; plaqueW: number; plaqueH: number; ctaSize: number; subSize: number; padX: number; padY: number; dotR: number; gap: number } | null = null;
 
-  const panelH = Math.round(h * 0.13);
-  const marginBottom = panelH + Math.round(h * 0.015);
-  let plaqueX: number;
-  let plaqueY = h - marginBottom - plaqueH;
+  for (const tier of tiers) {
+    const ctaSize = tier.cta;
+    const subSize = tier.sub;
+    ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
+    const tm = ctx.measureText(text);
+    ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
+    const sm = ctx.measureText(sub);
+    const padX = Math.round(ctaSize * tier.padMul);
+    const padY = Math.round(ctaSize * 0.65);
+    const dotR = Math.round(ctaSize * 0.28);
+    const gap = Math.round(ctaSize * 0.55);
+    const plaqueW = dotR * 2 + gap + Math.max(tm.width, sm.width) + padX * 2;
+    const plaqueH = ctaSize + subSize * 1.6 + padY * 2;
 
-  if (isPortrait) {
-    plaqueX = (w - plaqueW) / 2;
-  } else if (variant === 'editorial') {
-    plaqueX = Math.round(w * 0.05);
-  } else if (variant === 'diptyque') {
-    plaqueX = w - plaqueW - Math.round(w * 0.04);
-  } else {
-    plaqueX = (w - plaqueW) / 2;
-  }
+    const edgeX = Math.round(w * 0.03);
+    const edgeY = Math.round(h * 0.03);
+    // Candidate anchors covering the whole canvas — CTA never over image.
+    const candidates: Array<{ x: number; y: number }> = [
+      { x: edgeX, y: h - edgeY - plaqueH },                    // bottom-left
+      { x: w - edgeX - plaqueW, y: h - edgeY - plaqueH },      // bottom-right
+      { x: (w - plaqueW) / 2, y: h - edgeY - plaqueH },        // bottom-center
+      { x: edgeX, y: edgeY },                                  // top-left
+      { x: w - edgeX - plaqueW, y: edgeY },                    // top-right
+      { x: (w - plaqueW) / 2, y: edgeY },                      // top-center
+      { x: edgeX, y: (h - plaqueH) / 2 },                      // middle-left
+      { x: w - edgeX - plaqueW, y: (h - plaqueH) / 2 },        // middle-right
+    ];
 
-  // Anti-collision QR
-  const qrLeft = qx - Math.round(w * 0.015);
-  if (plaqueX + plaqueW > qrLeft && plaqueY + plaqueH > qy - h * 0.01) {
-    plaqueY = qy - plaqueH - Math.round(h * 0.015);
-    if (plaqueX + plaqueW > qrLeft) {
-      plaqueX = Math.max(w * 0.03, qrLeft - plaqueW);
+    for (const c of candidates) {
+      if (c.x < 0 || c.y < 0 || c.x + plaqueW > w || c.y + plaqueH > h) continue;
+      const rect: Rect = { x: c.x, y: c.y, w: plaqueW, h: plaqueH };
+      const collides = obstacles.some((o) => rectsIntersect(rect, o, margin));
+      if (!collides) {
+        chosen = { x: c.x, y: c.y, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap };
+        break;
+      }
     }
+    if (chosen) break;
   }
+
+  // Absolute fallback: compact bottom-left, ignore collision (last resort).
+  if (!chosen) {
+    const tier = tiers[1];
+    const ctaSize = tier.cta;
+    const subSize = tier.sub;
+    ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
+    const tm = ctx.measureText(text);
+    ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
+    const sm = ctx.measureText(sub);
+    const padX = Math.round(ctaSize * tier.padMul);
+    const padY = Math.round(ctaSize * 0.65);
+    const dotR = Math.round(ctaSize * 0.28);
+    const gap = Math.round(ctaSize * 0.55);
+    const plaqueW = dotR * 2 + gap + Math.max(tm.width, sm.width) + padX * 2;
+    const plaqueH = ctaSize + subSize * 1.6 + padY * 2;
+    chosen = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - plaqueH, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap };
+  }
+
+  const { x: plaqueX, y: plaqueY, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap } = chosen;
+
 
   // Ombre + plaque sombre arrondie
   ctx.save();
