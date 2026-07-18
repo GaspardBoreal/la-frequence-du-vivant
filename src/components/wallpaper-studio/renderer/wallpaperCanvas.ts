@@ -233,12 +233,17 @@ function drawImageRoundedRect(
 
 // ============= VARIANTS =============
 
-function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], rng: () => number) {
+type Rect = { x: number; y: number; w: number; h: number };
+const ellipseBBox = (cx: number, cy: number, rx: number, ry: number): Rect =>
+  ({ x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 });
+
+function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], rng: () => number): Rect[] {
+  const rects: Rect[] = [];
   const isPortrait = h > w;
   const cx = w * (isPortrait ? 0.5 : 0.42);
   const cy = h * (isPortrait ? 0.36 : 0.44);
   const heroR = Math.min(w, h) * (isPortrait ? 0.34 : 0.31);
-  if (imgs[0]) drawImageEllipse(ctx, imgs[0], cx, cy, heroR, heroR, 0);
+  if (imgs[0]) { drawImageEllipse(ctx, imgs[0], cx, cy, heroR, heroR, 0); rects.push(ellipseBBox(cx, cy, heroR, heroR)); }
 
   const sats: [number, number, number, number][] = isPortrait
     ? [[w * 0.78, h * 0.22, heroR * 0.45, heroR * 0.45],
@@ -251,39 +256,41 @@ function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, img
        [w * 0.60, h * 0.82, heroR * 0.36, heroR * 0.30]];
   for (let i = 1; i < imgs.length && i - 1 < sats.length; i++) {
     const [sx, sy, rx, ry] = sats[i - 1];
-    drawImageEllipse(ctx, imgs[i], sx + (rng() - 0.5) * w * 0.02, sy + (rng() - 0.5) * h * 0.02, rx, ry, (rng() - 0.5) * 0.35);
+    const jx = sx + (rng() - 0.5) * w * 0.02;
+    const jy = sy + (rng() - 0.5) * h * 0.02;
+    drawImageEllipse(ctx, imgs[i], jx, jy, rx, ry, (rng() - 0.5) * 0.35);
+    rects.push(ellipseBBox(jx, jy, rx, ry));
   }
+  return rects;
 }
 
-function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette) {
-  // Big hero on right (60% width, full height minus signature)
+function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette): Rect[] {
+  const rects: Rect[] = [];
   const heroW = w * 0.58;
   const heroH = h * 0.78;
   const heroX = w - heroW - w * 0.04;
   const heroY = h * 0.06;
-  if (imgs[0]) drawImageRoundedRect(ctx, imgs[0], heroX, heroY, heroW, heroH, Math.min(heroW, heroH) * 0.04);
+  if (imgs[0]) { drawImageRoundedRect(ctx, imgs[0], heroX, heroY, heroW, heroH, Math.min(heroW, heroH) * 0.04); rects.push({ x: heroX, y: heroY, w: heroW, h: heroH }); }
 
-  // Vertical gold rule left of hero
   ctx.fillStyle = pal.gold;
   ctx.fillRect(heroX - w * 0.018, heroY + heroH * 0.15, Math.max(2, w * 0.0025), heroH * 0.7);
 
-  // Two small thumbs stacked bottom-left
   const thumbW = w * 0.24;
   const thumbH = h * 0.22;
   const thumbX = w * 0.05;
-  if (imgs[1]) drawImageRoundedRect(ctx, imgs[1], thumbX, h * 0.42, thumbW, thumbH, thumbW * 0.06);
-  if (imgs[2]) drawImageRoundedRect(ctx, imgs[2], thumbX, h * 0.42 + thumbH + h * 0.03, thumbW, thumbH, thumbW * 0.06);
+  if (imgs[1]) { drawImageRoundedRect(ctx, imgs[1], thumbX, h * 0.42, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: h * 0.42, w: thumbW, h: thumbH }); }
+  if (imgs[2]) { drawImageRoundedRect(ctx, imgs[2], thumbX, h * 0.42 + thumbH + h * 0.03, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: h * 0.42 + thumbH + h * 0.03, w: thumbW, h: thumbH }); }
+  return rects;
 }
 
-function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[]) {
-  // Left hero rectangle 55%
+function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[]): Rect[] {
+  const rects: Rect[] = [];
   const leftW = w * 0.52;
   const leftH = h * 0.82;
   const leftX = w * 0.04;
   const leftY = h * 0.05;
-  if (imgs[0]) drawImageRoundedRect(ctx, imgs[0], leftX, leftY, leftW, leftH, Math.min(leftW, leftH) * 0.08);
+  if (imgs[0]) { drawImageRoundedRect(ctx, imgs[0], leftX, leftY, leftW, leftH, Math.min(leftW, leftH) * 0.08); rects.push({ x: leftX, y: leftY, w: leftW, h: leftH }); }
 
-  // Right: 3 overlapping tilted cards
   const rightCx = w * 0.75;
   const rightCy = h * 0.42;
   const cardW = w * 0.28;
@@ -292,17 +299,21 @@ function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, im
   const offsets: [number, number][] = [[-w * 0.04, -h * 0.08], [0, 0], [w * 0.04, h * 0.10]];
   for (let i = 1; i < Math.min(4, imgs.length); i++) {
     const [ox, oy] = offsets[i - 1];
-    drawImageRoundedRect(ctx, imgs[i], rightCx - cardW / 2 + ox, rightCy - cardH / 2 + oy, cardW, cardH, cardW * 0.06, tilts[i - 1]);
+    const x = rightCx - cardW / 2 + ox;
+    const y = rightCy - cardH / 2 + oy;
+    drawImageRoundedRect(ctx, imgs[i], x, y, cardW, cardH, cardW * 0.06, tilts[i - 1]);
+    const pad = Math.max(cardW, cardH) * 0.12;
+    rects.push({ x: x - pad, y: y - pad, w: cardW + pad * 2, h: cardH + pad * 2 });
   }
+  return rects;
 }
 
-function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, rng: () => number) {
+function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, rng: () => number): Rect[] {
+  const rects: Rect[] = [];
   const cx = w * 0.5;
   const cy = h * 0.44;
   const heroR = Math.min(w, h) * 0.16;
 
-  // Draw connecting curves first (behind)
-  const nodes: [number, number, number][] = [[cx, cy, heroR]];
   const sats: [number, number, number][] = [
     [w * 0.18, h * 0.22, heroR * 0.55],
     [w * 0.82, h * 0.20, heroR * 0.5],
@@ -327,7 +338,6 @@ function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: numbe
   }
   ctx.restore();
 
-  // Small bright dots at endpoints
   for (const s of shuffled) {
     ctx.fillStyle = pal.gold;
     ctx.beginPath();
@@ -335,15 +345,14 @@ function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: numbe
     ctx.fill();
   }
 
-  // Hero
-  if (imgs[0]) drawImageEllipse(ctx, imgs[0], cx, cy, heroR, heroR, 0);
+  if (imgs[0]) { drawImageEllipse(ctx, imgs[0], cx, cy, heroR, heroR, 0); rects.push(ellipseBBox(cx, cy, heroR, heroR)); }
 
-  // Satellites (varied sizes)
   for (let i = 1; i < imgs.length && i - 1 < shuffled.length; i++) {
     const [sx, sy, sr] = shuffled[i - 1];
     drawImageEllipse(ctx, imgs[i], sx, sy, sr, sr, 0);
-    nodes.push([sx, sy, sr]);
+    rects.push(ellipseBBox(sx, sy, sr, sr));
   }
+  return rects;
 }
 
 // ============= SIGNATURE =============
