@@ -1,37 +1,33 @@
-## Objectif
-Rendre le CTA « Rejoignez la communauté des Marcheurs du Vivant » parfaitement lisible et élégant sur toutes les variantes (Organic, Editorial, Diptyque, Constellation) et tous formats (paysage, portrait mobile, ultra-wide).
-
 ## Diagnostic
-Dans `wallpaperCanvas.ts > drawCommunityCta` :
-- Le texte est posé sans fond, à ~82 % d'opacité doré, souvent sur une photo ou zone claire → contraste insuffisant.
-- La taille (h × 0.018) devient minuscule en paysage et se chevauche avec la signature bottom (`drawSignature`, panel h × 0.13).
-- Aligné à droite juste à gauche du QR → collision fréquente avec le bloc meta droit de la signature.
-- Aucun padding de sécurité, pas de plaque de fond, pas de scaling par variante.
+Le bouton reste sur « Composition en cours… » puis se termine sans afficher de proposition. Deux causes possibles (masquées par le `try/finally` silencieux dans `handleGenerate`) :
 
-## Correctifs (fichier unique : `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts`)
+1. **Erreur runtime dans `renderWallpaper`** — probablement `canvas.toDataURL()` qui jette une `SecurityError` si une photo iNat s'est chargée sans en-tête CORS et a « pollué » le canvas. Le `drawGrain` interne est protégé, mais `toDataURL` non → le `for` s'arrête à la 1re proposition, `results` reste vide, aucune preview n'apparaît.
+2. **`pickPhotos` renvoie 0 photo** pour la combinaison choisie (règne × catégorie × marche) → le `continue` saute les 4 itérations et on termine avec 0 proposition, sans message.
 
-### 1. Refonte de `drawCommunityCta`
-- **Pilule/plaque de fond** : rectangle arrondi semi-transparent noir (`rgba(10,8,4,0.55)`) avec bordure dorée 1px `rgba(232,192,122,0.35)` + léger blur d'ombre → garantit le contraste sur n'importe quelle photo.
-- **Typo plus généreuse** : `ctaSize = max(14px, h × 0.022)` (au lieu de 0.018) ; sous-titre `max(11px, h × 0.014)`.
-- **Couleurs** : titre en `#f5e6c8` opacité 1.0 (paper doré chaud), sous-titre `rgba(245,230,200,0.85)`.
-- **Petit pictogramme feuille/point doré** à gauche du texte pour ancrer visuellement.
-- **Padding interne** : 20 × 12 px scalé.
+Aucune des deux ne remonte à l'UI : le `catch` est absent et l'utilisateur ne voit rien.
 
-### 2. Placement anti-collision
-- Positionner la plaque **au-dessus du panel signature** (donc dans la zone `y = h - panelH - ctaHeight - marge`), centrée horizontalement OU alignée à gauche selon la variante :
-  - Organic / Constellation : centrée horizontalement en bas.
-  - Editorial : alignée à gauche sous le trait doré du titre (le titre étant en haut).
-  - Diptyque : alignée à droite sous les cartes.
-- Toujours laisser une marge de `w × 0.02` avec le QR (jamais dessous).
+## Correctifs
 
-### 3. Adapter la signature pour laisser la place
-- Si `ctaEnabled`, réduire légèrement `panelH` de 0.13 → 0.11 et remonter le CTA juste au-dessus, avec un espacement de `h × 0.015`.
+### 1. `src/components/wallpaper-studio/WallpaperStudio.tsx`
+- Ajouter `try/catch` par itération dans `handleGenerate`, logger l'erreur (`console.error`) et continuer avec la variante suivante.
+- Ajouter un état `error: string | null` et un toast (via `sonner`) affiché si :
+  - 0 photo trouvée pour la combinaison → « Aucune photo disponible pour ce règne/cette marche — essaie une autre combinaison ».
+  - Toutes les propositions ont échoué → message d'erreur explicite.
+- Toujours passer `crossOrigin` déjà géré côté renderer, mais fallback : si `canvas.toDataURL` jette, régénérer sans grain (le grain utilise `getImageData` qui pollue) — voir #2.
 
-### 4. Format portrait mobile (h > w)
-- Empiler CTA + sous-titre + QR verticalement, texte centré, plaque pleine largeur `w × 0.86`.
+### 2. `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts`
+- Envelopper le rendu final dans un try/catch qui, si `toDataURL` ou `getImageData` échoue à cause de CORS, refait un rendu **sans `drawGrain`** (car c'est cet appel qui rend le canvas "tainted" côté détection).
+- Plus proprement : détecter en amont si une image est CORS-tainted (test rapide via `getImageData` sur 1px après chargement) et sauter le grain si oui.
+- Ajouter un `console.warn` explicite en cas de canvas pollué pour tracer.
+
+### 3. Renforcer `renderWallpaper`
+- Enrouler chaque bloc (backdrop, variant, signature, QR, CTA) dans un try/catch local avec `console.warn('[wallpaper] step X failed', e)` pour que même si le CTA nouveau plante, on retourne quand même le canvas complet.
 
 ## Résultat attendu
-CTA toujours lisible (plaque sombre + texte crème + liseré doré), harmonieux avec la charte Jardin, sans jamais chevaucher le QR ni la signature, quelle que soit la variante ou la résolution.
+- Si les photos existent : les 4 propositions s'affichent (au pire sans grain sur les canvases pollués).
+- Si aucune photo n'est trouvée : un message clair remplace le silence.
+- La console remonte enfin l'erreur exacte pour tout diagnostic futur.
 
-## Fichier modifié
-- `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts` (uniquement `drawCommunityCta` + petit ajustement dans `renderWallpaper` pour passer la variante/format et réduire le panel si CTA actif).
+## Fichiers modifiés
+- `src/components/wallpaper-studio/WallpaperStudio.tsx`
+- `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts`

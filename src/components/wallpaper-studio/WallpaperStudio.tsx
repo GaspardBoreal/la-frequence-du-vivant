@@ -94,6 +94,8 @@ const WallpaperStudio: React.FC = () => {
     if (!theme || !category || !ambiance || !kingdom) return;
     setGenerating(true);
     setProposals([]);
+    let failures = 0;
+    let noPhotos = 0;
     try {
       const evt = eventId ? await fetchEventById(eventId) : null;
       const baseSeed = Date.now();
@@ -101,49 +103,68 @@ const WallpaperStudio: React.FC = () => {
       for (let i = 0; i < VARIANT_SEQUENCE.length; i++) {
         const { variant, titleScale } = VARIANT_SEQUENCE[i];
         const seed = baseSeed + i * 137;
-        const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom });
-        if (photos.length === 0) continue;
-        const qrTarget = ctaEnabled
-          ? 'https://la-frequence-du-vivant.com/marches-du-vivant/connexion?tab=register'
-          : evt?.slug
-          ? `https://la-frequence-du-vivant.com/m/${evt.slug}`
-          : theme === 'frequence'
-          ? 'https://la-frequence-du-vivant.com'
-          : 'https://la-frequence-du-vivant.com/marches-du-vivant';
-        const canvas = await renderWallpaper({
-          width: PREVIEW_W,
-          height: PREVIEW_H,
-          theme,
-          photos,
-          event: evt,
-          category,
-          ambiance,
-          qrTarget,
-          seed,
-          variant,
-          titleScale,
-          ctaEnabled,
-          kingdomLabel,
-        });
-        results.push({
-          seed,
-          previewUrl: canvas.toDataURL('image/jpeg', 0.85),
-          photos,
-          event: evt,
-          theme,
-          category,
-          ambiance,
-          variant,
-          titleScale,
-          kingdom,
-          ctaEnabled,
-        });
-        setProposals([...results]);
+        try {
+          const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom });
+          if (photos.length === 0) { noPhotos++; continue; }
+          const qrTarget = ctaEnabled
+            ? 'https://la-frequence-du-vivant.com/marches-du-vivant/connexion?tab=register'
+            : evt?.slug
+            ? `https://la-frequence-du-vivant.com/m/${evt.slug}`
+            : theme === 'frequence'
+            ? 'https://la-frequence-du-vivant.com'
+            : 'https://la-frequence-du-vivant.com/marches-du-vivant';
+          const canvas = await renderWallpaper({
+            width: PREVIEW_W,
+            height: PREVIEW_H,
+            theme,
+            photos,
+            event: evt,
+            category,
+            ambiance,
+            qrTarget,
+            seed,
+            variant,
+            titleScale,
+            ctaEnabled,
+            kingdomLabel,
+          });
+          let previewUrl: string;
+          try {
+            previewUrl = canvas.toDataURL('image/jpeg', 0.85);
+          } catch (err) {
+            console.warn('[wallpaper] toDataURL tainted, falling back to PNG blob url', err);
+            previewUrl = await new Promise<string>((resolve, reject) => {
+              canvas.toBlob((b) => b ? resolve(URL.createObjectURL(b)) : reject(new Error('toBlob null')), 'image/png');
+            }).catch(() => '');
+            if (!previewUrl) { failures++; continue; }
+          }
+          results.push({
+            seed, previewUrl, photos, event: evt, theme, category, ambiance,
+            variant, titleScale, kingdom, ctaEnabled,
+          });
+          setProposals([...results]);
+        } catch (err) {
+          console.error('[wallpaper] variant generation failed', variant, err);
+          failures++;
+        }
       }
+      if (results.length === 0) {
+        const { toast } = await import('sonner');
+        if (noPhotos > 0 && failures === 0) {
+          toast.error('Aucune photo disponible pour cette combinaison. Essaie un autre règne ou une autre marche.');
+        } else {
+          toast.error('La composition a échoué. Ouvre la console pour voir le détail — puis réessaie.');
+        }
+      }
+    } catch (err) {
+      console.error('[wallpaper] handleGenerate crashed', err);
+      const { toast } = await import('sonner');
+      toast.error('Erreur inattendue lors de la génération.');
     } finally {
       setGenerating(false);
     }
   }
+
 
 
 
