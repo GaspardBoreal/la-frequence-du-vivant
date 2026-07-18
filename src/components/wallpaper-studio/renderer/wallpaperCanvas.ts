@@ -550,10 +550,12 @@ function drawCommunityCta(
   w: number, h: number,
   pal: Palette,
   obstacles: Rect[],
+  brandLine: string = '',
 ) {
   const isPortrait = h > w;
   const text = 'Rejoignez la communauté des Marcheurs du Vivant';
   const sub = 'la-frequence-du-vivant.com';
+  const brand = brandLine;
 
   ctx.save();
   ctx.textBaseline = 'alphabetic';
