@@ -81,6 +81,16 @@ const WallpaperStudio: React.FC = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [selected, setSelected] = useState<Proposal | null>(null);
   const [comboOpen, setComboOpen] = useState(false);
+  const [cycleCount, setCycleCount] = useState(0);
+  const [seenCount, setSeenCount] = useState(0);
+  const seenUrlsRef = useRef<Set<string>>(new Set());
+  const lastPoolSizeRef = useRef<number>(0);
+
+  function resetCycles() {
+    seenUrlsRef.current = new Set();
+    setSeenCount(0);
+    setCycleCount(0);
+  }
 
   useEffect(() => {
     fetchEvents().then(setEvents);
