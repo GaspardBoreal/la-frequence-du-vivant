@@ -57,6 +57,14 @@ const AMBIANCES: { id: Ambiance; label: string; icon: React.ElementType }[] = [
   { id: 'night', label: 'Nuit', icon: Moon },
 ];
 
+const KINGDOMS: { id: Kingdom; label: string; icon: React.ElementType; hint: string }[] = [
+  { id: 'all', label: 'Tout le vivant', icon: Globe2, hint: 'Toutes espèces confondues' },
+  { id: 'flora', label: 'Flore', icon: Leaf, hint: 'Plantes, arbres, fleurs' },
+  { id: 'winged', label: 'Faune ailée', icon: Bird, hint: 'Oiseaux & papillons' },
+  { id: 'small_fauna', label: 'Petite faune', icon: Bug, hint: 'Insectes, reptiles, amphibiens' },
+  { id: 'fungi', label: 'Champignons', icon: Sprout, hint: 'Champignons & lichens' },
+];
+
 const PREVIEW_W = 800;
 const PREVIEW_H = 450;
 
@@ -65,8 +73,10 @@ const WallpaperStudio: React.FC = () => {
   const [scope, setScope] = useState<Scope | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [events, setEvents] = useState<EventSnapshot[]>([]);
+  const [kingdom, setKingdom] = useState<Kingdom | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [ambiance, setAmbiance] = useState<Ambiance | null>(null);
+  const [ctaEnabled, setCtaEnabled] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [selected, setSelected] = useState<Proposal | null>(null);
@@ -76,11 +86,12 @@ const WallpaperStudio: React.FC = () => {
     fetchEvents().then(setEvents);
   }, []);
 
-  const canGenerate = theme && scope && (scope === 'all' || eventId) && category && ambiance;
+  const canGenerate = theme && scope && (scope === 'all' || eventId) && kingdom && category && ambiance;
   const selectedEvent = useMemo(() => events.find((e) => e.id === eventId) || null, [events, eventId]);
+  const kingdomLabel = KINGDOMS.find((k) => k.id === kingdom)?.label;
 
   async function handleGenerate() {
-    if (!theme || !category || !ambiance) return;
+    if (!theme || !category || !ambiance || !kingdom) return;
     setGenerating(true);
     setProposals([]);
     try {
@@ -90,9 +101,11 @@ const WallpaperStudio: React.FC = () => {
       for (let i = 0; i < VARIANT_SEQUENCE.length; i++) {
         const { variant, titleScale } = VARIANT_SEQUENCE[i];
         const seed = baseSeed + i * 137;
-        const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 6 });
+        const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom });
         if (photos.length === 0) continue;
-        const qrTarget = evt?.slug
+        const qrTarget = ctaEnabled
+          ? 'https://la-frequence-du-vivant.com/marches-du-vivant/connexion?tab=register'
+          : evt?.slug
           ? `https://la-frequence-du-vivant.com/m/${evt.slug}`
           : theme === 'frequence'
           ? 'https://la-frequence-du-vivant.com'
@@ -109,6 +122,8 @@ const WallpaperStudio: React.FC = () => {
           seed,
           variant,
           titleScale,
+          ctaEnabled,
+          kingdomLabel,
         });
         results.push({
           seed,
@@ -120,6 +135,8 @@ const WallpaperStudio: React.FC = () => {
           ambiance,
           variant,
           titleScale,
+          kingdom,
+          ctaEnabled,
         });
         setProposals([...results]);
       }
@@ -127,6 +144,8 @@ const WallpaperStudio: React.FC = () => {
       setGenerating(false);
     }
   }
+
+
 
   return (
     <section id="studio-fonds-ecran" className="relative z-10 py-16">
