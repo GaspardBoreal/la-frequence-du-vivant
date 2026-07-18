@@ -233,12 +233,17 @@ function drawImageRoundedRect(
 
 // ============= VARIANTS =============
 
-function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], rng: () => number) {
+type Rect = { x: number; y: number; w: number; h: number };
+const ellipseBBox = (cx: number, cy: number, rx: number, ry: number): Rect =>
+  ({ x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 });
+
+function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], rng: () => number): Rect[] {
+  const rects: Rect[] = [];
   const isPortrait = h > w;
   const cx = w * (isPortrait ? 0.5 : 0.42);
   const cy = h * (isPortrait ? 0.36 : 0.44);
   const heroR = Math.min(w, h) * (isPortrait ? 0.34 : 0.31);
-  if (imgs[0]) drawImageEllipse(ctx, imgs[0], cx, cy, heroR, heroR, 0);
+  if (imgs[0]) { drawImageEllipse(ctx, imgs[0], cx, cy, heroR, heroR, 0); rects.push(ellipseBBox(cx, cy, heroR, heroR)); }
 
   const sats: [number, number, number, number][] = isPortrait
     ? [[w * 0.78, h * 0.22, heroR * 0.45, heroR * 0.45],
@@ -251,39 +256,41 @@ function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, img
        [w * 0.60, h * 0.82, heroR * 0.36, heroR * 0.30]];
   for (let i = 1; i < imgs.length && i - 1 < sats.length; i++) {
     const [sx, sy, rx, ry] = sats[i - 1];
-    drawImageEllipse(ctx, imgs[i], sx + (rng() - 0.5) * w * 0.02, sy + (rng() - 0.5) * h * 0.02, rx, ry, (rng() - 0.5) * 0.35);
+    const jx = sx + (rng() - 0.5) * w * 0.02;
+    const jy = sy + (rng() - 0.5) * h * 0.02;
+    drawImageEllipse(ctx, imgs[i], jx, jy, rx, ry, (rng() - 0.5) * 0.35);
+    rects.push(ellipseBBox(jx, jy, rx, ry));
   }
+  return rects;
 }
 
-function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette) {
-  // Big hero on right (60% width, full height minus signature)
+function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette): Rect[] {
+  const rects: Rect[] = [];
   const heroW = w * 0.58;
   const heroH = h * 0.78;
   const heroX = w - heroW - w * 0.04;
   const heroY = h * 0.06;
-  if (imgs[0]) drawImageRoundedRect(ctx, imgs[0], heroX, heroY, heroW, heroH, Math.min(heroW, heroH) * 0.04);
+  if (imgs[0]) { drawImageRoundedRect(ctx, imgs[0], heroX, heroY, heroW, heroH, Math.min(heroW, heroH) * 0.04); rects.push({ x: heroX, y: heroY, w: heroW, h: heroH }); }
 
-  // Vertical gold rule left of hero
   ctx.fillStyle = pal.gold;
   ctx.fillRect(heroX - w * 0.018, heroY + heroH * 0.15, Math.max(2, w * 0.0025), heroH * 0.7);
 
-  // Two small thumbs stacked bottom-left
   const thumbW = w * 0.24;
   const thumbH = h * 0.22;
   const thumbX = w * 0.05;
-  if (imgs[1]) drawImageRoundedRect(ctx, imgs[1], thumbX, h * 0.42, thumbW, thumbH, thumbW * 0.06);
-  if (imgs[2]) drawImageRoundedRect(ctx, imgs[2], thumbX, h * 0.42 + thumbH + h * 0.03, thumbW, thumbH, thumbW * 0.06);
+  if (imgs[1]) { drawImageRoundedRect(ctx, imgs[1], thumbX, h * 0.42, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: h * 0.42, w: thumbW, h: thumbH }); }
+  if (imgs[2]) { drawImageRoundedRect(ctx, imgs[2], thumbX, h * 0.42 + thumbH + h * 0.03, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: h * 0.42 + thumbH + h * 0.03, w: thumbW, h: thumbH }); }
+  return rects;
 }
 
-function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[]) {
-  // Left hero rectangle 55%
+function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[]): Rect[] {
+  const rects: Rect[] = [];
   const leftW = w * 0.52;
   const leftH = h * 0.82;
   const leftX = w * 0.04;
   const leftY = h * 0.05;
-  if (imgs[0]) drawImageRoundedRect(ctx, imgs[0], leftX, leftY, leftW, leftH, Math.min(leftW, leftH) * 0.08);
+  if (imgs[0]) { drawImageRoundedRect(ctx, imgs[0], leftX, leftY, leftW, leftH, Math.min(leftW, leftH) * 0.08); rects.push({ x: leftX, y: leftY, w: leftW, h: leftH }); }
 
-  // Right: 3 overlapping tilted cards
   const rightCx = w * 0.75;
   const rightCy = h * 0.42;
   const cardW = w * 0.28;
@@ -292,17 +299,21 @@ function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, im
   const offsets: [number, number][] = [[-w * 0.04, -h * 0.08], [0, 0], [w * 0.04, h * 0.10]];
   for (let i = 1; i < Math.min(4, imgs.length); i++) {
     const [ox, oy] = offsets[i - 1];
-    drawImageRoundedRect(ctx, imgs[i], rightCx - cardW / 2 + ox, rightCy - cardH / 2 + oy, cardW, cardH, cardW * 0.06, tilts[i - 1]);
+    const x = rightCx - cardW / 2 + ox;
+    const y = rightCy - cardH / 2 + oy;
+    drawImageRoundedRect(ctx, imgs[i], x, y, cardW, cardH, cardW * 0.06, tilts[i - 1]);
+    const pad = Math.max(cardW, cardH) * 0.12;
+    rects.push({ x: x - pad, y: y - pad, w: cardW + pad * 2, h: cardH + pad * 2 });
   }
+  return rects;
 }
 
-function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, rng: () => number) {
+function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, rng: () => number): Rect[] {
+  const rects: Rect[] = [];
   const cx = w * 0.5;
   const cy = h * 0.44;
   const heroR = Math.min(w, h) * 0.16;
 
-  // Draw connecting curves first (behind)
-  const nodes: [number, number, number][] = [[cx, cy, heroR]];
   const sats: [number, number, number][] = [
     [w * 0.18, h * 0.22, heroR * 0.55],
     [w * 0.82, h * 0.20, heroR * 0.5],
@@ -327,7 +338,6 @@ function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: numbe
   }
   ctx.restore();
 
-  // Small bright dots at endpoints
   for (const s of shuffled) {
     ctx.fillStyle = pal.gold;
     ctx.beginPath();
@@ -335,15 +345,14 @@ function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: numbe
     ctx.fill();
   }
 
-  // Hero
-  if (imgs[0]) drawImageEllipse(ctx, imgs[0], cx, cy, heroR, heroR, 0);
+  if (imgs[0]) { drawImageEllipse(ctx, imgs[0], cx, cy, heroR, heroR, 0); rects.push(ellipseBBox(cx, cy, heroR, heroR)); }
 
-  // Satellites (varied sizes)
   for (let i = 1; i < imgs.length && i - 1 < shuffled.length; i++) {
     const [sx, sy, sr] = shuffled[i - 1];
     drawImageEllipse(ctx, imgs[i], sx, sy, sr, sr, 0);
-    nodes.push([sx, sy, sr]);
+    rects.push(ellipseBBox(sx, sy, sr, sr));
   }
+  return rects;
 }
 
 // ============= SIGNATURE =============
@@ -425,10 +434,8 @@ function drawSignature(
   if (meta.length) lines.push(meta.join(' · '));
   const gps = formatGps(event?.lat ?? null, event?.lng ?? null);
   if (gps) lines.push(gps);
-  if (!event) {
-    lines.push(category === 'species' ? 'Constellation vivante' : 'Territoires en éveil');
-    lines.push('France · une mosaïque de marches');
-  }
+  // No "Territoires en éveil" / "France · mosaïque…" — visual clutter removed.
+
   const rightX = w - padX;
   lines.forEach((l, i) => {
     const m = ctx.measureText(l);
@@ -458,12 +465,13 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const imgs = (await Promise.all(photos.slice(0, 6).map((p) => loadImage(p.url))))
     .filter((x): x is HTMLImageElement => !!x);
 
+  let photoRects: Rect[] = [];
   if (imgs.length > 0) {
     try {
-      if (variant === 'organic') variantOrganic(ctx, width, height, imgs, rng);
-      else if (variant === 'editorial') variantEditorial(ctx, width, height, imgs, pal);
-      else if (variant === 'diptyque') variantDiptyque(ctx, width, height, imgs);
-      else if (variant === 'constellation') variantConstellation(ctx, width, height, imgs, pal, rng);
+      if (variant === 'organic') photoRects = variantOrganic(ctx, width, height, imgs, rng);
+      else if (variant === 'editorial') photoRects = variantEditorial(ctx, width, height, imgs, pal);
+      else if (variant === 'diptyque') photoRects = variantDiptyque(ctx, width, height, imgs);
+      else if (variant === 'constellation') photoRects = variantConstellation(ctx, width, height, imgs, pal, rng);
     } catch (e) { console.warn('[wallpaper] variant failed', e); }
   }
 
@@ -483,6 +491,8 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const padX = Math.round(width * 0.045);
   const qx = width - qrSize - padX * 0.4;
   const qy = height - qrSize - padX * 0.4;
+  const qrPad = qrSize * 0.08;
+  const qrRect: Rect = { x: qx - qrPad, y: qy - qrPad, w: qrSize + qrPad * 2, h: qrSize + qrPad * 2 };
   try {
     const qrDataUrl = await QRCode.toDataURL(qrTarget, {
       margin: 1,
@@ -491,17 +501,17 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     });
     const qrImg = await loadImage(qrDataUrl);
     if (qrImg) {
-      const pad = qrSize * 0.08;
       ctx.fillStyle = pal.paper;
-      ctx.fillRect(qx - pad, qy - pad, qrSize + pad * 2, qrSize + pad * 2);
+      ctx.fillRect(qrRect.x, qrRect.y, qrRect.w, qrRect.h);
       ctx.drawImage(qrImg, qx, qy, qrSize, qrSize);
     }
   } catch (e) { console.warn('[wallpaper] qr failed', e); }
 
   if (opts.ctaEnabled) {
-    try { drawCommunityCta(ctx, width, height, pal, variant, qx, qy); }
+    try { drawCommunityCta(ctx, width, height, pal, [...photoRects, qrRect]); }
     catch (e) { console.warn('[wallpaper] cta failed', e); }
   }
+
 
   // Grain (skip silently if canvas is CORS-tainted)
   try { drawGrain(ctx, width, height, 10); }
@@ -511,59 +521,97 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
 }
 
 
+function rectsIntersect(a: Rect, b: Rect, margin = 0): boolean {
+  return !(
+    a.x + a.w + margin <= b.x ||
+    b.x + b.w + margin <= a.x ||
+    a.y + a.h + margin <= b.y ||
+    b.y + b.h + margin <= a.y
+  );
+}
+
 function drawCommunityCta(
   ctx: CanvasRenderingContext2D,
   w: number, h: number,
   pal: Palette,
-  variant: Variant,
-  qx: number, qy: number,
+  obstacles: Rect[],
 ) {
   const isPortrait = h > w;
-  const ctaSize = Math.max(14, Math.round(h * (isPortrait ? 0.018 : 0.022)));
-  const subSize = Math.max(11, Math.round(h * (isPortrait ? 0.012 : 0.014)));
   const text = 'Rejoignez la communauté des Marcheurs du Vivant';
   const sub = 'la-frequence-du-vivant.com';
 
   ctx.save();
   ctx.textBaseline = 'alphabetic';
 
-  ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
-  const tm = ctx.measureText(text);
-  ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
-  const sm = ctx.measureText(sub);
+  // Try up to two size tiers (normal, compact) to find a slot without image collision.
+  const tiers = [
+    { cta: Math.max(14, Math.round(h * (isPortrait ? 0.018 : 0.022))), sub: Math.max(11, Math.round(h * (isPortrait ? 0.012 : 0.014))), padMul: 1.1 },
+    { cta: Math.max(12, Math.round(h * (isPortrait ? 0.014 : 0.017))), sub: Math.max(10, Math.round(h * (isPortrait ? 0.010 : 0.012))), padMul: 0.85 },
+  ];
 
-  const padX = Math.round(ctaSize * 1.1);
-  const padY = Math.round(ctaSize * 0.65);
-  const dotR = Math.round(ctaSize * 0.28);
-  const gap = Math.round(ctaSize * 0.55);
-  const contentW = dotR * 2 + gap + Math.max(tm.width, sm.width);
-  const contentH = ctaSize + subSize * 1.6;
-  const plaqueW = contentW + padX * 2;
-  const plaqueH = contentH + padY * 2;
+  const margin = Math.round(Math.min(w, h) * 0.012);
+  let chosen: { x: number; y: number; plaqueW: number; plaqueH: number; ctaSize: number; subSize: number; padX: number; padY: number; dotR: number; gap: number } | null = null;
 
-  const panelH = Math.round(h * 0.13);
-  const marginBottom = panelH + Math.round(h * 0.015);
-  let plaqueX: number;
-  let plaqueY = h - marginBottom - plaqueH;
+  for (const tier of tiers) {
+    const ctaSize = tier.cta;
+    const subSize = tier.sub;
+    ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
+    const tm = ctx.measureText(text);
+    ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
+    const sm = ctx.measureText(sub);
+    const padX = Math.round(ctaSize * tier.padMul);
+    const padY = Math.round(ctaSize * 0.65);
+    const dotR = Math.round(ctaSize * 0.28);
+    const gap = Math.round(ctaSize * 0.55);
+    const plaqueW = dotR * 2 + gap + Math.max(tm.width, sm.width) + padX * 2;
+    const plaqueH = ctaSize + subSize * 1.6 + padY * 2;
 
-  if (isPortrait) {
-    plaqueX = (w - plaqueW) / 2;
-  } else if (variant === 'editorial') {
-    plaqueX = Math.round(w * 0.05);
-  } else if (variant === 'diptyque') {
-    plaqueX = w - plaqueW - Math.round(w * 0.04);
-  } else {
-    plaqueX = (w - plaqueW) / 2;
-  }
+    const edgeX = Math.round(w * 0.03);
+    const edgeY = Math.round(h * 0.03);
+    // Candidate anchors covering the whole canvas — CTA never over image.
+    const candidates: Array<{ x: number; y: number }> = [
+      { x: edgeX, y: h - edgeY - plaqueH },                    // bottom-left
+      { x: w - edgeX - plaqueW, y: h - edgeY - plaqueH },      // bottom-right
+      { x: (w - plaqueW) / 2, y: h - edgeY - plaqueH },        // bottom-center
+      { x: edgeX, y: edgeY },                                  // top-left
+      { x: w - edgeX - plaqueW, y: edgeY },                    // top-right
+      { x: (w - plaqueW) / 2, y: edgeY },                      // top-center
+      { x: edgeX, y: (h - plaqueH) / 2 },                      // middle-left
+      { x: w - edgeX - plaqueW, y: (h - plaqueH) / 2 },        // middle-right
+    ];
 
-  // Anti-collision QR
-  const qrLeft = qx - Math.round(w * 0.015);
-  if (plaqueX + plaqueW > qrLeft && plaqueY + plaqueH > qy - h * 0.01) {
-    plaqueY = qy - plaqueH - Math.round(h * 0.015);
-    if (plaqueX + plaqueW > qrLeft) {
-      plaqueX = Math.max(w * 0.03, qrLeft - plaqueW);
+    for (const c of candidates) {
+      if (c.x < 0 || c.y < 0 || c.x + plaqueW > w || c.y + plaqueH > h) continue;
+      const rect: Rect = { x: c.x, y: c.y, w: plaqueW, h: plaqueH };
+      const collides = obstacles.some((o) => rectsIntersect(rect, o, margin));
+      if (!collides) {
+        chosen = { x: c.x, y: c.y, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap };
+        break;
+      }
     }
+    if (chosen) break;
   }
+
+  // Absolute fallback: compact bottom-left, ignore collision (last resort).
+  if (!chosen) {
+    const tier = tiers[1];
+    const ctaSize = tier.cta;
+    const subSize = tier.sub;
+    ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
+    const tm = ctx.measureText(text);
+    ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
+    const sm = ctx.measureText(sub);
+    const padX = Math.round(ctaSize * tier.padMul);
+    const padY = Math.round(ctaSize * 0.65);
+    const dotR = Math.round(ctaSize * 0.28);
+    const gap = Math.round(ctaSize * 0.55);
+    const plaqueW = dotR * 2 + gap + Math.max(tm.width, sm.width) + padX * 2;
+    const plaqueH = ctaSize + subSize * 1.6 + padY * 2;
+    chosen = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - plaqueH, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap };
+  }
+
+  const { x: plaqueX, y: plaqueY, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap } = chosen;
+
 
   // Ombre + plaque sombre arrondie
   ctx.save();
