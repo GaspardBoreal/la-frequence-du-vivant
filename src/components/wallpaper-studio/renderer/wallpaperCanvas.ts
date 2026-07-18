@@ -434,10 +434,8 @@ function drawSignature(
   if (meta.length) lines.push(meta.join(' · '));
   const gps = formatGps(event?.lat ?? null, event?.lng ?? null);
   if (gps) lines.push(gps);
-  if (!event) {
-    lines.push(category === 'species' ? 'Constellation vivante' : 'Territoires en éveil');
-    lines.push('France · une mosaïque de marches');
-  }
+  // No "Territoires en éveil" / "France · mosaïque…" — visual clutter removed.
+
   const rightX = w - padX;
   lines.forEach((l, i) => {
     const m = ctx.measureText(l);
