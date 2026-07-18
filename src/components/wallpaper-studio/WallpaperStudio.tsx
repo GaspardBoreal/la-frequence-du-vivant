@@ -76,7 +76,7 @@ const WallpaperStudio: React.FC = () => {
   const [kingdom, setKingdom] = useState<Kingdom | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [ambiance, setAmbiance] = useState<Ambiance | null>(null);
-  const [ctaEnabled, setCtaEnabled] = useState(false);
+  const [ctaEnabled, setCtaEnabled] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [selected, setSelected] = useState<Proposal | null>(null);
