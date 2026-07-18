@@ -6428,6 +6428,72 @@ export type Database = {
         }
         Relationships: []
       }
+      wallpaper_generations: {
+        Row: {
+          ambiance: string
+          category: string
+          created_at: string
+          download_count: number
+          event_commune_snapshot: string | null
+          event_date_snapshot: string | null
+          event_gps_snapshot: Json | null
+          event_id: string | null
+          event_name_snapshot: string | null
+          id: string
+          is_public: boolean
+          photo_urls: Json
+          preview_url: string | null
+          resolution: string
+          scope: string
+          share_count: number
+          species_names: string[] | null
+          theme: string
+          user_id: string | null
+        }
+        Insert: {
+          ambiance: string
+          category: string
+          created_at?: string
+          download_count?: number
+          event_commune_snapshot?: string | null
+          event_date_snapshot?: string | null
+          event_gps_snapshot?: Json | null
+          event_id?: string | null
+          event_name_snapshot?: string | null
+          id?: string
+          is_public?: boolean
+          photo_urls?: Json
+          preview_url?: string | null
+          resolution: string
+          scope: string
+          share_count?: number
+          species_names?: string[] | null
+          theme: string
+          user_id?: string | null
+        }
+        Update: {
+          ambiance?: string
+          category?: string
+          created_at?: string
+          download_count?: number
+          event_commune_snapshot?: string | null
+          event_date_snapshot?: string | null
+          event_gps_snapshot?: Json | null
+          event_id?: string | null
+          event_name_snapshot?: string | null
+          id?: string
+          is_public?: boolean
+          photo_urls?: Json
+          preview_url?: string | null
+          resolution?: string
+          scope?: string
+          share_count?: number
+          species_names?: string[] | null
+          theme?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       waypoint_biodiversity_snapshots: {
         Row: {
           collected_at: string
@@ -7358,6 +7424,11 @@ export type Database = {
         Args: { export_slug: string }
         Returns: undefined
       }
+      increment_wallpaper_download: {
+        Args: { wp_id: string }
+        Returns: undefined
+      }
+      increment_wallpaper_share: { Args: { wp_id: string }; Returns: undefined }
       initialize_first_admin: {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
