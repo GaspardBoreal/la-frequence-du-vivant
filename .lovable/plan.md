@@ -1,92 +1,162 @@
+## Générateur de fonds d'écran — Matériel Pédagogique
 
-# Accueil vivant — Carrousel « Nouveautés de la communauté »
+Ajouter une section **"Studio Fonds d'Écran"** dans `/materiel-pedagogique` : un générateur de wallpapers en mosaïque poétique multi-espèces, avec sélection guidée en 3 étapes, rendu multi-format, téléchargement 1-clic, galerie communautaire, et traçabilité en base.
 
-Sur `/marches-du-vivant/mon-espace`, l'onglet Accueil affichera au-dessus de `FrequenceWave` un carrousel horizontal (cards style Netflix) présentant les nouvelles observations des autres marcheurs des 30 derniers jours, jamais vues par l'utilisateur connecté. Les observations des marches non inscrites sont regroupées dans une section « Ailleurs dans la communauté » juste après.
+### Parcours utilisateur (3 étapes)
 
-## Sources unifiées (5 types)
+```text
+Étape 1 — THÈME               Étape 2 — PORTÉE              Étape 3 — ANGLE
+┌─────────────────┐           ┌─────────────────┐           ┌──────────────────┐
+│ Fréquence Vivant│           │ Tous événements │           │ Catégorie:       │
+│ Marches Vivant  │           │ Un événement ▼  │           │  Espèce vedette  │
+└─────────────────┘           └─────────────────┘           │  Paysage         │
+                                                            │  Mosaïque marcheurs│
+                                                            │  Empreinte territoire│
+                                                            │ Ambiance:        │
+                                                            │  Aube/Jour/Crép./Nuit│
+                                                            └──────────────────┘
+                                                                    ↓
+                                                          [Générer 4 propositions]
+```
 
-Une edge function `feed-community-new-items` renvoie un flux mixé, filtré côté serveur :
+Puis grille de 4 wallpapers proposés → clic → prévisualisation grand format multi-résolution → téléchargement + partage + tuto installation.
 
-| Type | Table source | Onglet cible | Preview |
-|---|---|---|---|
-| `photo` | `marcheur_medias` (kind=photo) | Voir | miniature |
-| `son` | `marcheur_audio` | Écouter | waveform + durée |
-| `lire` | `marcheur_textes` (type=lire) | Lire | titre + extrait |
-| `ecrire` | `marcheur_textes` (type=ecrire) | Écrire | titre + extrait |
-| `espece` | `marcheur_observations` (nouvelle espèce dans le pool marche) | Biodiversité → Taxons | thumb SpeciesThumb |
+### Composition visuelle (mosaïque poétique)
 
-Filtres serveur :
-- `created_at >= now() - 30 days`
-- `user_id != auth.uid()`
-- `marche_event_id IN (marches de l'utilisateur)` → flux principal
-- `marche_event_id NOT IN (…)` mais dans une marche publique/visible → flux découverte
-- Exclure les items déjà loggés dans `marcheur_activity_logs` avec `event_type = 'feed_seen'` et `event_target = '<type>:<item_id>'`
+Chaque wallpaper = **collage organique 3-5 photos** sur fond dégradé sage/ambre (`#1a3c2a → #87a878 → #e8c07a → #faf8f5`), avec :
+- Photo centrale héroïque (60% surface)
+- 2-4 photos satellites en formes organiques (cercles/blobs) avec ombres douces
+- **Signature bas** : wordmark (Fréquence ou Marches) + nom événement + date + commune + coords GPS en `font-crimson` italique
+- **QR code discret** coin bas-droite (100px) → page publique événement/espèce
+- **Grain papier** subtil sur toute la surface pour la texture "Papier Crème"
 
-Limite 20 items principal + 10 découverte. Tri : plus récents d'abord, avec une légère diversification par auteur pour éviter un seul marcheur qui monopolise.
+### Formats générés
+- Desktop 16:9 → 1920×1080, 2560×1440, 3840×2160
+- Ultra-wide 21:9 → 3440×1440
+- Mobile 9:19.5 → 1170×2532
+- Tablette 4:3 → 2048×1536
 
-## Composants
+Rendu côté client via `<canvas>` (haute résolution, pas de coût serveur).
 
-- `src/components/community/tabs/AccueilTab.tsx` — ajoute `<CommunityFeedCarousel />` et `<CommunityDiscoveryCarousel />` au-dessus de `FrequenceWave`.
-- `src/components/community/feed/CommunityFeedCarousel.tsx` — carrousel horizontal snap-x (scroll natif + boutons ← →), header « Nouveautés depuis votre dernière visite ». Chaque carte : icône type (Camera/Waveform/BookOpen/Feather/Sparkles), preview, nom marcheur + avatar, marche + date relative.
-- `src/components/community/feed/CommunityFeedCard.tsx` — carte unique 220×280, animation fadeIn en cascade (framer-motion), hover lift léger. Clic = navigation.
-- `src/components/community/feed/CommunityDiscoveryCard.tsx` — variante pour marches non inscrites : bandeau « Marche non rejointe », CTA « Rejoindre cette marche » au lieu d'ouvrir l'item.
-- `src/hooks/useCommunityFeed.ts` — React Query : appelle l'edge function, retourne `{ main: Item[], discovery: Item[] }`.
-- `src/hooks/useFeedSeenTracker.ts` — extension de `useActivityTracker`, expose `markSeen(item)` et `markClicked(item)` qui insèrent respectivement `feed_seen` et `feed_clicked` dans `marcheur_activity_logs` (debounced, batch).
+### Sources de photos (déjà en base)
+- `marche_photos` (photos officielles événement)
+- `marcheur_medias` (photos marcheurs, filtrées `is_public=true` + curation)
+- `species_thumb_cache` + `marcheur_observations` (espèces observées, meilleure photo curée)
+- `explorations.cover_image_url` + `marche_events`
 
-## Tracking « vu / cliqué »
+Sélection intelligente : privilégier photos avec GPS proche, meilleure qualité, diversité taxonomique.
 
-Utilise la table existante `marcheur_activity_logs` (déjà utilisée par `useActivityTracker`) :
-- `event_type = 'feed_seen'`, `event_target = '<type>:<item_id>'`, `metadata = { marche_event_id, kind, author_user_id }`
-- `event_type = 'feed_clicked'`, même clé
-- IntersectionObserver sur chaque carte : dès qu'elle est ≥50% visible ≥ 800ms, on log `feed_seen` (une seule fois via un `Set` in-memory + debounce 2s).
-- Au prochain fetch, l'edge function exclut tout `<type>:<id>` déjà dans `feed_seen` pour cet utilisateur.
+### Installation "1-clic" par OS
+Dialog tutoriel adaptatif selon `navigator.userAgent` :
+- **Windows** : "Téléchargé → Clic droit → Choisir comme arrière-plan du bureau"
+- **macOS** : "Téléchargé → Clic droit → Définir comme fond d'écran"
+- **iOS** : "Photos → Partager → Utiliser en fond d'écran"
+- **Android** : "Galerie → Menu → Définir comme fond d'écran"
 
-Les logs restent visibles dans l'onglet Community → Activités existant (via `event_type` filtrable).
+Avec micro-illustrations SVG animées par étape.
 
-## Navigation au clic
+### Galerie communautaire publique
+- Sous la section génération : "Fonds créés par la communauté" (12 derniers)
+- Compteur téléchargements par wallpaper
+- Partage LinkedIn/Instagram/WhatsApp pré-rempli avec lien retour vers `/materiel-pedagogique#studio-fonds-ecran`
 
-Le carrousel émet un `CustomEvent('mon-espace:navigate', { detail: { tab, subtab?, itemId } })` capté par `MarchesDuVivantMonEspace.tsx`, qui bascule sur le bon onglet (`carnet` puis sous-onglet Voir/Écouter/Lire/Écrire/Biodiversité) et scrolle/ouvre l'item.
+### Accès
+- **Génération** : ouvert au public (booster viralité SEO/GEO)
+- **Galerie communautaire** : publique en lecture
+- **Compteur téléchargements** : incrémenté anonymement
 
-- Photo → `carnet` → sous-onglet Voir → ouverture drawer photo `?photo=<id>`
-- Son → `carnet` → sous-onglet Écouter → scroll + play `?audio=<id>`
-- Texte lire/écrire → `carnet` → sous-onglet correspondant → drawer `?text=<id>`
-- Espèce → `carnet` → sous-onglet Biodiversité → Taxons observés, ouvre `SpeciesDrawer` sur cette espèce
-- Discovery card → navigate vers `/m/:slug` (page publique marche) pour inscription
-
-## Edge function
-
-`supabase/functions/feed-community-new-items/index.ts` — JWT-validated via `validateAuth`. Requêtes parallèles sur les 5 tables + join avec `community_profiles` (auteur) + `marche_events` (marche/titre/slug). Retourne le tableau trié + fusionné.
-
-## États UX
-
-- Loading : 3 cartes skeleton shimmer.
-- Vide (aucune nouveauté) : carte unique poétique « Tout est calme aujourd'hui — vos marcheurs dorment 🌙 » + rappel prochaine marche.
-- Erreur : silencieux (le carrousel disparaît, on garde `FrequenceWave`).
-
-## Effet « wahouh »
-
-- Animation d'apparition en cascade (stagger 80ms) via framer-motion.
-- Léger glow doré autour de la première carte non vue (« 1 nouveauté »).
-- Badge pulsant `n` en haut du carrousel indiquant le nombre de nouveautés.
-- Compteur textuel qui décrémente en temps réel quand les cartes sont marquées vues.
+### Design intégré à la page
+Nouvelle section entre "Constellation" et citation de clôture :
+- Bandeau intro poétique (font-crimson, badge sage/ambre)
+- Wizard 3 étapes en cards glassmorphism
+- Grille 4 propositions avec hover reveal + shimmer
+- Preview modal plein écran avec sélecteur résolution
+- Galerie horizontal scroll
 
 ## Détails techniques
 
-- Nouveauté espèce : on considère nouvelle si `scientific_name` n'apparaît pas dans les précédentes `marcheur_observations` de la même marche avant `created_at` de la ligne courante.
-- Les 30 jours sont calculés en UTC côté serveur.
-- Aucun changement de schéma : `marcheur_activity_logs` supporte déjà les nouveaux `event_type`.
-- RLS : l'edge function utilise le token utilisateur pour la requête `marcheur_activity_logs` (lecture propre) et service role pour joindre les données des autres marcheurs (nécessaire car photos/audio des autres marcheurs peuvent être privés selon marche — on ne retourne QUE des items déjà publics/visibles dans les onglets Voir/Écouter/Lire/Écrire).
+### Fichiers créés
+- `src/components/wallpaper-studio/WallpaperStudio.tsx` — section wrapper + wizard state
+- `src/components/wallpaper-studio/steps/ThemeStep.tsx` — 2 cartes thème
+- `src/components/wallpaper-studio/steps/ScopeStep.tsx` — tous vs événement + combobox
+- `src/components/wallpaper-studio/steps/AngleStep.tsx` — catégorie + ambiance
+- `src/components/wallpaper-studio/WallpaperPreviewGrid.tsx` — 4 propositions
+- `src/components/wallpaper-studio/WallpaperPreviewModal.tsx` — plein écran + sélecteur résolution + boutons DL/share
+- `src/components/wallpaper-studio/InstallTutorialDialog.tsx` — tutos par OS avec détection UA
+- `src/components/wallpaper-studio/CommunityGallery.tsx` — galerie 12 derniers
+- `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts` — moteur canvas (mosaïque, gradient, texte, QR, grain)
+- `src/components/wallpaper-studio/renderer/photoPicker.ts` — sélection intelligente photos
+- `src/hooks/useWallpaperEvents.ts` — fetch events pour combobox
+- `src/hooks/useWallpaperGeneration.ts` — orchestre pick + render
+- `src/hooks/useCommunityWallpapers.ts` — fetch galerie
+- `src/pages/MaterielPedagogique.tsx` — insertion nouvelle section
 
-## Fichiers touchés
+### Base de données (nouvelle table)
 
-**Créés**
-- `supabase/functions/feed-community-new-items/index.ts`
-- `src/hooks/useCommunityFeed.ts`
-- `src/hooks/useFeedSeenTracker.ts`
-- `src/components/community/feed/CommunityFeedCarousel.tsx`
-- `src/components/community/feed/CommunityFeedCard.tsx`
-- `src/components/community/feed/CommunityDiscoveryCard.tsx`
+```sql
+CREATE TABLE public.wallpaper_generations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  theme text NOT NULL,             -- 'frequence' | 'marches'
+  scope text NOT NULL,             -- 'all' | 'event'
+  event_id uuid REFERENCES marche_events(id) ON DELETE SET NULL,
+  category text NOT NULL,          -- 'species' | 'landscape' | 'walkers' | 'territory'
+  ambiance text NOT NULL,          -- 'dawn' | 'day' | 'dusk' | 'night'
+  photo_ids jsonb NOT NULL,        -- ids sources utilisées
+  species_names text[],
+  resolution text NOT NULL,        -- '1920x1080' etc.
+  storage_path text,               -- si sauvegardé pour galerie
+  is_public boolean DEFAULT true,
+  download_count int DEFAULT 0,
+  share_count int DEFAULT 0,
+  event_name_snapshot text,
+  event_date_snapshot date,
+  event_commune_snapshot text,
+  event_gps_snapshot jsonb
+);
 
-**Modifiés**
-- `src/components/community/tabs/AccueilTab.tsx` (ajout carrousels au-dessus de FrequenceWave)
-- `src/pages/MarchesDuVivantMonEspace.tsx` (listener CustomEvent → navigation onglet+sous-onglet+item)
+GRANT SELECT ON public.wallpaper_generations TO anon;
+GRANT SELECT, INSERT, UPDATE ON public.wallpaper_generations TO authenticated;
+GRANT ALL ON public.wallpaper_generations TO service_role;
+
+ALTER TABLE public.wallpaper_generations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "public read gallery" ON public.wallpaper_generations
+  FOR SELECT TO anon, authenticated USING (is_public = true);
+CREATE POLICY "auth insert own" ON public.wallpaper_generations
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+CREATE POLICY "anon insert anonymous" ON public.wallpaper_generations
+  FOR INSERT TO anon WITH CHECK (user_id IS NULL);
+CREATE POLICY "increment counters" ON public.wallpaper_generations
+  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+```
+
++ RPC `increment_wallpaper_download(uuid)` et `increment_wallpaper_share(uuid)` en SECURITY DEFINER pour compteurs.
+
++ Storage bucket public `wallpapers` pour les rendus sauvegardés en galerie.
+
+### Rendu Canvas
+- Un seul render haute résolution 3840×2160, puis re-scale via `canvas.toBlob()` pour autres formats
+- Layout mosaïque : algorithme placement organique déterministe (seed = wallpaper_id) pour reproductibilité
+- QR code via `qrcode` npm
+- Grain papier via noise procedural léger
+- Polices web déjà chargées (Crimson Text, Libre Baskerville)
+
+### QR code
+Cible :
+- Portée événement → `/m/{slug}`
+- Angle espèce → `/m/{slug}#species-{scientific_name}`
+- Sinon → `/marches-du-vivant`
+
+### Sélection photos
+Fonction `pickPhotos({eventId, category, ambiance, count: 5})` :
+1. Query prioritaire selon catégorie (marche_photos > marcheur_medias curés > species)
+2. Filtre ambiance via champ `taken_at` heure (dawn=5-8h, day=8-18h, dusk=18-21h, night=21-5h) — fallback souple si peu de données
+3. Diversité : évite doublons taxonomiques
+4. Fallback iNaturalist si pas assez de photos locales
+
+### Non prévu
+- Pas d'IA générative d'image (uniquement composition de vraies photos)
+- Pas d'upload utilisateur (source = base uniquement)
+- Pas de personnalisation typo/couleurs (charte fixe = identité forte)
