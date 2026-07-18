@@ -237,7 +237,21 @@ type Rect = { x: number; y: number; w: number; h: number };
 const ellipseBBox = (cx: number, cy: number, rx: number, ry: number): Rect =>
   ({ x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 });
 
-function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], rng: () => number): Rect[] {
+/**
+ * Zone réservée au CTA "Rejoignez la communauté" — aucune image n'y est dessinée
+ * quand ctaEnabled=true. Basse-gauche pour laisser QR + titre en bas-droit.
+ */
+export function getCtaSafeZone(w: number, h: number): Rect {
+  const isPortrait = h > w;
+  return isPortrait
+    ? { x: 0, y: h * 0.83, w: w * 0.62, h: h * 0.16 }
+    : { x: 0, y: h * 0.76, w: w * 0.44, h: h * 0.22 };
+}
+
+const bboxInSafeZone = (r: Rect, sz?: Rect | null): boolean =>
+  !!sz && !(r.x + r.w < sz.x || sz.x + sz.w < r.x || r.y + r.h < sz.y || sz.y + sz.h < r.y);
+
+function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], rng: () => number, safeZone?: Rect | null): Rect[] {
   const rects: Rect[] = [];
   const isPortrait = h > w;
   const cx = w * (isPortrait ? 0.5 : 0.42);
@@ -256,18 +270,32 @@ function variantOrganic(ctx: CanvasRenderingContext2D, w: number, h: number, img
        [w * 0.60, h * 0.82, heroR * 0.36, heroR * 0.30]];
   for (let i = 1; i < imgs.length && i - 1 < sats.length; i++) {
     const [sx, sy, rx, ry] = sats[i - 1];
-    const jx = sx + (rng() - 0.5) * w * 0.02;
-    const jy = sy + (rng() - 0.5) * h * 0.02;
+    let jx = sx + (rng() - 0.5) * w * 0.02;
+    let jy = sy + (rng() - 0.5) * h * 0.02;
+    // Évite la safe zone du CTA : remonte le satellite si sa bbox y tombe.
+    if (safeZone) {
+      let bbox = ellipseBBox(jx, jy, rx, ry);
+      if (bboxInSafeZone(bbox, safeZone)) {
+        jy = safeZone.y - ry - Math.min(w, h) * 0.02;
+        // Si l'écart pousse hors canvas, réduit le rayon et repositionne.
+        if (jy - ry < h * 0.04) { jy = h * 0.20; }
+        bbox = ellipseBBox(jx, jy, rx, ry);
+        // Si toujours dans safe zone (portrait extrême), décale à droite hors safeZone.
+        if (bboxInSafeZone(bbox, safeZone)) {
+          jx = safeZone.x + safeZone.w + rx + w * 0.02;
+        }
+      }
+    }
     drawImageEllipse(ctx, imgs[i], jx, jy, rx, ry, (rng() - 0.5) * 0.35);
     rects.push(ellipseBBox(jx, jy, rx, ry));
   }
   return rects;
 }
 
-function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette): Rect[] {
+function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, safeZone?: Rect | null): Rect[] {
   const rects: Rect[] = [];
   const heroW = w * 0.58;
-  const heroH = h * 0.78;
+  const heroH = safeZone ? h * 0.68 : h * 0.78;
   const heroX = w - heroW - w * 0.04;
   const heroY = h * 0.06;
   if (imgs[0]) { drawImageRoundedRect(ctx, imgs[0], heroX, heroY, heroW, heroH, Math.min(heroW, heroH) * 0.04); rects.push({ x: heroX, y: heroY, w: heroW, h: heroH }); }
@@ -276,17 +304,20 @@ function variantEditorial(ctx: CanvasRenderingContext2D, w: number, h: number, i
   ctx.fillRect(heroX - w * 0.018, heroY + heroH * 0.15, Math.max(2, w * 0.0025), heroH * 0.7);
 
   const thumbW = w * 0.24;
-  const thumbH = h * 0.22;
+  const thumbH = safeZone ? h * 0.18 : h * 0.22;
   const thumbX = w * 0.05;
-  if (imgs[1]) { drawImageRoundedRect(ctx, imgs[1], thumbX, h * 0.42, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: h * 0.42, w: thumbW, h: thumbH }); }
-  if (imgs[2]) { drawImageRoundedRect(ctx, imgs[2], thumbX, h * 0.42 + thumbH + h * 0.03, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: h * 0.42 + thumbH + h * 0.03, w: thumbW, h: thumbH }); }
+  const thumbY1 = safeZone ? h * 0.30 : h * 0.42;
+  if (imgs[1]) { drawImageRoundedRect(ctx, imgs[1], thumbX, thumbY1, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: thumbY1, w: thumbW, h: thumbH }); }
+  const thumbY2 = thumbY1 + thumbH + h * 0.03;
+  if (imgs[2]) { drawImageRoundedRect(ctx, imgs[2], thumbX, thumbY2, thumbW, thumbH, thumbW * 0.06); rects.push({ x: thumbX, y: thumbY2, w: thumbW, h: thumbH }); }
   return rects;
 }
 
-function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[]): Rect[] {
+function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], safeZone?: Rect | null): Rect[] {
   const rects: Rect[] = [];
-  const leftW = w * 0.52;
-  const leftH = h * 0.82;
+  // Si CTA actif, réduit la carte gauche pour libérer le bas-gauche.
+  const leftW = safeZone ? w * 0.52 : w * 0.52;
+  const leftH = safeZone ? h * 0.68 : h * 0.82;
   const leftX = w * 0.04;
   const leftY = h * 0.05;
   if (imgs[0]) { drawImageRoundedRect(ctx, imgs[0], leftX, leftY, leftW, leftH, Math.min(leftW, leftH) * 0.08); rects.push({ x: leftX, y: leftY, w: leftW, h: leftH }); }
@@ -308,13 +339,14 @@ function variantDiptyque(ctx: CanvasRenderingContext2D, w: number, h: number, im
   return rects;
 }
 
-function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, rng: () => number): Rect[] {
+function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: number, imgs: HTMLImageElement[], pal: Palette, rng: () => number, safeZone?: Rect | null): Rect[] {
   const rects: Rect[] = [];
   const cx = w * 0.5;
   const cy = h * 0.44;
   const heroR = Math.min(w, h) * 0.16;
 
-  const sats: [number, number, number][] = [
+
+  const rawSats: [number, number, number][] = [
     [w * 0.18, h * 0.22, heroR * 0.55],
     [w * 0.82, h * 0.20, heroR * 0.5],
     [w * 0.15, h * 0.70, heroR * 0.7],
@@ -322,6 +354,16 @@ function variantConstellation(ctx: CanvasRenderingContext2D, w: number, h: numbe
     [w * 0.42, h * 0.80, heroR * 0.45],
     [w * 0.68, h * 0.82, heroR * 0.4],
   ];
+  // Reroute les satellites qui tombent dans la safe zone du CTA vers la moitié droite/haute.
+  const sats: [number, number, number][] = rawSats.map(([sx, sy, sr]) => {
+    const bbox = ellipseBBox(sx, sy, sr, sr);
+    if (bboxInSafeZone(bbox, safeZone ?? null)) {
+      const newX = sx < w * 0.5 ? Math.min(w * 0.92 - sr, (safeZone!.x + safeZone!.w) + sr + w * 0.02) : sx;
+      const newY = Math.max(sr + h * 0.04, safeZone!.y - sr - h * 0.02);
+      return [newX, newY, sr];
+    }
+    return [sx, sy, sr];
+  });
   const shuffled = sats.slice(0, Math.min(6, imgs.length - 1));
 
   ctx.save();
@@ -488,13 +530,16 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const imgs = (await Promise.all(photos.slice(0, 6).map((p) => loadImage(p.url))))
     .filter((x): x is HTMLImageElement => !!x);
 
+  // Zone réservée au CTA — les variantes évitent d'y dessiner des images.
+  const safeZone: Rect | null = opts.ctaEnabled ? getCtaSafeZone(width, height) : null;
+
   let photoRects: Rect[] = [];
   if (imgs.length > 0) {
     try {
-      if (variant === 'organic') photoRects = variantOrganic(ctx, width, height, imgs, rng);
-      else if (variant === 'editorial') photoRects = variantEditorial(ctx, width, height, imgs, pal);
-      else if (variant === 'diptyque') photoRects = variantDiptyque(ctx, width, height, imgs);
-      else if (variant === 'constellation') photoRects = variantConstellation(ctx, width, height, imgs, pal, rng);
+      if (variant === 'organic') photoRects = variantOrganic(ctx, width, height, imgs, rng, safeZone);
+      else if (variant === 'editorial') photoRects = variantEditorial(ctx, width, height, imgs, pal, safeZone);
+      else if (variant === 'diptyque') photoRects = variantDiptyque(ctx, width, height, imgs, safeZone);
+      else if (variant === 'constellation') photoRects = variantConstellation(ctx, width, height, imgs, pal, rng, safeZone);
     } catch (e) { console.warn('[wallpaper] variant failed', e); }
   }
 
@@ -536,7 +581,7 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
 
 
   if (opts.ctaEnabled) {
-    try { drawCommunityCta(ctx, width, height, pal, [...photoRects, qrRect], wordmark(theme)); }
+    try { drawCommunityCta(ctx, width, height, pal, [...photoRects, qrRect], wordmark(theme), safeZone); }
     catch (e) { console.warn('[wallpaper] cta failed', e); }
   }
 
@@ -564,6 +609,7 @@ function drawCommunityCta(
   pal: Palette,
   obstacles: Rect[],
   brandLine: string = '',
+  safeZone?: Rect | null,
 ) {
   const isPortrait = h > w;
   const text = 'Rejoignez la communauté des Marcheurs du Vivant';
@@ -573,10 +619,11 @@ function drawCommunityCta(
   ctx.save();
   ctx.textBaseline = 'alphabetic';
 
-  // Try up to two size tiers (normal, compact) to find a slot without image collision.
+  // Trois paliers : normal, compact, ultra-compact — pour trouver un slot sans collision.
   const tiers = [
     { cta: Math.max(14, Math.round(h * (isPortrait ? 0.018 : 0.022))), sub: Math.max(11, Math.round(h * (isPortrait ? 0.012 : 0.014))), padMul: 1.1 },
     { cta: Math.max(12, Math.round(h * (isPortrait ? 0.014 : 0.017))), sub: Math.max(10, Math.round(h * (isPortrait ? 0.010 : 0.012))), padMul: 0.85 },
+    { cta: Math.max(10, Math.round(h * (isPortrait ? 0.012 : 0.014))), sub: Math.max(9,  Math.round(h * (isPortrait ? 0.009 : 0.011))), padMul: 0.7 },
   ];
 
   const margin = Math.round(Math.min(w, h) * 0.012);
@@ -614,8 +661,17 @@ function drawCommunityCta(
 
     const edgeX = Math.round(w * 0.03);
     const edgeY = Math.round(h * 0.03);
-    // Candidate anchors covering the whole canvas — CTA never over image.
+    // Priorité 1 : safe zone du CTA (garantie sans image).
+    const szCandidates: Array<{ x: number; y: number }> = safeZone
+      ? [
+          { x: safeZone.x + edgeX, y: safeZone.y + (safeZone.h - plaqueH) / 2 },
+          { x: safeZone.x + edgeX, y: safeZone.y + safeZone.h - plaqueH - edgeY * 0.3 },
+          { x: safeZone.x + (safeZone.w - plaqueW) / 2, y: safeZone.y + (safeZone.h - plaqueH) / 2 },
+        ]
+      : [];
+    // Candidats de secours (coins et milieux).
     const candidates: Array<{ x: number; y: number }> = [
+      ...szCandidates,
       { x: edgeX, y: h - edgeY - plaqueH },                    // bottom-left
       { x: w - edgeX - plaqueW, y: h - edgeY - plaqueH },      // bottom-right
       { x: (w - plaqueW) / 2, y: h - edgeY - plaqueH },        // bottom-center
@@ -638,10 +694,29 @@ function drawCommunityCta(
     if (chosen) break;
   }
 
-  // Absolute fallback: compact bottom-left, ignore collision (last resort).
+  // Fallback : scan de grille — choisit la position avec le minimum d'overlap.
   if (!chosen) {
-    const m = measureTier(tiers[1]);
-    chosen = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - m.plaqueH, ...m };
+    const m = measureTier(tiers[2]);
+    const { plaqueW, plaqueH } = m;
+    const step = Math.round(Math.min(w, h) * 0.03);
+    let bestPos = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - plaqueH };
+    let bestOverlap = Infinity;
+    const overlapArea = (a: Rect, b: Rect) => {
+      const ox = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+      const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+      return ox * oy;
+    };
+    for (let y = Math.round(h * 0.03); y + plaqueH <= h * 0.97; y += step) {
+      for (let x = Math.round(w * 0.03); x + plaqueW <= w * 0.97; x += step) {
+        const rect: Rect = { x, y, w: plaqueW, h: plaqueH };
+        let total = 0;
+        for (const o of obstacles) total += overlapArea(rect, o);
+        if (total < bestOverlap) { bestOverlap = total; bestPos = { x, y }; if (total === 0) break; }
+      }
+      if (bestOverlap === 0) break;
+    }
+    console.warn('[wallpaper] cta grid fallback used, overlap =', bestOverlap);
+    chosen = { x: bestPos.x, y: bestPos.y, ...m };
   }
 
   const { x: plaqueX, y: plaqueY, plaqueW, plaqueH, ctaSize, subSize, brandSize, padX, padY, dotR, gap } = chosen;
