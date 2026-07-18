@@ -530,13 +530,16 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const imgs = (await Promise.all(photos.slice(0, 6).map((p) => loadImage(p.url))))
     .filter((x): x is HTMLImageElement => !!x);
 
+  // Zone réservée au CTA — les variantes évitent d'y dessiner des images.
+  const safeZone: Rect | null = opts.ctaEnabled ? getCtaSafeZone(width, height) : null;
+
   let photoRects: Rect[] = [];
   if (imgs.length > 0) {
     try {
-      if (variant === 'organic') photoRects = variantOrganic(ctx, width, height, imgs, rng);
-      else if (variant === 'editorial') photoRects = variantEditorial(ctx, width, height, imgs, pal);
-      else if (variant === 'diptyque') photoRects = variantDiptyque(ctx, width, height, imgs);
-      else if (variant === 'constellation') photoRects = variantConstellation(ctx, width, height, imgs, pal, rng);
+      if (variant === 'organic') photoRects = variantOrganic(ctx, width, height, imgs, rng, safeZone);
+      else if (variant === 'editorial') photoRects = variantEditorial(ctx, width, height, imgs, pal, safeZone);
+      else if (variant === 'diptyque') photoRects = variantDiptyque(ctx, width, height, imgs, safeZone);
+      else if (variant === 'constellation') photoRects = variantConstellation(ctx, width, height, imgs, pal, rng, safeZone);
     } catch (e) { console.warn('[wallpaper] variant failed', e); }
   }
 
