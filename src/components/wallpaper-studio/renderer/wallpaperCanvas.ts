@@ -381,7 +381,9 @@ function drawSignature(
   pal: Palette,
   titleScale: TitleScale,
   variant: Variant,
+  qrRect?: Rect,
 ) {
+
   const panelH = Math.round(h * 0.13);
   const panelY = h - panelH;
   const grad = ctx.createLinearGradient(0, panelY, 0, h);
@@ -435,12 +437,14 @@ function drawSignature(
   // Réserver un couloir à droite pour le QR agrandi
   const qrReserve = Math.round(Math.min(w, h) * 0.11) + Math.round(w * 0.045) * 1.6;
   const rightX = w - padX - qrReserve;
-  // Remonter la ligne meta bien au-dessus du QR
-  const metaBaseY = event?.title ? panelY - Math.round(h * 0.05) : baseY;
+  // Aligner la baseline du titre événement avec le bas du QR code
+  const qrBottom = qrRect ? qrRect.y + qrRect.h : panelY - Math.round(h * 0.05) + smallSize;
+  const metaBaseY = event?.title ? qrBottom - smallSize : baseY;
   lines.forEach((l, i) => {
     const m = ctx.measureText(l);
     ctx.fillText(l, rightX - m.width, metaBaseY + i * smallSize * 1.5);
   });
+
 
 }
 
@@ -485,9 +489,6 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     } catch (e) { console.warn('[wallpaper] frame failed', e); }
   }
 
-  try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant); }
-  catch (e) { console.warn('[wallpaper] signature failed', e); }
-
   // QR — plus grand et haute correction pour rester scannable
   const qrSize = Math.round(Math.min(width, height) * 0.11);
   const padX = Math.round(width * 0.045);
@@ -495,6 +496,10 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const qy = height - qrSize - padX * 0.5;
   const qrPad = qrSize * 0.14;
   const qrRect: Rect = { x: qx - qrPad, y: qy - qrPad, w: qrSize + qrPad * 2, h: qrSize + qrPad * 2 };
+
+  try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant, qrRect); }
+  catch (e) { console.warn('[wallpaper] signature failed', e); }
+
   try {
     const qrDataUrl = await QRCode.toDataURL(qrTarget, {
       margin: 2,
@@ -510,6 +515,7 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     }
 
   } catch (e) { console.warn('[wallpaper] qr failed', e); }
+
 
 
   if (opts.ctaEnabled) {
