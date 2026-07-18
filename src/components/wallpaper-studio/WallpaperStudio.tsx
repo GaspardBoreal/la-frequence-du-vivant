@@ -82,10 +82,12 @@ const WallpaperStudio: React.FC = () => {
     setProposals([]);
     try {
       const evt = eventId ? await fetchEventById(eventId) : null;
-      const seeds = [Date.now(), Date.now() + 97, Date.now() + 313, Date.now() + 719];
+      const baseSeed = Date.now();
       const results: Proposal[] = [];
-      for (const seed of seeds) {
-        const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 5 });
+      for (let i = 0; i < VARIANT_SEQUENCE.length; i++) {
+        const { variant, titleScale } = VARIANT_SEQUENCE[i];
+        const seed = baseSeed + i * 137;
+        const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 6 });
         if (photos.length === 0) continue;
         const qrTarget = evt?.slug
           ? `https://la-frequence-du-vivant.com/m/${evt.slug}`
@@ -102,6 +104,8 @@ const WallpaperStudio: React.FC = () => {
           ambiance,
           qrTarget,
           seed,
+          variant,
+          titleScale,
         });
         results.push({
           seed,
@@ -111,6 +115,8 @@ const WallpaperStudio: React.FC = () => {
           theme,
           category,
           ambiance,
+          variant,
+          titleScale,
         });
         setProposals([...results]);
       }
