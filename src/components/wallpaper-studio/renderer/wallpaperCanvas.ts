@@ -465,12 +465,13 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const imgs = (await Promise.all(photos.slice(0, 6).map((p) => loadImage(p.url))))
     .filter((x): x is HTMLImageElement => !!x);
 
+  let photoRects: Rect[] = [];
   if (imgs.length > 0) {
     try {
-      if (variant === 'organic') variantOrganic(ctx, width, height, imgs, rng);
-      else if (variant === 'editorial') variantEditorial(ctx, width, height, imgs, pal);
-      else if (variant === 'diptyque') variantDiptyque(ctx, width, height, imgs);
-      else if (variant === 'constellation') variantConstellation(ctx, width, height, imgs, pal, rng);
+      if (variant === 'organic') photoRects = variantOrganic(ctx, width, height, imgs, rng);
+      else if (variant === 'editorial') photoRects = variantEditorial(ctx, width, height, imgs, pal);
+      else if (variant === 'diptyque') photoRects = variantDiptyque(ctx, width, height, imgs);
+      else if (variant === 'constellation') photoRects = variantConstellation(ctx, width, height, imgs, pal, rng);
     } catch (e) { console.warn('[wallpaper] variant failed', e); }
   }
 
@@ -490,6 +491,8 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const padX = Math.round(width * 0.045);
   const qx = width - qrSize - padX * 0.4;
   const qy = height - qrSize - padX * 0.4;
+  const qrPad = qrSize * 0.08;
+  const qrRect: Rect = { x: qx - qrPad, y: qy - qrPad, w: qrSize + qrPad * 2, h: qrSize + qrPad * 2 };
   try {
     const qrDataUrl = await QRCode.toDataURL(qrTarget, {
       margin: 1,
@@ -498,17 +501,17 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     });
     const qrImg = await loadImage(qrDataUrl);
     if (qrImg) {
-      const pad = qrSize * 0.08;
       ctx.fillStyle = pal.paper;
-      ctx.fillRect(qx - pad, qy - pad, qrSize + pad * 2, qrSize + pad * 2);
+      ctx.fillRect(qrRect.x, qrRect.y, qrRect.w, qrRect.h);
       ctx.drawImage(qrImg, qx, qy, qrSize, qrSize);
     }
   } catch (e) { console.warn('[wallpaper] qr failed', e); }
 
   if (opts.ctaEnabled) {
-    try { drawCommunityCta(ctx, width, height, pal, variant, qx, qy); }
+    try { drawCommunityCta(ctx, width, height, pal, [...photoRects, qrRect]); }
     catch (e) { console.warn('[wallpaper] cta failed', e); }
   }
+
 
   // Grain (skip silently if canvas is CORS-tainted)
   try { drawGrain(ctx, width, height, 10); }
