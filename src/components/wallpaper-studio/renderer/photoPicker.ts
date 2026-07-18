@@ -335,14 +335,18 @@ export async function pickPhotosDetailed(opts: {
   const officialRaw = opts.category !== 'species'
     ? await fetchOfficialPhotos(opts.eventId)
     : [];
+  const convivialiteRaw = opts.category !== 'species'
+    ? await fetchConvivialitePhotos(opts.eventId)
+    : [];
 
-  const totalPool = speciesRaw.length + walkerRaw.length + officialRaw.length;
+  const totalPool = speciesRaw.length + walkerRaw.length + officialRaw.length + convivialiteRaw.length;
 
   // Filtre exclusion + shuffle par pool
   const filter = (arr: PickedPhoto[]) => arr.filter((p) => !excluded.has(p.url));
   let speciesPool = seededShuffle(filter(speciesRaw), seed);
   let walkerPool = seededShuffle(filter(walkerRaw), seed + 101);
   let officialPool = seededShuffle(filter(officialRaw), seed + 211);
+  let convivialitePool = seededShuffle(filter(convivialiteRaw), seed + 317);
 
   // Si l'exclusion vide un pool essentiel, on relâche pour cette catégorie
   if (kingdom !== 'all' && speciesPool.length < 3 && speciesRaw.length >= 3) {
@@ -353,14 +357,18 @@ export async function pickPhotosDetailed(opts: {
   const orderedPools: PickedPhoto[][] = [];
   if (kingdom !== 'all') {
     orderedPools.push(speciesPool);
-    if (opts.category !== 'species') orderedPools.push(walkerPool, officialPool);
+    if (opts.category !== 'species') orderedPools.push(convivialitePool, walkerPool, officialPool);
   } else if (opts.category === 'species') {
     orderedPools.push(speciesPool, walkerPool);
-  } else if (opts.category === 'landscape' || opts.category === 'territory') {
-    orderedPools.push(officialPool, walkerPool, speciesPool);
+  } else if (opts.category === 'landscape') {
+    orderedPools.push(officialPool, convivialitePool, walkerPool, speciesPool);
+  } else if (opts.category === 'territory') {
+    orderedPools.push(officialPool, walkerPool, convivialitePool, speciesPool);
   } else {
-    orderedPools.push(walkerPool, officialPool, speciesPool);
+    // walkers / Mosaïque marcheurs
+    orderedPools.push(convivialitePool, walkerPool, officialPool, speciesPool);
   }
+
 
   // Round-robin entre pools : 1 espèce, 1 marcheur, 1 officiel, 1 espèce…
   const merged: PickedPhoto[] = [];
