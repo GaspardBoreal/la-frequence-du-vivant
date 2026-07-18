@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Loader2, Download, Share2, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { renderWallpaper, canvasToBlob, downloadBlob, type Theme } from './renderer/wallpaperCanvas';
+import { renderWallpaper, canvasToBlob, downloadBlob, type Theme, type Variant, type TitleScale } from './renderer/wallpaperCanvas';
 import type { PickedPhoto, EventSnapshot } from './renderer/photoPicker';
 import InstallTutorialDialog from './InstallTutorialDialog';
 
