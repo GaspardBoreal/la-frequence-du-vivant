@@ -382,6 +382,7 @@ function drawSignature(
   titleScale: TitleScale,
   variant: Variant,
   qrRect?: Rect,
+  ctaEnabled: boolean = false,
 ) {
 
   const panelH = Math.round(h * 0.13);
