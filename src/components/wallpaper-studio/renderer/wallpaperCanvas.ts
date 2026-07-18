@@ -404,25 +404,28 @@ function drawSignature(
   ctx.fillStyle = textColor;
   ctx.font = `italic 500 ${markSize}px "Crimson Text", Georgia, serif`;
 
-  // Editorial: title big, top-left of the composition instead of bottom
-  if (variant === 'editorial' && titleScale === 'large') {
-    const topY = h * 0.10;
-    const topX = w * 0.05;
-    ctx.font = `italic 500 ${Math.round(h * 0.075)}px "Crimson Text", Georgia, serif`;
-    // Wrap on two lines
-    const words = wordmark(theme).split(' ');
-    const mid = Math.ceil(words.length / 2);
-    const line1 = words.slice(0, mid).join(' ');
-    const line2 = words.slice(mid).join(' ');
-    ctx.fillText(line1, topX, topY);
-    ctx.fillText(line2, topX, topY + Math.round(h * 0.075) * 1.05);
-    ctx.fillStyle = pal.gold;
-    ctx.fillRect(topX, topY + Math.round(h * 0.075) * 2.2, w * 0.12, Math.max(2, h * 0.003));
-  } else {
-    ctx.fillText(wordmark(theme), padX, baseY);
-    ctx.fillStyle = pal.gold;
-    const m = ctx.measureText(wordmark(theme));
-    ctx.fillRect(padX, baseY + markSize * 1.15, m.width, Math.max(2, h * 0.002));
+  // Skip the standalone wordmark when the CTA plaque is displayed — the wordmark
+  // is folded into the plaque to avoid any visual collision.
+  if (!ctaEnabled) {
+    // Editorial: title big, top-left of the composition instead of bottom
+    if (variant === 'editorial' && titleScale === 'large') {
+      const topY = h * 0.10;
+      const topX = w * 0.05;
+      ctx.font = `italic 500 ${Math.round(h * 0.075)}px "Crimson Text", Georgia, serif`;
+      const words = wordmark(theme).split(' ');
+      const mid = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, mid).join(' ');
+      const line2 = words.slice(mid).join(' ');
+      ctx.fillText(line1, topX, topY);
+      ctx.fillText(line2, topX, topY + Math.round(h * 0.075) * 1.05);
+      ctx.fillStyle = pal.gold;
+      ctx.fillRect(topX, topY + Math.round(h * 0.075) * 2.2, w * 0.12, Math.max(2, h * 0.003));
+    } else {
+      ctx.fillText(wordmark(theme), padX, baseY);
+      ctx.fillStyle = pal.gold;
+      const m = ctx.measureText(wordmark(theme));
+      ctx.fillRect(padX, baseY + markSize * 1.15, m.width, Math.max(2, h * 0.002));
+    }
   }
 
   // Right meta
