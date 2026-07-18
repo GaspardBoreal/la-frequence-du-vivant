@@ -77,27 +77,38 @@ export async function fetchEventById(id: string): Promise<EventSnapshot | null> 
 }
 
 const marcheIdsCache = new Map<string, string[]>();
+const explorationIdCache = new Map<string, string | null>();
 
-async function resolveMarcheIds(eventId?: string): Promise<string[]> {
-  if (!eventId) return [];
-  if (marcheIdsCache.has(eventId)) return marcheIdsCache.get(eventId)!;
+async function resolveEventContext(eventId?: string): Promise<{ explorationId: string | null; marcheIds: string[] }> {
+  if (!eventId) return { explorationId: null, marcheIds: [] };
+  const cachedExpl = explorationIdCache.get(eventId);
+  const cachedMarches = marcheIdsCache.get(eventId);
+  if (cachedExpl !== undefined && cachedMarches !== undefined) {
+    return { explorationId: cachedExpl, marcheIds: cachedMarches };
+  }
   const { data: ev } = await supabase
     .from('marche_events')
     .select('exploration_id')
     .eq('id', eventId)
     .maybeSingle();
-  const explorationId = (ev as any)?.exploration_id;
+  const explorationId = ((ev as any)?.exploration_id ?? null) as string | null;
+  explorationIdCache.set(eventId, explorationId);
   if (!explorationId) {
     marcheIdsCache.set(eventId, []);
-    return [];
+    return { explorationId: null, marcheIds: [] };
   }
   const { data: links } = await supabase
     .from('exploration_marches')
     .select('marche_id')
     .eq('exploration_id', explorationId);
-  const ids = (links || []).map((l: any) => l.marche_id).filter(Boolean);
-  marcheIdsCache.set(eventId, ids);
-  return ids;
+  const marcheIds = (links || []).map((l: any) => l.marche_id).filter(Boolean);
+  marcheIdsCache.set(eventId, marcheIds);
+  return { explorationId, marcheIds };
+}
+
+async function resolveMarcheIds(eventId?: string): Promise<string[]> {
+  const { marcheIds } = await resolveEventContext(eventId);
+  return marcheIds;
 }
 
 async function fetchOfficialPhotos(eventId?: string): Promise<PickedPhoto[]> {
@@ -115,16 +126,37 @@ async function fetchOfficialPhotos(eventId?: string): Promise<PickedPhoto[]> {
     .filter((p) => !!p.url);
 }
 
+async function fetchConvivialitePhotos(eventId?: string): Promise<PickedPhoto[]> {
+  const { explorationId } = await resolveEventContext(eventId);
+  if (!explorationId) return [];
+  const { data } = await (supabase as any)
+    .from('exploration_convivialite_photos')
+    .select('url,is_hidden,position,created_at')
+    .eq('exploration_id', explorationId)
+    .eq('is_hidden', false)
+    .order('position', { ascending: true })
+    .order('created_at', { ascending: true })
+    .limit(300);
+  return (data || [])
+    .map((p: any) => ({ url: p.url, attribution: 'Convivialité' }))
+    .filter((p: PickedPhoto) => !!p.url);
+}
 
 async function fetchWalkerPhotos(eventId?: string, amb: Ambiance = 'any'): Promise<PickedPhoto[]> {
+  const marcheIds = await resolveMarcheIds(eventId);
   let q = supabase
     .from('marcheur_medias')
-    .select('url_fichier,external_url,type_media,is_public,shared_to_web,metadata,created_at,titre')
+    .select('url_fichier,external_url,type_media,is_public,shared_to_web,metadata,created_at,titre,marche_event_id,marche_id')
     .eq('type_media', 'photo')
-    .eq('is_public', true)
     .order('created_at', { ascending: false })
     .limit(400);
-  if (eventId) q = q.eq('marche_event_id', eventId);
+  if (eventId) {
+    const orParts = [`marche_event_id.eq.${eventId}`];
+    if (marcheIds.length > 0) orParts.push(`marche_id.in.(${marcheIds.join(',')})`);
+    q = q.or(orParts.join(','));
+  } else {
+    q = q.eq('is_public', true);
+  }
   const { data } = await q;
   return (data || [])
     .filter((m: any) => inAmbiance(m.metadata?.taken_at || m.created_at, amb))
@@ -134,6 +166,7 @@ async function fetchWalkerPhotos(eventId?: string, amb: Ambiance = 'any'): Promi
     }))
     .filter((p) => !!p.url);
 }
+
 
 
 const LEPIDOPTERA_FAMILIES = new Set([
@@ -302,14 +335,18 @@ export async function pickPhotosDetailed(opts: {
   const officialRaw = opts.category !== 'species'
     ? await fetchOfficialPhotos(opts.eventId)
     : [];
+  const convivialiteRaw = opts.category !== 'species'
+    ? await fetchConvivialitePhotos(opts.eventId)
+    : [];
 
-  const totalPool = speciesRaw.length + walkerRaw.length + officialRaw.length;
+  const totalPool = speciesRaw.length + walkerRaw.length + officialRaw.length + convivialiteRaw.length;
 
   // Filtre exclusion + shuffle par pool
   const filter = (arr: PickedPhoto[]) => arr.filter((p) => !excluded.has(p.url));
   let speciesPool = seededShuffle(filter(speciesRaw), seed);
   let walkerPool = seededShuffle(filter(walkerRaw), seed + 101);
   let officialPool = seededShuffle(filter(officialRaw), seed + 211);
+  let convivialitePool = seededShuffle(filter(convivialiteRaw), seed + 317);
 
   // Si l'exclusion vide un pool essentiel, on relâche pour cette catégorie
   if (kingdom !== 'all' && speciesPool.length < 3 && speciesRaw.length >= 3) {
@@ -320,14 +357,18 @@ export async function pickPhotosDetailed(opts: {
   const orderedPools: PickedPhoto[][] = [];
   if (kingdom !== 'all') {
     orderedPools.push(speciesPool);
-    if (opts.category !== 'species') orderedPools.push(walkerPool, officialPool);
+    if (opts.category !== 'species') orderedPools.push(convivialitePool, walkerPool, officialPool);
   } else if (opts.category === 'species') {
     orderedPools.push(speciesPool, walkerPool);
-  } else if (opts.category === 'landscape' || opts.category === 'territory') {
-    orderedPools.push(officialPool, walkerPool, speciesPool);
+  } else if (opts.category === 'landscape') {
+    orderedPools.push(officialPool, convivialitePool, walkerPool, speciesPool);
+  } else if (opts.category === 'territory') {
+    orderedPools.push(officialPool, walkerPool, convivialitePool, speciesPool);
   } else {
-    orderedPools.push(walkerPool, officialPool, speciesPool);
+    // walkers / Mosaïque marcheurs
+    orderedPools.push(convivialitePool, walkerPool, officialPool, speciesPool);
   }
+
 
   // Round-robin entre pools : 1 espèce, 1 marcheur, 1 officiel, 1 espèce…
   const merged: PickedPhoto[] = [];
@@ -381,10 +422,12 @@ export async function pickPhotosDetailed(opts: {
     speciesPool: speciesPool.length,
     walkerPool: walkerPool.length,
     officialPool: officialPool.length,
+    convivialitePool: convivialitePool.length,
     returned: final.length,
     totalPool,
     kingdomShortfall,
   });
+
 
   return { photos: final, kingdomShortfall, poolSize: totalPool };
 }
