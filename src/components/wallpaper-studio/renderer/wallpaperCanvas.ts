@@ -432,13 +432,16 @@ function drawSignature(
   }
   // No date/commune/GPS/tagline — only the event title when an event is selected.
 
-  const rightX = w - padX;
-  // Remonter la ligne meta quand le QR agrandi occupe le coin bas-droit
-  const metaBaseY = event?.title ? panelY - smallSize * 1.8 : baseY;
+  // Réserver un couloir à droite pour le QR agrandi
+  const qrReserve = Math.round(Math.min(w, h) * 0.11) + Math.round(w * 0.045) * 1.6;
+  const rightX = w - padX - qrReserve;
+  // Remonter la ligne meta bien au-dessus du QR
+  const metaBaseY = event?.title ? panelY - Math.round(h * 0.05) : baseY;
   lines.forEach((l, i) => {
     const m = ctx.measureText(l);
     ctx.fillText(l, rightX - m.width, metaBaseY + i * smallSize * 1.5);
   });
+
 }
 
 
@@ -496,15 +499,16 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     const qrDataUrl = await QRCode.toDataURL(qrTarget, {
       margin: 2,
       errorCorrectionLevel: 'M',
-      color: { dark: pal.ink, light: pal.paper },
+      color: { dark: pal.paper, light: '#0b0b0b' },
       width: qrSize * 3,
     });
     const qrImg = await loadImage(qrDataUrl);
     if (qrImg) {
-      ctx.fillStyle = pal.paper;
+      ctx.fillStyle = '#0b0b0b';
       ctx.fillRect(qrRect.x, qrRect.y, qrRect.w, qrRect.h);
       ctx.drawImage(qrImg, qx, qy, qrSize, qrSize);
     }
+
   } catch (e) { console.warn('[wallpaper] qr failed', e); }
 
 
