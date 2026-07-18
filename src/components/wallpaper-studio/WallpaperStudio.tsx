@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { pickPhotos, fetchEvents, fetchEventById, type EventSnapshot, type PickedPhoto } from './renderer/photoPicker';
-import { renderWallpaper, type Theme } from './renderer/wallpaperCanvas';
+import { renderWallpaper, type Theme, type Variant, type TitleScale } from './renderer/wallpaperCanvas';
 import WallpaperPreviewModal from './WallpaperPreviewModal';
 import CommunityGallery from './CommunityGallery';
 
@@ -24,7 +24,16 @@ interface Proposal {
   theme: Theme;
   category: Category;
   ambiance: Ambiance;
+  variant: Variant;
+  titleScale: TitleScale;
 }
+
+const VARIANT_SEQUENCE: { variant: Variant; titleScale: TitleScale }[] = [
+  { variant: 'editorial', titleScale: 'large' },
+  { variant: 'organic', titleScale: 'small' },
+  { variant: 'diptyque', titleScale: 'medium' },
+  { variant: 'constellation', titleScale: 'small' },
+];
 
 const THEMES: { id: Theme; title: string; subtitle: string; accent: string }[] = [
   { id: 'frequence', title: 'La Fréquence du Vivant', subtitle: 'L\'écoute large du territoire', accent: 'from-emerald-700/40 to-amber-300/30' },
