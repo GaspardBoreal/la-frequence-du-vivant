@@ -1,23 +1,21 @@
-## Ajustements Studio Fonds d'Écran
+## Correctifs Studio Fond d'écran
 
-**A. CTA jamais au-dessus d'une image**
+### 1. QR code lisible
+Dans `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts` :
+- Passer la taille du QR de `6%` à `~11%` du min(width, height) — un QR de ~140 px sur un 1280×800 est actuellement à ~48 px, ce qui rend le scan impossible.
+- Augmenter la marge du QRCode (`margin: 2`) et générer à `qrSize * 3` pour piquer la netteté.
+- Épaissir le padding blanc autour (de `0.08` à `0.14`) pour la zone de silence exigée par les scanners.
+- Ajouter le `qrRect` élargi à la liste des zones à éviter par la signature meta et le CTA (déjà présent pour le CTA, à renforcer pour le bloc meta droit).
 
-Fichier : `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts`
+### 2. Signature quand un événement est sélectionné
+Dans `drawSignature` du même fichier :
+- Si `event?.title` existe → n'afficher **que** le titre de l'événement à droite (suppression de la date, commune, GPS).
+- Sinon (mode "toute la Fréquence") → garder le comportement actuel (rien ou mentions génériques).
+- Repositionner ce titre plus haut pour ne pas croiser le nouveau QR agrandi (baseY remonté quand `event` présent).
 
-- Dans chaque layout (Editorial, Organic, Diptyque, Constellation), la fonction de rendu calcule déjà les rectangles des photos (`photoRects: {x,y,w,h}[]`). Exposer ces rects au moment d'appeler `drawCommunityCta`.
-- Modifier `drawCommunityCta(ctx, W, H, opts, photoRects)` : au lieu de positions fixes bas-gauche/droite, tester une liste de positions candidates (bas-gauche, bas-centre, bas-droite, haut-gauche, milieu-gauche selon variante) et retenir la première dont le rectangle CTA n'intersecte AUCUN `photoRect` (avec marge 12px). Fallback : réduire la largeur du CTA (mode compact 1 ligne) puis, en dernier recours, dessiner sur une bande noire pleine largeur en bas hors images.
-- Même logique appliquée pour éviter chevauchement avec QR et signature (déjà positionnés bas-droite/bas-gauche selon variante).
+### Détails techniques
+- `qrSize = Math.round(Math.min(width, height) * 0.11)`
+- `QRCode.toDataURL(qrTarget, { margin: 2, errorCorrectionLevel: 'M', color: { dark: pal.ink, light: pal.paper }, width: qrSize * 3 })`
+- `lines` dans `drawSignature` devient `event?.title ? [event.title] : []`.
 
-**B. Supprimer la signature "Territoires en éveil · France - une mosaïque de marches"**
-
-Fichier : `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts`
-
-- Retirer l'appel à `drawSignature` (ou équivalent) dans les 4 variantes. Conserver le petit label "Les Marches du Vivant" / "La Fréquence du Vivant" en titre et le QR code, mais supprimer la ligne secondaire "Territoires en éveil…".
-
-**C. CTA coché par défaut**
-
-Fichier : `src/components/wallpaper-studio/WallpaperStudio.tsx`
-
-- Initial state `ctaEnabled` : passer de `false` à `true`.
-
-Aucun changement DB ni edge function.
+Aucun autre écran impacté.
