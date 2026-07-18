@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wand2, Sparkles, MapPin, Feather, Users, Compass, Sun, Sunrise, Sunset, Moon, Loader2, Check, Leaf, Bird, Bug, Sprout, Globe2, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
