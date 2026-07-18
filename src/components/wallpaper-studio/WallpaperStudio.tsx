@@ -368,6 +368,8 @@ const WallpaperStudio: React.FC = () => {
               theme: item.theme as Theme,
               category: item.category as Category,
               ambiance: item.ambiance as Ambiance,
+              variant: (item.variant as Variant) ?? 'organic',
+              titleScale: 'small',
             });
           }} />
         </div>
