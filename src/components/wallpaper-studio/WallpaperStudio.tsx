@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { pickPhotos, fetchEvents, fetchEventById, type EventSnapshot, type PickedPhoto } from './renderer/photoPicker';
-import { renderWallpaper, type Theme } from './renderer/wallpaperCanvas';
+import { renderWallpaper, type Theme, type Variant, type TitleScale } from './renderer/wallpaperCanvas';
 import WallpaperPreviewModal from './WallpaperPreviewModal';
 import CommunityGallery from './CommunityGallery';
 
@@ -24,7 +24,16 @@ interface Proposal {
   theme: Theme;
   category: Category;
   ambiance: Ambiance;
+  variant: Variant;
+  titleScale: TitleScale;
 }
+
+const VARIANT_SEQUENCE: { variant: Variant; titleScale: TitleScale }[] = [
+  { variant: 'editorial', titleScale: 'large' },
+  { variant: 'organic', titleScale: 'small' },
+  { variant: 'diptyque', titleScale: 'medium' },
+  { variant: 'constellation', titleScale: 'small' },
+];
 
 const THEMES: { id: Theme; title: string; subtitle: string; accent: string }[] = [
   { id: 'frequence', title: 'La Fréquence du Vivant', subtitle: 'L\'écoute large du territoire', accent: 'from-emerald-700/40 to-amber-300/30' },
@@ -73,10 +82,12 @@ const WallpaperStudio: React.FC = () => {
     setProposals([]);
     try {
       const evt = eventId ? await fetchEventById(eventId) : null;
-      const seeds = [Date.now(), Date.now() + 97, Date.now() + 313, Date.now() + 719];
+      const baseSeed = Date.now();
       const results: Proposal[] = [];
-      for (const seed of seeds) {
-        const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 5 });
+      for (let i = 0; i < VARIANT_SEQUENCE.length; i++) {
+        const { variant, titleScale } = VARIANT_SEQUENCE[i];
+        const seed = baseSeed + i * 137;
+        const photos = await pickPhotos({ category, ambiance, eventId: eventId ?? undefined, count: 6 });
         if (photos.length === 0) continue;
         const qrTarget = evt?.slug
           ? `https://la-frequence-du-vivant.com/m/${evt.slug}`
@@ -93,6 +104,8 @@ const WallpaperStudio: React.FC = () => {
           ambiance,
           qrTarget,
           seed,
+          variant,
+          titleScale,
         });
         results.push({
           seed,
@@ -102,6 +115,8 @@ const WallpaperStudio: React.FC = () => {
           theme,
           category,
           ambiance,
+          variant,
+          titleScale,
         });
         setProposals([...results]);
       }
@@ -353,6 +368,8 @@ const WallpaperStudio: React.FC = () => {
               theme: item.theme as Theme,
               category: item.category as Category,
               ambiance: item.ambiance as Ambiance,
+              variant: ((item as { variant?: string }).variant as Variant) ?? 'organic',
+              titleScale: 'small',
             });
           }} />
         </div>

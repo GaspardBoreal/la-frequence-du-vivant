@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Loader2, Download, Share2, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { renderWallpaper, canvasToBlob, downloadBlob, type Theme } from './renderer/wallpaperCanvas';
+import { renderWallpaper, canvasToBlob, downloadBlob, type Theme, type Variant, type TitleScale } from './renderer/wallpaperCanvas';
 import type { PickedPhoto, EventSnapshot } from './renderer/photoPicker';
 import InstallTutorialDialog from './InstallTutorialDialog';
 
@@ -15,6 +15,8 @@ interface Proposal {
   theme: Theme;
   category: string;
   ambiance: string;
+  variant?: Variant;
+  titleScale?: TitleScale;
 }
 
 const RESOLUTIONS: { id: string; label: string; w: number; h: number; icon: React.ElementType }[] = [
@@ -57,7 +59,8 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
           event_date_snapshot: proposal.event?.date ?? null,
           event_commune_snapshot: proposal.event?.commune ?? null,
           event_gps_snapshot: proposal.event ? { lat: proposal.event.lat, lng: proposal.event.lng } : null,
-        }).select('id').maybeSingle();
+          variant: proposal.variant ?? null,
+        } as never).select('id').maybeSingle();
         if (!error && data?.id) setSavedId(data.id);
       } catch {}
     })();
@@ -82,6 +85,8 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
         ambiance: proposal.ambiance,
         qrTarget,
         seed: proposal.seed,
+        variant: proposal.variant,
+        titleScale: proposal.titleScale,
       });
       const blob = await canvasToBlob(canvas, 'image/jpeg', 0.93);
       const label = proposal.theme === 'frequence' ? 'frequence-du-vivant' : 'marches-du-vivant';
