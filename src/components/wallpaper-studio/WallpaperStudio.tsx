@@ -110,16 +110,30 @@ const WallpaperStudio: React.FC = () => {
       const evt = eventId ? await fetchEventById(eventId) : null;
       const baseSeed = Date.now();
       const results: Proposal[] = [];
+      // Auto-reset si le pool est presque épuisé (>80 % vu)
+      if (lastPoolSizeRef.current > 0 && seenUrlsRef.current.size > lastPoolSizeRef.current * 0.8) {
+        seenUrlsRef.current = new Set();
+        setSeenCount(0);
+        setCycleCount(0);
+        const { toast } = await import('sonner');
+        toast.info('Tu as parcouru toutes les vues disponibles — nouveau cycle 🌱');
+      }
       for (let i = 0; i < VARIANT_SEQUENCE.length; i++) {
         const { variant, titleScale } = VARIANT_SEQUENCE[i];
         const seed = baseSeed + i * 137;
         try {
-          const { photos, kingdomShortfall } = await pickPhotosDetailed({ category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom });
+          const { photos, kingdomShortfall, poolSize } = await pickPhotosDetailed({
+            category, ambiance, eventId: eventId ?? undefined, count: 6, kingdom,
+            excludeUrls: seenUrlsRef.current, seed,
+          });
+          if (poolSize > 0) lastPoolSizeRef.current = poolSize;
           if (i === 0 && kingdomShortfall && kingdom !== 'all') {
             const { toast } = await import('sonner');
             toast.info(`Peu d'observations pour ce règne — mosaïque enrichie avec des scènes du territoire.`);
           }
           if (photos.length === 0) { noPhotos++; continue; }
+          // Mémoriser les URLs pour éviter les répétitions au prochain clic
+          photos.forEach((p) => seenUrlsRef.current.add(p.url));
           const qrTarget = ctaEnabled
             ? 'https://la-frequence-du-vivant.com/marches-du-vivant/connexion?tab=register'
             : evt?.slug
