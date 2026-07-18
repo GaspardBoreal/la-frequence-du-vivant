@@ -422,10 +422,12 @@ export async function pickPhotosDetailed(opts: {
     speciesPool: speciesPool.length,
     walkerPool: walkerPool.length,
     officialPool: officialPool.length,
+    convivialitePool: convivialitePool.length,
     returned: final.length,
     totalPool,
     kingdomShortfall,
   });
+
 
   return { photos: final, kingdomShortfall, poolSize: totalPool };
 }
