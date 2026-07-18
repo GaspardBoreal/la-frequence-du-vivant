@@ -119,6 +119,10 @@ const MaterielPedagogique: React.FC = () => {
         {/* Section Constellation des Voix Territoriales */}
         <ConstellationSection />
 
+        {/* Section Studio Fonds d'Écran */}
+        <WallpaperStudio />
+
+
         {/* Citation de clôture */}
         <motion.section
           initial={{ opacity: 0 }}
