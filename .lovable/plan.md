@@ -1,45 +1,37 @@
-## Améliorations Studio Fonds d'Écran
+## Objectif
+Rendre le CTA « Rejoignez la communauté des Marcheurs du Vivant » parfaitement lisible et élégant sur toutes les variantes (Organic, Editorial, Diptyque, Constellation) et tous formats (paysage, portrait mobile, ultra-wide).
 
-### 1. Nouvelle étape "Règne du vivant" (entre marche et ambiance)
+## Diagnostic
+Dans `wallpaperCanvas.ts > drawCommunityCta` :
+- Le texte est posé sans fond, à ~82 % d'opacité doré, souvent sur une photo ou zone claire → contraste insuffisant.
+- La taille (h × 0.018) devient minuscule en paysage et se chevauche avec la signature bottom (`drawSignature`, panel h × 0.13).
+- Aligné à droite juste à gauche du QR → collision fréquente avec le bloc meta droit de la signature.
+- Aucun padding de sécurité, pas de plaque de fond, pas de scaling par variante.
 
-Ajouter une **étape 3 dédiée** dans le wizard (`WallpaperStudio.tsx`) permettant de choisir le règne d'espèces mis en avant :
+## Correctifs (fichier unique : `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts`)
 
-- **Tout le vivant** (défaut, comportement actuel)
-- **Flore** (plantes, arbres, fleurs)
-- **Faune ailée** (oiseaux, papillons, insectes volants)
-- **Petite faune** (insectes, arthropodes, reptiles, amphibiens)
-- **Champignons & lichens**
+### 1. Refonte de `drawCommunityCta`
+- **Pilule/plaque de fond** : rectangle arrondi semi-transparent noir (`rgba(10,8,4,0.55)`) avec bordure dorée 1px `rgba(232,192,122,0.35)` + léger blur d'ombre → garantit le contraste sur n'importe quelle photo.
+- **Typo plus généreuse** : `ctaSize = max(14px, h × 0.022)` (au lieu de 0.018) ; sous-titre `max(11px, h × 0.014)`.
+- **Couleurs** : titre en `#f5e6c8` opacité 1.0 (paper doré chaud), sous-titre `rgba(245,230,200,0.85)`.
+- **Petit pictogramme feuille/point doré** à gauche du texte pour ancrer visuellement.
+- **Padding interne** : 20 × 12 px scalé.
 
-**Impact code** :
-- `photoPicker.ts` → `fetchSpeciesPhotos()` filtre sur `iconic_taxon` / `kingdom` du `species_data` selon le règne choisi ; fallback vers pool général si moins de 3 photos trouvées pour ce règne.
-- `WallpaperStudio.tsx` → nouvelle prop `kingdom` passée à `pickPhotos`, nouvelle étape UI (chips visuels avec pictos).
-- `wallpaperCanvas.ts` → transmis en signature/sous-titre optionnel ("Faune ailée · Deviat").
-- Table `wallpaper_generations` → nouvelle colonne `kingdom text` (migration).
+### 2. Placement anti-collision
+- Positionner la plaque **au-dessus du panel signature** (donc dans la zone `y = h - panelH - ctaHeight - marge`), centrée horizontalement OU alignée à gauche selon la variante :
+  - Organic / Constellation : centrée horizontalement en bas.
+  - Editorial : alignée à gauche sous le trait doré du titre (le titre étant en haut).
+  - Diptyque : alignée à droite sous les cartes.
+- Toujours laisser une marge de `w × 0.02` avec le QR (jamais dessous).
 
-Les 4 variantes (Editorial / Organic / Diptyque / Constellation) restent générées ; seule la source photo est filtrée.
+### 3. Adapter la signature pour laisser la place
+- Si `ctaEnabled`, réduire légèrement `panelH` de 0.13 → 0.11 et remonter le CTA juste au-dessus, avec un espacement de `h × 0.015`.
 
-### 2. Option "Appel à la communauté" discret et design
+### 4. Format portrait mobile (h > w)
+- Empiler CTA + sous-titre + QR verticalement, texte centré, plaque pleine largeur `w × 0.86`.
 
-Nouvelle **case à cocher** dans l'étape finale (avant "Générer 4 propositions") :
+## Résultat attendu
+CTA toujours lisible (plaque sombre + texte crème + liseré doré), harmonieux avec la charte Jardin, sans jamais chevaucher le QR ni la signature, quelle que soit la variante ou la résolution.
 
-> ☐ Inclure un appel discret « Rejoignez la communauté des Marcheurs du Vivant »
-
-**Rendu canvas** (`wallpaperCanvas.ts`) :
-- Bandeau ultra-fin en bas du wallpaper, à côté ou au-dessus du QR code
-- Typo Crimson italique en doré transparent (`rgba(212, 168, 83, 0.75)`)
-- Texte : « Rejoignez la communauté des Marcheurs du Vivant »
-- Sous-ligne fine (`la-frequence-du-vivant.com`) en Inter light
-- Positionnement adaptatif selon variante (Editorial : bas gauche ; Organic/Constellation : bas centre ; Diptyque : sous la colonne texte)
-- QR code redirige vers `/marches-du-vivant/connexion?tab=register` quand l'option est activée (au lieu de l'URL par défaut)
-
-**Impact code** :
-- `WallpaperStudio.tsx` → state `includeCta: boolean`, checkbox stylée (switch shadcn)
-- `wallpaperCanvas.ts` → paramètre `ctaEnabled` dans `renderWallpaper()` + fonction `drawCommunityCta()`
-- `WallpaperPreviewModal.tsx` → propage `ctaEnabled` au rendu HD et stocke dans DB
-- Migration : colonne `cta_enabled boolean default false`
-
-### Détails techniques
-
-- Filtrage règne : mapping `iconic_taxon` iNat → règne UI (Aves + Insecta+ailés → "Faune ailée", Plantae → "Flore", Fungi → "Champignons", etc.)
-- Si le règne choisi n'a pas assez de photos pour l'event/marche sélectionné : afficher un toast "Peu d'observations Faune ailée sur cette marche, complétées par le pool général"
-- Le CTA ne s'affiche jamais par-dessus une photo (zone réservée dans le layout de chaque variante)
+## Fichier modifié
+- `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts` (uniquement `drawCommunityCta` + petit ajustement dans `renderWallpaper` pour passer la variante/format et réduire le panel si CTA actif).
