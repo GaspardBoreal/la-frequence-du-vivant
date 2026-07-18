@@ -6449,6 +6449,7 @@ export type Database = {
           species_names: string[] | null
           theme: string
           user_id: string | null
+          variant: string | null
         }
         Insert: {
           ambiance: string
@@ -6470,6 +6471,7 @@ export type Database = {
           species_names?: string[] | null
           theme: string
           user_id?: string | null
+          variant?: string | null
         }
         Update: {
           ambiance?: string
@@ -6491,6 +6493,7 @@ export type Database = {
           species_names?: string[] | null
           theme?: string
           user_id?: string | null
+          variant?: string | null
         }
         Relationships: []
       }
