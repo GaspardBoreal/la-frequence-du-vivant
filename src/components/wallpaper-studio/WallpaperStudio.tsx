@@ -266,9 +266,34 @@ const WallpaperStudio: React.FC = () => {
             </WizardStep>
           )}
 
-          {/* Step 3: Category + Ambiance */}
+          {/* Step 3: Kingdom (règne du vivant) */}
           {theme && scope && (scope === 'all' || eventId) && (
-            <WizardStep number={3} title="Angle & ambiance" active={!category || !ambiance}>
+            <WizardStep number={3} title="Règne du vivant à mettre en lumière" active={!kingdom}>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {KINGDOMS.map((k) => {
+                  const Icon = k.icon;
+                  return (
+                    <button
+                      key={k.id}
+                      onClick={() => setKingdom(k.id)}
+                      className={cn(
+                        'rounded-xl border p-4 text-left transition-all bg-card/40 backdrop-blur-sm hover:bg-card/60',
+                        kingdom === k.id ? 'border-amber-500 ring-2 ring-amber-500/40' : 'border-border/40',
+                      )}
+                    >
+                      <Icon className="w-5 h-5 mb-2 text-emerald-600 dark:text-emerald-400" />
+                      <div className="font-medium text-sm">{k.label}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{k.hint}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </WizardStep>
+          )}
+
+          {/* Step 4: Category + Ambiance */}
+          {theme && scope && (scope === 'all' || eventId) && kingdom && (
+            <WizardStep number={4} title="Angle & ambiance" active={!category || !ambiance}>
               <div className="space-y-6">
                 <div>
                   <div className="text-sm text-muted-foreground mb-2">Catégorie</div>
@@ -318,6 +343,27 @@ const WallpaperStudio: React.FC = () => {
               </div>
             </WizardStep>
           )}
+
+          {/* CTA option */}
+          {canGenerate && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between gap-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-emerald-950/30 to-amber-950/20 backdrop-blur-sm px-5 py-4"
+            >
+              <div className="flex items-start gap-3">
+                <Heart className="w-5 h-5 mt-0.5 text-amber-400" />
+                <div>
+                  <div className="font-crimson italic text-foreground">Inclure un appel discret à la communauté</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    « Rejoignez la communauté des Marcheurs du Vivant » + QR vers l'inscription
+                  </div>
+                </div>
+              </div>
+              <Switch checked={ctaEnabled} onCheckedChange={setCtaEnabled} />
+            </motion.div>
+          )}
+
 
           {/* CTA */}
           {canGenerate && (
