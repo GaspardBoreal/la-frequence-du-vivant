@@ -1,0 +1,1 @@
+alter table public.wallpaper_generations add column if not exists variant text;
