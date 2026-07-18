@@ -15,6 +15,8 @@ interface Proposal {
   theme: Theme;
   category: string;
   ambiance: string;
+  variant?: Variant;
+  titleScale?: TitleScale;
 }
 
 const RESOLUTIONS: { id: string; label: string; w: number; h: number; icon: React.ElementType }[] = [
