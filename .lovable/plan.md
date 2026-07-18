@@ -1,59 +1,54 @@
-# Bug — aucun oiseau/papillon quand on choisit « Faune ailée »
+# Variété illimitée — chaque clic sur « Générer 4 propositions » doit puiser dans un pool renouvelé
 
-## Diagnostic (vérifié sur la base)
+## Diagnostic
 
-En inspectant `biodiversity_snapshots.species_data`, chaque espèce a la forme :
+Aujourd'hui, `pickPhotosDetailed` :
+- récupère toujours les **20 snapshots les plus récents** (`order snapshot_date desc limit 20`) → mêmes espèces à chaque appel ;
+- récupère les **150 dernières photos marcheurs** (`order created_at desc`) → mêmes clichés en tête ;
+- ne mélange qu'à la **fin**, donc les mêmes ~80 photos ressortent et le shuffle final ne fait tourner que sur une petite tête.
 
-```
-{ scientificName, commonName, iconicTaxon: "Aves", family: "Columbidae",
-  photoData: { url: "...square.jpg" }, photos: ["...square.jpg", ...] }
-```
+Résultat : deux clics consécutifs proposent quasi-systématiquement les mêmes espèces vedettes et le même bandeau photo marcheur.
 
-Le picker actuel (`src/components/wallpaper-studio/renderer/photoPicker.ts`) lit :
+## Correctifs (frontend uniquement)
 
-```ts
-const url = s.photoUrl || s.photo_url; // ⇒ toujours undefined
-```
+### 1. Élargir & randomiser les pools sources — `photoPicker.ts`
 
-Ces champs n'existent pas dans les snapshots. **Résultat : le pool « espèces filtrées par règne » est toujours vide**, donc :
+- **Espèces** : passer la limite snapshot de `20 → 60` et fusionner *tous* les snapshots retenus dans un pool d'espèces uniques (par `scientificName`), en gardant potentiellement plusieurs URLs par espèce (`photos[]` complet, pas seulement `photos[0]`). Cela multiplie le pool par ~5.
+- **Photos marcheurs** : passer `150 → 400`, et ajouter un **offset aléatoire** (`range(offset, offset+400)`) pour puiser au-delà des dernières.
+- **Photos officielles** : passer `80 → 300`.
+- Ajouter un paramètre optionnel `excludeUrls: Set<string>` que `pickPhotosDetailed` filtrera avant le merge.
 
-- pour la catégorie **Empreinte territoire** (celle choisie sur la capture), le règne ne peut pas être appliqué — seuls les pools `marche_photos` et `marcheur_medias` remontent, qui ne sont pas taggués par espèce → aucun oiseau/papillon garanti ;
-- même en catégorie **Espèce vedette**, le filtre Faune ailée renvoie 0 photo et déclenche le fallback « tout le vivant » → l'utilisateur voit à nouveau de la flore.
+### 2. Rotation entre appels — mémoire côté `WallpaperStudio.tsx`
 
-Deuxième point : le matcher `winged` pour les insectes n'utilise que le `commonName` avec une regex `papillon|lepidopt|odonat|hymenopt`. Les données ont un champ `family` fiable (`Nymphalidae`, `Pieridae`, `Libellulidae`, `Apidae`…) qui n'est jamais consulté.
+- Nouveau `useRef<Set<string>>(seenUrls)` qui accumule les URLs des 4 dernières générations.
+- À chaque `handleGenerate`, passer `excludeUrls: seenUrls.current` à `pickPhotosDetailed`.
+- Après génération, ajouter les URLs retenues au Set.
+- Quand le Set couvre > 80 % du pool disponible (détecté par un shortfall répété), le **réinitialiser** avec un toast discret : « Tu as parcouru toutes les vues disponibles — on repart pour un nouveau cycle. »
 
-## Correctifs (frontend uniquement, `photoPicker.ts`)
+### 3. Vraie randomisation, pas juste un shuffle final
 
-1. **Extraction URL robuste** dans `fetchSpeciesPhotos` :
-   ```
-   url = s.photoData?.url || s.photos?.[0] || s.photoUrl || s.photo_url
-   ```
-   + normalisation `square/small → medium` déjà en place.
+- Dans `pickPhotosDetailed`, mélanger **chaque pool** (`speciesPool`, `walkerPool`, `officialPool`) **avant** le merge, puis piocher en round-robin (1 photo espèce, 1 marcheur, 1 officiel, 1 espèce…) plutôt qu'en concaténation. Cela garantit une composition différente même sans exclusion.
+- Ajouter un `seed` optionnel (timestamp + index de génération) passé à un shuffle déterministe (mulberry32) pour que chaque variante d'un même clic reste distincte mais reproductible en debug.
 
-2. **Matcher `winged` élargi** — utiliser aussi `family` :
-   - oiseaux : `iconicTaxon === 'aves'`
-   - papillons : `family` ∈ liste Lepidoptera (Nymphalidae, Pieridae, Papilionidae, Lycaenidae, Hesperiidae, Sphingidae, Saturniidae, Erebidae, Noctuidae, Geometridae…)
-   - libellules : Odonata (Libellulidae, Aeshnidae, Coenagrionidae, Calopterygidae…)
-   - abeilles/guêpes emblématiques : Apidae, Vespidae, Syrphidae (survol floral)
-   - garde la regex `commonName` en filet de sécurité.
+### 4. Diversité des espèces dans une même mosaïque
 
-3. **Priorité des pools quand `kingdom !== 'all'`** :
-   Toutes catégories confondues, mettre `fetchSpeciesPhotos(kingdom)` **en tête** du merge, et ne compléter avec `walker`/`official` que si le pool espèces < `count`. Aujourd'hui pour Territoire/Paysage/Mosaïque, les photos génériques sont ajoutées avant et saturent le mélange.
+- Quand plusieurs photos d'une même espèce existent, n'autoriser qu'**une seule occurrence par espèce et par proposition** (déjà partiellement fait via `seen` sur `scientificName`, à durcir : `seen` doit être par-proposition, pas cumulé pour toute la session).
+- Pour la variante **Constellation** (qui affiche 8-9 vignettes), forcer une diversité `family` différente si possible.
 
-4. **Fallback plus honnête** : si après filtrage < 3 photos du règne demandé sont trouvées :
-   - garder les quelques photos du règne trouvées ;
-   - compléter avec le pool général **mais** afficher un toast discret dans `WallpaperStudio.tsx` : « Peu d'observations de faune ailée pour cette sélection — mosaïque enrichie avec des scènes du territoire. » (au lieu du silence actuel).
+### 5. UI — mini-indicateur
 
-5. **Log de diagnostic** (console.debug) : nombre de photos par pool et par règne, pour faciliter le support futur.
+- Sous le bouton « Générer 4 propositions », afficher discrètement `Cycle 3 · 47 vues déjà vues` pour que l'utilisateur perçoive la fraîcheur du contenu à chaque clic.
+- Ajouter un petit bouton « ↻ Repartir de zéro » qui vide le `seenUrls` immédiatement.
 
 ## Détails techniques
 
-- Aucun changement de schéma DB, aucune migration.
-- Aucune modification du renderer canvas ni de l'UI wizard — seuls `photoPicker.ts` (logique) et `WallpaperStudio.tsx` (toast de fallback) sont touchés.
-- Les 4 variantes (Editorial/Organic/Diptyque/Constellation) profitent automatiquement du pool corrigé.
+- Aucune migration DB nécessaire.
+- Aucun changement de schéma des snapshots.
+- Modifications : `src/components/wallpaper-studio/renderer/photoPicker.ts`, `src/components/wallpaper-studio/WallpaperStudio.tsx`.
+- Perf : les nouvelles limites (`60 snapshots × ~50 espèces = 3000` avant dédup, `400 marcheurs`, `300 officielles`) restent sous les seuils de PostgREST et l'API renvoie le tout en < 500 ms côté marche unique.
 
-## Vérification après build
+## Vérification
 
-- Sélection **Empreinte territoire + Faune ailée + Nuit** → au moins 3 vignettes d'oiseaux/papillons visibles dans les 4 propositions.
-- Sélection **Espèce vedette + Champignons** → mycètes uniquement (bonus, même correctif d'extraction URL).
-- Sélection **Flore** → inchangée.
+- Cliquer 5 fois de suite « Générer 4 propositions » avec le même règne → chaque cycle propose au moins 12 photos nouvelles (0 doublon entre cycles consécutifs).
+- Après ~10 cycles sur une petite marche : toast « nouveau cycle » et le pool redémarre proprement.
+- Cliquer avec « Faune ailée » → les 4 variantes montrent 4 combinaisons différentes d'oiseaux/papillons.
