@@ -76,23 +76,45 @@ export async function fetchEventById(id: string): Promise<EventSnapshot | null> 
   };
 }
 
-async function fetchOfficialPhotos(eventId?: string): Promise<PickedPhoto[]> {
-  let marcheId: string | null = null;
-  if (eventId) {
-    const { data: ev } = await supabase.from('marche_events').select('marche_id').eq('id', eventId).maybeSingle();
-    marcheId = (ev as any)?.marche_id || null;
+const marcheIdsCache = new Map<string, string[]>();
+
+async function resolveMarcheIds(eventId?: string): Promise<string[]> {
+  if (!eventId) return [];
+  if (marcheIdsCache.has(eventId)) return marcheIdsCache.get(eventId)!;
+  const { data: ev } = await supabase
+    .from('marche_events')
+    .select('exploration_id')
+    .eq('id', eventId)
+    .maybeSingle();
+  const explorationId = (ev as any)?.exploration_id;
+  if (!explorationId) {
+    marcheIdsCache.set(eventId, []);
+    return [];
   }
+  const { data: links } = await supabase
+    .from('exploration_marches')
+    .select('marche_id')
+    .eq('exploration_id', explorationId);
+  const ids = (links || []).map((l: any) => l.marche_id).filter(Boolean);
+  marcheIdsCache.set(eventId, ids);
+  return ids;
+}
+
+async function fetchOfficialPhotos(eventId?: string): Promise<PickedPhoto[]> {
+  const marcheIds = await resolveMarcheIds(eventId);
+  if (eventId && marcheIds.length === 0) return [];
   let q = supabase
     .from('marche_photos')
     .select('url_supabase,url_originale,titre,metadata')
     .order('ordre', { ascending: true })
     .limit(300);
-  if (marcheId) q = q.eq('marche_id', marcheId);
+  if (marcheIds.length > 0) q = q.in('marche_id', marcheIds);
   const { data } = await q;
   return (data || [])
     .map((p: any) => ({ url: p.url_supabase || p.url_originale, attribution: p.titre }))
     .filter((p) => !!p.url);
 }
+
 
 async function fetchWalkerPhotos(eventId?: string, amb: Ambiance = 'any'): Promise<PickedPhoto[]> {
   let q = supabase
