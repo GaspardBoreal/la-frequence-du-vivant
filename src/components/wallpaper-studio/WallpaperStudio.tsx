@@ -424,7 +424,7 @@ const WallpaperStudio: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex justify-center"
+              className="flex flex-col items-center gap-3"
             >
               <Button
                 size="lg"
@@ -434,10 +434,24 @@ const WallpaperStudio: React.FC = () => {
               >
                 {generating ? (
                   <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Composition en cours…</>
+                ) : cycleCount > 0 ? (
+                  <><Wand2 className="w-5 h-5 mr-2" /> Générer 4 nouvelles propositions</>
                 ) : (
                   <><Wand2 className="w-5 h-5 mr-2" /> Générer 4 propositions</>
                 )}
               </Button>
+              {cycleCount > 0 && (
+                <div className="flex items-center gap-3 text-xs text-white/60 font-crimson">
+                  <span>Cycle {cycleCount} · {seenCount} vue{seenCount > 1 ? 's' : ''} déjà explorée{seenCount > 1 ? 's' : ''}</span>
+                  <button
+                    type="button"
+                    onClick={resetCycles}
+                    className="text-amber-300/80 hover:text-amber-200 underline underline-offset-2 transition-colors"
+                  >
+                    ↻ Repartir de zéro
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
 
