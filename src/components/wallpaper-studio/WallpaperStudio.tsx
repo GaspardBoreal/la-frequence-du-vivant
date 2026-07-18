@@ -190,8 +190,13 @@ const WallpaperStudio: React.FC = () => {
       toast.error('Erreur inattendue lors de la génération.');
     } finally {
       setGenerating(false);
+      setSeenCount(seenUrlsRef.current.size);
+      setCycleCount((c) => c + 1);
     }
   }
+
+  // Reset le cycle quand l'utilisateur change les paramètres essentiels
+  useEffect(() => { resetCycles(); }, [category, kingdom, eventId, ambiance, scope]);
 
 
 
