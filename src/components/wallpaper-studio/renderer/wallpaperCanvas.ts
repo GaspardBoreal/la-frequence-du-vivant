@@ -499,15 +499,16 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
     const qrDataUrl = await QRCode.toDataURL(qrTarget, {
       margin: 2,
       errorCorrectionLevel: 'M',
-      color: { dark: pal.ink, light: pal.paper },
+      color: { dark: pal.paper, light: '#0b0b0b' },
       width: qrSize * 3,
     });
     const qrImg = await loadImage(qrDataUrl);
     if (qrImg) {
-      ctx.fillStyle = pal.paper;
+      ctx.fillStyle = '#0b0b0b';
       ctx.fillRect(qrRect.x, qrRect.y, qrRect.w, qrRect.h);
       ctx.drawImage(qrImg, qx, qy, qrSize, qrSize);
     }
+
   } catch (e) { console.warn('[wallpaper] qr failed', e); }
 
 
