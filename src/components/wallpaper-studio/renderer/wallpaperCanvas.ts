@@ -382,6 +382,7 @@ function drawSignature(
   titleScale: TitleScale,
   variant: Variant,
   qrRect?: Rect,
+  ctaEnabled: boolean = false,
 ) {
 
   const panelH = Math.round(h * 0.13);
@@ -403,25 +404,28 @@ function drawSignature(
   ctx.fillStyle = textColor;
   ctx.font = `italic 500 ${markSize}px "Crimson Text", Georgia, serif`;
 
-  // Editorial: title big, top-left of the composition instead of bottom
-  if (variant === 'editorial' && titleScale === 'large') {
-    const topY = h * 0.10;
-    const topX = w * 0.05;
-    ctx.font = `italic 500 ${Math.round(h * 0.075)}px "Crimson Text", Georgia, serif`;
-    // Wrap on two lines
-    const words = wordmark(theme).split(' ');
-    const mid = Math.ceil(words.length / 2);
-    const line1 = words.slice(0, mid).join(' ');
-    const line2 = words.slice(mid).join(' ');
-    ctx.fillText(line1, topX, topY);
-    ctx.fillText(line2, topX, topY + Math.round(h * 0.075) * 1.05);
-    ctx.fillStyle = pal.gold;
-    ctx.fillRect(topX, topY + Math.round(h * 0.075) * 2.2, w * 0.12, Math.max(2, h * 0.003));
-  } else {
-    ctx.fillText(wordmark(theme), padX, baseY);
-    ctx.fillStyle = pal.gold;
-    const m = ctx.measureText(wordmark(theme));
-    ctx.fillRect(padX, baseY + markSize * 1.15, m.width, Math.max(2, h * 0.002));
+  // Skip the standalone wordmark when the CTA plaque is displayed — the wordmark
+  // is folded into the plaque to avoid any visual collision.
+  if (!ctaEnabled) {
+    // Editorial: title big, top-left of the composition instead of bottom
+    if (variant === 'editorial' && titleScale === 'large') {
+      const topY = h * 0.10;
+      const topX = w * 0.05;
+      ctx.font = `italic 500 ${Math.round(h * 0.075)}px "Crimson Text", Georgia, serif`;
+      const words = wordmark(theme).split(' ');
+      const mid = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, mid).join(' ');
+      const line2 = words.slice(mid).join(' ');
+      ctx.fillText(line1, topX, topY);
+      ctx.fillText(line2, topX, topY + Math.round(h * 0.075) * 1.05);
+      ctx.fillStyle = pal.gold;
+      ctx.fillRect(topX, topY + Math.round(h * 0.075) * 2.2, w * 0.12, Math.max(2, h * 0.003));
+    } else {
+      ctx.fillText(wordmark(theme), padX, baseY);
+      ctx.fillStyle = pal.gold;
+      const m = ctx.measureText(wordmark(theme));
+      ctx.fillRect(padX, baseY + markSize * 1.15, m.width, Math.max(2, h * 0.002));
+    }
   }
 
   // Right meta
@@ -497,7 +501,7 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   const qrPad = qrSize * 0.14;
   const qrRect: Rect = { x: qx - qrPad, y: qy - qrPad, w: qrSize + qrPad * 2, h: qrSize + qrPad * 2 };
 
-  try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant, qrRect); }
+  try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant, qrRect, !!opts.ctaEnabled); }
   catch (e) { console.warn('[wallpaper] signature failed', e); }
 
   try {
@@ -519,7 +523,7 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
 
 
   if (opts.ctaEnabled) {
-    try { drawCommunityCta(ctx, width, height, pal, [...photoRects, qrRect]); }
+    try { drawCommunityCta(ctx, width, height, pal, [...photoRects, qrRect], wordmark(theme)); }
     catch (e) { console.warn('[wallpaper] cta failed', e); }
   }
 
@@ -546,10 +550,12 @@ function drawCommunityCta(
   w: number, h: number,
   pal: Palette,
   obstacles: Rect[],
+  brandLine: string = '',
 ) {
   const isPortrait = h > w;
   const text = 'Rejoignez la communauté des Marcheurs du Vivant';
   const sub = 'la-frequence-du-vivant.com';
+  const brand = brandLine;
 
   ctx.save();
   ctx.textBaseline = 'alphabetic';
@@ -561,21 +567,37 @@ function drawCommunityCta(
   ];
 
   const margin = Math.round(Math.min(w, h) * 0.012);
-  let chosen: { x: number; y: number; plaqueW: number; plaqueH: number; ctaSize: number; subSize: number; padX: number; padY: number; dotR: number; gap: number } | null = null;
+  const brandUpper = brand ? brand.toUpperCase() : '';
+  let chosen: { x: number; y: number; plaqueW: number; plaqueH: number; ctaSize: number; subSize: number; brandSize: number; padX: number; padY: number; dotR: number; gap: number } | null = null;
 
-  for (const tier of tiers) {
+  const measureTier = (tier: { cta: number; sub: number; padMul: number }) => {
     const ctaSize = tier.cta;
     const subSize = tier.sub;
+    const brandSize = brandUpper ? Math.max(9, Math.round(ctaSize * 0.52)) : 0;
     ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
     const tm = ctx.measureText(text);
     ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
     const sm = ctx.measureText(sub);
+    let bm = 0;
+    if (brandUpper) {
+      ctx.font = `600 ${brandSize}px "Inter", "Libre Baskerville", sans-serif`;
+      // Emulate letter-spacing in width measurement (~0.18em tracking).
+      bm = ctx.measureText(brandUpper).width + brandSize * 0.18 * (brandUpper.length - 1);
+    }
     const padX = Math.round(ctaSize * tier.padMul);
     const padY = Math.round(ctaSize * 0.65);
     const dotR = Math.round(ctaSize * 0.28);
     const gap = Math.round(ctaSize * 0.55);
-    const plaqueW = dotR * 2 + gap + Math.max(tm.width, sm.width) + padX * 2;
-    const plaqueH = ctaSize + subSize * 1.6 + padY * 2;
+    const contentW = Math.max(tm.width, sm.width, bm);
+    const plaqueW = dotR * 2 + gap + contentW + padX * 2;
+    const brandBlockH = brandUpper ? brandSize * 1.6 : 0;
+    const plaqueH = brandBlockH + ctaSize + subSize * 1.6 + padY * 2;
+    return { ctaSize, subSize, brandSize, padX, padY, dotR, gap, plaqueW, plaqueH };
+  };
+
+  for (const tier of tiers) {
+    const m = measureTier(tier);
+    const { plaqueW, plaqueH } = m;
 
     const edgeX = Math.round(w * 0.03);
     const edgeY = Math.round(h * 0.03);
@@ -596,7 +618,7 @@ function drawCommunityCta(
       const rect: Rect = { x: c.x, y: c.y, w: plaqueW, h: plaqueH };
       const collides = obstacles.some((o) => rectsIntersect(rect, o, margin));
       if (!collides) {
-        chosen = { x: c.x, y: c.y, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap };
+        chosen = { x: c.x, y: c.y, ...m };
         break;
       }
     }
@@ -605,23 +627,11 @@ function drawCommunityCta(
 
   // Absolute fallback: compact bottom-left, ignore collision (last resort).
   if (!chosen) {
-    const tier = tiers[1];
-    const ctaSize = tier.cta;
-    const subSize = tier.sub;
-    ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
-    const tm = ctx.measureText(text);
-    ctx.font = `400 ${subSize}px "Inter", "Libre Baskerville", sans-serif`;
-    const sm = ctx.measureText(sub);
-    const padX = Math.round(ctaSize * tier.padMul);
-    const padY = Math.round(ctaSize * 0.65);
-    const dotR = Math.round(ctaSize * 0.28);
-    const gap = Math.round(ctaSize * 0.55);
-    const plaqueW = dotR * 2 + gap + Math.max(tm.width, sm.width) + padX * 2;
-    const plaqueH = ctaSize + subSize * 1.6 + padY * 2;
-    chosen = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - plaqueH, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap };
+    const m = measureTier(tiers[1]);
+    chosen = { x: Math.round(w * 0.03), y: h - Math.round(h * 0.03) - m.plaqueH, ...m };
   }
 
-  const { x: plaqueX, y: plaqueY, plaqueW, plaqueH, ctaSize, subSize, padX, padY, dotR, gap } = chosen;
+  const { x: plaqueX, y: plaqueY, plaqueW, plaqueH, ctaSize, subSize, brandSize, padX, padY, dotR, gap } = chosen;
 
 
   // Ombre + plaque sombre arrondie
@@ -655,9 +665,26 @@ function drawCommunityCta(
   ctx.arc(dotCx, dotCy, dotR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Texte principal (crème lumineuse)
+  // Wordmark discret (petit, tracked) en haut de la plaque
   const textX = dotCx + dotR + gap;
-  const textY = plaqueY + padY + ctaSize;
+  let cursorY = plaqueY + padY;
+  if (brandUpper && brandSize > 0) {
+    ctx.font = `600 ${brandSize}px "Inter", "Libre Baskerville", sans-serif`;
+    ctx.fillStyle = 'rgba(232, 192, 122, 0.72)';
+    const track = brandSize * 0.18;
+    let x = textX;
+    for (const ch of brandUpper) {
+      ctx.fillText(ch, x, cursorY + brandSize);
+      x += ctx.measureText(ch).width + track;
+    }
+    // Séparateur fin doré
+    ctx.fillStyle = 'rgba(232, 192, 122, 0.35)';
+    ctx.fillRect(textX, cursorY + brandSize * 1.35, Math.min(plaqueW - (textX - plaqueX) - padX, brandSize * 6), Math.max(1, h * 0.0006));
+    cursorY += brandSize * 1.6;
+  }
+
+  // Texte principal (crème lumineuse)
+  const textY = cursorY + ctaSize;
   ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
   ctx.fillStyle = '#faf3e0';
   ctx.fillText(text, textX, textY);
