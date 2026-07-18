@@ -194,27 +194,30 @@ function extractSpeciesUrl(s: any): string | null {
 }
 
 async function fetchSpeciesPhotos(eventId?: string, kingdom: Kingdom = 'all'): Promise<PickedPhoto[]> {
+  const marcheIds = await resolveMarcheIds(eventId);
+  if (eventId && marcheIds.length === 0) return [];
   let q = supabase
     .from('biodiversity_snapshots')
     .select('species_data,marche_id')
     .order('snapshot_date', { ascending: false })
-    .limit(60);
-  if (eventId) {
-    const { data: ev } = await supabase.from('marche_events').select('marche_id').eq('id', eventId).maybeSingle();
-    const mid = (ev as any)?.marche_id;
-    if (mid) q = q.eq('marche_id', mid);
-  }
+    .limit(kingdom === 'all' ? 60 : 250);
+  if (marcheIds.length > 0) q = q.in('marche_id', marcheIds);
   const { data } = await q;
   const photos: PickedPhoto[] = [];
   const seenUrl = new Set<string>();
   let scanned = 0;
   let matched = 0;
+  let familyLepidoptera = 0;
+  let familyOdonata = 0;
   for (const snap of data || []) {
     const species = ((snap as any).species_data as any[]) || [];
     for (const s of species) {
       scanned++;
       const name = s.scientificName || s.scientific_name;
       if (!name) continue;
+      const fam = String(s.family || '').toLowerCase();
+      if (LEPIDOPTERA_FAMILIES.has(fam)) familyLepidoptera++;
+      if (ODONATA_FAMILIES.has(fam)) familyOdonata++;
       if (!matchKingdom(s, kingdom)) continue;
       matched++;
       // Collecte de TOUTES les photos de l'espèce (photoData + photos[])
@@ -238,9 +241,10 @@ async function fetchSpeciesPhotos(eventId?: string, kingdom: Kingdom = 'all'): P
     }
     if (photos.length >= 400) break;
   }
-  console.debug('[wallpaper] species pool', { kingdom, scanned, matched, kept: photos.length });
+  console.debug('[wallpaper] species pool', { kingdom, marcheIds: marcheIds.length, scanned, matched, kept: photos.length, familyLepidoptera, familyOdonata });
   return photos;
 }
+
 
 export interface PickResult {
   photos: PickedPhoto[];
