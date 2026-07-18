@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import FormationSection from '@/components/FormationSection';
 import OutilsSection from '@/components/OutilsSection';
 import ConstellationSection from '@/components/ConstellationSection';
+import WallpaperStudio from '@/components/wallpaper-studio/WallpaperStudio';
 import Footer from '@/components/Footer';
 
 const MaterielPedagogique: React.FC = () => {
