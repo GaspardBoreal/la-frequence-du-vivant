@@ -1,28 +1,30 @@
-## Objectif
+## Diagnostic
 
-Repositionner le titre de l'événement (nom de la marche) : le placer **sous** le QR code, avec son **bord droit aligné** sur le bord droit du QR code, et un petit espace vertical entre les deux pour la lisibilité.
+En mode **Paysage** sur un événement précis (POITIERS Maison Sous Blossac), le pool est famélique parce que le picker ignore les deux sources visibles dans l'app marcheurs :
 
-## État actuel
+1. **Convivialité (8 photos)** — stockées dans `exploration_convivialite_photos` (scopées par `exploration_id`). Le picker ne les interroge pas du tout.
+2. **Marche → Voir (3 photos)** — stockées dans `marche_photos` (scopées par `marche_id`). Déjà interrogées, mais mélangées à peu de choses.
+3. **Photos marcheurs** — `fetchWalkerPhotos` filtre `is_public = true` + `marche_event_id = eventId`. Or beaucoup d'obs sont rattachées via `marche_id`, pas `marche_event_id`, et `is_public` élimine la majorité du corpus. Résultat : pool quasi vide → générateur retombe sur des macros d'espèces.
 
-Dans `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts`, `drawSignature` calcule la baseline du titre à partir du **bas du QR** (alignement vertical avec le bas du QR), et le texte est placé à gauche du QR dans un « couloir » réservé. Résultat : titre **à côté** du QR, pas dessous.
+## Évolution proposée (fichier unique : `src/components/wallpaper-studio/renderer/photoPicker.ts`)
 
-## Changement proposé
+### 1. Nouvelle source convivialité
+- Ajouter `fetchConvivialitePhotos(explorationId)` qui lit `exploration_convivialite_photos` (filtre `is_hidden = false`, tri `position, created_at`, limite 300).
+- Résoudre `explorationId` depuis `eventId` via le cache déjà en place (`resolveMarcheIds` fait déjà le lookup — on ajoute `resolveExplorationId`).
 
-Dans `drawSignature` (branche « événement sélectionné ») :
+### 2. Élargir la source marcheur_medias
+- Étendre la clause de scoping : `.or('marche_event_id.eq.<eventId>,marche_id.in.(<marcheIds>)')` pour rattraper les obs liées via `marche_id`.
+- Supprimer le filtre `is_public = true` quand on est scopé à un événement (RLS reste garant, et sur événement les photos partagées à l'exploration doivent apparaître). Conserver `is_public = true` uniquement en mode "toute la Fréquence".
+- Ambiance : conserver `inAmbiance` (déjà tolérant si pas d'EXIF).
 
-1. Mesurer la largeur du titre (avec ellipsis si trop long — max = largeur QR + marge raisonnable, sinon on borne à la largeur du canvas moins marges).
-2. `textAlign = 'right'`.
-3. `x = qrRect.x + qrRect.width` (bord droit du texte = bord droit du QR).
-4. `y = qrRect.y + qrRect.height + gap + fontSize` (baseline sous le QR, avec `gap ≈ 14–18 px` selon échelle).
-5. Conserver le halo/ombre existant pour la lisibilité sur fond sombre.
-6. Si le titre dépasse à gauche du canvas (marches très longues), réduire la taille de police d'un cran puis tronquer avec `…`.
+### 3. Rééquilibrage des pools pour Paysage/Mosaïque marcheurs
+- `landscape` → ordre : **officiel → convivialité → marcheur_medias → espèces** (espèces en dernier recours pour éviter les macros).
+- `walkers` → ordre : **convivialité → marcheur_medias → officiel → espèces**.
+- `territory` → inchangé (officiel prime).
+- `species` → inchangé.
 
-Aucun autre bloc n'est touché (CTA fusionné, wordmark, QR restent inchangés).
+### 4. Instrumentation
+- Étendre le log `[wallpaper] pickPhotos` avec `convivialitePool` pour vérifier immédiatement l'effet.
 
-## Fichier concerné
-
-- `src/components/wallpaper-studio/renderer/wallpaperCanvas.ts` → `drawSignature`
-
-## Question
-
-Le titre pourra être **plus large que le QR** (le QR fait ~11% de la dimension min). Je propose de le laisser déborder **vers la gauche** uniquement (bord droit ancré sur le QR), avec troncature `…` seulement si ça touche la marge gauche du canvas. OK ? Ou tu préfères borner strictement à la largeur du QR (titres très courts uniquement, sinon `…`) ?
+## Résultat attendu
+Sur POITIERS Blossac en Paysage : pool ≈ 3 (marche_photos) + 8 (convivialité) + N (marcheur_medias par marche_id) = ~15+ paysages authentiques, plus les cycles de rotation existants deviennent réellement variés.
