@@ -392,6 +392,8 @@ const WallpaperStudio: React.FC = () => {
               ambiance: item.ambiance as Ambiance,
               variant: ((item as { variant?: string }).variant as Variant) ?? 'organic',
               titleScale: 'small',
+              kingdom: ((item as { kingdom?: string }).kingdom as Kingdom) ?? 'all',
+              ctaEnabled: Boolean((item as { cta_enabled?: boolean }).cta_enabled),
             });
           }} />
         </div>
