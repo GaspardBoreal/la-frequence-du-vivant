@@ -665,9 +665,26 @@ function drawCommunityCta(
   ctx.arc(dotCx, dotCy, dotR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Texte principal (crème lumineuse)
+  // Wordmark discret (petit, tracked) en haut de la plaque
   const textX = dotCx + dotR + gap;
-  const textY = plaqueY + padY + ctaSize;
+  let cursorY = plaqueY + padY;
+  if (brandUpper && brandSize > 0) {
+    ctx.font = `600 ${brandSize}px "Inter", "Libre Baskerville", sans-serif`;
+    ctx.fillStyle = 'rgba(232, 192, 122, 0.72)';
+    const track = brandSize * 0.18;
+    let x = textX;
+    for (const ch of brandUpper) {
+      ctx.fillText(ch, x, cursorY + brandSize);
+      x += ctx.measureText(ch).width + track;
+    }
+    // Séparateur fin doré
+    ctx.fillStyle = 'rgba(232, 192, 122, 0.35)';
+    ctx.fillRect(textX, cursorY + brandSize * 1.35, Math.min(plaqueW - (textX - plaqueX) - padX, brandSize * 6), Math.max(1, h * 0.0006));
+    cursorY += brandSize * 1.6;
+  }
+
+  // Texte principal (crème lumineuse)
+  const textY = cursorY + ctaSize;
   ctx.font = `italic 600 ${ctaSize}px "Crimson Text", Georgia, serif`;
   ctx.fillStyle = '#faf3e0';
   ctx.fillText(text, textX, textY);
