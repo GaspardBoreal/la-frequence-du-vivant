@@ -62,6 +62,8 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
           event_commune_snapshot: proposal.event?.commune ?? null,
           event_gps_snapshot: proposal.event ? { lat: proposal.event.lat, lng: proposal.event.lng } : null,
           variant: proposal.variant ?? null,
+          kingdom: proposal.kingdom ?? null,
+          cta_enabled: proposal.ctaEnabled ?? false,
         } as never).select('id').maybeSingle();
         if (!error && data?.id) setSavedId(data.id);
       } catch {}
