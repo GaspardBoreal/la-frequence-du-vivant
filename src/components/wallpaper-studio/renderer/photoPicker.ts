@@ -86,7 +86,7 @@ async function fetchOfficialPhotos(eventId?: string): Promise<PickedPhoto[]> {
     .from('marche_photos')
     .select('url_supabase,url_originale,titre,metadata')
     .order('ordre', { ascending: true })
-    .limit(80);
+    .limit(300);
   if (marcheId) q = q.eq('marche_id', marcheId);
   const { data } = await q;
   return (data || [])
@@ -101,7 +101,7 @@ async function fetchWalkerPhotos(eventId?: string, amb: Ambiance = 'any'): Promi
     .eq('type_media', 'photo')
     .eq('is_public', true)
     .order('created_at', { ascending: false })
-    .limit(150);
+    .limit(400);
   if (eventId) q = q.eq('marche_event_id', eventId);
   const { data } = await q;
   return (data || [])
@@ -112,6 +112,7 @@ async function fetchWalkerPhotos(eventId?: string, amb: Ambiance = 'any'): Promi
     }))
     .filter((p) => !!p.url);
 }
+
 
 const LEPIDOPTERA_FAMILIES = new Set([
   'nymphalidae','pieridae','papilionidae','lycaenidae','hesperiidae',
