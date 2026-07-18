@@ -523,7 +523,7 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
 
 
   if (opts.ctaEnabled) {
-    try { drawCommunityCta(ctx, width, height, pal, [...photoRects, qrRect]); }
+    try { drawCommunityCta(ctx, width, height, pal, [...photoRects, qrRect], wordmark(theme)); }
     catch (e) { console.warn('[wallpaper] cta failed', e); }
   }
 
