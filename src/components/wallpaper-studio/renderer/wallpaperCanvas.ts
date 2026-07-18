@@ -485,18 +485,19 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
   try { drawSignature(ctx, width, height, theme, event ?? null, category, pal, titleScale, variant); }
   catch (e) { console.warn('[wallpaper] signature failed', e); }
 
-  // QR
-  const qrSize = Math.round(Math.min(width, height) * 0.06);
+  // QR — plus grand et haute correction pour rester scannable
+  const qrSize = Math.round(Math.min(width, height) * 0.11);
   const padX = Math.round(width * 0.045);
-  const qx = width - qrSize - padX * 0.4;
-  const qy = height - qrSize - padX * 0.4;
-  const qrPad = qrSize * 0.08;
+  const qx = width - qrSize - padX * 0.5;
+  const qy = height - qrSize - padX * 0.5;
+  const qrPad = qrSize * 0.14;
   const qrRect: Rect = { x: qx - qrPad, y: qy - qrPad, w: qrSize + qrPad * 2, h: qrSize + qrPad * 2 };
   try {
     const qrDataUrl = await QRCode.toDataURL(qrTarget, {
-      margin: 1,
+      margin: 2,
+      errorCorrectionLevel: 'M',
       color: { dark: pal.ink, light: pal.paper },
-      width: qrSize * 2,
+      width: qrSize * 3,
     });
     const qrImg = await loadImage(qrDataUrl);
     if (qrImg) {
@@ -505,6 +506,7 @@ export async function renderWallpaper(opts: RenderOptions): Promise<HTMLCanvasEl
       ctx.drawImage(qrImg, qx, qy, qrSize, qrSize);
     }
   } catch (e) { console.warn('[wallpaper] qr failed', e); }
+
 
   if (opts.ctaEnabled) {
     try { drawCommunityCta(ctx, width, height, pal, [...photoRects, qrRect]); }
