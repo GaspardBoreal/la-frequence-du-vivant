@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFrenchSpeciesNames } from './useFrenchSpeciesNames';
 import { mergeGenusIntoSpecies } from '@/utils/taxonomyMerge';
+import { useTaxonomyAliasesForMarches, normalizeAliasKey } from './useTaxonomyAliases';
 
 export interface ExplorationSpecies {
   /** Stable key used as curation entity_id (scientific name preferred, fallback common name) */
