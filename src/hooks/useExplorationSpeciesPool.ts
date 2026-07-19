@@ -164,10 +164,39 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
     imageUrl: resolveImage(sp),
   }));
 
-  // Fusion taxonomique automatique : absorbe les entrées « genre seul »
-  // (ex. `Lantana`) dans l'unique binomiale du genre (ex. `Lantana camara`).
-  // Idempotent, appliqué à chaque lecture donc résistant aux futures synchros iNat/Pl@ntNet.
-  const merged = mergeGenusIntoSpecies(intermediate as any) as typeof intermediate;
+  // 1) Applique les alias taxonomiques persistants (table `species_taxonomy_aliases`).
+  //    Toute entrée dont le scientific/common est mappé vers un canonical est réécrite,
+  //    puis les entrées partageant le même canonical sont fusionnées.
+  const aliased = (() => {
+    if (!aliasMap || aliasMap.size === 0) return intermediate;
+    const buckets = new Map<string, typeof intermediate[number]>();
+    intermediate.forEach(s => {
+      const sciKey = normalizeAliasKey(s.scientificName);
+      const comKey = normalizeAliasKey(s.commonName);
+      const hit = (sciKey && aliasMap.get(sciKey)) || (comKey && aliasMap.get(comKey)) || null;
+      const rewritten = hit
+        ? { ...s, scientificName: hit.scientificName, key: hit.scientificName }
+        : s;
+      const gk = normalizeAliasKey(rewritten.scientificName) || rewritten.key;
+      const existing = buckets.get(gk);
+      if (!existing) {
+        buckets.set(gk, rewritten);
+      } else {
+        existing.count = (existing.count || 0) + (rewritten.count || 0);
+        if (!existing.imageUrl && rewritten.imageUrl) existing.imageUrl = rewritten.imageUrl;
+        if (!existing.commonName && rewritten.commonName) existing.commonName = rewritten.commonName;
+        if (!existing.family && rewritten.family) existing.family = rewritten.family;
+        if (!existing.group && rewritten.group) existing.group = rewritten.group;
+      }
+    });
+    return Array.from(buckets.values());
+  })();
+
+  // 2) Fusion taxonomique automatique : absorbe les entrées « genre seul »
+  //    (ex. `Lantana`) dans l'unique binomiale du genre (ex. `Lantana camara`).
+  //    Idempotent, résistant aux futures synchros iNat/Pl@ntNet.
+  const merged = mergeGenusIntoSpecies(aliased as any) as typeof intermediate;
+
 
   // Enrich with French names — single batched DB lookup, cached 24h
   const { data: frMap } = useFrenchSpeciesNames(
