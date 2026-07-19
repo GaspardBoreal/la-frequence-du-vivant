@@ -383,6 +383,61 @@ const MarchesDuVivant = () => {
         {/* Compteurs Science Participative */}
         <ScienceCounters className="border-t border-border/20" />
 
+        {/* CTA — Explorer la carte des marches */}
+        <section className="relative overflow-hidden border-t border-border/20 py-20 px-6">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 pointer-events-none" />
+          <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-primary/20 blur-3xl pointer-events-none animate-pulse" />
+          <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none animate-pulse" style={{ animationDelay: '1.5s' }} />
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            className="relative max-w-4xl mx-auto text-center"
+          >
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-primary">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              <MapPin className="h-3.5 w-3.5" />
+              Carte vivante
+            </div>
+
+            <h2 className="mt-6 font-crimson text-4xl sm:text-5xl md:text-6xl leading-tight text-foreground">
+              Explorez les marches<br />
+              <span className="text-primary">près de chez vous</span>
+            </h2>
+
+            <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Découvrez une cartographie sensible des territoires traversés, les espèces recensées
+              et les prochaines marches à rejoindre — partout en France.
+            </p>
+
+            <div className="mt-9 flex flex-wrap justify-center gap-4">
+              <Link
+                to="/marches-du-vivant/carte-marches-du-vivant?tab=carte"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
+                className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-primary text-primary-foreground font-medium shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300"
+              >
+                <Compass className="h-5 w-5 group-hover:rotate-45 transition-transform duration-500" />
+                Explorer la carte des marches
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                to="/marches-du-vivant/carte-marches-du-vivant?tab=agenda"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
+                className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-border bg-card/60 backdrop-blur-sm text-foreground font-medium hover:border-primary/40 hover:bg-card transition-all duration-300"
+              >
+                <CalendarDays className="h-5 w-5 text-primary" />
+                Voir l'agenda
+              </Link>
+            </div>
+          </motion.div>
+        </section>
+
+
         {/* FAQ SEO — Marches du Vivant */}
         <section className="py-16 px-6 border-t border-border/20" aria-labelledby="faq-mdv">
           <div className="max-w-3xl mx-auto">
