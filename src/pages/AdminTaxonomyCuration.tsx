@@ -118,7 +118,7 @@ const AdminTaxonomyCuration: React.FC = () => {
     queryFn: async (): Promise<SpeciesRow[]> => {
       let q = supabase
         .from('marcheur_observations')
-        .select('species_scientific_name, taxon_common_name_fr, source, marche_id');
+        .select('species_scientific_name, taxon_common_name_fr, source, marche_id, kingdom');
       if (marcheId) {
         q = q.eq('marche_id', marcheId);
       } else if (eventId && eventMarcheIds && eventMarcheIds.length > 0) {
@@ -136,12 +136,14 @@ const AdminTaxonomyCuration: React.FC = () => {
         if (existing) {
           existing.count += 1;
           if (r.source) existing.sources.add(r.source);
+          if (!existing.kingdom && r.kingdom) existing.kingdom = r.kingdom;
         } else {
           map.set(key, {
             scientific_name: r.species_scientific_name,
             common_name: r.taxon_common_name_fr,
             count: 1,
             sources: new Set(r.source ? [r.source] : []),
+            kingdom: r.kingdom || null,
           });
         }
       });
@@ -149,6 +151,7 @@ const AdminTaxonomyCuration: React.FC = () => {
     },
     enabled: !eventId || !!eventMarcheIds,
   });
+
 
   const { list: aliasList, upsert, remove } = useTaxonomyAliasesAdmin(marcheId);
 
