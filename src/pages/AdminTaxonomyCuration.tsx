@@ -324,7 +324,7 @@ const AdminTaxonomyCuration: React.FC = () => {
               </Select>
             </div>
           </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
             <div>
               <Label>Trier les doublons par</Label>
               <Select value={sortMode} onValueChange={v => setSortMode(v as 'count' | 'genus')}>
@@ -344,7 +344,21 @@ const AdminTaxonomyCuration: React.FC = () => {
                 placeholder="nom scientifique ou vernaculaire…"
               />
             </div>
+            <div>
+              <Label>Règne du vivant</Label>
+              <Select value={kingdomFilter} onValueChange={v => setKingdomFilter(v as KingdomFilter)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes ({kingdomCounts.all})</SelectItem>
+                  <SelectItem value="faune">Faune ({kingdomCounts.faune})</SelectItem>
+                  <SelectItem value="plants">Plantes ({kingdomCounts.plants})</SelectItem>
+                  <SelectItem value="fungi">Champignons ({kingdomCounts.fungi})</SelectItem>
+                  <SelectItem value="others">Autres ({kingdomCounts.others})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
           <div className="mt-3 flex items-center justify-between gap-3">
             <div className="text-xs text-muted-foreground">
               Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
