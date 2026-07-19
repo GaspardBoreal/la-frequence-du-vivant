@@ -139,12 +139,13 @@ export const RichMap: React.FC<RichMapProps> = ({
       <SafeMapContainer
         center={center}
         zoom={zoom}
+        maxZoom={maxZoom}
         scrollWheelZoom={scrollWheelZoom}
         zoomControl={false}
         className="w-full h-full"
         style={{ background: '#1a1a2e' }}
       >
-        <DynamicTileLayer mapStyle={mapStyle} />
+        <DynamicTileLayer mapStyle={mapStyle} maxZoom={maxZoom} />
 
         {bounds && bounds.length > 0 && <FitBounds positions={bounds} />}
 
