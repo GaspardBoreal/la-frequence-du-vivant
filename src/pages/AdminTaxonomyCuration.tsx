@@ -285,6 +285,27 @@ const AdminTaxonomyCuration: React.FC = () => {
               </Select>
             </div>
           </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div>
+              <Label>Trier les doublons par</Label>
+              <Select value={sortMode} onValueChange={v => setSortMode(v as 'count' | 'genus')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="count">Nombre de doublons (défaut)</SelectItem>
+                  <SelectItem value="genus">Genre (A→Z)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="search-species">Rechercher une espèce</Label>
+              <Input
+                id="search-species"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="nom scientifique ou vernaculaire…"
+              />
+            </div>
+          </div>
           <div className="mt-3 text-xs text-muted-foreground">
             Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
           </div>
