@@ -44,6 +44,8 @@ const AdminTaxonomyCuration: React.FC = () => {
   const [isMerging, setIsMerging] = useState(false);
   const [sortMode, setSortMode] = useState<'count' | 'genus'>('count');
   const [search, setSearch] = useState<string>('');
+  const [kingdomFilter, setKingdomFilter] = useState<KingdomFilter>('all');
+
   const [viewMode, setViewMode] = useState<'list' | 'map'>(() => {
     if (typeof window === 'undefined') return 'list';
     return new URLSearchParams(window.location.search).get('view') === 'map' ? 'map' : 'list';
