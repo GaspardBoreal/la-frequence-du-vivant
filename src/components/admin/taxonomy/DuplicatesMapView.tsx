@@ -75,10 +75,13 @@ const CLUSTER_COLORS = [
 
 interface Props {
   marcheIds: string[] | null; // null = all
+  kingdomFilter?: KingdomFilter;
+  search?: string;
   onRequestMerge: (canonical: string, sources: string[]) => void;
 }
 
-const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
+const DuplicatesMapView: React.FC<Props> = ({ marcheIds, kingdomFilter = 'all', search = '', onRequestMerge }) => {
+
   const [radius, setRadius] = useState(25);
   const [activeCluster, setActiveCluster] = useState<Cluster | null>(null);
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
