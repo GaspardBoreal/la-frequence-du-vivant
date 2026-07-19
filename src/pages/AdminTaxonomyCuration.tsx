@@ -32,6 +32,17 @@ const AdminTaxonomyCuration: React.FC = () => {
   const [isMerging, setIsMerging] = useState(false);
   const [sortMode, setSortMode] = useState<'count' | 'genus'>('count');
   const [search, setSearch] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>(() => {
+    if (typeof window === 'undefined') return 'list';
+    return new URLSearchParams(window.location.search).get('view') === 'map' ? 'map' : 'list';
+  });
+
+  React.useEffect(() => {
+    const u = new URL(window.location.href);
+    if (viewMode === 'map') u.searchParams.set('view', 'map');
+    else u.searchParams.delete('view');
+    window.history.replaceState({}, '', u.toString());
+  }, [viewMode]);
 
   const { data: marches } = useQuery({
     queryKey: ['admin-marches-simple'],
