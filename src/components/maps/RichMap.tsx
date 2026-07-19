@@ -81,6 +81,7 @@ export const RichMap: React.FC<RichMapProps> = ({
   className = '',
   children,
   scrollWheelZoom = true,
+  maxZoom = 19,
   onMarcheVisibilityChange,
 }) => {
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
