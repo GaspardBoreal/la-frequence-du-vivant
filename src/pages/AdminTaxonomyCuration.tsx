@@ -318,12 +318,48 @@ const AdminTaxonomyCuration: React.FC = () => {
               />
             </div>
           </div>
-          <div className="mt-3 text-xs text-muted-foreground">
-            Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="text-xs text-muted-foreground">
+              Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
+            </div>
+            <div className="inline-flex rounded-md border p-0.5 bg-muted/40">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 text-xs rounded flex items-center gap-1.5 transition ${viewMode === 'list' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <List className="h-3.5 w-3.5" /> Liste
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('map')}
+                className={`px-3 py-1.5 text-xs rounded flex items-center gap-1.5 transition ${viewMode === 'map' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <MapIcon className="h-3.5 w-3.5" /> Carte
+              </button>
+            </div>
           </div>
         </Card>
 
-        {suspects.length > 0 && (
+        {viewMode === 'map' && (
+          <DuplicatesMapView
+            marcheIds={
+              marcheId
+                ? [marcheId]
+                : eventId
+                ? eventMarcheIds || []
+                : null
+            }
+            onRequestMerge={(canonicalName, sources) => {
+              setCanonical(canonicalName);
+              setSelected(sources);
+              toast.info(`Fusion pré-remplie : ${sources.length} source(s) → « ${canonicalName} »`);
+              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }}
+          />
+        )}
+
+        {viewMode === 'list' && suspects.length > 0 && (
           <Card className="p-4 border-amber-500/40">
             <div className="flex items-center gap-2 mb-3">
               <AlertCircle className="h-4 w-4 text-amber-500" />
