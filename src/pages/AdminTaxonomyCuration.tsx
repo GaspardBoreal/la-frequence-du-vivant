@@ -20,12 +20,17 @@ interface SpeciesRow {
   sources: Set<string>;
 }
 
+const normalizeSearch = (s: string | null | undefined) =>
+  (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
 const AdminTaxonomyCuration: React.FC = () => {
   const [eventId, setEventId] = useState<string | null>(null);
   const [marcheId, setMarcheId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [canonical, setCanonical] = useState<string>('');
   const [isMerging, setIsMerging] = useState(false);
+  const [sortMode, setSortMode] = useState<'count' | 'genus'>('count');
+  const [search, setSearch] = useState<string>('');
 
   const { data: marches } = useQuery({
     queryKey: ['admin-marches-simple'],
