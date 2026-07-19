@@ -353,10 +353,11 @@ const AdminTaxonomyCuration: React.FC = () => {
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             <div>
               <Label>Trier les doublons par</Label>
-              <Select value={sortMode} onValueChange={v => setSortMode(v as 'count' | 'genus')}>
+              <Select value={sortMode} onValueChange={v => setSortMode(v as 'suggested' | 'count' | 'genus')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="count">Nombre de doublons (défaut)</SelectItem>
+                  <SelectItem value="suggested">Fusions suggérées d'abord (défaut)</SelectItem>
+                  <SelectItem value="count">Nombre de doublons</SelectItem>
                   <SelectItem value="genus">Genre (A→Z)</SelectItem>
                 </SelectContent>
               </Select>
