@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge } from 'lucide-react';
 
 const OUTILS = [
   {
@@ -24,6 +24,13 @@ const OUTILS = [
     description: 'Audit AFNOR SPEC 2314 — frugalité numérique IA, score /100, plan d\'action.',
     icon: Leaf,
     to: '/admin/outils/audit-frugal',
+    active: true,
+  },
+  {
+    titre: 'Curation taxonomique',
+    description: 'Fusionne durablement les espèces dupliquées (Lantana / Lantana camara…), par marche ou globalement. Persistant face aux synchros iNat / Pl@ntNet.',
+    icon: GitMerge,
+    to: '/admin/outils/taxonomie',
     active: true,
   },
   {

@@ -98,6 +98,7 @@ import AdhesionAdmin from './pages/AdhesionAdmin';
 import AdhesionFab from './components/adhesion/AdhesionFab';
 import ApiMcpPublic from './pages/ApiMcpPublic';
 import AdminApiMcp from './pages/AdminApiMcp';
+import AdminTaxonomyCuration from './pages/AdminTaxonomyCuration';
 import AdminAuditFrugalHub from './pages/AdminAuditFrugalHub';
 import PublicAuditFrugal from './pages/PublicAuditFrugal';
 import AgentIA from './pages/AgentIA';
@@ -304,6 +305,11 @@ function App() {
             <Route path="/admin/outils/audit-frugal" element={
               <AdminAuth>
                 <AdminAuditFrugalHub />
+              </AdminAuth>
+            } />
+            <Route path="/admin/outils/taxonomie" element={
+              <AdminAuth>
+                <AdminTaxonomyCuration />
               </AdminAuth>
             } />
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
