@@ -307,6 +307,11 @@ function App() {
                 <AdminAuditFrugalHub />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/taxonomie" element={
+              <AdminAuth>
+                <AdminTaxonomyCuration />
+              </AdminAuth>
+            } />
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
             <Route path="/api-mcp" element={<ApiMcpPublic />} />
             <Route path="/admin" element={
