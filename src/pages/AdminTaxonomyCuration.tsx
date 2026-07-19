@@ -20,12 +20,17 @@ interface SpeciesRow {
   sources: Set<string>;
 }
 
+const normalizeSearch = (s: string | null | undefined) =>
+  (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
 const AdminTaxonomyCuration: React.FC = () => {
   const [eventId, setEventId] = useState<string | null>(null);
   const [marcheId, setMarcheId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [canonical, setCanonical] = useState<string>('');
   const [isMerging, setIsMerging] = useState(false);
+  const [sortMode, setSortMode] = useState<'count' | 'genus'>('count');
+  const [search, setSearch] = useState<string>('');
 
   const { data: marches } = useQuery({
     queryKey: ['admin-marches-simple'],
@@ -122,7 +127,7 @@ const AdminTaxonomyCuration: React.FC = () => {
   const { list: aliasList, upsert, remove } = useTaxonomyAliasesAdmin(marcheId);
 
   const suspects = useMemo(() => {
-    if (!pool) return [] as { genus: string; rows: SpeciesRow[] }[];
+    if (!pool) return [] as { genus: string; rows: SpeciesRow[]; total: number }[];
     const byGenus = new Map<string, SpeciesRow[]>();
     pool.forEach(r => {
       const g = getGenus(r.scientific_name)?.toLowerCase();
@@ -131,10 +136,28 @@ const AdminTaxonomyCuration: React.FC = () => {
       arr.push(r);
       byGenus.set(g, arr);
     });
-    return Array.from(byGenus.entries())
+    const q = normalizeSearch(search);
+    let groups = Array.from(byGenus.entries())
       .filter(([, rows]) => rows.length >= 2 && rows.some(r => isGenusOnly(r.scientific_name)))
-      .map(([genus, rows]) => ({ genus, rows }));
-  }, [pool]);
+      .map(([genus, rows]) => ({
+        genus,
+        rows,
+        total: rows.reduce((s, r) => s + (r.count || 0), 0),
+      }));
+    if (q) {
+      groups = groups.filter(g =>
+        normalizeSearch(g.genus).includes(q) ||
+        g.rows.some(r =>
+          normalizeSearch(r.scientific_name).includes(q) ||
+          normalizeSearch(r.common_name).includes(q)
+        )
+      );
+    }
+    groups.sort((a, b) =>
+      sortMode === 'genus' ? a.genus.localeCompare(b.genus) : b.total - a.total
+    );
+    return groups;
+  }, [pool, search, sortMode]);
 
   const toggle = (key: string) =>
     setSelected(s => (s.includes(key) ? s.filter(k => k !== key) : [...s, key]));
@@ -260,6 +283,27 @@ const AdminTaxonomyCuration: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div>
+              <Label>Trier les doublons par</Label>
+              <Select value={sortMode} onValueChange={v => setSortMode(v as 'count' | 'genus')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="count">Nombre de doublons (défaut)</SelectItem>
+                  <SelectItem value="genus">Genre (A→Z)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="search-species">Rechercher une espèce</Label>
+              <Input
+                id="search-species"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="nom scientifique ou vernaculaire…"
+              />
             </div>
           </div>
           <div className="mt-3 text-xs text-muted-foreground">
