@@ -433,6 +433,36 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
                             {new Date(o.observation_date).toLocaleDateString('fr-FR')}
                           </div>
                         )}
+                        {o.marche_name && (
+                          <div
+                            className={`text-[10px] mt-1 flex items-center gap-1 ${
+                              o.outOfPerimeter ? 'text-red-600 font-medium' : 'text-muted-foreground'
+                            }`}
+                          >
+                            {o.outOfPerimeter && <span>⚠</span>}
+                            <span className="truncate" title={o.marche_name}>
+                              {o.marche_name}
+                            </span>
+                            {o.outOfPerimeter && o.distanceToMarche != null && (
+                              <span className="whitespace-nowrap">· {Math.round(o.distanceToMarche)} m</span>
+                            )}
+                          </div>
+                        )}
+                        {o.outOfPerimeter && (
+                          <Badge variant="destructive" className="text-[10px] mt-1">
+                            Hors périmètre marche
+                          </Badge>
+                        )}
+                        {o.marche_id && (
+                          <a
+                            href={`/admin/marches/${o.marche_id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block text-[10px] text-primary hover:underline mt-1"
+                          >
+                            Voir dans l'admin marche →
+                          </a>
+                        )}
                         {o.source && (
                           <Badge variant="outline" className="text-[10px] mt-1">
                             {o.source}
