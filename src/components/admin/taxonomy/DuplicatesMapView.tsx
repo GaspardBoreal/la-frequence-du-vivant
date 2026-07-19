@@ -21,6 +21,12 @@ interface Obs {
   photo_url: string | null;
   observation_date: string | null;
   source: string | null;
+  marche_name?: string | null;
+  marche_lat?: number | null;
+  marche_lng?: number | null;
+  marche_radius?: number | null;
+  distanceToMarche?: number | null;
+  outOfPerimeter?: boolean;
 }
 
 interface Cluster {
