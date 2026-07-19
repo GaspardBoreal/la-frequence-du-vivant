@@ -225,11 +225,11 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, kingdomFilter = 'all', 
   const [showOnlyOut, setShowOnlyOut] = useState(false);
 
   // Refresh bounds when clusters change (via key on RichMap)
-  const mapKey = useMemo(() => `${marcheIds?.join(',') || 'all'}-${radius}-${clusters.length}`, [
-    marcheIds,
-    radius,
-    clusters.length,
-  ]);
+  const mapKey = useMemo(
+    () => `${marcheIds?.join(',') || 'all'}-${radius}-${kingdomFilter}-${norm(search)}-${clusters.length}`,
+    [marcheIds, radius, kingdomFilter, search, clusters.length],
+  );
+
 
   return (
     <div className="relative">
