@@ -1,76 +1,60 @@
-## Analyse du problème
+## Réponse directe à ta question
 
-Sur DEVIAT / Jardin Monde, filtre « plantées par marcheurs » :
+**Oui, l'action « Fusionner Lantana → Lantana camara » est le bon geste** dans l'outil. Mais dans l'état actuel du code, **la fusion ne se propage PAS partout** — voici l'analyse rigoureuse.
 
-Données réelles en base (`marcheur_observations`) :
-- `Lantana` (genre seul, 4 obs, source `walker_upload`)
-- `Lantana camara` (binomial, 1 obs, source `walker_upload`)
-- `Viburnum lantana` (autre taxon — épithète « lantana », à ne PAS fusionner)
+### Ce qui fonctionne déjà (aujourd'hui, après le dernier commit)
 
-→ Les deux premières lignes sont le même taxon. Elles apparaissent séparément car le pool d'espèces (`useExplorationSpeciesPool`) construit la clé sur `scientific_name || common_name`, donc « Lantana » et « Lantana camara » sont deux entrées distinctes.
+- ✅ **Galerie / Liste / Découvrir / Score / Œil / Écologique / Chatbot pool** : tous passent par `useExplorationSpeciesPool`, qui applique désormais les alias + le merge genre. Lantana disparaît, ses 4 obs sont additionnées aux 1 de Lantana camara → **5 obs**, une seule fiche.
+- ✅ **Fiche espèce → onglet Observateurs (Lantana camara)** : `useSpeciesObservers` absorbe déjà automatiquement le rang genre via `getMergedGenusFor` quand une seule binomiale du genre est présente. Les 4 attributions iNat de « Lantana » remonteront bien sur la fiche de Lantana camara.
 
-### Cause racine
+### Ce qui NE fonctionne PAS encore (angles morts identifiés)
 
-1. Le utilitaire `mergeGenusIntoSpecies` (dans `src/utils/taxonomyMerge.ts`) existe déjà et gère exactement ce cas (1 espèce du genre → absorption du rang genre). **Il n'est appelé nulle part.**
-2. Aucun mécanisme persistant n'existe pour fusionner des paires que la règle automatique ne peut trancher (synonymes iNat/Pl@ntNet, noms vernaculaires libres saisis par les marcheurs, homonymes locaux, sous-espèces vs binomial, mauvaises orthographes).
-3. Toute nouvelle synchro iNat/Pl@ntNet ré-écrase les snapshots → une fusion manuelle « one shot » serait perdue à chaque sync.
+1. **Compteur officiel `get_exploration_species_count` (RPC)** — source unique de vérité pour :
+  - le total « X espèces » affiché sur Carnet, Carte, Synthèse, badges, Score, Fréquence,
+  - les explorations listées (`useExplorationsWithMetrics`, `useMarcheCollectedData`),
+  - le chatbot admin (`get_admin_entity_context`),
+  - les analytics et exports.
+   → La RPC agrège en SQL brut : **elle comptera toujours 2 espèces** (Lantana + Lantana camara), même après ta fusion UI. Le total sera incohérent avec la galerie.
+2. `**useSpeciesObservers` ne consulte PAS la table d'alias** — il ne gère que le cas « genre → espèce unique ». Pour d'autres cas (synonymes, fautes de frappe, taxons renommés par iNat), les observateurs de la source ne remonteront pas sur la fiche canonique.
+3. **Consommateurs directs de la RPC** qui court-circuitent `useExplorationSpeciesPool` :
+  - `SeasonSpeciesCarousel` (fiche jardin immersif) → doublon Lantana réapparaîtra.
+  - Edge functions `guide-marche-chat`, `generate-pack-vivant`, `classify-species-eco-tags`, `run-frugal-audit`.
+4. **Curations existantes** (`exploration_curations.entity_id`) enregistrées sous « Lantana » : après fusion, la curation continuera de pointer sur l'ancienne clé → l'éditorial et les eco-tags validés sur Lantana ne migreront pas automatiquement vers Lantana camara.
+5. **Jeux pédagogiques (Quiz)** : `quiz_questions` référence des noms scientifiques en dur (colonnes texte). Aucune propagation automatique — mais impact mineur, un quiz créé sur « Lantana camara » continuera de fonctionner.
 
-## Plan proposé
+## Plan de correction en 3 étages
 
-Deux niveaux : (A) fix auto immédiat côté lecture, (B) module admin persistant de curation taxonomique par marche.
+### Étage 1 — Normalisation côté SERVEUR (fait tout tomber d'un coup)
 
-### A. Correction immédiate (sans intervention humaine)
+Migration SQL :
 
-Brancher `mergeGenusIntoSpecies` dans `useExplorationSpeciesPool.ts` juste avant l'enrichissement FR. Effet : « Lantana » (genre) est absorbé par « Lantana camara » sur toutes les vues (Galerie/Liste/Découvrir/Score/Chatbot), sans toucher aux données brutes. La règle « 2+ espèces du genre → pas de fusion » protège les cas ambigus. Idempotent : rejoué à chaque render, donc résistant aux syncs.
+1. Créer une fonction SQL `public.resolve_species_alias(scientific_name text, common_name text, marche_id uuid) → jsonb` qui retourne `{ scientific_name, common_name_fr }` canoniques en consultant `species_taxonomy_aliases` (global + marche-spécifique, spécifique prioritaire).
+2. Modifier `get_exploration_species_count` et `get_exploration_species_pool` : appliquer `resolve_species_alias` sur chaque ligne AVANT le `GROUP BY`. Résultat : la fusion se propage à **tout** ce qui lit la RPC (compteurs, chatbot, edges, exports).
+3. Ajouter un trigger `AFTER INSERT/UPDATE` sur `species_taxonomy_aliases` qui invalide un cache éventuel (option : simple bump d'un `updated_at` global).
 
-Étendre `mergeGenusIntoSpecies` pour couvrir aussi le cas « nom vernaculaire libre sans scientifique » (ex. saisie marcheur `common_name = "Lantana"`, `scientific = null`) : si un binomial du pool a un nom FR ou commun matchant (normalisation NFD, lowercase), fusionner.
+### Étage 2 — Client : combler les angles morts
 
-### B. Nouvel outil Admin — « Curation taxonomique » (`/admin/outils`)
+- `useSpeciesObservers.ts` : accepter un `aliasMap` (via `useTaxonomyAliasesForMarches`) et remapper les attributions dont `taxon.scientificName` matche un alias → attribuées à la fiche canonique. Idempotent avec la logique `getMergedGenusFor` déjà en place.
+- `SeasonSpeciesCarousel.tsx` : remplacer l'appel RPC direct par `useExplorationSpeciesPool` (déjà aliasé) pour garantir la cohérence UI jardin.
+- Migration douce des curations : trigger SQL sur insert d'alias → `UPDATE exploration_curations SET entity_id = canonical WHERE entity_id = alias_key` (best-effort, log dans `admin_audit_log`).
 
-Table de vérité persistante, appliquée à chaque lecture ET aux futures synchros.
+### Étage 3 — UX de l'outil (petits ajustements)
 
-**Schéma DB (nouvelle migration)**
-- `species_taxonomy_aliases`
-  - `marche_id uuid null` (null = règle globale, sinon scopée à une marche)
-  - `alias_key text` (clé source normalisée : scientific_name OU common_name en NFD/lower)
-  - `canonical_scientific_name text` (cible)
-  - `canonical_common_name_fr text null`
-  - `reason text` (`genus_merge`, `synonym`, `misspelling`, `vernacular`, `manual`)
-  - `created_by`, `created_at`, `updated_at`
-  - unique (`marche_id`, `alias_key`)
-  - RLS : lecture `authenticated`, écriture réservée admin (`has_role admin`)
-- RPC `get_exploration_species_pool` (et son équivalent count) : intégrer un JOIN LEFT sur `species_taxonomy_aliases` (marche_id de l'exploration + alias globaux) qui remappe la clé de regroupement avant le `GROUP BY`. Ainsi la fusion s'applique côté serveur, donc à toutes les vues (Carte, Synthèse, Chatbot, Pack Vivant, Fréquence).
+- Sur la ligne du groupe fusionné, afficher un badge « ✓ Alias actif » avec le canonical cible et un bouton « Annuler la fusion » qui supprime l'alias.
+- Après enregistrement, invalider aussi : `exploration-species-count`, `species-observers-citizen`, `exploration-biodiversity-summary`, `marche-collected-data`, `explorations-with-metrics`.
+- Message de succès : « Fusion active. Comptes recalculés dans ~30 s (cache DB). »
 
-**UI admin — page `AdminOutilsHub` → nouvelle carte « Curation taxonomique »**
-1. Sélecteur de marche (ou « Global »).
-2. Liste des espèces du pool avec compteur d'obs + vignette + source (marcheur / iNat / Pl@ntNet).
-3. Détecteur de doublons probables (affiché en tête, tri par confiance) :
-   - même genre + une seule binomiale (règle A auto, déjà « pré-fusionnée »)
-   - Levenshtein < 2 sur scientific_name
-   - même `taxon_common_name_fr` normalisé
-   - synonymes iNat connus (via cache `species_thumb_cache` / taxon GBIF déjà utilisé par `gbif-taxon-search`)
-4. Action « Fusionner » : sélection multi-source → choix du canonical → écriture d'un alias par entrée source. Prévisualisation « avant/après » du pool.
-5. Action « Séparer » : suppression d'alias.
-6. Journal des fusions (audit) avec possibilité de rollback.
+## Réponse résumée à tes questions
 
-**Persistance face aux futures synchros**
-- Les snapshots iNat/Pl@ntNet continuent d'insérer les noms bruts (aucune perte).
-- Le remappage vit dans `species_taxonomy_aliases`, appliqué à la lecture par la RPC → toute nouvelle observation d'un alias connu est fusionnée automatiquement, sans re-curation.
-- Un backfill `apply-taxonomy-aliases` (edge function optionnelle) peut aussi enrichir `snapshot_species_cache` pour les exports statiques.
 
-**Chatbot & Fréquence**
-La RPC étant la source unique de vérité (mémoire `unified-species-count-rpc`), les scores et le chatbot héritent automatiquement des fusions — pas de divergence.
+| Question                                                                           | Réponse                                                                                                               |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Est-ce le bon geste dans l'outil ?                                                 | ✅ Oui                                                                                                                 |
+| Les observations des deux entités seront-elles regroupées sur la fiche canonique ? | ⚠️ Partiellement aujourd'hui (uniquement pour le cas genre/espèce déjà géré). Étage 2 le garantit pour tous les cas.  |
+| Les analyses/outils continueront-ils à fonctionner ?                               | ✅ Pour la galerie/liste/eco-tags/chatbot pool. ❌ Compteurs officiels, jardin immersif, edges → nécessitent l'Étage 1. |
+| Impact sur les quiz pédagogiques ?                                                 | Nul (référence texte statique).                                                                                       |
 
-### Détails techniques
 
-- `useExplorationSpeciesPool.ts` : ajouter `mergeGenusIntoSpecies(intermediate)` avant l'enrichissement FR ; conserver la clé stable pour les curations existantes en gardant la clé du binomial gagnant.
-- Migration SQL : `CREATE TABLE public.species_taxonomy_aliases (...)`, GRANT `select` à `authenticated` + `all` à `service_role`, RLS `select` = `true`, `insert/update/delete` = `has_role(auth.uid(),'admin')`, trigger `updated_at`.
-- RPC : `get_exploration_species_pool` refactor — CTE `resolved AS (SELECT *, COALESCE(a.canonical_scientific_name, o.scientific_name) AS canonical_key FROM ... LEFT JOIN species_taxonomy_aliases a ON a.alias_key = normalize(o.scientific_name) OR a.alias_key = normalize(o.common_name))`, puis `GROUP BY canonical_key`.
-- UI : nouveau composant `src/pages/AdminTaxonomyCuration.tsx` + hook `useTaxonomyAliases(marcheId)` ; entrée dans `AdminOutilsHub`.
-- Mémoire projet à mettre à jour après implémentation (feature `taxonomy-aliases-curation`).
+**Recommandation** : livrer Étage 1 (SQL) + Étage 2 (client) dans une seule passe. C'est la seule façon de garantir qu'après ta fusion Lantana, **tout** l'écosystème (compteurs, fiches, exports, chatbot, edges) affichera 5 obs sur une seule espèce, de manière durable et résistante aux prochaines synchros iNat/Pl@ntNet.
 
-### Livraison suggérée
-
-1. Étape 1 (rapide, résout Lantana) : brancher `mergeGenusIntoSpecies` + extension vernaculaire.
-2. Étape 2 : migration `species_taxonomy_aliases` + intégration RPC.
-3. Étape 3 : UI admin `/admin/outils` (détection auto + fusion manuelle + audit).
+implémentation complète (Étages 1+2+3) 
