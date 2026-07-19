@@ -19,10 +19,22 @@ interface SpeciesRow {
   common_name: string | null;
   count: number;
   sources: Set<string>;
+  kingdom: string | null;
 }
+
+export type KingdomFilter = 'all' | 'faune' | 'plants' | 'fungi' | 'others';
+
+export const kingdomBucket = (k: string | null | undefined): KingdomFilter => {
+  const v = (k || '').trim();
+  if (v === 'Animalia') return 'faune';
+  if (v === 'Plantae') return 'plants';
+  if (v === 'Fungi') return 'fungi';
+  return 'others';
+};
 
 const normalizeSearch = (s: string | null | undefined) =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
 
 const AdminTaxonomyCuration: React.FC = () => {
   const [eventId, setEventId] = useState<string | null>(null);
