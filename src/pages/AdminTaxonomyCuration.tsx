@@ -177,7 +177,7 @@ const AdminTaxonomyCuration: React.FC = () => {
   }, [pool, search, kingdomFilter]);
 
   const suspects = useMemo(() => {
-    if (!poolFiltered.length) return [] as { genus: string; rows: SpeciesRow[]; total: number }[];
+    if (!poolFiltered.length) return [] as { genus: string; rows: SpeciesRow[]; total: number; suggested: boolean; canonical: string | null; sources: string[] }[];
     const byGenus = new Map<string, SpeciesRow[]>();
     poolFiltered.forEach(r => {
       const g = getGenus(r.scientific_name)?.toLowerCase();
@@ -186,18 +186,42 @@ const AdminTaxonomyCuration: React.FC = () => {
       arr.push(r);
       byGenus.set(g, arr);
     });
-    const groups = Array.from(byGenus.entries())
+    let groups = Array.from(byGenus.entries())
       .filter(([, rows]) => rows.length >= 2 && rows.some(r => isGenusOnly(r.scientific_name)))
-      .map(([genus, rows]) => ({
-        genus,
-        rows,
-        total: rows.reduce((s, r) => s + (r.count || 0), 0),
-      }));
-    groups.sort((a, b) =>
-      sortMode === 'genus' ? a.genus.localeCompare(b.genus) : b.total - a.total
-    );
+      .map(([genus, rows]) => {
+        const binomials = rows.filter(r => !isGenusOnly(r.scientific_name));
+        const genusEntries = rows.filter(r => isGenusOnly(r.scientific_name));
+        // Fusion suggérée sûre : 1 seule binomiale + ≥1 entrée genre → fusionner tout vers la binomiale
+        const suggested = binomials.length === 1 && genusEntries.length >= 1;
+        const canonical = suggested ? binomials[0].scientific_name : null;
+        const sources = suggested
+          ? genusEntries.map(g => g.scientific_name || '').filter(Boolean)
+          : [];
+        return {
+          genus,
+          rows,
+          total: rows.reduce((s, r) => s + (r.count || 0), 0),
+          suggested,
+          canonical,
+          sources,
+        };
+      });
+    if (onlySuggested) groups = groups.filter(g => g.suggested);
+    groups.sort((a, b) => {
+      if (sortMode === 'suggested') {
+        if (a.suggested !== b.suggested) return a.suggested ? -1 : 1;
+        return b.total - a.total;
+      }
+      if (sortMode === 'genus') return a.genus.localeCompare(b.genus);
+      return b.total - a.total;
+    });
     return groups;
-  }, [poolFiltered, sortMode]);
+  }, [poolFiltered, sortMode, onlySuggested]);
+
+  const suggestedCount = useMemo(
+    () => suspects.filter(s => s.suggested).length,
+    [suspects]
+  );
 
 
   const toggle = (key: string) =>
