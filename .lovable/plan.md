@@ -1,37 +1,38 @@
-## Diagnostic
+## Objectif
 
-Le cluster « arion » qui apparaît sur la carte de l'événement DEVIAT « Jardin Monde » vient bien de `marcheur_observations` filtrées via `exploration_marches` : l'événement contient plusieurs marches, et au moins une des observations `Arion` a `marche_id = <marche Jardin Monde>` alors qu'elle est géographiquement plus proche d'une autre marche DEVIAT.
+Le bandeau de filtres de `/admin/outils/taxonomie` ne s'applique aujourd'hui qu'à la vue **Liste**. On veut :
 
-Autrement dit, ce n'est pas un bug d'affichage : c'est une **mauvaise attribution de `marche_id`** à la saisie (ou lors d'un import iNat). La carte fait son travail — elle révèle un problème de qualité de données qui restait invisible jusqu'ici.
+1. Ajouter un filtre **Règne du vivant** (Toutes / Faune / Plantes / Champignons / Autres) — même chip UX que la copie écran (`SpeciesExplorer`).
+2. Faire en sorte que **tous** les filtres (Événement, Marche, Règne, Recherche, Tri) s'appliquent aussi à la vue **Carte** (`DuplicatesMapView`) — et donc au clustering, au bandeau « X constellations », au comptage « hors périmètre » et au Sheet.
 
-Aujourd'hui la vue Carte n'affiche ni le nom de la marche associée à chaque point ni ne signale les points « hors périmètre ». D'où l'impression que l'outil se trompe.
+## Ce qui change
 
-## Plan (UI-only, aucune modif métier)
+### 1. `src/pages/AdminTaxonomyCuration.tsx`
 
-### 1. Enrichir chaque observation avec sa marche
-- Étendre le fetch de `DuplicatesMapView` pour joindre `marches (id, name, latitude, longitude, search_radius_m)`.
-- Ajouter `marche_name`, `marche_lat`, `marche_lng`, `marche_radius` sur l'objet `Obs`.
+- Ajouter un `useState<'all'|'faune'|'plants'|'fungi'|'others'>` pour le règne.
+- Insérer un `Select` « Règne du vivant » dans le bandeau existant (grille 3 colonnes : Tri / Recherche / Règne) avec compteurs live calculés depuis `pool`.
+- Étendre la requête `taxonomy-curation-pool` pour sélectionner aussi `kingdom` (déjà présent dans `marcheur_observations`).
+- Étendre `SpeciesRow` avec `kingdom: string | null` (agrégé : premier non-null rencontré par clé).
+- Appliquer le filtre règne + recherche au calcul de `pool` affiché ET à `suspects` (via un `poolFiltered` mémoïsé) ; la logique de `getGenus`/`isGenusOnly` reste intacte.
+- Passer les filtres à la carte : nouvelles props `kingdomFilter` et `search` sur `<DuplicatesMapView>`.
 
-### 2. Détection « hors périmètre »
-- Pour chaque obs : `distanceToMarche = haversine(obs, marche)`.
-- Si `distanceToMarche > (marche.search_radius_m || 500) * 1.2` → flag `outOfPerimeter = true`.
+### 2. `src/components/admin/taxonomy/DuplicatesMapView.tsx`
 
-### 3. Signalétique visuelle inspirante
-- Marker `outOfPerimeter` : contour **rouge pointillé** + pastille ⚠ au lieu du blanc plein.
-- Filament vers le centroïde en rouge, plus opaque.
-- Tooltip du point : ajoute la ligne « Marche : *nom* — Xm hors périmètre » quand applicable.
-- Dans le Sheet cluster : badge rouge « Hors périmètre marche » sur les cartes concernées + affichage du nom de la marche.
+- Ajouter `kingdomFilter` et `search` aux `Props`.
+- Étendre le `select()` Supabase pour inclure `kingdom` et `iconic_taxon`.
+- Avant le clustering, filtrer `obs` par :
+  - **règne** : bucket `Animalia` → faune, `Plantae` → plants, `Fungi` → fungi, autre/null → others (même mapping que `SpeciesExplorer`).
+  - **recherche** : normalisation NFD comme dans la page (matches sur `species_scientific_name`, `taxon_common_name_fr`, ou genre).
+- Recalculer clusters, bandeau, filaments, points, tooltips et Sheet à partir de ce sous-ensemble.
+- Ajouter le règne + `search` dans la `mapKey` pour forcer le re-fit des bounds quand le filtre change.
 
-### 4. Bandeau de synthèse
-Dans le header info actuel, ajouter : « ⚠ N observation(s) hors périmètre marche » (cliquable → filtre visuel qui n'affiche que ces points).
+## Ce qui ne change pas
 
-### 5. Lien vers correction
-Sur chaque carte-obs du Sheet, bouton discret « Voir dans l'admin marche » (deep link `/admin/marches/:id` ancré sur l'observation) pour permettre à l'admin de réassigner le `marche_id`. Pas de réassignation directe ici — on garde la vue en lecture, la fusion taxonomique reste sa mission principale.
+- Logique de fusion (`upsert_species_taxonomy_alias`), portée (marche/événement/global), triggers SQL, ni les autres vues du site : uniquement UI + queries côté page admin.
+- L'apparence générale du bandeau reste identique (mêmes composants shadcn, mêmes chips).
 
-### Fichiers modifiés
-- `src/components/admin/taxonomy/DuplicatesMapView.tsx` (fetch enrichi + rendu + Sheet)
-- Aucun changement DB, aucun hook, aucune RLS.
+## Vérifs
 
-### Hors scope (à confirmer si besoin plus tard)
-- Réassignation automatique du `marche_id` au point le plus proche.
-- Audit global des mis-attributions hors de cette page.
+- Filtrer sur « Faune » → seules les observations `kingdom='Animalia'` alimentent Liste, Suspects et Carte (mêmes counts).
+- Taper « lantana » → même sous-ensemble visible dans la Liste, dans « Doublons probables » et dans les constellations Carte.
+- Combiner Événement + Règne + Recherche → aucun résidu de cluster hors filtre sur la carte.
