@@ -75,6 +75,24 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
     enabled: !!explorationId,
     staleTime: 5 * 60 * 1000,
   });
+  // Marches liées à cette exploration (pour scoper les alias taxonomiques)
+  const { data: marcheIds } = useQuery({
+    queryKey: ['exploration-marche-ids', explorationId],
+    queryFn: async () => {
+      if (!explorationId) return [] as string[];
+      const { data } = await supabase
+        .from('exploration_marches')
+        .select('marche_id')
+        .eq('exploration_id', explorationId);
+      return (data || []).map((r: any) => r.marche_id).filter(Boolean) as string[];
+    },
+    enabled: !!explorationId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Alias taxonomiques persistants (globaux + spécifiques à ces marches)
+  const { data: aliasMap } = useTaxonomyAliasesForMarches(marcheIds);
+
 
   const rawQuery = useQuery({
     queryKey: ['exploration-species-pool-rpc', explorationId, 'v5-unified'],
