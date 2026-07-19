@@ -386,9 +386,21 @@ const AdminTaxonomyCuration: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <div className="text-xs text-muted-foreground">
-              Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
+          <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="text-xs text-muted-foreground">
+                Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
+              </div>
+              {suggestedCount > 0 && (
+                <Badge variant="outline" className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  {suggestedCount} fusion{suggestedCount > 1 ? 's' : ''} suggérée{suggestedCount > 1 ? 's' : ''}
+                </Badge>
+              )}
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <Switch checked={onlySuggested} onCheckedChange={setOnlySuggested} />
+                Seulement les fusions suggérées
+              </label>
             </div>
             <div className="inline-flex rounded-md border p-0.5 bg-muted/40">
               <button
