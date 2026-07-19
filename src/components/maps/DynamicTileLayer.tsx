@@ -5,13 +5,15 @@ import { TILE_CONFIGS, CADASTRE_OVERLAY_URL, type MapStyle } from './mapStyles';
 
 interface Props {
   mapStyle: MapStyle;
+  /** Max zoom allowed on the map. Tiles beyond native are upscaled. */
+  maxZoom?: number;
 }
 
 /**
  * Swap the basemap tiles without remounting the MapContainer.
  * Adds the Etalab cadastre overlay when mapStyle === 'cadastre'.
  */
-const DynamicTileLayer: React.FC<Props> = ({ mapStyle }) => {
+const DynamicTileLayer: React.FC<Props> = ({ mapStyle, maxZoom = 19 }) => {
   const map = useMap();
   const [currentLayer, setCurrentLayer] = useState<L.TileLayer | null>(null);
   const cadastreOverlayRef = useRef<L.TileLayer | null>(null);
@@ -21,9 +23,11 @@ const DynamicTileLayer: React.FC<Props> = ({ mapStyle }) => {
       map.removeLayer(currentLayer);
     }
     const config = TILE_CONFIGS[mapStyle];
+    const nativeMax = config.maxZoom || 19;
     const layer = L.tileLayer(config.url, {
       attribution: config.attribution,
-      maxZoom: config.maxZoom || 19,
+      maxNativeZoom: nativeMax,
+      maxZoom: Math.max(maxZoom, nativeMax),
       className: config.className || '',
     });
     layer.addTo(map);
@@ -37,7 +41,8 @@ const DynamicTileLayer: React.FC<Props> = ({ mapStyle }) => {
       const overlay = L.tileLayer(CADASTRE_OVERLAY_URL, {
         attribution: '&copy; Etalab — Cadastre',
         opacity: 0.55,
-        maxZoom: 20,
+        maxNativeZoom: 20,
+        maxZoom: Math.max(maxZoom, 20),
         pane: 'overlayPane',
       });
       overlay.addTo(map);
