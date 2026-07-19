@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Merge, Trash2, AlertCircle, GitMerge, List, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, Merge, Trash2, AlertCircle, GitMerge, List, Map as MapIcon, Sparkles, Wand2 } from 'lucide-react';
 import { useTaxonomyAliasesAdmin, normalizeAliasKey } from '@/hooks/useTaxonomyAliases';
 import { toast } from 'sonner';
 import { getGenus, isGenusOnly } from '@/utils/taxonomyMerge';
 import DuplicatesMapView from '@/components/admin/taxonomy/DuplicatesMapView';
+import { Switch } from '@/components/ui/switch';
 
 interface SpeciesRow {
   scientific_name: string | null;
