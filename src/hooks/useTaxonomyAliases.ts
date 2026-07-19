@@ -98,6 +98,12 @@ export const useTaxonomyAliasesAdmin = (marcheId: string | null) => {
       qc.invalidateQueries({ queryKey: ['taxonomy-aliases-admin'] });
       qc.invalidateQueries({ queryKey: ['taxonomy-aliases'] });
       qc.invalidateQueries({ queryKey: ['exploration-species-pool-rpc'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-count'] });
+      qc.invalidateQueries({ queryKey: ['species-observers-citizen'] });
+      qc.invalidateQueries({ queryKey: ['exploration-biodiversity-summary'] });
+      qc.invalidateQueries({ queryKey: ['marche-collected-data'] });
+      qc.invalidateQueries({ queryKey: ['explorations-with-metrics'] });
+      qc.invalidateQueries({ queryKey: ['garden-season-pool'] });
     },
   });
 
@@ -110,6 +116,12 @@ export const useTaxonomyAliasesAdmin = (marcheId: string | null) => {
       qc.invalidateQueries({ queryKey: ['taxonomy-aliases-admin'] });
       qc.invalidateQueries({ queryKey: ['taxonomy-aliases'] });
       qc.invalidateQueries({ queryKey: ['exploration-species-pool-rpc'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-count'] });
+      qc.invalidateQueries({ queryKey: ['species-observers-citizen'] });
+      qc.invalidateQueries({ queryKey: ['exploration-biodiversity-summary'] });
+      qc.invalidateQueries({ queryKey: ['marche-collected-data'] });
+      qc.invalidateQueries({ queryKey: ['explorations-with-metrics'] });
+      qc.invalidateQueries({ queryKey: ['garden-season-pool'] });
     },
   });
 
