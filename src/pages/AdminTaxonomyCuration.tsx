@@ -155,38 +155,48 @@ const AdminTaxonomyCuration: React.FC = () => {
 
   const { list: aliasList, upsert, remove } = useTaxonomyAliasesAdmin(marcheId);
 
+  const kingdomCounts = useMemo(() => {
+    const c = { all: 0, faune: 0, plants: 0, fungi: 0, others: 0 };
+    (pool || []).forEach(r => {
+      c.all++;
+      c[kingdomBucket(r.kingdom)]++;
+    });
+    return c;
+  }, [pool]);
+
+  const poolFiltered = useMemo(() => {
+    if (!pool) return [] as SpeciesRow[];
+    const q = normalizeSearch(search);
+    return pool.filter(r => {
+      if (kingdomFilter !== 'all' && kingdomBucket(r.kingdom) !== kingdomFilter) return false;
+      if (q && !normalizeSearch(r.scientific_name).includes(q) && !normalizeSearch(r.common_name).includes(q)) return false;
+      return true;
+    });
+  }, [pool, search, kingdomFilter]);
+
   const suspects = useMemo(() => {
-    if (!pool) return [] as { genus: string; rows: SpeciesRow[]; total: number }[];
+    if (!poolFiltered.length) return [] as { genus: string; rows: SpeciesRow[]; total: number }[];
     const byGenus = new Map<string, SpeciesRow[]>();
-    pool.forEach(r => {
+    poolFiltered.forEach(r => {
       const g = getGenus(r.scientific_name)?.toLowerCase();
       if (!g) return;
       const arr = byGenus.get(g) || [];
       arr.push(r);
       byGenus.set(g, arr);
     });
-    const q = normalizeSearch(search);
-    let groups = Array.from(byGenus.entries())
+    const groups = Array.from(byGenus.entries())
       .filter(([, rows]) => rows.length >= 2 && rows.some(r => isGenusOnly(r.scientific_name)))
       .map(([genus, rows]) => ({
         genus,
         rows,
         total: rows.reduce((s, r) => s + (r.count || 0), 0),
       }));
-    if (q) {
-      groups = groups.filter(g =>
-        normalizeSearch(g.genus).includes(q) ||
-        g.rows.some(r =>
-          normalizeSearch(r.scientific_name).includes(q) ||
-          normalizeSearch(r.common_name).includes(q)
-        )
-      );
-    }
     groups.sort((a, b) =>
       sortMode === 'genus' ? a.genus.localeCompare(b.genus) : b.total - a.total
     );
     return groups;
-  }, [pool, search, sortMode]);
+  }, [poolFiltered, sortMode]);
+
 
   const toggle = (key: string) =>
     setSelected(s => (s.includes(key) ? s.filter(k => k !== key) : [...s, key]));
