@@ -186,6 +186,11 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
   );
 
   const totalObsInDuplicates = clusters.reduce((s, c) => s + c.observations.length, 0);
+  const outCount = clusters.reduce(
+    (s, c) => s + c.observations.filter((o) => o.outOfPerimeter).length,
+    0,
+  );
+  const [showOnlyOut, setShowOnlyOut] = useState(false);
 
   // Refresh bounds when clusters change (via key on RichMap)
   const mapKey = useMemo(() => `${marcheIds?.join(',') || 'all'}-${radius}-${clusters.length}`, [
