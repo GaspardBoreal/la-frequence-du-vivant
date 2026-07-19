@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Building2, Users, Heart, Trophy, ArrowRight, Waves, Leaf, Mic2, Sparkles, Trees, Sprout } from 'lucide-react';
+import { Building2, Users, Heart, Trophy, ArrowRight, Waves, Leaf, Mic2, Sparkles, Trees, Sprout, MapPin, Compass, CalendarDays } from 'lucide-react';
 import Footer from '@/components/Footer';
 import PublicTopBar from '@/components/layout/PublicTopBar';
 import { ArrowLeft } from 'lucide-react';
