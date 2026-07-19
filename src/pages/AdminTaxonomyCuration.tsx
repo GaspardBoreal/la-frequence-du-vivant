@@ -43,9 +43,10 @@ const AdminTaxonomyCuration: React.FC = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [canonical, setCanonical] = useState<string>('');
   const [isMerging, setIsMerging] = useState(false);
-  const [sortMode, setSortMode] = useState<'count' | 'genus'>('count');
+  const [sortMode, setSortMode] = useState<'suggested' | 'count' | 'genus'>('suggested');
   const [search, setSearch] = useState<string>('');
   const [kingdomFilter, setKingdomFilter] = useState<KingdomFilter>('all');
+  const [onlySuggested, setOnlySuggested] = useState<boolean>(false);
 
   const [viewMode, setViewMode] = useState<'list' | 'map'>(() => {
     if (typeof window === 'undefined') return 'list';
