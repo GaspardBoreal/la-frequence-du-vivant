@@ -19,10 +19,22 @@ interface SpeciesRow {
   common_name: string | null;
   count: number;
   sources: Set<string>;
+  kingdom: string | null;
 }
+
+export type KingdomFilter = 'all' | 'faune' | 'plants' | 'fungi' | 'others';
+
+export const kingdomBucket = (k: string | null | undefined): KingdomFilter => {
+  const v = (k || '').trim();
+  if (v === 'Animalia') return 'faune';
+  if (v === 'Plantae') return 'plants';
+  if (v === 'Fungi') return 'fungi';
+  return 'others';
+};
 
 const normalizeSearch = (s: string | null | undefined) =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
 
 const AdminTaxonomyCuration: React.FC = () => {
   const [eventId, setEventId] = useState<string | null>(null);
@@ -32,6 +44,8 @@ const AdminTaxonomyCuration: React.FC = () => {
   const [isMerging, setIsMerging] = useState(false);
   const [sortMode, setSortMode] = useState<'count' | 'genus'>('count');
   const [search, setSearch] = useState<string>('');
+  const [kingdomFilter, setKingdomFilter] = useState<KingdomFilter>('all');
+
   const [viewMode, setViewMode] = useState<'list' | 'map'>(() => {
     if (typeof window === 'undefined') return 'list';
     return new URLSearchParams(window.location.search).get('view') === 'map' ? 'map' : 'list';
@@ -104,7 +118,7 @@ const AdminTaxonomyCuration: React.FC = () => {
     queryFn: async (): Promise<SpeciesRow[]> => {
       let q = supabase
         .from('marcheur_observations')
-        .select('species_scientific_name, taxon_common_name_fr, source, marche_id');
+        .select('species_scientific_name, taxon_common_name_fr, source, marche_id, kingdom');
       if (marcheId) {
         q = q.eq('marche_id', marcheId);
       } else if (eventId && eventMarcheIds && eventMarcheIds.length > 0) {
@@ -122,12 +136,14 @@ const AdminTaxonomyCuration: React.FC = () => {
         if (existing) {
           existing.count += 1;
           if (r.source) existing.sources.add(r.source);
+          if (!existing.kingdom && r.kingdom) existing.kingdom = r.kingdom;
         } else {
           map.set(key, {
             scientific_name: r.species_scientific_name,
             common_name: r.taxon_common_name_fr,
             count: 1,
             sources: new Set(r.source ? [r.source] : []),
+            kingdom: r.kingdom || null,
           });
         }
       });
@@ -136,40 +152,51 @@ const AdminTaxonomyCuration: React.FC = () => {
     enabled: !eventId || !!eventMarcheIds,
   });
 
+
   const { list: aliasList, upsert, remove } = useTaxonomyAliasesAdmin(marcheId);
 
+  const kingdomCounts = useMemo(() => {
+    const c = { all: 0, faune: 0, plants: 0, fungi: 0, others: 0 };
+    (pool || []).forEach(r => {
+      c.all++;
+      c[kingdomBucket(r.kingdom)]++;
+    });
+    return c;
+  }, [pool]);
+
+  const poolFiltered = useMemo(() => {
+    if (!pool) return [] as SpeciesRow[];
+    const q = normalizeSearch(search);
+    return pool.filter(r => {
+      if (kingdomFilter !== 'all' && kingdomBucket(r.kingdom) !== kingdomFilter) return false;
+      if (q && !normalizeSearch(r.scientific_name).includes(q) && !normalizeSearch(r.common_name).includes(q)) return false;
+      return true;
+    });
+  }, [pool, search, kingdomFilter]);
+
   const suspects = useMemo(() => {
-    if (!pool) return [] as { genus: string; rows: SpeciesRow[]; total: number }[];
+    if (!poolFiltered.length) return [] as { genus: string; rows: SpeciesRow[]; total: number }[];
     const byGenus = new Map<string, SpeciesRow[]>();
-    pool.forEach(r => {
+    poolFiltered.forEach(r => {
       const g = getGenus(r.scientific_name)?.toLowerCase();
       if (!g) return;
       const arr = byGenus.get(g) || [];
       arr.push(r);
       byGenus.set(g, arr);
     });
-    const q = normalizeSearch(search);
-    let groups = Array.from(byGenus.entries())
+    const groups = Array.from(byGenus.entries())
       .filter(([, rows]) => rows.length >= 2 && rows.some(r => isGenusOnly(r.scientific_name)))
       .map(([genus, rows]) => ({
         genus,
         rows,
         total: rows.reduce((s, r) => s + (r.count || 0), 0),
       }));
-    if (q) {
-      groups = groups.filter(g =>
-        normalizeSearch(g.genus).includes(q) ||
-        g.rows.some(r =>
-          normalizeSearch(r.scientific_name).includes(q) ||
-          normalizeSearch(r.common_name).includes(q)
-        )
-      );
-    }
     groups.sort((a, b) =>
       sortMode === 'genus' ? a.genus.localeCompare(b.genus) : b.total - a.total
     );
     return groups;
-  }, [pool, search, sortMode]);
+  }, [poolFiltered, sortMode]);
+
 
   const toggle = (key: string) =>
     setSelected(s => (s.includes(key) ? s.filter(k => k !== key) : [...s, key]));
@@ -297,7 +324,7 @@ const AdminTaxonomyCuration: React.FC = () => {
               </Select>
             </div>
           </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
             <div>
               <Label>Trier les doublons par</Label>
               <Select value={sortMode} onValueChange={v => setSortMode(v as 'count' | 'genus')}>
@@ -317,7 +344,21 @@ const AdminTaxonomyCuration: React.FC = () => {
                 placeholder="nom scientifique ou vernaculaire…"
               />
             </div>
+            <div>
+              <Label>Règne du vivant</Label>
+              <Select value={kingdomFilter} onValueChange={v => setKingdomFilter(v as KingdomFilter)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes ({kingdomCounts.all})</SelectItem>
+                  <SelectItem value="faune">Faune ({kingdomCounts.faune})</SelectItem>
+                  <SelectItem value="plants">Plantes ({kingdomCounts.plants})</SelectItem>
+                  <SelectItem value="fungi">Champignons ({kingdomCounts.fungi})</SelectItem>
+                  <SelectItem value="others">Autres ({kingdomCounts.others})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
           <div className="mt-3 flex items-center justify-between gap-3">
             <div className="text-xs text-muted-foreground">
               Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
@@ -350,6 +391,8 @@ const AdminTaxonomyCuration: React.FC = () => {
                 ? eventMarcheIds || []
                 : null
             }
+            kingdomFilter={kingdomFilter}
+            search={search}
             onRequestMerge={(canonicalName, sources) => {
               setCanonical(canonicalName);
               setSelected(sources);
@@ -358,6 +401,7 @@ const AdminTaxonomyCuration: React.FC = () => {
             }}
           />
         )}
+
 
         {viewMode === 'list' && suspects.length > 0 && (
           <Card className="p-4 border-amber-500/40">
@@ -394,7 +438,7 @@ const AdminTaxonomyCuration: React.FC = () => {
         <Card className="p-4">
           {poolLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
           <div className="max-h-96 overflow-auto divide-y">
-            {pool?.map(r => {
+            {poolFiltered.map(r => {
               const k = r.scientific_name || r.common_name || '';
               return (
                 <label key={k} className="flex items-center gap-3 py-2 cursor-pointer hover:bg-muted/40 px-2">

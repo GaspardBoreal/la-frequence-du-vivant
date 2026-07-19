@@ -21,6 +21,7 @@ interface Obs {
   photo_url: string | null;
   observation_date: string | null;
   source: string | null;
+  kingdom: string | null;
   marche_name?: string | null;
   marche_lat?: number | null;
   marche_lng?: number | null;
@@ -28,6 +29,16 @@ interface Obs {
   distanceToMarche?: number | null;
   outOfPerimeter?: boolean;
 }
+
+type KingdomFilter = 'all' | 'faune' | 'plants' | 'fungi' | 'others';
+const kingdomBucket = (k: string | null | undefined): KingdomFilter => {
+  const v = (k || '').trim();
+  if (v === 'Animalia') return 'faune';
+  if (v === 'Plantae') return 'plants';
+  if (v === 'Fungi') return 'fungi';
+  return 'others';
+};
+
 
 interface Cluster {
   id: string;
@@ -64,10 +75,13 @@ const CLUSTER_COLORS = [
 
 interface Props {
   marcheIds: string[] | null; // null = all
+  kingdomFilter?: KingdomFilter;
+  search?: string;
   onRequestMerge: (canonical: string, sources: string[]) => void;
 }
 
-const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
+const DuplicatesMapView: React.FC<Props> = ({ marcheIds, kingdomFilter = 'all', search = '', onRequestMerge }) => {
+
   const [radius, setRadius] = useState(25);
   const [activeCluster, setActiveCluster] = useState<Cluster | null>(null);
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
@@ -78,11 +92,12 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
       let q = supabase
         .from('marcheur_observations')
         .select(
-          'id, marche_id, species_scientific_name, taxon_common_name_fr, latitude, longitude, photo_url, observation_date, source, marches:marche_id ( nom_marche, latitude, longitude, radius_m )'
+          'id, marche_id, species_scientific_name, taxon_common_name_fr, latitude, longitude, photo_url, observation_date, source, kingdom, marches:marche_id ( nom_marche, latitude, longitude, radius_m )'
         )
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
       if (marcheIds && marcheIds.length > 0) q = q.in('marche_id', marcheIds);
+
       const { data, error } = await q.limit(8000);
       if (error) throw error;
       return ((data || []) as any[]).map((r) => {
@@ -109,12 +124,28 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
     },
   });
 
+  // Applique les filtres du bandeau (règne + recherche) AVANT le clustering
+  const obsFiltered = useMemo(() => {
+    const q = norm(search);
+    return obs.filter((o) => {
+      if (kingdomFilter !== 'all' && kingdomBucket(o.kingdom) !== kingdomFilter) return false;
+      if (q) {
+        const hay =
+          norm(o.species_scientific_name) + ' ' +
+          norm(o.taxon_common_name_fr) + ' ' +
+          norm(getGenus(o.species_scientific_name) || '');
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [obs, kingdomFilter, search]);
+
   // Clustering : par genre + proximité GPS ≤ radius (Haversine)
   const clusters = useMemo<Cluster[]>(() => {
-    if (!obs.length) return [];
+    if (!obsFiltered.length) return [];
     // Groupe par genre normalisé
     const byGenus = new Map<string, Obs[]>();
-    for (const o of obs) {
+    for (const o of obsFiltered) {
       const g = norm(getGenus(o.species_scientific_name) || '');
       if (!g) continue;
       const arr = byGenus.get(g) || [];
@@ -175,15 +206,16 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
       }
     }
     return out.sort((a, b) => b.observations.length - a.observations.length);
-  }, [obs, radius]);
+  }, [obsFiltered, radius]);
 
   const bounds = useMemo<[number, number][]>(
     () =>
       clusters.length > 0
         ? clusters.flatMap((c) => c.observations.map((o) => [o.latitude, o.longitude] as [number, number]))
-        : obs.slice(0, 200).map((o) => [o.latitude, o.longitude] as [number, number]),
-    [clusters, obs]
+        : obsFiltered.slice(0, 200).map((o) => [o.latitude, o.longitude] as [number, number]),
+    [clusters, obsFiltered]
   );
+
 
   const totalObsInDuplicates = clusters.reduce((s, c) => s + c.observations.length, 0);
   const outCount = clusters.reduce(
@@ -193,11 +225,11 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
   const [showOnlyOut, setShowOnlyOut] = useState(false);
 
   // Refresh bounds when clusters change (via key on RichMap)
-  const mapKey = useMemo(() => `${marcheIds?.join(',') || 'all'}-${radius}-${clusters.length}`, [
-    marcheIds,
-    radius,
-    clusters.length,
-  ]);
+  const mapKey = useMemo(
+    () => `${marcheIds?.join(',') || 'all'}-${radius}-${kingdomFilter}-${norm(search)}-${clusters.length}`,
+    [marcheIds, radius, kingdomFilter, search, clusters.length],
+  );
+
 
   return (
     <div className="relative">
