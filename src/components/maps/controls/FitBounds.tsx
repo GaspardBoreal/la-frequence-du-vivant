@@ -83,8 +83,8 @@ export const FitBounds: React.FC<FitBoundsProps> = ({
 
     let computedMax = maxZoom ?? 13;
     if (maxZoom === undefined) {
-      if (diag < 150) computedMax = 18;
-      else if (diag < 500) computedMax = 17;
+      if (diag < 150) computedMax = 20;
+      else if (diag < 500) computedMax = 19;
       else if (diag < 2000) computedMax = 16;
       else if (diag < 10000) computedMax = 14;
     }
