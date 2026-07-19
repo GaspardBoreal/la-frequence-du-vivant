@@ -390,8 +390,8 @@ const AdminTaxonomyCuration: React.FC = () => {
           </Card>
         )}
 
+        {viewMode === 'list' && (
         <Card className="p-4">
-          <h2 className="font-semibold mb-3">Espèces observées ({pool?.length || 0})</h2>
           {poolLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
           <div className="max-h-96 overflow-auto divide-y">
             {pool?.map(r => {
