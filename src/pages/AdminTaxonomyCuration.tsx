@@ -438,7 +438,7 @@ const AdminTaxonomyCuration: React.FC = () => {
         <Card className="p-4">
           {poolLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
           <div className="max-h-96 overflow-auto divide-y">
-            {pool?.map(r => {
+            {poolFiltered.map(r => {
               const k = r.scientific_name || r.common_name || '';
               return (
                 <label key={k} className="flex items-center gap-3 py-2 cursor-pointer hover:bg-muted/40 px-2">
