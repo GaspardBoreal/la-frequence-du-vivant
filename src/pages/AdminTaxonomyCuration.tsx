@@ -418,6 +418,8 @@ const AdminTaxonomyCuration: React.FC = () => {
             })}
           </div>
         </Card>
+        )}
+
 
         <Card className="p-4 border-primary/40">
           <h2 className="font-semibold mb-3 flex items-center gap-2"><Merge className="h-4 w-4" /> Fusionner</h2>
