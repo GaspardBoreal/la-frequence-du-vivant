@@ -21,6 +21,7 @@ interface Obs {
   photo_url: string | null;
   observation_date: string | null;
   source: string | null;
+  kingdom: string | null;
   marche_name?: string | null;
   marche_lat?: number | null;
   marche_lng?: number | null;
@@ -28,6 +29,16 @@ interface Obs {
   distanceToMarche?: number | null;
   outOfPerimeter?: boolean;
 }
+
+type KingdomFilter = 'all' | 'faune' | 'plants' | 'fungi' | 'others';
+const kingdomBucket = (k: string | null | undefined): KingdomFilter => {
+  const v = (k || '').trim();
+  if (v === 'Animalia') return 'faune';
+  if (v === 'Plantae') return 'plants';
+  if (v === 'Fungi') return 'fungi';
+  return 'others';
+};
+
 
 interface Cluster {
   id: string;
