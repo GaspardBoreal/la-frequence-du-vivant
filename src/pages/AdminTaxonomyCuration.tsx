@@ -127,7 +127,7 @@ const AdminTaxonomyCuration: React.FC = () => {
   const { list: aliasList, upsert, remove } = useTaxonomyAliasesAdmin(marcheId);
 
   const suspects = useMemo(() => {
-    if (!pool) return [] as { genus: string; rows: SpeciesRow[] }[];
+    if (!pool) return [] as { genus: string; rows: SpeciesRow[]; total: number }[];
     const byGenus = new Map<string, SpeciesRow[]>();
     pool.forEach(r => {
       const g = getGenus(r.scientific_name)?.toLowerCase();
@@ -136,10 +136,28 @@ const AdminTaxonomyCuration: React.FC = () => {
       arr.push(r);
       byGenus.set(g, arr);
     });
-    return Array.from(byGenus.entries())
+    const q = normalizeSearch(search);
+    let groups = Array.from(byGenus.entries())
       .filter(([, rows]) => rows.length >= 2 && rows.some(r => isGenusOnly(r.scientific_name)))
-      .map(([genus, rows]) => ({ genus, rows }));
-  }, [pool]);
+      .map(([genus, rows]) => ({
+        genus,
+        rows,
+        total: rows.reduce((s, r) => s + (r.count || 0), 0),
+      }));
+    if (q) {
+      groups = groups.filter(g =>
+        normalizeSearch(g.genus).includes(q) ||
+        g.rows.some(r =>
+          normalizeSearch(r.scientific_name).includes(q) ||
+          normalizeSearch(r.common_name).includes(q)
+        )
+      );
+    }
+    groups.sort((a, b) =>
+      sortMode === 'genus' ? a.genus.localeCompare(b.genus) : b.total - a.total
+    );
+    return groups;
+  }, [pool, search, sortMode]);
 
   const toggle = (key: string) =>
     setSelected(s => (s.includes(key) ? s.filter(k => k !== key) : [...s, key]));
