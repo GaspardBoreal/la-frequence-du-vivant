@@ -88,6 +88,22 @@ export function useSpeciesObservers(
         });
       });
       const mergedGenus = getMergedGenusFor(scientificName, Array.from(poolSci));
+
+      // Alias persistants (globaux + spécifiques aux marches de l'exploration) —
+      // permet de rattacher à la fiche `scientificName` toute observation dont
+      // le nom source (sci ou common) mappe au canonical courant.
+      const { data: aliasRows } = await (supabase as any)
+        .from('species_taxonomy_aliases')
+        .select('marche_id, alias_key, canonical_scientific_name')
+        .or(`marche_id.is.null,marche_id.in.(${marcheIds.join(',')})`);
+      const canonicalKey = normalizeAliasKey(scientificName);
+      const aliasKeysForThisCanonical = new Set<string>();
+      ((aliasRows || []) as any[]).forEach((r) => {
+        if (normalizeAliasKey(r.canonical_scientific_name) === canonicalKey) {
+          aliasKeysForThisCanonical.add(r.alias_key);
+        }
+      });
+
       const target = scientificName.toLowerCase().trim();
       const targetGenus = mergedGenus ? mergedGenus.toLowerCase().trim() : null;
       const out: SpeciesObserver[] = [];
@@ -96,8 +112,15 @@ export function useSpeciesObservers(
       snaps.forEach((snap: any) => {
         const arr: any[] = Array.isArray(snap.species_data) ? snap.species_data : [];
         arr.forEach((sp) => {
-          const sci = (sp.scientificName || sp.scientific_name || '').toString().toLowerCase().trim();
-          if (sci !== target && sci !== targetGenus) return;
+          const sciRaw = (sp.scientificName || sp.scientific_name || '').toString();
+          const comRaw = (sp.commonName || sp.common_name || '').toString();
+          const sci = sciRaw.toLowerCase().trim();
+          const sciKey = normalizeAliasKey(sciRaw);
+          const comKey = normalizeAliasKey(comRaw);
+          const matchesAlias =
+            aliasKeysForThisCanonical.has(sciKey) ||
+            aliasKeysForThisCanonical.has(comKey);
+          if (sci !== target && sci !== targetGenus && !matchesAlias) return;
           const attribs: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
           const mi = marcheInfoMap.get(snap.marche_id);
           attribs.forEach((a, idx) => {
