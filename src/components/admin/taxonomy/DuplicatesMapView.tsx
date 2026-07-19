@@ -124,12 +124,28 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, kingdomFilter = 'all', 
     },
   });
 
+  // Applique les filtres du bandeau (règne + recherche) AVANT le clustering
+  const obsFiltered = useMemo(() => {
+    const q = norm(search);
+    return obs.filter((o) => {
+      if (kingdomFilter !== 'all' && kingdomBucket(o.kingdom) !== kingdomFilter) return false;
+      if (q) {
+        const hay =
+          norm(o.species_scientific_name) + ' ' +
+          norm(o.taxon_common_name_fr) + ' ' +
+          norm(getGenus(o.species_scientific_name) || '');
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [obs, kingdomFilter, search]);
+
   // Clustering : par genre + proximité GPS ≤ radius (Haversine)
   const clusters = useMemo<Cluster[]>(() => {
-    if (!obs.length) return [];
+    if (!obsFiltered.length) return [];
     // Groupe par genre normalisé
     const byGenus = new Map<string, Obs[]>();
-    for (const o of obs) {
+    for (const o of obsFiltered) {
       const g = norm(getGenus(o.species_scientific_name) || '');
       if (!g) continue;
       const arr = byGenus.get(g) || [];
@@ -190,15 +206,16 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, kingdomFilter = 'all', 
       }
     }
     return out.sort((a, b) => b.observations.length - a.observations.length);
-  }, [obs, radius]);
+  }, [obsFiltered, radius]);
 
   const bounds = useMemo<[number, number][]>(
     () =>
       clusters.length > 0
         ? clusters.flatMap((c) => c.observations.map((o) => [o.latitude, o.longitude] as [number, number]))
-        : obs.slice(0, 200).map((o) => [o.latitude, o.longitude] as [number, number]),
-    [clusters, obs]
+        : obsFiltered.slice(0, 200).map((o) => [o.latitude, o.longitude] as [number, number]),
+    [clusters, obsFiltered]
   );
+
 
   const totalObsInDuplicates = clusters.reduce((s, c) => s + c.observations.length, 0);
   const outCount = clusters.reduce(
