@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge } from 'lucide-react';
 
 const OUTILS = [
   {
