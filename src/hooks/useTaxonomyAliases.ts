@@ -89,9 +89,14 @@ export const useTaxonomyAliasesAdmin = (marcheId: string | null) => {
         notes: payload.notes ?? null,
         created_by: u.user?.id ?? null,
       };
-      const { error } = await (supabase as any)
-        .from('species_taxonomy_aliases')
-        .upsert(row, { onConflict: marcheId ? 'marche_id,alias_key' : 'alias_key' });
+      const { error } = await (supabase as any).rpc('upsert_species_taxonomy_alias', {
+        p_marche_id: row.marche_id,
+        p_alias_key: row.alias_key,
+        p_canonical_scientific_name: row.canonical_scientific_name,
+        p_canonical_common_name_fr: row.canonical_common_name_fr,
+        p_reason: row.reason,
+        p_notes: row.notes,
+      });
       if (error) throw error;
     },
     onSuccess: () => {

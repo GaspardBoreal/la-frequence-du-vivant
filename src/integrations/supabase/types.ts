@@ -7614,6 +7614,7 @@ export type Database = {
           rec_opus_id: string
         }[]
       }
+      normalize_species_alias_key: { Args: { p_name: string }; Returns: string }
       peek_event_invitation: { Args: { _token: string }; Returns: Json }
       reattribute_media:
         | {
@@ -7779,6 +7780,17 @@ export type Database = {
           _label: string
           _marche_id?: string
           _scientific_name: string
+        }
+        Returns: string
+      }
+      upsert_species_taxonomy_alias: {
+        Args: {
+          p_alias_key: string
+          p_canonical_common_name_fr?: string
+          p_canonical_scientific_name: string
+          p_marche_id: string
+          p_notes?: string
+          p_reason?: string
         }
         Returns: string
       }
