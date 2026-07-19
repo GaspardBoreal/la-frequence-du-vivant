@@ -152,10 +152,10 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
 
   // Enrich with French names — single batched DB lookup, cached 24h
   const { data: frMap } = useFrenchSpeciesNames(
-    intermediate.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }))
+    merged.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }))
   );
 
-  const enriched: ExplorationSpecies[] = intermediate.map(s => {
+  const enriched: ExplorationSpecies[] = merged.map(s => {
     const fr = s.scientificName ? frMap?.get(s.scientificName) : undefined;
     const displayName = fr?.displayName || s.commonName || s.scientificName || '';
     return {
