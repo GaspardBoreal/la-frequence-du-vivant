@@ -426,7 +426,7 @@ const MarchesDuVivant = () => {
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
-                to="/marches-du-vivant/carte-marches-du-vivant?tab=agenda"
+                to="/marches-du-vivant/carte-marches-du-vivant?tab=carte&view=timeline"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
                 className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-border bg-card/60 backdrop-blur-sm text-foreground font-medium hover:border-primary/40 hover:bg-card transition-all duration-300"
               >
