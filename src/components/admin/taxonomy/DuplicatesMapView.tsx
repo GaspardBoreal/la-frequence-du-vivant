@@ -305,6 +305,7 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, kingdomFilter = 'all', 
             bounds={bounds}
             initialStyle="satellite"
             controls={{ zoom: true, style: true, geolocate: true, cadastre: true }}
+            maxZoom={22}
             height="100%"
           >
             {clusters.map((c, idx) => {
