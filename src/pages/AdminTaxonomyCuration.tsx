@@ -446,12 +446,46 @@ const AdminTaxonomyCuration: React.FC = () => {
           <Card className="p-4 border-amber-500/40">
             <div className="flex items-center gap-2 mb-3">
               <AlertCircle className="h-4 w-4 text-amber-500" />
-              <h2 className="font-semibold">Doublons probables détectés ({suspects.length})</h2>
+              <h2 className="font-semibold">
+                Doublons probables détectés ({suspects.length})
+                {suggestedCount > 0 && (
+                  <span className="ml-2 text-xs font-normal text-emerald-600 dark:text-emerald-400">
+                    · {suggestedCount} auto-fusionnable{suggestedCount > 1 ? 's' : ''}
+                  </span>
+                )}
+              </h2>
             </div>
             <div className="space-y-3">
               {suspects.map(s => (
-                <div key={s.genus} className="border rounded p-3">
-                  <div className="text-xs text-muted-foreground mb-2">Genre : <span className="italic">{s.genus}</span></div>
+                <div
+                  key={s.genus}
+                  className={`border rounded p-3 ${s.suggested ? 'border-emerald-500/50 bg-emerald-500/5' : ''}`}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+                    <div className="text-xs text-muted-foreground">
+                      Genre : <span className="italic">{s.genus}</span>
+                      {s.suggested && (
+                        <Badge variant="outline" className="ml-2 border-emerald-500/60 text-emerald-600 dark:text-emerald-400 gap-1">
+                          <Sparkles className="h-3 w-3" /> Fusion suggérée
+                        </Badge>
+                      )}
+                    </div>
+                    {s.suggested && s.canonical && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                        onClick={() => {
+                          setCanonical(s.canonical!);
+                          setSelected(s.sources);
+                          toast.info(`Pré-rempli : ${s.sources.length} source(s) → « ${s.canonical} »`);
+                          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                        }}
+                      >
+                        <Wand2 className="h-3 w-3" /> Pré-remplir → « {s.canonical} »
+                      </Button>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {s.rows.map(r => (
                       <label key={r.scientific_name || r.common_name || ''} className="flex items-center gap-2 border rounded px-2 py-1 cursor-pointer hover:bg-muted/40">
