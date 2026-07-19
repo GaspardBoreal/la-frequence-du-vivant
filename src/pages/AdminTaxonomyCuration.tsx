@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Merge, Trash2, AlertCircle, GitMerge, List, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, Merge, Trash2, AlertCircle, GitMerge, List, Map as MapIcon, Sparkles, Wand2 } from 'lucide-react';
 import { useTaxonomyAliasesAdmin, normalizeAliasKey } from '@/hooks/useTaxonomyAliases';
 import { toast } from 'sonner';
 import { getGenus, isGenusOnly } from '@/utils/taxonomyMerge';
 import DuplicatesMapView from '@/components/admin/taxonomy/DuplicatesMapView';
+import { Switch } from '@/components/ui/switch';
 
 interface SpeciesRow {
   scientific_name: string | null;
@@ -42,9 +43,10 @@ const AdminTaxonomyCuration: React.FC = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [canonical, setCanonical] = useState<string>('');
   const [isMerging, setIsMerging] = useState(false);
-  const [sortMode, setSortMode] = useState<'count' | 'genus'>('count');
+  const [sortMode, setSortMode] = useState<'suggested' | 'count' | 'genus'>('suggested');
   const [search, setSearch] = useState<string>('');
   const [kingdomFilter, setKingdomFilter] = useState<KingdomFilter>('all');
+  const [onlySuggested, setOnlySuggested] = useState<boolean>(false);
 
   const [viewMode, setViewMode] = useState<'list' | 'map'>(() => {
     if (typeof window === 'undefined') return 'list';
@@ -175,7 +177,7 @@ const AdminTaxonomyCuration: React.FC = () => {
   }, [pool, search, kingdomFilter]);
 
   const suspects = useMemo(() => {
-    if (!poolFiltered.length) return [] as { genus: string; rows: SpeciesRow[]; total: number }[];
+    if (!poolFiltered.length) return [] as { genus: string; rows: SpeciesRow[]; total: number; suggested: boolean; canonical: string | null; sources: string[] }[];
     const byGenus = new Map<string, SpeciesRow[]>();
     poolFiltered.forEach(r => {
       const g = getGenus(r.scientific_name)?.toLowerCase();
@@ -184,18 +186,42 @@ const AdminTaxonomyCuration: React.FC = () => {
       arr.push(r);
       byGenus.set(g, arr);
     });
-    const groups = Array.from(byGenus.entries())
+    let groups = Array.from(byGenus.entries())
       .filter(([, rows]) => rows.length >= 2 && rows.some(r => isGenusOnly(r.scientific_name)))
-      .map(([genus, rows]) => ({
-        genus,
-        rows,
-        total: rows.reduce((s, r) => s + (r.count || 0), 0),
-      }));
-    groups.sort((a, b) =>
-      sortMode === 'genus' ? a.genus.localeCompare(b.genus) : b.total - a.total
-    );
+      .map(([genus, rows]) => {
+        const binomials = rows.filter(r => !isGenusOnly(r.scientific_name));
+        const genusEntries = rows.filter(r => isGenusOnly(r.scientific_name));
+        // Fusion suggérée sûre : 1 seule binomiale + ≥1 entrée genre → fusionner tout vers la binomiale
+        const suggested = binomials.length === 1 && genusEntries.length >= 1;
+        const canonical = suggested ? binomials[0].scientific_name : null;
+        const sources = suggested
+          ? genusEntries.map(g => g.scientific_name || '').filter(Boolean)
+          : [];
+        return {
+          genus,
+          rows,
+          total: rows.reduce((s, r) => s + (r.count || 0), 0),
+          suggested,
+          canonical,
+          sources,
+        };
+      });
+    if (onlySuggested) groups = groups.filter(g => g.suggested);
+    groups.sort((a, b) => {
+      if (sortMode === 'suggested') {
+        if (a.suggested !== b.suggested) return a.suggested ? -1 : 1;
+        return b.total - a.total;
+      }
+      if (sortMode === 'genus') return a.genus.localeCompare(b.genus);
+      return b.total - a.total;
+    });
     return groups;
-  }, [poolFiltered, sortMode]);
+  }, [poolFiltered, sortMode, onlySuggested]);
+
+  const suggestedCount = useMemo(
+    () => suspects.filter(s => s.suggested).length,
+    [suspects]
+  );
 
 
   const toggle = (key: string) =>
@@ -327,10 +353,11 @@ const AdminTaxonomyCuration: React.FC = () => {
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             <div>
               <Label>Trier les doublons par</Label>
-              <Select value={sortMode} onValueChange={v => setSortMode(v as 'count' | 'genus')}>
+              <Select value={sortMode} onValueChange={v => setSortMode(v as 'suggested' | 'count' | 'genus')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="count">Nombre de doublons (défaut)</SelectItem>
+                  <SelectItem value="suggested">Fusions suggérées d'abord (défaut)</SelectItem>
+                  <SelectItem value="count">Nombre de doublons</SelectItem>
                   <SelectItem value="genus">Genre (A→Z)</SelectItem>
                 </SelectContent>
               </Select>
@@ -359,9 +386,21 @@ const AdminTaxonomyCuration: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <div className="text-xs text-muted-foreground">
-              Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
+          <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="text-xs text-muted-foreground">
+                Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
+              </div>
+              {suggestedCount > 0 && (
+                <Badge variant="outline" className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  {suggestedCount} fusion{suggestedCount > 1 ? 's' : ''} suggérée{suggestedCount > 1 ? 's' : ''}
+                </Badge>
+              )}
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <Switch checked={onlySuggested} onCheckedChange={setOnlySuggested} />
+                Seulement les fusions suggérées
+              </label>
             </div>
             <div className="inline-flex rounded-md border p-0.5 bg-muted/40">
               <button
@@ -407,12 +446,46 @@ const AdminTaxonomyCuration: React.FC = () => {
           <Card className="p-4 border-amber-500/40">
             <div className="flex items-center gap-2 mb-3">
               <AlertCircle className="h-4 w-4 text-amber-500" />
-              <h2 className="font-semibold">Doublons probables détectés ({suspects.length})</h2>
+              <h2 className="font-semibold">
+                Doublons probables détectés ({suspects.length})
+                {suggestedCount > 0 && (
+                  <span className="ml-2 text-xs font-normal text-emerald-600 dark:text-emerald-400">
+                    · {suggestedCount} auto-fusionnable{suggestedCount > 1 ? 's' : ''}
+                  </span>
+                )}
+              </h2>
             </div>
             <div className="space-y-3">
               {suspects.map(s => (
-                <div key={s.genus} className="border rounded p-3">
-                  <div className="text-xs text-muted-foreground mb-2">Genre : <span className="italic">{s.genus}</span></div>
+                <div
+                  key={s.genus}
+                  className={`border rounded p-3 ${s.suggested ? 'border-emerald-500/50 bg-emerald-500/5' : ''}`}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+                    <div className="text-xs text-muted-foreground">
+                      Genre : <span className="italic">{s.genus}</span>
+                      {s.suggested && (
+                        <Badge variant="outline" className="ml-2 border-emerald-500/60 text-emerald-600 dark:text-emerald-400 gap-1">
+                          <Sparkles className="h-3 w-3" /> Fusion suggérée
+                        </Badge>
+                      )}
+                    </div>
+                    {s.suggested && s.canonical && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                        onClick={() => {
+                          setCanonical(s.canonical!);
+                          setSelected(s.sources);
+                          toast.info(`Pré-rempli : ${s.sources.length} source(s) → « ${s.canonical} »`);
+                          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                        }}
+                      >
+                        <Wand2 className="h-3 w-3" /> Pré-remplir → « {s.canonical} »
+                      </Button>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {s.rows.map(r => (
                       <label key={r.scientific_name || r.common_name || ''} className="flex items-center gap-2 border rounded px-2 py-1 cursor-pointer hover:bg-muted/40">
