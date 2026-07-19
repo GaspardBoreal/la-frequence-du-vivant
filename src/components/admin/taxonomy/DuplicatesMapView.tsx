@@ -21,6 +21,12 @@ interface Obs {
   photo_url: string | null;
   observation_date: string | null;
   source: string | null;
+  marche_name?: string | null;
+  marche_lat?: number | null;
+  marche_lng?: number | null;
+  marche_radius?: number | null;
+  distanceToMarche?: number | null;
+  outOfPerimeter?: boolean;
 }
 
 interface Cluster {
@@ -72,14 +78,34 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
       let q = supabase
         .from('marcheur_observations')
         .select(
-          'id, marche_id, species_scientific_name, taxon_common_name_fr, latitude, longitude, photo_url, observation_date, source'
+          'id, marche_id, species_scientific_name, taxon_common_name_fr, latitude, longitude, photo_url, observation_date, source, marches:marche_id ( nom_marche, latitude, longitude, radius_m )'
         )
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
       if (marcheIds && marcheIds.length > 0) q = q.in('marche_id', marcheIds);
       const { data, error } = await q.limit(8000);
       if (error) throw error;
-      return (data || []) as Obs[];
+      return ((data || []) as any[]).map((r) => {
+        const m = r.marches || {};
+        const mLat = m.latitude ?? null;
+        const mLng = m.longitude ?? null;
+        const radius = m.radius_m ?? 500;
+        let distanceToMarche: number | null = null;
+        let outOfPerimeter = false;
+        if (mLat != null && mLng != null) {
+          distanceToMarche = haversine([r.latitude, r.longitude], [mLat, mLng]);
+          outOfPerimeter = distanceToMarche > radius * 1.2;
+        }
+        return {
+          ...r,
+          marche_name: m.nom_marche ?? null,
+          marche_lat: mLat,
+          marche_lng: mLng,
+          marche_radius: radius,
+          distanceToMarche,
+          outOfPerimeter,
+        } as Obs;
+      });
     },
   });
 
@@ -160,6 +186,11 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
   );
 
   const totalObsInDuplicates = clusters.reduce((s, c) => s + c.observations.length, 0);
+  const outCount = clusters.reduce(
+    (s, c) => s + c.observations.filter((o) => o.outOfPerimeter).length,
+    0,
+  );
+  const [showOnlyOut, setShowOnlyOut] = useState(false);
 
   // Refresh bounds when clusters change (via key on RichMap)
   const mapKey = useMemo(() => `${marcheIds?.join(',') || 'all'}-${radius}-${clusters.length}`, [
@@ -194,6 +225,20 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
           {totalObsInDuplicates > 1 ? 's' : ''} concernée{totalObsInDuplicates > 1 ? 's' : ''} ·{' '}
           <span className="text-muted-foreground">rayon {radius} m</span>
         </div>
+        {outCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowOnlyOut((v) => !v)}
+            className={`text-xs px-2 py-1 rounded-full border transition ${
+              showOnlyOut
+                ? 'bg-red-500/15 border-red-500/60 text-red-600'
+                : 'bg-red-500/5 border-red-500/30 text-red-500 hover:bg-red-500/10'
+            }`}
+            title="Observation dont le GPS est en dehors du périmètre de sa marche associée"
+          >
+            ⚠ {outCount} hors périmètre marche {showOnlyOut ? '(actif)' : ''}
+          </button>
+        )}
         <div className="ml-auto flex items-center gap-3 min-w-[260px]">
           <span className="text-xs text-muted-foreground whitespace-nowrap">10 m</span>
           <Slider
@@ -207,6 +252,7 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
           <span className="text-xs text-muted-foreground whitespace-nowrap">500 m</span>
         </div>
       </div>
+
 
       <div
         className="relative rounded-xl overflow-hidden border shadow-lg"
@@ -249,40 +295,58 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
                     eventHandlers={{ click: () => setActiveCluster(c) }}
                   />
                   {/* Filaments centroïde → points */}
-                  {c.observations.map((o) => (
-                    <Polyline
-                      key={`f-${c.id}-${o.id}`}
-                      positions={[c.centroid, [o.latitude, o.longitude]]}
-                      pathOptions={{ color, weight: 1, opacity: 0.4 }}
-                    />
-                  ))}
+                  {c.observations
+                    .filter((o) => !showOnlyOut || o.outOfPerimeter)
+                    .map((o) => (
+                      <Polyline
+                        key={`f-${c.id}-${o.id}`}
+                        positions={[c.centroid, [o.latitude, o.longitude]]}
+                        pathOptions={{
+                          color: o.outOfPerimeter ? '#ef4444' : color,
+                          weight: 1,
+                          opacity: o.outOfPerimeter ? 0.8 : 0.4,
+                          dashArray: o.outOfPerimeter ? '3 4' : undefined,
+                        }}
+                      />
+                    ))}
                   {/* Points GPS ultra-précis */}
-                  {c.observations.map((o) => (
-                    <CircleMarker
-                      key={o.id}
-                      center={[o.latitude, o.longitude]}
-                      radius={6}
-                      pathOptions={{
-                        color: '#fff',
-                        weight: 1.5,
-                        fillColor: color,
-                        fillOpacity: 0.95,
-                      }}
-                      eventHandlers={{ click: () => setActiveCluster(c) }}
-                    >
-                      <Tooltip direction="top" offset={[0, -6]} opacity={0.95}>
-                        <div className="text-xs">
-                          <div className="italic font-medium">
-                            {o.species_scientific_name || o.taxon_common_name_fr}
+                  {c.observations
+                    .filter((o) => !showOnlyOut || o.outOfPerimeter)
+                    .map((o) => (
+                      <CircleMarker
+                        key={o.id}
+                        center={[o.latitude, o.longitude]}
+                        radius={o.outOfPerimeter ? 7 : 6}
+                        pathOptions={{
+                          color: o.outOfPerimeter ? '#ef4444' : '#fff',
+                          weight: o.outOfPerimeter ? 2 : 1.5,
+                          fillColor: color,
+                          fillOpacity: 0.95,
+                          dashArray: o.outOfPerimeter ? '2 3' : undefined,
+                        }}
+                        eventHandlers={{ click: () => setActiveCluster(c) }}
+                      >
+                        <Tooltip direction="top" offset={[0, -6]} opacity={0.95}>
+                          <div className="text-xs">
+                            <div className="italic font-medium">
+                              {o.species_scientific_name || o.taxon_common_name_fr}
+                            </div>
+                            <div className="opacity-70 font-mono">
+                              {o.latitude.toFixed(6)}, {o.longitude.toFixed(6)}
+                            </div>
+                            {o.marche_name && (
+                              <div className={o.outOfPerimeter ? 'text-red-500 font-medium' : 'opacity-70'}>
+                                Marche : {o.marche_name}
+                                {o.outOfPerimeter && o.distanceToMarche != null && (
+                                  <> — ⚠ {Math.round(o.distanceToMarche)} m hors périmètre</>
+                                )}
+                              </div>
+                            )}
+                            {o.source && <div className="opacity-60">source: {o.source}</div>}
                           </div>
-                          <div className="opacity-70 font-mono">
-                            {o.latitude.toFixed(6)}, {o.longitude.toFixed(6)}
-                          </div>
-                          {o.source && <div className="opacity-60">source: {o.source}</div>}
-                        </div>
-                      </Tooltip>
-                    </CircleMarker>
-                  ))}
+                        </Tooltip>
+                      </CircleMarker>
+                    ))}
                   {/* Étiquette de constellation au centroïde */}
                   <CircleMarker
                     center={c.centroid}
@@ -368,6 +432,36 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
                           <div className="text-[10px] text-muted-foreground">
                             {new Date(o.observation_date).toLocaleDateString('fr-FR')}
                           </div>
+                        )}
+                        {o.marche_name && (
+                          <div
+                            className={`text-[10px] mt-1 flex items-center gap-1 ${
+                              o.outOfPerimeter ? 'text-red-600 font-medium' : 'text-muted-foreground'
+                            }`}
+                          >
+                            {o.outOfPerimeter && <span>⚠</span>}
+                            <span className="truncate" title={o.marche_name}>
+                              {o.marche_name}
+                            </span>
+                            {o.outOfPerimeter && o.distanceToMarche != null && (
+                              <span className="whitespace-nowrap">· {Math.round(o.distanceToMarche)} m</span>
+                            )}
+                          </div>
+                        )}
+                        {o.outOfPerimeter && (
+                          <Badge variant="destructive" className="text-[10px] mt-1">
+                            Hors périmètre marche
+                          </Badge>
+                        )}
+                        {o.marche_id && (
+                          <a
+                            href={`/admin/marches/${o.marche_id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block text-[10px] text-primary hover:underline mt-1"
+                          >
+                            Voir dans l'admin marche →
+                          </a>
                         )}
                         {o.source && (
                           <Badge variant="outline" className="text-[10px] mt-1">
