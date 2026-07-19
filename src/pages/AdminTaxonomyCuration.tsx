@@ -21,11 +21,11 @@ interface SpeciesRow {
 }
 
 const AdminTaxonomyCuration: React.FC = () => {
+  const [eventId, setEventId] = useState<string | null>(null);
   const [marcheId, setMarcheId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [canonical, setCanonical] = useState<string>('');
 
-  // Liste des marches
   const { data: marches } = useQuery({
     queryKey: ['admin-marches-simple'],
     queryFn: async () => {
@@ -34,14 +34,66 @@ const AdminTaxonomyCuration: React.FC = () => {
     },
   });
 
-  // Pool brut des espèces observées pour cette marche (jointure marcheur_observations)
+  const { data: events } = useQuery({
+    queryKey: ['admin-marche-events-simple'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marche_events')
+        .select('id, title, date_marche, exploration_id')
+        .order('date_marche', { ascending: false });
+      return ((data || []) as any[]).map(e => ({
+        id: e.id as string,
+        title: (e.title as string) || '(sans titre)',
+        date: e.date_marche as string | null,
+        explorationId: e.exploration_id as string | null,
+      }));
+    },
+  });
+
+  const selectedEvent = useMemo(
+    () => events?.find(e => e.id === eventId) || null,
+    [events, eventId]
+  );
+
+  const { data: eventMarcheIds } = useQuery({
+    queryKey: ['event-marche-ids', selectedEvent?.explorationId],
+    queryFn: async (): Promise<string[]> => {
+      if (!selectedEvent?.explorationId) return [];
+      const { data } = await supabase
+        .from('exploration_marches')
+        .select('marche_id')
+        .eq('exploration_id', selectedEvent.explorationId);
+      return ((data || []) as any[]).map(r => r.marche_id as string).filter(Boolean);
+    },
+    enabled: !!selectedEvent?.explorationId,
+  });
+
+  const marchesFiltered = useMemo(() => {
+    if (!marches) return [];
+    if (!eventId) return marches;
+    const set = new Set(eventMarcheIds || []);
+    return marches.filter(m => set.has(m.id));
+  }, [marches, eventId, eventMarcheIds]);
+
+  React.useEffect(() => {
+    if (marcheId && eventId && eventMarcheIds && !eventMarcheIds.includes(marcheId)) {
+      setMarcheId(null);
+    }
+  }, [eventId, eventMarcheIds, marcheId]);
+
   const { data: pool, isLoading: poolLoading } = useQuery({
-    queryKey: ['taxonomy-curation-pool', marcheId || 'all'],
+    queryKey: ['taxonomy-curation-pool', marcheId || 'all', eventId || 'no-event', (eventMarcheIds || []).join(',')],
     queryFn: async (): Promise<SpeciesRow[]> => {
       let q = supabase
         .from('marcheur_observations')
         .select('species_scientific_name, taxon_common_name_fr, source, marche_id');
-      if (marcheId) q = q.eq('marche_id', marcheId);
+      if (marcheId) {
+        q = q.eq('marche_id', marcheId);
+      } else if (eventId && eventMarcheIds && eventMarcheIds.length > 0) {
+        q = q.in('marche_id', eventMarcheIds);
+      } else if (eventId && (!eventMarcheIds || eventMarcheIds.length === 0)) {
+        return [];
+      }
       const { data, error } = await q.limit(5000);
       if (error) throw error;
       const map = new Map<string, SpeciesRow>();
@@ -63,11 +115,11 @@ const AdminTaxonomyCuration: React.FC = () => {
       });
       return Array.from(map.values()).sort((a, b) => b.count - a.count);
     },
+    enabled: !eventId || !!eventMarcheIds,
   });
 
   const { list: aliasList, upsert, remove } = useTaxonomyAliasesAdmin(marcheId);
 
-  // Détecteur de doublons probables : entrées du même genre
   const suspects = useMemo(() => {
     if (!pool) return [] as { genus: string; rows: SpeciesRow[] }[];
     const byGenus = new Map<string, SpeciesRow[]>();
@@ -86,22 +138,78 @@ const AdminTaxonomyCuration: React.FC = () => {
   const toggle = (key: string) =>
     setSelected(s => (s.includes(key) ? s.filter(k => k !== key) : [...s, key]));
 
+  const mergeScope = useMemo<
+    | { kind: 'global'; label: string }
+    | { kind: 'marche'; marcheId: string; label: string }
+    | { kind: 'event'; marcheIds: string[]; label: string }
+  >(() => {
+    if (marcheId) {
+      const name = marches?.find(m => m.id === marcheId)?.name || marcheId;
+      return { kind: 'marche', marcheId, label: `Marche : ${name}` };
+    }
+    if (eventId && selectedEvent) {
+      const ids = eventMarcheIds || [];
+      return {
+        kind: 'event',
+        marcheIds: ids,
+        label: `Événement : ${selectedEvent.title} (fan-out sur ${ids.length} marche${ids.length > 1 ? 's' : ''})`,
+      };
+    }
+    return { kind: 'global', label: 'Global (toutes les marches)' };
+  }, [marcheId, eventId, selectedEvent, eventMarcheIds, marches]);
+
   const doMerge = async () => {
     const target = canonical.trim();
     if (!target || selected.length === 0) {
       toast.error('Sélectionne au moins une source et saisis le nom canonique');
       return;
     }
+    if (mergeScope.kind === 'event' && mergeScope.marcheIds.length === 0) {
+      toast.error('Aucune marche liée à cet événement — impossible de fusionner');
+      return;
+    }
     try {
-      for (const src of selected) {
-        if (normalizeAliasKey(src) === normalizeAliasKey(target)) continue;
-        await upsert.mutateAsync({
-          alias_key: src,
-          canonical_scientific_name: target,
-          reason: 'manual',
-        });
+      const sourcesToApply = selected.filter(
+        s => normalizeAliasKey(s) !== normalizeAliasKey(target)
+      );
+      let upserts = 0;
+
+      if (mergeScope.kind === 'event') {
+        const { data: u } = await supabase.auth.getUser();
+        for (const mid of mergeScope.marcheIds) {
+          for (const src of sourcesToApply) {
+            const { error } = await (supabase as any)
+              .from('species_taxonomy_aliases')
+              .upsert(
+                {
+                  marche_id: mid,
+                  alias_key: normalizeAliasKey(src),
+                  canonical_scientific_name: target,
+                  canonical_common_name_fr: null,
+                  reason: 'manual_event_fanout',
+                  notes: `event:${eventId}`,
+                  created_by: u.user?.id ?? null,
+                },
+                { onConflict: 'marche_id,alias_key' }
+              );
+            if (error) throw error;
+            upserts++;
+          }
+        }
+        toast.success(
+          `${upserts} alias enregistré(s) sur ${mergeScope.marcheIds.length} marche(s) → « ${target} »`
+        );
+      } else {
+        for (const src of sourcesToApply) {
+          await upsert.mutateAsync({
+            alias_key: src,
+            canonical_scientific_name: target,
+            reason: 'manual',
+          });
+          upserts++;
+        }
+        toast.success(`${upserts} alias enregistré(s) → « ${target} » (${mergeScope.label})`);
       }
-      toast.success(`${selected.length} alias enregistré(s) → « ${target} »`);
       setSelected([]);
       setCanonical('');
     } catch (e: any) {
@@ -131,17 +239,34 @@ const AdminTaxonomyCuration: React.FC = () => {
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <Label>Marche</Label>
+              <Label>Événement</Label>
+              <Select value={eventId || 'none'} onValueChange={v => setEventId(v === 'none' ? null : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Tous les événements —</SelectItem>
+                  {events?.map(e => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.title}{e.date ? ` — ${new Date(e.date).toLocaleDateString('fr-FR')}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Marche{eventId ? ' (limitée à cet événement)' : ''}</Label>
               <Select value={marcheId || 'global'} onValueChange={v => setMarcheId(v === 'global' ? null : v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="global">— Règles globales —</SelectItem>
-                  {marches?.map(m => (
+                  <SelectItem value="global">— Toutes les marches —</SelectItem>
+                  {marchesFiltered.map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="mt-3 text-xs text-muted-foreground">
+            Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
           </div>
         </Card>
 
@@ -208,6 +333,9 @@ const AdminTaxonomyCuration: React.FC = () => {
         <Card className="p-4 border-primary/40">
           <h2 className="font-semibold mb-3 flex items-center gap-2"><Merge className="h-4 w-4" /> Fusionner</h2>
           <div className="space-y-3">
+            <div className="text-xs px-2 py-1 rounded bg-muted/60 inline-block">
+              Portée : <span className="font-medium">{mergeScope.label}</span>
+            </div>
             <div>
               <Label>Sources sélectionnées ({selected.length})</Label>
               <div className="flex flex-wrap gap-2 mt-1">
@@ -226,7 +354,15 @@ const AdminTaxonomyCuration: React.FC = () => {
                 placeholder="ex. Lantana camara"
               />
             </div>
-            <Button onClick={doMerge} disabled={upsert.isPending || selected.length === 0 || !canonical.trim()}>
+            <Button
+              onClick={doMerge}
+              disabled={
+                upsert.isPending ||
+                selected.length === 0 ||
+                !canonical.trim() ||
+                (mergeScope.kind === 'event' && mergeScope.marcheIds.length === 0)
+              }
+            >
               <Merge className="h-4 w-4 mr-2" />
               Enregistrer la fusion
             </Button>
@@ -234,7 +370,14 @@ const AdminTaxonomyCuration: React.FC = () => {
         </Card>
 
         <Card className="p-4">
-          <h2 className="font-semibold mb-3">Alias enregistrés ({aliasList.data?.length || 0})</h2>
+          <h2 className="font-semibold mb-3">
+            Alias enregistrés — {marcheId ? 'marche sélectionnée' : 'portée globale'} ({aliasList.data?.length || 0})
+          </h2>
+          {eventId && !marcheId && (
+            <p className="text-xs text-muted-foreground mb-2">
+              Sélectionne une marche pour voir les alias marche-scopés créés par le fan-out d'événement.
+            </p>
+          )}
           <div className="divide-y">
             {aliasList.data?.map(a => (
               <div key={a.id} className="flex items-center gap-3 py-2">
