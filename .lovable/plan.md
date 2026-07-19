@@ -1,38 +1,31 @@
 ## Objectif
+Permettre de zoomer beaucoup plus près sur la carte de curation taxonomique afin d'inspecter précisément chaque observation d'un cluster (ex. « weigela · 3 obs » sur DEVIAT).
 
-Le bandeau de filtres de `/admin/outils/taxonomie` ne s'applique aujourd'hui qu'à la vue **Liste**. On veut :
+## Diagnostic
+- Le `MapContainer` (Leaflet) plafonne au `maxZoom` de la tuile active : **19** pour le satellite et **20** pour le cadastre. Impossible d'aller plus près.
+- `FitBounds` limite en plus le zoom initial à **18** quand le diamètre du cluster est petit (< 150 m), ce qui donne l'impression d'être « bloqué ».
 
-1. Ajouter un filtre **Règne du vivant** (Toutes / Faune / Plantes / Champignons / Autres) — même chip UX que la copie écran (`SpeciesExplorer`).
-2. Faire en sorte que **tous** les filtres (Événement, Marche, Règne, Recherche, Tri) s'appliquent aussi à la vue **Carte** (`DuplicatesMapView`) — et donc au clustering, au bandeau « X constellations », au comptage « hors périmètre » et au Sheet.
+## Correctifs (frontend uniquement)
 
-## Ce qui change
+### 1. `src/components/maps/RichMap.tsx`
+Ajouter une prop optionnelle `maxZoom?: number` (défaut 19) transmise à `SafeMapContainer`.
 
-### 1. `src/pages/AdminTaxonomyCuration.tsx`
+### 2. `src/components/maps/DynamicTileLayer.tsx`
+Pour chaque tuile, activer l'upscaling au-delà du natif :
+- satellite / géo / relief : `maxNativeZoom = config.maxZoom ?? 19`, `maxZoom = 22`.
+- overlay cadastre : `maxNativeZoom = 20`, `maxZoom = 22`.
+Les tuiles restent nettes jusqu'au niveau natif, puis sont agrandies au-delà.
 
-- Ajouter un `useState<'all'|'faune'|'plants'|'fungi'|'others'>` pour le règne.
-- Insérer un `Select` « Règne du vivant » dans le bandeau existant (grille 3 colonnes : Tri / Recherche / Règne) avec compteurs live calculés depuis `pool`.
-- Étendre la requête `taxonomy-curation-pool` pour sélectionner aussi `kingdom` (déjà présent dans `marcheur_observations`).
-- Étendre `SpeciesRow` avec `kingdom: string | null` (agrégé : premier non-null rencontré par clé).
-- Appliquer le filtre règne + recherche au calcul de `pool` affiché ET à `suspects` (via un `poolFiltered` mémoïsé) ; la logique de `getGenus`/`isGenusOnly` reste intacte.
-- Passer les filtres à la carte : nouvelles props `kingdomFilter` et `search` sur `<DuplicatesMapView>`.
+### 3. `src/components/maps/controls/FitBounds.tsx`
+Relever le plafond auto pour les très petits diamètres :
+- `diag < 150 m` → `computedMax = 20` (au lieu de 18).
+- `diag < 500 m` → `computedMax = 19` (au lieu de 17).
+Le zoom manuel via la molette / boutons + reste libre jusqu'au `maxZoom` de la carte.
 
-### 2. `src/components/admin/taxonomy/DuplicatesMapView.tsx`
+### 4. `src/components/admin/taxonomy/DuplicatesMapView.tsx`
+Passer `maxZoom={22}` à `<RichMap>` pour débloquer le zoom précis sur les constellations.
 
-- Ajouter `kingdomFilter` et `search` aux `Props`.
-- Étendre le `select()` Supabase pour inclure `kingdom` et `iconic_taxon`.
-- Avant le clustering, filtrer `obs` par :
-  - **règne** : bucket `Animalia` → faune, `Plantae` → plants, `Fungi` → fungi, autre/null → others (même mapping que `SpeciesExplorer`).
-  - **recherche** : normalisation NFD comme dans la page (matches sur `species_scientific_name`, `taxon_common_name_fr`, ou genre).
-- Recalculer clusters, bandeau, filaments, points, tooltips et Sheet à partir de ce sous-ensemble.
-- Ajouter le règne + `search` dans la `mapKey` pour forcer le re-fit des bounds quand le filtre change.
-
-## Ce qui ne change pas
-
-- Logique de fusion (`upsert_species_taxonomy_alias`), portée (marche/événement/global), triggers SQL, ni les autres vues du site : uniquement UI + queries côté page admin.
-- L'apparence générale du bandeau reste identique (mêmes composants shadcn, mêmes chips).
-
-## Vérifs
-
-- Filtrer sur « Faune » → seules les observations `kingdom='Animalia'` alimentent Liste, Suspects et Carte (mêmes counts).
-- Taper « lantana » → même sous-ensemble visible dans la Liste, dans « Doublons probables » et dans les constellations Carte.
-- Combiner Événement + Règne + Recherche → aucun résidu de cluster hors filtre sur la carte.
+## Résultat attendu
+- Zoom bouton **+** / molette utilisable jusqu'au niveau 22 sur satellite et cadastre (tuiles upscalées, contours cadastraux nets).
+- L'auto-fit sur un cluster ≤ 150 m arrive directement à un niveau exploitable pour distinguer chaque point d'observation.
+- Aucun impact sur les autres écrans (défaut inchangé à 19).
