@@ -25,6 +25,7 @@ const AdminTaxonomyCuration: React.FC = () => {
   const [marcheId, setMarcheId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [canonical, setCanonical] = useState<string>('');
+  const [isMerging, setIsMerging] = useState(false);
 
   const { data: marches } = useQuery({
     queryKey: ['admin-marches-simple'],
@@ -168,6 +169,7 @@ const AdminTaxonomyCuration: React.FC = () => {
       toast.error('Aucune marche liée à cet événement — impossible de fusionner');
       return;
     }
+    setIsMerging(true);
     try {
       const sourcesToApply = selected.filter(
         s => normalizeAliasKey(s) !== normalizeAliasKey(target)
@@ -175,23 +177,16 @@ const AdminTaxonomyCuration: React.FC = () => {
       let upserts = 0;
 
       if (mergeScope.kind === 'event') {
-        const { data: u } = await supabase.auth.getUser();
         for (const mid of mergeScope.marcheIds) {
           for (const src of sourcesToApply) {
-            const { error } = await (supabase as any)
-              .from('species_taxonomy_aliases')
-              .upsert(
-                {
-                  marche_id: mid,
-                  alias_key: normalizeAliasKey(src),
-                  canonical_scientific_name: target,
-                  canonical_common_name_fr: null,
-                  reason: 'manual_event_fanout',
-                  notes: `event:${eventId}`,
-                  created_by: u.user?.id ?? null,
-                },
-                { onConflict: 'marche_id,alias_key' }
-              );
+            const { error } = await (supabase as any).rpc('upsert_species_taxonomy_alias', {
+              p_marche_id: mid,
+              p_alias_key: normalizeAliasKey(src),
+              p_canonical_scientific_name: target,
+              p_canonical_common_name_fr: null,
+              p_reason: 'manual_event_fanout',
+              p_notes: `event:${eventId}`,
+            });
             if (error) throw error;
             upserts++;
           }
@@ -214,6 +209,8 @@ const AdminTaxonomyCuration: React.FC = () => {
       setCanonical('');
     } catch (e: any) {
       toast.error(e?.message || 'Erreur');
+    } finally {
+      setIsMerging(false);
     }
   };
 
@@ -357,6 +354,7 @@ const AdminTaxonomyCuration: React.FC = () => {
             <Button
               onClick={doMerge}
               disabled={
+                isMerging ||
                 upsert.isPending ||
                 selected.length === 0 ||
                 !canonical.trim() ||
