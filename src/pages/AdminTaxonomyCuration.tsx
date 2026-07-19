@@ -29,8 +29,8 @@ const AdminTaxonomyCuration: React.FC = () => {
   const { data: marches } = useQuery({
     queryKey: ['admin-marches-simple'],
     queryFn: async () => {
-      const { data } = await supabase.from('marches').select('id, name').order('name');
-      return (data || []) as { id: string; name: string }[];
+      const { data } = await supabase.from('marches').select('id, nom_marche').order('nom_marche');
+      return ((data || []) as any[]).map(m => ({ id: m.id as string, name: m.nom_marche as string }));
     },
   });
 
