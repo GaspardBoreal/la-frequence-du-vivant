@@ -391,6 +391,8 @@ const AdminTaxonomyCuration: React.FC = () => {
                 ? eventMarcheIds || []
                 : null
             }
+            kingdomFilter={kingdomFilter}
+            search={search}
             onRequestMerge={(canonicalName, sources) => {
               setCanonical(canonicalName);
               setSelected(sources);
@@ -399,6 +401,7 @@ const AdminTaxonomyCuration: React.FC = () => {
             }}
           />
         )}
+
 
         {viewMode === 'list' && suspects.length > 0 && (
           <Card className="p-4 border-amber-500/40">
