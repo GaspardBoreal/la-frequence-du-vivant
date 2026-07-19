@@ -6167,6 +6167,53 @@ export type Database = {
         }
         Relationships: []
       }
+      species_taxonomy_aliases: {
+        Row: {
+          alias_key: string
+          canonical_common_name_fr: string | null
+          canonical_scientific_name: string
+          created_at: string
+          created_by: string | null
+          id: string
+          marche_id: string | null
+          notes: string | null
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          alias_key: string
+          canonical_common_name_fr?: string | null
+          canonical_scientific_name: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          marche_id?: string | null
+          notes?: string | null
+          reason?: string
+          updated_at?: string
+        }
+        Update: {
+          alias_key?: string
+          canonical_common_name_fr?: string | null
+          canonical_scientific_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          marche_id?: string | null
+          notes?: string | null
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "species_taxonomy_aliases_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       species_thumb_cache: {
         Row: {
           common_name_en: string | null
