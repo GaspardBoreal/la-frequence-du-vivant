@@ -92,11 +92,12 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, kingdomFilter = 'all', 
       let q = supabase
         .from('marcheur_observations')
         .select(
-          'id, marche_id, species_scientific_name, taxon_common_name_fr, latitude, longitude, photo_url, observation_date, source, marches:marche_id ( nom_marche, latitude, longitude, radius_m )'
+          'id, marche_id, species_scientific_name, taxon_common_name_fr, latitude, longitude, photo_url, observation_date, source, kingdom, marches:marche_id ( nom_marche, latitude, longitude, radius_m )'
         )
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
       if (marcheIds && marcheIds.length > 0) q = q.in('marche_id', marcheIds);
+
       const { data, error } = await q.limit(8000);
       if (error) throw error;
       return ((data || []) as any[]).map((r) => {
