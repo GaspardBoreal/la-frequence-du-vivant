@@ -54,6 +54,8 @@ export interface RichMapProps {
   children?: React.ReactNode;
   /** scroll wheel zoom (default true) */
   scrollWheelZoom?: boolean;
+  /** Max map zoom (default 19). Tiles beyond native are upscaled. */
+  maxZoom?: number;
   /** Notified when the user toggles marche step markers visibility (only when controls.marcheRouteVisibility is on) */
   onMarcheVisibilityChange?: (visible: boolean) => void;
 }
@@ -79,6 +81,7 @@ export const RichMap: React.FC<RichMapProps> = ({
   className = '',
   children,
   scrollWheelZoom = true,
+  maxZoom = 19,
   onMarcheVisibilityChange,
 }) => {
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
@@ -136,12 +139,13 @@ export const RichMap: React.FC<RichMapProps> = ({
       <SafeMapContainer
         center={center}
         zoom={zoom}
+        maxZoom={maxZoom}
         scrollWheelZoom={scrollWheelZoom}
         zoomControl={false}
         className="w-full h-full"
         style={{ background: '#1a1a2e' }}
       >
-        <DynamicTileLayer mapStyle={mapStyle} />
+        <DynamicTileLayer mapStyle={mapStyle} maxZoom={maxZoom} />
 
         {bounds && bounds.length > 0 && <FitBounds positions={bounds} />}
 
