@@ -7638,6 +7638,7 @@ export type Database = {
         }
         Returns: string
       }
+      refresh_biodiversity_snapshots_aliases: { Args: never; Returns: number }
       remove_admin_user: { Args: { target_user_id: string }; Returns: boolean }
       reorder_convivialite_photos: {
         Args: { _exploration_id: string; _ordered_ids: string[] }
@@ -7676,6 +7677,14 @@ export type Database = {
           p_user_id: string
         }
         Returns: number
+      }
+      resolve_species_alias: {
+        Args: { p_marche_id?: string; p_name: string }
+        Returns: string
+      }
+      resolve_species_alias_common_fr: {
+        Args: { p_marche_id?: string; p_name: string }
+        Returns: string
       }
       round_coord: { Args: { _v: number }; Returns: number }
       search_community_profiles_for_invite: {
