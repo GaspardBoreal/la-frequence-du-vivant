@@ -79,7 +79,6 @@ export const useTaxonomyAliasesAdmin = (marcheId: string | null) => {
       reason?: string;
       notes?: string | null;
     }) => {
-      const { data: u } = await supabase.auth.getUser();
       const row = {
         marche_id: marcheId,
         alias_key: normalizeAliasKey(payload.alias_key),
@@ -87,7 +86,6 @@ export const useTaxonomyAliasesAdmin = (marcheId: string | null) => {
         canonical_common_name_fr: payload.canonical_common_name_fr ?? null,
         reason: payload.reason || 'manual',
         notes: payload.notes ?? null,
-        created_by: u.user?.id ?? null,
       };
       const { error } = await (supabase as any).rpc('upsert_species_taxonomy_alias', {
         p_marche_id: row.marche_id,
