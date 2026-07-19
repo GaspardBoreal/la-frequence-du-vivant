@@ -225,6 +225,20 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
           {totalObsInDuplicates > 1 ? 's' : ''} concernée{totalObsInDuplicates > 1 ? 's' : ''} ·{' '}
           <span className="text-muted-foreground">rayon {radius} m</span>
         </div>
+        {outCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowOnlyOut((v) => !v)}
+            className={`text-xs px-2 py-1 rounded-full border transition ${
+              showOnlyOut
+                ? 'bg-red-500/15 border-red-500/60 text-red-600'
+                : 'bg-red-500/5 border-red-500/30 text-red-500 hover:bg-red-500/10'
+            }`}
+            title="Observation dont le GPS est en dehors du périmètre de sa marche associée"
+          >
+            ⚠ {outCount} hors périmètre marche {showOnlyOut ? '(actif)' : ''}
+          </button>
+        )}
         <div className="ml-auto flex items-center gap-3 min-w-[260px]">
           <span className="text-xs text-muted-foreground whitespace-nowrap">10 m</span>
           <Slider
@@ -238,6 +252,7 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
           <span className="text-xs text-muted-foreground whitespace-nowrap">500 m</span>
         </div>
       </div>
+
 
       <div
         className="relative rounded-xl overflow-hidden border shadow-lg"
