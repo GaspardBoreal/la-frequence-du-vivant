@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFrenchSpeciesNames } from './useFrenchSpeciesNames';
+import { mergeGenusIntoSpecies } from '@/utils/taxonomyMerge';
 
 export interface ExplorationSpecies {
   /** Stable key used as curation entity_id (scientific name preferred, fallback common name) */
@@ -144,12 +145,17 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
     imageUrl: resolveImage(sp),
   }));
 
+  // Fusion taxonomique automatique : absorbe les entrées « genre seul »
+  // (ex. `Lantana`) dans l'unique binomiale du genre (ex. `Lantana camara`).
+  // Idempotent, appliqué à chaque lecture donc résistant aux futures synchros iNat/Pl@ntNet.
+  const merged = mergeGenusIntoSpecies(intermediate as any) as typeof intermediate;
+
   // Enrich with French names — single batched DB lookup, cached 24h
   const { data: frMap } = useFrenchSpeciesNames(
-    intermediate.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }))
+    merged.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }))
   );
 
-  const enriched: ExplorationSpecies[] = intermediate.map(s => {
+  const enriched: ExplorationSpecies[] = merged.map(s => {
     const fr = s.scientificName ? frMap?.get(s.scientificName) : undefined;
     const displayName = fr?.displayName || s.commonName || s.scientificName || '';
     return {
