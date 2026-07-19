@@ -78,14 +78,34 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
       let q = supabase
         .from('marcheur_observations')
         .select(
-          'id, marche_id, species_scientific_name, taxon_common_name_fr, latitude, longitude, photo_url, observation_date, source'
+          'id, marche_id, species_scientific_name, taxon_common_name_fr, latitude, longitude, photo_url, observation_date, source, marches:marche_id ( nom_marche, latitude, longitude, radius_m )'
         )
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
       if (marcheIds && marcheIds.length > 0) q = q.in('marche_id', marcheIds);
       const { data, error } = await q.limit(8000);
       if (error) throw error;
-      return (data || []) as Obs[];
+      return ((data || []) as any[]).map((r) => {
+        const m = r.marches || {};
+        const mLat = m.latitude ?? null;
+        const mLng = m.longitude ?? null;
+        const radius = m.radius_m ?? 500;
+        let distanceToMarche: number | null = null;
+        let outOfPerimeter = false;
+        if (mLat != null && mLng != null) {
+          distanceToMarche = haversine([r.latitude, r.longitude], [mLat, mLng]);
+          outOfPerimeter = distanceToMarche > radius * 1.2;
+        }
+        return {
+          ...r,
+          marche_name: m.nom_marche ?? null,
+          marche_lat: mLat,
+          marche_lng: mLng,
+          marche_radius: radius,
+          distanceToMarche,
+          outOfPerimeter,
+        } as Obs;
+      });
     },
   });
 
