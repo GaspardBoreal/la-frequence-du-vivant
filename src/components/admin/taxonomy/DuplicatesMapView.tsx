@@ -295,40 +295,58 @@ const DuplicatesMapView: React.FC<Props> = ({ marcheIds, onRequestMerge }) => {
                     eventHandlers={{ click: () => setActiveCluster(c) }}
                   />
                   {/* Filaments centroïde → points */}
-                  {c.observations.map((o) => (
-                    <Polyline
-                      key={`f-${c.id}-${o.id}`}
-                      positions={[c.centroid, [o.latitude, o.longitude]]}
-                      pathOptions={{ color, weight: 1, opacity: 0.4 }}
-                    />
-                  ))}
+                  {c.observations
+                    .filter((o) => !showOnlyOut || o.outOfPerimeter)
+                    .map((o) => (
+                      <Polyline
+                        key={`f-${c.id}-${o.id}`}
+                        positions={[c.centroid, [o.latitude, o.longitude]]}
+                        pathOptions={{
+                          color: o.outOfPerimeter ? '#ef4444' : color,
+                          weight: 1,
+                          opacity: o.outOfPerimeter ? 0.8 : 0.4,
+                          dashArray: o.outOfPerimeter ? '3 4' : undefined,
+                        }}
+                      />
+                    ))}
                   {/* Points GPS ultra-précis */}
-                  {c.observations.map((o) => (
-                    <CircleMarker
-                      key={o.id}
-                      center={[o.latitude, o.longitude]}
-                      radius={6}
-                      pathOptions={{
-                        color: '#fff',
-                        weight: 1.5,
-                        fillColor: color,
-                        fillOpacity: 0.95,
-                      }}
-                      eventHandlers={{ click: () => setActiveCluster(c) }}
-                    >
-                      <Tooltip direction="top" offset={[0, -6]} opacity={0.95}>
-                        <div className="text-xs">
-                          <div className="italic font-medium">
-                            {o.species_scientific_name || o.taxon_common_name_fr}
+                  {c.observations
+                    .filter((o) => !showOnlyOut || o.outOfPerimeter)
+                    .map((o) => (
+                      <CircleMarker
+                        key={o.id}
+                        center={[o.latitude, o.longitude]}
+                        radius={o.outOfPerimeter ? 7 : 6}
+                        pathOptions={{
+                          color: o.outOfPerimeter ? '#ef4444' : '#fff',
+                          weight: o.outOfPerimeter ? 2 : 1.5,
+                          fillColor: color,
+                          fillOpacity: 0.95,
+                          dashArray: o.outOfPerimeter ? '2 3' : undefined,
+                        }}
+                        eventHandlers={{ click: () => setActiveCluster(c) }}
+                      >
+                        <Tooltip direction="top" offset={[0, -6]} opacity={0.95}>
+                          <div className="text-xs">
+                            <div className="italic font-medium">
+                              {o.species_scientific_name || o.taxon_common_name_fr}
+                            </div>
+                            <div className="opacity-70 font-mono">
+                              {o.latitude.toFixed(6)}, {o.longitude.toFixed(6)}
+                            </div>
+                            {o.marche_name && (
+                              <div className={o.outOfPerimeter ? 'text-red-500 font-medium' : 'opacity-70'}>
+                                Marche : {o.marche_name}
+                                {o.outOfPerimeter && o.distanceToMarche != null && (
+                                  <> — ⚠ {Math.round(o.distanceToMarche)} m hors périmètre</>
+                                )}
+                              </div>
+                            )}
+                            {o.source && <div className="opacity-60">source: {o.source}</div>}
                           </div>
-                          <div className="opacity-70 font-mono">
-                            {o.latitude.toFixed(6)}, {o.longitude.toFixed(6)}
-                          </div>
-                          {o.source && <div className="opacity-60">source: {o.source}</div>}
-                        </div>
-                      </Tooltip>
-                    </CircleMarker>
-                  ))}
+                        </Tooltip>
+                      </CircleMarker>
+                    ))}
                   {/* Étiquette de constellation au centroïde */}
                   <CircleMarker
                     center={c.centroid}
