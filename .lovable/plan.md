@@ -1,100 +1,37 @@
-# Vue Carte "Constellation des Doublons" — Admin / Taxonomie
+## Diagnostic
 
-Ajouter à `/admin/outils/taxonomie` un **mode Carte** immersif qui révèle spatialement les doublons probables et permet de trancher en une seule vue (visuel + son + GPS ultra-précis), au niveau qu'attendent des pros de la donnée biodiversité.
+Le cluster « arion » qui apparaît sur la carte de l'événement DEVIAT « Jardin Monde » vient bien de `marcheur_observations` filtrées via `exploration_marches` : l'événement contient plusieurs marches, et au moins une des observations `Arion` a `marche_id = <marche Jardin Monde>` alors qu'elle est géographiquement plus proche d'une autre marche DEVIAT.
 
-## Intention design
+Autrement dit, ce n'est pas un bug d'affichage : c'est une **mauvaise attribution de `marche_id`** à la saisie (ou lors d'un import iNat). La carte fait son travail — elle révèle un problème de qualité de données qui restait invisible jusqu'ici.
 
-**Métaphore** : une constellation. Chaque cluster de doublons = une constellation d'étoiles reliées par un halo lumineux. L'admin "aligne les étoiles" en fusionnant.
+Aujourd'hui la vue Carte n'affiche ni le nom de la marche associée à chaque point ni ne signale les points « hors périmètre ». D'où l'impression que l'outil se trompe.
 
-**Palette** : hérite du thème (Papier Crème / Forêt Émeraude). Halos ambre pour les doublons non résolus, vert émeraude pour ceux résolus dans la session, gris translucide pour les singletons de contrôle.
+## Plan (UI-only, aucune modif métier)
 
-**Registre** : sobre, aéré, cinématographique. Zéro chrome inutile. Le fond de carte porte le sens.
+### 1. Enrichir chaque observation avec sa marche
+- Étendre le fetch de `DuplicatesMapView` pour joindre `marches (id, name, latitude, longitude, search_radius_m)`.
+- Ajouter `marche_name`, `marche_lat`, `marche_lng`, `marche_radius` sur l'objet `Obs`.
 
-## Structure de la page
+### 2. Détection « hors périmètre »
+- Pour chaque obs : `distanceToMarche = haversine(obs, marche)`.
+- Si `distanceToMarche > (marche.search_radius_m || 500) * 1.2` → flag `outOfPerimeter = true`.
 
-Nouveau switch en haut du bandeau : **Liste ↔ Carte** (à côté du tri et de la recherche déjà présents). Les filtres actuels (Marche, Événement, Recherche nom, Tri) restent actifs et pilotent la carte.
+### 3. Signalétique visuelle inspirante
+- Marker `outOfPerimeter` : contour **rouge pointillé** + pastille ⚠ au lieu du blanc plein.
+- Filament vers le centroïde en rouge, plus opaque.
+- Tooltip du point : ajoute la ligne « Marche : *nom* — Xm hors périmètre » quand applicable.
+- Dans le Sheet cluster : badge rouge « Hors périmètre marche » sur les cartes concernées + affichage du nom de la marche.
 
-```text
-┌─ FiltersBar (existant) ─────────────────────────────────────┐
-│  [Marche ▾] [Event ▾] [Recherche…] [Tri ▾]  [◧ Liste │ Carte]│
-└──────────────────────────────────────────────────────────────┘
-┌─ Carte (RichMap) ─────────────────┬─ Panneau contextuel ────┐
-│                                    │  Cluster sélectionné    │
-│   • Halos ambre = doublons         │  ┌──────┬──────┐       │
-│     - Lantana ×3                   │  │photo │photo │       │
-│     - Lantana camara ×7            │  ├──────┼──────┤       │
-│                                    │  │ ♪ son│ GPS  │       │
-│   • Filaments reliant les points   │  └──────┴──────┘       │
-│     d'un même cluster              │  [Écouter tout]         │
-│                                    │  [Fusionner ce cluster] │
-│   Fond cadastre / satellite / géo  │  [Marquer non-doublon]  │
-└────────────────────────────────────┴─────────────────────────┘
-```
+### 4. Bandeau de synthèse
+Dans le header info actuel, ajouter : « ⚠ N observation(s) hors périmètre marche » (cliquable → filtre visuel qui n'affiche que ces points).
 
-## Détection des clusters de doublons (côté carte)
+### 5. Lien vers correction
+Sur chaque carte-obs du Sheet, bouton discret « Voir dans l'admin marche » (deep link `/admin/marches/:id` ancré sur l'observation) pour permettre à l'admin de réassigner le `marche_id`. Pas de réassignation directe ici — on garde la vue en lecture, la fusion taxonomique reste sa mission principale.
 
-Pour la marche/event filtré, agréger les observations (`marcheur_observations` ∪ snapshots iNat déjà normalisés). Regrouper par **similarité nom + proximité GPS** :
+### Fichiers modifiés
+- `src/components/admin/taxonomy/DuplicatesMapView.tsx` (fetch enrichi + rendu + Sheet)
+- Aucun changement DB, aucun hook, aucune RLS.
 
-- Similarité nom : même canonical alias, ou lemme identique (`lantana` ⊂ `lantana camara`), ou distance Levenshtein ≤ 2 sur le binôme.
-- Proximité GPS : rayon paramétrable (défaut **25 m**, curseur 10 m → 500 m), calculé Haversine.
-- Un cluster = ≥ 2 observations qui matchent les 2 critères mais portent des étiquettes taxonomiques différentes → candidat doublon.
-
-Un badge en haut de la carte : `12 clusters de doublons détectés · 47 observations concernées`.
-
-## Rendu carte — le "wahouhh"
-
-Basé sur `<RichMap>` (réutilise DynamicTileLayer, style toggle, cadastre, zoom, geolocate — cohérent avec Mon Espace) :
-
-1. **Marqueurs GPS ultra-précis** : chaque observation = un point vectoriel (pas d'icône Leaflet par défaut). Rayon 6 px, halo lumineux 18 px, couleur = teinte du cluster.
-2. **Halos de cluster** : cercle SVG translucide ambre (`hsl(var(--accent) / 0.15)`), stroke pointillé animé (dashoffset), qui englobe les points d'un cluster. Hover = le halo pulse doucement (2s ease-in-out infinite).
-3. **Filaments** : polyline courbe (Bézier quadratique) reliant chaque point au centroïde du cluster, opacité 0.35, épaisseur 1 px, couleur or/ambre → effet constellation.
-4. **Curseur de rayon** : slider glassmorphique flottant en bas-gauche (10 m → 500 m), met à jour le clustering en live avec transition 300 ms.
-5. **Loupe hyper-précise** : au zoom ≥ 18, révèle les coordonnées GPS exactes (lat/lng à 6 décimales) sous chaque point, en typo mono, avec le cadastre visible dessous.
-6. **Photo-halos** : chaque marqueur non-iNat porte une mini-vignette 32 px de la photo marcheur en overlay (border ambre 2 px). Effet mosaïque au dézoom.
-7. **Son embarqué** : point avec `sound_recordings` → petit ⓢ pulsant, clic = lecture inline (WaveSurfer mini-player 40 px de haut).
-
-## Panneau contextuel (Sheet latéral droit)
-
-À l'ouverture d'un cluster (clic sur un halo) :
-
-- **En-tête** : nom canonique proposé + nb obs + fourchette de dates.
-- **Grille photos** : 2 colonnes, photos triées par observateur, chaque tuile affiche nom brut, date, distance au centroïde, GPS (6 déc.), source (marcheur / iNat).
-- **Lecteur audio** groupé si sons présents (bouton "Écouter les 4 enregistrements en séquence").
-- **Mini-carte** zoomée sur le cluster (fond cadastre) avec les points numérotés.
-- **Actions** :
-  - `Fusionner ce cluster` → ouvre le dialog de merge existant pré-rempli (canonical + variantes détectées).
-  - `Marquer comme non-doublon` → persiste dans une nouvelle table `species_taxonomy_alias_dismissals` pour ne plus proposer.
-  - `Aller à la Liste` → bascule vue Liste filtrée sur ces espèces.
-
-Après merge : les halos passent au vert émeraude, filaments épaissis, léger flash → feedback immédiat.
-
-## Données & filtrage
-
-- Réutilise `get_exploration_species_pool` (déjà normalisé aliases) + un nouveau RPC `get_taxonomy_duplicate_candidates(marche_ids[], event_id, radius_m, name_threshold)` qui retourne : `cluster_id`, `centroid`, `variants[]`, `observations[] {id, lat, lng, name_raw, photo_url, sound_url, source, observer, date}`.
-- RPC `SECURITY DEFINER` avec `has_role(auth.uid(), 'admin')`.
-- Coord GPS lues telles quelles (pas d'arrondi) — on veut la précision terrain.
-
-## Détails techniques
-
-- Nouveau composant `src/components/admin/taxonomy/DuplicatesMapView.tsx` monté conditionnellement dans `AdminTaxonomyCuration.tsx`.
-- Toggle Liste/Carte stocké dans l'URL (`?view=map`) pour deep-linking.
-- Clustering côté client (rapide sur < 5k obs) via un simple union-find sur (nom-similaire) × (Haversine ≤ radius).
-- Halos + filaments dessinés via `react-leaflet` `<Circle>` + `<Polyline>` avec `pathOptions` animés en CSS.
-- Vignettes photos via `<SpeciesThumb />` (cascade locale → iNat) déjà en place.
-- Audio via composant existant `MarcheurAudioPlayer`.
-- Nouvelle table `species_taxonomy_alias_dismissals(marche_id, name_a, name_b, dismissed_by, at)` + policies admin.
-- Fond de carte cadastre par défaut sur cette vue (le plus parlant pour la précision parcellaire).
-
-## Livrables
-
-1. Migration : RPC `get_taxonomy_duplicate_candidates` + table `species_taxonomy_alias_dismissals` + GRANTs + RLS.
-2. `DuplicatesMapView.tsx` (carte + clustering + halos + filaments + curseur rayon).
-3. `DuplicateClusterSheet.tsx` (panneau photos/sons/actions).
-4. Toggle Liste/Carte dans `AdminTaxonomyCuration.tsx` avec sync URL.
-5. Mémoire projet : `mem://features/admin/taxonomy-duplicates-map-view`.
-
-## Hors-scope (proposé pour V2 si validé)
-
-- Suggestions IA de merge (Lovable AI ranking les clusters les plus probables).
-- Export GeoJSON des clusters non résolus pour audit externe.
-- Historique de décisions par admin (audit trail dédié).
+### Hors scope (à confirmer si besoin plus tard)
+- Réassignation automatique du `marche_id` au point le plus proche.
+- Audit global des mis-attributions hors de cette page.
