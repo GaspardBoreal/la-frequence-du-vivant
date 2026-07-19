@@ -144,6 +144,11 @@ export const useExplorationSpeciesPool = (explorationId: string | null | undefin
     imageUrl: resolveImage(sp),
   }));
 
+  // Fusion taxonomique automatique : absorbe les entrées « genre seul »
+  // (ex. `Lantana`) dans l'unique binomiale du genre (ex. `Lantana camara`).
+  // Idempotent, appliqué à chaque lecture donc résistant aux futures synchros iNat/Pl@ntNet.
+  const merged = mergeGenusIntoSpecies(intermediate as any) as typeof intermediate;
+
   // Enrich with French names — single batched DB lookup, cached 24h
   const { data: frMap } = useFrenchSpeciesNames(
     intermediate.map(s => ({ scientificName: s.scientificName, commonName: s.commonName }))
