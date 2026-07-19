@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Merge, Trash2, AlertCircle, GitMerge } from 'lucide-react';
+import { ArrowLeft, Merge, Trash2, AlertCircle, GitMerge, List, Map as MapIcon } from 'lucide-react';
 import { useTaxonomyAliasesAdmin, normalizeAliasKey } from '@/hooks/useTaxonomyAliases';
 import { toast } from 'sonner';
 import { getGenus, isGenusOnly } from '@/utils/taxonomyMerge';
+import DuplicatesMapView from '@/components/admin/taxonomy/DuplicatesMapView';
 
 interface SpeciesRow {
   scientific_name: string | null;
@@ -31,6 +32,17 @@ const AdminTaxonomyCuration: React.FC = () => {
   const [isMerging, setIsMerging] = useState(false);
   const [sortMode, setSortMode] = useState<'count' | 'genus'>('count');
   const [search, setSearch] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>(() => {
+    if (typeof window === 'undefined') return 'list';
+    return new URLSearchParams(window.location.search).get('view') === 'map' ? 'map' : 'list';
+  });
+
+  React.useEffect(() => {
+    const u = new URL(window.location.href);
+    if (viewMode === 'map') u.searchParams.set('view', 'map');
+    else u.searchParams.delete('view');
+    window.history.replaceState({}, '', u.toString());
+  }, [viewMode]);
 
   const { data: marches } = useQuery({
     queryKey: ['admin-marches-simple'],
@@ -306,12 +318,48 @@ const AdminTaxonomyCuration: React.FC = () => {
               />
             </div>
           </div>
-          <div className="mt-3 text-xs text-muted-foreground">
-            Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="text-xs text-muted-foreground">
+              Portée de fusion : <span className="font-medium text-foreground">{mergeScope.label}</span>
+            </div>
+            <div className="inline-flex rounded-md border p-0.5 bg-muted/40">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 text-xs rounded flex items-center gap-1.5 transition ${viewMode === 'list' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <List className="h-3.5 w-3.5" /> Liste
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('map')}
+                className={`px-3 py-1.5 text-xs rounded flex items-center gap-1.5 transition ${viewMode === 'map' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <MapIcon className="h-3.5 w-3.5" /> Carte
+              </button>
+            </div>
           </div>
         </Card>
 
-        {suspects.length > 0 && (
+        {viewMode === 'map' && (
+          <DuplicatesMapView
+            marcheIds={
+              marcheId
+                ? [marcheId]
+                : eventId
+                ? eventMarcheIds || []
+                : null
+            }
+            onRequestMerge={(canonicalName, sources) => {
+              setCanonical(canonicalName);
+              setSelected(sources);
+              toast.info(`Fusion pré-remplie : ${sources.length} source(s) → « ${canonicalName} »`);
+              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }}
+          />
+        )}
+
+        {viewMode === 'list' && suspects.length > 0 && (
           <Card className="p-4 border-amber-500/40">
             <div className="flex items-center gap-2 mb-3">
               <AlertCircle className="h-4 w-4 text-amber-500" />
@@ -342,8 +390,8 @@ const AdminTaxonomyCuration: React.FC = () => {
           </Card>
         )}
 
+        {viewMode === 'list' && (
         <Card className="p-4">
-          <h2 className="font-semibold mb-3">Espèces observées ({pool?.length || 0})</h2>
           {poolLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
           <div className="max-h-96 overflow-auto divide-y">
             {pool?.map(r => {
@@ -370,6 +418,8 @@ const AdminTaxonomyCuration: React.FC = () => {
             })}
           </div>
         </Card>
+        )}
+
 
         <Card className="p-4 border-primary/40">
           <h2 className="font-semibold mb-3 flex items-center gap-2"><Merge className="h-4 w-4" /> Fusionner</h2>
