@@ -15,6 +15,8 @@ import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
+import { AppChoiceDialog, getDefaultAppTarget } from '@/components/community/AppChoiceDialog';
+import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
 
 const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
   { value: 'agroecologique', label: '🌱 Agroécologique', hint: 'sols, cultures, pratiques régénératives' },
@@ -51,6 +53,7 @@ const MarchesDuVivantConnexion = () => {
   const [consentementAnalyse, setConsentementAnalyse] = useState(false);
   const [emailConfirmDialog, setEmailConfirmDialog] = useState<{ open: boolean; email: string }>({ open: false, email: '' });
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [appChoice, setAppChoice] = useState<{ open: boolean; prenom?: string; proprietes: ProprieteAccess[] }>({ open: false, proprietes: [] });
 
   // Invitation Lecteur invité
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
@@ -116,14 +119,33 @@ const MarchesDuVivantConnexion = () => {
         navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
         return;
       }
-      // App switcher : si l'utilisateur a une propriété principale, on l'y amène directement
+      // App choice : si l'utilisateur a accès à Mon Espace + une ou plusieurs propriétés,
+      // on lui laisse le choix (dialogue). Une préférence localStorage court-circuite le dialogue.
       try {
         const { data: apps } = await supabase.rpc('get_user_apps_access');
-        const list = (apps as any)?.proprietesAccessibles ?? [];
-        const mainId = (apps as any)?.proprietePrincipaleId;
-        const main = list.find((p: any) => p.id === mainId) ?? list[0];
-        if (main?.slug) {
-          navigate(`/propriete/${main.slug}`);
+        const list: ProprieteAccess[] = ((apps as any)?.proprietesAccessibles ?? []) as ProprieteAccess[];
+
+        const pref = getDefaultAppTarget();
+        if (pref === 'mon-espace') {
+          navigate('/marches-du-vivant/mon-espace');
+          return;
+        }
+        if (pref?.startsWith('propriete:')) {
+          const slug = pref.slice('propriete:'.length);
+          if (list.some((p) => p.slug === slug)) {
+            navigate(`/propriete/${slug}`);
+            return;
+          }
+        }
+
+        if (list.length >= 1) {
+          // Récupère le prénom pour personnaliser le dialogue.
+          const { data: prof } = await supabase
+            .from('community_profiles')
+            .select('prenom')
+            .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
+            .maybeSingle();
+          setAppChoice({ open: true, prenom: prof?.prenom, proprietes: list });
           return;
         }
       } catch { /* fallback vers mon-espace */ }
@@ -586,7 +608,15 @@ const MarchesDuVivantConnexion = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AppChoiceDialog
+        open={appChoice.open}
+        onOpenChange={(v) => setAppChoice((s) => ({ ...s, open: v }))}
+        prenom={appChoice.prenom}
+        proprietes={appChoice.proprietes}
+      />
     </>
+
   );
 };
 
