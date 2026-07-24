@@ -4,6 +4,15 @@
 
 @layer base {
   :root {
+    /* === Méthode D.S. — carnet de terrain === */
+    --ds-cream: 42 40% 95%;         /* #f7f3ea */
+    --ds-line: 40 25% 82%;          /* #d9d0b8 */
+    --ds-forest: 138 32% 27%;       /* #2f5d3a */
+    --ds-forest-deep: 138 40% 18%;  /* #1e3f26 */
+    --ds-forest-soft: 118 20% 58%;  /* #7fa87f */
+    --ds-earth: 30 27% 42%;         /* #8b6f4e */
+    --ds-gold: 44 51% 54%;          /* #c9a84c */
+
     /* === MODE CLAIR — Crème papier, encre sombre, émeraude profond === */
     --background: 42 30% 96%;         /* Crème papier #FAF8F3 */
     --foreground: 0 0% 10%;           /* Encre sombre #1a1a1a */
