@@ -2,13 +2,21 @@ import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, TreePine, MapPin, Leaf, Users, Settings } from 'lucide-react';
+import { ArrowLeft, TreePine, MapPin, Leaf } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { useUserAppsAccess } from '@/hooks/useUserAppsAccess';
 import AppSwitcher from '@/components/community/AppSwitcher';
 import ThemeToggle from '@/components/community/ThemeToggle';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { usePropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
+import { NudgeMarcheBanner } from '@/components/propriete/NudgeMarcheBanner';
+import { TabObserve } from '@/components/propriete/tabs/TabObserve';
+import { TabAnalyze } from '@/components/propriete/tabs/TabAnalyze';
+import { TabIdentify } from '@/components/propriete/tabs/TabIdentify';
+import { TabSynthesize } from '@/components/propriete/tabs/TabSynthesize';
+import { TabPalette } from '@/components/propriete/tabs/TabPalette';
 
 const ProprieteEspace: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
