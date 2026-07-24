@@ -306,6 +306,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         marcheurId: c.marcheurId,
         observations: c.observations,
         speciesCount: c.speciesKeys.size,
+        speciesKeys: Array.from(c.speciesKeys),
         lastSeen: c.lastSeen,
       }))
       .sort((a, b) => b.observations - a.observations);
