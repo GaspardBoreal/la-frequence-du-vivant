@@ -215,6 +215,7 @@ const AdminProprietes: React.FC = () => {
     onSuccess: (data) => {
       toast.success(editing ? 'Propriété mise à jour' : 'Propriété créée');
       qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
+      qc.invalidateQueries({ queryKey: ['propriete-marcheurs', data.id] });
       setEditing(data);
       setCreating(false);
     },
@@ -482,6 +483,9 @@ const AdminProprietes: React.FC = () => {
               </div>
               <div>
                 <Label className="flex items-center gap-2"><Users className="h-4 w-4" />Marcheur référent</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Le marcheur référent obtient automatiquement l’accès à l’espace Propriété et peut le choisir après connexion.
+                </p>
                 <Select
                   value={form.main_walker_id ?? '__none__'}
                   onValueChange={(v) => setForm(f => ({ ...f, main_walker_id: v === '__none__' ? null : v }))}
