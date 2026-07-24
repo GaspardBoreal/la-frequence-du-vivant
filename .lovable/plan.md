@@ -1,28 +1,17 @@
-Constat vérifié : la page affiche **27/06/2026** parce que le RPC `get_propriete_biodiversity` prend bien `marcheur_observations.observation_date`, mais il ignore le champ iNaturalist réellement présent dans les snapshots : `species_data[].lastSeen`.
+# Harmoniser les vignettes du menu "Changer d'espace"
 
-Pour Maison Sous Blossac, les données confirment :
-- `marcheur_observations` max = **2026-06-27**
-- `biodiversity_snapshots.species_data[].lastSeen` max = **2026-07-14**
-- le RPC actuel renvoie donc à tort **2026-06-27**
+## Constat
+Dans `src/components/community/AppSwitcher.tsx`, les vignettes des propriétés utilisent un petit bloc maison (`<img>` brut + fallback `TreePine`) qui apparaît vide/moche quand `photo_hero_url` est absent ou cassé.
 
-Plan de correction :
+À l'inverse, `AppChoiceDialog` (pop-up de connexion) utilise déjà `ProprieteTile` avec sa cascade robuste : photo hero → photo d'un event lié → monogramme doré sur gradient signature + badge `TreePine`.
 
-1. **Mettre à jour le RPC `public.get_propriete_biodiversity(uuid)`**
-   - Ajouter `species_data[].lastSeen` dans le calcul de `lastObservationDate`.
-   - Ajouter aussi les variantes robustes déjà rencontrées dans le projet : `last_seen`, `observationDate`, `observedDate`, `observedOn`, `lastObservedAt`, `observed_on`.
-   - Garder uniquement les dates d’observation réelles ; ne pas utiliser `snapshot_date`, qui est une date de synchronisation et non une date d’observation.
+## Correctif
+1. **`src/components/community/AppSwitcher.tsx`** :
+   - Importer `ProprieteTile` (`@/components/community/ProprieteTile`).
+   - Remplacer la `<div class="w-9 h-9 …">` interne du bouton propriété par `<ProprieteTile propriete={p} className="w-9 h-9 rounded-md" />` (taille réduite pour le menu déroulant).
+   - Conserver le reste (label, badge Principal, ville · rôle, check actif).
 
-2. **Sécuriser le parsing des dates**
-   - Ne caster en date/timestamp que les chaînes au format ISO valide pour éviter une erreur SQL si un snapshot contient une valeur non standard.
+2. **`src/components/community/ProprieteTile.tsx`** (si besoin) :
+   - Vérifier que le composant accepte une taille compacte via `className` (rayons, gradient, `Sparkles`/monogramme lisible à 36px). Si le monogramme est trop grand à 36px, ajouter une prop `size?: 'sm' | 'md' | 'lg'` avec ajustement typographique (initiales `text-xs` en `sm`) sans casser l'usage existant dans `AppChoiceDialog`.
 
-3. **Conserver la logique actuelle de rayon et de propriété**
-   - Continuer à parcourir tous les événements rattachés à la propriété.
-   - Continuer à résoudre les marches sous-jacentes via `exploration_marches`.
-   - Continuer à ne prendre que les espèces dans le rayon de marche.
-
-4. **Valider après migration**
-   - Rejouer `public.get_propriete_biodiversity()` sur Maison Sous Blossac.
-   - Vérifier que `lastObservationDate` devient **2026-07-14**.
-   - Vérifier que l’écran affiche ensuite **14/07/2026** dans “Dernière observation”.
-
-Impact attendu : la carte Propriété affichera une date de dernière observation alignée avec les données naturalistes iNaturalist les plus récentes, pas seulement avec les observations marcheurs importées.
+Aucune autre modification, aucun changement de logique métier.
