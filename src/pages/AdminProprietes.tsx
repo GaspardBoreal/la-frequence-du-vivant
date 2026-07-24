@@ -324,7 +324,7 @@ const AdminProprietes: React.FC = () => {
             Propriétés
           </h1>
           <p className="text-muted-foreground mt-2">
-            Lieux vivants regroupant plusieurs événements Marches du Vivant — cœur du partenariat Ver de Terre Production & Alliance Paysage.
+            Lieux vivants regroupant plusieurs événements Marches du Vivant
           </p>
         </div>
 
