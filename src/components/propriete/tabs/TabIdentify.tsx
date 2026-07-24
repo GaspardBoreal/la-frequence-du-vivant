@@ -76,7 +76,7 @@ export const TabIdentify: React.FC<{
 
   return (
     <div className="space-y-6">
-      <BiodiversityEvidenceBlock bio={bio} />
+      <BiodiversityEvidenceBlock bio={bio} proprieteId={proprieteId} proprieteNom={proprieteNom} />
       <StepHeader current={3} savedAt={savedAt} saving={saving} />
 
       <SkipBlock skip={state.skip_bioindication} onToggle={(v) => setField('skip_bioindication', v)} index={0} />
