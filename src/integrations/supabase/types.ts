@@ -5890,6 +5890,65 @@ export type Database = {
           },
         ]
       }
+      propriete_soil_diagnostics: {
+        Row: {
+          boudin_shape: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          life_signs: string[]
+          ph: number | null
+          propriete_id: string
+          samples: Json
+          structure: string | null
+          synthesis: string | null
+          terrain_status: string | null
+          texture: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          boudin_shape?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          life_signs?: string[]
+          ph?: number | null
+          propriete_id: string
+          samples?: Json
+          structure?: string | null
+          synthesis?: string | null
+          terrain_status?: string | null
+          texture?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          boudin_shape?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          life_signs?: string[]
+          ph?: number | null
+          propriete_id?: string
+          samples?: Json
+          structure?: string | null
+          synthesis?: string | null
+          terrain_status?: string | null
+          texture?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_soil_diagnostics_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: true
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proprietes: {
         Row: {
           adresse: string | null
@@ -8066,6 +8125,42 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "propriete_observations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      upsert_propriete_soil: {
+        Args: {
+          p_boudin_shape?: string
+          p_completed?: boolean
+          p_life_signs?: string[]
+          p_ph?: number
+          p_propriete_id: string
+          p_samples?: Json
+          p_structure?: string
+          p_synthesis?: string
+          p_terrain_status?: string
+          p_texture?: string
+        }
+        Returns: {
+          boudin_shape: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          life_signs: string[]
+          ph: number | null
+          propriete_id: string
+          samples: Json
+          structure: string | null
+          synthesis: string | null
+          terrain_status: string | null
+          texture: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "propriete_soil_diagnostics"
           isOneToOne: true
           isSetofReturn: false
         }
