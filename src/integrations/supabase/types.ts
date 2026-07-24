@@ -5768,6 +5768,59 @@ export type Database = {
           },
         ]
       }
+      propriete_flora_diagnostics: {
+        Row: {
+          completed_at: string | null
+          concordance: Json
+          created_at: string
+          flora_conclusion: string | null
+          icg_score: number | null
+          id: string
+          notes: string | null
+          observed_plants: string[]
+          propriete_id: string
+          skip_bioindication: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          concordance?: Json
+          created_at?: string
+          flora_conclusion?: string | null
+          icg_score?: number | null
+          id?: string
+          notes?: string | null
+          observed_plants?: string[]
+          propriete_id: string
+          skip_bioindication?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          concordance?: Json
+          created_at?: string
+          flora_conclusion?: string | null
+          icg_score?: number | null
+          id?: string
+          notes?: string | null
+          observed_plants?: string[]
+          propriete_id?: string
+          skip_bioindication?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_flora_diagnostics_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: true
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_marche_events: {
         Row: {
           created_at: string
@@ -8102,6 +8155,38 @@ export type Database = {
           _scientific_name: string
         }
         Returns: string
+      }
+      upsert_propriete_flora: {
+        Args: {
+          p_completed?: boolean
+          p_concordance?: Json
+          p_flora_conclusion?: string
+          p_icg_score?: number
+          p_notes?: string
+          p_observed_plants?: string[]
+          p_propriete_id: string
+          p_skip_bioindication?: boolean
+        }
+        Returns: {
+          completed_at: string | null
+          concordance: Json
+          created_at: string
+          flora_conclusion: string | null
+          icg_score: number | null
+          id: string
+          notes: string | null
+          observed_plants: string[]
+          propriete_id: string
+          skip_bioindication: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "propriete_flora_diagnostics"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       upsert_propriete_observation: {
         Args: {
