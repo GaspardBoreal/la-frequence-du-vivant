@@ -20,10 +20,11 @@ import {
 
 const TOTAL = 4; // Cortège + Intensités + Concordance + Narration
 
-export const TabIdentify: React.FC<{ proprieteId?: string; bio?: PropertyBiodiversity }> = ({
-  proprieteId,
-  bio,
-}) => {
+export const TabIdentify: React.FC<{
+  proprieteId?: string;
+  proprieteNom?: string;
+  bio?: PropertyBiodiversity;
+}> = ({ proprieteId, proprieteNom, bio }) => {
   const {
     state,
     saving,
