@@ -1,72 +1,29 @@
-## Diagnostic confirmé
+## Problème
 
-- L’extension `unaccent` existe bien, mais elle est installée dans le schéma `extensions`, pas dans `public`.
-- Le trigger de génération automatique du slug des propriétés appelle actuellement `unaccent(NEW.nom)` sans préfixe de schéma.
-- Comme la fonction `public.trg_propriete_slug()` force `search_path` à `public`, Postgres ne trouve pas `extensions.unaccent(...)`, d’où l’erreur : `function unaccent(text) does not exist`.
+Dans `/admin/proprietes`, le sélecteur « Événements Marches du Vivant » est vide : impossible d'ajouter un événement à une propriété.
 
-## Correction proposée
+## Cause racine (vérifiée en base)
 
-1. Remplacer la fonction `public.trg_propriete_slug()` pour appeler explicitement :
-   - `extensions.unaccent(NEW.nom)`
-   - ou mieux `public.f_unaccent(NEW.nom)` si on veut s’appuyer sur le wrapper déjà existant.
+La table `public.marche_events` **n'a pas** de colonnes `nom` ni `date_debut`. Les vraies colonnes sont `title` et `date_marche`.
 
-2. Garder le trigger existant `trg_proprietes_slug` inchangé : seule sa fonction appelée doit être corrigée.
+Or dans `src/pages/AdminProprietes.tsx` :
 
-3. Vérifier après migration :
-   - que la fonction compile,
-   - que `extensions.unaccent('École Vivante')` fonctionne,
-   - que le trigger utilise bien la nouvelle définition qualifiée,
-   - puis tester une insertion de propriété avec accents via la vraie table ou un test transactionnel contrôlé.
+- La requête `useQuery(['admin-proprietes-events'])` sélectionne `id, nom, date_debut` et fait `.order('date_debut')` → PostgREST renvoie une erreur, `events` reste `[]`, donc rien à choisir.
+- Le rendu du `<SelectItem>` et de la liste des liens affichent `e.nom` / `e.date_debut` → même s'il y avait des lignes, l'affichage serait vide.
 
-## Migration SQL prévue
+## Correctif
 
-```sql
-CREATE OR REPLACE FUNCTION public.trg_propriete_slug()
-RETURNS trigger
-LANGUAGE plpgsql
-SET search_path TO public
-AS $$
-DECLARE
-  v_base TEXT;
-  v_slug TEXT;
-  v_suffix INT := 0;
-BEGIN
-  IF NEW.slug IS NOT NULL AND NEW.slug <> '' THEN
-    RETURN NEW;
-  END IF;
+Un seul fichier concerné : `src/pages/AdminProprietes.tsx`.
 
-  v_base := regexp_replace(
-    lower(extensions.unaccent(NEW.nom)),
-    '[^a-z0-9]+',
-    '-',
-    'g'
-  );
-  v_base := trim(both '-' from v_base);
+1. Type `MarcheEventLite` : remplacer `nom` par `title` et `date_debut` par `date_marche`.
+2. Query events : `.select('id, title, date_marche').order('date_marche', { ascending: false })`.
+3. Ajouter, comme pour marcheurs/entreprises, un champ de recherche « nom contient » dans le `SelectContent` (filtre local sur `title`, normalisation NFD, `onKeyDown` stopPropagation, état `eventSearch`).
+4. Mettre à jour les 2 endroits qui lisent `e.nom` / `e.date_debut` (l'option du Select et la liste `linkedEvents.map(...)`) pour utiliser `title` / `date_marche`.
 
-  IF v_base = '' THEN
-    v_base := 'propriete';
-  END IF;
+Aucun changement de schéma, de RLS, ni d'autre écran.
 
-  v_slug := v_base;
-  WHILE EXISTS (
-    SELECT 1
-    FROM public.proprietes
-    WHERE slug = v_slug
-      AND id <> COALESCE(NEW.id, gen_random_uuid())
-  ) LOOP
-    v_suffix := v_suffix + 1;
-    v_slug := v_base || '-' || v_suffix;
-  END LOOP;
+## Vérification
 
-  NEW.slug := v_slug;
-  RETURN NEW;
-END;
-$$;
-```
-
-## Impact
-
-- Corrige directement la création de propriété depuis l’admin.
-- Ne modifie pas les données existantes.
-- Ne change pas les règles RLS.
-- Ne crée pas de nouvelle table.
+- Ouvrir la fiche d'une propriété existante, dérouler « Événements Marches du Vivant » → la liste affiche les événements avec titre + date FR.
+- Taper dans le champ de recherche → filtrage instantané.
+- Sélectionner + `+` → l'événement apparaît dans la liste rattachée avec son titre.

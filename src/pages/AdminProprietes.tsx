@@ -45,7 +45,7 @@ type Propriete = {
 
 type MarcheurLite = { id: string; prenom: string | null; nom: string | null; ville: string | null };
 type CompanyLite = { id: string; denomination: string | null; nom_complet: string | null; ville: string | null };
-type MarcheEventLite = { id: string; nom: string | null; date_debut: string | null };
+type MarcheEventLite = { id: string; title: string | null; date_marche: string | null };
 type LinkedMarcheur = { id: string; community_profile_id: string; role: 'proprietaire' | 'prestataire' | 'marcheur_historique'; is_main: boolean };
 type LinkedCompany = { id: string; company_id: string; role: 'gestionnaire' | 'prestataire' | 'lecture' };
 type LinkedEvent = { id: string; marche_event_id: string };
@@ -110,13 +110,15 @@ const AdminProprietes: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await sb
         .from('marche_events')
-        .select('id, nom, date_debut')
-        .order('date_debut', { ascending: false })
+        .select('id, title, date_marche')
+        .order('date_marche', { ascending: false })
         .limit(500);
       if (error) throw error;
       return data as MarcheEventLite[];
     },
   });
+
+  const [eventSearch, setEventSearch] = useState('');
 
   const activeId = editing?.id;
 
@@ -690,11 +692,25 @@ const AdminProprietes: React.FC = () => {
                       <Select value={eventToAdd} onValueChange={setEventToAdd}>
                         <SelectTrigger><SelectValue placeholder="Sélectionner un événement…" /></SelectTrigger>
                         <SelectContent className="max-h-80">
+                          <div className="p-2 sticky top-0 bg-popover z-10 border-b">
+                            <Input
+                              autoFocus
+                              placeholder="Rechercher…"
+                              value={eventSearch}
+                              onChange={(e) => setEventSearch(e.target.value)}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              className="h-8"
+                            />
+                          </div>
                           {events
                             .filter(e => !linkedEvents.some(l => l.marche_event_id === e.id))
+                            .filter(e => {
+                              if (!eventSearch.trim()) return true;
+                              return norm(e.title ?? '').includes(norm(eventSearch));
+                            })
                             .map(e => (
                               <SelectItem key={e.id} value={e.id}>
-                                {e.nom ?? '(sans nom)'}{e.date_debut ? ` · ${new Date(e.date_debut).toLocaleDateString('fr-FR')}` : ''}
+                                {e.title ?? '(sans titre)'}{e.date_marche ? ` · ${new Date(e.date_marche).toLocaleDateString('fr-FR')}` : ''}
                               </SelectItem>
                             ))}
                         </SelectContent>
@@ -711,7 +727,7 @@ const AdminProprietes: React.FC = () => {
                       const e = eventById[l.marche_event_id];
                       return (
                         <li key={l.id} className="flex items-center justify-between gap-2 p-2 text-sm">
-                          <span>{e?.nom ?? '(inconnu)'}{e?.date_debut ? ` · ${new Date(e.date_debut).toLocaleDateString('fr-FR')}` : ''}</span>
+                          <span>{e?.title ?? '(inconnu)'}{e?.date_marche ? ` · ${new Date(e.date_marche).toLocaleDateString('fr-FR')}` : ''}</span>
                           <Button size="sm" variant="ghost" onClick={() => removeEvent.mutate(l.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
