@@ -1,31 +1,28 @@
-## Diagnostic
+Constat vérifié : la page affiche **27/06/2026** parce que le RPC `get_propriete_biodiversity` prend bien `marcheur_observations.observation_date`, mais il ignore le champ iNaturalist réellement présent dans les snapshots : `species_data[].lastSeen`.
 
-Sur `/propriete/maison-sous-blossac`, la carte « Dernière observation » affiche **10/05/2026** alors que la dernière obs réelle sur l'événement « POITIERS Maison Sous Blossac » est le **14/07/2026**.
+Pour Maison Sous Blossac, les données confirment :
+- `marcheur_observations` max = **2026-06-27**
+- `biodiversity_snapshots.species_data[].lastSeen` max = **2026-07-14**
+- le RPC actuel renvoie donc à tort **2026-06-27**
 
-Cause : dans la RPC `public.get_propriete_biodiversity`, la valeur retournée `lastEventDate` = `max(marche_events.date_marche)` — c'est la **date de l'événement**, pas la **date de la dernière observation**. Le label côté UI (`TabObserve.tsx`) est trompeur : il utilise ce champ pour dire « Dernière observation ».
+Plan de correction :
 
-La RPC parcourt déjà **tous les événements liés** à la propriété (via `linked_events` → `linked_marches`), donc le périmètre est bon ; seul le calcul de date est faux.
+1. **Mettre à jour le RPC `public.get_propriete_biodiversity(uuid)`**
+   - Ajouter `species_data[].lastSeen` dans le calcul de `lastObservationDate`.
+   - Ajouter aussi les variantes robustes déjà rencontrées dans le projet : `last_seen`, `observationDate`, `observedDate`, `observedOn`, `lastObservedAt`, `observed_on`.
+   - Garder uniquement les dates d’observation réelles ; ne pas utiliser `snapshot_date`, qui est une date de synchronisation et non une date d’observation.
 
-## Correctif
+2. **Sécuriser le parsing des dates**
+   - Ne caster en date/timestamp que les chaînes au format ISO valide pour éviter une erreur SQL si un snapshot contient une valeur non standard.
 
-### 1. RPC `public.get_propriete_biodiversity`
-Ajouter un vrai calcul `lastObservationDate` en fusionnant les 3 sources sur l'ensemble des `linked_marches` :
+3. **Conserver la logique actuelle de rayon et de propriété**
+   - Continuer à parcourir tous les événements rattachés à la propriété.
+   - Continuer à résoudre les marches sous-jacentes via `exploration_marches`.
+   - Continuer à ne prendre que les espèces dans le rayon de marche.
 
-- `max(marcheur_observations.observation_date)` sur `marche_id ∈ linked_marches` (filtrage rayon Haversine, comme les espèces).
-- `max((sp->>'observedOn')::timestamptz)` sur les entrées `snap_rows` (déjà filtrées rayon).
-- `max((att->>'observedOn')::timestamptz)` sur les attributions iNat de `snap_rows`.
+4. **Valider après migration**
+   - Rejouer `public.get_propriete_biodiversity()` sur Maison Sous Blossac.
+   - Vérifier que `lastObservationDate` devient **2026-07-14**.
+   - Vérifier que l’écran affiche ensuite **14/07/2026** dans “Dernière observation”.
 
-Retourner `lastObservationDate` (nouveau champ) en plus de `lastEventDate` (conservé pour rétro-compat / autres usages éventuels : nudge « inactif > 12 mois »).
-
-### 2. Hook `usePropertyBiodiversity.ts`
-Exposer `lastObservationDate: string | null` dans `PropertyBiodiversity`. Garder `lastEventDate` pour le nudge d'inactivité (qui mesure la dynamique événementielle, pas les observations).
-
-### 3. UI `TabObserve.tsx`
-La carte « Dernière observation » utilise `lastObservationDate` (fallback sur `lastEventDate` si null pour ne jamais afficher « — » quand un event existe).
-
-## Hors scope
-- Le nudge d'inactivité (`NudgeMarcheBanner`) continue de se baser sur `lastEventDate` (sémantique « pas de marche depuis X mois »).
-- Aucun changement UI ailleurs, aucun changement de RLS.
-
-## Vérification
-Après migration : sur Maison sous Blossac, la carte doit afficher **14/07/2026** (max des `observation_date` iNat + marcheurs sur tous les events liés).
+Impact attendu : la carte Propriété affichera une date de dernière observation alignée avec les données naturalistes iNaturalist les plus récentes, pas seulement avec les observations marcheurs importées.
