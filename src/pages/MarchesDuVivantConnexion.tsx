@@ -53,6 +53,7 @@ const MarchesDuVivantConnexion = () => {
   const [consentementAnalyse, setConsentementAnalyse] = useState(false);
   const [emailConfirmDialog, setEmailConfirmDialog] = useState<{ open: boolean; email: string }>({ open: false, email: '' });
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [appChoice, setAppChoice] = useState<{ open: boolean; prenom?: string; proprietes: ProprieteAccess[] }>({ open: false, proprietes: [] });
 
   // Invitation Lecteur invité
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
