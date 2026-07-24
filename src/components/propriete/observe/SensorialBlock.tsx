@@ -57,7 +57,7 @@ export const SensorialBlock: React.FC<{
       <div
         role="group"
         aria-label="Analyse sensorielle du site"
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 p-5 md:p-6 pt-2"
+        className="grid grid-cols-2 gap-2.5 p-5 md:p-6 pt-2"
       >
         {SENSORIAL_FIELDS.map((f) => (
           <div
