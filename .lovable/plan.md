@@ -1,57 +1,38 @@
-# Amplifier l'exploitation des données marcheurs dans "J'identifie"
+# Doublons de marcheurs — Sentinelles du lieu
 
-Aujourd'hui, les données marcheurs alimentent seulement 2 endroits : le bandeau BiodiversityEvidenceBlock (KPIs + SpeciesExplorer) et le Cortège Révélé (matching KB 40 plantes). On laisse dormir 90 % du potentiel : géolocalisation, dates, marcheurs individuels, familles écologiques, iNaturalist, corrélations sol↔flore réelles.
+## Cause confirmée
 
-## 6 modules à ajouter dans "J'identifie"
+`usePropertySpeciesPool` agrège les contributeurs par `marcheur_id` (UUID de la ligne `exploration_marcheurs`). Or **un même humain a une ligne `exploration_marcheurs` par exploration** à laquelle il participe. La propriété « Jardin Monde Deviat » agrège plusieurs marches/explorations → Gaspard Boréal et Laurence Karki apparaissent chacun 2 fois (un `marcheur_id` différent par exploration), avec des stats splittées (107/74 esp., 47/31 esp.).
 
-### 1. Carte des révélations (mini-RichMap)
-Carte compacte au-dessus du Cortège, centrée sur la propriété, affichant :
-- Waypoints réels des observations marcheurs (photos cliquables)
-- Heatmap densité par règne (Plantae / Animalia / Fungi)
-- Filtre "N'afficher que les bio-indicatrices du KB"
-- Clic sur point → ouvre drawer espèce (déjà existant)
-Vraie preuve terrain : "voilà où Corylus avellana a été photographié le 23/07".
+Le fix doit se faire **après résolution des profils** (là où on connaît `user_id` + nom), pas dans le pool brut — c'est le seul endroit où on peut fusionner de manière fiable.
 
-### 2. Frise chronologique des passages
-Timeline horizontale : chaque marche = une bulle datée avec nb d'espèces révélées ce jour-là et nom du marcheur principal. Permet de voir la dynamique : "Depuis mai, 3 marches → +18 bio-indicatrices révélées". Renforce la boucle "plus de marches = plus de révélations".
+## Correctif
 
-### 3. Sentinelles du lieu (marcheurs contributeurs)
-Cards des marcheurs ayant contribué sur cette propriété (avatar, rôle Ambassadeur/Sentinelle, nb d'observations, dernière visite). Humanise la donnée, ouvre vers portfolio marcheur. Utilise déjà les hooks community existants.
+Modifier `src/hooks/propriete/usePropertyContributors.ts` pour :
 
-### 4. Concordance Sol↔Flore RÉELLE (upgrade ConcordanceBlock)
-Actuellement basé sur cases cochées manuellement. Nouvelle version : croiser automatiquement le diagnostic sol (TabAnalyze) avec les bio-indicatrices DÉJÀ révélées par les marcheurs. Verdict enrichi : "Sol argileux annoncé + Rumex + Juncus + Renoncule révélés par marcheurs = compaction confirmée à 92%". Score de fiabilité pondéré par nb d'observations.
+1. Après avoir résolu les `exploration_marcheurs` + `community_profiles`, calculer pour chaque contributeur une **clé d'identité canonique** :
+   - priorité 1 : `user_id` (si non nul)
+   - priorité 2 : `normName(prenom + ' ' + nom)` (NFD, lowercase, trim — cohérent avec `identity-matching-logic` en mémoire)
+   - fallback : `marcheurId` (comportement actuel, cas anonyme sans nom)
 
-### 5. Familles écologiques révélées (au-delà des 40 plantes)
-Extension aux 12 tags fonctionnels (mellifère, fixateur azote, arbre nourricier…) déjà classifiés dans species_eco_tags_kb. Grille : "Sur votre propriété, les marcheurs ont révélé : 14 mellifères, 3 fixateurs d'azote, 8 arbres nourriciers". Chaque tag ouvre la liste des espèces. Directement branché sur l'infra eco tags existante.
+2. Fusionner les entrées partageant la même clé :
+   - `observations` = somme
+   - `speciesCount` = **union** des clés espèces, pas somme (nécessite de remonter `speciesKeys: Set<string>` depuis `usePropertySpeciesPool` au lieu d'un simple `speciesCount` déjà agrégé)
+   - `lastSeen` = max
+   - profil (prenom/nom/avatar/rôle/couleur) = première valeur non nulle, avec préférence au profil issu de `community_profiles`
+   - `marcheurIds: string[]` = liste conservée pour debug / futures actions
 
-### 6. Delta entre visites (nouveautés & disparitions)
-Encart "Depuis votre dernière connexion" : X nouvelles espèces révélées, Y espèces re-confirmées. Basé sur snapshot_history + validated_at. Crée un rituel de retour ("qu'ont vu les marcheurs cette semaine ?").
+3. Trier par `observations` desc puis afficher (aucun changement dans `SentinellesBlock.tsx` sauf la `key` qui devient la clé canonique).
 
-## Nouveaux fichiers
-- `src/components/propriete/identify/blocks/RevealMapBlock.tsx` — mini RichMap + filtres
-- `src/components/propriete/identify/blocks/TimelineBlock.tsx` — frise passages marcheurs
-- `src/components/propriete/identify/blocks/SentinellesBlock.tsx` — grille marcheurs
-- `src/components/propriete/identify/blocks/EcoFunctionsBlock.tsx` — grille 12 fonctions
-- `src/components/propriete/identify/blocks/DeltaBlock.tsx` — nouveautés depuis N jours
-- `src/hooks/propriete/usePropertyWaypoints.ts` — waypoints géolocalisés
-- `src/hooks/propriete/usePropertyContributors.ts` — marcheurs contributeurs
-- `src/hooks/propriete/usePropertyEcoFunctions.ts` — agrégation tags fonctionnels
-- `src/hooks/propriete/usePropertyDelta.ts` — diff snapshots récent vs historique
+## Détails techniques
 
-## Fichiers modifiés
-- `src/components/propriete/tabs/TabIdentify.tsx` — nouvelle composition des blocs
-- `src/components/propriete/identify/blocks/ConcordanceBlock.tsx` — pondération observations réelles
+- `usePropertySpeciesPool.contributorSummaries` : remplacer `speciesCount: number` par `speciesKeys: string[]` (ou garder les deux) pour permettre l'union côté hook contributors.
+- `usePropertyContributors` :
+  - signature d'entrée inchangée côté appelant ; interne consomme `speciesKeys`.
+  - la sortie `PropertyContributor` reste identique + optionnel `marcheurIds?: string[]`.
+- `SentinellesBlock.tsx` : changer `key={c.marcheurId}` en `key={c.marcheurIds?.[0] ?? c.marcheurId}` (ou une clé stable dérivée).
 
-## Ordre proposé dans TabIdentify
-1. BiodiversityEvidenceBlock (existant)
-2. **DeltaBlock** (accroche retour)
-3. **RevealMapBlock** (preuve spatiale)
-4. **TimelineBlock** (preuve temporelle)
-5. CortegeBlock (existant, matching KB)
-6. **EcoFunctionsBlock** (fonctions écologiques)
-7. IntensitiesBlock (existant)
-8. ConcordanceBlock (upgraded — sol × flore révélée)
-9. **SentinellesBlock** (humains derrière la donnée)
+## Hors périmètre
 
-## Question avant de lancer
-Veux-tu que je livre **les 6 blocs d'un coup**, ou qu'on **priorise 2-3 blocs** pour livrer un impact visible plus vite ? Recommandation perso : commencer par **Carte des révélations + Delta + Sentinelles** (les 3 plus wahou visuellement et les plus rapides à brancher sur l'existant).
+- Pas de migration SQL : le doublon est structurel (1 ligne exploration_marcheurs par participation) et légitime côté data. On corrige uniquement l'affichage agrégé propriété.
+- Pas de dedup côté carte / delta pour l'instant (à voir dans un second temps si tu veux fusionner aussi les waypoints par personne).
