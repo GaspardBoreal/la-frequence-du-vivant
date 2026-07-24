@@ -282,7 +282,7 @@ const PropTabs: React.FC<{
           <TabsTrigger value="palette">Palette végétale</TabsTrigger>
         </TabsList>
         <TabsContent value="observe" className="pt-5">
-          <TabObserve bio={bio} />
+          <TabObserve bio={bio} proprieteId={proprieteId} />
         </TabsContent>
         <TabsContent value="analyze" className="pt-5">
           <TabAnalyze bio={bio} />
