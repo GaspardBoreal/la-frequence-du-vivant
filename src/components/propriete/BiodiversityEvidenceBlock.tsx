@@ -101,26 +101,6 @@ export const BiodiversityEvidenceBlock: React.FC<Props> = ({
             className="overflow-hidden"
           >
             <div className="pt-2 space-y-5">
-              {kingdoms.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-semibold mb-2 text-muted-foreground">
-                    Répartition par règne
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {kingdoms.map(([k, count]) => (
-                      <div
-                        key={k}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs"
-                      >
-                        {KINGDOM_ICONS[k] ?? <Leaf className="w-4 h-4" />}
-                        <span className="font-medium">{k}</span>
-                        <span className="text-muted-foreground">·</span>
-                        <span>{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div>
                 <h4 className="text-xs font-semibold mb-3 text-muted-foreground">
