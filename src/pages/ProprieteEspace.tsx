@@ -2,13 +2,21 @@ import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, TreePine, MapPin, Leaf, Users, Settings } from 'lucide-react';
+import { ArrowLeft, TreePine, MapPin, Leaf } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { useUserAppsAccess } from '@/hooks/useUserAppsAccess';
 import AppSwitcher from '@/components/community/AppSwitcher';
 import ThemeToggle from '@/components/community/ThemeToggle';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { usePropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
+import { NudgeMarcheBanner } from '@/components/propriete/NudgeMarcheBanner';
+import { TabObserve } from '@/components/propriete/tabs/TabObserve';
+import { TabAnalyze } from '@/components/propriete/tabs/TabAnalyze';
+import { TabIdentify } from '@/components/propriete/tabs/TabIdentify';
+import { TabSynthesize } from '@/components/propriete/tabs/TabSynthesize';
+import { TabPalette } from '@/components/propriete/tabs/TabPalette';
 
 const ProprieteEspace: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -134,30 +142,61 @@ const ProprieteEspace: React.FC = () => {
             )}
           </motion.div>
 
-          {/* Quick actions grid — placeholders for next phases */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <ActionCard icon={<Leaf className="w-5 h-5" />} title="Diagnostic Vivant" subtitle="Méthode D.S. multi-device (à venir)" />
-            <ActionCard icon={<Users className="w-5 h-5" />} title="Équipe & rôles" subtitle={`${apps?.proprietesAccessibles.length ?? 0} espace(s) accessible(s)`} />
-            <ActionCard icon={<Settings className="w-5 h-5" />} title="Paramètres" subtitle="Bientôt disponible" />
-          </div>
+          {/* D.S. tabs */}
+          <PropTabs
+            proprieteId={propriete.id}
+            proprieteNom={propriete.nom}
+            proprieteVille={propriete.ville}
+          />
         </main>
       </div>
     </>
   );
 };
 
-const ActionCard: React.FC<{ icon: React.ReactNode; title: string; subtitle: string }> = ({
-  icon,
-  title,
-  subtitle,
-}) => (
-  <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm p-4 hover:bg-card transition-colors">
-    <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center text-primary mb-3">
-      {icon}
+const PropTabs: React.FC<{
+  proprieteId: string;
+  proprieteNom: string;
+  proprieteVille?: string | null;
+}> = ({ proprieteId, proprieteNom, proprieteVille }) => {
+  const { data: bio } = usePropertyBiodiversity(proprieteId);
+  return (
+    <div className="space-y-5">
+      <NudgeMarcheBanner
+        proprieteNom={proprieteNom}
+        monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
+      />
+      <Tabs defaultValue="observe" className="w-full">
+        <TabsList className="w-full flex overflow-x-auto justify-start md:justify-center">
+          <TabsTrigger value="observe">J'observe</TabsTrigger>
+          <TabsTrigger value="analyze">J'analyse</TabsTrigger>
+          <TabsTrigger value="identify">J'identifie</TabsTrigger>
+          <TabsTrigger value="synthesize">Je synthétise</TabsTrigger>
+          <TabsTrigger value="palette">Palette végétale</TabsTrigger>
+        </TabsList>
+        <TabsContent value="observe" className="pt-5">
+          <TabObserve bio={bio} />
+        </TabsContent>
+        <TabsContent value="analyze" className="pt-5">
+          <TabAnalyze bio={bio} />
+        </TabsContent>
+        <TabsContent value="identify" className="pt-5">
+          <TabIdentify proprieteId={proprieteId} />
+        </TabsContent>
+        <TabsContent value="synthesize" className="pt-5">
+          <TabSynthesize
+            proprieteNom={proprieteNom}
+            proprieteVille={proprieteVille}
+            proprieteId={proprieteId}
+            bio={bio}
+          />
+        </TabsContent>
+        <TabsContent value="palette" className="pt-5">
+          <TabPalette bio={bio} />
+        </TabsContent>
+      </Tabs>
     </div>
-    <div className="text-sm font-semibold text-foreground">{title}</div>
-    <div className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</div>
-  </div>
-);
+  );
+};
 
 export default ProprieteEspace;
