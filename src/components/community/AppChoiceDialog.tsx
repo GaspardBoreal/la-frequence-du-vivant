@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Leaf, MapPin, Star, ArrowRight } from 'lucide-react';
+import { ProprieteTile } from './ProprieteTile';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
 
 const DEFAULT_KEY = 'mdv:default-app';
@@ -70,14 +71,8 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes }: Prop
                 onClick={() => go(target)}
                 className="group relative overflow-hidden rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 transition-all p-4 text-left flex items-center gap-4"
               >
-                <div
-                  className="w-14 h-14 rounded-xl shrink-0 bg-cover bg-center border border-white/10"
-                  style={{
-                    backgroundImage: p.photo_hero_url
-                      ? `url(${p.photo_hero_url})`
-                      : 'linear-gradient(135deg,#0D6B58,#14b8a6)',
-                  }}
-                />
+                <ProprieteTile propriete={p} />
+
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-white flex items-center gap-2 flex-wrap">
                     <span className="truncate">{p.nom}</span>
