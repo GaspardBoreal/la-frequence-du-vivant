@@ -5846,6 +5846,50 @@ export type Database = {
           },
         ]
       }
+      propriete_observations: {
+        Row: {
+          answers: Json
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          propriete_id: string
+          sensorial: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          propriete_id: string
+          sensorial?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          propriete_id?: string
+          sensorial?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_observations_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: true
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proprietes: {
         Row: {
           adresse: string | null
@@ -7999,6 +8043,32 @@ export type Database = {
           _scientific_name: string
         }
         Returns: string
+      }
+      upsert_propriete_observation: {
+        Args: {
+          p_answers?: Json
+          p_completed?: boolean
+          p_notes?: string
+          p_propriete_id: string
+          p_sensorial?: Json
+        }
+        Returns: {
+          answers: Json
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          propriete_id: string
+          sensorial: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "propriete_observations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       upsert_species_taxonomy_alias: {
         Args: {
