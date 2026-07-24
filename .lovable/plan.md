@@ -1,43 +1,43 @@
-# Fix : 0 espèces / 0 règnes sur l'espace Propriété
+# Hero « Canopée » pour l'espace Propriété
 
-## Diagnostic (confirmé par lectures DB)
+## Constat
 
-L'onglet « J'observe » de `/propriete/:slug` interroge `biodiversity_snapshots` avec `marche_event_id`, mais cette colonne **n'existe pas** sur la table :
+Le hero actuel de `/propriete/:slug` est une simple image plate de 208–288px avec un `object-cover`, un fondu vers le fond, puis le titre plaqué en dessous. Comparé au hero immersif de `/jardin/:slug` (KenBurnsCarousel plein écran, overlay noir progressif, titre serif italique doré, CTA organique, indicateur de scroll), c'est effectivement pauvre.
 
-- `biodiversity_snapshots` est clé par `marche_id` (table historique `marches`)
-- `marche_events` n'a **pas** de colonne `marche_id` — c'est une table parallèle
-- Le lien propriété → événement passe par `propriete_marche_events.marche_event_id` (donc côté `marche_events`)
+Bonne nouvelle : les mêmes photos hero (`get_garden_hero_photos`) et les mêmes primitives (`KenBurnsCarousel`, `OrganicButton`, `RevealText`, palette doré/crème `#c9a24a`/`#f4ecd4`) sont déjà en place dans `ImmersiveGardenFiche.tsx`. Il suffit de les transposer dans `ProprieteEspace.tsx` en les adaptant au contexte connecté.
 
-Résultat : la requête ne remonte rien → 0 espèces, 0 règnes. La carte « Marches réalisées : 1 » fonctionne car elle compte les liens, pas les snapshots.
+## Transposition proposée
 
-## Solution
+### 1. Hero plein écran « Canopée du propriétaire »
 
-Réutiliser la source de vérité déjà en place — la RPC `get_marche_species_count(p_marche_id uuid)` — qui unifie `biodiversity_snapshots` ∪ `marcheur_observations` avec filtre rayon et alias taxonomiques.
+Dans `src/pages/ProprieteEspace.tsx`, remplacer le bloc hero (lignes 116–143) par une section `h-[85vh]` (pas `h-screen` — on garde la sticky header visible et le premier onglet devine-able en bas) :
 
-Pour ça, il faut **résoudre les `marche_events` liés à la propriété vers les `marches.id`** correspondants. Le pont existant est :
+- **Fond animé** : `<KenBurnsCarousel>` avec les mêmes photos que le hero public (récupérées via le RPC `get_garden_hero_photos` existant + fallback sur `propriete.photo_hero_url`, puis `cover` par défaut). Interval 7s, zoom Ken-Burns fluide.
+- **Voile** : dégradé `from-black/70 via-black/30 to-background` en bas pour la lisibilité + fondu vers le contenu qui suit.
+- **Kicker doré** : petit bandeau `Leaf` + « Espace Propriétaire · Marches du Vivant » en `#c9a24a`, tracking `0.35em`.
+- **Titre serif** : `font-serif italic` `text-4xl md:text-6xl` en `#f4ecd4` avec `<RevealText>` (animation lettre-par-lettre déjà utilisée).
+- **Sous-titre** : ville + description courte en `#f4ecd4/75`.
+- **Badge rôle** : le badge « Votre rôle : PROPRIETAIRE » repositionné sous le titre, style verre `backdrop-blur bg-white/10 border border-[#c9a24a]/40` — le seul rappel « app connectée » dans le hero.
+- **CTA organique** : `<OrganicButton variant="gold" pulse>` « Explorer votre diagnostic vivant » qui scroll doucement vers la section des onglets D.S.
+- **Indicateur ↓** : « ↓ Descendez dans votre jardin » animé en bas.
+- **Parallaxe** : `useScroll` + `useTransform` pour `scale` (1 → 1.15) et un `opacity` overlay noir qui monte à mesure qu'on descend, comme la version publique.
 
-```text
-marche_events.exploration_id → exploration_marches.exploration_id → exploration_marches.marche_id
-```
+### 2. Header sticky : traité « verre sombre »
 
-## Étapes
+Le header sticky actuel (`bg-white/95`) casse l'immersion quand on est sur le hero. Le passer en `bg-background/40 backdrop-blur-xl` avec `border-b border-white/10` tant qu'on est en haut, avec l'icône, le nom, `AppSwitcher` et `ThemeToggle` en teinte crème. Il reste lisible sur photo grâce au blur + une légère ombre portée sous le texte.
 
-1. **Nouvelle RPC `public.get_propriete_biodiversity(p_propriete_id uuid)`** (SECURITY DEFINER, search_path public,extensions) :
-   - Récupère `propriete_marche_events` → `marche_events.exploration_id`
-   - Joint `exploration_marches` pour obtenir la liste des `marches.id` sous-jacents
-   - Appelle la logique de `get_marche_species_count` par marche puis agrège :
-     - `species_total` (union dédupliquée par clé canonique)
-     - `by_kingdom` (Animalia, Plantae, Fungi, Others)
-     - `top_species` (top 12 par nombre d'observations)
-     - `events` (id, title, date_marche, last_event_date)
-   - GRANT EXECUTE à `authenticated`
+### 3. Sous le hero
 
-2. **`src/hooks/propriete/usePropertyBiodiversity.ts`** : remplacer les requêtes actuelles par un simple `supabase.rpc('get_propriete_biodiversity', { p_propriete_id })`. L'interface `PropertyBiodiversity` reste identique — aucun changement dans les 5 onglets.
+La section principale (badge rôle + h1 + description) devient redondante avec le hero — on la supprime. On garde directement `NudgeMarcheBanner` + les onglets D.S., avec un `<section id="diagnostic">` cible du CTA « Explorer ».
 
-3. **Vérification** : sur `/propriete/jardin-monde-deviat`, les compteurs doivent refléter l'événement DEVIAT Jardin Monde (espèces, règnes, top espèces, palette végétale).
+## Fichiers touchés
 
-## Notes techniques
+- `src/pages/ProprieteEspace.tsx` : refonte du header + hero + suppression du bloc titre redondant, ajout de `id="diagnostic"` sur les tabs.
+- Nouveau hook léger `src/hooks/propriete/useProprieteHeroPhotos.ts` : réutilise `get_garden_hero_photos` (le RPC accepte déjà un event_id) en prenant le 1er `marche_event_id` lié à la propriété via `propriete_marche_events`, avec fallback sur `propriete.photo_hero_url`.
+- Aucun autre composant modifié — on importe `KenBurnsCarousel`, `RevealText`, `OrganicButton` déjà présents dans `ImmersiveGardenFiche.tsx` (à extraire si inline, sinon référencer leur chemin actuel).
 
-- Pas de changement RLS nécessaire (RPC en SECURITY DEFINER, appelée par utilisateur authentifié ayant déjà accès à la propriété via `useUserAppsAccess`).
-- Cohérence garantie avec Carnet / Carte / Synthèse marcheur puisqu'on partage la même logique de comptage.
-- Si un `marche_event` n'a pas d'`exploration_id`, il est ignoré côté biodiversité (comportement à documenter).
+## Notes
+
+- Aucun changement DB, aucun changement RLS.
+- Le rendu reste responsive : `h-[70vh]` sur mobile, `h-[85vh]` desktop.
+- Respect palette « Papier Crème » (light) et « Forêt Émeraude » (dark) pour tout ce qui suit le hero.
