@@ -174,7 +174,38 @@ export const CompanyDetailContent: React.FC<Props> = ({ companyId, onClose, mode
             );
           })}
         </div>
+
+        {/* Famille client (partenariat propriétés) */}
+        <div className="mt-2 inline-flex flex-wrap gap-1 p-1 rounded-full bg-muted/40 border">
+          {([
+            { v: null, label: '— Famille —' },
+            { v: 'PROPRIETAIRE_LIEUX', label: 'Propriétaire de lieux' },
+            { v: 'PAYSAGISTE', label: 'Paysagiste' },
+            { v: 'AUTRE', label: 'Autre' },
+          ] as const).map((opt) => {
+            const active = ((company as any).famille_client ?? null) === opt.v;
+            return (
+              <button
+                key={String(opt.v)}
+                onClick={() => {
+                  if (active) return;
+                  (supabase as any).from('crm_companies').update({ famille_client: opt.v }).eq('id', company.id).then(() => {
+                    updateStage.reset?.();
+                    (window as any).dispatchEvent?.(new CustomEvent('crm-company-updated', { detail: { id: company.id } }));
+                  });
+                }}
+                className={cn(
+                  'px-2.5 py-0.5 text-[11px] rounded-full transition-colors',
+                  active ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
+
 
       {/* Body scrollable */}
       <div className="flex-1 overflow-y-auto px-5 py-4 pb-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
