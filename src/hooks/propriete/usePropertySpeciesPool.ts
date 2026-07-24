@@ -28,21 +28,26 @@ const normName = (s: string | null | undefined): string =>
     .toLowerCase()
     .trim();
 
-const resolvePhoto = (sp: RpcSpecies): string | null => {
+const resolvePhotos = (sp: RpcSpecies): string[] => {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (u?: string | null) => {
+    if (!u || seen.has(u)) return;
+    seen.add(u);
+    out.push(u);
+  };
+  // 1. Photos marcheurs (prioritaires), triées par date desc
   const mAttrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
-  const direct = mAttrs
+  const sortedMarcheur = mAttrs
     .filter((a) => a?.photo_url)
-    .sort((a, b) => (b.observation_date || '').localeCompare(a.observation_date || ''))[0];
-  if (direct?.photo_url) return direct.photo_url;
+    .sort((a, b) => (b.observation_date || '').localeCompare(a.observation_date || ''));
+  for (const a of sortedMarcheur) push(a.photo_url);
+  // 2. Fallback iNat
   const groups: any[] = Array.isArray(sp.photos) ? sp.photos : [];
   for (const g of groups) {
-    if (Array.isArray(g)) {
-      for (const u of g) {
-        if (u) return toMediumInat(u);
-      }
-    }
+    if (Array.isArray(g)) for (const u of g) push(toMediumInat(u));
   }
-  return null;
+  return out;
 };
 
 const mapKingdom = (k?: string | null): BiodiversitySpecies['kingdom'] => {
