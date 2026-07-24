@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Compass, Leaf, TreePine, Check, ChevronDown } from 'lucide-react';
+import { Compass, Leaf, Check, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useUserAppsAccess, ProprieteAccess } from '@/hooks/useUserAppsAccess';
+import { ProprieteTile } from '@/components/community/ProprieteTile';
 import { cn } from '@/lib/utils';
 
 interface AppSwitcherProps {
