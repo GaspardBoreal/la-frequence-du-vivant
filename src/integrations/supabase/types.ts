@@ -789,6 +789,7 @@ export type Database = {
           rgpd_newsletter_consent: boolean
           rgpd_newsletter_consent_at: string | null
           role: Database["public"]["Enums"]["community_role"]
+          role_propriete: Database["public"]["Enums"]["role_propriete"]
           slug: string | null
           statut: string
           superpouvoir_sensoriel: string | null
@@ -830,6 +831,7 @@ export type Database = {
           rgpd_newsletter_consent?: boolean
           rgpd_newsletter_consent_at?: string | null
           role?: Database["public"]["Enums"]["community_role"]
+          role_propriete?: Database["public"]["Enums"]["role_propriete"]
           slug?: string | null
           statut?: string
           superpouvoir_sensoriel?: string | null
@@ -871,6 +873,7 @@ export type Database = {
           rgpd_newsletter_consent?: boolean
           rgpd_newsletter_consent_at?: string | null
           role?: Database["public"]["Enums"]["community_role"]
+          role_propriete?: Database["public"]["Enums"]["role_propriete"]
           slug?: string | null
           statut?: string
           superpouvoir_sensoriel?: string | null
@@ -931,6 +934,7 @@ export type Database = {
           departement: string | null
           dirigeants: Json | null
           etat_administratif: string | null
+          famille_client: Database["public"]["Enums"]["famille_client"] | null
           finances: Json | null
           forme_juridique: string | null
           id: string
@@ -969,6 +973,7 @@ export type Database = {
           departement?: string | null
           dirigeants?: Json | null
           etat_administratif?: string | null
+          famille_client?: Database["public"]["Enums"]["famille_client"] | null
           finances?: Json | null
           forme_juridique?: string | null
           id?: string
@@ -1007,6 +1012,7 @@ export type Database = {
           departement?: string | null
           dirigeants?: Json | null
           etat_administratif?: string | null
+          famille_client?: Database["public"]["Enums"]["famille_client"] | null
           finances?: Json | null
           forme_juridique?: string | null
           id?: string
@@ -5723,6 +5729,207 @@ export type Database = {
         }
         Relationships: []
       }
+      propriete_companies: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          propriete_id: string
+          role: Database["public"]["Enums"]["propriete_acces_role"]
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          propriete_id: string
+          role?: Database["public"]["Enums"]["propriete_acces_role"]
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          propriete_id?: string
+          role?: Database["public"]["Enums"]["propriete_acces_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_companies_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_marche_events: {
+        Row: {
+          created_at: string
+          id: string
+          marche_event_id: string
+          propriete_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marche_event_id: string
+          propriete_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marche_event_id?: string
+          propriete_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_marche_events_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_marche_events_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_marcheurs: {
+        Row: {
+          community_profile_id: string
+          created_at: string
+          id: string
+          is_main: boolean
+          propriete_id: string
+          role: Database["public"]["Enums"]["role_propriete"]
+        }
+        Insert: {
+          community_profile_id: string
+          created_at?: string
+          id?: string
+          is_main?: boolean
+          propriete_id: string
+          role?: Database["public"]["Enums"]["role_propriete"]
+        }
+        Update: {
+          community_profile_id?: string
+          created_at?: string
+          id?: string
+          is_main?: boolean
+          propriete_id?: string
+          role?: Database["public"]["Enums"]["role_propriete"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_marcheurs_community_profile_id_fkey"
+            columns: ["community_profile_id"]
+            isOneToOne: false
+            referencedRelation: "community_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_marcheurs_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proprietes: {
+        Row: {
+          adresse: string | null
+          code_postal: string | null
+          created_at: string
+          created_by: string | null
+          departement: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          latitude: number | null
+          longitude: number | null
+          main_walker_id: string | null
+          metadata: Json
+          nom: string
+          owner_company_id: string | null
+          photo_hero_url: string | null
+          region: string | null
+          slug: string | null
+          surface_hectares: number | null
+          updated_at: string
+          ville: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          code_postal?: string | null
+          created_at?: string
+          created_by?: string | null
+          departement?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          main_walker_id?: string | null
+          metadata?: Json
+          nom: string
+          owner_company_id?: string | null
+          photo_hero_url?: string | null
+          region?: string | null
+          slug?: string | null
+          surface_hectares?: number | null
+          updated_at?: string
+          ville?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          code_postal?: string | null
+          created_at?: string
+          created_by?: string | null
+          departement?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          main_walker_id?: string | null
+          metadata?: Json
+          nom?: string
+          owner_company_id?: string | null
+          photo_hero_url?: string | null
+          region?: string | null
+          slug?: string | null
+          surface_hectares?: number | null
+          updated_at?: string
+          ville?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proprietes_main_walker_id_fkey"
+            columns: ["main_walker_id"]
+            isOneToOne: false
+            referencedRelation: "community_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proprietes_owner_company_id_fkey"
+            columns: ["owner_company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       published_exports: {
         Row: {
           artistic_direction: string | null
@@ -7442,6 +7649,7 @@ export type Database = {
           name: string
         }[]
       }
+      get_user_apps_access: { Args: never; Returns: Json }
       get_user_crm_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["crm_role"]
@@ -7520,6 +7728,7 @@ export type Database = {
             Returns: string
           }
       is_admin_user: { Args: never; Returns: boolean }
+      is_current_user_admin: { Args: never; Returns: boolean }
       is_eco_curator: { Args: { _user_id: string }; Returns: boolean }
       is_event_curator: {
         Args: { _exploration_id: string; _user_id: string }
@@ -7640,6 +7849,10 @@ export type Database = {
         Returns: string
       }
       refresh_biodiversity_snapshots_aliases: { Args: never; Returns: number }
+      refresh_community_role_propriete: {
+        Args: { _profile_id: string }
+        Returns: undefined
+      }
       remove_admin_user: { Args: { target_user_id: string }; Returns: boolean }
       reorder_convivialite_photos: {
         Args: { _exploration_id: string; _ordered_ids: string[] }
@@ -7824,6 +8037,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      user_can_access_propriete: {
+        Args: { _propriete_id: string }
+        Returns: boolean
+      }
       validate_admin_email_access: { Args: never; Returns: boolean }
       validate_species_eco_tags: {
         Args: { _scientific_name: string; _source?: string; _tags: string[] }
@@ -7883,6 +8100,7 @@ export type Database = {
       curation_sense: "oeil" | "main" | "coeur" | "oreille" | "palais"
       etude_type: "principale" | "complementaire" | "annexe"
       exploration_type: "agroecologique" | "eco_poetique" | "eco_tourisme"
+      famille_client: "PROPRIETAIRE_LIEUX" | "PAYSAGISTE" | "AUTRE"
       insight_angle: "biodiversite" | "bioacoustique" | "geopoetique"
       insight_category:
         | "formation"
@@ -7904,6 +8122,8 @@ export type Database = {
         | "sans_activite"
         | "prefere_ne_pas_dire"
       profile_gender: "femme" | "homme" | "non_binaire" | "prefere_ne_pas_dire"
+      propriete_acces_role: "gestionnaire" | "prestataire" | "lecture"
+      role_propriete: "marcheur_historique" | "proprietaire" | "prestataire"
       science_network:
         | "inaturalist"
         | "ebird"
@@ -8079,6 +8299,7 @@ export const Constants = {
       curation_sense: ["oeil", "main", "coeur", "oreille", "palais"],
       etude_type: ["principale", "complementaire", "annexe"],
       exploration_type: ["agroecologique", "eco_poetique", "eco_tourisme"],
+      famille_client: ["PROPRIETAIRE_LIEUX", "PAYSAGISTE", "AUTRE"],
       insight_angle: ["biodiversite", "bioacoustique", "geopoetique"],
       insight_category: [
         "formation",
@@ -8102,6 +8323,8 @@ export const Constants = {
         "prefere_ne_pas_dire",
       ],
       profile_gender: ["femme", "homme", "non_binaire", "prefere_ne_pas_dire"],
+      propriete_acces_role: ["gestionnaire", "prestataire", "lecture"],
+      role_propriete: ["marcheur_historique", "proprietaire", "prestataire"],
       science_network: [
         "inaturalist",
         "ebird",
