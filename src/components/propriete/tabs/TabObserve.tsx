@@ -29,9 +29,13 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity }> = ({ bio }) =>
         <StatCard label="Règnes présents" value={kingdoms.length} />
         <StatCard
           label="Dernière observation"
-          value={bio?.lastEventDate ? new Date(bio.lastEventDate).toLocaleDateString('fr-FR') : '—'}
+          value={(() => {
+            const d = bio?.lastObservationDate ?? bio?.lastEventDate;
+            return d ? new Date(d).toLocaleDateString('fr-FR') : '—';
+          })()}
           small
         />
+
       </div>
 
       {kingdoms.length > 0 && (
