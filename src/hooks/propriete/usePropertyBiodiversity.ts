@@ -50,13 +50,13 @@ export function usePropertyBiodiversity(proprieteId?: string) {
       const speciesMap = new Map<string, { scientific: string; common: string | null; count: number; kingdom: string | null }>();
 
       if (eventIds.length) {
-        const { data: snaps } = await supabase
+        const { data: snaps } = await (supabase as any)
           .from('biodiversity_snapshots')
           .select('species_data, kingdom, marche_event_id')
           .in('marche_event_id', eventIds)
           .limit(1000);
 
-        (snaps ?? []).forEach((s: any) => {
+        ((snaps ?? []) as any[]).forEach((s: any) => {
           const list = Array.isArray(s.species_data) ? s.species_data : [];
           list.forEach((sp: any) => {
             const sci = sp?.scientificName || sp?.scientific_name;
