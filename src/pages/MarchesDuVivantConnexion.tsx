@@ -15,7 +15,7 @@ import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
-import { AppChoiceDialog, getDefaultAppTarget } from '@/components/community/AppChoiceDialog';
+import { AppChoiceDialog } from '@/components/community/AppChoiceDialog';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
 
 const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
@@ -124,19 +124,6 @@ const MarchesDuVivantConnexion = () => {
       try {
         const { data: apps } = await supabase.rpc('get_user_apps_access');
         const list: ProprieteAccess[] = ((apps as any)?.proprietesAccessibles ?? []) as ProprieteAccess[];
-
-        const pref = getDefaultAppTarget();
-        if (pref === 'mon-espace') {
-          navigate('/marches-du-vivant/mon-espace');
-          return;
-        }
-        if (pref?.startsWith('propriete:')) {
-          const slug = pref.slice('propriete:'.length);
-          if (list.some((p) => p.slug === slug)) {
-            navigate(`/propriete/${slug}`);
-            return;
-          }
-        }
 
         if (list.length >= 1) {
           // Récupère le prénom pour personnaliser le dialogue.
