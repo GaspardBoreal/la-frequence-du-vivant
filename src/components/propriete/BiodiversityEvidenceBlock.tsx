@@ -4,6 +4,7 @@ import { Eye, Leaf, Bug, Bird, Sprout, ChevronDown } from 'lucide-react';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
+import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 
 const KINGDOM_ICONS: Record<string, React.ReactNode> = {
   Plantae: <Sprout className="w-4 h-4" />,
@@ -42,7 +43,7 @@ export const BiodiversityEvidenceBlock: React.FC<Props> = ({
   const eventCount = bio?.events.length ?? 0;
 
   // Le pool n'est chargé qu'à l'ouverture — évite le fan-out RPC inutile.
-  const { species, isLoading, latestExplorationId } = usePropertySpeciesPool(
+  const { species, fieldPhotos, isLoading, latestExplorationId } = usePropertySpeciesPool(
     open ? proprieteId : undefined,
   );
 
@@ -115,12 +116,17 @@ export const BiodiversityEvidenceBlock: React.FC<Props> = ({
                     Aucune espèce collectée pour le moment.
                   </div>
                 ) : (
-                  <SpeciesExplorer
-                    species={species}
+                  <SpeciesPhotoModeProvider
                     explorationId={latestExplorationId}
-                    compact
-                    className="!p-0"
-                  />
+                    fieldPhotosOverride={fieldPhotos}
+                  >
+                    <SpeciesExplorer
+                      species={species}
+                      explorationId={latestExplorationId}
+                      compact
+                      className="!p-0"
+                    />
+                  </SpeciesPhotoModeProvider>
                 )}
                 {filtersLabel && (
                   <div className="mt-2 text-[10px] text-muted-foreground text-right italic">

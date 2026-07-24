@@ -3,6 +3,8 @@ import { useQuery, useQueries } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
+import type { MarcheurSpeciesPhoto } from '@/hooks/useSpeciesMarcheurPhotos';
+import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
 
 interface RpcSpecies {
   key: string;
@@ -186,8 +188,52 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       .sort((a, b) => b.observations - a.observations);
   }, [merged, frMap]);
 
+  const fieldPhotos = useMemo(() => {
+    const byName = new Map<string, MarcheurSpeciesPhoto[]>();
+    const seen = new Set<string>();
+
+    const push = (scientificName: string, attr: any) => {
+      const url = attr?.photo_url;
+      if (!scientificName || !url) return;
+      const key = normalizeSpeciesKey(scientificName);
+      if (!key) return;
+      const uniqueKey = `${key}:${url}`;
+      if (seen.has(uniqueKey)) return;
+      seen.add(uniqueKey);
+
+      const arr = byName.get(key) || [];
+      arr.push({
+        id: `propriete-marcheur-${attr?.marche_id || 'marche'}-${arr.length}-${url.slice(-24)}`,
+        url,
+        source: 'marcheur',
+        observerName: 'Marcheur',
+        observationDate: attr?.observation_date || undefined,
+        marcheId: attr?.marche_id || undefined,
+        marcheurId: attr?.marcheur_id || undefined,
+      });
+      byName.set(key, arr);
+    };
+
+    for (const sp of allRows) {
+      const scientificName = sp.scientific_name || sp.common_name || sp.key || '';
+      const attrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
+      for (const attr of attrs) push(scientificName, attr);
+    }
+
+    byName.forEach((arr) => {
+      arr.sort((a, b) => {
+        const da = a.observationDate ? new Date(a.observationDate).getTime() : 0;
+        const db = b.observationDate ? new Date(b.observationDate).getTime() : 0;
+        return db - da;
+      });
+    });
+
+    return byName;
+  }, [allRows]);
+
   return {
     species,
+    fieldPhotos,
     isLoading: idsQuery.isLoading || poolsLoading,
     explorationIds,
     /** Exploration la plus récente : bon candidat pour prioriser les photos terrain */

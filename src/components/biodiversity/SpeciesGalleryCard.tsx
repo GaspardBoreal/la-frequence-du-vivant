@@ -28,7 +28,8 @@ const SpeciesGalleryCard: React.FC<Props> = ({ species, translation, onClick }) 
   const { data: fetchedPhotoData, isLoading: photoLoading } = useSpeciesPhoto(
     species.scientificName,
   );
-  const taxonRefUrl = fetchedPhotoData?.photos?.[0] ?? null;
+  const localFallbackUrl = species.photos?.[0] ?? species.photoData?.url ?? null;
+  const taxonRefUrl = localFallbackUrl ?? fetchedPhotoData?.photos?.[0] ?? null;
 
   const { getPreferredPhoto } = useSpeciesPhotoMode();
   const preferred = getPreferredPhoto(species.scientificName, taxonRefUrl ?? undefined);
