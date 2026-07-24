@@ -86,6 +86,7 @@ import PublicEventPage from './pages/PublicEventPage';
 import CommunityProfilesAdmin from './pages/CommunityProfilesAdmin';
 import OrganisateursAdmin from './pages/OrganisateursAdmin';
 import AdminProprietes from './pages/AdminProprietes';
+import ProprieteEspace from './pages/ProprieteEspace';
 import MarchesDuVivantExplorationMarcheur from './pages/MarchesDuVivantExplorationMarcheur';
 import AdminOutilsHub from './pages/AdminOutilsHub';
 import AdminFrequences from './pages/AdminFrequences';
@@ -293,6 +294,7 @@ function App() {
                 <AdminProprietes />
               </AdminAuth>
             } />
+            <Route path="/propriete/:slug" element={<ProprieteEspace />} />
             <Route path="/admin/outils" element={
               <AdminAuth>
                 <AdminOutilsHub />
