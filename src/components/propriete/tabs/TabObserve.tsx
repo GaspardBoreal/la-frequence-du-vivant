@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowRight, CheckCheck } from 'lucide-react';
+import { ArrowRight, CheckCheck, Loader2, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
 import { OBSERVE_BLOCKS } from '@/components/propriete/observe/observeConfig';
@@ -12,8 +13,9 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
   bio,
   proprieteId,
 }) => {
-  const { state, saving, savedAt, toggleChoice, setSensorial, setNotes, markComplete } =
+  const { state, saving, savedAt, completedAt, toggleChoice, setSensorial, setNotes, markComplete } =
     usePropertyObservation(proprieteId);
+  const [submitting, setSubmitting] = React.useState(false);
 
   const blocksAnswered = Object.values(state.answers).reduce(
     (n, arr) => n + (arr?.length ? 1 : 0),
@@ -24,6 +26,21 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
   );
   const totalAnswered = blocksAnswered + (sensorialFilled ? 1 : 0);
   const totalBlocks = OBSERVE_BLOCKS.length + 1;
+
+  const handleComplete = async () => {
+    setSubmitting(true);
+    try {
+      await markComplete();
+      toast.success("Étape 1 marquée comme terminée ✓");
+    } catch (e: any) {
+      toast.error("Échec de l'enregistrement", { description: e?.message ?? 'Réessayez.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isDone = !!completedAt;
+  const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
 
   return (
     <div className="space-y-6">
@@ -59,16 +76,34 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
 
       {/* Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6">
-        <div className="text-sm text-[hsl(var(--ds-forest-deep))]">
-          <span className="font-semibold">{totalAnswered}</span> / {totalBlocks} blocs
-          renseignés
+        <div className="flex items-center gap-3 text-sm text-[hsl(var(--ds-forest-deep))]">
+          <span>
+            <span className="font-semibold">{totalAnswered}</span> / {totalBlocks} blocs renseignés
+          </span>
+          {isDone && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--ds-forest))]/15 text-[hsl(var(--ds-forest-deep))] px-2.5 py-0.5 text-xs font-semibold">
+              <Check className="w-3 h-3" /> Terminée
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
-            onClick={markComplete}
-            className="bg-[hsl(var(--ds-forest))]/85 text-white hover:bg-[hsl(var(--ds-forest-deep))] border border-[hsl(var(--ds-forest))]/40"
+            onClick={handleComplete}
+            disabled={submitting}
+            className={
+              isDone
+                ? "bg-[hsl(var(--ds-forest-deep))] text-white hover:bg-[hsl(var(--ds-forest))] border border-[hsl(var(--ds-forest))]/40"
+                : "bg-[hsl(var(--ds-forest))]/85 text-white hover:bg-[hsl(var(--ds-forest-deep))] border border-[hsl(var(--ds-forest))]/40"
+            }
           >
-            <CheckCheck className="w-4 h-4 mr-2" /> Marquer l'étape comme terminée
+            {submitting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCheck className="w-4 h-4 mr-2" />
+            )}
+            {isDone
+              ? `Étape terminée${doneDate ? ` le ${doneDate}` : ''} · Réenregistrer`
+              : "Marquer l'étape comme terminée"}
           </Button>
           <Button className="bg-[hsl(var(--ds-forest))] hover:bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))]">
             Étape suivante · J'analyse le sol <ArrowRight className="w-4 h-4 ml-2" />
