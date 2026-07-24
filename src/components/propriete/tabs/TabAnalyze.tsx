@@ -1,51 +1,160 @@
 import React from 'react';
-import { BarChart3 } from 'lucide-react';
+import { ArrowRight, CheckCheck, Loader2, Check, BarChart3 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
+import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
+import { StepHeader } from '@/components/propriete/observe/StepHeader';
+import { TerrainBlock } from '@/components/propriete/analyze/blocks/TerrainBlock';
+import { SamplesBlock } from '@/components/propriete/analyze/blocks/SamplesBlock';
+import { StructureBlock } from '@/components/propriete/analyze/blocks/StructureBlock';
+import { TextureBlock } from '@/components/propriete/analyze/blocks/TextureBlock';
+import { PhBlock } from '@/components/propriete/analyze/blocks/PhBlock';
+import { LifeSignsBlock } from '@/components/propriete/analyze/blocks/LifeSignsBlock';
 
-export const TabAnalyze: React.FC<{ bio?: PropertyBiodiversity }> = ({ bio }) => {
-  const total = Object.values(bio?.kingdoms ?? {}).reduce((a, b) => a + b, 0) || 1;
-  const kingdoms = Object.entries(bio?.kingdoms ?? {}).sort((a, b) => b[1] - a[1]);
+const TOTAL = 7; // 6 blocs + synthèse
+
+export const TabAnalyze: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string }> = ({
+  bio,
+  proprieteId,
+}) => {
+  const {
+    state,
+    saving,
+    savedAt,
+    completedAt,
+    setField,
+    toggleLifeSign,
+    updateSample,
+    addSample,
+    removeSample,
+    markComplete,
+  } = usePropertySoil(proprieteId);
+
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const filled =
+    (state.terrain_status ? 1 : 0) +
+    (state.samples.some((s) => (s.location ?? '').trim().length > 0) ? 1 : 0) +
+    (state.structure ? 1 : 0) +
+    (state.boudin_shape ? 1 : 0) +
+    (state.ph != null ? 1 : 0) +
+    (state.life_signs.length > 0 ? 1 : 0) +
+    ((state.synthesis ?? '').trim().length > 0 ? 1 : 0);
+
+  const handleComplete = async () => {
+    setSubmitting(true);
+    try {
+      await markComplete();
+      toast.success('Étape 2 marquée comme terminée ✓');
+    } catch (e: any) {
+      toast.error("Échec de l'enregistrement", { description: e?.message ?? 'Réessayez.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isDone = !!completedAt;
+  const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
 
   return (
-    <div className="space-y-5">
-      <header>
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-primary">
-          <BarChart3 className="w-3.5 h-3.5" /> Étape 2 · J'analyse
-        </div>
-        <h2 className="text-xl font-semibold mt-1">Ce que les données révèlent</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Équilibre des règnes, tendances et signaux faibles.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <StepHeader current={2} savedAt={savedAt} saving={saving} />
 
-      <div className="space-y-2">
-        {kingdoms.map(([k, v]) => {
-          const pct = Math.round((v / total) * 100);
-          return (
-            <div key={k}>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="font-medium">{k}</span>
-                <span className="text-muted-foreground">{pct}%</span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-amber-400"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-        {kingdoms.length === 0 && (
-          <p className="text-sm text-muted-foreground italic">
-            Aucune donnée à analyser pour l'instant. Organisez une Marche pour alimenter l'analyse.
-          </p>
-        )}
+      <div className="grid md:grid-cols-2 gap-5">
+        <TerrainBlock
+          value={state.terrain_status}
+          onChange={(v) => setField('terrain_status', v)}
+          index={0}
+        />
+        <SamplesBlock
+          samples={state.samples}
+          onUpdate={updateSample}
+          onAdd={addSample}
+          onRemove={removeSample}
+          index={1}
+        />
+        <StructureBlock
+          value={state.structure}
+          onChange={(v) => setField('structure', v)}
+          index={2}
+        />
+        <TextureBlock
+          boudinShape={state.boudin_shape}
+          texture={state.texture}
+          onChangeBoudin={(v) => setField('boudin_shape', v)}
+          onChangeTexture={(v) => setField('texture', v)}
+          index={3}
+        />
+        <PhBlock value={state.ph} onChange={(v) => setField('ph', v)} index={4} />
+        <LifeSignsBlock values={state.life_signs} onToggle={toggleLifeSign} index={5} />
       </div>
 
-      <div className="rounded-xl border border-dashed border-border/60 p-4 text-xs text-muted-foreground">
-        <strong className="text-foreground">À venir :</strong> comparaison saisonnière, indice de
-        Shannon local, corrélations météo & phénologie (en cours de développement).
+      {/* Synthèse */}
+      <div className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6 shadow-[0_2px_20px_-10px_rgba(60,80,60,0.15)]">
+        <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/80">
+          <BarChart3 className="w-3 h-3" /> Synthèse d'analyse
+        </div>
+        <textarea
+          rows={3}
+          value={state.synthesis ?? ''}
+          onChange={(e) => setField('synthesis', e.target.value)}
+          placeholder="Ce que ce sol raconte : forces, limites, points d'attention pour la suite du diagnostic…"
+          className="mt-2 w-full bg-transparent border-none outline-none resize-none text-sm text-[hsl(var(--ds-forest-deep))] placeholder:text-[hsl(var(--ds-forest))]/40"
+        />
+      </div>
+
+      {/* Empreinte biodiversité (contexte) */}
+      {bio && (
+        <div className="rounded-3xl border border-dashed border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-5 text-xs text-[hsl(var(--ds-forest-deep))]/80">
+          <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/70 mb-2">
+            En appui — biodiversité connue
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {Object.entries(bio.kingdoms ?? {}).map(([k, v]) => (
+              <span key={k} className="rounded-full bg-[hsl(var(--ds-forest))]/10 px-3 py-1">
+                <span className="font-semibold">{v}</span> {k}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6">
+        <div className="flex items-center gap-3 text-sm text-[hsl(var(--ds-forest-deep))]">
+          <span>
+            <span className="font-semibold">{filled}</span> / {TOTAL} blocs renseignés
+          </span>
+          {isDone && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--ds-forest))]/15 text-[hsl(var(--ds-forest-deep))] px-2.5 py-0.5 text-xs font-semibold">
+              <Check className="w-3 h-3" /> Terminée
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleComplete}
+            disabled={submitting}
+            className={
+              isDone
+                ? 'bg-[hsl(var(--ds-forest-deep))] text-white hover:bg-[hsl(var(--ds-forest))] border border-[hsl(var(--ds-forest))]/40'
+                : 'bg-[hsl(var(--ds-forest))]/85 text-white hover:bg-[hsl(var(--ds-forest-deep))] border border-[hsl(var(--ds-forest))]/40'
+            }
+          >
+            {submitting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCheck className="w-4 h-4 mr-2" />
+            )}
+            {isDone
+              ? `Étape terminée${doneDate ? ` le ${doneDate}` : ''} · Réenregistrer`
+              : "Marquer l'étape comme terminée"}
+          </Button>
+          <Button className="bg-[hsl(var(--ds-forest))] hover:bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))]">
+            Étape suivante · J'identifie <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
       </div>
     </div>
   );
