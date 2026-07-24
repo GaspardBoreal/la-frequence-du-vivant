@@ -85,6 +85,7 @@ import MarcheEventDetail from './pages/MarcheEventDetail';
 import PublicEventPage from './pages/PublicEventPage';
 import CommunityProfilesAdmin from './pages/CommunityProfilesAdmin';
 import OrganisateursAdmin from './pages/OrganisateursAdmin';
+import AdminProprietes from './pages/AdminProprietes';
 import MarchesDuVivantExplorationMarcheur from './pages/MarchesDuVivantExplorationMarcheur';
 import AdminOutilsHub from './pages/AdminOutilsHub';
 import AdminFrequences from './pages/AdminFrequences';
@@ -285,6 +286,11 @@ function App() {
             <Route path="/admin/organisateurs" element={
               <AdminAuth>
                 <OrganisateursAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/proprietes" element={
+              <AdminAuth>
+                <AdminProprietes />
               </AdminAuth>
             } />
             <Route path="/admin/outils" element={

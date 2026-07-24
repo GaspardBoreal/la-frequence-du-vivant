@@ -106,22 +106,32 @@ const AdminAccess: React.FC = () => {
             </Link>
           </Card>
 
-          {/* 5. Organisateurs */}
-          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+          {/* 5. Organisateurs & Propriétés */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-emerald-500/20 bg-emerald-500/5">
             <div className="flex items-center mb-4">
-              <Building2 className="h-8 w-8 text-accent mr-3" />
-              <h2 className="text-xl font-semibold text-foreground">Organisateurs</h2>
+              <Building2 className="h-8 w-8 text-emerald-600 mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Organisateurs & Propriétés</h2>
             </div>
             <p className="text-muted-foreground mb-4 min-h-[4rem]">
-              Gérer les organisateurs des marches : associations, collectifs, individus.
+              Gérer les organisateurs (associations, collectifs, individus) et les propriétés (lieux vivants partenaires
+              Ver de Terre Production & Alliance Paysage).
             </p>
-            <Link to="/admin/organisateurs">
-              <Button variant="outline" className="w-full">
-                <Building2 className="h-4 w-4 mr-2" />
-                Accéder aux Organisateurs
-              </Button>
-            </Link>
+            <div className="flex flex-col gap-2">
+              <Link to="/admin/organisateurs">
+                <Button variant="outline" className="w-full">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Organisateurs
+                </Button>
+              </Link>
+              <Link to="/admin/proprietes">
+                <Button variant="outline" className="w-full">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Propriétés
+                </Button>
+              </Link>
+            </div>
           </Card>
+
 
           {/* 6. Outils */}
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-amber-500/20 bg-amber-500/5">
