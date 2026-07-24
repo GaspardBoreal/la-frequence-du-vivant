@@ -1,88 +1,124 @@
-
 ## Contexte
 
-L'onglet actuel **J'analyse** (`TabAnalyze.tsx`) se limite à un camembert des règnes — très éloigné de la Méthode D.S. Le document (pages 6-7-8) définit précisément l'**Étape 2 : J'analyse le sol**, structurée en **6 blocs** de diagnostic pédologique, avec pictos et raisonnements pros.
+L'onglet **J'identifie** actuel (`TabIdentify.tsx`) est un simple check-list de 6 « enjeux vivants ». Il ne reflète pas la Méthode D.S. Le PDF (pages 9-13) définit une démarche pro : cocher les plantes bio-indicatrices, calculer l'intensité des indices EAU/TEXTURE/NUTRITION/pH, comparer avec l'étape 2 (sol), et produire un **Indice de Cohérence Globale (ICG /100)**.
 
 ## Objectif
 
-Reproduire fidèlement l'Étape 2 dans l'esprit du carnet de terrain déjà livré pour l'Étape 1 (cartes crème, badges vert forêt, illustrations aquarellées, autosave), en poussant les **pictos** à un niveau design/wahouh (SVG dessinés main, animés, pas d'emoji).
+Reproduire fidèlement l'Étape 3 dans le même carnet crème/vert forêt/or que les étapes 1 & 2, avec pictos botaniques SVG dessinés main (aquarelle animée), et calculs automatiques.
 
-## Les 6 blocs à construire (fidèles au PDF)
+## Écran d'entrée : porte optionnelle (page 13)
 
-**1. Le terrain a-t-il été remanié ?** — 5 pictos-choix radio :
-   - Construction récente / Remanié
-   - Remblai / Apport de terre
-   - Décaissement important
-   - Terrain naturel
-   - Je ne sais pas
-   *Note contextuelle "Cette information donne du poids à vos observations"*
+Bandeau discret en haut de l'onglet — 2 cartes horizontales :
+- **Oui, je poursuis** (diagnostic renforcé) → déroule les 5 blocs.
+- **Passer cette étape** → collapse tout, badge « Étape sautée » et bouton « Reprendre plus tard ».
 
-**2. Où et combien de prélèvements ?** — Cartes A / B / C dynamiques (add/remove), chacune avec : localisation courte, photo optionnelle, note. Rappel visuel "Éviter bords, ombre, pied d'arbre".
+Choix mémorisé (autosave `skip_bioindication bool`).
 
-**3. Structure du sol** (test de la bêche / stabilité) — 3 pictos-choix majeurs illustrés :
-   - **Compacte** (motte dense, eau qui stagne)
-   - **Grumeleuse** (agrégats, galeries de lombric — la cible)
-   - **Particulaire** (motte qui s'effondre, eau trop rapide)
-   *Chaque choix révèle une définition micro-texte du PDF.*
+## Les 5 blocs à construire
 
-**4. Texture du sol** — Test du boudin illustré en 4 étapes (prélever / façonner / courber / lire), puis choix parmi 3 catégories illustrées :
-   - Sable → limon sableux
-   - Limon sableux → limon moyen
-   - Limon argileux → argiles
-   + micro-radio "boudin droit / lune / cercle" → teneur estimée en argile (10 % / 10–30 % / >30 %).
+**1. Le cortège floristique (35 plantes bio-indicatrices)**
+Grille responsive de vignettes cochables regroupées en 4 familles avec compteurs :
+- **Herbacées (15)** · Ortie, Épilobe, Pissenlit, Gaillet, Achillée, Renoncule, Lamier, Bardane, Trèfle, Consoude, Thym serpolet, Lotier, Carotte sauv., Sénéçon, Oseille.
+- **Arbustes (10)** · Sureau, Cornouiller sanguin, Poirier cœur, Troène, Cytise, Cornouiller mâle, Camérisier, Églantier, Genêt, Callune.
+- **Lianes/grimpantes (5)** · Lierre, Clématite, Houblon, Liseron, Ronce.
+- **Arbres (5)** · Saule blanc, Sorbier, Frêne, Châtaignier, Peuplier tremble.
 
-**5. pH du sol** — Slider chromatique unique 4 → 9 (acide rouge → neutre vert → basique bleu), curseur draggable, valeur numérique affichée en gros, badge auto ACIDE / NEUTRE / BASIQUE.
+Chaque vignette : mini-picto SVG botanique (silhouette feuille dessinée main), nom scientifique italique + nom vernaculaire, tap = check + micro-animation « feuille qui bruisse ». Bouton flottant « + Ajouter via PlantNet » (deep-link `plantnet://` mobile, fallback lien web) — pas de scan intégré (hors scope).
 
-**6. Le sol est-il vivant ?** — Grille multi-check de 6 pictos animés (vers de terre, taupinière, racines fines, micro-faune, matière organique, test CO₂ optionnel). Compteur "Signes de vie détectés : n/6" avec jauge verte.
+Compteur global : « 12 / 35 plantes observées ».
 
-**Synthèse finale : « Ce que je commence à comprendre »** — 3 phrases auto-générées à partir des réponses (structure + texture + vivant), éditables.
+**2. Ce que racontent les plantes — Intensité des indices (page 11)**
+Auto-calculé à partir des plantes cochées. Table des scores écologiques via `computeIndicatorScores(selectedPlants)` qui somme les valeurs (● =1, ●● =2, ●●● =3) issues d'une constante `PLANT_INDICATOR_KB` (transcrite du tableau page 10).
 
-## Design system (aligné Étape 1)
+Affichage : 8 lignes (EAU frais/sec, TEXTURE limono-sableux/argilo-limoneux, NUTRITION riche/pauvre, pH acide/calcaire), chacune une **jauge horizontale segmentée** 0→30+ avec :
+- Palette dégradée bleu clair (faible) → vert profond (fort).
+- Curseur goutte/feuille SVG animé à la position exacte.
+- Badge auto « Très faible / Faible / Moyen / Fort / Très fort ».
 
-- Mêmes cartes crème `bg-observation-card`, badges `bg-observation-accent`, header animé, ratio illustration **16/7**.
-- Compteur `x / 6 blocs renseignés` + badge vert « Terminée le JJ/MM » identique à Étape 1.
-- Bouton « Marquer l'étape comme terminée » : même variante (fond vert forêt, texte blanc au repos).
+**3. Conclusion de la flore (page 11 bas)**
+Phrase auto-générée éditable : *« D'après la flore observée, le sol serait [texture] à tendance [pH], plutôt [nutrition] et [eau]. »* — récap chips cliquables des tendances dominantes.
 
-## Pictos wahouh (le point critique du brief)
+**4. Comparaison avec l'étape 2 — Concordance sol/flore (page 12)**
+Tableau 4 critères × 2 niveaux (8 lignes), 3 colonnes de résultat :
+- Colonne « Sol » (Faible/Moyen/Fort auto depuis `usePropertySoil` : texture/structure/pH/vitalité mappés).
+- Colonne « Flore » (Faible/Moyen/Fort auto depuis bloc 2).
+- Colonne « Concordance » : pastille cliquable Oui (●, vert) / Partiel (◐, or) / Non (○, sépia). L'utilisateur peut ajuster manuellement.
 
-Créer un jeu de **pictos SVG maison** dans `src/components/propriete/observe/pictos/soil/` — trait fin encre sépia sur fond crème, remplissage aquarelle vert forêt à l'hover/selected, micro-animation (dessin de trait, pulsation légère). Pictos requis :
+Design : chaque ligne = mini-carte crème avec picto critère à gauche (goutte, motte, épi, réglette pH).
 
-- `TerrainRemanieSet.tsx` : chantier, remblai (tas), pelleteuse, prairie, point d'interrogation.
-- `StructureSet.tsx` : motte compacte, motte grumeleuse (avec vers), motte particulaire.
-- `TextureSet.tsx` : boudin droit / lune / cercle + 4 étapes du test.
-- `VieDuSolSet.tsx` : lombric, taupinière, racines, cloporte (micro-faune), tas humus, tube à essai CO₂.
-- `PhScale.tsx` : réglette chromatique + goutte curseur.
+**5. Indice de Cohérence Globale (ICG /100)**
+Cercle SVG animé (compteur qui tourne), formule : `ICG = (score/16) * 100` avec Oui=2, Partiel=1, Non=0.
 
-Chaque picto ≈ 80–96 px, `strokeWidth` fin, palette limitée : sépia `#3a2f28`, vert forêt `#2f5d3a`, or `#c9a24b`, crème `#f7f3ea`.
+Badge sémantique :
+- **80-100** → « Bonne cohérence » (vert forêt).
+- **60-79** → « Cohérence moyenne » (or).
+- **0-59** → « Faible cohérence » (sépia + encart conseil « Reprenez vos observations : prélèvements, autres zones, contexte »).
+
+## Design system (aligné étapes 1 & 2)
+
+- `AnalyzeCard`-like wrapper renommé `IdentifyCard` (mêmes tokens `--ds-cream`, `--ds-forest`, `--ds-gold`).
+- Header étape avec `<StepHeader current={3} />` (les points 1-2-3 remplis).
+- Illustration hero botanique 16/7 par bloc (aquarelle).
+- Compteur `x / 5 blocs renseignés` + badge « Terminée le JJ/MM » identique aux étapes 1-2.
+- Bouton « Marquer l'étape comme terminée » : même variante blanche au repos.
+
+## Pictos wahouh (SVG maison, `src/components/propriete/identify/pictos/`)
+
+- `PlantLeafSet.tsx` : 35 silhouettes de feuilles distinctives dessinées main (trait sépia, remplissage aquarelle vert au hover/selected). Micro-animation `pathLength` Framer Motion.
+- `CriteriaIconSet.tsx` : goutte EAU, motte TEXTURE, épi NUTRITION, réglette pH — dessinés cohérents avec ceux de l'étape 2.
+- `ConcordanceBadges.tsx` : cercle plein / demi / vide, animation morph au clic.
+- `ICGRing.tsx` : cercle SVG progressif, feuille au bout du tracé.
+
+Palette limitée : sépia `#3a2f28`, vert forêt `#2f5d3a`, or `#c9a24b`, crème `#f7f3ea`.
 
 ## Persistance
 
-- Table **`propriete_soil_diagnostics`** (une ligne par propriété) — champs typés :
-  `terrain_status text`, `samples jsonb`, `structure text`, `texture text`, `boudin_shape text`, `ph numeric`, `life_signs text[]`, `synthesis text`, `completed_at timestamptz`, RLS `has_propriete_access`.
-- RPC `upsert_propriete_soil(...)` (SECURITY DEFINER), autosave debounced comme Étape 1.
-- Hook `usePropertySoil.ts` copié du modèle `usePropertyObservation.ts` (même contrat : `local`, `set`, `persist`, `markComplete`, toast succès/erreur).
+Nouvelle table **`propriete_flora_diagnostics`** (une ligne par propriété) :
+- `skip_bioindication bool default false`
+- `observed_plants text[]` (slugs plantes)
+- `flora_conclusion text`
+- `concordance jsonb` (8 clés → 'oui' | 'partiel' | 'non')
+- `icg_score int`
+- `completed_at timestamptz`
+- RLS via même règle que `propriete_soil_diagnostics`.
+
+RPC `upsert_propriete_flora(...)` SECURITY DEFINER, autosave debounced.
+
+Hook `usePropertyFlora.ts` calqué sur `usePropertySoil.ts` : `state / setField / togglePlant / setConcordance / persist / markComplete`.
 
 ## Découpage fichiers
 
 **Nouveaux**
-- `src/components/propriete/analyze/pictos/` (5 fichiers SVG ci-dessus).
-- `src/components/propriete/analyze/AnalyzeCard.tsx` (wrapper carte façon `ObservationCard`).
-- `src/components/propriete/analyze/blocks/` : `BlockRemaniement.tsx`, `BlockPrelevements.tsx`, `BlockStructure.tsx`, `BlockTexture.tsx`, `BlockPh.tsx`, `BlockVieDuSol.tsx`, `BlockSynthese.tsx`.
-- `src/hooks/propriete/usePropertySoil.ts`.
-- Migration SQL : table + RPC + grants + RLS.
+- `src/lib/plantIndicatorKb.ts` — 35 plantes + valeurs indicatrices (transcription page 10) + helpers `computeIndicatorScores`, `computeFloraConclusion`, `computeConcordance`, `computeICG`.
+- `src/components/propriete/identify/pictos/PlantLeafSet.tsx`
+- `src/components/propriete/identify/pictos/CriteriaIconSet.tsx`
+- `src/components/propriete/identify/pictos/ConcordanceBadges.tsx`
+- `src/components/propriete/identify/pictos/ICGRing.tsx`
+- `src/components/propriete/identify/IdentifyCard.tsx`
+- `src/components/propriete/identify/PlantTile.tsx`
+- `src/components/propriete/identify/blocks/BlockOptIn.tsx`
+- `src/components/propriete/identify/blocks/BlockCortege.tsx`
+- `src/components/propriete/identify/blocks/BlockIntensites.tsx`
+- `src/components/propriete/identify/blocks/BlockConclusion.tsx`
+- `src/components/propriete/identify/blocks/BlockConcordance.tsx`
+- `src/components/propriete/identify/blocks/BlockICG.tsx`
+- `src/hooks/propriete/usePropertyFlora.ts`
+- Migration SQL : table + RPC + grants + RLS + trigger updated_at.
 
 **Modifiés**
-- `src/components/propriete/tabs/TabAnalyze.tsx` : devient orchestrateur des 6 blocs + synthèse + progression `x/6`, header identique à `TabObserve`, KPI règnes existant repositionné en bas comme « Ce que la Fréquence sait déjà » (données de contexte, pas cœur de l'étape).
+- `src/components/propriete/tabs/TabIdentify.tsx` : devient orchestrateur des 5 blocs + porte d'entrée + synthèse + progression `x/5`. Conserve `BiodiversityEvidenceBlock` en tête (bloc « Ce que la Fréquence sait déjà »).
+- `src/pages/ProprieteEspace.tsx` : passe `soil` (état étape 2) en prop de `TabIdentify` pour la comparaison bloc 4.
 
 ## Détails techniques
 
-- Pictos animés via Framer Motion (`motion.svg` `pathLength` sur `whileInView`).
-- `BlockPh` : slider custom (pas Radix) sur canvas SVG chromatique pour un rendu premium.
-- `BlockPrelevements` : `useFieldArray`-like, max 5 prélèvements, drag-reorder optionnel V2.
-- Synthèse auto : petite fonction pure `computeSoilSynthesis(soil)` retournant 3 phrases (structure / texture+ph / vitalité), utilisateur peut éditer par-dessus.
-- Aucun changement design system global — tokens déjà en place depuis Étape 1.
+- Jauges intensités : SVG segmenté 7 crans, curseur `motion.g` transition spring.
+- `BlockCortege` : `useMemo` sur familles + collapsible par famille, compteur live.
+- `BlockConcordance` : lecture directe de `usePropertySoil.state` (déjà passé en prop) + résultats bloc 2 → colonne Sol/Flore auto-calculées, override manuel possible.
+- `BlockICG` : animation `motion.circle` `strokeDashoffset` sur `whileInView`.
+- Tokens design déjà en place (index.css). Aucun changement global.
 
 ## Hors scope
 
-- Test de sédimentation détaillé (mentionné "optionnel" dans le PDF) — bouton "En savoir plus" ouvrant un drawer explicatif, mais pas de saisie dédiée.
-- Étape 3 « J'identifie la flore » — traitée dans un prochain lot.
+- Intégration scan PlantNet directe (renvoi vers l'app externe uniquement).
+- Étape 4 « Je synthétise » — traitée dans un prochain lot.
+- Édition manuelle de la KB des plantes (constante en dur, V2 admin).
