@@ -1,37 +1,33 @@
-## Contexte
+## Diagnostic confirmé
 
-Sur `/propriete/:slug` onglet **J'identifie**, bloc « Ce que la Fréquence du Vivant sait déjà » :
+Le module Propriété affiche bien `SpeciesExplorer`, mais il n’est pas enveloppé par `SpeciesPhotoModeProvider`. Résultat : `SpeciesGalleryCard` tombe sur le fallback no-op du contexte, dont le mode est toujours `inaturalist`, puis recharge les photos de référence via `useSpeciesPhoto`. C’est pourquoi les vignettes restent iNaturalist même si `usePropertySpeciesPool` met déjà des photos marcheurs en priorité dans `species.photos`.
 
-1. Les vignettes affichent des photos iNaturalist alors que l'app marcheurs (Biodiversité → Taxons observés) affiche en priorité les **photos réellement prises par les marcheurs**.
-2. Le bloc « Répartition par règne » (Fungi · 3, Plantae · 100, Unknown · 23, Animalia · 98) fait doublon avec les onglets Faune/Flore/Champignons/Autres déjà affichés par `SpeciesExplorer` juste en-dessous.
+Deuxième point : dans l’univers Propriété, on agrège plusieurs explorations liées à une propriété. Le provider actuel sait charger les photos terrain pour une seule exploration (`explorationId`), pas pour un pool multi-marches/propriété. Il faut donc lui fournir une `fieldPhotosOverride` construite depuis les données déjà agrégées.
 
-## Diagnostic
+## Correctif proposé
 
-**Photos marcheurs manquantes**
-- `SpeciesExplorer` résout les photos terrain via `useExplorationFieldPhotos(explorationId)` — un seul `explorationId`.
-- Notre propriété agrège N explorations via `usePropertySpeciesPool`, mais ne passe qu'un `latestExplorationId` à `SpeciesExplorer`. Résultat : seules les photos terrain de la dernière marche remontent, les autres retombent sur iNat.
-- Le champ `photos[]` de `BiodiversitySpecies` n'inclut aujourd'hui qu'une photo (résolue via `resolvePhoto`), pas la stack complète des photos marcheurs multi-marches.
+1. **Créer une map de photos terrain côté Propriété**
+   - Dans `usePropertySpeciesPool`, construire une `Map<scientificNameNormalisé, MarcheurSpeciesPhoto[]>`.
+   - Alimenter cette map avec toutes les entrées `marcheur_attrs` issues des RPC de toutes les explorations liées.
+   - Trier chaque espèce avec priorité absolue aux photos marcheurs, puis date décroissante.
 
-**Doublon règnes**
-- `SpeciesExplorer` fournit déjà les onglets règnes avec compteurs — la ligne « Répartition par règne » au-dessus est redondante.
+2. **Brancher le provider photo autour de SpeciesExplorer**
+   - Dans `BiodiversityEvidenceBlock`, envelopper `SpeciesExplorer` avec :
+     - `SpeciesPhotoModeProvider fieldPhotosOverride={fieldPhotos}`
+   - Ainsi `SpeciesGalleryCard`, le toggle `Photos marcheurs / iNaturalist`, et les futures évolutions du module partagé fonctionneront aussi dans l’espace Propriété.
 
-## Modifications
+3. **Forcer un fallback local quand une photo marcheur existe déjà dans `species.photos`**
+   - Adapter `SpeciesGalleryCard` pour utiliser `species.photos[0]` comme fallback avant de requêter la photo taxon iNaturalist.
+   - Cela sécurise le rendu même si le provider n’a pas encore fini d’initialiser son mode.
 
-### 1. `src/hooks/propriete/usePropertySpeciesPool.ts`
-- Enrichir la fusion pour collecter **toutes** les URLs de photos marcheurs (`marcheur_attrs[*].photo_url`) accumulées à travers TOUTES les explorations, triées par date desc.
-- Alimenter `photos: string[]` de `BiodiversitySpecies` avec la stack complète (photos marcheurs d'abord, puis fallback iNat), pour que `SpeciesExplorer` / `SpeciesThumb` les affichent en priorité indépendamment de l'`explorationId` passé.
+4. **Préserver le comportement de l’app Marcheurs**
+   - Ne pas modifier la logique centrale de `SpeciesExplorer`.
+   - Ne pas casser le mode iNaturalist : l’utilisateur pourra toujours basculer vers iNaturalist, mais le défaut en contexte Propriété sera bien “Photos marcheurs” dès qu’il y en a.
 
-### 2. `src/components/propriete/BiodiversityEvidenceBlock.tsx`
-- Supprimer le bloc `Répartition par règne` (lignes ~104-123).
-- Conserver le reste inchangé (KPIs repliables + `SpeciesExplorer`).
+## Validation attendue
 
-## Détails techniques
-
-- `resolvePhoto` devient `resolvePhotos(sp): string[]` qui concatène toutes les `photo_url` marcheurs (dédupliquées, triées par `observation_date` desc) puis les photos iNat en fallback.
-- Lors de la fusion multi-marches, on concatène les stacks des doublons scientifiques et on dédup les URLs.
-- `SpeciesExplorer` / `SpeciesThumb` consomment déjà `species.photos[0]` avec fallback iNat — aucun changement côté consumer.
-
-## Résultat attendu
-
-- Vignettes du bloc affichent les vraies photos terrain marcheurs (comme dans l'app marcheurs), fallback iNat uniquement si aucune photo terrain.
-- Section règnes redondante supprimée : le bloc s'ouvre directement sur `SpeciesExplorer` avec ses propres onglets règnes.
+Sur `/propriete/maison-sous-blossac`, Étape 3 > bloc déplié :
+- le toggle “Photos marcheurs” apparaît si des photos terrain existent ;
+- il est sélectionné par défaut ;
+- les vignettes affichent d’abord les photos réelles des marcheurs ;
+- le mode iNaturalist reste disponible en bascule.
