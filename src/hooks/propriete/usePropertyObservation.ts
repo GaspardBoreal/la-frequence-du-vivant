@@ -45,6 +45,13 @@ export function usePropertyObservation(proprieteId?: string) {
       setLocal(query.data);
       setSavedAt(query.data.updated_at ?? null);
       initRef.current = true;
+    } else if (query.data && initRef.current) {
+      // Resync completed_at only, don't clobber in-flight edits
+      setLocal((s) =>
+        s.completed_at === query.data!.completed_at
+          ? s
+          : { ...s, completed_at: query.data!.completed_at ?? null }
+      );
     }
   }, [query.data]);
 
@@ -60,10 +67,12 @@ export function usePropertyObservation(proprieteId?: string) {
         p_completed: completed,
       });
       setSaving(false);
-      if (!error) {
-        setSavedAt(new Date().toISOString());
-        qc.invalidateQueries({ queryKey: ['propriete-observation', proprieteId] });
+      if (error) throw error;
+      setSavedAt(new Date().toISOString());
+      if (completed) {
+        setLocal((s) => ({ ...s, completed_at: new Date().toISOString() }));
       }
+      qc.invalidateQueries({ queryKey: ['propriete-observation', proprieteId] });
     },
     [proprieteId, qc]
   );
