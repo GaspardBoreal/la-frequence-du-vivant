@@ -79,13 +79,8 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
                   active && 'bg-muted/40'
                 )}
               >
-                <div className="w-9 h-9 rounded-md overflow-hidden bg-gradient-to-br from-amber-400/30 to-emerald-500/30 flex items-center justify-center flex-shrink-0">
-                  {p.photo_hero_url ? (
-                    <img src={p.photo_hero_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <TreePine className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
-                  )}
-                </div>
+                <ProprieteTile propriete={p} size={36} />
+
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
                     {p.nom}
