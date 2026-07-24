@@ -12,6 +12,9 @@ import { CortegeBlock } from '@/components/propriete/identify/blocks/CortegeBloc
 import { IntensitiesBlock } from '@/components/propriete/identify/blocks/IntensitiesBlock';
 import { ConcordanceBlock } from '@/components/propriete/identify/blocks/ConcordanceBlock';
 import { NarrativeBlock } from '@/components/propriete/identify/blocks/NarrativeBlock';
+import { DeltaBlock } from '@/components/propriete/identify/blocks/DeltaBlock';
+import { RevealMapBlock } from '@/components/propriete/identify/blocks/RevealMapBlock';
+import { SentinellesBlock } from '@/components/propriete/identify/blocks/SentinellesBlock';
 import {
   computeFloraProfile,
   computeConcordance,
@@ -83,11 +86,17 @@ export const TabIdentify: React.FC<{
 
       {!state.skip_bioindication && (
         <>
-          <CortegeBlock observed={state.observed_plants} onToggle={togglePlant} index={1} proprieteId={proprieteId} />
+          {/* Nouveautés depuis 30j — accroche de retour */}
+          <DeltaBlock proprieteId={proprieteId} index={0} />
+
+          {/* Preuve spatiale : carte des observations marcheurs */}
+          <RevealMapBlock proprieteId={proprieteId} index={1} />
+
+          <CortegeBlock observed={state.observed_plants} onToggle={togglePlant} index={2} proprieteId={proprieteId} />
 
           <div className="grid md:grid-cols-2 gap-5">
-            <IntensitiesBlock profile={profile} index={2} />
-            <ConcordanceBlock report={report} soilAvailable={soilAvailable && profile.count > 0} index={3} />
+            <IntensitiesBlock profile={profile} index={3} />
+            <ConcordanceBlock report={report} soilAvailable={soilAvailable && profile.count > 0} index={4} />
           </div>
 
           <NarrativeBlock
@@ -96,8 +105,11 @@ export const TabIdentify: React.FC<{
             notes={state.notes ?? ''}
             onChangeNotes={(v) => setField('notes', v)}
             autoNarrative={autoNarrative}
-            index={4}
+            index={5}
           />
+
+          {/* Humains derrière la donnée */}
+          <SentinellesBlock proprieteId={proprieteId} index={6} />
         </>
       )}
 
