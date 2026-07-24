@@ -45,7 +45,7 @@ type Propriete = {
 
 type MarcheurLite = { id: string; prenom: string | null; nom: string | null; ville: string | null };
 type CompanyLite = { id: string; denomination: string | null; nom_complet: string | null; ville: string | null };
-type MarcheEventLite = { id: string; nom: string | null; date_debut: string | null };
+type MarcheEventLite = { id: string; title: string | null; date_marche: string | null };
 type LinkedMarcheur = { id: string; community_profile_id: string; role: 'proprietaire' | 'prestataire' | 'marcheur_historique'; is_main: boolean };
 type LinkedCompany = { id: string; company_id: string; role: 'gestionnaire' | 'prestataire' | 'lecture' };
 type LinkedEvent = { id: string; marche_event_id: string };
@@ -110,13 +110,15 @@ const AdminProprietes: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await sb
         .from('marche_events')
-        .select('id, nom, date_debut')
-        .order('date_debut', { ascending: false })
+        .select('id, title, date_marche')
+        .order('date_marche', { ascending: false })
         .limit(500);
       if (error) throw error;
       return data as MarcheEventLite[];
     },
   });
+
+  const [eventSearch, setEventSearch] = useState('');
 
   const activeId = editing?.id;
 
