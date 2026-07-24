@@ -288,6 +288,11 @@ function App() {
                 <OrganisateursAdmin />
               </AdminAuth>
             } />
+            <Route path="/admin/proprietes" element={
+              <AdminAuth>
+                <AdminProprietes />
+              </AdminAuth>
+            } />
             <Route path="/admin/outils" element={
               <AdminAuth>
                 <AdminOutilsHub />
