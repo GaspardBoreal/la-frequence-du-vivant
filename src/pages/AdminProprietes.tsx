@@ -692,11 +692,25 @@ const AdminProprietes: React.FC = () => {
                       <Select value={eventToAdd} onValueChange={setEventToAdd}>
                         <SelectTrigger><SelectValue placeholder="Sélectionner un événement…" /></SelectTrigger>
                         <SelectContent className="max-h-80">
+                          <div className="p-2 sticky top-0 bg-popover z-10 border-b">
+                            <Input
+                              autoFocus
+                              placeholder="Rechercher…"
+                              value={eventSearch}
+                              onChange={(e) => setEventSearch(e.target.value)}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              className="h-8"
+                            />
+                          </div>
                           {events
                             .filter(e => !linkedEvents.some(l => l.marche_event_id === e.id))
+                            .filter(e => {
+                              if (!eventSearch.trim()) return true;
+                              return norm(e.title ?? '').includes(norm(eventSearch));
+                            })
                             .map(e => (
                               <SelectItem key={e.id} value={e.id}>
-                                {e.nom ?? '(sans nom)'}{e.date_debut ? ` · ${new Date(e.date_debut).toLocaleDateString('fr-FR')}` : ''}
+                                {e.title ?? '(sans titre)'}{e.date_marche ? ` · ${new Date(e.date_marche).toLocaleDateString('fr-FR')}` : ''}
                               </SelectItem>
                             ))}
                         </SelectContent>
