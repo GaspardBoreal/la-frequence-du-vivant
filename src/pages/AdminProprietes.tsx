@@ -323,8 +323,8 @@ const AdminProprietes: React.FC = () => {
             <Trees className="h-8 w-8 text-emerald-600" />
             Propriétés
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Lieux vivants regroupant plusieurs événements Marches du Vivant
+          <p className="text-muted-foreground mt-2 text-center">
+            Jardins, Vignobles, Exploitations regroupant plusieurs événements Marches du Vivant
           </p>
         </div>
 
