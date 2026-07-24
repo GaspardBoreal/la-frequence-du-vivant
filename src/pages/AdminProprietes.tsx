@@ -81,12 +81,16 @@ const AdminProprietes: React.FC = () => {
         .from('community_profiles')
         .select('id, prenom, nom, ville')
         .not('user_id', 'is', null)
-        .order('nom')
+        .order('prenom', { ascending: true })
         .limit(2000);
       if (error) throw error;
       return data as MarcheurLite[];
     },
   });
+
+  const [marcheurSearch, setMarcheurSearch] = useState('');
+  const [companySearch, setCompanySearch] = useState('');
+  const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
   const { data: companies = [] } = useQuery({
     queryKey: ['admin-proprietes-companies'],
@@ -505,8 +509,23 @@ const AdminProprietes: React.FC = () => {
                       <Select value={marcheurToAdd} onValueChange={setMarcheurToAdd}>
                         <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                         <SelectContent className="max-h-80">
+                          <div className="p-2 sticky top-0 bg-popover z-10 border-b">
+                            <Input
+                              autoFocus
+                              placeholder="Rechercher…"
+                              value={marcheurSearch}
+                              onChange={(e) => setMarcheurSearch(e.target.value)}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              className="h-8"
+                            />
+                          </div>
                           {marcheurs
                             .filter(m => !linkedMarcheurs.some(l => l.community_profile_id === m.id))
+                            .filter(m => {
+                              if (!marcheurSearch.trim()) return true;
+                              const q = norm(marcheurSearch);
+                              return norm(`${m.prenom ?? ''} ${m.nom ?? ''} ${m.ville ?? ''}`).includes(q);
+                            })
                             .map(m => (
                               <SelectItem key={m.id} value={m.id}>
                                 {m.prenom ?? ''} {m.nom ?? ''}{m.ville ? ` · ${m.ville}` : ''}
@@ -569,8 +588,23 @@ const AdminProprietes: React.FC = () => {
                       <Select value={companyToAdd} onValueChange={setCompanyToAdd}>
                         <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                         <SelectContent className="max-h-80">
+                          <div className="p-2 sticky top-0 bg-popover z-10 border-b">
+                            <Input
+                              autoFocus
+                              placeholder="Rechercher…"
+                              value={companySearch}
+                              onChange={(e) => setCompanySearch(e.target.value)}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              className="h-8"
+                            />
+                          </div>
                           {companies
                             .filter(c => !linkedCompanies.some(l => l.company_id === c.id))
+                            .filter(c => {
+                              if (!companySearch.trim()) return true;
+                              const q = norm(companySearch);
+                              return norm(`${c.denomination ?? ''} ${c.nom_complet ?? ''} ${c.ville ?? ''}`).includes(q);
+                            })
                             .map(c => (
                               <SelectItem key={c.id} value={c.id}>
                                 {c.denomination ?? c.nom_complet ?? '(sans nom)'}{c.ville ? ` · ${c.ville}` : ''}
