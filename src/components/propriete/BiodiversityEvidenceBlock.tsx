@@ -117,7 +117,6 @@ export const BiodiversityEvidenceBlock: React.FC<Props> = ({
                   </div>
                 ) : (
                   <SpeciesPhotoModeProvider
-                    explorationId={latestExplorationId}
                     fieldPhotosOverride={fieldPhotos}
                   >
                     <SpeciesExplorer
