@@ -8,6 +8,7 @@ import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import MonEspaceSettings from './MonEspaceSettings';
 import ProgressionSheet from './ProgressionSheet';
 import HeaderSearchTrigger from '@/components/search/HeaderSearchTrigger';
+import AppSwitcher from './AppSwitcher';
 
 interface CommunityProfile {
   id: string;
@@ -85,6 +86,7 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
                 <RoleBadge role={role} size="sm" darkMode />
               </button>
             </div>
+            <AppSwitcher userId={profile.user_id} currentContext="mdv" />
             <HeaderSearchTrigger scope="global" />
             <motion.div
               key={totalFrequences}

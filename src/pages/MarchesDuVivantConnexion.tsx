@@ -116,6 +116,17 @@ const MarchesDuVivantConnexion = () => {
         navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
         return;
       }
+      // App switcher : si l'utilisateur a une propriété principale, on l'y amène directement
+      try {
+        const { data: apps } = await supabase.rpc('get_user_apps_access');
+        const list = (apps as any)?.proprietesAccessibles ?? [];
+        const mainId = (apps as any)?.proprietePrincipaleId;
+        const main = list.find((p: any) => p.id === mainId) ?? list[0];
+        if (main?.slug) {
+          navigate(`/propriete/${main.slug}`);
+          return;
+        }
+      } catch { /* fallback vers mon-espace */ }
       navigate('/marches-du-vivant/mon-espace');
     } catch (error: any) {
       toast.error(error.message || 'Erreur de connexion');
