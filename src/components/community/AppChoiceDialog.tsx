@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Leaf, MapPin, Star, ArrowRight } from 'lucide-react';
+import { ProprieteTile } from './ProprieteTile';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
 
 const DEFAULT_KEY = 'mdv:default-app';
