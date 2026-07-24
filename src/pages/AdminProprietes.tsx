@@ -453,12 +453,28 @@ const AdminProprietes: React.FC = () => {
                 >
                   <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                   <SelectContent className="max-h-80">
+                    <div className="p-2 sticky top-0 bg-popover z-10 border-b">
+                      <Input
+                        autoFocus
+                        placeholder="Rechercher…"
+                        value={companySearch}
+                        onChange={(e) => setCompanySearch(e.target.value)}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="h-8"
+                      />
+                    </div>
                     <SelectItem value="__none__">— aucune —</SelectItem>
-                    {companies.map(c => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.denomination ?? c.nom_complet ?? '(sans nom)'}{c.ville ? ` · ${c.ville}` : ''}
-                      </SelectItem>
-                    ))}
+                    {companies
+                      .filter(c => {
+                        if (!companySearch.trim()) return true;
+                        const q = norm(companySearch);
+                        return norm(`${c.denomination ?? ''} ${c.nom_complet ?? ''} ${c.ville ?? ''}`).includes(q);
+                      })
+                      .map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.denomination ?? c.nom_complet ?? '(sans nom)'}{c.ville ? ` · ${c.ville}` : ''}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
