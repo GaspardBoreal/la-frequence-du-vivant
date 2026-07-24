@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Compass } from 'lucide-react';
+import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
+import { BiodiversityEvidenceBlock } from '@/components/propriete/BiodiversityEvidenceBlock';
 
 const ENJEUX = [
   { id: 'biodiv', label: 'Restaurer la biodiversité', hint: 'Corridors, haies, mares' },
@@ -12,7 +14,7 @@ const ENJEUX = [
 
 const STORAGE_KEY = 'propriete-ds-identify';
 
-export const TabIdentify: React.FC<{ proprieteId?: string }> = ({ proprieteId }) => {
+export const TabIdentify: React.FC<{ proprieteId?: string; bio?: PropertyBiodiversity }> = ({ proprieteId, bio }) => {
   const key = `${STORAGE_KEY}:${proprieteId ?? 'default'}`;
   const [selected, setSelected] = useState<string[]>(() => {
     try {
@@ -32,6 +34,7 @@ export const TabIdentify: React.FC<{ proprieteId?: string }> = ({ proprieteId })
 
   return (
     <div className="space-y-5">
+      <BiodiversityEvidenceBlock bio={bio} />
       <header>
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-primary">
           <Compass className="w-3.5 h-3.5" /> Étape 3 · J'identifie
