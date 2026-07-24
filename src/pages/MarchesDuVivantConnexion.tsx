@@ -608,7 +608,15 @@ const MarchesDuVivantConnexion = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AppChoiceDialog
+        open={appChoice.open}
+        onOpenChange={(v) => setAppChoice((s) => ({ ...s, open: v }))}
+        prenom={appChoice.prenom}
+        proprietes={appChoice.proprietes}
+      />
     </>
+
   );
 };
 
