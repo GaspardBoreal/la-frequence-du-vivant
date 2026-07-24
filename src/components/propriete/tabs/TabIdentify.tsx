@@ -12,6 +12,9 @@ import { CortegeBlock } from '@/components/propriete/identify/blocks/CortegeBloc
 import { IntensitiesBlock } from '@/components/propriete/identify/blocks/IntensitiesBlock';
 import { ConcordanceBlock } from '@/components/propriete/identify/blocks/ConcordanceBlock';
 import { NarrativeBlock } from '@/components/propriete/identify/blocks/NarrativeBlock';
+import { DeltaBlock } from '@/components/propriete/identify/blocks/DeltaBlock';
+import { RevealMapBlock } from '@/components/propriete/identify/blocks/RevealMapBlock';
+import { SentinellesBlock } from '@/components/propriete/identify/blocks/SentinellesBlock';
 import {
   computeFloraProfile,
   computeConcordance,
