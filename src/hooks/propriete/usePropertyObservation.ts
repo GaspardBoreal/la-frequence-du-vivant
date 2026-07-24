@@ -108,6 +108,7 @@ export function usePropertyObservation(proprieteId?: string) {
     loading: query.isLoading,
     saving,
     savedAt,
+    completedAt: local.completed_at ?? null,
     toggleChoice,
     setSensorial,
     setNotes: (n: string) => setLocal((s) => ({ ...s, notes: n })),
