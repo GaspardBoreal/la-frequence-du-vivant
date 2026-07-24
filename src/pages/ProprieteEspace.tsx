@@ -285,7 +285,7 @@ const PropTabs: React.FC<{
           <TabObserve bio={bio} proprieteId={proprieteId} />
         </TabsContent>
         <TabsContent value="analyze" className="pt-5">
-          <TabAnalyze bio={bio} />
+          <TabAnalyze bio={bio} proprieteId={proprieteId} />
         </TabsContent>
         <TabsContent value="identify" className="pt-5">
           <TabIdentify proprieteId={proprieteId} bio={bio} />
