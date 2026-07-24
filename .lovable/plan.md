@@ -1,40 +1,44 @@
-## Diagnostic
+## Diagnostic confirmé
 
-Dans `src/pages/MarchesDuVivantConnexion.tsx` (`handleLogin`, lignes ~119-130), le code appelle `get_user_apps_access` puis **redirige silencieusement** vers la propriété principale (ou la première) sans demander à l'utilisateur. C'est pourquoi Gaspard Boréal, référent principal de « Jardin Monde DEVIAT », est envoyé directement sur `/propriete/jardin-monde-deviat` sans choix.
+- La propriété **Jardin Monde DEVIAT** existe et est active.
+- **Gaspard Boréal** existe bien avec un `user_id` valide.
+- Le champ principal `proprietes.main_walker_id` pointe bien vers Gaspard.
+- Mais il n'existe **aucune ligne** dans `propriete_marcheurs` pour Gaspard + Jardin Monde DEVIAT.
+- Or le RPC `get_user_apps_access()` utilisé après connexion ne lit **que** `propriete_marcheurs`, pas `proprietes.main_walker_id`.
 
-Deux cas doivent être distingués :
-- **1 seul espace disponible** (Mon Espace uniquement, ou 1 propriété uniquement) → redirection directe, aucun dialogue.
-- **≥ 2 espaces disponibles** (Mon Espace marcheur + 1 ou N propriétés) → **dialogue de choix** après connexion réussie.
+Conclusion : l'interface Admin permet de définir un **Marcheur référent principal** dans `proprietes.main_walker_id`, mais cela ne crée pas le rattachement d'accès attendu dans `propriete_marcheurs`. Donc Gaspard n'a pas accès à la propriété côté login, même si visuellement il est référent dans Admin/Propriétés.
 
-## Plan
+## Plan de correction
 
-### 1. Nouveau composant `AppChoiceDialog`
-Fichier : `src/components/community/AppChoiceDialog.tsx`
+1. **Sécuriser la donnée existante immédiatement**
+   - Ajouter une migration qui synchronise les propriétés ayant déjà un `main_walker_id` vers `propriete_marcheurs`.
+   - Pour Jardin Monde DEVIAT, cela créera le lien manquant pour Gaspard.
+   - Le lien sera marqué `is_main = true`.
 
-- Modal (shadcn `Dialog`) affiché après login réussi quand l'utilisateur a accès à ≥ 2 espaces.
-- Titre : « Bienvenue {prenom} ! Où souhaitez-vous aller ? »
-- Liste de cartes cliquables :
-  - **Mon Espace Marcheur** (toujours présent) — icône Leaf, sous-titre « Vos marches, votre carnet, votre progression ».
-  - Une carte par propriété accessible — image `photo_hero_url` en fond, nom, ville, badge rôle (« Référent·e », « Marcheur·euse », etc.), badge « Principal » si `is_main`.
-- Chaque carte navigue vers `/marches-du-vivant/mon-espace` ou `/propriete/{slug}` puis ferme le dialogue.
-- Bouton discret « Ne plus me demander — toujours ouvrir {choix} » (stocke dans `localStorage` la clé `mdv:default-app` avec la valeur `mon-espace` ou `propriete:{slug}`).
+2. **Empêcher que le bug revienne**
+   - Créer une fonction/trigger SQL sur `proprietes` : à chaque création ou modification de `main_walker_id`, une ligne correspondante est automatiquement créée ou mise à jour dans `propriete_marcheurs`.
+   - Si on change le référent principal, l'ancien lien principal est désactivé comme principal pour éviter les incohérences.
 
-### 2. Refonte de `handleLogin` dans `MarchesDuVivantConnexion.tsx`
-- Après `signIn` + gestion invitation Lecteur invité (inchangée), appeler `get_user_apps_access`.
-- Logique :
-  1. Si `localStorage['mdv:default-app']` existe et correspond à un espace toujours accessible → redirection directe.
-  2. Sinon, si `proprietesAccessibles.length === 0` → redirection directe `/marches-du-vivant/mon-espace` (comportement actuel sans propriété).
-  3. Sinon (≥ 1 propriété) → **ouvrir `AppChoiceDialog`** avec la liste `[MonEspace, ...proprietes]`. Ne pas naviguer automatiquement.
-- État local `appChoice: { open: boolean; apps: ProprieteAccess[] }` pour piloter le dialogue.
+3. **Corriger l'interface Admin/Propriétés**
+   - Quand l'admin choisit un **Marcheur référent principal**, afficher clairement que cela donne aussi accès à l'espace Propriété.
+   - Après sauvegarde, invalider aussi les requêtes des rattachements pour que l'interface montre le lien sans devoir recharger.
 
-### 3. Comportement attendu pour Gaspard
-Gaspard est référent de « Jardin Monde DEVIAT » **et** marcheur → il verra désormais un dialogue avec 2 cartes (Mon Espace + Jardin Monde DEVIAT), au lieu d'être redirigé silencieusement.
+4. **Rendre la connexion robuste**
+   - Ajuster `get_user_apps_access()` pour prendre en compte à la fois :
+     - les accès explicites dans `propriete_marcheurs`,
+     - et les propriétés où l'utilisateur est `main_walker_id`.
+   - Ainsi, même si une ancienne donnée est imparfaite, le dialogue post-connexion verra bien la propriété.
 
-### 4. Hors scope
-- La redirection post-inscription (`handleRegister`) reste inchangée (dialogue de confirmation email d'abord).
-- Pas de changement backend : la RPC `get_user_apps_access` renvoie déjà les bonnes données.
-- Pas de changement dans `AppSwitcher` (déjà présent dans le header de Mon Espace).
+5. **Vérification finale**
+   - Requêter la BDD pour confirmer que Gaspard a bien un accès à Jardin Monde DEVIAT via `propriete_marcheurs`.
+   - Requêter le RPC pour confirmer qu'il retourne `jardin-monde-deviat` pour l'utilisateur Gaspard.
+   - Vérifier que le flux de login peut afficher le dialogue de choix dès qu'une propriété est retournée.
 
-### Fichiers modifiés
-- `src/components/community/AppChoiceDialog.tsx` (nouveau)
-- `src/pages/MarchesDuVivantConnexion.tsx` (handleLogin + rendu du dialogue)
+## Résultat attendu
+
+Après correction, quand Gaspard Boréal se connectera via `/connexions`, il devra voir le choix entre :
+
+- **Mon Espace Marcheur**
+- **Jardin Monde DEVIAT**
+
+et il pourra mémoriser son espace par défaut s'il le souhaite.
