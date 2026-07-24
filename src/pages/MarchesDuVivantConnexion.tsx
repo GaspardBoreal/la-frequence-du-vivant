@@ -15,6 +15,8 @@ import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
+import { AppChoiceDialog, getDefaultAppTarget } from '@/components/community/AppChoiceDialog';
+import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
 
 const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
   { value: 'agroecologique', label: '🌱 Agroécologique', hint: 'sols, cultures, pratiques régénératives' },
