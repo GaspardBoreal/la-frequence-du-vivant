@@ -231,12 +231,95 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     return byName;
   }, [allRows]);
 
+  // 6. Waypoints géolocalisés (observations marcheurs avec lat/lng)
+  const waypoints = useMemo(() => {
+    const out: Array<{
+      id: string;
+      lat: number;
+      lng: number;
+      scientificName: string;
+      commonName: string | null;
+      kingdom: string | null;
+      photoUrl: string | null;
+      observationDate: string | null;
+      marcheurId: string | null;
+      marcheId: string | null;
+    }> = [];
+    let n = 0;
+    for (const sp of allRows) {
+      const attrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
+      for (const a of attrs) {
+        const lat = Number(a?.latitude);
+        const lng = Number(a?.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        out.push({
+          id: `wp-${n++}`,
+          lat,
+          lng,
+          scientificName: sp.scientific_name || sp.key || '',
+          commonName: sp.common_name,
+          kingdom: sp.kingdom,
+          photoUrl: a?.photo_url || null,
+          observationDate: a?.observation_date || null,
+          marcheurId: a?.marcheur_id || null,
+          marcheId: a?.marche_id || null,
+        });
+      }
+    }
+    return out;
+  }, [allRows]);
+
+  // 7. Contributeurs (agrégation par marcheur_id)
+  const contributorSummaries = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        marcheurId: string;
+        observations: number;
+        speciesKeys: Set<string>;
+        lastSeen: string | null;
+      }
+    >();
+    for (const sp of allRows) {
+      const attrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
+      const key = normName(sp.scientific_name || sp.common_name || sp.key || '');
+      for (const a of attrs) {
+        const mid = a?.marcheur_id;
+        if (!mid) continue;
+        const ex = map.get(mid);
+        if (!ex) {
+          map.set(mid, {
+            marcheurId: mid,
+            observations: 1,
+            speciesKeys: new Set(key ? [key] : []),
+            lastSeen: a?.observation_date || null,
+          });
+        } else {
+          ex.observations += 1;
+          if (key) ex.speciesKeys.add(key);
+          if ((a?.observation_date || '') > (ex.lastSeen || '')) ex.lastSeen = a.observation_date;
+        }
+      }
+    }
+    return Array.from(map.values())
+      .map((c) => ({
+        marcheurId: c.marcheurId,
+        observations: c.observations,
+        speciesCount: c.speciesKeys.size,
+        lastSeen: c.lastSeen,
+      }))
+      .sort((a, b) => b.observations - a.observations);
+  }, [allRows]);
+
   return {
     species,
     fieldPhotos,
+    waypoints,
+    contributorSummaries,
     isLoading: idsQuery.isLoading || poolsLoading,
     explorationIds,
     /** Exploration la plus récente : bon candidat pour prioriser les photos terrain */
     latestExplorationId: explorationIds[0],
   };
 }
+
