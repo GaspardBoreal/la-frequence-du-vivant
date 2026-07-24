@@ -727,7 +727,7 @@ const AdminProprietes: React.FC = () => {
                       const e = eventById[l.marche_event_id];
                       return (
                         <li key={l.id} className="flex items-center justify-between gap-2 p-2 text-sm">
-                          <span>{e?.nom ?? '(inconnu)'}{e?.date_debut ? ` · ${new Date(e.date_debut).toLocaleDateString('fr-FR')}` : ''}</span>
+                          <span>{e?.title ?? '(inconnu)'}{e?.date_marche ? ` · ${new Date(e.date_marche).toLocaleDateString('fr-FR')}` : ''}</span>
                           <Button size="sm" variant="ghost" onClick={() => removeEvent.mutate(l.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
