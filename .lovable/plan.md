@@ -1,28 +1,31 @@
-## Problème
+## Diagnostic
 
-Dans `AppChoiceDialog.tsx`, chaque propriété affiche une vignette 56×56 alimentée par `p.photo_hero_url`. Quand la propriété n'a pas encore de photo hero renseignée (cas actuel de « Jardin Monde DEVIAT » et « Maison sous Blossac »), le fallback est un simple dégradé émeraude uni → carré vide, sans âme, qui casse l'effet « Bienvenue ».
+Sur `/propriete/maison-sous-blossac`, la carte « Dernière observation » affiche **10/05/2026** alors que la dernière obs réelle sur l'événement « POITIERS Maison Sous Blossac » est le **14/07/2026**.
 
-## Proposition — Vignettes vivantes par propriété
+Cause : dans la RPC `public.get_propriete_biodiversity`, la valeur retournée `lastEventDate` = `max(marche_events.date_marche)` — c'est la **date de l'événement**, pas la **date de la dernière observation**. Le label côté UI (`TabObserve.tsx`) est trompeur : il utilise ce champ pour dire « Dernière observation ».
 
-Remplacer le carré vide par une **vignette signature** qui reste belle même sans photo, avec une cascade de sources :
+La RPC parcourt déjà **tous les événements liés** à la propriété (via `linked_events` → `linked_marches`), donc le périmètre est bon ; seul le calcul de date est faux.
 
-1. **Photo hero de la propriété** si présente (comportement actuel).
-2. **Sinon, photo dérivée** : première image du hook `useProprieteHeroPhotos` (photos des events liés — déjà utilisé sur `/propriete/:slug`). Ça réutilise la vraie mémoire visuelle du lieu.
-3. **Sinon, monogramme illustré** : fond dégradé thématique (émeraude→ambre pour Propriétaire, teal→cyan pour Paysagiste, etc.) + initiales de la propriété en serif italique doré `#c9a24a`, + petit picto `TreePine`/`Vineyard`/`Sprout` selon la famille (jardin/vignoble/exploitation) en overlay bas-droit, + grain subtil.
+## Correctif
 
-## Détails visuels
+### 1. RPC `public.get_propriete_biodiversity`
+Ajouter un vrai calcul `lastObservationDate` en fusionnant les 3 sources sur l'ensemble des `linked_marches` :
 
-- Vignette agrandie 64×64, coins `rounded-2xl`, ring `ring-1 ring-amber-300/20`, ombre douce.
-- Ken Burns léger (scale 1→1.05 en 8s) quand une vraie photo est présente → sensation « vivant ».
-- Badge rôle repositionné pour respirer.
-- Loading state : shimmer discret pendant la résolution des photos d'events.
+- `max(marcheur_observations.observation_date)` sur `marche_id ∈ linked_marches` (filtrage rayon Haversine, comme les espèces).
+- `max((sp->>'observedOn')::timestamptz)` sur les entrées `snap_rows` (déjà filtrées rayon).
+- `max((att->>'observedOn')::timestamptz)` sur les attributions iNat de `snap_rows`.
 
-## Fichiers concernés
+Retourner `lastObservationDate` (nouveau champ) en plus de `lastEventDate` (conservé pour rétro-compat / autres usages éventuels : nudge « inactif > 12 mois »).
 
-- `src/components/community/AppChoiceDialog.tsx` — remplacer le `<div style={backgroundImage…}>` par un nouveau composant `<ProprieteTile propriete={p} />`.
-- `src/components/community/ProprieteTile.tsx` *(nouveau)* — encapsule la cascade photo → monogramme + picto famille.
-- Réutiliser `useProprieteHeroPhotos` (déjà en place) pour la source #2, en le rendant paramétrable par `slug` ou `id`.
+### 2. Hook `usePropertyBiodiversity.ts`
+Exposer `lastObservationDate: string | null` dans `PropertyBiodiversity`. Garder `lastEventDate` pour le nudge d'inactivité (qui mesure la dynamique événementielle, pas les observations).
+
+### 3. UI `TabObserve.tsx`
+La carte « Dernière observation » utilise `lastObservationDate` (fallback sur `lastEventDate` si null pour ne jamais afficher « — » quand un event existe).
 
 ## Hors scope
+- Le nudge d'inactivité (`NudgeMarcheBanner`) continue de se baser sur `lastEventDate` (sémantique « pas de marche depuis X mois »).
+- Aucun changement UI ailleurs, aucun changement de RLS.
 
-Aucun changement DB, aucun changement de routing, aucun impact sur `/propriete/:slug`.
+## Vérification
+Après migration : sur Maison sous Blossac, la carte doit afficher **14/07/2026** (max des `observation_date` iNat + marcheurs sur tous les events liés).
