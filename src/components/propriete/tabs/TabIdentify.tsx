@@ -20,10 +20,11 @@ import {
 
 const TOTAL = 4; // Cortège + Intensités + Concordance + Narration
 
-export const TabIdentify: React.FC<{ proprieteId?: string; bio?: PropertyBiodiversity }> = ({
-  proprieteId,
-  bio,
-}) => {
+export const TabIdentify: React.FC<{
+  proprieteId?: string;
+  proprieteNom?: string;
+  bio?: PropertyBiodiversity;
+}> = ({ proprieteId, proprieteNom, bio }) => {
   const {
     state,
     saving,
@@ -75,7 +76,7 @@ export const TabIdentify: React.FC<{ proprieteId?: string; bio?: PropertyBiodive
 
   return (
     <div className="space-y-6">
-      <BiodiversityEvidenceBlock bio={bio} />
+      <BiodiversityEvidenceBlock bio={bio} proprieteId={proprieteId} proprieteNom={proprieteNom} />
       <StepHeader current={3} savedAt={savedAt} saving={saving} />
 
       <SkipBlock skip={state.skip_bioindication} onToggle={(v) => setField('skip_bioindication', v)} index={0} />
