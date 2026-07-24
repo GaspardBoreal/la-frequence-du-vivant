@@ -81,12 +81,16 @@ const AdminProprietes: React.FC = () => {
         .from('community_profiles')
         .select('id, prenom, nom, ville')
         .not('user_id', 'is', null)
-        .order('nom')
+        .order('prenom', { ascending: true })
         .limit(2000);
       if (error) throw error;
       return data as MarcheurLite[];
     },
   });
+
+  const [marcheurSearch, setMarcheurSearch] = useState('');
+  const [companySearch, setCompanySearch] = useState('');
+  const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
   const { data: companies = [] } = useQuery({
     queryKey: ['admin-proprietes-companies'],
