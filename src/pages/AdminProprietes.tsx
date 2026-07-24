@@ -509,8 +509,23 @@ const AdminProprietes: React.FC = () => {
                       <Select value={marcheurToAdd} onValueChange={setMarcheurToAdd}>
                         <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                         <SelectContent className="max-h-80">
+                          <div className="p-2 sticky top-0 bg-popover z-10 border-b">
+                            <Input
+                              autoFocus
+                              placeholder="Rechercher…"
+                              value={marcheurSearch}
+                              onChange={(e) => setMarcheurSearch(e.target.value)}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              className="h-8"
+                            />
+                          </div>
                           {marcheurs
                             .filter(m => !linkedMarcheurs.some(l => l.community_profile_id === m.id))
+                            .filter(m => {
+                              if (!marcheurSearch.trim()) return true;
+                              const q = norm(marcheurSearch);
+                              return norm(`${m.prenom ?? ''} ${m.nom ?? ''} ${m.ville ?? ''}`).includes(q);
+                            })
                             .map(m => (
                               <SelectItem key={m.id} value={m.id}>
                                 {m.prenom ?? ''} {m.nom ?? ''}{m.ville ? ` · ${m.ville}` : ''}
