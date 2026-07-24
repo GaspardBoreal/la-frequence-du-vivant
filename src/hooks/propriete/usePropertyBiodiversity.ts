@@ -10,6 +10,7 @@ export interface PropertyEventLite {
 export interface PropertyBiodiversity {
   events: PropertyEventLite[];
   lastEventDate: string | null;
+  lastObservationDate: string | null;
   monthsSinceLastEvent: number | null;
   speciesTotal: number;
   kingdoms: Record<string, number>;
@@ -34,6 +35,7 @@ export function usePropertyBiodiversity(proprieteId?: string) {
       }));
 
       const lastEventDate = r.lastEventDate ?? null;
+      const lastObservationDate = r.lastObservationDate ?? null;
       const monthsSinceLastEvent = lastEventDate
         ? Math.floor((Date.now() - new Date(lastEventDate).getTime()) / (1000 * 60 * 60 * 24 * 30))
         : null;
@@ -48,6 +50,7 @@ export function usePropertyBiodiversity(proprieteId?: string) {
       return {
         events,
         lastEventDate,
+        lastObservationDate,
         monthsSinceLastEvent,
         speciesTotal: r.speciesTotal ?? 0,
         kingdoms: r.kingdoms ?? {},
