@@ -7565,6 +7565,10 @@ export type Database = {
           scientific_name: string
         }[]
       }
+      get_propriete_biodiversity: {
+        Args: { p_propriete_id: string }
+        Returns: Json
+      }
       get_public_event: { Args: { _slug: string }; Returns: Json }
       get_public_event_biodiversity: { Args: { _slug: string }; Returns: Json }
       get_public_event_counters: { Args: { _slug: string }; Returns: Json }
