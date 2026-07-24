@@ -1,44 +1,43 @@
-## Diagnostic confirmé
+# Fix : 0 espèces / 0 règnes sur l'espace Propriété
 
-- La propriété **Jardin Monde DEVIAT** existe et est active.
-- **Gaspard Boréal** existe bien avec un `user_id` valide.
-- Le champ principal `proprietes.main_walker_id` pointe bien vers Gaspard.
-- Mais il n'existe **aucune ligne** dans `propriete_marcheurs` pour Gaspard + Jardin Monde DEVIAT.
-- Or le RPC `get_user_apps_access()` utilisé après connexion ne lit **que** `propriete_marcheurs`, pas `proprietes.main_walker_id`.
+## Diagnostic (confirmé par lectures DB)
 
-Conclusion : l'interface Admin permet de définir un **Marcheur référent principal** dans `proprietes.main_walker_id`, mais cela ne crée pas le rattachement d'accès attendu dans `propriete_marcheurs`. Donc Gaspard n'a pas accès à la propriété côté login, même si visuellement il est référent dans Admin/Propriétés.
+L'onglet « J'observe » de `/propriete/:slug` interroge `biodiversity_snapshots` avec `marche_event_id`, mais cette colonne **n'existe pas** sur la table :
 
-## Plan de correction
+- `biodiversity_snapshots` est clé par `marche_id` (table historique `marches`)
+- `marche_events` n'a **pas** de colonne `marche_id` — c'est une table parallèle
+- Le lien propriété → événement passe par `propriete_marche_events.marche_event_id` (donc côté `marche_events`)
 
-1. **Sécuriser la donnée existante immédiatement**
-   - Ajouter une migration qui synchronise les propriétés ayant déjà un `main_walker_id` vers `propriete_marcheurs`.
-   - Pour Jardin Monde DEVIAT, cela créera le lien manquant pour Gaspard.
-   - Le lien sera marqué `is_main = true`.
+Résultat : la requête ne remonte rien → 0 espèces, 0 règnes. La carte « Marches réalisées : 1 » fonctionne car elle compte les liens, pas les snapshots.
 
-2. **Empêcher que le bug revienne**
-   - Créer une fonction/trigger SQL sur `proprietes` : à chaque création ou modification de `main_walker_id`, une ligne correspondante est automatiquement créée ou mise à jour dans `propriete_marcheurs`.
-   - Si on change le référent principal, l'ancien lien principal est désactivé comme principal pour éviter les incohérences.
+## Solution
 
-3. **Corriger l'interface Admin/Propriétés**
-   - Quand l'admin choisit un **Marcheur référent principal**, afficher clairement que cela donne aussi accès à l'espace Propriété.
-   - Après sauvegarde, invalider aussi les requêtes des rattachements pour que l'interface montre le lien sans devoir recharger.
+Réutiliser la source de vérité déjà en place — la RPC `get_marche_species_count(p_marche_id uuid)` — qui unifie `biodiversity_snapshots` ∪ `marcheur_observations` avec filtre rayon et alias taxonomiques.
 
-4. **Rendre la connexion robuste**
-   - Ajuster `get_user_apps_access()` pour prendre en compte à la fois :
-     - les accès explicites dans `propriete_marcheurs`,
-     - et les propriétés où l'utilisateur est `main_walker_id`.
-   - Ainsi, même si une ancienne donnée est imparfaite, le dialogue post-connexion verra bien la propriété.
+Pour ça, il faut **résoudre les `marche_events` liés à la propriété vers les `marches.id`** correspondants. Le pont existant est :
 
-5. **Vérification finale**
-   - Requêter la BDD pour confirmer que Gaspard a bien un accès à Jardin Monde DEVIAT via `propriete_marcheurs`.
-   - Requêter le RPC pour confirmer qu'il retourne `jardin-monde-deviat` pour l'utilisateur Gaspard.
-   - Vérifier que le flux de login peut afficher le dialogue de choix dès qu'une propriété est retournée.
+```text
+marche_events.exploration_id → exploration_marches.exploration_id → exploration_marches.marche_id
+```
 
-## Résultat attendu
+## Étapes
 
-Après correction, quand Gaspard Boréal se connectera via `/connexions`, il devra voir le choix entre :
+1. **Nouvelle RPC `public.get_propriete_biodiversity(p_propriete_id uuid)`** (SECURITY DEFINER, search_path public,extensions) :
+   - Récupère `propriete_marche_events` → `marche_events.exploration_id`
+   - Joint `exploration_marches` pour obtenir la liste des `marches.id` sous-jacents
+   - Appelle la logique de `get_marche_species_count` par marche puis agrège :
+     - `species_total` (union dédupliquée par clé canonique)
+     - `by_kingdom` (Animalia, Plantae, Fungi, Others)
+     - `top_species` (top 12 par nombre d'observations)
+     - `events` (id, title, date_marche, last_event_date)
+   - GRANT EXECUTE à `authenticated`
 
-- **Mon Espace Marcheur**
-- **Jardin Monde DEVIAT**
+2. **`src/hooks/propriete/usePropertyBiodiversity.ts`** : remplacer les requêtes actuelles par un simple `supabase.rpc('get_propriete_biodiversity', { p_propriete_id })`. L'interface `PropertyBiodiversity` reste identique — aucun changement dans les 5 onglets.
 
-et il pourra mémoriser son espace par défaut s'il le souhaite.
+3. **Vérification** : sur `/propriete/jardin-monde-deviat`, les compteurs doivent refléter l'événement DEVIAT Jardin Monde (espèces, règnes, top espèces, palette végétale).
+
+## Notes techniques
+
+- Pas de changement RLS nécessaire (RPC en SECURITY DEFINER, appelée par utilisateur authentifié ayant déjà accès à la propriété via `useUserAppsAccess`).
+- Cohérence garantie avec Carnet / Carte / Synthèse marcheur puisqu'on partage la même logique de comptage.
+- Si un `marche_event` n'a pas d'`exploration_id`, il est ignoré côté biodiversité (comportement à documenter).
