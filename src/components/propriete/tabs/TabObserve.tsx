@@ -44,9 +44,7 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
             index={i}
           />
         ))}
-        <div className="md:col-span-2">
-          <SensorialBlock values={state.sensorial} onChange={setSensorial} />
-        </div>
+        <SensorialBlock values={state.sensorial} onChange={setSensorial} />
       </div>
 
       {/* Notes libres */}

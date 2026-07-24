@@ -57,7 +57,7 @@ export const SensorialBlock: React.FC<{
       <div
         role="group"
         aria-label="Analyse sensorielle du site"
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 p-5 md:p-6 pt-2"
+        className="grid grid-cols-2 gap-2.5 p-5 md:p-6 pt-2"
       >
         {SENSORIAL_FIELDS.map((f) => (
           <div
@@ -87,7 +87,7 @@ export const SensorialBlock: React.FC<{
         ))}
 
         {/* Slider d'intensité — pleine largeur dans la même grille */}
-        <div className="col-span-2 sm:col-span-3 md:col-span-4 rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-4">
+        <div className="col-span-2 rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-4">
           <div className="flex items-center justify-between text-[10px] font-bold tracking-[0.25em] uppercase text-[hsl(var(--ds-forest))]/80">
             <span>Ambiance ressentie</span>
             <span className="text-[hsl(var(--ds-forest-deep))]">{intensity}/10</span>
