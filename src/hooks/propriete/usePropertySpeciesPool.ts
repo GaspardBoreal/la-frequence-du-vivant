@@ -28,21 +28,26 @@ const normName = (s: string | null | undefined): string =>
     .toLowerCase()
     .trim();
 
-const resolvePhoto = (sp: RpcSpecies): string | null => {
+const resolvePhotos = (sp: RpcSpecies): string[] => {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (u?: string | null) => {
+    if (!u || seen.has(u)) return;
+    seen.add(u);
+    out.push(u);
+  };
+  // 1. Photos marcheurs (prioritaires), triées par date desc
   const mAttrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
-  const direct = mAttrs
+  const sortedMarcheur = mAttrs
     .filter((a) => a?.photo_url)
-    .sort((a, b) => (b.observation_date || '').localeCompare(a.observation_date || ''))[0];
-  if (direct?.photo_url) return direct.photo_url;
+    .sort((a, b) => (b.observation_date || '').localeCompare(a.observation_date || ''));
+  for (const a of sortedMarcheur) push(a.photo_url);
+  // 2. Fallback iNat
   const groups: any[] = Array.isArray(sp.photos) ? sp.photos : [];
   for (const g of groups) {
-    if (Array.isArray(g)) {
-      for (const u of g) {
-        if (u) return toMediumInat(u);
-      }
-    }
+    if (Array.isArray(g)) for (const u of g) push(toMediumInat(u));
   }
-  return null;
+  return out;
 };
 
 const mapKingdom = (k?: string | null): BiodiversitySpecies['kingdom'] => {
@@ -112,7 +117,8 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         iconic: string | null;
         count: number;
         lastSeen: string | null;
-        photo: string | null;
+        photos: string[];
+        seen: Set<string>;
       }
     >();
     for (const sp of allRows) {
@@ -120,8 +126,9 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       const key = normName(sci);
       if (!key) continue;
       const existing = bucket.get(key);
-      const photo = resolvePhoto(sp);
+      const photos = resolvePhotos(sp);
       if (!existing) {
+        const seen = new Set<string>(photos);
         bucket.set(key, {
           scientific: sci,
           common: sp.common_name,
@@ -130,12 +137,18 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           iconic: sp.iconic_taxon,
           count: sp.observations || 0,
           lastSeen: sp.last_seen,
-          photo,
+          photos: [...photos],
+          seen,
         });
       } else {
         existing.count += sp.observations || 0;
         if (!existing.common && sp.common_name) existing.common = sp.common_name;
-        if (!existing.photo && photo) existing.photo = photo;
+        for (const p of photos) {
+          if (!existing.seen.has(p)) {
+            existing.seen.add(p);
+            existing.photos.push(p);
+          }
+        }
         if (!existing.family && sp.family) existing.family = sp.family;
         if (!existing.iconic && sp.iconic_taxon) existing.iconic = sp.iconic_taxon;
         if (!existing.kingdom && sp.kingdom) existing.kingdom = sp.kingdom;
@@ -165,7 +178,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           iconicTaxon: s.iconic || undefined,
           observations: s.count,
           lastSeen: s.lastSeen || '',
-          photos: s.photo ? [s.photo] : [],
+          photos: s.photos,
           source: 'inaturalist',
           attributions: [],
         };
