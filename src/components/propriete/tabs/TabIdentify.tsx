@@ -83,7 +83,7 @@ export const TabIdentify: React.FC<{
 
       {!state.skip_bioindication && (
         <>
-          <CortegeBlock observed={state.observed_plants} onToggle={togglePlant} index={1} />
+          <CortegeBlock observed={state.observed_plants} onToggle={togglePlant} index={1} proprieteId={proprieteId} />
 
           <div className="grid md:grid-cols-2 gap-5">
             <IntensitiesBlock profile={profile} index={2} />
