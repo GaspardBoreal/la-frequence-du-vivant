@@ -119,14 +119,33 @@ const MarchesDuVivantConnexion = () => {
         navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
         return;
       }
-      // App switcher : si l'utilisateur a une propriété principale, on l'y amène directement
+      // App choice : si l'utilisateur a accès à Mon Espace + une ou plusieurs propriétés,
+      // on lui laisse le choix (dialogue). Une préférence localStorage court-circuite le dialogue.
       try {
         const { data: apps } = await supabase.rpc('get_user_apps_access');
-        const list = (apps as any)?.proprietesAccessibles ?? [];
-        const mainId = (apps as any)?.proprietePrincipaleId;
-        const main = list.find((p: any) => p.id === mainId) ?? list[0];
-        if (main?.slug) {
-          navigate(`/propriete/${main.slug}`);
+        const list: ProprieteAccess[] = ((apps as any)?.proprietesAccessibles ?? []) as ProprieteAccess[];
+
+        const pref = getDefaultAppTarget();
+        if (pref === 'mon-espace') {
+          navigate('/marches-du-vivant/mon-espace');
+          return;
+        }
+        if (pref?.startsWith('propriete:')) {
+          const slug = pref.slice('propriete:'.length);
+          if (list.some((p) => p.slug === slug)) {
+            navigate(`/propriete/${slug}`);
+            return;
+          }
+        }
+
+        if (list.length >= 1) {
+          // Récupère le prénom pour personnaliser le dialogue.
+          const { data: prof } = await supabase
+            .from('community_profiles')
+            .select('prenom')
+            .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
+            .maybeSingle();
+          setAppChoice({ open: true, prenom: prof?.prenom, proprietes: list });
           return;
         }
       } catch { /* fallback vers mon-espace */ }
