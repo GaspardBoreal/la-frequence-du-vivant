@@ -1,43 +1,28 @@
-# Hero « Canopée » pour l'espace Propriété
+## Problème
 
-## Constat
+Dans `AppChoiceDialog.tsx`, chaque propriété affiche une vignette 56×56 alimentée par `p.photo_hero_url`. Quand la propriété n'a pas encore de photo hero renseignée (cas actuel de « Jardin Monde DEVIAT » et « Maison sous Blossac »), le fallback est un simple dégradé émeraude uni → carré vide, sans âme, qui casse l'effet « Bienvenue ».
 
-Le hero actuel de `/propriete/:slug` est une simple image plate de 208–288px avec un `object-cover`, un fondu vers le fond, puis le titre plaqué en dessous. Comparé au hero immersif de `/jardin/:slug` (KenBurnsCarousel plein écran, overlay noir progressif, titre serif italique doré, CTA organique, indicateur de scroll), c'est effectivement pauvre.
+## Proposition — Vignettes vivantes par propriété
 
-Bonne nouvelle : les mêmes photos hero (`get_garden_hero_photos`) et les mêmes primitives (`KenBurnsCarousel`, `OrganicButton`, `RevealText`, palette doré/crème `#c9a24a`/`#f4ecd4`) sont déjà en place dans `ImmersiveGardenFiche.tsx`. Il suffit de les transposer dans `ProprieteEspace.tsx` en les adaptant au contexte connecté.
+Remplacer le carré vide par une **vignette signature** qui reste belle même sans photo, avec une cascade de sources :
 
-## Transposition proposée
+1. **Photo hero de la propriété** si présente (comportement actuel).
+2. **Sinon, photo dérivée** : première image du hook `useProprieteHeroPhotos` (photos des events liés — déjà utilisé sur `/propriete/:slug`). Ça réutilise la vraie mémoire visuelle du lieu.
+3. **Sinon, monogramme illustré** : fond dégradé thématique (émeraude→ambre pour Propriétaire, teal→cyan pour Paysagiste, etc.) + initiales de la propriété en serif italique doré `#c9a24a`, + petit picto `TreePine`/`Vineyard`/`Sprout` selon la famille (jardin/vignoble/exploitation) en overlay bas-droit, + grain subtil.
 
-### 1. Hero plein écran « Canopée du propriétaire »
+## Détails visuels
 
-Dans `src/pages/ProprieteEspace.tsx`, remplacer le bloc hero (lignes 116–143) par une section `h-[85vh]` (pas `h-screen` — on garde la sticky header visible et le premier onglet devine-able en bas) :
+- Vignette agrandie 64×64, coins `rounded-2xl`, ring `ring-1 ring-amber-300/20`, ombre douce.
+- Ken Burns léger (scale 1→1.05 en 8s) quand une vraie photo est présente → sensation « vivant ».
+- Badge rôle repositionné pour respirer.
+- Loading state : shimmer discret pendant la résolution des photos d'events.
 
-- **Fond animé** : `<KenBurnsCarousel>` avec les mêmes photos que le hero public (récupérées via le RPC `get_garden_hero_photos` existant + fallback sur `propriete.photo_hero_url`, puis `cover` par défaut). Interval 7s, zoom Ken-Burns fluide.
-- **Voile** : dégradé `from-black/70 via-black/30 to-background` en bas pour la lisibilité + fondu vers le contenu qui suit.
-- **Kicker doré** : petit bandeau `Leaf` + « Espace Propriétaire · Marches du Vivant » en `#c9a24a`, tracking `0.35em`.
-- **Titre serif** : `font-serif italic` `text-4xl md:text-6xl` en `#f4ecd4` avec `<RevealText>` (animation lettre-par-lettre déjà utilisée).
-- **Sous-titre** : ville + description courte en `#f4ecd4/75`.
-- **Badge rôle** : le badge « Votre rôle : PROPRIETAIRE » repositionné sous le titre, style verre `backdrop-blur bg-white/10 border border-[#c9a24a]/40` — le seul rappel « app connectée » dans le hero.
-- **CTA organique** : `<OrganicButton variant="gold" pulse>` « Explorer votre diagnostic vivant » qui scroll doucement vers la section des onglets D.S.
-- **Indicateur ↓** : « ↓ Descendez dans votre jardin » animé en bas.
-- **Parallaxe** : `useScroll` + `useTransform` pour `scale` (1 → 1.15) et un `opacity` overlay noir qui monte à mesure qu'on descend, comme la version publique.
+## Fichiers concernés
 
-### 2. Header sticky : traité « verre sombre »
+- `src/components/community/AppChoiceDialog.tsx` — remplacer le `<div style={backgroundImage…}>` par un nouveau composant `<ProprieteTile propriete={p} />`.
+- `src/components/community/ProprieteTile.tsx` *(nouveau)* — encapsule la cascade photo → monogramme + picto famille.
+- Réutiliser `useProprieteHeroPhotos` (déjà en place) pour la source #2, en le rendant paramétrable par `slug` ou `id`.
 
-Le header sticky actuel (`bg-white/95`) casse l'immersion quand on est sur le hero. Le passer en `bg-background/40 backdrop-blur-xl` avec `border-b border-white/10` tant qu'on est en haut, avec l'icône, le nom, `AppSwitcher` et `ThemeToggle` en teinte crème. Il reste lisible sur photo grâce au blur + une légère ombre portée sous le texte.
+## Hors scope
 
-### 3. Sous le hero
-
-La section principale (badge rôle + h1 + description) devient redondante avec le hero — on la supprime. On garde directement `NudgeMarcheBanner` + les onglets D.S., avec un `<section id="diagnostic">` cible du CTA « Explorer ».
-
-## Fichiers touchés
-
-- `src/pages/ProprieteEspace.tsx` : refonte du header + hero + suppression du bloc titre redondant, ajout de `id="diagnostic"` sur les tabs.
-- Nouveau hook léger `src/hooks/propriete/useProprieteHeroPhotos.ts` : réutilise `get_garden_hero_photos` (le RPC accepte déjà un event_id) en prenant le 1er `marche_event_id` lié à la propriété via `propriete_marche_events`, avec fallback sur `propriete.photo_hero_url`.
-- Aucun autre composant modifié — on importe `KenBurnsCarousel`, `RevealText`, `OrganicButton` déjà présents dans `ImmersiveGardenFiche.tsx` (à extraire si inline, sinon référencer leur chemin actuel).
-
-## Notes
-
-- Aucun changement DB, aucun changement RLS.
-- Le rendu reste responsive : `h-[70vh]` sur mobile, `h-[85vh]` desktop.
-- Respect palette « Papier Crème » (light) et « Forêt Émeraude » (dark) pour tout ce qui suit le hero.
+Aucun changement DB, aucun changement de routing, aucun impact sur `/propriete/:slug`.
