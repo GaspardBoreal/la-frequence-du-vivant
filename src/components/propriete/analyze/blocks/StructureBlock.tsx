@@ -31,19 +31,20 @@ export const StructureBlock: React.FC<{
         </div>
       }
     >
-      <div className="grid grid-cols-3 gap-2.5">
-        {OPTIONS.map((o) => {
+      <div className="grid grid-cols-3 gap-2.5 justify-items-center">
+        {OPTIONS.map((o, i) => {
           const tooltipId = `structure-tip-${o.value}`;
+          const align = i === 0 ? 'left' : i === OPTIONS.length - 1 ? 'right' : 'center';
           return (
             <div
               key={o.value}
-              className="relative"
+              className="relative w-full flex justify-center"
               onMouseEnter={() => setHovered(o.value)}
               onMouseLeave={() => setHovered((h) => (h === o.value ? null : h))}
               onFocus={() => setHovered(o.value)}
               onBlur={() => setHovered((h) => (h === o.value ? null : h))}
             >
-              <div aria-describedby={hovered === o.value ? tooltipId : undefined}>
+              <div aria-describedby={hovered === o.value ? tooltipId : undefined} className="w-full max-w-[180px]">
                 <ChoiceButton
                   label={o.label}
                   hint={o.hint}
@@ -55,6 +56,7 @@ export const StructureBlock: React.FC<{
               <StructureChoiceTooltip
                 variant={hovered === o.value ? (o.value as any) : null}
                 id={tooltipId}
+                align={align}
               />
             </div>
           );
