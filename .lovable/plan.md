@@ -1,67 +1,63 @@
-# Impression combinée "J'observe" (+ Portrait)
+# Cahier complet : Portrait d'abord, J'observe ensuite
 
-## Comportement cible
+Oui, c'est clair. Voici ce qui change.
 
-Au clic sur **Imprimer** dans le carnet scellé de "J'observe" :
+## 1. Modale de choix (`PrintChoiceDialog.tsx`)
 
-1. Une **modale design** s'ouvre au lieu de lancer l'impression directement.
-2. Deux choix illustrés, côte à côte :
-   - **Carnet seul** — synthèse "J'observe" uniquement (comportement actuel).
-   - **Cahier complet** — "J'observe" puis "Portrait du site" dans un seul document, séparés par une page de garde intercalaire.
-3. Confirmation → construction du DOM d'impression combiné, attente du chargement images, `window.print()`, nettoyage.
+Carte "Cahier complet" (recommandée) :
 
-## Design de la modale (Radix Dialog déjà utilisé partout)
+- Ordre des pictos : `Images (Portrait) · BookOpen (J'observe)` au lieu de l'inverse.
+- Description : *« Le « Portrait du site » en ouverture, suivi de la synthèse « J'observe » — un seul document relié. »*
+- Titre inchangé, badge "Recommandé" inchangé.
 
-- Fond crème `hsl(var(--ds-cream))`, filet or `hsl(var(--ds-gold))`, coins arrondis 24px, ombre douce.
-- Titre serif Cormorant : *« Comment souhaitez-vous imprimer ce carnet ? »*
-- Sous-titre italique bronze : *« Deux façons de partager votre regard sur le site. »*
-- Deux **cartes-choix** cliquables (grille 2 colonnes, empilées mobile) :
-  - Miniature SVG maison en aquarelle (cachet daté seul vs cachet + planches photo empilées).
-  - Titre + 1 ligne descriptive + estimation `~N pages`.
-  - Hover : liseré or, léger scale, ombre chaude.
-  - Une carte "recommandée" (Cahier complet si la galerie Portrait contient ≥ 1 photo) porte un ruban discret *« Recommandé »*.
-- Si aucune photo Portrait n'existe : la 2ᵉ carte est désactivée, tooltip *« Ajoutez d'abord des photos dans l'onglet Portrait. »*
-- Pied de modale : bouton fantôme "Annuler" + bouton principal "Imprimer" (activé après sélection), avec picto `Printer` animé au hover.
+## 2. Nouvel ordre du PDF combiné (`CombinedPrintLayout.tsx`)
 
-## Impression combinée (single PDF, une seule pop-up navigateur)
-
-Nouveau composant `CombinedPrintLayout.tsx` monté via `createPortal` sur `document.body` dans un `<div id="combined-print-portal">` :
+Actuellement (voir PDF joint) :
 
 ```
-[Couverture crème "Carnet du site — {propriete}"]
-[Section 1 : rendu <ObserveSummary print /> ]
-[Page intercalaire : "Portrait du site" + cachet daté]
-[Section 2 : rendu <PortraitPrintLayout photos={...} />]
+P1  Couverture Portrait ("Carnet d'atelier")
+P2  Sommaire visuel (12 vignettes numérotées)
+P3  Page intercalaire vide/graphique
+P4  Hero photo pleine page
+P5+ Doubles / respirations / photos
+Pn-1 Citation
+Pn   Colophon + QR
 ```
 
-- Nouvelle règle CSS d'isolation impression :
-  ```
-  body.combined-printing > *:not(#combined-print-portal) { display: none !important; }
-  @page { size: A4; margin: 0; }
-  .combined-print-root .print-break { break-before: page; }
-  ```
-- `ObserveSummary` accepte une nouvelle prop `printMode?: 'inline' | 'standalone'` pour ne pas ré-appliquer sa propre logique `window.print()` quand rendu dans le layout combiné (retire ses `print:hidden` sur le header).
-- Attente `Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })))` avant `window.print()` — même pattern que TabPortrait.
-- `afterprint` : démontage portail, retrait classe `combined-printing`.
+Nouveau montage :
 
-## Où brancher le déclencheur
+```
+P1  = ancienne P4 (Hero photo pleine page) — devient la COUVERTURE
+      + mention "Édité le {date}" en pied de page, filet or
+P2+ Sommaire visuel (toutes les pages actuelles du sommaire)
+Pk+ Section J'observe (rendu <ObserveSummary printOnly />)
+Pn-1 Page citation (respiration poétique)
+Pn   Colophon + QR
+```
 
-- `ObserveSummary.tsx` : le bouton "Imprimer" (l.289) n'appelle plus `window.print()` directement. Il appelle une prop `onPrint()` fournie par `TabObserve`.
-- `TabObserve.tsx` : détient l'état `printChoice: 'observe' | 'combined' | null`, ouvre `<PrintChoiceDialog>`, connaît `photos.length` via hook existant `usePropertyGallery(proprieteId)`, monte `<CombinedPrintLayout>` quand nécessaire.
-- Si l'utilisateur choisit "Carnet seul" → on garde l'ancienne isolation `observe-printing` (déjà fonctionnelle).
-- Si "Cahier complet" → nouvelle isolation `combined-printing` + layout combiné.
+Concrètement dans `CombinedPrintLayout.tsx` :
+
+- Supprimer la section intercalaire "Deuxième partie / Portrait du site" (l'actuelle P3 du bloc dédié).
+- Remplacer l'ordre `<ObserveSummary/> puis <PortraitPrintLayout/>` par : `<PortraitPrintLayout/> puis <ObserveSummary printOnly/>`.
+- Passer une prop `coverVariant="hero-photo"` à `PortraitPrintLayout` pour que la 1ʳᵉ page ne soit plus la couverture crème "Carnet d'atelier" mais directement la 1ʳᵉ photo hero avec :
+  - Titre propriété en surimpression bas-gauche (serif crème, filet or)
+  - Mention `Édité le {jj mois aaaa}` en pied
+  - Suppression de la couverture crème actuelle et de la page intercalaire graphique (ex-P3).
+- Réordonner l'intérieur de `PortraitPrintLayout` : `[Hero-couverture] → [Sommaire visuel] → [reste des planches photo] → [Citation] → [Colophon]`.
+- La section `<ObserveSummary printOnly/>` s'insère **entre le sommaire visuel et la citation** (avant les respirations finales), pour respecter l'ordre demandé : *Portrait (couverture + sommaire) → J'observe → Citation → Colophon*.
+
+> Correction de lecture : tu demandes « puis les pages du sommaire visuel, puis les pages J'observe, enfin citation + colophon ». je garde **toutes les planches photo intermédiaires** dans la section Sommaire visuel .
+
+## Point à confirmer avant build
+
+- **(B) souple** : on **conserve les planches photo** entre le sommaire et J'observe (Portrait garde sa substance visuelle, J'observe vient juste après).
 
 ## Fichiers touchés
 
-- **Nouveaux**
-  - `src/components/propriete/print/PrintChoiceDialog.tsx` — modale de choix (Radix Dialog + illustrations SVG inline).
-  - `src/components/propriete/print/CombinedPrintLayout.tsx` — layout d'impression fusionné (couverture + Observe + intercalaire + Portrait).
-  - `src/components/propriete/print/usePrintCombined.ts` — hook orchestrant portail, attente images, `window.print()`, cleanup.
-- **Modifiés**
-  - `src/components/propriete/observe/ObserveSummary.tsx` — prop `onPrint?()`; supprimer l'appel direct à `window.print()` lorsqu'un handler est fourni.
-  - `src/components/propriete/tabs/TabObserve.tsx` — état + rendu de la modale + branchement du layout combiné ; injecte `onPrint` dans `<ObserveSummary>`.
-  - `src/index.css` — ajouter le bloc `@media print` pour `#combined-print-portal` (isolation + `@page` + `print-color-adjust: exact` + `break-before: page`).
+- `src/components/propriete/print/PrintChoiceDialog.tsx` — ordre pictos + description.
+- `src/components/propriete/print/CombinedPrintLayout.tsx` — inversion Portrait/J'observe, suppression page intercalaire.
+- `src/components/propriete/portrait/PortraitPrintLayout.tsx` — prop `coverVariant`, réorganisation interne, option `omitPhotoPlates` pour la variante (A).
 
 ## Vérification
 
-Ouvrir `/propriete/jardin-monde-deviat` → onglet "J'observe" (étape complétée) → bouton **Imprimer** → la modale s'affiche → choisir **Cahier complet** → un unique aperçu Chrome présente la synthèse Observe puis le cahier Portrait, correctement paginés, images visibles, sans fond noir.
+`/propriete/jardin-monde-deviat` → J'observe → Imprimer → Cahier complet → aperçu : P1 = hero photo avec date en pied, puis sommaire, puis J'observe, puis citation, puis colophon. Plus de page intercalaire "Deuxième partie".

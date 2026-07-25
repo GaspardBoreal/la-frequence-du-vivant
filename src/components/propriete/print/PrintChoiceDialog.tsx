@@ -128,19 +128,20 @@ export const PrintChoiceDialog: React.FC<Props> = ({ open, onClose, onConfirm, p
             disabled={combinedDisabled}
             disabledHint={combinedDisabled ? 'Ajoutez d\u2019abord des photos dans l\u2019onglet Portrait.' : undefined}
             title="Cahier complet"
-            desc="La synthèse « J'observe », puis le « Portrait du site » — un seul document relié."
+            desc="Le « Portrait du site » en ouverture, suivi de la synthèse « J'observe » — un seul document relié."
             pages={combinedDisabled ? '—' : `≈ ${2 + Math.ceil(portraitPhotoCount / 2) + 3} pages · A4`}
             badge={!combinedDisabled ? 'Recommandé' : undefined}
           >
             <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
-              <span className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70 font-bold">J'observe</span>
-              <span className="text-[hsl(var(--ds-gold))]">·</span>
               <Images className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
               <span className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70 font-bold">Portrait</span>
+              <span className="text-[hsl(var(--ds-gold))]">·</span>
+              <BookOpen className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
+              <span className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70 font-bold">J'observe</span>
             </div>
             <MiniCombined />
           </Card>
+
         </div>
 
         <div className="flex items-center justify-end gap-2 mt-4">

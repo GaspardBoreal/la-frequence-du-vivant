@@ -7,7 +7,12 @@ interface Props {
   proprieteNom: string;
   proprieteVille?: string | null;
   publicUrl?: string;
+  /** 'atelier' = couverture crème signée (défaut). 'hero-photo' = première photo pleine page + titre en surimpression. */
+  coverVariant?: 'atelier' | 'hero-photo';
+  /** Contenu inséré juste avant la page Colophon (ex : synthèse J'observe dans le cahier combiné). */
+  insertBeforeColophon?: React.ReactNode;
 }
+
 
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
@@ -57,7 +62,9 @@ const QUOTES = [
 
 export const PortraitPrintLayout: React.FC<Props> = ({
   photos, proprieteNom, proprieteVille, publicUrl,
+  coverVariant = 'atelier', insertBeforeColophon,
 }) => {
+
   const [qr, setQr] = useState<string | null>(null);
   useEffect(() => {
     const url = publicUrl ?? (typeof window !== 'undefined' ? window.location.href : '');
@@ -90,28 +97,31 @@ export const PortraitPrintLayout: React.FC<Props> = ({
              | { kind: 'double'; main: GalleryPhoto; sides: GalleryPhoto[]; startIndex: number }
              | { kind: 'breath'; quote: string };
   const pages: Page[] = [];
+  const platePhotos = coverVariant === 'hero-photo' ? photos.slice(1) : photos;
+  const indexOffset = coverVariant === 'hero-photo' ? 1 : 0;
   let i = 0;
   let pageSinceBreath = 0;
   let quoteIdx = 0;
-  while (i < photos.length) {
+  while (i < platePhotos.length) {
     // Alterne
-    const useDouble = pages.filter((p) => p.kind !== 'breath').length % 2 === 1 && photos.length - i >= 2;
+    const useDouble = pages.filter((p) => p.kind !== 'breath').length % 2 === 1 && platePhotos.length - i >= 2;
     if (useDouble) {
-      const main = photos[i];
-      const sides = photos.slice(i + 1, i + 4);
-      pages.push({ kind: 'double', main, sides, startIndex: i });
+      const main = platePhotos[i];
+      const sides = platePhotos.slice(i + 1, i + 4);
+      pages.push({ kind: 'double', main, sides, startIndex: i + indexOffset });
       i += 1 + sides.length;
     } else {
-      pages.push({ kind: 'full', photo: photos[i], index: i });
+      pages.push({ kind: 'full', photo: platePhotos[i], index: i + indexOffset });
       i += 1;
     }
     pageSinceBreath++;
-    if (pageSinceBreath >= 5 && i < photos.length) {
+    if (pageSinceBreath >= 5 && i < platePhotos.length) {
       pages.push({ kind: 'breath', quote: QUOTES[quoteIdx % QUOTES.length] });
       quoteIdx++;
       pageSinceBreath = 0;
     }
   }
+
 
   const totalPages = 2 /* cover + toc */ + pages.length + 1 /* colophon */;
 
@@ -128,24 +138,42 @@ export const PortraitPrintLayout: React.FC<Props> = ({
   return (
     <div className="portrait-print-root">
       {/* ===== Couverture ===== */}
-      <section className="portrait-print-cover">
-        <div className="portrait-print-eyebrow">Portrait du site</div>
-        <div>
-          <h1 className="portrait-print-title">{proprieteNom}</h1>
-          <div className="portrait-print-title-rule" />
-          {proprieteVille && <div className="portrait-print-place">{proprieteVille}</div>}
-        </div>
-        <div className="portrait-print-cover-foot">
-          <div className="portrait-print-cover-quote">
-            « Un carnet d'atelier composé à partir des photographies rassemblées par les marcheurs et le propriétaire du lieu — première trace d'un dialogue en cours avec le vivant. »
+      {coverVariant === 'hero-photo' && photos[0] ? (
+        <section className="portrait-print-page portrait-print-full portrait-print-hero-cover">
+          <div className="portrait-print-hero">
+            <img src={photos[0].url} alt="" crossOrigin="anonymous" />
           </div>
-          <Seal
-            dateLabel={editionLabel}
-            photoCount={photos.length}
-            contribCount={authors.length}
-          />
-        </div>
-      </section>
+          <div className="portrait-print-hero-overlay">
+            <div className="portrait-print-eyebrow" style={{ color: '#fbf7ee' }}>Portrait du site</div>
+            <h1 className="portrait-print-title" style={{ color: '#fbf7ee' }}>{proprieteNom}</h1>
+            <div className="portrait-print-title-rule" />
+            {proprieteVille && <div className="portrait-print-place" style={{ color: '#fbf7ee' }}>{proprieteVille}</div>}
+          </div>
+          <div className="portrait-print-hero-editfoot">
+            Édité le {fmtLong(today)}
+          </div>
+        </section>
+      ) : (
+        <section className="portrait-print-cover">
+          <div className="portrait-print-eyebrow">Portrait du site</div>
+          <div>
+            <h1 className="portrait-print-title">{proprieteNom}</h1>
+            <div className="portrait-print-title-rule" />
+            {proprieteVille && <div className="portrait-print-place">{proprieteVille}</div>}
+          </div>
+          <div className="portrait-print-cover-foot">
+            <div className="portrait-print-cover-quote">
+              « Un carnet d'atelier composé à partir des photographies rassemblées par les marcheurs et le propriétaire du lieu — première trace d'un dialogue en cours avec le vivant. »
+            </div>
+            <Seal
+              dateLabel={editionLabel}
+              photoCount={photos.length}
+              contribCount={authors.length}
+            />
+          </div>
+        </section>
+      )}
+
 
       {/* ===== Sommaire visuel ===== */}
       <section className="portrait-print-page portrait-print-toc">
@@ -223,6 +251,10 @@ export const PortraitPrintLayout: React.FC<Props> = ({
           </section>
         );
       })}
+
+      {insertBeforeColophon}
+
+
 
       {/* ===== Colophon ===== */}
       <section className="portrait-print-page portrait-print-colophon">
