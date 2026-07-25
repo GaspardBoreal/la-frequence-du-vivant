@@ -252,7 +252,8 @@ export const SamplesMapBlock: React.FC<{
       )}
 
       <div className="grid md:grid-cols-5 gap-4">
-        <div className="md:col-span-3 rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: 400 }}>
+        <div className="md:col-span-3 space-y-1.5">
+        <div className="rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: 400 }}>
           <RichMap
             center={center}
             zoom={18}
@@ -312,6 +313,13 @@ export const SamplesMapBlock: React.FC<{
               );
             })}
           </RichMap>
+        </div>
+        <div className="flex items-center justify-center gap-4 text-[10px] text-[hsl(var(--ds-forest-deep))]/60">
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-forest))]" /> Prélèvement</span>
+          {waypoints.length > 0 && (
+            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: KINGDOM_COLORS.Plantae }} /> Observation marcheur</span>
+          )}
+        </div>
         </div>
 
         <div className="md:col-span-2 space-y-2">
