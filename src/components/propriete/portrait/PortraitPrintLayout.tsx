@@ -123,7 +123,10 @@ export const PortraitPrintLayout: React.FC<Props> = ({
   }
 
 
-  const totalPages = 2 /* cover + toc */ + pages.length + 1 /* colophon */;
+  // Retire une éventuelle respiration finale de la boucle (on force notre propre citation avant colophon)
+  while (pages.length > 0 && pages[pages.length - 1].kind === 'breath') pages.pop();
+
+  const totalPages = 2 /* cover + toc */ + pages.length + 1 /* final breath */ + 1 /* colophon */;
 
   const footer = (pageNum: number) => (
     <div className="portrait-print-footer">
