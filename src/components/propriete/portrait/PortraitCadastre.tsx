@@ -33,6 +33,7 @@ import CadastreOptionsMenu, {
   type CadastreOptionsState,
 } from './CadastreOptionsMenu';
 import PropertyAddressCard from './PropertyAddressCard';
+import NearestWeatherStationCard from './NearestWeatherStationCard';
 
 const SAVED_STYLE: L.PathOptions = {
   color: '#2f5d3a',
