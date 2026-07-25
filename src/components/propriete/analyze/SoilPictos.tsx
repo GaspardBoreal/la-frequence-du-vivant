@@ -126,39 +126,118 @@ export const IconInconnu = () =>
   );
 
 
-/* ============== Structure ============== */
+/* ============== Structure — grammaire commune :
+   silhouette de motte (contour arrondi) posée sur un trait de paume,
+   remplissage traduisant l'état (bloc / grumeaux / grains). ============== */
+
+const palmLine = (
+  <path d="M8 54 Q32 50 56 54" stroke={stroke} strokeWidth="0.9" opacity="0.5" fill="none" />
+);
+
+const mottePath = 'M18 22 Q22 12 32 12 Q42 12 46 22 L48 48 Q44 52 32 52 Q20 52 16 48 Z';
+
 export const IconCompacte = () =>
   wrap(
     <>
-      <rect x="10" y="10" width="44" height="44" rx="3" stroke={stroke} strokeWidth="1.8" />
-      <path d="M14 22 L54 22 M14 32 L54 32 M14 42 L54 42" stroke={stroke} strokeWidth="1.2" opacity="0.55" />
-      <path d="M20 14 L20 54 M32 14 L32 54 M44 14 L44 54" stroke={stroke} strokeWidth="1.2" opacity="0.55" />
+      {palmLine}
+      {/* motte massive pleine */}
+      <path d={mottePath} fill={stroke} fillOpacity="0.35" stroke={stroke} strokeWidth="1.4" />
+      {/* fissure unique nette */}
+      <path
+        d="M28 14 L32 30 L28 44 L34 52"
+        stroke={accent}
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {/* point d'impact */}
+      <circle cx="30" cy="15" r="1.4" fill={accent} />
     </>,
   );
 
 export const IconGrumeleuse = () =>
   wrap(
     <>
-      <circle cx="20" cy="24" r="6" stroke={stroke} strokeWidth="1.6" fill={accent} fillOpacity="0.2" />
-      <circle cx="34" cy="18" r="4.5" stroke={stroke} strokeWidth="1.6" fill={accent} fillOpacity="0.2" />
-      <circle cx="46" cy="26" r="5.5" stroke={stroke} strokeWidth="1.6" fill={accent} fillOpacity="0.2" />
-      <circle cx="26" cy="38" r="5" stroke={stroke} strokeWidth="1.6" fill={accent} fillOpacity="0.2" />
-      <circle cx="40" cy="42" r="6" stroke={stroke} strokeWidth="1.6" fill={accent} fillOpacity="0.2" />
-      <circle cx="18" cy="48" r="4" stroke={stroke} strokeWidth="1.6" fill={accent} fillOpacity="0.2" />
+      {palmLine}
+      {/* motte-silhouette masquant les agrégats */}
+      <defs>
+        <clipPath id="motte-grum">
+          <path d={mottePath} />
+        </clipPath>
+      </defs>
+      <path d={mottePath} stroke={stroke} strokeWidth="1.4" fill={cream} fillOpacity="0.35" />
+      <g clipPath="url(#motte-grum)">
+        {[
+          { cx: 24, cy: 22, r: 6 },
+          { cx: 38, cy: 20, r: 5 },
+          { cx: 44, cy: 30, r: 5.5 },
+          { cx: 22, cy: 34, r: 5 },
+          { cx: 34, cy: 34, r: 5.5 },
+          { cx: 28, cy: 46, r: 4.5 },
+          { cx: 40, cy: 44, r: 5 },
+        ].map((a, i) => (
+          <circle
+            key={i}
+            cx={a.cx}
+            cy={a.cy}
+            r={a.r}
+            fill={stroke}
+            fillOpacity="0.28"
+            stroke={stroke}
+            strokeWidth="0.9"
+          />
+        ))}
+        {/* pores */}
+        <circle cx="30" cy="26" r="1" fill={cream} />
+        <circle cx="40" cy="36" r="1" fill={cream} />
+        <circle cx="26" cy="42" r="0.9" fill={cream} />
+      </g>
     </>,
   );
 
 export const IconParticulaire = () =>
   wrap(
     <>
+      {palmLine}
+      {/* silhouette fantôme de la motte disparue */}
+      <path
+        d="M20 22 Q24 14 32 14 Q40 14 44 22"
+        stroke={stroke}
+        strokeWidth="0.9"
+        strokeDasharray="2 3"
+        fill="none"
+        opacity="0.55"
+      />
+      {/* cascade de grains qui coulent */}
       {[
-        [16, 18], [26, 14], [36, 20], [46, 16], [22, 26], [32, 30], [42, 28],
-        [18, 36], [28, 40], [38, 38], [48, 42], [20, 48], [30, 50], [40, 48], [46, 52],
-      ].map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="1.8" fill={stroke} />
+        [22, 22, 1.4],
+        [30, 20, 1.2],
+        [38, 22, 1.4],
+        [20, 30, 1.2],
+        [28, 30, 1.6],
+        [36, 30, 1.2],
+        [44, 30, 1.4],
+        [24, 38, 1.4],
+        [32, 40, 1.2],
+        [40, 38, 1.4],
+        [18, 46, 1.2],
+        [28, 48, 1.4],
+        [36, 48, 1.2],
+        [46, 46, 1.4],
+      ].map(([x, y, r], i) => (
+        <circle
+          key={i}
+          cx={x as number}
+          cy={y as number}
+          r={r as number}
+          fill={i % 3 === 0 ? accent : stroke}
+          opacity={i % 3 === 0 ? 0.85 : 0.7}
+        />
       ))}
     </>,
   );
+
+
 
 /* ============== Texture — boudin ============== */
 export const IconBoudinSable = () =>
