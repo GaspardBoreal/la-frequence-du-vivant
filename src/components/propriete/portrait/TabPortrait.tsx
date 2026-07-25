@@ -267,15 +267,15 @@ export const TabPortrait: React.FC<Props> = ({
         <GalleryConstellation photos={photos} fallbackCenter={proprieteCenter ?? null} />
       )}
 
-      {/* Version imprimable — visible uniquement pendant l'impression */}
-      {photos.length > 0 && (
-        <div className="portrait-print-only">
-          <PortraitPrintLayout
-            photos={photos}
-            proprieteNom={proprieteNom}
-            proprieteVille={proprieteVille}
-          />
-        </div>
+      {/* Version imprimable — rendue dans un portail sur <body> pendant l'impression uniquement */}
+      {printMode && photos.length > 0 && portalRef.current && createPortal(
+        <PortraitPrintLayout
+          photos={photos}
+          proprieteNom={proprieteNom}
+          proprieteVille={proprieteVille}
+          publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
+        />,
+        portalRef.current
       )}
     </div>
   );
