@@ -14,12 +14,14 @@ import { LifeSignsBlock } from '@/components/propriete/analyze/blocks/LifeSignsB
 
 const TOTAL = 7; // 6 blocs + synthèse
 
-export const TabAnalyze: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string }> = ({
-  bio,
-  proprieteId,
-}) => {
+export const TabAnalyze: React.FC<{
+  bio?: PropertyBiodiversity;
+  proprieteId?: string;
+  proprieteCenter?: [number, number] | null;
+}> = ({ bio, proprieteId, proprieteCenter }) => {
   const {
     state,
+    setLocal,
     saving,
     savedAt,
     completedAt,
