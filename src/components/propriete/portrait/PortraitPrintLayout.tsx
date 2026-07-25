@@ -202,6 +202,10 @@ export const PortraitPrintLayout: React.FC<Props> = ({
         {footer(2)}
       </section>
 
+      {/* ===== Insert après le sommaire visuel (ex : fiche Propriété) ===== */}
+      {insertAfterToc && insertAfterToc(3, totalPages)}
+
+
       {/* ===== Pages photo ===== */}
       {pages.map((pg, k) => {
         const pageNum = pageCursor++;
