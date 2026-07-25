@@ -1,41 +1,56 @@
 ## Objectif
 
-Aligner le bloc « Étape 2 · 3 · Structure du sol » sur la grammaire visuelle déjà en place pour « État du terrain » (bloc 1) : un hero SVG qui morphe selon le choix + 3 pictos spécifiques, design, didactiques, partageant une signature graphique commune. S'inspirer de la page 6 du document D.S. (Compacte / Grumeleuse / Particulaire).
+Afficher, au survol (mouse over) de chacun des 3 choix « Compacte / Grumeleuse / Particulaire » du bloc 3 « Structure du sol », un tooltip riche, design et impactant contenant les descriptions terrain fournies (D.S.).
 
-## Diagnostic actuel
+## Cible
 
-- `StructureBlock.tsx` : le hero est statique (`SoilHeroStrata variant="cross"` — un cube stratifié qui ne change jamais quel que soit le choix).
-- `SoilPictos.tsx` : les 3 icônes existent mais restent génériques (grille, ronds, points) sans « verbe clé » ni cohérence avec le hero.
+- Fichier : `src/components/propriete/analyze/blocks/StructureBlock.tsx`
+- Composant réutilisé : `ChoiceButton` (`src/components/propriete/analyze/ChoiceButton.tsx`)
 
 ## Ce qu'on va livrer
 
-### 1. Nouveau composant `StructureCrossSection.tsx`
-Même patron que `TerrainCrossSection` : une scène SVG « motte dans la main » qui morphe en 3 états via `framer-motion`, avec verbe clé animé en dessous.
+### 1. Nouveau composant `StructureChoiceTooltip.tsx`
 
-- **Compacte** — motte massive, monolithique, fissurée sur une seule ligne nette ; verbe : « Résiste · bloc unique ».
-- **Grumeleuse** — motte qui éclate en agrégats arrondis, aération visible (petits vides entre grumeaux), touche de radicelle ; verbe : « S'émiette · respire ».
-- **Particulaire** — la motte se désagrège en grains individuels qui glissent entre les doigts ; verbe : « Se disperse · sable ».
+Un tooltip flottant maison (pas de dépendance Radix supplémentaire), positionné au-dessus du bouton survolé, avec :
 
-Fond dégradé terre (ocre → sable) cohérent avec le hero actuel + main stylisée en bas pour rappeler le geste « cassez une motte ».
+- Fond `hsl(var(--ds-cream))` + bordure `hsl(var(--ds-forest))/40` + shadow douce ambre.
+- En-tête : mini-picto (réutilise `IconCompacte / IconGrumeleuse / IconParticulaire` en taille 28px) + titre « Compacte / Grumeleuse / Particulaire » en `--ds-forest-deep`, gras.
+- Bandeau « verbe clé » (repris de `StructureCrossSection`) en petites capitales espacées, doré.
+- 3 puces sensorielles (icônes Lucide : `Droplets`, `Thermometer`, `Hand` / `Sprout`) déclinant le texte D.S. en fragments courts et lisibles.
+- Animation `framer-motion` : `opacity 0→1`, `y: 8→0`, `scale: 0.96→1`, easing doux (240 ms). Sortie miroir.
+- Petite flèche SVG pointant vers le bouton.
+- Largeur ~ 280 px, `pointer-events-none` pour ne pas gêner le clic.
+- Accessibilité : `role="tooltip"`, `id` lié en `aria-describedby` sur le bouton parent.
 
-### 2. Redessin des 3 pictos (`SoilPictos.tsx`)
-Même grammaire : cadre carré 64px, contour vert forêt, silhouette d'une motte, remplissage qui traduit l'état :
+### 2. Contenu par variante (fidèle au texte utilisateur)
 
-- **IconCompacte** — bloc plein avec une fissure nette diagonale (motte massive qui refuse de se briser).
-- **IconGrumeleuse** — silhouette de motte composée d'agrégats arrondis imbriqués, un petit vide central (porosité).
-- **IconParticulaire** — silhouette de motte dissoute en grains qui « coulent » vers le bas.
+**Compacte** — verbe : « Résiste · bloc unique »
+- 💧 L'eau s'infiltre mal
+- 🧱 Motte difficile à diviser, rupture brusque, effet de lourdeur (ocre)
+- 🌡 Dur et sec l'été / élastique et gorgé d'eau l'hiver, lent à se réchauffer
 
-Chaque picto respecte le token `--primary` (forêt émeraude) et l'accent `--accent` (ambre) via la fonction `wrap` existante.
+**Grumeleuse** — verbe : « S'émiette · respire »
+- 🌱 Agrégats visibles, motte qui se divise facilement et tient
+- 🫧 Bulles au test de stabilité = air ; galeries de lombrics, racines, micro-faune
+- 💧 Bonne infiltration de l'eau
 
-### 3. Câblage dans `StructureBlock.tsx`
-- Remplacer `<SoilHeroStrata variant="cross" />` par `<StructureCrossSection value={value} />`.
-- Passer `value` au hero pour qu'il morphe en direct sur clic.
-- Rien d'autre ne change (choix, `AnalyzeCard`, `ChoiceButton`).
+**Particulaire** — verbe : « Se disperse · sable »
+- 🪨 La motte ne tient pas, s'effondre avant même la main ou le bocal
+- 💧 L'eau s'infiltre trop vite
+- 🌡 Sol qui se réchauffe rapidement, pauvre (nutriments lessivés)
+
+(Icônes rendues via Lucide, pas des emojis, pour rester dans la charte.)
+
+### 3. Intégration dans `StructureBlock.tsx`
+
+- Envelopper chaque `ChoiceButton` dans un conteneur `relative` + gestionnaires `onMouseEnter / onMouseLeave / onFocus / onBlur` qui pilotent un état local `hoveredValue`.
+- Sur desktop (`hover: hover` media query implicite via événement souris) : afficher le tooltip.
+- Sur mobile (pas de hover) : le tooltip s'ouvre également au `focus` (au tap le bouton reçoit le focus), et se ferme au tap suivant hors zone. Aucune régression du comportement de sélection existant.
+- Aucun changement de logique métier, aucun changement de stockage, aucun impact sur `StructureCrossSection`, `SoilPictos`, ni sur les autres blocs.
 
 ## Fichiers touchés
 
-- **Nouveau** : `src/components/propriete/analyze/StructureCrossSection.tsx`
-- **Modifié** : `src/components/propriete/analyze/SoilPictos.tsx` (les 3 icônes structure uniquement)
-- **Modifié** : `src/components/propriete/analyze/blocks/StructureBlock.tsx` (hero + import)
+- **Nouveau** : `src/components/propriete/analyze/StructureChoiceTooltip.tsx`
+- **Modifié** : `src/components/propriete/analyze/blocks/StructureBlock.tsx` (état hover + wrapping des `ChoiceButton`)
 
-Aucun changement sur le stockage, aucun impact sur les autres blocs (`TerrainBlock`, `TextureBlock`, `PhBlock`, `LifeBlock`) ni sur l'impression.
+Aucun autre fichier n'est modifié.
