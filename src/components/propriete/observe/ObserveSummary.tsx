@@ -70,10 +70,25 @@ export const ObserveSummary: React.FC<Props> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="relative bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-line))] shadow-[0_10px_40px_-15px_rgba(22,48,32,0.15)] p-8 md:p-14 overflow-hidden print:shadow-none print:border-0"
+      className="observe-print-root relative bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-line))] shadow-[0_10px_40px_-15px_rgba(22,48,32,0.15)] p-8 md:p-14 overflow-hidden print:shadow-none print:border-0"
     >
-      {/* Sceau daté */}
-      <div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10">
+      {/* Cartouche impression — visible uniquement à l'impression */}
+      <div className="hidden print:block mb-8">
+        <div className="border-t-2 border-b-2 border-[hsl(var(--ds-gold))] py-6 text-center">
+          <div className="text-[10px] font-bold tracking-[0.4em] uppercase text-[hsl(var(--ds-forest))]/70">
+            Diagnostic Propriété · Étape 1
+          </div>
+          <h1 className="mt-3 font-serif italic text-4xl text-[hsl(var(--ds-forest-deep))] leading-tight">
+            {propertyName ?? 'Portrait de la Propriété'}
+          </h1>
+          <div className="mt-3 text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--ds-forest))]/70">
+            Validé le {dateStr} · Fréquence du Vivant
+          </div>
+        </div>
+      </div>
+
+      {/* Sceau daté (masqué à l'impression) */}
+      <div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10 print:hidden">
         <svg className="absolute inset-0 w-full h-full text-[hsl(var(--ds-forest-deep))]" viewBox="0 0 100 100">
           <defs>
             <path
@@ -101,19 +116,23 @@ export const ObserveSummary: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Header */}
-      <header className="mb-10 md:mb-12 border-b border-[hsl(var(--ds-line))] pb-6 pr-32">
+      {/* Header écran */}
+      <header className="mb-6 md:mb-8 border-b border-[hsl(var(--ds-line))] pb-6 pr-32 print:hidden">
         <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
           Étape 1 — Terminée
         </span>
         <h2 className="mt-2 font-serif italic text-4xl md:text-5xl text-[hsl(var(--ds-forest-deep))] leading-tight">
-          Portrait de la Propriété
+          {propertyName ? `Portrait — ${propertyName}` : 'Portrait de la Propriété'}
         </h2>
         <p className="mt-3 text-sm md:text-base text-[hsl(var(--ds-forest-deep))]/70 max-w-xl">
           Synthèse des observations réalisées sur site. Ce portrait constitue le
           socle écologique du projet.
         </p>
       </header>
+
+      {/* Signature du site — glyphe unique */}
+      <SiteSignature answers={answers} sensorial={sensorial} dateStr={dateStr} />
+
 
       {/* Grille synthèse — 7 premiers blocs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
@@ -158,7 +177,7 @@ export const ObserveSummary: React.FC<Props> = ({
                 )}
               </div>
 
-              <PictoRow block={b} selected={sel} />
+              <ChipRow block={b} selected={sel} />
 
               <p
                 className={
