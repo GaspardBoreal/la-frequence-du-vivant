@@ -165,7 +165,14 @@ export const TabPortrait: React.FC<Props> = ({
       </div>
 
       {subTab === 'cadastre' ? (
-        <PortraitCadastre proprieteId={proprieteId} proprieteCenter={proprieteCenter} />
+        <PortraitCadastre
+          proprieteId={proprieteId}
+          proprieteNom={proprieteNom}
+          proprieteAdresse={proprieteAdresse}
+          proprieteVille={proprieteVille}
+          proprieteCodePostal={proprieteCodePostal}
+          proprieteCenter={proprieteCenter}
+        />
       ) : (
         <>
           {/* En-tête */}
