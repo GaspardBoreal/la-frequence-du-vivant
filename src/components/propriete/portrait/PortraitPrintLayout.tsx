@@ -123,7 +123,10 @@ export const PortraitPrintLayout: React.FC<Props> = ({
   }
 
 
-  const totalPages = 2 /* cover + toc */ + pages.length + 1 /* colophon */;
+  // Retire une éventuelle respiration finale de la boucle (on force notre propre citation avant colophon)
+  while (pages.length > 0 && pages[pages.length - 1].kind === 'breath') pages.pop();
+
+  const totalPages = 2 /* cover + toc */ + pages.length + 1 /* final breath */ + 1 /* colophon */;
 
   const footer = (pageNum: number) => (
     <div className="portrait-print-footer">
@@ -254,7 +257,11 @@ export const PortraitPrintLayout: React.FC<Props> = ({
 
       {insertBeforeColophon}
 
-
+      {/* ===== Respiration finale — citation ===== */}
+      <section className="portrait-print-page portrait-print-breath portrait-print-breath-final">
+        <p>{QUOTES[0]}</p>
+        {footer(totalPages - 1)}
+      </section>
 
       {/* ===== Colophon ===== */}
       <section className="portrait-print-page portrait-print-colophon">
@@ -293,10 +300,12 @@ export const PortraitPrintLayout: React.FC<Props> = ({
             )}
           </div>
         </div>
-        <div className="portrait-print-signature">
-          <span>Marches du Vivant</span>
-          <span><span className="dot" /></span>
-          <span>La Fréquence du Vivant</span>
+        <div className="portrait-print-colophon-mark">
+          <div className="portrait-print-signature">
+            <span>Marches du Vivant</span>
+            <span><span className="dot" /></span>
+            <span>La Fréquence du Vivant</span>
+          </div>
         </div>
         {footer(totalPages)}
       </section>

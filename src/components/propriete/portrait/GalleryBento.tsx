@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, User, Calendar, ChevronLeft, ChevronRight, GripVertical } from 'lucide-react';
+import { X, User, Calendar, ChevronLeft, ChevronRight, GripVertical, Star } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -38,8 +38,10 @@ const SortableTile: React.FC<{
   photo: GalleryPhoto;
   index: number;
   draggable: boolean;
+  isCover: boolean;
   onOpen: () => void;
-}> = ({ photo, index, draggable, onOpen }) => {
+  onPromote?: () => void;
+}> = ({ photo, index, draggable, isCover, onOpen, onPromote }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: photo.id,
     disabled: !draggable,
@@ -56,7 +58,7 @@ const SortableTile: React.FC<{
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative overflow-hidden rounded-2xl group ${TILE_CLASSES[index] ?? 'col-span-1 row-span-1'} bg-muted`}
+      className={`relative overflow-hidden rounded-2xl group ${TILE_CLASSES[index] ?? 'col-span-1 row-span-1'} bg-muted ${isCover ? 'ring-2 ring-amber-500/70 ring-offset-2 ring-offset-background' : ''}`}
     >
       <button onClick={onOpen} className="absolute inset-0 w-full h-full">
         <img
@@ -80,6 +82,26 @@ const SortableTile: React.FC<{
           )}
         </div>
       </button>
+
+      {isCover && (
+        <div
+          className="absolute top-1.5 right-1.5 z-10 flex items-center gap-1 rounded-full bg-amber-500/95 text-white text-[9px] uppercase tracking-[0.15em] px-2 py-0.5 shadow"
+          title="Photo d'ouverture du cahier imprimé"
+        >
+          <Star className="w-2.5 h-2.5 fill-white" strokeWidth={0} /> Ouverture
+        </div>
+      )}
+
+      {draggable && onPromote && !isCover && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onPromote(); }}
+          className="absolute top-1.5 right-1.5 z-10 rounded-full p-1.5 bg-black/55 backdrop-blur text-white/90 hover:bg-amber-500 hover:text-white opacity-0 group-hover:opacity-100 transition"
+          title="Définir comme photo d'ouverture"
+        >
+          <Star className="w-3.5 h-3.5" />
+        </button>
+      )}
 
       {draggable && (
         <div
@@ -149,7 +171,13 @@ export const GalleryBento: React.FC<Props> = ({ photos, onReorder }) => {
                 photo={p}
                 index={i}
                 draggable={draggable}
+                isCover={i === 0}
                 onOpen={() => setLightbox(i)}
+                onPromote={draggable ? () => {
+                  const reordered = [p, ...localPhotos.filter((x) => x.id !== p.id)];
+                  setLocalPhotos(reordered);
+                  onReorder?.(reordered);
+                } : undefined}
               />
             ))}
           </div>

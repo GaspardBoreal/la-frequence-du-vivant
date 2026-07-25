@@ -1,63 +1,38 @@
-# Cahier complet : Portrait d'abord, J'observe ensuite
+# Ajustements du cahier « Portrait + J'observe »
 
-Oui, c'est clair. Voici ce qui change.
+## 1. Photo d'ouverture sélectionnable
 
-## 1. Modale de choix (`PrintChoiceDialog.tsx`)
+Objectif : laisser l'utilisateur désigner explicitement la photo qui servira de couverture (variante `hero-photo`), au lieu de prendre simplement la première du tri.
 
-Carte "Cahier complet" (recommandée) :
+- **`src/components/propriete/portrait/GalleryBento.tsx`** : ajouter sur chaque vignette (au survol, à côté de la poignée de drag) un bouton étoile « ✦ Photo d'ouverture ». Un clic remonte la photo à l'index 0 via le `onReorder` existant et déclenche la sauvegarde (`useSavePropertyGallery`). La vignette actuellement en position 0 reçoit un badge discret « Ouverture » (filet or, coin haut-droit) pour rendre le statut lisible sans nouvelle colonne en base.
+- **`src/components/propriete/portrait/TabPortrait.tsx`** : ajouter une courte ligne d'aide sous la galerie : *« La première photo ouvre le cahier imprimé — cliquez ✦ pour changer d'ouverture. »*
+- Aucune migration Supabase : on réutilise `order_index` déjà persisté par `set_propriete_gallery`. `PortraitPrintLayout` continue de prendre `photos[0]` comme couverture.
 
-- Ordre des pictos : `Images (Portrait) · BookOpen (J'observe)` au lieu de l'inverse.
-- Description : *« Le « Portrait du site » en ouverture, suivi de la synthèse « J'observe » — un seul document relié. »*
-- Titre inchangé, badge "Recommandé" inchangé.
+## 2. Réinsérer la page « respiration citation » en avant-dernière page
 
-## 2. Nouvel ordre du PDF combiné (`CombinedPrintLayout.tsx`)
+La page crème avec la citation *« Regarder un lieu, c'est déjà en prendre soin. »* (copie 2) disparaît du cahier combiné quand le nombre de planches est faible (la boucle de rythme n'en génère plus). Elle doit toujours apparaître, positionnée juste avant le colophon.
 
-Actuellement (voir PDF joint) :
+- **`src/components/propriete/portrait/PortraitPrintLayout.tsx`** :
+  - Ajouter une prop `finalBreath?: boolean` (défaut `true` en mode `hero-photo`).
+  - Après `{insertBeforeColophon}` et avant la section colophon, rendre inconditionnellement une `<section className="portrait-print-page portrait-print-breath portrait-print-breath-final">` avec la citation d'ouverture (`QUOTES[0]`).
+  - Recalculer `totalPages` (+1) et le `pageCursor` pour que la pagination du footer reste juste (la citation devient `totalPages - 1`, le colophon `totalPages`).
+  - Retirer la respiration automatique équivalente de la boucle si elle tombe en dernière position, pour éviter le doublon.
 
-```
-P1  Couverture Portrait ("Carnet d'atelier")
-P2  Sommaire visuel (12 vignettes numérotées)
-P3  Page intercalaire vide/graphique
-P4  Hero photo pleine page
-P5+ Doubles / respirations / photos
-Pn-1 Citation
-Pn   Colophon + QR
-```
+## 3. Colophon : picto centré en bas de page
 
-Nouveau montage :
+Actuellement la « signature » (Marches du Vivant · La Fréquence du Vivant + point or) est collée sous la grille, non centrée verticalement et alignée à gauche selon la largeur du bloc.
 
-```
-P1  = ancienne P4 (Hero photo pleine page) — devient la COUVERTURE
-      + mention "Édité le {date}" en pied de page, filet or
-P2+ Sommaire visuel (toutes les pages actuelles du sommaire)
-Pk+ Section J'observe (rendu <ObserveSummary printOnly />)
-Pn-1 Page citation (respiration poétique)
-Pn   Colophon + QR
-```
-
-Concrètement dans `CombinedPrintLayout.tsx` :
-
-- Supprimer la section intercalaire "Deuxième partie / Portrait du site" (l'actuelle P3 du bloc dédié).
-- Remplacer l'ordre `<ObserveSummary/> puis <PortraitPrintLayout/>` par : `<PortraitPrintLayout/> puis <ObserveSummary printOnly/>`.
-- Passer une prop `coverVariant="hero-photo"` à `PortraitPrintLayout` pour que la 1ʳᵉ page ne soit plus la couverture crème "Carnet d'atelier" mais directement la 1ʳᵉ photo hero avec :
-  - Titre propriété en surimpression bas-gauche (serif crème, filet or)
-  - Mention `Édité le {jj mois aaaa}` en pied
-  - Suppression de la couverture crème actuelle et de la page intercalaire graphique (ex-P3).
-- Réordonner l'intérieur de `PortraitPrintLayout` : `[Hero-couverture] → [Sommaire visuel] → [reste des planches photo] → [Citation] → [Colophon]`.
-- La section `<ObserveSummary printOnly/>` s'insère **entre le sommaire visuel et la citation** (avant les respirations finales), pour respecter l'ordre demandé : *Portrait (couverture + sommaire) → J'observe → Citation → Colophon*.
-
-> Correction de lecture : tu demandes « puis les pages du sommaire visuel, puis les pages J'observe, enfin citation + colophon ». je garde **toutes les planches photo intermédiaires** dans la section Sommaire visuel .
-
-## Point à confirmer avant build
-
-- **(B) souple** : on **conserve les planches photo** entre le sommaire et J'observe (Portrait garde sa substance visuelle, J'observe vient juste après).
-
-## Fichiers touchés
-
-- `src/components/propriete/print/PrintChoiceDialog.tsx` — ordre pictos + description.
-- `src/components/propriete/print/CombinedPrintLayout.tsx` — inversion Portrait/J'observe, suppression page intercalaire.
-- `src/components/propriete/portrait/PortraitPrintLayout.tsx` — prop `coverVariant`, réorganisation interne, option `omitPhotoPlates` pour la variante (A).
+- **`src/components/propriete/portrait/PortraitPrintLayout.tsx`** : envelopper `portrait-print-signature` dans un conteneur `portrait-print-colophon-mark` positionné en bas de page.
+- **`src/index.css`** (bloc print déjà présent) :
+  - `.portrait-print-colophon { display: flex; flex-direction: column; }`
+  - `.portrait-print-colophon-mark { margin-top: auto; display: flex; justify-content: center; padding-bottom: 18mm; }`
+  - `.portrait-print-signature { justify-content: center; text-align: center; }`
+  - Le footer paginé reste ancré tout en bas via son positionnement absolu existant.
 
 ## Vérification
 
-`/propriete/jardin-monde-deviat` → J'observe → Imprimer → Cahier complet → aperçu : P1 = hero photo avec date en pied, puis sommaire, puis J'observe, puis citation, puis colophon. Plus de page intercalaire "Deuxième partie".
+`/propriete/jardin-monde-deviat` → onglet **Portrait** : cliquer ✦ sur une vignette autre que la première, vérifier que le badge « Ouverture » se déplace. Puis **J'observe → Imprimer → Cahier complet** :
+
+1. Page 1 = la photo choisie, avec date d'édition en pied.
+2. Avant-dernière page = citation crème centrée (« Regarder un lieu… »).
+3. Dernière page = colophon avec la signature « Marches du Vivant · La Fréquence du Vivant » centrée horizontalement en bas de la page.

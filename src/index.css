@@ -1349,15 +1349,23 @@
   font-family: 'Helvetica Neue', Arial, sans-serif;
   font-size: 7pt; letter-spacing: 0.25em; text-transform: uppercase; color: #8a6d3b;
 }
+.portrait-print-colophon-mark {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  padding: 14mm 0 6mm;
+}
 .portrait-print-signature {
-  margin-top: auto; padding-top: 12mm;
+  padding: 6mm 14mm;
   border-top: 0.3mm solid #b08d57;
-  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 0.3mm solid #b08d57;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4mm;
   font-family: 'Helvetica Neue', Arial, sans-serif;
   font-size: 8pt; letter-spacing: 0.35em; text-transform: uppercase; color: #8a6d3b;
+  text-align: center;
 }
 .portrait-print-signature .dot {
-  width: 3mm; height: 3mm; border-radius: 50%; background: #b08d57; display: inline-block; margin: 0 3mm;
+  width: 3mm; height: 3mm; border-radius: 50%; background: #b08d57; display: inline-block;
 }
 
 /* Portrait — Constellation animée */
