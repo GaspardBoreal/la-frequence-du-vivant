@@ -76,8 +76,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   );
 
   // Page « Propriété » insérée juste après le sommaire visuel (page 3)
-  // La numérotation exacte est calculée à l'intérieur de PortraitPrintLayout via insertedAfterTocPageCount.
-  const propertySlot = (
+  const renderPropertyPage = (pageNumber: number, totalPages: number) => (
     <PropertyPrintPage
       nom={propertyName ?? ''}
       adresse={proprieteAdresse}
@@ -87,8 +86,8 @@ export const CombinedPrintLayout: React.FC<Props> = ({
       parcelles={parcelles}
       station={station}
       editionDate={new Date()}
-      pageNumber={3}
-      totalPages={0 /* patché par le layout via CSS-only footer si besoin */}
+      pageNumber={pageNumber}
+      totalPages={totalPages}
     />
   );
 
@@ -100,7 +99,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         proprieteVille={proprieteVille}
         publicUrl={publicUrl}
         coverVariant="hero-photo"
-        insertAfterToc={propertySlot}
+        insertAfterToc={renderPropertyPage}
         insertedAfterTocPageCount={1}
         insertBeforeColophon={observeSlot}
         insertedPageCount={2}
