@@ -38,29 +38,38 @@ export function usePropertyObservation(proprieteId?: string) {
   const [local, setLocal] = useState<PropertyObservationState>(EMPTY);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const initRef = useRef(false);
+  const loadedIdRef = useRef<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Reset local state immediately when property changes
   useEffect(() => {
-    if (query.data && !initRef.current) {
-      setLocal(query.data);
-      setSavedAt(query.data.updated_at ?? null);
-      initRef.current = true;
-    } else if (query.data && initRef.current) {
-      // Resync completed_at only, don't clobber in-flight edits
-      setLocal((s) =>
-        s.completed_at === query.data!.completed_at
-          ? s
-          : { ...s, completed_at: query.data!.completed_at ?? null }
-      );
+    if (proprieteId !== loadedIdRef.current) {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      setLocal(EMPTY);
+      setSavedAt(null);
+      loadedIdRef.current = null;
     }
-  }, [query.data]);
+  }, [proprieteId]);
+
+  // Hydrate once per property
+  useEffect(() => {
+    if (!proprieteId || !query.data) return;
+    if (loadedIdRef.current === proprieteId) return;
+    setLocal(query.data);
+    setSavedAt(query.data.updated_at ?? null);
+    loadedIdRef.current = proprieteId;
+  }, [proprieteId, query.data]);
 
   const persist = useCallback(
-    async (state: PropertyObservationState, completed = false) => {
-      if (!proprieteId) return;
+    async (state: PropertyObservationState, completed = false, targetId?: string) => {
+      const id = targetId ?? proprieteId;
+      if (!id || id !== proprieteId) return; // anti-race: never write to a stale id
       setSaving(true);
       const { error } = await supabase.rpc('upsert_propriete_observation' as any, {
-        p_propriete_id: proprieteId,
+        p_propriete_id: id,
         p_answers: state.answers,
         p_sensorial: state.sensorial,
         p_notes: state.notes ?? null,
@@ -72,22 +81,24 @@ export function usePropertyObservation(proprieteId?: string) {
       if (completed) {
         setLocal((s) => ({ ...s, completed_at: new Date().toISOString() }));
       }
-      qc.invalidateQueries({ queryKey: ['propriete-observation', proprieteId] });
+      qc.invalidateQueries({ queryKey: ['propriete-observation', id] });
     },
     [proprieteId, qc]
   );
 
-  // Autosave debounced
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Autosave debounced — only after hydration of the current property
   useEffect(() => {
-    if (!initRef.current) return;
+    if (!proprieteId || loadedIdRef.current !== proprieteId) return;
+    const targetId = proprieteId;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => persist(local, false), 1500);
+    debounceRef.current = setTimeout(() => {
+      persist(local, false, targetId).catch(() => {});
+    }, 1500);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [local]);
+  }, [local, proprieteId]);
 
   const toggleChoice = (blockId: string, value: string) => {
     setLocal((s) => {
