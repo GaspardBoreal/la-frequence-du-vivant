@@ -5821,6 +5821,65 @@ export type Database = {
           },
         ]
       }
+      propriete_gallery_photos: {
+        Row: {
+          author_name: string | null
+          caption: string | null
+          created_at: string
+          curated_by: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          order_index: number
+          photo_date: string | null
+          propriete_id: string
+          source_id: string
+          source_table: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          author_name?: string | null
+          caption?: string | null
+          created_at?: string
+          curated_by?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          order_index?: number
+          photo_date?: string | null
+          propriete_id: string
+          source_id: string
+          source_table: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          author_name?: string | null
+          caption?: string | null
+          created_at?: string
+          curated_by?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          order_index?: number
+          photo_date?: string | null
+          propriete_id?: string
+          source_id?: string
+          source_table?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_gallery_photos_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_marche_events: {
         Row: {
           created_at: string
@@ -7164,6 +7223,10 @@ export type Database = {
       can_access_crm: { Args: { _user_id: string }; Returns: boolean }
       can_create_marche: { Args: { _user_id: string }; Returns: boolean }
       can_curate_audio: { Args: { _user_id: string }; Returns: boolean }
+      can_curate_propriete_gallery: {
+        Args: { _propriete_id: string }
+        Returns: boolean
+      }
       can_edit_marche_event: {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
@@ -7725,6 +7788,37 @@ export type Database = {
         Args: { p_propriete_id: string }
         Returns: Json
       }
+      get_propriete_gallery: {
+        Args: { _propriete_id: string }
+        Returns: {
+          author_name: string
+          caption: string
+          id: string
+          lat: number
+          lng: number
+          order_index: number
+          photo_date: string
+          source_id: string
+          source_table: string
+          url: string
+        }[]
+      }
+      get_propriete_gallery_candidates: {
+        Args: { _propriete_id: string }
+        Returns: {
+          author_name: string
+          event_id: string
+          event_title: string
+          is_selected: boolean
+          lat: number
+          lng: number
+          order_index: number
+          photo_date: string
+          source_id: string
+          source_table: string
+          url: string
+        }[]
+      }
       get_public_event: { Args: { _slug: string }; Returns: Json }
       get_public_event_biodiversity: { Args: { _slug: string }; Returns: Json }
       get_public_event_counters: { Args: { _slug: string }; Returns: Json }
@@ -8083,6 +8177,10 @@ export type Database = {
           subtitle: string
           title: string
         }[]
+      }
+      set_propriete_gallery: {
+        Args: { _items: Json; _propriete_id: string }
+        Returns: undefined
       }
       set_species_translation_manual: {
         Args: { _common_name_fr: string; _scientific_name: string }
