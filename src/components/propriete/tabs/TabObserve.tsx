@@ -66,6 +66,10 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
     return (
       <div className="space-y-6">
         <StepHeader current={1} savedAt={savedAt} saving={saving} />
+        <PortraitTeaser
+          proprieteId={proprieteId}
+          onOpen={() => window.dispatchEvent(new CustomEvent('propriete:goto-tab', { detail: 'portrait' }))}
+        />
         <ObserveSummary
           answers={state.answers}
           sensorial={state.sensorial}
