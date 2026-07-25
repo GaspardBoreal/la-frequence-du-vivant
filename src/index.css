@@ -1039,8 +1039,9 @@
 /* =============================================================
  * Portrait du site — impression cahier photo A4
  * ============================================================= */
-/* Portail d'impression : monté sur <body> pendant l'impression uniquement */
-#portrait-print-portal { display: none; }
+/* Portails d'impression : montés sur <body> pendant l'impression uniquement */
+#portrait-print-portal,
+#combined-print-portal { display: none; }
 
 @media print {
   @page { size: A4; margin: 0; }
@@ -1051,9 +1052,65 @@
     print-color-adjust: exact !important;
   }
 
-  /* Isolation : masque tout sauf le portail */
+  /* Isolation : masque tout sauf le portail actif */
   body.portrait-printing > *:not(#portrait-print-portal) { display: none !important; }
   body.portrait-printing #portrait-print-portal { display: block !important; }
+
+  body.combined-printing > *:not(#combined-print-portal) { display: none !important; }
+  body.combined-printing #combined-print-portal { display: block !important; }
+}
+
+/* ============ Impression combinée : J'observe + Portrait ============ */
+.combined-print-root {
+  background: #fbf7ee;
+  color: #2a2419;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.combined-print-observe {
+  padding: 20mm 18mm;
+  page-break-after: always;
+  break-after: page;
+  background: #fbf7ee;
+}
+.combined-print-divider {
+  width: 210mm;
+  height: 297mm;
+  page-break-after: always;
+  break-after: page;
+  padding: 90mm 26mm 40mm;
+  position: relative;
+  background:
+    radial-gradient(120mm 80mm at 22% 80%, rgba(107,124,90,0.12), transparent 60%),
+    linear-gradient(180deg, #fbf7ee 0%, #f2e8d1 100%);
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  text-align: center;
+  box-sizing: border-box;
+}
+.combined-print-divider-eyebrow {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+  letter-spacing: 4pt;
+  text-transform: uppercase;
+  color: #8a6d3b;
+}
+.combined-print-divider-title {
+  margin: 6mm 0 4mm;
+  font-size: 42pt;
+  font-style: italic;
+  color: #2a2419;
+  line-height: 1.05;
+}
+.combined-print-divider-rule {
+  width: 40mm; height: 0.6mm; background: #b08d57; margin: 4mm auto 6mm;
+}
+.combined-print-divider-sub {
+  font-size: 14pt; color: #4a3f2e; font-style: italic;
+}
+.combined-print-divider-foot {
+  position: absolute; left: 0; right: 0; bottom: 22mm;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt; letter-spacing: 2pt; text-transform: uppercase; color: #8a6d3b;
 }
 
 .portrait-print-root {

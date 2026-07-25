@@ -13,6 +13,10 @@ interface Props {
   onReopenAll: () => void;
   onNextStep?: () => void;
   propertyName?: string;
+  /** Ouvre la modale de choix d'impression (fournie par le parent) */
+  onPrint?: () => void;
+  /** Mode "rendu pour impression combinée" : masque actions écran, garde le cartouche print */
+  printOnly?: boolean;
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
@@ -52,6 +56,8 @@ export const ObserveSummary: React.FC<Props> = ({
   onReopenAll,
   onNextStep,
   propertyName,
+  onPrint,
+  printOnly = false,
 }) => {
   const dateStr = completedAt
     ? new Date(completedAt).toLocaleDateString('fr-FR', {
@@ -73,7 +79,7 @@ export const ObserveSummary: React.FC<Props> = ({
       className="observe-print-root relative bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-line))] shadow-[0_10px_40px_-15px_rgba(22,48,32,0.15)] p-8 md:p-14 overflow-hidden print:shadow-none print:border-0"
     >
       {/* Cartouche impression — visible uniquement à l'impression */}
-      <div className="hidden print:block mb-8">
+      <div className={printOnly ? 'block mb-8' : 'hidden print:block mb-8'}>
         <div className="border-t-2 border-b-2 border-[hsl(var(--ds-gold))] py-6 text-center">
           <div className="text-[10px] font-bold tracking-[0.4em] uppercase text-[hsl(var(--ds-forest))]/70">
             Diagnostic Propriété · Étape 1
@@ -88,7 +94,7 @@ export const ObserveSummary: React.FC<Props> = ({
       </div>
 
       {/* Sceau daté (masqué à l'impression) */}
-      <div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10 print:hidden">
+      {!printOnly && (<div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10 print:hidden">
         <svg className="absolute inset-0 w-full h-full text-[hsl(var(--ds-forest-deep))]" viewBox="0 0 100 100">
           <defs>
             <path
@@ -114,10 +120,12 @@ export const ObserveSummary: React.FC<Props> = ({
             Étape 1
           </span>
         </div>
-      </div>
+      </div>)}
+
+
 
       {/* Header écran */}
-      <header className="mb-6 md:mb-8 border-b border-[hsl(var(--ds-line))] pb-6 pr-32 print:hidden">
+      {!printOnly && (<header className="mb-6 md:mb-8 border-b border-[hsl(var(--ds-line))] pb-6 pr-32 print:hidden">
         <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
           Étape 1 — Terminée
         </span>
@@ -128,7 +136,7 @@ export const ObserveSummary: React.FC<Props> = ({
           Synthèse des observations réalisées sur site. Ce portrait constitue le
           socle écologique du projet.
         </p>
-      </header>
+      </header>)}
 
       {/* Signature du site — glyphe unique */}
       <SiteSignature answers={answers} sensorial={sensorial} dateStr={dateStr} />
@@ -264,7 +272,7 @@ export const ObserveSummary: React.FC<Props> = ({
       </div>
 
       {/* Footer / actions */}
-      <footer className="mt-12 pt-6 border-t border-[hsl(var(--ds-line))] flex flex-wrap items-center justify-between gap-3 print:hidden">
+      {!printOnly && (<footer className="mt-12 pt-6 border-t border-[hsl(var(--ds-line))] flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-2">
           <span className="w-7 h-7 rounded-full border border-[hsl(var(--ds-forest))] flex items-center justify-center text-[hsl(var(--ds-forest))]">
             <Check className="w-4 h-4" />
@@ -276,6 +284,7 @@ export const ObserveSummary: React.FC<Props> = ({
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
+              if (onPrint) { onPrint(); return; }
               document.body.classList.add('observe-printing');
               const cleanup = () => {
                 document.body.classList.remove('observe-printing');
@@ -303,7 +312,7 @@ export const ObserveSummary: React.FC<Props> = ({
             </button>
           )}
         </div>
-      </footer>
+      </footer>)}
     </motion.article>
   );
 };
