@@ -1,14 +1,19 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, CheckCheck, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
+import { usePropertyGallery } from '@/hooks/propriete/usePropertyGallery';
 import { OBSERVE_BLOCKS } from '@/components/propriete/observe/observeConfig';
 import { ObservationCard } from '@/components/propriete/observe/ObservationCard';
 import { SensorialBlock } from '@/components/propriete/observe/SensorialBlock';
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { ObserveSummary } from '@/components/propriete/observe/ObserveSummary';
 import { PortraitTeaser } from '@/components/propriete/portrait/PortraitTeaser';
+import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/print/PrintChoiceDialog';
+import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
+import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import { Button } from '@/components/ui/button';
 
 export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string; propertyName?: string }> = ({
