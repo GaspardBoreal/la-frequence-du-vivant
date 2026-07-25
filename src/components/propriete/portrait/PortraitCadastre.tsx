@@ -344,7 +344,7 @@ export const PortraitCadastre: React.FC<Props> = ({
       {/* Fullscreen toggle */}
       <button
         onClick={() => setFullscreen(!fs)}
-        className="absolute top-4 right-16 z-[1000] h-10 w-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-white flex items-center justify-center shadow-lg hover:bg-black/75 transition active:scale-95"
+        className="absolute top-4 left-4 z-[1000] h-10 w-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-white flex items-center justify-center shadow-lg hover:bg-black/75 transition active:scale-95"
         title={fs ? 'Réduire' : 'Plein écran'}
         aria-label={fs ? 'Réduire la carte' : 'Agrandir la carte'}
       >
