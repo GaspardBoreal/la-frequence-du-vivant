@@ -275,6 +275,14 @@ const PropTabs: React.FC<{
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
   const [tab, setTab] = React.useState<string>('portrait');
+  React.useEffect(() => {
+    const onGoto = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail === 'string') setTab(detail);
+    };
+    window.addEventListener('propriete:goto-tab', onGoto);
+    return () => window.removeEventListener('propriete:goto-tab', onGoto);
+  }, []);
   return (
     <div className="space-y-5">
       <NudgeMarcheBanner
