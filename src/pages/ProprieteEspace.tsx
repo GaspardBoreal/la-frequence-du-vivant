@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
@@ -274,13 +274,14 @@ const PropTabs: React.FC<{
   proprieteCenter?: [number, number] | null;
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
+  const [tab, setTab] = React.useState<string>('portrait');
   return (
     <div className="space-y-5">
       <NudgeMarcheBanner
         proprieteNom={proprieteNom}
         monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
       />
-      <Tabs defaultValue="portrait" className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="w-full flex overflow-x-auto justify-start md:justify-center">
           <TabsTrigger value="portrait">Portrait</TabsTrigger>
           <TabsTrigger value="observe">J'observe</TabsTrigger>
