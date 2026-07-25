@@ -13,6 +13,10 @@ interface Props {
   insertBeforeColophon?: React.ReactNode;
   /** Nombre de pages physiques insérées par insertBeforeColophon, pour paginer citation + colophon. */
   insertedPageCount?: number;
+  /** Contenu inséré juste après le Sommaire visuel (ex : fiche Propriété). Fonction pour recevoir la pagination. */
+  insertAfterToc?: (pageNumber: number, totalPages: number) => React.ReactNode;
+  /** Nombre de pages physiques insérées par insertAfterToc. */
+  insertedAfterTocPageCount?: number;
 }
 
 
