@@ -213,9 +213,15 @@ export const SamplesMapBlock: React.FC<{
             controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
             maxZoom={22}
             height="100%"
+            initialStyle="cadastre"
           >
             <ViewController center={center} />
             <AddOnClick onAdd={handleAdd} disabled={disabledAdd} />
+            {parcelles.map((p) =>
+              p.geometry ? (
+                <GeoJSON key={p.id} data={p.geometry as any} style={SAVED_STYLE} />
+              ) : null,
+            )}
             {samples.map((s) =>
               s.lat != null && s.lng != null ? (
                 <Marker
