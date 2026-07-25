@@ -1138,6 +1138,11 @@
 }
 .portrait-print-page:last-child { page-break-after: auto; break-after: auto; }
 
+@media print {
+  .print-break-before { break-before: page; page-break-before: always; }
+  .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
+}
+
 /* ============ Couverture éditoriale ============ */
 .portrait-print-cover {
   padding: 32mm 26mm;
