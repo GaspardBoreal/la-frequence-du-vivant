@@ -133,7 +133,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
   // Retire une éventuelle respiration finale de la boucle (on force notre propre citation avant colophon)
   while (pages.length > 0 && pages[pages.length - 1].kind === 'breath') pages.pop();
 
-  const totalPages = 2 /* cover + toc */ + pages.length + insertedPageCount + 1 /* final breath */ + 1 /* colophon */;
+  const totalPages = 2 /* cover + toc */ + insertedAfterTocPageCount + pages.length + insertedPageCount + 1 /* final breath */ + 1 /* colophon */;
 
   const footer = (pageNum: number) => (
     <div className="portrait-print-footer">
@@ -143,7 +143,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
     </div>
   );
 
-  let pageCursor = 3; // cover=1, toc=2, then start at 3
+  let pageCursor = 3 + insertedAfterTocPageCount; // cover=1, toc=2, +inserted pages, then photo pages
 
   return (
     <div className="portrait-print-root">
