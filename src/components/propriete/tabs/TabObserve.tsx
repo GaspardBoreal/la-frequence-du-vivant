@@ -151,6 +151,12 @@ export const TabObserve: React.FC<{
           completedAt={completedAt}
           propertyName={propertyName}
           photos={galleryPhotos}
+          proprieteVille={proprieteVille}
+          proprieteAdresse={proprieteAdresse}
+          proprieteCodePostal={proprieteCodePostal}
+          proprieteCenter={derivedCenter}
+          parcelles={parcelles}
+          station={nearestStation}
           publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
         />,
         combinedPortalRef.current,
