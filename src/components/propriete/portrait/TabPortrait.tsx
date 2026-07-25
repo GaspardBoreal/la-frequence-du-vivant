@@ -296,6 +296,7 @@ export const TabPortrait: React.FC<Props> = ({
           publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
         />,
         portalRef.current
+      )}
         </>
       )}
     </div>
