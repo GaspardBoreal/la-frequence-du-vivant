@@ -7,7 +7,12 @@ interface Props {
   proprieteNom: string;
   proprieteVille?: string | null;
   publicUrl?: string;
+  /** 'atelier' = couverture crème signée (défaut). 'hero-photo' = première photo pleine page + titre en surimpression. */
+  coverVariant?: 'atelier' | 'hero-photo';
+  /** Contenu inséré juste avant la page Colophon (ex : synthèse J'observe dans le cahier combiné). */
+  insertBeforeColophon?: React.ReactNode;
 }
+
 
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
