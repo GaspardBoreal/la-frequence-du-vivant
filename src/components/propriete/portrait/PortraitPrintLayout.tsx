@@ -62,7 +62,9 @@ const QUOTES = [
 
 export const PortraitPrintLayout: React.FC<Props> = ({
   photos, proprieteNom, proprieteVille, publicUrl,
+  coverVariant = 'atelier', insertBeforeColophon,
 }) => {
+
   const [qr, setQr] = useState<string | null>(null);
   useEffect(() => {
     const url = publicUrl ?? (typeof window !== 'undefined' ? window.location.href : '');
