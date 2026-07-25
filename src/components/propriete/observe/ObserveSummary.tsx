@@ -119,9 +119,10 @@ export const ObserveSummary: React.FC<Props> = ({
           <span className="text-[7px] uppercase tracking-widest text-[hsl(var(--ds-gold))]">
             Étape 1
           </span>
+        </div>
       </div>)}
 
-      </div>
+
 
       {/* Header écran */}
       {!printOnly && (<header className="mb-6 md:mb-8 border-b border-[hsl(var(--ds-line))] pb-6 pr-32 print:hidden">
