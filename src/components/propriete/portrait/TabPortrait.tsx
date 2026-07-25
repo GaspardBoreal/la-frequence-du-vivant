@@ -216,7 +216,21 @@ export const TabPortrait: React.FC<Props> = ({
           </p>
         </div>
       ) : viewMode === 'bento' ? (
-        <GalleryBento photos={photos} />
+        <GalleryBento
+          photos={photos}
+          onReorder={canCurate ? (reordered) => {
+            saveMut.mutate(reordered.map((p) => ({
+              source_table: p.source_table,
+              source_id: p.source_id,
+              url: p.url,
+              author_name: p.author_name,
+              photo_date: p.photo_date,
+              lat: p.lat,
+              lng: p.lng,
+              caption: p.caption,
+            })));
+          } : undefined}
+        />
       ) : viewMode === 'motion' ? (
         <GalleryMotion photos={photos} />
       ) : (
