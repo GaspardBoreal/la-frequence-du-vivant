@@ -75,28 +75,36 @@ export function usePropertySoil(proprieteId?: string) {
   const [local, setLocal] = useState<PropertySoilState>(EMPTY);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const initRef = useRef(false);
+  const loadedIdRef = useRef<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (query.data && !initRef.current) {
-      setLocal(query.data);
-      setSavedAt(query.data.updated_at ?? null);
-      initRef.current = true;
-    } else if (query.data && initRef.current) {
-      setLocal((s) =>
-        s.completed_at === query.data!.completed_at
-          ? s
-          : { ...s, completed_at: query.data!.completed_at ?? null }
-      );
+    if (proprieteId !== loadedIdRef.current) {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      setLocal(EMPTY);
+      setSavedAt(null);
+      loadedIdRef.current = null;
     }
-  }, [query.data]);
+  }, [proprieteId]);
+
+  useEffect(() => {
+    if (!proprieteId || !query.data) return;
+    if (loadedIdRef.current === proprieteId) return;
+    setLocal(query.data);
+    setSavedAt(query.data.updated_at ?? null);
+    loadedIdRef.current = proprieteId;
+  }, [proprieteId, query.data]);
 
   const persist = useCallback(
-    async (state: PropertySoilState, completed = false) => {
-      if (!proprieteId) return;
+    async (state: PropertySoilState, completed = false, targetId?: string) => {
+      const id = targetId ?? proprieteId;
+      if (!id || id !== proprieteId) return;
       setSaving(true);
       const { error } = await supabase.rpc('upsert_propriete_soil' as any, {
-        p_propriete_id: proprieteId,
+        p_propriete_id: id,
         p_terrain_status: state.terrain_status ?? null,
         p_samples: state.samples as any,
         p_structure: state.structure ?? null,
@@ -113,23 +121,23 @@ export function usePropertySoil(proprieteId?: string) {
       if (completed) {
         setLocal((s) => ({ ...s, completed_at: new Date().toISOString() }));
       }
-      qc.invalidateQueries({ queryKey: ['propriete-soil', proprieteId] });
+      qc.invalidateQueries({ queryKey: ['propriete-soil', id] });
     },
     [proprieteId, qc]
   );
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!initRef.current) return;
+    if (!proprieteId || loadedIdRef.current !== proprieteId) return;
+    const targetId = proprieteId;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      persist(local, false).catch(() => {});
+      persist(local, false, targetId).catch(() => {});
     }, 1500);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [local]);
+  }, [local, proprieteId]);
 
   return {
     state: local,
