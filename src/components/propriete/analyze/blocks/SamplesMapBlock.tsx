@@ -147,9 +147,9 @@ export const SamplesMapBlock: React.FC<{
     for (const s of samples) {
       if (s.lat != null && s.lng != null) pts.push([s.lat, s.lng]);
     }
-    for (const w of visibleWaypoints) pts.push([w.lat, w.lng]);
     return pts.length >= 2 ? pts : undefined;
-  }, [samples, parcelleBounds, visibleWaypoints]);
+  }, [samples, parcelleBounds]);
+
 
   const disabledAdd = samples.length >= MAX_SAMPLES;
 
