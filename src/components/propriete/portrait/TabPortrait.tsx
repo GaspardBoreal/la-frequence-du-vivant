@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles } from 'lucide-react';
 import {
   GALLERY_MAX,
