@@ -61,7 +61,18 @@ export const TabAnalyze: React.FC<{
 
   return (
     <div className="space-y-6">
-      <StepHeader current={2} savedAt={savedAt} saving={saving} />
+      <StepHeader
+        current={2}
+        savedAt={savedAt}
+        saving={saving}
+        title="J'analyse le sol"
+        subtitle={
+          <>
+            Lire la terre par les mains et les yeux : texture, structure, pH, signes de vie.
+            <span className="italic"> Toucher · Sentir · Comprendre.</span>
+          </>
+        }
+      />
 
       {/* Blocs 1 → 4 : pleine largeur pour laisser respirer les cartes et pictos */}
       <div className="space-y-5">
