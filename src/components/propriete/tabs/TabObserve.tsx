@@ -10,9 +10,10 @@ import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { ObserveSummary } from '@/components/propriete/observe/ObserveSummary';
 import { Button } from '@/components/ui/button';
 
-export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string }> = ({
+export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string; propertyName?: string }> = ({
   bio,
   proprieteId,
+  propertyName,
 }) => {
   const { state, saving, savedAt, completedAt, toggleChoice, setSensorial, setNotes, markComplete } =
     usePropertyObservation(proprieteId);
