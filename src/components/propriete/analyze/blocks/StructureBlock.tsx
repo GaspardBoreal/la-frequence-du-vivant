@@ -31,14 +31,14 @@ export const StructureBlock: React.FC<{
         </div>
       }
     >
-      <div className="grid grid-cols-3 gap-6 sm:gap-10 md:gap-16 items-stretch justify-items-center w-full px-2 sm:px-6 md:px-10 lg:px-14">
+      <div className="grid grid-cols-3 gap-4 items-stretch w-full px-2 sm:px-6 md:px-10 lg:px-14">
         {OPTIONS.map((o, i) => {
           const tooltipId = `structure-tip-${o.value}`;
           const align = i === 0 ? 'left' : i === OPTIONS.length - 1 ? 'right' : 'center';
           return (
             <div
               key={o.value}
-              className="relative w-full flex justify-center"
+              className={`relative w-full flex ${i === 0 ? 'justify-start' : i === OPTIONS.length - 1 ? 'justify-end' : 'justify-center'}`}
               onMouseEnter={() => setHovered(o.value)}
               onMouseLeave={() => setHovered((h) => (h === o.value ? null : h))}
               onFocus={() => setHovered(o.value)}
