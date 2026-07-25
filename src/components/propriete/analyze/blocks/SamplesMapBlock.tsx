@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Plus, X, MapPin, Info, Move3D, Camera, Sprout } from 'lucide-react';
+import { Plus, X, MapPin, Info, Move3D } from 'lucide-react';
 import { AnalyzeCard } from '../AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
@@ -10,7 +10,6 @@ import {
   useProprieteParcelles,
   centroidOfParcelles,
 } from '@/hooks/propriete/usePropertyParcelles';
-import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 
 const LABELS = ['A', 'B', 'C', 'D', 'E'];
 const MAX_SAMPLES = 5;
