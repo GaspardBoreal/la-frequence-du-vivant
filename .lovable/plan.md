@@ -1,88 +1,54 @@
-## Objectif
+# Galerie « Portrait du Site » — en amont de J'observe
 
-Rendre chaque bloc du carnet scellé « Portrait de la Propriété » immédiatement lisible, améliorer l'impression, et ajouter un dispositif signature.
+Une galerie curatée par le propriétaire/paysagiste, alimentée par les photos des marches liées à la propriété, qui devient la **carte de visite visuelle** du site avant tout diagnostic.
 
----
+## Emplacement & entrée
 
-### 1. Chips lisibles (au lieu de pictos fantômes)
+Nouvel onglet **Portrait** en position 0 du `ProprieteEspace` (avant J'observe → J'analyse → J'identifie). Icône `Images` + pastille compteur « n/12 ».
 
-Dans `src/components/propriete/observe/ObserveSummary.tsx`, remplacer le composant `PictoRow` (qui affiche les 6-8 choix avec les non-cochés grisés) par un `ChipRow` qui affiche **uniquement les cases cochées**, sous forme de chip lisible :
+Sur l'onglet **J'observe**, en tête du carnet : bandeau discret « 🖼️ Portrait du site — 7 photos choisies » cliquant vers l'onglet Portrait. Si vide : CTA « Composez le portrait de votre site » avec micro-preview.
 
-- Fond crème, bordure or fine, coins arrondis
-- Emoji + libellé complet (`{icon} {label}`)
-- Taille confortable (text-sm, py-1 px-2.5)
-- Wrap naturel, gap 2
+## Sélection — « Table lumineuse »
 
-Si aucune case cochée : petit texte italique `— Non renseigné —` en gris.
+Metaphore d'une table lumineuse de photographe : les photos candidates (issues de `marche_photos` + `convivialite` + `marcheur_medias` des events liés) apparaissent en mosaïque contact-sheet sépia légère. Un clic les fait basculer en couleur pleine + coche ambre, un second désélectionne.
 
-Ceci s'applique aux 7 premiers blocs. La phrase narrative (`describeBlock`) reste dessous en complément mais devient secondaire (couleur atténuée).
+- **Source** : RPC `get_propriete_gallery_candidates(propriete_id)` — agrège toutes les photos géolocalisées dans le rayon des events liés, dédupliquées, avec auteur/date/GPS.
+- **Filtres discrets en haut** : par marche, par saison, par auteur, « avec GPS uniquement ».
+- **Cap** : **12 photos max** (nombre d'or narratif — assez pour raconter, trop peu pour diluer). Compteur circulaire progressif « 7 / 12 » qui se remplit en ambre.
+- **Ordre** : drag-and-drop pour réordonner (dnd-kit, comme les autres flows photos). L'ordre pilote l'affichage et l'impression.
+- **Crédit** : chaque photo garde l'attribution marcheur (badge discret en overlay hover).
+- **Droits** : seul le propriétaire de la propriété + admin peuvent curater. Les autres visiteurs voient le portrait en lecture seule.
 
----
+## Modes d'affichage — 3 registres au choix
 
-### 2. Refonte de l'impression
+Toggle en haut de l'onglet Portrait (`Mosaïque` · `Récit` · `Constellation`), état persisté.
 
-Actuellement `window.print()` imprime la page entière (header app, sidebar, sceau tourné, etc.). Refonte :
+1. **Mosaïque `Bento**` — grille asymétrique 12 tuiles (1 large hero + 3 moyennes + 8 petites), ratios variés, coins doucement arrondis. Hover → légende (auteur · date · lieu). Clic → lightbox plein écran avec navigation clavier.
+2. **Récit `Cinemagraph**` — défilement vertical plein largeur, une photo par écran, parallax léger, légende typographique serif qui apparaît au scroll (fade + translate). Fond crème, marges généreuses. Ambiance carnet d'auteur.
+3. **Constellation `Carte**` — les 12 photos posées sur la carte de la propriété à leurs coordonnées GPS, reliées par un trait fin (ordre de sélection = fil narratif). Clic vignette → carte zoome + panneau photo. Convertit le portrait en **balade visuelle géolocalisée**.
 
-**a) Cacher tout sauf le carnet à l'impression** — ajouter dans `src/index.css` un bloc `@media print` :
-```css
-@media print {
-  body * { visibility: hidden; }
-  .print-root, .print-root * { visibility: visible; }
-  .print-root { position: absolute; inset: 0; }
-}
-```
-Et poser `className="print-root"` sur `<motion.article>` du `ObserveSummary`.
+## Impression — Cahier photo A4
 
-**b) Nouveau cartouche d'impression en tête** — remplacer le hero écran par un bandeau print-only (visible uniquement `@media print`) :
+Bouton `Imprimer le portrait` génère une mise en page dédiée (règles `@media print`, comme le carnet J'observe) :
 
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      DIAGNOSTIC PROPRIÉTÉ · ÉTAPE 1
-      
-      Jardin Monde — Deviat        [nom en serif italique XXL]
-      
-      Validé le 25/07/2026 · Fréquence du Vivant
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-- Nom de la propriété en grand (font-serif italic, 3xl print)
-- Filet or fin dessus/dessous
-- Sceau daté masqué à l'impression (`print:hidden` sur le sceau tourné) car redondant
-- Actions footer déjà `print:hidden` ✓
-
-**c) Récupérer le nom de la propriété** — `ObserveSummary` reçoit une nouvelle prop `propertyName?: string`, passée depuis `TabObserve.tsx` qui la reçoit lui-même via nouvelle prop depuis son parent (page Propriété). Fallback : `Portrait de la Propriété`.
-
----
-
-### 3. Idée signature : « Ligne de Vie » — sparkline du site
-
-Sous le header écran (et à l'impression), afficher une **ligne de vie horizontale** qui condense visuellement le portrait en un glyphe unique :
-
-- Bandeau fin (h-16 écran, h-12 print) traversé par une ligne SVG ondulée qui suit métaphoriquement le terrain observé
-  - amplitude = relief (plat → plate ligne, pentu → grande onde)
-  - couleur du trait = dominante eau (bleu si stagnation/humide, ambre si sec)
-  - épaisseur variable = intensité ambiance (1→4px)
-- 8 points-repères le long de la ligne, un par bloc, chacun avec le picto dominant du bloc au-dessus/en-dessous en alternance
-- Les points « à risque » (pollution, sécheresse…) pulsent en ambre (animation écran only)
-- Sous-titre : `Signature écologique du site — 25/07/2026`
-
-Un composant `SiteSignature.tsx` génère le SVG à partir des `answers` + `sensorial.intensity`. Fonctions utilitaires : `computeAmplitude`, `computeStroke`, `pickWaterColor` — pures, dans le même fichier.
-
-Ce glyphe :
-- devient la carte de visite du diagnostic (imprimable, exportable),
-- se réutilisera plus tard en badge sur la fiche propriété, dans le PDF client, dans un futur partage social.
-
----
+- **Page 1** : couverture — nom propriété en serif large, « Portrait du site » en filet, sous-titre « n photographies · n contributeurs · n marches », date d'édition, `SiteSignature` (déjà créée) en filigrane bas de page.
+- **Pages intérieures** : 1 photo pleine page OU planche contact 4-up selon densité (auto : ≤6 photos = pleine page, >6 = mixte hero + planches).
+- Chaque photo légendée : `Auteur · Date · Localisation` en petit caps.
+- **Dernière page** : mini-carte de constellation + crédits marcheurs listés.
+- Isolation impression via classe `portrait-printing` sur `<body>` (même pattern que `observe-printing`).
 
 ## Détails techniques
 
-**Fichiers modifiés**
-- `src/components/propriete/observe/ObserveSummary.tsx` : remplacer `PictoRow` par `ChipRow`, ajouter cartouche print, ajouter `<SiteSignature>`, ajouter prop `propertyName`, ajouter `print-root`, cacher sceau à l'impression.
-- `src/components/propriete/tabs/TabObserve.tsx` : propager `propertyName` vers `ObserveSummary`.
-- Page propriété appelante (à identifier via `rg TabObserve`) : passer `propertyName` déjà présent dans le state.
-- `src/index.css` : règles `@media print` globales pour isoler `.print-root`.
+- RPC `SECURITY DEFINER` `get_propriete_gallery_candidates` + table `propriete_gallery_photos` (propriete_id, source_table, source_id, order_index, curated_by, created_at) avec unique(propriete_id, source_table, source_id).
+- Hook `usePropertyGallery(proprieteId)` + `useUpdatePropertyGallery` (invalide `portrait` + bandeau J'observe).
+- Composants nouveaux : `TabPortrait.tsx`, `GalleryLightTable.tsx` (sélection), `GalleryBento.tsx`, `GalleryStory.tsx`, `GalleryConstellation.tsx`, `PortraitPrintLayout.tsx`, `PortraitTeaser.tsx` (bandeau J'observe).
+- Réutilise `SafeMapContainer`/`RichMap` primitives pour la constellation, `SpeciesThumb` pattern pour fallback vignette.
+- Ordonnancement drag-and-drop : dnd-kit (déjà utilisé dans `convivialite-photo-reordering-logic` et `marcheur-observations-reordering-logic`).
 
-**Fichier créé**
-- `src/components/propriete/observe/SiteSignature.tsx` : composant SVG pur.
+## Livrable UX à valider avant build
 
-**Pas de changement backend / data / RPC.**
+Confirmer :
+
+1. **Cap à 12**
+2. 2 pour la v1 (ex. Bento + Constellation)
+3. **Curation ouverte aux paysagistes liés** au CRM en plus du propriétaire
