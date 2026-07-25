@@ -13,9 +13,6 @@ interface Props {
   publicUrl?: string;
 }
 
-const fmtLong = (d: Date) =>
-  d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-
 export const CombinedPrintLayout: React.FC<Props> = ({
   answers,
   sensorial,
@@ -25,40 +22,29 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   proprieteVille,
   publicUrl,
 }) => {
-  const now = new Date();
+  const observeSlot = (
+    <section className="portrait-print-page combined-print-observe print-break">
+      <ObserveSummary
+        answers={answers}
+        sensorial={sensorial}
+        completedAt={completedAt}
+        propertyName={propertyName}
+        onEditBlock={() => {}}
+        onReopenAll={() => {}}
+        printOnly
+      />
+    </section>
+  );
+
   return (
     <div className="combined-print-root">
-      {/* Section 1 — J'observe */}
-      <section className="combined-print-observe">
-        <ObserveSummary
-          answers={answers}
-          sensorial={sensorial}
-          completedAt={completedAt}
-          propertyName={propertyName}
-          onEditBlock={() => {}}
-          onReopenAll={() => {}}
-          printOnly
-        />
-      </section>
-
-      {/* Page intercalaire — Portrait */}
-      <section className="combined-print-divider">
-        <div className="combined-print-divider-eyebrow">Deuxième partie</div>
-        <h1 className="combined-print-divider-title">Portrait du site</h1>
-        <div className="combined-print-divider-rule" />
-        <div className="combined-print-divider-sub">
-          {propertyName ?? 'Cette propriété'}
-          {proprieteVille ? ` · ${proprieteVille}` : ''}
-        </div>
-        <div className="combined-print-divider-foot">Édité le {fmtLong(now)}</div>
-      </section>
-
-      {/* Section 2 — Portrait (cahier photo complet) */}
       <PortraitPrintLayout
         photos={photos}
         proprieteNom={propertyName ?? ''}
         proprieteVille={proprieteVille}
         publicUrl={publicUrl}
+        coverVariant="hero-photo"
+        insertBeforeColophon={observeSlot}
       />
     </div>
   );
