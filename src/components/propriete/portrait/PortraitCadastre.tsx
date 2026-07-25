@@ -33,6 +33,7 @@ import CadastreOptionsMenu, {
   type CadastreOptionsState,
 } from './CadastreOptionsMenu';
 import PropertyAddressCard from './PropertyAddressCard';
+import NearestWeatherStationCard from './NearestWeatherStationCard';
 
 const SAVED_STYLE: L.PathOptions = {
   color: '#2f5d3a',
@@ -521,6 +522,9 @@ export const PortraitCadastre: React.FC<Props> = ({
         center={center}
         parcelles={parcelles}
       />
+
+      {/* Station météo la plus proche */}
+      <NearestWeatherStationCard center={center} />
 
       {/* Plein écran */}
       {fullscreen &&
