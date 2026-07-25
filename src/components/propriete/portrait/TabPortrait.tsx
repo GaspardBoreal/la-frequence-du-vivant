@@ -137,8 +137,16 @@ export const TabPortrait: React.FC<Props> = ({
         <div className="flex items-center gap-2 flex-wrap">
           {!editMode && photos.length > 0 && (
             <>
-              <ViewButton active={viewMode === 'bento'} onClick={() => setViewMode('bento')} icon={LayoutGrid} label="Mosaïque" />
-              <ViewButton active={viewMode === 'constellation'} onClick={() => setViewMode('constellation')} icon={MapPin} label="Constellation" />
+              <ViewButton active={viewMode === 'bento'} onClick={() => pickView('bento')} icon={LayoutGrid} label="Mosaïque" />
+              <ViewButton active={viewMode === 'motion'} onClick={() => pickView('motion')} icon={Sparkles} label="Mouvement" />
+              <ViewButton
+                active={viewMode === 'constellation'}
+                onClick={() => gpsCount > 0 && pickView('constellation')}
+                icon={MapPin}
+                label="Carte"
+                disabled={gpsCount === 0}
+                title={gpsCount === 0 ? 'Aucune photo géolocalisée' : `${gpsCount}/${photos.length} photos géolocalisées`}
+              />
               <button
                 onClick={() => setPrintMode(true)}
                 className="text-xs px-3 py-1.5 rounded-full border border-border hover:bg-muted flex items-center gap-1.5"
