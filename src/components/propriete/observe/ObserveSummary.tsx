@@ -69,7 +69,70 @@ export const ObserveSummary: React.FC<Props> = ({
   const intensity =
     typeof sensorial?.intensity === 'number' ? sensorial.intensity : 5;
 
-  const first7 = OBSERVE_BLOCKS.slice(0, 7);
+  const firstGroup = OBSERVE_BLOCKS.slice(0, 5);
+  const secondGroup = OBSERVE_BLOCKS.slice(5, 7);
+
+  const renderBlock = (b: ObserveBlock) => {
+    const sel = answers[b.id] ?? [];
+    const risky = hasRisk(sel);
+    const risks = riskLabels(b, sel);
+    return (
+      <div
+        key={b.id}
+        className={
+          (risky
+            ? 'group relative -m-2 p-3 rounded-lg bg-amber-50/60 border border-amber-200/70'
+            : 'group relative') + ' print-avoid-break'
+        }
+      >
+        <button
+          onClick={() => onEditBlock(b.id)}
+          className={
+            'absolute -right-1 top-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-gold))]/15 print:hidden'
+          }
+          title={`Modifier ${b.category}`}
+          aria-label={`Modifier ${b.category}`}
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="flex items-center gap-2 mb-2">
+          <h3
+            className={
+              risky
+                ? 'text-[11px] uppercase tracking-[0.2em] font-bold text-amber-700'
+                : 'text-[11px] uppercase tracking-[0.2em] font-bold text-[hsl(var(--ds-forest))]'
+            }
+          >
+            {num(b.number)}. {b.category}
+          </h3>
+          {risky && (
+            <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[9px] font-bold uppercase tracking-tight">
+              Attention
+            </span>
+          )}
+        </div>
+
+        <ChipRow block={b} selected={sel} />
+
+        <p
+          className={
+            risky
+              ? 'text-[hsl(var(--ds-forest-deep))] font-medium leading-relaxed'
+              : 'text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed'
+          }
+        >
+          {describeBlock(b, sel)}
+        </p>
+
+        {risky && risks.length > 0 && (
+          <p className="mt-1 text-[11px] uppercase tracking-widest text-amber-700 font-bold">
+            {risks.join(' · ')}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <motion.article
