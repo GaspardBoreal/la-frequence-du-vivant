@@ -17,6 +17,8 @@ interface Props {
   onPrint?: () => void;
   /** Mode "rendu pour impression combinée" : masque actions écran, garde le cartouche print */
   printOnly?: boolean;
+  /** Fragment imprimé : permet au cahier combiné de créer deux vraies pages A4. */
+  printSection?: 'all' | 'first' | 'second';
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
@@ -58,6 +60,7 @@ export const ObserveSummary: React.FC<Props> = ({
   propertyName,
   onPrint,
   printOnly = false,
+  printSection = 'all',
 }) => {
   const dateStr = completedAt
     ? new Date(completedAt).toLocaleDateString('fr-FR', {
@@ -71,6 +74,8 @@ export const ObserveSummary: React.FC<Props> = ({
 
   const firstGroup = OBSERVE_BLOCKS.slice(0, 5);
   const secondGroup = OBSERVE_BLOCKS.slice(5, 7);
+  const showFirstPage = printSection === 'all' || printSection === 'first';
+  const showSecondPage = printSection === 'all' || printSection === 'second';
 
   const renderBlock = (b: ObserveBlock) => {
     const sel = answers[b.id] ?? [];
@@ -134,6 +139,72 @@ export const ObserveSummary: React.FC<Props> = ({
     );
   };
 
+  const renderSensorialBlock = () => (
+    <div className="md:col-span-2 group relative mt-4 pt-8 border-t border-[hsl(var(--ds-line))] print-avoid-break">
+
+      <button
+        onClick={() => onEditBlock('sensorial')}
+        className="absolute right-0 top-8 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-gold))]/15 print:hidden"
+        title="Modifier l'analyse sensorielle"
+        aria-label="Modifier l'analyse sensorielle"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
+
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
+            08. Analyse sensorielle
+          </span>
+          <h3 className="mt-1 font-serif italic text-3xl text-[hsl(var(--ds-forest-deep))]">
+            L'Âme du Lieu
+          </h3>
+        </div>
+        <div className="text-right">
+          <span className="block text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70 font-bold mb-1.5">
+            Ambiance ressentie
+          </span>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className={
+                  i < intensity
+                    ? 'w-4 h-1.5 bg-[hsl(var(--ds-forest))]'
+                    : 'w-4 h-1.5 bg-[hsl(var(--ds-line))]'
+                }
+              />
+            ))}
+            <span className="ml-2 text-xs font-bold text-[hsl(var(--ds-forest-deep))]">
+              {intensity}/10
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
+        {SENSORIAL_FIELDS.map((f) => {
+          const v = sensorial?.[f.key];
+          return (
+            <div key={f.key}>
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-sm" aria-hidden>
+                  {f.icon}
+                </span>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-[hsl(var(--ds-forest))]/70">
+                  {f.label}
+                </span>
+              </div>
+              <p className="text-sm text-[hsl(var(--ds-forest-deep))] italic min-h-[1.25rem]">
+                {v && String(v).trim() ? String(v) : '—'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 12 }}
@@ -142,7 +213,7 @@ export const ObserveSummary: React.FC<Props> = ({
       className="observe-print-root relative bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-line))] shadow-[0_10px_40px_-15px_rgba(22,48,32,0.15)] p-8 md:p-14 overflow-hidden print:shadow-none print:border-0"
     >
       {/* Cartouche impression — visible uniquement à l'impression */}
-      <div className={printOnly ? 'block mb-8' : 'hidden print:block mb-8'}>
+      {showFirstPage && (<div className={printOnly ? 'block mb-8' : 'hidden print:block mb-8'}>
         <div className="border-t-2 border-b-2 border-[hsl(var(--ds-gold))] py-6 text-center">
           <div className="text-[10px] font-bold tracking-[0.4em] uppercase text-[hsl(var(--ds-forest))]/70">
             Diagnostic Propriété · Étape 1
@@ -154,7 +225,21 @@ export const ObserveSummary: React.FC<Props> = ({
             Validé le {dateStr} · Fréquence du Vivant
           </div>
         </div>
-      </div>
+      </div>)}
+
+      {printSection === 'second' && (
+        <div className="mb-10 border-b border-[hsl(var(--ds-gold))]/70 pb-5">
+          <div className="text-[10px] font-bold tracking-[0.35em] uppercase text-[hsl(var(--ds-forest))]/70">
+            Diagnostic Propriété · Étape 1 · Suite
+          </div>
+          <h2 className="mt-2 font-serif italic text-3xl text-[hsl(var(--ds-forest-deep))] leading-tight">
+            {propertyName ?? 'Portrait de la Propriété'}
+          </h2>
+          <div className="mt-2 text-[10px] tracking-[0.25em] uppercase text-[hsl(var(--ds-forest))]/60">
+            Sections 06 à 08 · Fréquence du Vivant
+          </div>
+        </div>
+      )}
 
       {/* Sceau daté (masqué à l'impression) */}
       {!printOnly && (<div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10 print:hidden">
@@ -202,83 +287,27 @@ export const ObserveSummary: React.FC<Props> = ({
       </header>)}
 
       {/* Signature du site — glyphe unique */}
-      <SiteSignature answers={answers} sensorial={sensorial} dateStr={dateStr} />
+      {showFirstPage && (
+        <SiteSignature answers={answers} sensorial={sensorial} dateStr={dateStr} />
+      )}
 
 
       {/* Grille synthèse — blocs 01 → 05 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-        {firstGroup.map(renderBlock)}
-      </div>
+      {showFirstPage && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+          {firstGroup.map(renderBlock)}
+        </div>
+      )}
 
       {/* Groupe impression : blocs 06 + 07 + 08 sur nouvelle page */}
-      <div className="print-break-before mt-8 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-        {secondGroup.map(renderBlock)}
+      {showSecondPage && (
+        <div className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8`}>
+          {secondGroup.map(renderBlock)}
 
-        {/* Bloc 8 — L'Âme du Lieu, pleine largeur */}
-        <div className="md:col-span-2 group relative mt-4 pt-8 border-t border-[hsl(var(--ds-line))] print-avoid-break">
-
-          <button
-            onClick={() => onEditBlock('sensorial')}
-            className="absolute right-0 top-8 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-gold))]/15"
-            title="Modifier l'analyse sensorielle"
-            aria-label="Modifier l'analyse sensorielle"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-
-          <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
-            <div>
-              <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
-                08. Analyse sensorielle
-              </span>
-              <h3 className="mt-1 font-serif italic text-3xl text-[hsl(var(--ds-forest-deep))]">
-                L'Âme du Lieu
-              </h3>
-            </div>
-            <div className="text-right">
-              <span className="block text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70 font-bold mb-1.5">
-                Ambiance ressentie
-              </span>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={
-                      i < intensity
-                        ? 'w-4 h-1.5 bg-[hsl(var(--ds-forest))]'
-                        : 'w-4 h-1.5 bg-[hsl(var(--ds-line))]'
-                    }
-                  />
-                ))}
-                <span className="ml-2 text-xs font-bold text-[hsl(var(--ds-forest-deep))]">
-                  {intensity}/10
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
-            {SENSORIAL_FIELDS.map((f) => {
-              const v = sensorial?.[f.key];
-              return (
-                <div key={f.key}>
-                  <div className="flex items-center gap-1 mb-1">
-                    <span className="text-sm" aria-hidden>
-                      {f.icon}
-                    </span>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-[hsl(var(--ds-forest))]/70">
-                      {f.label}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[hsl(var(--ds-forest-deep))] italic min-h-[1.25rem]">
-                    {v && String(v).trim() ? String(v) : '—'}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+          {/* Bloc 8 — L'Âme du Lieu, pleine largeur */}
+          {renderSensorialBlock()}
         </div>
-      </div>
+      )}
 
       {/* Footer / actions */}
       {!printOnly && (<footer className="mt-12 pt-6 border-t border-[hsl(var(--ds-line))] flex flex-wrap items-center justify-between gap-3 print:hidden">

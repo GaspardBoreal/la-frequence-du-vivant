@@ -1,31 +1,42 @@
-## Problème
+## Oui, le problème est clair
 
-À l'impression du carnet « J'observe », la section **06** commence trop bas en page 8 et se retrouve isolée / coupée. Les sections **07** et **08** finissent également mal réparties.
+Dans le PDF V4, la page 8 contient encore le début de la section 06 en bas de page, et les sections 07/08 ne suivent pas sur une nouvelle page : elles sont probablement poussées hors du conteneur d’impression puis masquées.
 
-Cause : la grille synthèse rend les blocs 01→07 en flux continu (grille 2 colonnes) puis le bloc 08 pleine largeur. Aucun saut de page n'est forcé, l'imprimeur casse donc où il peut.
+## Cause confirmée
 
-## Correctif
+Le saut `print-break-before` a été ajouté à l’intérieur de `ObserveSummary`, mais dans le PDF combiné cette synthèse est enfermée dans :
 
-Dans `src/components/propriete/observe/ObserveSummary.tsx` :
+```text
+<section class="portrait-print-page combined-print-observe ...">
+```
 
-1. Découper `first7` en deux groupes de rendu :
-   - **Groupe A** : blocs **01 → 05** (rendus dans la grille actuelle).
-   - **Groupe B** : blocs **06 → 07** dans une nouvelle grille précédée d'un saut de page à l'impression (`className="print-break-before"` + wrapper `md:col-span-2`).
-2. Placer le **bloc 08** (Analyse sensorielle) immédiatement après le Groupe B, dans le même conteneur, sans saut supplémentaire, afin que 06 + 07 + 08 partagent la nouvelle page.
-3. Réutiliser la classe existante `print-break` déjà utilisée par `CombinedPrintLayout` (elle applique `page-break-before: always` / `break-before: page`). Si absente en global, ajouter une petite règle utilitaire dans `src/index.css` sous `@media print` :
+Or `.portrait-print-page` impose une page A4 fixe avec `height: 297mm` et `overflow: hidden`. Donc le navigateur ne peut pas fragmenter proprement le contenu interne sur deux pages. Le saut demandé à l’intérieur est trop tard / trop profond : il ne crée pas une vraie nouvelle page A4 dans le flux du cahier.
 
-   ```css
-   .print-break-before { break-before: page; page-break-before: always; }
-   ```
-4. Ajouter `break-inside: avoid` sur chacun des blocs 06/07/08 pour éviter toute nouvelle coupure interne.
+## Correctif proposé
+
+1. Remplacer le rendu actuel de `J’observe` dans le PDF combiné par deux vraies pages A4 séparées :
+   - Page J’observe A : cartouche + signature écologique + sections 01 à 05.
+   - Page J’observe B : sections 06 + 07 + 08, avec un en-tête discret rappelant le nom de la propriété.
+
+2. Ne plus compter sur un `break-before` interne pour ce cas combiné : la séparation doit être structurelle dans `CombinedPrintLayout`, avec deux `<section class="portrait-print-page ...">` distinctes.
+
+3. Adapter `ObserveSummary` pour permettre ce rendu imprimé en deux fragments, sans impact écran :
+   - mode normal inchangé pour l’application ;
+   - mode impression page 1 : 01–05 ;
+   - mode impression page 2 : 06–08.
+
+4. Ajouter/ajuster les classes print dédiées :
+   - pas de `overflow` destructeur sur les sous-blocs ;
+   - densité légèrement optimisée en impression ;
+   - `break-inside: avoid` conservé sur chaque bloc.
 
 ## Résultat attendu
 
-- Page N : blocs 01 → 05 + signature du site.
-- Page N+1 (nouvelle page) : blocs 06 + 07 côte à côte, puis bloc 08 « L'Âme du Lieu » pleine largeur, tous groupés proprement.
-- Aucun impact écran : le saut de page n'agit qu'en impression.
+```text
+Page 8  : J’observe — sections 01 à 05 uniquement
+Page 9  : J’observe — sections 06, 07 et 08 ensemble
+Page 10 : Citation respiration
+Page 11 : Colophon
+```
 
-## Fichiers touchés
-
-- `src/components/propriete/observe/ObserveSummary.tsx` (découpage rendu + classes)
-- `src/index.css` (règle print utilitaire si non existante)
+Le rendu écran de l’onglet `J’observe` ne change pas.
