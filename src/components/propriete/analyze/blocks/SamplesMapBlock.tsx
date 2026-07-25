@@ -123,24 +123,8 @@ export const SamplesMapBlock: React.FC<{
   const parcCenter = useMemo(() => centroidOfParcelles(parcelles), [parcelles]);
   const center: [number, number] = parcCenter ?? proprieteCenter ?? [45.0, 0.5];
 
-  const { waypoints } = usePropertySpeciesPool(proprieteId);
-  const [showWaypoints, setShowWaypoints] = useState(true);
-  const [kingdomFilter, setKingdomFilter] = useState<KingdomFilter>('all');
-
-  const wpStats = useMemo(() => {
-    const c: Record<string, number> = { Plantae: 0, Animalia: 0, Fungi: 0, Other: 0 };
-    for (const w of waypoints) c[kingdomFrom(w.kingdom)]++;
-    return c;
-  }, [waypoints]);
-
-  const visibleWaypoints = useMemo(() => {
-    if (!showWaypoints) return [];
-    return waypoints.filter((w) =>
-      kingdomFilter === 'all' ? true : kingdomFrom(w.kingdom) === kingdomFilter,
-    );
-  }, [waypoints, showWaypoints, kingdomFilter]);
-
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+
 
   // Seed default coordinates once the centre is known
   useEffect(() => {
