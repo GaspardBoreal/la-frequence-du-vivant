@@ -13,6 +13,10 @@ interface Props {
   insertBeforeColophon?: React.ReactNode;
   /** Nombre de pages physiques insérées par insertBeforeColophon, pour paginer citation + colophon. */
   insertedPageCount?: number;
+  /** Contenu inséré juste après le Sommaire visuel (ex : fiche Propriété). Fonction pour recevoir la pagination. */
+  insertAfterToc?: (pageNumber: number, totalPages: number) => React.ReactNode;
+  /** Nombre de pages physiques insérées par insertAfterToc. */
+  insertedAfterTocPageCount?: number;
 }
 
 
@@ -65,6 +69,7 @@ const QUOTES = [
 export const PortraitPrintLayout: React.FC<Props> = ({
   photos, proprieteNom, proprieteVille, publicUrl,
   coverVariant = 'atelier', insertBeforeColophon, insertedPageCount = 0,
+  insertAfterToc, insertedAfterTocPageCount = 0,
 }) => {
 
   const [qr, setQr] = useState<string | null>(null);
@@ -128,7 +133,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
   // Retire une éventuelle respiration finale de la boucle (on force notre propre citation avant colophon)
   while (pages.length > 0 && pages[pages.length - 1].kind === 'breath') pages.pop();
 
-  const totalPages = 2 /* cover + toc */ + pages.length + insertedPageCount + 1 /* final breath */ + 1 /* colophon */;
+  const totalPages = 2 /* cover + toc */ + insertedAfterTocPageCount + pages.length + insertedPageCount + 1 /* final breath */ + 1 /* colophon */;
 
   const footer = (pageNum: number) => (
     <div className="portrait-print-footer">
@@ -138,7 +143,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
     </div>
   );
 
-  let pageCursor = 3; // cover=1, toc=2, then start at 3
+  let pageCursor = 3 + insertedAfterTocPageCount; // cover=1, toc=2, +inserted pages, then photo pages
 
   return (
     <div className="portrait-print-root">
@@ -196,6 +201,10 @@ export const PortraitPrintLayout: React.FC<Props> = ({
         </div>
         {footer(2)}
       </section>
+
+      {/* ===== Insert après le sommaire visuel (ex : fiche Propriété) ===== */}
+      {insertAfterToc && insertAfterToc(3, totalPages)}
+
 
       {/* ===== Pages photo ===== */}
       {pages.map((pg, k) => {

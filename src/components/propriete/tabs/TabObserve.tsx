@@ -5,6 +5,9 @@ import { toast } from 'sonner';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
 import { usePropertyGallery } from '@/hooks/propriete/usePropertyGallery';
+import { useProprieteParcelles, centroidOfParcelles } from '@/hooks/propriete/usePropertyParcelles';
+import { useNearestStations } from '@/hooks/useNearestStations';
+import { getStationByCode } from '@/utils/weatherStationDatabase';
 import { OBSERVE_BLOCKS } from '@/components/propriete/observe/observeConfig';
 import { ObservationCard } from '@/components/propriete/observe/ObservationCard';
 import { SensorialBlock } from '@/components/propriete/observe/SensorialBlock';
@@ -16,10 +19,22 @@ import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintL
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import { Button } from '@/components/ui/button';
 
-export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string; propertyName?: string }> = ({
+export const TabObserve: React.FC<{
+  bio?: PropertyBiodiversity;
+  proprieteId?: string;
+  propertyName?: string;
+  proprieteVille?: string | null;
+  proprieteAdresse?: string | null;
+  proprieteCodePostal?: string | null;
+  proprieteCenter?: [number, number] | null;
+}> = ({
   bio,
   proprieteId,
   propertyName,
+  proprieteVille,
+  proprieteAdresse,
+  proprieteCodePostal,
+  proprieteCenter,
 }) => {
   const { state, saving, savedAt, completedAt, toggleChoice, setSensorial, setNotes, markComplete } =
     usePropertyObservation(proprieteId);
@@ -68,6 +83,35 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
 
   // ─── Impression : dialogue + portail combiné ────────────────────────────
   const { data: galleryPhotos = [] } = usePropertyGallery(proprieteId);
+  const { data: parcelles = [] } = useProprieteParcelles(proprieteId);
+  const derivedCenter = React.useMemo<[number, number] | null>(
+    () => proprieteCenter ?? centroidOfParcelles(parcelles),
+    [proprieteCenter, parcelles],
+  );
+  const stationPoints = React.useMemo(
+    () => (derivedCenter ? [{ id: 'property-center', latitude: derivedCenter[0], longitude: derivedCenter[1] }] : []),
+    [derivedCenter],
+  );
+  const { stations, pointLinks } = useNearestStations(stationPoints, 60);
+  const nearestStation = React.useMemo(() => {
+    const link = pointLinks[0];
+    if (!link) return null;
+    const st = stations.find((s) => s.code === link.stationCode);
+    if (!st) return null;
+    const local = getStationByCode(st.code);
+    return {
+      code: st.code,
+      name: st.name,
+      lat: st.lat,
+      lng: st.lng,
+      distanceKm: link.distance,
+      source: st.source,
+      department: local?.department ?? null,
+      region: local?.region ?? null,
+      elevation: local?.elevation ?? null,
+    };
+  }, [pointLinks, stations]);
+
   const [printOpen, setPrintOpen] = React.useState(false);
   const [combinedPrinting, setCombinedPrinting] = React.useState(false);
   const combinedPortalRef = usePrintCombined({
@@ -107,6 +151,12 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
           completedAt={completedAt}
           propertyName={propertyName}
           photos={galleryPhotos}
+          proprieteVille={proprieteVille}
+          proprieteAdresse={proprieteAdresse}
+          proprieteCodePostal={proprieteCodePostal}
+          proprieteCenter={derivedCenter}
+          parcelles={parcelles}
+          station={nearestStation}
           publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
         />,
         combinedPortalRef.current,
