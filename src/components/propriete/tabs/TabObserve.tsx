@@ -7,6 +7,7 @@ import { OBSERVE_BLOCKS } from '@/components/propriete/observe/observeConfig';
 import { ObservationCard } from '@/components/propriete/observe/ObservationCard';
 import { SensorialBlock } from '@/components/propriete/observe/SensorialBlock';
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
+import { ObserveSummary } from '@/components/propriete/observe/ObserveSummary';
 import { Button } from '@/components/ui/button';
 
 export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string }> = ({
@@ -16,6 +17,21 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
   const { state, saving, savedAt, completedAt, toggleChoice, setSensorial, setNotes, markComplete } =
     usePropertyObservation(proprieteId);
   const [submitting, setSubmitting] = React.useState(false);
+  const [mode, setMode] = React.useState<'summary' | 'edit'>(
+    completedAt ? 'summary' : 'edit'
+  );
+
+  // Repasse en summary quand une nouvelle validation intervient
+  React.useEffect(() => {
+    if (completedAt) setMode('summary');
+  }, [completedAt]);
+
+  const scrollToBlock = (blockId: string) => {
+    setTimeout(() => {
+      const el = document.getElementById(`observe-block-${blockId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  };
 
   const blocksAnswered = Object.values(state.answers).reduce(
     (n, arr) => n + (arr?.length ? 1 : 0),
@@ -32,6 +48,7 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
     try {
       await markComplete();
       toast.success("Étape 1 marquée comme terminée ✓");
+      setMode('summary');
     } catch (e: any) {
       toast.error("Échec de l'enregistrement", { description: e?.message ?? 'Réessayez.' });
     } finally {
@@ -42,22 +59,61 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
   const isDone = !!completedAt;
   const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
 
+  // Vue synthèse (carnet scellé) — quand terminé et non en mode édition
+  if (isDone && mode === 'summary') {
+    return (
+      <div className="space-y-6">
+        <StepHeader current={1} savedAt={savedAt} saving={saving} />
+        <ObserveSummary
+          answers={state.answers}
+          sensorial={state.sensorial}
+          completedAt={completedAt}
+          onEditBlock={(id) => {
+            setMode('edit');
+            scrollToBlock(id);
+          }}
+          onReopenAll={() => setMode('edit')}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <StepHeader current={1} savedAt={savedAt} saving={saving} />
 
+      {isDone && (
+        <div className="flex items-center justify-between rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-sm text-[hsl(var(--ds-forest-deep))]">
+          <span className="inline-flex items-center gap-1.5">
+            <Check className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
+            Mode édition — les modifications seront réenregistrées.
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setMode('summary')}
+            className="text-xs"
+          >
+            Revenir à la synthèse
+          </Button>
+        </div>
+      )}
+
       {/* Grille des 8 cartes */}
       <div className="grid md:grid-cols-2 gap-5">
         {OBSERVE_BLOCKS.map((b, i) => (
-          <ObservationCard
-            key={b.id}
-            block={b}
-            selected={state.answers[b.id] ?? []}
-            onToggle={(v) => toggleChoice(b.id, v)}
-            index={i}
-          />
+          <div key={b.id} id={`observe-block-${b.id}`}>
+            <ObservationCard
+              block={b}
+              selected={state.answers[b.id] ?? []}
+              onToggle={(v) => toggleChoice(b.id, v)}
+              index={i}
+            />
+          </div>
         ))}
-        <SensorialBlock values={state.sensorial} onChange={setSensorial} />
+        <div id="observe-block-sensorial">
+          <SensorialBlock values={state.sensorial} onChange={setSensorial} />
+        </div>
       </div>
 
       {/* Notes libres */}

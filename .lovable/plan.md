@@ -1,38 +1,58 @@
-# Doublons de marcheurs — Sentinelles du lieu
+## Objectif
 
-## Cause confirmée
+Quand l'étape 1 « J'observe » est terminée (`completed_at != null`), remplacer la grille éditable des 8 cartes par **une synthèse "Carnet scellé"** — la maquette v2 validée au premier tour (Portrait de la Propriété, sceau rond daté, 8 blocs en grille 2 colonnes, bloc 8 pleine largeur pour l'Âme du Lieu) — en y ajoutant sous chaque titre de bloc **une ligne de pictos représentant les choix cochés** (les non cochés restent en fantôme pour lisibilité).
 
-`usePropertySpeciesPool` agrège les contributeurs par `marcheur_id` (UUID de la ligne `exploration_marcheurs`). Or **un même humain a une ligne `exploration_marcheurs` par exploration** à laquelle il participe. La propriété « Jardin Monde Deviat » agrège plusieurs marches/explorations → Gaspard Boréal et Laurence Karki apparaissent chacun 2 fois (un `marcheur_id` différent par exploration), avec des stats splittées (107/74 esp., 47/31 esp.).
+## Ce qu'on construit
 
-Le fix doit se faire **après résolution des profils** (là où on connaît `user_id` + nom), pas dans le pool brut — c'est le seul endroit où on peut fusionner de manière fiable.
+### 1. Nouveau composant `ObserveSummary.tsx`
+`src/components/propriete/observe/ObserveSummary.tsx`
 
-## Correctif
+Rendu conforme à la maquette v2 :
+- **Header** : chip "Étape 1 — Terminée" + titre serif italique "Portrait de la Propriété" + sous-titre + trait de séparation.
+- **Sceau daté** en haut à droite : cercle 128px, bordure or, texte circulaire "Diagnostic Propriété • Fréquence du Vivant", centre "Validé · 25/07/2026" (date issue de `completed_at`), rotation 12°.
+- **Grille 2 colonnes** des 7 premiers blocs :
+  - Numéro `01. Relief`, titre uppercase forest, phrase narrative générée à partir des choix (voir ci-dessous).
+  - **Sous le titre : rangée de pictos** (icônes des `choices` du bloc dans `observeConfig`). Cochés = plein forest sur pastille crème bordure or ; non cochés = même picto opacité 20 %, pas de bordure. 24×24, gap 8px.
+  - Blocs contenant des choix « à risque » (pollution, tassement, sécheresse, sel, inondation, vent salin, piétinement) reçoivent le fond amber-50/50 + tag "ATTENTION" comme dans la maquette.
+  - Bouton crayon apparaît au hover (`opacity-0 group-hover:opacity-100`) → `onEditBlock(blockId)`.
+- **Bloc 8 pleine largeur "L'Âme du Lieu"** : titre serif italique, jauge intensité 10 segments (forest pleins jusqu'à `intensity`, ds-line ensuite) + label "7/10", puis grille 5 colonnes (Vues / Sons / Odeurs / Textures / Ambiance) avec label uppercase gray + valeur texte du champ sensoriel.
+- **Footer** : coche + "Observation verrouillée pour le rapport client" à gauche, bouton "Imprimer la synthèse" à droite. Ajout de deux boutons additionnels : "Rouvrir en édition complète" (repasse en mode grille éditable) et "Étape suivante · J'analyse le sol".
 
-Modifier `src/hooks/propriete/usePropertyContributors.ts` pour :
+### 2. Génération des phrases narratives par bloc
+Utilitaire `src/components/propriete/observe/summarizeAnswers.ts` :
+- Fonction `describeBlock(blockId, selectedValues[], allChoices[]) → string` : produit une phrase courte à partir des labels des choix cochés (ex : `['secheresse', 'ombre_permanente']` sur bloc 7 → « Le terrain subit une **ombre permanente** et une **sécheresse marquée**. »).
+- Templates par bloc (relief / eau / sol_nu / vegetation / faune / usages_passes / particularites) définis dans le fichier, avec fallback générique « Choix retenus : X, Y. » si aucun template ne matche.
+- Aucun appel LLM, purement local.
 
-1. Après avoir résolu les `exploration_marcheurs` + `community_profiles`, calculer pour chaque contributeur une **clé d'identité canonique** :
-   - priorité 1 : `user_id` (si non nul)
-   - priorité 2 : `normName(prenom + ' ' + nom)` (NFD, lowercase, trim — cohérent avec `identity-matching-logic` en mémoire)
-   - fallback : `marcheurId` (comportement actuel, cas anonyme sans nom)
+### 3. Branchement dans `TabObserve.tsx`
+Dans `src/components/propriete/tabs/TabObserve.tsx` :
+- Ajouter un état local `mode: 'summary' | 'edit'` initialisé à `'summary'` si `completedAt` existe, sinon `'edit'`.
+- Si `mode === 'summary'` et `completedAt` : rendre `<ObserveSummary … onEditBlock={id => { setMode('edit'); scrollToBlock(id); }} onReopenAll={() => setMode('edit')} />` à la place de la grille actuelle.
+- Sinon : conserver la grille éditable actuelle inchangée.
+- Après édition, le bouton "Marquer l'étape comme terminée" repasse automatiquement en `'summary'` via effet sur `completedAt`.
 
-2. Fusionner les entrées partageant la même clé :
-   - `observations` = somme
-   - `speciesCount` = **union** des clés espèces, pas somme (nécessite de remonter `speciesKeys: Set<string>` depuis `usePropertySpeciesPool` au lieu d'un simple `speciesCount` déjà agrégé)
-   - `lastSeen` = max
-   - profil (prenom/nom/avatar/rôle/couleur) = première valeur non nulle, avec préférence au profil issu de `community_profiles`
-   - `marcheurIds: string[]` = liste conservée pour debug / futures actions
+### 4. Ancrage/scroll vers un bloc édité
+Ajouter `id={`observe-block-${b.id}`}` sur chaque `<ObservationCard>` de la grille éditable pour que `scrollToBlock` fonctionne quand on clique le crayon d'un bloc dans la synthèse.
 
-3. Trier par `observations` desc puis afficher (aucun changement dans `SentinellesBlock.tsx` sauf la `key` qui devient la clé canonique).
+## Ce qu'on ne touche PAS
+
+- Le hook `usePropertyObservation` (état, autosave, RPC) : inchangé.
+- `observeConfig.ts` : inchangé, la synthèse lit `OBSERVE_BLOCKS` pour retrouver labels + icônes des choix.
+- Les 3 autres étapes (J'analyse, J'identifie) : inchangées.
+- La palette CSS (`--ds-cream`, `--ds-forest`, `--ds-forest-deep`, `--ds-gold`, `--ds-line`) : inchangée.
 
 ## Détails techniques
 
-- `usePropertySpeciesPool.contributorSummaries` : remplacer `speciesCount: number` par `speciesKeys: string[]` (ou garder les deux) pour permettre l'union côté hook contributors.
-- `usePropertyContributors` :
-  - signature d'entrée inchangée côté appelant ; interne consomme `speciesKeys`.
-  - la sortie `PropertyContributor` reste identique + optionnel `marcheurIds?: string[]`.
-- `SentinellesBlock.tsx` : changer `key={c.marcheurId}` en `key={c.marcheurIds?.[0] ?? c.marcheurId}` (ou une clé stable dérivée).
+- Le sceau utilise un `<svg>` avec `<textPath>` sur un cercle pour le texte curviligne (déjà présent dans le prototype v2).
+- Les icônes cochés/non-cochés viennent de `block.choices[i].icon` (déjà des composants React dans `observeConfig`).
+- Détection "à risque" : liste blanche des `value` sensibles → `RISK_VALUES = ['pollution', 'tassement', 'secheresse', 'sel', 'inondation', 'vent_salin', 'pietinement', 'erosion']`.
+- Le mode impression est déjà géré ailleurs → le bouton "Imprimer" appelle simplement `window.print()`.
 
-## Hors périmètre
+## Fichiers créés
+- `src/components/propriete/observe/ObserveSummary.tsx`
+- `src/components/propriete/observe/summarizeAnswers.ts`
 
-- Pas de migration SQL : le doublon est structurel (1 ligne exploration_marcheurs par participation) et légitime côté data. On corrige uniquement l'affichage agrégé propriété.
-- Pas de dedup côté carte / delta pour l'instant (à voir dans un second temps si tu veux fusionner aussi les waypoints par personne).
+## Fichiers modifiés
+- `src/components/propriete/tabs/TabObserve.tsx` (mode summary/edit + rendu conditionnel + id d'ancre sur les cartes)
+
+Prêt à passer en build si tu valides.
