@@ -138,24 +138,42 @@ export const PortraitPrintLayout: React.FC<Props> = ({
   return (
     <div className="portrait-print-root">
       {/* ===== Couverture ===== */}
-      <section className="portrait-print-cover">
-        <div className="portrait-print-eyebrow">Portrait du site</div>
-        <div>
-          <h1 className="portrait-print-title">{proprieteNom}</h1>
-          <div className="portrait-print-title-rule" />
-          {proprieteVille && <div className="portrait-print-place">{proprieteVille}</div>}
-        </div>
-        <div className="portrait-print-cover-foot">
-          <div className="portrait-print-cover-quote">
-            « Un carnet d'atelier composé à partir des photographies rassemblées par les marcheurs et le propriétaire du lieu — première trace d'un dialogue en cours avec le vivant. »
+      {coverVariant === 'hero-photo' && photos[0] ? (
+        <section className="portrait-print-page portrait-print-full portrait-print-hero-cover">
+          <div className="portrait-print-hero">
+            <img src={photos[0].url} alt="" crossOrigin="anonymous" />
           </div>
-          <Seal
-            dateLabel={editionLabel}
-            photoCount={photos.length}
-            contribCount={authors.length}
-          />
-        </div>
-      </section>
+          <div className="portrait-print-hero-overlay">
+            <div className="portrait-print-eyebrow" style={{ color: '#fbf7ee' }}>Portrait du site</div>
+            <h1 className="portrait-print-title" style={{ color: '#fbf7ee' }}>{proprieteNom}</h1>
+            <div className="portrait-print-title-rule" />
+            {proprieteVille && <div className="portrait-print-place" style={{ color: '#fbf7ee' }}>{proprieteVille}</div>}
+          </div>
+          <div className="portrait-print-hero-editfoot">
+            Édité le {fmtLong(today)}
+          </div>
+        </section>
+      ) : (
+        <section className="portrait-print-cover">
+          <div className="portrait-print-eyebrow">Portrait du site</div>
+          <div>
+            <h1 className="portrait-print-title">{proprieteNom}</h1>
+            <div className="portrait-print-title-rule" />
+            {proprieteVille && <div className="portrait-print-place">{proprieteVille}</div>}
+          </div>
+          <div className="portrait-print-cover-foot">
+            <div className="portrait-print-cover-quote">
+              « Un carnet d'atelier composé à partir des photographies rassemblées par les marcheurs et le propriétaire du lieu — première trace d'un dialogue en cours avec le vivant. »
+            </div>
+            <Seal
+              dateLabel={editionLabel}
+              photoCount={photos.length}
+              contribCount={authors.length}
+            />
+          </div>
+        </section>
+      )}
+
 
       {/* ===== Sommaire visuel ===== */}
       <section className="portrait-print-page portrait-print-toc">
