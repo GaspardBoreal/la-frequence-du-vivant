@@ -1,28 +1,65 @@
-## Diagnostic (confirmé par lecture code)
+## Objectif
 
-Deux sources de stations coexistent :
+Ajouter une nouvelle page **« Propriété »** dans le Cahier complet (mode d'impression « J'observe + Portrait »), insérée entre le **Sommaire visuel** et la première page **Diagnostic étape 1 (J'observe)**. Elle reprend, sur **une seule page A4**, l'intégralité des informations visibles dans **Portrait → Cadastre**.
 
-1. **Carte cadastre** (`WeatherStationsLayer` → `useNearestStations`) : fusionne la DB locale + les stations **LEXICON géocodées** via `useNearestLexiconStations`. C'est ainsi que **POITIERS-BIARD (86027001)** apparaît à ~2.5 km — elle n'est pas dans la DB locale, mais résolue depuis LEXICON.
-2. **Pavé actuel** (`NearestWeatherStationCard`) : lit uniquement `getAllStationsSortedByDistance()` → base hardcodée `weatherStationDatabase.ts`. POITIERS-BIARD absente ⇒ retombe sur **Chasseneuil (~84 km)**, la station "connue" la plus proche.
+## Contenu de la page (single A4, portrait)
 
-Résultat : incohérence carte / pavé.
+Organisation en 3 bandes verticales, sur fond crème du carnet, filet doré latéral cohérent avec la charte :
 
-## Correctif
+**1. En-tête (~15 % de la page)**
 
-Aligner le pavé sur exactement la même source que la carte, en réutilisant `useNearestStations` avec le `center` de la propriété comme unique point.
+- Eyebrow « Fiche propriété · Cadastre »
+- Titre serif : nom de la propriété
+- Sous-titre : ville · code postal
+- Filet doré + date d'édition à droite
 
-### Modification `src/components/propriete/portrait/NearestWeatherStationCard.tsx`
-- Supprimer l'appel direct à `getAllStationsSortedByDistance`.
-- Appeler `useNearestStations([{ id: 'property-center', latitude, longitude }], radiusKm)` avec `radiusKm = 60` (défaut carte).
-- Récupérer la station via `pointLinks[0]` → `stations.find(s => s.code === link.stationCode)` → distance déjà calculée dans `pointLinks[0].distance`.
-- Enrichir avec les métadonnées locales si dispo : `getStationByCode(code)` pour récupérer `department`, `region`, `elevation` (LEXICON n'a que name/lat/lng/source). Sinon fallback : afficher uniquement le nom + code + badge source (`Géocodé`/`Précis`/`Commune`) + distance + GPS.
-- Ajouter un mini badge de qualité de source (`Précis` / `Géocodé` / `Commune`) cohérent avec le popup carte.
-- Si `stations` vide (aucune station à ≤ 60 km) : ne rien afficher (comportement identique à la carte).
-- État loading (`isLoading` du hook) : skeleton discret pendant la résolution LEXICON.
+**2. Bloc principal (~55 %) — deux colonnes**
 
-### Aucun changement ailleurs
-- `PortraitCadastre.tsx` : signature du composant inchangée (toujours `center`).
-- Aucune modification DB ou base stations.
+- **Colonne gauche « Identité & Cadastre »**
+  - Adresse complète (rue, CP, ville)
+  - Communes couvertes (chips)
+  - Liste des parcelles : Section · N° · Préfixe · Contenance (m²) — présentée en tableau serré 2 colonnes si > 8 lignes
+  - Total surface cadastrale cumulée + nombre de parcelles
+- **Colonne droite « Repères géographiques »**
+  - Coordonnées GPS du centroïde (format DMS + décimal)
+  - Altitude si disponible
+  - Mini-carte statique **snapshot** du cadastre (rendue via `html2canvas` sur la carte plein-écran au moment du print, ou fallback SVG des contours de parcelles depuis `geometry`) — cadre doré, ~70 mm × 55 mm
+  - Légende sobre : « Contours cadastraux · centroïde »
 
-## Résultat attendu
-Sur `Maison sous Blossac` : le pavé affiche **POITIERS-BIARD** à ~2.5 km avec le badge `Géocodé`, exactement comme le popup de la carte.
+**3. Pied de bloc (~30 %) — Station météo & QR**
+
+- Encart « Station météo de référence » (nom, distance km, altitude, coordonnées, source badge)
+- Rayons d'observation configurés (chips : 250 m / 500 m / 1 km…) si présents dans les préférences
+- QR code discret vers la page publique + footer paginé standard
+
+## Design
+
+- Palette crème/or/vert forêt existante (`portrait-print-*` tokens)
+- Typo : Cormorant Garamond italique (titre), Helvetica (data)
+- Numérotation à l'ancienne « 03 » en marge, cohérente avec les autres planches
+- Aucun scroll : dimensionnement strict A4 avec `page-break-after: always` et grille CSS calibrée pour tenir même avec 30+ parcelles (bascule auto en 3 colonnes de parcelles au-delà de 20)
+
+## Insertion dans le flux du cahier combiné
+
+Ordre final du PDF « Cahier complet » :
+
+1. Couverture Hero
+2. Sommaire visuel
+3. **Propriété (nouveau) ← ici**
+4. Diagnostic étape 1 — J'observe (pages 1 & 2)
+5. Planches photo
+6. Citation
+7. Colophon
+
+## Fichiers touchés (frontend uniquement)
+
+- **Nouveau** `src/components/propriete/print/PropertyPrintPage.tsx` — la page A4 elle-même (reçoit `nom`, `adresse`, `ville`, `codePostal`, `parcelles`, `center`, `nearestStation`)
+- `src/components/propriete/print/CombinedPrintLayout.tsx` — accepte les props propriété + station, compose `<PropertyPrintPage/>` dans un nouveau slot `insertAfterToc`
+- `src/components/propriete/portrait/PortraitPrintLayout.tsx` — ajoute la prop `insertAfterToc?: ReactNode` rendue juste après le Sommaire visuel, et incrémente `totalPages` en conséquence
+- `src/index.css` — styles `.property-print-page` (grille, filet doré, tableau parcelles, mini-carte cadre)
+- `src/pages/ProprieteEspace.tsx` (ou le composant qui monte `CombinedPrintLayout`) — passe `parcelles`, `center`, `adresse`, `ville`, `codePostal`, `nearestStation` déjà disponibles via `useProprieteParcelles` + `useNearestStations`
+
+## Points ouverts / questions
+
+1. **Mini-carte** : un rendu SVG des contours de parcelles à partir de `geometry` (léger, fiable à l'impression, sans dépendance),
+2. Faut-il aussi afficher le **paysagiste / propriétaire** rattachés (si présents en base) 
