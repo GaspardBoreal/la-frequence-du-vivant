@@ -1,7 +1,8 @@
 import React from 'react';
 import { AnalyzeCard } from '../AnalyzeCard';
 import { ChoiceButton } from '../ChoiceButton';
-import { IconCompacte, IconGrumeleuse, IconParticulaire, SoilHeroStrata } from '../SoilPictos';
+import { IconCompacte, IconGrumeleuse, IconParticulaire } from '../SoilPictos';
+import { StructureCrossSection } from '../StructureCrossSection';
 
 const OPTIONS = [
   { value: 'compacte', label: 'Compacte', hint: 'motte massive', icon: <IconCompacte /> },
@@ -22,7 +23,7 @@ export const StructureBlock: React.FC<{
     index={index}
     hero={
       <div className="aspect-[16/7]">
-        <SoilHeroStrata variant="cross" />
+        <StructureCrossSection value={value as any} />
       </div>
     }
   >
@@ -40,3 +41,4 @@ export const StructureBlock: React.FC<{
     </div>
   </AnalyzeCard>
 );
+
