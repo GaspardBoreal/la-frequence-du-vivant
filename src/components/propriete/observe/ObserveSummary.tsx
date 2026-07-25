@@ -275,7 +275,15 @@ export const ObserveSummary: React.FC<Props> = ({
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => window.print()}
+            onClick={() => {
+              document.body.classList.add('observe-printing');
+              const cleanup = () => {
+                document.body.classList.remove('observe-printing');
+                window.removeEventListener('afterprint', cleanup);
+              };
+              window.addEventListener('afterprint', cleanup);
+              setTimeout(() => window.print(), 50);
+            }}
             className="inline-flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--ds-forest))] text-[hsl(var(--ds-forest-deep))] text-xs font-semibold uppercase tracking-widest hover:bg-[hsl(var(--ds-forest))] hover:text-[hsl(var(--ds-cream))] transition-colors rounded"
           >
             <Printer className="w-3.5 h-3.5" /> Imprimer
