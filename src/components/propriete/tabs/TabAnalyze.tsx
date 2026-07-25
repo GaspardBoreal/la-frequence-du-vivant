@@ -63,17 +63,21 @@ export const TabAnalyze: React.FC<{
     <div className="space-y-6">
       <StepHeader current={2} savedAt={savedAt} saving={saving} />
 
-      <div className="grid md:grid-cols-2 gap-5">
+      {/* Blocs 1 → 4 : pleine largeur pour laisser respirer les cartes et pictos */}
+      <div className="space-y-5">
         <TerrainBlock
           value={state.terrain_status}
           onChange={(v) => setField('terrain_status', v)}
           index={0}
         />
-        <SamplesBlock
+        <SamplesMapBlock
+          proprieteId={proprieteId}
+          proprieteCenter={proprieteCenter}
           samples={state.samples}
           onUpdate={updateSample}
           onAdd={addSample}
           onRemove={removeSample}
+          onBulkSet={(next) => setLocal((s) => ({ ...s, samples: next }))}
           index={1}
         />
         <StructureBlock
@@ -88,6 +92,10 @@ export const TabAnalyze: React.FC<{
           onChangeTexture={(v) => setField('texture', v)}
           index={3}
         />
+      </div>
+
+      {/* Blocs 5 & 6 : conservés en 2 colonnes */}
+      <div className="grid md:grid-cols-2 gap-5">
         <PhBlock value={state.ph} onChange={(v) => setField('ph', v)} index={4} />
         <LifeSignsBlock values={state.life_signs} onToggle={toggleLifeSign} index={5} />
       </div>
