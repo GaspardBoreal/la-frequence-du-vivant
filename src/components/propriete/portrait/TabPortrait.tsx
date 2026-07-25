@@ -37,7 +37,21 @@ export const TabPortrait: React.FC<Props> = ({
 
   const [editMode, setEditMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('bento');
+  const [viewModeTouched, setViewModeTouched] = useState(false);
   const [printMode, setPrintMode] = useState(false);
+
+  const gpsCount = useMemo(() => photos.filter((p) => p.lat != null && p.lng != null).length, [photos]);
+  const gpsRatio = photos.length > 0 ? gpsCount / photos.length : 0;
+
+  // Auto-bascule initiale : si peu de photos GPS, on préfère la vue Mouvement à la Mosaïque
+  // (Mosaïque reste le default neutre ; Constellation cartographique n'est proposée qu'avec ≥ 1 GPS)
+  useEffect(() => {
+    if (viewModeTouched || photos.length === 0) return;
+    if (gpsRatio >= 0.3) setViewMode('bento');
+    // sinon on garde bento par défaut, l'utilisateur bascule sur Mouvement à la main
+  }, [gpsRatio, photos.length, viewModeTouched]);
+
+  const pickView = (v: ViewMode) => { setViewMode(v); setViewModeTouched(true); };
 
   const { data: candidates = [], isLoading: loadingCandidates } =
     usePropertyGalleryCandidates(proprieteId, editMode);
