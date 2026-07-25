@@ -13,6 +13,10 @@ interface Props {
   onReopenAll: () => void;
   onNextStep?: () => void;
   propertyName?: string;
+  /** Ouvre la modale de choix d'impression (fournie par le parent) */
+  onPrint?: () => void;
+  /** Mode "rendu pour impression combinée" : masque actions écran, garde le cartouche print */
+  printOnly?: boolean;
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
