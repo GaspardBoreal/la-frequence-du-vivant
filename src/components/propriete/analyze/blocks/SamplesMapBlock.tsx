@@ -41,8 +41,6 @@ const wpIcon = (color: string) =>
     html: `<div style="width:12px;height:12px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 1px 4px rgba(0,0,0,.35);"></div>`,
   });
 
-const LABELS = ['A', 'B', 'C', 'D', 'E'];
-const MAX_SAMPLES = 5;
 
 const makeIcon = (letter: string, active: boolean) =>
   L.divIcon({
