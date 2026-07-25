@@ -42,6 +42,7 @@ export const TabPortrait: React.FC<Props> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('bento');
   const [viewModeTouched, setViewModeTouched] = useState(false);
   const [printMode, setPrintMode] = useState(false);
+  const [subTab, setSubTab] = useState<SubTab>('galerie');
 
   const gpsCount = useMemo(() => photos.filter((p) => p.lat != null && p.lng != null).length, [photos]);
   const gpsRatio = photos.length > 0 ? gpsCount / photos.length : 0;
