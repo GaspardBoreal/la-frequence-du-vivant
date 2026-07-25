@@ -212,44 +212,12 @@ export const SamplesMapBlock: React.FC<{
                 />
               ) : null,
             )}
-            {visibleWaypoints.map((w) => {
-              const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.Other;
-              return (
-                <Marker key={`wp-${w.id}`} position={[w.lat, w.lng]} icon={wpIcon(color)}>
-                  <Popup>
-                    <div style={{ minWidth: 160 }}>
-                      {w.photoUrl && (
-                        <img
-                          src={w.photoUrl}
-                          alt={w.scientificName}
-                          style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
-                        />
-                      )}
-                      <div style={{ fontWeight: 600, fontSize: 12 }}>
-                        {w.commonName || w.scientificName}
-                      </div>
-                      <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
-                        {w.scientificName}
-                      </div>
-                      {w.observationDate && (
-                        <div style={{ fontSize: 10, marginTop: 4, color: '#888' }}>
-                          <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
-                          {new Date(w.observationDate).toLocaleDateString('fr-FR')}
-                        </div>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
           </RichMap>
         </div>
         <div className="flex items-center justify-center gap-4 text-[10px] text-[hsl(var(--ds-forest-deep))]/60">
           <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-forest))]" /> Prélèvement</span>
-          {waypoints.length > 0 && (
-            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: KINGDOM_COLORS.Plantae }} /> Observation marcheur</span>
-          )}
         </div>
+
         </div>
 
         <div className="md:col-span-2 space-y-2">
