@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, User, Calendar, ChevronLeft, ChevronRight, GripVertical } from 'lucide-react';
+import { X, User, Calendar, ChevronLeft, ChevronRight, GripVertical, Star } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
