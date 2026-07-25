@@ -163,7 +163,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
               center={center}
               zoom={16}
               bounds={bounds.length > 1 ? bounds : undefined}
-              controls={{ zoom: true, style: true, geolocate: false, cadastre: false }}
+              controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
               maxZoom={22}
               height="100%"
             >

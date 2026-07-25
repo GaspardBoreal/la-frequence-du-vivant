@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Marker, useMap, useMapEvents } from 'react-leaflet';
+import { Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Plus, X, MapPin, Info, Move3D } from 'lucide-react';
+import { Plus, X, MapPin, Info, Move3D, Camera, Sprout } from 'lucide-react';
 import { AnalyzeCard } from '../AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
@@ -10,9 +10,37 @@ import {
   useProprieteParcelles,
   centroidOfParcelles,
 } from '@/hooks/propriete/usePropertyParcelles';
+import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 
 const LABELS = ['A', 'B', 'C', 'D', 'E'];
 const MAX_SAMPLES = 5;
+
+const KINGDOM_COLORS: Record<string, string> = {
+  Plantae: '#2f5d3a',
+  Animalia: '#c26a3a',
+  Fungi: '#8a4b8f',
+  Other: '#8a8a8a',
+};
+
+const kingdomFrom = (k?: string | null): string => {
+  const s = (k || '').toLowerCase();
+  if (s.includes('plant')) return 'Plantae';
+  if (s.includes('fungi')) return 'Fungi';
+  if (s.includes('animal') || s.includes('aves') || s.includes('insect') || s.includes('mamm'))
+    return 'Animalia';
+  return 'Other';
+};
+
+type KingdomFilter = 'all' | 'Plantae' | 'Animalia' | 'Fungi';
+
+const wpIcon = (color: string) =>
+  L.divIcon({
+    className: 'reveal-wp-marker',
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+    html: `<div style="width:12px;height:12px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 1px 4px rgba(0,0,0,.35);"></div>`,
+  });
+
 
 const makeIcon = (letter: string, active: boolean) =>
   L.divIcon({
@@ -121,6 +149,23 @@ export const SamplesMapBlock: React.FC<{
   const parcCenter = useMemo(() => centroidOfParcelles(parcelles), [parcelles]);
   const center: [number, number] = parcCenter ?? proprieteCenter ?? [45.0, 0.5];
 
+  const { waypoints } = usePropertySpeciesPool(proprieteId);
+  const [showWaypoints, setShowWaypoints] = useState(true);
+  const [kingdomFilter, setKingdomFilter] = useState<KingdomFilter>('all');
+
+  const wpStats = useMemo(() => {
+    const c: Record<string, number> = { Plantae: 0, Animalia: 0, Fungi: 0, Other: 0 };
+    for (const w of waypoints) c[kingdomFrom(w.kingdom)]++;
+    return c;
+  }, [waypoints]);
+
+  const visibleWaypoints = useMemo(() => {
+    if (!showWaypoints) return [];
+    return waypoints.filter((w) =>
+      kingdomFilter === 'all' ? true : kingdomFrom(w.kingdom) === kingdomFilter,
+    );
+  }, [waypoints, showWaypoints, kingdomFilter]);
+
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Seed default coordinates once the centre is known
@@ -144,8 +189,9 @@ export const SamplesMapBlock: React.FC<{
     for (const s of samples) {
       if (s.lat != null && s.lng != null) pts.push([s.lat, s.lng]);
     }
+    for (const w of visibleWaypoints) pts.push([w.lat, w.lng]);
     return pts.length >= 2 ? pts : undefined;
-  }, [samples, parcelleBounds]);
+  }, [samples, parcelleBounds, visibleWaypoints]);
 
   const disabledAdd = samples.length >= MAX_SAMPLES;
 
@@ -168,15 +214,46 @@ export const SamplesMapBlock: React.FC<{
     >
       <style>{`@keyframes soil-sample-pulse{0%{transform:translate(-50%,-50%) scale(.6);opacity:.9}70%{transform:translate(-50%,-50%) scale(2.2);opacity:0}100%{opacity:0}}`}</style>
 
-      <div className="flex items-center gap-3 text-[11px] text-[hsl(var(--ds-forest-deep))]/70 mb-2">
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[hsl(var(--ds-forest-deep))]/70 mb-2">
         <span className="inline-flex items-center gap-1"><Move3D className="w-3 h-3" /> Glissez les pastilles</span>
         <span className="opacity-40">•</span>
         <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> Cliquez la carte pour ajouter</span>
         <span className="ml-auto font-semibold text-[hsl(var(--ds-forest))]">{samples.length} / {MAX_SAMPLES}</span>
       </div>
 
+      {waypoints.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+          <button
+            onClick={() => setShowWaypoints((v) => !v)}
+            className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+              showWaypoints
+                ? 'bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest-deep))]'
+                : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+            }`}
+          >
+            <Sprout className="w-3 h-3" /> Vivant observé
+            <span className="opacity-70">· {waypoints.length}</span>
+          </button>
+          {showWaypoints && (['all', 'Plantae', 'Animalia', 'Fungi'] as KingdomFilter[]).map((k) => (
+            <button
+              key={k}
+              onClick={() => setKingdomFilter(k)}
+              className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                kingdomFilter === k
+                  ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest))]'
+                  : 'bg-transparent text-[hsl(var(--ds-forest-deep))]/80 border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+              }`}
+            >
+              {k === 'all' ? 'Tous' : k}
+              {k !== 'all' && <span className="ml-1 opacity-60">· {wpStats[k] ?? 0}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid md:grid-cols-5 gap-4">
-        <div className="md:col-span-3 rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: 400 }}>
+        <div className="md:col-span-3 space-y-1.5">
+        <div className="rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: 400 }}>
           <RichMap
             center={center}
             zoom={18}
@@ -205,7 +282,44 @@ export const SamplesMapBlock: React.FC<{
                 />
               ) : null,
             )}
+            {visibleWaypoints.map((w) => {
+              const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.Other;
+              return (
+                <Marker key={`wp-${w.id}`} position={[w.lat, w.lng]} icon={wpIcon(color)}>
+                  <Popup>
+                    <div style={{ minWidth: 160 }}>
+                      {w.photoUrl && (
+                        <img
+                          src={w.photoUrl}
+                          alt={w.scientificName}
+                          style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
+                        />
+                      )}
+                      <div style={{ fontWeight: 600, fontSize: 12 }}>
+                        {w.commonName || w.scientificName}
+                      </div>
+                      <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
+                        {w.scientificName}
+                      </div>
+                      {w.observationDate && (
+                        <div style={{ fontSize: 10, marginTop: 4, color: '#888' }}>
+                          <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
+                          {new Date(w.observationDate).toLocaleDateString('fr-FR')}
+                        </div>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
           </RichMap>
+        </div>
+        <div className="flex items-center justify-center gap-4 text-[10px] text-[hsl(var(--ds-forest-deep))]/60">
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-forest))]" /> Prélèvement</span>
+          {waypoints.length > 0 && (
+            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: KINGDOM_COLORS.Plantae }} /> Observation marcheur</span>
+          )}
+        </div>
         </div>
 
         <div className="md:col-span-2 space-y-2">

@@ -1,46 +1,32 @@
-## Bloc 1 · État du terrain — pictos et visuel didactiques par cas
+## Bloc 2.2 · Prélèvements — superposer les observations marcheurs + fix Cadastre
 
-### Constat (audit UI)
+### Constat
 
-- Les 5 pictos de vignette (Remanié, Remblai, Décaissement, Naturel, Inconnu) existent bien mais restent trop discrets pour porter la pédagogie de la page 6 du guide D.S.
-- **Le vrai problème** : le grand visuel en haut de la carte (collines stratifiées) est **le même pour les 5 cas**. Résultat : rien ne « raconte » visuellement le cas choisi, alors que la méthode D.S. repose sur la lecture d'une coupe de terrain.
+Le bloc « 3 à 5 échantillons représentatifs » (`SamplesMapBlock`) ne montre aujourd'hui que les pastilles A–E. La carte « Où les marcheurs ont-ils observé le vivant ? » (`RevealMapBlock`, dans J'identifie·2) montre les waypoints des marcheurs mais **sans le Cadastre** (`cadastre: false`).
 
-### Correctif — deux niveaux
+### Deux corrections
 
-**A. Hero dynamique — une coupe de sol par cas**
+**1. Fusionner la vue « marcheurs » dans `SamplesMapBlock`**
 
-Remplacer le `SoilHeroStrata` statique par un composant `TerrainCrossSection` qui morphe (transitions Framer Motion 500 ms) selon la valeur choisie. Une seule scène (ciel + horizon + strates + surface végétale), 5 déclinaisons didactiques :
+Sur la même carte que les pastilles A–E, superposer les waypoints marcheurs (via `usePropertySpeciesPool`) avec les mêmes conventions visuelles que `RevealMapBlock` :
 
-| Cas | Signature visuelle |
-|---|---|
-| **Remanié** | Strates ondulées puis rompues et rebouchées en désordre, cicatrice diagonale, petite pelle en filigrane |
-| **Remblai** | Monticule ajouté au-dessus du terrain naturel, matériaux hétérogènes (cailloux, gravats stylisés), ligne pointillée marquant le sol d'origine enfoui |
-| **Décaissement** | Cuvette creusée, strates tronquées net, flèche descendante ambre, ligne pointillée indiquant le niveau retiré |
-| **Naturel** | Strates parallèles régulières (litière · humus · terre végétale · argile · roche mère), racines qui plongent proprement, herbes en surface |
-| **Inconnu** | Coupe voilée par un dégradé brumeux, points d'interrogation en filigrane, strates à moitié révélées comme un scan incomplet |
+- Marqueurs points ronds colorés par règne (Plantae vert, Animalia ambre, Fungi violet), 12 px, halo crème 2 px — visuellement en retrait des grosses pastilles A–E pour ne pas gêner la lecture des prélèvements.
+- Popup identique : miniature + nom vernaculaire + nom latin + date.
+- Barre de contrôle discrète au-dessus de la carte (ligne « Glissez les pastilles · Cliquez la carte pour ajouter » enrichie à droite) :
+  - Toggle **« Vivant observé »** ON/OFF (OFF par défaut si aucune donnée, ON si des waypoints existent).
+  - Petits chips par règne : Plantae · Animalia · Fungi (avec compteurs, cliquables pour filtrer).
+- `bounds` recalculés pour englober pastilles + parcelles + waypoints filtrés (seulement si le toggle est ON).
+- Aucun changement de l'UX de saisie : clic sur la carte ajoute toujours un prélèvement A–E ; le drag et le retrait fonctionnent à l'identique. Les clics sur un marqueur ouvrent son popup et **n'ajoutent pas** de prélèvement (comportement natif Leaflet).
 
-Palette commune (crème → ambre → forêt) pour rester cohérent avec les autres blocs. État par défaut (aucun choix) : version « Naturel » désaturée + légende « Choisissez un cas pour révéler la coupe ».
+Nouvelles props : le hook `usePropertySpeciesPool(proprieteId)` est appelé en interne — pas de prop supplémentaire nécessaire. Petite légende sous la carte : « ● Prélèvements  ● Observations marcheurs ».
 
-**B. Refonte des 5 pictos de vignette**
+**2. Réparer Cadastre dans `RevealMapBlock`**
 
-Les redessiner pour qu'ils partagent la **même grammaire** (cadre 64×64, ligne d'horizon commune, ambre = intervention humaine, forêt = matière naturelle) et deviennent immédiatement lisibles :
-
-- **Remanié** : deux couches décalées avec flèche circulaire de brassage
-- **Remblai** : monticule posé sur ligne de sol + trois cailloux ambre
-- **Décaissement** : cuvette + flèche descendante ambre + niveau d'origine pointillé
-- **Naturel** : strates parallèles nettes + brin d'herbe
-- **Inconnu** : coupe voilée + point d'interrogation intégré à la strate
-
-Chaque picto reprend la même signature que son hero → lecture croisée immédiate (petit picto = petit résumé du grand visuel).
-
-**C. Micro-interaction pédagogique**
-
-Sous le hero, une ligne discrète (10 px, tracking large) affiche le **verbe clé** du cas sélectionné : « Terre déplacée · brassée » / « Terre apportée · empilée » / « Terre retirée · creusée » / « Terre en place · stratifiée » / « À investiguer · scan partiel ». Fade-in synchronisé avec le morph du hero.
+Passer `controls={{ ..., cadastre: true }}` sur le `RichMap` de `RevealMapBlock` (aujourd'hui à `false`). Le `RichMap` accepte déjà l'overlay Cadastre et prend le centre de carte comme point pivot pour charger les parcelles alentour — aucune autre modification nécessaire côté layer.
 
 ### Fichiers touchés
 
-- `src/components/propriete/analyze/SoilPictos.tsx` — redessin des 5 icônes Terrain avec la nouvelle grammaire commune (mêmes signatures = mêmes exports, aucun impact ailleurs).
-- `src/components/propriete/analyze/TerrainCrossSection.tsx` — **nouveau**. SVG 320×140 avec 5 variantes + `AnimatePresence` pour le morph.
-- `src/components/propriete/analyze/blocks/TerrainBlock.tsx` — remplacer `<SoilHeroStrata variant="strata" />` par `<TerrainCrossSection value={value} />` + petite légende dynamique du verbe clé.
+- `src/components/propriete/analyze/blocks/SamplesMapBlock.tsx` — ajout du hook `usePropertySpeciesPool`, overlay markers waypoints, toggle + chips filtre règne, ajustement `bounds` et légende sous la carte.
+- `src/components/propriete/identify/blocks/RevealMapBlock.tsx` — activer `cadastre: true` dans les `controls` de `RichMap`.
 
-Aucun changement de données ni d'API ; strictement UI/illustration.
+Aucun changement de schéma, aucun impact sur les hooks de sauvegarde des échantillons.
