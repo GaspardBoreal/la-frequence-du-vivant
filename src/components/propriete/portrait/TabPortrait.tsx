@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles } from 'lucide-react';
+import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles, Map as MapIcon } from 'lucide-react';
+import { PortraitCadastre } from './PortraitCadastre';
 import {
   GALLERY_MAX,
   useCanCurateGallery,
