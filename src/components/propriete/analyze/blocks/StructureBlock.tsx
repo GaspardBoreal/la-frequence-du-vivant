@@ -16,7 +16,7 @@ export const StructureBlock: React.FC<{
 }> = ({ value, onChange, index = 0 }) => (
   <AnalyzeCard
     number={3}
-    category="Étape 2 · Structure"
+    category="Étape 2 · Structure du sol"
     title="Comment se tient une motte ?"
     subtitle="Cassez une motte à la main : lecture des agrégats."
     index={index}
