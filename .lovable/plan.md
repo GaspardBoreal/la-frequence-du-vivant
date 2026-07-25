@@ -1,32 +1,28 @@
-## Objectif
-Ajouter, sous la carte Cadastre (à côté / dessous de `PropertyAddressCard`), un pavé **"Station météo la plus proche"** avec les 3 actions (Copier adresse / Google Maps / OpenStreetMap).
+## Diagnostic (confirmé par lecture code)
 
-## Source de données
-Utiliser l'utilitaire existant `findNearestWeatherStation(target)` de `src/utils/weatherStationDatabase.ts` (base locale des stations FR déjà géolocalisées et catégorisées par département/région). Aucune requête réseau nécessaire — parfaitement aligné avec les autres vues météo du projet.
+Deux sources de stations coexistent :
 
-Champs disponibles : `code`, `name` (ex. "BORDEAUX-MERIGNAC"), `coordinates {lat,lng}`, `elevation`, `region`, `department`. Il n'y a pas d'adresse postale précise → on compose une "adresse" éditoriale : `NOM STATION — Département, Région` (cohérent avec le reste de l'app).
+1. **Carte cadastre** (`WeatherStationsLayer` → `useNearestStations`) : fusionne la DB locale + les stations **LEXICON géocodées** via `useNearestLexiconStations`. C'est ainsi que **POITIERS-BIARD (86027001)** apparaît à ~2.5 km — elle n'est pas dans la DB locale, mais résolue depuis LEXICON.
+2. **Pavé actuel** (`NearestWeatherStationCard`) : lit uniquement `getAllStationsSortedByDistance()` → base hardcodée `weatherStationDatabase.ts`. POITIERS-BIARD absente ⇒ retombe sur **Chasseneuil (~84 km)**, la station "connue" la plus proche.
 
-## Livrables
+Résultat : incohérence carte / pavé.
 
-### 1. Nouveau composant `src/components/propriete/portrait/NearestWeatherStationCard.tsx`
-- Props : `center: { lat, lng } | null`.
-- Calcule la station la plus proche via `findNearestWeatherStation` + `calculateDistance` (déjà exportées).
-- Rendu glassmorphique, aligné visuellement avec `PropertyAddressCard` (même palette forêt/émeraude, même grille).
-- Contenu :
-  - Icône `CloudSun` + label "STATION MÉTÉO LA PLUS PROCHE"
-  - Nom de la station en titre italique (typo cohérente avec Portrait)
-  - Ligne "adresse éditoriale" : `{department} · {region}` + altitude si dispo (`{elevation} m`)
-  - Badge distance : `{km} km` (1 décimale si < 10, sinon entier)
-  - Coordonnées GPS formatées (mêmes helpers que `PropertyAddressCard`)
-  - 3 boutons : `Copier l'adresse` (copie `Nom — Département, Région`), `Google Maps` (lat/lng), `OpenStreetMap` (lat/lng) — mêmes styles/icônes que la carte adresse
-- État vide (aucun center) : le composant ne s'affiche pas.
+## Correctif
 
-### 2. Intégration `src/components/propriete/portrait/PortraitCadastre.tsx`
-- Sous `PropertyAddressCard`, ajouter `<NearestWeatherStationCard center={center} />`.
-- Passer le même `center` déjà calculé (barycentre parcelles ou coordonnées propriété).
-- Mode plein écran : rendre également la card dans la colonne latérale existante (sous les parcelles) pour rester consultable en fullscreen — sinon la garder uniquement hors fullscreen (choix : uniquement hors fullscreen pour ne pas alourdir la vue immersive).
+Aligner le pavé sur exactement la même source que la carte, en réutilisant `useNearestStations` avec le `center` de la propriété comme unique point.
 
-## Hors périmètre
-- Pas de modification de la base des stations.
-- Pas d'appel réseau ni cache.
-- Pas de changement des autres onglets.
+### Modification `src/components/propriete/portrait/NearestWeatherStationCard.tsx`
+- Supprimer l'appel direct à `getAllStationsSortedByDistance`.
+- Appeler `useNearestStations([{ id: 'property-center', latitude, longitude }], radiusKm)` avec `radiusKm = 60` (défaut carte).
+- Récupérer la station via `pointLinks[0]` → `stations.find(s => s.code === link.stationCode)` → distance déjà calculée dans `pointLinks[0].distance`.
+- Enrichir avec les métadonnées locales si dispo : `getStationByCode(code)` pour récupérer `department`, `region`, `elevation` (LEXICON n'a que name/lat/lng/source). Sinon fallback : afficher uniquement le nom + code + badge source (`Géocodé`/`Précis`/`Commune`) + distance + GPS.
+- Ajouter un mini badge de qualité de source (`Précis` / `Géocodé` / `Commune`) cohérent avec le popup carte.
+- Si `stations` vide (aucune station à ≤ 60 km) : ne rien afficher (comportement identique à la carte).
+- État loading (`isLoading` du hook) : skeleton discret pendant la résolution LEXICON.
+
+### Aucun changement ailleurs
+- `PortraitCadastre.tsx` : signature du composant inchangée (toujours `center`).
+- Aucune modification DB ou base stations.
+
+## Résultat attendu
+Sur `Maison sous Blossac` : le pavé affiche **POITIERS-BIARD** à ~2.5 km avec le badge `Géocodé`, exactement comme le popup de la carte.

@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { CloudSun, Copy, Check, ExternalLink, Navigation, Mountain, Route } from 'lucide-react';
 import { toast } from 'sonner';
-import { getAllStationsSortedByDistance } from '@/utils/weatherStationDatabase';
+import { useNearestStations } from '@/hooks/useNearestStations';
+import { getStationByCode } from '@/utils/weatherStationDatabase';
+import type { StationCoordSource } from '@/utils/weatherStationResolver';
 
 interface Props {
   center?: [number, number] | null;
+  radiusKm?: number;
 }
 
 const formatCoord = (v: number, dir: 'lat' | 'lng') => {
@@ -23,25 +26,71 @@ const titleCase = (s: string) =>
     .map((w) => (w.length > 1 ? w[0].toUpperCase() + w.slice(1) : w))
     .join('');
 
+const sourceBadge = (source: StationCoordSource) => {
+  switch (source) {
+    case 'local':
+    case 'cached':
+      return { label: 'Précis', cls: 'bg-emerald-500/15 border-emerald-400/25 text-emerald-100' };
+    case 'geocoded':
+      return { label: 'Géocodé', cls: 'bg-sky-500/15 border-sky-400/25 text-sky-100' };
+    case 'commune':
+      return { label: 'Commune', cls: 'bg-amber-500/15 border-amber-400/25 text-amber-100' };
+    default:
+      return { label: '—', cls: 'bg-white/5 border-white/10 text-white/60' };
+  }
+};
+
 /**
- * Pavé "Station météo la plus proche" affiché sous la carte cadastre.
- * S'appuie sur la base locale des stations FR (aucun appel réseau).
+ * Pavé "Station météo la plus proche" — utilise la même source que la carte
+ * (`useNearestStations`), qui fusionne la DB locale et les stations LEXICON
+ * géocodées, garantissant la cohérence avec le popup carte.
  */
-export const NearestWeatherStationCard: React.FC<Props> = ({ center }) => {
+export const NearestWeatherStationCard: React.FC<Props> = ({ center, radiusKm = 60 }) => {
   const [copied, setCopied] = useState<'addr' | 'gps' | null>(null);
 
-  const nearest = useMemo(() => {
-    if (!center) return null;
-    const [lat, lng] = center;
-    const sorted = getAllStationsSortedByDistance({ lat, lng });
-    return sorted[0] ?? null;
+  const points = useMemo(() => {
+    if (!center) return [];
+    return [{ id: 'property-center', latitude: center[0], longitude: center[1] }];
   }, [center]);
 
-  if (!center || !nearest) return null;
+  const { stations, pointLinks, isLoading } = useNearestStations(points, radiusKm);
+
+  const nearest = useMemo(() => {
+    const link = pointLinks[0];
+    if (!link) return null;
+    const station = stations.find((s) => s.code === link.stationCode);
+    if (!station) return null;
+    const local = getStationByCode(station.code);
+    return {
+      code: station.code,
+      name: station.name,
+      lat: station.lat,
+      lng: station.lng,
+      source: station.source,
+      distance: link.distance,
+      department: local?.department,
+      region: local?.region,
+      elevation: local?.elevation,
+    };
+  }, [pointLinks, stations]);
+
+  if (!center) return null;
+
+  if (isLoading && !nearest) {
+    return (
+      <div className="rounded-2xl border border-emerald-800/40 bg-slate-900/60 backdrop-blur-xl p-4 animate-pulse">
+        <div className="h-4 w-56 bg-white/10 rounded mb-2" />
+        <div className="h-3 w-40 bg-white/5 rounded" />
+      </div>
+    );
+  }
+
+  if (!nearest) return null;
 
   const displayName = titleCase(nearest.name);
   const locality = [nearest.department, nearest.region].filter(Boolean).join(' · ');
   const addressText = [displayName, nearest.department, nearest.region].filter(Boolean).join(' — ');
+  const badge = sourceBadge(nearest.source);
 
   const copy = async (text: string, key: 'addr' | 'gps') => {
     try {
@@ -54,9 +103,10 @@ export const NearestWeatherStationCard: React.FC<Props> = ({ center }) => {
     }
   };
 
-  const { lat, lng } = nearest.coordinates;
+  const { lat, lng } = nearest;
   const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
   const osmUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=13/${lat}/${lng}`;
+  const approx = nearest.source === 'geocoded' || nearest.source === 'commune';
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-emerald-800/40 bg-gradient-to-br from-slate-900/90 via-emerald-950/60 to-slate-950/90 backdrop-blur-xl shadow-lg">
@@ -76,18 +126,19 @@ export const NearestWeatherStationCard: React.FC<Props> = ({ center }) => {
               <div className="text-base md:text-lg font-serif italic text-white leading-tight mt-0.5">
                 {displayName}
               </div>
-              {locality && (
-                <div className="text-sm text-white/85 mt-1">{locality}</div>
-              )}
+              {locality && <div className="text-sm text-white/85 mt-1">{locality}</div>}
               <div className="flex flex-wrap gap-1.5 mt-2">
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/25 text-sky-100 font-medium flex items-center gap-1">
-                  <Route className="w-3 h-3" /> {formatDistance(nearest.distance)}
+                  <Route className="w-3 h-3" /> {approx ? '~' : ''}{formatDistance(nearest.distance)}
                 </span>
                 {nearest.elevation != null && (
                   <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/25 text-emerald-100 font-medium flex items-center gap-1">
                     <Mountain className="w-3 h-3" /> {nearest.elevation} m
                   </span>
                 )}
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium uppercase tracking-wider ${badge.cls}`}>
+                  {badge.label}
+                </span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/60 font-mono">
                   #{nearest.code}
                 </span>
