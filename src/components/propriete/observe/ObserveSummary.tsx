@@ -56,6 +56,8 @@ export const ObserveSummary: React.FC<Props> = ({
   onReopenAll,
   onNextStep,
   propertyName,
+  onPrint,
+  printOnly = false,
 }) => {
   const dateStr = completedAt
     ? new Date(completedAt).toLocaleDateString('fr-FR', {
