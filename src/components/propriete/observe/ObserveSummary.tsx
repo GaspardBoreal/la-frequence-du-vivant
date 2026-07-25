@@ -79,7 +79,7 @@ export const ObserveSummary: React.FC<Props> = ({
       className="observe-print-root relative bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-line))] shadow-[0_10px_40px_-15px_rgba(22,48,32,0.15)] p-8 md:p-14 overflow-hidden print:shadow-none print:border-0"
     >
       {/* Cartouche impression — visible uniquement à l'impression */}
-      <div className="hidden print:block mb-8">
+      <div className={printOnly ? 'block mb-8' : 'hidden print:block mb-8'}>
         <div className="border-t-2 border-b-2 border-[hsl(var(--ds-gold))] py-6 text-center">
           <div className="text-[10px] font-bold tracking-[0.4em] uppercase text-[hsl(var(--ds-forest))]/70">
             Diagnostic Propriété · Étape 1
@@ -94,7 +94,7 @@ export const ObserveSummary: React.FC<Props> = ({
       </div>
 
       {/* Sceau daté (masqué à l'impression) */}
-      <div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10 print:hidden">
+      {!printOnly && (<div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10 print:hidden">
         <svg className="absolute inset-0 w-full h-full text-[hsl(var(--ds-forest-deep))]" viewBox="0 0 100 100">
           <defs>
             <path
@@ -119,11 +119,12 @@ export const ObserveSummary: React.FC<Props> = ({
           <span className="text-[7px] uppercase tracking-widest text-[hsl(var(--ds-gold))]">
             Étape 1
           </span>
-        </div>
+      </div>)}
+
       </div>
 
       {/* Header écran */}
-      <header className="mb-6 md:mb-8 border-b border-[hsl(var(--ds-line))] pb-6 pr-32 print:hidden">
+      {!printOnly && (<header className="mb-6 md:mb-8 border-b border-[hsl(var(--ds-line))] pb-6 pr-32 print:hidden">
         <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
           Étape 1 — Terminée
         </span>
@@ -134,7 +135,7 @@ export const ObserveSummary: React.FC<Props> = ({
           Synthèse des observations réalisées sur site. Ce portrait constitue le
           socle écologique du projet.
         </p>
-      </header>
+      </header>)}
 
       {/* Signature du site — glyphe unique */}
       <SiteSignature answers={answers} sensorial={sensorial} dateStr={dateStr} />
