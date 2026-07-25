@@ -1068,10 +1068,23 @@
   print-color-adjust: exact;
 }
 .combined-print-observe {
-  padding: 20mm 18mm;
+  padding: 18mm 18mm 16mm;
   page-break-after: always;
   break-after: page;
   background: #fbf7ee;
+}
+.combined-print-observe .observe-print-root {
+  width: 100%;
+  height: auto;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.combined-print-observe-second {
+  padding-top: 24mm;
 }
 .combined-print-divider {
   width: 210mm;

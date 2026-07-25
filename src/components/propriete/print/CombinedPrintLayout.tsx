@@ -23,17 +23,32 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   publicUrl,
 }) => {
   const observeSlot = (
-    <section className="portrait-print-page combined-print-observe print-break">
-      <ObserveSummary
-        answers={answers}
-        sensorial={sensorial}
-        completedAt={completedAt}
-        propertyName={propertyName}
-        onEditBlock={() => {}}
-        onReopenAll={() => {}}
-        printOnly
-      />
-    </section>
+    <>
+      <section className="portrait-print-page combined-print-observe combined-print-observe-first print-break">
+        <ObserveSummary
+          answers={answers}
+          sensorial={sensorial}
+          completedAt={completedAt}
+          propertyName={propertyName}
+          onEditBlock={() => {}}
+          onReopenAll={() => {}}
+          printOnly
+          printSection="first"
+        />
+      </section>
+      <section className="portrait-print-page combined-print-observe combined-print-observe-second">
+        <ObserveSummary
+          answers={answers}
+          sensorial={sensorial}
+          completedAt={completedAt}
+          propertyName={propertyName}
+          onEditBlock={() => {}}
+          onReopenAll={() => {}}
+          printOnly
+          printSection="second"
+        />
+      </section>
+    </>
   );
 
   return (
@@ -45,6 +60,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         publicUrl={publicUrl}
         coverVariant="hero-photo"
         insertBeforeColophon={observeSlot}
+        insertedPageCount={2}
       />
     </div>
   );

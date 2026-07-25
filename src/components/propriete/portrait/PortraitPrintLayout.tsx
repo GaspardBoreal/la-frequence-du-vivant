@@ -11,6 +11,8 @@ interface Props {
   coverVariant?: 'atelier' | 'hero-photo';
   /** Contenu inséré juste avant la page Colophon (ex : synthèse J'observe dans le cahier combiné). */
   insertBeforeColophon?: React.ReactNode;
+  /** Nombre de pages physiques insérées par insertBeforeColophon, pour paginer citation + colophon. */
+  insertedPageCount?: number;
 }
 
 
@@ -62,7 +64,7 @@ const QUOTES = [
 
 export const PortraitPrintLayout: React.FC<Props> = ({
   photos, proprieteNom, proprieteVille, publicUrl,
-  coverVariant = 'atelier', insertBeforeColophon,
+  coverVariant = 'atelier', insertBeforeColophon, insertedPageCount = 0,
 }) => {
 
   const [qr, setQr] = useState<string | null>(null);
@@ -126,7 +128,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
   // Retire une éventuelle respiration finale de la boucle (on force notre propre citation avant colophon)
   while (pages.length > 0 && pages[pages.length - 1].kind === 'breath') pages.pop();
 
-  const totalPages = 2 /* cover + toc */ + pages.length + 1 /* final breath */ + 1 /* colophon */;
+  const totalPages = 2 /* cover + toc */ + pages.length + insertedPageCount + 1 /* final breath */ + 1 /* colophon */;
 
   const footer = (pageNum: number) => (
     <div className="portrait-print-footer">
