@@ -171,7 +171,13 @@ export const GalleryBento: React.FC<Props> = ({ photos, onReorder }) => {
                 photo={p}
                 index={i}
                 draggable={draggable}
+                isCover={i === 0}
                 onOpen={() => setLightbox(i)}
+                onPromote={draggable ? () => {
+                  const reordered = [p, ...localPhotos.filter((x) => x.id !== p.id)];
+                  setLocalPhotos(reordered);
+                  onReorder?.(reordered);
+                } : undefined}
               />
             ))}
           </div>
