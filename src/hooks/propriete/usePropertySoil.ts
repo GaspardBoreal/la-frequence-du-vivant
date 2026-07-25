@@ -7,6 +7,8 @@ export interface SoilSample {
   label: string;      // "A" "B" "C" ...
   location?: string;  // description libre du prélèvement
   photo_url?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface PropertySoilState {
