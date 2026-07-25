@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
@@ -18,6 +18,7 @@ import { TabAnalyze } from '@/components/propriete/tabs/TabAnalyze';
 import { TabIdentify } from '@/components/propriete/tabs/TabIdentify';
 import { TabSynthesize } from '@/components/propriete/tabs/TabSynthesize';
 import { TabPalette } from '@/components/propriete/tabs/TabPalette';
+import { TabPortrait } from '@/components/propriete/portrait/TabPortrait';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
 
@@ -104,6 +105,11 @@ const ProprieteEspace: React.FC = () => {
             proprieteId={propriete.id}
             proprieteNom={propriete.nom}
             proprieteVille={propriete.ville}
+            proprieteCenter={
+              propriete.latitude != null && propriete.longitude != null
+                ? [Number(propriete.latitude), Number(propriete.longitude)]
+                : null
+            }
           />
         </main>
       </div>
@@ -265,22 +271,41 @@ const PropTabs: React.FC<{
   proprieteId: string;
   proprieteNom: string;
   proprieteVille?: string | null;
-}> = ({ proprieteId, proprieteNom, proprieteVille }) => {
+  proprieteCenter?: [number, number] | null;
+}> = ({ proprieteId, proprieteNom, proprieteVille, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
+  const [tab, setTab] = React.useState<string>('portrait');
+  React.useEffect(() => {
+    const onGoto = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail === 'string') setTab(detail);
+    };
+    window.addEventListener('propriete:goto-tab', onGoto);
+    return () => window.removeEventListener('propriete:goto-tab', onGoto);
+  }, []);
   return (
     <div className="space-y-5">
       <NudgeMarcheBanner
         proprieteNom={proprieteNom}
         monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
       />
-      <Tabs defaultValue="observe" className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="w-full flex overflow-x-auto justify-start md:justify-center">
+          <TabsTrigger value="portrait">Portrait</TabsTrigger>
           <TabsTrigger value="observe">J'observe</TabsTrigger>
           <TabsTrigger value="analyze">J'analyse</TabsTrigger>
           <TabsTrigger value="identify">J'identifie</TabsTrigger>
           <TabsTrigger value="synthesize">Je synthétise</TabsTrigger>
           <TabsTrigger value="palette">Palette végétale</TabsTrigger>
         </TabsList>
+        <TabsContent value="portrait" className="pt-5">
+          <TabPortrait
+            proprieteId={proprieteId}
+            proprieteNom={proprieteNom}
+            proprieteVille={proprieteVille}
+            proprieteCenter={proprieteCenter}
+          />
+        </TabsContent>
         <TabsContent value="observe" className="pt-5">
           <TabObserve bio={bio} proprieteId={proprieteId} propertyName={proprieteNom} />
         </TabsContent>

@@ -1035,3 +1035,99 @@
   .vignoble-scroll-cue { animation: none !important; clip-path: none !important; transform: none !important; opacity: 1 !important; }
 }
 
+
+/* =============================================================
+ * Portrait du site — impression cahier photo A4
+ * ============================================================= */
+.portrait-print-only { display: none; }
+
+@media print {
+  body.portrait-printing > *:not(.portrait-print-root-wrapper) { display: none !important; }
+  body.portrait-printing .portrait-print-only { display: block !important; }
+  body.portrait-printing .portrait-print-only .portrait-print-root { display: block; }
+}
+
+@page { size: A4; margin: 0; }
+
+.portrait-print-root {
+  font-family: Georgia, 'Cormorant Garamond', serif;
+  color: #1a1a1a;
+  background: #fdfaf3;
+}
+.portrait-print-cover,
+.portrait-print-page {
+  width: 210mm;
+  height: 297mm;
+  page-break-after: always;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #fdfaf3;
+}
+.portrait-print-cover {
+  padding: 40mm 30mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(180deg, #fdfaf3 0%, #f0e8d0 100%);
+  border-top: 8px solid #c9a24a;
+}
+.portrait-print-eyebrow {
+  font-size: 10pt; letter-spacing: 0.4em; text-transform: uppercase;
+  color: #8b7c4a; margin-bottom: 12mm;
+}
+.portrait-print-title {
+  font-size: 38pt; font-style: italic; line-height: 1.1; margin: 0 0 6mm;
+}
+.portrait-print-place { font-size: 14pt; color: #5a5040; margin-bottom: 14mm; }
+.portrait-print-meta { font-size: 11pt; color: #6a5f4a; margin-bottom: 20mm; }
+.portrait-print-date {
+  font-size: 9pt; letter-spacing: 0.15em; text-transform: uppercase; color: #8b7c4a;
+}
+.portrait-print-full { padding: 12mm; }
+.portrait-print-full figure {
+  width: 100%; height: 100%; margin: 0;
+  display: flex; flex-direction: column;
+}
+.portrait-print-full img {
+  flex: 1 1 auto; width: 100%; height: 100%;
+  object-fit: cover; border-radius: 2mm;
+  box-shadow: 0 4mm 8mm rgba(0,0,0,0.12);
+}
+.portrait-print-full figcaption,
+.portrait-print-4up figcaption {
+  display: flex; align-items: baseline; gap: 4mm;
+  font-size: 9pt; color: #5a5040; margin-top: 4mm;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+.portrait-print-full figcaption .num,
+.portrait-print-4up figcaption .num {
+  font-size: 8pt; font-weight: 700; color: #c9a24a; letter-spacing: 0.15em;
+}
+.portrait-print-sheet { padding: 12mm; }
+.portrait-print-4up {
+  width: 100%; height: 100%;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6mm;
+}
+.portrait-print-4up figure { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
+.portrait-print-4up img {
+  flex: 1 1 auto; width: 100%; height: 100%;
+  object-fit: cover; border-radius: 1.5mm;
+}
+.portrait-print-colophon {
+  padding: 30mm; page-break-after: auto;
+}
+.portrait-print-colophon h2 {
+  font-size: 18pt; font-style: italic; margin-bottom: 10mm; color: #5a5040;
+}
+.portrait-print-colophon ul {
+  list-style: none; padding: 0;
+  columns: 2; column-gap: 10mm;
+  font-size: 10pt; color: #3a3a3a;
+}
+.portrait-print-colophon li { margin-bottom: 3mm; break-inside: avoid; }
+.portrait-print-signature {
+  margin-top: 20mm; font-size: 8pt; letter-spacing: 0.3em;
+  text-transform: uppercase; color: #8b7c4a;
+}

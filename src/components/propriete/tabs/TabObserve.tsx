@@ -8,6 +8,7 @@ import { ObservationCard } from '@/components/propriete/observe/ObservationCard'
 import { SensorialBlock } from '@/components/propriete/observe/SensorialBlock';
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { ObserveSummary } from '@/components/propriete/observe/ObserveSummary';
+import { PortraitTeaser } from '@/components/propriete/portrait/PortraitTeaser';
 import { Button } from '@/components/ui/button';
 
 export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string; propertyName?: string }> = ({
@@ -65,6 +66,10 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
     return (
       <div className="space-y-6">
         <StepHeader current={1} savedAt={savedAt} saving={saving} />
+        <PortraitTeaser
+          proprieteId={proprieteId}
+          onOpen={() => window.dispatchEvent(new CustomEvent('propriete:goto-tab', { detail: 'portrait' }))}
+        />
         <ObserveSummary
           answers={state.answers}
           sensorial={state.sensorial}
@@ -83,6 +88,12 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
   return (
     <div className="space-y-6">
       <StepHeader current={1} savedAt={savedAt} saving={saving} />
+
+      <PortraitTeaser
+        proprieteId={proprieteId}
+        onOpen={() => window.dispatchEvent(new CustomEvent('propriete:goto-tab', { detail: 'portrait' }))}
+      />
+
 
       {isDone && (
         <div className="flex items-center justify-between rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-sm text-[hsl(var(--ds-forest-deep))]">
