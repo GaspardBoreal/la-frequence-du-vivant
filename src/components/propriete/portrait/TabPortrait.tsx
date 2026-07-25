@@ -246,21 +246,28 @@ export const TabPortrait: React.FC<Props> = ({
           </p>
         </div>
       ) : viewMode === 'bento' ? (
-        <GalleryBento
-          photos={photos}
-          onReorder={canCurate ? (reordered) => {
-            saveMut.mutate(reordered.map((p) => ({
-              source_table: p.source_table,
-              source_id: p.source_id,
-              url: p.url,
-              author_name: p.author_name,
-              photo_date: p.photo_date,
-              lat: p.lat,
-              lng: p.lng,
-              caption: p.caption,
-            })));
-          } : undefined}
-        />
+        <div className="space-y-2">
+          <GalleryBento
+            photos={photos}
+            onReorder={canCurate ? (reordered) => {
+              saveMut.mutate(reordered.map((p) => ({
+                source_table: p.source_table,
+                source_id: p.source_id,
+                url: p.url,
+                author_name: p.author_name,
+                photo_date: p.photo_date,
+                lat: p.lat,
+                lng: p.lng,
+                caption: p.caption,
+              })));
+            } : undefined}
+          />
+          {canCurate && (
+            <p className="text-[11px] text-muted-foreground italic pl-1">
+              La première photo ouvre le cahier imprimé — cliquez ✦ sur une vignette pour changer d'ouverture, ou glissez pour réordonner.
+            </p>
+          )}
+        </div>
       ) : viewMode === 'motion' ? (
         <GalleryMotion photos={photos} />
       ) : (
