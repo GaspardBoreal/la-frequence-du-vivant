@@ -179,35 +179,7 @@ export const SamplesMapBlock: React.FC<{
         <span className="ml-auto font-semibold text-[hsl(var(--ds-forest))]">{samples.length} / {MAX_SAMPLES}</span>
       </div>
 
-      {waypoints.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 mb-2">
-          <button
-            onClick={() => setShowWaypoints((v) => !v)}
-            className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition-all ${
-              showWaypoints
-                ? 'bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest-deep))]'
-                : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
-            }`}
-          >
-            <Sprout className="w-3 h-3" /> Vivant observé
-            <span className="opacity-70">· {waypoints.length}</span>
-          </button>
-          {showWaypoints && (['all', 'Plantae', 'Animalia', 'Fungi'] as KingdomFilter[]).map((k) => (
-            <button
-              key={k}
-              onClick={() => setKingdomFilter(k)}
-              className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                kingdomFilter === k
-                  ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest))]'
-                  : 'bg-transparent text-[hsl(var(--ds-forest-deep))]/80 border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
-              }`}
-            >
-              {k === 'all' ? 'Tous' : k}
-              {k !== 'all' && <span className="ml-1 opacity-60">· {wpStats[k] ?? 0}</span>}
-            </button>
-          ))}
-        </div>
-      )}
+
 
       <div className="grid md:grid-cols-5 gap-4">
         <div className="md:col-span-3 space-y-1.5">
