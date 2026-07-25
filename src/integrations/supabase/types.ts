@@ -6002,6 +6002,71 @@ export type Database = {
           },
         ]
       }
+      propriete_parcelles: {
+        Row: {
+          centroid_lat: number | null
+          centroid_lng: number | null
+          commune_code: string | null
+          commune_nom: string | null
+          contenance_m2: number | null
+          created_at: string
+          created_by: string | null
+          geometry: Json | null
+          id: string
+          note: string | null
+          numero: string | null
+          parcel_id: string
+          prefix: string | null
+          propriete_id: string
+          section: string | null
+          updated_at: string
+        }
+        Insert: {
+          centroid_lat?: number | null
+          centroid_lng?: number | null
+          commune_code?: string | null
+          commune_nom?: string | null
+          contenance_m2?: number | null
+          created_at?: string
+          created_by?: string | null
+          geometry?: Json | null
+          id?: string
+          note?: string | null
+          numero?: string | null
+          parcel_id: string
+          prefix?: string | null
+          propriete_id: string
+          section?: string | null
+          updated_at?: string
+        }
+        Update: {
+          centroid_lat?: number | null
+          centroid_lng?: number | null
+          commune_code?: string | null
+          commune_nom?: string | null
+          contenance_m2?: number | null
+          created_at?: string
+          created_by?: string | null
+          geometry?: Json | null
+          id?: string
+          note?: string | null
+          numero?: string | null
+          parcel_id?: string
+          prefix?: string | null
+          propriete_id?: string
+          section?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_parcelles_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_soil_diagnostics: {
         Row: {
           boudin_shape: string | null
@@ -7227,6 +7292,10 @@ export type Database = {
         Args: { _propriete_id: string }
         Returns: boolean
       }
+      can_curate_propriete_parcelles: {
+        Args: { _propriete_id: string }
+        Returns: boolean
+      }
       can_edit_marche_event: {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
@@ -7289,6 +7358,7 @@ export type Database = {
         Args: { _tag_id: string }
         Returns: boolean
       }
+      delete_propriete_parcelle: { Args: { _id: string }; Returns: undefined }
       detach_pratique_from_marcheur: {
         Args: { p_curation_id: string; p_marcheur_id: string }
         Returns: boolean
@@ -8014,6 +8084,24 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_propriete_parcelles: {
+        Args: { _propriete_id: string }
+        Returns: {
+          centroid_lat: number
+          centroid_lng: number
+          commune_code: string
+          commune_nom: string
+          contenance_m2: number
+          created_at: string
+          geometry: Json
+          id: string
+          note: string
+          numero: string
+          parcel_id: string
+          prefix: string
+          section: string
+        }[]
+      }
       log_public_event_event: {
         Args: {
           _event_type: string
@@ -8241,6 +8329,10 @@ export type Database = {
         Args: { new_orders: number[]; page_ids: string[] }
         Returns: undefined
       }
+      update_propriete_parcelle_note: {
+        Args: { _id: string; _note: string }
+        Returns: undefined
+      }
       update_species_translation_manual: {
         Args: { p_common_name_fr: string; p_scientific_name: string }
         Returns: undefined
@@ -8311,6 +8403,23 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      upsert_propriete_parcelle: {
+        Args: {
+          _centroid_lat: number
+          _centroid_lng: number
+          _commune_code: string
+          _commune_nom: string
+          _contenance_m2: number
+          _geometry: Json
+          _note?: string
+          _numero: string
+          _parcel_id: string
+          _prefix: string
+          _propriete_id: string
+          _section: string
+        }
+        Returns: string
       }
       upsert_propriete_soil: {
         Args: {
