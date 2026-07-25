@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles } from 'lucide-react';
 import {
   GALLERY_MAX,
@@ -95,15 +96,44 @@ export const TabPortrait: React.FC<Props> = ({
     setEditMode(false);
   };
 
-  // Impression : ajoute classe body puis lance print, retire au retour
+  // Impression via portail body : contourne l'isolation cassée quand la layout est profondément imbriquée
+  const portalRef = useRef<HTMLDivElement | null>(null);
+  if (typeof document !== 'undefined' && !portalRef.current) {
+    const existing = document.getElementById('portrait-print-portal') as HTMLDivElement | null;
+    portalRef.current = existing ?? Object.assign(document.createElement('div'), { id: 'portrait-print-portal' });
+    if (!existing) document.body.appendChild(portalRef.current);
+  }
+
   useEffect(() => {
     if (!printMode) return;
+    let cancelled = false;
     document.body.classList.add('portrait-printing');
-    const t = setTimeout(() => window.print(), 100);
+
+    const waitForImages = async () => {
+      const node = portalRef.current;
+      if (!node) return;
+      const imgs = Array.from(node.querySelectorAll('img'));
+      await Promise.all(
+        imgs.map((img) =>
+          img.complete && img.naturalWidth > 0
+            ? Promise.resolve()
+            : new Promise<void>((res) => {
+                const done = () => res();
+                img.addEventListener('load', done, { once: true });
+                img.addEventListener('error', done, { once: true });
+              })
+        )
+      );
+      // petit délai pour laisser le layout se stabiliser
+      await new Promise((r) => setTimeout(r, 150));
+      if (!cancelled) window.print();
+    };
+    waitForImages();
+
     const onAfter = () => setPrintMode(false);
     window.addEventListener('afterprint', onAfter);
     return () => {
-      clearTimeout(t);
+      cancelled = true;
       document.body.classList.remove('portrait-printing');
       window.removeEventListener('afterprint', onAfter);
     };
@@ -237,15 +267,15 @@ export const TabPortrait: React.FC<Props> = ({
         <GalleryConstellation photos={photos} fallbackCenter={proprieteCenter ?? null} />
       )}
 
-      {/* Version imprimable — visible uniquement pendant l'impression */}
-      {photos.length > 0 && (
-        <div className="portrait-print-only">
-          <PortraitPrintLayout
-            photos={photos}
-            proprieteNom={proprieteNom}
-            proprieteVille={proprieteVille}
-          />
-        </div>
+      {/* Version imprimable — rendue dans un portail sur <body> pendant l'impression uniquement */}
+      {printMode && photos.length > 0 && portalRef.current && createPortal(
+        <PortraitPrintLayout
+          photos={photos}
+          proprieteNom={proprieteNom}
+          proprieteVille={proprieteVille}
+          publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
+        />,
+        portalRef.current
       )}
     </div>
   );
