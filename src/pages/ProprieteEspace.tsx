@@ -105,6 +105,8 @@ const ProprieteEspace: React.FC = () => {
             proprieteId={propriete.id}
             proprieteNom={propriete.nom}
             proprieteVille={propriete.ville}
+            proprieteAdresse={propriete.adresse}
+            proprieteCodePostal={propriete.code_postal}
             proprieteCenter={
               propriete.latitude != null && propriete.longitude != null
                 ? [Number(propriete.latitude), Number(propriete.longitude)]
