@@ -205,72 +205,18 @@ export const ObserveSummary: React.FC<Props> = ({
       <SiteSignature answers={answers} sensorial={sensorial} dateStr={dateStr} />
 
 
-      {/* Grille synthèse — 7 premiers blocs */}
+      {/* Grille synthèse — blocs 01 → 05 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-        {first7.map((b) => {
-          const sel = answers[b.id] ?? [];
-          const risky = hasRisk(sel);
-          const risks = riskLabels(b, sel);
-          return (
-            <div
-              key={b.id}
-              className={
-                risky
-                  ? 'group relative -m-2 p-3 rounded-lg bg-amber-50/60 border border-amber-200/70'
-                  : 'group relative'
-              }
-            >
-              <button
-                onClick={() => onEditBlock(b.id)}
-                className={
-                  'absolute -right-1 top-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-gold))]/15'
-                }
-                title={`Modifier ${b.category}`}
-                aria-label={`Modifier ${b.category}`}
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
+        {firstGroup.map(renderBlock)}
+      </div>
 
-              <div className="flex items-center gap-2 mb-2">
-                <h3
-                  className={
-                    risky
-                      ? 'text-[11px] uppercase tracking-[0.2em] font-bold text-amber-700'
-                      : 'text-[11px] uppercase tracking-[0.2em] font-bold text-[hsl(var(--ds-forest))]'
-                  }
-                >
-                  {num(b.number)}. {b.category}
-                </h3>
-                {risky && (
-                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[9px] font-bold uppercase tracking-tight">
-                    Attention
-                  </span>
-                )}
-              </div>
-
-              <ChipRow block={b} selected={sel} />
-
-              <p
-                className={
-                  risky
-                    ? 'text-[hsl(var(--ds-forest-deep))] font-medium leading-relaxed'
-                    : 'text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed'
-                }
-              >
-                {describeBlock(b, sel)}
-              </p>
-
-              {risky && risks.length > 0 && (
-                <p className="mt-1 text-[11px] uppercase tracking-widest text-amber-700 font-bold">
-                  {risks.join(' · ')}
-                </p>
-              )}
-            </div>
-          );
-        })}
+      {/* Groupe impression : blocs 06 + 07 + 08 sur nouvelle page */}
+      <div className="print-break-before mt-8 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+        {secondGroup.map(renderBlock)}
 
         {/* Bloc 8 — L'Âme du Lieu, pleine largeur */}
-        <div className="md:col-span-2 group relative mt-4 pt-8 border-t border-[hsl(var(--ds-line))]">
+        <div className="md:col-span-2 group relative mt-4 pt-8 border-t border-[hsl(var(--ds-line))] print-avoid-break">
+
           <button
             onClick={() => onEditBlock('sensorial')}
             className="absolute right-0 top-8 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-gold))]/15"
