@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, Pencil, Printer, RotateCcw, ArrowRight } from 'lucide-react';
 import { OBSERVE_BLOCKS, SENSORIAL_FIELDS, type ObserveBlock } from './observeConfig';
 import { describeBlock, hasRisk, riskLabels } from './summarizeAnswers';
+import { SiteSignature } from './SiteSignature';
 
 interface Props {
   answers: Record<string, string[]>;
@@ -11,33 +12,37 @@ interface Props {
   onEditBlock: (blockId: string) => void;
   onReopenAll: () => void;
   onNextStep?: () => void;
+  propertyName?: string;
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
 
-const PictoRow: React.FC<{ block: ObserveBlock; selected: string[] }> = ({
+const ChipRow: React.FC<{ block: ObserveBlock; selected: string[] }> = ({
   block,
   selected,
-}) => (
-  <div className="flex flex-wrap gap-2 mb-3">
-    {block.choices.map((c) => {
-      const on = selected.includes(c.value);
-      return (
-        <div
+}) => {
+  const picks = block.choices.filter((c) => selected.includes(c.value));
+  if (picks.length === 0) {
+    return (
+      <p className="mb-2 text-xs italic text-[hsl(var(--ds-forest-deep))]/40">
+        — Non renseigné —
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5 mb-3">
+      {picks.map((c) => (
+        <span
           key={c.value}
-          title={c.label}
-          className={
-            on
-              ? 'w-8 h-8 rounded-full border border-[hsl(var(--ds-gold))] bg-[hsl(var(--ds-cream))]/70 flex items-center justify-center text-[hsl(var(--ds-forest-deep))] text-sm shadow-sm'
-              : 'w-8 h-8 rounded-full border border-transparent bg-[hsl(var(--ds-cream))]/40 flex items-center justify-center text-[hsl(var(--ds-forest-deep))] text-sm opacity-25'
-          }
+          className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-gold))]/60 bg-[hsl(var(--ds-cream))] px-2.5 py-1 text-sm text-[hsl(var(--ds-forest-deep))] shadow-sm print:shadow-none"
         >
-          <span aria-hidden>{c.icon}</span>
-        </div>
-      );
-    })}
-  </div>
-);
+          <span aria-hidden className="text-base leading-none">{c.icon}</span>
+          <span className="font-medium">{c.label}</span>
+        </span>
+      ))}
+    </div>
+  );
+};
 
 export const ObserveSummary: React.FC<Props> = ({
   answers,
@@ -46,6 +51,7 @@ export const ObserveSummary: React.FC<Props> = ({
   onEditBlock,
   onReopenAll,
   onNextStep,
+  propertyName,
 }) => {
   const dateStr = completedAt
     ? new Date(completedAt).toLocaleDateString('fr-FR', {
@@ -64,10 +70,25 @@ export const ObserveSummary: React.FC<Props> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="relative bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-line))] shadow-[0_10px_40px_-15px_rgba(22,48,32,0.15)] p-8 md:p-14 overflow-hidden print:shadow-none print:border-0"
+      className="observe-print-root relative bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-line))] shadow-[0_10px_40px_-15px_rgba(22,48,32,0.15)] p-8 md:p-14 overflow-hidden print:shadow-none print:border-0"
     >
-      {/* Sceau daté */}
-      <div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10">
+      {/* Cartouche impression — visible uniquement à l'impression */}
+      <div className="hidden print:block mb-8">
+        <div className="border-t-2 border-b-2 border-[hsl(var(--ds-gold))] py-6 text-center">
+          <div className="text-[10px] font-bold tracking-[0.4em] uppercase text-[hsl(var(--ds-forest))]/70">
+            Diagnostic Propriété · Étape 1
+          </div>
+          <h1 className="mt-3 font-serif italic text-4xl text-[hsl(var(--ds-forest-deep))] leading-tight">
+            {propertyName ?? 'Portrait de la Propriété'}
+          </h1>
+          <div className="mt-3 text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--ds-forest))]/70">
+            Validé le {dateStr} · Fréquence du Vivant
+          </div>
+        </div>
+      </div>
+
+      {/* Sceau daté (masqué à l'impression) */}
+      <div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10 print:hidden">
         <svg className="absolute inset-0 w-full h-full text-[hsl(var(--ds-forest-deep))]" viewBox="0 0 100 100">
           <defs>
             <path
@@ -95,19 +116,23 @@ export const ObserveSummary: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Header */}
-      <header className="mb-10 md:mb-12 border-b border-[hsl(var(--ds-line))] pb-6 pr-32">
+      {/* Header écran */}
+      <header className="mb-6 md:mb-8 border-b border-[hsl(var(--ds-line))] pb-6 pr-32 print:hidden">
         <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
           Étape 1 — Terminée
         </span>
         <h2 className="mt-2 font-serif italic text-4xl md:text-5xl text-[hsl(var(--ds-forest-deep))] leading-tight">
-          Portrait de la Propriété
+          {propertyName ? `Portrait — ${propertyName}` : 'Portrait de la Propriété'}
         </h2>
         <p className="mt-3 text-sm md:text-base text-[hsl(var(--ds-forest-deep))]/70 max-w-xl">
           Synthèse des observations réalisées sur site. Ce portrait constitue le
           socle écologique du projet.
         </p>
       </header>
+
+      {/* Signature du site — glyphe unique */}
+      <SiteSignature answers={answers} sensorial={sensorial} dateStr={dateStr} />
+
 
       {/* Grille synthèse — 7 premiers blocs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
@@ -152,7 +177,7 @@ export const ObserveSummary: React.FC<Props> = ({
                 )}
               </div>
 
-              <PictoRow block={b} selected={sel} />
+              <ChipRow block={b} selected={sel} />
 
               <p
                 className={
@@ -250,7 +275,15 @@ export const ObserveSummary: React.FC<Props> = ({
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => window.print()}
+            onClick={() => {
+              document.body.classList.add('observe-printing');
+              const cleanup = () => {
+                document.body.classList.remove('observe-printing');
+                window.removeEventListener('afterprint', cleanup);
+              };
+              window.addEventListener('afterprint', cleanup);
+              setTimeout(() => window.print(), 50);
+            }}
             className="inline-flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--ds-forest))] text-[hsl(var(--ds-forest-deep))] text-xs font-semibold uppercase tracking-widest hover:bg-[hsl(var(--ds-forest))] hover:text-[hsl(var(--ds-cream))] transition-colors rounded"
           >
             <Printer className="w-3.5 h-3.5" /> Imprimer
