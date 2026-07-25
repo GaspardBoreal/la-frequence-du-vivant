@@ -105,6 +105,8 @@ const ProprieteEspace: React.FC = () => {
             proprieteId={propriete.id}
             proprieteNom={propriete.nom}
             proprieteVille={propriete.ville}
+            proprieteAdresse={propriete.adresse}
+            proprieteCodePostal={propriete.code_postal}
             proprieteCenter={
               propriete.latitude != null && propriete.longitude != null
                 ? [Number(propriete.latitude), Number(propriete.longitude)]
@@ -271,8 +273,10 @@ const PropTabs: React.FC<{
   proprieteId: string;
   proprieteNom: string;
   proprieteVille?: string | null;
+  proprieteAdresse?: string | null;
+  proprieteCodePostal?: string | null;
   proprieteCenter?: [number, number] | null;
-}> = ({ proprieteId, proprieteNom, proprieteVille, proprieteCenter }) => {
+}> = ({ proprieteId, proprieteNom, proprieteVille, proprieteAdresse, proprieteCodePostal, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
   const [tab, setTab] = React.useState<string>('portrait');
   React.useEffect(() => {
@@ -303,6 +307,8 @@ const PropTabs: React.FC<{
             proprieteId={proprieteId}
             proprieteNom={proprieteNom}
             proprieteVille={proprieteVille}
+            proprieteAdresse={proprieteAdresse}
+            proprieteCodePostal={proprieteCodePostal}
             proprieteCenter={proprieteCenter}
           />
         </TabsContent>

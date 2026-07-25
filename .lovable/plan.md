@@ -1,105 +1,72 @@
-## Le problème
+## Objectif
 
-Les hooks `usePropertyObservation`, `usePropertySoil` et `usePropertyFlora` partagent tous le même bug de cycle de vie lorsqu'on change de propriété.
+Aligner l'expérience de **Propriété → Portrait → Cadastre** sur celle de **Mon espace → Événement → Carte**, avec un menu d'options unifié, un mode plein écran et un bandeau d'adresse sous la carte.
 
-### Ce qu'ils font aujourd'hui
+---
 
-Chaque hook maintient un état local (`local`) hydraté depuis la BDD, avec un autosave debounced (1,5 s) qui écrit sur `proprieteId`. La ré-hydratation est gardée par un `useRef(false)` :
+## 1. Menu « Options carte » unifié
 
-```ts
-const initRef = useRef(false);
-useEffect(() => {
-  if (query.data && !initRef.current) {
-    setLocal(query.data);
-    initRef.current = true;
-  } else if (query.data && initRef.current) {
-    // resync completed_at uniquement, jamais answers/samples/etc.
-  }
-}, [query.data]);
-```
+Réutiliser exactement le même composant `MapOptionsMenu` (bouton rond glassmorphique en bas de carte + Popover desktop / Sheet mobile), mais dans une **variante « Propriété »** qui masque ce qui n'a pas de sens ici :
 
-### Pourquoi les données « fuient » d'une propriété à l'autre
+**Masqué** (spécifique événement/marche) :
+- Section « AJOUTER » (Point de marche, Point intermédiaire)
+- Boucle fermée
+- Points intermédiaires
 
-Quand on navigue de Propriété A vers Propriété B :
+**Conservé** :
+- **Rayons d'observation** — halos autour de chaque parcelle retenue (rayon paramétrable 50 m → 1 km)
+- **Stations météo** — même sous-menu avec 3 modes + slider 40-100 km, centré sur le centroïde des parcelles
+- **Ajout** : nouveau bloc « AJOUTER → Parcelle cadastrale » qui active le mode tap-to-add (au lieu de cliquer directement la carte), aligné visuellement avec « Point de marche » de l'événement
 
-1. `proprieteId` change → React Query relance la requête sur B.
-2. **`initRef.current` reste `true`** (le hook n'est pas démonté, seul le prop change).
-3. La branche « resync completed_at only » se déclenche : `local` garde donc les réponses/échantillons/flora de A.
-4. Le `useEffect` d'autosave voit `local` inchangé mais `persist` est recréé (nouveau `proprieteId`), et surtout **le prochain changement de champ écrit l'état hérité de A dans B** — corruption silencieuse.
-5. À l'affichage, l'utilisateur voit soit les données de A collées sur B, soit un mélange après un premier édit.
+Les toggles actuels au-dessus de la carte (Copier la liste / GeoJSON) restent, mais l'ancien style toggle Géo/Sat/Relief/Cadastre est déplacé dans le popover Options (section « Fond de carte »), comme demandé par cohérence.
 
-Pourquoi **Portrait** et **Cadastre** ne sont pas touchés : ils n'ont pas ce pattern « local mirror + autosave ». Ils lisent/écrivent directement via mutations ciblées par `proprieteId`, donc pas de state à réinitialiser.
+**Persistance** : chaque toggle est mémorisé en `localStorage` (clé `propriete-cadastre-options`), pas en BDD.
 
-## Correction
+---
 
-Une correction centralisée, appliquée à l'identique aux 3 hooks.
+## 2. Mode plein écran
 
-### 1. Réinitialiser à chaque changement de `proprieteId`
+Bouton **Maximize** en haut-droite de la carte (aligné avec les zoom controls). Au clic :
 
-Remplacer le garde `initRef` par une clé d'ID :
+- Ouvre un overlay `fixed inset-0 z-[100]` (portalisé sur `document.body`) reprenant toute la surface
+- Contient : la même `RichMap`, le même `MapOptionsMenu`, la liste latérale des parcelles retenues (drawer rétractable à droite), le bandeau d'adresse sous la carte, et un bouton **Réduire** (icône `Minimize2`)
+- Verrouille `document.body` overflow, `Escape` ferme, animation d'entrée/sortie via Framer Motion
+- Sur mobile : passe automatiquement en plein écran natif (100dvh) avec la liste des parcelles en Sheet du bas
 
-```ts
-const loadedIdRef = useRef<string | null>(null);
+Aucun re-mount de la Map n'est nécessaire si on portalise le conteneur — mais pour simplicité et robustesse (SafeMapContainer), on remonte la carte en plein écran avec les mêmes props et le même state (parcelles, options) partagé via le hook parent.
 
-useEffect(() => {
-  // Nouvelle propriété : on vide l'état local immédiatement
-  if (proprieteId !== loadedIdRef.current) {
-    setLocal(EMPTY);
-    setSavedAt(null);
-    loadedIdRef.current = null;
-  }
-}, [proprieteId]);
+---
 
-useEffect(() => {
-  if (!proprieteId || !query.data) return;
-  if (loadedIdRef.current === proprieteId) return; // déjà hydraté
-  setLocal(query.data);
-  setSavedAt(query.data.updated_at ?? null);
-  loadedIdRef.current = proprieteId;
-}, [proprieteId, query.data]);
-```
+## 3. Bandeau d'adresse sous la carte
 
-### 2. Verrouiller l'autosave sur la propriété hydratée
+Sous la carte, une **carte glassmorphique** affichant l'adresse complète de la propriété, composée de :
 
-L'autosave ne doit jamais écrire tant que l'hydratation de la propriété courante n'est pas confirmée, et doit capturer l'`id` cible :
+1. **Ligne 1** : nom de la propriété (existant : `propriete.nom`) en typo éditoriale
+2. **Ligne 2** : adresse dérivée = concat des parcelles retenues → `Section EP · N°46 · Commune POITIERS (86000)` (déjà en BDD via `commune_nom`, `section`, `numero`, `commune_code`)
+3. **Ligne 3** : centroïde GPS formaté (`46.5812°N · 0.3421°E`), avec bouton copier
+4. **Ligne 4** : liens contextuels — « Ouvrir dans Google Maps », « Ouvrir dans OpenStreetMap », « Copier l'adresse »
 
-```ts
-useEffect(() => {
-  if (!proprieteId) return;
-  if (loadedIdRef.current !== proprieteId) return; // pas encore hydraté pour CE propriétaire
-  const targetId = proprieteId;
-  const t = setTimeout(() => {
-    persist(local, false, targetId).catch(() => {});
-  }, 1500);
-  return () => clearTimeout(t);
-}, [local, proprieteId]);
-```
+Design : fond sombre translucide, bordure verte forêt, icône `MapPin` en accent doré, ligne verticale décorative à gauche, chips par parcelle si plusieurs communes. Responsive : desktop = 2 colonnes (adresse | GPS+actions), mobile = empilé.
 
-Et `persist` prend `targetId` en paramètre pour ne jamais écrire vers un id devenu obsolète entre-temps :
+Fallback si aucune parcelle : afficher la `ville` de la propriété + centre carte GPS uniquement.
 
-```ts
-const persist = useCallback(async (state, completed, targetId) => {
-  if (!targetId || targetId !== proprieteId) return; // guard anti-race
-  await supabase.rpc('upsert_propriete_*', { p_propriete_id: targetId, ... });
-  ...
-}, [proprieteId]);
-```
+---
 
-### 3. Annuler tout debounce en vol au changement d'ID
+## Détails techniques
 
-Dans le cleanup du `useEffect` du changement de `proprieteId`, effacer le `debounceRef` en cours pour qu'un save de A ne parte pas juste après un switch vers B.
+- **Nouveau composant** `src/components/propriete/portrait/CadastreOptionsMenu.tsx` — fork réduit de `MapOptionsMenu` (ou version paramétrable via prop `variant: 'event' | 'propriete'` directement dans le composant existant — préférence : fork pour ne pas alourdir le composant événement).
+- **Nouveau composant** `src/components/propriete/portrait/CadastreFullscreen.tsx` — overlay plein écran.
+- **Nouveau composant** `src/components/propriete/portrait/PropertyAddressCard.tsx` — bandeau adresse.
+- **Édition** `PortraitCadastre.tsx` — brancher le menu, le bouton fullscreen, la card adresse ; retirer les 3 boutons actuels (Copier/GeoJSON) déplacés dans le popover Options.
+- **Réutilise** `RichMap`, `CadastreLayer` (déjà en place), `WeatherStationsLayer`, et un nouveau `ParcelObservationRadii` (SVG circle GeoJSON simple autour de chaque centroïde parcelle).
+- Aucune migration BDD.
 
-## Fichiers touchés
-
-- `src/hooks/propriete/usePropertyObservation.ts` — appliquer le pattern.
-- `src/hooks/propriete/usePropertySoil.ts` — appliquer le pattern.
-- `src/hooks/propriete/usePropertyFlora.ts` — appliquer le pattern (même bug, même correctif).
-
-Aucun changement de schéma, ni de RPC, ni de composant. Portrait, Cadastre, Identify (partie IA/matching) ne sont pas modifiés.
+---
 
 ## Vérification
 
-1. Ouvrir Propriété A → remplir 2-3 blocs J'observe / J'analyse → attendre l'autosave (« Enregistré »).
-2. Naviguer vers Propriété B → **les blocs doivent apparaître vides** (ou avec les données propres à B), pas ceux de A.
-3. Modifier un champ sur B → recharger B : la valeur persiste. Recharger A : les valeurs originelles de A sont intactes (pas écrasées).
-4. Aller-retour rapide A→B→A pendant qu'un autosave est en vol : aucune ligne de A n'est écrite sur B (grâce au guard `targetId !== proprieteId`).
+1. Ouvrir Propriété → Portrait → Cadastre : le bouton Options apparaît, popover ouvre les sections Ajouter / Afficher / Fond de carte
+2. Activer « Rayons d'observation » → halos autour des parcelles retenues
+3. Activer « Stations météo → Avec points » → stations affichées dans le rayon défini
+4. Cliquer Maximize → plein écran, toutes les options fonctionnent, Escape ferme
+5. Sous la carte : nom, adresse dérivée des parcelles, GPS, actions — testé avec 0, 1, N parcelles

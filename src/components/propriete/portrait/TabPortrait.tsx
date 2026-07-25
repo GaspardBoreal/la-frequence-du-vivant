@@ -20,6 +20,8 @@ interface Props {
   proprieteId: string;
   proprieteNom: string;
   proprieteVille?: string | null;
+  proprieteAdresse?: string | null;
+  proprieteCodePostal?: string | null;
   proprieteCenter?: [number, number] | null;
 }
 
@@ -33,6 +35,8 @@ export const TabPortrait: React.FC<Props> = ({
   proprieteId,
   proprieteNom,
   proprieteVille,
+  proprieteAdresse,
+  proprieteCodePostal,
   proprieteCenter,
 }) => {
   const { data: photos = [], isLoading } = usePropertyGallery(proprieteId);
@@ -161,7 +165,14 @@ export const TabPortrait: React.FC<Props> = ({
       </div>
 
       {subTab === 'cadastre' ? (
-        <PortraitCadastre proprieteId={proprieteId} proprieteCenter={proprieteCenter} />
+        <PortraitCadastre
+          proprieteId={proprieteId}
+          proprieteNom={proprieteNom}
+          proprieteAdresse={proprieteAdresse}
+          proprieteVille={proprieteVille}
+          proprieteCodePostal={proprieteCodePostal}
+          proprieteCenter={proprieteCenter}
+        />
       ) : (
         <>
           {/* En-tête */}
