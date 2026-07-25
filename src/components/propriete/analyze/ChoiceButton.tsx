@@ -8,14 +8,15 @@ export const ChoiceButton: React.FC<{
   icon?: React.ReactNode;
   selected: boolean;
   onSelect: () => void;
-}> = ({ label, hint, icon, selected, onSelect }) => (
+  className?: string;
+}> = ({ label, hint, icon, selected, onSelect, className = '' }) => (
   <motion.button
     type="button"
     onClick={onSelect}
     role="radio"
     aria-checked={selected}
     whileTap={{ scale: 0.96 }}
-    className={`group relative flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-all min-h-[110px] ${
+    className={`group relative flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-all min-h-[110px] ${className} ${
       selected
         ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/8 shadow-[inset_0_2px_10px_rgba(47,93,58,0.10),0_4px_12px_-4px_rgba(47,93,58,0.25)]'
         : 'border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 hover:border-[hsl(var(--ds-forest))]/50 hover:bg-[hsl(var(--ds-cream))]'
