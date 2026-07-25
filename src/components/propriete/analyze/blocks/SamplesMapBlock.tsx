@@ -214,12 +214,42 @@ export const SamplesMapBlock: React.FC<{
     >
       <style>{`@keyframes soil-sample-pulse{0%{transform:translate(-50%,-50%) scale(.6);opacity:.9}70%{transform:translate(-50%,-50%) scale(2.2);opacity:0}100%{opacity:0}}`}</style>
 
-      <div className="flex items-center gap-3 text-[11px] text-[hsl(var(--ds-forest-deep))]/70 mb-2">
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[hsl(var(--ds-forest-deep))]/70 mb-2">
         <span className="inline-flex items-center gap-1"><Move3D className="w-3 h-3" /> Glissez les pastilles</span>
         <span className="opacity-40">•</span>
         <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> Cliquez la carte pour ajouter</span>
         <span className="ml-auto font-semibold text-[hsl(var(--ds-forest))]">{samples.length} / {MAX_SAMPLES}</span>
       </div>
+
+      {waypoints.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+          <button
+            onClick={() => setShowWaypoints((v) => !v)}
+            className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+              showWaypoints
+                ? 'bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest-deep))]'
+                : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+            }`}
+          >
+            <Sprout className="w-3 h-3" /> Vivant observé
+            <span className="opacity-70">· {waypoints.length}</span>
+          </button>
+          {showWaypoints && (['all', 'Plantae', 'Animalia', 'Fungi'] as KingdomFilter[]).map((k) => (
+            <button
+              key={k}
+              onClick={() => setKingdomFilter(k)}
+              className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                kingdomFilter === k
+                  ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest))]'
+                  : 'bg-transparent text-[hsl(var(--ds-forest-deep))]/80 border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+              }`}
+            >
+              {k === 'all' ? 'Tous' : k}
+              {k !== 'all' && <span className="ml-1 opacity-60">· {wpStats[k] ?? 0}</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid md:grid-cols-5 gap-4">
         <div className="md:col-span-3 rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: 400 }}>
@@ -251,6 +281,36 @@ export const SamplesMapBlock: React.FC<{
                 />
               ) : null,
             )}
+            {visibleWaypoints.map((w) => {
+              const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.Other;
+              return (
+                <Marker key={`wp-${w.id}`} position={[w.lat, w.lng]} icon={wpIcon(color)}>
+                  <Popup>
+                    <div style={{ minWidth: 160 }}>
+                      {w.photoUrl && (
+                        <img
+                          src={w.photoUrl}
+                          alt={w.scientificName}
+                          style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
+                        />
+                      )}
+                      <div style={{ fontWeight: 600, fontSize: 12 }}>
+                        {w.commonName || w.scientificName}
+                      </div>
+                      <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
+                        {w.scientificName}
+                      </div>
+                      {w.observationDate && (
+                        <div style={{ fontSize: 10, marginTop: 4, color: '#888' }}>
+                          <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
+                          {new Date(w.observationDate).toLocaleDateString('fr-FR')}
+                        </div>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
           </RichMap>
         </div>
 
