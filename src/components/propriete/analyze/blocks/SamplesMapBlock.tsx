@@ -1,7 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Marker, useMap, useMapEvents } from 'react-leaflet';
+import { GeoJSON, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+
+const SAVED_STYLE: L.PathOptions = {
+  color: '#2f5d3a',
+  weight: 3,
+  opacity: 0.95,
+  fillColor: '#2f5d3a',
+  fillOpacity: 0.28,
+};
 import { Plus, X, MapPin, Info, Move3D } from 'lucide-react';
 import { AnalyzeCard } from '../AnalyzeCard';
 import { RichMap } from '@/components/maps';
