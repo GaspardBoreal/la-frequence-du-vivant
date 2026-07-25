@@ -1,30 +1,39 @@
-## Problème
+## Objectifs
 
-Dans **J'analyse › Étape 2 · Prélèvements**, la carte n'affiche ni les **polygones verts des parcelles enregistrées**, ni le **fond cadastre** par défaut. Résultat : on ne voit qu'un fond gris avec les pastilles A/B/C, alors que **Portrait › Cadastre** affiche les parcelles retenues en vert (SAVED_STYLE) et bascule sur le fond cadastre.
+1. **Plein écran** pour la carte des prélèvements (J'analyse · Étape 2), à l'identique de Portrait › Cadastre.
+2. **Corriger le bug D/E** : les pastilles ajoutées via le bouton latéral « + Ajouter un prélèvement » n'ont pas de coordonnées, donc n'apparaissent jamais sur la carte.
 
-Vérifié dans `src/components/propriete/analyze/blocks/SamplesMapBlock.tsx` :
-- La liste `parcelles` est chargée via `useProprieteParcelles` mais elle n'est utilisée que pour calculer le centre/bounds — **les `p.geometry` ne sont jamais rendues** en `<GeoJSON>`.
-- La `RichMap` est instanciée sans `initialStyle="cadastre"`, alors que `PortraitCadastre` la passe (fond cadastre par défaut).
+## Diagnostic du bug D/E (vérifié dans le code)
 
-## Correctif ciblé (un seul fichier)
+- `usePropertySoil.addSample` crée un nouveau `SoilSample` sans `lat`/`lng`.
+- Le seeding de coordonnées dans `SamplesMapBlock` (`seedSampleCoords`) :
+  - a une garde `hasAnyCoord` qui retourne tel quel dès qu'**au moins un** échantillon a des coordonnées ;
+  - n'est déclenché que quand le centroïde change, pas quand `samples.length` change.
+- Conséquence : dès que A/B/C sont posés, D et E créés par le bouton restent sans coordonnées et ne sont donc pas rendus sur la carte (rendu conditionnel `s.lat != null && s.lng != null`).
+- L'ajout par clic carte fonctionne car `handleAdd` patch les coordonnées immédiatement.
 
-`src/components/propriete/analyze/blocks/SamplesMapBlock.tsx`
+## Corrections
 
-1. Ajouter le style vert partagé (identique à `PortraitCadastre.SAVED_STYLE`) :
-   ```
-   color:#2f5d3a, weight:3, opacity:.95, fillColor:#2f5d3a, fillOpacity:.28
-   ```
-2. Rendre les polygones à l'intérieur de `<RichMap>` juste avant les `<Marker>` échantillons :
-   ```tsx
-   {parcelles.map((p) => p.geometry ? (
-     <GeoJSON key={p.id} data={p.geometry as any} style={SAVED_STYLE} />
-   ) : null)}
-   ```
-   (import de `GeoJSON` depuis `react-leaflet` à ajouter).
-3. Passer `initialStyle="cadastre"` à `<RichMap>` pour que le fond soit le même que dans Portrait › Cadastre (parcelles alentours visibles en trame beige).
-4. Étendre `bounds` : utiliser les **coordonnées réelles des polygones** (pas seulement les centroïdes) via `L.geoJSON(p.geometry).getBounds()` afin que la carte cadre correctement toute la propriété au premier affichage.
-5. Ne rien changer d'autre : pas d'options météo, pas de rayons, pas de menu FAB — on garde la carte simple et focalisée sur les prélèvements comme aujourd'hui.
+### Bug D/E (`SamplesMapBlock.tsx`)
+- Remplacer `hasAnyCoord` par un seeding **par échantillon** : pour chaque sample sans `lat`/`lng`, poser un point autour du centroïde de la propriété (ou du centre carte) selon un motif en pentagone (5 positions déjà définies, indexées par la position du sample).
+- Redéclencher le seeding sur `samples.length` (nouvel ajout) en plus du changement de centre.
+- Petit offset (~5 m) si la position calculée est identique à une pastille existante, pour éviter la superposition D/E sur A/B/C.
 
-## Résultat attendu
+### Plein écran
+- Ajouter un état local `fullscreen` dans `SamplesMapBlock`.
+- Bouton `Maximize2` en haut-**gauche** de la carte (comme Portrait › Cadastre, au-dessus des contrôles Géo/Sat/Relief/Cadastre qui sont en haut-droite).
+- En mode plein écran : `createPortal(document.body)` + overlay `fixed inset-0 z-[2000]` avec `framer-motion` (fade), fond crème du design system.
+- Layout plein écran :
+  - En-tête compacte : titre « Étape 2 · Prélèvements », compteur `n/5`, bouton fermer.
+  - Zone principale : la carte pleine hauteur.
+  - Colonne latérale droite (largeur ~360 px, scrollable) : liste des pastilles A→E avec inputs d'emplacement et bouton « + Ajouter un prélèvement », identique à la vue normale.
+  - Sur mobile (`< md`), la colonne devient un tiroir bas rétractable pour ne pas masquer la carte.
+- `Esc` ferme le plein écran ; lock du scroll du body pendant l'ouverture.
+- Aucune modification des hooks ni de la sauvegarde : la même instance d'état `samples` alimente les deux vues (normale et plein écran).
 
-La même vue verte des parcelles retenues et le même fond cadastre que dans Portrait › Cadastre, avec par-dessus les pastilles A/B/C draggables inchangées.
+## Détails techniques
+
+- Fichier unique modifié : `src/components/propriete/analyze/blocks/SamplesMapBlock.tsx`.
+- Extraction interne d'un sous-composant `SamplesMapView` (carte + panneau) monté soit en inline soit en portail plein écran, pour ne pas dupliquer JSX.
+- Réutilise `RichMap` avec les mêmes props (`controls`, `initialStyle="cadastre"`, `maxZoom={22}`).
+- Aucune migration DB, aucune logique métier modifiée.
