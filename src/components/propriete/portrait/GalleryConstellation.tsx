@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { SafeMapContainer } from '@/components/maps/SafeMapContainer';
+import SafeMapContainer from '@/components/maps/SafeMapContainer';
 import type { GalleryPhoto } from '@/hooks/propriete/usePropertyGallery';
 
 interface Props {
