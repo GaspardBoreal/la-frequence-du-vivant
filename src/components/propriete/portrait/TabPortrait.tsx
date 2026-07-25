@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles } from 'lucide-react';
+import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles, Map as MapIcon } from 'lucide-react';
+import { PortraitCadastre } from './PortraitCadastre';
 import {
   GALLERY_MAX,
   useCanCurateGallery,
@@ -23,6 +24,7 @@ interface Props {
 }
 
 type ViewMode = 'bento' | 'motion' | 'constellation';
+type SubTab = 'galerie' | 'cadastre';
 
 const keyOf = (c: { source_table: string; source_id: string }) =>
   `${c.source_table}::${c.source_id}`;
@@ -40,6 +42,7 @@ export const TabPortrait: React.FC<Props> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('bento');
   const [viewModeTouched, setViewModeTouched] = useState(false);
   const [printMode, setPrintMode] = useState(false);
+  const [subTab, setSubTab] = useState<SubTab>('galerie');
 
   const gpsCount = useMemo(() => photos.filter((p) => p.lat != null && p.lng != null).length, [photos]);
   const gpsRatio = photos.length > 0 ? gpsCount / photos.length : 0;
@@ -151,9 +154,19 @@ export const TabPortrait: React.FC<Props> = ({
 
   return (
     <div className="space-y-5">
-      {/* En-tête */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
+      {/* Sous-onglets Portrait */}
+      <div className="flex items-center gap-1 rounded-full bg-muted/40 p-1 w-fit border border-border/60">
+        <SubTabPill active={subTab === 'galerie'} onClick={() => setSubTab('galerie')} icon={Images} label="Galerie" />
+        <SubTabPill active={subTab === 'cadastre'} onClick={() => setSubTab('cadastre')} icon={MapIcon} label="Cadastre" />
+      </div>
+
+      {subTab === 'cadastre' ? (
+        <PortraitCadastre proprieteId={proprieteId} proprieteCenter={proprieteCenter} />
+      ) : (
+        <>
+          {/* En-tête */}
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
           <h2 className="text-xl md:text-2xl font-serif italic text-foreground flex items-center gap-2">
             <Images className="w-5 h-5 text-amber-600" />
             Portrait du site
@@ -284,9 +297,31 @@ export const TabPortrait: React.FC<Props> = ({
         />,
         portalRef.current
       )}
+        </>
+      )}
     </div>
   );
 };
+
+const SubTabPill: React.FC<{
+  active: boolean;
+  onClick: () => void;
+  icon: React.ComponentType<any>;
+  label: string;
+}> = ({ active, onClick, icon: Icon, label }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition ${
+      active
+        ? 'bg-background text-foreground shadow-sm'
+        : 'text-muted-foreground hover:text-foreground'
+    }`}
+  >
+    <Icon className="w-3.5 h-3.5" />
+    {label}
+  </button>
+);
+
 
 const ViewButton: React.FC<{
   active: boolean;

@@ -6,7 +6,7 @@ import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiver
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { TerrainBlock } from '@/components/propriete/analyze/blocks/TerrainBlock';
-import { SamplesBlock } from '@/components/propriete/analyze/blocks/SamplesBlock';
+import { SamplesMapBlock } from '@/components/propriete/analyze/blocks/SamplesMapBlock';
 import { StructureBlock } from '@/components/propriete/analyze/blocks/StructureBlock';
 import { TextureBlock } from '@/components/propriete/analyze/blocks/TextureBlock';
 import { PhBlock } from '@/components/propriete/analyze/blocks/PhBlock';
@@ -14,12 +14,14 @@ import { LifeSignsBlock } from '@/components/propriete/analyze/blocks/LifeSignsB
 
 const TOTAL = 7; // 6 blocs + synthèse
 
-export const TabAnalyze: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string }> = ({
-  bio,
-  proprieteId,
-}) => {
+export const TabAnalyze: React.FC<{
+  bio?: PropertyBiodiversity;
+  proprieteId?: string;
+  proprieteCenter?: [number, number] | null;
+}> = ({ bio, proprieteId, proprieteCenter }) => {
   const {
     state,
+    setLocal,
     saving,
     savedAt,
     completedAt,
@@ -61,17 +63,21 @@ export const TabAnalyze: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
     <div className="space-y-6">
       <StepHeader current={2} savedAt={savedAt} saving={saving} />
 
-      <div className="grid md:grid-cols-2 gap-5">
+      {/* Blocs 1 → 4 : pleine largeur pour laisser respirer les cartes et pictos */}
+      <div className="space-y-5">
         <TerrainBlock
           value={state.terrain_status}
           onChange={(v) => setField('terrain_status', v)}
           index={0}
         />
-        <SamplesBlock
+        <SamplesMapBlock
+          proprieteId={proprieteId}
+          proprieteCenter={proprieteCenter}
           samples={state.samples}
           onUpdate={updateSample}
           onAdd={addSample}
           onRemove={removeSample}
+          onBulkSet={(next) => setLocal((s) => ({ ...s, samples: next }))}
           index={1}
         />
         <StructureBlock
@@ -86,6 +92,10 @@ export const TabAnalyze: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
           onChangeTexture={(v) => setField('texture', v)}
           index={3}
         />
+      </div>
+
+      {/* Blocs 5 & 6 : conservés en 2 colonnes */}
+      <div className="grid md:grid-cols-2 gap-5">
         <PhBlock value={state.ph} onChange={(v) => setField('ph', v)} index={4} />
         <LifeSignsBlock values={state.life_signs} onToggle={toggleLifeSign} index={5} />
       </div>
