@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye } from 'lucide-react';
+import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles } from 'lucide-react';
 import {
   GALLERY_MAX,
   useCanCurateGallery,
@@ -11,6 +11,7 @@ import {
 import { GalleryLightTable } from './GalleryLightTable';
 import { GalleryBento } from './GalleryBento';
 import { GalleryConstellation } from './GalleryConstellation';
+import { GalleryMotion } from './GalleryMotion';
 import { PortraitPrintLayout } from './PortraitPrintLayout';
 
 interface Props {
