@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Marker, useMap, useMapEvents } from 'react-leaflet';
+import { Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Plus, X, MapPin, Info, Move3D } from 'lucide-react';
+import { Plus, X, MapPin, Info, Move3D, Camera, Sprout } from 'lucide-react';
 import { AnalyzeCard } from '../AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
@@ -10,6 +10,36 @@ import {
   useProprieteParcelles,
   centroidOfParcelles,
 } from '@/hooks/propriete/usePropertyParcelles';
+import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+
+const LABELS = ['A', 'B', 'C', 'D', 'E'];
+const MAX_SAMPLES = 5;
+
+const KINGDOM_COLORS: Record<string, string> = {
+  Plantae: '#2f5d3a',
+  Animalia: '#c26a3a',
+  Fungi: '#8a4b8f',
+  Other: '#8a8a8a',
+};
+
+const kingdomFrom = (k?: string | null): string => {
+  const s = (k || '').toLowerCase();
+  if (s.includes('plant')) return 'Plantae';
+  if (s.includes('fungi')) return 'Fungi';
+  if (s.includes('animal') || s.includes('aves') || s.includes('insect') || s.includes('mamm'))
+    return 'Animalia';
+  return 'Other';
+};
+
+type KingdomFilter = 'all' | 'Plantae' | 'Animalia' | 'Fungi';
+
+const wpIcon = (color: string) =>
+  L.divIcon({
+    className: 'reveal-wp-marker',
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+    html: `<div style="width:12px;height:12px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 1px 4px rgba(0,0,0,.35);"></div>`,
+  });
 
 const LABELS = ['A', 'B', 'C', 'D', 'E'];
 const MAX_SAMPLES = 5;
