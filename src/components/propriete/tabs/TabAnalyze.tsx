@@ -6,7 +6,7 @@ import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiver
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { TerrainBlock } from '@/components/propriete/analyze/blocks/TerrainBlock';
-import { SamplesBlock } from '@/components/propriete/analyze/blocks/SamplesBlock';
+import { SamplesMapBlock } from '@/components/propriete/analyze/blocks/SamplesMapBlock';
 import { StructureBlock } from '@/components/propriete/analyze/blocks/StructureBlock';
 import { TextureBlock } from '@/components/propriete/analyze/blocks/TextureBlock';
 import { PhBlock } from '@/components/propriete/analyze/blocks/PhBlock';
