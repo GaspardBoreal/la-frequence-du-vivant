@@ -83,6 +83,35 @@ export const TabObserve: React.FC<{
 
   // ─── Impression : dialogue + portail combiné ────────────────────────────
   const { data: galleryPhotos = [] } = usePropertyGallery(proprieteId);
+  const { data: parcelles = [] } = useProprieteParcelles(proprieteId);
+  const derivedCenter = React.useMemo<[number, number] | null>(
+    () => proprieteCenter ?? centroidOfParcelles(parcelles),
+    [proprieteCenter, parcelles],
+  );
+  const stationPoints = React.useMemo(
+    () => (derivedCenter ? [{ id: 'property-center', latitude: derivedCenter[0], longitude: derivedCenter[1] }] : []),
+    [derivedCenter],
+  );
+  const { stations, pointLinks } = useNearestStations(stationPoints, 60);
+  const nearestStation = React.useMemo(() => {
+    const link = pointLinks[0];
+    if (!link) return null;
+    const st = stations.find((s) => s.code === link.stationCode);
+    if (!st) return null;
+    const local = getStationByCode(st.code);
+    return {
+      code: st.code,
+      name: st.name,
+      lat: st.lat,
+      lng: st.lng,
+      distanceKm: link.distance,
+      source: st.source,
+      department: local?.department ?? null,
+      region: local?.region ?? null,
+      elevation: local?.elevation ?? null,
+    };
+  }, [pointLinks, stations]);
+
   const [printOpen, setPrintOpen] = React.useState(false);
   const [combinedPrinting, setCombinedPrinting] = React.useState(false);
   const combinedPortalRef = usePrintCombined({
