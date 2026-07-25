@@ -1039,97 +1039,242 @@
 /* =============================================================
  * Portrait du site — impression cahier photo A4
  * ============================================================= */
-.portrait-print-only { display: none; }
+/* Portail d'impression : monté sur <body> pendant l'impression uniquement */
+#portrait-print-portal { display: none; }
 
 @media print {
-  body.portrait-printing > *:not(.portrait-print-root-wrapper) { display: none !important; }
-  body.portrait-printing .portrait-print-only { display: block !important; }
-  body.portrait-printing .portrait-print-only .portrait-print-root { display: block; }
-}
+  @page { size: A4; margin: 0; }
 
-@page { size: A4; margin: 0; }
+  html, body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Isolation : masque tout sauf le portail */
+  body.portrait-printing > *:not(#portrait-print-portal) { display: none !important; }
+  body.portrait-printing #portrait-print-portal { display: block !important; }
+}
 
 .portrait-print-root {
-  font-family: Georgia, 'Cormorant Garamond', serif;
-  color: #1a1a1a;
-  background: #fdfaf3;
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  color: #2a2419;
+  background: #fbf7ee;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
+.portrait-print-root * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
 .portrait-print-cover,
 .portrait-print-page {
   width: 210mm;
   height: 297mm;
   page-break-after: always;
+  break-after: page;
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
-  background: #fdfaf3;
+  background: #fbf7ee;
 }
+.portrait-print-page:last-child { page-break-after: auto; break-after: auto; }
+
+/* ============ Couverture éditoriale ============ */
 .portrait-print-cover {
-  padding: 40mm 30mm;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  background: linear-gradient(180deg, #fdfaf3 0%, #f0e8d0 100%);
-  border-top: 8px solid #c9a24a;
+  padding: 32mm 26mm;
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  background:
+    radial-gradient(120mm 80mm at 78% 20%, rgba(176,141,87,0.10), transparent 60%),
+    linear-gradient(180deg, #fbf7ee 0%, #f2e8d1 100%);
 }
+.portrait-print-cover::before,
+.portrait-print-cover::after {
+  content: ''; position: absolute; left: 20mm; right: 20mm; height: 0.4mm;
+  background: #b08d57;
+}
+.portrait-print-cover::before { top: 18mm; }
+.portrait-print-cover::after { bottom: 18mm; }
+
 .portrait-print-eyebrow {
-  font-size: 10pt; letter-spacing: 0.4em; text-transform: uppercase;
-  color: #8b7c4a; margin-bottom: 12mm;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 9pt; letter-spacing: 0.5em; text-transform: uppercase;
+  color: #8a6d3b;
 }
 .portrait-print-title {
-  font-size: 38pt; font-style: italic; line-height: 1.1; margin: 0 0 6mm;
+  font-size: 52pt; font-style: italic; line-height: 1.02;
+  margin: 8mm 0 4mm; color: #2a2419;
 }
-.portrait-print-place { font-size: 14pt; color: #5a5040; margin-bottom: 14mm; }
-.portrait-print-meta { font-size: 11pt; color: #6a5f4a; margin-bottom: 20mm; }
-.portrait-print-date {
-  font-size: 9pt; letter-spacing: 0.15em; text-transform: uppercase; color: #8b7c4a;
+.portrait-print-title-rule {
+  width: 40mm; height: 0.6mm; background: #b08d57; margin: 4mm 0 6mm;
 }
-.portrait-print-full { padding: 12mm; }
-.portrait-print-full figure {
-  width: 100%; height: 100%; margin: 0;
-  display: flex; flex-direction: column;
+.portrait-print-place {
+  font-size: 16pt; color: #5a4a30; font-style: italic;
 }
-.portrait-print-full img {
-  flex: 1 1 auto; width: 100%; height: 100%;
-  object-fit: cover; border-radius: 2mm;
-  box-shadow: 0 4mm 8mm rgba(0,0,0,0.12);
+.portrait-print-cover-foot {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 10mm;
 }
-.portrait-print-full figcaption,
-.portrait-print-4up figcaption {
-  display: flex; align-items: baseline; gap: 4mm;
-  font-size: 9pt; color: #5a5040; margin-top: 4mm;
+.portrait-print-cover-quote {
+  max-width: 90mm; font-size: 11pt; line-height: 1.5; color: #4a3e28; font-style: italic;
+}
+.portrait-print-seal {
+  width: 46mm; height: 46mm; flex-shrink: 0;
+}
+
+/* ============ Sommaire visuel ============ */
+.portrait-print-toc { padding: 22mm 20mm 26mm; display: flex; flex-direction: column; }
+.portrait-print-toc h2 {
+  font-size: 22pt; font-style: italic; margin: 0 0 2mm; color: #2a2419;
+}
+.portrait-print-toc-sub {
   font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 9pt; letter-spacing: 0.3em; text-transform: uppercase;
+  color: #8a6d3b; margin-bottom: 10mm;
 }
-.portrait-print-full figcaption .num,
-.portrait-print-4up figcaption .num {
-  font-size: 8pt; font-weight: 700; color: #c9a24a; letter-spacing: 0.15em;
+.portrait-print-toc-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm;
+  flex: 1 1 auto;
 }
-.portrait-print-sheet { padding: 12mm; }
-.portrait-print-4up {
-  width: 100%; height: 100%;
-  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6mm;
+.portrait-print-toc-tile {
+  position: relative; aspect-ratio: 3/4; overflow: hidden; border-radius: 1mm;
+  background: #e8ddc4;
 }
-.portrait-print-4up figure { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
-.portrait-print-4up img {
-  flex: 1 1 auto; width: 100%; height: 100%;
-  object-fit: cover; border-radius: 1.5mm;
+.portrait-print-toc-tile img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
 }
+.portrait-print-toc-num {
+  position: absolute; bottom: 1mm; left: 1.5mm;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 7pt; font-weight: 700; color: #fff;
+  text-shadow: 0 0.3mm 0.6mm rgba(0,0,0,0.6);
+  letter-spacing: 0.15em;
+}
+
+/* ============ Pages photo ============ */
+.portrait-print-full { padding: 0; display: flex; flex-direction: column; }
+.portrait-print-full .portrait-print-hero {
+  flex: 1 1 auto; width: 100%; height: auto; min-height: 0;
+  overflow: hidden; background: #ded1b3;
+}
+.portrait-print-full .portrait-print-hero img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  break-inside: avoid;
+}
+.portrait-print-cartouche {
+  padding: 10mm 16mm 14mm;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 8mm;
+  background: #fbf7ee;
+  border-top: 0.3mm solid #b08d57;
+}
+.portrait-print-cartouche .num-huge {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 44pt; font-style: italic; line-height: 1;
+  color: transparent; -webkit-text-stroke: 0.3mm #b08d57;
+}
+.portrait-print-cartouche .who {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 9pt; color: #4a3e28; letter-spacing: 0.05em;
+}
+.portrait-print-cartouche .who strong { font-weight: 600; color: #2a2419; }
+.portrait-print-cartouche .when {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 8pt; letter-spacing: 0.25em; text-transform: uppercase; color: #8a6d3b;
+}
+
+/* Planche double : 1 grande + 3 petites */
+.portrait-print-double { padding: 14mm; display: grid; grid-template-columns: 2fr 1fr; gap: 6mm; }
+.portrait-print-double .col-main,
+.portrait-print-double .col-side { display: flex; flex-direction: column; gap: 6mm; }
+.portrait-print-double figure { margin: 0; display: flex; flex-direction: column; overflow: hidden; flex: 1 1 auto; }
+.portrait-print-double .col-main figure { flex: 1 1 100%; }
+.portrait-print-double img {
+  flex: 1 1 auto; width: 100%; height: 100%; object-fit: cover;
+  border-radius: 1mm; break-inside: avoid;
+}
+.portrait-print-double figcaption {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 7.5pt; color: #6a5b3f; margin-top: 1.5mm; letter-spacing: 0.05em;
+}
+.portrait-print-double figcaption .num {
+  color: #b08d57; font-weight: 700; margin-right: 2mm; letter-spacing: 0.2em;
+}
+
+/* Page de respiration : citation */
+.portrait-print-breath {
+  padding: 40mm 32mm; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; text-align: center;
+  background: #f5edda;
+}
+.portrait-print-breath::before {
+  content: ''; width: 24mm; height: 0.4mm; background: #b08d57; margin-bottom: 10mm;
+}
+.portrait-print-breath p {
+  font-size: 22pt; font-style: italic; line-height: 1.35; color: #3a2f1c;
+  max-width: 140mm; margin: 0;
+}
+.portrait-print-breath::after {
+  content: ''; width: 24mm; height: 0.4mm; background: #b08d57; margin-top: 10mm;
+}
+
+/* Pied de page (à partir de la p.2) */
+.portrait-print-footer {
+  position: absolute; left: 16mm; right: 16mm; bottom: 8mm;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 7pt; letter-spacing: 0.2em; text-transform: uppercase;
+  color: #8a6d3b;
+}
+.portrait-print-footer .center { color: #b08d57; letter-spacing: 0.4em; }
+
+/* ============ Colophon ============ */
 .portrait-print-colophon {
-  padding: 30mm; page-break-after: auto;
+  padding: 26mm 24mm; display: flex; flex-direction: column;
 }
 .portrait-print-colophon h2 {
-  font-size: 18pt; font-style: italic; margin-bottom: 10mm; color: #5a5040;
+  font-size: 26pt; font-style: italic; margin: 0 0 2mm; color: #2a2419;
+}
+.portrait-print-colophon-sub {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 9pt; letter-spacing: 0.3em; text-transform: uppercase;
+  color: #8a6d3b; margin-bottom: 12mm;
+}
+.portrait-print-colophon-body {
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 12mm; flex: 1 1 auto;
 }
 .portrait-print-colophon ul {
-  list-style: none; padding: 0;
-  columns: 2; column-gap: 10mm;
-  font-size: 10pt; color: #3a3a3a;
+  list-style: none; padding: 0; margin: 0;
+  columns: 2; column-gap: 8mm;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10pt; color: #2a2419;
 }
-.portrait-print-colophon li { margin-bottom: 3mm; break-inside: avoid; }
+.portrait-print-colophon li {
+  margin-bottom: 2.5mm; break-inside: avoid;
+  text-transform: uppercase; letter-spacing: 0.12em; font-size: 8.5pt;
+}
+.portrait-print-colophon-meta {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 9pt; color: #4a3e28; line-height: 1.7;
+}
+.portrait-print-colophon-meta strong { color: #2a2419; }
+.portrait-print-colophon-qr {
+  align-self: end; display: flex; flex-direction: column; align-items: center; gap: 3mm;
+}
+.portrait-print-colophon-qr img { width: 32mm; height: 32mm; display: block; }
+.portrait-print-colophon-qr span {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 7pt; letter-spacing: 0.25em; text-transform: uppercase; color: #8a6d3b;
+}
 .portrait-print-signature {
-  margin-top: 20mm; font-size: 8pt; letter-spacing: 0.3em;
-  text-transform: uppercase; color: #8b7c4a;
+  margin-top: auto; padding-top: 12mm;
+  border-top: 0.3mm solid #b08d57;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 8pt; letter-spacing: 0.35em; text-transform: uppercase; color: #8a6d3b;
+}
+.portrait-print-signature .dot {
+  width: 3mm; height: 3mm; border-radius: 50%; background: #b08d57; display: inline-block; margin: 0 3mm;
 }
 
 /* Portrait — Constellation animée */
