@@ -43,7 +43,20 @@ const DATA: Record<Variant, { title: string; verb: string; icon: React.ReactNode
 export const StructureChoiceTooltip: React.FC<{
   variant: Variant | null;
   id?: string;
-}> = ({ variant, id }) => {
+  align?: 'left' | 'center' | 'right';
+}> = ({ variant, id, align = 'center' }) => {
+  const posClass =
+    align === 'left'
+      ? 'left-0'
+      : align === 'right'
+      ? 'right-0'
+      : 'left-1/2 -translate-x-1/2';
+  const arrowClass =
+    align === 'left'
+      ? 'left-6'
+      : align === 'right'
+      ? 'right-6'
+      : 'left-1/2 -translate-x-1/2';
   return (
     <AnimatePresence>
       {variant && (
@@ -55,7 +68,7 @@ export const StructureChoiceTooltip: React.FC<{
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.97 }}
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-40 w-[280px]"
+          className={`pointer-events-none absolute ${posClass} bottom-full mb-3 z-40 w-[280px] max-w-[calc(100vw-2rem)]`}
         >
           <div className="relative rounded-2xl border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-cream))] shadow-[0_12px_32px_-8px_rgba(47,93,58,0.28),0_2px_8px_rgba(212,163,63,0.18)] overflow-hidden">
             {/* Ruban doré haut */}
