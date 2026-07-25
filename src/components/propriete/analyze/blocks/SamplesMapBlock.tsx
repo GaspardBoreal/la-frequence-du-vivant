@@ -145,9 +145,23 @@ export const SamplesMapBlock: React.FC<{
   }, [parcCenter?.[0], parcCenter?.[1], proprieteCenter?.[0], proprieteCenter?.[1]]);
 
   const parcelleBounds = useMemo<Array<[number, number]>>(() => {
-    return parcelles
-      .filter((p) => p.centroid_lat != null && p.centroid_lng != null)
-      .map((p) => [p.centroid_lat as number, p.centroid_lng as number]);
+    const pts: Array<[number, number]> = [];
+    for (const p of parcelles) {
+      if (p.geometry) {
+        try {
+          const b = L.geoJSON(p.geometry as any).getBounds();
+          if (b.isValid()) {
+            pts.push([b.getSouth(), b.getWest()]);
+            pts.push([b.getNorth(), b.getEast()]);
+            continue;
+          }
+        } catch {}
+      }
+      if (p.centroid_lat != null && p.centroid_lng != null) {
+        pts.push([p.centroid_lat as number, p.centroid_lng as number]);
+      }
+    }
+    return pts;
   }, [parcelles]);
 
   const bounds = useMemo<Array<[number, number]> | undefined>(() => {
