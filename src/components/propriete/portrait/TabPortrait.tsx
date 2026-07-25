@@ -296,10 +296,31 @@ export const TabPortrait: React.FC<Props> = ({
           publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
         />,
         portalRef.current
+        </>
       )}
     </div>
   );
 };
+
+const SubTabPill: React.FC<{
+  active: boolean;
+  onClick: () => void;
+  icon: React.ComponentType<any>;
+  label: string;
+}> = ({ active, onClick, icon: Icon, label }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition ${
+      active
+        ? 'bg-background text-foreground shadow-sm'
+        : 'text-muted-foreground hover:text-foreground'
+    }`}
+  >
+    <Icon className="w-3.5 h-3.5" />
+    {label}
+  </button>
+);
+
 
 const ViewButton: React.FC<{
   active: boolean;
