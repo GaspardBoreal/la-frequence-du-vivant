@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye } from 'lucide-react';
+import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles } from 'lucide-react';
 import {
   GALLERY_MAX,
   useCanCurateGallery,
@@ -11,6 +11,7 @@ import {
 import { GalleryLightTable } from './GalleryLightTable';
 import { GalleryBento } from './GalleryBento';
 import { GalleryConstellation } from './GalleryConstellation';
+import { GalleryMotion } from './GalleryMotion';
 import { PortraitPrintLayout } from './PortraitPrintLayout';
 
 interface Props {
@@ -20,7 +21,7 @@ interface Props {
   proprieteCenter?: [number, number] | null;
 }
 
-type ViewMode = 'bento' | 'constellation';
+type ViewMode = 'bento' | 'motion' | 'constellation';
 
 const keyOf = (c: { source_table: string; source_id: string }) =>
   `${c.source_table}::${c.source_id}`;
@@ -36,7 +37,21 @@ export const TabPortrait: React.FC<Props> = ({
 
   const [editMode, setEditMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('bento');
+  const [viewModeTouched, setViewModeTouched] = useState(false);
   const [printMode, setPrintMode] = useState(false);
+
+  const gpsCount = useMemo(() => photos.filter((p) => p.lat != null && p.lng != null).length, [photos]);
+  const gpsRatio = photos.length > 0 ? gpsCount / photos.length : 0;
+
+  // Auto-bascule initiale : si peu de photos GPS, on préfère la vue Mouvement à la Mosaïque
+  // (Mosaïque reste le default neutre ; Constellation cartographique n'est proposée qu'avec ≥ 1 GPS)
+  useEffect(() => {
+    if (viewModeTouched || photos.length === 0) return;
+    if (gpsRatio >= 0.3) setViewMode('bento');
+    // sinon on garde bento par défaut, l'utilisateur bascule sur Mouvement à la main
+  }, [gpsRatio, photos.length, viewModeTouched]);
+
+  const pickView = (v: ViewMode) => { setViewMode(v); setViewModeTouched(true); };
 
   const { data: candidates = [], isLoading: loadingCandidates } =
     usePropertyGalleryCandidates(proprieteId, editMode);
@@ -122,8 +137,16 @@ export const TabPortrait: React.FC<Props> = ({
         <div className="flex items-center gap-2 flex-wrap">
           {!editMode && photos.length > 0 && (
             <>
-              <ViewButton active={viewMode === 'bento'} onClick={() => setViewMode('bento')} icon={LayoutGrid} label="Mosaïque" />
-              <ViewButton active={viewMode === 'constellation'} onClick={() => setViewMode('constellation')} icon={MapPin} label="Constellation" />
+              <ViewButton active={viewMode === 'bento'} onClick={() => pickView('bento')} icon={LayoutGrid} label="Mosaïque" />
+              <ViewButton active={viewMode === 'motion'} onClick={() => pickView('motion')} icon={Sparkles} label="Mouvement" />
+              <ViewButton
+                active={viewMode === 'constellation'}
+                onClick={() => gpsCount > 0 && pickView('constellation')}
+                icon={MapPin}
+                label="Carte"
+                disabled={gpsCount === 0}
+                title={gpsCount === 0 ? 'Aucune photo géolocalisée' : `${gpsCount}/${photos.length} photos géolocalisées`}
+              />
               <button
                 onClick={() => setPrintMode(true)}
                 className="text-xs px-3 py-1.5 rounded-full border border-border hover:bg-muted flex items-center gap-1.5"
@@ -194,6 +217,8 @@ export const TabPortrait: React.FC<Props> = ({
         </div>
       ) : viewMode === 'bento' ? (
         <GalleryBento photos={photos} />
+      ) : viewMode === 'motion' ? (
+        <GalleryMotion photos={photos} />
       ) : (
         <GalleryConstellation photos={photos} fallbackCenter={proprieteCenter ?? null} />
       )}
@@ -217,13 +242,19 @@ const ViewButton: React.FC<{
   onClick: () => void;
   icon: React.ComponentType<any>;
   label: string;
-}> = ({ active, onClick, icon: Icon, label }) => (
+  disabled?: boolean;
+  title?: string;
+}> = ({ active, onClick, icon: Icon, label, disabled, title }) => (
   <button
     onClick={onClick}
+    disabled={disabled}
+    title={title}
     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
-      active
-        ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
-        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+      disabled
+        ? 'text-muted-foreground/40 cursor-not-allowed'
+        : active
+          ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
     }`}
   >
     <Icon className="w-3.5 h-3.5" />

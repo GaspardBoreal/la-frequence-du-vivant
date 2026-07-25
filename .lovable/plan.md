@@ -1,54 +1,73 @@
-# Galerie « Portrait du Site » — en amont de J'observe
+# Constellation animée — quand le GPS manque
 
-Une galerie curatée par le propriétaire/paysagiste, alimentée par les photos des marches liées à la propriété, qui devient la **carte de visite visuelle** du site avant tout diagnostic.
+## Constat
 
-## Emplacement & entrée
+La vue Constellation actuelle (`GalleryConstellation.tsx`) suppose des coordonnées GPS pour poser chaque photo sur la carte et tracer un fil narratif. Or la plupart des photos remontent via WhatsApp, qui **strippe systématiquement l'EXIF GPS**. Résultat : carte vide, message "Aucune photo géolocalisée", et la promesse "balade visuelle" tombe à plat.
 
-Nouvel onglet **Portrait** en position 0 du `ProprieteEspace` (avant J'observe → J'analyse → J'identifie). Icône `Images` + pastille compteur « n/12 ».
+## Principe
 
-Sur l'onglet **J'observe**, en tête du carnet : bandeau discret « 🖼️ Portrait du site — 7 photos choisies » cliquant vers l'onglet Portrait. Si vide : CTA « Composez le portrait de votre site » avec micro-preview.
+Détecter automatiquement le taux de photos géolocalisées et **basculer** vers une vue **animée poétique** quand < 30 % ont un GPS (ou via toggle explicite `Carte` ↔ `Mouvement`). L'objectif : garder la métaphore « constellation » — points lumineux en mouvement, fils entre eux — mais **sans dépendance géographique**.
 
-## Sélection — « Table lumineuse »
+## Trois registres animés proposés (implémenter 1 par défaut + toggle vers les autres)
 
-Metaphore d'une table lumineuse de photographe : les photos candidates (issues de `marche_photos` + `convivialite` + `marcheur_medias` des events liés) apparaissent en mosaïque contact-sheet sépia légère. Un clic les fait basculer en couleur pleine + coche ambre, un second désélectionne.
+### 1. « Constellation Vivante » — orbites organiques (recommandé par défaut)
 
-- **Source** : RPC `get_propriete_gallery_candidates(propriete_id)` — agrège toutes les photos géolocalisées dans le rayon des events liés, dédupliquées, avec auteur/date/GPS.
-- **Filtres discrets en haut** : par marche, par saison, par auteur, « avec GPS uniquement ».
-- **Cap** : **12 photos max** (nombre d'or narratif — assez pour raconter, trop peu pour diluer). Compteur circulaire progressif « 7 / 12 » qui se remplit en ambre.
-- **Ordre** : drag-and-drop pour réordonner (dnd-kit, comme les autres flows photos). L'ordre pilote l'affichage et l'impression.
-- **Crédit** : chaque photo garde l'attribution marcheur (badge discret en overlay hover).
-- **Droits** : seul le propriétaire de la propriété + admin peuvent curater. Les autres visiteurs voient le portrait en lecture seule.
+Fond noir profond dégradé bleu nuit, les 12 photos deviennent des **médaillons ronds lumineux** flottant sur des **orbites elliptiques** décalées, à vitesses différentes (les grandes orbites tournent lentement, les petites plus vite). 
 
-## Modes d'affichage — 3 registres au choix
+- Fils fins ambrés reliant chaque photo à la suivante dans l'ordre narratif — les fils se **tendent et se relâchent** comme des élastiques au fil du mouvement.
+- Hover sur une photo → l'orbite se **fige**, la photo passe au premier plan avec zoom léger, légende (auteur · date) apparaît en cartouche serif.
+- Clic → **lightbox plein écran** avec navigation clavier (réutilise celle du Bento).
+- Micro-particules (points lumineux) dérivent en arrière-plan pour donner la profondeur d'un ciel étoilé.
+- Rotation continue ~40s pour un tour complet — assez rapide pour ressentir le mouvement, assez lent pour lire.
 
-Toggle en haut de l'onglet Portrait (`Mosaïque` · `Récit` · `Constellation`), état persisté.
+Techniquement : `requestAnimationFrame` + calcul positions polaires, pas de librairie lourde. `will-change: transform` pour la fluidité.
 
-1. **Mosaïque `Bento**` — grille asymétrique 12 tuiles (1 large hero + 3 moyennes + 8 petites), ratios variés, coins doucement arrondis. Hover → légende (auteur · date · lieu). Clic → lightbox plein écran avec navigation clavier.
-2. **Récit `Cinemagraph**` — défilement vertical plein largeur, une photo par écran, parallax léger, légende typographique serif qui apparaît au scroll (fade + translate). Fond crème, marges généreuses. Ambiance carnet d'auteur.
-3. **Constellation `Carte**` — les 12 photos posées sur la carte de la propriété à leurs coordonnées GPS, reliées par un trait fin (ordre de sélection = fil narratif). Clic vignette → carte zoome + panneau photo. Convertit le portrait en **balade visuelle géolocalisée**.
+### 2. « Ruban de mémoire » — carrousel 3D infini
 
-## Impression — Cahier photo A4
+Les 12 photos défilent en **anneau horizontal 3D** (perspective CSS), comme un manège vu du dessus légèrement incliné.
 
-Bouton `Imprimer le portrait` génère une mise en page dédiée (règles `@media print`, comme le carnet J'observe) :
+- Défilement autonome lent (une photo/2s), pause au survol.
+- Photo centrale au premier plan, légèrement plus grande, celles de côté floutées (`filter: blur`) et translucides.
+- Fond dégradé crème → ambre pâle, ambiance carnet d'auteur.
+- Flèches ← → discrètes, drag horizontal supporté (souris + tactile).
+- Numéro d'ordre (1/12) et légende affichés sous la photo focus.
 
-- **Page 1** : couverture — nom propriété en serif large, « Portrait du site » en filet, sous-titre « n photographies · n contributeurs · n marches », date d'édition, `SiteSignature` (déjà créée) en filigrane bas de page.
-- **Pages intérieures** : 1 photo pleine page OU planche contact 4-up selon densité (auto : ≤6 photos = pleine page, >6 = mixte hero + planches).
-- Chaque photo légendée : `Auteur · Date · Localisation` en petit caps.
-- **Dernière page** : mini-carte de constellation + crédits marcheurs listés.
-- Isolation impression via classe `portrait-printing` sur `<body>` (même pattern que `observe-printing`).
+### 3. « Nuée » — Brownian float façon murmuration
 
-## Détails techniques
+Les 12 photos flottent librement dans le cadre, chacune avec sa propre **trajectoire pseudo-aléatoire douce** (mouvement brownien contraint). Elles se **repoussent légèrement** entre elles pour éviter les collisions.
 
-- RPC `SECURITY DEFINER` `get_propriete_gallery_candidates` + table `propriete_gallery_photos` (propriete_id, source_table, source_id, order_index, curated_by, created_at) avec unique(propriete_id, source_table, source_id).
-- Hook `usePropertyGallery(proprieteId)` + `useUpdatePropertyGallery` (invalide `portrait` + bandeau J'observe).
-- Composants nouveaux : `TabPortrait.tsx`, `GalleryLightTable.tsx` (sélection), `GalleryBento.tsx`, `GalleryStory.tsx`, `GalleryConstellation.tsx`, `PortraitPrintLayout.tsx`, `PortraitTeaser.tsx` (bandeau J'observe).
-- Réutilise `SafeMapContainer`/`RichMap` primitives pour la constellation, `SpeciesThumb` pattern pour fallback vignette.
-- Ordonnancement drag-and-drop : dnd-kit (déjà utilisé dans `convivialite-photo-reordering-logic` et `marcheur-observations-reordering-logic`).
+- Ambiance plus abstraite, presque aquatique.
+- Toutes les 6s, une photo est **mise en lumière** à tour de rôle : elle grossit, s'illumine, légende apparaît, puis retourne dans la nuée.
+- Un fil ambré ténu suit l'ordre narratif mais **respire** avec le mouvement.
+- Fond sombre avec léger grain, texture papier.
 
-## Livrable UX à valider avant build
+## UX de bascule
 
-Confirmer :
+Toggle en tête de l'onglet Portrait devient :
 
-1. **Cap à 12**
-2. 2 pour la v1 (ex. Bento + Constellation)
-3. **Curation ouverte aux paysagistes liés** au CRM en plus du propriétaire
+`Mosaïque` · `Mouvement` · `Carte`
+
+- **Carte** = actuelle GalleryConstellation, désactivée (grisée + tooltip) si 0 photo GPS.
+- **Mouvement** = nouvelle vue animée. Sous-toggle interne discret pour choisir le registre (Orbites / Ruban / Nuée), état persisté en `localStorage` (`portrait.motionMode`).
+- Auto-sélection au premier affichage : si ≥ 30 % GPS → Carte, sinon → Mouvement.
+
+## Accessibilité & performance
+
+- Respect `prefers-reduced-motion` : mouvement figé, photos disposées en grille circulaire statique, hover révèle la légende (pas d'animation continue).
+- Pause automatique quand l'onglet n'est pas visible (`document.visibilityState`).
+- Images déjà miniaturisées via le pipeline existant, pas de recharge.
+- Animation en `transform` pur (GPU), pas de reflow.
+
+## Fichiers touchés
+
+- **Nouveau** `src/components/propriete/portrait/GalleryMotion.tsx` — orchestrateur avec les 3 registres (orbits/ribbon/swarm) en sous-composants internes ou fichiers voisins selon volume.
+- **Nouveau** `src/components/propriete/portrait/motion/OrbitsField.tsx`, `RibbonCarousel.tsx`, `SwarmFloat.tsx` — un composant par registre.
+- **Modif** `src/components/propriete/portrait/TabPortrait.tsx` — ajouter le mode `motion`, la logique auto-bascule GPS, et le sous-toggle registre.
+- **Modif** `src/index.css` — quelques keyframes utilitaires si besoin (la majorité en JS pour orchestration précise).
+- Lightbox mutualisée avec Bento (extraction légère si pas déjà factorisée).
+
+## Livrable UX à valider
+
+1. **Le registre par défaut** : Orbites (recommandé — le plus proche de la métaphore constellation), Ruban 3D, ou Nuée ?
+2. **Auto-bascule GPS** : garder le seuil 30 % ou toujours proposer les deux vues au choix sans auto-select ?
+3. **Implémenter les 3 registres d'entrée de jeu**, ou 1 seul en v1 puis itérer ?
