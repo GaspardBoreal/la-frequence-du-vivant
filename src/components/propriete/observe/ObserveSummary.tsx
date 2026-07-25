@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, Pencil, Printer, RotateCcw, ArrowRight } from 'lucide-react';
 import { OBSERVE_BLOCKS, SENSORIAL_FIELDS, type ObserveBlock } from './observeConfig';
 import { describeBlock, hasRisk, riskLabels } from './summarizeAnswers';
+import { SiteSignature } from './SiteSignature';
 
 interface Props {
   answers: Record<string, string[]>;
@@ -11,33 +12,37 @@ interface Props {
   onEditBlock: (blockId: string) => void;
   onReopenAll: () => void;
   onNextStep?: () => void;
+  propertyName?: string;
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
 
-const PictoRow: React.FC<{ block: ObserveBlock; selected: string[] }> = ({
+const ChipRow: React.FC<{ block: ObserveBlock; selected: string[] }> = ({
   block,
   selected,
-}) => (
-  <div className="flex flex-wrap gap-2 mb-3">
-    {block.choices.map((c) => {
-      const on = selected.includes(c.value);
-      return (
-        <div
+}) => {
+  const picks = block.choices.filter((c) => selected.includes(c.value));
+  if (picks.length === 0) {
+    return (
+      <p className="mb-2 text-xs italic text-[hsl(var(--ds-forest-deep))]/40">
+        — Non renseigné —
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5 mb-3">
+      {picks.map((c) => (
+        <span
           key={c.value}
-          title={c.label}
-          className={
-            on
-              ? 'w-8 h-8 rounded-full border border-[hsl(var(--ds-gold))] bg-[hsl(var(--ds-cream))]/70 flex items-center justify-center text-[hsl(var(--ds-forest-deep))] text-sm shadow-sm'
-              : 'w-8 h-8 rounded-full border border-transparent bg-[hsl(var(--ds-cream))]/40 flex items-center justify-center text-[hsl(var(--ds-forest-deep))] text-sm opacity-25'
-          }
+          className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-gold))]/60 bg-[hsl(var(--ds-cream))] px-2.5 py-1 text-sm text-[hsl(var(--ds-forest-deep))] shadow-sm print:shadow-none"
         >
-          <span aria-hidden>{c.icon}</span>
-        </div>
-      );
-    })}
-  </div>
-);
+          <span aria-hidden className="text-base leading-none">{c.icon}</span>
+          <span className="font-medium">{c.label}</span>
+        </span>
+      ))}
+    </div>
+  );
+};
 
 export const ObserveSummary: React.FC<Props> = ({
   answers,
@@ -46,6 +51,7 @@ export const ObserveSummary: React.FC<Props> = ({
   onEditBlock,
   onReopenAll,
   onNextStep,
+  propertyName,
 }) => {
   const dateStr = completedAt
     ? new Date(completedAt).toLocaleDateString('fr-FR', {
