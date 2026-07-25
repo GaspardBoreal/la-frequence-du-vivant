@@ -242,13 +242,19 @@ const ViewButton: React.FC<{
   onClick: () => void;
   icon: React.ComponentType<any>;
   label: string;
-}> = ({ active, onClick, icon: Icon, label }) => (
+  disabled?: boolean;
+  title?: string;
+}> = ({ active, onClick, icon: Icon, label, disabled, title }) => (
   <button
     onClick={onClick}
+    disabled={disabled}
+    title={title}
     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
-      active
-        ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
-        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+      disabled
+        ? 'text-muted-foreground/40 cursor-not-allowed'
+        : active
+          ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
     }`}
   >
     <Icon className="w-3.5 h-3.5" />
