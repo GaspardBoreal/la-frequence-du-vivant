@@ -74,6 +74,7 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
             scrollToBlock(id);
           }}
           onReopenAll={() => setMode('edit')}
+          propertyName={propertyName}
         />
       </div>
     );
