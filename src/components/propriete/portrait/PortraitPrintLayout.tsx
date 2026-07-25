@@ -97,28 +97,31 @@ export const PortraitPrintLayout: React.FC<Props> = ({
              | { kind: 'double'; main: GalleryPhoto; sides: GalleryPhoto[]; startIndex: number }
              | { kind: 'breath'; quote: string };
   const pages: Page[] = [];
+  const platePhotos = coverVariant === 'hero-photo' ? photos.slice(1) : photos;
+  const indexOffset = coverVariant === 'hero-photo' ? 1 : 0;
   let i = 0;
   let pageSinceBreath = 0;
   let quoteIdx = 0;
-  while (i < photos.length) {
+  while (i < platePhotos.length) {
     // Alterne
-    const useDouble = pages.filter((p) => p.kind !== 'breath').length % 2 === 1 && photos.length - i >= 2;
+    const useDouble = pages.filter((p) => p.kind !== 'breath').length % 2 === 1 && platePhotos.length - i >= 2;
     if (useDouble) {
-      const main = photos[i];
-      const sides = photos.slice(i + 1, i + 4);
-      pages.push({ kind: 'double', main, sides, startIndex: i });
+      const main = platePhotos[i];
+      const sides = platePhotos.slice(i + 1, i + 4);
+      pages.push({ kind: 'double', main, sides, startIndex: i + indexOffset });
       i += 1 + sides.length;
     } else {
-      pages.push({ kind: 'full', photo: photos[i], index: i });
+      pages.push({ kind: 'full', photo: platePhotos[i], index: i + indexOffset });
       i += 1;
     }
     pageSinceBreath++;
-    if (pageSinceBreath >= 5 && i < photos.length) {
+    if (pageSinceBreath >= 5 && i < platePhotos.length) {
       pages.push({ kind: 'breath', quote: QUOTES[quoteIdx % QUOTES.length] });
       quoteIdx++;
       pageSinceBreath = 0;
     }
   }
+
 
   const totalPages = 2 /* cover + toc */ + pages.length + 1 /* colophon */;
 
