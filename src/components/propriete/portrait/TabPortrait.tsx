@@ -24,6 +24,7 @@ interface Props {
 }
 
 type ViewMode = 'bento' | 'motion' | 'constellation';
+type SubTab = 'galerie' | 'cadastre';
 
 const keyOf = (c: { source_table: string; source_id: string }) =>
   `${c.source_table}::${c.source_id}`;
