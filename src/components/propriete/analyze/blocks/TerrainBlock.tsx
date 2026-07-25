@@ -7,8 +7,8 @@ import {
   IconDecaissement,
   IconNaturel,
   IconInconnu,
-  SoilHeroStrata,
 } from '../SoilPictos';
+import { TerrainCrossSection } from '../TerrainCrossSection';
 
 const OPTIONS = [
   { value: 'remanie', label: 'Remanié', hint: 'terre déplacée', icon: <IconRemanie /> },
@@ -31,7 +31,7 @@ export const TerrainBlock: React.FC<{
     index={index}
     hero={
       <div className="aspect-[16/7]">
-        <SoilHeroStrata variant="strata" />
+        <TerrainCrossSection value={value as any} />
       </div>
     }
   >
@@ -49,3 +49,4 @@ export const TerrainBlock: React.FC<{
     </div>
   </AnalyzeCard>
 );
+

@@ -15,57 +15,116 @@ const wrap = (children: React.ReactNode) => (
   </svg>
 );
 
-/* ============== Terrain / Remaniement ============== */
+/* ============== Terrain / Remaniement — grammaire commune :
+   cadre 64×64, ligne d'horizon y=44, ambre = intervention humaine,
+   forêt = matière naturelle. Chaque picto = résumé de son hero. ============== */
+
+const groundLine = (
+  <path d="M4 44 L60 44" stroke={stroke} strokeWidth="1.1" opacity="0.55" />
+);
+
 export const IconRemanie = () =>
   wrap(
     <>
-      <path d="M6 42 L20 34 L28 40 L40 30 L58 42" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M6 50 L58 50" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" strokeDasharray="3 3" />
-      <path d="M14 42 L14 50 M28 40 L28 50 M40 30 L40 50" stroke={accent} strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
+      {groundLine}
+      {/* deux couches décalées + brassage */}
+      <path d="M4 44 L28 42 L30 50 L4 52 Z" fill={accent} fillOpacity="0.28" stroke={stroke} strokeWidth="1" />
+      <path d="M32 42 L60 44 L60 54 L34 52 Z" fill={stroke} fillOpacity="0.14" stroke={stroke} strokeWidth="1" />
+      <path d="M28 42 L34 52" stroke={accent} strokeWidth="1.4" strokeDasharray="2 2" />
+      {/* flèche circulaire de brassage */}
+      <path
+        d="M22 26 A10 10 0 1 1 42 26"
+        stroke={stroke}
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path d="M42 26 L38 22 M42 26 L46 24" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
     </>,
   );
 
 export const IconRemblai = () =>
   wrap(
     <>
-      <path d="M6 50 L58 50" stroke={stroke} strokeWidth="1.6" />
-      <path d="M16 50 L20 34 L28 30 L38 28 L46 32 L50 50 Z" stroke={stroke} strokeWidth="1.7" strokeLinejoin="round" fill={accent} fillOpacity="0.18" />
-      <circle cx="24" cy="38" r="1.4" fill={stroke} />
-      <circle cx="34" cy="34" r="1.4" fill={stroke} />
-      <circle cx="42" cy="40" r="1.4" fill={stroke} />
+      {groundLine}
+      {/* monticule posé sur la ligne de sol */}
+      <path
+        d="M10 44 Q22 22 32 20 Q42 22 54 44 Z"
+        fill={accent}
+        fillOpacity="0.28"
+        stroke={stroke}
+        strokeWidth="1.4"
+      />
+      {/* cailloux ambre = matériaux hétérogènes */}
+      <circle cx="22" cy="36" r="1.8" fill={stroke} opacity="0.7" />
+      <circle cx="32" cy="30" r="2" fill={stroke} opacity="0.75" />
+      <circle cx="40" cy="34" r="1.8" fill={stroke} opacity="0.7" />
+      {/* sol d'origine pointillé sous le monticule */}
+      <path d="M4 50 L60 50" stroke={stroke} strokeWidth="0.9" strokeDasharray="2 2" opacity="0.55" />
     </>,
   );
 
 export const IconDecaissement = () =>
   wrap(
     <>
-      <path d="M6 34 L22 34 L26 44 L38 44 L42 34 L58 34" stroke={stroke} strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M6 34 L6 52 L58 52 L58 34" stroke={stroke} strokeWidth="1.4" opacity="0.5" />
-      <path d="M28 22 L32 30 L36 22" stroke={accent} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M32 12 L32 30" stroke={accent} strokeWidth="1.6" strokeLinecap="round" />
+      {/* niveau d'origine retiré (pointillé haut) */}
+      <path d="M4 22 L60 22" stroke={accent} strokeWidth="1.2" strokeDasharray="3 2" opacity="0.85" />
+      {/* sol restant avec cuvette */}
+      <path
+        d="M4 44 L20 44 Q26 44 28 50 L36 50 Q38 44 44 44 L60 44 L60 58 L4 58 Z"
+        fill={stroke}
+        fillOpacity="0.14"
+        stroke={stroke}
+        strokeWidth="1.3"
+      />
+      {/* flèche descendante ambre */}
+      <g stroke={accent} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M32 26 L32 42" />
+        <path d="M28 38 L32 44 L36 38" />
+      </g>
     </>,
   );
 
 export const IconNaturel = () =>
   wrap(
     <>
-      <path d="M6 46 Q20 40 32 46 T58 46" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M18 46 L18 34 M26 46 L26 30 M36 46 L36 26 M46 46 L46 32" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="18" cy="32" r="3" fill={accent} fillOpacity="0.6" />
-      <circle cx="26" cy="28" r="3" fill={accent} fillOpacity="0.7" />
-      <circle cx="36" cy="24" r="3.4" fill={accent} fillOpacity="0.8" />
-      <circle cx="46" cy="30" r="3" fill={accent} fillOpacity="0.6" />
+      {/* strates parallèles nettes */}
+      <rect x="4" y="30" width="56" height="4" fill={accent} fillOpacity="0.35" />
+      <rect x="4" y="34" width="56" height="6" fill={accent} fillOpacity="0.22" />
+      <rect x="4" y="40" width="56" height="8" fill={stroke} fillOpacity="0.18" />
+      <rect x="4" y="48" width="56" height="8" fill={stroke} fillOpacity="0.1" />
+      {/* brins d'herbe en surface */}
+      <path d="M14 30 Q13 24 15 20" stroke={stroke} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      <path d="M22 30 Q23 22 21 18" stroke={stroke} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      <path d="M32 30 Q31 22 33 18" stroke={stroke} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      <path d="M44 30 Q45 24 43 20" stroke={stroke} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      <path d="M52 30 Q51 24 53 22" stroke={stroke} strokeWidth="1.2" fill="none" strokeLinecap="round" />
     </>,
   );
 
 export const IconInconnu = () =>
   wrap(
     <>
-      <circle cx="32" cy="32" r="18" stroke={stroke} strokeWidth="1.8" />
-      <path d="M26 26 Q26 20 32 20 Q38 20 38 26 Q38 30 32 32 L32 38" stroke={stroke} strokeWidth="2" strokeLinecap="round" fill="none" />
+      {/* strates partielles */}
+      <path d="M4 32 L26 32" stroke={stroke} strokeWidth="1" opacity="0.55" />
+      <path d="M4 40 L22 40" stroke={stroke} strokeWidth="1" opacity="0.5" />
+      <path d="M4 48 L18 48" stroke={stroke} strokeWidth="1" opacity="0.45" />
+      <path d="M42 34 L60 34" stroke={stroke} strokeWidth="1" opacity="0.5" />
+      <path d="M46 46 L60 46" stroke={stroke} strokeWidth="1" opacity="0.4" />
+      {/* voile */}
+      <rect x="4" y="14" width="56" height="46" fill={cream} opacity="0.35" />
+      {/* point d'interrogation intégré */}
+      <path
+        d="M27 26 Q27 20 32 20 Q37 20 37 26 Q37 30 32 32 L32 38"
+        stroke={stroke}
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
       <circle cx="32" cy="44" r="1.6" fill={stroke} />
     </>,
   );
+
 
 /* ============== Structure ============== */
 export const IconCompacte = () =>
