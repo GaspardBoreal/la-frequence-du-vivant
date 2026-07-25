@@ -96,15 +96,44 @@ export const TabPortrait: React.FC<Props> = ({
     setEditMode(false);
   };
 
-  // Impression : ajoute classe body puis lance print, retire au retour
+  // Impression via portail body : contourne l'isolation cassée quand la layout est profondément imbriquée
+  const portalRef = useRef<HTMLDivElement | null>(null);
+  if (typeof document !== 'undefined' && !portalRef.current) {
+    const existing = document.getElementById('portrait-print-portal') as HTMLDivElement | null;
+    portalRef.current = existing ?? Object.assign(document.createElement('div'), { id: 'portrait-print-portal' });
+    if (!existing) document.body.appendChild(portalRef.current);
+  }
+
   useEffect(() => {
     if (!printMode) return;
+    let cancelled = false;
     document.body.classList.add('portrait-printing');
-    const t = setTimeout(() => window.print(), 100);
+
+    const waitForImages = async () => {
+      const node = portalRef.current;
+      if (!node) return;
+      const imgs = Array.from(node.querySelectorAll('img'));
+      await Promise.all(
+        imgs.map((img) =>
+          img.complete && img.naturalWidth > 0
+            ? Promise.resolve()
+            : new Promise<void>((res) => {
+                const done = () => res();
+                img.addEventListener('load', done, { once: true });
+                img.addEventListener('error', done, { once: true });
+              })
+        )
+      );
+      // petit délai pour laisser le layout se stabiliser
+      await new Promise((r) => setTimeout(r, 150));
+      if (!cancelled) window.print();
+    };
+    waitForImages();
+
     const onAfter = () => setPrintMode(false);
     window.addEventListener('afterprint', onAfter);
     return () => {
-      clearTimeout(t);
+      cancelled = true;
       document.body.classList.remove('portrait-printing');
       window.removeEventListener('afterprint', onAfter);
     };
