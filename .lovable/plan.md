@@ -1,39 +1,41 @@
-## Objectifs
+## Objectif
 
-1. **Plein écran** pour la carte des prélèvements (J'analyse · Étape 2), à l'identique de Portrait › Cadastre.
-2. **Corriger le bug D/E** : les pastilles ajoutées via le bouton latéral « + Ajouter un prélèvement » n'ont pas de coordonnées, donc n'apparaissent jamais sur la carte.
+Aligner le bloc « Étape 2 · 3 · Structure du sol » sur la grammaire visuelle déjà en place pour « État du terrain » (bloc 1) : un hero SVG qui morphe selon le choix + 3 pictos spécifiques, design, didactiques, partageant une signature graphique commune. S'inspirer de la page 6 du document D.S. (Compacte / Grumeleuse / Particulaire).
 
-## Diagnostic du bug D/E (vérifié dans le code)
+## Diagnostic actuel
 
-- `usePropertySoil.addSample` crée un nouveau `SoilSample` sans `lat`/`lng`.
-- Le seeding de coordonnées dans `SamplesMapBlock` (`seedSampleCoords`) :
-  - a une garde `hasAnyCoord` qui retourne tel quel dès qu'**au moins un** échantillon a des coordonnées ;
-  - n'est déclenché que quand le centroïde change, pas quand `samples.length` change.
-- Conséquence : dès que A/B/C sont posés, D et E créés par le bouton restent sans coordonnées et ne sont donc pas rendus sur la carte (rendu conditionnel `s.lat != null && s.lng != null`).
-- L'ajout par clic carte fonctionne car `handleAdd` patch les coordonnées immédiatement.
+- `StructureBlock.tsx` : le hero est statique (`SoilHeroStrata variant="cross"` — un cube stratifié qui ne change jamais quel que soit le choix).
+- `SoilPictos.tsx` : les 3 icônes existent mais restent génériques (grille, ronds, points) sans « verbe clé » ni cohérence avec le hero.
 
-## Corrections
+## Ce qu'on va livrer
 
-### Bug D/E (`SamplesMapBlock.tsx`)
-- Remplacer `hasAnyCoord` par un seeding **par échantillon** : pour chaque sample sans `lat`/`lng`, poser un point autour du centroïde de la propriété (ou du centre carte) selon un motif en pentagone (5 positions déjà définies, indexées par la position du sample).
-- Redéclencher le seeding sur `samples.length` (nouvel ajout) en plus du changement de centre.
-- Petit offset (~5 m) si la position calculée est identique à une pastille existante, pour éviter la superposition D/E sur A/B/C.
+### 1. Nouveau composant `StructureCrossSection.tsx`
+Même patron que `TerrainCrossSection` : une scène SVG « motte dans la main » qui morphe en 3 états via `framer-motion`, avec verbe clé animé en dessous.
 
-### Plein écran
-- Ajouter un état local `fullscreen` dans `SamplesMapBlock`.
-- Bouton `Maximize2` en haut-**gauche** de la carte (comme Portrait › Cadastre, au-dessus des contrôles Géo/Sat/Relief/Cadastre qui sont en haut-droite).
-- En mode plein écran : `createPortal(document.body)` + overlay `fixed inset-0 z-[2000]` avec `framer-motion` (fade), fond crème du design system.
-- Layout plein écran :
-  - En-tête compacte : titre « Étape 2 · Prélèvements », compteur `n/5`, bouton fermer.
-  - Zone principale : la carte pleine hauteur.
-  - Colonne latérale droite (largeur ~360 px, scrollable) : liste des pastilles A→E avec inputs d'emplacement et bouton « + Ajouter un prélèvement », identique à la vue normale.
-  - Sur mobile (`< md`), la colonne devient un tiroir bas rétractable pour ne pas masquer la carte.
-- `Esc` ferme le plein écran ; lock du scroll du body pendant l'ouverture.
-- Aucune modification des hooks ni de la sauvegarde : la même instance d'état `samples` alimente les deux vues (normale et plein écran).
+- **Compacte** — motte massive, monolithique, fissurée sur une seule ligne nette ; verbe : « Résiste · bloc unique ».
+- **Grumeleuse** — motte qui éclate en agrégats arrondis, aération visible (petits vides entre grumeaux), touche de radicelle ; verbe : « S'émiette · respire ».
+- **Particulaire** — la motte se désagrège en grains individuels qui glissent entre les doigts ; verbe : « Se disperse · sable ».
 
-## Détails techniques
+Fond dégradé terre (ocre → sable) cohérent avec le hero actuel + main stylisée en bas pour rappeler le geste « cassez une motte ».
 
-- Fichier unique modifié : `src/components/propriete/analyze/blocks/SamplesMapBlock.tsx`.
-- Extraction interne d'un sous-composant `SamplesMapView` (carte + panneau) monté soit en inline soit en portail plein écran, pour ne pas dupliquer JSX.
-- Réutilise `RichMap` avec les mêmes props (`controls`, `initialStyle="cadastre"`, `maxZoom={22}`).
-- Aucune migration DB, aucune logique métier modifiée.
+### 2. Redessin des 3 pictos (`SoilPictos.tsx`)
+Même grammaire : cadre carré 64px, contour vert forêt, silhouette d'une motte, remplissage qui traduit l'état :
+
+- **IconCompacte** — bloc plein avec une fissure nette diagonale (motte massive qui refuse de se briser).
+- **IconGrumeleuse** — silhouette de motte composée d'agrégats arrondis imbriqués, un petit vide central (porosité).
+- **IconParticulaire** — silhouette de motte dissoute en grains qui « coulent » vers le bas.
+
+Chaque picto respecte le token `--primary` (forêt émeraude) et l'accent `--accent` (ambre) via la fonction `wrap` existante.
+
+### 3. Câblage dans `StructureBlock.tsx`
+- Remplacer `<SoilHeroStrata variant="cross" />` par `<StructureCrossSection value={value} />`.
+- Passer `value` au hero pour qu'il morphe en direct sur clic.
+- Rien d'autre ne change (choix, `AnalyzeCard`, `ChoiceButton`).
+
+## Fichiers touchés
+
+- **Nouveau** : `src/components/propriete/analyze/StructureCrossSection.tsx`
+- **Modifié** : `src/components/propriete/analyze/SoilPictos.tsx` (les 3 icônes structure uniquement)
+- **Modifié** : `src/components/propriete/analyze/blocks/StructureBlock.tsx` (hero + import)
+
+Aucun changement sur le stockage, aucun impact sur les autres blocs (`TerrainBlock`, `TextureBlock`, `PhBlock`, `LifeBlock`) ni sur l'impression.
