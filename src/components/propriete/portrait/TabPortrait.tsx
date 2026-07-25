@@ -154,9 +154,19 @@ export const TabPortrait: React.FC<Props> = ({
 
   return (
     <div className="space-y-5">
-      {/* En-tête */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
+      {/* Sous-onglets Portrait */}
+      <div className="flex items-center gap-1 rounded-full bg-muted/40 p-1 w-fit border border-border/60">
+        <SubTabPill active={subTab === 'galerie'} onClick={() => setSubTab('galerie')} icon={Images} label="Galerie" />
+        <SubTabPill active={subTab === 'cadastre'} onClick={() => setSubTab('cadastre')} icon={MapIcon} label="Cadastre" />
+      </div>
+
+      {subTab === 'cadastre' ? (
+        <PortraitCadastre proprieteId={proprieteId} proprieteCenter={proprieteCenter} />
+      ) : (
+        <>
+          {/* En-tête */}
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
           <h2 className="text-xl md:text-2xl font-serif italic text-foreground flex items-center gap-2">
             <Images className="w-5 h-5 text-amber-600" />
             Portrait du site
