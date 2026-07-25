@@ -69,6 +69,7 @@ const QUOTES = [
 export const PortraitPrintLayout: React.FC<Props> = ({
   photos, proprieteNom, proprieteVille, publicUrl,
   coverVariant = 'atelier', insertBeforeColophon, insertedPageCount = 0,
+  insertAfterToc, insertedAfterTocPageCount = 0,
 }) => {
 
   const [qr, setQr] = useState<string | null>(null);
