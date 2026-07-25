@@ -272,7 +272,7 @@ export const ObserveSummary: React.FC<Props> = ({
       </div>
 
       {/* Footer / actions */}
-      <footer className="mt-12 pt-6 border-t border-[hsl(var(--ds-line))] flex flex-wrap items-center justify-between gap-3 print:hidden">
+      {!printOnly && (<footer className="mt-12 pt-6 border-t border-[hsl(var(--ds-line))] flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-2">
           <span className="w-7 h-7 rounded-full border border-[hsl(var(--ds-forest))] flex items-center justify-center text-[hsl(var(--ds-forest))]">
             <Check className="w-4 h-4" />
@@ -284,6 +284,7 @@ export const ObserveSummary: React.FC<Props> = ({
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
+              if (onPrint) { onPrint(); return; }
               document.body.classList.add('observe-printing');
               const cleanup = () => {
                 document.body.classList.remove('observe-printing');
@@ -311,7 +312,7 @@ export const ObserveSummary: React.FC<Props> = ({
             </button>
           )}
         </div>
-      </footer>
+      </footer>)}
     </motion.article>
   );
 };
