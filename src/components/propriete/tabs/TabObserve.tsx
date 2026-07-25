@@ -66,6 +66,54 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
   const isDone = !!completedAt;
   const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
 
+  // ─── Impression : dialogue + portail combiné ────────────────────────────
+  const { data: galleryPhotos = [] } = usePropertyGallery(proprieteId);
+  const [printOpen, setPrintOpen] = React.useState(false);
+  const [combinedPrinting, setCombinedPrinting] = React.useState(false);
+  const combinedPortalRef = usePrintCombined({
+    active: combinedPrinting,
+    portalId: 'combined-print-portal',
+    bodyClass: 'combined-printing',
+    onDone: () => setCombinedPrinting(false),
+  });
+
+  const handleConfirmPrint = (choice: PrintChoice) => {
+    setPrintOpen(false);
+    if (choice === 'observe') {
+      document.body.classList.add('observe-printing');
+      const cleanup = () => {
+        document.body.classList.remove('observe-printing');
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      setTimeout(() => window.print(), 60);
+    } else {
+      setCombinedPrinting(true);
+    }
+  };
+
+  const printDialogAndPortal = (
+    <>
+      <PrintChoiceDialog
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        onConfirm={handleConfirmPrint}
+        portraitPhotoCount={galleryPhotos.length}
+      />
+      {combinedPrinting && combinedPortalRef.current && createPortal(
+        <CombinedPrintLayout
+          answers={state.answers}
+          sensorial={state.sensorial}
+          completedAt={completedAt}
+          propertyName={propertyName}
+          photos={galleryPhotos}
+          publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
+        />,
+        combinedPortalRef.current,
+      )}
+    </>
+  );
+
   // Vue synthèse (carnet scellé) — quand terminé et non en mode édition
   if (isDone && mode === 'summary') {
     return (
@@ -85,7 +133,9 @@ export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: st
           }}
           onReopenAll={() => setMode('edit')}
           propertyName={propertyName}
+          onPrint={() => setPrintOpen(true)}
         />
+        {printDialogAndPortal}
       </div>
     );
   }
