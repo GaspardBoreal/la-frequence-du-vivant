@@ -9,10 +9,23 @@ const STEPS = [
   { n: 5, label: 'Palette' },
 ];
 
-export const StepHeader: React.FC<{ current?: number; savedAt?: string | null; saving?: boolean }> = ({
+export const StepHeader: React.FC<{
+  current?: number;
+  savedAt?: string | null;
+  saving?: boolean;
+  title?: string;
+  subtitle?: React.ReactNode;
+}> = ({
   current = 1,
   savedAt,
   saving,
+  title = "J'observe le site",
+  subtitle = (
+    <>
+      Recueillir les informations essentielles du site avant d'analyser le sol.
+      <span className="italic"> Observer · Comprendre · Concevoir.</span>
+    </>
+  ),
 }) => {
   return (
     <div className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-6 md:p-8 shadow-[0_2px_20px_-8px_rgba(60,80,60,0.15)]">
@@ -22,11 +35,10 @@ export const StepHeader: React.FC<{ current?: number; savedAt?: string | null; s
             <Eye className="w-3.5 h-3.5" /> Méthode D.S. · Étape {current} / 5
           </div>
           <h2 className="font-serif italic text-3xl md:text-4xl mt-2 text-[hsl(var(--ds-forest-deep))]">
-            J'observe le site
+            {title}
           </h2>
           <p className="mt-2 text-sm text-[hsl(var(--ds-forest))]/80 max-w-xl leading-relaxed">
-            Recueillir les informations essentielles du site avant d'analyser le sol.
-            <span className="italic"> Observer · Comprendre · Concevoir.</span>
+            {subtitle}
           </p>
         </div>
 
