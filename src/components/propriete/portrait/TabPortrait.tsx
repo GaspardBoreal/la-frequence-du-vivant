@@ -21,7 +21,7 @@ interface Props {
   proprieteCenter?: [number, number] | null;
 }
 
-type ViewMode = 'bento' | 'constellation';
+type ViewMode = 'bento' | 'motion' | 'constellation';
 
 const keyOf = (c: { source_table: string; source_id: string }) =>
   `${c.source_table}::${c.source_id}`;
