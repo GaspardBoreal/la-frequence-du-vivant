@@ -16,10 +16,22 @@ import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintL
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import { Button } from '@/components/ui/button';
 
-export const TabObserve: React.FC<{ bio?: PropertyBiodiversity; proprieteId?: string; propertyName?: string }> = ({
+export const TabObserve: React.FC<{
+  bio?: PropertyBiodiversity;
+  proprieteId?: string;
+  propertyName?: string;
+  proprieteVille?: string | null;
+  proprieteAdresse?: string | null;
+  proprieteCodePostal?: string | null;
+  proprieteCenter?: [number, number] | null;
+}> = ({
   bio,
   proprieteId,
   propertyName,
+  proprieteVille,
+  proprieteAdresse,
+  proprieteCodePostal,
+  proprieteCenter,
 }) => {
   const { state, saving, savedAt, completedAt, toggleChoice, setSensorial, setNotes, markComplete } =
     usePropertyObservation(proprieteId);
