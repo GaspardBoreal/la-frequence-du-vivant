@@ -252,6 +252,10 @@ export const PortraitPrintLayout: React.FC<Props> = ({
         );
       })}
 
+      {insertBeforeColophon}
+
+
+
       {/* ===== Colophon ===== */}
       <section className="portrait-print-page portrait-print-colophon">
         <h2>Colophon</h2>
