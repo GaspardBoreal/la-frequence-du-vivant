@@ -1,7 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Marker, useMap, useMapEvents } from 'react-leaflet';
+import { GeoJSON, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+
+const SAVED_STYLE: L.PathOptions = {
+  color: '#2f5d3a',
+  weight: 3,
+  opacity: 0.95,
+  fillColor: '#2f5d3a',
+  fillOpacity: 0.28,
+};
 import { Plus, X, MapPin, Info, Move3D } from 'lucide-react';
 import { AnalyzeCard } from '../AnalyzeCard';
 import { RichMap } from '@/components/maps';
@@ -137,9 +145,23 @@ export const SamplesMapBlock: React.FC<{
   }, [parcCenter?.[0], parcCenter?.[1], proprieteCenter?.[0], proprieteCenter?.[1]]);
 
   const parcelleBounds = useMemo<Array<[number, number]>>(() => {
-    return parcelles
-      .filter((p) => p.centroid_lat != null && p.centroid_lng != null)
-      .map((p) => [p.centroid_lat as number, p.centroid_lng as number]);
+    const pts: Array<[number, number]> = [];
+    for (const p of parcelles) {
+      if (p.geometry) {
+        try {
+          const b = L.geoJSON(p.geometry as any).getBounds();
+          if (b.isValid()) {
+            pts.push([b.getSouth(), b.getWest()]);
+            pts.push([b.getNorth(), b.getEast()]);
+            continue;
+          }
+        } catch {}
+      }
+      if (p.centroid_lat != null && p.centroid_lng != null) {
+        pts.push([p.centroid_lat as number, p.centroid_lng as number]);
+      }
+    }
+    return pts;
   }, [parcelles]);
 
   const bounds = useMemo<Array<[number, number]> | undefined>(() => {
@@ -191,9 +213,15 @@ export const SamplesMapBlock: React.FC<{
             controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
             maxZoom={22}
             height="100%"
+            initialStyle="cadastre"
           >
             <ViewController center={center} />
             <AddOnClick onAdd={handleAdd} disabled={disabledAdd} />
+            {parcelles.map((p) =>
+              p.geometry ? (
+                <GeoJSON key={p.id} data={p.geometry as any} style={SAVED_STYLE} />
+              ) : null,
+            )}
             {samples.map((s) =>
               s.lat != null && s.lng != null ? (
                 <Marker
