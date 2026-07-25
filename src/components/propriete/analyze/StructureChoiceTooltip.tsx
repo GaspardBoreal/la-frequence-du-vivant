@@ -109,7 +109,7 @@ export const StructureChoiceTooltip: React.FC<{
 
             {/* Flèche */}
             <svg
-              className="absolute left-1/2 -translate-x-1/2 -bottom-[7px]"
+              className={`absolute ${arrowClass} -bottom-[7px]`}
               width="14"
               height="8"
               viewBox="0 0 14 8"
