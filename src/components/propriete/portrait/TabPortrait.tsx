@@ -217,6 +217,8 @@ export const TabPortrait: React.FC<Props> = ({
         </div>
       ) : viewMode === 'bento' ? (
         <GalleryBento photos={photos} />
+      ) : viewMode === 'motion' ? (
+        <GalleryMotion photos={photos} />
       ) : (
         <GalleryConstellation photos={photos} fallbackCenter={proprieteCenter ?? null} />
       )}
