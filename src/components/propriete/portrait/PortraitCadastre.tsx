@@ -522,6 +522,9 @@ export const PortraitCadastre: React.FC<Props> = ({
         parcelles={parcelles}
       />
 
+      {/* Station météo la plus proche */}
+      <NearestWeatherStationCard center={center} />
+
       {/* Plein écran */}
       {fullscreen &&
         createPortal(
