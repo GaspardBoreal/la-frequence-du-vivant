@@ -324,7 +324,7 @@ export const AnalyzeSummary: React.FC<Props> = ({
             onEdit={() => onEditBlock('prelevements')}
           />
 
-          <SoilSignature reading={r} dateStr={dateStr} />
+
 
           {/* Lecture dominante */}
           <div className="mb-8 border-l-2 border-[hsl(var(--ds-gold))] pl-4 print-avoid-break">
