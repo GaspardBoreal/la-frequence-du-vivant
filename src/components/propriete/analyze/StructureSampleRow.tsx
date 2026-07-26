@@ -105,7 +105,6 @@ export const StructureSampleRow: React.FC<{
             {RESULT_ORDER.map((r, i) => {
               const selected = result === r;
               const tipId = `struct-tip-${sample.id}-${r}`;
-              const align = i === 0 ? 'left' : i === RESULT_ORDER.length - 1 ? 'right' : 'center';
               return (
                 <div
                   key={r}
@@ -138,7 +137,8 @@ export const StructureSampleRow: React.FC<{
                   <StructureChoiceTooltip
                     variant={hovered === r ? r : null}
                     id={tipId}
-                    align={align as 'left' | 'center' | 'right'}
+                    align="right"
+                    clamp
                   />
                 </div>
               );
