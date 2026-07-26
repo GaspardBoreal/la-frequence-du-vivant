@@ -89,11 +89,27 @@ export const BiodiversityEvidenceBlock: React.FC<Props> = ({
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Espèces observées" value={bio?.speciesTotal ?? 0} />
+        <StatCard label="Espèces observées" value={speciesCount.total} />
         <StatCard label="Marches réalisées" value={eventCount} />
-        <StatCard label="Règnes présents" value={kingdoms.length} />
+        <StatCard label="Règnes présents" value={speciesCount.kingdomsPresent} />
         <StatCard label="Dernière observation" value={lastObsLabel} small />
       </div>
+
+      {speciesCount.total > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {KINGDOM_ORDER.filter((k) => speciesCount.byKingdom[k] > 0).map((k) => (
+            <span
+              key={k}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs"
+            >
+              {KINGDOM_ICONS[k]}
+              <span className="font-semibold">{speciesCount.byKingdom[k]}</span>
+              <span className="text-muted-foreground">{KINGDOM_LABELS_FR[k]}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
 
       <AnimatePresence initial={false}>
         {open && (
