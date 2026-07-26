@@ -159,8 +159,11 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               printSection="p3"
             />
           </section>
+
+          <TestMediaPrintPlates medias={testMedias} propertyName={propertyName} />
         </>
       )}
+
     </>
   );
 
