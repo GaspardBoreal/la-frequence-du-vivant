@@ -229,3 +229,229 @@ export function computeConcordance(flora: FloraProfile, soil: SoilLite): Concord
 
   return { eau: eauMatch, texture: texMatch, nutri: nutriMatch, ph: phMatch, icg };
 }
+
+// ============================================================
+// Grille de lecture écologique (méthode D.S. — page 10)
+// 4 critères × 2 pôles = 8 colonnes ; intensité 0..3
+//   3 = forte · 2 = moyenne · 1 = faible · 0 = neutre
+// ============================================================
+
+export type EcoAxis = 'eau' | 'texture' | 'nutri' | 'ph';
+export type EcoPoleKey =
+  | 'eau_frais' | 'eau_sec'
+  | 'tex_limon_sable' | 'tex_argile_limon'
+  | 'nutri_riche' | 'nutri_pauvre'
+  | 'ph_acide' | 'ph_calcaire';
+
+export interface EcoPole {
+  key: EcoPoleKey;
+  axis: EcoAxis;
+  label: string;
+  short: string;
+  /** signe de la valeur signée du KB qui alimente ce pôle */
+  sign: 1 | -1;
+}
+
+export const ECO_AXES: Record<EcoAxis, { label: string; token: string }> = {
+  eau:     { label: 'Eau',       token: '--ds-eco-eau' },
+  texture: { label: 'Texture',   token: '--ds-eco-texture' },
+  nutri:   { label: 'Nutrition', token: '--ds-eco-nutri' },
+  ph:      { label: 'pH',        token: '--ds-eco-ph' },
+};
+
+export const ECO_POLES: EcoPole[] = [
+  { key: 'eau_frais',        axis: 'eau',     label: 'Frais / humide',    short: 'Frais',    sign: 1 },
+  { key: 'eau_sec',          axis: 'eau',     label: 'Sec',               short: 'Sec',      sign: -1 },
+  { key: 'tex_limon_sable',  axis: 'texture', label: 'Limoneux / sableux', short: 'Limon/sable', sign: -1 },
+  { key: 'tex_argile_limon', axis: 'texture', label: 'Argileux / limoneux', short: 'Argile', sign: 1 },
+  { key: 'nutri_riche',      axis: 'nutri',   label: 'Riche',             short: 'Riche',    sign: 1 },
+  { key: 'nutri_pauvre',     axis: 'nutri',   label: 'Pauvre',            short: 'Pauvre',   sign: -1 },
+  { key: 'ph_acide',         axis: 'ph',      label: 'Acide',             short: 'Acide',    sign: -1 },
+  { key: 'ph_calcaire',      axis: 'ph',      label: 'Calcaire',          short: 'Calcaire', sign: 1 },
+];
+
+export type EcoIntensity = 0 | 1 | 2 | 3;
+
+export const INTENSITY_LABEL: Record<EcoIntensity, string> = {
+  0: 'Neutre',
+  1: 'Faible',
+  2: 'Moyenne',
+  3: 'Forte',
+};
+
+/** Intensité 0..3 d'une plante sur un pôle donné */
+export function poleIntensity(plant: PlantIndicator, pole: EcoPole): EcoIntensity {
+  const v = plant[pole.axis];
+  if (pole.sign === 1 ? v <= 0 : v >= 0) return 0;
+  const a = Math.min(3, Math.round(Math.abs(v)));
+  return a as EcoIntensity;
+}
+
+/** Grille complète d'une plante (8 valeurs) */
+export function plantGrid(plant: PlantIndicator): Record<EcoPoleKey, EcoIntensity> {
+  const out = {} as Record<EcoPoleKey, EcoIntensity>;
+  for (const p of ECO_POLES) out[p.key] = poleIntensity(plant, p);
+  return out;
+}
+
+export type EcoLevel = 'tres_faible' | 'faible' | 'moyen' | 'fort' | 'tres_fort';
+
+export const LEVEL_LABEL: Record<EcoLevel, string> = {
+  tres_faible: 'Très faible',
+  faible: 'Faible',
+  moyen: 'Moyen',
+  fort: 'Fort',
+  tres_fort: 'Très fort',
+};
+
+export interface PoleScore {
+  pole: EcoPole;
+  points: number;      // somme des intensités du cortège coché
+  ratio: number;       // 0..1 (points / max théorique)
+  level: EcoLevel;
+  contributors: number; // nb de plantes qui alimentent ce pôle
+}
+
+function levelFromRatio(ratio: number): EcoLevel {
+  if (ratio < 0.12) return 'tres_faible';
+  if (ratio < 0.28) return 'faible';
+  if (ratio < 0.48) return 'moyen';
+  if (ratio < 0.68) return 'fort';
+  return 'tres_fort';
+}
+
+/** Somme des indices par pôle sur les plantes cochées (page 11) */
+export function computePoleScores(observedIds: string[]): PoleScore[] {
+  const plants = PLANT_INDICATORS.filter((p) => observedIds.includes(p.id));
+  const max = Math.max(1, plants.length * 3);
+  return ECO_POLES.map((pole) => {
+    let points = 0;
+    let contributors = 0;
+    for (const p of plants) {
+      const i = poleIntensity(p, pole);
+      if (i > 0) {
+        points += i;
+        contributors += 1;
+      }
+    }
+    const ratio = points / max;
+    return { pole, points, ratio, level: levelFromRatio(ratio), contributors };
+  });
+}
+
+export function poleScore(scores: PoleScore[], key: EcoPoleKey): PoleScore {
+  return scores.find((s) => s.pole.key === key)!;
+}
+
+/** Phrase de synthèse à partir des dominantes par critère */
+export function narratePoleScores(scores: PoleScore[]): string {
+  if (scores.every((s) => s.points === 0)) return '';
+  const pick = (a: EcoPoleKey, b: EcoPoleKey) => {
+    const sa = poleScore(scores, a);
+    const sb = poleScore(scores, b);
+    if (sa.points === 0 && sb.points === 0) return null;
+    if (Math.abs(sa.points - sb.points) <= 1) return 'équilibré';
+    return (sa.points > sb.points ? sa : sb).pole.label.toLowerCase();
+  };
+  const eau = pick('eau_frais', 'eau_sec');
+  const tex = pick('tex_argile_limon', 'tex_limon_sable');
+  const nut = pick('nutri_riche', 'nutri_pauvre');
+  const ph = pick('ph_calcaire', 'ph_acide');
+  const parts: string[] = [];
+  if (eau) parts.push(`une ambiance hydrique ${eau === 'équilibré' ? 'équilibrée' : eau}`);
+  if (tex) parts.push(`une texture plutôt ${tex === 'équilibré' ? 'intermédiaire' : tex}`);
+  if (nut) parts.push(`une richesse ${nut === 'équilibré' ? 'moyenne' : nut}`);
+  if (ph) parts.push(`une réaction ${ph === 'équilibré' ? 'neutre' : ph}`);
+  return `D'après la flore en place, le sol présenterait ${parts.join(', ')}.`;
+}
+
+// ============================================================
+// Concordance détaillée sol / flore — 8 lignes (page 12)
+// ============================================================
+
+export interface ConcordanceRow {
+  key: EcoPoleKey;
+  axis: EcoAxis;
+  label: string;
+  soil: string;   // lecture Étape 2
+  flora: string;  // lecture Étape 3
+  match: AxisMatch;
+}
+
+export interface ConcordanceDetail {
+  rows: ConcordanceRow[];
+  points: number;   // /16
+  max: number;      // 16 (moins les lignes na × 2)
+  icg: number;      // 0..100
+  counts: { oui: number; partiel: number; non: number; na: number };
+}
+
+/** Lecture du sol (Étape 2) traduite sur chaque pôle : -1 absent, 0 neutre, 1..3 intensité */
+function soilPoleValue(soil: SoilLite, key: EcoPoleKey): number | null {
+  switch (key) {
+    case 'eau_frais':
+      return soil.structure === 'compacte' ? 3 : soil.structure === 'grumeleuse' ? 1 : soil.structure === 'particulaire' ? 0 : null;
+    case 'eau_sec':
+      return soil.structure === 'particulaire' ? 3 : soil.structure === 'grumeleuse' ? 1 : soil.structure === 'compacte' ? 0 : null;
+    case 'tex_argile_limon':
+      return soil.texture === 'limon_argile' ? 3 : soil.texture === 'limon_moyen' ? 1 : soil.texture === 'sable_limon' ? 0 : null;
+    case 'tex_limon_sable':
+      return soil.texture === 'sable_limon' ? 3 : soil.texture === 'limon_moyen' ? 1 : soil.texture === 'limon_argile' ? 0 : null;
+    case 'nutri_riche': {
+      const n = soil.life_signs?.length ?? 0;
+      return n === 0 && !soil.structure ? null : n >= 3 ? 3 : n >= 1 ? 2 : 0;
+    }
+    case 'nutri_pauvre': {
+      const n = soil.life_signs?.length ?? 0;
+      return n === 0 && !soil.structure ? null : n === 0 ? 3 : n <= 1 ? 1 : 0;
+    }
+    case 'ph_acide':
+      return soil.ph == null ? null : soil.ph <= 5.5 ? 3 : soil.ph <= 6.5 ? 2 : soil.ph < 7 ? 1 : 0;
+    case 'ph_calcaire':
+      return soil.ph == null ? null : soil.ph >= 7.8 ? 3 : soil.ph >= 7.2 ? 2 : soil.ph > 7 ? 1 : 0;
+  }
+}
+
+const soilWord = (v: number | null): string =>
+  v == null ? 'Donnée manquante' : v >= 3 ? 'Marqué' : v === 2 ? 'Présent' : v === 1 ? 'Léger' : 'Non observé';
+
+const floraWord = (level: EcoLevel, points: number): string =>
+  points === 0 ? 'Aucun indice' : `${LEVEL_LABEL[level]} · ${points} pt${points > 1 ? 's' : ''}`;
+
+/** Concordance sur les 8 lignes — OUI 2 / PARTIEL 1 / NON 0, ICG = pts ÷ 16 × 100 */
+export function computeConcordanceDetail(observedIds: string[], soil: SoilLite): ConcordanceDetail {
+  const scores = computePoleScores(observedIds);
+  const rows: ConcordanceRow[] = ECO_POLES.map((pole) => {
+    const s = poleScore(scores, pole.key);
+    const sv = soilPoleValue(soil, pole.key);
+    // flore ramenée sur 0..3
+    const fv = s.points === 0 ? 0 : s.ratio >= 0.48 ? 3 : s.ratio >= 0.28 ? 2 : 1;
+    let match: AxisMatch;
+    if (sv == null) match = 'na';
+    else {
+      const gap = Math.abs(sv - fv);
+      match = gap <= 1 ? 'oui' : gap === 2 ? 'partiel' : 'non';
+    }
+    return {
+      key: pole.key,
+      axis: pole.axis,
+      label: pole.label,
+      soil: soilWord(sv),
+      flora: floraWord(s.level, s.points),
+      match,
+    };
+  });
+
+  const counts = { oui: 0, partiel: 0, non: 0, na: 0 };
+  let points = 0;
+  for (const r of rows) {
+    counts[r.match] += 1;
+    points += r.match === 'oui' ? 2 : r.match === 'partiel' ? 1 : 0;
+  }
+  const max = (rows.length - counts.na) * 2;
+  const icg = max === 0 ? 0 : Math.round((points / max) * 100);
+  return { rows, points, max, icg, counts };
+}
+
+export const ECO_SOURCE =
+  'Source des données écologiques : CNPF — 2018 — G. Dumé ; C. Gauberville ; D. Mansion ; J.-C. Rameau — Flore forestière française, Guide écologique illustré — 1 Plaines et Collines.';
