@@ -21,8 +21,10 @@ export const StructureBlock: React.FC<{
   onChange: (v: string) => void;
   samples?: SoilSample[];
   onUpdateSample?: (id: string, patch: Partial<SoilSample>) => void;
+  /** Pastille médias par prélèvement (preuves de terrain). */
+  renderSampleMedia?: (sample: SoilSample) => React.ReactNode;
   index?: number;
-}> = ({ value, onChange, samples = [], onUpdateSample, index = 0 }) => {
+}> = ({ value, onChange, samples = [], onUpdateSample, renderSampleMedia, index = 0 }) => {
   const { dominant, counts, filled, contrasted } = useMemo(
     () => dominantResult(samples.map((s) => s.structure_result as StructureResultId | null)),
     [samples]
@@ -125,6 +127,7 @@ export const StructureBlock: React.FC<{
                   sample={s}
                   index={i}
                   onPatch={(patch) => onUpdateSample?.(s.id, patch)}
+                  mediaSlot={renderSampleMedia?.(s)}
                 />
               ))}
             </motion.div>
