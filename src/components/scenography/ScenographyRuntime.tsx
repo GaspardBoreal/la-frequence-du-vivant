@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import * as Babel from '@babel/standalone';
+
 import { buildScenographyHtml } from './scenographyRuntimeHtml';
 import type { ScenographyData } from '@/hooks/useScenography';
 import type { BrandKit } from '@/lib/brandKits/types';
