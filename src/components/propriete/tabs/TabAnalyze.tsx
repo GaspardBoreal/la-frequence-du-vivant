@@ -36,6 +36,8 @@ export const TabAnalyze: React.FC<{
   } = usePropertySoil(proprieteId);
 
   const speciesCount = usePropertySpeciesCount(proprieteId);
+  const [submitting, setSubmitting] = React.useState(false);
+
 
   const filled =
     (state.terrain_status ? 1 : 0) +
