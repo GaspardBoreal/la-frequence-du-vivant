@@ -6,6 +6,7 @@ import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import { buildSoilReading } from './soilReading';
 
 import { SoilSamplesPlan } from './SoilSamplesPlan';
+import { SamplesRegisterTable } from './SamplesRegisterTable';
 import { RESULT_SHORT, TEST_LABELS } from './structureTests';
 import { TEXTURE_SHORT, TEXTURE_TEST_LABELS, BOUDIN_FORM_MAP } from './textureTests';
 import { PH_CLASS_MAP, PH_TEST_LABELS, classifyPh } from './phTests';
