@@ -35,7 +35,7 @@ export const TabAnalyze: React.FC<{
     markComplete,
   } = usePropertySoil(proprieteId);
 
-  const [submitting, setSubmitting] = React.useState(false);
+  const speciesCount = usePropertySpeciesCount(proprieteId);
 
   const filled =
     (state.terrain_status ? 1 : 0) +
