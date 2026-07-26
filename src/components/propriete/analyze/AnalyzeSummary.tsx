@@ -6,6 +6,7 @@ import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import { buildSoilReading } from './soilReading';
 
 import { SoilSamplesPlan } from './SoilSamplesPlan';
+import { SamplesRegisterTable } from './SamplesRegisterTable';
 import { RESULT_SHORT, TEST_LABELS } from './structureTests';
 import { TEXTURE_SHORT, TEXTURE_TEST_LABELS, BOUDIN_FORM_MAP } from './textureTests';
 import { PH_CLASS_MAP, PH_TEST_LABELS, classifyPh } from './phTests';
@@ -135,106 +136,8 @@ export const AnalyzeSummary: React.FC<Props> = ({
   const phClass = r.ph.dominant ? PH_CLASS_MAP[r.ph.dominant] : null;
   const lifeClass = r.life.dominant ? LIFE_CLASS_MAP[r.life.dominant] : null;
 
-  const samplesTable = (
-    <div className="overflow-hidden rounded-xl border border-[hsl(var(--ds-line))]">
-      <table className="w-full text-left text-[11px]">
-        <thead>
-          <tr className="bg-[hsl(var(--ds-forest))]/8 text-[9px] uppercase tracking-[0.18em] text-[hsl(var(--ds-forest))]/80">
-            <th className="px-2.5 py-2">#</th>
-            <th className="px-2.5 py-2">Lieu</th>
-            <th className="px-2.5 py-2">Structure</th>
-            <th className="px-2.5 py-2">Texture</th>
-            <th className="px-2.5 py-2">pH</th>
-            <th className="px-2.5 py-2">Vie du sol</th>
-          </tr>
-        </thead>
-        <tbody>
-          {r.samples.map((s) => {
-            const incomplete = r.incomplete.includes(s.label);
-            const ph = typeof s.ph_value === 'number' ? s.ph_value : null;
-            const phc = ph != null ? classifyPh(ph) : null;
-            const signs = (s.life_signs ?? [])
-              .map((id) => LIFE_SIGN_MAP[id as LifeSignId]?.short)
-              .filter(Boolean);
+  const samplesTable = <SamplesRegisterTable reading={r} printOnly={printOnly} />;
 
-            return (
-              <tr
-                key={s.id}
-                className={
-                  'border-t border-[hsl(var(--ds-line))] align-top ' +
-                  (incomplete ? 'bg-amber-50/50' : '')
-                }
-              >
-                <td className="px-2.5 py-2 font-bold text-[hsl(var(--ds-forest-deep))]">
-                  {s.label}
-                  {s.lat != null && s.lng != null && (
-                    <MapPin className="inline w-3 h-3 ml-1 text-[hsl(var(--ds-gold))]" />
-                  )}
-                </td>
-                <td className="px-2.5 py-2 text-[hsl(var(--ds-forest-deep))]/80">
-                  {s.location?.trim() || '—'}
-                </td>
-                <td className="px-2.5 py-2">
-                  {s.structure_result ? (
-                    <>
-                      <span className="font-semibold">{RESULT_SHORT[s.structure_result]}</span>
-                      {s.structure_test && (
-                        <span className="block text-[9px] uppercase tracking-wider text-[hsl(var(--ds-forest))]/60">
-                          {TEST_LABELS[s.structure_test]}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td className="px-2.5 py-2">
-                  {s.texture_result ? (
-                    <>
-                      <span className="font-semibold">{TEXTURE_SHORT[s.texture_result]}</span>
-                      <span className="block text-[9px] uppercase tracking-wider text-[hsl(var(--ds-forest))]/60">
-                        {s.texture_test ? TEXTURE_TEST_LABELS[s.texture_test] : ''}
-                        {s.boudin_form ? ` · ${BOUDIN_FORM_MAP[s.boudin_form].label}` : ''}
-                      </span>
-                    </>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td className="px-2.5 py-2">
-                  {ph != null ? (
-                    <>
-                      <span className="font-semibold">{ph.toFixed(1)}</span>
-                      <span className="block text-[9px] uppercase tracking-wider text-[hsl(var(--ds-forest))]/60">
-                        {phc?.short}
-                        {s.ph_test ? ` · ${PH_TEST_LABELS[s.ph_test]}` : ''}
-                      </span>
-                    </>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td className="px-2.5 py-2">
-                  {signs.length || typeof s.worm_count === 'number' ? (
-                    <>
-                      <span className="font-semibold">
-                        {typeof s.worm_count === 'number' ? `${s.worm_count} vers` : '—'}
-                      </span>
-                      <span className="block text-[9px] text-[hsl(var(--ds-forest))]/70">
-                        {signs.join(' · ') || (s.life_test ? LIFE_TEST_LABELS[s.life_test] : '')}
-                      </span>
-                    </>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
 
   return (
     <motion.article

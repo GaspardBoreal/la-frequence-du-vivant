@@ -708,6 +708,34 @@
   @page { size: A4; margin: 0; }
 }
 
+/* === REGISTRE DES PRÉLÈVEMENTS — impression (solo + cahier complet) === */
+@media print {
+  .samples-register {
+    overflow: visible !important;
+    border-color: hsl(var(--ds-gold) / 0.55) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .samples-register table {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 8.6pt !important;
+    line-height: 1.25 !important;
+    table-layout: fixed;
+  }
+  .samples-register thead { display: table-header-group; }
+  .samples-register tfoot { display: table-footer-group; }
+  .samples-register th,
+  .samples-register td {
+    padding: 1.6mm 1.8mm !important;
+    word-break: break-word;
+  }
+  .samples-register tr { break-inside: avoid; page-break-inside: avoid; }
+  .samples-register .samples-register-row:hover { background: transparent !important; }
+  .samples-register-foot td { font-weight: 600; }
+}
+
+
 
 
 /* === PLAQUETTE PRINT STYLES — Fond vert dégradé "Fréquence du Vivant" === */
