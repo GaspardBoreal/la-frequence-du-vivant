@@ -365,6 +365,13 @@ export const TabAnalyze: React.FC<{
         />
       </div>
 
+      {/* Registre visuel — toutes les preuves de terrain */}
+      <div id="analyze-block-medias" className="scroll-mt-24">
+        <TestMediaRegistry medias={testMedias} index={6} />
+      </div>
+
+
+
 
 
 
