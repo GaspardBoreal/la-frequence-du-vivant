@@ -31,7 +31,8 @@ interface Props {
   onPrint?: () => void;
   /** Rendu destiné à l'impression combinée. */
   printOnly?: boolean;
-  printSection?: 'all' | 'first' | 'second';
+  /** Découpage éditorial : p1 = plan + 01, p2 = 02→06, p3 = registre 07 + note 08. */
+  printSection?: 'all' | 'first' | 'second' | 'p1' | 'p2' | 'p3';
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
