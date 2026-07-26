@@ -22,8 +22,13 @@ export const TabSynthesize: React.FC<Props> = ({ proprieteNom, proprieteVille, p
     }
   })();
 
-  const exportPdf = () => {
+  const exportPdf = async () => {
     try {
+      // jsPDF est chargé à la demande (au clic).
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
       const doc = new jsPDF();
       doc.setFontSize(18);
       doc.text(`Diagnostic Vivant — ${proprieteNom}`, 14, 20);
