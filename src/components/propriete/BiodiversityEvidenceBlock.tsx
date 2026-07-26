@@ -3,15 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, Leaf, Bug, Bird, Sprout, ChevronDown } from 'lucide-react';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
+import { KINGDOM_ORDER, KINGDOM_LABELS_FR, type KingdomKey } from '@/lib/kingdomLabels';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 
-const KINGDOM_ICONS: Record<string, React.ReactNode> = {
-  Plantae: <Sprout className="w-4 h-4" />,
-  Animalia: <Bird className="w-4 h-4" />,
-  Insecta: <Bug className="w-4 h-4" />,
-  Fungi: <Leaf className="w-4 h-4" />,
+const KINGDOM_ICONS: Record<KingdomKey, React.ReactNode> = {
+  plantae: <Sprout className="w-4 h-4" />,
+  animalia: <Bird className="w-4 h-4" />,
+  fungi: <Leaf className="w-4 h-4" />,
+  others: <Bug className="w-4 h-4" />,
 };
+
 
 const StatCard: React.FC<{ label: string; value: React.ReactNode; small?: boolean }> = ({
   label,
