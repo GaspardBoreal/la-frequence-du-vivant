@@ -67,7 +67,7 @@ export const TabAnalyze: React.FC<{
   } = usePropertySoil(proprieteId);
 
   const speciesCount = usePropertySpeciesCount(proprieteId);
-  const { data: testMedias = [] } = usePropertyTestMedias(proprieteId);
+  const { data: testMedias = [], refetch: refetchTestMedias } = usePropertyTestMedias(proprieteId);
   const mediaIndex = useTestMediaIndex(testMedias);
 
   const mediaBadge = (
