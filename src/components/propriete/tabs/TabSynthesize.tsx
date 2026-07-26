@@ -43,9 +43,9 @@ export const TabSynthesize: React.FC<Props> = ({ proprieteNom, proprieteVille, p
         startY: 46,
         head: [['Indicateur', 'Valeur']],
         body: [
-          ['Espèces observées', String(bio?.speciesTotal ?? 0)],
+          ['Espèces observées', String(speciesCount.total)],
           ['Marches réalisées', String(bio?.events.length ?? 0)],
-          ['Règnes présents', String(Object.keys(bio?.kingdoms ?? {}).length)],
+          ['Règnes présents', String(speciesCount.kingdomsPresent)],
           [
             'Dernière observation',
             bio?.lastEventDate
