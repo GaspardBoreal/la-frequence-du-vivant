@@ -330,7 +330,8 @@ export const TabAnalyze: React.FC<{
 
 
       {/* Synthèse */}
-      <div className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6 shadow-[0_2px_20px_-10px_rgba(60,80,60,0.15)]">
+      <div id="analyze-block-synthesis" className="scroll-mt-24 rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6 shadow-[0_2px_20px_-10px_rgba(60,80,60,0.15)]">
+
         <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/80">
           <BarChart3 className="w-3 h-3" /> Synthèse d'analyse
         </div>
@@ -402,6 +403,8 @@ export const TabAnalyze: React.FC<{
           </Button>
         </div>
       </div>
+      {printDialogAndPortal}
     </div>
+
   );
 };
