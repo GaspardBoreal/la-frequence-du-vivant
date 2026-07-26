@@ -31,7 +31,20 @@ export const TabAnalyze: React.FC<{
   bio?: PropertyBiodiversity;
   proprieteId?: string;
   proprieteCenter?: [number, number] | null;
-}> = ({ bio, proprieteId, proprieteCenter }) => {
+  propertyName?: string;
+  proprieteVille?: string | null;
+  proprieteAdresse?: string | null;
+  proprieteCodePostal?: string | null;
+}> = ({
+  bio,
+  proprieteId,
+  proprieteCenter,
+  propertyName,
+  proprieteVille,
+  proprieteAdresse,
+  proprieteCodePostal,
+}) => {
+
   const {
     state,
     setLocal,
