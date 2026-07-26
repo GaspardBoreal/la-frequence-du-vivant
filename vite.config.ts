@@ -28,13 +28,22 @@ export default defineConfig(({ mode }) => ({
         // pour toutes les pages. Les autres groupes restent des librairies
         // « feuilles » pour éviter les cycles entre chunks.
         manualChunks(id) {
-          // Helpers d'interop CommonJS : partagés par tout le monde, ils doivent
+          // Helpers partagés par tout le monde (interop CommonJS, helper de
+          // préchargement Vite, micro-utilitaires de classes CSS) : ils doivent
           // vivre seuls, sinon ils entraînent un gros chunk (docx, recharts…)
           // dans le chargement initial de chaque page.
-          if (id.includes('commonjsHelpers') || id.includes('commonjs-dynamic-modules')) {
+          if (
+            id.includes('commonjsHelpers') ||
+            id.includes('commonjs-dynamic-modules') ||
+            id.includes('vite/preload-helper') ||
+            id.includes('vite/modulepreload-polyfill')
+          ) {
             return 'cjs-helpers';
           }
           if (!id.includes('node_modules')) return;
+          if (/[\\/]node_modules[\\/](clsx|tailwind-merge|class-variance-authority|tslib)[\\/]/.test(id)) {
+            return 'cjs-helpers';
+          }
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-is|use-sync-external-store|object-assign)[\\/]/.test(id)) {
             return 'react-vendor';
           }
