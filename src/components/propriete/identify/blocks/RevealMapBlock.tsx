@@ -200,7 +200,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         height="100%"
       >
         {filtered.map((w) => {
-          const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.Other;
+          const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
           return (
             <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color)}>
               <Popup>
