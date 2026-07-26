@@ -33,6 +33,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   index = 0,
 }) => {
   const { waypoints } = usePropertySpeciesPool(proprieteId);
+  // Référence de cohérence : même compteur que le bandeau « Empreinte biodiversité »
+  const speciesRef = usePropertySpeciesCount(proprieteId);
 
   const { data: propriete } = useQuery({
     queryKey: ['propriete-coords', proprieteId],
