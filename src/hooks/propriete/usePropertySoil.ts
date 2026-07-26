@@ -13,7 +13,14 @@ export interface SoilSample {
   structure_test?: 'beche' | 'stabilite' | null;
   /** Bloc 3 · résultat observé : 'compacte' | 'grumeleuse' | 'particulaire' */
   structure_result?: 'compacte' | 'grumeleuse' | 'particulaire' | null;
+  /** Bloc 4 · test de texture réalisé : 'boudin' | 'sedimentation' */
+  texture_test?: 'boudin' | 'sedimentation' | null;
+  /** Bloc 4 · classe de texture observée */
+  texture_result?: 'sable' | 'limon' | 'argile' | null;
+  /** Bloc 4 · forme prise par le boudin (indice de teneur en argile) */
+  boudin_form?: 'droit' | 'lune' | 'cercle' | null;
 }
+
 
 
 export interface PropertySoilState {
