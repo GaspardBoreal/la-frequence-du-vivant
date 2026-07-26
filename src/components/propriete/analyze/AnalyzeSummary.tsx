@@ -442,10 +442,11 @@ export const AnalyzeSummary: React.FC<Props> = ({
         </>
       )}
 
-      {showSecond && (
+      {showP2 && (
         <div
-          className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8`}
+          className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} ${gridCols}`}
         >
+
           <Section
             number={5}
             title="Acidité"
