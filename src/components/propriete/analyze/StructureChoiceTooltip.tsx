@@ -29,7 +29,7 @@ const DATA: Record<Variant, { title: string; verb: string; icon: React.ReactNode
     ],
   },
   particulaire: {
-    title: 'Particulaire',
+    title: 'Très meuble (particulaire)',
     verb: 'Se disperse · sable',
     icon: <IconParticulaire />,
     bullets: [

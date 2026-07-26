@@ -1,56 +1,61 @@
 ## Objectif
 
-Afficher, au survol (mouse over) de chacun des 3 choix « Compacte / Grumeleuse / Particulaire » du bloc 3 « Structure du sol », un tooltip riche, design et impactant contenant les descriptions terrain fournies (D.S.).
+Coupler le Widget 3 (Structure du sol) aux prélèvements posés sur la carte du Widget 2 : pour chaque point A→E, l'utilisateur choisit **le test réalisé** (A — Test de la bêche / B — Test de stabilité) puis **le résultat observé** (Compacte / Grumeleuse / Très meuble (particulaire)). Le bloc devient un vrai protocole guidé, avec vidéos et synthèse.
 
-## Cible
+## Nouvelle anatomie du Widget 3
 
-- Fichier : `src/components/propriete/analyze/blocks/StructureBlock.tsx`
-- Composant réutilisé : `ChoiceButton` (`src/components/propriete/analyze/ChoiceButton.tsx`)
+```text
+┌─ 3 · Étape 2 · Structure du sol ─────────────────────────────┐
+│  Hero morphé sur la DOMINANTE (auto-calculée)                │
+│                                                              │
+│  ① Ce que vous devez faire  (3 étapes numérotées, 1 phrase)   │
+│                                                              │
+│  ② Les deux tests — 2 cartes côte à côte                     │
+│     ┌ A · Test de la bêche ┐  ┌ B · Test de stabilité ┐      │
+│     │ schéma SVG animé     │  │ schéma SVG animé      │      │
+│     │ 3 puces protocole    │  │ 3 puces protocole     │      │
+│     │ ▶ 3 slots vidéo      │  │ ▶ 3 slots vidéo       │      │
+│                                                              │
+│  ③ Résultats par prélèvement (une ligne par point A→E)       │
+│     [A] sous le tilleul   Test: (A)(B)   Résultat: 3 pictos  │
+│     [B] allée nord        Test: (A)(B)   Résultat: 3 pictos  │
+│                                                              │
+│  ④ Synthèse : barre de répartition + dominante + couverture  │
+└──────────────────────────────────────────────────────────────┘
+```
 
-## Ce qu'on va livrer
+### ① Consigne
+Encart doré : « Sur chacun de vos prélèvements, réalisez un des deux tests ci-dessous, puis notez le résultat observé. » + 3 pastilles : *Prélever → Tester → Noter*.
 
-### 1. Nouveau composant `StructureChoiceTooltip.tsx`
+### ② Les deux tests
+Deux cartes « fiche protocole » à la même grammaire visuelle que le reste du parcours (cream / forest / ruban doré) :
+- **A · Test de la bêche** — prélever un bloc de terre à la bêche (20 cm), le laisser tomber d'environ 1 m ou l'ouvrir à la main, lire comment la motte se rompt. Schéma SVG dédié (bêche + bloc qui se fragmente).
+- **B · Test de stabilité (bocal / slake test)** — immerger un agrégat sec dans un bocal d'eau claire, observer 10 min : bulles, tenue ou effondrement. Schéma SVG dédié (bocal + agrégat + bulles animées).
+- Chaque carte porte **3 emplacements vidéo** : le tableau de liens est dans le code, vide au départ ; les boutons ▶ ne s'affichent que si une URL est renseignée (je les brancherai dès que tu me donnes les liens). Ouverture en lightbox si YouTube/Vimeo, sinon nouvel onglet.
 
-Un tooltip flottant maison (pas de dépendance Radix supplémentaire), positionné au-dessus du bouton survolé, avec :
+### ③ Résultats par prélèvement
+Une ligne par prélèvement existant (les mêmes A→E que le Widget 2, avec leur libellé d'emplacement, en lecture seule) :
+- segmenté **Test A / Test B**,
+- trois pictos de résultat réutilisant les icônes actuelles + le tooltip riche déjà en place (Compacte / Grumeleuse / Très meuble (particulaire)),
+- état visuel « à compléter » (pointillés) → « complété » (anneau vert + coche),
+- ligne survolée = point correspondant mis en avant (léger halo) pour garder le lien mental avec la carte.
+- Si aucun prélèvement n'est encore posé : message d'appel vers le Widget 2 avec bouton de remontée.
 
-- Fond `hsl(var(--ds-cream))` + bordure `hsl(var(--ds-forest))/40` + shadow douce ambre.
-- En-tête : mini-picto (réutilise `IconCompacte / IconGrumeleuse / IconParticulaire` en taille 28px) + titre « Compacte / Grumeleuse / Particulaire » en `--ds-forest-deep`, gras.
-- Bandeau « verbe clé » (repris de `StructureCrossSection`) en petites capitales espacées, doré.
-- 3 puces sensorielles (icônes Lucide : `Droplets`, `Thermometer`, `Hand` / `Sprout`) déclinant le texte D.S. en fragments courts et lisibles.
-- Animation `framer-motion` : `opacity 0→1`, `y: 8→0`, `scale: 0.96→1`, easing doux (240 ms). Sortie miroir.
-- Petite flèche SVG pointant vers le bouton.
-- Largeur ~ 280 px, `pointer-events-none` pour ne pas gêner le clic.
-- Accessibilité : `role="tooltip"`, `id` lié en `aria-describedby` sur le bouton parent.
+### ④ Synthèse
+- Barre de répartition proportionnelle (3 segments colorés) + compteur « n/N prélèvements renseignés ».
+- **Dominante auto-calculée** = résultat majoritaire (égalité → mention « sol contrasté », résolution déterministe compacte < grumeleuse < très meuble pour l'affichage) ; c'est elle qui pilote le hero et qui remplace le choix global manuel.
+- Phrase de lecture agronomique adaptée à la dominante et à l'hétérogénéité constatée.
+- Répartition des tests utilisés (x bêche / y stabilité).
 
-### 2. Contenu par variante (fidèle au texte utilisateur)
+### Vocabulaire
+Le 3ᵉ libellé devient « Très meuble (particulaire) » partout dans ce parcours (pictos, tooltip, hero, synthèse).
 
-**Compacte** — verbe : « Résiste · bloc unique »
-- 💧 L'eau s'infiltre mal
-- 🧱 Motte difficile à diviser, rupture brusque, effet de lourdeur (ocre)
-- 🌡 Dur et sec l'été / élastique et gorgé d'eau l'hiver, lent à se réchauffer
+## Détails techniques
 
-**Grumeleuse** — verbe : « S'émiette · respire »
-- 🌱 Agrégats visibles, motte qui se divise facilement et tient
-- 🫧 Bulles au test de stabilité = air ; galeries de lombrics, racines, micro-faune
-- 💧 Bonne infiltration de l'eau
-
-**Particulaire** — verbe : « Se disperse · sable »
-- 🪨 La motte ne tient pas, s'effondre avant même la main ou le bocal
-- 💧 L'eau s'infiltre trop vite
-- 🌡 Sol qui se réchauffe rapidement, pauvre (nutriments lessivés)
-
-(Icônes rendues via Lucide, pas des emojis, pour rester dans la charte.)
-
-### 3. Intégration dans `StructureBlock.tsx`
-
-- Envelopper chaque `ChoiceButton` dans un conteneur `relative` + gestionnaires `onMouseEnter / onMouseLeave / onFocus / onBlur` qui pilotent un état local `hoveredValue`.
-- Sur desktop (`hover: hover` media query implicite via événement souris) : afficher le tooltip.
-- Sur mobile (pas de hover) : le tooltip s'ouvre également au `focus` (au tap le bouton reçoit le focus), et se ferme au tap suivant hors zone. Aucune régression du comportement de sélection existant.
-- Aucun changement de logique métier, aucun changement de stockage, aucun impact sur `StructureCrossSection`, `SoilPictos`, ni sur les autres blocs.
-
-## Fichiers touchés
-
-- **Nouveau** : `src/components/propriete/analyze/StructureChoiceTooltip.tsx`
-- **Modifié** : `src/components/propriete/analyze/blocks/StructureBlock.tsx` (état hover + wrapping des `ChoiceButton`)
-
-Aucun autre fichier n'est modifié.
+- **Aucune migration.** Les prélèvements sont déjà stockés en JSONB dans `propriete_soil_diagnostics.samples` ; j'y ajoute deux champs par échantillon : `structure_test` (`beche` | `stabilite`) et `structure_result` (`compacte` | `grumeleuse` | `particulaire`). L'auto-save debounce existant les persiste tel quel.
+- `SoilSample` (dans `usePropertySoil.ts`) étendu avec ces deux champs optionnels ; `updateSample` est déjà générique, rien à changer côté persistance.
+- Le champ global `structure` reste écrit en base, mais **dérivé** de la dominante (compat ascendante avec la synthèse et les exports existants) — plus de sélection manuelle.
+- `StructureBlock.tsx` réécrit en composeur ; nouveaux fichiers : `StructureProtocolCard.tsx` (fiche test + slots vidéo), `StructureTestPictos.tsx` (2 schémas SVG bêche / bocal), `StructureSampleRow.tsx` (ligne prélèvement), `StructureResultsSummary.tsx` (synthèse), `structureTests.ts` (données protocole + tableau de liens vidéo à remplir).
+- Réutilisation de `StructureChoiceTooltip`, `SoilPictos`, `StructureCrossSection` (hero piloté par la dominante), `AnalyzeCard`.
+- Le compteur d'avancement de `TabAnalyze.tsx` (bloc 3) compte désormais « renseigné » quand au moins un prélèvement a test + résultat.
+- Responsive : cartes protocole en 2 colonnes desktop / empilées mobile ; lignes de résultats en grille qui passe en 2 niveaux sur mobile ; tooltips conservent l'alignement anti-débordement déjà corrigé.

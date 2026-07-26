@@ -9,7 +9,12 @@ export interface SoilSample {
   photo_url?: string | null;
   lat?: number | null;
   lng?: number | null;
+  /** Bloc 3 · test réalisé sur ce prélèvement : 'beche' | 'stabilite' */
+  structure_test?: 'beche' | 'stabilite' | null;
+  /** Bloc 3 · résultat observé : 'compacte' | 'grumeleuse' | 'particulaire' */
+  structure_result?: 'compacte' | 'grumeleuse' | 'particulaire' | null;
 }
+
 
 export interface PropertySoilState {
   terrain_status?: string | null;

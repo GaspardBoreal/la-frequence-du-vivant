@@ -17,7 +17,7 @@ const cream = 'hsl(var(--ds-cream))';
 const VERBS: Record<Exclude<Variant, null | undefined>, string> = {
   compacte: 'Résiste · bloc unique',
   grumeleuse: 'S’émiette · respire',
-  particulaire: 'Se disperse · sable',
+  particulaire: 'Très meuble · se disperse',
 };
 
 // Silhouette « paume ouverte » commune (les mottes reposent dessus)

@@ -38,7 +38,7 @@ export const TabAnalyze: React.FC<{
   const filled =
     (state.terrain_status ? 1 : 0) +
     (state.samples.some((s) => (s.location ?? '').trim().length > 0) ? 1 : 0) +
-    (state.structure ? 1 : 0) +
+    (state.samples.some((s) => s.structure_test && s.structure_result) ? 1 : 0) +
     (state.boudin_shape ? 1 : 0) +
     (state.ph != null ? 1 : 0) +
     (state.life_signs.length > 0 ? 1 : 0) +
@@ -81,6 +81,7 @@ export const TabAnalyze: React.FC<{
           onChange={(v) => setField('terrain_status', v)}
           index={0}
         />
+        <div id="etape2-prelevements" className="scroll-mt-24">
         <SamplesMapBlock
           proprieteId={proprieteId}
           proprieteCenter={proprieteCenter}
@@ -91,9 +92,12 @@ export const TabAnalyze: React.FC<{
           onBulkSet={(next) => setLocal((s) => ({ ...s, samples: next }))}
           index={1}
         />
+        </div>
         <StructureBlock
           value={state.structure}
           onChange={(v) => setField('structure', v)}
+          samples={state.samples}
+          onUpdateSample={updateSample}
           index={2}
         />
         <TextureBlock
