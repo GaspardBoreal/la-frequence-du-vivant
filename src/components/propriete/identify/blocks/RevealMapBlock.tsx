@@ -137,7 +137,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                     : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
                 }`}
               >
-                {k === 'all' ? 'Tous' : k}
+                {k === 'all' ? 'Tous' : KINGDOM_LABELS_FR_SHORT[normalizeKingdom(k)]}
                 {k !== 'all' && (
                   <span className="ml-1 opacity-60">· {stats[k] ?? 0}</span>
                 )}
