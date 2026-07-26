@@ -245,14 +245,29 @@ export const TabAnalyze: React.FC<{
         }
       />
 
+      {isDone && (
+        <div className="flex items-center justify-between rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-sm text-[hsl(var(--ds-forest-deep))]">
+          <span className="inline-flex items-center gap-1.5">
+            <Check className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
+            Mode édition — les modifications seront réenregistrées.
+          </span>
+          <Button size="sm" variant="ghost" onClick={() => setMode('summary')} className="text-xs">
+            Revenir à la synthèse
+          </Button>
+        </div>
+      )}
+
       {/* Blocs 1 → 4 : pleine largeur pour laisser respirer les cartes et pictos */}
       <div className="space-y-5">
-        <TerrainBlock
-          value={state.terrain_status}
-          onChange={(v) => setField('terrain_status', v)}
-          index={0}
-        />
+        <div id="analyze-block-terrain" className="scroll-mt-24">
+          <TerrainBlock
+            value={state.terrain_status}
+            onChange={(v) => setField('terrain_status', v)}
+            index={0}
+          />
+        </div>
         <div id="etape2-prelevements" className="scroll-mt-24">
+        <div id="analyze-block-prelevements" className="scroll-mt-24">
         <SamplesMapBlock
           proprieteId={proprieteId}
           proprieteCenter={proprieteCenter}
@@ -264,43 +279,53 @@ export const TabAnalyze: React.FC<{
           index={1}
         />
         </div>
-        <StructureBlock
-          value={state.structure}
-          onChange={(v) => setField('structure', v)}
-          samples={state.samples}
-          onUpdateSample={updateSample}
-          index={2}
-        />
-        <TextureBlock
-          boudinShape={state.boudin_shape}
-          texture={state.texture}
-          onChangeBoudin={(v) => setField('boudin_shape', v)}
-          onChangeTexture={(v) => setField('texture', v)}
-          samples={state.samples}
-          onUpdateSample={updateSample}
-          index={3}
-        />
+        </div>
+        <div id="analyze-block-structure" className="scroll-mt-24">
+          <StructureBlock
+            value={state.structure}
+            onChange={(v) => setField('structure', v)}
+            samples={state.samples}
+            onUpdateSample={updateSample}
+            index={2}
+          />
+        </div>
+        <div id="analyze-block-texture" className="scroll-mt-24">
+          <TextureBlock
+            boudinShape={state.boudin_shape}
+            texture={state.texture}
+            onChangeBoudin={(v) => setField('boudin_shape', v)}
+            onChangeTexture={(v) => setField('texture', v)}
+            samples={state.samples}
+            onUpdateSample={updateSample}
+            index={3}
+          />
+        </div>
 
       </div>
 
       {/* Bloc 5 : pleine largeur — une mesure de pH par prélèvement */}
-      <PhBlock
-        value={state.ph}
-        onChange={(v) => setField('ph', v)}
-        samples={state.samples}
-        onUpdateSample={updateSample}
-        index={4}
-      />
+      <div id="analyze-block-ph" className="scroll-mt-24">
+        <PhBlock
+          value={state.ph}
+          onChange={(v) => setField('ph', v)}
+          samples={state.samples}
+          onUpdateSample={updateSample}
+          index={4}
+        />
+      </div>
 
       {/* Bloc 6 : pleine largeur — indices de vie par prélèvement */}
-      <LifeSignsBlock
-        values={state.life_signs}
-        onToggle={toggleLifeSign}
-        onSetAll={(next) => setLocal((s) => ({ ...s, life_signs: next }))}
-        samples={state.samples}
-        onUpdateSample={updateSample}
-        index={5}
-      />
+      <div id="analyze-block-life" className="scroll-mt-24">
+        <LifeSignsBlock
+          values={state.life_signs}
+          onToggle={toggleLifeSign}
+          onSetAll={(next) => setLocal((s) => ({ ...s, life_signs: next }))}
+          samples={state.samples}
+          onUpdateSample={updateSample}
+          index={5}
+        />
+      </div>
+
 
 
 
