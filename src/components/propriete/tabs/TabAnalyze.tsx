@@ -67,7 +67,7 @@ export const TabAnalyze: React.FC<{
   } = usePropertySoil(proprieteId);
 
   const speciesCount = usePropertySpeciesCount(proprieteId);
-  const { data: testMedias = [] } = usePropertyTestMedias(proprieteId);
+  const { data: testMedias = [], refetch: refetchTestMedias } = usePropertyTestMedias(proprieteId);
   const mediaIndex = useTestMediaIndex(testMedias);
 
   const mediaBadge = (
@@ -185,14 +185,21 @@ export const TabAnalyze: React.FC<{
     onDone: () => setSoloPrinting(false),
   });
 
-  const handleConfirmPrint = (choice: PrintChoice) => {
+  const handleConfirmPrint = async (choice: PrintChoice) => {
     setPrintOpen(false);
     if (choice === 'combined') {
+      // URL signées valables 1 h : on les rafraîchit avant d'imprimer les preuves de terrain.
+      try {
+        await refetchTestMedias();
+      } catch {
+        /* impression possible malgré tout */
+      }
       setCombinedPrinting(true);
       return;
     }
     setSoloPrinting(true);
   };
+
 
   const printDialogAndPortal = (
     <>
@@ -230,6 +237,7 @@ export const TabAnalyze: React.FC<{
           publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
           soil={state}
           soilCompletedAt={completedAt}
+          testMedias={testMedias}
         />,
         combinedPortalRef.current,
       )}

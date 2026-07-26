@@ -3,6 +3,11 @@ import { ObserveSummary } from '@/components/propriete/observe/ObserveSummary';
 import { AnalyzeSummary } from '@/components/propriete/analyze/AnalyzeSummary';
 import { PortraitPrintLayout } from '@/components/propriete/portrait/PortraitPrintLayout';
 import { PropertyPrintPage } from '@/components/propriete/print/PropertyPrintPage';
+import {
+  TestMediaPrintPlates,
+  testMediaPlateCount,
+} from '@/components/propriete/analyze/print/TestMediaPrintPlates';
+import type { TestMedia } from '@/hooks/propriete/usePropertyTestMedias';
 import type { GalleryPhoto } from '@/hooks/propriete/usePropertyGallery';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import type { PropertySoilState } from '@/hooks/propriete/usePropertySoil';
@@ -35,6 +40,8 @@ interface Props {
   /** Étape 2 — inclus dans le cahier complet lorsque fourni. */
   soil?: PropertySoilState | null;
   soilCompletedAt?: string | null;
+  /** Preuves de terrain (photos des tests de sol), imprimées après « Le sol, point par point ». */
+  testMedias?: TestMedia[];
 }
 
 const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string; variant?: 'observe' | 'analyze' }> = ({
@@ -68,8 +75,11 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   publicUrl,
   soil,
   soilCompletedAt,
+  testMedias,
 }) => {
   const withAnalyze = !!soil;
+  const plateCount = withAnalyze ? testMediaPlateCount(testMedias) : 0;
+
 
   const observeSlot = (
     <>
@@ -149,8 +159,11 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               printSection="p3"
             />
           </section>
+
+          <TestMediaPrintPlates medias={testMedias} propertyName={propertyName} />
         </>
       )}
+
     </>
   );
 
@@ -181,7 +194,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         insertAfterToc={renderPropertyPage}
         insertedAfterTocPageCount={1}
         insertBeforeColophon={observeSlot}
-        insertedPageCount={withAnalyze ? 7 : 3}
+        insertedPageCount={(withAnalyze ? 7 : 3) + plateCount}
       />
     </div>
   );
