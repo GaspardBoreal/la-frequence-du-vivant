@@ -372,9 +372,12 @@ function App() {
 
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <AdminChatBotMount />
-          <CommunityChatBotMount />
-          <AdhesionFab />
+          </Suspense>
+          <Suspense fallback={null}>
+            <AdminChatBotMount />
+            <CommunityChatBotMount />
+            <AdhesionFab />
+          </Suspense>
           <Toaster position="top-right" />
 
             </DiscoverFullscreenProvider>
