@@ -37,13 +37,14 @@ interface Props {
   soilCompletedAt?: string | null;
 }
 
-const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string }> = ({
+const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string; variant?: 'observe' | 'analyze' }> = ({
   eyebrow,
   title,
   sub,
   foot,
+  variant = 'analyze',
 }) => (
-  <section className="combined-print-divider">
+  <section className={`combined-print-divider combined-print-divider--${variant}`}>
     <div className="combined-print-divider-eyebrow">{eyebrow}</div>
     <h2 className="combined-print-divider-title">{title}</h2>
     <div className="combined-print-divider-rule" />
