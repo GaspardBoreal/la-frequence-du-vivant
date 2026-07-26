@@ -67,6 +67,8 @@ export const TabAnalyze: React.FC<{
   } = usePropertySoil(proprieteId);
 
   const speciesCount = usePropertySpeciesCount(proprieteId);
+  const { data: testMedias = [] } = usePropertyTestMedias(proprieteId);
+  const mediaIndex = useTestMediaIndex(testMedias);
   const [submitting, setSubmitting] = React.useState(false);
   const [mode, setMode] = React.useState<'summary' | 'edit'>(
     completedAt ? 'summary' : 'edit'
