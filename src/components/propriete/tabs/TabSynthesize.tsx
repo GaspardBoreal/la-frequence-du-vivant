@@ -14,6 +14,7 @@ interface Props {
 }
 
 export const TabSynthesize: React.FC<Props> = ({ proprieteNom, proprieteVille, proprieteId, bio }) => {
+  const speciesCount = usePropertySpeciesCount(proprieteId);
   const enjeux = (() => {
     try {
       return JSON.parse(localStorage.getItem(`propriete-ds-identify:${proprieteId ?? 'default'}`) ?? '[]');
