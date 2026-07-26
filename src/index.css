@@ -667,6 +667,14 @@
     background: linear-gradient(90deg, hsl(var(--ds-gold)) 0%, rgba(214, 190, 130, 0.15) 100%);
   }
   .analyze-print-body { font-size: 10.5pt; line-height: 1.45; }
+  .analyze-print-page .analyze-print-root {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
   .analyze-print-body .print-break-before {
     break-before: auto !important;
     page-break-before: auto !important;
