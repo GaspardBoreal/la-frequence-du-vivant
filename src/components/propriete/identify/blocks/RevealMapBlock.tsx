@@ -97,11 +97,47 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 2px 6px rgba(0,0,0,.3);"></div>`,
     });
 
+  /**
+   * Comptage **espèces distinctes** — même méthode que le bandeau
+   * « Empreinte biodiversité mesurée ici » (usePropertySpeciesCount) :
+   * dédup par nom scientifique normalisé (NFD + lower + trim), règne via
+   * normalizeKingdom, un règne identifié l'emporte sur « autres ».
+   */
+  const speciesBucket = (list: typeof waypoints) => {
+    const bucket = new Map<string, KingdomKey>();
+    for (const w of list) {
+      const key = norm(w.scientificName);
+      if (!key) continue;
+      const k = kingdomFrom(w.kingdom);
+      const existing = bucket.get(key);
+      if (!existing || (existing === 'others' && k !== 'others')) bucket.set(key, k);
+    }
+    return bucket;
+  };
+
+  // Pastilles : calculées après le filtre bio-indicatrices, avant le filtre de règne
   const stats = useMemo(() => {
-    const counts: Record<string, number> = { Plantae: 0, Animalia: 0, Fungi: 0, Other: 0 };
-    for (const w of filtered) counts[kingdomFrom(w.kingdom)]++;
+    const base = onlyKb
+      ? waypoints.filter((w) => {
+          const n = norm(w.scientificName);
+          return kbKeys.has(n) || kbKeys.has(n.split(/\s+/)[0]);
+        })
+      : waypoints;
+    const counts: Record<KingdomKey, number> = { plantae: 0, animalia: 0, fungi: 0, others: 0 };
+    speciesBucket(base).forEach((k) => {
+      counts[k] += 1;
+    });
     return counts;
-  }, [filtered]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waypoints, onlyKb, kbKeys]);
+
+  // Total affiché : espèces distinctes actuellement visibles sur la carte
+  const visibleSpecies = useMemo(
+    () => speciesBucket(filtered).size,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filtered],
+  );
+
 
   const hasData = waypoints.length > 0;
 
