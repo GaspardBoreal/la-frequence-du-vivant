@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Filter, Camera } from 'lucide-react';
+import { MapPin, Filter, Camera, Maximize2, Minimize2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
