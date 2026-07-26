@@ -217,6 +217,7 @@ export const TabAnalyze: React.FC<{
           state={state}
           completedAt={completedAt}
           propertyName={propertyName}
+          parcelles={parcelles}
           onEditBlock={(id) => {
             setMode('edit');
             scrollToBlock(id);

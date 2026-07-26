@@ -2,8 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, Pencil, Printer, RotateCcw, ArrowRight, MapPin, AlertTriangle } from 'lucide-react';
 import type { PropertySoilState } from '@/hooks/propriete/usePropertySoil';
+import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import { buildSoilReading } from './soilReading';
 import { SoilSignature } from './SoilSignature';
+import { SoilSamplesPlan } from './SoilSamplesPlan';
 import { RESULT_SHORT, TEST_LABELS } from './structureTests';
 import { TEXTURE_SHORT, TEXTURE_TEST_LABELS, BOUDIN_FORM_MAP } from './textureTests';
 import { PH_CLASS_MAP, PH_TEST_LABELS, classifyPh } from './phTests';
@@ -22,6 +24,7 @@ interface Props {
   state: PropertySoilState;
   completedAt: string | null;
   propertyName?: string;
+  parcelles?: ProprieteParcelle[];
   onEditBlock: (id: AnalyzeBlockId) => void;
   onReopenAll: () => void;
   onNextStep?: () => void;
@@ -102,6 +105,7 @@ export const AnalyzeSummary: React.FC<Props> = ({
   state,
   completedAt,
   propertyName,
+  parcelles = [],
   onEditBlock,
   onReopenAll,
   onNextStep,
@@ -312,6 +316,14 @@ export const AnalyzeSummary: React.FC<Props> = ({
 
       {showFirst && (
         <>
+          <SoilSamplesPlan
+            parcelles={parcelles}
+            samples={r.samples}
+            propertyName={propertyName}
+            printOnly={printOnly}
+            onEdit={() => onEditBlock('prelevements')}
+          />
+
           <SoilSignature reading={r} dateStr={dateStr} />
 
           {/* Lecture dominante */}
