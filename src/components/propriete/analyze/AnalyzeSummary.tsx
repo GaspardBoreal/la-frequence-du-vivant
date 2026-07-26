@@ -105,6 +105,7 @@ export const AnalyzeSummary: React.FC<Props> = ({
   state,
   completedAt,
   propertyName,
+  parcelles = [],
   onEditBlock,
   onReopenAll,
   onNextStep,
