@@ -25,8 +25,20 @@ export const TextureBlock: React.FC<{
   onChangeTexture: (v: string) => void;
   samples?: SoilSample[];
   onUpdateSample?: (id: string, patch: Partial<SoilSample>) => void;
+  /** Pastille médias par prélèvement (preuves de terrain). */
+  renderSampleMedia?: (sample: SoilSample) => React.ReactNode;
   index?: number;
-}> = ({ boudinShape, texture, onChangeBoudin, onChangeTexture, samples = [], onUpdateSample, index = 0 }) => {
+}> = ({
+  boudinShape,
+  texture,
+  onChangeBoudin,
+  onChangeTexture,
+  samples = [],
+  onUpdateSample,
+  renderSampleMedia,
+  index = 0,
+}) => {
+
   const { dominant, counts, filled, contrasted } = useMemo(
     () => dominantTexture(samples.map((s) => s.texture_result as TextureResultId | null)),
     [samples]
@@ -141,7 +153,9 @@ export const TextureBlock: React.FC<{
                   sample={s}
                   index={i}
                   onPatch={(patch) => onUpdateSample?.(s.id, patch)}
+                  mediaSlot={renderSampleMedia?.(s)}
                 />
+
               ))}
             </motion.div>
           )}

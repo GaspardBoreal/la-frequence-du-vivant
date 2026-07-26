@@ -21,7 +21,9 @@ export const LifeSampleRow: React.FC<{
   index: number;
   total: number;
   onPatch: (patch: Partial<SoilSample>) => void;
-}> = ({ sample, index, total, onPatch }) => {
+  /** Pastille « preuves de terrain ». */
+  mediaSlot?: React.ReactNode;
+}> = ({ sample, index, total, onPatch, mediaSlot }) => {
   const [hovered, setHovered] = useState<LifeSignId | null>(null);
   const test = (sample.life_test ?? null) as LifeTestId | null;
   const signs = (sample.life_signs ?? []) as LifeSignId[];
@@ -51,6 +53,7 @@ export const LifeSampleRow: React.FC<{
       }`}
     >
       <div className="flex flex-wrap items-start gap-3">
+        {mediaSlot}
         {/* Identité du prélèvement */}
         <div className="flex items-center gap-2 min-w-[150px] flex-1">
           <div className="relative flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm">

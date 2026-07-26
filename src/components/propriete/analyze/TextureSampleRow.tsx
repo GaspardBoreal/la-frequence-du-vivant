@@ -24,7 +24,10 @@ export const TextureSampleRow: React.FC<{
   sample: SoilSample;
   index: number;
   onPatch: (patch: Partial<SoilSample>) => void;
-}> = ({ sample, index, onPatch }) => {
+  /** Pastille « preuves de terrain » (photos / vidéos du prélèvement pour ce test). */
+  mediaSlot?: React.ReactNode;
+}> = ({ sample, index, onPatch, mediaSlot }) => {
+
   const [hovered, setHovered] = useState<TextureResultId | null>(null);
   const test = (sample.texture_test ?? null) as TextureTestId | null;
   const result = (sample.texture_result ?? null) as TextureResultId | null;
@@ -44,10 +47,12 @@ export const TextureSampleRow: React.FC<{
       }`}
     >
       <div className="flex flex-wrap items-center gap-3">
+        {mediaSlot}
         {/* Identité du prélèvement */}
         <div className="flex items-center gap-2 min-w-[150px] flex-1">
           <div className="relative flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm">
             {sample.label}
+
             {complete && (
               <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[hsl(var(--ds-gold))] flex items-center justify-center">
                 <Check className="w-2.5 h-2.5 text-[hsl(var(--ds-forest-deep))]" strokeWidth={3.5} />

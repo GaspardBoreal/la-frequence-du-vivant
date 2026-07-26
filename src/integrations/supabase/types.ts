@@ -6126,6 +6126,83 @@ export type Database = {
           },
         ]
       }
+      propriete_test_medias: {
+        Row: {
+          block: string
+          caption: string | null
+          created_at: string
+          duration_s: number | null
+          height: number | null
+          id: string
+          media_type: string
+          mime: string | null
+          order_index: number
+          propriete_id: string
+          sample_id: string
+          sample_label: string | null
+          sample_location: string | null
+          size_bytes: number | null
+          storage_path: string
+          taken_at: string | null
+          test_id: string
+          updated_at: string
+          uploaded_by: string
+          width: number | null
+        }
+        Insert: {
+          block: string
+          caption?: string | null
+          created_at?: string
+          duration_s?: number | null
+          height?: number | null
+          id?: string
+          media_type?: string
+          mime?: string | null
+          order_index?: number
+          propriete_id: string
+          sample_id: string
+          sample_label?: string | null
+          sample_location?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          taken_at?: string | null
+          test_id: string
+          updated_at?: string
+          uploaded_by?: string
+          width?: number | null
+        }
+        Update: {
+          block?: string
+          caption?: string | null
+          created_at?: string
+          duration_s?: number | null
+          height?: number | null
+          id?: string
+          media_type?: string
+          mime?: string | null
+          order_index?: number
+          propriete_id?: string
+          sample_id?: string
+          sample_label?: string | null
+          sample_location?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          taken_at?: string | null
+          test_id?: string
+          updated_at?: string
+          uploaded_by?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_test_medias_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proprietes: {
         Row: {
           adresse: string | null
@@ -7286,6 +7363,10 @@ export type Database = {
         Returns: number
       }
       can_access_crm: { Args: { _user_id: string }; Returns: boolean }
+      can_access_propriete: {
+        Args: { _propriete_id: string }
+        Returns: boolean
+      }
       can_create_marche: { Args: { _user_id: string }; Returns: boolean }
       can_curate_audio: { Args: { _user_id: string }; Returns: boolean }
       can_curate_propriete_gallery: {

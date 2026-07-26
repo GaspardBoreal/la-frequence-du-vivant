@@ -1,0 +1,243 @@
+/**
+ * Médias de terrain (photos / vidéos courtes) attachés à un couple
+ * prélèvement × test de sol, pour une propriété.
+ *
+ * Lecture : une seule requête par propriété + signature d'URL en lot.
+ * Écriture : upload Storage (bucket privé `propriete-tests`) puis insert DB
+ * avec rollback storage en cas d'échec.
+ */
+import { useCallback, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { preparePhotoForUpload, insertWithStorageRollback } from '@/utils/uploadWithMetadata';
+import type { SoilBlockId, SoilTestId } from '@/components/propriete/analyze/media/soilTestCatalog';
+
+export const TEST_MEDIA_BUCKET = 'propriete-tests';
+export const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
+export const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
+
+export interface TestMedia {
+  id: string;
+  propriete_id: string;
+  sample_id: string;
+  sample_label: string | null;
+  sample_location: string | null;
+  block: SoilBlockId;
+  test_id: SoilTestId;
+  media_type: 'photo' | 'video';
+  storage_path: string;
+  mime: string | null;
+  size_bytes: number | null;
+  width: number | null;
+  height: number | null;
+  duration_s: number | null;
+  caption: string | null;
+  taken_at: string | null;
+  uploaded_by: string;
+  order_index: number;
+  created_at: string;
+  /** URL signée résolue côté client (1 h). */
+  url?: string;
+}
+
+const KEY = (id?: string) => ['propriete-test-medias', id];
+
+export function usePropertyTestMedias(proprieteId?: string) {
+  return useQuery({
+    queryKey: KEY(proprieteId),
+    enabled: !!proprieteId,
+    staleTime: 30_000,
+    queryFn: async (): Promise<TestMedia[]> => {
+      const { data, error } = await (supabase as any)
+        .from('propriete_test_medias')
+        .select('*')
+        .eq('propriete_id', proprieteId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      const rows = (data ?? []) as TestMedia[];
+      if (rows.length === 0) return [];
+      const { data: signed } = await supabase.storage
+        .from(TEST_MEDIA_BUCKET)
+        .createSignedUrls(rows.map((r) => r.storage_path), 3600);
+      const byPath = new Map<string, string>();
+      (signed ?? []).forEach((s: any) => {
+        if (s?.path && s?.signedUrl) byPath.set(s.path, s.signedUrl);
+      });
+      return rows.map((r) => ({ ...r, url: byPath.get(r.storage_path) }));
+    },
+  });
+}
+
+export interface UploadTarget {
+  proprieteId: string;
+  sampleId: string;
+  sampleLabel?: string | null;
+  sampleLocation?: string | null;
+  block: SoilBlockId;
+  testId: SoilTestId;
+}
+
+const extOf = (name: string) => (name.split('.').pop() || 'bin').toLowerCase();
+
+const videoDimensions = (file: File) =>
+  new Promise<{ width: number; height: number; duration: number } | null>((resolve) => {
+    try {
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.onloadedmetadata = () => {
+        resolve({ width: v.videoWidth, height: v.videoHeight, duration: v.duration });
+        URL.revokeObjectURL(v.src);
+      };
+      v.onerror = () => resolve(null);
+      v.src = URL.createObjectURL(file);
+    } catch {
+      resolve(null);
+    }
+  });
+
+export function useTestMediaUpload(target?: UploadTarget) {
+  const qc = useQueryClient();
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const upload = useCallback(
+    async (files: File[]) => {
+      if (!target) return;
+      const list = Array.from(files);
+      if (list.length === 0) return;
+      setProgress({ done: 0, total: list.length });
+      let ok = 0;
+
+      for (const file of list) {
+        try {
+          const isVideo = (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(file.name);
+          if (isVideo && file.size > MAX_VIDEO_BYTES) {
+            throw new Error('Vidéo trop lourde (60 Mo max)');
+          }
+          if (!isVideo && file.size > MAX_PHOTO_BYTES) {
+            throw new Error('Photo trop lourde (25 Mo max)');
+          }
+
+          let processed = file;
+          let takenAt: string | null = null;
+          let width: number | null = null;
+          let height: number | null = null;
+          let duration: number | null = null;
+
+          if (isVideo) {
+            const dim = await videoDimensions(file);
+            width = dim?.width ?? null;
+            height = dim?.height ?? null;
+            duration = dim?.duration ?? null;
+          } else {
+            const prepared = await preparePhotoForUpload(file);
+            processed = prepared.processedFile;
+            takenAt = prepared.metadata.date_taken;
+            width = prepared.metadata.dimensions?.width ?? null;
+            height = prepared.metadata.dimensions?.height ?? null;
+          }
+
+          const path = `${target.proprieteId}/${target.testId}/${target.sampleId}/${crypto.randomUUID()}.${extOf(
+            processed.name
+          )}`;
+
+          const { error: upErr } = await supabase.storage
+            .from(TEST_MEDIA_BUCKET)
+            .upload(path, processed, { contentType: processed.type || undefined, upsert: false });
+          if (upErr) throw upErr;
+
+          await insertWithStorageRollback({
+            bucket: TEST_MEDIA_BUCKET,
+            storagePath: path,
+            insertFn: async () => {
+              const { data: auth } = await supabase.auth.getUser();
+              const { error } = await (supabase as any).from('propriete_test_medias').insert({
+                propriete_id: target.proprieteId,
+                sample_id: target.sampleId,
+                sample_label: target.sampleLabel ?? null,
+                sample_location: target.sampleLocation ?? null,
+                block: target.block,
+                test_id: target.testId,
+                media_type: isVideo ? 'video' : 'photo',
+                storage_path: path,
+                mime: processed.type || null,
+                size_bytes: processed.size,
+                width,
+                height,
+                duration_s: duration,
+                taken_at: takenAt,
+                uploaded_by: auth.user?.id,
+                order_index: Math.floor(Date.now() / 1000) % 100000,
+              });
+              if (error) throw error;
+              return true;
+            },
+          });
+          ok += 1;
+        } catch (e: any) {
+          toast.error(`Échec : ${file.name}`, { description: e?.message ?? 'Réessayez.' });
+        } finally {
+          setProgress((p) => (p ? { ...p, done: p.done + 1 } : null));
+        }
+      }
+
+      setProgress(null);
+      if (ok > 0) {
+        toast.success(`${ok} preuve${ok > 1 ? 's' : ''} ajoutée${ok > 1 ? 's' : ''}`);
+        qc.invalidateQueries({ queryKey: KEY(target.proprieteId) });
+      }
+    },
+    [target, qc]
+  );
+
+  return { upload, progress };
+}
+
+export function useTestMediaMutations(proprieteId?: string) {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: KEY(proprieteId) });
+
+  const remove = useMutation({
+    mutationFn: async (media: TestMedia) => {
+      const { error } = await (supabase as any)
+        .from('propriete_test_medias')
+        .delete()
+        .eq('id', media.id);
+      if (error) throw error;
+      await supabase.storage.from(TEST_MEDIA_BUCKET).remove([media.storage_path]);
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success('Média supprimé');
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Suppression impossible'),
+  });
+
+  const patch = useMutation({
+    mutationFn: async ({ id, caption }: { id: string; caption: string | null }) => {
+      const { error } = await (supabase as any)
+        .from('propriete_test_medias')
+        .update({ caption })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e: any) => toast.error(e?.message ?? 'Enregistrement impossible'),
+  });
+
+  return { remove, patch };
+}
+
+/** Index rapide : combien de médias par couple test × prélèvement. */
+export function useTestMediaIndex(medias: TestMedia[] | undefined) {
+  return useMemo(() => {
+    const map = new Map<string, TestMedia[]>();
+    (medias ?? []).forEach((m) => {
+      const k = `${m.test_id}::${m.sample_id}`;
+      const arr = map.get(k) ?? [];
+      arr.push(m);
+      map.set(k, arr);
+    });
+    return map;
+  }, [medias]);
+}

@@ -17,8 +17,10 @@ export const LifeSignsBlock: React.FC<{
   onSetAll?: (next: string[]) => void;
   samples?: SoilSample[];
   onUpdateSample?: (id: string, patch: Partial<SoilSample>) => void;
+  /** Pastille médias par prélèvement (preuves de terrain). */
+  renderSampleMedia?: (sample: SoilSample) => React.ReactNode;
   index?: number;
-}> = ({ values, onToggle, onSetAll, samples = [], onUpdateSample, index = 0 }) => {
+}> = ({ values, onToggle, onSetAll, samples = [], onUpdateSample, renderSampleMedia, index = 0 }) => {
   const agg = useMemo(
     () =>
       aggregateLife(
@@ -154,6 +156,7 @@ export const LifeSignsBlock: React.FC<{
                   index={i}
                   total={samples.length}
                   onPatch={(patch) => onUpdateSample?.(s.id, patch)}
+                  mediaSlot={renderSampleMedia?.(s)}
                 />
               ))}
             </motion.div>

@@ -24,6 +24,12 @@ import { AnalyzePrintLayout } from '@/components/propriete/print/AnalyzePrintLay
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
+import { TestMediaBadge } from '@/components/propriete/analyze/media/TestMediaDrawer';
+import { TestMediaRegistry } from '@/components/propriete/analyze/media/TestMediaRegistry';
+import {
+  usePropertyTestMedias,
+  useTestMediaIndex,
+} from '@/hooks/propriete/usePropertyTestMedias';
 
 
 const TOTAL = 7; // 6 blocs + synthèse
@@ -61,6 +67,28 @@ export const TabAnalyze: React.FC<{
   } = usePropertySoil(proprieteId);
 
   const speciesCount = usePropertySpeciesCount(proprieteId);
+  const { data: testMedias = [] } = usePropertyTestMedias(proprieteId);
+  const mediaIndex = useTestMediaIndex(testMedias);
+
+  const mediaBadge = (
+    s: any,
+    block: 'structure' | 'texture' | 'ph' | 'life',
+    testId: string
+  ) =>
+    proprieteId ? (
+      <TestMediaBadge
+        target={{
+          proprieteId,
+          sampleId: s.id,
+          sampleLabel: s.label,
+          sampleLocation: s.location ?? null,
+          block,
+          testId: testId as any,
+        }}
+        medias={mediaIndex.get(`${testId}::${s.id}`) ?? []}
+      />
+    ) : null;
+
   const [submitting, setSubmitting] = React.useState(false);
   const [mode, setMode] = React.useState<'summary' | 'edit'>(
     completedAt ? 'summary' : 'edit'
@@ -299,6 +327,7 @@ export const TabAnalyze: React.FC<{
             onChange={(v) => setField('structure', v)}
             samples={state.samples}
             onUpdateSample={updateSample}
+            renderSampleMedia={(s) => mediaBadge(s, 'structure', (s.structure_test as any) ?? 'beche')}
             index={2}
           />
         </div>
@@ -310,9 +339,27 @@ export const TabAnalyze: React.FC<{
             onChangeTexture={(v) => setField('texture', v)}
             samples={state.samples}
             onUpdateSample={updateSample}
+            renderSampleMedia={(s) =>
+              proprieteId ? (
+                <TestMediaBadge
+                  target={{
+                    proprieteId,
+                    sampleId: s.id,
+                    sampleLabel: s.label,
+                    sampleLocation: s.location ?? null,
+                    block: 'texture',
+                    testId: (s.texture_test as any) ?? 'boudin',
+                  }}
+                  medias={
+                    mediaIndex.get(`${(s.texture_test as any) ?? 'boudin'}::${s.id}`) ?? []
+                  }
+                />
+              ) : null
+            }
             index={3}
           />
         </div>
+
 
       </div>
 
@@ -323,6 +370,7 @@ export const TabAnalyze: React.FC<{
           onChange={(v) => setField('ph', v)}
           samples={state.samples}
           onUpdateSample={updateSample}
+          renderSampleMedia={(s) => mediaBadge(s, 'ph', (s.ph_test as any) ?? 'bandelette')}
           index={4}
         />
       </div>
@@ -335,9 +383,17 @@ export const TabAnalyze: React.FC<{
           onSetAll={(next) => setLocal((s) => ({ ...s, life_signs: next }))}
           samples={state.samples}
           onUpdateSample={updateSample}
+          renderSampleMedia={(s) => mediaBadge(s, 'life', (s.life_test as any) ?? 'beche_vivante')}
           index={5}
         />
       </div>
+
+      {/* Registre visuel — toutes les preuves de terrain */}
+      <div id="analyze-block-medias" className="scroll-mt-24">
+        <TestMediaRegistry medias={testMedias} index={6} />
+      </div>
+
+
 
 
 

@@ -16,8 +16,10 @@ export const PhBlock: React.FC<{
   onChange: (v: number) => void;
   samples?: SoilSample[];
   onUpdateSample?: (id: string, patch: Partial<SoilSample>) => void;
+  /** Pastille médias par prélèvement (preuves de terrain). */
+  renderSampleMedia?: (sample: SoilSample) => React.ReactNode;
   index?: number;
-}> = ({ value, onChange, samples = [], onUpdateSample, index = 0 }) => {
+}> = ({ value, onChange, samples = [], onUpdateSample, renderSampleMedia, index = 0 }) => {
   const agg = useMemo(
     () => aggregatePh(samples.map((s) => (typeof s.ph_value === 'number' ? s.ph_value : null))),
     [samples]
@@ -148,6 +150,7 @@ export const PhBlock: React.FC<{
                   sample={s}
                   index={i}
                   onPatch={(patch) => onUpdateSample?.(s.id, patch)}
+                  mediaSlot={renderSampleMedia?.(s)}
                 />
               ))}
             </motion.div>
