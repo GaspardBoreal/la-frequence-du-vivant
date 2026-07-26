@@ -36,7 +36,7 @@ export const TextureBlock: React.FC<{
 }> = ({ boudinShape, texture, onChangeBoudin, onChangeTexture, index = 0 }) => (
   <AnalyzeCard
     number={4}
-    category="Étape 2 · Texture · Test du boudin"
+    category="Étape 2 · Texture du sol · Test du boudin"
     title="Sable, limon ou argile ?"
     subtitle="Humidifiez, roulez un boudin de 3 mm : sa tenue révèle la texture."
     index={index}
