@@ -164,7 +164,23 @@ export const PH_TESTS: PhTest[] = [
     ],
     pitfall:
       'Jamais d’eau du robinet : elle est souvent calcaire et fait mécaniquement grimper le pH lu.',
-    videos: [],
+    videos: [
+      {
+        label: 'Truffaut · Tester la terre de mon jardin',
+        url: 'https://youtu.be/jIeS6Kfpt5g',
+        angle: 'Le regard jardinier : le geste du test pH pas à pas, avec le matériel du commerce.',
+      },
+      {
+        label: 'pH du sol : comment le connaître ?',
+        url: 'https://youtu.be/ATBwDzRjMCc',
+        angle: 'Le regard méthodique : les différentes façons de mesurer et leurs limites.',
+      },
+      {
+        label: 'Tout savoir sur le pH et les sols calcaires',
+        url: 'https://youtu.be/AHiwHK_QxNw',
+        angle: 'Le regard agronomique : interpréter le résultat obtenu et corriger sans forcer.',
+      },
+    ],
   },
   {
     id: 'phmetre',
