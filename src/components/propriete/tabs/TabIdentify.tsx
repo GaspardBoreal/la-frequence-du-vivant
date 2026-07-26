@@ -8,6 +8,8 @@ import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { BiodiversityEvidenceBlock } from '@/components/propriete/BiodiversityEvidenceBlock';
 import { SkipBlock } from '@/components/propriete/identify/blocks/SkipBlock';
+import { IdentifyBriefBlock } from '@/components/propriete/identify/blocks/IdentifyBriefBlock';
+import { EcoMatrixBlock } from '@/components/propriete/identify/blocks/EcoMatrixBlock';
 import { CortegeBlock } from '@/components/propriete/identify/blocks/CortegeBlock';
 import { IntensitiesBlock } from '@/components/propriete/identify/blocks/IntensitiesBlock';
 import { ConcordanceBlock } from '@/components/propriete/identify/blocks/ConcordanceBlock';
@@ -17,11 +19,12 @@ import { RevealMapBlock } from '@/components/propriete/identify/blocks/RevealMap
 import { SentinellesBlock } from '@/components/propriete/identify/blocks/SentinellesBlock';
 import {
   computeFloraProfile,
-  computeConcordance,
-  narrateFloraProfile,
+  computePoleScores,
+  computeConcordanceDetail,
+  narratePoleScores,
 } from '@/lib/plantIndicatorKb';
 
-const TOTAL = 4; // Cortège + Intensités + Concordance + Narration
+const TOTAL = 5; // Tableau + Cortège illustré + Somme des indices + Concordance + Narration
 
 export const TabIdentify: React.FC<{
   proprieteId?: string;
@@ -43,21 +46,26 @@ export const TabIdentify: React.FC<{
 
   const profile = useMemo(() => computeFloraProfile(state.observed_plants), [state.observed_plants]);
   const soilAvailable = !!(soil.structure || soil.texture || soil.ph != null || (soil.life_signs?.length ?? 0) > 0);
-  const report = useMemo(() => computeConcordance(profile, soil), [profile, soil]);
-  const autoNarrative = useMemo(() => narrateFloraProfile(profile), [profile]);
+  const scores = useMemo(() => computePoleScores(state.observed_plants), [state.observed_plants]);
+  const detail = useMemo(
+    () => computeConcordanceDetail(state.observed_plants, soil),
+    [state.observed_plants, soil]
+  );
+  const autoNarrative = useMemo(() => narratePoleScores(scores), [scores]);
 
   // Persister ICG dans la base pour l'onglet Synthèse
   useEffect(() => {
     if (profile.count > 0 && soilAvailable) {
-      setField('icg_score', report.icg);
-      setField('concordance', report as any);
+      setField('icg_score', detail.icg);
+      setField('concordance', detail as any);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [report.icg, profile.count, soilAvailable]);
+  }, [detail.icg, profile.count, soilAvailable]);
 
   const filled = state.skip_bioindication
     ? TOTAL
     : (profile.count > 0 ? 1 : 0) +
+      (profile.count > 0 ? 1 : 0) +
       (profile.count > 0 ? 1 : 0) +
       (soilAvailable && profile.count > 0 ? 1 : 0) +
       ((state.flora_conclusion ?? '').trim().length > 0 ? 1 : 0);
@@ -92,12 +100,31 @@ export const TabIdentify: React.FC<{
           {/* Preuve spatiale : carte des observations marcheurs */}
           <RevealMapBlock proprieteId={proprieteId} index={1} />
 
-          <CortegeBlock observed={state.observed_plants} onToggle={togglePlant} index={2} proprieteId={proprieteId} />
+          <IdentifyBriefBlock index={2} />
 
-          <div className="grid md:grid-cols-2 gap-5">
-            <IntensitiesBlock profile={profile} index={3} />
-            <ConcordanceBlock report={report} soilAvailable={soilAvailable && profile.count > 0} index={4} />
-          </div>
+          <EcoMatrixBlock
+            observed={state.observed_plants}
+            onToggle={togglePlant}
+            index={3}
+            proprieteId={proprieteId}
+          />
+
+          <CortegeBlock observed={state.observed_plants} onToggle={togglePlant} index={4} proprieteId={proprieteId} />
+
+          <IntensitiesBlock
+            scores={scores}
+            plantCount={profile.count}
+            narrative={autoNarrative}
+            index={5}
+            onUseNarrative={(t) =>
+              setField(
+                'flora_conclusion',
+                (state.flora_conclusion ?? '').trim() ? `${state.flora_conclusion}\n${t}` : t
+              )
+            }
+          />
+
+          <ConcordanceBlock detail={detail} soilAvailable={soilAvailable && profile.count > 0} index={6} />
 
           <NarrativeBlock
             conclusion={state.flora_conclusion ?? ''}
@@ -105,11 +132,11 @@ export const TabIdentify: React.FC<{
             notes={state.notes ?? ''}
             onChangeNotes={(v) => setField('notes', v)}
             autoNarrative={autoNarrative}
-            index={5}
+            index={7}
           />
 
           {/* Humains derrière la donnée */}
-          <SentinellesBlock proprieteId={proprieteId} index={6} />
+          <SentinellesBlock proprieteId={proprieteId} index={8} />
         </>
       )}
 

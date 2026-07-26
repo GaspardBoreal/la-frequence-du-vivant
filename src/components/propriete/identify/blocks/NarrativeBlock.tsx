@@ -1,5 +1,6 @@
 import React from 'react';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
+import { EcoSourceNote } from '../EcoSourceNote';
 
 export const NarrativeBlock: React.FC<{
   conclusion: string;
@@ -11,13 +12,17 @@ export const NarrativeBlock: React.FC<{
 }> = ({ conclusion, onChangeConclusion, notes, onChangeNotes, autoNarrative, index = 3 }) => {
   return (
     <AnalyzeCard
-      number={4}
+      number={5}
       category="Narration"
       title="Ce que la flore raconte"
       subtitle="Un texte auto-généré à partir de vos observations. Reformulez-le librement pour qu'il vous ressemble."
       index={index}
     >
       <div className="space-y-4">
+        <p className="text-[11.5px] italic leading-relaxed text-[hsl(var(--ds-forest-deep))]/70">
+          Rassemblez ici ce que la végétation vous apprend du lieu. Il n’y a pas d’exactitude à atteindre :
+          l’objectif est une lecture argumentée, ouverte au doute, que vous pourrez confronter aux saisons suivantes.
+        </p>
         {autoNarrative && (
           <div className="rounded-xl bg-[hsl(var(--ds-forest))]/6 border border-[hsl(var(--ds-forest))]/20 p-3 text-[12px] italic text-[hsl(var(--ds-forest-deep))]/80 leading-relaxed">
             <div className="text-[9px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/70 mb-1">
@@ -50,6 +55,7 @@ export const NarrativeBlock: React.FC<{
             className="mt-1 w-full rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-3 text-sm text-[hsl(var(--ds-forest-deep))] outline-none focus:border-[hsl(var(--ds-forest))] resize-none"
           />
         </div>
+        <EcoSourceNote compact />
       </div>
     </AnalyzeCard>
   );
