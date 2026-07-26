@@ -35,16 +35,22 @@ const ScenographyRuntime: React.FC<Props> = ({
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [error, setError] = useState<string | null>(null);
+  // Babel-standalone (~2-3 Mo) est chargé à la demande, uniquement ici.
+  const [compiled, setCompiled] = useState<{ code: string; error: string | null } | null>(null);
 
-  // Transpile TSX → JS once per code change
-  const compiled = useMemo(() => {
-    try {
-      const repairedCode = code.replace(
-        /},\s*(sp\.common_name\s*\|\|\s*sp\.scientific_name)\),/g,
-        (_match, labelExpr) => `}, ${labelExpr});`
-      );
+  useEffect(() => {
+    let cancelled = false;
+    setCompiled(null);
+    (async () => {
+      try {
+        const Babel = await import('@babel/standalone');
 
-      const wrapped = `
+        const repairedCode = code.replace(
+          /},\s*(sp\.common_name\s*\|\|\s*sp\.scientific_name)\),/g,
+          (_match, labelExpr) => `}, ${labelExpr});`
+        );
+
+        const wrapped = `
         (function(){
           const { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect, Fragment, createElement } = React;
           const { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring } = (window.Motion || window.motion || window["framer-motion"] || {});
@@ -57,26 +63,33 @@ const ScenographyRuntime: React.FC<Props> = ({
           }
         })();
       `;
-      // Rewrite "export default X" → "var Scenography_default = X;"
-      const normalized = wrapped.replace(/export\s+default\s+/g, 'var Scenography_default = ');
-      // Auto-detect JSX (capitalised tag or closing tag). When absent we use
-      // the plain TS parser to avoid the `a < b` / JSX ambiguity which breaks
-      // expressions like `p < 0.8` in createElement-based templates.
-      const hasJsx = /<[A-Za-z][\s\S]*?>|<\/[A-Za-z]/.test(code);
-      const out = Babel.transform(normalized, {
-        presets: hasJsx
-          ? [['react', { runtime: 'classic' }], ['typescript', { allExtensions: true, isTSX: true }]]
-          : [['typescript', { allExtensions: true, isTSX: false }]],
-        filename: hasJsx ? 'scenography.tsx' : 'scenography.ts',
-      });
-      return { code: out.code ?? '', error: null as string | null };
-    } catch (e: any) {
-      return { code: '', error: e.message ?? String(e) };
-    }
+        // Rewrite "export default X" → "var Scenography_default = X;"
+        const normalized = wrapped.replace(/export\s+default\s+/g, 'var Scenography_default = ');
+        // Auto-detect JSX (capitalised tag or closing tag). When absent we use
+        // the plain TS parser to avoid the `a < b` / JSX ambiguity which breaks
+        // expressions like `p < 0.8` in createElement-based templates.
+        const hasJsx = /<[A-Za-z][\s\S]*?>|<\/[A-Za-z]/.test(code);
+        const out = Babel.transform(normalized, {
+          presets: hasJsx
+            ? [['react', { runtime: 'classic' }], ['typescript', { allExtensions: true, isTSX: true }]]
+            : [['typescript', { allExtensions: true, isTSX: false }]],
+          filename: hasJsx ? 'scenography.tsx' : 'scenography.ts',
+        });
+        if (!cancelled) setCompiled({ code: out.code ?? '', error: null });
+      } catch (e: any) {
+        if (!cancelled) setCompiled({ code: '', error: e?.message ?? String(e) });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [code]);
 
   const html = useMemo(
-    () => (compiled.error ? null : buildScenographyHtml({ compiledCode: compiled.code, nonceTitle: title, brand: brand ?? null })),
+    () =>
+      !compiled || compiled.error
+        ? null
+        : buildScenographyHtml({ compiledCode: compiled.code, nonceTitle: title, brand: brand ?? null }),
     [compiled, title, brand]
   );
 
