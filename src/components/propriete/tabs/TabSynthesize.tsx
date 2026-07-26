@@ -1,7 +1,6 @@
 import React from 'react';
 import { FileText, Download } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { toast as _toastPreload } from 'sonner';
 import { toast } from 'sonner';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
