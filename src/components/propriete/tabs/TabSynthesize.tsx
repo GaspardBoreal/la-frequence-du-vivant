@@ -104,7 +104,7 @@ export const TabSynthesize: React.FC<Props> = ({ proprieteNom, proprieteVille, p
           {proprieteVille ? ` · ${proprieteVille}` : ''}
         </div>
         <div className="text-xs text-muted-foreground">
-          {bio?.speciesTotal ?? 0} espèces recensées sur {bio?.events.length ?? 0} Marche(s) du Vivant.{' '}
+          {speciesCount.total} espèces recensées sur {bio?.events.length ?? 0} Marche(s) du Vivant.{' '}
           {enjeux.length
             ? `${enjeux.length} enjeu(x) identifié(s).`
             : 'Aucun enjeu identifié pour l\'instant (onglet précédent).'}
