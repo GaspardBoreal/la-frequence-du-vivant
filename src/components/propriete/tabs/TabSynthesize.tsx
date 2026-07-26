@@ -1,7 +1,6 @@
 import React from 'react';
 import { FileText, Download } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+
 import { toast } from 'sonner';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
@@ -23,8 +22,13 @@ export const TabSynthesize: React.FC<Props> = ({ proprieteNom, proprieteVille, p
     }
   })();
 
-  const exportPdf = () => {
+  const exportPdf = async () => {
     try {
+      // jsPDF est chargé à la demande (au clic).
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
       const doc = new jsPDF();
       doc.setFontSize(18);
       doc.text(`Diagnostic Vivant — ${proprieteNom}`, 14, 20);

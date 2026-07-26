@@ -1,55 +1,62 @@
 ## Objectif
 
-Transformer le tableau « 07. Registre des prélèvements » en pièce maîtresse du carnet : chaque cellule affiche la valeur complète mesurée, et une ligne de pied de tableau donne la synthèse colonne par colonne. Même qualité de lecture à l'écran et à l'impression A4 (page 3).
+Réduire le poids du premier chargement de l'application sans modifier **aucune** fonctionnalité, aucun design, aucun texte. Aujourd'hui un visiteur télécharge la totalité de l'app (29 Mo, 5,5 Mo compressé) avant de voir la première page — y compris l'administration, les exports Word/Excel/PDF, les cartes, la conversion de photos iPhone et l'éditeur de scénographie qu'il n'ouvrira jamais.
 
-## 1. Cellules enrichies (valeurs complètes)
+Cible : **premier chargement < 1,5 Mo compressé** (contre 5,5 Mo), le reste arrivant à la demande.
 
-Aujourd'hui chaque cellule n'affiche que le résultat court + le nom du test. Contenu cible, par colonne :
+## Constat mesuré
 
-| Colonne | Contenu enrichi |
-| --- | --- |
-| **#** | Lettre A→E en pastille ronde encrée + puce dorée « géolocalisé » (coordonnées lat/lng en micro-texte) |
-| **Lieu** | Repère saisi ; à défaut « sans repère » en italique atténué |
-| **Structure** | Résultat (Compacte / Grumeleuse / Très meuble) + test employé (bêche / stabilité) + micro-barre d'état 3 crans |
-| **Texture** | Résultat (Sable / Limon / Argile) + test (boudin / sédimentation) + forme du boudin observée |
-| **pH** | Valeur chiffrée à 1 décimale + classe (acide / neutre / calcaire) + test (bandelette / pH-mètre) + micro-jauge colorée positionnée sur l'échelle 4→9 |
-| **Vie du sol** | Nombre de vers + indices cochés listés en clair + test employé |
-| *(nouveau)* **Complétude** | Pastille discrète : cellule remplie / à compléter (remplace le fond ambré plein, trop bruyant à l'impression) |
+- `src/App.tsx` importe **95 pages en dur** (lignes 2-112) et rend ~90 routes. Aucun `React.lazy` dans tout le projet.
+- `vite.config.ts` n'a **aucune configuration `build`** : Rollup n'a donc aucune consigne de découpage et met tout dans un seul fichier.
+- Grosses librairies chargées systématiquement, même sans être utilisées :
+  - `@babel/standalone` (~2-3 Mo) dans `ScenographyRuntime.tsx:2` — utilisé uniquement pour les scénographies sur-mesure.
+  - `docx` dans 5 utilitaires d'export (`wordExportUtils.ts:12`, `eventExportUtils.ts:14`, `editorExportUtils.ts:19`, `marchesStatsExport.ts:15`, `vocabularyWordExport.ts:10`).
+  - `xlsx` (`eventExportUtils.ts:16`), `jszip` (`InatUploadPrepDrawer.tsx:2`), `jspdf` (`TabSynthesize.tsx:3`, `exportClassificationReport.ts:2`), `qrcode` (4 fichiers).
+  - `leaflet` + `react-leaflet` dans ~35 fichiers, plus le CSS Leaflet chargé dès l'entrée (`main.tsx:6`).
+  - `recharts` dans 19 fichiers, `framer-motion` dans 367 fichiers.
+- Déjà bien fait et à répliquer : `heic-to`/`heic2any` sont chargés à la demande (`heicConverter.ts:83,89`) — d'où leurs fichiers séparés dans le build.
 
-Les valeurs manquantes restent un tiret cadratin atténué (jamais de case vide muette).
+## Ce qui va être fait
 
-## 2. Ligne « Synthèse » en pied de tableau
+### Phase 1 — Découpage des routes (le gain principal)
 
-Nouveau `<tfoot>` sur fond forêt clair, séparé par un filet doré, avec par colonne :
+Transformer les 95 imports de pages de `App.tsx` en chargement à la demande (`React.lazy`), avec un `<Suspense>` global affichant un écran d'attente soigné aux couleurs du site (pas un spinner générique) : logo/monogramme, fond crème ou forêt selon le thème actif, transition douce.
 
-- **#** : libellé « Synthèse » + nombre de prélèvements (n dont x géolocalisés)
-- **Lieu** : nombre de repères nommés
-- **Structure** : dominante + « x / n testés » + mention « sol contrasté » si les résultats divergent
-- **Texture** : dominante + « x / n testés » + mention « texture contrastée »
-- **pH** : moyenne à 1 décimale + min–max + classe dominante
-- **Vie du sol** : moyenne de vers / bêchée (1 décimale) + indice de vie /100 arrondi à 1 décimale + classe
-- **Complétude** : « n / n complets » ou la liste des prélèvements à compléter
+Les 5-6 pages d'entrée les plus visitées restent en chargement immédiat pour éviter tout clignotement : `Index`, `MarchesDuVivant`, `CarteMarchesDuVivant`, `PublicEventPage`, `Auth`. Tout le reste (administration, CRM, Opus, exports, Dordonia, propriété/diagnostic, livre vivant…) arrive au clic.
 
-Toutes ces valeurs viennent des agrégats déjà calculés dans `buildSoilReading` (`structure`, `texture`, `ph`, `life`, `placedSamples`, `incomplete`) — aucune nouvelle logique métier, aucun changement de base de données. Seuls min/max pH et le comptage de repères nommés sont dérivés localement à partir des mêmes échantillons.
+Effet attendu : l'admin (~40 % du code) et les modules experts disparaissent du premier chargement.
 
-## 3. Présentation « wahouhh », écran
+### Phase 2 — Librairies lourdes à la demande
 
-- En-tête de tableau en petites capitales espacées sur fond forêt très clair, filet doré en dessous.
-- Lignes alternées crème / crème plus clair, ligne survolée légèrement dorée (écran uniquement).
-- Colonne « # » collante à gauche en défilement horizontal sur mobile, tableau scrollable avec ombre de bord.
-- Valeur principale en semi-gras, qualificatifs et tests en micro-capitales atténuées : hiérarchie à deux niveaux dans chaque cellule.
-- Micro-visualisations vectorielles (barre structure, jauge pH) dessinées en SVG inline, sans dépendance nouvelle, couleurs issues des tokens `--ds-*` existants.
+Aucune suppression de fonctionnalité : on déplace simplement l'import à l'intérieur de la fonction qui l'utilise.
 
-## 4. Présentation à l'impression
+| Librairie | Traitement |
+|---|---|
+| `@babel/standalone` | chargé au montage de `ScenographyRuntime` uniquement |
+| `docx`, `xlsx`, `jszip`, `jspdf` | chargés dans le gestionnaire de clic « Exporter » / « Imprimer » |
+| `qrcode` | chargé au moment de la génération du QR |
+| `dompurify` | usage unifié (aujourd'hui statique dans `htmlSanitizer.ts`, dynamique ailleurs) |
 
-- Tableau en pleine largeur de la page 3 A4 déjà créée, corps 9 pt, interlignage serré, en-tête répété si le tableau déborde (`thead` en `table-header-group`).
-- Pied de synthèse en `table-footer-group` pour rester attaché en bas du tableau.
-- Aplats et jauges forcés en couleurs exactes (`print-color-adjust: exact`), suppression des ombres et des effets de survol.
-- Bordures fines dorées/grises pour rester lisible en impression laser noir et blanc (contraste porté aussi par le gras, pas seulement la couleur).
+Les boutons concernés gagnent un état « préparation… » pendant le chargement (< 1 s), déjà présent sur certains.
+
+### Phase 3 — Chunks nommés
+
+Ajouter `build.rollupOptions.output.manualChunks` dans `vite.config.ts` pour regrouper proprement : `react-vendor`, `maps` (Leaflet + plugins), `charts` (Recharts), `motion` (framer-motion), `supabase`, `ui` (Radix/shadcn). Résultat : des fichiers mis en cache par le navigateur qui ne sont pas re-téléchargés à chaque publication, et un CSS Leaflet chargé avec les cartes plutôt qu'à l'entrée.
+
+### Phase 4 — Vérification
+
+- Build de production : relevé du poids de chaque chunk avant/après, comparé au relevé actuel (index = 29 143 kB).
+- Parcours Playwright des routes clés (accueil, carte, `/m/:slug`, mon-espace, admin, `/propriete/...`) : capture d'écran + zéro erreur console, pour prouver qu'aucun écran ne casse.
+- Test des 4 exports (Word, Excel, PDF, ZIP iNat) et d'une scénographie sur-mesure.
+- Le heap Node à 8 Go reste en place par sécurité, mais ne devrait plus être nécessaire.
 
 ## Détails techniques
 
-- `src/components/propriete/analyze/AnalyzeSummary.tsx` : refonte du bloc `samplesTable` (cellules + `tfoot`), extraction des micro-jauges en petits composants locaux.
-- Éventuel nouveau fichier `src/components/propriete/analyze/SamplesRegisterTable.tsx` si le bloc dépasse ~150 lignes, pour garder `AnalyzeSummary` lisible ; mêmes props (`reading`, `printOnly`).
-- `src/index.css` : règles d'impression du registre dans le bloc `analyze-print-mode` déjà en place (répétition d'en-tête, `table-footer-group`, tailles 9 pt) + réutilisation dans le cahier complet (`combined-print-analyze`).
-- Aucune modification des hooks, RPC ou schéma.
+- `React.lazy` + `Suspense` par route ; les routes imbriquées (`ExplorationLayout` lignes 170-185, `CrmShell` 263-271) gardent leur layout en chargement immédiat et ne rendent lazy que les enfants, pour éviter un flash du gabarit.
+- Les imports dynamiques utilisent `await import()` dans le corps des fonctions ; les modules d'export (`src/utils/*ExportUtils.ts`) restent des modules statiques, seul l'import de la librairie tierce devient dynamique — les signatures publiques ne changent pas.
+- `framer-motion` est trop diffus (367 fichiers) pour être rendu dynamique : il est isolé en chunk vendor partagé, ce qui suffit (il est chargé une fois et mis en cache).
+- Non concernés : `three` et `mapbox-gl` ne sont pas utilisés ; `html2canvas` arrive comme dépendance de `jspdf` et suivra son découpage.
+
+## Ce qui ne change pas
+
+Aucune interface, aucun libellé, aucun comportement métier, aucune requête base de données, aucun style. Seul ajout visible : un écran d'attente très bref et graphiquement intégré lors du premier accès à une section lourde.

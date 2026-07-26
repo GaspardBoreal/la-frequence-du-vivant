@@ -1,6 +1,5 @@
 import { saveAs } from 'file-saver';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { BiogeographyAggregates, BiogeographyRow } from '@/hooks/useExplorationBiogeography';
@@ -109,7 +108,12 @@ export function exportClassificationCsv(ctx: ExportContext) {
   saveAs(blob, `rapport-classification-${slug}-${date}.csv`);
 }
 
-export function exportClassificationPdf(ctx: ExportContext) {
+export async function exportClassificationPdf(ctx: ExportContext) {
+  // jsPDF est chargé à la demande (au clic) pour ne pas alourdir le démarrage.
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
   const rows = buildRows(ctx);
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const dateStr = format(new Date(), 'dd/MM/yyyy', { locale: fr });

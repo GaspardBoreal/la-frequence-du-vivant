@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -8,106 +8,119 @@ import { AudioProvider } from './contexts/AudioContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import RouteFallback from './components/RouteFallback';
+
+/* --- Chargées immédiatement : accueil + garde admin (léger) --- */
 import AdminAuth from './components/AdminAuth';
-import AdminLogin from './pages/AdminLogin';
-import AdminResetPassword from './pages/AdminResetPassword';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
-import MarcheDetail from './pages/MarcheDetail';
-import MarcheDetailBio from './pages/MarcheDetailBio';
-import MarchesTechnoSensibles from './pages/MarchesTechnoSensibles';
-import BioacoustiquePoetique from './pages/BioacoustiquePoetique';
-import MigrationAdmin from './pages/MigrationAdmin';
-import MigrationExecution from './pages/MigrationExecution';
-import MarcheAdmin from './pages/MarcheAdmin';
-import AdminAccess from './pages/AdminAccess';
-import ExplorationsList from './pages/ExplorationsList';
-import ExplorationDetail from './pages/ExplorationDetail';
-import NarrativeLandscape from './pages/NarrativeLandscape';
-import ExplorationsAdmin from './pages/ExplorationsAdmin';
-import ExplorationFormPage from './pages/ExplorationFormPage';
-import ExplorationMarchesAdmin from './pages/ExplorationMarchesAdmin';
-import TestEbird from './pages/TestEbird';
-import FaviconTest from './pages/FaviconTest';
-import DataInsights from './pages/DataInsights';
-import ExplorationAnimatorRefactored from './pages/ExplorationAnimatorRefactored';
-import ExplorationExperience from './pages/ExplorationExperience';
-import ExplorationPodcast from './pages/ExplorationPodcast';
-import ExplorationPodcastDordogne from './pages/ExplorationPodcastDordogne';
-import WeatherCalendar from './pages/WeatherCalendar';
-import ProjectPresentation from './pages/ProjectPresentation';
-import GalerieFleuvePage from './pages/GalerieFleuvePage';
-import GalerieFluveExploration from './pages/GalerieFluveExploration';
-import GalerieFluveExplorationLecteurs from './pages/GalerieFluveExplorationLecteurs';
-import ExplorationHistorique from './pages/ExplorationHistorique';
-import ExplorationEssais from './pages/ExplorationEssais';
-import ExperienceAudioContinue from './components/experience/ExperienceAudioContinue';
-import ExperienceLectureOptimisee from './components/reading/ExperienceLectureOptimisee';
-import OpusAdmin from './pages/OpusAdmin';
-import ExplorationPrefigurer from './pages/ExplorationPrefigurer';
-import ExplorationImports from './pages/ExplorationImports';
-import AtlasClimatique from './pages/AtlasClimatique';
-import ExportationsAdmin from './pages/ExportationsAdmin';
-import AutomationsAdmin from './pages/AutomationsAdmin';
-import ExplorationLayout from './layouts/ExplorationLayout';
-import ExplorationBiodiversite from './pages/ExplorationBiodiversite';
-import TraverseesLecteurs from './pages/TraverseesLecteurs';
-import IsegcomBordeaux from './pages/IsegcomBordeaux';
 
-import ExplorationsSensibles from './pages/ExplorationsSensibles';
-import MaterielPedagogique from './pages/MaterielPedagogique';
-import Dordonia from './pages/Dordonia';
-import PublicEpubDownload from './pages/PublicEpubDownload';
-import PublicLivreVivant from './pages/PublicLivreVivant';
-import MarchesDuVivant from './pages/MarchesDuVivant';
-import OffreVdtMdv from './pages/OffreVdtMdv';
-import MarchesDuVivantEntreprises from './pages/MarchesDuVivantEntreprises';
-import MarchesDuVivantAgriculture from './pages/MarchesDuVivantAgriculture';
-import MarchesDuVivantPartenaires from './pages/MarchesDuVivantPartenaires';
-import MarchesDuVivantAssociation from './pages/MarchesDuVivantAssociation';
-import MarchesDuVivantExplorer from './pages/MarchesDuVivantExplorer';
-import CarteMarchesDuVivant from './pages/CarteMarchesDuVivant';
-import CarnetsDeTerrainGalerie from './pages/CarnetsDeTerrainGalerie';
-import CarnetDeTerrain from './pages/CarnetDeTerrain';
-import CrmPipeline from './pages/CrmPipeline';
-import CrmAnnuaire from './pages/CrmAnnuaire';
-import TeamManagement from './pages/TeamManagement';
-import CrmShell from './layouts/CrmShell';
-import CrmHome from './pages/CrmHome';
-import CrmMarches from './pages/CrmMarches';
-import CrmIa from './pages/CrmIa';
-import CrmMissions from './pages/CrmMissions';
-import MarchesDuVivantConnexion from './pages/MarchesDuVivantConnexion';
-import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
-import MarchesDuVivantValiderPresence from './pages/MarchesDuVivantValiderPresence';
-import MarcheEventsAdmin from './pages/MarcheEventsAdmin';
-import MarcheEventDetail from './pages/MarcheEventDetail';
-import PublicEventPage from './pages/PublicEventPage';
-import CommunityProfilesAdmin from './pages/CommunityProfilesAdmin';
-import OrganisateursAdmin from './pages/OrganisateursAdmin';
-import AdminProprietes from './pages/AdminProprietes';
-import ProprieteEspace from './pages/ProprieteEspace';
-import MarchesDuVivantExplorationMarcheur from './pages/MarchesDuVivantExplorationMarcheur';
-import AdminOutilsHub from './pages/AdminOutilsHub';
-import AdminFrequences from './pages/AdminFrequences';
-import CommunityAffiliateLanding from './pages/CommunityAffiliateLanding';
-import PartagePublic from './pages/PartagePublic';
-import CarnetMarcheur from './pages/CarnetMarcheur';
-import { AdminChatBotMount } from './components/chatbot/AdminChatBotMount';
-import { CommunityChatBotMount } from './components/chatbot/CommunityChatBotMount';
-import Adhesion from './pages/Adhesion';
-import AdhesionAdmin from './pages/AdhesionAdmin';
-import AdhesionFab from './components/adhesion/AdhesionFab';
-import ApiMcpPublic from './pages/ApiMcpPublic';
-import AdminApiMcp from './pages/AdminApiMcp';
-import AdminTaxonomyCuration from './pages/AdminTaxonomyCuration';
-import AdminAuditFrugalHub from './pages/AdminAuditFrugalHub';
-import PublicAuditFrugal from './pages/PublicAuditFrugal';
-import AgentIA from './pages/AgentIA';
-import AgentIAFiche from './pages/AgentIAFiche';
-import InterregSudoeMdv from './pages/InterregSudoeMdv';
-import ApprendreMarchePage from './pages/ApprendreMarchePage';
-import ImmersiveGardenFiche from './pages/ImmersiveGardenFiche';
+/* Portes d'entrée publiques — chunk dédié, chargé dès la navigation */
+const MarchesDuVivant = lazy(() => import('./pages/MarchesDuVivant'));
+const CarteMarchesDuVivant = lazy(() => import('./pages/CarteMarchesDuVivant'));
+const PublicEventPage = lazy(() => import('./pages/PublicEventPage'));
+const MarchesDuVivantConnexion = lazy(() => import('./pages/MarchesDuVivantConnexion'));
+/* Layouts des routes imbriquées */
+const ExplorationLayout = lazy(() => import('./layouts/ExplorationLayout'));
+const CrmShell = lazy(() => import('./layouts/CrmShell'));
+
+/* --- Chargées à la demande --- */
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminResetPassword = lazy(() => import('./pages/AdminResetPassword'));
+const MarcheDetail = lazy(() => import('./pages/MarcheDetail'));
+const MarcheDetailBio = lazy(() => import('./pages/MarcheDetailBio'));
+const MarchesTechnoSensibles = lazy(() => import('./pages/MarchesTechnoSensibles'));
+const BioacoustiquePoetique = lazy(() => import('./pages/BioacoustiquePoetique'));
+const MigrationAdmin = lazy(() => import('./pages/MigrationAdmin'));
+const MigrationExecution = lazy(() => import('./pages/MigrationExecution'));
+const MarcheAdmin = lazy(() => import('./pages/MarcheAdmin'));
+const AdminAccess = lazy(() => import('./pages/AdminAccess'));
+const ExplorationsList = lazy(() => import('./pages/ExplorationsList'));
+const ExplorationDetail = lazy(() => import('./pages/ExplorationDetail'));
+const NarrativeLandscape = lazy(() => import('./pages/NarrativeLandscape'));
+const ExplorationsAdmin = lazy(() => import('./pages/ExplorationsAdmin'));
+const ExplorationFormPage = lazy(() => import('./pages/ExplorationFormPage'));
+const ExplorationMarchesAdmin = lazy(() => import('./pages/ExplorationMarchesAdmin'));
+const TestEbird = lazy(() => import('./pages/TestEbird'));
+const FaviconTest = lazy(() => import('./pages/FaviconTest'));
+const DataInsights = lazy(() => import('./pages/DataInsights'));
+const ExplorationAnimatorRefactored = lazy(() => import('./pages/ExplorationAnimatorRefactored'));
+const ExplorationExperience = lazy(() => import('./pages/ExplorationExperience'));
+const ExplorationPodcast = lazy(() => import('./pages/ExplorationPodcast'));
+const WeatherCalendar = lazy(() => import('./pages/WeatherCalendar'));
+const ProjectPresentation = lazy(() => import('./pages/ProjectPresentation'));
+const GalerieFleuvePage = lazy(() => import('./pages/GalerieFleuvePage'));
+const GalerieFluveExploration = lazy(() => import('./pages/GalerieFluveExploration'));
+const GalerieFluveExplorationLecteurs = lazy(() => import('./pages/GalerieFluveExplorationLecteurs'));
+const ExplorationHistorique = lazy(() => import('./pages/ExplorationHistorique'));
+const ExplorationEssais = lazy(() => import('./pages/ExplorationEssais'));
+const ExperienceAudioContinue = lazy(() => import('./components/experience/ExperienceAudioContinue'));
+const ExperienceLectureOptimisee = lazy(() => import('./components/reading/ExperienceLectureOptimisee'));
+const OpusAdmin = lazy(() => import('./pages/OpusAdmin'));
+const ExplorationPrefigurer = lazy(() => import('./pages/ExplorationPrefigurer'));
+const ExplorationImports = lazy(() => import('./pages/ExplorationImports'));
+const AtlasClimatique = lazy(() => import('./pages/AtlasClimatique'));
+const ExportationsAdmin = lazy(() => import('./pages/ExportationsAdmin'));
+const AutomationsAdmin = lazy(() => import('./pages/AutomationsAdmin'));
+const ExplorationBiodiversite = lazy(() => import('./pages/ExplorationBiodiversite'));
+const TraverseesLecteurs = lazy(() => import('./pages/TraverseesLecteurs'));
+const IsegcomBordeaux = lazy(() => import('./pages/IsegcomBordeaux'));
+const ExplorationsSensibles = lazy(() => import('./pages/ExplorationsSensibles'));
+const MaterielPedagogique = lazy(() => import('./pages/MaterielPedagogique'));
+const Dordonia = lazy(() => import('./pages/Dordonia'));
+const PublicEpubDownload = lazy(() => import('./pages/PublicEpubDownload'));
+const PublicLivreVivant = lazy(() => import('./pages/PublicLivreVivant'));
+const OffreVdtMdv = lazy(() => import('./pages/OffreVdtMdv'));
+const MarchesDuVivantEntreprises = lazy(() => import('./pages/MarchesDuVivantEntreprises'));
+const MarchesDuVivantAgriculture = lazy(() => import('./pages/MarchesDuVivantAgriculture'));
+const MarchesDuVivantPartenaires = lazy(() => import('./pages/MarchesDuVivantPartenaires'));
+const MarchesDuVivantAssociation = lazy(() => import('./pages/MarchesDuVivantAssociation'));
+const MarchesDuVivantExplorer = lazy(() => import('./pages/MarchesDuVivantExplorer'));
+const CarnetsDeTerrainGalerie = lazy(() => import('./pages/CarnetsDeTerrainGalerie'));
+const CarnetDeTerrain = lazy(() => import('./pages/CarnetDeTerrain'));
+const CrmPipeline = lazy(() => import('./pages/CrmPipeline'));
+const CrmAnnuaire = lazy(() => import('./pages/CrmAnnuaire'));
+const TeamManagement = lazy(() => import('./pages/TeamManagement'));
+const CrmHome = lazy(() => import('./pages/CrmHome'));
+const CrmMarches = lazy(() => import('./pages/CrmMarches'));
+const CrmIa = lazy(() => import('./pages/CrmIa'));
+const CrmMissions = lazy(() => import('./pages/CrmMissions'));
+const MarchesDuVivantMonEspace = lazy(() => import('./pages/MarchesDuVivantMonEspace'));
+const MarchesDuVivantValiderPresence = lazy(() => import('./pages/MarchesDuVivantValiderPresence'));
+const MarcheEventsAdmin = lazy(() => import('./pages/MarcheEventsAdmin'));
+const MarcheEventDetail = lazy(() => import('./pages/MarcheEventDetail'));
+const CommunityProfilesAdmin = lazy(() => import('./pages/CommunityProfilesAdmin'));
+const OrganisateursAdmin = lazy(() => import('./pages/OrganisateursAdmin'));
+const AdminProprietes = lazy(() => import('./pages/AdminProprietes'));
+const ProprieteEspace = lazy(() => import('./pages/ProprieteEspace'));
+const MarchesDuVivantExplorationMarcheur = lazy(() => import('./pages/MarchesDuVivantExplorationMarcheur'));
+const AdminOutilsHub = lazy(() => import('./pages/AdminOutilsHub'));
+const AdminFrequences = lazy(() => import('./pages/AdminFrequences'));
+const CommunityAffiliateLanding = lazy(() => import('./pages/CommunityAffiliateLanding'));
+const PartagePublic = lazy(() => import('./pages/PartagePublic'));
+const CarnetMarcheur = lazy(() => import('./pages/CarnetMarcheur'));
+const Adhesion = lazy(() => import('./pages/Adhesion'));
+const AdhesionAdmin = lazy(() => import('./pages/AdhesionAdmin'));
+const ApiMcpPublic = lazy(() => import('./pages/ApiMcpPublic'));
+const AdminApiMcp = lazy(() => import('./pages/AdminApiMcp'));
+const AdminTaxonomyCuration = lazy(() => import('./pages/AdminTaxonomyCuration'));
+const AdminAuditFrugalHub = lazy(() => import('./pages/AdminAuditFrugalHub'));
+const PublicAuditFrugal = lazy(() => import('./pages/PublicAuditFrugal'));
+const AgentIA = lazy(() => import('./pages/AgentIA'));
+const AgentIAFiche = lazy(() => import('./pages/AgentIAFiche'));
+const InterregSudoeMdv = lazy(() => import('./pages/InterregSudoeMdv'));
+const ApprendreMarchePage = lazy(() => import('./pages/ApprendreMarchePage'));
+const ImmersiveGardenFiche = lazy(() => import('./pages/ImmersiveGardenFiche'));
+
+/* Montages globaux : chargés à la demande, sans écran d'attente */
+const AdminChatBotMount = lazy(() =>
+  import('./components/chatbot/AdminChatBotMount').then((m) => ({ default: m.AdminChatBotMount })),
+);
+const CommunityChatBotMount = lazy(() =>
+  import('./components/chatbot/CommunityChatBotMount').then((m) => ({ default: m.CommunityChatBotMount })),
+);
+const AdhesionFab = lazy(() => import('./components/adhesion/AdhesionFab'));
+
 import { TrophicFullscreenProvider } from './components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider';
 import { DiscoverFullscreenProvider } from './components/biodiversity/discover/DiscoverFullscreenProvider';
 
@@ -124,6 +137,7 @@ function App() {
             <BrowserRouter>
             <TrophicFullscreenProvider>
             <DiscoverFullscreenProvider>
+          <Suspense fallback={<RouteFallback />}>
           <Routes>
 
             <Route path="/" element={<Index />} />
@@ -360,9 +374,12 @@ function App() {
 
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <AdminChatBotMount />
-          <CommunityChatBotMount />
-          <AdhesionFab />
+          </Suspense>
+          <Suspense fallback={null}>
+            <AdminChatBotMount />
+            <CommunityChatBotMount />
+            <AdhesionFab />
+          </Suspense>
           <Toaster position="top-right" />
 
             </DiscoverFullscreenProvider>
