@@ -1,30 +1,19 @@
-## Objectif
+## Problème
 
-Ajouter à la carte « Carte des révélations » (étape J'identifie) le même mode plein écran que celui déjà en place sur « Étape 2 · Prélèvements — 3 à 5 échantillons représentatifs ».
+Dans « 2 · Carte des révélations », les pastilles de filtre (Flore · 250, Faune · 173, Champignons · 5) et le compteur de droite (459 obs.) comptent des **points d'observation**, alors que le bandeau du haut « Empreinte biodiversité mesurée ici » compte des **espèces distinctes** (230 · 104 Flore · 100 Faune · 3 Champignons · 23 Autres).
 
-## Ce qui existe déjà (référence)
+Vérifié dans le code : `RevealMapBlock.tsx` fait `for (const w of filtered) counts[...]++` sur les waypoints, et affiche `filtered.length`. Le bandeau du haut passe lui par `usePropertySpeciesCount`, qui déduplique par nom scientifique normalisé (NFD, minuscules) et normalise le règne via `normalizeKingdom`.
 
-`SamplesMapBlock.tsx` implémente le motif suivant :
-- un état `fullscreen`, un bouton rond vert en haut-gauche de la carte (Maximize2/Minimize2, placé à gauche pour ne pas recouvrir les contrôles Géo/Sat/Relief/Cadastre en haut-droite) ;
-- la carte extraite dans une fonction `mapNode(height)` réutilisée en mode normal et en plein écran (une seule instance montée à la fois, un placeholder « Carte affichée en plein écran… » remplace l'emplacement inline) ;
-- un overlay via `createPortal` vers `document.body`, `fixed inset-0 z-[2000]`, fond crème, animé en fondu par framer-motion ;
-- un en-tête reprenant numéro, catégorie, titre, compteur et bouton de fermeture ;
-- fermeture par Échap et blocage du scroll du body pendant l'ouverture.
+## Correction
 
-## Modification prévue
+Dans `src/components/propriete/identify/blocks/RevealMapBlock.tsx` uniquement :
 
-Un seul fichier : `src/components/propriete/identify/blocks/RevealMapBlock.tsx`
+1. Remplacer le calcul `stats` par une déduplication par nom scientifique normalisé, avec **exactement la même normalisation** que `usePropertySpeciesCount` (NFD + suppression des diacritiques + lower + trim) et le même `normalizeKingdom` de `@/lib/kingdomLabels` (au lieu du `kingdomFrom` local ad hoc). Règle identique : un règne identifié l'emporte sur « autres » si la même espèce apparaît sous deux règnes.
+2. Les pastilles affichent le nombre d'espèces distinctes du règne, calculé **avant** le filtre de règne mais **après** le filtre « bio-indicatrices », pour que les chiffres restent stables quand on change de règne (comportement actuel).
+3. Le compteur de droite devient le nombre total d'espèces distinctes visibles, libellé « espèces » au lieu de « obs. ». Le nombre d'observations reste indiqué en second, plus discret (ex. `128 espèces · 459 obs.`), pour ne pas perdre l'information.
+4. Ajouter la pastille « Autres » (règne `others`) pour aligner la nomenclature sur les 4 règnes du bandeau du haut.
+5. Les couleurs des marqueurs sur la carte sont mappées sur les clés `normalizeKingdom` pour rester cohérentes.
 
-1. Extraire la barre de filtres (Tous / Plantes / Animaux / Champignons / Bio-indicatrices + compteur d'observations) dans une variable `filtersBar`, et le bloc `<RichMap>` + marqueurs dans une fonction `mapNode(height)` afin de les rendre à l'identique dans les deux modes.
-2. Ajouter l'état `fullscreen` et le bouton rond en haut-gauche de la carte, strictement même style et mêmes icônes que les Prélèvements.
-3. Ajouter l'effet Échap + verrouillage du scroll du body.
-4. Ajouter l'overlay `createPortal` : en-tête (pastille numéro, sur-titre « Carte des révélations », titre « Où les marcheurs ont-ils observé le vivant ? », compteur « n obs. », bouton X), barre de filtres sous l'en-tête pour rester pilotable en plein écran, puis la carte occupant toute la hauteur restante.
-5. En mode normal, remplacer la carte par le même placeholder pointillé pour éviter deux instances Leaflet simultanées.
+## Note
 
-Aucune logique de données, de filtrage ou de requête n'est touchée : uniquement la présentation.
-
-## Détails techniques
-
-- Réutilisation des tokens `--ds-cream`, `--ds-forest`, `--ds-forest-deep`, `--ds-line` déjà employés, aucune couleur en dur ajoutée.
-- Le layout plein écran est vertical (filtres en bandeau, carte plein cadre) plutôt que carte + panneau latéral, car ce bloc n'a pas de liste latérale à afficher.
-- Les popups Leaflet fonctionnent tels quels dans le portail puisque la carte est remontée dans le nouveau conteneur.
+Les chiffres de la carte resteront inférieurs à ceux du bandeau du haut : la carte n'affiche que les observations **géolocalisées**, alors que le bandeau compte toutes les espèces de la propriété. La méthode de comptage sera identique, mais le périmètre reste celui des points cartographiés. Aucun changement de données ni de RPC.
