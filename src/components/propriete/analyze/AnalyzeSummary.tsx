@@ -4,7 +4,7 @@ import { Check, Pencil, Printer, RotateCcw, ArrowRight, MapPin, AlertTriangle } 
 import type { PropertySoilState } from '@/hooks/propriete/usePropertySoil';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import { buildSoilReading } from './soilReading';
-import { SoilSignature } from './SoilSignature';
+
 import { SoilSamplesPlan } from './SoilSamplesPlan';
 import { RESULT_SHORT, TEST_LABELS } from './structureTests';
 import { TEXTURE_SHORT, TEXTURE_TEST_LABELS, BOUDIN_FORM_MAP } from './textureTests';
@@ -324,7 +324,7 @@ export const AnalyzeSummary: React.FC<Props> = ({
             onEdit={() => onEditBlock('prelevements')}
           />
 
-          <SoilSignature reading={r} dateStr={dateStr} />
+
 
           {/* Lecture dominante */}
           <div className="mb-8 border-l-2 border-[hsl(var(--ds-gold))] pl-4 print-avoid-break">
