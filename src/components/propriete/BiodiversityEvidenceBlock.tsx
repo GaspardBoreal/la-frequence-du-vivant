@@ -42,8 +42,9 @@ export const BiodiversityEvidenceBlock: React.FC<Props> = ({
   defaultOpen = false,
 }) => {
   const [open, setOpen] = React.useState(defaultOpen);
-  const kingdoms = Object.entries(bio?.kingdoms ?? {});
+  const speciesCount = usePropertySpeciesCount(proprieteId);
   const eventCount = bio?.events.length ?? 0;
+
 
   // Le pool n'est chargé qu'à l'ouverture — évite le fan-out RPC inutile.
   const { species, fieldPhotos, isLoading, latestExplorationId } = usePropertySpeciesPool(
