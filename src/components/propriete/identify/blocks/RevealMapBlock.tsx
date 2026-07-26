@@ -201,13 +201,39 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       >
         🌿 Bio-indicatrices seulement
       </button>
-      <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
+
+      <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
+      {([
+        ['all', 'Toutes sources'],
+        ['marcheur', '📷 Marcheurs'],
+        ['inaturalist', '🌐 iNaturalist'],
+      ] as Array<['all' | 'marcheur' | 'inaturalist', string]>).map(([v, label]) => (
+        <button
+          key={v}
+          onClick={() => setSourceFilter(v)}
+          className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+            sourceFilter === v
+              ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest))]'
+              : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+
+      <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))] text-right">
         {visibleSpecies} espèces
         <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
+        {refTotal > 0 && (
+          <span className="block font-normal opacity-55 text-[10px]">
+            {localizedSpecies} / {refTotal} espèces localisées
+          </span>
+        )}
       </span>
 
     </div>
   );
+
 
   const mapNode = (heightPx: number | string) => (
     <div className="relative rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: heightPx }}>
