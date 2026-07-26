@@ -300,7 +300,11 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                       Où les marcheurs ont-ils observé le vivant ?
                     </div>
                   </div>
-                  <span className="ml-auto text-sm font-semibold text-[hsl(var(--ds-forest))]">{filtered.length} obs.</span>
+                  <span className="ml-auto text-sm font-semibold text-[hsl(var(--ds-forest))]">
+                    {visibleSpecies} espèces
+                    <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
+                  </span>
+
                   <button
                     onClick={() => setFullscreen(false)}
                     aria-label="Fermer le plein écran"
