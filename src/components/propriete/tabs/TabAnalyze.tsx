@@ -39,7 +39,7 @@ export const TabAnalyze: React.FC<{
     (state.terrain_status ? 1 : 0) +
     (state.samples.some((s) => (s.location ?? '').trim().length > 0) ? 1 : 0) +
     (state.samples.some((s) => s.structure_test && s.structure_result) ? 1 : 0) +
-    (state.boudin_shape ? 1 : 0) +
+    (state.samples.some((s) => s.texture_test && s.texture_result) || state.boudin_shape ? 1 : 0) +
     (state.ph != null ? 1 : 0) +
     (state.life_signs.length > 0 ? 1 : 0) +
     ((state.synthesis ?? '').trim().length > 0 ? 1 : 0);
@@ -105,8 +105,11 @@ export const TabAnalyze: React.FC<{
           texture={state.texture}
           onChangeBoudin={(v) => setField('boudin_shape', v)}
           onChangeTexture={(v) => setField('texture', v)}
+          samples={state.samples}
+          onUpdateSample={updateSample}
           index={3}
         />
+
       </div>
 
       {/* Blocs 5 & 6 : conservés en 2 colonnes */}
