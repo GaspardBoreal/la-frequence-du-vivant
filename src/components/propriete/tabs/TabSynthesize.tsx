@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
+import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 
 interface Props {
   proprieteNom: string;
