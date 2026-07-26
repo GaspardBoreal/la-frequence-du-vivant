@@ -499,9 +499,18 @@ export const AnalyzeSummary: React.FC<Props> = ({
               <Empty />
             )}
           </Section>
+        </div>
+      )}
 
+      {showP3 && (
+        <div
+          className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} ${
+            printOnly ? 'grid grid-cols-1 gap-y-8' : 'grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8'
+          }`}
+        >
           {/* Tableau des prélèvements — pleine largeur */}
-          <div className="md:col-span-2 mt-4 pt-8 border-t border-[hsl(var(--ds-line))] print-avoid-break">
+          <div className="md:col-span-2 print-avoid-break">
+
             <div className="flex items-end justify-between mb-4 flex-wrap gap-3">
               <div>
                 <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
