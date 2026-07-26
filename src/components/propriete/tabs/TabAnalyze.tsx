@@ -185,14 +185,21 @@ export const TabAnalyze: React.FC<{
     onDone: () => setSoloPrinting(false),
   });
 
-  const handleConfirmPrint = (choice: PrintChoice) => {
+  const handleConfirmPrint = async (choice: PrintChoice) => {
     setPrintOpen(false);
     if (choice === 'combined') {
+      // URL signées valables 1 h : on les rafraîchit avant d'imprimer les preuves de terrain.
+      try {
+        await refetchTestMedias();
+      } catch {
+        /* impression possible malgré tout */
+      }
       setCombinedPrinting(true);
       return;
     }
     setSoloPrinting(true);
   };
+
 
   const printDialogAndPortal = (
     <>
