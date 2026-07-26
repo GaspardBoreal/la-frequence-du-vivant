@@ -446,6 +446,76 @@ export const AnalyzeSummary: React.FC<Props> = ({
         <div
           className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} ${gridCols}`}
         >
+          <Section
+            number={2}
+            title="Prélèvements"
+            blockId="prelevements"
+            onEditBlock={onEditBlock}
+            printOnly={printOnly}
+            warn={r.samples.length === 0}
+          >
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {r.samples.map((s) => (
+                <Chip key={s.id}>
+                  <span className="font-bold">{s.label}</span>
+                  <span className="opacity-70">{s.location?.trim() || 'sans repère'}</span>
+                </Chip>
+              ))}
+              {r.samples.length === 0 && <Empty />}
+            </div>
+            <p className="text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed">
+              {r.placedSamples} prélèvement{r.placedSamples > 1 ? 's' : ''} positionné
+              {r.placedSamples > 1 ? 's' : ''} sur la carte cadastrale du site.
+            </p>
+          </Section>
+
+          <Section
+            number={3}
+            title="Structure du sol"
+            blockId="structure"
+            onEditBlock={onEditBlock}
+            printOnly={printOnly}
+            warn={r.structure.dominant === 'compacte'}
+          >
+            {r.structure.dominant ? (
+              <>
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  <Chip>{RESULT_SHORT[r.structure.dominant]}</Chip>
+                  <Chip tone="muted">{r.structure.filled} / {r.samples.length} testés</Chip>
+                  {r.structure.contrasted && <Chip tone="muted">Sol contrasté</Chip>}
+                </div>
+                <p className="text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed">
+                  {r.readings.find((x) => x.key === 'structure')?.text}
+                </p>
+              </>
+            ) : (
+              <Empty />
+            )}
+          </Section>
+
+          <Section
+            number={4}
+            title="Texture du sol"
+            blockId="texture"
+            onEditBlock={onEditBlock}
+            printOnly={printOnly}
+          >
+            {r.texture.dominant ? (
+              <>
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  <Chip>{TEXTURE_SHORT[r.texture.dominant]}</Chip>
+                  <Chip tone="muted">{r.texture.filled} / {r.samples.length} testés</Chip>
+                  {r.texture.contrasted && <Chip tone="muted">Texture contrastée</Chip>}
+                </div>
+                <p className="text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed">
+                  {r.readings.find((x) => x.key === 'texture')?.text}
+                </p>
+              </>
+            ) : (
+              <Empty />
+            )}
+          </Section>
+
 
           <Section
             number={5}
