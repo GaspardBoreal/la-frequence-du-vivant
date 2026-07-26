@@ -114,7 +114,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               onEditBlock={() => {}}
               onReopenAll={() => {}}
               printOnly
-              printSection="first"
+              printSection="p1"
             />
           </section>
           <section className="portrait-print-page combined-print-analyze combined-print-analyze-second">
@@ -125,7 +125,18 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               onEditBlock={() => {}}
               onReopenAll={() => {}}
               printOnly
-              printSection="second"
+              printSection="p2"
+            />
+          </section>
+          <section className="portrait-print-page combined-print-analyze combined-print-analyze-second">
+            <AnalyzeSummary
+              state={soil}
+              completedAt={soilCompletedAt ?? null}
+              propertyName={propertyName}
+              onEditBlock={() => {}}
+              onReopenAll={() => {}}
+              printOnly
+              printSection="p3"
             />
           </section>
         </>
