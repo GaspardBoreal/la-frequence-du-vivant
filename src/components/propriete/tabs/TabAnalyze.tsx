@@ -237,6 +237,7 @@ export const TabAnalyze: React.FC<{
           publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
           soil={state}
           soilCompletedAt={completedAt}
+          testMedias={testMedias}
         />,
         combinedPortalRef.current,
       )}
