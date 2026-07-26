@@ -23,6 +23,12 @@ export interface SoilSample {
   ph_test?: 'bandelette' | 'phmetre' | null;
   /** Bloc 5 · valeur de pH mesurée (4 → 9) */
   ph_value?: number | null;
+  /** Bloc 6 · test de vie du sol réalisé sur ce prélèvement */
+  life_test?: 'beche_vivante' | 'vinaigre' | 'sachet' | null;
+  /** Bloc 6 · indices de vie biologique cochés */
+  life_signs?: string[];
+  /** Bloc 6 · nombre de vers de terre comptés (bêchée 20 × 20 × 20 cm) */
+  worm_count?: number | null;
 }
 
 
