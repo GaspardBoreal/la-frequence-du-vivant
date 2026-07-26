@@ -23,11 +23,15 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
-        // Regroupements volontairement limités aux librairies « feuilles »
-        // (sans dépendances croisées) : découper React/Radix provoque des
-        // cycles entre chunks et des erreurs d'initialisation au runtime.
+        // Le socle React est isolé en premier : sinon Rollup le place dans le
+        // premier gros chunk venu (ex. Babel), qui devient alors obligatoire
+        // pour toutes les pages. Les autres groupes restent des librairies
+        // « feuilles » pour éviter les cycles entre chunks.
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-is|use-sync-external-store|object-assign)[\\/]/.test(id)) {
+            return 'react-vendor';
+          }
           if (/[\\/]node_modules[\\/](leaflet|react-leaflet|@react-leaflet|leaflet\.)/.test(id)) {
             return 'maps';
           }
@@ -35,7 +39,6 @@ export default defineConfig(({ mode }) => ({
           if (/[\\/]node_modules[\\/](docx|xlsx|jszip|jspdf|jspdf-autotable|html2canvas|qrcode)[\\/]/.test(id)) {
             return 'exports';
           }
-          if (/[\\/]node_modules[\\/]@babel[\\/]standalone/.test(id)) return 'babel-standalone';
         },
       },
     },
