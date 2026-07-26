@@ -23,7 +23,24 @@ interface RpcSpecies {
 const toMediumInat = (url: string): string =>
   url ? url.replace('/square.', '/medium.').replace('/square.jpg', '/medium.jpg') : url;
 
+export interface PropertyWaypoint {
+  id: string;
+  lat: number;
+  lng: number;
+  scientificName: string;
+  commonName: string | null;
+  kingdom: string | null;
+  photoUrl: string | null;
+  observationDate: string | null;
+  marcheurId: string | null;
+  marcheId: string | null;
+  /** Provenance de la position : terrain marcheur ou base iNaturalist/eBird */
+  source: 'marcheur' | 'inaturalist';
+  observerName: string | null;
+}
+
 const normName = (s: string | null | undefined): string =>
+
   (s || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
