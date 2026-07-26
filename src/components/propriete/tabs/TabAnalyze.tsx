@@ -20,6 +20,7 @@ import { LifeSignsBlock } from '@/components/propriete/analyze/blocks/LifeSignsB
 import { AnalyzeSummary, type AnalyzeBlockId } from '@/components/propriete/analyze/AnalyzeSummary';
 import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/print/PrintChoiceDialog';
 import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
+import { AnalyzePrintLayout } from '@/components/propriete/print/AnalyzePrintLayout';
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
