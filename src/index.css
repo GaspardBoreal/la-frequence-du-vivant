@@ -13,6 +13,14 @@
     --ds-earth: 30 27% 42%;         /* #8b6f4e */
     --ds-gold: 44 51% 54%;          /* #c9a84c */
 
+    /* === Étape 3 « J'identifie » — une teinte par critère écologique === */
+    --ds-eco-eau: 192 45% 38%;      /* bleu-vert eau */
+    --ds-eco-texture: 24 38% 44%;   /* terre / limon */
+    --ds-eco-nutri: 42 62% 45%;     /* or nourricier */
+    --ds-eco-ph: 276 28% 46%;       /* violet craie */
+
+
+
     /* === MODE CLAIR — Crème papier, encre sombre, émeraude profond === */
     --background: 42 30% 96%;         /* Crème papier #FAF8F3 */
     --foreground: 0 0% 10%;           /* Encre sombre #1a1a1a */
