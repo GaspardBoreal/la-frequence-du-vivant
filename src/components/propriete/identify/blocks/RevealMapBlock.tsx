@@ -222,7 +222,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         {filtered.map((w) => {
           const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
           return (
-            <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color)}>
+            <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color, w.source)}>
               <Popup>
                 <div style={{ minWidth: 160 }}>
                   {w.photoUrl && (
@@ -238,8 +238,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                   <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
                     {w.scientificName}
                   </div>
+                  <div style={{ fontSize: 10, marginTop: 4, color: '#666' }}>
+                    {w.source === 'marcheur'
+                      ? '📷 Observation marcheur'
+                      : `🌐 Observation citoyenne${w.observerName ? ` · ${w.observerName}` : ''}`}
+                  </div>
                   {w.observationDate && (
-                    <div style={{ fontSize: 10, marginTop: 4, color: '#888' }}>
+                    <div style={{ fontSize: 10, marginTop: 2, color: '#888' }}>
                       <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
                       {new Date(w.observationDate).toLocaleDateString('fr-FR')}
                     </div>
@@ -247,6 +252,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                 </div>
               </Popup>
             </Marker>
+
           );
         })}
       </RichMap>
