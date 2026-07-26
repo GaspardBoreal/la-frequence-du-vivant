@@ -148,8 +148,16 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     [filtered],
   );
 
+  // Garde-fou : espèces localisables sur la carte vs total du bandeau du haut
+  const localizedSpecies = useMemo(
+    () => speciesBucket(waypoints).size,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [waypoints],
+  );
+  const refTotal = speciesRef.total;
 
   const hasData = waypoints.length > 0;
+
 
   // Esc closes fullscreen + lock body scroll
   useEffect(() => {
