@@ -1,49 +1,45 @@
 ## Objectif
 
-Aligner le Widget 4 (Texture du sol) sur la logique déjà en place au Widget 3 (Structure) : un test + un résultat **par prélèvement** (A→E positionnés sur la carte du Widget 2), avec protocole illustré et synthèse.
+Intégrer les 3 vidéos du test bêche (AFES, Bio Nouvelle-Aquitaine, Chambre d'Agriculture Nouvelle-Aquitaine) dans le Widget 3 « Étape 2 · Structure du sol », de façon **clairement optionnelle** : invisible/discret pour qui connaît déjà le test, immédiatement désirable pour qui découvre.
 
-## Contenu repris de la page 7 du document
+## Parti pris design : le « Ciné-terrain » replié
 
-Protocole du test du boudin :
-1. Prélevez de la terre humidifiée
-2. Façonnez un boudin (1 cm de diamètre)
-3. Essayez de le courber doucement
-4. Observez le résultat
+Aucun lecteur imposé, aucune vignette qui écrase le protocole. Sur la fiche-test A (bêche), sous les 3 étapes du protocole, une **barre d'appel repliée** :
 
-Les 3 résultats (libellés exacts du carnet) :
-- **Sable à sable limoneux** — modelage difficile ; boudin très grossier, ne tient pas ; ne colle pas, granuleux, ne salit pas les mains une fois sec
-- **Limon sableux à limon moyen** — modelage possible ; petit boudin ou boudins colmatés ; peu collant, peu granuleux, salit les mains
-- **Limon argileux à argiles** — modelage facile à très facile ; boudin bien dessiné, peut être mis en cercle ; collant, doux, ne salit pas ou peu les mains
+```text
+┌──────────────────────────────────────────────┐
+│ ▷  Voir le geste — 3 regards de terrain      │
+│    Optionnel · 3 vidéos · ~4 à 8 min      ▾  │
+└──────────────────────────────────────────────┘
+```
 
-Indice complémentaire (teneur en argile), proposé uniquement si un boudin a pu être formé :
-- boudin **droit** ≈ 10 % d'argile
-- boudin **en lune** ≈ 10–30 %
-- boudin **en cercle** > 30 %
+- Ligne fine dorée, icône film, chip « Optionnel » discrète.
+- Au clic : dépliage animé (hauteur + fondu) révélant **3 mini-cartes « pellicule »** côte à côte (empilées en mobile) :
+  - miniature YouTube réelle (`img.youtube.com/vi/<id>/hqdefault.jpg`), légère désaturation qui se lève au survol,
+  - bouton play circulaire vert forêt avec halo doré animé,
+  - nom de la source en petites capitales espacées (AFES / Bio Nouvelle-Aquitaine / Chambre d'Agriculture N-A),
+  - une ligne d'angle éditorial pour orienter le choix (ex. « le regard scientifique », « le regard paysan bio », « le regard technique »),
+  - liseré latéral doré + numéro sérigraphié pour l'esprit « planche de carnet ».
+- Rien n'est chargé avant le clic : **facade YouTube** (image + play), l'iframe n'est montée qu'à l'ouverture → zéro impact perf/RGPD tant que l'utilisateur n'y va pas.
 
-Second test : **Test de sédimentation** (optionnel, renforce le boudin) — fiche présentée avec protocole en attente + slots vidéo, sélectionnable comme méthode mais sans grille de résultats propre pour l'instant (le résultat saisi reste la classe de texture).
+## Lecture
 
-## Ce qui sera construit
+Clic sur une carte → **lightbox** (Dialog shadcn) plein cadre :
+- fond assombri, cadre crème avec liseré doré, ratio 16/9,
+- iframe `youtube-nocookie.com/embed/<id>?autoplay=1&rel=0`,
+- barre inférieure : sélecteur des 3 sources pour passer d'une vidéo à l'autre sans fermer, et lien « Ouvrir sur YouTube ».
 
-1. `src/components/propriete/analyze/textureTests.ts` — modèle de données : `TextureTestId` (`boudin` | `sedimentation`), `TextureResultId` (`sable` | `limon` | `argile`), libellés longs/courts, protocoles pas-à-pas, slots `videos: []` (1 à 3 par test, à remplir plus tard), lecture agronomique par dominante, helper `dominantTexture()`.
+## Mémoire du geste (renforce l'optionnalité)
 
-2. `TexturePictos.tsx` — 3 pictos SVG partageant la même grammaire visuelle (un boudin de terre entre deux doigts) : boudin qui s'émiette / boudin cassé en tronçons / boudin plié en cercle. Plus 2 schémas animés de test (mains qui roulent le boudin ; éprouvette de sédimentation à 3 strates sable/limon/argile).
+- Une fois une vidéo ouverte, la carte porte une pastille « vue » ; la barre affiche « Geste revu ».
+- L'état déplié/replié est mémorisé en `localStorage` : celui qui replie ne le revoit plus déplié, celui qui découvre garde son panneau ouvert.
+- Micro-lien secondaire « Je connais déjà le test » qui replie et marque la section comme acquise (visuel apaisé, plus de halo animé).
 
-3. `TextureCrossSection.tsx` — hero animé qui morphe selon la dominante (grains libres → mélange feuilleté → masse plastique), avec verbe clé doré (« Fuit · granuleux », « Se casse · équilibré », « Se plie · retient »), sur le modèle de `StructureCrossSection`.
+## Détails techniques
 
-4. `TextureProtocolCard.tsx` + `TextureChoiceTooltip.tsx` — fiches des 2 tests (étapes numérotées, schéma, boutons ▶ masqués tant qu'aucune URL) et tooltip riche au survol des 3 résultats (puces sensorielles : modelage / tenue du boudin / toucher), avec le même système `align` + `clamp` que le Widget 3 pour éviter tout débordement.
-
-5. `TextureSampleRow.tsx` — une ligne par prélèvement : pastille A/B/C…, rappel du lieu, choix du test (Boudin / Sédimentation), choix du résultat (3 pictos), et — si résultat ≠ sable — mini-sélecteur de forme du boudin (droit / lune / cercle) affichant l'estimation d'argile.
-
-6. `TextureResultsSummary.tsx` — barres de répartition des 3 classes, dominante auto-calculée, mention « profil contrasté » en cas d'égalité, compteur par type de test, et lecture agronomique de la dominante.
-
-7. `blocks/TextureBlock.tsx` — réécriture complète : bandeau consigne doré (Humidifier → Rouler → Courber → Noter), grille des 2 fiches-tests, liste des résultats par prélèvement (état vide avec lien d'ancre vers le bloc Prélèvements), puis synthèse. Le hero est piloté par la dominante.
-
-## Données
-
-Aucune migration : les prélèvements sont stockés en JSONB. On étend `SoilSample` dans `src/hooks/propriete/usePropertySoil.ts` avec `texture_test`, `texture_result` et `boudin_form` (`droit` | `lune` | `cercle`). Les champs globaux existants `texture` et `boudin_shape` sont maintenus en synchronisation automatique depuis la dominante (comme `structure` au Widget 3), donc la synthèse, l'export PDF et l'étape 3 « J'identifie » continuent de fonctionner sans changement.
-
-`TabAnalyze.tsx` : le `TextureBlock` reçoit `samples` + `updateSample` ; le compteur « blocs renseignés » comptera un prélèvement texture complété.
-
-## Ce qui ne change pas
-
-Widgets 1, 2, 3, 5 (pH) et 6 (signes de vie) restent identiques. Pleine largeur conservée pour le bloc 4.
+- `src/components/propriete/analyze/structureTests.ts` : remplir `videos` du test `beche` avec les 3 entrées (label = source, url = lien youtu.be) et étendre le type par des champs optionnels `angle` (ligne éditoriale) et `youtubeId` (dérivé automatiquement de l'URL si absent).
+- Nouveau `src/components/propriete/analyze/VideoLightbox.tsx` : Dialog + iframe nocookie + navigation entre sources.
+- Nouveau `src/components/propriete/analyze/TestVideoShelf.tsx` : barre repliée + grille de facades + persistance localStorage (clé par test id). Réutilisable tel quel par le Widget 4 (texture) quand les vidéos boudin/sédimentation arriveront.
+- `StructureProtocolCard.tsx` : remplacer la rangée de puces `▶ Vidéo n` par `<TestVideoShelf test={test} />` (rendu uniquement si au moins une URL est fournie — comportement actuel conservé pour le test B sans vidéo).
+- Tous les styles via les tokens existants `--ds-forest`, `--ds-forest-deep`, `--ds-cream`, `--ds-gold`, `--ds-line` ; animations framer-motion cohérentes avec les cartes voisines.
+- Accessibilité : boutons réels, `aria-expanded` sur la barre, `title` sur l'iframe, focus visible, respect `prefers-reduced-motion` pour les halos.
