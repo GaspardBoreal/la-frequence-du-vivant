@@ -38,7 +38,7 @@ export interface TextureTest {
   optional?: boolean;
   steps: string[];
   /** Liens vidéo (1 à 3). Laisser vide : les boutons ▶ sont masqués tant qu'aucune URL n'est fournie. */
-  videos: { label: string; url: string }[];
+  videos: { label: string; url: string; angle?: string }[];
 }
 
 export const TEXTURE_TESTS: TextureTest[] = [
