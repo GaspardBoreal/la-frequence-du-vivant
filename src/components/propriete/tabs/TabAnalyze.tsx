@@ -61,7 +61,20 @@ export const TabAnalyze: React.FC<{
 
   const speciesCount = usePropertySpeciesCount(proprieteId);
   const [submitting, setSubmitting] = React.useState(false);
+  const [mode, setMode] = React.useState<'summary' | 'edit'>(
+    completedAt ? 'summary' : 'edit'
+  );
 
+  React.useEffect(() => {
+    if (completedAt) setMode('summary');
+  }, [completedAt]);
+
+  const scrollToBlock = (blockId: AnalyzeBlockId) => {
+    setTimeout(() => {
+      const el = document.getElementById(`analyze-block-${blockId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  };
 
   const filled =
     (state.terrain_status ? 1 : 0) +
@@ -81,6 +94,7 @@ export const TabAnalyze: React.FC<{
     try {
       await markComplete();
       toast.success('Étape 2 marquée comme terminée ✓');
+      setMode('summary');
     } catch (e: any) {
       toast.error("Échec de l'enregistrement", { description: e?.message ?? 'Réessayez.' });
     } finally {
@@ -90,6 +104,131 @@ export const TabAnalyze: React.FC<{
 
   const isDone = !!completedAt;
   const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
+
+  // ─── Impression : dialogue + portail cahier complet ─────────────────────
+  const observation = usePropertyObservation(proprieteId);
+  const { data: galleryPhotos = [] } = usePropertyGallery(proprieteId);
+  const { data: parcelles = [] } = useProprieteParcelles(proprieteId);
+  const derivedCenter = React.useMemo<[number, number] | null>(
+    () => proprieteCenter ?? centroidOfParcelles(parcelles),
+    [proprieteCenter, parcelles],
+  );
+  const stationPoints = React.useMemo(
+    () =>
+      derivedCenter
+        ? [{ id: 'property-center', latitude: derivedCenter[0], longitude: derivedCenter[1] }]
+        : [],
+    [derivedCenter],
+  );
+  const { stations, pointLinks } = useNearestStations(stationPoints, 60);
+  const nearestStation = React.useMemo(() => {
+    const link = pointLinks[0];
+    if (!link) return null;
+    const st = stations.find((s) => s.code === link.stationCode);
+    if (!st) return null;
+    const local = getStationByCode(st.code);
+    return {
+      code: st.code,
+      name: st.name,
+      lat: st.lat,
+      lng: st.lng,
+      distanceKm: link.distance,
+      source: st.source,
+      department: local?.department ?? null,
+      region: local?.region ?? null,
+      elevation: local?.elevation ?? null,
+    };
+  }, [pointLinks, stations]);
+
+  const [printOpen, setPrintOpen] = React.useState(false);
+  const [combinedPrinting, setCombinedPrinting] = React.useState(false);
+  const combinedPortalRef = usePrintCombined({
+    active: combinedPrinting,
+    portalId: 'combined-print-portal',
+    bodyClass: 'combined-printing',
+    onDone: () => setCombinedPrinting(false),
+  });
+
+  const handleConfirmPrint = (choice: PrintChoice) => {
+    setPrintOpen(false);
+    if (choice === 'combined') {
+      setCombinedPrinting(true);
+      return;
+    }
+    document.body.classList.add('analyze-printing');
+    const cleanup = () => {
+      document.body.classList.remove('analyze-printing');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => window.print(), 60);
+  };
+
+  const printDialogAndPortal = (
+    <>
+      <PrintChoiceDialog
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        onConfirm={handleConfirmPrint}
+        portraitPhotoCount={galleryPhotos.length}
+        origin="analyze"
+        analyzeReady={isDone}
+        observeReady={!!observation.completedAt}
+      />
+      {combinedPrinting && combinedPortalRef.current && createPortal(
+        <CombinedPrintLayout
+          answers={observation.state.answers}
+          sensorial={observation.state.sensorial}
+          completedAt={observation.completedAt}
+          propertyName={propertyName}
+          photos={galleryPhotos}
+          proprieteVille={proprieteVille}
+          proprieteAdresse={proprieteAdresse}
+          proprieteCodePostal={proprieteCodePostal}
+          proprieteCenter={derivedCenter}
+          parcelles={parcelles}
+          station={nearestStation}
+          publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
+          soil={state}
+          soilCompletedAt={completedAt}
+        />,
+        combinedPortalRef.current,
+      )}
+    </>
+  );
+
+  // Vue synthèse (carnet scellé) — quand terminé et non en mode édition
+  if (isDone && mode === 'summary') {
+    return (
+      <div className="space-y-6">
+        <StepHeader
+          current={2}
+          savedAt={savedAt}
+          saving={saving}
+          title="J'analyse le sol"
+          subtitle={
+            <>
+              Lire la terre par les mains et les yeux : texture, structure, pH, signes de vie.
+              <span className="italic"> Toucher · Sentir · Comprendre.</span>
+            </>
+          }
+        />
+        <AnalyzeSummary
+          state={state}
+          completedAt={completedAt}
+          propertyName={propertyName}
+          onEditBlock={(id) => {
+            setMode('edit');
+            scrollToBlock(id);
+          }}
+          onReopenAll={() => setMode('edit')}
+          onPrint={() => setPrintOpen(true)}
+        />
+        {printDialogAndPortal}
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-6">
