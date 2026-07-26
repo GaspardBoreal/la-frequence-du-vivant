@@ -123,8 +123,14 @@ export const AnalyzeSummary: React.FC<Props> = ({
       })
     : '—';
 
-  const showFirst = printSection === 'all' || printSection === 'first';
-  const showSecond = printSection === 'all' || printSection === 'second';
+  const showP1 = printSection === 'all' || printSection === 'first' || printSection === 'p1';
+  const showP2 = printSection === 'all' || printSection === 'second' || printSection === 'p2';
+  const showP3 = printSection === 'all' || printSection === 'second' || printSection === 'p3';
+  const showFirst = showP1;
+  const isSuite = printSection === 'second' || printSection === 'p2' || printSection === 'p3';
+  const gridCols = printOnly
+    ? 'grid grid-cols-2 gap-x-8 gap-y-6'
+    : 'grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8';
 
   const phClass = r.ph.dominant ? PH_CLASS_MAP[r.ph.dominant] : null;
   const lifeClass = r.life.dominant ? LIFE_CLASS_MAP[r.life.dominant] : null;
