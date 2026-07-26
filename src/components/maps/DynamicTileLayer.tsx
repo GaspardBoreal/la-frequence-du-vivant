@@ -39,10 +39,10 @@ const DynamicTileLayer: React.FC<Props> = ({ mapStyle, maxZoom = 19 }) => {
     }
     if (mapStyle === 'cadastre') {
       const overlay = L.tileLayer(CADASTRE_OVERLAY_URL, {
-        attribution: '&copy; Etalab — Cadastre',
-        opacity: 0.55,
-        maxNativeZoom: 20,
-        maxZoom: Math.max(maxZoom, 20),
+        attribution: '&copy; IGN — Parcellaire Express (PCI)',
+        opacity: 0.9,
+        maxNativeZoom: 19,
+        maxZoom: Math.max(maxZoom, 19),
         pane: 'overlayPane',
       });
       overlay.addTo(map);
