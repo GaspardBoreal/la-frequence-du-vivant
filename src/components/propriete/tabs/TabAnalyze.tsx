@@ -310,9 +310,27 @@ export const TabAnalyze: React.FC<{
             onChangeTexture={(v) => setField('texture', v)}
             samples={state.samples}
             onUpdateSample={updateSample}
+            renderSampleMedia={(s) =>
+              proprieteId ? (
+                <TestMediaBadge
+                  target={{
+                    proprieteId,
+                    sampleId: s.id,
+                    sampleLabel: s.label,
+                    sampleLocation: s.location ?? null,
+                    block: 'texture',
+                    testId: (s.texture_test as any) ?? 'boudin',
+                  }}
+                  medias={
+                    mediaIndex.get(`${(s.texture_test as any) ?? 'boudin'}::${s.id}`) ?? []
+                  }
+                />
+              ) : null
+            }
             index={3}
           />
         </div>
+
 
       </div>
 
