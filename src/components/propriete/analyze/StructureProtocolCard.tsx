@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Play, ListChecks } from 'lucide-react';
+import { ListChecks } from 'lucide-react';
 import { TestSchema } from './StructureTestPictos';
+import { TestVideoShelf } from './TestVideoShelf';
 import type { StructureTest } from './structureTests';
 
 export const StructureProtocolCard: React.FC<{ test: StructureTest; index?: number }> = ({
@@ -9,6 +10,7 @@ export const StructureProtocolCard: React.FC<{ test: StructureTest; index?: numb
   index = 0,
 }) => {
   const videos = (test.videos ?? []).filter((v) => (v.url ?? '').trim().length > 0);
+
 
   return (
     <motion.div
