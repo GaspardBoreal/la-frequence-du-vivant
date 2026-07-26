@@ -40,6 +40,8 @@ interface Props {
   /** Étape 2 — inclus dans le cahier complet lorsque fourni. */
   soil?: PropertySoilState | null;
   soilCompletedAt?: string | null;
+  /** Preuves de terrain (photos des tests de sol), imprimées après « Le sol, point par point ». */
+  testMedias?: TestMedia[];
 }
 
 const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string; variant?: 'observe' | 'analyze' }> = ({
