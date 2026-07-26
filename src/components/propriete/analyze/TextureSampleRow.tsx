@@ -24,7 +24,10 @@ export const TextureSampleRow: React.FC<{
   sample: SoilSample;
   index: number;
   onPatch: (patch: Partial<SoilSample>) => void;
-}> = ({ sample, index, onPatch }) => {
+  /** Pastille « preuves de terrain » (photos / vidéos du prélèvement pour ce test). */
+  mediaSlot?: React.ReactNode;
+}> = ({ sample, index, onPatch, mediaSlot }) => {
+
   const [hovered, setHovered] = useState<TextureResultId | null>(null);
   const test = (sample.texture_test ?? null) as TextureTestId | null;
   const result = (sample.texture_result ?? null) as TextureResultId | null;
