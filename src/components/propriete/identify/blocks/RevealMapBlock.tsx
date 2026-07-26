@@ -15,22 +15,17 @@ import { KINGDOM_LABELS_FR_SHORT, normalizeKingdom } from '@/lib/kingdomLabels';
 const norm = (s: string | null | undefined): string =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
-const KINGDOM_COLORS: Record<string, string> = {
-  Plantae: '#2f5d3a',
-  Animalia: '#c26a3a',
-  Fungi: '#8a4b8f',
-  Other: '#8a8a8a',
+const KINGDOM_COLORS: Record<KingdomKey, string> = {
+  plantae: '#2f5d3a',
+  animalia: '#c26a3a',
+  fungi: '#8a4b8f',
+  others: '#8a8a8a',
 };
 
-const kingdomFrom = (k?: string | null): string => {
-  const s = (k || '').toLowerCase();
-  if (s.includes('plant')) return 'Plantae';
-  if (s.includes('fungi')) return 'Fungi';
-  if (s.includes('animal') || s.includes('aves') || s.includes('insect') || s.includes('mamm')) return 'Animalia';
-  return 'Other';
-};
+const kingdomFrom = (k?: string | null): KingdomKey => normalizeKingdom(k);
 
-type KingdomFilter = 'all' | 'Plantae' | 'Animalia' | 'Fungi';
+type KingdomFilter = 'all' | KingdomKey;
+
 
 export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> = ({
   proprieteId,
