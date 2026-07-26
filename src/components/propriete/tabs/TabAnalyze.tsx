@@ -40,7 +40,7 @@ export const TabAnalyze: React.FC<{
     (state.samples.some((s) => (s.location ?? '').trim().length > 0) ? 1 : 0) +
     (state.samples.some((s) => s.structure_test && s.structure_result) ? 1 : 0) +
     (state.samples.some((s) => s.texture_test && s.texture_result) || state.boudin_shape ? 1 : 0) +
-    (state.ph != null ? 1 : 0) +
+    (state.samples.some((s) => typeof s.ph_value === 'number') || state.ph != null ? 1 : 0) +
     (state.life_signs.length > 0 ? 1 : 0) +
     ((state.synthesis ?? '').trim().length > 0 ? 1 : 0);
 
