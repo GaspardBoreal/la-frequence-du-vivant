@@ -8,6 +8,7 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { KINGDOM_LABELS_FR_SHORT, normalizeKingdom } from '@/lib/kingdomLabels';
 
 const norm = (s: string | null | undefined): string =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
