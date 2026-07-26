@@ -10,6 +10,7 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_LABELS_FR_SHORT, KINGDOM_ORDER, normalizeKingdom, type KingdomKey } from '@/lib/kingdomLabels';
 
 const norm = (s: string | null | undefined): string =>
@@ -32,6 +33,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   index = 0,
 }) => {
   const { waypoints } = usePropertySpeciesPool(proprieteId);
+  // Référence de cohérence : même compteur que le bandeau « Empreinte biodiversité »
+  const speciesRef = usePropertySpeciesCount(proprieteId);
 
   const { data: propriete } = useQuery({
     queryKey: ['propriete-coords', proprieteId],
@@ -50,6 +53,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [kingdom, setKingdom] = useState<KingdomFilter>('all');
   const [onlyKb, setOnlyKb] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'marcheur' | 'inaturalist'>('all');
 
   const kbKeys = useMemo(() => {
     const s = new Set<string>();
@@ -65,6 +69,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     return waypoints.filter((w) => {
       const k = kingdomFrom(w.kingdom);
       if (kingdom !== 'all' && k !== kingdom) return false;
+      if (sourceFilter !== 'all' && w.source !== sourceFilter) return false;
       if (onlyKb) {
         const n = norm(w.scientificName);
         const g = n.split(/\s+/)[0];
@@ -72,7 +77,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       }
       return true;
     });
-  }, [waypoints, kingdom, onlyKb, kbKeys]);
+  }, [waypoints, kingdom, onlyKb, kbKeys, sourceFilter]);
+
 
   const bounds = useMemo<Array<[number, number]>>(() => {
     const b: Array<[number, number]> = filtered.map((w) => [w.lat, w.lng]);
@@ -89,13 +95,17 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       ? [filtered[0].lat, filtered[0].lng]
       : [45.0, 0.5];
 
-  const iconFor = (color: string) =>
+  const iconFor = (color: string, source: 'marcheur' | 'inaturalist') =>
     L.divIcon({
       className: 'reveal-wp-marker',
       iconSize: [18, 18],
       iconAnchor: [9, 9],
-      html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 2px 6px rgba(0,0,0,.3);"></div>`,
+      html:
+        source === 'marcheur'
+          ? `<div style="width:16px;height:16px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 2px 6px rgba(0,0,0,.3);"></div>`
+          : `<div style="width:16px;height:16px;border-radius:50%;background:${color}33;border:2px dashed ${color};box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.25);"></div>`,
     });
+
 
   /**
    * Comptage **espèces distinctes** — même méthode que le bandeau
@@ -138,8 +148,16 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     [filtered],
   );
 
+  // Garde-fou : espèces localisables sur la carte vs total du bandeau du haut
+  const localizedSpecies = useMemo(
+    () => speciesBucket(waypoints).size,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [waypoints],
+  );
+  const refTotal = speciesRef.total;
 
   const hasData = waypoints.length > 0;
+
 
   // Esc closes fullscreen + lock body scroll
   useEffect(() => {
@@ -183,13 +201,39 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       >
         🌿 Bio-indicatrices seulement
       </button>
-      <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
+
+      <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
+      {([
+        ['all', 'Toutes sources'],
+        ['marcheur', '📷 Marcheurs'],
+        ['inaturalist', '🌐 iNaturalist'],
+      ] as Array<['all' | 'marcheur' | 'inaturalist', string]>).map(([v, label]) => (
+        <button
+          key={v}
+          onClick={() => setSourceFilter(v)}
+          className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+            sourceFilter === v
+              ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest))]'
+              : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+
+      <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))] text-right">
         {visibleSpecies} espèces
         <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
+        {refTotal > 0 && (
+          <span className="block font-normal opacity-55 text-[10px]">
+            {localizedSpecies} / {refTotal} espèces localisées
+          </span>
+        )}
       </span>
 
     </div>
   );
+
 
   const mapNode = (heightPx: number | string) => (
     <div className="relative rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: heightPx }}>
@@ -204,7 +248,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         {filtered.map((w) => {
           const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
           return (
-            <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color)}>
+            <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color, w.source)}>
               <Popup>
                 <div style={{ minWidth: 160 }}>
                   {w.photoUrl && (
@@ -220,8 +264,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                   <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
                     {w.scientificName}
                   </div>
+                  <div style={{ fontSize: 10, marginTop: 4, color: '#666' }}>
+                    {w.source === 'marcheur'
+                      ? '📷 Observation marcheur'
+                      : `🌐 Observation citoyenne${w.observerName ? ` · ${w.observerName}` : ''}`}
+                  </div>
                   {w.observationDate && (
-                    <div style={{ fontSize: 10, marginTop: 4, color: '#888' }}>
+                    <div style={{ fontSize: 10, marginTop: 2, color: '#888' }}>
                       <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
                       {new Date(w.observationDate).toLocaleDateString('fr-FR')}
                     </div>
@@ -229,6 +278,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                 </div>
               </Popup>
             </Marker>
+
           );
         })}
       </RichMap>

@@ -23,7 +23,24 @@ interface RpcSpecies {
 const toMediumInat = (url: string): string =>
   url ? url.replace('/square.', '/medium.').replace('/square.jpg', '/medium.jpg') : url;
 
+export interface PropertyWaypoint {
+  id: string;
+  lat: number;
+  lng: number;
+  scientificName: string;
+  commonName: string | null;
+  kingdom: string | null;
+  photoUrl: string | null;
+  observationDate: string | null;
+  marcheurId: string | null;
+  marcheId: string | null;
+  /** Provenance de la position : terrain marcheur ou base iNaturalist/eBird */
+  source: 'marcheur' | 'inaturalist';
+  observerName: string | null;
+}
+
 const normName = (s: string | null | undefined): string =>
+
   (s || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -231,43 +248,80 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     return byName;
   }, [allRows]);
 
-  // 6. Waypoints géolocalisés (observations marcheurs avec lat/lng)
+  // 6. Waypoints géolocalisés — obs. marcheurs (lat/lng) **et** attributions
+  //    iNaturalist / eBird des snapshots (exactLatitude / exactLongitude).
+  //    Sans ce second bloc, la carte sous-comptait les espèces par rapport au
+  //    bandeau « Empreinte biodiversité » (qui, lui, ne filtre pas sur le GPS).
   const waypoints = useMemo(() => {
-    const out: Array<{
-      id: string;
-      lat: number;
-      lng: number;
-      scientificName: string;
-      commonName: string | null;
-      kingdom: string | null;
-      photoUrl: string | null;
-      observationDate: string | null;
-      marcheurId: string | null;
-      marcheId: string | null;
-    }> = [];
+    const out: PropertyWaypoint[] = [];
+    const seen = new Set<string>();
     let n = 0;
+
+    const dedupKey = (sci: string, lat: number, lng: number) =>
+      `${normName(sci)}|${lat.toFixed(5)}|${lng.toFixed(5)}`;
+
+    // a) Observations marcheurs (prioritaires)
     for (const sp of allRows) {
+      const sci = sp.scientific_name || sp.key || '';
       const attrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
       for (const a of attrs) {
         const lat = Number(a?.latitude);
         const lng = Number(a?.longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        const k = dedupKey(sci, lat, lng);
+        if (seen.has(k)) continue;
+        seen.add(k);
         out.push({
           id: `wp-${n++}`,
           lat,
           lng,
-          scientificName: sp.scientific_name || sp.key || '',
+          scientificName: sci,
           commonName: sp.common_name,
           kingdom: sp.kingdom,
           photoUrl: a?.photo_url || null,
           observationDate: a?.observation_date || null,
           marcheurId: a?.marcheur_id || null,
           marcheId: a?.marche_id || null,
+          source: 'marcheur',
+          observerName: null,
         });
       }
     }
+
+    // b) Attributions des snapshots (tableau de tableaux côté RPC)
+    for (const sp of allRows) {
+      const sci = sp.scientific_name || sp.key || '';
+      const groups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+      for (const g of groups) {
+        const list: any[] = Array.isArray(g) ? g : [g];
+        for (const a of list) {
+          const lat = Number(a?.exactLatitude);
+          const lng = Number(a?.exactLongitude);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+          const k = dedupKey(sci, lat, lng);
+          if (seen.has(k)) continue;
+          seen.add(k);
+          out.push({
+            id: `wp-${n++}`,
+            lat,
+            lng,
+            scientificName: sci,
+            commonName: sp.common_name,
+            kingdom: sp.kingdom,
+            photoUrl: a?.photoUrl || a?.photo_url || null,
+            observationDate: a?.date || a?.observationDate || null,
+            marcheurId: null,
+            marcheId: null,
+            source: 'inaturalist',
+            observerName: a?.observerName || null,
+          });
+        }
+      }
+    }
+
     return out;
   }, [allRows]);
+
 
   // 7. Contributeurs (agrégation par marcheur_id)
   const contributorSummaries = useMemo(() => {
