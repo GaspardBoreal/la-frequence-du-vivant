@@ -66,7 +66,32 @@ export const PLANT_INDICATORS: PlantIndicator[] = [
   { id: 'erable-champetre', nom: 'Érable champêtre', latin: 'Acer campestre', famille: 'arbre', eau: 0, texture: 1, nutri: 1, ph: 2 },
   { id: 'pin-sylvestre', nom: 'Pin sylvestre', latin: 'Pinus sylvestris', famille: 'arbre', eau: -1, texture: -1, nutri: -1, ph: -1 },
   { id: 'hetre', nom: 'Hêtre', latin: 'Fagus sylvatica', famille: 'arbre', eau: 1, texture: 0, nutri: 1, ph: 0 },
+
+  // === Cortège complémentaire de la méthode D.S. (pages 9-10) ===
+  // Herbacées
+  { id: 'epilobe-hirsute', nom: 'Épilobe hérissé', latin: 'Epilobium hirsutum', famille: 'herbacee', eau: 3, texture: 1, nutri: 3, ph: 1 },
+  { id: 'gaillet-gratteron', nom: 'Gaillet gratteron', latin: 'Galium aparine', famille: 'herbacee', eau: 1, texture: 1, nutri: 3, ph: 1 },
+  { id: 'lamier-blanc', nom: 'Lamier blanc', latin: 'Lamium album', famille: 'herbacee', eau: 1, texture: 1, nutri: 3, ph: 1 },
+  { id: 'grande-bardane', nom: 'Grande bardane', latin: 'Arctium lappa', famille: 'herbacee', eau: 0, texture: 1, nutri: 3, ph: 1 },
+  { id: 'thym-serpolet', nom: 'Thym serpolet', latin: 'Thymus serpyllum', famille: 'herbacee', eau: -3, texture: -2, nutri: -2, ph: 1 },
+  { id: 'lotier-corniculé', nom: 'Lotier corniculé', latin: 'Lotus corniculatus', famille: 'herbacee', eau: -1, texture: 0, nutri: -1, ph: 1 },
+  { id: 'carotte-sauvage', nom: 'Carotte sauvage', latin: 'Daucus carota', famille: 'herbacee', eau: -1, texture: 0, nutri: 0, ph: 2 },
+  { id: 'senecon-jacobee', nom: 'Séneçon de Jacob', latin: 'Jacobaea vulgaris', famille: 'herbacee', eau: -1, texture: -1, nutri: -1, ph: 0 },
+  // Arbustes
+  { id: 'troene', nom: 'Troène commun', latin: 'Ligustrum vulgare', famille: 'arbuste', eau: 0, texture: 1, nutri: 1, ph: 3 },
+  { id: 'cytise', nom: 'Cytise faux-ébénier', latin: 'Laburnum anagyroides', famille: 'arbuste', eau: -1, texture: 0, nutri: 0, ph: 2 },
+  { id: 'cornouiller-male', nom: 'Cornouiller mâle', latin: 'Cornus mas', famille: 'arbuste', eau: 0, texture: 1, nutri: 1, ph: 3 },
+  { id: 'camerisier', nom: 'Camérisier à balais', latin: 'Lonicera xylosteum', famille: 'arbuste', eau: 0, texture: 1, nutri: 1, ph: 2 },
+  { id: 'eglantier', nom: 'Églantier', latin: 'Rosa canina', famille: 'arbuste', eau: 0, texture: 1, nutri: 1, ph: 1 },
+  { id: 'poirier-cordata', nom: 'Poirier à feuilles en cœur', latin: 'Pyrus cordata', famille: 'arbuste', eau: -1, texture: 0, nutri: -1, ph: -1 },
+  // Lianes
+  { id: 'liseron-des-haies', nom: 'Liseron des haies', latin: 'Calystegia sepium', famille: 'liane', eau: 2, texture: 1, nutri: 3, ph: 1 },
+  { id: 'chevrefeuille', nom: 'Chèvrefeuille des bois', latin: 'Lonicera periclymenum', famille: 'liane', eau: 1, texture: -1, nutri: 0, ph: -2 },
+  // Arbres
+  { id: 'sorbier', nom: 'Sorbier des oiseleurs', latin: 'Sorbus aucuparia', famille: 'arbre', eau: 0, texture: -1, nutri: -1, ph: -2 },
+  { id: 'tremble', nom: 'Peuplier tremble', latin: 'Populus tremula', famille: 'arbre', eau: 1, texture: 0, nutri: 0, ph: 0 },
 ];
+
 
 export const FAMILY_META: Record<PlantFamily, { label: string; hint: string }> = {
   herbacee: { label: 'Herbacées', hint: 'Cortège du sol vif' },
