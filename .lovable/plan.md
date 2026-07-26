@@ -1,49 +1,43 @@
-## Constat (vérifié en base)
+## Objectif
 
-Pour la propriété **Jardin Monde DEVIAT** :
+Donner à l'étape **« J'analyse le sol »** le même rituel éditorial que « J'observe » : une **synthèse verrouillée** (carnet scellé) avec *Observations verrouillées · prête pour le rapport client · Imprimer · Rouvrir en édition*, et une modale d'impression enrichie proposant **J'analyse (seul)** ou **Portrait + J'observe + J'analyse**.
 
-| Source | Total | Détail |
+## 1. Nouveau « carnet scellé » de l'étape 2
+
+Nouveau composant `AnalyzeSummary.tsx` (miroir de `ObserveSummary`, même langage graphique : crème, filets or, sceau circulaire, serif italique) :
+
+- **Cachet daté** « Validé le JJ/MM/AAAA · Étape 2 » en haut à droite (masqué à l'impression, remplacé par un cartouche centré).
+- **Signature du sol** : glyphe SVG unique généré depuis les données (dominantes structure / texture / pH / vitalité) — équivalent de `SiteSignature` pour le sol, en 4 arcs concentriques + points par prélèvement.
+- **Lecture dominante** en grand : une phrase agronomique de synthèse (ex. « Sol limoneux à structure grumeleuse, légèrement acide, vitalité soutenue »), composée depuis les agrégats déjà calculés dans `structureTests.ts`, `textureTests.ts`, `phTests.ts`, `lifeTests.ts`.
+- **6 sections numérotées** (01 état du terrain → 06 vie du sol) avec puces de choix, barre de répartition et un crayon au survol qui rouvre l'édition et scrolle sur le bloc concerné (même mécanique `onEditBlock` que l'étape 1).
+- **Tableau des prélèvements A → E** : une ligne par échantillon (lieu, test/résultat structure, test/résultat texture, pH, vers + indices de vie) — c'est la pièce maîtresse « pro » pour le rapport client. Signalement ambre des prélèvements incomplets ou contrastés.
+- **Note de synthèse** libre reprise telle quelle.
+- **Pied de page actions** : `Observations verrouillées · prête pour le rapport client` + boutons **Imprimer** / **Rouvrir en édition** / **Étape suivante · J'identifie**.
+
+`TabAnalyze` adopte le pattern de `TabObserve` : état `mode: 'summary' | 'edit'`, bascule automatique en `summary` dès que `completedAt` existe, bandeau « Mode édition — les modifications seront réenregistrées » avec retour à la synthèse. Aucune modification du modèle de données (`usePropertySoil` suffit : `completed_at` existe déjà).
+
+## 2. Modale d'impression — 3 modèles
+
+`PrintChoiceDialog` devient générique et pilotée par une prop `options` (l'appelant déclare les modèles disponibles) :
+
+| Modèle | Contenu | Disponible si |
 |---|---|---|
-| `get_propriete_biodiversity` (espace Propriété) | **226** | Animalia 99 · Plantae 101 · Fungi 3 · Unknown 23 |
-| `get_exploration_species_count` (Mon espace › Taxons observés) | **226** | animalia 99 · plantae 101 · fungi 3 · others 23 |
-| `get_exploration_species_pool` (liste affichée) | **226** | — |
+| **Carnet J'observe** | Sceau + 8 blocs + Âme du Lieu (≈2 p.) | étape 1 validée |
+| **Carnet J'analyse** *(nouveau)* | Sceau étape 2 + signature du sol + 6 sections + tableau des prélèvements (≈2–3 p.) | étape 2 renseignée |
+| **Cahier complet** | Portrait photo → Propriété → J'observe → J'analyse (≈n p.) | ≥1 photo Portrait |
 
-Les chiffres sont donc **déjà identiques** : même déduplication (`lower(unaccent(...))` + alias de curation), même filtrage par rayon Haversine, même union snapshots ∪ observations marcheurs.
+- Nouvelle miniature aquarelle `MiniAnalyze` (bêchée en coupe + 3 pastilles de prélèvement + courbe pH), dans le même style SVG que les deux existantes.
+- Le libellé du « Cahier complet » et son estimation de pages s'adaptent aux étapes réellement validées (« Portrait + J'observe + J'analyse »).
+- La modale est appelée depuis les deux onglets, avec présélection du modèle correspondant à l'onglet courant.
 
-Il reste deux vrais problèmes :
+## 3. Modèles d'édition (mise en page A4)
 
-1. **Libellés en anglais** dans l'interface : le bandeau « En appui — biodiversité connue » affiche les clés brutes du règne (`3 Fungi`, `101 Plantae`, `23 Unknown`, `99 Animalia`), alors que Mon espace dit « Faune / Flore / Champignons ». Idem pour les filtres de la carte « Cortège révélé » (`Plantae`, `Animalia`, `Fungi`, `Other`).
-2. **Aucune garantie structurelle** que les deux compteurs restent alignés : ce sont deux fonctions SQL distinctes, et si la propriété est reliée à des événements de plusieurs explorations, l'agrégation propriété et la vue marcheur pourraient divergier à l'avenir.
-
-## Ce qu'on met en place
-
-### 1. Vocabulaire français unique des règnes
-Créer un helper partagé (`src/lib/kingdomLabels.ts`) :
-- normalisation d'une clé de règne quelconque (`Plantae`, `plants`, `Aves`, `Insecta`, `Unknown`, `Other`, `null`) vers 4 catégories, exactement comme `SpeciesExplorer` ;
-- libellés FR : **Flore**, **Faune**, **Champignons**, **Autres / indéterminés** (singulier/pluriel gérés) ;
-- ordre d'affichage stable : Flore → Faune → Champignons → Autres.
-
-### 2. Compteur de propriété branché sur la fonction de Mon espace
-Nouveau hook `usePropertySpeciesCount(proprieteId)` :
-- récupère les `exploration_id` des événements liés (même requête que `usePropertySpeciesPool`) ;
-- appelle **`get_exploration_species_count`** pour chacune (la fonction utilisée par Mon espace › Biodiversité) ;
-- fusionne côté client les listes `species` par nom scientifique normalisé (évite tout double comptage si plusieurs explorations partagent des espèces) ;
-- expose `total`, `byKingdom` (4 catégories FR) et `explorationIds`.
-
-L'espace Propriété consomme ce hook pour tous les chiffres d'espèces / règnes : « Espèces observées », « Règnes présents », bandeau « En appui », synthèse. `usePropertyBiodiversity` reste la source des données non-espèces (événements, dates de dernière observation, top espèces).
-
-### 3. Écrans corrigés
-- `TabAnalyze.tsx` — bandeau « En appui — biodiversité connue » : puces en français, ordre stable, catégorie « Autres / indéterminés », total affiché à côté du titre.
-- `BiodiversityEvidenceBlock.tsx` — cartes « Espèces observées » / « Règnes présents » alimentées par le nouveau hook, puces de règnes en français avec leurs icônes.
-- `TabSynthesize.tsx` — lignes « Espèces observées » et « Règnes présents » alignées sur le même compteur.
-- `RevealMapBlock.tsx` — chips de filtre en français (Tout · Flore · Faune · Champignons), couleurs et logique de filtrage inchangées.
-
-### 4. Vérification
-- Comparaison chiffrée pour DEVIAT : le total affiché dans la Propriété doit être **226**, identique à Mon espace (99 Faune · 101 Flore · 3 Champignons · 23 Autres).
-- Contrôle visuel via capture de `/propriete/jardin-monde-deviat` (onglets J'analyse et Portrait) pour confirmer l'absence de tout libellé anglais.
+- **`AnalyzePrintLayout`** : `AnalyzeSummary` en mode `printOnly` découpé en deux sections A4 (`printSection: 'first' | 'second'`) — page 1 : cartouche + signature du sol + terrain / prélèvements / structure ; page 2 : texture / pH / vie du sol + tableau des prélèvements + note de synthèse.
+- **`CombinedPrintLayout`** gagne un `analyzeSlot` inséré après le slot J'observe, précédé d'une **page-intercalaire éditoriale** (`combined-print-divider`, déjà stylée) titrée *« J'analyse le sol »* avec sa citation — et un intercalaire équivalent pour J'observe, pour que le cahier complet se lise comme un vrai ouvrage relié (Couverture → Sommaire visuel → Propriété → planches photo → intercalaire I → J'observe → intercalaire II → J'analyse → respiration → colophon). La pagination totale de `PortraitPrintLayout` est ajustée via les props `insertedPageCount` existantes.
 
 ## Détails techniques
 
-- Aucune migration SQL : les deux RPC existantes suffisent, on cesse simplement d'utiliser `kingdoms` brut de `get_propriete_biodiversity` pour l'affichage.
-- Le hook réutilise le cache react-query par exploration (`['exploration-species-count', id]`), donc aucun appel réseau supplémentaire si la vue marcheur a déjà chargé la donnée.
-- Aucun changement de logique métier de comptage : dédup, rayon et alias restent gérés côté SQL.
+- Fichiers créés : `src/components/propriete/analyze/AnalyzeSummary.tsx`, `SoilSignature.tsx`, `soilReading.ts` (phrase de synthèse + agrégats partagés), `src/components/propriete/print/AnalyzePrintLayout.tsx`.
+- Fichiers modifiés : `TabAnalyze.tsx` (mode summary/edit + impression + portail), `PrintChoiceDialog.tsx` (options dynamiques + `MiniAnalyze`), `CombinedPrintLayout.tsx` (slot + intercalaires), `src/index.css` (`body.analyze-printing`, `.analyze-print-root`, `.combined-print-analyze` — calqués sur les règles `observe-printing` existantes lignes 618-633 / 1063-1088).
+- Réutilisation de `usePrintCombined` (portail body + attente des images + `window.print`) sans changement.
+- Aucune migration, aucune modification des RPC ; les agrégats de synthèse réutilisent la logique déjà présente dans les `*ResultsSummary`.
