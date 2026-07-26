@@ -69,6 +69,26 @@ export const TabAnalyze: React.FC<{
   const speciesCount = usePropertySpeciesCount(proprieteId);
   const { data: testMedias = [] } = usePropertyTestMedias(proprieteId);
   const mediaIndex = useTestMediaIndex(testMedias);
+
+  const mediaBadge = (
+    s: any,
+    block: 'structure' | 'texture' | 'ph' | 'life',
+    testId: string
+  ) =>
+    proprieteId ? (
+      <TestMediaBadge
+        target={{
+          proprieteId,
+          sampleId: s.id,
+          sampleLabel: s.label,
+          sampleLocation: s.location ?? null,
+          block,
+          testId: testId as any,
+        }}
+        medias={mediaIndex.get(`${testId}::${s.id}`) ?? []}
+      />
+    ) : null;
+
   const [submitting, setSubmitting] = React.useState(false);
   const [mode, setMode] = React.useState<'summary' | 'edit'>(
     completedAt ? 'summary' : 'edit'
@@ -307,6 +327,7 @@ export const TabAnalyze: React.FC<{
             onChange={(v) => setField('structure', v)}
             samples={state.samples}
             onUpdateSample={updateSample}
+            renderSampleMedia={(s) => mediaBadge(s, 'structure', (s.structure_test as any) ?? 'beche')}
             index={2}
           />
         </div>
@@ -349,6 +370,7 @@ export const TabAnalyze: React.FC<{
           onChange={(v) => setField('ph', v)}
           samples={state.samples}
           onUpdateSample={updateSample}
+          renderSampleMedia={(s) => mediaBadge(s, 'ph', (s.ph_test as any) ?? 'bandelette')}
           index={4}
         />
       </div>
@@ -361,6 +383,7 @@ export const TabAnalyze: React.FC<{
           onSetAll={(next) => setLocal((s) => ({ ...s, life_signs: next }))}
           samples={state.samples}
           onUpdateSample={updateSample}
+          renderSampleMedia={(s) => mediaBadge(s, 'life', (s.life_test as any) ?? 'beche_vivante')}
           index={5}
         />
       </div>
