@@ -75,8 +75,11 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   publicUrl,
   soil,
   soilCompletedAt,
+  testMedias,
 }) => {
   const withAnalyze = !!soil;
+  const plateCount = withAnalyze ? testMediaPlateCount(testMedias) : 0;
+
 
   const observeSlot = (
     <>
