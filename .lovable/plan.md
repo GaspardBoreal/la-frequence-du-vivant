@@ -1,61 +1,49 @@
 ## Objectif
 
-Coupler le Widget 3 (Structure du sol) aux prélèvements posés sur la carte du Widget 2 : pour chaque point A→E, l'utilisateur choisit **le test réalisé** (A — Test de la bêche / B — Test de stabilité) puis **le résultat observé** (Compacte / Grumeleuse / Très meuble (particulaire)). Le bloc devient un vrai protocole guidé, avec vidéos et synthèse.
+Aligner le Widget 4 (Texture du sol) sur la logique déjà en place au Widget 3 (Structure) : un test + un résultat **par prélèvement** (A→E positionnés sur la carte du Widget 2), avec protocole illustré et synthèse.
 
-## Nouvelle anatomie du Widget 3
+## Contenu repris de la page 7 du document
 
-```text
-┌─ 3 · Étape 2 · Structure du sol ─────────────────────────────┐
-│  Hero morphé sur la DOMINANTE (auto-calculée)                │
-│                                                              │
-│  ① Ce que vous devez faire  (3 étapes numérotées, 1 phrase)   │
-│                                                              │
-│  ② Les deux tests — 2 cartes côte à côte                     │
-│     ┌ A · Test de la bêche ┐  ┌ B · Test de stabilité ┐      │
-│     │ schéma SVG animé     │  │ schéma SVG animé      │      │
-│     │ 3 puces protocole    │  │ 3 puces protocole     │      │
-│     │ ▶ 3 slots vidéo      │  │ ▶ 3 slots vidéo       │      │
-│                                                              │
-│  ③ Résultats par prélèvement (une ligne par point A→E)       │
-│     [A] sous le tilleul   Test: (A)(B)   Résultat: 3 pictos  │
-│     [B] allée nord        Test: (A)(B)   Résultat: 3 pictos  │
-│                                                              │
-│  ④ Synthèse : barre de répartition + dominante + couverture  │
-└──────────────────────────────────────────────────────────────┘
-```
+Protocole du test du boudin :
+1. Prélevez de la terre humidifiée
+2. Façonnez un boudin (1 cm de diamètre)
+3. Essayez de le courber doucement
+4. Observez le résultat
 
-### ① Consigne
-Encart doré : « Sur chacun de vos prélèvements, réalisez un des deux tests ci-dessous, puis notez le résultat observé. » + 3 pastilles : *Prélever → Tester → Noter*.
+Les 3 résultats (libellés exacts du carnet) :
+- **Sable à sable limoneux** — modelage difficile ; boudin très grossier, ne tient pas ; ne colle pas, granuleux, ne salit pas les mains une fois sec
+- **Limon sableux à limon moyen** — modelage possible ; petit boudin ou boudins colmatés ; peu collant, peu granuleux, salit les mains
+- **Limon argileux à argiles** — modelage facile à très facile ; boudin bien dessiné, peut être mis en cercle ; collant, doux, ne salit pas ou peu les mains
 
-### ② Les deux tests
-Deux cartes « fiche protocole » à la même grammaire visuelle que le reste du parcours (cream / forest / ruban doré) :
-- **A · Test de la bêche** — prélever un bloc de terre à la bêche (20 cm), le laisser tomber d'environ 1 m ou l'ouvrir à la main, lire comment la motte se rompt. Schéma SVG dédié (bêche + bloc qui se fragmente).
-- **B · Test de stabilité (bocal / slake test)** — immerger un agrégat sec dans un bocal d'eau claire, observer 10 min : bulles, tenue ou effondrement. Schéma SVG dédié (bocal + agrégat + bulles animées).
-- Chaque carte porte **3 emplacements vidéo** : le tableau de liens est dans le code, vide au départ ; les boutons ▶ ne s'affichent que si une URL est renseignée (je les brancherai dès que tu me donnes les liens). Ouverture en lightbox si YouTube/Vimeo, sinon nouvel onglet.
+Indice complémentaire (teneur en argile), proposé uniquement si un boudin a pu être formé :
+- boudin **droit** ≈ 10 % d'argile
+- boudin **en lune** ≈ 10–30 %
+- boudin **en cercle** > 30 %
 
-### ③ Résultats par prélèvement
-Une ligne par prélèvement existant (les mêmes A→E que le Widget 2, avec leur libellé d'emplacement, en lecture seule) :
-- segmenté **Test A / Test B**,
-- trois pictos de résultat réutilisant les icônes actuelles + le tooltip riche déjà en place (Compacte / Grumeleuse / Très meuble (particulaire)),
-- état visuel « à compléter » (pointillés) → « complété » (anneau vert + coche),
-- ligne survolée = point correspondant mis en avant (léger halo) pour garder le lien mental avec la carte.
-- Si aucun prélèvement n'est encore posé : message d'appel vers le Widget 2 avec bouton de remontée.
+Second test : **Test de sédimentation** (optionnel, renforce le boudin) — fiche présentée avec protocole en attente + slots vidéo, sélectionnable comme méthode mais sans grille de résultats propre pour l'instant (le résultat saisi reste la classe de texture).
 
-### ④ Synthèse
-- Barre de répartition proportionnelle (3 segments colorés) + compteur « n/N prélèvements renseignés ».
-- **Dominante auto-calculée** = résultat majoritaire (égalité → mention « sol contrasté », résolution déterministe compacte < grumeleuse < très meuble pour l'affichage) ; c'est elle qui pilote le hero et qui remplace le choix global manuel.
-- Phrase de lecture agronomique adaptée à la dominante et à l'hétérogénéité constatée.
-- Répartition des tests utilisés (x bêche / y stabilité).
+## Ce qui sera construit
 
-### Vocabulaire
-Le 3ᵉ libellé devient « Très meuble (particulaire) » partout dans ce parcours (pictos, tooltip, hero, synthèse).
+1. `src/components/propriete/analyze/textureTests.ts` — modèle de données : `TextureTestId` (`boudin` | `sedimentation`), `TextureResultId` (`sable` | `limon` | `argile`), libellés longs/courts, protocoles pas-à-pas, slots `videos: []` (1 à 3 par test, à remplir plus tard), lecture agronomique par dominante, helper `dominantTexture()`.
 
-## Détails techniques
+2. `TexturePictos.tsx` — 3 pictos SVG partageant la même grammaire visuelle (un boudin de terre entre deux doigts) : boudin qui s'émiette / boudin cassé en tronçons / boudin plié en cercle. Plus 2 schémas animés de test (mains qui roulent le boudin ; éprouvette de sédimentation à 3 strates sable/limon/argile).
 
-- **Aucune migration.** Les prélèvements sont déjà stockés en JSONB dans `propriete_soil_diagnostics.samples` ; j'y ajoute deux champs par échantillon : `structure_test` (`beche` | `stabilite`) et `structure_result` (`compacte` | `grumeleuse` | `particulaire`). L'auto-save debounce existant les persiste tel quel.
-- `SoilSample` (dans `usePropertySoil.ts`) étendu avec ces deux champs optionnels ; `updateSample` est déjà générique, rien à changer côté persistance.
-- Le champ global `structure` reste écrit en base, mais **dérivé** de la dominante (compat ascendante avec la synthèse et les exports existants) — plus de sélection manuelle.
-- `StructureBlock.tsx` réécrit en composeur ; nouveaux fichiers : `StructureProtocolCard.tsx` (fiche test + slots vidéo), `StructureTestPictos.tsx` (2 schémas SVG bêche / bocal), `StructureSampleRow.tsx` (ligne prélèvement), `StructureResultsSummary.tsx` (synthèse), `structureTests.ts` (données protocole + tableau de liens vidéo à remplir).
-- Réutilisation de `StructureChoiceTooltip`, `SoilPictos`, `StructureCrossSection` (hero piloté par la dominante), `AnalyzeCard`.
-- Le compteur d'avancement de `TabAnalyze.tsx` (bloc 3) compte désormais « renseigné » quand au moins un prélèvement a test + résultat.
-- Responsive : cartes protocole en 2 colonnes desktop / empilées mobile ; lignes de résultats en grille qui passe en 2 niveaux sur mobile ; tooltips conservent l'alignement anti-débordement déjà corrigé.
+3. `TextureCrossSection.tsx` — hero animé qui morphe selon la dominante (grains libres → mélange feuilleté → masse plastique), avec verbe clé doré (« Fuit · granuleux », « Se casse · équilibré », « Se plie · retient »), sur le modèle de `StructureCrossSection`.
+
+4. `TextureProtocolCard.tsx` + `TextureChoiceTooltip.tsx` — fiches des 2 tests (étapes numérotées, schéma, boutons ▶ masqués tant qu'aucune URL) et tooltip riche au survol des 3 résultats (puces sensorielles : modelage / tenue du boudin / toucher), avec le même système `align` + `clamp` que le Widget 3 pour éviter tout débordement.
+
+5. `TextureSampleRow.tsx` — une ligne par prélèvement : pastille A/B/C…, rappel du lieu, choix du test (Boudin / Sédimentation), choix du résultat (3 pictos), et — si résultat ≠ sable — mini-sélecteur de forme du boudin (droit / lune / cercle) affichant l'estimation d'argile.
+
+6. `TextureResultsSummary.tsx` — barres de répartition des 3 classes, dominante auto-calculée, mention « profil contrasté » en cas d'égalité, compteur par type de test, et lecture agronomique de la dominante.
+
+7. `blocks/TextureBlock.tsx` — réécriture complète : bandeau consigne doré (Humidifier → Rouler → Courber → Noter), grille des 2 fiches-tests, liste des résultats par prélèvement (état vide avec lien d'ancre vers le bloc Prélèvements), puis synthèse. Le hero est piloté par la dominante.
+
+## Données
+
+Aucune migration : les prélèvements sont stockés en JSONB. On étend `SoilSample` dans `src/hooks/propriete/usePropertySoil.ts` avec `texture_test`, `texture_result` et `boudin_form` (`droit` | `lune` | `cercle`). Les champs globaux existants `texture` et `boudin_shape` sont maintenus en synchronisation automatique depuis la dominante (comme `structure` au Widget 3), donc la synthèse, l'export PDF et l'étape 3 « J'identifie » continuent de fonctionner sans changement.
+
+`TabAnalyze.tsx` : le `TextureBlock` reçoit `samples` + `updateSample` ; le compteur « blocs renseignés » comptera un prélèvement texture complété.
+
+## Ce qui ne change pas
+
+Widgets 1, 2, 3, 5 (pH) et 6 (signes de vie) restent identiques. Pleine largeur conservée pour le bloc 4.
