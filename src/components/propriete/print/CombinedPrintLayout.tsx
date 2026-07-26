@@ -112,7 +112,9 @@ export const CombinedPrintLayout: React.FC<Props> = ({
             title="J’analyse le sol"
             sub="« La terre ne se raconte qu’à ceux qui la prennent en main. »"
             foot={`${propertyName ?? 'Propriété'} · Fréquence du Vivant`}
+            variant="analyze"
           />
+
           <section className="portrait-print-page combined-print-analyze">
             <AnalyzeSummary
               state={soil}
