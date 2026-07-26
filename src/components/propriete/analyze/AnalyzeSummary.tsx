@@ -24,6 +24,7 @@ interface Props {
   state: PropertySoilState;
   completedAt: string | null;
   propertyName?: string;
+  parcelles?: ProprieteParcelle[];
   onEditBlock: (id: AnalyzeBlockId) => void;
   onReopenAll: () => void;
   onNextStep?: () => void;
