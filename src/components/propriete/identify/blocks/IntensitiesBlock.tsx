@@ -38,7 +38,7 @@ export const IntensitiesBlock: React.FC<{
 
   return (
     <AnalyzeCard
-      number={2}
+      number={3}
       category="Somme des indices"
       title="Ce que racontent les plantes observées"
       subtitle="Intensité forte = 3 points, moyenne = 2, faible = 1. Additionnées par colonne, elles révèlent les tendances du sol."

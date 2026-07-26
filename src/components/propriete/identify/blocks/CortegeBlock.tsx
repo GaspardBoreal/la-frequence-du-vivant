@@ -71,8 +71,8 @@ export const CortegeBlock: React.FC<{
 
   return (
     <AnalyzeCard
-      number={1}
-      category="Cortège floristique"
+      number={2}
+      category="Cortège illustré · photos des marcheurs"
       title="Cochez les plantes que vous reconnaissez"
       subtitle="Ces bio-indicatrices racontent votre sol. Cochez celles que vous observez — les plantes déjà repérées par les marcheurs sont mises en évidence."
       index={index}

@@ -37,7 +37,7 @@ export const ConcordanceBlock: React.FC<{
 
   return (
     <AnalyzeCard
-      number={3}
+      number={4}
       category="Concordance sol / flore"
       title="Deux voix, une seule histoire ?"
       subtitle="On confronte ligne à ligne ce que dit le sol (Étape 2) et ce que raconte la végétation (Étape 3)."
