@@ -111,6 +111,18 @@ const ScenographyRuntime: React.FC<Props> = ({
     return () => window.removeEventListener('message', onMsg);
   }, [data, onError]);
 
+  if (!compiled) {
+    return (
+      <div className={className ?? 'fixed inset-0 z-0'}>
+        <div className="w-full h-full min-h-screen grid place-items-center bg-background">
+          <p className="text-[11px] uppercase tracking-[0.32em] text-muted-foreground animate-pulse">
+            La scénographie s'éveille…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (compiled.error) {
     return (
       <div className="min-h-screen grid place-items-center bg-background p-6">
