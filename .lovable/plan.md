@@ -1,58 +1,62 @@
 ## Objectif
 
-Transformer le Widget 5 « Acidité » (aujourd'hui un simple curseur global pleine demi-largeur) en un bloc **pleine largeur**, aligné sur le pattern déjà éprouvé des Widgets 3 (Structure) et 4 (Texture) : consigne → protocole illustré + vidéos → saisie par prélèvement → synthèse.
+Passer le Widget 6 « Étape 2 · Vie du sol » du même niveau de finition que les Widgets 3 (Structure), 4 (Texture) et 5 (Acidité) : pleine largeur, consigne pédagogique, tests nommés/schématisés/expliqués avec étagère vidéo, relevé par prélèvement, synthèse.
 
 ## Ce que verra l'utilisateur
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ 5  ÉTAPE 2 · ACIDITÉ — « Le pH, clé de la nutrition »        │
-│ [HERO SVG : profil de sol dont la teinte morphe selon le pH] │
-│                                                              │
-│ ① CE QUE VOUS DEVEZ FAIRE  (bandeau or)                      │
-│   Mesurer le pH sur un échantillon humide de chacun de vos   │
-│   prélèvements. Étapes : Humidifier → Mesurer → Lire → Noter │
-│   Encart pédagogique : le pH pilote la disponibilité des     │
-│   nutriments et explique pourquoi certaines plantes          │
-│   prospèrent là où d'autres dépérissent.                     │
-│   NB : la plupart des végétaux d'ornement aiment un pH proche │
-│   de la neutralité ; certaines espèces recherchent des sols   │
-│   très acides ou très calcaires.                             │
-│                                                              │
-│ ② LES TESTS (2 cartes protocole + étagère vidéo)             │
-│   • Bandelette / kit colorimétrique  • pHmètre électronique   │
-│   Schémas SVG animés + « Ciné-terrain » (1 à 3 vidéos)       │
-│                                                              │
-│ ③ RÉSULTATS PAR PRÉLÈVEMENT   (A → E, x/n complétés)         │
-│   [A] test ▸ bandelette | pHmètre    pH ▸ [mini-curseur 4-9] │
-│       + valeur colorée + classe (Très acide → Très basique)  │
-│                                                              │
-│ ④ SYNTHÈSE                                                   │
-│   Barre de distribution par classe, pH moyen + amplitude,    │
-│   lecture agronomique dominante, alerte « sol contrasté »    │
-│   si l'écart entre prélèvements dépasse 1 point de pH.       │
+│ 6 · ÉTAPE 2 · VIE DU SOL — « Ce que la terre laisse voir »    │
+│ HERO : coupe de sol vivante (vers, galeries, radicelles,      │
+│        micro-faune) — densité et couleur pilotées par le      │
+│        score de vie moyen des prélèvements                    │
+├──────────────────────────────────────────────────────────────┤
+│ ① Consigne « Ce que vous devez faire » + fil 1→4              │
+│   Observer → Compter → Cocher → Noter                        │
+│ ① bis  Pourquoi c'est décisif  |  Nota bene                   │
+├──────────────────────────────────────────────────────────────┤
+│ ② Les protocoles (cartes côte à côte, schémas animés)         │
+│   • Test bêche vivante (bloc 20×20×20, tri 5 min)            │
+│   • Test du vinaigre / CO₂ (effervescence = calcaire)        │
+│   • Test du slip / sachet de thé (dégradation) [optionnel]   │
+│   ↳ Étagère « Ciné-terrain » (1 à 3 vidéos, prête à recevoir │
+│     les liens que vous fournirez)                            │
+├──────────────────────────────────────────────────────────────┤
+│ ③ Relevé par prélèvement  (A → E, 3/5 renseignés)            │
+│   [A] emplacement · test utilisé · indices cochés · nb vers  │
+│       → pastille de vitalité (Faible/Moyenne/Forte)          │
+├──────────────────────────────────────────────────────────────┤
+│ ④ Synthèse : barres de distribution des indices, vitalité    │
+│   dominante, indice de vie moyen, alerte « sol contrasté »   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## Détail des sections
+## Indices de vie retenus (cochables par prélèvement)
 
-**① Consigne** — bandeau or identique aux widgets 3/4, avec la chaîne d'étapes numérotées et les deux textes pédagogiques fournis (influence sur la disponibilité des nutriments + NB sur les végétaux d'ornement).
+Vers de terre (avec comptage), galeries / taupinières, racines actives et radicelles fines, micro-faune visible (cloportes, collemboles, mille-pattes), mycélium / filaments blancs, matière organique en décomposition, odeur d'humus, effervescence au vinaigre (CO₂ / calcaire). Chaque indice a une infobulle riche (description sensorielle + lecture agronomique), au format des tooltips des blocs 3/4/5.
 
-**② Protocoles nommés, schématisés, expliqués**
-- *Bandelette / kit colorimétrique* : terre + eau déminéralisée, repos, trempage, lecture de la teinte sur nuancier.
-- *pHmètre électronique* : calibration, boue de terre, insertion sonde, lecture stabilisée.
-Chaque carte : titre, matériel, gestes numérotés, schéma SVG animé, piège à éviter.
-Sous la première carte, une étagère vidéo « Ciné-terrain » repliable réutilisant les composants vidéo existants. **Les URLs seront fournies plus tard** : le registre de vidéos sera créé vide et un simple ajout de 1 à 3 entrées suffira ensuite pour les afficher (aucune autre modification de code nécessaire).
+## Lecture de vitalité
 
-**③ Saisie par prélèvement** — une ligne par prélèvement positionné au bloc 2, reprenant strictement l'ergonomie de la ligne « Texture » : pastille lettre, choix du test, mini-curseur pH 4→9 (pas 0,1) avec valeur affichée dans la couleur de la classe, badge de classe animé, tooltip riche au survol décrivant chaque classe (sensoriel + agronomique + plantes typiques). Si aucun prélèvement n'existe, encart pointillé avec lien d'ancrage vers le bloc 2 (comme widget 4).
+Score par prélèvement dérivé du nombre d'indices cochés + comptage de vers (barème : < 5 vers faible, 5–15 moyenne, > 15 forte pour une bêchée 20×20×20). Trois classes : Vie discrète · Vie installée · Vie foisonnante, chacune avec verbe clé, couleur et conduite conseillée.
 
-**④ Synthèse** — barres de distribution par classe de pH, pH moyen, min/max, classe dominante, lecture agronomique (disponibilité des nutriments, familles de plantes adaptées), signal « sol contrasté » quand l'amplitude est forte.
+## Détails techniques
 
-## Points techniques
+Nouveaux fichiers dans `src/components/propriete/analyze/` :
+- `lifeTests.ts` — modèle : `LIFE_SIGNS` (id, label, icône, description sensorielle, lecture agronomique), `LIFE_TESTS` (protocoles + étapes + emplacements vidéos), `LIFE_CLASSES`, `scoreLife()`, `aggregateLife()`.
+- `LifePictos.tsx` — pictos SVG dédiés par indice + schémas animés des protocoles (bêchée triée, bocal vinaigre effervescent, sachet enterré).
+- `LifeCrossSection.tsx` — hero SVG morphant selon la vitalité dominante.
+- `LifeProtocolCard.tsx` — protocole détaillé, réutilise `TestVideoShelf` / `VideoLightbox` existants.
+- `LifeChoiceTooltip.tsx` — infobulle riche, avec prop `align` pour éviter tout débordement.
+- `LifeSampleRow.tsx` — ligne A→E : test utilisé, chips d'indices cochables, champ nb de vers, pastille de vitalité.
+- `LifeResultsSummary.tsx` — distribution des indices, vitalité dominante, indice moyen, amplitude.
 
-- Nouveau modèle de données `phTests.ts` : classes de pH (bornes, couleur, label, lecture agronomique, plantes indicatrices), définition des 2 tests, registre vidéos, helpers `classifyPh`, `dominantPh` (moyenne, amplitude, distribution).
-- Nouveaux composants dans `src/components/propriete/analyze/` : `PhCrossSection.tsx` (hero morphant), `PhPictos.tsx`, `PhProtocolCard.tsx`, `PhChoiceTooltip.tsx`, `PhSampleRow.tsx`, `PhResultsSummary.tsx`.
-- `blocks/PhBlock.tsx` réécrit sur le modèle de `TextureBlock.tsx` ; garde la prop `value`/`onChange` du pH global, désormais **dérivé** de la moyenne des prélèvements (rétro-compatible avec les données déjà saisies).
-- `usePropertySoil.ts` : ajout de `ph_test?: 'bandelette' | 'phmetre' | null` et `ph_value?: number | null` dans l'interface `SoilSample` (stockage dans le JSONB `samples` déjà persisté — **aucune migration SQL**).
-- `TabAnalyze.tsx` : le widget 5 sort de la grille 2 colonnes pour passer en pleine largeur (bloc 6 « Signes de vie » reste tel quel, en dessous, pleine largeur) ; le compteur de blocs renseignés tient compte du pH par prélèvement.
-- Aucun changement de logique métier hors de ces fichiers ; palette et tokens `--ds-*` existants réutilisés, avec la gamme colorée pH (rouge acide → bleu basique) déjà présente dans le fichier actuel.
+Fichiers modifiés :
+- `blocks/LifeSignsBlock.tsx` — réécrit sur le modèle de `PhBlock` (consigne, protocoles, relevé par prélèvement, synthèse). Reçoit `samples` + `onUpdateSample`, conserve `values`/`onToggle` pour la liste globale du site, désormais dérivée de l'union des indices des prélèvements.
+- `hooks/propriete/usePropertySoil.ts` — ajout sur `SoilSample` de `life_test`, `life_signs: string[]`, `worm_count?: number | null` (persistés dans le JSONB `samples`, aucune migration SQL nécessaire).
+- `tabs/TabAnalyze.tsx` — sortir le bloc 6 de la grille `md:grid-cols-2` pour le passer en pleine largeur ; passage de `samples`/`updateSample` ; ajustement du compteur de progression (bloc 6 validé dès qu'un prélèvement porte au moins un indice).
+
+Aucun changement des blocs 1, 2, 5 hors passage de props, et aucun changement de logique métier hors Widget 6.
+
+## Vidéos
+
+L'étagère « Ciné-terrain » est câblée avec trois emplacements vides (titre + angle) prêts à recevoir vos URLs YouTube ; il suffira de les coller dans `lifeTests.ts`.

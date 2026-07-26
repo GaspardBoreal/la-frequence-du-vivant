@@ -41,7 +41,11 @@ export const TabAnalyze: React.FC<{
     (state.samples.some((s) => s.structure_test && s.structure_result) ? 1 : 0) +
     (state.samples.some((s) => s.texture_test && s.texture_result) || state.boudin_shape ? 1 : 0) +
     (state.samples.some((s) => typeof s.ph_value === 'number') || state.ph != null ? 1 : 0) +
-    (state.life_signs.length > 0 ? 1 : 0) +
+    (state.samples.some(
+      (s) => (s.life_signs?.length ?? 0) > 0 || typeof s.worm_count === 'number'
+    ) || state.life_signs.length > 0
+      ? 1
+      : 0) +
     ((state.synthesis ?? '').trim().length > 0 ? 1 : 0);
 
   const handleComplete = async () => {
@@ -121,10 +125,16 @@ export const TabAnalyze: React.FC<{
         index={4}
       />
 
-      {/* Bloc 6 */}
-      <div className="grid md:grid-cols-2 gap-5">
-        <LifeSignsBlock values={state.life_signs} onToggle={toggleLifeSign} index={5} />
-      </div>
+      {/* Bloc 6 : pleine largeur — indices de vie par prélèvement */}
+      <LifeSignsBlock
+        values={state.life_signs}
+        onToggle={toggleLifeSign}
+        onSetAll={(next) => setLocal((s) => ({ ...s, life_signs: next }))}
+        samples={state.samples}
+        onUpdateSample={updateSample}
+        index={5}
+      />
+
 
 
       {/* Synthèse */}
