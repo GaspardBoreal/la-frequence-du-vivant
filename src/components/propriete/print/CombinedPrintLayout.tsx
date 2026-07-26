@@ -1,9 +1,11 @@
 import React from 'react';
 import { ObserveSummary } from '@/components/propriete/observe/ObserveSummary';
+import { AnalyzeSummary } from '@/components/propriete/analyze/AnalyzeSummary';
 import { PortraitPrintLayout } from '@/components/propriete/portrait/PortraitPrintLayout';
 import { PropertyPrintPage } from '@/components/propriete/print/PropertyPrintPage';
 import type { GalleryPhoto } from '@/hooks/propriete/usePropertyGallery';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
+import type { PropertySoilState } from '@/hooks/propriete/usePropertySoil';
 
 interface StationInfo {
   code: string;
@@ -30,7 +32,25 @@ interface Props {
   parcelles?: ProprieteParcelle[];
   station?: StationInfo | null;
   publicUrl?: string;
+  /** Étape 2 — inclus dans le cahier complet lorsque fourni. */
+  soil?: PropertySoilState | null;
+  soilCompletedAt?: string | null;
 }
+
+const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string }> = ({
+  eyebrow,
+  title,
+  sub,
+  foot,
+}) => (
+  <section className="combined-print-divider">
+    <div className="combined-print-divider-eyebrow">{eyebrow}</div>
+    <h2 className="combined-print-divider-title">{title}</h2>
+    <div className="combined-print-divider-rule" />
+    <div className="combined-print-divider-sub">{sub}</div>
+    <div className="combined-print-divider-foot">{foot}</div>
+  </section>
+);
 
 export const CombinedPrintLayout: React.FC<Props> = ({
   answers,
@@ -45,7 +65,11 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   parcelles = [],
   station,
   publicUrl,
+  soil,
+  soilCompletedAt,
 }) => {
+  const withAnalyze = !!soil;
+
   const observeSlot = (
     <>
       <section className="portrait-print-page combined-print-observe combined-print-observe-first print-break">
@@ -72,6 +96,39 @@ export const CombinedPrintLayout: React.FC<Props> = ({
           printSection="second"
         />
       </section>
+
+      {withAnalyze && soil && (
+        <>
+          <Divider
+            eyebrow="Étape 2"
+            title="J’analyse le sol"
+            sub="« La terre ne se raconte qu’à ceux qui la prennent en main. »"
+            foot={`${propertyName ?? 'Propriété'} · Fréquence du Vivant`}
+          />
+          <section className="portrait-print-page combined-print-analyze">
+            <AnalyzeSummary
+              state={soil}
+              completedAt={soilCompletedAt ?? null}
+              propertyName={propertyName}
+              onEditBlock={() => {}}
+              onReopenAll={() => {}}
+              printOnly
+              printSection="first"
+            />
+          </section>
+          <section className="portrait-print-page combined-print-analyze combined-print-analyze-second">
+            <AnalyzeSummary
+              state={soil}
+              completedAt={soilCompletedAt ?? null}
+              propertyName={propertyName}
+              onEditBlock={() => {}}
+              onReopenAll={() => {}}
+              printOnly
+              printSection="second"
+            />
+          </section>
+        </>
+      )}
     </>
   );
 
@@ -102,7 +159,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         insertAfterToc={renderPropertyPage}
         insertedAfterTocPageCount={1}
         insertBeforeColophon={observeSlot}
-        insertedPageCount={2}
+        insertedPageCount={withAnalyze ? 5 : 2}
       />
     </div>
   );

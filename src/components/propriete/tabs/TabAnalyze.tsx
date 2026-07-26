@@ -1,9 +1,15 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, CheckCheck, Loader2, Check, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
+import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
+import { usePropertyGallery } from '@/hooks/propriete/usePropertyGallery';
+import { useProprieteParcelles, centroidOfParcelles } from '@/hooks/propriete/usePropertyParcelles';
+import { useNearestStations } from '@/hooks/useNearestStations';
+import { getStationByCode } from '@/utils/weatherStationDatabase';
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { TerrainBlock } from '@/components/propriete/analyze/blocks/TerrainBlock';
 import { SamplesMapBlock } from '@/components/propriete/analyze/blocks/SamplesMapBlock';
@@ -11,8 +17,13 @@ import { StructureBlock } from '@/components/propriete/analyze/blocks/StructureB
 import { TextureBlock } from '@/components/propriete/analyze/blocks/TextureBlock';
 import { PhBlock } from '@/components/propriete/analyze/blocks/PhBlock';
 import { LifeSignsBlock } from '@/components/propriete/analyze/blocks/LifeSignsBlock';
+import { AnalyzeSummary, type AnalyzeBlockId } from '@/components/propriete/analyze/AnalyzeSummary';
+import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/print/PrintChoiceDialog';
+import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
+import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
+
 
 const TOTAL = 7; // 6 blocs + synthèse
 
@@ -20,7 +31,20 @@ export const TabAnalyze: React.FC<{
   bio?: PropertyBiodiversity;
   proprieteId?: string;
   proprieteCenter?: [number, number] | null;
-}> = ({ bio, proprieteId, proprieteCenter }) => {
+  propertyName?: string;
+  proprieteVille?: string | null;
+  proprieteAdresse?: string | null;
+  proprieteCodePostal?: string | null;
+}> = ({
+  bio,
+  proprieteId,
+  proprieteCenter,
+  propertyName,
+  proprieteVille,
+  proprieteAdresse,
+  proprieteCodePostal,
+}) => {
+
   const {
     state,
     setLocal,
@@ -37,7 +61,20 @@ export const TabAnalyze: React.FC<{
 
   const speciesCount = usePropertySpeciesCount(proprieteId);
   const [submitting, setSubmitting] = React.useState(false);
+  const [mode, setMode] = React.useState<'summary' | 'edit'>(
+    completedAt ? 'summary' : 'edit'
+  );
 
+  React.useEffect(() => {
+    if (completedAt) setMode('summary');
+  }, [completedAt]);
+
+  const scrollToBlock = (blockId: AnalyzeBlockId) => {
+    setTimeout(() => {
+      const el = document.getElementById(`analyze-block-${blockId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  };
 
   const filled =
     (state.terrain_status ? 1 : 0) +
@@ -57,6 +94,7 @@ export const TabAnalyze: React.FC<{
     try {
       await markComplete();
       toast.success('Étape 2 marquée comme terminée ✓');
+      setMode('summary');
     } catch (e: any) {
       toast.error("Échec de l'enregistrement", { description: e?.message ?? 'Réessayez.' });
     } finally {
@@ -66,6 +104,131 @@ export const TabAnalyze: React.FC<{
 
   const isDone = !!completedAt;
   const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
+
+  // ─── Impression : dialogue + portail cahier complet ─────────────────────
+  const observation = usePropertyObservation(proprieteId);
+  const { data: galleryPhotos = [] } = usePropertyGallery(proprieteId);
+  const { data: parcelles = [] } = useProprieteParcelles(proprieteId);
+  const derivedCenter = React.useMemo<[number, number] | null>(
+    () => proprieteCenter ?? centroidOfParcelles(parcelles),
+    [proprieteCenter, parcelles],
+  );
+  const stationPoints = React.useMemo(
+    () =>
+      derivedCenter
+        ? [{ id: 'property-center', latitude: derivedCenter[0], longitude: derivedCenter[1] }]
+        : [],
+    [derivedCenter],
+  );
+  const { stations, pointLinks } = useNearestStations(stationPoints, 60);
+  const nearestStation = React.useMemo(() => {
+    const link = pointLinks[0];
+    if (!link) return null;
+    const st = stations.find((s) => s.code === link.stationCode);
+    if (!st) return null;
+    const local = getStationByCode(st.code);
+    return {
+      code: st.code,
+      name: st.name,
+      lat: st.lat,
+      lng: st.lng,
+      distanceKm: link.distance,
+      source: st.source,
+      department: local?.department ?? null,
+      region: local?.region ?? null,
+      elevation: local?.elevation ?? null,
+    };
+  }, [pointLinks, stations]);
+
+  const [printOpen, setPrintOpen] = React.useState(false);
+  const [combinedPrinting, setCombinedPrinting] = React.useState(false);
+  const combinedPortalRef = usePrintCombined({
+    active: combinedPrinting,
+    portalId: 'combined-print-portal',
+    bodyClass: 'combined-printing',
+    onDone: () => setCombinedPrinting(false),
+  });
+
+  const handleConfirmPrint = (choice: PrintChoice) => {
+    setPrintOpen(false);
+    if (choice === 'combined') {
+      setCombinedPrinting(true);
+      return;
+    }
+    document.body.classList.add('analyze-printing');
+    const cleanup = () => {
+      document.body.classList.remove('analyze-printing');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => window.print(), 60);
+  };
+
+  const printDialogAndPortal = (
+    <>
+      <PrintChoiceDialog
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        onConfirm={handleConfirmPrint}
+        portraitPhotoCount={galleryPhotos.length}
+        origin="analyze"
+        analyzeReady={isDone}
+        observeReady={!!observation.completedAt}
+      />
+      {combinedPrinting && combinedPortalRef.current && createPortal(
+        <CombinedPrintLayout
+          answers={observation.state.answers}
+          sensorial={observation.state.sensorial}
+          completedAt={observation.completedAt}
+          propertyName={propertyName}
+          photos={galleryPhotos}
+          proprieteVille={proprieteVille}
+          proprieteAdresse={proprieteAdresse}
+          proprieteCodePostal={proprieteCodePostal}
+          proprieteCenter={derivedCenter}
+          parcelles={parcelles}
+          station={nearestStation}
+          publicUrl={typeof window !== 'undefined' ? window.location.href : undefined}
+          soil={state}
+          soilCompletedAt={completedAt}
+        />,
+        combinedPortalRef.current,
+      )}
+    </>
+  );
+
+  // Vue synthèse (carnet scellé) — quand terminé et non en mode édition
+  if (isDone && mode === 'summary') {
+    return (
+      <div className="space-y-6">
+        <StepHeader
+          current={2}
+          savedAt={savedAt}
+          saving={saving}
+          title="J'analyse le sol"
+          subtitle={
+            <>
+              Lire la terre par les mains et les yeux : texture, structure, pH, signes de vie.
+              <span className="italic"> Toucher · Sentir · Comprendre.</span>
+            </>
+          }
+        />
+        <AnalyzeSummary
+          state={state}
+          completedAt={completedAt}
+          propertyName={propertyName}
+          onEditBlock={(id) => {
+            setMode('edit');
+            scrollToBlock(id);
+          }}
+          onReopenAll={() => setMode('edit')}
+          onPrint={() => setPrintOpen(true)}
+        />
+        {printDialogAndPortal}
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-6">
@@ -82,14 +245,29 @@ export const TabAnalyze: React.FC<{
         }
       />
 
+      {isDone && (
+        <div className="flex items-center justify-between rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-sm text-[hsl(var(--ds-forest-deep))]">
+          <span className="inline-flex items-center gap-1.5">
+            <Check className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
+            Mode édition — les modifications seront réenregistrées.
+          </span>
+          <Button size="sm" variant="ghost" onClick={() => setMode('summary')} className="text-xs">
+            Revenir à la synthèse
+          </Button>
+        </div>
+      )}
+
       {/* Blocs 1 → 4 : pleine largeur pour laisser respirer les cartes et pictos */}
       <div className="space-y-5">
-        <TerrainBlock
-          value={state.terrain_status}
-          onChange={(v) => setField('terrain_status', v)}
-          index={0}
-        />
+        <div id="analyze-block-terrain" className="scroll-mt-24">
+          <TerrainBlock
+            value={state.terrain_status}
+            onChange={(v) => setField('terrain_status', v)}
+            index={0}
+          />
+        </div>
         <div id="etape2-prelevements" className="scroll-mt-24">
+        <div id="analyze-block-prelevements" className="scroll-mt-24">
         <SamplesMapBlock
           proprieteId={proprieteId}
           proprieteCenter={proprieteCenter}
@@ -101,48 +279,59 @@ export const TabAnalyze: React.FC<{
           index={1}
         />
         </div>
-        <StructureBlock
-          value={state.structure}
-          onChange={(v) => setField('structure', v)}
-          samples={state.samples}
-          onUpdateSample={updateSample}
-          index={2}
-        />
-        <TextureBlock
-          boudinShape={state.boudin_shape}
-          texture={state.texture}
-          onChangeBoudin={(v) => setField('boudin_shape', v)}
-          onChangeTexture={(v) => setField('texture', v)}
-          samples={state.samples}
-          onUpdateSample={updateSample}
-          index={3}
-        />
+        </div>
+        <div id="analyze-block-structure" className="scroll-mt-24">
+          <StructureBlock
+            value={state.structure}
+            onChange={(v) => setField('structure', v)}
+            samples={state.samples}
+            onUpdateSample={updateSample}
+            index={2}
+          />
+        </div>
+        <div id="analyze-block-texture" className="scroll-mt-24">
+          <TextureBlock
+            boudinShape={state.boudin_shape}
+            texture={state.texture}
+            onChangeBoudin={(v) => setField('boudin_shape', v)}
+            onChangeTexture={(v) => setField('texture', v)}
+            samples={state.samples}
+            onUpdateSample={updateSample}
+            index={3}
+          />
+        </div>
 
       </div>
 
       {/* Bloc 5 : pleine largeur — une mesure de pH par prélèvement */}
-      <PhBlock
-        value={state.ph}
-        onChange={(v) => setField('ph', v)}
-        samples={state.samples}
-        onUpdateSample={updateSample}
-        index={4}
-      />
+      <div id="analyze-block-ph" className="scroll-mt-24">
+        <PhBlock
+          value={state.ph}
+          onChange={(v) => setField('ph', v)}
+          samples={state.samples}
+          onUpdateSample={updateSample}
+          index={4}
+        />
+      </div>
 
       {/* Bloc 6 : pleine largeur — indices de vie par prélèvement */}
-      <LifeSignsBlock
-        values={state.life_signs}
-        onToggle={toggleLifeSign}
-        onSetAll={(next) => setLocal((s) => ({ ...s, life_signs: next }))}
-        samples={state.samples}
-        onUpdateSample={updateSample}
-        index={5}
-      />
+      <div id="analyze-block-life" className="scroll-mt-24">
+        <LifeSignsBlock
+          values={state.life_signs}
+          onToggle={toggleLifeSign}
+          onSetAll={(next) => setLocal((s) => ({ ...s, life_signs: next }))}
+          samples={state.samples}
+          onUpdateSample={updateSample}
+          index={5}
+        />
+      </div>
+
 
 
 
       {/* Synthèse */}
-      <div className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6 shadow-[0_2px_20px_-10px_rgba(60,80,60,0.15)]">
+      <div id="analyze-block-synthesis" className="scroll-mt-24 rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6 shadow-[0_2px_20px_-10px_rgba(60,80,60,0.15)]">
+
         <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/80">
           <BarChart3 className="w-3 h-3" /> Synthèse d'analyse
         </div>
@@ -214,6 +403,8 @@ export const TabAnalyze: React.FC<{
           </Button>
         </div>
       </div>
+      {printDialogAndPortal}
     </div>
+
   );
 };
