@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Play, ListChecks } from 'lucide-react';
+import { ListChecks } from 'lucide-react';
 import { TextureTestSchema } from './TexturePictos';
+import { TestVideoShelf } from './TestVideoShelf';
 import type { TextureTest } from './textureTests';
 
 export const TextureProtocolCard: React.FC<{ test: TextureTest; index?: number }> = ({
