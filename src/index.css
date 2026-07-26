@@ -629,6 +629,22 @@
   }
 }
 
+/* === ANALYZE SUMMARY PRINT — isole le carnet « J'analyse » de l'app === */
+@media print {
+  body.analyze-printing * { visibility: hidden !important; }
+  body.analyze-printing .analyze-print-root,
+  body.analyze-printing .analyze-print-root * { visibility: visible !important; }
+  body.analyze-printing .analyze-print-root {
+    position: absolute !important;
+    left: 0; top: 0; right: 0;
+    margin: 0 !important;
+    padding: 24px !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+}
+
+
 /* === PLAQUETTE PRINT STYLES — Fond vert dégradé "Fréquence du Vivant" === */
 @media print {
   * {
