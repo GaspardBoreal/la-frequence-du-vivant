@@ -23,7 +23,15 @@ export const TILE_CONFIGS: Record<MapStyle, { url: string; attribution: string; 
   },
 };
 
-export const CADASTRE_OVERLAY_URL = 'https://cadastre.data.gouv.fr/map/{z}/{x}/{y}.png';
+/**
+ * Overlay cadastral. L'ancien endpoint Etalab (cadastre.data.gouv.fr/map) renvoie
+ * désormais 404 : on utilise le WMTS IGN PARCELLAIRE EXPRESS (PCI vecteur),
+ * qui affiche les délimitations de chaque parcelle en surcouche transparente.
+ */
+export const CADASTRE_OVERLAY_URL =
+  'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0' +
+  '&LAYER=CADASTRALPARCELS.PARCELLAIRE_EXPRESS&STYLE=PCI%20vecteur' +
+  '&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
 
 export const POLYLINE_COLORS: Record<MapStyle, string> = {
   geopoetic: '#10b981',
