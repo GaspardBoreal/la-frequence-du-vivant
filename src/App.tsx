@@ -135,6 +135,7 @@ function App() {
             <BrowserRouter>
             <TrophicFullscreenProvider>
             <DiscoverFullscreenProvider>
+          <Suspense fallback={<RouteFallback />}>
           <Routes>
 
             <Route path="/" element={<Index />} />
