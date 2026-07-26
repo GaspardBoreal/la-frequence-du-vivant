@@ -95,13 +95,17 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       ? [filtered[0].lat, filtered[0].lng]
       : [45.0, 0.5];
 
-  const iconFor = (color: string) =>
+  const iconFor = (color: string, source: 'marcheur' | 'inaturalist') =>
     L.divIcon({
       className: 'reveal-wp-marker',
       iconSize: [18, 18],
       iconAnchor: [9, 9],
-      html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 2px 6px rgba(0,0,0,.3);"></div>`,
+      html:
+        source === 'marcheur'
+          ? `<div style="width:16px;height:16px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 2px 6px rgba(0,0,0,.3);"></div>`
+          : `<div style="width:16px;height:16px;border-radius:50%;background:${color}33;border:2px dashed ${color};box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.25);"></div>`,
     });
+
 
   /**
    * Comptage **espèces distinctes** — même méthode que le bandeau
