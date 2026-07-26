@@ -11,6 +11,8 @@ import { StructureBlock } from '@/components/propriete/analyze/blocks/StructureB
 import { TextureBlock } from '@/components/propriete/analyze/blocks/TextureBlock';
 import { PhBlock } from '@/components/propriete/analyze/blocks/PhBlock';
 import { LifeSignsBlock } from '@/components/propriete/analyze/blocks/LifeSignsBlock';
+import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
+import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
 
 const TOTAL = 7; // 6 blocs + synthèse
 
