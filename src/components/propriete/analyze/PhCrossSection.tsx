@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PH_CLASS_MAP, PH_GRADIENT, phPercent, type PhClassId } from './phTests';
+import { PH_CLASS_MAP, phPercent, type PhClassId } from './phTests';
 
 const stroke = 'hsl(var(--ds-forest-deep))';
 const forest = 'hsl(var(--ds-forest))';
