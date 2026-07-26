@@ -73,6 +73,13 @@ export const CombinedPrintLayout: React.FC<Props> = ({
 
   const observeSlot = (
     <>
+      <Divider
+        eyebrow="Étape 1"
+        title="J’observe"
+        sub="« Avant de comprendre, il faut regarder longtemps. »"
+        foot={`${propertyName ?? 'Propriété'} · Fréquence du Vivant`}
+        variant="observe"
+      />
       <section className="portrait-print-page combined-print-observe combined-print-observe-first print-break">
         <ObserveSummary
           answers={answers}
