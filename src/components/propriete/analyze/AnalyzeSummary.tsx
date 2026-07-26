@@ -7,7 +7,7 @@ import { SoilSignature } from './SoilSignature';
 import { RESULT_SHORT, TEST_LABELS } from './structureTests';
 import { TEXTURE_SHORT, TEXTURE_TEST_LABELS, BOUDIN_FORM_MAP } from './textureTests';
 import { PH_CLASS_MAP, PH_TEST_LABELS, classifyPh } from './phTests';
-import { LIFE_CLASS_MAP, LIFE_SIGN_MAP, LIFE_TEST_LABELS } from './lifeTests';
+import { LIFE_CLASS_MAP, LIFE_SIGN_MAP, LIFE_TEST_LABELS, type LifeSignId } from './lifeTests';
 
 export type AnalyzeBlockId =
   | 'terrain'
@@ -142,7 +142,10 @@ export const AnalyzeSummary: React.FC<Props> = ({
             const incomplete = r.incomplete.includes(s.label);
             const ph = typeof s.ph_value === 'number' ? s.ph_value : null;
             const phc = ph != null ? classifyPh(ph) : null;
-            const signs = (s.life_signs ?? []).map((id) => LIFE_SIGN_MAP[id as never]?.short).filter(Boolean);
+            const signs = (s.life_signs ?? [])
+              .map((id) => LIFE_SIGN_MAP[id as LifeSignId]?.short)
+              .filter(Boolean);
+
             return (
               <tr
                 key={s.id}
