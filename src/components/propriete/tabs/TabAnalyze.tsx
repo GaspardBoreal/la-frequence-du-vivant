@@ -121,10 +121,16 @@ export const TabAnalyze: React.FC<{
         index={4}
       />
 
-      {/* Bloc 6 */}
-      <div className="grid md:grid-cols-2 gap-5">
-        <LifeSignsBlock values={state.life_signs} onToggle={toggleLifeSign} index={5} />
-      </div>
+      {/* Bloc 6 : pleine largeur — indices de vie par prélèvement */}
+      <LifeSignsBlock
+        values={state.life_signs}
+        onToggle={toggleLifeSign}
+        onSetAll={(next) => setLocal((s) => ({ ...s, life_signs: next }))}
+        samples={state.samples}
+        onUpdateSample={updateSample}
+        index={5}
+      />
+
 
 
       {/* Synthèse */}
