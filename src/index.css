@@ -642,6 +642,17 @@
     box-shadow: none !important;
     border: 0 !important;
   }
+  /* Plan des prélèvements : contenu au tiers haut de la page, couleurs forcées */
+  .analyze-plan {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .analyze-plan svg {
+    max-height: 92mm !important;
+    height: auto !important;
+  }
 }
 
 
