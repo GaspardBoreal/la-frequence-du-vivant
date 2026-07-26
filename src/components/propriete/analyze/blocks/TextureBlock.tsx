@@ -153,7 +153,9 @@ export const TextureBlock: React.FC<{
                   sample={s}
                   index={i}
                   onPatch={(patch) => onUpdateSample?.(s.id, patch)}
+                  mediaSlot={renderSampleMedia?.(s)}
                 />
+
               ))}
             </motion.div>
           )}
