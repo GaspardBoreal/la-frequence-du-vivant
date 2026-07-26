@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Play, ListChecks } from 'lucide-react';
+import { ListChecks } from 'lucide-react';
 import { TestSchema } from './StructureTestPictos';
+import { TestVideoShelf } from './TestVideoShelf';
 import type { StructureTest } from './structureTests';
 
 export const StructureProtocolCard: React.FC<{ test: StructureTest; index?: number }> = ({
@@ -9,6 +10,7 @@ export const StructureProtocolCard: React.FC<{ test: StructureTest; index?: numb
   index = 0,
 }) => {
   const videos = (test.videos ?? []).filter((v) => (v.url ?? '').trim().length > 0);
+
 
   return (
     <motion.div
@@ -57,20 +59,9 @@ export const StructureProtocolCard: React.FC<{ test: StructureTest; index?: numb
         </ol>
 
         {videos.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {videos.map((v, i) => (
-              <a
-                key={i}
-                href={v.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-forest))]/8 px-3 py-1 text-[10.5px] font-semibold text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/15 transition"
-              >
-                <Play className="w-3 h-3" /> {v.label || `Vidéo ${i + 1}`}
-              </a>
-            ))}
-          </div>
+          <TestVideoShelf storageKey={`structure-${test.id}`} videos={videos} />
         )}
+
       </div>
     </motion.div>
   );

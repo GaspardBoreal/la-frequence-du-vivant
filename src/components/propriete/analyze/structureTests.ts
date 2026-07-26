@@ -21,8 +21,8 @@ export interface StructureTest {
   title: string;
   subtitle: string;
   steps: string[];
-  /** Liens vidéo (1 à 3). Laisser vide : les boutons ▶ sont masqués tant qu'aucune URL n'est fournie. */
-  videos: { label: string; url: string }[];
+  /** Liens vidéo (1 à 3). Laisser vide : l'étagère vidéo est masquée tant qu'aucune URL n'est fournie. */
+  videos: { label: string; url: string; angle?: string }[];
 }
 
 export const STRUCTURE_TESTS: StructureTest[] = [
@@ -36,7 +36,23 @@ export const STRUCTURE_TESTS: StructureTest[] = [
       'Le laisser tomber d’environ 1 m sur un sol dur, ou l’ouvrir doucement à la main.',
       'Observer comment il se rompt : bloc massif, agrégats nets, ou effondrement en grains.',
     ],
-    videos: [],
+    videos: [
+      {
+        label: 'AFES',
+        url: 'https://youtu.be/vdaKW3A8i58',
+        angle: 'Le regard scientifique : lire le profil et nommer ce que l’on voit.',
+      },
+      {
+        label: 'Bio Nouvelle-Aquitaine',
+        url: 'https://youtu.be/YssZG6SiVfQ',
+        angle: 'Le regard paysan : le geste au champ, simple et reproductible.',
+      },
+      {
+        label: 'Chambre d’Agriculture N-A',
+        url: 'https://youtu.be/l7_t0TzCOhc',
+        angle: 'Le regard technique : notation et interprétation agronomique.',
+      },
+    ],
   },
   {
     id: 'stabilite',
@@ -51,6 +67,7 @@ export const STRUCTURE_TESTS: StructureTest[] = [
     videos: [],
   },
 ];
+
 
 export const TEST_LABELS: Record<StructureTestId, string> = {
   beche: 'Test de la bêche (A)',
