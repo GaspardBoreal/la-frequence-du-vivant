@@ -110,6 +110,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               state={soil}
               completedAt={soilCompletedAt ?? null}
               propertyName={propertyName}
+              parcelles={parcelles}
               onEditBlock={() => {}}
               onReopenAll={() => {}}
               printOnly
