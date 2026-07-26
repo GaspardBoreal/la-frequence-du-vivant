@@ -1,9 +1,15 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, CheckCheck, Loader2, Check, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
+import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
+import { usePropertyGallery } from '@/hooks/propriete/usePropertyGallery';
+import { useProprieteParcelles, centroidOfParcelles } from '@/hooks/propriete/usePropertyParcelles';
+import { useNearestStations } from '@/hooks/useNearestStations';
+import { getStationByCode } from '@/utils/weatherStationDatabase';
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { TerrainBlock } from '@/components/propriete/analyze/blocks/TerrainBlock';
 import { SamplesMapBlock } from '@/components/propriete/analyze/blocks/SamplesMapBlock';
@@ -11,8 +17,13 @@ import { StructureBlock } from '@/components/propriete/analyze/blocks/StructureB
 import { TextureBlock } from '@/components/propriete/analyze/blocks/TextureBlock';
 import { PhBlock } from '@/components/propriete/analyze/blocks/PhBlock';
 import { LifeSignsBlock } from '@/components/propriete/analyze/blocks/LifeSignsBlock';
+import { AnalyzeSummary, type AnalyzeBlockId } from '@/components/propriete/analyze/AnalyzeSummary';
+import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/print/PrintChoiceDialog';
+import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
+import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
+
 
 const TOTAL = 7; // 6 blocs + synthèse
 
