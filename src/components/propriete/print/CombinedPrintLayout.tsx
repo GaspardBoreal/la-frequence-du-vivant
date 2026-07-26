@@ -3,6 +3,11 @@ import { ObserveSummary } from '@/components/propriete/observe/ObserveSummary';
 import { AnalyzeSummary } from '@/components/propriete/analyze/AnalyzeSummary';
 import { PortraitPrintLayout } from '@/components/propriete/portrait/PortraitPrintLayout';
 import { PropertyPrintPage } from '@/components/propriete/print/PropertyPrintPage';
+import {
+  TestMediaPrintPlates,
+  testMediaPlateCount,
+} from '@/components/propriete/analyze/print/TestMediaPrintPlates';
+import type { TestMedia } from '@/hooks/propriete/usePropertyTestMedias';
 import type { GalleryPhoto } from '@/hooks/propriete/usePropertyGallery';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import type { PropertySoilState } from '@/hooks/propriete/usePropertySoil';
