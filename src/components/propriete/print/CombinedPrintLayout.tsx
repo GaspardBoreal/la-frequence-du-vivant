@@ -194,7 +194,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         insertAfterToc={renderPropertyPage}
         insertedAfterTocPageCount={1}
         insertBeforeColophon={observeSlot}
-        insertedPageCount={withAnalyze ? 7 : 3}
+        insertedPageCount={(withAnalyze ? 7 : 3) + plateCount}
       />
     </div>
   );
