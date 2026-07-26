@@ -316,6 +316,14 @@ export const AnalyzeSummary: React.FC<Props> = ({
 
       {showFirst && (
         <>
+          <SoilSamplesPlan
+            parcelles={parcelles}
+            samples={r.samples}
+            propertyName={propertyName}
+            printOnly={printOnly}
+            onEdit={() => onEditBlock('prelevements')}
+          />
+
           <SoilSignature reading={r} dateStr={dateStr} />
 
           {/* Lecture dominante */}
