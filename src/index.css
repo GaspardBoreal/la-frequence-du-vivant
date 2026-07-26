@@ -1255,6 +1255,19 @@
   font-family: Helvetica, Arial, sans-serif;
   font-size: 8pt; letter-spacing: 2pt; text-transform: uppercase; color: #8a6d3b;
 }
+/* Halo différencié par étape */
+.combined-print-divider--observe {
+  background:
+    radial-gradient(30mm 30mm at 26% 74%, rgba(107,124,90,0.10), transparent 62%),
+    radial-gradient(56mm 56mm at 26% 74%, rgba(107,124,90,0.07), transparent 66%),
+    radial-gradient(84mm 84mm at 26% 74%, rgba(107,124,90,0.05), transparent 70%),
+    linear-gradient(180deg, #fdf9f2 0%, #f4ecd8 100%);
+}
+.combined-print-divider--analyze {
+  background:
+    radial-gradient(120mm 80mm at 22% 80%, rgba(107,124,90,0.12), transparent 60%),
+    linear-gradient(180deg, #fbf7ee 0%, #f2e8d1 100%);
+}
 
 .portrait-print-root {
   font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;

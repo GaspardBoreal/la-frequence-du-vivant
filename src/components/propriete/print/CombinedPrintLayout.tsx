@@ -37,13 +37,14 @@ interface Props {
   soilCompletedAt?: string | null;
 }
 
-const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string }> = ({
+const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string; variant?: 'observe' | 'analyze' }> = ({
   eyebrow,
   title,
   sub,
   foot,
+  variant = 'analyze',
 }) => (
-  <section className="combined-print-divider">
+  <section className={`combined-print-divider combined-print-divider--${variant}`}>
     <div className="combined-print-divider-eyebrow">{eyebrow}</div>
     <h2 className="combined-print-divider-title">{title}</h2>
     <div className="combined-print-divider-rule" />
@@ -72,6 +73,13 @@ export const CombinedPrintLayout: React.FC<Props> = ({
 
   const observeSlot = (
     <>
+      <Divider
+        eyebrow="Étape 1"
+        title="J’observe"
+        sub="« Avant de comprendre, il faut regarder longtemps. »"
+        foot={`${propertyName ?? 'Propriété'} · Fréquence du Vivant`}
+        variant="observe"
+      />
       <section className="portrait-print-page combined-print-observe combined-print-observe-first print-break">
         <ObserveSummary
           answers={answers}
@@ -104,7 +112,9 @@ export const CombinedPrintLayout: React.FC<Props> = ({
             title="J’analyse le sol"
             sub="« La terre ne se raconte qu’à ceux qui la prennent en main. »"
             foot={`${propertyName ?? 'Propriété'} · Fréquence du Vivant`}
+            variant="analyze"
           />
+
           <section className="portrait-print-page combined-print-analyze">
             <AnalyzeSummary
               state={soil}
@@ -171,7 +181,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         insertAfterToc={renderPropertyPage}
         insertedAfterTocPageCount={1}
         insertBeforeColophon={observeSlot}
-        insertedPageCount={withAnalyze ? 6 : 2}
+        insertedPageCount={withAnalyze ? 7 : 3}
       />
     </div>
   );
