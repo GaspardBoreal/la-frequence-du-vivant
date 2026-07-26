@@ -74,14 +74,18 @@ export const PhCrossSection: React.FC<{
 
         {/* Échelle pH */}
         <g>
-          <rect x="28" y="26" width="364" height="10" rx="5" fill="none" stroke={stroke} strokeOpacity={0.18} />
-          <foreignObject x="28" y="26" width="364" height="10">
-            <div
-              // @ts-expect-error xmlns attribute for foreignObject content
-              xmlns="http://www.w3.org/1999/xhtml"
-              style={{ width: '100%', height: '100%', borderRadius: 5, background: PH_GRADIENT }}
-            />
-          </foreignObject>
+          <defs>
+            <linearGradient id="ph-scale" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#c94a3a" />
+              <stop offset="22%" stopColor="#d97a2b" />
+              <stop offset="44%" stopColor="#e4b64a" />
+              <stop offset="58%" stopColor="#6b9a3b" />
+              <stop offset="78%" stopColor="#3e8074" />
+              <stop offset="100%" stopColor="#2f5d7a" />
+            </linearGradient>
+          </defs>
+          <rect x="28" y="26" width="364" height="10" rx="5" fill="url(#ph-scale)" />
+
           {pct != null && (
             <motion.g
               animate={{ x: 28 + (pct / 100) * 364 }}
