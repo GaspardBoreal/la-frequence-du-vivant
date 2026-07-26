@@ -38,7 +38,7 @@ export interface TextureTest {
   optional?: boolean;
   steps: string[];
   /** Liens vidéo (1 à 3). Laisser vide : les boutons ▶ sont masqués tant qu'aucune URL n'est fournie. */
-  videos: { label: string; url: string }[];
+  videos: { label: string; url: string; angle?: string }[];
 }
 
 export const TEXTURE_TESTS: TextureTest[] = [
@@ -53,7 +53,23 @@ export const TEXTURE_TESTS: TextureTest[] = [
       'Essayez de le courber doucement entre les doigts.',
       'Observez le résultat et choisissez la classe correspondante.',
     ],
-    videos: [],
+    videos: [
+      {
+        label: 'Le Jardin Potager Du Bonheur',
+        url: 'https://youtu.be/rT8PNkjz638',
+        angle: 'Le regard jardinier : le geste au potager, simple et reproductible.',
+      },
+      {
+        label: 'Les Artisans du Végétal',
+        url: 'https://youtu.be/k_pBT9uRrnE',
+        angle: 'Le regard professionnel : lire et nommer les classes de texture.',
+      },
+      {
+        label: 'Potager Durable · Nicolas',
+        url: 'https://youtu.be/yT2zU3gtmPs',
+        angle: 'Le regard pédagogique : interpréter le résultat obtenu.',
+      },
+    ],
   },
   {
     id: 'sedimentation',
