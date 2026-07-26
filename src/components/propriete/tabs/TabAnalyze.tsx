@@ -24,6 +24,12 @@ import { AnalyzePrintLayout } from '@/components/propriete/print/AnalyzePrintLay
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
+import { TestMediaBadge } from '@/components/propriete/analyze/media/TestMediaDrawer';
+import { TestMediaRegistry } from '@/components/propriete/analyze/media/TestMediaRegistry';
+import {
+  usePropertyTestMedias,
+  useTestMediaIndex,
+} from '@/hooks/propriete/usePropertyTestMedias';
 
 
 const TOTAL = 7; // 6 blocs + synthèse
