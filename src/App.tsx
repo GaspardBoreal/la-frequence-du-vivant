@@ -10,17 +10,19 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import RouteFallback from './components/RouteFallback';
 
-/* --- Chargées immédiatement : portes d'entrée les plus visitées + garde admin --- */
+/* --- Chargées immédiatement : accueil + garde admin (léger) --- */
 import AdminAuth from './components/AdminAuth';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
-import MarchesDuVivant from './pages/MarchesDuVivant';
-import CarteMarchesDuVivant from './pages/CarteMarchesDuVivant';
-import PublicEventPage from './pages/PublicEventPage';
-import MarchesDuVivantConnexion from './pages/MarchesDuVivantConnexion';
-/* Layouts : immédiats pour éviter un flash du gabarit sur les routes imbriquées */
-import ExplorationLayout from './layouts/ExplorationLayout';
-import CrmShell from './layouts/CrmShell';
+
+/* Portes d'entrée publiques — chunk dédié, chargé dès la navigation */
+const MarchesDuVivant = lazy(() => import('./pages/MarchesDuVivant'));
+const CarteMarchesDuVivant = lazy(() => import('./pages/CarteMarchesDuVivant'));
+const PublicEventPage = lazy(() => import('./pages/PublicEventPage'));
+const MarchesDuVivantConnexion = lazy(() => import('./pages/MarchesDuVivantConnexion'));
+/* Layouts des routes imbriquées */
+const ExplorationLayout = lazy(() => import('./layouts/ExplorationLayout'));
+const CrmShell = lazy(() => import('./layouts/CrmShell'));
 
 /* --- Chargées à la demande --- */
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
