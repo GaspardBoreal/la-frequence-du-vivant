@@ -466,7 +466,7 @@ export const AnalyzeSummary: React.FC<Props> = ({
                 <div className="mb-3 flex flex-wrap gap-1.5">
                   <Chip>{lifeClass.label}</Chip>
                   {r.life.averageScore != null && (
-                    <Chip tone="muted">Indice {r.life.averageScore}/100</Chip>
+                    <Chip tone="muted">Indice {r.life.averageScore.toFixed(1)}/100</Chip>
                   )}
                   <Chip tone="muted">{r.life.union.length} indices relevés</Chip>
                 </div>

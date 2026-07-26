@@ -323,7 +323,8 @@ export const aggregateLife = (
 
   const max = Math.max(...LIFE_CLASS_ORDER.map((c) => classCounts[c]));
   const top = LIFE_CLASS_ORDER.filter((c) => classCounts[c] === max);
-  const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const averageScore =
+    Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
   const dominant =
     top.length === 1
       ? top[0]
