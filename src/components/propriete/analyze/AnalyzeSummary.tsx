@@ -260,8 +260,8 @@ export const AnalyzeSummary: React.FC<Props> = ({
         </div>
       )}
 
-      {printSection === 'second' && (
-        <div className="mb-10 border-b border-[hsl(var(--ds-gold))]/70 pb-5">
+      {isSuite && (
+        <div className="mb-8 border-b border-[hsl(var(--ds-gold))]/70 pb-5">
           <div className="text-[10px] font-bold tracking-[0.35em] uppercase text-[hsl(var(--ds-forest))]/70">
             Diagnostic Propriété · Étape 2 · Suite
           </div>
@@ -269,7 +269,9 @@ export const AnalyzeSummary: React.FC<Props> = ({
             {propertyName ?? 'Analyse du sol'}
           </h2>
           <div className="mt-2 text-[10px] tracking-[0.25em] uppercase text-[hsl(var(--ds-forest))]/60">
-            Prélèvements · lectures agronomiques · Fréquence du Vivant
+            {printSection === 'p3'
+              ? 'Registre des prélèvements · Fréquence du Vivant'
+              : 'Prélèvements · lectures agronomiques · Fréquence du Vivant'}
           </div>
         </div>
       )}
