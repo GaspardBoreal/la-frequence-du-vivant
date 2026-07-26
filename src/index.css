@@ -629,19 +629,70 @@
   }
 }
 
-/* === ANALYZE SUMMARY PRINT — isole le carnet « J'analyse » de l'app === */
+/* === ANALYZE PRINT — portail A4 dédié « J'analyse le sol » === */
+#analyze-print-portal { display: none; }
+
 @media print {
-  body.analyze-printing * { visibility: hidden !important; }
-  body.analyze-printing .analyze-print-root,
-  body.analyze-printing .analyze-print-root * { visibility: visible !important; }
-  body.analyze-printing .analyze-print-root {
-    position: absolute !important;
-    left: 0; top: 0; right: 0;
+  body.analyze-print-mode {
     margin: 0 !important;
-    padding: 24px !important;
-    box-shadow: none !important;
-    border: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
   }
+  body.analyze-print-mode > *:not(#analyze-print-portal) { display: none !important; }
+  body.analyze-print-mode #analyze-print-portal { display: block !important; }
+
+  .analyze-print-page {
+    position: relative;
+    box-sizing: border-box;
+    width: 210mm;
+    min-height: 296mm;
+    max-height: 296mm;
+    overflow: hidden;
+    margin: 0;
+    padding: 14mm 13mm 12mm;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(214, 190, 130, 0.13) 0%, rgba(255, 255, 255, 0) 62%),
+      #fdfcf7 !important;
+    break-after: page;
+    page-break-after: always;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .analyze-print-page:last-child { break-after: auto; page-break-after: auto; }
+
+  .analyze-print-rule {
+    height: 2px;
+    width: 100%;
+    margin-bottom: 8mm;
+    background: linear-gradient(90deg, hsl(var(--ds-gold)) 0%, rgba(214, 190, 130, 0.15) 100%);
+  }
+  .analyze-print-body { font-size: 10.5pt; line-height: 1.45; }
+  .analyze-print-page .analyze-print-root {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  .analyze-print-body .print-break-before {
+    break-before: auto !important;
+    page-break-before: auto !important;
+    margin-top: 0 !important;
+  }
+  .analyze-print-foot {
+    position: absolute;
+    left: 13mm; right: 13mm; bottom: 7mm;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: hsl(var(--ds-forest) / 0.6);
+    border-top: 1px solid hsl(var(--ds-gold) / 0.5);
+    padding-top: 3mm;
+  }
+
   /* Plan des prélèvements : contenu au tiers haut de la page, couleurs forcées */
   .analyze-plan {
     break-inside: avoid;
@@ -650,10 +701,13 @@
     print-color-adjust: exact !important;
   }
   .analyze-plan svg {
-    max-height: 92mm !important;
+    max-height: 86mm !important;
     height: auto !important;
   }
+
+  @page { size: A4; margin: 0; }
 }
+
 
 
 /* === PLAQUETTE PRINT STYLES — Fond vert dégradé "Fréquence du Vivant" === */

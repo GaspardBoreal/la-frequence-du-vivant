@@ -31,7 +31,8 @@ interface Props {
   onPrint?: () => void;
   /** Rendu destiné à l'impression combinée. */
   printOnly?: boolean;
-  printSection?: 'all' | 'first' | 'second';
+  /** Découpage éditorial : p1 = plan + 01, p2 = 02→06, p3 = registre 07 + note 08. */
+  printSection?: 'all' | 'first' | 'second' | 'p1' | 'p2' | 'p3';
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
@@ -122,8 +123,14 @@ export const AnalyzeSummary: React.FC<Props> = ({
       })
     : '—';
 
-  const showFirst = printSection === 'all' || printSection === 'first';
-  const showSecond = printSection === 'all' || printSection === 'second';
+  const showP1 = printSection === 'all' || printSection === 'first' || printSection === 'p1';
+  const showP2 = printSection === 'all' || printSection === 'second' || printSection === 'p2';
+  const showP3 = printSection === 'all' || printSection === 'second' || printSection === 'p3';
+  const showFirst = showP1;
+  const isSuite = printSection === 'second' || printSection === 'p2' || printSection === 'p3';
+  const gridCols = printOnly
+    ? 'grid grid-cols-2 gap-x-8 gap-y-6'
+    : 'grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8';
 
   const phClass = r.ph.dominant ? PH_CLASS_MAP[r.ph.dominant] : null;
   const lifeClass = r.life.dominant ? LIFE_CLASS_MAP[r.life.dominant] : null;
@@ -253,8 +260,8 @@ export const AnalyzeSummary: React.FC<Props> = ({
         </div>
       )}
 
-      {printSection === 'second' && (
-        <div className="mb-10 border-b border-[hsl(var(--ds-gold))]/70 pb-5">
+      {isSuite && (
+        <div className="mb-8 border-b border-[hsl(var(--ds-gold))]/70 pb-5">
           <div className="text-[10px] font-bold tracking-[0.35em] uppercase text-[hsl(var(--ds-forest))]/70">
             Diagnostic Propriété · Étape 2 · Suite
           </div>
@@ -262,7 +269,9 @@ export const AnalyzeSummary: React.FC<Props> = ({
             {propertyName ?? 'Analyse du sol'}
           </h2>
           <div className="mt-2 text-[10px] tracking-[0.25em] uppercase text-[hsl(var(--ds-forest))]/60">
-            Prélèvements · lectures agronomiques · Fréquence du Vivant
+            {printSection === 'p3'
+              ? 'Registre des prélèvements · Fréquence du Vivant'
+              : 'Prélèvements · lectures agronomiques · Fréquence du Vivant'}
           </div>
         </div>
       )}
@@ -344,7 +353,7 @@ export const AnalyzeSummary: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+          <div className={printOnly ? 'grid grid-cols-1' : 'grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8'}>
             <Section number={1} title="État du terrain" blockId="terrain" onEditBlock={onEditBlock} printOnly={printOnly}>
               {r.terrainLabel ? (
                 <>
@@ -359,84 +368,86 @@ export const AnalyzeSummary: React.FC<Props> = ({
                 <Empty />
               )}
             </Section>
-
-            <Section
-              number={2}
-              title="Prélèvements"
-              blockId="prelevements"
-              onEditBlock={onEditBlock}
-              printOnly={printOnly}
-              warn={r.samples.length === 0}
-            >
-              <div className="mb-3 flex flex-wrap gap-1.5">
-                {r.samples.map((s) => (
-                  <Chip key={s.id}>
-                    <span className="font-bold">{s.label}</span>
-                    <span className="opacity-70">{s.location?.trim() || 'sans repère'}</span>
-                  </Chip>
-                ))}
-                {r.samples.length === 0 && <Empty />}
-              </div>
-              <p className="text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed">
-                {r.placedSamples} prélèvement{r.placedSamples > 1 ? 's' : ''} positionné
-                {r.placedSamples > 1 ? 's' : ''} sur la carte cadastrale du site.
-              </p>
-            </Section>
-
-            <Section
-              number={3}
-              title="Structure du sol"
-              blockId="structure"
-              onEditBlock={onEditBlock}
-              printOnly={printOnly}
-              warn={r.structure.dominant === 'compacte'}
-            >
-              {r.structure.dominant ? (
-                <>
-                  <div className="mb-3 flex flex-wrap gap-1.5">
-                    <Chip>{RESULT_SHORT[r.structure.dominant]}</Chip>
-                    <Chip tone="muted">{r.structure.filled} / {r.samples.length} testés</Chip>
-                    {r.structure.contrasted && <Chip tone="muted">Sol contrasté</Chip>}
-                  </div>
-                  <p className="text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed">
-                    {r.readings.find((x) => x.key === 'structure')?.text}
-                  </p>
-                </>
-              ) : (
-                <Empty />
-              )}
-            </Section>
-
-            <Section
-              number={4}
-              title="Texture du sol"
-              blockId="texture"
-              onEditBlock={onEditBlock}
-              printOnly={printOnly}
-            >
-              {r.texture.dominant ? (
-                <>
-                  <div className="mb-3 flex flex-wrap gap-1.5">
-                    <Chip>{TEXTURE_SHORT[r.texture.dominant]}</Chip>
-                    <Chip tone="muted">{r.texture.filled} / {r.samples.length} testés</Chip>
-                    {r.texture.contrasted && <Chip tone="muted">Texture contrastée</Chip>}
-                  </div>
-                  <p className="text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed">
-                    {r.readings.find((x) => x.key === 'texture')?.text}
-                  </p>
-                </>
-              ) : (
-                <Empty />
-              )}
-            </Section>
           </div>
+
         </>
       )}
 
-      {showSecond && (
+      {showP2 && (
         <div
-          className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8`}
+          className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} ${gridCols}`}
         >
+          <Section
+            number={2}
+            title="Prélèvements"
+            blockId="prelevements"
+            onEditBlock={onEditBlock}
+            printOnly={printOnly}
+            warn={r.samples.length === 0}
+          >
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {r.samples.map((s) => (
+                <Chip key={s.id}>
+                  <span className="font-bold">{s.label}</span>
+                  <span className="opacity-70">{s.location?.trim() || 'sans repère'}</span>
+                </Chip>
+              ))}
+              {r.samples.length === 0 && <Empty />}
+            </div>
+            <p className="text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed">
+              {r.placedSamples} prélèvement{r.placedSamples > 1 ? 's' : ''} positionné
+              {r.placedSamples > 1 ? 's' : ''} sur la carte cadastrale du site.
+            </p>
+          </Section>
+
+          <Section
+            number={3}
+            title="Structure du sol"
+            blockId="structure"
+            onEditBlock={onEditBlock}
+            printOnly={printOnly}
+            warn={r.structure.dominant === 'compacte'}
+          >
+            {r.structure.dominant ? (
+              <>
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  <Chip>{RESULT_SHORT[r.structure.dominant]}</Chip>
+                  <Chip tone="muted">{r.structure.filled} / {r.samples.length} testés</Chip>
+                  {r.structure.contrasted && <Chip tone="muted">Sol contrasté</Chip>}
+                </div>
+                <p className="text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed">
+                  {r.readings.find((x) => x.key === 'structure')?.text}
+                </p>
+              </>
+            ) : (
+              <Empty />
+            )}
+          </Section>
+
+          <Section
+            number={4}
+            title="Texture du sol"
+            blockId="texture"
+            onEditBlock={onEditBlock}
+            printOnly={printOnly}
+          >
+            {r.texture.dominant ? (
+              <>
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  <Chip>{TEXTURE_SHORT[r.texture.dominant]}</Chip>
+                  <Chip tone="muted">{r.texture.filled} / {r.samples.length} testés</Chip>
+                  {r.texture.contrasted && <Chip tone="muted">Texture contrastée</Chip>}
+                </div>
+                <p className="text-[hsl(var(--ds-forest-deep))]/85 leading-relaxed">
+                  {r.readings.find((x) => x.key === 'texture')?.text}
+                </p>
+              </>
+            ) : (
+              <Empty />
+            )}
+          </Section>
+
+
           <Section
             number={5}
             title="Acidité"
@@ -490,9 +501,18 @@ export const AnalyzeSummary: React.FC<Props> = ({
               <Empty />
             )}
           </Section>
+        </div>
+      )}
 
+      {showP3 && (
+        <div
+          className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} ${
+            printOnly ? 'grid grid-cols-1 gap-y-8' : 'grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8'
+          }`}
+        >
           {/* Tableau des prélèvements — pleine largeur */}
-          <div className="md:col-span-2 mt-4 pt-8 border-t border-[hsl(var(--ds-line))] print-avoid-break">
+          <div className="md:col-span-2 print-avoid-break">
+
             <div className="flex items-end justify-between mb-4 flex-wrap gap-3">
               <div>
                 <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">

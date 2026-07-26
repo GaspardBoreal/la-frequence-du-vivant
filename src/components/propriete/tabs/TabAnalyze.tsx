@@ -20,6 +20,7 @@ import { LifeSignsBlock } from '@/components/propriete/analyze/blocks/LifeSignsB
 import { AnalyzeSummary, type AnalyzeBlockId } from '@/components/propriete/analyze/AnalyzeSummary';
 import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/print/PrintChoiceDialog';
 import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
+import { AnalyzePrintLayout } from '@/components/propriete/print/AnalyzePrintLayout';
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
@@ -142,11 +143,18 @@ export const TabAnalyze: React.FC<{
 
   const [printOpen, setPrintOpen] = React.useState(false);
   const [combinedPrinting, setCombinedPrinting] = React.useState(false);
+  const [soloPrinting, setSoloPrinting] = React.useState(false);
   const combinedPortalRef = usePrintCombined({
     active: combinedPrinting,
     portalId: 'combined-print-portal',
     bodyClass: 'combined-printing',
     onDone: () => setCombinedPrinting(false),
+  });
+  const soloPortalRef = usePrintCombined({
+    active: soloPrinting,
+    portalId: 'analyze-print-portal',
+    bodyClass: 'analyze-print-mode',
+    onDone: () => setSoloPrinting(false),
   });
 
   const handleConfirmPrint = (choice: PrintChoice) => {
@@ -155,13 +163,7 @@ export const TabAnalyze: React.FC<{
       setCombinedPrinting(true);
       return;
     }
-    document.body.classList.add('analyze-printing');
-    const cleanup = () => {
-      document.body.classList.remove('analyze-printing');
-      window.removeEventListener('afterprint', cleanup);
-    };
-    window.addEventListener('afterprint', cleanup);
-    setTimeout(() => window.print(), 60);
+    setSoloPrinting(true);
   };
 
   const printDialogAndPortal = (
@@ -175,6 +177,15 @@ export const TabAnalyze: React.FC<{
         analyzeReady={isDone}
         observeReady={!!observation.completedAt}
       />
+      {soloPrinting && soloPortalRef.current && createPortal(
+        <AnalyzePrintLayout
+          soil={state}
+          completedAt={completedAt}
+          propertyName={propertyName}
+          parcelles={parcelles}
+        />,
+        soloPortalRef.current,
+      )}
       {combinedPrinting && combinedPortalRef.current && createPortal(
         <CombinedPrintLayout
           answers={observation.state.answers}
@@ -196,6 +207,7 @@ export const TabAnalyze: React.FC<{
       )}
     </>
   );
+
 
   // Vue synthèse (carnet scellé) — quand terminé et non en mode édition
   if (isDone && mode === 'summary') {
