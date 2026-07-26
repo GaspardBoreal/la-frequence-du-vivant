@@ -159,7 +159,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       <div className="flex items-center gap-1 text-[10px] font-bold tracking-[0.22em] uppercase text-[hsl(var(--ds-forest-deep))]/70 mr-1">
         <Filter className="w-3 h-3" /> Filtre
       </div>
-      {(['all', 'Plantae', 'Animalia', 'Fungi'] as KingdomFilter[]).map((k) => (
+      {(['all', ...KINGDOM_ORDER] as KingdomFilter[]).map((k) => (
         <button
           key={k}
           onClick={() => setKingdom(k)}
@@ -169,7 +169,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
               : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
           }`}
         >
-          {k === 'all' ? 'Tous' : KINGDOM_LABELS_FR_SHORT[normalizeKingdom(k)]}
+          {k === 'all' ? 'Tous' : KINGDOM_LABELS_FR_SHORT[k]}
           {k !== 'all' && <span className="ml-1 opacity-60">· {stats[k] ?? 0}</span>}
         </button>
       ))}
@@ -184,8 +184,10 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         🌿 Bio-indicatrices seulement
       </button>
       <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
-        {filtered.length} obs.
+        {visibleSpecies} espèces
+        <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
       </span>
+
     </div>
   );
 
