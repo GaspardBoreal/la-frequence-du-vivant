@@ -10,27 +10,22 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
-import { KINGDOM_LABELS_FR_SHORT, normalizeKingdom } from '@/lib/kingdomLabels';
+import { KINGDOM_LABELS_FR_SHORT, KINGDOM_ORDER, normalizeKingdom, type KingdomKey } from '@/lib/kingdomLabels';
 
 const norm = (s: string | null | undefined): string =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
-const KINGDOM_COLORS: Record<string, string> = {
-  Plantae: '#2f5d3a',
-  Animalia: '#c26a3a',
-  Fungi: '#8a4b8f',
-  Other: '#8a8a8a',
+const KINGDOM_COLORS: Record<KingdomKey, string> = {
+  plantae: '#2f5d3a',
+  animalia: '#c26a3a',
+  fungi: '#8a4b8f',
+  others: '#8a8a8a',
 };
 
-const kingdomFrom = (k?: string | null): string => {
-  const s = (k || '').toLowerCase();
-  if (s.includes('plant')) return 'Plantae';
-  if (s.includes('fungi')) return 'Fungi';
-  if (s.includes('animal') || s.includes('aves') || s.includes('insect') || s.includes('mamm')) return 'Animalia';
-  return 'Other';
-};
+const kingdomFrom = (k?: string | null): KingdomKey => normalizeKingdom(k);
 
-type KingdomFilter = 'all' | 'Plantae' | 'Animalia' | 'Fungi';
+type KingdomFilter = 'all' | KingdomKey;
+
 
 export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> = ({
   proprieteId,
@@ -102,11 +97,47 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 2px 6px rgba(0,0,0,.3);"></div>`,
     });
 
+  /**
+   * Comptage **espèces distinctes** — même méthode que le bandeau
+   * « Empreinte biodiversité mesurée ici » (usePropertySpeciesCount) :
+   * dédup par nom scientifique normalisé (NFD + lower + trim), règne via
+   * normalizeKingdom, un règne identifié l'emporte sur « autres ».
+   */
+  const speciesBucket = (list: typeof waypoints) => {
+    const bucket = new Map<string, KingdomKey>();
+    for (const w of list) {
+      const key = norm(w.scientificName);
+      if (!key) continue;
+      const k = kingdomFrom(w.kingdom);
+      const existing = bucket.get(key);
+      if (!existing || (existing === 'others' && k !== 'others')) bucket.set(key, k);
+    }
+    return bucket;
+  };
+
+  // Pastilles : calculées après le filtre bio-indicatrices, avant le filtre de règne
   const stats = useMemo(() => {
-    const counts: Record<string, number> = { Plantae: 0, Animalia: 0, Fungi: 0, Other: 0 };
-    for (const w of filtered) counts[kingdomFrom(w.kingdom)]++;
+    const base = onlyKb
+      ? waypoints.filter((w) => {
+          const n = norm(w.scientificName);
+          return kbKeys.has(n) || kbKeys.has(n.split(/\s+/)[0]);
+        })
+      : waypoints;
+    const counts: Record<KingdomKey, number> = { plantae: 0, animalia: 0, fungi: 0, others: 0 };
+    speciesBucket(base).forEach((k) => {
+      counts[k] += 1;
+    });
     return counts;
-  }, [filtered]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waypoints, onlyKb, kbKeys]);
+
+  // Total affiché : espèces distinctes actuellement visibles sur la carte
+  const visibleSpecies = useMemo(
+    () => speciesBucket(filtered).size,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filtered],
+  );
+
 
   const hasData = waypoints.length > 0;
 
@@ -128,7 +159,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       <div className="flex items-center gap-1 text-[10px] font-bold tracking-[0.22em] uppercase text-[hsl(var(--ds-forest-deep))]/70 mr-1">
         <Filter className="w-3 h-3" /> Filtre
       </div>
-      {(['all', 'Plantae', 'Animalia', 'Fungi'] as KingdomFilter[]).map((k) => (
+      {(['all', ...KINGDOM_ORDER] as KingdomFilter[]).map((k) => (
         <button
           key={k}
           onClick={() => setKingdom(k)}
@@ -138,7 +169,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
               : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
           }`}
         >
-          {k === 'all' ? 'Tous' : KINGDOM_LABELS_FR_SHORT[normalizeKingdom(k)]}
+          {k === 'all' ? 'Tous' : KINGDOM_LABELS_FR_SHORT[k]}
           {k !== 'all' && <span className="ml-1 opacity-60">· {stats[k] ?? 0}</span>}
         </button>
       ))}
@@ -153,8 +184,10 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         🌿 Bio-indicatrices seulement
       </button>
       <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
-        {filtered.length} obs.
+        {visibleSpecies} espèces
+        <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
       </span>
+
     </div>
   );
 
@@ -169,7 +202,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         height="100%"
       >
         {filtered.map((w) => {
-          const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.Other;
+          const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
           return (
             <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color)}>
               <Popup>
@@ -267,7 +300,11 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                       Où les marcheurs ont-ils observé le vivant ?
                     </div>
                   </div>
-                  <span className="ml-auto text-sm font-semibold text-[hsl(var(--ds-forest))]">{filtered.length} obs.</span>
+                  <span className="ml-auto text-sm font-semibold text-[hsl(var(--ds-forest))]">
+                    {visibleSpecies} espèces
+                    <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
+                  </span>
+
                   <button
                     onClick={() => setFullscreen(false)}
                     aria-label="Fermer le plein écran"
