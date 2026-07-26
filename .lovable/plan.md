@@ -1,62 +1,49 @@
-## Objectif
+## Constat (vérifié en base)
 
-Passer le Widget 6 « Étape 2 · Vie du sol » du même niveau de finition que les Widgets 3 (Structure), 4 (Texture) et 5 (Acidité) : pleine largeur, consigne pédagogique, tests nommés/schématisés/expliqués avec étagère vidéo, relevé par prélèvement, synthèse.
+Pour la propriété **Jardin Monde DEVIAT** :
 
-## Ce que verra l'utilisateur
+| Source | Total | Détail |
+|---|---|---|
+| `get_propriete_biodiversity` (espace Propriété) | **226** | Animalia 99 · Plantae 101 · Fungi 3 · Unknown 23 |
+| `get_exploration_species_count` (Mon espace › Taxons observés) | **226** | animalia 99 · plantae 101 · fungi 3 · others 23 |
+| `get_exploration_species_pool` (liste affichée) | **226** | — |
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ 6 · ÉTAPE 2 · VIE DU SOL — « Ce que la terre laisse voir »    │
-│ HERO : coupe de sol vivante (vers, galeries, radicelles,      │
-│        micro-faune) — densité et couleur pilotées par le      │
-│        score de vie moyen des prélèvements                    │
-├──────────────────────────────────────────────────────────────┤
-│ ① Consigne « Ce que vous devez faire » + fil 1→4              │
-│   Observer → Compter → Cocher → Noter                        │
-│ ① bis  Pourquoi c'est décisif  |  Nota bene                   │
-├──────────────────────────────────────────────────────────────┤
-│ ② Les protocoles (cartes côte à côte, schémas animés)         │
-│   • Test bêche vivante (bloc 20×20×20, tri 5 min)            │
-│   • Test du vinaigre / CO₂ (effervescence = calcaire)        │
-│   • Test du slip / sachet de thé (dégradation) [optionnel]   │
-│   ↳ Étagère « Ciné-terrain » (1 à 3 vidéos, prête à recevoir │
-│     les liens que vous fournirez)                            │
-├──────────────────────────────────────────────────────────────┤
-│ ③ Relevé par prélèvement  (A → E, 3/5 renseignés)            │
-│   [A] emplacement · test utilisé · indices cochés · nb vers  │
-│       → pastille de vitalité (Faible/Moyenne/Forte)          │
-├──────────────────────────────────────────────────────────────┤
-│ ④ Synthèse : barres de distribution des indices, vitalité    │
-│   dominante, indice de vie moyen, alerte « sol contrasté »   │
-└──────────────────────────────────────────────────────────────┘
-```
+Les chiffres sont donc **déjà identiques** : même déduplication (`lower(unaccent(...))` + alias de curation), même filtrage par rayon Haversine, même union snapshots ∪ observations marcheurs.
 
-## Indices de vie retenus (cochables par prélèvement)
+Il reste deux vrais problèmes :
 
-Vers de terre (avec comptage), galeries / taupinières, racines actives et radicelles fines, micro-faune visible (cloportes, collemboles, mille-pattes), mycélium / filaments blancs, matière organique en décomposition, odeur d'humus, effervescence au vinaigre (CO₂ / calcaire). Chaque indice a une infobulle riche (description sensorielle + lecture agronomique), au format des tooltips des blocs 3/4/5.
+1. **Libellés en anglais** dans l'interface : le bandeau « En appui — biodiversité connue » affiche les clés brutes du règne (`3 Fungi`, `101 Plantae`, `23 Unknown`, `99 Animalia`), alors que Mon espace dit « Faune / Flore / Champignons ». Idem pour les filtres de la carte « Cortège révélé » (`Plantae`, `Animalia`, `Fungi`, `Other`).
+2. **Aucune garantie structurelle** que les deux compteurs restent alignés : ce sont deux fonctions SQL distinctes, et si la propriété est reliée à des événements de plusieurs explorations, l'agrégation propriété et la vue marcheur pourraient divergier à l'avenir.
 
-## Lecture de vitalité
+## Ce qu'on met en place
 
-Score par prélèvement dérivé du nombre d'indices cochés + comptage de vers (barème : < 5 vers faible, 5–15 moyenne, > 15 forte pour une bêchée 20×20×20). Trois classes : Vie discrète · Vie installée · Vie foisonnante, chacune avec verbe clé, couleur et conduite conseillée.
+### 1. Vocabulaire français unique des règnes
+Créer un helper partagé (`src/lib/kingdomLabels.ts`) :
+- normalisation d'une clé de règne quelconque (`Plantae`, `plants`, `Aves`, `Insecta`, `Unknown`, `Other`, `null`) vers 4 catégories, exactement comme `SpeciesExplorer` ;
+- libellés FR : **Flore**, **Faune**, **Champignons**, **Autres / indéterminés** (singulier/pluriel gérés) ;
+- ordre d'affichage stable : Flore → Faune → Champignons → Autres.
+
+### 2. Compteur de propriété branché sur la fonction de Mon espace
+Nouveau hook `usePropertySpeciesCount(proprieteId)` :
+- récupère les `exploration_id` des événements liés (même requête que `usePropertySpeciesPool`) ;
+- appelle **`get_exploration_species_count`** pour chacune (la fonction utilisée par Mon espace › Biodiversité) ;
+- fusionne côté client les listes `species` par nom scientifique normalisé (évite tout double comptage si plusieurs explorations partagent des espèces) ;
+- expose `total`, `byKingdom` (4 catégories FR) et `explorationIds`.
+
+L'espace Propriété consomme ce hook pour tous les chiffres d'espèces / règnes : « Espèces observées », « Règnes présents », bandeau « En appui », synthèse. `usePropertyBiodiversity` reste la source des données non-espèces (événements, dates de dernière observation, top espèces).
+
+### 3. Écrans corrigés
+- `TabAnalyze.tsx` — bandeau « En appui — biodiversité connue » : puces en français, ordre stable, catégorie « Autres / indéterminés », total affiché à côté du titre.
+- `BiodiversityEvidenceBlock.tsx` — cartes « Espèces observées » / « Règnes présents » alimentées par le nouveau hook, puces de règnes en français avec leurs icônes.
+- `TabSynthesize.tsx` — lignes « Espèces observées » et « Règnes présents » alignées sur le même compteur.
+- `RevealMapBlock.tsx` — chips de filtre en français (Tout · Flore · Faune · Champignons), couleurs et logique de filtrage inchangées.
+
+### 4. Vérification
+- Comparaison chiffrée pour DEVIAT : le total affiché dans la Propriété doit être **226**, identique à Mon espace (99 Faune · 101 Flore · 3 Champignons · 23 Autres).
+- Contrôle visuel via capture de `/propriete/jardin-monde-deviat` (onglets J'analyse et Portrait) pour confirmer l'absence de tout libellé anglais.
 
 ## Détails techniques
 
-Nouveaux fichiers dans `src/components/propriete/analyze/` :
-- `lifeTests.ts` — modèle : `LIFE_SIGNS` (id, label, icône, description sensorielle, lecture agronomique), `LIFE_TESTS` (protocoles + étapes + emplacements vidéos), `LIFE_CLASSES`, `scoreLife()`, `aggregateLife()`.
-- `LifePictos.tsx` — pictos SVG dédiés par indice + schémas animés des protocoles (bêchée triée, bocal vinaigre effervescent, sachet enterré).
-- `LifeCrossSection.tsx` — hero SVG morphant selon la vitalité dominante.
-- `LifeProtocolCard.tsx` — protocole détaillé, réutilise `TestVideoShelf` / `VideoLightbox` existants.
-- `LifeChoiceTooltip.tsx` — infobulle riche, avec prop `align` pour éviter tout débordement.
-- `LifeSampleRow.tsx` — ligne A→E : test utilisé, chips d'indices cochables, champ nb de vers, pastille de vitalité.
-- `LifeResultsSummary.tsx` — distribution des indices, vitalité dominante, indice moyen, amplitude.
-
-Fichiers modifiés :
-- `blocks/LifeSignsBlock.tsx` — réécrit sur le modèle de `PhBlock` (consigne, protocoles, relevé par prélèvement, synthèse). Reçoit `samples` + `onUpdateSample`, conserve `values`/`onToggle` pour la liste globale du site, désormais dérivée de l'union des indices des prélèvements.
-- `hooks/propriete/usePropertySoil.ts` — ajout sur `SoilSample` de `life_test`, `life_signs: string[]`, `worm_count?: number | null` (persistés dans le JSONB `samples`, aucune migration SQL nécessaire).
-- `tabs/TabAnalyze.tsx` — sortir le bloc 6 de la grille `md:grid-cols-2` pour le passer en pleine largeur ; passage de `samples`/`updateSample` ; ajustement du compteur de progression (bloc 6 validé dès qu'un prélèvement porte au moins un indice).
-
-Aucun changement des blocs 1, 2, 5 hors passage de props, et aucun changement de logique métier hors Widget 6.
-
-## Vidéos
-
-L'étagère « Ciné-terrain » est câblée avec trois emplacements vides (titre + angle) prêts à recevoir vos URLs YouTube ; il suffira de les coller dans `lifeTests.ts`.
+- Aucune migration SQL : les deux RPC existantes suffisent, on cesse simplement d'utiliser `kingdoms` brut de `get_propriete_biodiversity` pour l'affichage.
+- Le hook réutilise le cache react-query par exploration (`['exploration-species-count', id]`), donc aucun appel réseau supplémentaire si la vue marcheur a déjà chargé la donnée.
+- Aucun changement de logique métier de comptage : dédup, rayon et alias restent gérés côté SQL.

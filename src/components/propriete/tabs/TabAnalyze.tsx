@@ -11,6 +11,8 @@ import { StructureBlock } from '@/components/propriete/analyze/blocks/StructureB
 import { TextureBlock } from '@/components/propriete/analyze/blocks/TextureBlock';
 import { PhBlock } from '@/components/propriete/analyze/blocks/PhBlock';
 import { LifeSignsBlock } from '@/components/propriete/analyze/blocks/LifeSignsBlock';
+import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
+import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
 
 const TOTAL = 7; // 6 blocs + synthèse
 
@@ -33,7 +35,9 @@ export const TabAnalyze: React.FC<{
     markComplete,
   } = usePropertySoil(proprieteId);
 
+  const speciesCount = usePropertySpeciesCount(proprieteId);
   const [submitting, setSubmitting] = React.useState(false);
+
 
   const filled =
     (state.terrain_status ? 1 : 0) +
@@ -152,20 +156,27 @@ export const TabAnalyze: React.FC<{
       </div>
 
       {/* Empreinte biodiversité (contexte) */}
-      {bio && (
+      {speciesCount.total > 0 && (
         <div className="rounded-3xl border border-dashed border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-5 text-xs text-[hsl(var(--ds-forest-deep))]/80">
-          <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/70 mb-2">
-            En appui — biodiversité connue
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+            <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/70">
+              En appui — biodiversité connue
+            </div>
+            <div className="text-[11px] text-[hsl(var(--ds-forest-deep))]/60">
+              <span className="font-semibold">{speciesCount.total}</span> espèces recensées
+            </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            {Object.entries(bio.kingdoms ?? {}).map(([k, v]) => (
+            {KINGDOM_ORDER.filter((k) => speciesCount.byKingdom[k] > 0).map((k) => (
               <span key={k} className="rounded-full bg-[hsl(var(--ds-forest))]/10 px-3 py-1">
-                <span className="font-semibold">{v}</span> {k}
+                <span className="font-semibold">{speciesCount.byKingdom[k]}</span>{' '}
+                {KINGDOM_LABELS_FR[k]}
               </span>
             ))}
           </div>
         </div>
       )}
+
 
       {/* Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6">

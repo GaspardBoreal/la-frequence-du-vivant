@@ -3,15 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, Leaf, Bug, Bird, Sprout, ChevronDown } from 'lucide-react';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
+import { KINGDOM_ORDER, KINGDOM_LABELS_FR, type KingdomKey } from '@/lib/kingdomLabels';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 
-const KINGDOM_ICONS: Record<string, React.ReactNode> = {
-  Plantae: <Sprout className="w-4 h-4" />,
-  Animalia: <Bird className="w-4 h-4" />,
-  Insecta: <Bug className="w-4 h-4" />,
-  Fungi: <Leaf className="w-4 h-4" />,
+const KINGDOM_ICONS: Record<KingdomKey, React.ReactNode> = {
+  plantae: <Sprout className="w-4 h-4" />,
+  animalia: <Bird className="w-4 h-4" />,
+  fungi: <Leaf className="w-4 h-4" />,
+  others: <Bug className="w-4 h-4" />,
 };
+
 
 const StatCard: React.FC<{ label: string; value: React.ReactNode; small?: boolean }> = ({
   label,
@@ -39,8 +42,9 @@ export const BiodiversityEvidenceBlock: React.FC<Props> = ({
   defaultOpen = false,
 }) => {
   const [open, setOpen] = React.useState(defaultOpen);
-  const kingdoms = Object.entries(bio?.kingdoms ?? {});
+  const speciesCount = usePropertySpeciesCount(proprieteId);
   const eventCount = bio?.events.length ?? 0;
+
 
   // Le pool n'est chargé qu'à l'ouverture — évite le fan-out RPC inutile.
   const { species, fieldPhotos, isLoading, latestExplorationId } = usePropertySpeciesPool(
@@ -85,11 +89,27 @@ export const BiodiversityEvidenceBlock: React.FC<Props> = ({
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Espèces observées" value={bio?.speciesTotal ?? 0} />
+        <StatCard label="Espèces observées" value={speciesCount.total} />
         <StatCard label="Marches réalisées" value={eventCount} />
-        <StatCard label="Règnes présents" value={kingdoms.length} />
+        <StatCard label="Règnes présents" value={speciesCount.kingdomsPresent} />
         <StatCard label="Dernière observation" value={lastObsLabel} small />
       </div>
+
+      {speciesCount.total > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {KINGDOM_ORDER.filter((k) => speciesCount.byKingdom[k] > 0).map((k) => (
+            <span
+              key={k}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs"
+            >
+              {KINGDOM_ICONS[k]}
+              <span className="font-semibold">{speciesCount.byKingdom[k]}</span>
+              <span className="text-muted-foreground">{KINGDOM_LABELS_FR[k]}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
 
       <AnimatePresence initial={false}>
         {open && (

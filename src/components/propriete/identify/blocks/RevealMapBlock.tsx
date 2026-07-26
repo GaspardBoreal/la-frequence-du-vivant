@@ -8,6 +8,7 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { KINGDOM_LABELS_FR_SHORT, normalizeKingdom } from '@/lib/kingdomLabels';
 
 const norm = (s: string | null | undefined): string =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -137,7 +138,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                     : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
                 }`}
               >
-                {k === 'all' ? 'Tous' : k}
+                {k === 'all' ? 'Tous' : KINGDOM_LABELS_FR_SHORT[normalizeKingdom(k)]}
                 {k !== 'all' && (
                   <span className="ml-1 opacity-60">· {stats[k] ?? 0}</span>
                 )}
