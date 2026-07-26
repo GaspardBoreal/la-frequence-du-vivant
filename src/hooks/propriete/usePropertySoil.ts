@@ -19,7 +19,12 @@ export interface SoilSample {
   texture_result?: 'sable' | 'limon' | 'argile' | null;
   /** Bloc 4 · forme prise par le boudin (indice de teneur en argile) */
   boudin_form?: 'droit' | 'lune' | 'cercle' | null;
+  /** Bloc 5 · test de pH réalisé sur ce prélèvement */
+  ph_test?: 'bandelette' | 'phmetre' | null;
+  /** Bloc 5 · valeur de pH mesurée (4 → 9) */
+  ph_value?: number | null;
 }
+
 
 
 

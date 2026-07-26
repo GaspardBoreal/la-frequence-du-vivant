@@ -40,7 +40,7 @@ export const TabAnalyze: React.FC<{
     (state.samples.some((s) => (s.location ?? '').trim().length > 0) ? 1 : 0) +
     (state.samples.some((s) => s.structure_test && s.structure_result) ? 1 : 0) +
     (state.samples.some((s) => s.texture_test && s.texture_result) || state.boudin_shape ? 1 : 0) +
-    (state.ph != null ? 1 : 0) +
+    (state.samples.some((s) => typeof s.ph_value === 'number') || state.ph != null ? 1 : 0) +
     (state.life_signs.length > 0 ? 1 : 0) +
     ((state.synthesis ?? '').trim().length > 0 ? 1 : 0);
 
@@ -112,11 +112,20 @@ export const TabAnalyze: React.FC<{
 
       </div>
 
-      {/* Blocs 5 & 6 : conservés en 2 colonnes */}
+      {/* Bloc 5 : pleine largeur — une mesure de pH par prélèvement */}
+      <PhBlock
+        value={state.ph}
+        onChange={(v) => setField('ph', v)}
+        samples={state.samples}
+        onUpdateSample={updateSample}
+        index={4}
+      />
+
+      {/* Bloc 6 */}
       <div className="grid md:grid-cols-2 gap-5">
-        <PhBlock value={state.ph} onChange={(v) => setField('ph', v)} index={4} />
         <LifeSignsBlock values={state.life_signs} onToggle={toggleLifeSign} index={5} />
       </div>
+
 
       {/* Synthèse */}
       <div className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6 shadow-[0_2px_20px_-10px_rgba(60,80,60,0.15)]">
