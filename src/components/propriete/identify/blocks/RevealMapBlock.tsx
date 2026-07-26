@@ -110,6 +110,108 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
   const hasData = waypoints.length > 0;
 
+  // Esc closes fullscreen + lock body scroll
+  useEffect(() => {
+    if (!fullscreen) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setFullscreen(false); };
+    window.addEventListener('keydown', handler);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handler);
+      document.body.style.overflow = prev;
+    };
+  }, [fullscreen]);
+
+  const filtersBar = (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1 text-[10px] font-bold tracking-[0.22em] uppercase text-[hsl(var(--ds-forest-deep))]/70 mr-1">
+        <Filter className="w-3 h-3" /> Filtre
+      </div>
+      {(['all', 'Plantae', 'Animalia', 'Fungi'] as KingdomFilter[]).map((k) => (
+        <button
+          key={k}
+          onClick={() => setKingdom(k)}
+          className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+            kingdom === k
+              ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest))]'
+              : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+          }`}
+        >
+          {k === 'all' ? 'Tous' : KINGDOM_LABELS_FR_SHORT[normalizeKingdom(k)]}
+          {k !== 'all' && <span className="ml-1 opacity-60">· {stats[k] ?? 0}</span>}
+        </button>
+      ))}
+      <button
+        onClick={() => setOnlyKb((v) => !v)}
+        className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+          onlyKb
+            ? 'bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest-deep))]'
+            : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+        }`}
+      >
+        🌿 Bio-indicatrices seulement
+      </button>
+      <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
+        {filtered.length} obs.
+      </span>
+    </div>
+  );
+
+  const mapNode = (heightPx: number | string) => (
+    <div className="relative rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: heightPx }}>
+      <RichMap
+        center={center}
+        zoom={16}
+        bounds={bounds.length > 1 ? bounds : undefined}
+        controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
+        maxZoom={22}
+        height="100%"
+      >
+        {filtered.map((w) => {
+          const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.Other;
+          return (
+            <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color)}>
+              <Popup>
+                <div style={{ minWidth: 160 }}>
+                  {w.photoUrl && (
+                    <img
+                      src={w.photoUrl}
+                      alt={w.scientificName}
+                      style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
+                    />
+                  )}
+                  <div style={{ fontWeight: 600, fontSize: 12 }}>
+                    {w.commonName || w.scientificName}
+                  </div>
+                  <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
+                    {w.scientificName}
+                  </div>
+                  {w.observationDate && (
+                    <div style={{ fontSize: 10, marginTop: 4, color: '#888' }}>
+                      <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
+                      {new Date(w.observationDate).toLocaleDateString('fr-FR')}
+                    </div>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </RichMap>
+
+      {/* Fullscreen toggle : top-left to avoid overlapping Géo/Sat/Relief/Cadastre (top-right) */}
+      <button
+        type="button"
+        onClick={() => setFullscreen((v) => !v)}
+        aria-label={fullscreen ? 'Quitter le plein écran' : 'Passer en plein écran'}
+        className="absolute top-3 left-3 z-[400] w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--ds-forest-deep))] transition"
+      >
+        {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+
   return (
     <AnalyzeCard
       number={2}
@@ -127,88 +229,66 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <div className="flex items-center gap-1 text-[10px] font-bold tracking-[0.22em] uppercase text-[hsl(var(--ds-forest-deep))]/70 mr-1">
-              <Filter className="w-3 h-3" /> Filtre
-            </div>
-            {(['all', 'Plantae', 'Animalia', 'Fungi'] as KingdomFilter[]).map((k) => (
-              <button
-                key={k}
-                onClick={() => setKingdom(k)}
-                className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
-                  kingdom === k
-                    ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest))]'
-                    : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
-                }`}
-              >
-                {k === 'all' ? 'Tous' : KINGDOM_LABELS_FR_SHORT[normalizeKingdom(k)]}
-                {k !== 'all' && (
-                  <span className="ml-1 opacity-60">· {stats[k] ?? 0}</span>
-                )}
-              </button>
-            ))}
-            <button
-              onClick={() => setOnlyKb((v) => !v)}
-              className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
-                onlyKb
-                  ? 'bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest-deep))]'
-                  : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
-              }`}
-            >
-              🌿 Bio-indicatrices seulement
-            </button>
-            <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
-              {filtered.length} obs.
-            </span>
-          </div>
+          <div className="mb-3">{!fullscreen && filtersBar}</div>
 
-          <div className="rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: 380 }}>
-            <RichMap
-              center={center}
-              zoom={16}
-              bounds={bounds.length > 1 ? bounds : undefined}
-              controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
-              maxZoom={22}
-              height="100%"
-            >
-              {filtered.map((w) => {
-                const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.Other;
-                return (
-                  <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color)}>
-                    <Popup>
-                      <div style={{ minWidth: 160 }}>
-                        {w.photoUrl && (
-                          <img
-                            src={w.photoUrl}
-                            alt={w.scientificName}
-                            style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
-                          />
-                        )}
-                        <div style={{ fontWeight: 600, fontSize: 12 }}>
-                          {w.commonName || w.scientificName}
-                        </div>
-                        <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
-                          {w.scientificName}
-                        </div>
-                        {w.observationDate && (
-                          <div style={{ fontSize: 10, marginTop: 4, color: '#888' }}>
-                            <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
-                            {new Date(w.observationDate).toLocaleDateString('fr-FR')}
-                          </div>
-                        )}
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
-            </RichMap>
-          </div>
+          {!fullscreen ? (
+            mapNode(380)
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/40 h-[380px] flex items-center justify-center text-[hsl(var(--ds-forest-deep))]/50 text-sm">
+              Carte affichée en plein écran…
+            </div>
+          )}
 
           <div className="mt-2 text-[10px] italic text-[hsl(var(--ds-forest-deep))]/55 text-center">
             Cliquez un point pour voir la photo et la date d'observation.
           </div>
+
+          {/* Fullscreen portal */}
+          {fullscreen && createPortal(
+            <AnimatePresence>
+              <motion.div
+                key="reveal-map-fs"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-[2000] bg-[hsl(var(--ds-cream))] flex flex-col"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Carte des révélations plein écran"
+              >
+                <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/95 backdrop-blur">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm">
+                    2
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70">Carte des révélations</div>
+                    <div className="font-serif text-lg text-[hsl(var(--ds-forest-deep))] truncate">
+                      Où les marcheurs ont-ils observé le vivant ?
+                    </div>
+                  </div>
+                  <span className="ml-auto text-sm font-semibold text-[hsl(var(--ds-forest))]">{filtered.length} obs.</span>
+                  <button
+                    onClick={() => setFullscreen(false)}
+                    aria-label="Fermer le plein écran"
+                    className="w-10 h-10 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center hover:bg-[hsl(var(--ds-forest-deep))] transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </header>
+
+                <div className="px-4 md:px-6 py-2.5 border-b border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/70">
+                  {filtersBar}
+                </div>
+
+                <div className="flex-1 min-h-0 p-3 md:p-4">{mapNode('100%')}</div>
+              </motion.div>
+            </AnimatePresence>,
+            document.body,
+          )}
         </>
       )}
     </AnalyzeCard>
   );
 };
+
