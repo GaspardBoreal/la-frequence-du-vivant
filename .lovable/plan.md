@@ -1,45 +1,58 @@
 ## Objectif
 
-Intégrer les 3 vidéos du test bêche (AFES, Bio Nouvelle-Aquitaine, Chambre d'Agriculture Nouvelle-Aquitaine) dans le Widget 3 « Étape 2 · Structure du sol », de façon **clairement optionnelle** : invisible/discret pour qui connaît déjà le test, immédiatement désirable pour qui découvre.
+Transformer le Widget 5 « Acidité » (aujourd'hui un simple curseur global pleine demi-largeur) en un bloc **pleine largeur**, aligné sur le pattern déjà éprouvé des Widgets 3 (Structure) et 4 (Texture) : consigne → protocole illustré + vidéos → saisie par prélèvement → synthèse.
 
-## Parti pris design : le « Ciné-terrain » replié
-
-Aucun lecteur imposé, aucune vignette qui écrase le protocole. Sur la fiche-test A (bêche), sous les 3 étapes du protocole, une **barre d'appel repliée** :
+## Ce que verra l'utilisateur
 
 ```text
-┌──────────────────────────────────────────────┐
-│ ▷  Voir le geste — 3 regards de terrain      │
-│    Optionnel · 3 vidéos · ~4 à 8 min      ▾  │
-└──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│ 5  ÉTAPE 2 · ACIDITÉ — « Le pH, clé de la nutrition »        │
+│ [HERO SVG : profil de sol dont la teinte morphe selon le pH] │
+│                                                              │
+│ ① CE QUE VOUS DEVEZ FAIRE  (bandeau or)                      │
+│   Mesurer le pH sur un échantillon humide de chacun de vos   │
+│   prélèvements. Étapes : Humidifier → Mesurer → Lire → Noter │
+│   Encart pédagogique : le pH pilote la disponibilité des     │
+│   nutriments et explique pourquoi certaines plantes          │
+│   prospèrent là où d'autres dépérissent.                     │
+│   NB : la plupart des végétaux d'ornement aiment un pH proche │
+│   de la neutralité ; certaines espèces recherchent des sols   │
+│   très acides ou très calcaires.                             │
+│                                                              │
+│ ② LES TESTS (2 cartes protocole + étagère vidéo)             │
+│   • Bandelette / kit colorimétrique  • pHmètre électronique   │
+│   Schémas SVG animés + « Ciné-terrain » (1 à 3 vidéos)       │
+│                                                              │
+│ ③ RÉSULTATS PAR PRÉLÈVEMENT   (A → E, x/n complétés)         │
+│   [A] test ▸ bandelette | pHmètre    pH ▸ [mini-curseur 4-9] │
+│       + valeur colorée + classe (Très acide → Très basique)  │
+│                                                              │
+│ ④ SYNTHÈSE                                                   │
+│   Barre de distribution par classe, pH moyen + amplitude,    │
+│   lecture agronomique dominante, alerte « sol contrasté »    │
+│   si l'écart entre prélèvements dépasse 1 point de pH.       │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-- Ligne fine dorée, icône film, chip « Optionnel » discrète.
-- Au clic : dépliage animé (hauteur + fondu) révélant **3 mini-cartes « pellicule »** côte à côte (empilées en mobile) :
-  - miniature YouTube réelle (`img.youtube.com/vi/<id>/hqdefault.jpg`), légère désaturation qui se lève au survol,
-  - bouton play circulaire vert forêt avec halo doré animé,
-  - nom de la source en petites capitales espacées (AFES / Bio Nouvelle-Aquitaine / Chambre d'Agriculture N-A),
-  - une ligne d'angle éditorial pour orienter le choix (ex. « le regard scientifique », « le regard paysan bio », « le regard technique »),
-  - liseré latéral doré + numéro sérigraphié pour l'esprit « planche de carnet ».
-- Rien n'est chargé avant le clic : **facade YouTube** (image + play), l'iframe n'est montée qu'à l'ouverture → zéro impact perf/RGPD tant que l'utilisateur n'y va pas.
+## Détail des sections
 
-## Lecture
+**① Consigne** — bandeau or identique aux widgets 3/4, avec la chaîne d'étapes numérotées et les deux textes pédagogiques fournis (influence sur la disponibilité des nutriments + NB sur les végétaux d'ornement).
 
-Clic sur une carte → **lightbox** (Dialog shadcn) plein cadre :
-- fond assombri, cadre crème avec liseré doré, ratio 16/9,
-- iframe `youtube-nocookie.com/embed/<id>?autoplay=1&rel=0`,
-- barre inférieure : sélecteur des 3 sources pour passer d'une vidéo à l'autre sans fermer, et lien « Ouvrir sur YouTube ».
+**② Protocoles nommés, schématisés, expliqués**
+- *Bandelette / kit colorimétrique* : terre + eau déminéralisée, repos, trempage, lecture de la teinte sur nuancier.
+- *pHmètre électronique* : calibration, boue de terre, insertion sonde, lecture stabilisée.
+Chaque carte : titre, matériel, gestes numérotés, schéma SVG animé, piège à éviter.
+Sous la première carte, une étagère vidéo « Ciné-terrain » repliable réutilisant les composants vidéo existants. **Les URLs seront fournies plus tard** : le registre de vidéos sera créé vide et un simple ajout de 1 à 3 entrées suffira ensuite pour les afficher (aucune autre modification de code nécessaire).
 
-## Mémoire du geste (renforce l'optionnalité)
+**③ Saisie par prélèvement** — une ligne par prélèvement positionné au bloc 2, reprenant strictement l'ergonomie de la ligne « Texture » : pastille lettre, choix du test, mini-curseur pH 4→9 (pas 0,1) avec valeur affichée dans la couleur de la classe, badge de classe animé, tooltip riche au survol décrivant chaque classe (sensoriel + agronomique + plantes typiques). Si aucun prélèvement n'existe, encart pointillé avec lien d'ancrage vers le bloc 2 (comme widget 4).
 
-- Une fois une vidéo ouverte, la carte porte une pastille « vue » ; la barre affiche « Geste revu ».
-- L'état déplié/replié est mémorisé en `localStorage` : celui qui replie ne le revoit plus déplié, celui qui découvre garde son panneau ouvert.
-- Micro-lien secondaire « Je connais déjà le test » qui replie et marque la section comme acquise (visuel apaisé, plus de halo animé).
+**④ Synthèse** — barres de distribution par classe de pH, pH moyen, min/max, classe dominante, lecture agronomique (disponibilité des nutriments, familles de plantes adaptées), signal « sol contrasté » quand l'amplitude est forte.
 
-## Détails techniques
+## Points techniques
 
-- `src/components/propriete/analyze/structureTests.ts` : remplir `videos` du test `beche` avec les 3 entrées (label = source, url = lien youtu.be) et étendre le type par des champs optionnels `angle` (ligne éditoriale) et `youtubeId` (dérivé automatiquement de l'URL si absent).
-- Nouveau `src/components/propriete/analyze/VideoLightbox.tsx` : Dialog + iframe nocookie + navigation entre sources.
-- Nouveau `src/components/propriete/analyze/TestVideoShelf.tsx` : barre repliée + grille de facades + persistance localStorage (clé par test id). Réutilisable tel quel par le Widget 4 (texture) quand les vidéos boudin/sédimentation arriveront.
-- `StructureProtocolCard.tsx` : remplacer la rangée de puces `▶ Vidéo n` par `<TestVideoShelf test={test} />` (rendu uniquement si au moins une URL est fournie — comportement actuel conservé pour le test B sans vidéo).
-- Tous les styles via les tokens existants `--ds-forest`, `--ds-forest-deep`, `--ds-cream`, `--ds-gold`, `--ds-line` ; animations framer-motion cohérentes avec les cartes voisines.
-- Accessibilité : boutons réels, `aria-expanded` sur la barre, `title` sur l'iframe, focus visible, respect `prefers-reduced-motion` pour les halos.
+- Nouveau modèle de données `phTests.ts` : classes de pH (bornes, couleur, label, lecture agronomique, plantes indicatrices), définition des 2 tests, registre vidéos, helpers `classifyPh`, `dominantPh` (moyenne, amplitude, distribution).
+- Nouveaux composants dans `src/components/propriete/analyze/` : `PhCrossSection.tsx` (hero morphant), `PhPictos.tsx`, `PhProtocolCard.tsx`, `PhChoiceTooltip.tsx`, `PhSampleRow.tsx`, `PhResultsSummary.tsx`.
+- `blocks/PhBlock.tsx` réécrit sur le modèle de `TextureBlock.tsx` ; garde la prop `value`/`onChange` du pH global, désormais **dérivé** de la moyenne des prélèvements (rétro-compatible avec les données déjà saisies).
+- `usePropertySoil.ts` : ajout de `ph_test?: 'bandelette' | 'phmetre' | null` et `ph_value?: number | null` dans l'interface `SoilSample` (stockage dans le JSONB `samples` déjà persisté — **aucune migration SQL**).
+- `TabAnalyze.tsx` : le widget 5 sort de la grille 2 colonnes pour passer en pleine largeur (bloc 6 « Signes de vie » reste tel quel, en dessous, pleine largeur) ; le compteur de blocs renseignés tient compte du pH par prélèvement.
+- Aucun changement de logique métier hors de ces fichiers ; palette et tokens `--ds-*` existants réutilisés, avec la gamme colorée pH (rouge acide → bleu basique) déjà présente dans le fichier actuel.
