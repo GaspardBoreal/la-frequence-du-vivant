@@ -54,6 +54,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
   const [kingdom, setKingdom] = useState<KingdomFilter>('all');
   const [onlyKb, setOnlyKb] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const kbKeys = useMemo(() => {
     const s = new Set<string>();
