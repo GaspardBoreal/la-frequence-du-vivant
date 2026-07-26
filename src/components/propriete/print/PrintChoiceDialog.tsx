@@ -1,14 +1,20 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Printer, BookOpen, Images, Sparkles } from 'lucide-react';
+import { Printer, BookOpen, Images, Sparkles, Layers } from 'lucide-react';
 
-export type PrintChoice = 'observe' | 'combined';
+export type PrintChoice = 'observe' | 'analyze' | 'combined';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onConfirm: (choice: PrintChoice) => void;
   portraitPhotoCount: number;
+  /** Étape depuis laquelle l'impression est lancée. */
+  origin?: 'observe' | 'analyze';
+  /** L'étape 2 est-elle validée (pour le cahier complet) ? */
+  analyzeReady?: boolean;
+  /** L'étape 1 est-elle validée (pour le cahier complet) ? */
+  observeReady?: boolean;
 }
 
 /** Miniature aquarelle — Carnet seul (cachet daté) */
@@ -27,19 +33,39 @@ const MiniObserve: React.FC = () => (
   </svg>
 );
 
-/** Miniature aquarelle — Cahier complet (cachet + planches photo) */
+/** Miniature aquarelle — Carnet du sol (strates + points de prélèvement) */
+const MiniAnalyze: React.FC = () => (
+  <svg viewBox="0 0 120 90" className="w-full h-24">
+    <rect x="6" y="6" width="108" height="78" rx="3" fill="#fbf7ee" stroke="#c9b78a" strokeWidth="1" />
+    <line x1="18" y1="20" x2="72" y2="20" stroke="#6b7c5a" strokeWidth="1.4" />
+    <line x1="18" y1="28" x2="60" y2="28" stroke="#a89b78" strokeWidth="0.8" />
+    {/* strates de sol */}
+    <rect x="18" y="38" width="84" height="10" fill="#c9b18a" opacity="0.75" />
+    <rect x="18" y="48" width="84" height="12" fill="#a9865c" opacity="0.7" />
+    <rect x="18" y="60" width="84" height="14" fill="#7d5f3d" opacity="0.6" />
+    {/* ligne de pH + points de prélèvement */}
+    <path d="M22,52 L44,44 L66,58 L88,46 L100,52" fill="none" stroke="#8aa63b" strokeWidth="1.4" />
+    {[22, 44, 66, 88].map((x, i) => (
+      <circle key={i} cx={x} cy={[52, 44, 58, 46][i]} r="2.6" fill="#2f7d4f" />
+    ))}
+    <text x="18" y="82" fill="#8a6d3b" fontSize="6" fontFamily="Georgia, serif" fontStyle="italic">A · B · C · D</text>
+  </svg>
+);
+
+/** Miniature aquarelle — Cahier complet (photos + carnets) */
 const MiniCombined: React.FC = () => (
   <svg viewBox="0 0 120 90" className="w-full h-24">
     <rect x="6" y="6" width="108" height="78" rx="3" fill="#fbf7ee" stroke="#c9b78a" strokeWidth="1" />
     <line x1="18" y1="22" x2="60" y2="22" stroke="#6b7c5a" strokeWidth="1.4" />
     <line x1="18" y1="30" x2="52" y2="30" stroke="#a89b78" strokeWidth="0.8" />
-    <line x1="18" y1="38" x2="56" y2="38" stroke="#a89b78" strokeWidth="0.8" />
     <rect x="66" y="20" width="20" height="16" fill="#e9d9b5" stroke="#b08d57" strokeWidth="0.6" />
     <rect x="90" y="20" width="20" height="16" fill="#c8d4b8" stroke="#b08d57" strokeWidth="0.6" />
-    <rect x="66" y="40" width="44" height="12" fill="#d8c9a1" stroke="#b08d57" strokeWidth="0.6" />
-    <rect x="18" y="52" width="44" height="26" fill="#c6bfa4" stroke="#b08d57" strokeWidth="0.6" />
-    <rect x="66" y="58" width="20" height="20" fill="#d9c8ae" stroke="#b08d57" strokeWidth="0.6" />
-    <rect x="90" y="58" width="20" height="20" fill="#b8c3a5" stroke="#b08d57" strokeWidth="0.6" />
+    <rect x="18" y="38" width="44" height="14" fill="#d8c9a1" stroke="#b08d57" strokeWidth="0.6" />
+    <rect x="66" y="40" width="44" height="12" fill="#c6bfa4" stroke="#b08d57" strokeWidth="0.6" />
+    {/* strates du sol en bas = étape 2 */}
+    <rect x="18" y="58" width="92" height="8" fill="#c9b18a" opacity="0.8" />
+    <rect x="18" y="66" width="92" height="10" fill="#a9865c" opacity="0.7" />
+    <path d="M22,66 L46,60 L70,70 L94,62 L108,66" fill="none" stroke="#2f7d4f" strokeWidth="1.2" />
   </svg>
 );
 
@@ -86,13 +112,46 @@ const Card: React.FC<{
   </button>
 );
 
-export const PrintChoiceDialog: React.FC<Props> = ({ open, onClose, onConfirm, portraitPhotoCount }) => {
-  const [choice, setChoice] = React.useState<PrintChoice | null>(null);
-  React.useEffect(() => {
-    if (open) setChoice(portraitPhotoCount > 0 ? 'combined' : 'observe');
-  }, [open, portraitPhotoCount]);
+const Eyebrow: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => (
+  <span className="inline-flex items-center gap-1.5">
+    {icon}
+    <span className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70 font-bold">
+      {label}
+    </span>
+  </span>
+);
 
-  const combinedDisabled = portraitPhotoCount === 0;
+export const PrintChoiceDialog: React.FC<Props> = ({
+  open,
+  onClose,
+  onConfirm,
+  portraitPhotoCount,
+  origin = 'observe',
+  analyzeReady = false,
+  observeReady = true,
+}) => {
+  const soloChoice: PrintChoice = origin === 'analyze' ? 'analyze' : 'observe';
+  const [choice, setChoice] = React.useState<PrintChoice | null>(null);
+
+  const combinedDisabled =
+    portraitPhotoCount === 0 || (origin === 'analyze' && !observeReady);
+
+  React.useEffect(() => {
+    if (open) setChoice(combinedDisabled ? soloChoice : 'combined');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, combinedDisabled, soloChoice]);
+
+  const soloPages = origin === 'analyze' ? '≈ 2 – 3 pages · A4' : '≈ 2 pages · A4';
+  const combinedPages = combinedDisabled
+    ? '—'
+    : `≈ ${2 + Math.ceil(portraitPhotoCount / 2) + 3 + (analyzeReady ? 3 : 0)} pages · A4`;
+
+  const combinedHint =
+    portraitPhotoCount === 0
+      ? 'Ajoutez d’abord des photos dans l’onglet Portrait.'
+      : origin === 'analyze' && !observeReady
+        ? 'Validez d’abord l’étape 1 « J’observe ».'
+        : undefined;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -108,40 +167,57 @@ export const PrintChoiceDialog: React.FC<Props> = ({ open, onClose, onConfirm, p
         </DialogDescription>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <Card
-            onSelect={() => setChoice('observe')}
-            selected={choice === 'observe'}
-            title="Carnet seul"
-            desc="La synthèse de l'étape « J'observe » : cachet daté, 8 blocs et Âme du Lieu."
-            pages="≈ 2 pages · A4"
-          >
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
-              <span className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70 font-bold">J'observe</span>
-            </div>
-            <MiniObserve />
-          </Card>
+          {origin === 'analyze' ? (
+            <Card
+              onSelect={() => setChoice('analyze')}
+              selected={choice === 'analyze'}
+              title="J'analyse (seul)"
+              desc="La synthèse du sol : signature, lectures agronomiques et registre des prélèvements A → E."
+              pages={soloPages}
+            >
+              <Eyebrow icon={<Layers className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'analyse le sol" />
+              <MiniAnalyze />
+            </Card>
+          ) : (
+            <Card
+              onSelect={() => setChoice('observe')}
+              selected={choice === 'observe'}
+              title="Carnet seul"
+              desc="La synthèse de l'étape « J'observe » : cachet daté, 8 blocs et Âme du Lieu."
+              pages={soloPages}
+            >
+              <Eyebrow icon={<BookOpen className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'observe" />
+              <MiniObserve />
+            </Card>
+          )}
 
           <Card
             onSelect={() => setChoice('combined')}
             selected={choice === 'combined'}
             disabled={combinedDisabled}
-            disabledHint={combinedDisabled ? 'Ajoutez d\u2019abord des photos dans l\u2019onglet Portrait.' : undefined}
+            disabledHint={combinedHint}
             title="Cahier complet"
-            desc="Le « Portrait du site » en ouverture, suivi de la synthèse « J'observe » — un seul document relié."
-            pages={combinedDisabled ? '—' : `≈ ${2 + Math.ceil(portraitPhotoCount / 2) + 3} pages · A4`}
+            desc={
+              analyzeReady
+                ? 'Portrait du site, puis « J\u2019observe », puis « J\u2019analyse le sol » — un seul document relié.'
+                : 'Le « Portrait du site » en ouverture, suivi de la synthèse « J\u2019observe » — un seul document relié.'
+            }
+            pages={combinedPages}
             badge={!combinedDisabled ? 'Recommandé' : undefined}
           >
-            <div className="flex items-center gap-2">
-              <Images className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
-              <span className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70 font-bold">Portrait</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Eyebrow icon={<Images className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="Portrait" />
               <span className="text-[hsl(var(--ds-gold))]">·</span>
-              <BookOpen className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
-              <span className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70 font-bold">J'observe</span>
+              <Eyebrow icon={<BookOpen className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'observe" />
+              {analyzeReady && (
+                <>
+                  <span className="text-[hsl(var(--ds-gold))]">·</span>
+                  <Eyebrow icon={<Layers className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'analyse" />
+                </>
+              )}
             </div>
             <MiniCombined />
           </Card>
-
         </div>
 
         <div className="flex items-center justify-end gap-2 mt-4">
@@ -156,7 +232,7 @@ export const PrintChoiceDialog: React.FC<Props> = ({ open, onClose, onConfirm, p
             disabled={!choice}
             className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] text-xs font-semibold uppercase tracking-widest hover:bg-[hsl(var(--ds-forest-deep))] transition-colors disabled:opacity-50"
           >
-            <Printer className="w-3.5 h-3.5 group-hover:-rotate-6 transition-transform" /> Imprimer
+            <Printer className="w-3.5 h-3.5" /> Imprimer
           </button>
         </div>
       </DialogContent>
