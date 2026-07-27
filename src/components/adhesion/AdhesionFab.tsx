@@ -1,15 +1,22 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Bouton flottant universel "Rejoindre la Fréquence".
  * Renvoie vers la page de connexion en préselectionnant l'onglet Inscription
  * pour éviter la confusion avec le formulaire d'adhésion à l'association
  * (qui reste accessible depuis la page /marches-du-vivant/association).
+ *
+ * N'est jamais affiché à un utilisateur déjà connecté.
  */
 export const AdhesionFab: React.FC = () => {
   const location = useLocation();
+  const { user, isLoading } = useAuth();
+
+  // Ne rien afficher tant que la session n'est pas résolue (évite un flash du CTA).
+  if (isLoading || user) return null;
 
   // Masquer sur certaines routes
   const hideOn = [
@@ -24,6 +31,7 @@ export const AdhesionFab: React.FC = () => {
     '/jardin/',
   ];
   if (hideOn.some((p) => location.pathname.startsWith(p))) return null;
+
 
   return (
     <Link
