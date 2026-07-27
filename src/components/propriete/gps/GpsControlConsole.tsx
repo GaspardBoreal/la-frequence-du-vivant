@@ -37,6 +37,8 @@ interface Props {
   /** Anneaux GeoJSON des parcelles ([lng, lat]) pour dessiner le périmètre */
   parcelRings: Array<Array<[number, number]>>;
   center: [number, number];
+  /** Ouvre la console directement sur ce point (sélectionné, prêt à être glissé). */
+  focusId?: string | null;
   displayNameFor: (w: { scientificName?: string | null; commonName?: string | null }) => string;
 }
 
