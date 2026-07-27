@@ -79,13 +79,18 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     [rawWaypoints, fence, bufferM],
   );
 
-  /** Les observations écartées par un curateur disparaissent des vues publiques. */
+  /**
+   * Les observations écartées par un curateur sont déjà retirées par la RPC
+   * (donc partout : propriété, marches, explorations, événements, exports).
+   * On garde ce filtre en ceinture-bretelles pour les caches encore chauds.
+   */
   const waypoints = useMemo(
     () => annotated.filter((w) => w.overrideStatus !== 'excluded'),
     [annotated],
   );
 
-  const excludedCount = annotated.length - waypoints.length;
+  const excludedCount = curation.excluded + (annotated.length - waypoints.length);
+  const repositionedCount = curation.repositioned;
   const outsideCount = waypoints.filter((w) => w.geofenceStatus === 'outside').length;
 
 
