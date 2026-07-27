@@ -475,18 +475,52 @@ export const GpsControlConsole: React.FC<Props> = ({
                   <Popup>
                     <div style={{ minWidth: 160 }}>
                       {photoFor.get(c.id) && (
-                        <img
-                          src={photoFor.get(c.id)!.url}
-                          alt=""
+                        <button
+                          type="button"
+                          onClick={() => openLightbox(c.id)}
+                          title="Voir la photo en grand"
                           style={{
+                            display: 'block',
+                            position: 'relative',
                             width: '100%',
-                            height: 96,
-                            objectFit: 'cover',
-                            borderRadius: 6,
+                            padding: 0,
+                            border: 'none',
+                            background: 'none',
+                            cursor: 'zoom-in',
                             marginBottom: 6,
                           }}
-                        />
+                        >
+                          <img
+                            src={photoFor.get(c.id)!.url}
+                            alt=""
+                            style={{
+                              width: '100%',
+                              height: 96,
+                              objectFit: 'cover',
+                              borderRadius: 6,
+                              display: 'block',
+                            }}
+                          />
+                          <span
+                            style={{
+                              position: 'absolute',
+                              right: 6,
+                              bottom: 6,
+                              background: 'rgba(0,0,0,0.55)',
+                              color: '#fff',
+                              borderRadius: 999,
+                              padding: '2px 6px',
+                              fontSize: 9,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                          >
+                            <ZoomIn style={{ width: 10, height: 10 }} /> Agrandir
+                          </span>
+                        </button>
                       )}
+
                       <div style={{ fontWeight: 600, fontSize: 12 }}>{displayNameFor(c)}</div>
                       <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
                         {c.scientificName}
