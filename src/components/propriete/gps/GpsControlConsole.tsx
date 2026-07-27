@@ -234,32 +234,43 @@ export const GpsControlConsole: React.FC<Props> = ({
                   selectedId === c.id ? 'bg-[hsl(var(--ds-forest))]/10' : 'hover:bg-black/5'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: STATUS_COLOR[c.geofenceStatus] }}
+                <div className="flex items-start gap-3">
+                  <CandidateThumb
+                    photo={photoFor.get(c.id)}
+                    color={STATUS_COLOR[c.geofenceStatus]}
+                    onZoom={(url) => setLightbox(url)}
                   />
-                  <span className="text-sm font-medium text-[hsl(var(--ds-forest-deep))] truncate">
-                    {displayNameFor(c)}
-                  </span>
-                  {c.overrideStatus && (
-                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))]">
-                      {c.overrideStatus === 'excluded'
-                        ? 'écartée'
-                        : c.overrideStatus === 'repositioned'
-                        ? 'corrigée'
-                        : 'validée'}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1 text-[11px] text-[hsl(var(--ds-forest-deep))]/60 flex flex-wrap gap-x-2">
-                  <span>{GEOFENCE_LABELS[c.geofenceStatus]}</span>
-                  {c.geofenceDistanceM ? <span>· {c.geofenceDistanceM} m</span> : null}
-                  {c.positionalAccuracy != null && <span>· ±{c.positionalAccuracy} m</span>}
-                  {c.obscured && <span>· position floutée</span>}
-                  <span>· {c.source === 'marcheur' ? 'marcheur' : 'iNaturalist'}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ background: STATUS_COLOR[c.geofenceStatus] }}
+                      />
+                      <span className="text-sm font-medium text-[hsl(var(--ds-forest-deep))] truncate">
+                        {displayNameFor(c)}
+                      </span>
+                      {c.overrideStatus && (
+                        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))]">
+                          {c.overrideStatus === 'excluded'
+                            ? 'écartée'
+                            : c.overrideStatus === 'repositioned'
+                            ? 'corrigée'
+                            : 'validée'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 text-[11px] text-[hsl(var(--ds-forest-deep))]/60 flex flex-wrap gap-x-2">
+                      <span>{GEOFENCE_LABELS[c.geofenceStatus]}</span>
+                      {c.geofenceDistanceM ? <span>· {c.geofenceDistanceM} m</span> : null}
+                      {c.positionalAccuracy != null && <span>· ±{c.positionalAccuracy} m</span>}
+                      {c.obscured && <span>· position floutée</span>}
+                      <span>· {c.source === 'marcheur' ? 'marcheur' : 'iNaturalist'}</span>
+                      {photoFor.get(c.id)?.kind === 'species' && <span>· photo d'espèce</span>}
+                    </div>
+                  </div>
                 </div>
               </button>
+
             ))}
 
             {applied.length > 0 && (
