@@ -4960,6 +4960,7 @@ export type Database = {
           created_at: string | null
           curated_at: string | null
           curated_by_user_id: string | null
+          geoprivacy: string | null
           gps_source: string | null
           iconic_taxon: string | null
           id: string
@@ -4970,8 +4971,10 @@ export type Database = {
           marche_id: string
           marcheur_id: string
           notes: string | null
+          obscured: boolean | null
           observation_date: string | null
           photo_url: string | null
+          positional_accuracy: number | null
           source: string | null
           source_media_id: string | null
           species_scientific_name: string
@@ -4982,6 +4985,7 @@ export type Database = {
           created_at?: string | null
           curated_at?: string | null
           curated_by_user_id?: string | null
+          geoprivacy?: string | null
           gps_source?: string | null
           iconic_taxon?: string | null
           id?: string
@@ -4992,8 +4996,10 @@ export type Database = {
           marche_id: string
           marcheur_id: string
           notes?: string | null
+          obscured?: boolean | null
           observation_date?: string | null
           photo_url?: string | null
+          positional_accuracy?: number | null
           source?: string | null
           source_media_id?: string | null
           species_scientific_name: string
@@ -5004,6 +5010,7 @@ export type Database = {
           created_at?: string | null
           curated_at?: string | null
           curated_by_user_id?: string | null
+          geoprivacy?: string | null
           gps_source?: string | null
           iconic_taxon?: string | null
           id?: string
@@ -5014,8 +5021,10 @@ export type Database = {
           marche_id?: string
           marcheur_id?: string
           notes?: string | null
+          obscured?: boolean | null
           observation_date?: string | null
           photo_url?: string | null
+          positional_accuracy?: number | null
           source?: string | null
           source_media_id?: string | null
           species_scientific_name?: string
@@ -5455,6 +5464,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      observation_gps_overrides: {
+        Row: {
+          created_at: string
+          curated_by: string | null
+          id: string
+          lat: number | null
+          lon: number | null
+          original_lat: number | null
+          original_lon: number | null
+          propriete_id: string | null
+          reason: string | null
+          status: string
+          target_key: string
+          target_kind: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          curated_by?: string | null
+          id?: string
+          lat?: number | null
+          lon?: number | null
+          original_lat?: number | null
+          original_lon?: number | null
+          propriete_id?: string | null
+          reason?: string | null
+          status?: string
+          target_key: string
+          target_kind: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          curated_by?: string | null
+          id?: string
+          lat?: number | null
+          lon?: number | null
+          original_lat?: number | null
+          original_lon?: number | null
+          propriete_id?: string | null
+          reason?: string | null
+          status?: string
+          target_key?: string
+          target_kind?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       opus_explorations: {
         Row: {
@@ -6211,6 +6268,7 @@ export type Database = {
           created_by: string | null
           departement: string | null
           description: string | null
+          geofence_buffer_m: number
           id: string
           is_active: boolean
           latitude: number | null
@@ -6233,6 +6291,7 @@ export type Database = {
           created_by?: string | null
           departement?: string | null
           description?: string | null
+          geofence_buffer_m?: number
           id?: string
           is_active?: boolean
           latitude?: number | null
@@ -6255,6 +6314,7 @@ export type Database = {
           created_by?: string | null
           departement?: string | null
           description?: string | null
+          geofence_buffer_m?: number
           id?: string
           is_active?: boolean
           latitude?: number | null
@@ -7393,6 +7453,10 @@ export type Database = {
       check_email_exists: { Args: { _email: string }; Returns: boolean }
       check_is_admin_user: { Args: { check_user_id: string }; Returns: boolean }
       check_system_initialization_safe: { Args: never; Returns: boolean }
+      clear_observation_gps_override: {
+        Args: { _target_key: string; _target_kind: string }
+        Returns: Json
+      }
       confirm_admin_email: { Args: { target_email: string }; Returns: boolean }
       consume_event_invitation: { Args: { _token: string }; Returns: Json }
       create_admin_user: {
@@ -8346,6 +8410,20 @@ export type Database = {
           subtitle: string
           title: string
         }[]
+      }
+      set_observation_gps_override: {
+        Args: {
+          _lat?: number
+          _lon?: number
+          _original_lat?: number
+          _original_lon?: number
+          _propriete_id?: string
+          _reason?: string
+          _status: string
+          _target_key: string
+          _target_kind: string
+        }
+        Returns: Json
       }
       set_propriete_gallery: {
         Args: { _items: Json; _propriete_id: string }

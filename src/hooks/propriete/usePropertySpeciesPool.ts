@@ -5,6 +5,13 @@ import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import type { MarcheurSpeciesPhoto } from '@/hooks/useSpeciesMarcheurPhotos';
 import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
+import {
+  useGpsOverrides,
+  overrideKeyOf,
+  type GpsOverrideKind,
+  type GpsOverrideStatus,
+} from '@/hooks/propriete/useGpsOverrides';
+
 
 interface RpcSpecies {
   key: string;
@@ -37,7 +44,21 @@ export interface PropertyWaypoint {
   /** Provenance de la position : terrain marcheur ou base iNaturalist/eBird */
   source: 'marcheur' | 'inaturalist';
   observerName: string | null;
+  /** Cible de curation GPS (surcouche éditoriale durable) */
+  overrideKind?: GpsOverrideKind;
+  overrideTargetKey?: string | null;
+  overrideStatus?: GpsOverrideStatus | null;
+  overrideReason?: string | null;
+  originalLat?: number | null;
+  originalLng?: number | null;
+  /** Métadonnées de fiabilité iNaturalist */
+  inatObservationId?: string | null;
+  positionalAccuracy?: number | null;
+  obscured?: boolean | null;
+  gpsSource?: string | null;
+  originalUrl?: string | null;
 }
+
 
 const normName = (s: string | null | undefined): string =>
 
@@ -86,7 +107,11 @@ const mapKingdom = (k?: string | null): BiodiversitySpecies['kingdom'] => {
  * Retourne des `BiodiversitySpecies[]` prêts pour <SpeciesExplorer />.
  */
 export function usePropertySpeciesPool(proprieteId: string | undefined) {
+  // 0. Corrections GPS éditoriales (appliquées à la lecture sur les waypoints)
+  const { overrides } = useGpsOverrides();
+
   // 1. exploration_ids liés à la propriété
+
   const idsQuery = useQuery({
     queryKey: ['propriete-exploration-ids', proprieteId],
     enabled: !!proprieteId,
@@ -252,6 +277,8 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   //    iNaturalist / eBird des snapshots (exactLatitude / exactLongitude).
   //    Sans ce second bloc, la carte sous-comptait les espèces par rapport au
   //    bandeau « Empreinte biodiversité » (qui, lui, ne filtre pas sur le GPS).
+  //    Les corrections éditoriales (`observation_gps_overrides`) sont appliquées
+  //    ici, à la lecture : position corrigée + statut d'exclusion.
   const waypoints = useMemo(() => {
     const out: PropertyWaypoint[] = [];
     const seen = new Set<string>();
@@ -259,6 +286,28 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
 
     const dedupKey = (sci: string, lat: number, lng: number) =>
       `${normName(sci)}|${lat.toFixed(5)}|${lng.toFixed(5)}`;
+
+    const applyOverride = (
+      wp: PropertyWaypoint,
+      kind: 'observation' | 'snapshot_attr',
+      key: string | null,
+    ): PropertyWaypoint => {
+      if (!key) return wp;
+      const ov = overrides.get(overrideKeyOf(kind, key));
+      if (!ov) return wp;
+      const next: PropertyWaypoint = {
+        ...wp,
+        overrideStatus: ov.status,
+        overrideReason: ov.reason,
+        originalLat: ov.original_lat ?? wp.lat,
+        originalLng: ov.original_lon ?? wp.lng,
+      };
+      if (ov.status === 'repositioned' && ov.lat != null && ov.lon != null) {
+        next.lat = Number(ov.lat);
+        next.lng = Number(ov.lon);
+      }
+      return next;
+    };
 
     // a) Observations marcheurs (prioritaires)
     for (const sp of allRows) {
@@ -271,20 +320,38 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         const k = dedupKey(sci, lat, lng);
         if (seen.has(k)) continue;
         seen.add(k);
-        out.push({
-          id: `wp-${n++}`,
-          lat,
-          lng,
-          scientificName: sci,
-          commonName: sp.common_name,
-          kingdom: sp.kingdom,
-          photoUrl: a?.photo_url || null,
-          observationDate: a?.observation_date || null,
-          marcheurId: a?.marcheur_id || null,
-          marcheId: a?.marche_id || null,
-          source: 'marcheur',
-          observerName: null,
-        });
+        const obsId: string | null = a?.obs_id || null;
+        out.push(
+          applyOverride(
+            {
+              id: `wp-${n++}`,
+              lat,
+              lng,
+              scientificName: sci,
+              commonName: sp.common_name,
+              kingdom: sp.kingdom,
+              photoUrl: a?.photo_url || null,
+              observationDate: a?.observation_date || null,
+              marcheurId: a?.marcheur_id || null,
+              marcheId: a?.marche_id || null,
+              source: 'marcheur',
+              observerName: null,
+              overrideKind: 'observation',
+              overrideTargetKey: obsId,
+              inatObservationId: a?.inaturalist_id ? String(a.inaturalist_id) : null,
+              positionalAccuracy:
+                a?.positional_accuracy != null ? Number(a.positional_accuracy) : null,
+              obscured: a?.obscured ?? null,
+              gpsSource: a?.gps_source || null,
+              overrideStatus: null,
+              overrideReason: null,
+              originalLat: null,
+              originalLng: null,
+            },
+            'observation',
+            obsId,
+          ),
+        );
       }
     }
 
@@ -301,26 +368,47 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           const k = dedupKey(sci, lat, lng);
           if (seen.has(k)) continue;
           seen.add(k);
-          out.push({
-            id: `wp-${n++}`,
-            lat,
-            lng,
-            scientificName: sci,
-            commonName: sp.common_name,
-            kingdom: sp.kingdom,
-            photoUrl: a?.photoUrl || a?.photo_url || null,
-            observationDate: a?.date || a?.observationDate || null,
-            marcheurId: null,
-            marcheId: null,
-            source: 'inaturalist',
-            observerName: a?.observerName || null,
-          });
+          // Les attributions n'ont pas d'identifiant : on les cible par l'URL
+          // iNaturalist d'origine, sinon par espèce + coordonnées d'origine.
+          const attrKey: string = a?.originalUrl || k;
+          out.push(
+            applyOverride(
+              {
+                id: `wp-${n++}`,
+                lat,
+                lng,
+                scientificName: sci,
+                commonName: sp.common_name,
+                kingdom: sp.kingdom,
+                photoUrl: a?.photoUrl || a?.photo_url || null,
+                observationDate: a?.date || a?.observationDate || null,
+                marcheurId: null,
+                marcheId: null,
+                source: 'inaturalist',
+                observerName: a?.observerName || null,
+                overrideKind: 'snapshot_attr',
+                overrideTargetKey: attrKey,
+                inatObservationId: null,
+                positionalAccuracy: null,
+                obscured: null,
+                gpsSource: null,
+                overrideStatus: null,
+                overrideReason: null,
+                originalLat: null,
+                originalLng: null,
+                originalUrl: a?.originalUrl || null,
+              },
+              'snapshot_attr',
+              attrKey,
+            ),
+          );
         }
       }
     }
 
     return out;
-  }, [allRows]);
+  }, [allRows, overrides]);
+
 
 
   // 7. Contributeurs (agrégation par marcheur_id)

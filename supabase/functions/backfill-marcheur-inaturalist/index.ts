@@ -154,6 +154,11 @@ Deno.serve(async (req) => {
               photo_url: obs?.photos?.[0]?.url?.replace('square', 'medium') || null,
               latitude: oLat,
               longitude: oLng,
+              // Métadonnées de fiabilité GPS (précision déclarée, floutage)
+              positional_accuracy:
+                obs?.positional_accuracy ?? obs?.public_positional_accuracy ?? null,
+              geoprivacy: obs?.geoprivacy ?? obs?.taxon_geoprivacy ?? null,
+              obscured: obs?.obscured === true,
             });
           }
         }
@@ -166,23 +171,52 @@ Deno.serve(async (req) => {
 
     // 5. Insert (idempotent via unique partial index sur (marcheur_id, inaturalist_observation_id))
     if (allInserts.length) {
-      const rows = allInserts.map((r) => ({
-        marcheur_id: crewId,
-        marche_id: r.marche_id,
-        species_scientific_name: r.species_scientific_name,
-        observation_date: r.observation_date,
-        photo_url: r.photo_url,
-        inaturalist_observation_id: r.inat_id,
-        latitude: r.latitude,
-        longitude: r.longitude,
-        notes: 'iNaturalist backfill',
-      }));
+      // Les positions corrigées à la main (gps_source = 'manual') ne doivent
+      // jamais être écrasées par une resynchronisation iNaturalist.
+      const inatIds = allInserts.map((r) => r.inat_id);
+      const manual = new Map<number, { latitude: number; longitude: number }>();
+      for (let i = 0; i < inatIds.length; i += 500) {
+        const { data: existingRows } = await admin
+          .from('marcheur_observations')
+          .select('inaturalist_observation_id, latitude, longitude, gps_source')
+          .eq('marcheur_id', crewId)
+          .eq('gps_source', 'manual')
+          .in('inaturalist_observation_id', inatIds.slice(i, i + 500));
+        for (const row of existingRows ?? []) {
+          if (row?.inaturalist_observation_id != null) {
+            manual.set(Number(row.inaturalist_observation_id), {
+              latitude: row.latitude,
+              longitude: row.longitude,
+            });
+          }
+        }
+      }
+
+      const rows = allInserts.map((r) => {
+        const kept = manual.get(r.inat_id);
+        return {
+          marcheur_id: crewId,
+          marche_id: r.marche_id,
+          species_scientific_name: r.species_scientific_name,
+          observation_date: r.observation_date,
+          photo_url: r.photo_url,
+          inaturalist_observation_id: r.inat_id,
+          latitude: kept ? kept.latitude : r.latitude,
+          longitude: kept ? kept.longitude : r.longitude,
+          gps_source: kept ? 'manual' : 'inaturalist',
+          positional_accuracy: r.positional_accuracy,
+          geoprivacy: r.geoprivacy,
+          obscured: r.obscured,
+          notes: 'iNaturalist backfill',
+        };
+      });
       const { error: insErr, count } = await admin
         .from('marcheur_observations')
         .upsert(rows, { onConflict: 'marcheur_id,inaturalist_observation_id', ignoreDuplicates: false, count: 'exact' });
       if (insErr) throw insErr;
       totalInserted = count ?? rows.length;
     }
+
 
     await admin.from('marcheur_backfill_log').update({
       status: 'success',

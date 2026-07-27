@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair } from 'lucide-react';
+import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
@@ -14,6 +14,13 @@ import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_LABELS_FR_SHORT, KINGDOM_ORDER, normalizeKingdom, type KingdomKey } from '@/lib/kingdomLabels';
 import { haversineM } from '@/utils/geoDistance';
+import {
+  useProprieteParcelles,
+  useCanCurateParcelles,
+} from '@/hooks/propriete/usePropertyParcelles';
+import { buildGeofence, evaluateGeofence, GEOFENCE_LABELS } from '@/lib/geofence';
+import GpsControlConsole, { type GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
+
 
 const norm = (s: string | null | undefined): string =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -34,7 +41,53 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   proprieteId,
   index = 0,
 }) => {
-  const { waypoints } = usePropertySpeciesPool(proprieteId);
+  const { waypoints: rawWaypoints } = usePropertySpeciesPool(proprieteId);
+  const { data: parcelles } = useProprieteParcelles(proprieteId);
+  const { data: canCurate } = useCanCurateParcelles(proprieteId);
+
+  const { data: propriete } = useQuery({
+    queryKey: ['propriete-coords', proprieteId],
+    enabled: !!proprieteId,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('proprietes')
+        .select('latitude, longitude, nom, geofence_buffer_m')
+        .eq('id', proprieteId!)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  const bufferM = Number((propriete as any)?.geofence_buffer_m ?? 25);
+
+  /**
+   * Géofence cadastral : chaque observation est située par rapport aux parcelles
+   * de la propriété (tampon paramétrable). Sans parcelle renseignée, aucun point
+   * n'est jugé — on n'écarte jamais de donnée par défaut.
+   */
+  const fence = useMemo(() => buildGeofence(parcelles ?? []), [parcelles]);
+  const parcelRings = useMemo(() => fence.rings, [fence]);
+
+
+  const annotated = useMemo<GpsCandidate[]>(
+    () =>
+      rawWaypoints.map((w) => {
+        const ev = evaluateGeofence(fence, w.lat, w.lng, bufferM);
+        return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
+      }),
+    [rawWaypoints, fence, bufferM],
+  );
+
+  /** Les observations écartées par un curateur disparaissent des vues publiques. */
+  const waypoints = useMemo(
+    () => annotated.filter((w) => w.overrideStatus !== 'excluded'),
+    [annotated],
+  );
+
+  const excludedCount = annotated.length - waypoints.length;
+  const outsideCount = waypoints.filter((w) => w.geofenceStatus === 'outside').length;
+
 
   // Même résolveur FR que le bandeau « Empreinte biodiversité » (source unique)
   const frInput = useMemo(() => {
@@ -54,25 +107,15 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   // Référence de cohérence : même compteur que le bandeau « Empreinte biodiversité »
   const speciesRef = usePropertySpeciesCount(proprieteId);
 
-  const { data: propriete } = useQuery({
-    queryKey: ['propriete-coords', proprieteId],
-    enabled: !!proprieteId,
-    staleTime: 10 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('proprietes')
-        .select('latitude, longitude, nom')
-        .eq('id', proprieteId!)
-        .maybeSingle();
-      return data;
-    },
-  });
+
 
   const [kingdom, setKingdom] = useState<KingdomFilter>('all');
   const [onlyKb, setOnlyKb] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'marcheur' | 'inaturalist'>('all');
+  const [perimeter, setPerimeter] = useState<'all' | 'inside' | 'outside'>('all');
   const [refitNonce, setRefitNonce] = useState(0);
+  const [gpsConsole, setGpsConsole] = useState(false);
 
   const kbKeys = useMemo(() => {
     const s = new Set<string>();
@@ -89,6 +132,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       const k = kingdomFrom(w.kingdom);
       if (kingdom !== 'all' && k !== kingdom) return false;
       if (sourceFilter !== 'all' && w.source !== sourceFilter) return false;
+      if (perimeter === 'inside' && w.geofenceStatus === 'outside') return false;
+      if (perimeter === 'outside' && w.geofenceStatus !== 'outside') return false;
       if (onlyKb) {
         const n = norm(w.scientificName);
         const g = n.split(/\s+/)[0];
@@ -96,7 +141,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       }
       return true;
     });
-  }, [waypoints, kingdom, onlyKb, kbKeys, sourceFilter]);
+  }, [waypoints, kingdom, onlyKb, kbKeys, sourceFilter, perimeter]);
+
 
 
   /**
@@ -264,6 +310,43 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         </button>
       ))}
 
+      {!fence.empty && (
+        <>
+          <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
+          {([
+            ['all', 'Périmètre : tout'],
+            ['inside', '📍 Dans le périmètre'],
+            ['outside', `⚠︎ Hors périmètre${outsideCount ? ` · ${outsideCount}` : ''}`],
+          ] as Array<['all' | 'inside' | 'outside', string]>).map(([v, label]) => (
+            <button
+              key={v}
+              onClick={() => setPerimeter(v)}
+              className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+                perimeter === v
+                  ? 'bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest-deep))]'
+                  : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </>
+      )}
+
+      {canCurate && (
+        <button
+          onClick={() => setGpsConsole(true)}
+          className="text-[11px] px-2.5 py-1 rounded-full border border-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-forest-deep))] flex items-center gap-1 hover:bg-[hsl(var(--ds-forest-deep))] hover:text-[hsl(var(--ds-cream))] transition"
+        >
+          <ShieldCheck className="w-3 h-3" /> Contrôle GPS
+          {(outsideCount > 0 || excludedCount > 0) && (
+            <span className="opacity-70">· {outsideCount + excludedCount}</span>
+          )}
+        </button>
+      )}
+
+
+
       <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))] text-right">
         {visibleSpecies} espèces
         <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
@@ -272,7 +355,14 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
             {localizedSpecies} / {refTotal} espèces localisées
           </span>
         )}
+        {excludedCount > 0 && (
+          <span className="block font-normal opacity-55 text-[10px]">
+            {excludedCount} observation{excludedCount > 1 ? 's' : ''} écartée
+            {excludedCount > 1 ? 's' : ''} par curation
+          </span>
+        )}
       </span>
+
 
     </div>
   );
@@ -314,6 +404,18 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                       ? '📷 Observation marcheur'
                       : `🌐 Observation citoyenne${w.observerName ? ` · ${w.observerName}` : ''}`}
                   </div>
+                  {w.geofenceStatus === 'outside' && (
+                    <div style={{ fontSize: 10, marginTop: 2, color: '#b4462f' }}>
+                      ⚠︎ {GEOFENCE_LABELS.outside}
+                      {w.geofenceDistanceM ? ` · ${w.geofenceDistanceM} m` : ''}
+                    </div>
+                  )}
+                  {w.overrideStatus === 'repositioned' && (
+                    <div style={{ fontSize: 10, marginTop: 2, color: '#2f5d3a' }}>
+                      ✎ Position corrigée par un curateur
+                    </div>
+                  )}
+
                   {w.observationDate && (
                     <div style={{ fontSize: 10, marginTop: 2, color: '#888' }}>
                       <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
@@ -431,7 +533,20 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
           )}
         </>
       )}
+
+      {canCurate && (
+        <GpsControlConsole
+          open={gpsConsole}
+          onClose={() => setGpsConsole(false)}
+          proprieteId={proprieteId}
+          candidates={annotated}
+          parcelRings={parcelRings}
+          center={center}
+          displayNameFor={displayNameFor}
+        />
+      )}
     </AnalyzeCard>
+
   );
 };
 
