@@ -308,6 +308,43 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         </button>
       ))}
 
+      {!fence.empty && (
+        <>
+          <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
+          {([
+            ['all', 'Périmètre : tout'],
+            ['inside', '📍 Dans le périmètre'],
+            ['outside', `⚠︎ Hors périmètre${outsideCount ? ` · ${outsideCount}` : ''}`],
+          ] as Array<['all' | 'inside' | 'outside', string]>).map(([v, label]) => (
+            <button
+              key={v}
+              onClick={() => setPerimeter(v)}
+              className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+                perimeter === v
+                  ? 'bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest-deep))]'
+                  : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </>
+      )}
+
+      {canCurate && (
+        <button
+          onClick={() => setGpsConsole(true)}
+          className="text-[11px] px-2.5 py-1 rounded-full border border-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-forest-deep))] flex items-center gap-1 hover:bg-[hsl(var(--ds-forest-deep))] hover:text-[hsl(var(--ds-cream))] transition"
+        >
+          <ShieldCheck className="w-3 h-3" /> Contrôle GPS
+          {(outsideCount > 0 || excludedCount > 0) && (
+            <span className="opacity-70">· {outsideCount + excludedCount}</span>
+          )}
+        </button>
+      )}
+
+
+
       <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))] text-right">
         {visibleSpecies} espèces
         <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
