@@ -713,11 +713,15 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       {canCurate && (
         <GpsControlConsole
           open={gpsConsole}
-          onClose={() => setGpsConsole(false)}
+          onClose={() => {
+            setGpsConsole(false);
+            setGpsFocusId(null);
+          }}
           proprieteId={proprieteId}
           candidates={annotated}
           parcelRings={parcelRings}
           center={center}
+          focusId={gpsFocusId}
           displayNameFor={displayNameFor}
         />
       )}
