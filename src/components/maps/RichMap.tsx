@@ -39,6 +39,10 @@ export interface RichMapProps {
   zoom?: number;
   /** Auto-fit positions on mount/update */
   bounds?: Array<[number, number]>;
+  /** Cap the zoom used by the auto-fit (default: auto-derived from bounds diagonal) */
+  fitMaxZoom?: number;
+  /** Padding in px for the auto-fit (default [40, 40]) */
+  fitPadding?: [number, number];
   /** Initial map style (default 'geopoetic') */
   initialStyle?: MapStyle;
   /** Which built-in controls to render */
