@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair } from 'lucide-react';
+import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
@@ -14,6 +14,13 @@ import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_LABELS_FR_SHORT, KINGDOM_ORDER, normalizeKingdom, type KingdomKey } from '@/lib/kingdomLabels';
 import { haversineM } from '@/utils/geoDistance';
+import {
+  useProprieteParcelles,
+  useCanCurateParcelles,
+} from '@/hooks/propriete/usePropertyParcelles';
+import { buildGeofence, evaluateGeofence, GEOFENCE_LABELS } from '@/lib/geofence';
+import GpsControlConsole, { type GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
+
 
 const norm = (s: string | null | undefined): string =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
