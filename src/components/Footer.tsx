@@ -44,22 +44,13 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
                     <span>Découvrir l'auteur</span>
                   </a>
                   <a
-                    href="https://www.gaspardboreal.com/comedie-2025"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-                  >
-                    <BookOpen size={16} />
-                    <span>Comédie des Mondes Hybrides</span>
-                  </a>
-                  <a
-                    href="https://www.gaspardboreal.com/conferences"
+                    href="https://www.gaspardboreal.com/contact"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
                   >
                     <Mic size={16} />
-                    <span>Conférences & Chaires</span>
+                    <span>Contacter Gaspard Boréal</span>
                   </a>
                 </div>
               </>
