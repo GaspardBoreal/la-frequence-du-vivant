@@ -5,7 +5,7 @@ import { Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
   X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert, Leaf, ExternalLink,
-  ZoomIn, ChevronLeft, ChevronRight,
+  ZoomIn, ChevronLeft, ChevronRight, ListChecks, Copy, Layers,
 } from 'lucide-react';
 import { useGpsCandidatePhotos, type CandidatePhoto } from '@/hooks/gps/useGpsCandidatePhotos';
 
@@ -14,6 +14,7 @@ import { RichMap } from '@/components/maps';
 import { toast } from 'sonner';
 import {
   useSetGpsOverride,
+  useSetGpsOverridesBatch,
   useClearGpsOverride,
   useGpsOverrides,
   type GpsOverrideKind,
