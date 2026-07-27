@@ -138,6 +138,10 @@ export const GpsControlConsole: React.FC<Props> = ({
   const [coordsInput, setCoordsInput] = useState('');
   const [spread, setSpread] = useState(true);
   const [repositioning, setRepositioning] = useState(false);
+  /** Glisser-déposer : position provisoire d'un marqueur, non encore enregistrée. */
+  const [dragDraft, setDragDraft] = useState<
+    { id: string; from: [number, number]; to: [number, number]; dragging: boolean } | null
+  >(null);
   const [scope, setScope] = useState<'suspects' | 'all'>('suspects');
   const setOverride = useSetGpsOverride();
   const setOverridesBatch = useSetGpsOverridesBatch();
