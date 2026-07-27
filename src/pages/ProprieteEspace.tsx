@@ -158,9 +158,6 @@ const CanopyHero: React.FC<{
   const { data: heroPhotos } = useProprieteHeroPhotos(proprieteId, heroUrl);
   const photos = (heroPhotos ?? []).map((p) => ({ id: p.id, url: p.url }));
 
-  const scrollToDiagnostic = () => {
-    document.getElementById('diagnostic')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
 
   return (
     <section
