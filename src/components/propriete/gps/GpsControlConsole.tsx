@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert } from 'lucide-react';
+import { X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert, Leaf, ExternalLink } from 'lucide-react';
+import { useGpsCandidatePhotos, type CandidatePhoto } from '@/hooks/gps/useGpsCandidatePhotos';
+
 import { RichMap } from '@/components/maps';
 import { toast } from 'sonner';
 import {
@@ -38,6 +40,55 @@ const STATUS_COLOR: Record<GeofenceStatus, string> = {
   outside: '#b4462f',
   unknown: '#8a8a8a',
 };
+
+/** Vignette d'un point de curation (photo réelle, photo d'espèce, ou silhouette). */
+const CandidateThumb: React.FC<{
+  photo?: CandidatePhoto;
+  color: string;
+  size?: number;
+  onZoom?: (url: string) => void;
+}> = ({ photo, color, size = 44, onZoom }) => {
+  const style = { width: size, height: size };
+  if (!photo) {
+    return (
+      <div
+        style={{ ...style, background: `${color}22`, color }}
+        className="rounded-lg flex items-center justify-center flex-shrink-0"
+      >
+        <Leaf className="w-4 h-4 opacity-70" />
+      </div>
+    );
+  }
+  return (
+    <span
+      role={onZoom ? 'button' : undefined}
+      onClick={
+        onZoom
+          ? (e) => {
+              e.stopPropagation();
+              onZoom(photo.url);
+            }
+          : undefined
+      }
+      className="relative rounded-lg overflow-hidden flex-shrink-0 block"
+      style={style}
+    >
+      <img
+        src={photo.url}
+        alt=""
+        loading="lazy"
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
+        }}
+      />
+      {photo.kind === 'species' && (
+        <span className="absolute bottom-0 inset-x-0 h-[3px] bg-[hsl(var(--ds-forest))]/70" />
+      )}
+    </span>
+  );
+};
+
 
 /** Clic carte → callback (mode repositionnement) */
 const MapClickCapture: React.FC<{ onPick: (lat: number, lng: number) => void; active: boolean }> = ({
@@ -105,6 +156,11 @@ export const GpsControlConsole: React.FC<Props> = ({
   }, [candidates, scope]);
 
   const selected = list.find((c) => c.id === selectedId) || null;
+
+  /** Photos des points : cliché marcheur → cliché iNat de l'observation → photo d'espèce. */
+  const { photoFor } = useGpsCandidatePhotos(list);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
 
   const targetOf = (c: GpsCandidate): { kind: GpsOverrideKind; key: string } | null => {
     if (!c.overrideTargetKey) return null;
@@ -234,32 +290,43 @@ export const GpsControlConsole: React.FC<Props> = ({
                   selectedId === c.id ? 'bg-[hsl(var(--ds-forest))]/10' : 'hover:bg-black/5'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: STATUS_COLOR[c.geofenceStatus] }}
+                <div className="flex items-start gap-3">
+                  <CandidateThumb
+                    photo={photoFor.get(c.id)}
+                    color={STATUS_COLOR[c.geofenceStatus]}
+                    onZoom={(url) => setLightbox(url)}
                   />
-                  <span className="text-sm font-medium text-[hsl(var(--ds-forest-deep))] truncate">
-                    {displayNameFor(c)}
-                  </span>
-                  {c.overrideStatus && (
-                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))]">
-                      {c.overrideStatus === 'excluded'
-                        ? 'écartée'
-                        : c.overrideStatus === 'repositioned'
-                        ? 'corrigée'
-                        : 'validée'}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1 text-[11px] text-[hsl(var(--ds-forest-deep))]/60 flex flex-wrap gap-x-2">
-                  <span>{GEOFENCE_LABELS[c.geofenceStatus]}</span>
-                  {c.geofenceDistanceM ? <span>· {c.geofenceDistanceM} m</span> : null}
-                  {c.positionalAccuracy != null && <span>· ±{c.positionalAccuracy} m</span>}
-                  {c.obscured && <span>· position floutée</span>}
-                  <span>· {c.source === 'marcheur' ? 'marcheur' : 'iNaturalist'}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ background: STATUS_COLOR[c.geofenceStatus] }}
+                      />
+                      <span className="text-sm font-medium text-[hsl(var(--ds-forest-deep))] truncate">
+                        {displayNameFor(c)}
+                      </span>
+                      {c.overrideStatus && (
+                        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))]">
+                          {c.overrideStatus === 'excluded'
+                            ? 'écartée'
+                            : c.overrideStatus === 'repositioned'
+                            ? 'corrigée'
+                            : 'validée'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 text-[11px] text-[hsl(var(--ds-forest-deep))]/60 flex flex-wrap gap-x-2">
+                      <span>{GEOFENCE_LABELS[c.geofenceStatus]}</span>
+                      {c.geofenceDistanceM ? <span>· {c.geofenceDistanceM} m</span> : null}
+                      {c.positionalAccuracy != null && <span>· ±{c.positionalAccuracy} m</span>}
+                      {c.obscured && <span>· position floutée</span>}
+                      <span>· {c.source === 'marcheur' ? 'marcheur' : 'iNaturalist'}</span>
+                      {photoFor.get(c.id)?.kind === 'species' && <span>· photo d'espèce</span>}
+                    </div>
+                  </div>
                 </div>
               </button>
+
             ))}
 
             {applied.length > 0 && (
@@ -351,7 +418,20 @@ export const GpsControlConsole: React.FC<Props> = ({
                   })}
                 >
                   <Popup>
-                    <div style={{ minWidth: 150 }}>
+                    <div style={{ minWidth: 160 }}>
+                      {photoFor.get(c.id) && (
+                        <img
+                          src={photoFor.get(c.id)!.url}
+                          alt=""
+                          style={{
+                            width: '100%',
+                            height: 96,
+                            objectFit: 'cover',
+                            borderRadius: 6,
+                            marginBottom: 6,
+                          }}
+                        />
+                      )}
                       <div style={{ fontWeight: 600, fontSize: 12 }}>{displayNameFor(c)}</div>
                       <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
                         {c.scientificName}
@@ -359,9 +439,11 @@ export const GpsControlConsole: React.FC<Props> = ({
                       <div style={{ fontSize: 10, marginTop: 4, color: '#666' }}>
                         {GEOFENCE_LABELS[c.geofenceStatus]}
                         {c.geofenceDistanceM ? ` · ${c.geofenceDistanceM} m` : ''}
+                        {photoFor.get(c.id)?.kind === 'species' ? ' · photo d’espèce' : ''}
                       </div>
                     </div>
                   </Popup>
+
                 </Marker>
               ))}
             </RichMap>
@@ -375,6 +457,12 @@ export const GpsControlConsole: React.FC<Props> = ({
             {selected && (
               <div className="absolute bottom-3 left-3 right-3 z-[1000] rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/95 backdrop-blur px-4 py-3 shadow-xl">
                 <div className="flex items-start gap-3 flex-wrap">
+                  <CandidateThumb
+                    photo={photoFor.get(selected.id)}
+                    color={STATUS_COLOR[selected.geofenceStatus]}
+                    size={56}
+                    onZoom={(url) => setLightbox(url)}
+                  />
                   <div className="min-w-0">
                     <div className="font-serif text-base text-[hsl(var(--ds-forest-deep))] truncate">
                       {displayNameFor(selected)}
@@ -383,7 +471,18 @@ export const GpsControlConsole: React.FC<Props> = ({
                       {GEOFENCE_LABELS[selected.geofenceStatus]}
                       {selected.geofenceDistanceM ? ` · ${selected.geofenceDistanceM} m du périmètre` : ''}
                       {selected.obscured && ' · coordonnées floutées par iNaturalist'}
+                      {photoFor.get(selected.id)?.kind === 'species' && ' · photo d’espèce (pas le cliché du point)'}
                     </div>
+                    {photoFor.get(selected.id)?.inatUrl && (
+                      <a
+                        href={photoFor.get(selected.id)!.inatUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-[11px] underline text-[hsl(var(--ds-forest-deep))]/75"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Voir sur iNaturalist
+                      </a>
+                    )}
                     {selected.obscured && (
                       <div className="mt-1 text-[11px] text-[hsl(var(--ds-forest-deep))]/70 flex items-center gap-1">
                         <ShieldAlert className="w-3 h-3" /> Position volontairement imprécise à la
@@ -391,6 +490,7 @@ export const GpsControlConsole: React.FC<Props> = ({
                       </div>
                     )}
                   </div>
+
                   <div className="ml-auto flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => setRepositioning((v) => !v)}
@@ -428,7 +528,17 @@ export const GpsControlConsole: React.FC<Props> = ({
             )}
           </section>
         </div>
+
+        {lightbox && (
+          <div
+            className="fixed inset-0 z-[2000] bg-black/85 flex items-center justify-center p-6"
+            onClick={() => setLightbox(null)}
+          >
+            <img src={lightbox} alt="" className="max-h-[90vh] max-w-[92vw] rounded-xl shadow-2xl" />
+          </div>
+        )}
       </motion.div>
+
     </AnimatePresence>,
     document.body,
   );
