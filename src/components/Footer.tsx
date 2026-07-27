@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, BookOpen, Mic, MapPin, Leaf, Settings } from 'lucide-react';
+import { ExternalLink, BookOpen, Mic, Leaf, Settings } from 'lucide-react';
 
 interface FooterProps {
   variant?: 'default' | 'marches';
