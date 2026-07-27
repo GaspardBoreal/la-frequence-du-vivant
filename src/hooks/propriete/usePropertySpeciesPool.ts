@@ -486,6 +486,8 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     fieldPhotos,
     waypoints,
     contributorSummaries,
+    /** Corrections GPS appliquées par la base (écartées / repositionnées / validées) */
+    curation,
     isLoading: idsQuery.isLoading || poolsLoading,
     explorationIds,
     /** Exploration la plus récente : bon candidat pour prioriser les photos terrain */
