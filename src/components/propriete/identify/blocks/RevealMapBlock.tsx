@@ -421,6 +421,23 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         maxZoom={22}
         height="100%"
       >
+        {showParcels &&
+          drawnParcelles.map((p) => (
+            <GeoJSON
+              key={`parcelle-${p.id}`}
+              data={p.geometry as any}
+              style={{ color: '#2f5d3a', weight: 2.5, opacity: 0.9, fillColor: '#10b981', fillOpacity: 0.08 }}
+            >
+              <Tooltip sticky>
+                <span style={{ fontSize: 11 }}>
+                  {[p.section, p.numero].filter(Boolean).join(' ') || p.parcel_id}
+                  {p.commune_nom ? ` · ${p.commune_nom}` : ''}
+                  {p.contenance_m2 ? ` · ${p.contenance_m2.toLocaleString('fr-FR')} m²` : ''}
+                </span>
+              </Tooltip>
+            </GeoJSON>
+          ))}
+
         {filtered.map((w) => {
           const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
           return (
