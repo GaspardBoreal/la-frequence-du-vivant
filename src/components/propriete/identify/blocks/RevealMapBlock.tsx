@@ -412,7 +412,10 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
       <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))] text-right">
         {visibleSpecies} espèces
-        <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
+        <span className="ml-1 font-normal opacity-60">
+          · {indexActive ? `${matched.length} / ${filtered.length}` : filtered.length} obs.
+        </span>
+
         {refTotal > 0 && (
           <span className="block font-normal opacity-55 text-[10px]">
             {localizedSpecies} / {refTotal} espèces localisées
