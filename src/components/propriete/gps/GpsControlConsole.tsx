@@ -170,7 +170,44 @@ export const GpsControlConsole: React.FC<Props> = ({
 
   /** Photos des points : cliché marcheur → cliché iNat de l'observation → photo d'espèce. */
   const { photoFor } = useGpsCandidatePhotos(list);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  /** Visionneuse plein écran : on mémorise l'id du point (légende + navigation). */
+  const [lightboxId, setLightboxId] = useState<string | null>(null);
+  const photoList = useMemo(() => list.filter((c) => photoFor.get(c.id)), [list, photoFor]);
+  const lightboxIndex = photoList.findIndex((c) => c.id === lightboxId);
+  const lightboxItem = lightboxIndex >= 0 ? photoList[lightboxIndex] : null;
+
+  const openLightbox = (id: string) => {
+    setSelectedId(id);
+    setLightboxId(id);
+  };
+
+  const stepLightbox = (dir: 1 | -1) => {
+    if (!photoList.length || lightboxIndex < 0) return;
+    const next = photoList[(lightboxIndex + dir + photoList.length) % photoList.length];
+    setLightboxId(next.id);
+    setSelectedId(next.id);
+  };
+
+  /** Bandeau gauche synchronisé avec la sélection carte. */
+  const rowRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  useEffect(() => {
+    if (!selectedId) return;
+    rowRefs.current.get(selectedId)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!lightboxId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxId(null);
+      if (e.key === 'ArrowRight') stepLightbox(1);
+      if (e.key === 'ArrowLeft') stepLightbox(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+
 
 
   const targetOf = (c: GpsCandidate): { kind: GpsOverrideKind; key: string } | null => {
