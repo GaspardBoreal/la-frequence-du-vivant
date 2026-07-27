@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker, Popup, GeoJSON, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
