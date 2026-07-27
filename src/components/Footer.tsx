@@ -150,21 +150,7 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
                     <span>Matériel pédagogique</span>
                   </Link>
                   <a
-                    href="#presse"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-                  >
-                    <ExternalLink size={16} />
-                    <span>Dossier presse & éditeurs</span>
-                  </a>
-                  <a
-                    href="https://www.gaspardboreal.com/contact"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-                  >
-                    <Mic size={16} />
-                    <span>Contacter Gaspard Boréal</span>
-                  </a>
+
                   <Link
                     to="/access-admin-gb2025"
                     className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
