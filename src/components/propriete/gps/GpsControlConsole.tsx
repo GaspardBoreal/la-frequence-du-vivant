@@ -239,26 +239,133 @@ export const GpsControlConsole: React.FC<Props> = ({
     toast.success(status === 'excluded' ? 'Observation écartée du périmètre' : 'Position validée');
   };
 
-  const reposition = async (lat: number, lng: number) => {
-    if (!selected) return;
-    const t = targetOf(selected);
-    if (!t) {
-      toast.error('Observation non identifiable — curation impossible');
+  /* ---------- Sélection multiple ---------- */
+
+  const batch = useMemo(() => list.filter((c) => selectedIds.has(c.id)), [list, selectedIds]);
+
+  const toggleRow = (c: GpsCandidate, shiftKey: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (shiftKey && lastClickedId) {
+        const a = list.findIndex((x) => x.id === lastClickedId);
+        const b = list.findIndex((x) => x.id === c.id);
+        if (a >= 0 && b >= 0) {
+          const [from, to] = a < b ? [a, b] : [b, a];
+          for (let i = from; i <= to; i++) next.add(list[i].id);
+          return next;
+        }
+      }
+      if (next.has(c.id)) next.delete(c.id);
+      else next.add(c.id);
+      return next;
+    });
+    setLastClickedId(c.id);
+  };
+
+  const normSci = (s?: string | null) =>
+    (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+  const selectSameSpecies = (c: GpsCandidate) => {
+    const key = normSci(c.scientificName) || normSci(displayNameFor(c));
+    const ids = list
+      .filter((x) => (normSci(x.scientificName) || normSci(displayNameFor(x))) === key)
+      .map((x) => x.id);
+    setSelectedIds(new Set(ids));
+    toast.success(`${ids.length} observation${ids.length > 1 ? 's' : ''} de cette espèce sélectionnée${ids.length > 1 ? 's' : ''}`);
+  };
+
+  /** Léger éclatement pour que N points superposés restent distinguables. */
+  const offsetOf = (i: number, n: number, lat: number): [number, number] => {
+    if (!spread || n <= 1) return [0, 0];
+    const r = 5; // mètres
+    const a = (2 * Math.PI * i) / n;
+    return [
+      (r * Math.cos(a)) / 111320,
+      (r * Math.sin(a)) / (111320 * Math.cos((lat * Math.PI) / 180) || 1),
+    ];
+  };
+
+  const repositionMany = async (targets: GpsCandidate[], lat: number, lng: number) => {
+    const inputs = targets
+      .map((c, i) => {
+        const t = targetOf(c);
+        if (!t) return null;
+        const [dLat, dLng] = offsetOf(i, targets.length, lat);
+        return {
+          kind: t.kind,
+          key: t.key,
+          status: 'repositioned' as const,
+          lat: lat + dLat,
+          lon: lng + dLng,
+          originalLat: c.originalLat ?? c.lat,
+          originalLon: c.originalLng ?? c.lng,
+          reason: 'Repositionnement curateur (lot)',
+          proprieteId: proprieteId ?? null,
+        };
+      })
+      .filter(Boolean) as any[];
+    if (!inputs.length) {
+      toast.error('Observations non identifiables — curation impossible');
       return;
     }
-    await setOverride.mutateAsync({
-      kind: t.kind,
-      key: t.key,
-      status: 'repositioned',
-      lat,
-      lon: lng,
-      originalLat: selected.originalLat ?? selected.lat,
-      originalLon: selected.originalLng ?? selected.lng,
-      reason: 'Repositionnement curateur',
-      proprieteId: proprieteId ?? null,
-    });
+    await setOverridesBatch.mutateAsync(inputs);
     setRepositioning(false);
-    toast.success('Position corrigée');
+    setSelectedIds(new Set());
+  };
+
+  const actMany = async (targets: GpsCandidate[], status: 'excluded' | 'validated', reason: string) => {
+    const inputs = targets
+      .map((c) => {
+        const t = targetOf(c);
+        if (!t) return null;
+        return {
+          kind: t.kind,
+          key: t.key,
+          status,
+          originalLat: c.originalLat ?? c.lat,
+          originalLon: c.originalLng ?? c.lng,
+          reason,
+          proprieteId: proprieteId ?? null,
+        };
+      })
+      .filter(Boolean) as any[];
+    if (!inputs.length) return;
+    await setOverridesBatch.mutateAsync(inputs);
+    setSelectedIds(new Set());
+  };
+
+  const clearMany = async (targets: GpsCandidate[]) => {
+    for (const c of targets) {
+      const t = targetOf(c);
+      if (t) await clearOverride.mutateAsync(t);
+    }
+    setSelectedIds(new Set());
+  };
+
+  const parseCoords = (raw: string): [number, number] | null => {
+    const m = raw.trim().replace(/;/g, ',').match(/(-?\d+[.,]?\d*)\s*,\s*(-?\d+[.,]?\d*)/);
+    if (!m) return null;
+    const lat = Number(m[1].replace(',', '.'));
+    const lng = Number(m[2].replace(',', '.'));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)
+      return null;
+    return [lat, lng];
+  };
+
+  const reposition = async (lat: number, lng: number) => {
+    const targets = batch.length ? batch : selected ? [selected] : [];
+    if (!targets.length) return;
+    await repositionMany(targets, lat, lng);
+  };
+
+  const applyCoords = async () => {
+    const c = parseCoords(coordsInput);
+    if (!c) {
+      toast.error('Coordonnées illisibles', { description: 'Format attendu : 44.8123, 0.1456' });
+      return;
+    }
+    await reposition(c[0], c[1]);
+    setCoordsInput('');
   };
 
   const undo = async (c: GpsCandidate) => {
