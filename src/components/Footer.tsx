@@ -149,7 +149,6 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
                     <BookOpen size={16} />
                     <span>Matériel pédagogique</span>
                   </Link>
-                  <a
 
                   <Link
                     to="/access-admin-gb2025"
