@@ -97,13 +97,37 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   }, [waypoints, kingdom, onlyKb, kbKeys, sourceFilter]);
 
 
+  /**
+   * Cadrage : on écarte les points isolés (au-delà du 95e percentile de distance
+   * au centroïde) pour que quelques observations lointaines n'étirent pas le cadre.
+   * Ces points restent affichés, ils ne pilotent simplement pas le fit initial.
+   */
   const bounds = useMemo<Array<[number, number]>>(() => {
-    const b: Array<[number, number]> = filtered.map((w) => [w.lat, w.lng]);
+    const pts: Array<[number, number]> = filtered.map((w) => [w.lat, w.lng]);
     if (propriete?.latitude != null && propriete?.longitude != null) {
-      b.push([propriete.latitude, propriete.longitude]);
+      pts.push([propriete.latitude, propriete.longitude]);
     }
-    return b;
-  }, [filtered, propriete]);
+    let core = pts;
+    if (pts.length > 6) {
+      const cLat = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+      const cLng = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+      const withD = pts.map((p) => ({
+        p,
+        d: haversineM(cLat, cLng, p[0], p[1]),
+      }));
+      const sorted = [...withD].sort((a, b) => a.d - b.d);
+      const cut = sorted[Math.floor(sorted.length * 0.95)]?.d ?? Infinity;
+      const kept = withD.filter((x) => x.d <= cut).map((x) => x.p);
+      if (kept.length >= 2) core = kept;
+    }
+    // Perturbation infime (~10 cm) pour forcer un nouveau cadrage sur demande.
+    if (refitNonce > 0 && core.length > 0) {
+      core = [...core];
+      core[0] = [core[0][0] + (refitNonce % 2) * 1e-6, core[0][1]];
+    }
+    return core;
+  }, [filtered, propriete, refitNonce]);
+
 
   const center: [number, number] =
     propriete?.latitude != null && propriete?.longitude != null
