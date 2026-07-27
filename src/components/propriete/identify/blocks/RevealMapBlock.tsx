@@ -67,6 +67,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
    * n'est jugé — on n'écarte jamais de donnée par défaut.
    */
   const fence = useMemo(() => buildGeofence(parcelles ?? []), [parcelles]);
+  const parcelRings = useMemo(() => fence.rings, [fence]);
+
 
   const annotated = useMemo<GpsCandidate[]>(
     () =>
