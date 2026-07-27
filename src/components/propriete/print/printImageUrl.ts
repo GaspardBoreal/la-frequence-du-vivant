@@ -53,3 +53,27 @@ export function dedupeUrls(urls: (string | null | undefined)[]): string[] {
   }
   return Array.from(seen);
 }
+
+/**
+ * Repli : renvoie l'URL d'origine (non transformée, pleine résolution) d'une
+ * image passée par le rendu Supabase. Sert de dernier recours à l'impression
+ * lorsque la variante redimensionnée échoue.
+ */
+export function originalUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (/^(data|blob):/i.test(url)) return url;
+  try {
+    const u = new URL(url, typeof window !== 'undefined' ? window.location.href : 'http://localhost');
+    if (u.pathname.includes('/storage/v1/render/image/')) {
+      u.pathname = u.pathname.replace('/storage/v1/render/image/', '/storage/v1/object/');
+    }
+    u.searchParams.delete('width');
+    u.searchParams.delete('height');
+    u.searchParams.delete('quality');
+    u.searchParams.delete('resize');
+    u.searchParams.delete('_r');
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
