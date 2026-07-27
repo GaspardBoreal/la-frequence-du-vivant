@@ -176,9 +176,9 @@ export const PH_TESTS: PhTest[] = [
         angle: 'Le regard méthodique : les différentes façons de mesurer et leurs limites.',
       },
       {
-        label: 'Tout savoir sur le pH et les sols calcaires',
-        url: 'https://youtu.be/AHiwHK_QxNw',
-        angle: 'Le regard agronomique : interpréter le résultat obtenu et corriger sans forcer.',
+        label: 'Tester l’acidité de votre sol avec des produits du quotidien',
+        url: 'https://youtu.be/PB9HNnOItU0',
+        angle: 'Le regard maison : vinaigre et bicarbonate pour un test rapide, sans matériel.',
       },
     ],
   },
