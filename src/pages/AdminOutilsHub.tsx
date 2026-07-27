@@ -27,6 +27,13 @@ const OUTILS = [
     active: true,
   },
   {
+    titre: 'Contrôle GPS des observations',
+    description: 'Repositionne, écarte ou valide les points mal placés. Surcouche éditoriale : iNaturalist reste intact, la correction s\'applique partout.',
+    icon: Crosshair,
+    to: '/admin/outils/gps',
+    active: true,
+  },
+  {
     titre: 'Curation taxonomique',
     description: 'Fusionne durablement les espèces dupliquées (Lantana / Lantana camara…), par marche ou globalement. Persistant face aux synchros iNat / Pl@ntNet.',
     icon: GitMerge,
