@@ -475,17 +475,23 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
         {filtered.map((w) => {
           const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
+          // Hors correspondance : point fantôme, non cliquable, pour garder le contexte.
+          const dim = indexActive && !matchedIds.has(w.id);
           return (
             <Marker
               key={w.id}
               position={[w.lat, w.lng]}
-              icon={iconFor(color, w.source)}
+              icon={iconFor(color, w.source, dim)}
+              opacity={dim ? 0.35 : 1}
+              interactive={!dim}
+              zIndexOffset={dim ? -500 : 0}
               ref={(m) => {
                 if (m) markerRefs.current.set(w.id, m as unknown as L.Marker);
                 else markerRefs.current.delete(w.id);
               }}
               eventHandlers={{ click: () => setSelectedId(w.id) }}
             >
+
               <Popup>
                 <div style={{ minWidth: 160 }}>
                   {w.photoUrl && (
