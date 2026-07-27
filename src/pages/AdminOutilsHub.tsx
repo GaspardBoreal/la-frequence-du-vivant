@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair } from 'lucide-react';
 
 const OUTILS = [
   {
@@ -24,6 +24,13 @@ const OUTILS = [
     description: 'Audit AFNOR SPEC 2314 — frugalité numérique IA, score /100, plan d\'action.',
     icon: Leaf,
     to: '/admin/outils/audit-frugal',
+    active: true,
+  },
+  {
+    titre: 'Contrôle GPS des observations',
+    description: 'Repositionne, écarte ou valide les points mal placés. Surcouche éditoriale : iNaturalist reste intact, la correction s\'applique partout.',
+    icon: Crosshair,
+    to: '/admin/outils/gps',
     active: true,
   },
   {

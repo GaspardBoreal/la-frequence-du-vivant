@@ -41,7 +41,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   proprieteId,
   index = 0,
 }) => {
-  const { waypoints: rawWaypoints } = usePropertySpeciesPool(proprieteId);
+  const { waypoints: rawWaypoints, curation } = usePropertySpeciesPool(proprieteId);
   const { data: parcelles } = useProprieteParcelles(proprieteId);
   const { data: canCurate } = useCanCurateParcelles(proprieteId);
 
@@ -79,13 +79,18 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     [rawWaypoints, fence, bufferM],
   );
 
-  /** Les observations écartées par un curateur disparaissent des vues publiques. */
+  /**
+   * Les observations écartées par un curateur sont déjà retirées par la RPC
+   * (donc partout : propriété, marches, explorations, événements, exports).
+   * On garde ce filtre en ceinture-bretelles pour les caches encore chauds.
+   */
   const waypoints = useMemo(
     () => annotated.filter((w) => w.overrideStatus !== 'excluded'),
     [annotated],
   );
 
-  const excludedCount = annotated.length - waypoints.length;
+  const excludedCount = curation.excluded + (annotated.length - waypoints.length);
+  const repositionedCount = curation.repositioned;
   const outsideCount = waypoints.filter((w) => w.geofenceStatus === 'outside').length;
 
 
@@ -355,10 +360,20 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
             {localizedSpecies} / {refTotal} espèces localisées
           </span>
         )}
-        {excludedCount > 0 && (
+        {(excludedCount > 0 || repositionedCount > 0) && (
           <span className="block font-normal opacity-55 text-[10px]">
-            {excludedCount} observation{excludedCount > 1 ? 's' : ''} écartée
-            {excludedCount > 1 ? 's' : ''} par curation
+            {excludedCount > 0 && (
+              <>
+                {excludedCount} écartée{excludedCount > 1 ? 's' : ''}
+              </>
+            )}
+            {excludedCount > 0 && repositionedCount > 0 && ' · '}
+            {repositionedCount > 0 && (
+              <>
+                {repositionedCount} repositionnée{repositionedCount > 1 ? 's' : ''}
+              </>
+            )}
+            {' par curation (partout)'}
           </span>
         )}
       </span>
