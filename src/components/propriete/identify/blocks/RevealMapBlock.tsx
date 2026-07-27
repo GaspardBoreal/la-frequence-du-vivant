@@ -282,8 +282,10 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     <div className="relative rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: heightPx }}>
       <RichMap
         center={center}
-        zoom={16}
+        zoom={15}
         bounds={bounds.length > 1 ? bounds : undefined}
+        fitMaxZoom={16}
+        fitPadding={[60, 60]}
         controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
         maxZoom={22}
         height="100%"
