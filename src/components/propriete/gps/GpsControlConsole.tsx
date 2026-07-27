@@ -828,9 +828,20 @@ export const GpsControlConsole: React.FC<Props> = ({
             )}
 
             {/* Aide au glissé + confirmation */}
-            {!repositioning && !dragDraft && (selectedId || selectedIds.size > 0) && (
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-forest-deep))]/90 text-[hsl(var(--ds-cream))] text-[11px] shadow-lg flex items-center gap-1.5">
-                <Move className="w-3 h-3" /> Glissez le point doré pour corriger sa position
+            {!repositioning && !dragDraft && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-3.5 py-2 rounded-full bg-[hsl(var(--ds-forest-deep))]/92 text-[hsl(var(--ds-cream))] text-[11px] shadow-lg flex items-center gap-2 max-w-[92%]">
+                <Move className="w-3.5 h-3.5 text-[hsl(var(--ds-gold))] flex-shrink-0" />
+                {selectedId || selectedIds.size > 0 ? (
+                  <span>
+                    <strong>Étape 2</strong> — attrapez le gros point doré « Glissez-moi » et
+                    déposez-le au bon endroit, puis <strong>Enregistrer</strong>.
+                  </span>
+                ) : (
+                  <span>
+                    <strong>Étape 1</strong> — cliquez un point (carte ou liste) : il devient doré et
+                    déplaçable à la souris.
+                  </span>
+                )}
               </div>
             )}
 
