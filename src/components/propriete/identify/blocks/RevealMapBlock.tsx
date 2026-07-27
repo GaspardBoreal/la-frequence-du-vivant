@@ -277,12 +277,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waypoints, onlyKb, kbKeys]);
 
-  // Total affiché : espèces distinctes actuellement visibles sur la carte
+  // Total affiché : espèces distinctes actuellement mises en avant sur la carte
   const visibleSpecies = useMemo(
-    () => speciesBucket(filtered).size,
+    () => speciesBucket(indexActive ? matched : filtered).size,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filtered],
+    [filtered, matched, indexActive],
   );
+
 
   // Garde-fou : espèces localisables sur la carte vs total du bandeau du haut
   const localizedSpecies = useMemo(
