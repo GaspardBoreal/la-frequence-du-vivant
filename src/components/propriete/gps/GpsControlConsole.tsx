@@ -841,6 +841,12 @@ export const GpsControlConsole: React.FC<Props> = ({
 
                   <div className="ml-auto flex items-center gap-2 flex-wrap">
                     <button
+                      onClick={() => selectSameSpecies(selected)}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] flex items-center gap-1"
+                    >
+                      <ListChecks className="w-3 h-3" /> Toute l’espèce
+                    </button>
+                    <button
                       onClick={() => setRepositioning((v) => !v)}
                       className={`text-[11px] px-3 py-1.5 rounded-full border flex items-center gap-1 ${
                         repositioning
