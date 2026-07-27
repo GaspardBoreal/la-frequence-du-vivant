@@ -95,6 +95,7 @@ const AdminProprietes = lazy(() => import('./pages/AdminProprietes'));
 const ProprieteEspace = lazy(() => import('./pages/ProprieteEspace'));
 const MarchesDuVivantExplorationMarcheur = lazy(() => import('./pages/MarchesDuVivantExplorationMarcheur'));
 const AdminOutilsHub = lazy(() => import('./pages/AdminOutilsHub'));
+const AdminGpsControl = lazy(() => import('./pages/AdminGpsControl'));
 const AdminFrequences = lazy(() => import('./pages/AdminFrequences'));
 const CommunityAffiliateLanding = lazy(() => import('./pages/CommunityAffiliateLanding'));
 const PartagePublic = lazy(() => import('./pages/PartagePublic'));
