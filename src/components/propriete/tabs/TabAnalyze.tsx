@@ -22,6 +22,7 @@ import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/prin
 import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
 import { AnalyzePrintLayout } from '@/components/propriete/print/AnalyzePrintLayout';
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
+import PrintPreparationOverlay from '@/components/propriete/print/PrintPreparationOverlay';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
 import { TestMediaBadge } from '@/components/propriete/analyze/media/TestMediaDrawer';

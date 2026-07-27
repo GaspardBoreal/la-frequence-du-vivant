@@ -17,6 +17,7 @@ import { PortraitTeaser } from '@/components/propriete/portrait/PortraitTeaser';
 import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/print/PrintChoiceDialog';
 import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
+import PrintPreparationOverlay from '@/components/propriete/print/PrintPreparationOverlay';
 import { Button } from '@/components/ui/button';
 
 export const TabObserve: React.FC<{
