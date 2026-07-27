@@ -71,6 +71,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [onlyKb, setOnlyKb] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'marcheur' | 'inaturalist'>('all');
+  const [refitNonce, setRefitNonce] = useState(0);
 
   const kbKeys = useMemo(() => {
     const s = new Set<string>();
