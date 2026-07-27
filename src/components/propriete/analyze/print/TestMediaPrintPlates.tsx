@@ -6,6 +6,7 @@ import {
   SOIL_TEST_MAP,
   type SoilTestId,
 } from '@/components/propriete/analyze/media/soilTestCatalog';
+import { printImageUrl } from '@/components/propriete/print/printImageUrl';
 
 const PER_PAGE = 12;
 
@@ -110,7 +111,7 @@ export const TestMediaPrintPlates: React.FC<{
               {plate.photos.map((p) => (
                 <figure key={p.id} className="combined-print-thumb">
                   <div className="combined-print-thumb-frame">
-                    <img src={p.url} alt={p.caption ?? `${def.label} — ${p.sample_label ?? ''}`} />
+                    <img src={printImageUrl(p.url, 'thumb')} loading="eager" alt={p.caption ?? `${def.label} — ${p.sample_label ?? ''}`} />
                     {p.sample_label && (
                       <span className="combined-print-thumb-pin">{p.sample_label}</span>
                     )}
