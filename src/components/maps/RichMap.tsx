@@ -153,7 +153,9 @@ export const RichMap: React.FC<RichMapProps> = ({
       >
         <DynamicTileLayer mapStyle={mapStyle} maxZoom={maxZoom} />
 
-        {bounds && bounds.length > 0 && <FitBounds positions={bounds} />}
+        {bounds && bounds.length > 0 && (
+          <FitBounds positions={bounds} maxZoom={fitMaxZoom} padding={fitPadding} />
+        )}
 
         {/* Marche route (background trace) */}
         {marcheRoute && marcheRoute.steps.length > 0 && (
