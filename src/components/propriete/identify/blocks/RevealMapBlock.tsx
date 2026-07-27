@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Filter, Camera, Maximize2, Minimize2, X } from 'lucide-react';
+import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
@@ -13,6 +13,7 @@ import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool
 import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_LABELS_FR_SHORT, KINGDOM_ORDER, normalizeKingdom, type KingdomKey } from '@/lib/kingdomLabels';
+import { haversineM } from '@/utils/geoDistance';
 
 const norm = (s: string | null | undefined): string =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -71,6 +72,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [onlyKb, setOnlyKb] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'marcheur' | 'inaturalist'>('all');
+  const [refitNonce, setRefitNonce] = useState(0);
 
   const kbKeys = useMemo(() => {
     const s = new Set<string>();
@@ -97,13 +99,37 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   }, [waypoints, kingdom, onlyKb, kbKeys, sourceFilter]);
 
 
+  /**
+   * Cadrage : on écarte les points isolés (au-delà du 95e percentile de distance
+   * au centroïde) pour que quelques observations lointaines n'étirent pas le cadre.
+   * Ces points restent affichés, ils ne pilotent simplement pas le fit initial.
+   */
   const bounds = useMemo<Array<[number, number]>>(() => {
-    const b: Array<[number, number]> = filtered.map((w) => [w.lat, w.lng]);
+    const pts: Array<[number, number]> = filtered.map((w) => [w.lat, w.lng]);
     if (propriete?.latitude != null && propriete?.longitude != null) {
-      b.push([propriete.latitude, propriete.longitude]);
+      pts.push([propriete.latitude, propriete.longitude]);
     }
-    return b;
-  }, [filtered, propriete]);
+    let core = pts;
+    if (pts.length > 6) {
+      const cLat = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+      const cLng = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+      const withD = pts.map((p) => ({
+        p,
+        d: haversineM(cLat, cLng, p[0], p[1]),
+      }));
+      const sorted = [...withD].sort((a, b) => a.d - b.d);
+      const cut = sorted[Math.floor(sorted.length * 0.95)]?.d ?? Infinity;
+      const kept = withD.filter((x) => x.d <= cut).map((x) => x.p);
+      if (kept.length >= 2) core = kept;
+    }
+    // Perturbation infime (~10 cm) pour forcer un nouveau cadrage sur demande.
+    if (refitNonce > 0 && core.length > 0) {
+      core = [...core];
+      core[0] = [core[0][0] + (refitNonce % 2) * 1e-6, core[0][1]];
+    }
+    return core;
+  }, [filtered, propriete, refitNonce]);
+
 
   const center: [number, number] =
     propriete?.latitude != null && propriete?.longitude != null
@@ -256,8 +282,10 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     <div className="relative rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: heightPx }}>
       <RichMap
         center={center}
-        zoom={16}
+        zoom={15}
         bounds={bounds.length > 1 ? bounds : undefined}
+        fitMaxZoom={16}
+        fitPadding={[60, 60]}
         controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
         maxZoom={22}
         height="100%"
@@ -308,6 +336,17 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         className="absolute top-3 left-3 z-[400] w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--ds-forest-deep))] transition"
       >
         {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+      </button>
+
+      {/* Recadrer sur l'ensemble des observations */}
+      <button
+        type="button"
+        onClick={() => setRefitNonce((n) => n + 1)}
+        aria-label="Recadrer la carte sur les observations"
+        title="Recadrer"
+        className="absolute top-14 left-3 z-[400] w-9 h-9 rounded-full bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] border border-[hsl(var(--ds-line))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--ds-forest))] hover:text-[hsl(var(--ds-cream))] transition"
+      >
+        <Crosshair className="w-4 h-4" />
       </button>
     </div>
   );
