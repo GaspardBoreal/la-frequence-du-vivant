@@ -550,7 +550,7 @@ export const GpsControlConsole: React.FC<Props> = ({
                     photo={photoFor.get(selected.id)}
                     color={STATUS_COLOR[selected.geofenceStatus]}
                     size={56}
-                    onZoom={(url) => setLightbox(url)}
+                    onZoom={() => openLightbox(selected.id)}
                   />
                   <div className="min-w-0">
                     <div className="font-serif text-base text-[hsl(var(--ds-forest-deep))] truncate">
