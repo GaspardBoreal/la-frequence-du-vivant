@@ -22,6 +22,7 @@ import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/prin
 import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
 import { AnalyzePrintLayout } from '@/components/propriete/print/AnalyzePrintLayout';
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
+import PrintPreparationOverlay from '@/components/propriete/print/PrintPreparationOverlay';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
 import { TestMediaBadge } from '@/components/propriete/analyze/media/TestMediaDrawer';
@@ -172,28 +173,33 @@ export const TabAnalyze: React.FC<{
   const [printOpen, setPrintOpen] = React.useState(false);
   const [combinedPrinting, setCombinedPrinting] = React.useState(false);
   const [soloPrinting, setSoloPrinting] = React.useState(false);
-  const combinedPortalRef = usePrintCombined({
+  const combinedPrint = usePrintCombined({
     active: combinedPrinting,
     portalId: 'combined-print-portal',
     bodyClass: 'combined-printing',
     onDone: () => setCombinedPrinting(false),
-  });
-  const soloPortalRef = usePrintCombined({
-    active: soloPrinting,
-    portalId: 'analyze-print-portal',
-    bodyClass: 'analyze-print-mode',
-    onDone: () => setSoloPrinting(false),
-  });
-
-  const handleConfirmPrint = async (choice: PrintChoice) => {
-    setPrintOpen(false);
-    if (choice === 'combined') {
-      // URL signées valables 1 h : on les rafraîchit avant d'imprimer les preuves de terrain.
+    // URL signées valables 1 h : on les rafraîchit en parallèle du montage.
+    prepare: async () => {
       try {
         await refetchTestMedias();
       } catch {
         /* impression possible malgré tout */
       }
+    },
+    prepareLabel: 'Réveil des preuves de terrain (liens sécurisés)',
+  });
+  const combinedPortalRef = combinedPrint.portalRef;
+  const soloPrint = usePrintCombined({
+    active: soloPrinting,
+    portalId: 'analyze-print-portal',
+    bodyClass: 'analyze-print-mode',
+    onDone: () => setSoloPrinting(false),
+  });
+  const soloPortalRef = soloPrint.portalRef;
+
+  const handleConfirmPrint = (choice: PrintChoice) => {
+    setPrintOpen(false);
+    if (choice === 'combined') {
       setCombinedPrinting(true);
       return;
     }
@@ -212,6 +218,21 @@ export const TabAnalyze: React.FC<{
         analyzeReady={isDone}
         observeReady={!!observation.completedAt}
       />
+      <PrintPreparationOverlay
+        visible={combinedPrinting}
+        progress={combinedPrint.progress}
+        steps={combinedPrint.steps}
+        skipped={combinedPrint.skipped}
+        onCancel={combinedPrint.cancel}
+      />
+      <PrintPreparationOverlay
+        visible={soloPrinting}
+        progress={soloPrint.progress}
+        steps={soloPrint.steps}
+        skipped={soloPrint.skipped}
+        onCancel={soloPrint.cancel}
+      />
+
       {soloPrinting && soloPortalRef.current && createPortal(
         <AnalyzePrintLayout
           soil={state}

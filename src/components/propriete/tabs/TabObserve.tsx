@@ -17,6 +17,7 @@ import { PortraitTeaser } from '@/components/propriete/portrait/PortraitTeaser';
 import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/print/PrintChoiceDialog';
 import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
 import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
+import PrintPreparationOverlay from '@/components/propriete/print/PrintPreparationOverlay';
 import { Button } from '@/components/ui/button';
 
 export const TabObserve: React.FC<{
@@ -114,12 +115,13 @@ export const TabObserve: React.FC<{
 
   const [printOpen, setPrintOpen] = React.useState(false);
   const [combinedPrinting, setCombinedPrinting] = React.useState(false);
-  const combinedPortalRef = usePrintCombined({
+  const combinedPrint = usePrintCombined({
     active: combinedPrinting,
     portalId: 'combined-print-portal',
     bodyClass: 'combined-printing',
     onDone: () => setCombinedPrinting(false),
   });
+  const combinedPortalRef = combinedPrint.portalRef;
 
   const handleConfirmPrint = (choice: PrintChoice) => {
     setPrintOpen(false);
@@ -144,6 +146,13 @@ export const TabObserve: React.FC<{
         onConfirm={handleConfirmPrint}
         portraitPhotoCount={galleryPhotos.length}
       />
+      <PrintPreparationOverlay
+        visible={combinedPrinting}
+        progress={combinedPrint.progress}
+        steps={combinedPrint.steps}
+        skipped={combinedPrint.skipped}
+        onCancel={combinedPrint.cancel}
+      />
       {combinedPrinting && combinedPortalRef.current && createPortal(
         <CombinedPrintLayout
           answers={state.answers}
@@ -163,6 +172,7 @@ export const TabObserve: React.FC<{
       )}
     </>
   );
+
 
   // Vue synthèse (carnet scellé) — quand terminé et non en mode édition
   if (isDone && mode === 'summary') {
