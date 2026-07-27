@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, BookOpen, Mic, MapPin, Leaf, Settings } from 'lucide-react';
+import { ExternalLink, BookOpen, Mic, Leaf, Settings } from 'lucide-react';
 
 interface FooterProps {
   variant?: 'default' | 'marches';
@@ -44,22 +44,13 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
                     <span>Découvrir l'auteur</span>
                   </a>
                   <a
-                    href="https://www.gaspardboreal.com/comedie-2025"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-                  >
-                    <BookOpen size={16} />
-                    <span>Comédie des Mondes Hybrides</span>
-                  </a>
-                  <a
-                    href="https://www.gaspardboreal.com/conferences"
+                    href="https://www.gaspardboreal.com/contact"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
                   >
                     <Mic size={16} />
-                    <span>Conférences & Chaires</span>
+                    <span>Contacter Gaspard Boréal</span>
                   </a>
                 </div>
               </>
@@ -95,13 +86,6 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
                     <Leaf size={16} />
                     <span>Explorations Sensibles</span>
                   </Link>
-                  <a
-                    href="/bioacoustique/la-ou-elle-se-jette-je-me-redresse-a-bec-dambes--bec-dambes-gauriac"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-                  >
-                    <MapPin size={16} />
-                    <span>Marches Sensibles</span>
-                  </a>
                   <Link
                     to="/marches-du-vivant"
                     className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
@@ -158,22 +142,7 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
                     <BookOpen size={16} />
                     <span>Matériel pédagogique</span>
                   </Link>
-                  <a
-                    href="#presse"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-                  >
-                    <ExternalLink size={16} />
-                    <span>Dossier presse & éditeurs</span>
-                  </a>
-                  <a
-                    href="https://www.gaspardboreal.com/contact"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-                  >
-                    <Mic size={16} />
-                    <span>Contacter Gaspard Boréal</span>
-                  </a>
+
                   <Link
                     to="/access-admin-gb2025"
                     className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
