@@ -223,6 +223,9 @@ export const TabAnalyze: React.FC<{
         progress={combinedPrint.progress}
         steps={combinedPrint.steps}
         skipped={combinedPrint.skipped}
+        incomplete={combinedPrint.incomplete}
+        onRetryMissing={combinedPrint.retryMissing}
+        onPrintAnyway={combinedPrint.printAnyway}
         onCancel={combinedPrint.cancel}
       />
       <PrintPreparationOverlay
@@ -230,6 +233,9 @@ export const TabAnalyze: React.FC<{
         progress={soloPrint.progress}
         steps={soloPrint.steps}
         skipped={soloPrint.skipped}
+        incomplete={soloPrint.incomplete}
+        onRetryMissing={soloPrint.retryMissing}
+        onPrintAnyway={soloPrint.printAnyway}
         onCancel={soloPrint.cancel}
       />
 

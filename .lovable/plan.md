@@ -1,44 +1,47 @@
-## Objectif
+## Diagnostic
 
-Rendre la préparation du « Cahier complet » (Portrait + J'observe + J'analyse) visible, rassurante et nettement plus rapide.
+Le flux actuel (`src/components/propriete/print/usePrintCombined.ts`) peut lancer `window.print()` alors que des images ne sont pas encore décodées :
 
-## Constat (vérifié dans le code)
+- **Timeout par image de 4 s** : l'image est comptée « skipped » et l'impression continue sans elle.
+- **Garde-fou global de 15 s** : `window.print()` est appelé de force, quel que soit l'état du chargement.
+- **Aucune reprise** : une image en échec (URL signée lente, transformation Supabase générée à la volée pour la 1ʳᵉ fois) n'est jamais retentée.
+- **`load` ≠ prêt à peindre** : sans `img.decode()`, une image peut être « chargée » mais pas encore rasterisée au moment de l'aperçu.
 
-- `usePrintCombined.ts` attend **toutes** les images du portail en une seule promesse, sans aucun retour d'état, puis attend 200 ms fixes et appelle `window.print()`. Aucun timeout : une image lente ou en erreur silencieuse bloque tout.
-- Le cahier complet charge en pleine résolution : photo héro + jusqu'à 12 planches Portrait (`PortraitPrintLayout`, plusieurs `<img>` par photo — sommaire visuel + planches + doubles), plus les planches « Preuves de terrain » (`TestMediaPrintPlates`, 12 vignettes par page, URL signées régénérées juste avant via `refetchTestMedias`).
-- Le même fichier `usePropertyGallery` / `usePropertyTestMedias` sert les URL originales : aucune variante redimensionnée n'est demandée.
+D'où le symptôme : 1ʳᵉ impression incomplète (cache Supabase froid, chaque variante `render/image` est calculée), 2ᵉ impression complète (tout en cache navigateur/CDN).
 
-## 1. Overlay de progression (UX)
+## Ce qu'on change
 
-Nouveau composant `src/components/propriete/print/PrintPreparationOverlay.tsx`, dans l'esprit de `InatFullscreenLoadingOverlay` (framer-motion, `Progress`, étapes cochées) mais habillé Carnet (crème/or/forêt, typo serif italique).
+### 1. Chargement garanti, avec reprises
+- Forcer `loading="eager"` + `decoding="sync"` sur toutes les images du portail avant préchargement (balayage DOM dans le hook, aucun changement dans les layouts).
+- Nouvelle fonction `ensureImage(img)` : attente `load`, puis `await img.decode()`.
+- **Retry x3** par image avec backoff (600 ms / 1,5 s / 3 s) et cache-buster (`&_r=n`) sur la tentative 2+.
+- **Fallback vers l'original** : si la variante `render/image` échoue après 2 essais, on retombe sur l'URL d'origine (non transformée) avant de déclarer un échec.
+- Timeout par tentative porté à 8 s (au lieu de 4 s pour l'unique essai).
 
-Étapes affichées, avec compteur et coche animée :
-1. « Rassemblement des photographies du portrait » (n/N)
-2. « Réveil des preuves de terrain » (n/N)
-3. « Mise en page des planches A4 »
-4. « Encre et papier — ouverture de l'aperçu »
+### 2. Plus d'impression silencieusement incomplète
+- Suppression du `window.print()` forcé à 15 s. Remplacé par un **budget adaptatif** : tant que des images progressent, on attend ; l'overlay reste visible.
+- Si, après tous les retries, il reste des images en échec : on **n'imprime pas automatiquement**. L'overlay affiche un état « N photographies manquent à l'appel » avec :
+  - bouton **« Réessayer les manquantes »** (relance uniquement les échecs),
+  - bouton **« Imprimer quand même »** (choix explicite de l'utilisateur),
+  - bouton **Annuler**.
+- Impression automatique uniquement quand `chargées = total` (0 manquante).
 
-Micro-copies poétiques tournantes sous la barre (« Le papier se prépare… », « Chaque photographie retrouve sa place »), et sous 3 s un message rassurant « L'aperçu d'impression va s'ouvrir ». Overlay non fermable mais avec bouton « Annuler » (annule le `window.print()` et retire la classe body). Respect de `prefers-reduced-motion`.
+### 3. Progression fidèle
+- La barre reflète les tentatives (`chargées / total`, plus « n en reprise »).
+- Nouvelle étape affichée quand nécessaire : « Reprise des photographies récalcitrantes (n) ».
+- Les micro-copies poétiques existantes sont conservées ; on ajoute le décompte réel pour la transparence.
 
-## 2. Optimisation de la préparation
-
-Dans `usePrintCombined.ts` :
-- Suivi image par image (`loaded/total`) exposé via un état → alimente l'overlay.
-- **Timeout par image** (≈4 s) et **timeout global** (≈15 s) : on n'attend jamais indéfiniment, l'impression part avec ce qui est prêt, l'overlay signale « n photo(s) non chargée(s) ».
-- Préchargement en parallèle plafonné (concurrence 6) via `Image()` + cache `decode()`, au lieu d'attendre passivement le DOM.
-- Suppression du `setTimeout(200)` fixe remplacé par un double `requestAnimationFrame` après décodage.
-
-Réduction du poids chargé :
-- Ajout d'un utilitaire `printImageUrl(url, width)` qui, pour les URL Supabase Storage, demande une variante redimensionnée (rendu image `width`/`quality`) — largeur cible selon l'usage : ~180 px pour les vignettes du sommaire visuel et les preuves de terrain, ~1200 px pour les planches pleine page et la couverture héro. Fallback transparent sur l'URL d'origine si la transformation n'est pas disponible.
-- Déduplication : la même photo réutilisée (sommaire + planche) ne se télécharge qu'une fois par variante.
-- `refetchTestMedias` lancé **en parallèle** du montage de l'overlay (et non avant, en bloquant), avec son propre pas de progression.
+### 4. Préchauffage du cache (optionnel mais recommandé)
+- Au moment où le dialogue de choix d'impression s'ouvre (`PrintChoiceDialog`), lancer un préchargement discret en arrière-plan des URLs de photos (via `new Image()`), pour que la 1ʳᵉ impression parte déjà avec un cache chaud.
 
 ## Fichiers touchés
 
-- `src/components/propriete/print/usePrintCombined.ts` (progression, timeouts, préchargement)
-- `src/components/propriete/print/PrintPreparationOverlay.tsx` (nouveau)
-- `src/components/propriete/print/printImageUrl.ts` (nouveau, utilitaire de variantes)
-- `src/components/propriete/portrait/PortraitPrintLayout.tsx` et `src/components/propriete/analyze/print/TestMediaPrintPlates.tsx` (utilisation des variantes)
-- `src/components/propriete/tabs/TabAnalyze.tsx` et `TabObserve.tsx` (montage de l'overlay, flux `handleConfirmPrint` non bloquant)
+- `src/components/propriete/print/usePrintCombined.ts` — cœur de la logique (ensureImage, retries, fallback original, arrêt avant print si incomplet, nouvel état `missing` + actions `retryMissing` / `printAnyway`).
+- `src/components/propriete/print/PrintPreparationOverlay.tsx` — état « photos manquantes » avec les 3 actions, décompte des reprises.
+- `src/components/propriete/print/printImageUrl.ts` — helper `originalUrl(url)` pour le fallback.
+- `src/components/propriete/print/PrintChoiceDialog.tsx` — préchauffage optionnel du cache images.
+- `src/components/propriete/TabObserve.tsx` et `TabAnalyze.tsx` — branchement des nouvelles props de l'overlay.
 
-Aucun changement de contenu ni de pagination des documents imprimés.
+## Résultat attendu
+
+Aucune impression ne part avec des photos manquantes sans que l'utilisateur l'ait explicitement décidé ; la première impression devient aussi complète que la seconde.

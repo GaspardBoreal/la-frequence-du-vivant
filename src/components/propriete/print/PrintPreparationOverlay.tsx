@@ -19,8 +19,12 @@ interface Props {
   /** 0 → 1 */
   progress: number;
   steps: PrintPrepStep[];
-  /** Nombre de médias qui n'ont pas pu être chargés (affichage rassurant). */
+  /** Nombre de médias qui n'ont pas pu être chargés. */
   skipped?: number;
+  /** Préparation terminée mais des photos manquent : l'utilisateur décide. */
+  incomplete?: boolean;
+  onRetryMissing?: () => void;
+  onPrintAnyway?: () => void;
   onCancel?: () => void;
 }
 
@@ -37,8 +41,12 @@ const PrintPreparationOverlay: React.FC<Props> = ({
   progress,
   steps,
   skipped = 0,
+  incomplete = false,
+  onRetryMissing,
+  onPrintAnyway,
   onCancel,
 }) => {
+
   const reduce = useReducedMotion();
   const [whisper, setWhisper] = React.useState(0);
   const [longWait, setLongWait] = React.useState(false);
@@ -166,26 +174,35 @@ const PrintPreparationOverlay: React.FC<Props> = ({
               ))}
             </ul>
 
-            {longWait && (
-              <motion.p
+            {incomplete ? (
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="mt-4 rounded-xl border border-[hsl(var(--ds-gold))]/40 bg-white/50 px-3 py-2 text-[12px] italic text-[hsl(var(--ds-forest-deep))]/75"
+                className="mt-4 rounded-xl border border-[hsl(var(--ds-gold))] bg-white/70 px-3 py-2.5 text-[12.5px] text-[hsl(var(--ds-forest-deep))]/85"
               >
-                L'aperçu d'impression va s'ouvrir dans la fenêtre de votre navigateur.
-                {skipped > 0 && (
-                  <>
-                    {' '}
-                    {skipped} photographie{skipped > 1 ? 's' : ''} n'a{skipped > 1 ? '' : ''}
-                    {skipped > 1 ? 'ont' : ''} pas pu être chargée{skipped > 1 ? 's' : ''} à temps —
-                    le carnet part sans elle{skipped > 1 ? 's' : ''}.
-                  </>
-                )}
-              </motion.p>
+                <span className="font-semibold">
+                  {skipped} photographie{skipped > 1 ? 's' : ''} manque
+                  {skipped > 1 ? 'nt' : ''} encore à l'appel.
+                </span>{' '}
+                <span className="italic">
+                  Le carnet attend : rien ne part incomplet sans votre accord.
+                </span>
+              </motion.div>
+            ) : (
+              longWait && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-4 rounded-xl border border-[hsl(var(--ds-gold))]/40 bg-white/50 px-3 py-2 text-[12px] italic text-[hsl(var(--ds-forest-deep))]/75"
+                >
+                  Chaque photographie est vérifiée avant l'impression — l'aperçu s'ouvrira
+                  dès que le carnet sera complet.
+                </motion.p>
+              )
             )}
 
-            {onCancel && (
-              <div className="mt-5 flex justify-end">
+            <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+              {onCancel && (
                 <button
                   type="button"
                   onClick={onCancel}
@@ -193,8 +210,27 @@ const PrintPreparationOverlay: React.FC<Props> = ({
                 >
                   Annuler
                 </button>
-              </div>
-            )}
+              )}
+              {incomplete && onPrintAnyway && (
+                <button
+                  type="button"
+                  onClick={onPrintAnyway}
+                  className="rounded-full border border-[hsl(var(--ds-line))] px-4 py-1.5 text-[12px] font-medium text-[hsl(var(--ds-forest-deep))]/70 transition-colors hover:border-[hsl(var(--ds-gold))]/60 hover:text-[hsl(var(--ds-forest-deep))]"
+                >
+                  Imprimer quand même
+                </button>
+              )}
+              {incomplete && onRetryMissing && (
+                <button
+                  type="button"
+                  onClick={onRetryMissing}
+                  className="rounded-full bg-[hsl(var(--ds-forest))] px-4 py-1.5 text-[12px] font-semibold text-[hsl(var(--ds-cream))] transition-opacity hover:opacity-90"
+                >
+                  Réessayer les manquantes
+                </button>
+              )}
+            </div>
+
           </motion.div>
         </motion.div>
       )}
