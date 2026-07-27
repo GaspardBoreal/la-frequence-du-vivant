@@ -107,7 +107,11 @@ const mapKingdom = (k?: string | null): BiodiversitySpecies['kingdom'] => {
  * Retourne des `BiodiversitySpecies[]` prêts pour <SpeciesExplorer />.
  */
 export function usePropertySpeciesPool(proprieteId: string | undefined) {
+  // 0. Corrections GPS éditoriales (appliquées à la lecture sur les waypoints)
+  const { overrides } = useGpsOverrides();
+
   // 1. exploration_ids liés à la propriété
+
   const idsQuery = useQuery({
     queryKey: ['propriete-exploration-ids', proprieteId],
     enabled: !!proprieteId,
