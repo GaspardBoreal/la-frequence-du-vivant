@@ -151,6 +151,17 @@ export const GpsControlConsole: React.FC<Props> = ({
   const clearOverride = useClearGpsOverride();
   const { overrides } = useGpsOverrides();
 
+  /** Ouverture ciblée depuis la carte : on montre tous les points et on sélectionne le bon. */
+  useEffect(() => {
+    if (!open || !focusId) return;
+    setScope('all');
+    setSelectedId(focusId);
+    setSelectedIds(new Set());
+    setDragDraft(null);
+  }, [open, focusId]);
+
+
+
   /**
    * Corrections déjà enregistrées : les points « écartés » ne remontent plus
    * dans le pool (la base les retire partout), il faut donc les lister depuis
