@@ -105,19 +105,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   // Référence de cohérence : même compteur que le bandeau « Empreinte biodiversité »
   const speciesRef = usePropertySpeciesCount(proprieteId);
 
-  const { data: propriete } = useQuery({
-    queryKey: ['propriete-coords', proprieteId],
-    enabled: !!proprieteId,
-    staleTime: 10 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('proprietes')
-        .select('latitude, longitude, nom')
-        .eq('id', proprieteId!)
-        .maybeSingle();
-      return data;
-    },
-  });
+
 
   const [kingdom, setKingdom] = useState<KingdomFilter>('all');
   const [onlyKb, setOnlyKb] = useState(false);
