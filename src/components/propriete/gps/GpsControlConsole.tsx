@@ -34,6 +34,10 @@ interface Props {
   onClose: () => void;
   proprieteId?: string;
   candidates: GpsCandidate[];
+  /** Sous-ensemble issu de la Carte des révélations (recherche/tags/source/périmètre conservés). */
+  contextCandidates?: GpsCandidate[];
+  /** Libellé court du filtre conservé, affiché en tête du bandeau gauche. */
+  contextLabel?: string | null;
   /** Anneaux GeoJSON des parcelles ([lng, lat]) pour dessiner le périmètre */
   parcelRings: Array<Array<[number, number]>>;
   center: [number, number];
@@ -130,6 +134,8 @@ export const GpsControlConsole: React.FC<Props> = ({
   onClose,
   proprieteId,
   candidates,
+  contextCandidates = [],
+  contextLabel,
   parcelRings,
   center,
   focusId,
@@ -145,20 +151,21 @@ export const GpsControlConsole: React.FC<Props> = ({
   const [dragDraft, setDragDraft] = useState<
     { id: string; from: [number, number]; to: [number, number]; dragging: boolean } | null
   >(null);
-  const [scope, setScope] = useState<'suspects' | 'all'>('suspects');
+  const [scope, setScope] = useState<'context' | 'suspects' | 'all'>('suspects');
   const setOverride = useSetGpsOverride();
   const setOverridesBatch = useSetGpsOverridesBatch();
   const clearOverride = useClearGpsOverride();
   const { overrides } = useGpsOverrides();
+  const hasContext = contextCandidates.length > 0;
 
-  /** Ouverture ciblée depuis la carte : on montre tous les points et on sélectionne le bon. */
+  /** Ouverture ciblée depuis la carte : on conserve le filtre courant et on sélectionne le bon point. */
   useEffect(() => {
     if (!open || !focusId) return;
-    setScope('all');
+    setScope(hasContext ? 'context' : 'all');
     setSelectedId(focusId);
     setSelectedIds(new Set());
     setDragDraft(null);
-  }, [open, focusId]);
+  }, [open, focusId, hasContext]);
 
 
 
@@ -175,21 +182,23 @@ export const GpsControlConsole: React.FC<Props> = ({
     [overrides, proprieteId],
   );
 
+  const suspectCandidates = useMemo(
+    () =>
+      candidates.filter(
+        (c) =>
+          c.geofenceStatus === 'outside' ||
+          c.overrideStatus ||
+          (c.positionalAccuracy != null && c.positionalAccuracy > 250) ||
+          c.obscured === true,
+      ),
+    [candidates],
+  );
+
   const list = useMemo(() => {
-    const base =
-      scope === 'suspects'
-        ? candidates.filter(
-            (c) =>
-              c.geofenceStatus === 'outside' ||
-              c.overrideStatus ||
-              (c.positionalAccuracy != null && c.positionalAccuracy > 250) ||
-              c.obscured === true,
-          )
-        : candidates;
-    return [...base].sort(
-      (a, b) => (b.geofenceDistanceM ?? 0) - (a.geofenceDistanceM ?? 0),
-    );
-  }, [candidates, scope]);
+    if (scope === 'context') return [...contextCandidates];
+    const base = scope === 'suspects' ? suspectCandidates : candidates;
+    return [...base].sort((a, b) => (b.geofenceDistanceM ?? 0) - (a.geofenceDistanceM ?? 0));
+  }, [candidates, contextCandidates, scope, suspectCandidates]);
 
   const selected = list.find((c) => c.id === selectedId) || null;
 
@@ -329,7 +338,7 @@ export const GpsControlConsole: React.FC<Props> = ({
     }
     await setOverridesBatch.mutateAsync(inputs);
     setRepositioning(false);
-    setSelectedIds(new Set());
+    if (scope !== 'context') setSelectedIds(new Set());
   };
 
   /* ---------- Glisser-déposer d'un marqueur ---------- */
@@ -371,7 +380,7 @@ export const GpsControlConsole: React.FC<Props> = ({
     const [lat, lng] = dragDraft.to;
     if (applyToBatch && batch.length > 1) {
       await repositionByDelta(batch, lat - dragDraft.from[0], lng - dragDraft.from[1]);
-      setSelectedIds(new Set());
+      if (scope !== 'context') setSelectedIds(new Set());
     } else {
       await repositionMany([dragCandidate], lat, lng);
     }
@@ -398,7 +407,7 @@ export const GpsControlConsole: React.FC<Props> = ({
       .filter(Boolean) as any[];
     if (!inputs.length) return;
     await setOverridesBatch.mutateAsync(inputs);
-    setSelectedIds(new Set());
+    if (scope !== 'context') setSelectedIds(new Set());
   };
 
   const clearMany = async (targets: GpsCandidate[]) => {
@@ -406,7 +415,7 @@ export const GpsControlConsole: React.FC<Props> = ({
       const t = targetOf(c);
       if (t) await clearOverride.mutateAsync(t);
     }
-    setSelectedIds(new Set());
+    if (scope !== 'context') setSelectedIds(new Set());
   };
 
   const parseCoords = (raw: string): [number, number] | null => {
@@ -466,7 +475,11 @@ export const GpsControlConsole: React.FC<Props> = ({
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            {(['suspects', 'all'] as const).map((s) => (
+            {([
+              ...(hasContext ? (['context'] as const) : []),
+              'suspects',
+              'all',
+            ] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setScope(s)}
@@ -476,7 +489,11 @@ export const GpsControlConsole: React.FC<Props> = ({
                     : 'border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))]'
                 }`}
               >
-                {s === 'suspects' ? `À traiter · ${list.length}` : 'Tous les points'}
+                {s === 'context'
+                  ? `Filtre · ${contextCandidates.length}`
+                  : s === 'suspects'
+                  ? `À traiter · ${suspectCandidates.length}`
+                  : `Tous les points · ${candidates.length}`}
               </button>
             ))}
             <button
@@ -503,6 +520,32 @@ export const GpsControlConsole: React.FC<Props> = ({
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[360px_1fr]">
           {/* File d'attente */}
           <aside className="border-r border-[hsl(var(--ds-line))] overflow-y-auto">
+            {scope === 'context' && (
+              <div className="px-4 py-3 border-b border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-gold))]/10">
+                <div className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70">
+                  Manipulation en cours
+                </div>
+                <div className="mt-0.5 text-[12px] font-semibold text-[hsl(var(--ds-forest-deep))]">
+                  {contextLabel || `Filtre conservé · ${contextCandidates.length} observation${contextCandidates.length > 1 ? 's' : ''}`}
+                </div>
+                {list.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIds(new Set(list.map((c) => c.id)))}
+                    className="mt-2 text-[11px] px-2.5 py-1 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] inline-flex items-center gap-1"
+                  >
+                    <ListChecks className="w-3 h-3" /> Sélectionner les {list.length} résultats filtrés
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setScope('all')}
+                  className="mt-2 ml-2 text-[11px] underline text-[hsl(var(--ds-forest-deep))]/70 hover:text-[hsl(var(--ds-forest-deep))]"
+                >
+                  Voir tous les points
+                </button>
+              </div>
+            )}
 
             {list.length === 0 && (
               <div className="p-6 text-sm text-[hsl(var(--ds-forest-deep))]/70">

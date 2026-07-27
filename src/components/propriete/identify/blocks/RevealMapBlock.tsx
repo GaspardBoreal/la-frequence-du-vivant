@@ -127,6 +127,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [refitNonce, setRefitNonce] = useState(0);
   const [gpsConsole, setGpsConsole] = useState(false);
   const [gpsFocusId, setGpsFocusId] = useState<string | null>(null);
+  const [gpsContextIds, setGpsContextIds] = useState<string[] | null>(null);
+  const [gpsContextLabel, setGpsContextLabel] = useState<string | null>(null);
   const [showParcels, setShowParcels] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lightboxId, setLightboxId] = useState<string | null>(null);
@@ -296,6 +298,39 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
   const hasData = waypoints.length > 0;
 
+  const gpsContextCandidates = useMemo(() => {
+    if (!gpsContextIds) return [];
+    const byId = new Map(annotated.map((w) => [w.id, w]));
+    return gpsContextIds
+      .map((id) => byId.get(id))
+      .filter((w): w is GpsCandidate => Boolean(w));
+  }, [annotated, gpsContextIds]);
+
+  const buildGpsContextLabel = (context: GpsCandidate[]) => {
+    const parts: string[] = [];
+    const q = revealIndex.query.trim();
+    if (q) parts.push(`“${q}”`);
+    if (revealIndex.activeTagKeys.length > 0) {
+      parts.push(`${revealIndex.activeTagKeys.length} tag${revealIndex.activeTagKeys.length > 1 ? 's' : ''}`);
+    }
+    if (kingdom !== 'all') parts.push(KINGDOM_LABELS_FR_SHORT[kingdom]);
+    if (sourceFilter !== 'all') parts.push(sourceFilter === 'marcheur' ? 'Marcheurs' : 'iNaturalist');
+    if (perimeter !== 'all') parts.push(perimeter === 'inside' ? 'Dans le périmètre' : 'Hors périmètre');
+    if (onlyKb) parts.push('Bio-indicatrices');
+    const count = context.length;
+    return `${parts.length ? `Filtre conservé · ${parts.join(' · ')}` : 'Contexte carte conservé'} · ${count} observation${count > 1 ? 's' : ''}`;
+  };
+
+  const openGpsFromPoint = (w: GpsCandidate) => {
+    const contextSource = indexActive ? matched : filtered;
+    const ids = Array.from(new Set([w.id, ...contextSource.map((c) => c.id)]));
+    setSelectedId(w.id);
+    setGpsFocusId(w.id);
+    setGpsContextIds(ids);
+    setGpsContextLabel(buildGpsContextLabel(contextSource));
+    setGpsConsole(true);
+  };
+
 
   // Esc closes fullscreen + lock body scroll
   useEffect(() => {
@@ -399,7 +434,12 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
       {canCurate && (
         <button
-          onClick={() => setGpsConsole(true)}
+          onClick={() => {
+            setGpsFocusId(null);
+            setGpsContextIds(null);
+            setGpsContextLabel(null);
+            setGpsConsole(true);
+          }}
           className="text-[11px] px-2.5 py-1 rounded-full border border-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-forest-deep))] flex items-center gap-1 hover:bg-[hsl(var(--ds-forest-deep))] hover:text-[hsl(var(--ds-cream))] transition"
         >
           <ShieldCheck className="w-3 h-3" /> Contrôle GPS
@@ -553,10 +593,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                   {canCurate && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setGpsFocusId(w.id);
-                        setGpsConsole(true);
-                      }}
+                      onClick={() => openGpsFromPoint(w)}
                       style={{
                         marginTop: 8,
                         width: '100%',
@@ -716,9 +753,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
           onClose={() => {
             setGpsConsole(false);
             setGpsFocusId(null);
+            setGpsContextIds(null);
+            setGpsContextLabel(null);
           }}
           proprieteId={proprieteId}
           candidates={annotated}
+          contextCandidates={gpsContextCandidates}
+          contextLabel={gpsContextLabel}
           parcelRings={parcelRings}
           center={center}
           focusId={gpsFocusId}
