@@ -360,10 +360,20 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
             {localizedSpecies} / {refTotal} espèces localisées
           </span>
         )}
-        {excludedCount > 0 && (
+        {(excludedCount > 0 || repositionedCount > 0) && (
           <span className="block font-normal opacity-55 text-[10px]">
-            {excludedCount} observation{excludedCount > 1 ? 's' : ''} écartée
-            {excludedCount > 1 ? 's' : ''} par curation
+            {excludedCount > 0 && (
+              <>
+                {excludedCount} écartée{excludedCount > 1 ? 's' : ''}
+              </>
+            )}
+            {excludedCount > 0 && repositionedCount > 0 && ' · '}
+            {repositionedCount > 0 && (
+              <>
+                {repositionedCount} repositionnée{repositionedCount > 1 ? 's' : ''}
+              </>
+            )}
+            {' par curation (partout)'}
           </span>
         )}
       </span>
