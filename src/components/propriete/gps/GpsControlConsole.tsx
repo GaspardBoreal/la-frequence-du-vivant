@@ -132,9 +132,14 @@ export const GpsControlConsole: React.FC<Props> = ({
   displayNameFor,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null);
+  const [coordsInput, setCoordsInput] = useState('');
+  const [spread, setSpread] = useState(true);
   const [repositioning, setRepositioning] = useState(false);
   const [scope, setScope] = useState<'suspects' | 'all'>('suspects');
   const setOverride = useSetGpsOverride();
+  const setOverridesBatch = useSetGpsOverridesBatch();
   const clearOverride = useClearGpsOverride();
   const { overrides } = useGpsOverrides();
 
