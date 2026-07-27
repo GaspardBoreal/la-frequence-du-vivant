@@ -451,6 +451,8 @@ export const GpsControlConsole: React.FC<Props> = ({
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[10000] bg-[hsl(var(--ds-cream))] flex flex-col"
       >
+        <style>{`@keyframes gpsPulse{0%{transform:scale(.7);opacity:.35}70%{transform:scale(1.15);opacity:0}100%{opacity:0}}
+        .gps-curation-handle:active div{cursor:grabbing!important}`}</style>
         <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-[hsl(var(--ds-line))]">
           <div className="w-9 h-9 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] flex items-center justify-center">
             <Crosshair className="w-4 h-4" />
