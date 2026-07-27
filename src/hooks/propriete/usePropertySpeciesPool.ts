@@ -5,6 +5,13 @@ import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
 import type { BiodiversitySpecies } from '@/types/biodiversity';
 import type { MarcheurSpeciesPhoto } from '@/hooks/useSpeciesMarcheurPhotos';
 import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
+import {
+  useGpsOverrides,
+  overrideKeyOf,
+  type GpsOverrideKind,
+  type GpsOverrideStatus,
+} from '@/hooks/propriete/useGpsOverrides';
+
 
 interface RpcSpecies {
   key: string;
@@ -37,7 +44,21 @@ export interface PropertyWaypoint {
   /** Provenance de la position : terrain marcheur ou base iNaturalist/eBird */
   source: 'marcheur' | 'inaturalist';
   observerName: string | null;
+  /** Cible de curation GPS (surcouche éditoriale durable) */
+  overrideKind?: GpsOverrideKind;
+  overrideTargetKey?: string | null;
+  overrideStatus?: GpsOverrideStatus | null;
+  overrideReason?: string | null;
+  originalLat?: number | null;
+  originalLng?: number | null;
+  /** Métadonnées de fiabilité iNaturalist */
+  inatObservationId?: string | null;
+  positionalAccuracy?: number | null;
+  obscured?: boolean | null;
+  gpsSource?: string | null;
+  originalUrl?: string | null;
 }
+
 
 const normName = (s: string | null | undefined): string =>
 
