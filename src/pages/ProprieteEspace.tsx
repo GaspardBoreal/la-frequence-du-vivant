@@ -119,9 +119,24 @@ const ProprieteEspace: React.FC = () => {
   );
 };
 
+/** Hauteur de la top-bar fixe, pour garder la barre d'onglets visible. */
+const DIAGNOSTIC_SCROLL_OFFSET = 64;
+
+/** Repositionne la vue sur l'ancre #diagnostic (barre d'onglets sous le header). */
+const scrollToDiagnostic = () => {
+  const el = document.getElementById('diagnostic');
+  if (!el) return;
+  const reduceMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const top = el.getBoundingClientRect().top + window.scrollY - DIAGNOSTIC_SCROLL_OFFSET;
+  window.scrollTo({ top: Math.max(top, 0), behavior: reduceMotion ? 'auto' : 'smooth' });
+};
+
 /* ============================================================
  * HERO CANOPÉE — inspiré de /jardin/:slug
  * ============================================================ */
+
 const CanopyHero: React.FC<{
   proprieteId: string;
   nom: string;
@@ -143,9 +158,6 @@ const CanopyHero: React.FC<{
   const { data: heroPhotos } = useProprieteHeroPhotos(proprieteId, heroUrl);
   const photos = (heroPhotos ?? []).map((p) => ({ id: p.id, url: p.url }));
 
-  const scrollToDiagnostic = () => {
-    document.getElementById('diagnostic')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
 
   return (
     <section
@@ -279,22 +291,29 @@ const PropTabs: React.FC<{
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteAdresse, proprieteCodePostal, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
   const [tab, setTab] = React.useState<string>('portrait');
+
+  const handleTabChange = React.useCallback((value: string) => {
+    setTab(value);
+    requestAnimationFrame(() => scrollToDiagnostic());
+  }, []);
+
   React.useEffect(() => {
     const onGoto = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (typeof detail === 'string') setTab(detail);
+      if (typeof detail === 'string') handleTabChange(detail);
     };
     window.addEventListener('propriete:goto-tab', onGoto);
     return () => window.removeEventListener('propriete:goto-tab', onGoto);
-  }, []);
+  }, [handleTabChange]);
   return (
     <div className="space-y-5">
       <NudgeMarcheBanner
         proprieteNom={proprieteNom}
         monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
       />
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="w-full flex overflow-x-auto justify-start md:justify-center">
+      <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="sticky top-16 z-30 w-full flex overflow-x-auto justify-start md:justify-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm">
+
           <TabsTrigger value="portrait">Portrait</TabsTrigger>
           <TabsTrigger value="observe">J'observe</TabsTrigger>
           <TabsTrigger value="analyze">J'analyse</TabsTrigger>
