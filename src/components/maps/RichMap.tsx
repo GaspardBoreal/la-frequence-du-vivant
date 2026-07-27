@@ -77,6 +77,8 @@ export const RichMap: React.FC<RichMapProps> = ({
   center = [45.0, 0.5],
   zoom = 13,
   bounds,
+  fitMaxZoom,
+  fitPadding,
   initialStyle = 'geopoetic',
   controls = { zoom: true, style: true, geolocate: true, cadastre: false, weather: false },
   marcheRoute,
