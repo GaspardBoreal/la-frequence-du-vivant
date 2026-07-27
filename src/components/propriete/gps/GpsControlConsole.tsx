@@ -618,14 +618,81 @@ export const GpsControlConsole: React.FC<Props> = ({
           </section>
         </div>
 
-        {lightbox && (
+        {lightboxItem && photoFor.get(lightboxItem.id) && (
           <div
-            className="fixed inset-0 z-[2000] bg-black/85 flex items-center justify-center p-6"
-            onClick={() => setLightbox(null)}
+            className="fixed inset-0 z-[2000] bg-black/90 flex flex-col items-center justify-center p-6"
+            onClick={() => setLightboxId(null)}
           >
-            <img src={lightbox} alt="" className="max-h-[90vh] max-w-[92vw] rounded-xl shadow-2xl" />
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxId(null); }}
+              className="absolute top-4 right-4 p-2 text-white/70 hover:text-white"
+              aria-label="Fermer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {photoList.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); stepLightbox(-1); }}
+                  className="absolute left-3 md:left-6 p-2 text-white/70 hover:text-white"
+                  aria-label="Précédent"
+                >
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); stepLightbox(1); }}
+                  className="absolute right-3 md:right-6 p-2 text-white/70 hover:text-white"
+                  aria-label="Suivant"
+                >
+                  <ChevronRight className="w-8 h-8" />
+                </button>
+              </>
+            )}
+
+            <img
+              src={photoFor.get(lightboxItem.id)!.url}
+              alt={displayNameFor(lightboxItem)}
+              className="max-h-[74vh] max-w-[88vw] object-contain rounded-xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+
+            <div
+              className="mt-4 max-w-[88vw] rounded-2xl bg-black/50 backdrop-blur px-5 py-3 text-center text-white/90"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="font-serif text-lg leading-tight">{displayNameFor(lightboxItem)}</div>
+              {lightboxItem.scientificName && (
+                <div className="text-[12px] italic text-white/60">{lightboxItem.scientificName}</div>
+              )}
+              <div className="mt-1 text-[11px] text-white/70">
+                {GEOFENCE_LABELS[lightboxItem.geofenceStatus]}
+                {lightboxItem.geofenceDistanceM ? ` · ${lightboxItem.geofenceDistanceM} m du périmètre` : ''}
+                {` · ${lightboxItem.source === 'marcheur' ? 'marcheur' : 'iNaturalist'}`}
+                {photoFor.get(lightboxItem.id)?.kind === 'species'
+                  ? ' · photo d’espèce (pas le cliché du point)'
+                  : ''}
+              </div>
+              <div className="mt-2 flex items-center justify-center gap-4 text-[11px] text-white/70">
+                {photoList.length > 1 && (
+                  <span>{lightboxIndex + 1} / {photoList.length}</span>
+                )}
+                {photoFor.get(lightboxItem.id)?.inatUrl && (
+                  <a
+                    href={photoFor.get(lightboxItem.id)!.inatUrl!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 underline hover:text-white"
+                  >
+                    <ExternalLink className="w-3 h-3" /> Voir sur iNaturalist
+                  </a>
+                )}
+                <span className="hidden md:inline text-white/45">← → naviguer · Échap fermer</span>
+              </div>
+            </div>
           </div>
         )}
+
       </motion.div>
 
     </AnimatePresence>,
