@@ -7,6 +7,8 @@ import L from 'leaflet';
 import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair, ShieldCheck } from 'lucide-react';
 import { RevealPhotoLightbox } from './RevealPhotoLightbox';
 import { RevealObservationList } from './RevealObservationList';
+import { useRevealIndex } from './useRevealIndex';
+
 
 import { supabase } from '@/integrations/supabase/client';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
@@ -171,16 +173,27 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     });
   }, [waypoints, kingdom, onlyKb, kbKeys, sourceFilter, perimeter]);
 
+  /**
+   * Index vivant (recherche « nom contient », tags, tri) partagé avec le bandeau :
+   * la carte s'aligne dessus pour ne jamais afficher plus que la liste.
+   */
+  const revealIndex = useRevealIndex(filtered, displayNameFor);
+  const { matched, matchedIds, isActive: indexActive } = revealIndex;
+
+
 
 
   /**
    * Cadrage : on écarte les points isolés (au-delà du 95e percentile de distance
    * au centroïde) pour que quelques observations lointaines n'étirent pas le cadre.
    * Ces points restent affichés, ils ne pilotent simplement pas le fit initial.
+   * Quand une recherche / un tag est actif, on cadre sur les seules correspondances.
    */
   const bounds = useMemo<Array<[number, number]>>(() => {
-    const pts: Array<[number, number]> = filtered.map((w) => [w.lat, w.lng]);
-    if (propriete?.latitude != null && propriete?.longitude != null) {
+    const zoomOnMatches = indexActive && matched.length > 0;
+    const source = zoomOnMatches ? matched : filtered;
+    const pts: Array<[number, number]> = source.map((w) => [w.lat, w.lng]);
+    if (!zoomOnMatches && propriete?.latitude != null && propriete?.longitude != null) {
       pts.push([propriete.latitude, propriete.longitude]);
     }
     let core = pts;
@@ -196,8 +209,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       const kept = withD.filter((x) => x.d <= cut).map((x) => x.p);
       if (kept.length >= 2) core = kept;
     }
-    // Les sommets des parcelles enregistrées sont toujours inclus dans le cadre.
-    if (showParcels && drawnParcelles.length > 0) {
+    // Les sommets des parcelles enregistrées sont inclus dans le cadre d'ensemble.
+    if (!zoomOnMatches && showParcels && drawnParcelles.length > 0) {
       core = [...core, ...parcelRings.flatMap((ring) => ring.map((c) => [c[1], c[0]] as [number, number]))];
     }
     // Perturbation infime (~10 cm) pour forcer un nouveau cadrage sur demande.
@@ -206,7 +219,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       core[0] = [core[0][0] + (refitNonce % 2) * 1e-6, core[0][1]];
     }
     return core;
-  }, [filtered, propriete, refitNonce, showParcels, drawnParcelles, parcelRings]);
+  }, [filtered, matched, indexActive, propriete, refitNonce, showParcels, drawnParcelles, parcelRings]);
+
 
 
   const center: [number, number] =
@@ -216,16 +230,17 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       ? [filtered[0].lat, filtered[0].lng]
       : [45.0, 0.5];
 
-  const iconFor = (color: string, source: 'marcheur' | 'inaturalist') =>
+  const iconFor = (color: string, source: 'marcheur' | 'inaturalist', dimmed = false) =>
     L.divIcon({
-      className: 'reveal-wp-marker',
+      className: `reveal-wp-marker${dimmed ? ' reveal-wp-marker--dim' : ''}`,
       iconSize: [18, 18],
       iconAnchor: [9, 9],
       html:
         source === 'marcheur'
-          ? `<div style="width:16px;height:16px;border-radius:50%;background:${color};box-shadow:0 0 0 2px #FAF8F3, 0 2px 6px rgba(0,0,0,.3);"></div>`
-          : `<div style="width:16px;height:16px;border-radius:50%;background:${color}33;border:2px dashed ${color};box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.25);"></div>`,
+          ? `<div style="width:16px;height:16px;border-radius:50%;background:${color};${dimmed ? 'opacity:.18;' : 'box-shadow:0 0 0 2px #FAF8F3, 0 2px 6px rgba(0,0,0,.3);'}"></div>`
+          : `<div style="width:16px;height:16px;border-radius:50%;background:${color}33;border:2px dashed ${color};box-sizing:border-box;${dimmed ? 'opacity:.18;' : 'box-shadow:0 1px 4px rgba(0,0,0,.25);'}"></div>`,
     });
+
 
 
   /**
@@ -262,12 +277,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waypoints, onlyKb, kbKeys]);
 
-  // Total affiché : espèces distinctes actuellement visibles sur la carte
+  // Total affiché : espèces distinctes actuellement mises en avant sur la carte
   const visibleSpecies = useMemo(
-    () => speciesBucket(filtered).size,
+    () => speciesBucket(indexActive ? matched : filtered).size,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filtered],
+    [filtered, matched, indexActive],
   );
+
 
   // Garde-fou : espèces localisables sur la carte vs total du bandeau du haut
   const localizedSpecies = useMemo(
@@ -396,7 +412,10 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
       <span className="ml-auto text-[11px] font-semibold text-[hsl(var(--ds-forest))] text-right">
         {visibleSpecies} espèces
-        <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
+        <span className="ml-1 font-normal opacity-60">
+          · {indexActive ? `${matched.length} / ${filtered.length}` : filtered.length} obs.
+        </span>
+
         {refTotal > 0 && (
           <span className="block font-normal opacity-55 text-[10px]">
             {localizedSpecies} / {refTotal} espèces localisées
@@ -456,17 +475,23 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
         {filtered.map((w) => {
           const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
+          // Hors correspondance : point fantôme, non cliquable, pour garder le contexte.
+          const dim = indexActive && !matchedIds.has(w.id);
           return (
             <Marker
               key={w.id}
               position={[w.lat, w.lng]}
-              icon={iconFor(color, w.source)}
+              icon={iconFor(color, w.source, dim)}
+              opacity={dim ? 0.35 : 1}
+              interactive={!dim}
+              zIndexOffset={dim ? -500 : 0}
               ref={(m) => {
                 if (m) markerRefs.current.set(w.id, m as unknown as L.Marker);
                 else markerRefs.current.delete(w.id);
               }}
               eventHandlers={{ click: () => setSelectedId(w.id) }}
             >
+
               <Popup>
                 <div style={{ minWidth: 160 }}>
                   {w.photoUrl && (
@@ -613,8 +638,11 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                   </div>
                   <span className="ml-auto text-sm font-semibold text-[hsl(var(--ds-forest))]">
                     {visibleSpecies} espèces
-                    <span className="ml-1 font-normal opacity-60">· {filtered.length} obs.</span>
+                    <span className="ml-1 font-normal opacity-60">
+                      · {indexActive ? `${matched.length} / ${filtered.length}` : filtered.length} obs.
+                    </span>
                   </span>
+
 
                   <button
                     onClick={() => setFullscreen(false)}
@@ -632,6 +660,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                 <div className="flex-1 min-h-0 flex">
                   <RevealObservationList
                     items={filtered}
+                    index={revealIndex}
+
                     selectedId={selectedId}
                     colorFor={(w) => KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others}
                     displayNameFor={displayNameFor}

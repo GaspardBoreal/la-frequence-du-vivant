@@ -1,16 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { Camera, Leaf, ZoomIn, Search, X, ArrowDownAZ, ArrowUpAZ, CalendarArrowDown, CalendarArrowUp, Tags } from 'lucide-react';
 import type { GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
-import {
-  useMarcheurSpeciesTags,
-  indexTagsBySpecies,
-  getTagColor,
-  normalizeTagKey,
-  type MarcheurSpeciesTag,
-} from '@/hooks/useMarcheurSpeciesTags';
+import { getTagColor } from '@/hooks/useMarcheurSpeciesTags';
+import type { RevealIndex } from './useRevealIndex';
 
 interface Props {
+  /** Ensemble filtré par la barre du haut (règne, source, périmètre…). */
   items: GpsCandidate[];
+  /** Index partagé avec la carte : recherche, tri, tags. */
+  index: RevealIndex;
   selectedId: string | null;
   colorFor: (w: GpsCandidate) => string;
   displayNameFor: (w: { scientificName?: string | null; commonName?: string | null }) => string;
@@ -18,8 +16,6 @@ interface Props {
   onZoomPhoto: (w: GpsCandidate) => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLLIElement>>;
 }
-
-type SortKey = 'name' | 'date';
 
 const norm = (s: string) =>
   s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -43,11 +39,12 @@ const Highlight: React.FC<{ text: string; query: string }> = ({ text, query }) =
 
 /**
  * Bandeau latéral des observations (mode plein écran de la Carte des révélations).
- * Index vivant : recherche « nom contient », tri espèce/date réversible,
- * filtre « Mes tags », en-têtes de section flottants.
+ * Purement présentiel : l'état de recherche/tri/tags vit dans `useRevealIndex`,
+ * partagé avec la carte pour que les points affichés restent alignés.
  */
 export const RevealObservationList: React.FC<Props> = ({
   items,
+  index,
   selectedId,
   colorFor,
   displayNameFor,
@@ -55,71 +52,25 @@ export const RevealObservationList: React.FC<Props> = ({
   onZoomPhoto,
   rowRefs,
 }) => {
-  const [query, setQuery] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('name');
-  const [nameAsc, setNameAsc] = useState(true);
-  const [dateDesc, setDateDesc] = useState(true);
-  const [activeTagKeys, setActiveTagKeys] = useState<string[]>([]);
-  const [tagsOpen, setTagsOpen] = useState(false);
+  const {
+    query,
+    setQuery,
+    sortKey,
+    setSortKey,
+    nameAsc,
+    setNameAsc,
+    dateDesc,
+    setDateDesc,
+    activeTagKeys,
+    setActiveTagKeys,
+    matched: displayed,
+    tagFacets,
+    tagsFor,
+    reset,
+  } = index;
 
-  const scientificNames = useMemo(
-    () => Array.from(new Set(items.map((w) => (w.scientificName || '').trim()).filter(Boolean))),
-    [items],
-  );
-  const { data: tags } = useMarcheurSpeciesTags(scientificNames);
-  const tagIndex = useMemo(() => indexTagsBySpecies(tags), [tags]);
-  const tagsFor = (w: GpsCandidate): MarcheurSpeciesTag[] =>
-    tagIndex.get(normalizeTagKey(w.scientificName || '')) || [];
+  const [tagsOpen, setTagsOpen] = React.useState(false);
 
-  /** Libellés de tags présents sur les espèces visibles, avec comptage. */
-  const tagFacets = useMemo(() => {
-    const m = new Map<string, { label: string; color_hash: number; count: number }>();
-    items.forEach((w) => {
-      const seen = new Set<string>();
-      tagsFor(w).forEach((t) => {
-        const k = normalizeTagKey(t.label);
-        if (seen.has(k)) return;
-        seen.add(k);
-        const ex = m.get(k);
-        if (ex) ex.count++;
-        else m.set(k, { label: t.label, color_hash: t.color_hash, count: 1 });
-      });
-    });
-    return Array.from(m.entries())
-      .map(([key, v]) => ({ key, ...v }))
-      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'));
-  }, [items, tagIndex]);
-
-  const displayed = useMemo(() => {
-    const q = norm(query.trim());
-    let list = items.filter((w) => {
-      if (q) {
-        const hay = norm(
-          [displayNameFor(w), w.scientificName || '', (w as any).observerName || ''].join(' '),
-        );
-        if (!hay.includes(q)) return false;
-      }
-      if (activeTagKeys.length) {
-        const keys = new Set(tagsFor(w).map((t) => normalizeTagKey(t.label)));
-        if (!activeTagKeys.every((k) => keys.has(k))) return false;
-      }
-      return true;
-    });
-
-    list = [...list].sort((a, b) => {
-      if (sortKey === 'name') {
-        const c = displayNameFor(a).localeCompare(displayNameFor(b), 'fr', { sensitivity: 'base' });
-        return nameAsc ? c : -c;
-      }
-      const da = a.observationDate ? new Date(a.observationDate).getTime() : NaN;
-      const db = b.observationDate ? new Date(b.observationDate).getTime() : NaN;
-      if (isNaN(da) && isNaN(db)) return 0;
-      if (isNaN(da)) return 1; // sans date → toujours en fin de liste
-      if (isNaN(db)) return -1;
-      return dateDesc ? db - da : da - db;
-    });
-    return list;
-  }, [items, query, activeTagKeys, sortKey, nameAsc, dateDesc, tagIndex, displayNameFor]);
 
   /** Clé de section flottante : initiale (tri espèce) ou mois/année (tri date). */
   const groupOf = (w: GpsCandidate): string => {
