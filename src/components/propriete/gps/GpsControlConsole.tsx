@@ -330,20 +330,27 @@ export const GpsControlConsole: React.FC<Props> = ({
             {list.map((c) => (
               <button
                 key={c.id}
+                ref={(el) => {
+                  if (el) rowRefs.current.set(c.id, el);
+                  else rowRefs.current.delete(c.id);
+                }}
                 onClick={() => {
                   setSelectedId(c.id);
                   setRepositioning(false);
                 }}
                 className={`w-full text-left px-4 py-3 border-b border-[hsl(var(--ds-line))]/60 transition ${
-                  selectedId === c.id ? 'bg-[hsl(var(--ds-forest))]/10' : 'hover:bg-black/5'
+                  selectedId === c.id
+                    ? 'bg-[hsl(var(--ds-forest))]/10 ring-1 ring-inset ring-[hsl(var(--ds-gold))]/60'
+                    : 'hover:bg-black/5'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <CandidateThumb
                     photo={photoFor.get(c.id)}
                     color={STATUS_COLOR[c.geofenceStatus]}
-                    onZoom={(url) => setLightbox(url)}
+                    onZoom={() => openLightbox(c.id)}
                   />
+
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span
