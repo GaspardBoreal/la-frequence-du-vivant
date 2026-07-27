@@ -180,13 +180,17 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       const kept = withD.filter((x) => x.d <= cut).map((x) => x.p);
       if (kept.length >= 2) core = kept;
     }
+    // Les sommets des parcelles enregistrées sont toujours inclus dans le cadre.
+    if (showParcels && drawnParcelles.length > 0) {
+      core = [...core, ...parcelRings.flatMap((ring) => ring.map((c) => [c[1], c[0]] as [number, number]))];
+    }
     // Perturbation infime (~10 cm) pour forcer un nouveau cadrage sur demande.
     if (refitNonce > 0 && core.length > 0) {
       core = [...core];
       core[0] = [core[0][0] + (refitNonce % 2) * 1e-6, core[0][1]];
     }
     return core;
-  }, [filtered, propriete, refitNonce]);
+  }, [filtered, propriete, refitNonce, showParcels, drawnParcelles, parcelRings]);
 
 
   const center: [number, number] =
