@@ -203,9 +203,21 @@ export const GpsControlConsole: React.FC<Props> = ({
           </div>
         </header>
 
+        {/* Protocole — pourquoi et jusqu'où porte une correction */}
+        <div className="px-4 md:px-6 py-2 border-b border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-forest))]/5">
+          <p className="text-[11px] leading-relaxed text-[hsl(var(--ds-forest-deep))]/75">
+            <span className="font-semibold">Protocole —</span> 1· repérer le point douteux · 2·
+            le repositionner, l'écarter ou le valider · 3· la correction s'applique aussitôt
+            <span className="font-medium"> partout</span> : propriété, marche, exploration,
+            événement, compteurs et exports. La donnée iNaturalist d'origine n'est jamais modifiée
+            chez le fournisseur ; elle est conservée et restituable à tout moment.
+          </p>
+        </div>
+
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[360px_1fr]">
           {/* File d'attente */}
           <aside className="border-r border-[hsl(var(--ds-line))] overflow-y-auto">
+
             {list.length === 0 && (
               <div className="p-6 text-sm text-[hsl(var(--ds-forest-deep))]/70">
                 Aucun point suspect : toutes les observations tombent dans le périmètre.
