@@ -50,7 +50,7 @@ const CandidateThumb: React.FC<{
   photo?: CandidatePhoto;
   color: string;
   size?: number;
-  onZoom?: (url: string) => void;
+  onZoom?: () => void;
 }> = ({ photo, color, size = 44, onZoom }) => {
   const style = { width: size, height: size };
   if (!photo) {
@@ -66,15 +66,16 @@ const CandidateThumb: React.FC<{
   return (
     <span
       role={onZoom ? 'button' : undefined}
+      title={onZoom ? 'Voir la photo en grand' : undefined}
       onClick={
         onZoom
           ? (e) => {
               e.stopPropagation();
-              onZoom(photo.url);
+              onZoom();
             }
           : undefined
       }
-      className="relative rounded-lg overflow-hidden flex-shrink-0 block"
+      className={`group relative rounded-lg overflow-hidden flex-shrink-0 block ${onZoom ? 'cursor-zoom-in' : ''}`}
       style={style}
     >
       <img
@@ -86,12 +87,18 @@ const CandidateThumb: React.FC<{
           (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
         }}
       />
+      {onZoom && (
+        <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/35 transition-colors">
+          <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+        </span>
+      )}
       {photo.kind === 'species' && (
         <span className="absolute bottom-0 inset-x-0 h-[3px] bg-[hsl(var(--ds-forest))]/70" />
       )}
     </span>
   );
 };
+
 
 
 /** Clic carte → callback (mode repositionnement) */
