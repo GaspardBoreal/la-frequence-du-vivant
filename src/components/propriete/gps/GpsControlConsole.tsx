@@ -713,7 +713,92 @@ export const GpsControlConsole: React.FC<Props> = ({
 
             {repositioning && (
               <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] text-[11px] shadow-lg">
-                Cliquez sur la carte pour poser la position corrigée
+                {batch.length > 1
+                  ? `Cliquez sur la carte pour poser les ${batch.length} points sélectionnés`
+                  : 'Cliquez sur la carte pour poser la position corrigée'}
+              </div>
+            )}
+
+            {/* Barre d'action groupée */}
+            {batch.length > 0 && (
+              <div
+                className={`absolute left-3 right-3 z-[1001] rounded-2xl border border-[hsl(var(--ds-gold))]/50 bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] px-4 py-3 shadow-2xl ${
+                  selected ? 'bottom-[124px]' : 'bottom-3'
+                }`}
+              >
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-[12px] font-medium flex items-center gap-1.5">
+                    <ListChecks className="w-4 h-4" /> {batch.length} sélectionné
+                    {batch.length > 1 ? 's' : ''}
+                  </span>
+
+                  <button
+                    onClick={() => setRepositioning((v) => !v)}
+                    className={`text-[11px] px-3 py-1.5 rounded-full flex items-center gap-1 border ${
+                      repositioning
+                        ? 'bg-[hsl(var(--ds-gold))] text-[hsl(var(--ds-forest-deep))] border-transparent'
+                        : 'border-[hsl(var(--ds-cream))]/40'
+                    }`}
+                  >
+                    <MapPin className="w-3 h-3" /> Repositionner (clic carte)
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    <input
+                      value={coordsInput}
+                      onChange={(e) => setCoordsInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && applyCoords()}
+                      placeholder="44.8123, 0.1456"
+                      className="text-[11px] px-2.5 py-1.5 rounded-full bg-[hsl(var(--ds-cream))]/10 border border-[hsl(var(--ds-cream))]/30 placeholder:text-[hsl(var(--ds-cream))]/40 w-[140px] outline-none"
+                    />
+                    <button
+                      onClick={applyCoords}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                    >
+                      <Copy className="w-3 h-3" /> Coller
+                    </button>
+                  </div>
+
+                  {selected && !selectedIds.has(selected.id) && (
+                    <button
+                      onClick={() => repositionMany(batch, selected.lat, selected.lng)}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                    >
+                      <Crosshair className="w-3 h-3" /> Position du point affiché
+                    </button>
+                  )}
+
+                  <label className="text-[11px] flex items-center gap-1.5 cursor-pointer opacity-90">
+                    <input
+                      type="checkbox"
+                      checked={spread}
+                      onChange={(e) => setSpread(e.target.checked)}
+                      className="accent-[hsl(var(--ds-gold))]"
+                    />
+                    <Layers className="w-3 h-3" /> éclatement 5 m
+                  </label>
+
+                  <div className="ml-auto flex items-center gap-2">
+                    <button
+                      onClick={() => actMany(batch, 'excluded', 'Hors périmètre propriété (lot)')}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                    >
+                      <EyeOff className="w-3 h-3" /> Écarter
+                    </button>
+                    <button
+                      onClick={() => actMany(batch, 'validated', 'Position confirmée par le curateur (lot)')}
+                      className="text-[11px] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] flex items-center gap-1"
+                    >
+                      <Check className="w-3 h-3" /> Valider
+                    </button>
+                    <button
+                      onClick={() => clearMany(batch)}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                    >
+                      <Undo2 className="w-3 h-3" /> Annuler correction
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
