@@ -187,10 +187,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
    * Cadrage : on écarte les points isolés (au-delà du 95e percentile de distance
    * au centroïde) pour que quelques observations lointaines n'étirent pas le cadre.
    * Ces points restent affichés, ils ne pilotent simplement pas le fit initial.
+   * Quand une recherche / un tag est actif, on cadre sur les seules correspondances.
    */
   const bounds = useMemo<Array<[number, number]>>(() => {
-    const pts: Array<[number, number]> = filtered.map((w) => [w.lat, w.lng]);
-    if (propriete?.latitude != null && propriete?.longitude != null) {
+    const zoomOnMatches = indexActive && matched.length > 0;
+    const source = zoomOnMatches ? matched : filtered;
+    const pts: Array<[number, number]> = source.map((w) => [w.lat, w.lng]);
+    if (!zoomOnMatches && propriete?.latitude != null && propriete?.longitude != null) {
       pts.push([propriete.latitude, propriete.longitude]);
     }
     let core = pts;
@@ -206,8 +209,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       const kept = withD.filter((x) => x.d <= cut).map((x) => x.p);
       if (kept.length >= 2) core = kept;
     }
-    // Les sommets des parcelles enregistrées sont toujours inclus dans le cadre.
-    if (showParcels && drawnParcelles.length > 0) {
+    // Les sommets des parcelles enregistrées sont inclus dans le cadre d'ensemble.
+    if (!zoomOnMatches && showParcels && drawnParcelles.length > 0) {
       core = [...core, ...parcelRings.flatMap((ring) => ring.map((c) => [c[1], c[0]] as [number, number]))];
     }
     // Perturbation infime (~10 cm) pour forcer un nouveau cadrage sur demande.
@@ -216,7 +219,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       core[0] = [core[0][0] + (refitNonce % 2) * 1e-6, core[0][1]];
     }
     return core;
-  }, [filtered, propriete, refitNonce, showParcels, drawnParcelles, parcelRings]);
+  }, [filtered, matched, indexActive, propriete, refitNonce, showParcels, drawnParcelles, parcelRings]);
+
 
 
   const center: [number, number] =
