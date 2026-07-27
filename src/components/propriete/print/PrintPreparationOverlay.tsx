@@ -19,8 +19,12 @@ interface Props {
   /** 0 → 1 */
   progress: number;
   steps: PrintPrepStep[];
-  /** Nombre de médias qui n'ont pas pu être chargés (affichage rassurant). */
+  /** Nombre de médias qui n'ont pas pu être chargés. */
   skipped?: number;
+  /** Préparation terminée mais des photos manquent : l'utilisateur décide. */
+  incomplete?: boolean;
+  onRetryMissing?: () => void;
+  onPrintAnyway?: () => void;
   onCancel?: () => void;
 }
 
@@ -37,8 +41,12 @@ const PrintPreparationOverlay: React.FC<Props> = ({
   progress,
   steps,
   skipped = 0,
+  incomplete = false,
+  onRetryMissing,
+  onPrintAnyway,
   onCancel,
 }) => {
+
   const reduce = useReducedMotion();
   const [whisper, setWhisper] = React.useState(0);
   const [longWait, setLongWait] = React.useState(false);
