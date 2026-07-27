@@ -291,22 +291,29 @@ const PropTabs: React.FC<{
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteAdresse, proprieteCodePostal, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
   const [tab, setTab] = React.useState<string>('portrait');
+
+  const handleTabChange = React.useCallback((value: string) => {
+    setTab(value);
+    requestAnimationFrame(() => scrollToDiagnostic());
+  }, []);
+
   React.useEffect(() => {
     const onGoto = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (typeof detail === 'string') setTab(detail);
+      if (typeof detail === 'string') handleTabChange(detail);
     };
     window.addEventListener('propriete:goto-tab', onGoto);
     return () => window.removeEventListener('propriete:goto-tab', onGoto);
-  }, []);
+  }, [handleTabChange]);
   return (
     <div className="space-y-5">
       <NudgeMarcheBanner
         proprieteNom={proprieteNom}
         monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
       />
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="w-full flex overflow-x-auto justify-start md:justify-center">
+      <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="sticky top-16 z-30 w-full flex overflow-x-auto justify-start md:justify-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm">
+
           <TabsTrigger value="portrait">Portrait</TabsTrigger>
           <TabsTrigger value="observe">J'observe</TabsTrigger>
           <TabsTrigger value="analyze">J'analyse</TabsTrigger>
