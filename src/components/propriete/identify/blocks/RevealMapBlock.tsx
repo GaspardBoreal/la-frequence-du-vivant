@@ -353,7 +353,14 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
             {localizedSpecies} / {refTotal} espèces localisées
           </span>
         )}
+        {excludedCount > 0 && (
+          <span className="block font-normal opacity-55 text-[10px]">
+            {excludedCount} observation{excludedCount > 1 ? 's' : ''} écartée
+            {excludedCount > 1 ? 's' : ''} par curation
+          </span>
+        )}
       </span>
+
 
     </div>
   );
@@ -395,6 +402,18 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                       ? '📷 Observation marcheur'
                       : `🌐 Observation citoyenne${w.observerName ? ` · ${w.observerName}` : ''}`}
                   </div>
+                  {w.geofenceStatus === 'outside' && (
+                    <div style={{ fontSize: 10, marginTop: 2, color: '#b4462f' }}>
+                      ⚠︎ {GEOFENCE_LABELS.outside}
+                      {w.geofenceDistanceM ? ` · ${w.geofenceDistanceM} m` : ''}
+                    </div>
+                  )}
+                  {w.overrideStatus === 'repositioned' && (
+                    <div style={{ fontSize: 10, marginTop: 2, color: '#2f5d3a' }}>
+                      ✎ Position corrigée par un curateur
+                    </div>
+                  )}
+
                   {w.observationDate && (
                     <div style={{ fontSize: 10, marginTop: 2, color: '#888' }}>
                       <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
