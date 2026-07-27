@@ -1,38 +1,31 @@
-## Objectif
+## Diagnostic (vérifié dans le code)
 
-Depuis la carte de la console GPS, pouvoir voir en grand la photo d'un point cliqué — et retrouver instantanément ce point dans la liste de gauche.
+Les deux cartes n'affichent pas la même chose :
 
-## 1. Bandeau gauche synchronisé (le « bon réflexe »)
+- **Portrait → Cadastre** (`PortraitCadastre.tsx`) dessine les **parcelles enregistrées de la propriété** (`useProprieteParcelles` → table `propriete_parcelles`), en vert : vos 3 parcelles.
+- **J'identifie → Carte des révélations** (`RevealMapBlock.tsx`) ne dessine **aucune** parcelle enregistrée. Le polygone orange/rouge visible sur la copie 1 provient de `RichMap` → `CadastreLayer`, qui interroge le cadastre pour **un seul point pivot** (le centre de la carte, cf. `cadastrePoints` dans `RichMap.tsx`). D'où : une seule parcelle, et seulement quand le style « Cadastre » est actif.
 
-Quand on clique un point sur la carte :
-- la ligne correspondante du bandeau gauche défile automatiquement en vue (scroll doux, centrée) ;
-- elle est mise en évidence (fond + liseré doré discret, pulsation courte) ;
-- la vignette de cette ligne devient la référence visuelle « en grand » à portée de clic.
+Les géométries des 3 parcelles sont pourtant déjà chargées dans `RevealMapBlock` (`useProprieteParcelles`) — elles ne servent aujourd'hui qu'au géofence (calcul dedans/limite/dehors), jamais au rendu.
 
-Rien ne change au comportement inverse (clic dans la liste → recentrage carte).
+## Correction proposée
 
-## 2. Photo agrandissable depuis la vignette carte
+1. **Dessiner le périmètre réel dans la Carte des révélations**
+   - Dans `RevealMapBlock.tsx`, rendre un `<GeoJSON>` par parcelle enregistrée (géométrie non nulle) en enfant de `RichMap`, sous les marqueurs.
+   - Style aligné sur Portrait → Cadastre : trait vert `#2f5d3a`/`#10b981`, remplissage très léger (~8 %), pour que les points restent lisibles.
+   - Popup/tooltip minimal au survol : section + numéro + contenance (mêmes champs que Portrait).
 
-Dans le popup de la carte :
-- la photo devient cliquable (curseur zoom + petite icône loupe en surimpression) ;
-- au clic → ouverture de la visionneuse plein écran déjà présente dans la console.
+2. **Rendre l'affichage indépendant du fond de carte**
+   - Le périmètre s'affiche quel que soit le style (Géo/Sat/Relief/Cadastre), contrairement à la couche cadastre dynamique.
+   - Petit toggle « Périmètre » dans la barre de filtres de la carte pour le masquer si besoin.
 
-Même geste ajouté sur la grande vignette du panneau d'action (point sélectionné).
+3. **Cohérence du cadrage**
+   - Inclure les sommets des parcelles dans le calcul de `bounds` (en plus des observations), pour que les 3 parcelles soient toujours dans le cadre initial et après « Recadrer ».
 
-## 3. Visionneuse plein écran enrichie
-
-La lightbox actuelle affiche l'image nue. Elle gagne :
-- un bandeau légende : nom français, nom scientifique, statut géofence + distance, source (marcheur / iNaturalist), mention « photo d'espèce » si ce n'est pas le cliché du point ;
-- navigation clavier ← → entre les points de la liste, Échap pour fermer ;
-- flèches précédent/suivant à l'écran, compteur « n / total » ;
-- lien « Voir sur iNaturalist » ;
-- fermeture au clic sur le fond, image jamais rognée.
-
-Naviguer dans la lightbox sélectionne aussi le point correspondant (carte + liste suivent), pour enchaîner directement écarter / repositionner / valider.
+4. **Même traitement en plein écran** (le `mapNode` est partagé, donc automatique).
 
 ## Détails techniques
 
-- Fichier concerné : `src/components/propriete/gps/GpsControlConsole.tsx` (aucun changement de données ni de RPC).
-- Le state `lightbox: string | null` devient `lightboxId: string | null` afin de disposer du candidat complet (légende + navigation) ; la résolution de l'URL passe par `photoFor.get(id)` déjà en place.
-- Le scroll de la liste utilise une `Map` de refs sur les lignes + `scrollIntoView({ block: 'center', behavior: 'smooth' })` dans un `useEffect` sur `selectedId`.
-- Gestion clavier via un `useEffect` avec `keydown` monté seulement quand la lightbox est ouverte.
+- Fichier principal : `src/components/propriete/identify/blocks/RevealMapBlock.tsx` (aucun changement de données ni de RPC).
+- Réutilisation de `parcelles` déjà retourné par `useProprieteParcelles`; le géofence reste inchangé.
+- Rendu via `GeoJSON` de `react-leaflet` avec `key` stable sur `parcelle.id` pour éviter les remontages.
+- Aucune modification de `RichMap.tsx` nécessaire (les enfants sont rendus dans la carte) ; option `pane` par défaut, sous les marqueurs.

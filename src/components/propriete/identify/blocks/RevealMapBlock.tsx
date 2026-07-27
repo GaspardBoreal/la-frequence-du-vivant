@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker, Popup, GeoJSON, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -121,6 +121,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [perimeter, setPerimeter] = useState<'all' | 'inside' | 'outside'>('all');
   const [refitNonce, setRefitNonce] = useState(0);
   const [gpsConsole, setGpsConsole] = useState(false);
+  const [showParcels, setShowParcels] = useState(true);
+
+  /** Parcelles enregistrées de la propriété (mêmes données que Portrait → Cadastre). */
+  const drawnParcelles = useMemo(
+    () => (parcelles ?? []).filter((p) => p.geometry?.coordinates),
+    [parcelles],
+  );
 
   const kbKeys = useMemo(() => {
     const s = new Set<string>();
@@ -173,13 +180,17 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       const kept = withD.filter((x) => x.d <= cut).map((x) => x.p);
       if (kept.length >= 2) core = kept;
     }
+    // Les sommets des parcelles enregistrées sont toujours inclus dans le cadre.
+    if (showParcels && drawnParcelles.length > 0) {
+      core = [...core, ...parcelRings.flatMap((ring) => ring.map((c) => [c[1], c[0]] as [number, number]))];
+    }
     // Perturbation infime (~10 cm) pour forcer un nouveau cadrage sur demande.
     if (refitNonce > 0 && core.length > 0) {
       core = [...core];
       core[0] = [core[0][0] + (refitNonce % 2) * 1e-6, core[0][1]];
     }
     return core;
-  }, [filtered, propriete, refitNonce]);
+  }, [filtered, propriete, refitNonce, showParcels, drawnParcelles, parcelRings]);
 
 
   const center: [number, number] =
@@ -338,6 +349,21 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         </>
       )}
 
+      {drawnParcelles.length > 0 && (
+        <button
+          onClick={() => setShowParcels((v) => !v)}
+          className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+            showParcels
+              ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest))]'
+              : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+          }`}
+        >
+          ▱ Périmètre · {drawnParcelles.length} parcelle{drawnParcelles.length > 1 ? 's' : ''}
+        </button>
+      )}
+
+
+
       {canCurate && (
         <button
           onClick={() => setGpsConsole(true)}
@@ -395,6 +421,23 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         maxZoom={22}
         height="100%"
       >
+        {showParcels &&
+          drawnParcelles.map((p) => (
+            <GeoJSON
+              key={`parcelle-${p.id}`}
+              data={p.geometry as any}
+              style={{ color: '#2f5d3a', weight: 2.5, opacity: 0.9, fillColor: '#10b981', fillOpacity: 0.08 }}
+            >
+              <Tooltip sticky>
+                <span style={{ fontSize: 11 }}>
+                  {[p.section, p.numero].filter(Boolean).join(' ') || p.parcel_id}
+                  {p.commune_nom ? ` · ${p.commune_nom}` : ''}
+                  {p.contenance_m2 ? ` · ${p.contenance_m2.toLocaleString('fr-FR')} m²` : ''}
+                </span>
+              </Tooltip>
+            </GeoJSON>
+          ))}
+
         {filtered.map((w) => {
           const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
           return (
