@@ -10,6 +10,7 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_LABELS_FR_SHORT, KINGDOM_ORDER, normalizeKingdom, type KingdomKey } from '@/lib/kingdomLabels';
 
@@ -33,6 +34,22 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   index = 0,
 }) => {
   const { waypoints } = usePropertySpeciesPool(proprieteId);
+
+  // Même résolveur FR que le bandeau « Empreinte biodiversité » (source unique)
+  const frInput = useMemo(() => {
+    const seen = new Map<string, { scientificName: string; commonName: string | null }>();
+    for (const w of waypoints) {
+      const sci = (w.scientificName || '').trim();
+      if (!sci || seen.has(sci)) continue;
+      seen.set(sci, { scientificName: sci, commonName: w.commonName || null });
+    }
+    return Array.from(seen.values());
+  }, [waypoints]);
+  const { data: frNames } = useFrenchSpeciesNamesAuto(frInput);
+  const displayNameFor = (w: { scientificName?: string | null; commonName?: string | null }) => {
+    const sci = (w.scientificName || '').trim();
+    return frNames?.get(sci)?.displayName || w.commonName || sci || '—';
+  };
   // Référence de cohérence : même compteur que le bandeau « Empreinte biodiversité »
   const speciesRef = usePropertySpeciesCount(proprieteId);
 
@@ -259,7 +276,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                     />
                   )}
                   <div style={{ fontWeight: 600, fontSize: 12 }}>
-                    {w.commonName || w.scientificName}
+                    {displayNameFor(w)}
                   </div>
                   <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
                     {w.scientificName}

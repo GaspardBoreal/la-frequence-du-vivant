@@ -1,12 +1,15 @@
-## Objectif
-Simplifier le hero de la page Propriété (`/propriete/:slug`) sans toucher au reste.
+## Problème
 
-## Modifications (fichier unique : `src/pages/ProprieteEspace.tsx`)
+Dans `J'identifie → Carte des révélations`, la popup d'un point affiche `w.commonName || w.scientificName` — soit le nom brut venu d'iNaturalist, donc souvent en anglais (« Cuckooflower »).
 
-1. **Supprimer** le bouton flottant animé « ↓ Descendez dans votre jardin » en bas du hero (lignes 303-311), ainsi que ses styles/animations propres.
-2. **Descendre le bouton « Explorer votre diagnostic vivant »** : passer sa marge haute de `mt-10` à une valeur plus généreuse et responsive (ex. `mt-16 md:mt-24`) pour qu'il occupe l'espace libéré et respire dans la composition.
+Juste au-dessus, le bandeau « Ce que la Fréquence du Vivant sait déjà » passe par le résolveur FR centralisé (`useFrenchSpeciesNamesAuto` / `<SpeciesName />`), d'où « Cardamine des prés ».
 
-## Non touché
-- `scrollToDiagnostic` reste utilisé par le bouton principal (aucune suppression de logique de scroll).
-- Aucun changement aux onglets, au sticky header, à la galerie ou aux autres pages.
-- Nettoyage éventuel de `useReducedMotion` uniquement s'il n'est plus utilisé ailleurs dans le composant (à vérifier avant retrait).
+## Correction
+
+Dans `src/components/propriete/identify/blocks/RevealMapBlock.tsx` :
+
+1. Appeler `useFrenchSpeciesNamesAuto` une seule fois au niveau du composant, avec la liste dédupliquée `{ scientificName, commonName }` issue de `waypoints` (pas des points filtrés, pour éviter de relancer une requête à chaque changement de filtre).
+2. Dans la popup, remplacer `w.commonName || w.scientificName` par le `displayName` renvoyé par la map du hook, avec repli sur `commonName` puis `scientificName` (aucun blanc possible). Le nom scientifique en italique reste inchangé dessous.
+3. Ne pas utiliser `<SpeciesName />` ici : le contenu de la popup Leaflet est stylé en inline styles compacts ; on réutilise le même hook (même source de vérité, même cache React Query) sans changer le rendu visuel.
+
+Aucun changement de données, de comptage, de filtre ni de carte : uniquement l'affichage du libellé.
