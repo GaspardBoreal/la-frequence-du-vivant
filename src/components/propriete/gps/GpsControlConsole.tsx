@@ -5,7 +5,7 @@ import { Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
   X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert, Leaf, ExternalLink,
-  ZoomIn, ChevronLeft, ChevronRight,
+  ZoomIn, ChevronLeft, ChevronRight, ListChecks, Copy, Layers,
 } from 'lucide-react';
 import { useGpsCandidatePhotos, type CandidatePhoto } from '@/hooks/gps/useGpsCandidatePhotos';
 
@@ -14,6 +14,7 @@ import { RichMap } from '@/components/maps';
 import { toast } from 'sonner';
 import {
   useSetGpsOverride,
+  useSetGpsOverridesBatch,
   useClearGpsOverride,
   useGpsOverrides,
   type GpsOverrideKind,
@@ -131,9 +132,14 @@ export const GpsControlConsole: React.FC<Props> = ({
   displayNameFor,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null);
+  const [coordsInput, setCoordsInput] = useState('');
+  const [spread, setSpread] = useState(true);
   const [repositioning, setRepositioning] = useState(false);
   const [scope, setScope] = useState<'suspects' | 'all'>('suspects');
   const setOverride = useSetGpsOverride();
+  const setOverridesBatch = useSetGpsOverridesBatch();
   const clearOverride = useClearGpsOverride();
   const { overrides } = useGpsOverrides();
 
@@ -233,26 +239,133 @@ export const GpsControlConsole: React.FC<Props> = ({
     toast.success(status === 'excluded' ? 'Observation écartée du périmètre' : 'Position validée');
   };
 
-  const reposition = async (lat: number, lng: number) => {
-    if (!selected) return;
-    const t = targetOf(selected);
-    if (!t) {
-      toast.error('Observation non identifiable — curation impossible');
+  /* ---------- Sélection multiple ---------- */
+
+  const batch = useMemo(() => list.filter((c) => selectedIds.has(c.id)), [list, selectedIds]);
+
+  const toggleRow = (c: GpsCandidate, shiftKey: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (shiftKey && lastClickedId) {
+        const a = list.findIndex((x) => x.id === lastClickedId);
+        const b = list.findIndex((x) => x.id === c.id);
+        if (a >= 0 && b >= 0) {
+          const [from, to] = a < b ? [a, b] : [b, a];
+          for (let i = from; i <= to; i++) next.add(list[i].id);
+          return next;
+        }
+      }
+      if (next.has(c.id)) next.delete(c.id);
+      else next.add(c.id);
+      return next;
+    });
+    setLastClickedId(c.id);
+  };
+
+  const normSci = (s?: string | null) =>
+    (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+  const selectSameSpecies = (c: GpsCandidate) => {
+    const key = normSci(c.scientificName) || normSci(displayNameFor(c));
+    const ids = list
+      .filter((x) => (normSci(x.scientificName) || normSci(displayNameFor(x))) === key)
+      .map((x) => x.id);
+    setSelectedIds(new Set(ids));
+    toast.success(`${ids.length} observation${ids.length > 1 ? 's' : ''} de cette espèce sélectionnée${ids.length > 1 ? 's' : ''}`);
+  };
+
+  /** Léger éclatement pour que N points superposés restent distinguables. */
+  const offsetOf = (i: number, n: number, lat: number): [number, number] => {
+    if (!spread || n <= 1) return [0, 0];
+    const r = 5; // mètres
+    const a = (2 * Math.PI * i) / n;
+    return [
+      (r * Math.cos(a)) / 111320,
+      (r * Math.sin(a)) / (111320 * Math.cos((lat * Math.PI) / 180) || 1),
+    ];
+  };
+
+  const repositionMany = async (targets: GpsCandidate[], lat: number, lng: number) => {
+    const inputs = targets
+      .map((c, i) => {
+        const t = targetOf(c);
+        if (!t) return null;
+        const [dLat, dLng] = offsetOf(i, targets.length, lat);
+        return {
+          kind: t.kind,
+          key: t.key,
+          status: 'repositioned' as const,
+          lat: lat + dLat,
+          lon: lng + dLng,
+          originalLat: c.originalLat ?? c.lat,
+          originalLon: c.originalLng ?? c.lng,
+          reason: 'Repositionnement curateur (lot)',
+          proprieteId: proprieteId ?? null,
+        };
+      })
+      .filter(Boolean) as any[];
+    if (!inputs.length) {
+      toast.error('Observations non identifiables — curation impossible');
       return;
     }
-    await setOverride.mutateAsync({
-      kind: t.kind,
-      key: t.key,
-      status: 'repositioned',
-      lat,
-      lon: lng,
-      originalLat: selected.originalLat ?? selected.lat,
-      originalLon: selected.originalLng ?? selected.lng,
-      reason: 'Repositionnement curateur',
-      proprieteId: proprieteId ?? null,
-    });
+    await setOverridesBatch.mutateAsync(inputs);
     setRepositioning(false);
-    toast.success('Position corrigée');
+    setSelectedIds(new Set());
+  };
+
+  const actMany = async (targets: GpsCandidate[], status: 'excluded' | 'validated', reason: string) => {
+    const inputs = targets
+      .map((c) => {
+        const t = targetOf(c);
+        if (!t) return null;
+        return {
+          kind: t.kind,
+          key: t.key,
+          status,
+          originalLat: c.originalLat ?? c.lat,
+          originalLon: c.originalLng ?? c.lng,
+          reason,
+          proprieteId: proprieteId ?? null,
+        };
+      })
+      .filter(Boolean) as any[];
+    if (!inputs.length) return;
+    await setOverridesBatch.mutateAsync(inputs);
+    setSelectedIds(new Set());
+  };
+
+  const clearMany = async (targets: GpsCandidate[]) => {
+    for (const c of targets) {
+      const t = targetOf(c);
+      if (t) await clearOverride.mutateAsync(t);
+    }
+    setSelectedIds(new Set());
+  };
+
+  const parseCoords = (raw: string): [number, number] | null => {
+    const m = raw.trim().replace(/;/g, ',').match(/(-?\d+[.,]?\d*)\s*,\s*(-?\d+[.,]?\d*)/);
+    if (!m) return null;
+    const lat = Number(m[1].replace(',', '.'));
+    const lng = Number(m[2].replace(',', '.'));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)
+      return null;
+    return [lat, lng];
+  };
+
+  const reposition = async (lat: number, lng: number) => {
+    const targets = batch.length ? batch : selected ? [selected] : [];
+    if (!targets.length) return;
+    await repositionMany(targets, lat, lng);
+  };
+
+  const applyCoords = async () => {
+    const c = parseCoords(coordsInput);
+    if (!c) {
+      toast.error('Coordonnées illisibles', { description: 'Format attendu : 44.8123, 0.1456' });
+      return;
+    }
+    await reposition(c[0], c[1]);
+    setCoordsInput('');
   };
 
   const undo = async (c: GpsCandidate) => {
@@ -327,6 +440,20 @@ export const GpsControlConsole: React.FC<Props> = ({
                 Aucun point suspect : toutes les observations tombent dans le périmètre.
               </div>
             )}
+            {list.length > 0 && (
+              <div className="px-4 py-2 border-b border-[hsl(var(--ds-line))]/60 flex items-center gap-2 text-[11px] text-[hsl(var(--ds-forest-deep))]/70">
+                <ListChecks className="w-3.5 h-3.5" />
+                <span>Cochez pour agir en lot · Maj+clic = plage</span>
+                {selectedIds.size > 0 && (
+                  <button
+                    onClick={() => setSelectedIds(new Set())}
+                    className="ml-auto underline hover:text-[hsl(var(--ds-forest-deep))]"
+                  >
+                    Tout désélectionner
+                  </button>
+                )}
+              </div>
+            )}
             {list.map((c) => (
               <button
                 key={c.id}
@@ -339,12 +466,31 @@ export const GpsControlConsole: React.FC<Props> = ({
                   setRepositioning(false);
                 }}
                 className={`w-full text-left px-4 py-3 border-b border-[hsl(var(--ds-line))]/60 transition ${
-                  selectedId === c.id
+                  selectedIds.has(c.id)
+                    ? 'bg-[hsl(var(--ds-gold))]/10'
+                    : selectedId === c.id
                     ? 'bg-[hsl(var(--ds-forest))]/10 ring-1 ring-inset ring-[hsl(var(--ds-gold))]/60'
                     : 'hover:bg-black/5'
                 }`}
               >
                 <div className="flex items-start gap-3">
+                  <span
+                    role="checkbox"
+                    aria-checked={selectedIds.has(c.id)}
+                    title="Sélectionner pour une action groupée"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleRow(c, e.shiftKey);
+                    }}
+                    className={`mt-1 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 cursor-pointer ${
+                      selectedIds.has(c.id)
+                        ? 'bg-[hsl(var(--ds-forest))] border-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))]'
+                        : 'border-[hsl(var(--ds-line))]'
+                    }`}
+                  >
+                    {selectedIds.has(c.id) && <Check className="w-3 h-3" />}
+                  </span>
+
                   <CandidateThumb
                     photo={photoFor.get(c.id)}
                     color={STATUS_COLOR[c.geofenceStatus]}
@@ -468,7 +614,11 @@ export const GpsControlConsole: React.FC<Props> = ({
                     html: `<div style="width:18px;height:18px;border-radius:50%;background:${
                       STATUS_COLOR[c.geofenceStatus]
                     };opacity:${c.overrideStatus === 'excluded' ? 0.35 : 1};box-shadow:0 0 0 ${
-                      selectedId === c.id ? '4px #FAF8F3, 0 0 0 6px ' + STATUS_COLOR[c.geofenceStatus] : '2px #FAF8F3'
+                      selectedIds.has(c.id)
+                        ? '3px #FAF8F3, 0 0 0 6px #C9A227'
+                        : selectedId === c.id
+                        ? '4px #FAF8F3, 0 0 0 6px ' + STATUS_COLOR[c.geofenceStatus]
+                        : '2px #FAF8F3'
                     };"></div>`,
                   })}
                 >
@@ -530,6 +680,30 @@ export const GpsControlConsole: React.FC<Props> = ({
                         {c.geofenceDistanceM ? ` · ${c.geofenceDistanceM} m` : ''}
                         {photoFor.get(c.id)?.kind === 'species' ? ' · photo d’espèce' : ''}
                       </div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => selectSameSpecies(c)}
+                          style={{
+                            fontSize: 10, padding: '3px 8px', borderRadius: 999,
+                            border: '1px solid #d8d2c4', background: 'transparent', cursor: 'pointer',
+                          }}
+                        >
+                          Sélectionner toute l’espèce
+                        </button>
+                        {batch.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => repositionMany(batch, c.lat, c.lng)}
+                            style={{
+                              fontSize: 10, padding: '3px 8px', borderRadius: 999,
+                              border: 'none', background: '#2f5d3a', color: '#FAF8F3', cursor: 'pointer',
+                            }}
+                          >
+                            Placer les {batch.length} sélectionnés ici
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </Popup>
 
@@ -539,7 +713,92 @@ export const GpsControlConsole: React.FC<Props> = ({
 
             {repositioning && (
               <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] text-[11px] shadow-lg">
-                Cliquez sur la carte pour poser la position corrigée
+                {batch.length > 1
+                  ? `Cliquez sur la carte pour poser les ${batch.length} points sélectionnés`
+                  : 'Cliquez sur la carte pour poser la position corrigée'}
+              </div>
+            )}
+
+            {/* Barre d'action groupée */}
+            {batch.length > 0 && (
+              <div
+                className={`absolute left-3 right-3 z-[1001] rounded-2xl border border-[hsl(var(--ds-gold))]/50 bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] px-4 py-3 shadow-2xl ${
+                  selected ? 'bottom-[124px]' : 'bottom-3'
+                }`}
+              >
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-[12px] font-medium flex items-center gap-1.5">
+                    <ListChecks className="w-4 h-4" /> {batch.length} sélectionné
+                    {batch.length > 1 ? 's' : ''}
+                  </span>
+
+                  <button
+                    onClick={() => setRepositioning((v) => !v)}
+                    className={`text-[11px] px-3 py-1.5 rounded-full flex items-center gap-1 border ${
+                      repositioning
+                        ? 'bg-[hsl(var(--ds-gold))] text-[hsl(var(--ds-forest-deep))] border-transparent'
+                        : 'border-[hsl(var(--ds-cream))]/40'
+                    }`}
+                  >
+                    <MapPin className="w-3 h-3" /> Repositionner (clic carte)
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    <input
+                      value={coordsInput}
+                      onChange={(e) => setCoordsInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && applyCoords()}
+                      placeholder="44.8123, 0.1456"
+                      className="text-[11px] px-2.5 py-1.5 rounded-full bg-[hsl(var(--ds-cream))]/10 border border-[hsl(var(--ds-cream))]/30 placeholder:text-[hsl(var(--ds-cream))]/40 w-[140px] outline-none"
+                    />
+                    <button
+                      onClick={applyCoords}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                    >
+                      <Copy className="w-3 h-3" /> Coller
+                    </button>
+                  </div>
+
+                  {selected && !selectedIds.has(selected.id) && (
+                    <button
+                      onClick={() => repositionMany(batch, selected.lat, selected.lng)}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                    >
+                      <Crosshair className="w-3 h-3" /> Position du point affiché
+                    </button>
+                  )}
+
+                  <label className="text-[11px] flex items-center gap-1.5 cursor-pointer opacity-90">
+                    <input
+                      type="checkbox"
+                      checked={spread}
+                      onChange={(e) => setSpread(e.target.checked)}
+                      className="accent-[hsl(var(--ds-gold))]"
+                    />
+                    <Layers className="w-3 h-3" /> éclatement 5 m
+                  </label>
+
+                  <div className="ml-auto flex items-center gap-2">
+                    <button
+                      onClick={() => actMany(batch, 'excluded', 'Hors périmètre propriété (lot)')}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                    >
+                      <EyeOff className="w-3 h-3" /> Écarter
+                    </button>
+                    <button
+                      onClick={() => actMany(batch, 'validated', 'Position confirmée par le curateur (lot)')}
+                      className="text-[11px] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] flex items-center gap-1"
+                    >
+                      <Check className="w-3 h-3" /> Valider
+                    </button>
+                    <button
+                      onClick={() => clearMany(batch)}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                    >
+                      <Undo2 className="w-3 h-3" /> Annuler correction
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -581,6 +840,12 @@ export const GpsControlConsole: React.FC<Props> = ({
                   </div>
 
                   <div className="ml-auto flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => selectSameSpecies(selected)}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] flex items-center gap-1"
+                    >
+                      <ListChecks className="w-3 h-3" /> Toute l’espèce
+                    </button>
                     <button
                       onClick={() => setRepositioning((v) => !v)}
                       className={`text-[11px] px-3 py-1.5 rounded-full border flex items-center gap-1 ${
