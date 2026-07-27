@@ -151,6 +151,9 @@ export const TabObserve: React.FC<{
         progress={combinedPrint.progress}
         steps={combinedPrint.steps}
         skipped={combinedPrint.skipped}
+        incomplete={combinedPrint.incomplete}
+        onRetryMissing={combinedPrint.retryMissing}
+        onPrintAnyway={combinedPrint.printAnyway}
         onCancel={combinedPrint.cancel}
       />
       {combinedPrinting && combinedPortalRef.current && createPortal(
