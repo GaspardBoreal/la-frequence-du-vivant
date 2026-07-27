@@ -92,6 +92,47 @@ export function useSetGpsOverride() {
   });
 }
 
+/**
+ * Curation groupée : applique la même correction à N observations.
+ * Boucle séquentielle sur la RPC existante (clés UUID marcheur ou URL iNaturalist),
+ * un seul toast et une seule invalidation de cache en fin de lot.
+ */
+export function useSetGpsOverridesBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (inputs: SetOverrideInput[]) => {
+      let ok = 0;
+      const errors: string[] = [];
+      for (const input of inputs) {
+        const { error } = await (supabase as any).rpc('set_observation_gps_override', {
+          _target_kind: input.kind,
+          _target_key: input.key,
+          _status: input.status,
+          _lat: input.lat ?? null,
+          _lon: input.lon ?? null,
+          _original_lat: input.originalLat ?? null,
+          _original_lon: input.originalLon ?? null,
+          _reason: input.reason ?? null,
+          _propriete_id: input.proprieteId ?? null,
+        });
+        if (error) errors.push(String(error.message || error));
+        else ok++;
+      }
+      return { ok, errors };
+    },
+    onSuccess: ({ ok, errors }) => {
+      qc.invalidateQueries({ queryKey: ['observation-gps-overrides'] });
+      qc.invalidateQueries({ queryKey: ['exploration-species-pool-rpc'] });
+      if (errors.length) {
+        toast.warning(`${ok} corrigée(s), ${errors.length} en échec`, { description: errors[0] });
+      } else {
+        toast.success(`${ok} observation${ok > 1 ? 's' : ''} mise${ok > 1 ? 's' : ''} à jour`);
+      }
+    },
+    onError: (e: any) => toast.error('Échec du lot', { description: String(e?.message || e) }),
+  });
+}
+
 export function useClearGpsOverride() {
   const qc = useQueryClient();
   return useMutation({
