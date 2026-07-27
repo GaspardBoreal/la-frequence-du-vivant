@@ -122,16 +122,71 @@ const ProprieteEspace: React.FC = () => {
 /** Hauteur de la top-bar fixe, pour garder la barre d'onglets visible. */
 const DIAGNOSTIC_SCROLL_OFFSET = 64;
 
+const getDiagnosticTarget = () => {
+  const el = document.getElementById('diagnostic');
+  if (!el) return null;
+  const top = el.getBoundingClientRect().top + window.scrollY - DIAGNOSTIC_SCROLL_OFFSET;
+  return Math.max(top, 0);
+};
+
 /** Repositionne la vue sur l'ancre #diagnostic (barre d'onglets sous le header). */
 const scrollToDiagnostic = () => {
-  const el = document.getElementById('diagnostic');
-  if (!el) return;
+  const top = getDiagnosticTarget();
+  if (top === null) return;
   const reduceMotion =
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const top = el.getBoundingClientRect().top + window.scrollY - DIAGNOSTIC_SCROLL_OFFSET;
-  window.scrollTo({ top: Math.max(top, 0), behavior: reduceMotion ? 'auto' : 'smooth' });
+  window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' });
 };
+
+/**
+ * Rejoue le repositionnement pendant une courte fenêtre : le contenu d'un onglet
+ * peut grandir après coup (données async, cartes, photos). S'annule dès que
+ * l'utilisateur interagit avec la page.
+ */
+const scrollToDiagnosticPersistent = () => {
+  if (typeof window === 'undefined') return () => {};
+  let cancelled = false;
+  const timers: number[] = [];
+  let ro: ResizeObserver | null = null;
+
+  const cancel = () => {
+    if (cancelled) return;
+    cancelled = true;
+    timers.forEach((t) => window.clearTimeout(t));
+    ro?.disconnect();
+    window.removeEventListener('wheel', cancel);
+    window.removeEventListener('touchstart', cancel);
+    window.removeEventListener('keydown', cancel);
+  };
+
+  const attempt = () => {
+    if (cancelled) return;
+    const target = getDiagnosticTarget();
+    if (target === null) return;
+    if (Math.abs(window.scrollY - target) > 4) scrollToDiagnostic();
+  };
+
+  window.addEventListener('wheel', cancel, { passive: true });
+  window.addEventListener('touchstart', cancel, { passive: true });
+  window.addEventListener('keydown', cancel);
+
+  requestAnimationFrame(() => {
+    attempt();
+    requestAnimationFrame(attempt);
+  });
+  [60, 150, 300, 600].forEach((d) => timers.push(window.setTimeout(attempt, d)));
+
+  const el = document.getElementById('diagnostic');
+  if (el && typeof ResizeObserver !== 'undefined') {
+    ro = new ResizeObserver(() => attempt());
+    ro.observe(el);
+  }
+  timers.push(window.setTimeout(cancel, 700));
+
+  return cancel;
+};
+
 
 /* ============================================================
  * HERO CANOPÉE — inspiré de /jardin/:slug
