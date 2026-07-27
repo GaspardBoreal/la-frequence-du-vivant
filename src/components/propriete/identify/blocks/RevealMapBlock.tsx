@@ -582,8 +582,10 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
           )}
 
           <div className="mt-2 text-[10px] italic text-[hsl(var(--ds-forest-deep))]/55 text-center">
-            Cliquez un point pour voir la photo et la date d'observation.
+            Cliquez un point pour voir la photo, puis la vignette pour l'agrandir. En plein écran, un
+            bandeau latéral liste toutes les observations.
           </div>
+
 
           {/* Fullscreen portal */}
           {fullscreen && createPortal(
