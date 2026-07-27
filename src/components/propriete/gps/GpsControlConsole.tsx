@@ -132,6 +132,7 @@ export const GpsControlConsole: React.FC<Props> = ({
   candidates,
   parcelRings,
   center,
+  focusId,
   displayNameFor,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
