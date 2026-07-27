@@ -337,6 +337,17 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       >
         {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
       </button>
+
+      {/* Recadrer sur l'ensemble des observations */}
+      <button
+        type="button"
+        onClick={() => setRefitNonce((n) => n + 1)}
+        aria-label="Recadrer la carte sur les observations"
+        title="Recadrer"
+        className="absolute top-14 left-3 z-[400] w-9 h-9 rounded-full bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] border border-[hsl(var(--ds-line))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--ds-forest))] hover:text-[hsl(var(--ds-cream))] transition"
+      >
+        <Crosshair className="w-4 h-4" />
+      </button>
     </div>
   );
 
