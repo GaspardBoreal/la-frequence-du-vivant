@@ -806,6 +806,53 @@ export const GpsControlConsole: React.FC<Props> = ({
               </div>
             )}
 
+            {/* Aide au glissé + confirmation */}
+            {!repositioning && !dragDraft && (selectedId || selectedIds.size > 0) && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-forest-deep))]/90 text-[hsl(var(--ds-cream))] text-[11px] shadow-lg flex items-center gap-1.5">
+                <Move className="w-3 h-3" /> Glissez le point doré pour corriger sa position
+              </div>
+            )}
+
+            <AnimatePresence>
+              {dragDraft && !dragDraft.dragging && dragCandidate && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="absolute top-3 left-1/2 -translate-x-1/2 z-[1002] rounded-2xl border border-[hsl(var(--ds-gold))]/60 bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] px-4 py-2.5 shadow-2xl flex items-center gap-3 flex-wrap max-w-[92%]"
+                >
+                  <span className="text-[12px] flex items-center gap-1.5">
+                    <Move className="w-3.5 h-3.5 text-[hsl(var(--ds-gold))]" />
+                    Nouvelle position · <strong>{dragDistanceM} m</strong>
+                  </span>
+                  <button
+                    onClick={() => commitDrag(false)}
+                    disabled={setOverridesBatch.isPending}
+                    className="text-[11px] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-gold))] text-[hsl(var(--ds-forest-deep))] flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Check className="w-3 h-3" /> Enregistrer
+                  </button>
+                  {batch.length > 1 && selectedIds.has(dragDraft.id) && (
+                    <button
+                      onClick={() => commitDrag(true)}
+                      disabled={setOverridesBatch.isPending}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <ListChecks className="w-3 h-3" /> Appliquer à la sélection ({batch.length})
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setDragDraft(null)}
+                    className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                  >
+                    <Undo2 className="w-3 h-3" /> Annuler
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+
+
             {/* Barre d'action groupée */}
             {batch.length > 0 && (
               <div
