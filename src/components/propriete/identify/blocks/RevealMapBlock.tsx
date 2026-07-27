@@ -629,7 +629,25 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                   {filtersBar}
                 </div>
 
-                <div className="flex-1 min-h-0 p-3 md:p-4">{mapNode('100%')}</div>
+                <div className="flex-1 min-h-0 flex">
+                  <RevealObservationList
+                    items={filtered}
+                    selectedId={selectedId}
+                    colorFor={(w) => KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others}
+                    displayNameFor={displayNameFor}
+                    onSelect={(w) => {
+                      setSelectedId(w.id);
+                      markerRefs.current.get(w.id)?.openPopup();
+                    }}
+                    onZoomPhoto={(w) => {
+                      setSelectedId(w.id);
+                      setLightboxId(w.id);
+                    }}
+                    rowRefs={rowRefs}
+                  />
+                  <div className="flex-1 min-w-0 p-3 md:p-4">{mapNode('100%')}</div>
+                </div>
+
               </motion.div>
             </AnimatePresence>,
             document.body,
