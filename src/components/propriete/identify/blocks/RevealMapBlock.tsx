@@ -126,6 +126,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [perimeter, setPerimeter] = useState<'all' | 'inside' | 'outside'>('all');
   const [refitNonce, setRefitNonce] = useState(0);
   const [gpsConsole, setGpsConsole] = useState(false);
+  const [gpsFocusId, setGpsFocusId] = useState<string | null>(null);
   const [showParcels, setShowParcels] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lightboxId, setLightboxId] = useState<string | null>(null);
