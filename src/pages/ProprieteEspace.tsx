@@ -289,7 +289,7 @@ const CanopyHero: React.FC<{
           </div>
         )}
 
-        <div className="mt-10">
+        <div className="mt-16 md:mt-24">
           <OrganicButton
             variant="gold"
             pulse
@@ -300,15 +300,6 @@ const CanopyHero: React.FC<{
           </OrganicButton>
         </div>
 
-        <motion.button
-          type="button"
-          onClick={scrollToDiagnostic}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[#f4ecd4]/70 text-[10px] tracking-[0.3em] uppercase hover:text-[#f4ecd4]"
-          animate={reduce ? undefined : { y: [0, 6, 0], opacity: [0.5, 0.95, 0.5] }}
-          transition={{ duration: 2.4, repeat: Infinity }}
-        >
-          ↓ Descendez dans votre jardin
-        </motion.button>
       </motion.div>
     </section>
   );
