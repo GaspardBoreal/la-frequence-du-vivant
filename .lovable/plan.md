@@ -1,28 +1,43 @@
-## Pourquoi il n'y a pas de photo
+## Ce qui se passe
 
-Deux causes, vérifiées :
+Écarter *Acanthus mollis* échoue avec :
+`invalid input syntax for type uuid: "https://www.inaturalist.org/observations/362307364"`
 
-1. **La console n'affiche aucune photo, jamais.** `GpsControlConsole.tsx` ne contient aucune référence à `photoUrl` : ni dans la liste de gauche, ni dans le popup du marqueur, ni dans la barre d'action du bas. La donnée arrive pourtant déjà (`photoUrl` est bien rempli dans `useExplorationGpsCandidates`).
-2. **Pour les points iNaturalist, la photo n'existe pas dans la donnée.** Les points rouges de la capture sont tous `iNaturalist` (source snapshot). Les attributions stockées dans `biodiversity_snapshots` ne contiennent que : `date, source, observerName/Login/Id/ProfileUrl, exactLatitude, exactLongitude, locationName, observationMethod, originalUrl`. Aucun champ photo. Seules les observations marcheurs (`marcheur_observations.photo_url`, remonté par la RPC) en ont une.
+Ce point vient d'un snapshot iNaturalist : sa clé de curation (`target_kind = 'snapshot_attr'`) est l'URL de l'observation, pas un identifiant interne. C'est normal et voulu.
 
-## Ce qu'on fait
+Le problème est dans la fonction base `set_observation_gps_override` : elle écrit une ligne de journal d'audit avec
 
-### 1. Afficher la photo là où elle existe (immédiat)
-- Vignette 44×44 arrondie à gauche de chaque ligne de la liste, avec fallback : silhouette par règne (couleur `STATUS_COLOR` en fond) si pas de photo.
-- Photo dans le popup Leaflet du point sélectionné (160px large) + dans la barre d'action du bas.
-- Cliquer la vignette ouvre la photo en grand (lightbox légère, même style que le plein écran existant).
+```sql
+INSERT INTO public.marcheur_media_gps_audit(... target_id ...)
+SELECT 'observation', _target_key::uuid, ...
+WHERE _target_kind = 'observation';
+```
 
-### 2. Donner une photo aux points iNaturalist (cascade)
-Nouveau hook `useGpsCandidatePhotos(candidates)` appliquant, par ordre de priorité :
-1. `photoUrl` de l'observation (marcheurs) ;
-2. **photo réelle de l'observation iNat** : `originalUrl` contient l'id d'observation → appel batch `GET https://api.inaturalist.org/v1/observations?id=<ids joints>&per_page=200` (30 ids par lot, mis en cache React Query 1 h) → `photos[0].url` en résolution `medium`. C'est la photo exacte du point litigieux, la plus utile pour juger un placement.
-3. fallback espèce : `species_thumb_cache` via le hook existant `useSpeciesThumbs` (photo générique de l'espèce), affichée avec une pastille discrète « photo d'espèce » pour ne pas laisser croire que c'est le cliché du point.
+Le filtre `WHERE _target_kind = 'observation'` est censé neutraliser la conversion pour les points iNaturalist, mais Postgres évalue la conversion `_target_key::uuid` au moment de préparer la requête, avant d'appliquer le filtre. L'URL n'étant pas un UUID, la fonction s'arrête en erreur — alors même que l'écartement lui-même est valide.
 
-### 3. Lien vers la source
-Sous la photo, lien « Voir sur iNaturalist » (`originalUrl`) ouvert dans un onglet — indispensable pour vérifier la localisation d'origine avant d'écarter/repositionner.
+Conséquence : **aucune observation d'origine iNaturalist ne peut être écartée, repositionnée ni validée** ; seules les observations marcheurs (clé UUID) fonctionnent.
+
+## Correction
+
+Une migration base de données qui remplace les deux fonctions de curation :
+
+1. `set_observation_gps_override`
+   - calculer d'abord un identifiant interne optionnel : renseigné uniquement si la cible est une observation marcheur et que la clé est bien au format UUID, sinon vide ;
+   - n'écrire la ligne de journal d'audit que dans ce cas, via une condition explicite (plus de conversion évaluée « à vide ») ;
+   - même protection pour la mise à jour miroir des coordonnées d'une observation marcheur ;
+   - le reste (enregistrement de la correction, historique de la position d'origine, contrôles de droits) est inchangé.
+
+2. `clear_observation_gps_override`
+   - même protection au format UUID avant la remise en état d'une observation marcheur, pour que l'annulation d'une correction iNaturalist ne casse pas non plus.
+
+Aucune modification de schéma, aucune donnée existante touchée, aucun changement de droits.
+
+## Vérification
+
+- Écarter à nouveau l'Acanthe à feuilles de figuier depuis la console GPS : le point doit passer en « écartée » et disparaître du périmètre partout (propriété, marche, exploration, événement, exports).
+- Vérifier ensuite qu'une observation marcheur reste écartable/repositionnable et que la ligne de journal d'audit est toujours créée pour ce cas.
+- Tester l'annulation d'une correction sur les deux types de points.
 
 ## Détails techniques
-- Fichiers touchés : `src/components/propriete/gps/GpsControlConsole.tsx` (UI), nouveau `src/hooks/gps/useGpsCandidatePhotos.ts`.
-- Aucun changement de schéma ni de RPC : la résolution photo est purement côté lecture/affichage.
-- L'appel iNat est fait uniquement pour les candidats affichés dans la console (jamais sur les pages publiques), donc pas d'impact sur les performances des cartes existantes.
-- `PropertyWaypoint` possède déjà `originalUrl` pour les points snapshot : c'est la clé d'extraction de l'id iNat.
+
+Mécanisme exact : plpgsql prépare un plan personnalisé où `_target_key` est une constante, et Postgres replie la conversion `text → uuid` au moment de la planification, ce qui déclenche l'erreur avant le filtre `WHERE`. La parade est de sortir la conversion du plan (variable calculée avec un test de format UUID par expression régulière) et d'entourer les instructions concernées d'un `IF`, qui n'est planifié que s'il est exécuté.
