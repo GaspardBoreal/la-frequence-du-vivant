@@ -41,7 +41,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   proprieteId,
   index = 0,
 }) => {
-  const { waypoints: rawWaypoints } = usePropertySpeciesPool(proprieteId);
+  const { waypoints: rawWaypoints, curation } = usePropertySpeciesPool(proprieteId);
   const { data: parcelles } = useProprieteParcelles(proprieteId);
   const { data: canCurate } = useCanCurateParcelles(proprieteId);
 
