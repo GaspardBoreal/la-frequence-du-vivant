@@ -318,6 +318,54 @@ export const GpsControlConsole: React.FC<Props> = ({
     setSelectedIds(new Set());
   };
 
+  /* ---------- Glisser-déposer d'un marqueur ---------- */
+
+  /** Déplace N observations du même vecteur (glissé appliqué à la sélection). */
+  const repositionByDelta = async (targets: GpsCandidate[], dLat: number, dLng: number) => {
+    const inputs = targets
+      .map((c) => {
+        const t = targetOf(c);
+        if (!t) return null;
+        return {
+          kind: t.kind,
+          key: t.key,
+          status: 'repositioned' as const,
+          lat: c.lat + dLat,
+          lon: c.lng + dLng,
+          originalLat: c.originalLat ?? c.lat,
+          originalLon: c.originalLng ?? c.lng,
+          reason: 'Repositionnement curateur (glisser-déposer, lot)',
+          proprieteId: proprieteId ?? null,
+        };
+      })
+      .filter(Boolean) as any[];
+    if (!inputs.length) return;
+    await setOverridesBatch.mutateAsync(inputs);
+  };
+
+  const dragCandidate = useMemo(
+    () => (dragDraft ? list.find((c) => c.id === dragDraft.id) ?? null : null),
+    [dragDraft, list],
+  );
+
+  const dragDistanceM = dragDraft
+    ? Math.round(haversineM(dragDraft.from[0], dragDraft.from[1], dragDraft.to[0], dragDraft.to[1]))
+    : 0;
+
+  const commitDrag = async (applyToBatch: boolean) => {
+    if (!dragDraft || !dragCandidate) return;
+    const [lat, lng] = dragDraft.to;
+    if (applyToBatch && batch.length > 1) {
+      await repositionByDelta(batch, lat - dragDraft.from[0], lng - dragDraft.from[1]);
+      setSelectedIds(new Set());
+    } else {
+      await repositionMany([dragCandidate], lat, lng);
+    }
+    setDragDraft(null);
+  };
+
+
+
   const actMany = async (targets: GpsCandidate[], status: 'excluded' | 'validated', reason: string) => {
     const inputs = targets
       .map((c) => {
