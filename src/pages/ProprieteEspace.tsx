@@ -100,7 +100,7 @@ const ProprieteEspace: React.FC = () => {
           slug={slug!}
         />
 
-        <main id="diagnostic" className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+        <main id="diagnostic" className="max-w-4xl mx-auto px-4 py-10 space-y-6 scroll-mt-16">
           <PropTabs
             proprieteId={propriete.id}
             proprieteNom={propriete.nom}
@@ -349,7 +349,7 @@ const PropTabs: React.FC<{
 
   const handleTabChange = React.useCallback((value: string) => {
     setTab(value);
-    requestAnimationFrame(() => scrollToDiagnostic());
+    scrollToDiagnosticPersistent();
   }, []);
 
   React.useEffect(() => {
@@ -376,7 +376,7 @@ const PropTabs: React.FC<{
           <TabsTrigger value="synthesize">Je synthétise</TabsTrigger>
           <TabsTrigger value="palette">Palette végétale</TabsTrigger>
         </TabsList>
-        <TabsContent value="portrait" className="pt-5">
+        <TabsContent value="portrait" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabPortrait
             proprieteId={proprieteId}
             proprieteNom={proprieteNom}
@@ -386,7 +386,7 @@ const PropTabs: React.FC<{
             proprieteCenter={proprieteCenter}
           />
         </TabsContent>
-        <TabsContent value="observe" className="pt-5">
+        <TabsContent value="observe" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabObserve
             bio={bio}
             proprieteId={proprieteId}
@@ -397,7 +397,7 @@ const PropTabs: React.FC<{
             proprieteCenter={proprieteCenter}
           />
         </TabsContent>
-        <TabsContent value="analyze" className="pt-5">
+        <TabsContent value="analyze" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabAnalyze
             bio={bio}
             proprieteId={proprieteId}
@@ -409,10 +409,10 @@ const PropTabs: React.FC<{
           />
 
         </TabsContent>
-        <TabsContent value="identify" className="pt-5">
+        <TabsContent value="identify" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabIdentify proprieteId={proprieteId} proprieteNom={proprieteNom} bio={bio} />
         </TabsContent>
-        <TabsContent value="synthesize" className="pt-5">
+        <TabsContent value="synthesize" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabSynthesize
             proprieteNom={proprieteNom}
             proprieteVille={proprieteVille}
@@ -420,7 +420,7 @@ const PropTabs: React.FC<{
             bio={bio}
           />
         </TabsContent>
-        <TabsContent value="palette" className="pt-5">
+        <TabsContent value="palette" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabPalette bio={bio} />
         </TabsContent>
       </Tabs>
