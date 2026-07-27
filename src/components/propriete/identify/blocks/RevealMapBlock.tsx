@@ -548,6 +548,30 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                       {new Date(w.observationDate).toLocaleDateString('fr-FR')}
                     </div>
                   )}
+
+                  {canCurate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGpsFocusId(w.id);
+                        setGpsConsole(true);
+                      }}
+                      style={{
+                        marginTop: 8,
+                        width: '100%',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        padding: '5px 8px',
+                        borderRadius: 999,
+                        border: 'none',
+                        background: '#C9A227',
+                        color: '#1e2a20',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✥ Déplacer ce point (Contrôle GPS)
+                    </button>
+                  )}
                 </div>
               </Popup>
             </Marker>
