@@ -126,6 +126,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [perimeter, setPerimeter] = useState<'all' | 'inside' | 'outside'>('all');
   const [refitNonce, setRefitNonce] = useState(0);
   const [gpsConsole, setGpsConsole] = useState(false);
+  const [gpsFocusId, setGpsFocusId] = useState<string | null>(null);
   const [showParcels, setShowParcels] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lightboxId, setLightboxId] = useState<string | null>(null);
@@ -548,6 +549,30 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                       {new Date(w.observationDate).toLocaleDateString('fr-FR')}
                     </div>
                   )}
+
+                  {canCurate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGpsFocusId(w.id);
+                        setGpsConsole(true);
+                      }}
+                      style={{
+                        marginTop: 8,
+                        width: '100%',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        padding: '5px 8px',
+                        borderRadius: 999,
+                        border: 'none',
+                        background: '#C9A227',
+                        color: '#1e2a20',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✥ Déplacer ce point (Contrôle GPS)
+                    </button>
+                  )}
                 </div>
               </Popup>
             </Marker>
@@ -688,11 +713,15 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       {canCurate && (
         <GpsControlConsole
           open={gpsConsole}
-          onClose={() => setGpsConsole(false)}
+          onClose={() => {
+            setGpsConsole(false);
+            setGpsFocusId(null);
+          }}
           proprieteId={proprieteId}
           candidates={annotated}
           parcelRings={parcelRings}
           center={center}
+          focusId={gpsFocusId}
           displayNameFor={displayNameFor}
         />
       )}

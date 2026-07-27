@@ -37,6 +37,8 @@ interface Props {
   /** Anneaux GeoJSON des parcelles ([lng, lat]) pour dessiner le périmètre */
   parcelRings: Array<Array<[number, number]>>;
   center: [number, number];
+  /** Ouvre la console directement sur ce point (sélectionné, prêt à être glissé). */
+  focusId?: string | null;
   displayNameFor: (w: { scientificName?: string | null; commonName?: string | null }) => string;
 }
 
@@ -130,6 +132,7 @@ export const GpsControlConsole: React.FC<Props> = ({
   candidates,
   parcelRings,
   center,
+  focusId,
   displayNameFor,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -147,6 +150,17 @@ export const GpsControlConsole: React.FC<Props> = ({
   const setOverridesBatch = useSetGpsOverridesBatch();
   const clearOverride = useClearGpsOverride();
   const { overrides } = useGpsOverrides();
+
+  /** Ouverture ciblée depuis la carte : on montre tous les points et on sélectionne le bon. */
+  useEffect(() => {
+    if (!open || !focusId) return;
+    setScope('all');
+    setSelectedId(focusId);
+    setSelectedIds(new Set());
+    setDragDraft(null);
+  }, [open, focusId]);
+
+
 
   /**
    * Corrections déjà enregistrées : les points « écartés » ne remontent plus
@@ -437,6 +451,8 @@ export const GpsControlConsole: React.FC<Props> = ({
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[10000] bg-[hsl(var(--ds-cream))] flex flex-col"
       >
+        <style>{`@keyframes gpsPulse{0%{transform:scale(.7);opacity:.35}70%{transform:scale(1.15);opacity:0}100%{opacity:0}}
+        .gps-curation-handle:active div{cursor:grabbing!important}`}</style>
         <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-[hsl(var(--ds-line))]">
           <div className="w-9 h-9 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] flex items-center justify-center">
             <Crosshair className="w-4 h-4" />
@@ -688,24 +704,31 @@ export const GpsControlConsole: React.FC<Props> = ({
                       );
                     },
                   }}
-                  icon={L.divIcon({
-                    className: 'gps-curation-marker',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10],
-                    html: `<div style="width:18px;height:18px;border-radius:50%;cursor:${
-                      movable ? 'grab' : 'pointer'
-                    };background:${
-                      STATUS_COLOR[c.geofenceStatus]
-                    };opacity:${c.overrideStatus === 'excluded' ? 0.35 : 1};box-shadow:0 0 0 ${
-                      draft
-                        ? '3px #FAF8F3, 0 0 0 7px #C9A227'
-                        : selectedIds.has(c.id)
-                        ? '3px #FAF8F3, 0 0 0 6px #C9A227'
-                        : selectedId === c.id
-                        ? '4px #FAF8F3, 0 0 0 6px ' + STATUS_COLOR[c.geofenceStatus]
-                        : '2px #FAF8F3'
-                    };"></div>`,
-                  })}
+                  icon={
+                    movable
+                      ? L.divIcon({
+                          className: 'gps-curation-marker gps-curation-handle',
+                          iconSize: [34, 34],
+                          iconAnchor: [17, 17],
+                          html: `<div style="position:relative;width:34px;height:34px;cursor:grab;">
+                            <div style="position:absolute;inset:0;border-radius:50%;background:#C9A227;opacity:.22;animation:gpsPulse 1.6s ease-out infinite;"></div>
+                            <div style="position:absolute;inset:7px;border-radius:50%;background:${
+                              STATUS_COLOR[c.geofenceStatus]
+                            };box-shadow:0 0 0 3px #FAF8F3,0 0 0 6px #C9A227;display:flex;align-items:center;justify-content:center;color:#FAF8F3;font-size:12px;line-height:1;">✥</div>
+                            <div style="position:absolute;left:50%;transform:translateX(-50%);top:-22px;white-space:nowrap;background:#C9A227;color:#1e2a20;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.25);">Glissez-moi</div>
+                          </div>`,
+                        })
+                      : L.divIcon({
+                          className: 'gps-curation-marker',
+                          iconSize: [20, 20],
+                          iconAnchor: [10, 10],
+                          html: `<div style="width:18px;height:18px;border-radius:50%;cursor:pointer;background:${
+                            STATUS_COLOR[c.geofenceStatus]
+                          };opacity:${
+                            c.overrideStatus === 'excluded' ? 0.35 : 1
+                          };box-shadow:0 0 0 2px #FAF8F3;"></div>`,
+                        })
+                  }
                 >
 
                   <Popup>
@@ -807,9 +830,20 @@ export const GpsControlConsole: React.FC<Props> = ({
             )}
 
             {/* Aide au glissé + confirmation */}
-            {!repositioning && !dragDraft && (selectedId || selectedIds.size > 0) && (
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-forest-deep))]/90 text-[hsl(var(--ds-cream))] text-[11px] shadow-lg flex items-center gap-1.5">
-                <Move className="w-3 h-3" /> Glissez le point doré pour corriger sa position
+            {!repositioning && !dragDraft && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-3.5 py-2 rounded-full bg-[hsl(var(--ds-forest-deep))]/92 text-[hsl(var(--ds-cream))] text-[11px] shadow-lg flex items-center gap-2 max-w-[92%]">
+                <Move className="w-3.5 h-3.5 text-[hsl(var(--ds-gold))] flex-shrink-0" />
+                {selectedId || selectedIds.size > 0 ? (
+                  <span>
+                    <strong>Étape 2</strong> — attrapez le gros point doré « Glissez-moi » et
+                    déposez-le au bon endroit, puis <strong>Enregistrer</strong>.
+                  </span>
+                ) : (
+                  <span>
+                    <strong>Étape 1</strong> — cliquez un point (carte ou liste) : il devient doré et
+                    déplaçable à la souris.
+                  </span>
+                )}
               </div>
             )}
 
