@@ -132,22 +132,41 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   const explorationIds = idsQuery.data || [];
 
   // 2. Pool par exploration en parallèle
+  //    La RPC applique désormais elle-même les corrections GPS éditoriales
+  //    (repositionnement / exclusion) : la même vérité sert la propriété,
+  //    les marches, les explorations, les événements et les exports.
   const pools = useQueries({
     queries: explorationIds.map((id) => ({
-      queryKey: ['exploration-species-pool-rpc', id, 'v5-unified'],
+      queryKey: ['exploration-species-pool-rpc', id, 'v6-gps-overrides'],
       staleTime: 60 * 1000,
-      queryFn: async (): Promise<RpcSpecies[]> => {
+      queryFn: async (): Promise<{ species: RpcSpecies[]; curation: RpcCuration }> => {
         const { data, error } = await supabase.rpc('get_exploration_species_pool', {
           p_exploration_id: id,
         });
         if (error) throw error;
-        return ((data as any)?.species || []) as RpcSpecies[];
+        return {
+          species: ((data as any)?.species || []) as RpcSpecies[],
+          curation: ((data as any)?.curation || {}) as RpcCuration,
+        };
       },
     })),
   });
 
   const poolsLoading = pools.some((q) => q.isLoading);
-  const allRows = useMemo(() => pools.flatMap((q) => q.data || []), [pools]);
+  const allRows = useMemo(() => pools.flatMap((q) => q.data?.species || []), [pools]);
+
+  /** Synthèse de curation GPS, cumulée sur toutes les explorations liées. */
+  const curation = useMemo(() => {
+    const acc = { excluded: 0, repositioned: 0, validated: 0 };
+    for (const q of pools) {
+      const c = q.data?.curation;
+      if (!c) continue;
+      acc.excluded += (c.excluded_observations || 0) + (c.excluded_attributions || 0);
+      acc.repositioned += c.repositioned_observations || 0;
+      acc.validated += c.validated_observations || 0;
+    }
+    return acc;
+  }, [pools]);
 
   // 3. Fusion multi-marches par clé scientifique normalisée
   const merged = useMemo(() => {
