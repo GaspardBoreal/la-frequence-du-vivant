@@ -45,6 +45,47 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const { data: parcelles } = useProprieteParcelles(proprieteId);
   const { data: canCurate } = useCanCurateParcelles(proprieteId);
 
+  const { data: propriete } = useQuery({
+    queryKey: ['propriete-coords', proprieteId],
+    enabled: !!proprieteId,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('proprietes')
+        .select('latitude, longitude, nom, geofence_buffer_m')
+        .eq('id', proprieteId!)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  const bufferM = Number((propriete as any)?.geofence_buffer_m ?? 25);
+
+  /**
+   * Géofence cadastral : chaque observation est située par rapport aux parcelles
+   * de la propriété (tampon paramétrable). Sans parcelle renseignée, aucun point
+   * n'est jugé — on n'écarte jamais de donnée par défaut.
+   */
+  const fence = useMemo(() => buildGeofence(parcelles ?? []), [parcelles]);
+
+  const annotated = useMemo<GpsCandidate[]>(
+    () =>
+      rawWaypoints.map((w) => {
+        const ev = evaluateGeofence(fence, w.lat, w.lng, bufferM);
+        return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
+      }),
+    [rawWaypoints, fence, bufferM],
+  );
+
+  /** Les observations écartées par un curateur disparaissent des vues publiques. */
+  const waypoints = useMemo(
+    () => annotated.filter((w) => w.overrideStatus !== 'excluded'),
+    [annotated],
+  );
+
+  const excludedCount = annotated.length - waypoints.length;
+  const outsideCount = waypoints.filter((w) => w.geofenceStatus === 'outside').length;
+
 
   // Même résolveur FR que le bandeau « Empreinte biodiversité » (source unique)
   const frInput = useMemo(() => {
