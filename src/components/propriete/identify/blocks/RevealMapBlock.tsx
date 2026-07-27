@@ -7,6 +7,8 @@ import L from 'leaflet';
 import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair, ShieldCheck } from 'lucide-react';
 import { RevealPhotoLightbox } from './RevealPhotoLightbox';
 import { RevealObservationList } from './RevealObservationList';
+import { useRevealIndex } from './useRevealIndex';
+
 
 import { supabase } from '@/integrations/supabase/client';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
