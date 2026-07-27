@@ -111,7 +111,9 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [onlyKb, setOnlyKb] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'marcheur' | 'inaturalist'>('all');
+  const [perimeter, setPerimeter] = useState<'all' | 'inside' | 'outside'>('all');
   const [refitNonce, setRefitNonce] = useState(0);
+  const [gpsConsole, setGpsConsole] = useState(false);
 
   const kbKeys = useMemo(() => {
     const s = new Set<string>();
@@ -128,6 +130,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       const k = kingdomFrom(w.kingdom);
       if (kingdom !== 'all' && k !== kingdom) return false;
       if (sourceFilter !== 'all' && w.source !== sourceFilter) return false;
+      if (perimeter === 'inside' && w.geofenceStatus === 'outside') return false;
+      if (perimeter === 'outside' && w.geofenceStatus !== 'outside') return false;
       if (onlyKb) {
         const n = norm(w.scientificName);
         const g = n.split(/\s+/)[0];
@@ -135,7 +139,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
       }
       return true;
     });
-  }, [waypoints, kingdom, onlyKb, kbKeys, sourceFilter]);
+  }, [waypoints, kingdom, onlyKb, kbKeys, sourceFilter, perimeter]);
+
 
 
   /**
