@@ -457,16 +457,43 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         {filtered.map((w) => {
           const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
           return (
-            <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color, w.source)}>
+            <Marker
+              key={w.id}
+              position={[w.lat, w.lng]}
+              icon={iconFor(color, w.source)}
+              ref={(m) => {
+                if (m) markerRefs.current.set(w.id, m as unknown as L.Marker);
+                else markerRefs.current.delete(w.id);
+              }}
+              eventHandlers={{ click: () => setSelectedId(w.id) }}
+            >
               <Popup>
                 <div style={{ minWidth: 160 }}>
                   {w.photoUrl && (
-                    <img
-                      src={w.photoUrl}
-                      alt={w.scientificName}
-                      style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setLightboxId(w.id)}
+                      title="Agrandir la photo"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: 0,
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'zoom-in',
+                      }}
+                    >
+                      <img
+                        src={w.photoUrl}
+                        alt={w.scientificName}
+                        style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
+                      />
+                      <span style={{ fontSize: 10, color: '#2f5d3a', display: 'block', marginBottom: 4 }}>
+                        🔍 Cliquer pour agrandir
+                      </span>
+                    </button>
                   )}
+
                   <div style={{ fontWeight: 600, fontSize: 12 }}>
                     {displayNameFor(w)}
                   </div>
