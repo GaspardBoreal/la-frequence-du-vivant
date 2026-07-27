@@ -73,6 +73,20 @@ export const GpsControlConsole: React.FC<Props> = ({
   const [scope, setScope] = useState<'suspects' | 'all'>('suspects');
   const setOverride = useSetGpsOverride();
   const clearOverride = useClearGpsOverride();
+  const { overrides } = useGpsOverrides();
+
+  /**
+   * Corrections déjà enregistrées : les points « écartés » ne remontent plus
+   * dans le pool (la base les retire partout), il faut donc les lister depuis
+   * la table d'overrides pour pouvoir les annuler.
+   */
+  const applied = useMemo(
+    () =>
+      Array.from(overrides.values())
+        .filter((o) => !proprieteId || !o.propriete_id || o.propriete_id === proprieteId)
+        .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')),
+    [overrides, proprieteId],
+  );
 
   const list = useMemo(() => {
     const base =
