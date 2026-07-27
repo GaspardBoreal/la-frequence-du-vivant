@@ -171,6 +171,14 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     });
   }, [waypoints, kingdom, onlyKb, kbKeys, sourceFilter, perimeter]);
 
+  /**
+   * Index vivant (recherche « nom contient », tags, tri) partagé avec le bandeau :
+   * la carte s'aligne dessus pour ne jamais afficher plus que la liste.
+   */
+  const revealIndex = useRevealIndex(filtered, displayNameFor);
+  const { matched, matchedIds, isActive: indexActive } = revealIndex;
+
+
 
 
   /**
