@@ -41,6 +41,55 @@ const STATUS_COLOR: Record<GeofenceStatus, string> = {
   unknown: '#8a8a8a',
 };
 
+/** Vignette d'un point de curation (photo réelle, photo d'espèce, ou silhouette). */
+const CandidateThumb: React.FC<{
+  photo?: CandidatePhoto;
+  color: string;
+  size?: number;
+  onZoom?: (url: string) => void;
+}> = ({ photo, color, size = 44, onZoom }) => {
+  const style = { width: size, height: size };
+  if (!photo) {
+    return (
+      <div
+        style={{ ...style, background: `${color}22`, color }}
+        className="rounded-lg flex items-center justify-center flex-shrink-0"
+      >
+        <Leaf className="w-4 h-4 opacity-70" />
+      </div>
+    );
+  }
+  return (
+    <span
+      role={onZoom ? 'button' : undefined}
+      onClick={
+        onZoom
+          ? (e) => {
+              e.stopPropagation();
+              onZoom(photo.url);
+            }
+          : undefined
+      }
+      className="relative rounded-lg overflow-hidden flex-shrink-0 block"
+      style={style}
+    >
+      <img
+        src={photo.url}
+        alt=""
+        loading="lazy"
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
+        }}
+      />
+      {photo.kind === 'species' && (
+        <span className="absolute bottom-0 inset-x-0 h-[3px] bg-[hsl(var(--ds-forest))]/70" />
+      )}
+    </span>
+  );
+};
+
+
 /** Clic carte → callback (mode repositionnement) */
 const MapClickCapture: React.FC<{ onPick: (lat: number, lng: number) => void; active: boolean }> = ({
   onPick,
