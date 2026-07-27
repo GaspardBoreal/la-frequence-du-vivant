@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert } from 'lucide-react';
+import { X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert, Leaf, ExternalLink } from 'lucide-react';
+import { useGpsCandidatePhotos, type CandidatePhoto } from '@/hooks/gps/useGpsCandidatePhotos';
+
 import { RichMap } from '@/components/maps';
 import { toast } from 'sonner';
 import {
