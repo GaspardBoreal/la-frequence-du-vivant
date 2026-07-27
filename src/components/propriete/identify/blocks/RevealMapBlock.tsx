@@ -276,7 +276,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                     />
                   )}
                   <div style={{ fontWeight: 600, fontSize: 12 }}>
-                    {w.commonName || w.scientificName}
+                    {displayNameFor(w)}
                   </div>
                   <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
                     {w.scientificName}
