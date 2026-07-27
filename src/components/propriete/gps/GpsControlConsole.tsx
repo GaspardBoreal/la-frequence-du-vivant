@@ -418,7 +418,20 @@ export const GpsControlConsole: React.FC<Props> = ({
                   })}
                 >
                   <Popup>
-                    <div style={{ minWidth: 150 }}>
+                    <div style={{ minWidth: 160 }}>
+                      {photoFor.get(c.id) && (
+                        <img
+                          src={photoFor.get(c.id)!.url}
+                          alt=""
+                          style={{
+                            width: '100%',
+                            height: 96,
+                            objectFit: 'cover',
+                            borderRadius: 6,
+                            marginBottom: 6,
+                          }}
+                        />
+                      )}
                       <div style={{ fontWeight: 600, fontSize: 12 }}>{displayNameFor(c)}</div>
                       <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
                         {c.scientificName}
@@ -426,9 +439,11 @@ export const GpsControlConsole: React.FC<Props> = ({
                       <div style={{ fontSize: 10, marginTop: 4, color: '#666' }}>
                         {GEOFENCE_LABELS[c.geofenceStatus]}
                         {c.geofenceDistanceM ? ` · ${c.geofenceDistanceM} m` : ''}
+                        {photoFor.get(c.id)?.kind === 'species' ? ' · photo d’espèce' : ''}
                       </div>
                     </div>
                   </Popup>
+
                 </Marker>
               ))}
             </RichMap>
