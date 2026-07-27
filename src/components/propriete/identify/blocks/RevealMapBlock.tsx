@@ -121,6 +121,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [perimeter, setPerimeter] = useState<'all' | 'inside' | 'outside'>('all');
   const [refitNonce, setRefitNonce] = useState(0);
   const [gpsConsole, setGpsConsole] = useState(false);
+  const [showParcels, setShowParcels] = useState(true);
+
+  /** Parcelles enregistrées de la propriété (mêmes données que Portrait → Cadastre). */
+  const drawnParcelles = useMemo(
+    () => (parcelles ?? []).filter((p) => p.geometry?.coordinates),
+    [parcelles],
+  );
 
   const kbKeys = useMemo(() => {
     const s = new Set<string>();
