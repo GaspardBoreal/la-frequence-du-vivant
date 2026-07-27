@@ -457,6 +457,12 @@ export const GpsControlConsole: React.FC<Props> = ({
             {selected && (
               <div className="absolute bottom-3 left-3 right-3 z-[1000] rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/95 backdrop-blur px-4 py-3 shadow-xl">
                 <div className="flex items-start gap-3 flex-wrap">
+                  <CandidateThumb
+                    photo={photoFor.get(selected.id)}
+                    color={STATUS_COLOR[selected.geofenceStatus]}
+                    size={56}
+                    onZoom={(url) => setLightbox(url)}
+                  />
                   <div className="min-w-0">
                     <div className="font-serif text-base text-[hsl(var(--ds-forest-deep))] truncate">
                       {displayNameFor(selected)}
@@ -465,7 +471,18 @@ export const GpsControlConsole: React.FC<Props> = ({
                       {GEOFENCE_LABELS[selected.geofenceStatus]}
                       {selected.geofenceDistanceM ? ` · ${selected.geofenceDistanceM} m du périmètre` : ''}
                       {selected.obscured && ' · coordonnées floutées par iNaturalist'}
+                      {photoFor.get(selected.id)?.kind === 'species' && ' · photo d’espèce (pas le cliché du point)'}
                     </div>
+                    {photoFor.get(selected.id)?.inatUrl && (
+                      <a
+                        href={photoFor.get(selected.id)!.inatUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-[11px] underline text-[hsl(var(--ds-forest-deep))]/75"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Voir sur iNaturalist
+                      </a>
+                    )}
                     {selected.obscured && (
                       <div className="mt-1 text-[11px] text-[hsl(var(--ds-forest-deep))]/70 flex items-center gap-1">
                         <ShieldAlert className="w-3 h-3" /> Position volontairement imprécise à la
@@ -473,6 +490,7 @@ export const GpsControlConsole: React.FC<Props> = ({
                       </div>
                     )}
                   </div>
+
                   <div className="ml-auto flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => setRepositioning((v) => !v)}
