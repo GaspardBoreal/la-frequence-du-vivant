@@ -1,24 +1,53 @@
-## Objectif
+## Plan de correction UX/UI
 
-Dans la console **Contrôle GPS**, pouvoir saisir un marqueur (ex. le Lantana) et le **faire glisser** à sa position exacte, au lieu de passer par « Repositionner (clic carte) » ou par la saisie de coordonnées.
+### Diagnostic confirmé
+- Le bouton **« Déplacer ce point (Contrôle GPS) »** ouvre bien la console GPS avec le point ciblé.
+- Mais la console reçoit actuellement **toutes les observations** (`annotated`) et force le scope **« Tous les points »** à l’ouverture ciblée.
+- Le filtre courant de la Carte des révélations (`nom contient = Lantana`, tags, source, périmètre, règne…) n’est pas transmis à la console GPS. Résultat : le bandeau gauche repasse sur l’ensemble des points, ce qui casse la continuité de manipulation.
 
-## Comportement proposé
+### Objectif UX
+Quand l’utilisateur part d’une recherche filtrée comme **Lantana · 3 résultats**, la console GPS doit s’ouvrir dans un **atelier de curation contextualisé** :
+- bandeau gauche conservé sur les 3 points Lantana ;
+- point cliqué déjà sélectionné et déplaçable ;
+- possibilité claire de passer à tous les points si nécessaire ;
+- après une correction, retour possible à la Carte des révélations avec le même filtre.
 
-1. **Marqueur déplaçable** : seul le point **sélectionné** (et, si un lot est coché, chaque point du lot) devient `draggable`. Les autres restent fixes pour éviter les déplacements accidentels.
-2. **Repère visuel** : le marqueur déplaçable prend un anneau doré + curseur `grab`/`grabbing`, et une petite infobulle « Glissez pour corriger la position ».
-3. **Pendant le glissé** : une ligne pointillée relie la position d'origine à la position courante, avec la distance en mètres affichée en direct (Haversine, utilitaire déjà présent).
-4. **Au relâché** : mini-confirmation flottante « Nouvelle position · 128 m — Enregistrer / Annuler ».
-   - *Enregistrer* → appelle la correction existante (`repositioned`, avec conservation de `original_lat/lon`).
-   - *Annuler* → le marqueur revient instantanément à sa position d'avant.
-5. **Lot** : si plusieurs points sont cochés, glisser l'un d'eux propose « Appliquer à la sélection (N points) » — les autres se déplacent du même vecteur, avec l'option d'éclatement 5 m déjà en place.
-6. **Précision** : maintenir la carte au zoom courant pendant le glissé (pas de recadrage automatique), et rendre le glissé possible jusqu'au zoom 22 déjà autorisé.
+### Changements à faire
 
-## Détails techniques
+1. **Créer un contexte de curation transmis à la console GPS**
+   - Dans `RevealMapBlock`, au clic sur **Déplacer ce point**, construire une liste `gpsContextCandidates` basée sur l’état courant :
+     - si recherche/tags actifs : `matched` ;
+     - sinon : `filtered` ;
+     - conserver le point cliqué même si besoin.
+   - Transmettre aussi un petit résumé lisible : ex. `Filtre conservé : “lantana” · 3 observations`.
 
-- `src/components/propriete/gps/GpsControlConsole.tsx` :
-  - `<Marker draggable={selectedId === c.id || selectedIds.has(c.id)}>` + `eventHandlers` `dragstart` / `drag` / `dragend`.
-  - état local `dragDraft: { id, lat, lng, from: [lat,lng] } | null` pour l'aperçu et la confirmation ; `<Polyline>` pointillée entre `from` et la position courante.
-  - `dragend` → `setDragDraft(...)` (aucune écriture immédiate) ; la validation réutilise `repositionMany([...], lat, lng)` (mode lot : delta appliqué à chaque cible).
-  - désactiver la propagation du clic carte pendant un glissé pour ne pas déclencher `MapClickCapture`.
-- Aucune modification base de données : la RPC `set_observation_gps_override` et le hook `useSetGpsOverridesBatch` couvrent déjà le besoin (clés UUID marcheur et URL iNaturalist).
-- Les modes existants (clic carte, coordonnées collées, point de référence) restent inchangés.
+2. **Modifier `GpsControlConsole` pour supporter un mode “filtre conservé”**
+   - Ajouter des props optionnelles :
+     - `contextCandidates` ou `initialCandidates` ;
+     - `contextLabel` ;
+     - éventuellement `onBackToRevealMap`.
+   - Ajouter un nouveau scope : **`context`** en plus de `suspects` et `all`.
+   - À l’ouverture depuis un point filtré, démarrer sur `context`, pas sur `all`.
+
+3. **Refondre le bandeau gauche de la console pour la manipulation en série**
+   - Afficher en haut : **« Filtre conservé · Lantana · 3 observations »**.
+   - Ajouter un bouton discret : **« Voir tous les points »** seulement si l’utilisateur veut sortir du contexte.
+   - Garder le point cliqué sélectionné, scrollé, avec le marqueur doré **Glissez-moi** visible.
+   - Ajouter une action rapide : **« Sélectionner les 3 résultats filtrés »** pour déplacer tout le lot si les 3 points correspondent à la même correction.
+
+4. **Conserver l’expérience après chaque correction**
+   - Ne pas vider la sélection de contexte après enregistrement si on est en mode `context`.
+   - Recharger les données, mais rester dans le filtre Lantana pour permettre plusieurs corrections successives.
+   - Fermer la console ramène à la Carte des révélations plein écran avec la recherche toujours active.
+
+5. **Sécuriser les cas limites**
+   - Si aucun filtre n’est actif, comportement actuel possible : ouverture sur le point ciblé + tous les points.
+   - Si un point filtré disparaît après curation (ex. écarté), garder le contexte lisible et sélectionner le point suivant disponible.
+   - Ne pas toucher aux RPC, aux tables, ni à la logique de correction GPS : uniquement UX/state côté frontend.
+
+### Fichiers concernés
+- `src/components/propriete/identify/blocks/RevealMapBlock.tsx`
+- `src/components/propriete/gps/GpsControlConsole.tsx`
+
+### Résultat attendu
+Le flux devient stable : **filtrer Lantana → cliquer un point → Contrôle GPS → le bandeau gauche reste sur les 3 Lantana → déplacer/enregistrer → continuer les autres manipulations sans perdre le contexte.**
