@@ -1,10 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert, Leaf, ExternalLink } from 'lucide-react';
+import {
+  X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert, Leaf, ExternalLink,
+  ZoomIn, ChevronLeft, ChevronRight,
+} from 'lucide-react';
 import { useGpsCandidatePhotos, type CandidatePhoto } from '@/hooks/gps/useGpsCandidatePhotos';
+
 
 import { RichMap } from '@/components/maps';
 import { toast } from 'sonner';
@@ -46,7 +50,7 @@ const CandidateThumb: React.FC<{
   photo?: CandidatePhoto;
   color: string;
   size?: number;
-  onZoom?: (url: string) => void;
+  onZoom?: () => void;
 }> = ({ photo, color, size = 44, onZoom }) => {
   const style = { width: size, height: size };
   if (!photo) {
@@ -62,15 +66,16 @@ const CandidateThumb: React.FC<{
   return (
     <span
       role={onZoom ? 'button' : undefined}
+      title={onZoom ? 'Voir la photo en grand' : undefined}
       onClick={
         onZoom
           ? (e) => {
               e.stopPropagation();
-              onZoom(photo.url);
+              onZoom();
             }
           : undefined
       }
-      className="relative rounded-lg overflow-hidden flex-shrink-0 block"
+      className={`group relative rounded-lg overflow-hidden flex-shrink-0 block ${onZoom ? 'cursor-zoom-in' : ''}`}
       style={style}
     >
       <img
@@ -82,12 +87,18 @@ const CandidateThumb: React.FC<{
           (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
         }}
       />
+      {onZoom && (
+        <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/35 transition-colors">
+          <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+        </span>
+      )}
       {photo.kind === 'species' && (
         <span className="absolute bottom-0 inset-x-0 h-[3px] bg-[hsl(var(--ds-forest))]/70" />
       )}
     </span>
   );
 };
+
 
 
 /** Clic carte → callback (mode repositionnement) */
@@ -159,7 +170,44 @@ export const GpsControlConsole: React.FC<Props> = ({
 
   /** Photos des points : cliché marcheur → cliché iNat de l'observation → photo d'espèce. */
   const { photoFor } = useGpsCandidatePhotos(list);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  /** Visionneuse plein écran : on mémorise l'id du point (légende + navigation). */
+  const [lightboxId, setLightboxId] = useState<string | null>(null);
+  const photoList = useMemo(() => list.filter((c) => photoFor.get(c.id)), [list, photoFor]);
+  const lightboxIndex = photoList.findIndex((c) => c.id === lightboxId);
+  const lightboxItem = lightboxIndex >= 0 ? photoList[lightboxIndex] : null;
+
+  const openLightbox = (id: string) => {
+    setSelectedId(id);
+    setLightboxId(id);
+  };
+
+  const stepLightbox = (dir: 1 | -1) => {
+    if (!photoList.length || lightboxIndex < 0) return;
+    const next = photoList[(lightboxIndex + dir + photoList.length) % photoList.length];
+    setLightboxId(next.id);
+    setSelectedId(next.id);
+  };
+
+  /** Bandeau gauche synchronisé avec la sélection carte. */
+  const rowRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  useEffect(() => {
+    if (!selectedId) return;
+    rowRefs.current.get(selectedId)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!lightboxId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxId(null);
+      if (e.key === 'ArrowRight') stepLightbox(1);
+      if (e.key === 'ArrowLeft') stepLightbox(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+
 
 
   const targetOf = (c: GpsCandidate): { kind: GpsOverrideKind; key: string } | null => {
@@ -282,20 +330,27 @@ export const GpsControlConsole: React.FC<Props> = ({
             {list.map((c) => (
               <button
                 key={c.id}
+                ref={(el) => {
+                  if (el) rowRefs.current.set(c.id, el);
+                  else rowRefs.current.delete(c.id);
+                }}
                 onClick={() => {
                   setSelectedId(c.id);
                   setRepositioning(false);
                 }}
                 className={`w-full text-left px-4 py-3 border-b border-[hsl(var(--ds-line))]/60 transition ${
-                  selectedId === c.id ? 'bg-[hsl(var(--ds-forest))]/10' : 'hover:bg-black/5'
+                  selectedId === c.id
+                    ? 'bg-[hsl(var(--ds-forest))]/10 ring-1 ring-inset ring-[hsl(var(--ds-gold))]/60'
+                    : 'hover:bg-black/5'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <CandidateThumb
                     photo={photoFor.get(c.id)}
                     color={STATUS_COLOR[c.geofenceStatus]}
-                    onZoom={(url) => setLightbox(url)}
+                    onZoom={() => openLightbox(c.id)}
                   />
+
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span
@@ -420,18 +475,52 @@ export const GpsControlConsole: React.FC<Props> = ({
                   <Popup>
                     <div style={{ minWidth: 160 }}>
                       {photoFor.get(c.id) && (
-                        <img
-                          src={photoFor.get(c.id)!.url}
-                          alt=""
+                        <button
+                          type="button"
+                          onClick={() => openLightbox(c.id)}
+                          title="Voir la photo en grand"
                           style={{
+                            display: 'block',
+                            position: 'relative',
                             width: '100%',
-                            height: 96,
-                            objectFit: 'cover',
-                            borderRadius: 6,
+                            padding: 0,
+                            border: 'none',
+                            background: 'none',
+                            cursor: 'zoom-in',
                             marginBottom: 6,
                           }}
-                        />
+                        >
+                          <img
+                            src={photoFor.get(c.id)!.url}
+                            alt=""
+                            style={{
+                              width: '100%',
+                              height: 96,
+                              objectFit: 'cover',
+                              borderRadius: 6,
+                              display: 'block',
+                            }}
+                          />
+                          <span
+                            style={{
+                              position: 'absolute',
+                              right: 6,
+                              bottom: 6,
+                              background: 'rgba(0,0,0,0.55)',
+                              color: '#fff',
+                              borderRadius: 999,
+                              padding: '2px 6px',
+                              fontSize: 9,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                          >
+                            <ZoomIn style={{ width: 10, height: 10 }} /> Agrandir
+                          </span>
+                        </button>
                       )}
+
                       <div style={{ fontWeight: 600, fontSize: 12 }}>{displayNameFor(c)}</div>
                       <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
                         {c.scientificName}
@@ -461,7 +550,7 @@ export const GpsControlConsole: React.FC<Props> = ({
                     photo={photoFor.get(selected.id)}
                     color={STATUS_COLOR[selected.geofenceStatus]}
                     size={56}
-                    onZoom={(url) => setLightbox(url)}
+                    onZoom={() => openLightbox(selected.id)}
                   />
                   <div className="min-w-0">
                     <div className="font-serif text-base text-[hsl(var(--ds-forest-deep))] truncate">
@@ -529,14 +618,81 @@ export const GpsControlConsole: React.FC<Props> = ({
           </section>
         </div>
 
-        {lightbox && (
+        {lightboxItem && photoFor.get(lightboxItem.id) && (
           <div
-            className="fixed inset-0 z-[2000] bg-black/85 flex items-center justify-center p-6"
-            onClick={() => setLightbox(null)}
+            className="fixed inset-0 z-[2000] bg-black/90 flex flex-col items-center justify-center p-6"
+            onClick={() => setLightboxId(null)}
           >
-            <img src={lightbox} alt="" className="max-h-[90vh] max-w-[92vw] rounded-xl shadow-2xl" />
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxId(null); }}
+              className="absolute top-4 right-4 p-2 text-white/70 hover:text-white"
+              aria-label="Fermer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {photoList.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); stepLightbox(-1); }}
+                  className="absolute left-3 md:left-6 p-2 text-white/70 hover:text-white"
+                  aria-label="Précédent"
+                >
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); stepLightbox(1); }}
+                  className="absolute right-3 md:right-6 p-2 text-white/70 hover:text-white"
+                  aria-label="Suivant"
+                >
+                  <ChevronRight className="w-8 h-8" />
+                </button>
+              </>
+            )}
+
+            <img
+              src={photoFor.get(lightboxItem.id)!.url}
+              alt={displayNameFor(lightboxItem)}
+              className="max-h-[74vh] max-w-[88vw] object-contain rounded-xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+
+            <div
+              className="mt-4 max-w-[88vw] rounded-2xl bg-black/50 backdrop-blur px-5 py-3 text-center text-white/90"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="font-serif text-lg leading-tight">{displayNameFor(lightboxItem)}</div>
+              {lightboxItem.scientificName && (
+                <div className="text-[12px] italic text-white/60">{lightboxItem.scientificName}</div>
+              )}
+              <div className="mt-1 text-[11px] text-white/70">
+                {GEOFENCE_LABELS[lightboxItem.geofenceStatus]}
+                {lightboxItem.geofenceDistanceM ? ` · ${lightboxItem.geofenceDistanceM} m du périmètre` : ''}
+                {` · ${lightboxItem.source === 'marcheur' ? 'marcheur' : 'iNaturalist'}`}
+                {photoFor.get(lightboxItem.id)?.kind === 'species'
+                  ? ' · photo d’espèce (pas le cliché du point)'
+                  : ''}
+              </div>
+              <div className="mt-2 flex items-center justify-center gap-4 text-[11px] text-white/70">
+                {photoList.length > 1 && (
+                  <span>{lightboxIndex + 1} / {photoList.length}</span>
+                )}
+                {photoFor.get(lightboxItem.id)?.inatUrl && (
+                  <a
+                    href={photoFor.get(lightboxItem.id)!.inatUrl!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 underline hover:text-white"
+                  >
+                    <ExternalLink className="w-3 h-3" /> Voir sur iNaturalist
+                  </a>
+                )}
+                <span className="hidden md:inline text-white/45">← → naviguer · Échap fermer</span>
+              </div>
+            </div>
           </div>
         )}
+
       </motion.div>
 
     </AnimatePresence>,
