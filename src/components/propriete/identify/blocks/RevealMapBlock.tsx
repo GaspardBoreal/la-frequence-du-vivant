@@ -349,6 +349,21 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         </>
       )}
 
+      {drawnParcelles.length > 0 && (
+        <button
+          onClick={() => setShowParcels((v) => !v)}
+          className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+            showParcels
+              ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest))]'
+              : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+          }`}
+        >
+          ▱ Périmètre · {drawnParcelles.length} parcelle{drawnParcelles.length > 1 ? 's' : ''}
+        </button>
+      )}
+
+
+
       {canCurate && (
         <button
           onClick={() => setGpsConsole(true)}
