@@ -157,6 +157,11 @@ export const GpsControlConsole: React.FC<Props> = ({
 
   const selected = list.find((c) => c.id === selectedId) || null;
 
+  /** Photos des points : cliché marcheur → cliché iNat de l'observation → photo d'espèce. */
+  const { photoFor } = useGpsCandidatePhotos(list);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+
   const targetOf = (c: GpsCandidate): { kind: GpsOverrideKind; key: string } | null => {
     if (!c.overrideTargetKey) return null;
     return { kind: (c.overrideKind || 'observation') as GpsOverrideKind, key: c.overrideTargetKey };
