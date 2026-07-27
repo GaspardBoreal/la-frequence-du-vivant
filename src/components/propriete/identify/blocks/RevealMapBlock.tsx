@@ -666,7 +666,23 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
           displayNameFor={displayNameFor}
         />
       )}
+
+      <AnimatePresence>
+        {lightboxId && (
+          <RevealPhotoLightbox
+            items={filtered}
+            currentId={lightboxId}
+            onChange={(id) => {
+              setLightboxId(id);
+              setSelectedId(id);
+            }}
+            onClose={() => setLightboxId(null)}
+            displayNameFor={displayNameFor}
+          />
+        )}
+      </AnimatePresence>
     </AnalyzeCard>
+
 
   );
 };
