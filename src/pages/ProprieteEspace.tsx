@@ -119,9 +119,24 @@ const ProprieteEspace: React.FC = () => {
   );
 };
 
+/** Hauteur de la top-bar fixe, pour garder la barre d'onglets visible. */
+const DIAGNOSTIC_SCROLL_OFFSET = 64;
+
+/** Repositionne la vue sur l'ancre #diagnostic (barre d'onglets sous le header). */
+const scrollToDiagnostic = () => {
+  const el = document.getElementById('diagnostic');
+  if (!el) return;
+  const reduceMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const top = el.getBoundingClientRect().top + window.scrollY - DIAGNOSTIC_SCROLL_OFFSET;
+  window.scrollTo({ top: Math.max(top, 0), behavior: reduceMotion ? 'auto' : 'smooth' });
+};
+
 /* ============================================================
  * HERO CANOPÉE — inspiré de /jardin/:slug
  * ============================================================ */
+
 const CanopyHero: React.FC<{
   proprieteId: string;
   nom: string;
