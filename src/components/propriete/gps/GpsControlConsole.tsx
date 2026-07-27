@@ -614,7 +614,11 @@ export const GpsControlConsole: React.FC<Props> = ({
                     html: `<div style="width:18px;height:18px;border-radius:50%;background:${
                       STATUS_COLOR[c.geofenceStatus]
                     };opacity:${c.overrideStatus === 'excluded' ? 0.35 : 1};box-shadow:0 0 0 ${
-                      selectedId === c.id ? '4px #FAF8F3, 0 0 0 6px ' + STATUS_COLOR[c.geofenceStatus] : '2px #FAF8F3'
+                      selectedIds.has(c.id)
+                        ? '3px #FAF8F3, 0 0 0 6px #C9A227'
+                        : selectedId === c.id
+                        ? '4px #FAF8F3, 0 0 0 6px ' + STATUS_COLOR[c.geofenceStatus]
+                        : '2px #FAF8F3'
                     };"></div>`,
                   })}
                 >
