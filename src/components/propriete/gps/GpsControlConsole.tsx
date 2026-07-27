@@ -794,7 +794,8 @@ export const GpsControlConsole: React.FC<Props> = ({
                   </Popup>
 
                 </Marker>
-              ))}
+                );
+              })}
             </RichMap>
 
             {repositioning && (
