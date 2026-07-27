@@ -100,7 +100,7 @@ const ProprieteEspace: React.FC = () => {
           slug={slug!}
         />
 
-        <main id="diagnostic" className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+        <main id="diagnostic" className="max-w-4xl mx-auto px-4 py-10 space-y-6 scroll-mt-16">
           <PropTabs
             proprieteId={propriete.id}
             proprieteNom={propriete.nom}
@@ -122,16 +122,71 @@ const ProprieteEspace: React.FC = () => {
 /** Hauteur de la top-bar fixe, pour garder la barre d'onglets visible. */
 const DIAGNOSTIC_SCROLL_OFFSET = 64;
 
+const getDiagnosticTarget = () => {
+  const el = document.getElementById('diagnostic');
+  if (!el) return null;
+  const top = el.getBoundingClientRect().top + window.scrollY - DIAGNOSTIC_SCROLL_OFFSET;
+  return Math.max(top, 0);
+};
+
 /** Repositionne la vue sur l'ancre #diagnostic (barre d'onglets sous le header). */
 const scrollToDiagnostic = () => {
-  const el = document.getElementById('diagnostic');
-  if (!el) return;
+  const top = getDiagnosticTarget();
+  if (top === null) return;
   const reduceMotion =
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const top = el.getBoundingClientRect().top + window.scrollY - DIAGNOSTIC_SCROLL_OFFSET;
-  window.scrollTo({ top: Math.max(top, 0), behavior: reduceMotion ? 'auto' : 'smooth' });
+  window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' });
 };
+
+/**
+ * Rejoue le repositionnement pendant une courte fenêtre : le contenu d'un onglet
+ * peut grandir après coup (données async, cartes, photos). S'annule dès que
+ * l'utilisateur interagit avec la page.
+ */
+const scrollToDiagnosticPersistent = () => {
+  if (typeof window === 'undefined') return () => {};
+  let cancelled = false;
+  const timers: number[] = [];
+  let ro: ResizeObserver | null = null;
+
+  const cancel = () => {
+    if (cancelled) return;
+    cancelled = true;
+    timers.forEach((t) => window.clearTimeout(t));
+    ro?.disconnect();
+    window.removeEventListener('wheel', cancel);
+    window.removeEventListener('touchstart', cancel);
+    window.removeEventListener('keydown', cancel);
+  };
+
+  const attempt = () => {
+    if (cancelled) return;
+    const target = getDiagnosticTarget();
+    if (target === null) return;
+    if (Math.abs(window.scrollY - target) > 4) scrollToDiagnostic();
+  };
+
+  window.addEventListener('wheel', cancel, { passive: true });
+  window.addEventListener('touchstart', cancel, { passive: true });
+  window.addEventListener('keydown', cancel);
+
+  requestAnimationFrame(() => {
+    attempt();
+    requestAnimationFrame(attempt);
+  });
+  [60, 150, 300, 600].forEach((d) => timers.push(window.setTimeout(attempt, d)));
+
+  const el = document.getElementById('diagnostic');
+  if (el && typeof ResizeObserver !== 'undefined') {
+    ro = new ResizeObserver(() => attempt());
+    ro.observe(el);
+  }
+  timers.push(window.setTimeout(cancel, 700));
+
+  return cancel;
+};
+
 
 /* ============================================================
  * HERO CANOPÉE — inspiré de /jardin/:slug
@@ -294,7 +349,7 @@ const PropTabs: React.FC<{
 
   const handleTabChange = React.useCallback((value: string) => {
     setTab(value);
-    requestAnimationFrame(() => scrollToDiagnostic());
+    scrollToDiagnosticPersistent();
   }, []);
 
   React.useEffect(() => {
@@ -321,7 +376,7 @@ const PropTabs: React.FC<{
           <TabsTrigger value="synthesize">Je synthétise</TabsTrigger>
           <TabsTrigger value="palette">Palette végétale</TabsTrigger>
         </TabsList>
-        <TabsContent value="portrait" className="pt-5">
+        <TabsContent value="portrait" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabPortrait
             proprieteId={proprieteId}
             proprieteNom={proprieteNom}
@@ -331,7 +386,7 @@ const PropTabs: React.FC<{
             proprieteCenter={proprieteCenter}
           />
         </TabsContent>
-        <TabsContent value="observe" className="pt-5">
+        <TabsContent value="observe" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabObserve
             bio={bio}
             proprieteId={proprieteId}
@@ -342,7 +397,7 @@ const PropTabs: React.FC<{
             proprieteCenter={proprieteCenter}
           />
         </TabsContent>
-        <TabsContent value="analyze" className="pt-5">
+        <TabsContent value="analyze" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabAnalyze
             bio={bio}
             proprieteId={proprieteId}
@@ -354,10 +409,10 @@ const PropTabs: React.FC<{
           />
 
         </TabsContent>
-        <TabsContent value="identify" className="pt-5">
+        <TabsContent value="identify" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabIdentify proprieteId={proprieteId} proprieteNom={proprieteNom} bio={bio} />
         </TabsContent>
-        <TabsContent value="synthesize" className="pt-5">
+        <TabsContent value="synthesize" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabSynthesize
             proprieteNom={proprieteNom}
             proprieteVille={proprieteVille}
@@ -365,7 +420,7 @@ const PropTabs: React.FC<{
             bio={bio}
           />
         </TabsContent>
-        <TabsContent value="palette" className="pt-5">
+        <TabsContent value="palette" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabPalette bio={bio} />
         </TabsContent>
       </Tabs>
