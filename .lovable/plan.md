@@ -1,18 +1,13 @@
-## Objectif
-Supprimer la bascule clair/sombre et forcer le mode sombre partout, sans rien casser.
+## Problème
+Le bouton flottant « Rejoindre la Fréquence » (`src/components/adhesion/AdhesionFab.tsx`, monté globalement dans `App.tsx`) n'est masqué que sur une liste de routes. Il ne tient aucun compte de l'état de connexion : un utilisateur connecté (ex. Gaspard Boréal) le voit donc partout ailleurs.
 
-## Ce qui change
+## Correction
+Dans `src/components/adhesion/AdhesionFab.tsx` :
+- Utiliser le hook `useAuth()` (déjà utilisé par `PublicTopBar`) pour lire l'utilisateur courant.
+- Retourner `null` dès qu'un utilisateur est connecté, en plus des exclusions de routes existantes.
+- Attendre la fin du chargement de la session (`loading`) avant d'afficher le bouton, pour éviter un flash du CTA au premier rendu chez un utilisateur connecté.
 
-1. **`src/components/community/ThemeToggle.tsx`** — supprimé.
+Aucun changement pour les visiteurs non connectés : le bouton reste affiché exactement comme aujourd'hui, avec les mêmes routes exclues.
 
-2. **Retrait du bouton** aux 3 endroits où il est affiché :
-   - `src/components/layout/PublicTopBar.tsx` (bandeau public)
-   - `src/components/community/MonEspaceHeader.tsx` (header Mon espace)
-   - `src/pages/ProprieteEspace.tsx` (header Propriété)
-
-3. **`src/contexts/ThemeContext.tsx`** — conservé mais simplifié : `resolvedTheme` vaut toujours `'dark'`, la classe `dark` est appliquée en permanence sur `<html>`, `setTheme` devient un no-op. Le contexte reste exporté pour ne casser aucun import existant (`PublicTopBar` lit `resolvedTheme` pour choisir son ton — il obtiendra toujours `dark`, cohérent avec l'app).
-
-## Points de vigilance
-- Aucun changement de palette, de tokens CSS ou de composants métier : seuls les rendus déjà en mode sombre restent actifs.
-- `src/components/ui/sonner.tsx` utilise `next-themes` (indépendant) — non modifié, il reste sur `system` comme aujourd'hui.
-- La clé localStorage `marcheur-theme` n'est plus lue ; les utilisateurs bloqués en clair repasseront automatiquement en sombre.
+## Note
+Le libellé équivalent dans `src/components/carte-mdv/views/MapView.tsx` est déjà conditionné à `user` — rien à modifier là-bas.
