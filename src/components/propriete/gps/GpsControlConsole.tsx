@@ -680,6 +680,30 @@ export const GpsControlConsole: React.FC<Props> = ({
                         {c.geofenceDistanceM ? ` · ${c.geofenceDistanceM} m` : ''}
                         {photoFor.get(c.id)?.kind === 'species' ? ' · photo d’espèce' : ''}
                       </div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => selectSameSpecies(c)}
+                          style={{
+                            fontSize: 10, padding: '3px 8px', borderRadius: 999,
+                            border: '1px solid #d8d2c4', background: 'transparent', cursor: 'pointer',
+                          }}
+                        >
+                          Sélectionner toute l’espèce
+                        </button>
+                        {batch.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => repositionMany(batch, c.lat, c.lng)}
+                            style={{
+                              fontSize: 10, padding: '3px 8px', borderRadius: 999,
+                              border: 'none', background: '#2f5d3a', color: '#FAF8F3', cursor: 'pointer',
+                            }}
+                          >
+                            Placer les {batch.length} sélectionnés ici
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </Popup>
 
