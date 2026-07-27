@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
+import { Marker, Popup, Polygon, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
   X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert, Leaf, ExternalLink,
