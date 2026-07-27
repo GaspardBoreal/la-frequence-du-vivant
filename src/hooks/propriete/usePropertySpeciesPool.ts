@@ -27,6 +27,14 @@ interface RpcSpecies {
   marcheur_attrs: any;
 }
 
+/** Synthèse des corrections GPS appliquées côté base par la RPC. */
+interface RpcCuration {
+  excluded_observations?: number;
+  repositioned_observations?: number;
+  validated_observations?: number;
+  excluded_attributions?: number;
+}
+
 const toMediumInat = (url: string): string =>
   url ? url.replace('/square.', '/medium.').replace('/square.jpg', '/medium.jpg') : url;
 
