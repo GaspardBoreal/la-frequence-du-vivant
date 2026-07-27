@@ -531,7 +531,20 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
           )}
         </>
       )}
+
+      {canCurate && (
+        <GpsControlConsole
+          open={gpsConsole}
+          onClose={() => setGpsConsole(false)}
+          proprieteId={proprieteId}
+          candidates={annotated}
+          parcelRings={parcelRings}
+          center={center}
+          displayNameFor={displayNameFor}
+        />
+      )}
     </AnalyzeCard>
+
   );
 };
 
