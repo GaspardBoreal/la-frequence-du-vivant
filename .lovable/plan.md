@@ -1,26 +1,27 @@
-## Diagnostic (vérifié dans le code)
+## Réponse courte (ce qui est possible aujourd'hui)
 
-Dans `RevealObservationList.tsx`, les états `query`, `sortKey`, `activeTagKeys` sont **locaux au bandeau** (lignes 58-63) et le filtrage produit une liste `displayed` qui ne sort jamais du composant.
+Ces trois points sont déjà corrigeables, mais **un par un** : sur la Carte des révélations, bouton **« Contrôle GPS »** (visible car vous êtes curateur) → dans la console, sélectionner un point → **Repositionner** → cliquer l'emplacement exact sur la carte. À répéter 3 fois. La correction est une surcouche éditoriale (iNaturalist n'est pas modifié) et se propage partout (propriété, marches, exports).
 
-Dans `RevealMapBlock.tsx`, les marqueurs (ligne 457), le compteur d'en-tête (« X espèces · Y obs. », lignes 397-399 et 614-616), le cadrage `bounds` (ligne 181) et la visionneuse `RevealPhotoLightbox` (ligne 673) consomment tous `filtered`, qui n'applique que les filtres de la barre du haut (règne, source, périmètre, bio-indicatrices).
+## Ce que je propose d'ajouter pour que ce soit fait en un geste
 
-D'où l'écart observé : 3 résultats à gauche, 357 points à droite.
+### 1. Sélection multiple dans la console GPS
+- Cases à cocher sur les lignes de la liste + `Maj+clic` pour une plage.
+- Raccourci **« Sélectionner toutes les observations de cette espèce »** depuis la fiche du point sélectionné (exactement votre cas : 3 points, même espèce).
+- Barre d'action flottante : « 3 sélectionnés · Repositionner · Écarter · Valider · Annuler correction ».
 
-## Correction : un seul état de filtrage, deux rendus
+### 2. Repositionnement groupé, avec 3 façons de désigner la cible
+- **Clic carte** : un clic place les N points au même endroit.
+- **Coller des coordonnées** (`44.8123, 0.1456`) — utile si vous avez la position exacte depuis iNaturalist ou un GPS de terrain.
+- **Copier la position d'un point de référence** : « utiliser la position de ce point » (un point déjà bien placé de la même espèce).
+- Option **« léger éclatement »** (5 m) pour que les 3 marqueurs restent distinguables au lieu de se superposer.
 
-1. **Remonter l'état d'index dans `RevealMapBlock`** : `query`, `sortKey`, `nameAsc`, `dateDesc`, `activeTagKeys` deviennent des props contrôlées passées à `RevealObservationList` (le composant reste purement présentiel).
-2. **Extraire la logique dans un hook `useRevealIndex(items, …)`** (nouveau fichier `useRevealIndex.ts`) qui expose : `matched` (liste filtrée + triée), `matchedIds` (Set), `tagFacets`, `tagsFor`, `isIndexActive` (recherche ou tags actifs).
-3. **Brancher la carte sur `matchedIds`** :
-   - marqueurs correspondants : rendu normal ;
-   - marqueurs non correspondants : version « fantôme » (opacité ~0.18, sans ombre, `interactive: false`) plutôt que suppression, pour garder le contexte spatial du jardin ;
-   - un petit bouton `Effacer la recherche` apparaît sur la carte quand l'index est actif.
-4. **Cadrage automatique** : quand une recherche/tag est active et qu'au moins 1 point correspond, `bounds` se calcule sur `matched` (avec le même écrêtage des points isolés). Retour au cadrage global dès que l'index est vide.
-5. **Compteurs cohérents** : les en-têtes affichent `N espèces · M obs.` calculés sur `matched`, avec la mention discrète `/ total` quand un filtre d'index est actif (même convention que le bandeau).
-6. **Visionneuse et navigation** : `RevealPhotoLightbox` reçoit `matched` (donc ← → circule uniquement dans les résultats de recherche, dans l'ordre de tri affiché) ; le clic carte continue de surligner la ligne correspondante.
+### 3. Traçabilité
+- Chaque point garde sa position d'origine (`original_lat/lon`) et le motif ; annulation possible point par point ou pour tout le lot.
+- Le compteur « repositionnés / écartés » de la Carte des révélations reflète le lot immédiatement.
 
 ## Détails techniques
 
-- Le tri n'affecte pas la carte mais conditionne l'ordre de la visionneuse → il reste dans le même hook.
-- `useMarcheurSpeciesTags` est appelé une seule fois dans le hook (au lieu du bandeau), ce qui évite un doublon de requête quand la carte doit aussi connaître les tags.
-- Aucune modification des RPC/données : purement présentation et état React.
-- Fichiers touchés : `src/components/propriete/identify/blocks/RevealMapBlock.tsx`, `RevealObservationList.tsx`, nouveau `src/components/propriete/identify/blocks/useRevealIndex.ts`.
+- `src/components/propriete/gps/GpsControlConsole.tsx` : état `selectedIds: Set<string>`, barre d'action groupée, mode `repositioning` étendu à N cibles, saisie de coordonnées, dispersion optionnelle.
+- `src/hooks/propriete/useGpsOverrides.ts` : ajout d'un `useSetGpsOverridesBatch` qui boucle sur la RPC existante `set_observation_gps_override` (séquentiel, avec compte des succès/échecs et un seul toast) — aucune migration nécessaire, la RPC accepte déjà les clés UUID et les URL iNaturalist.
+- Invalidation des caches `observation-gps-overrides` et `exploration-species-pool-rpc` une seule fois en fin de lot.
+- Aucun changement côté base de données ni côté données sources.
