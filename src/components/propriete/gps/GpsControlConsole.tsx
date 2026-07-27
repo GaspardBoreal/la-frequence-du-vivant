@@ -440,6 +440,20 @@ export const GpsControlConsole: React.FC<Props> = ({
                 Aucun point suspect : toutes les observations tombent dans le périmètre.
               </div>
             )}
+            {list.length > 0 && (
+              <div className="px-4 py-2 border-b border-[hsl(var(--ds-line))]/60 flex items-center gap-2 text-[11px] text-[hsl(var(--ds-forest-deep))]/70">
+                <ListChecks className="w-3.5 h-3.5" />
+                <span>Cochez pour agir en lot · Maj+clic = plage</span>
+                {selectedIds.size > 0 && (
+                  <button
+                    onClick={() => setSelectedIds(new Set())}
+                    className="ml-auto underline hover:text-[hsl(var(--ds-forest-deep))]"
+                  >
+                    Tout désélectionner
+                  </button>
+                )}
+              </div>
+            )}
             {list.map((c) => (
               <button
                 key={c.id}
@@ -452,12 +466,31 @@ export const GpsControlConsole: React.FC<Props> = ({
                   setRepositioning(false);
                 }}
                 className={`w-full text-left px-4 py-3 border-b border-[hsl(var(--ds-line))]/60 transition ${
-                  selectedId === c.id
+                  selectedIds.has(c.id)
+                    ? 'bg-[hsl(var(--ds-gold))]/10'
+                    : selectedId === c.id
                     ? 'bg-[hsl(var(--ds-forest))]/10 ring-1 ring-inset ring-[hsl(var(--ds-gold))]/60'
                     : 'hover:bg-black/5'
                 }`}
               >
                 <div className="flex items-start gap-3">
+                  <span
+                    role="checkbox"
+                    aria-checked={selectedIds.has(c.id)}
+                    title="Sélectionner pour une action groupée"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleRow(c, e.shiftKey);
+                    }}
+                    className={`mt-1 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 cursor-pointer ${
+                      selectedIds.has(c.id)
+                        ? 'bg-[hsl(var(--ds-forest))] border-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))]'
+                        : 'border-[hsl(var(--ds-line))]'
+                    }`}
+                  >
+                    {selectedIds.has(c.id) && <Check className="w-3 h-3" />}
+                  </span>
+
                   <CandidateThumb
                     photo={photoFor.get(c.id)}
                     color={STATUS_COLOR[c.geofenceStatus]}
