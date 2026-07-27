@@ -334,6 +334,12 @@ function App() {
                 <AdminTaxonomyCuration />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/gps" element={
+              <AdminAuth>
+                <AdminGpsControl />
+              </AdminAuth>
+            } />
+
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
             <Route path="/api-mcp" element={<ApiMcpPublic />} />
             <Route path="/admin" element={
