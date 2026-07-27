@@ -1,27 +1,24 @@
-## Réponse courte (ce qui est possible aujourd'hui)
+## Objectif
 
-Ces trois points sont déjà corrigeables, mais **un par un** : sur la Carte des révélations, bouton **« Contrôle GPS »** (visible car vous êtes curateur) → dans la console, sélectionner un point → **Repositionner** → cliquer l'emplacement exact sur la carte. À répéter 3 fois. La correction est une surcouche éditoriale (iNaturalist n'est pas modifié) et se propage partout (propriété, marches, exports).
+Dans la console **Contrôle GPS**, pouvoir saisir un marqueur (ex. le Lantana) et le **faire glisser** à sa position exacte, au lieu de passer par « Repositionner (clic carte) » ou par la saisie de coordonnées.
 
-## Ce que je propose d'ajouter pour que ce soit fait en un geste
+## Comportement proposé
 
-### 1. Sélection multiple dans la console GPS
-- Cases à cocher sur les lignes de la liste + `Maj+clic` pour une plage.
-- Raccourci **« Sélectionner toutes les observations de cette espèce »** depuis la fiche du point sélectionné (exactement votre cas : 3 points, même espèce).
-- Barre d'action flottante : « 3 sélectionnés · Repositionner · Écarter · Valider · Annuler correction ».
-
-### 2. Repositionnement groupé, avec 3 façons de désigner la cible
-- **Clic carte** : un clic place les N points au même endroit.
-- **Coller des coordonnées** (`44.8123, 0.1456`) — utile si vous avez la position exacte depuis iNaturalist ou un GPS de terrain.
-- **Copier la position d'un point de référence** : « utiliser la position de ce point » (un point déjà bien placé de la même espèce).
-- Option **« léger éclatement »** (5 m) pour que les 3 marqueurs restent distinguables au lieu de se superposer.
-
-### 3. Traçabilité
-- Chaque point garde sa position d'origine (`original_lat/lon`) et le motif ; annulation possible point par point ou pour tout le lot.
-- Le compteur « repositionnés / écartés » de la Carte des révélations reflète le lot immédiatement.
+1. **Marqueur déplaçable** : seul le point **sélectionné** (et, si un lot est coché, chaque point du lot) devient `draggable`. Les autres restent fixes pour éviter les déplacements accidentels.
+2. **Repère visuel** : le marqueur déplaçable prend un anneau doré + curseur `grab`/`grabbing`, et une petite infobulle « Glissez pour corriger la position ».
+3. **Pendant le glissé** : une ligne pointillée relie la position d'origine à la position courante, avec la distance en mètres affichée en direct (Haversine, utilitaire déjà présent).
+4. **Au relâché** : mini-confirmation flottante « Nouvelle position · 128 m — Enregistrer / Annuler ».
+   - *Enregistrer* → appelle la correction existante (`repositioned`, avec conservation de `original_lat/lon`).
+   - *Annuler* → le marqueur revient instantanément à sa position d'avant.
+5. **Lot** : si plusieurs points sont cochés, glisser l'un d'eux propose « Appliquer à la sélection (N points) » — les autres se déplacent du même vecteur, avec l'option d'éclatement 5 m déjà en place.
+6. **Précision** : maintenir la carte au zoom courant pendant le glissé (pas de recadrage automatique), et rendre le glissé possible jusqu'au zoom 22 déjà autorisé.
 
 ## Détails techniques
 
-- `src/components/propriete/gps/GpsControlConsole.tsx` : état `selectedIds: Set<string>`, barre d'action groupée, mode `repositioning` étendu à N cibles, saisie de coordonnées, dispersion optionnelle.
-- `src/hooks/propriete/useGpsOverrides.ts` : ajout d'un `useSetGpsOverridesBatch` qui boucle sur la RPC existante `set_observation_gps_override` (séquentiel, avec compte des succès/échecs et un seul toast) — aucune migration nécessaire, la RPC accepte déjà les clés UUID et les URL iNaturalist.
-- Invalidation des caches `observation-gps-overrides` et `exploration-species-pool-rpc` une seule fois en fin de lot.
-- Aucun changement côté base de données ni côté données sources.
+- `src/components/propriete/gps/GpsControlConsole.tsx` :
+  - `<Marker draggable={selectedId === c.id || selectedIds.has(c.id)}>` + `eventHandlers` `dragstart` / `drag` / `dragend`.
+  - état local `dragDraft: { id, lat, lng, from: [lat,lng] } | null` pour l'aperçu et la confirmation ; `<Polyline>` pointillée entre `from` et la position courante.
+  - `dragend` → `setDragDraft(...)` (aucune écriture immédiate) ; la validation réutilise `repositionMany([...], lat, lng)` (mode lot : delta appliqué à chaque cible).
+  - désactiver la propagation du clic carte pendant un glissé pour ne pas déclencher `MapClickCapture`.
+- Aucune modification base de données : la RPC `set_observation_gps_override` et le hook `useSetGpsOverridesBatch` couvrent déjà le besoin (clés UUID marcheur et URL iNaturalist).
+- Les modes existants (clic carte, coordonnées collées, point de référence) restent inchangés.

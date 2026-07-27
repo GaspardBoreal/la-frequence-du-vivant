@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
+import { Marker, Popup, Polygon, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
   X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert, Leaf, ExternalLink,
-  ZoomIn, ChevronLeft, ChevronRight, ListChecks, Copy, Layers,
+  ZoomIn, ChevronLeft, ChevronRight, ListChecks, Copy, Layers, Move,
 } from 'lucide-react';
 import { useGpsCandidatePhotos, type CandidatePhoto } from '@/hooks/gps/useGpsCandidatePhotos';
+import { haversineM } from '@/utils/geoDistance';
 
 
 import { RichMap } from '@/components/maps';
@@ -137,6 +138,10 @@ export const GpsControlConsole: React.FC<Props> = ({
   const [coordsInput, setCoordsInput] = useState('');
   const [spread, setSpread] = useState(true);
   const [repositioning, setRepositioning] = useState(false);
+  /** Glisser-déposer : position provisoire d'un marqueur, non encore enregistrée. */
+  const [dragDraft, setDragDraft] = useState<
+    { id: string; from: [number, number]; to: [number, number]; dragging: boolean } | null
+  >(null);
   const [scope, setScope] = useState<'suspects' | 'all'>('suspects');
   const setOverride = useSetGpsOverride();
   const setOverridesBatch = useSetGpsOverridesBatch();
@@ -312,6 +317,54 @@ export const GpsControlConsole: React.FC<Props> = ({
     setRepositioning(false);
     setSelectedIds(new Set());
   };
+
+  /* ---------- Glisser-déposer d'un marqueur ---------- */
+
+  /** Déplace N observations du même vecteur (glissé appliqué à la sélection). */
+  const repositionByDelta = async (targets: GpsCandidate[], dLat: number, dLng: number) => {
+    const inputs = targets
+      .map((c) => {
+        const t = targetOf(c);
+        if (!t) return null;
+        return {
+          kind: t.kind,
+          key: t.key,
+          status: 'repositioned' as const,
+          lat: c.lat + dLat,
+          lon: c.lng + dLng,
+          originalLat: c.originalLat ?? c.lat,
+          originalLon: c.originalLng ?? c.lng,
+          reason: 'Repositionnement curateur (glisser-déposer, lot)',
+          proprieteId: proprieteId ?? null,
+        };
+      })
+      .filter(Boolean) as any[];
+    if (!inputs.length) return;
+    await setOverridesBatch.mutateAsync(inputs);
+  };
+
+  const dragCandidate = useMemo(
+    () => (dragDraft ? list.find((c) => c.id === dragDraft.id) ?? null : null),
+    [dragDraft, list],
+  );
+
+  const dragDistanceM = dragDraft
+    ? Math.round(haversineM(dragDraft.from[0], dragDraft.from[1], dragDraft.to[0], dragDraft.to[1]))
+    : 0;
+
+  const commitDrag = async (applyToBatch: boolean) => {
+    if (!dragDraft || !dragCandidate) return;
+    const [lat, lng] = dragDraft.to;
+    if (applyToBatch && batch.length > 1) {
+      await repositionByDelta(batch, lat - dragDraft.from[0], lng - dragDraft.from[1]);
+      setSelectedIds(new Set());
+    } else {
+      await repositionMany([dragCandidate], lat, lng);
+    }
+    setDragDraft(null);
+  };
+
+
 
   const actMany = async (targets: GpsCandidate[], status: 'excluded' | 'validated', reason: string) => {
     const inputs = targets
@@ -602,19 +655,51 @@ export const GpsControlConsole: React.FC<Props> = ({
                 />
               ))}
 
-              {list.map((c) => (
+              {dragDraft && (
+                <Polyline
+                  positions={[dragDraft.from, dragDraft.to]}
+                  pathOptions={{ color: '#C9A227', weight: 2, dashArray: '5 6' }}
+                />
+              )}
+
+              {list.map((c) => {
+                const movable = selectedId === c.id || selectedIds.has(c.id);
+                const draft = dragDraft?.id === c.id ? dragDraft : null;
+                return (
                 <Marker
                   key={c.id}
-                  position={[c.lat, c.lng]}
-                  eventHandlers={{ click: () => setSelectedId(c.id) }}
+                  position={draft ? draft.to : [c.lat, c.lng]}
+                  draggable={movable}
+                  title={movable ? 'Glissez pour corriger la position' : undefined}
+                  eventHandlers={{
+                    click: () => setSelectedId(c.id),
+                    dragstart: () => {
+                      setSelectedId(c.id);
+                      setDragDraft({ id: c.id, from: [c.lat, c.lng], to: [c.lat, c.lng], dragging: true });
+                    },
+                    drag: (e: any) => {
+                      const ll = e.target.getLatLng();
+                      setDragDraft((d) => (d && d.id === c.id ? { ...d, to: [ll.lat, ll.lng] } : d));
+                    },
+                    dragend: (e: any) => {
+                      const ll = e.target.getLatLng();
+                      setDragDraft((d) =>
+                        d && d.id === c.id ? { ...d, to: [ll.lat, ll.lng], dragging: false } : d,
+                      );
+                    },
+                  }}
                   icon={L.divIcon({
                     className: 'gps-curation-marker',
                     iconSize: [20, 20],
                     iconAnchor: [10, 10],
-                    html: `<div style="width:18px;height:18px;border-radius:50%;background:${
+                    html: `<div style="width:18px;height:18px;border-radius:50%;cursor:${
+                      movable ? 'grab' : 'pointer'
+                    };background:${
                       STATUS_COLOR[c.geofenceStatus]
                     };opacity:${c.overrideStatus === 'excluded' ? 0.35 : 1};box-shadow:0 0 0 ${
-                      selectedIds.has(c.id)
+                      draft
+                        ? '3px #FAF8F3, 0 0 0 7px #C9A227'
+                        : selectedIds.has(c.id)
                         ? '3px #FAF8F3, 0 0 0 6px #C9A227'
                         : selectedId === c.id
                         ? '4px #FAF8F3, 0 0 0 6px ' + STATUS_COLOR[c.geofenceStatus]
@@ -622,6 +707,7 @@ export const GpsControlConsole: React.FC<Props> = ({
                     };"></div>`,
                   })}
                 >
+
                   <Popup>
                     <div style={{ minWidth: 160 }}>
                       {photoFor.get(c.id) && (
@@ -708,7 +794,8 @@ export const GpsControlConsole: React.FC<Props> = ({
                   </Popup>
 
                 </Marker>
-              ))}
+                );
+              })}
             </RichMap>
 
             {repositioning && (
@@ -718,6 +805,53 @@ export const GpsControlConsole: React.FC<Props> = ({
                   : 'Cliquez sur la carte pour poser la position corrigée'}
               </div>
             )}
+
+            {/* Aide au glissé + confirmation */}
+            {!repositioning && !dragDraft && (selectedId || selectedIds.size > 0) && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-forest-deep))]/90 text-[hsl(var(--ds-cream))] text-[11px] shadow-lg flex items-center gap-1.5">
+                <Move className="w-3 h-3" /> Glissez le point doré pour corriger sa position
+              </div>
+            )}
+
+            <AnimatePresence>
+              {dragDraft && !dragDraft.dragging && dragCandidate && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="absolute top-3 left-1/2 -translate-x-1/2 z-[1002] rounded-2xl border border-[hsl(var(--ds-gold))]/60 bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] px-4 py-2.5 shadow-2xl flex items-center gap-3 flex-wrap max-w-[92%]"
+                >
+                  <span className="text-[12px] flex items-center gap-1.5">
+                    <Move className="w-3.5 h-3.5 text-[hsl(var(--ds-gold))]" />
+                    Nouvelle position · <strong>{dragDistanceM} m</strong>
+                  </span>
+                  <button
+                    onClick={() => commitDrag(false)}
+                    disabled={setOverridesBatch.isPending}
+                    className="text-[11px] px-3 py-1.5 rounded-full bg-[hsl(var(--ds-gold))] text-[hsl(var(--ds-forest-deep))] flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Check className="w-3 h-3" /> Enregistrer
+                  </button>
+                  {batch.length > 1 && selectedIds.has(dragDraft.id) && (
+                    <button
+                      onClick={() => commitDrag(true)}
+                      disabled={setOverridesBatch.isPending}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <ListChecks className="w-3 h-3" /> Appliquer à la sélection ({batch.length})
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setDragDraft(null)}
+                    className="text-[11px] px-3 py-1.5 rounded-full border border-[hsl(var(--ds-cream))]/40 flex items-center gap-1"
+                  >
+                    <Undo2 className="w-3 h-3" /> Annuler
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+
 
             {/* Barre d'action groupée */}
             {batch.length > 0 && (
