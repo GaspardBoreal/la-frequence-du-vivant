@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Linkedin, UserCircle } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
-import ThemeToggle from '@/components/community/ThemeToggle';
+
 import ShareButton from '@/components/share/ShareButton';
 
 export type PublicTopBarTone = 'light' | 'dark' | 'glass' | 'auto';
@@ -96,7 +96,7 @@ const PublicTopBar: React.FC<PublicTopBarProps> = ({
           {leftSlot}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <ThemeToggle />
+          
           <Link
             to={connectHref}
             title={connectTitle}

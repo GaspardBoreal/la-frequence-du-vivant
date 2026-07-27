@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { useUserAppsAccess } from '@/hooks/useUserAppsAccess';
 import AppSwitcher from '@/components/community/AppSwitcher';
-import ThemeToggle from '@/components/community/ThemeToggle';
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { usePropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { useProprieteHeroPhotos } from '@/hooks/propriete/useProprieteHeroPhotos';
@@ -186,7 +186,7 @@ const CanopyHero: React.FC<{
             )}
           </div>
           <AppSwitcher userId={userId} currentContext={slug} />
-          <ThemeToggle />
+
         </div>
       </div>
 

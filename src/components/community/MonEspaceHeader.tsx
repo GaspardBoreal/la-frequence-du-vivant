@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, ArrowLeft } from 'lucide-react';
-import ThemeToggle from './ThemeToggle';
+
 import { Link } from 'react-router-dom';
 import RoleBadge from './RoleBadge';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
@@ -97,7 +97,7 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
               <span className="text-amber-500 dark:text-amber-400 text-[10px]">★</span>
               <span className="text-foreground text-xs font-bold">{totalFrequences}</span>
             </motion.div>
-            <ThemeToggle />
+            
             <button onClick={() => setSettingsOpen(true)} className="text-muted-foreground hover:text-foreground transition-colors p-1 flex-shrink-0">
               <Settings className="w-4 h-4" />
             </button>
