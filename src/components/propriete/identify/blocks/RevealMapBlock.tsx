@@ -1,10 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Marker, Popup, GeoJSON, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Filter, Camera, Maximize2, Minimize2, X, Crosshair, ShieldCheck } from 'lucide-react';
+import { RevealPhotoLightbox } from './RevealPhotoLightbox';
+import { RevealObservationList } from './RevealObservationList';
+
 import { supabase } from '@/integrations/supabase/client';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
@@ -122,6 +125,19 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [refitNonce, setRefitNonce] = useState(0);
   const [gpsConsole, setGpsConsole] = useState(false);
   const [showParcels, setShowParcels] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [lightboxId, setLightboxId] = useState<string | null>(null);
+  const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+
+  /** Sélection carte → la liste défile jusqu'à la ligne correspondante. */
+  useEffect(() => {
+    if (!selectedId) return;
+    const el = rowRefs.current.get(selectedId);
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selectedId]);
+
+
 
   /** Parcelles enregistrées de la propriété (mêmes données que Portrait → Cadastre). */
   const drawnParcelles = useMemo(
@@ -441,16 +457,43 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         {filtered.map((w) => {
           const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
           return (
-            <Marker key={w.id} position={[w.lat, w.lng]} icon={iconFor(color, w.source)}>
+            <Marker
+              key={w.id}
+              position={[w.lat, w.lng]}
+              icon={iconFor(color, w.source)}
+              ref={(m) => {
+                if (m) markerRefs.current.set(w.id, m as unknown as L.Marker);
+                else markerRefs.current.delete(w.id);
+              }}
+              eventHandlers={{ click: () => setSelectedId(w.id) }}
+            >
               <Popup>
                 <div style={{ minWidth: 160 }}>
                   {w.photoUrl && (
-                    <img
-                      src={w.photoUrl}
-                      alt={w.scientificName}
-                      style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setLightboxId(w.id)}
+                      title="Agrandir la photo"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: 0,
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'zoom-in',
+                      }}
+                    >
+                      <img
+                        src={w.photoUrl}
+                        alt={w.scientificName}
+                        style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
+                      />
+                      <span style={{ fontSize: 10, color: '#2f5d3a', display: 'block', marginBottom: 4 }}>
+                        🔍 Cliquer pour agrandir
+                      </span>
+                    </button>
                   )}
+
                   <div style={{ fontWeight: 600, fontSize: 12 }}>
                     {displayNameFor(w)}
                   </div>
@@ -539,8 +582,10 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
           )}
 
           <div className="mt-2 text-[10px] italic text-[hsl(var(--ds-forest-deep))]/55 text-center">
-            Cliquez un point pour voir la photo et la date d'observation.
+            Cliquez un point pour voir la photo, puis la vignette pour l'agrandir. En plein écran, un
+            bandeau latéral liste toutes les observations.
           </div>
+
 
           {/* Fullscreen portal */}
           {fullscreen && createPortal(
@@ -584,7 +629,25 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                   {filtersBar}
                 </div>
 
-                <div className="flex-1 min-h-0 p-3 md:p-4">{mapNode('100%')}</div>
+                <div className="flex-1 min-h-0 flex">
+                  <RevealObservationList
+                    items={filtered}
+                    selectedId={selectedId}
+                    colorFor={(w) => KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others}
+                    displayNameFor={displayNameFor}
+                    onSelect={(w) => {
+                      setSelectedId(w.id);
+                      markerRefs.current.get(w.id)?.openPopup();
+                    }}
+                    onZoomPhoto={(w) => {
+                      setSelectedId(w.id);
+                      setLightboxId(w.id);
+                    }}
+                    rowRefs={rowRefs}
+                  />
+                  <div className="flex-1 min-w-0 p-3 md:p-4">{mapNode('100%')}</div>
+                </div>
+
               </motion.div>
             </AnimatePresence>,
             document.body,
@@ -603,7 +666,23 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
           displayNameFor={displayNameFor}
         />
       )}
+
+      <AnimatePresence>
+        {lightboxId && (
+          <RevealPhotoLightbox
+            items={filtered}
+            currentId={lightboxId}
+            onChange={(id) => {
+              setLightboxId(id);
+              setSelectedId(id);
+            }}
+            onClose={() => setLightboxId(null)}
+            displayNameFor={displayNameFor}
+          />
+        )}
+      </AnimatePresence>
     </AnalyzeCard>
+
 
   );
 };
