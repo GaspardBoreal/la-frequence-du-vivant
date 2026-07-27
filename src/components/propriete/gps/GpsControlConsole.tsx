@@ -702,24 +702,31 @@ export const GpsControlConsole: React.FC<Props> = ({
                       );
                     },
                   }}
-                  icon={L.divIcon({
-                    className: 'gps-curation-marker',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10],
-                    html: `<div style="width:18px;height:18px;border-radius:50%;cursor:${
-                      movable ? 'grab' : 'pointer'
-                    };background:${
-                      STATUS_COLOR[c.geofenceStatus]
-                    };opacity:${c.overrideStatus === 'excluded' ? 0.35 : 1};box-shadow:0 0 0 ${
-                      draft
-                        ? '3px #FAF8F3, 0 0 0 7px #C9A227'
-                        : selectedIds.has(c.id)
-                        ? '3px #FAF8F3, 0 0 0 6px #C9A227'
-                        : selectedId === c.id
-                        ? '4px #FAF8F3, 0 0 0 6px ' + STATUS_COLOR[c.geofenceStatus]
-                        : '2px #FAF8F3'
-                    };"></div>`,
-                  })}
+                  icon={
+                    movable
+                      ? L.divIcon({
+                          className: 'gps-curation-marker gps-curation-handle',
+                          iconSize: [34, 34],
+                          iconAnchor: [17, 17],
+                          html: `<div style="position:relative;width:34px;height:34px;cursor:grab;">
+                            <div style="position:absolute;inset:0;border-radius:50%;background:#C9A227;opacity:.22;animation:gpsPulse 1.6s ease-out infinite;"></div>
+                            <div style="position:absolute;inset:7px;border-radius:50%;background:${
+                              STATUS_COLOR[c.geofenceStatus]
+                            };box-shadow:0 0 0 3px #FAF8F3,0 0 0 6px #C9A227;display:flex;align-items:center;justify-content:center;color:#FAF8F3;font-size:12px;line-height:1;">✥</div>
+                            <div style="position:absolute;left:50%;transform:translateX(-50%);top:-22px;white-space:nowrap;background:#C9A227;color:#1e2a20;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.25);">Glissez-moi</div>
+                          </div>`,
+                        })
+                      : L.divIcon({
+                          className: 'gps-curation-marker',
+                          iconSize: [20, 20],
+                          iconAnchor: [10, 10],
+                          html: `<div style="width:18px;height:18px;border-radius:50%;cursor:pointer;background:${
+                            STATUS_COLOR[c.geofenceStatus]
+                          };opacity:${
+                            c.overrideStatus === 'excluded' ? 0.35 : 1
+                          };box-shadow:0 0 0 2px #FAF8F3;"></div>`,
+                        })
+                  }
                 >
 
                   <Popup>
