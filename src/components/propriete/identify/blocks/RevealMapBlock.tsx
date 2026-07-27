@@ -125,6 +125,19 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   const [refitNonce, setRefitNonce] = useState(0);
   const [gpsConsole, setGpsConsole] = useState(false);
   const [showParcels, setShowParcels] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [lightboxId, setLightboxId] = useState<string | null>(null);
+  const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+
+  /** Sélection carte → la liste défile jusqu'à la ligne correspondante. */
+  useEffect(() => {
+    if (!selectedId) return;
+    const el = rowRefs.current.get(selectedId);
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selectedId]);
+
+
 
   /** Parcelles enregistrées de la propriété (mêmes données que Portrait → Cadastre). */
   const drawnParcelles = useMemo(
