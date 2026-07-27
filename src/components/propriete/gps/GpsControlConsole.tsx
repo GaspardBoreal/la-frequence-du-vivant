@@ -528,7 +528,17 @@ export const GpsControlConsole: React.FC<Props> = ({
             )}
           </section>
         </div>
+
+        {lightbox && (
+          <div
+            className="fixed inset-0 z-[2000] bg-black/85 flex items-center justify-center p-6"
+            onClick={() => setLightbox(null)}
+          >
+            <img src={lightbox} alt="" className="max-h-[90vh] max-w-[92vw] rounded-xl shadow-2xl" />
+          </div>
+        )}
       </motion.div>
+
     </AnimatePresence>,
     document.body,
   );
