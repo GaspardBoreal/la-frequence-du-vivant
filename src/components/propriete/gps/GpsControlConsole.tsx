@@ -5,9 +5,10 @@ import { Marker, Popup, Polygon, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
   X, Crosshair, EyeOff, Check, Undo2, MapPin, ShieldAlert, Leaf, ExternalLink,
-  ZoomIn, ChevronLeft, ChevronRight, ListChecks, Copy, Layers,
+  ZoomIn, ChevronLeft, ChevronRight, ListChecks, Copy, Layers, Move,
 } from 'lucide-react';
 import { useGpsCandidatePhotos, type CandidatePhoto } from '@/hooks/gps/useGpsCandidatePhotos';
+import { haversineM } from '@/utils/geoDistance';
 
 
 import { RichMap } from '@/components/maps';
