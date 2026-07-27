@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import {
   useSetGpsOverride,
   useClearGpsOverride,
+  useGpsOverrides,
   type GpsOverrideKind,
 } from '@/hooks/propriete/useGpsOverrides';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
