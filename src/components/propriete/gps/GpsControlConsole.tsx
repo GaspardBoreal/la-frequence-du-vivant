@@ -655,19 +655,51 @@ export const GpsControlConsole: React.FC<Props> = ({
                 />
               ))}
 
-              {list.map((c) => (
+              {dragDraft && (
+                <Polyline
+                  positions={[dragDraft.from, dragDraft.to]}
+                  pathOptions={{ color: '#C9A227', weight: 2, dashArray: '5 6' }}
+                />
+              )}
+
+              {list.map((c) => {
+                const movable = selectedId === c.id || selectedIds.has(c.id);
+                const draft = dragDraft?.id === c.id ? dragDraft : null;
+                return (
                 <Marker
                   key={c.id}
-                  position={[c.lat, c.lng]}
-                  eventHandlers={{ click: () => setSelectedId(c.id) }}
+                  position={draft ? draft.to : [c.lat, c.lng]}
+                  draggable={movable}
+                  title={movable ? 'Glissez pour corriger la position' : undefined}
+                  eventHandlers={{
+                    click: () => setSelectedId(c.id),
+                    dragstart: () => {
+                      setSelectedId(c.id);
+                      setDragDraft({ id: c.id, from: [c.lat, c.lng], to: [c.lat, c.lng], dragging: true });
+                    },
+                    drag: (e: any) => {
+                      const ll = e.target.getLatLng();
+                      setDragDraft((d) => (d && d.id === c.id ? { ...d, to: [ll.lat, ll.lng] } : d));
+                    },
+                    dragend: (e: any) => {
+                      const ll = e.target.getLatLng();
+                      setDragDraft((d) =>
+                        d && d.id === c.id ? { ...d, to: [ll.lat, ll.lng], dragging: false } : d,
+                      );
+                    },
+                  }}
                   icon={L.divIcon({
                     className: 'gps-curation-marker',
                     iconSize: [20, 20],
                     iconAnchor: [10, 10],
-                    html: `<div style="width:18px;height:18px;border-radius:50%;background:${
+                    html: `<div style="width:18px;height:18px;border-radius:50%;cursor:${
+                      movable ? 'grab' : 'pointer'
+                    };background:${
                       STATUS_COLOR[c.geofenceStatus]
                     };opacity:${c.overrideStatus === 'excluded' ? 0.35 : 1};box-shadow:0 0 0 ${
-                      selectedIds.has(c.id)
+                      draft
+                        ? '3px #FAF8F3, 0 0 0 7px #C9A227'
+                        : selectedIds.has(c.id)
                         ? '3px #FAF8F3, 0 0 0 6px #C9A227'
                         : selectedId === c.id
                         ? '4px #FAF8F3, 0 0 0 6px ' + STATUS_COLOR[c.geofenceStatus]
@@ -675,6 +707,7 @@ export const GpsControlConsole: React.FC<Props> = ({
                     };"></div>`,
                   })}
                 >
+
                   <Popup>
                     <div style={{ minWidth: 160 }}>
                       {photoFor.get(c.id) && (
