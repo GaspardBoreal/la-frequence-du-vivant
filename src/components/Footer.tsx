@@ -86,13 +86,6 @@ const Footer = ({ variant = 'default' }: FooterProps) => {
                     <Leaf size={16} />
                     <span>Explorations Sensibles</span>
                   </Link>
-                  <a
-                    href="/bioacoustique/la-ou-elle-se-jette-je-me-redresse-a-bec-dambes--bec-dambes-gauriac"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-                  >
-                    <MapPin size={16} />
-                    <span>Marches Sensibles</span>
-                  </a>
                   <Link
                     to="/marches-du-vivant"
                     className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
