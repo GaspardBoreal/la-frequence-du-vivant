@@ -2098,6 +2098,14 @@
   font-size: 7.5pt; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
+.flora-atlas-field {
+  position: absolute; bottom: 1mm; right: 1mm;
+  padding: 0.3mm 1.2mm; border-radius: 1mm;
+  background: rgba(107, 124, 90, 0.92); color: #fdf9f2;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 5.2pt; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+}
+
 .flora-atlas-cell figcaption { margin-top: 1.4mm; display: block; }
 .flora-atlas-name {
   display: block;
