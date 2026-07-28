@@ -1223,6 +1223,32 @@
 .combined-print-analyze-second {
   padding-top: 24mm;
 }
+/* Pages « J'identifie » dans le cahier complet */
+.combined-print-identify {
+  padding: 18mm 18mm 16mm;
+  page-break-after: always;
+  break-after: page;
+  background: #fbf7ee;
+}
+.combined-print-identify .identify-print-root {
+  width: 100%;
+  height: auto;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.combined-print-identify-second {
+  padding-top: 24mm;
+}
+.portrait-print-page.flora-atlas-page {
+  padding: 16mm 15mm 14mm;
+  background: #fbf7ee;
+}
+
+
 
 .combined-print-divider {
   width: 210mm;
