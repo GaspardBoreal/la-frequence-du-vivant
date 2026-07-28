@@ -121,7 +121,7 @@ export const ItemsEditor: React.FC<Props> = ({
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -132,12 +132,12 @@ export const ItemsEditor: React.FC<Props> = ({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-3 py-1.5 text-xs text-[hsl(var(--ds-forest-deep))] outline-none focus:border-[hsl(var(--ds-gold))]"
+          className="flex-1 min-w-0 rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-3 py-1.5 text-xs text-[hsl(var(--ds-forest-deep))] outline-none focus:border-[hsl(var(--ds-gold))]"
         />
         <button
           type="button"
           onClick={addDraft}
-          className="rounded-full border border-[hsl(var(--ds-forest))] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))] hover:text-[hsl(var(--ds-cream))] transition-colors"
+          className="shrink-0 whitespace-nowrap rounded-full border border-[hsl(var(--ds-forest))] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))] hover:text-[hsl(var(--ds-cream))] transition-colors"
         >
           Ajouter
         </button>
