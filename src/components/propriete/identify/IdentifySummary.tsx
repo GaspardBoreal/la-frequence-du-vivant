@@ -637,6 +637,9 @@ export const IdentifySummary: React.FC<Props> = ({
               onEditBlock={onEditBlock}
               printOnly={printOnly}
             >
+              {!printOnly ? (
+                <RichPoles scores={scores} plantCount={plants.length} sentence={sentence} />
+              ) : (
               <div className="space-y-2">
                 {scores.map((s) => (
                   <div key={s.pole.key} className="print-avoid-break">
@@ -660,6 +663,8 @@ export const IdentifySummary: React.FC<Props> = ({
                   </div>
                 ))}
               </div>
+              )}
+
             </Section>
           </div>
         </>
