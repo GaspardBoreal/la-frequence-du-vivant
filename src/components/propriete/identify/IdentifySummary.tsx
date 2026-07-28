@@ -759,10 +759,25 @@ export const IdentifySummary: React.FC<Props> = ({
               </div>
             )}
           </Section>
+        </div>
+      )}
+
+      {showP3 && (
+        <div className={`${printSection === 'all' ? 'mt-8' : 'mt-0'} space-y-8`}>
+          {printOnly && sentence && (
+            <div className="identify-narration-exergue print-avoid-break">
+              <div className="text-[9px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/70">
+                Lecture dominante
+              </div>
+              <p className="mt-1.5 font-serif italic text-xl text-[hsl(var(--ds-forest-deep))] leading-snug">
+                {sentence}
+              </p>
+            </div>
+          )}
 
           <Section
             number={4}
-            title="Narration du diagnostic"
+            title="Ce que la flore raconte"
             blockId="narration"
             onEditBlock={onEditBlock}
             printOnly={printOnly}
@@ -770,9 +785,23 @@ export const IdentifySummary: React.FC<Props> = ({
           >
             {(state.flora_conclusion ?? '').trim() ? (
               printOnly ? (
-                <p className="font-serif italic text-lg text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
-                  {state.flora_conclusion}
-                </p>
+                <div className="identify-narration-print">
+                  <div className="identify-narration-body">
+                    {(state.flora_conclusion ?? '')
+                      .trim()
+                      .split(/\n{2,}/)
+                      .filter((p) => p.trim())
+                      .map((para, i) => (
+                        <p key={i} className={i === 0 ? 'identify-narration-lead' : undefined}>
+                          {para.trim()}
+                        </p>
+                      ))}
+                  </div>
+                  <div className="identify-narration-trace">
+                    Texte auto-généré à partir des observations du site, relu et validé par le
+                    propriétaire · {ECO_AXES.eau ? '' : ''}Fréquence du Vivant
+                  </div>
+                </div>
               ) : (
                 <RichNarration text={(state.flora_conclusion ?? '').trim()} />
               )
