@@ -74,22 +74,30 @@ const OAuthConsent: React.FC = () => {
 
   const decide = async (approve: boolean) => {
     setBusy(true);
-    const { data, error: err } = approve
-      ? await oauthApi().approveAuthorization(authorizationId)
-      : await oauthApi().denyAuthorization(authorizationId);
-    if (err) {
+    try {
+      const api = oauthApi();
+      if (!api) throw new Error("Module OAuth indisponible.");
+      const { data, error: err } = approve
+        ? await api.approveAuthorization(authorizationId)
+        : await api.denyAuthorization(authorizationId);
+      if (err) {
+        setBusy(false);
+        setError(err.message ?? String(err));
+        return;
+      }
+      const target = data?.redirect_url ?? data?.redirect_to;
+      if (!target) {
+        setBusy(false);
+        setError("Le serveur d'autorisation n'a renvoyé aucune redirection.");
+        return;
+      }
+      window.location.href = target;
+    } catch (e: any) {
       setBusy(false);
-      setError(err.message);
-      return;
+      setError(e?.message ?? "Erreur inattendue pendant l'autorisation.");
     }
-    const target = data?.redirect_url ?? data?.redirect_to;
-    if (!target) {
-      setBusy(false);
-      setError("Le serveur d'autorisation n'a renvoyé aucune redirection.");
-      return;
-    }
-    window.location.href = target;
   };
+
 
   return (
     <main className="min-h-screen bg-background flex items-center justify-center p-6">
