@@ -69,6 +69,7 @@ interface Props {
     excluded: PaletteExclusion[];
     implementation: PalettePlanStep[];
     notes?: string | null;
+    presence?: Record<string, { count: number; zoneNames?: string[] }>;
   } | null;
   paletteCompletedAt?: string | null;
   /** Propriété — photos de terrain prioritaires dans l'atlas du cortège. */
@@ -331,6 +332,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               excluded={palette.excluded}
               implementation={palette.implementation}
               notes={palette.notes}
+              presence={palette.presence}
               completedAt={paletteCompletedAt ?? null}
               propertyName={propertyName}
               commune={proprieteVille}
@@ -345,6 +347,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               excluded={palette.excluded}
               implementation={palette.implementation}
               notes={palette.notes}
+              presence={palette.presence}
               completedAt={paletteCompletedAt ?? null}
               propertyName={propertyName}
               commune={proprieteVille}

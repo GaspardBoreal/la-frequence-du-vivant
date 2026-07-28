@@ -380,6 +380,7 @@ export const TabPalette: React.FC<Props> = ({
             excluded={exclusions}
             implementation={implementation}
             notes={palette.state.notes}
+            presence={excludedPresenceRecord}
             completedAt={palette.completedAt}
             propertyName={proprieteNom}
             commune={proprieteVille}
@@ -418,6 +419,7 @@ export const TabPalette: React.FC<Props> = ({
                     excluded: exclusions,
                     implementation,
                     notes: palette.state.notes,
+                    presence: excludedPresenceRecord,
                   }
                 : null
             }
@@ -455,6 +457,7 @@ export const TabPalette: React.FC<Props> = ({
           excluded={exclusions}
           implementation={implementation}
           notes={palette.state.notes}
+          presence={excludedPresenceRecord}
           completedAt={palette.completedAt}
           propertyName={proprieteNom}
           commune={proprieteVille}
