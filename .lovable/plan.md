@@ -1,42 +1,30 @@
-## Objectif
+## Constat
 
-Apporter à l'étape 3 « J'identifie la flore en place » le même rituel que les étapes 1 et 2 : synthèse scellée, impression de l'étape seule ou du cahier complet, et un **atlas botanique** imprimant en petites vignettes toutes les bio-indicatrices cochées, 24 par page.
+La page n'est pas vide : elle est **imprimée à opacité quasi nulle**. Tout le contenu est bien présent dans l'aperçu (titre, lecture dominante, cortège, 8 pôles, pied de page, 3 feuilles), mais en gris très pâle.
 
-## 1. Synthèse scellée « IdentifySummary »
+## Cause identifiée
 
-Nouveau composant `IdentifySummary.tsx` (calque de `AnalyzeSummary`), affiché dès que l'étape est validée :
+`IdentifySummary.tsx` (lignes 146-149) rend sa racine en `motion.article` avec `initial={{ opacity: 0, y: 12 }}` → `animate={{ opacity: 1 }}`.
 
-- Bandeau « Flore verrouillée · prête pour le rapport client » avec date de scellé, boutons **Imprimer** et **Rouvrir en édition**.
-- 6 sections numérotées, chacune éditable par un crayon qui ramène au bloc concerné :
-  1. **01. Cortège révélé** — nombre de plantes cochées, strates, sources (marcheurs / saisie manuelle).
-  2. **02. Les 4 pôles** — barres d'intensité (Azote, Humidité, Compaction, pH) avec niveau 1→5 et libellé.
-  3. **03. Concordance sol ↔ flore** — ICG /16 arrondi, jauge, et les 8 lignes de concordance.
-  4. **04. Lecture dominante** — phrase de synthèse auto (narratePoleScores) + conclusion rédigée.
-  5. **05. Notes de terrain**.
-  6. **06. Sources** — mention CNPF 2018 (Flore forestière française) + iNaturalist.
-- `printOnly` + `printSection` (`p1` / `p2`) pour la pagination A4, comme AnalyzeSummary.
-- `TabIdentify` bascule en mode `summary` / `edit` selon `completed_at`.
+Or le contenu d'impression est monté dans un portail `#identify-print-portal` qui est `display: none` hors impression (`index.css`). Une animation d'opacité Framer Motion (WAAPI / composited) lancée sur un sous-arbre non rendu ne progresse pas : au moment où `window.print()` bascule le portail en `display: block`, l'élément reste figé près de son état initial `opacity: 0`. D'où la page fantôme.
 
-## 2. Atlas des bio-indicatrices — 24 vignettes par page
+## Correction
 
-Nouveau composant `FloraAtlasPrintPlates.tsx` :
+1. **`IdentifySummary.tsx`** — en mode `printOnly`, rendre un `<article>` statique (pas de `motion`, pas d'`initial/animate`). L'animation reste en place pour l'affichage écran de la synthèse scellée.
+2. **Filet de sécurité CSS (`index.css`)** — dans les blocs `@media print`, pour les trois portails d'impression (`#identify-print-portal`, `#analyze-print-portal`, `body.combined-printing`) :
+   ```
+   * { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; filter: none !important; }
+   ```
+   sauf les opacités décoratives volontaires — la règle sera portée uniquement sur les racines `.identify-print-root`, `.analyze-print-root`, `.observe-print-root` et leurs descendants directs animés, pour ne pas écraser les pastilles de l'atlas (qui utilisent `opacity` inline comme échelle de valeur). Concrètement : cibler `[style*="opacity"]` issus de Framer Motion via les classes racines, et laisser `.flora-atlas-pastille` intacte.
+3. **Même prévention pour l'étape 2 et le cahier complet** — `AnalyzeSummary.tsx` et `ObserveSummary.tsx` utilisent le même schéma `motion.article` + `printOnly` ; appliquer le même rendu statique pour éviter des impressions pâles aléatoires (le bug est latent, il dépend du timing de rasterisation).
 
-- Grille A4 **4 colonnes × 6 lignes = 24 vignettes/page**, pagination automatique (`Math.ceil(n/24)`).
-- Chaque vignette : photo carrée (via `SpeciesThumb` / cache espèces, repli pictogramme strate), **nom français en gras**, *nom latin en italique*, et une ligne de 4 micro-pastilles colorées (N · H · C · pH) reprenant les valeurs écologiques CNPF.
-- Bandeau de tête de page : « Atlas du cortège · n espèces bio-indicatrices », filet fin, pied de page paginé.
-- Traitement d'impression soigné : fond crème, filets sépia, pas d'ombres (rendu papier), `break-inside: avoid` sur chaque vignette.
-- Légende des pastilles imprimée en pied de la dernière page + source CNPF 2018.
+## Vérification
 
-## 3. Impression : étape seule et cahier complet
+Rendu de la page d'impression en émulation `media: print` (Playwright) sur `/propriete/jardin-monde-deviat`, capture des 3 pages, contrôle que l'opacité calculée des racines vaut 1 et que l'atlas conserve ses pastilles graduées.
 
-- Nouveau `IdentifyPrintLayout.tsx` : page 1 (cortège + pôles), page 2 (concordance + narration + notes), puis les pages d'atlas.
-- `PrintChoiceDialog` : ajout du choix `identify` et extension du cahier complet en **Portrait + J'observe + J'analyse + J'identifie**, avec une nouvelle miniature aquarelle (feuille + loupe) et libellés adaptés selon l'étape d'origine.
-- `CombinedPrintLayout` : nouvelle page de garde « Étape 3 · J'identifie la flore en place » (halo végétal, citation en italique), puis les pages de synthèse et l'atlas ; le compteur `insertedPageCount` intègre les pages d'atlas.
-- Branchement dans `TabIdentify` de `usePrintCombined` + `PrintPreparationOverlay` (progression, reprises, garantie « aucune photo manquante ») déjà en place dans les autres étapes — les photos d'espèces entrent dans le préchargement.
+## Fichiers touchés
 
-## Détails techniques
-
-- Fichiers créés : `src/components/propriete/identify/IdentifySummary.tsx`, `src/components/propriete/identify/print/FloraAtlasPrintPlates.tsx`, `src/components/propriete/print/IdentifyPrintLayout.tsx`.
-- Fichiers modifiés : `TabIdentify.tsx` (mode summary/edit, dialogue et portails d'impression), `PrintChoiceDialog.tsx` (choix `identify`), `CombinedPrintLayout.tsx` (page de garde + slot étape 3), CSS d'impression (`.identify-print-page`, `.flora-atlas-grid`).
-- Source des vignettes : `state.observed_plants` croisé avec le KB `plantIndicatorKb` (nom latin, nom FR, valeurs N/H/C/pH), photos via le cache espèces existant.
-- Aucun changement de schéma : `propriete_flora_diagnostics.completed_at` sert déjà de verrou.
+- `src/components/propriete/identify/IdentifySummary.tsx`
+- `src/components/propriete/analyze/AnalyzeSummary.tsx`
+- `src/components/propriete/observe/ObserveSummary.tsx`
+- `src/index.css` (blocs `@media print` des portails)
