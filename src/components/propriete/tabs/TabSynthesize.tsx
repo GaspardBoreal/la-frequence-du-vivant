@@ -560,7 +560,7 @@ export const TabSynthesize: React.FC<Props> = ({
       {/* 04 — Atouts / contraintes / vigilances */}
       <section
         id="synthesize-block-atouts"
-        className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-3 gap-4"
+        className="scroll-mt-24 flex flex-col gap-4"
       >
         <ItemsEditor
           eyebrow="04 · Ce qui porte"
