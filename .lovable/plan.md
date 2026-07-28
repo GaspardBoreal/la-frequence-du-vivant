@@ -1,42 +1,29 @@
-## Objectif
+## Constat (vérifié à l'instant)
 
-Permettre à Gaspard Boréal (gaspard.boreal@gmail.com) d'interroger les données du projet depuis Claude (Desktop / Code / Cowork), en commençant par la propriété **Jardin Monde DEVIAT**, sans jamais exposer de clé d'administration ni contourner la sécurité existante.
+- Les 5 secrets SMTP existent bien : `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`.
+- La fonction `send-smtp-email` n'a **aucun log récent** et les logs d'authentification sont vides → aucun envoi tenté récemment (pas encore une preuve de panne, mais rien ne confirme que ça marche).
+- Il y a **deux circuits d'email indépendants** pour un nouvel inscrit :
+  1. **L'email de confirmation Supabase** (envoyé par Supabase Auth lui-même, `emailRedirectTo` → `/marches-du-vivant/connexion`). Il dépend du SMTP configuré dans le dashboard Supabase, pas des secrets ci-dessus.
+  2. **L'email de bienvenue maison** (`useCommunityAuth.signUp` → fonction `send-smtp-email` → serveur SMTP via les secrets).
 
-## Approche retenue : serveur MCP intégré à l'app, protégé par OAuth
+Une panne sur l'un n'empêche pas l'autre : il faut tester les deux, séparément.
 
-On expose l'application elle-même comme **serveur MCP** (Model Context Protocol) — le standard que Claude utilise pour se connecter à une source de données externe. Claude appelle des « outils » précis (lister une propriété, lire sa biodiversité, ses parcelles, ses analyses de sol…) au lieu d'avoir un accès brut à la base.
+## Plan de vérification (≈ 5 minutes, sans rien casser)
 
-Sécurité :
-- Connexion via **OAuth** : dans Claude, Gaspard clique « se connecter », il arrive sur une page de consentement de l'app, se connecte avec son compte habituel, approuve. Aucun mot de passe ni clé n'est copié-collé.
-- Chaque appel d'outil s'exécute **en tant que Gaspard** : les politiques RLS existantes s'appliquent telles quelles. Aucune clé service_role n'est utilisée, aucune politique n'est assouplie.
-- Accès en **lecture seule** dans cette première étape (aucun outil d'écriture), donc aucun risque d'altérer les données de production.
+1. **Test du circuit maison** — appel direct de `send-smtp-email` vers une adresse que vous contrôlez. Résultat immédiat : soit l'email arrive (circuit OK), soit on obtient l'erreur SMTP exacte (identifiants refusés, port bloqué, quota, domaine non autorisé).
+2. **Test du circuit Supabase Auth** — déclenchement d'une réinitialisation de mot de passe sur une adresse test (même moteur d'envoi que l'email de confirmation d'inscription), puis lecture des logs d'authentification pour voir si Supabase signale une erreur d'envoi.
+3. **Lecture des logs** des deux tests pour nommer la cause précise.
 
-## Outils MCP exposés (lecture seule)
+## Correction (selon le résultat)
 
-1. `list_proprietes` — propriétés accessibles à l'utilisateur (id, nom, slug, ville, rôle).
-2. `get_propriete_overview` — fiche complète : parcelles (surfaces, cadastre), événements liés, contributeurs.
-3. `get_propriete_biodiversity` — synthèse biodiversité (nombre d'espèces, règnes, top espèces, dates) via la RPC existante.
-4. `get_propriete_species_pool` — liste détaillée des espèces observées (nom scientifique, nom FR, nb d'observations, dates, GPS) — la matière première pour vérifier les comptages.
-5. `get_propriete_soil_analysis` — relevés « J'analyse le sol » (échantillons, structure, texture, pH, vie du sol).
-6. `get_propriete_flora_diagnostic` — « J'identifie » : cortège botanique, indices écologiques, ICG et sa décomposition (dénominateur 16, fiabilité) — pour auditer le calcul.
-7. `get_propriete_observations` — observations brutes filtrables (espèce, date, marcheur, source iNat/terrain) avec pagination.
+- **SMTP refusé / expiré** : mise à jour du secret concerné (`SMTP_PASSWORD` le plus souvent) — 1 minute.
+- **SMTP Supabase Auth non configuré ou expiré** : vous le corrigez dans le dashboard Supabase (Authentication → Emails → SMTP Settings), je vous indique exactement quel champ.
+- **Rien de cassé** : je vous le dis clairement, et on regarde plutôt si les inscriptions arrivent bien en base (le problème serait alors côté inscription, pas email).
 
-Chaque outil réutilise les RPC et requêtes déjà en place (`get_propriete_biodiversity`, `get_user_apps_access`, tables `propriete_*`, `marcheur_observations`, snapshots), donc **les chiffres renvoyés à Claude sont exactement ceux affichés dans l'app** — condition indispensable pour vérifier la cohérence des calculs.
+## Renforcement (optionnel, si le temps le permet)
 
-## Ce qui sera mis en place
+Ajout d'une trace d'erreur explicite côté inscription : aujourd'hui, si `send-smtp-email` échoue, l'échec est silencieux et personne ne le sait. Une remontée d'erreur visible en console + un log permettrait de détecter la panne immédiatement la prochaine fois.
 
-1. Installation du SDK MCP et création de `src/lib/mcp/` (un fichier par outil + une entrée serveur).
-2. Activation du serveur d'autorisation OAuth côté Supabase (avec enregistrement dynamique des clients, requis par Claude).
-3. Ajout d'une page de consentement `/.lovable/oauth/consent` dans l'app (design cohérent avec le thème sombre existant), avec retour correct après connexion e-mail ou sociale.
-4. Génération et déploiement de la fonction edge `mcp` ; l'URL à coller dans Claude sera fournie à la fin.
-5. Vérification : appel réel des outils sur Jardin Monde DEVIAT et comparaison des compteurs (espèces, ICG) avec l'écran.
+### Détails techniques
 
-## Ce que Gaspard fera ensuite
-
-Dans Claude → Paramètres → Connecteurs → « Ajouter un connecteur personnalisé » → coller l'URL du serveur → se connecter → approuver. Ensuite il peut demander en langage naturel : « recalcule l'ICG de Jardin Monde DEVIAT à partir des espèces observées », ou « propose une nouvelle interface à partir de ces données ».
-
-## Notes techniques
-
-- Aucun changement de schéma ni de politique RLS n'est nécessaire ; si un outil renvoie vide, c'est que RLS bloque légitimement, et on corrigera l'appartenance de l'utilisateur, pas la politique.
-- Les handlers restent rapides (une requête ou une RPC), pas de traitement long incompatible avec le timeout MCP.
-- L'écriture (curation GPS, validation taxonomique depuis Claude) est volontairement exclue de cette étape ; elle pourra être ajoutée ensuite comme outils marqués destructifs.
+`supabase/functions/send-smtp-email/index.ts` exige un jeton utilisateur authentifié (anti-relais spam) — le test utilisera la session de prévisualisation. `src/hooks/useCommunityAuth.ts` ligne 177 invoque la fonction après le `signUp` ligne 121, sans vérifier l'erreur retournée.
