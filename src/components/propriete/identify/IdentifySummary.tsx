@@ -543,6 +543,20 @@ export const IdentifySummary: React.FC<Props> = ({
         </div>
       )}
 
+      {isNarrationPage && (
+        <div className="mb-8 border-b border-[hsl(var(--ds-gold))]/70 pb-5">
+          <div className="text-[10px] font-bold tracking-[0.35em] uppercase text-[hsl(var(--ds-forest))]/70">
+            Diagnostic Propriété · Étape 3 · Narration
+          </div>
+          <h2 className="mt-2 font-serif italic text-3xl text-[hsl(var(--ds-forest-deep))] leading-tight">
+            {propertyName ?? 'La flore en place'}
+          </h2>
+          <div className="mt-2 text-[10px] tracking-[0.25em] uppercase text-[hsl(var(--ds-forest))]/60">
+            Ce que la flore raconte · Fréquence du Vivant
+          </div>
+        </div>
+      )}
+
       {/* Sceau daté (écran) */}
       {!printOnly && (
         <div className="absolute top-6 right-6 md:top-8 md:right-8 w-32 h-32 flex items-center justify-center rotate-12 pointer-events-none z-10 print:hidden">
