@@ -56,21 +56,23 @@ const Pastille: React.FC<{ letter: string; value: number; hue: string; title: st
   );
 };
 
-const Vignette: React.FC<{ plant: PlantIndicator; photo?: string | null; index: number }> = ({
-  plant,
-  photo,
-  index,
-}) => (
+const Vignette: React.FC<{
+  plant: PlantIndicator;
+  photo?: string | null;
+  field?: boolean;
+  index: number;
+}> = ({ plant, photo, field, index }) => (
   <figure className="flora-atlas-cell print-avoid-break">
     <div className="flora-atlas-photo">
       {photo ? (
-        <img src={photo} alt={plant.nom} loading="eager" decoding="sync" />
+        <img src={photo} alt={plant.nom} loading="eager" decoding="sync" crossOrigin="anonymous" />
       ) : (
         <div className="flora-atlas-photo-fallback">
           <FamilyIcon family={plant.famille} active size={34} />
         </div>
       )}
       <span className="flora-atlas-num">{index}</span>
+      {field && <span className="flora-atlas-field">Terrain</span>}
     </div>
     <figcaption>
       <span className="flora-atlas-name">{plant.nom}</span>
@@ -93,22 +95,46 @@ const Vignette: React.FC<{ plant: PlantIndicator; photo?: string | null; index: 
 interface Props {
   observedIds: string[];
   propertyName?: string;
+  /** Propriété — permet de prioriser les photos de terrain des marcheurs. */
+  proprieteId?: string;
   /** Classe de page : A4 dédiée (solo) ou page du cahier complet. */
   pageClassName?: string;
 }
 
+const norm = (s: string) =>
+  (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
 /**
  * Atlas du cortège bio-indicateur — 24 vignettes par page A4 (4 × 6).
- * Chaque vignette : photo de référence, nom français, nom latin,
- * et les 4 indices écologiques CNPF en micro-pastilles.
+ * Chaque vignette : photo de terrain du marcheur (prioritaire) ou photo de
+ * référence, nom français, nom latin, et les 4 indices écologiques CNPF.
  */
 export const FloraAtlasPrintPlates: React.FC<Props> = ({
   observedIds,
   propertyName,
+  proprieteId,
   pageClassName = 'identify-print-page',
 }) => {
   const plants = React.useMemo(() => floraAtlasPlants(observedIds), [observedIds]);
   const thumbs = useSpeciesThumbs(plants.map((p) => p.latin ?? p.nom));
+  const { species } = usePropertySpeciesPool(proprieteId);
+
+  /** Photos marcheurs indexées par nom scientifique ET nom français normalisés. */
+  const fieldByName = React.useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of species ?? []) {
+      const url = (s as any).photos?.[0];
+      if (!url) continue;
+      for (const key of [norm((s as any).scientificName), norm((s as any).commonName)]) {
+        if (key && !m.has(key)) m.set(key, url);
+      }
+    }
+    return m;
+  }, [species]);
 
   if (plants.length === 0) return null;
 
@@ -117,8 +143,14 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
     pages.push(plants.slice(i, i + ATLAS_PER_PAGE));
   }
 
+  const fieldPhotoOf = (p: PlantIndicator) =>
+    fieldByName.get(norm(p.latin ?? '')) ?? fieldByName.get(norm(p.nom)) ?? null;
+
   const photoOf = (p: PlantIndicator) =>
-    thumbs.data?.get((p.latin ?? p.nom).trim().toLowerCase())?.photo_url ?? null;
+    fieldPhotoOf(p) ??
+    thumbs.data?.get((p.latin ?? p.nom).trim().toLowerCase())?.photo_url ??
+    null;
+
 
   return (
     <>
