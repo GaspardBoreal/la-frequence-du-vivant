@@ -416,8 +416,11 @@ const PropTabs: React.FC<{
             proprieteNom={proprieteNom}
             proprieteVille={proprieteVille}
             proprieteId={proprieteId}
+            proprieteAdresse={proprieteAdresse}
+            proprieteCodePostal={proprieteCodePostal}
             bio={bio}
           />
+
         </TabsContent>
         <TabsContent value="palette" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabPalette bio={bio} />
