@@ -162,8 +162,9 @@ export const IcgRing: React.FC<{
         fill="none"
         strokeLinecap="round"
         transform="rotate(-90 64 64)"
-        initial={{ strokeDasharray: c, strokeDashoffset: c }}
-        animate={{ strokeDashoffset: offset }}
+        initial={still ? false : { strokeDasharray: c, strokeDashoffset: c }}
+        animate={still ? undefined : { strokeDashoffset: offset }}
+        style={still ? { strokeDasharray: c, strokeDashoffset: offset } : undefined}
         transition={{ duration: 1.4, ease: 'easeOut' }}
       />
       <text
@@ -173,10 +174,11 @@ export const IcgRing: React.FC<{
         fontFamily="serif"
         fontStyle="italic"
         fontSize={34}
-        fill={FOREST}
+        fill={tone}
       >
         {clamped}
       </text>
+
       <text
         x={64}
         y={82}
