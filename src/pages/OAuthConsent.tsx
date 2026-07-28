@@ -16,7 +16,8 @@ type OAuthApi = {
   denyAuthorization: (id: string) => Promise<{ data: any; error: any }>;
 };
 
-const oauthApi = () => (supabase.auth as unknown as { oauth: OAuthApi }).oauth;
+const oauthApi = (): OAuthApi | undefined =>
+  (supabase.auth as unknown as { oauth?: OAuthApi }).oauth;
 
 const OAuthConsent: React.FC = () => {
   const [params] = useSearchParams();
@@ -24,37 +25,52 @@ const OAuthConsent: React.FC = () => {
   const [details, setDetails] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
     (async () => {
-      if (!authorizationId) {
-        setError("Paramètre « authorization_id » manquant.");
-        return;
+      try {
+        setError(null);
+        if (!authorizationId) {
+          setError("Paramètre « authorization_id » manquant.");
+          return;
+        }
+        const api = oauthApi();
+        if (!api?.getAuthorizationDetails) {
+          setError(
+            "Le module OAuth du client Supabase est indisponible sur cette version de l'application. Rechargez la page ; si le problème persiste, l'application doit être republiée."
+          );
+          return;
+        }
+        const { data: sess } = await supabase.auth.getSession();
+        if (!sess.session) {
+          const next = window.location.pathname + window.location.search;
+          window.location.href = `/marches-du-vivant/connexion?next=${encodeURIComponent(next)}`;
+          return;
+        }
+        const { data, error: err } = await api.getAuthorizationDetails(authorizationId);
+        if (!active) return;
+        if (err) {
+          setError(err.message ?? String(err));
+          return;
+        }
+        const immediate = data?.redirect_url ?? data?.redirect_to;
+        if (immediate && !data?.client) {
+          window.location.href = immediate;
+          return;
+        }
+        setDetails(data);
+      } catch (e: any) {
+        if (!active) return;
+        setError(e?.message ?? "Erreur inattendue lors de la lecture de la demande d'autorisation.");
       }
-      const { data: sess } = await supabase.auth.getSession();
-      if (!sess.session) {
-        const next = window.location.pathname + window.location.search;
-        window.location.href = `/marches-du-vivant/connexion?next=${encodeURIComponent(next)}`;
-        return;
-      }
-      const { data, error: err } = await oauthApi().getAuthorizationDetails(authorizationId);
-      if (!active) return;
-      if (err) {
-        setError(err.message);
-        return;
-      }
-      const immediate = data?.redirect_url ?? data?.redirect_to;
-      if (immediate && !data?.client) {
-        window.location.href = immediate;
-        return;
-      }
-      setDetails(data);
     })();
     return () => {
       active = false;
     };
-  }, [authorizationId]);
+  }, [authorizationId, attempt]);
+
 
   const decide = async (approve: boolean) => {
     setBusy(true);
