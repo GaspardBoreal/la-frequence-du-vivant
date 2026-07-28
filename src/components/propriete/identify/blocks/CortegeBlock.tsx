@@ -70,6 +70,29 @@ export const CortegeBlock: React.FC<{
 
   const count = observed.length;
 
+  // Galerie plein écran : toutes les vignettes photo actuellement affichées.
+  const gallery = useMemo<CortegePhotoItem[]>(() => {
+    const out: CortegePhotoItem[] = [];
+    for (const tier of ['revealed', 'weak', 'hidden'] as TierKey[]) {
+      for (const m of tiered[tier]) {
+        if (!m.photos[0]) continue;
+        out.push({
+          url: m.photos[0],
+          nom: m.plant.nom,
+          latin: m.plant.latin,
+          lastSeen: m.lastSeen,
+          observations: m.observations,
+        });
+      }
+    }
+    return out;
+  }, [tiered]);
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const openPhoto = (url: string) => {
+    const i = gallery.findIndex((g) => g.url === url);
+    if (i >= 0) setLightbox(i);
+  };
+
   return (
     <AnalyzeCard
       number={2}
