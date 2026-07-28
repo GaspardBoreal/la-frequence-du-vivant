@@ -9,6 +9,7 @@ import {
   Compass,
   FileText,
   Wand2,
+  Printer,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -608,21 +609,42 @@ export const TabSynthesize: React.FC<Props> = ({
       </section>
 
       {/* Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-4">
-        <div className="text-xs text-[hsl(var(--ds-forest-deep))]/70">
-          {filled} / 6 éléments renseignés
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6">
+        <div className="flex items-center gap-3 text-sm text-[hsl(var(--ds-forest-deep))]">
+          <span>
+            <span className="font-semibold">{Math.min(filled, 6)}</span> / 6 blocs renseignés
+          </span>
+          {completedAt && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--ds-forest))]/15 text-[hsl(var(--ds-forest-deep))] px-2.5 py-0.5 text-xs font-semibold">
+              <Check className="w-3 h-3" /> Terminée
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)}>
-            Imprimer
+          <Button
+            variant="outline"
+            onClick={() => setPrintOpen(true)}
+            className="border-[hsl(var(--ds-forest))]/40 text-[hsl(var(--ds-forest-deep))]"
+          >
+            <Printer className="w-4 h-4 mr-2" /> Imprimer
           </Button>
-          <Button size="sm" onClick={handleComplete} disabled={submitting}>
+          <Button
+            onClick={handleComplete}
+            disabled={submitting}
+            className={
+              completedAt
+                ? 'bg-[hsl(var(--ds-forest-deep))] text-white hover:bg-[hsl(var(--ds-forest))] border border-[hsl(var(--ds-forest))]/40'
+                : 'bg-[hsl(var(--ds-forest))]/85 text-white hover:bg-[hsl(var(--ds-forest-deep))] border border-[hsl(var(--ds-forest))]/40'
+            }
+          >
             {submitting ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <CheckCheck className="w-4 h-4 mr-1.5" />
+              <CheckCheck className="w-4 h-4 mr-2" />
             )}
-            Sceller la synthèse
+            {completedAt
+              ? `Synthèse scellée le ${new Date(completedAt).toLocaleDateString('fr-FR')} · Réenregistrer`
+              : 'Sceller la synthèse'}
           </Button>
         </div>
       </div>
