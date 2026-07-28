@@ -1,6 +1,6 @@
 
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClient } from './lib/queryClient';
@@ -128,6 +128,21 @@ import { DiscoverFullscreenProvider } from './components/biodiversity/discover/D
 
 
 
+
+function GlobalMounts() {
+  const location = useLocation();
+  const isOAuthRoute = location.pathname === '/.lovable/oauth/consent' || location.pathname === '/oauth/consent';
+
+  if (isOAuthRoute) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <AdminChatBotMount />
+      <CommunityChatBotMount />
+      <AdhesionFab />
+    </Suspense>
+  );
+}
 
 function App() {
   return (
@@ -386,11 +401,7 @@ function App() {
 
           </Routes>
           </Suspense>
-          <Suspense fallback={null}>
-            <AdminChatBotMount />
-            <CommunityChatBotMount />
-            <AdhesionFab />
-          </Suspense>
+          <GlobalMounts />
           <Toaster position="top-right" />
 
             </DiscoverFullscreenProvider>
