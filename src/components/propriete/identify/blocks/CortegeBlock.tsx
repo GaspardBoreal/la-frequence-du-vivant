@@ -161,6 +161,7 @@ export const CortegeBlock: React.FC<{
                     match={m}
                     checked={observed.includes(m.plant.id)}
                     onToggle={() => onToggle(m.plant.id)}
+                    onOpenPhoto={openPhoto}
                     tier={tier}
                   />
                 ))}
