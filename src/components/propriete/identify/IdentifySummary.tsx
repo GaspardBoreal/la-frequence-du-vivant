@@ -1,21 +1,34 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Pencil, Printer, RotateCcw, Leaf, AlertTriangle } from 'lucide-react';
+import { Check, Pencil, Printer, RotateCcw, Leaf, AlertTriangle, Gauge, Sparkles } from 'lucide-react';
 import type { PropertyFloraState } from '@/hooks/propriete/usePropertyFlora';
 import { FamilyIcon, IcgRing } from '@/components/propriete/identify/FloraPictos';
+import {
+  VerdictChip,
+  LevelGauge,
+  VERDICT_TOKEN,
+  CONCORDANCE_GUIDE,
+  CONCORDANCE_REMEDES,
+} from '@/components/propriete/identify/ConcordanceParts';
 import {
   PLANT_INDICATORS,
   FAMILY_META,
   ECO_AXES,
   ECO_SOURCE,
   LEVEL_LABEL,
+  READ_LEVEL_LABEL,
+  poleScore,
   computePoleScores,
   computeConcordanceDetail,
   narratePoleScores,
   type PlantFamily,
   type SoilLite,
+  type EcoAxis,
+  type EcoPoleKey,
+  type ConcordanceRow,
   ICG_BAND_LABEL,
 } from '@/lib/plantIndicatorKb';
+
 
 
 export type IdentifyBlockId = 'cortege' | 'poles' | 'concordance' | 'narration' | 'notes';
