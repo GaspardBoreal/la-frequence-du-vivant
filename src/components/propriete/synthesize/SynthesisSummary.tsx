@@ -1,6 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Pencil, Printer, RotateCcw, AlertTriangle } from 'lucide-react';
+import {
+  Check,
+  Pencil,
+  Printer,
+  RotateCcw,
+  AlertTriangle,
+  Sprout,
+  Feather,
+  ShieldAlert,
+  Scale,
+  NotebookPen,
+  IdCard,
+  ShieldCheck,
+} from 'lucide-react';
 import type { PropertySynthesisState, SynthesisItem } from '@/hooks/propriete/usePropertySynthesis';
 import type { SynthesisModel } from './synthesisModel';
 import { IdentityCard } from './IdentityCard';
@@ -22,41 +35,97 @@ interface Props {
   printSection?: 'all' | 'p1' | 'p2';
 }
 
+/** Titre de section illustré — picto en pastille + filet coloré. */
+const SectionHead: React.FC<{
+  num: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  tint: string;
+  ink: string;
+}> = ({ num, label, Icon, tint, ink }) => (
+  <div className="flex items-center gap-2.5 print-avoid-break">
+    <span
+      className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 print-exact"
+      style={{ backgroundColor: tint, color: ink }}
+    >
+      <Icon className="w-3.5 h-3.5" />
+    </span>
+    <span className="text-[10px] font-bold tracking-[0.3em] uppercase" style={{ color: ink }}>
+      {num}. {label}
+    </span>
+    <span className="flex-1 h-px" style={{ backgroundColor: tint }} />
+  </div>
+);
+
 const Column: React.FC<{
   eyebrow: string;
   title: string;
   items: SynthesisItem[];
-  dot: string;
-  head: string;
-}> = ({ eyebrow, title, items, dot, head }) => (
-  <div className="print-avoid-break">
-    <div className={`text-[10px] font-bold tracking-[0.3em] uppercase ${head}`}>{eyebrow}</div>
-    <h4 className="mt-1 mb-2 font-serif italic text-2xl text-[hsl(var(--ds-forest-deep))]">
-      {title}
-    </h4>
-    {items.length === 0 ? (
-      <p className="text-xs italic text-[hsl(var(--ds-forest-deep))]/40">— Non renseigné —</p>
-    ) : (
-      <ul className="space-y-2">
-        {items.map((it, i) => (
-          <li key={i} className="flex items-start gap-2 print-avoid-break">
-            <span className={`mt-[7px] w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-            <div>
-              <span className="text-sm text-[hsl(var(--ds-forest-deep))] leading-snug">
-                {it.text}
+  Icon: React.ComponentType<{ className?: string }>;
+  ink: string;
+  tint: string;
+  soft: string;
+}> = ({ eyebrow, title, items, Icon, ink, tint, soft }) => (
+  <div
+    className="print-avoid-break rounded-2xl border overflow-hidden print-exact"
+    style={{ borderColor: tint, backgroundColor: soft }}
+  >
+    <div
+      className="flex items-center gap-2.5 px-4 py-3 print-exact"
+      style={{ backgroundColor: tint }}
+    >
+      <span
+        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-[hsl(var(--ds-cream))] print-exact"
+        style={{ color: ink }}
+      >
+        <Icon className="w-4 h-4" />
+      </span>
+      <div className="min-w-0">
+        <div className="text-[9px] font-bold tracking-[0.28em] uppercase" style={{ color: ink }}>
+          {eyebrow}
+        </div>
+        <h4 className="font-serif italic text-xl leading-tight" style={{ color: ink }}>
+          {title}
+        </h4>
+      </div>
+      <span
+        className="ml-auto text-[11px] font-bold tabular-nums rounded-full px-2 py-0.5 bg-[hsl(var(--ds-cream))] print-exact"
+        style={{ color: ink }}
+      >
+        {items.length}
+      </span>
+    </div>
+    <div className="px-4 py-3">
+      {items.length === 0 ? (
+        <p className="text-xs italic text-[hsl(var(--ds-forest-deep))]/40">— Non renseigné —</p>
+      ) : (
+        <ul className="space-y-2.5">
+          {items.map((it, i) => (
+            <li key={i} className="flex items-start gap-2 print-avoid-break">
+              <span
+                className="mt-[2px] w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[9px] font-bold print-exact"
+                style={{ backgroundColor: tint, color: ink }}
+              >
+                {i + 1}
               </span>
-              {it.because && (
-                <span className="block text-[10px] italic text-[hsl(var(--ds-forest-deep))]/50">
-                  {it.because}
+              <div>
+                <span className="text-sm text-[hsl(var(--ds-forest-deep))] leading-snug">
+                  {it.text}
                 </span>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    )}
+                {it.because && (
+                  <span className="block text-[10px] italic text-[hsl(var(--ds-forest-deep))]/50">
+                    {it.because}
+                  </span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   </div>
 );
+
 
 export const SynthesisSummary: React.FC<Props> = ({
   state,
@@ -177,9 +246,13 @@ export const SynthesisSummary: React.FC<Props> = ({
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             )}
-            <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
-              01. Carte d’identité écologique
-            </div>
+            <SectionHead
+              num="01"
+              label="Carte d’identité écologique"
+              Icon={IdCard}
+              tint="hsl(var(--ds-forest) / 0.18)"
+              ink="hsl(var(--ds-forest-deep))"
+            />
             <div className="mt-3">
               <IdentityCard lines={model.identity} compact={printOnly} />
             </div>
@@ -195,13 +268,18 @@ export const SynthesisSummary: React.FC<Props> = ({
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             )}
-            <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
-              02. Portrait du site
-            </div>
-            <p className="mt-3 font-serif italic text-lg md:text-xl text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
+            <SectionHead
+              num="02"
+              label="Portrait du site"
+              Icon={Feather}
+              tint="hsl(var(--ds-gold) / 0.25)"
+              ink="hsl(32 60% 26%)"
+            />
+            <p className="mt-3 font-serif italic text-lg md:text-xl text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line border-l-2 pl-4 border-[hsl(var(--ds-gold))]/60 print-exact">
               {portrait}
             </p>
           </div>
+
 
           {model.missing.length > 0 && (
             <div className="mt-6 flex items-start gap-2 rounded-xl border border-amber-300/70 bg-amber-50/60 px-3 py-2 print-avoid-break">
@@ -217,40 +295,51 @@ export const SynthesisSummary: React.FC<Props> = ({
 
       {showP2 && (
         <div className={showP1 && !printOnly ? 'mt-10' : ''}>
-          <div className={printOnly ? 'grid grid-cols-3 gap-x-8' : 'grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-8'}>
+          <div className={printOnly ? 'grid grid-cols-3 gap-x-6' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
             <Column
               eyebrow="03 · Ce qui porte"
               title="Atouts"
               items={state.atouts}
-              dot="bg-[hsl(var(--ds-forest))]"
-              head="text-[hsl(var(--ds-forest))]"
+              Icon={Sprout}
+              ink="hsl(var(--ds-forest-deep))"
+              tint="hsl(var(--ds-forest) / 0.22)"
+              soft="hsl(var(--ds-forest) / 0.06)"
             />
             <Column
               eyebrow="04 · Ce qui limite"
               title="Contraintes"
               items={state.contraintes}
-              dot="bg-[hsl(var(--ds-gold))]"
-              head="text-[hsl(var(--ds-gold))]"
+              Icon={Scale}
+              ink="hsl(32 60% 26%)"
+              tint="hsl(var(--ds-gold) / 0.28)"
+              soft="hsl(var(--ds-gold) / 0.08)"
             />
             <Column
               eyebrow="05 · Ce qui alerte"
               title="Vigilances"
               items={state.vigilances}
-              dot="bg-amber-500"
-              head="text-amber-700"
+              Icon={ShieldAlert}
+              ink="hsl(14 62% 34%)"
+              tint="hsl(14 72% 55% / 0.24)"
+              soft="hsl(14 72% 55% / 0.07)"
             />
           </div>
 
           {(state.notes ?? '').trim().length > 0 && (
             <div className="mt-8 print-avoid-break">
-              <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
-                06. Note libre
-              </div>
-              <p className="mt-2 font-serif italic text-base text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
+              <SectionHead
+                num="06"
+                label="Note libre"
+                Icon={NotebookPen}
+                tint="hsl(var(--ds-forest) / 0.18)"
+                ink="hsl(var(--ds-forest-deep))"
+              />
+              <p className="mt-3 font-serif italic text-base text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
                 {state.notes}
               </p>
             </div>
           )}
+
 
           <p className="mt-8 text-[9px] leading-snug text-[hsl(var(--ds-forest-deep))]/45">
             {ECO_SOURCE} Méthode de diagnostic de site — Étape 4 « Je synthétise ».
@@ -261,14 +350,23 @@ export const SynthesisSummary: React.FC<Props> = ({
       {/* Footer / actions */}
       {!printOnly && (
         <footer className="mt-12 pt-6 border-t border-[hsl(var(--ds-line))] flex flex-wrap items-center justify-between gap-3 print:hidden">
-          <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-full border border-[hsl(var(--ds-forest))] flex items-center justify-center text-[hsl(var(--ds-forest))]">
-              <Check className="w-4 h-4" />
+          <div className="flex items-center gap-3 rounded-full border border-[hsl(var(--ds-forest))]/30 bg-[hsl(var(--ds-forest))]/[0.07] pl-2 pr-4 py-1.5">
+            <span className="relative w-8 h-8 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center shadow-[0_2px_8px_-2px_hsl(var(--ds-forest))]">
+              <ShieldCheck className="w-4 h-4" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[hsl(var(--ds-gold))] text-[hsl(var(--ds-forest-deep))] flex items-center justify-center">
+                <Check className="w-2.5 h-2.5" />
+              </span>
             </span>
-            <span className="text-sm font-medium text-[hsl(var(--ds-forest-deep))]">
-              Synthèse verrouillée · prête pour le rapport client
+            <span className="leading-tight">
+              <span className="block text-sm font-semibold text-[hsl(var(--ds-forest-deep))]">
+                Synthèse verrouillée
+              </span>
+              <span className="block text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]/70">
+                Prête pour le rapport client · {dateStr}
+              </span>
             </span>
           </div>
+
           <div className="flex flex-wrap gap-2">
             <button
               onClick={onPrint}
