@@ -26,6 +26,7 @@ export const IdentifyPrintLayout: React.FC<Props> = ({
   soilAvailable,
   completedAt,
   propertyName,
+  proprieteId,
 }) => {
   const atlasPages = floraAtlasPageCount(flora.observed_plants ?? []);
   const total = 2 + atlasPages;
@@ -64,6 +65,7 @@ export const IdentifyPrintLayout: React.FC<Props> = ({
       <FloraAtlasPrintPlates
         observedIds={flora.observed_plants ?? []}
         propertyName={propertyName}
+        proprieteId={proprieteId}
         pageClassName="identify-print-page"
       />
     </div>
