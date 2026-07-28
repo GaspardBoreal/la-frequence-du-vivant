@@ -33,7 +33,11 @@ import {
   computePoleScores,
   computeConcordanceDetail,
   narratePoleScores,
+  PLANT_INDICATORS,
+  LEVEL_LABEL,
+  ECO_AXES,
 } from '@/lib/plantIndicatorKb';
+
 
 const TOTAL = 5; // Tableau + Cortège illustré + Somme des indices + Concordance + Narration
 
