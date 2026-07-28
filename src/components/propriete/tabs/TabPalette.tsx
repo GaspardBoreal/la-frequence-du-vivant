@@ -170,6 +170,14 @@ export const TabPalette: React.FC<Props> = ({
     ? palette.state.implementation
     : autoImplementation;
 
+  /** Refus réellement observés sur la propriété (étape 3 → étape 5). */
+  const {
+    presence: excludedPresence,
+    totalOnSite: onSiteCount,
+    allWaypoints,
+  } = useExcludedOnSite(proprieteId, exclusions);
+  const [mapOpenFor, setMapOpenFor] = React.useState<string | null>(null);
+
   const selectedTotal = zoneViews.reduce((n, z) => n + z.selected.length, 0);
 
   const applyAuto = () => {
