@@ -117,6 +117,22 @@ export const TabIdentify: React.FC<{
     [proprieteNom, proprieteVille, bio?.speciesTotal, state.observed_plants, scores, soil, soilAvailable, detail],
   );
 
+  /** Signature des données : une régénération n'est pertinente que si elle change */
+  const narrationContextKey = useMemo(
+    () =>
+      [
+        proprieteId ?? '',
+        (state.observed_plants ?? []).slice().sort().join(','),
+        soilAvailable ? detail.icg : 'no-soil',
+        soil.structure ?? '',
+        soil.texture ?? '',
+        soil.ph ?? '',
+        (soil.life_signs ?? []).join('|'),
+      ].join('#'),
+    [proprieteId, state.observed_plants, soilAvailable, detail.icg, soil],
+  );
+
+
 
   // Persister ICG dans la base pour l'onglet Synthèse
   useEffect(() => {
