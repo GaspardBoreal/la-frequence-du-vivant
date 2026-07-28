@@ -316,6 +316,12 @@ export const PrintChoiceDialog: React.FC<Props> = ({
                   <Eyebrow icon={<Leaf className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'identifie" />
                 </>
               )}
+              {synthesizeReady && (
+                <>
+                  <span className="text-[hsl(var(--ds-gold))]">·</span>
+                  <Eyebrow icon={<ScrollText className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="Je synthétise" />
+                </>
+              )}
             </div>
             <MiniCombined />
           </Card>
