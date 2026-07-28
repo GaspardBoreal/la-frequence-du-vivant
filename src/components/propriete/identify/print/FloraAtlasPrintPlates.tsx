@@ -1,11 +1,13 @@
 import React from 'react';
 import { useSpeciesThumbs } from '@/hooks/useSpeciesThumb';
+import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 import { FamilyIcon } from '@/components/propriete/identify/FloraPictos';
 import {
   PLANT_INDICATORS,
   ECO_SOURCE,
   type PlantIndicator,
 } from '@/lib/plantIndicatorKb';
+
 
 export const ATLAS_PER_PAGE = 24; // 4 colonnes × 6 lignes
 
