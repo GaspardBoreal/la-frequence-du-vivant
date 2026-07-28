@@ -92,7 +92,9 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   flora,
   floraCompletedAt,
   floraSoil,
+  proprieteId,
 }) => {
+
   const withAnalyze = !!soil;
   const plateCount = withAnalyze ? testMediaPlateCount(testMedias) : 0;
   const withIdentify = !!flora && (flora.observed_plants ?? []).length > 0;
