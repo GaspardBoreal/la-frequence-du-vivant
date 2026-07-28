@@ -43,8 +43,8 @@ interface Props {
   onReopenAll: () => void;
   onPrint?: () => void;
   printOnly?: boolean;
-  /** p1 = cortège + pôles, p2 = concordance + narration + notes + sources */
-  printSection?: 'all' | 'p1' | 'p2';
+  /** p1 = cortège + pôles, p2 = concordance, p3 = narration + notes + sources */
+  printSection?: 'all' | 'p1' | 'p2' | 'p3';
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
