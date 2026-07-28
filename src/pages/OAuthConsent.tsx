@@ -26,6 +26,34 @@ const oauthApi = (): OAuthApi | undefined =>
 
 type SessionState = 'loading' | 'anonymous' | 'authenticated';
 
+type OAuthDiagnostic = {
+  step: string;
+  message: string;
+  authorizationId: string;
+  clientName?: string | null;
+  hasRedirect?: boolean;
+  redirectHost?: string | null;
+};
+
+const maskAuthorizationId = (id: string) => {
+  if (!id) return 'absent';
+  if (id.length <= 10) return `${id.slice(0, 3)}…`;
+  return `${id.slice(0, 6)}…${id.slice(-4)}`;
+};
+
+const safeRedirectHost = (target: string | null | undefined) => {
+  if (!target) return null;
+  try {
+    return new URL(target).host;
+  } catch {
+    return target.startsWith('/') ? window.location.host : 'illisible';
+  }
+};
+
+const logOAuthStep = (step: string, payload: Record<string, unknown>) => {
+  console.info('[OAuth Claude]', step, payload);
+};
+
 const OAuthConsent: React.FC = () => {
   const [params] = useSearchParams();
   const authorizationId = params.get('authorization_id') ?? '';
@@ -36,6 +64,7 @@ const OAuthConsent: React.FC = () => {
   const [attempt, setAttempt] = useState(0);
   const [sessionState, setSessionState] = useState<SessionState>('loading');
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [diagnostic, setDiagnostic] = useState<OAuthDiagnostic | null>(null);
   const consentReturnPath = `${window.location.pathname}${window.location.search}`;
   const loginPath = loginPathForOAuthReturn(consentReturnPath);
 
@@ -43,6 +72,10 @@ const OAuthConsent: React.FC = () => {
   useEffect(() => {
     if (authorizationId) {
       rememberPendingOAuthRequest(consentReturnPath);
+      logOAuthStep('authorization_request_remembered', {
+        authorizationId: maskAuthorizationId(authorizationId),
+        path: window.location.pathname,
+      });
     }
   }, [authorizationId, consentReturnPath]);
 
@@ -55,12 +88,20 @@ const OAuthConsent: React.FC = () => {
       if (!active) return;
       setUserEmail(session?.user?.email ?? null);
       setSessionState(session ? 'authenticated' : 'anonymous');
+      logOAuthStep('session_state_changed', {
+        state: session ? 'authenticated' : 'anonymous',
+        authorizationId: maskAuthorizationId(authorizationId),
+      });
     });
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       setUserEmail(data.session?.user?.email ?? null);
       setSessionState(data.session ? 'authenticated' : 'anonymous');
+      logOAuthStep('session_resolved', {
+        state: data.session ? 'authenticated' : 'anonymous',
+        authorizationId: maskAuthorizationId(authorizationId),
+      });
     });
 
     return () => {
@@ -79,33 +120,62 @@ const OAuthConsent: React.FC = () => {
         setExpired(false);
         if (!authorizationId) {
           setError("Paramètre « authorization_id » manquant.");
+          setDiagnostic({
+            step: 'lecture_demande',
+            message: 'Aucun authorization_id reçu dans l’URL de consentement.',
+            authorizationId: 'absent',
+          });
           return;
         }
         const api = oauthApi();
         if (!api?.getAuthorizationDetails) {
-          setError(
-            "Le module OAuth du client Supabase est indisponible sur cette version de l'application. Rechargez la page ; si le problème persiste, l'application doit être republiée."
-          );
+          const message = "Le module OAuth du client Supabase est indisponible sur cette version de l'application. Rechargez la page ; si le problème persiste, l'application doit être republiée.";
+          setError(message);
+          setDiagnostic({
+            step: 'client_oauth_indisponible',
+            message,
+            authorizationId: maskAuthorizationId(authorizationId),
+          });
           return;
         }
+        logOAuthStep('authorization_details_loading', {
+          authorizationId: maskAuthorizationId(authorizationId),
+        });
         const { data, error: err } = await api.getAuthorizationDetails(authorizationId);
         if (!active) return;
         if (err) {
           const msg = err.message ?? String(err);
           if (/not found|expired|invalid/i.test(msg)) setExpired(true);
           else setError(msg);
+          setDiagnostic({
+            step: 'lecture_demande_refusee',
+            message: msg,
+            authorizationId: maskAuthorizationId(authorizationId),
+          });
           return;
         }
         const immediate = data?.redirect_url ?? data?.redirect_to;
+        logOAuthStep('authorization_details_loaded', {
+          authorizationId: maskAuthorizationId(authorizationId),
+          clientName: data?.client?.name ?? null,
+          hasImmediateRedirect: Boolean(immediate),
+          redirectHost: safeRedirectHost(immediate),
+        });
         if (immediate && !data?.client) {
           clearPendingOAuthRequest();
-          window.location.href = immediate;
+          window.location.assign(immediate);
           return;
         }
         setDetails(data);
       } catch (e: any) {
         if (!active) return;
-        setError(e?.message ?? "Erreur inattendue lors de la lecture de la demande d'autorisation.");
+        const message = e?.message ?? "Erreur inattendue lors de la lecture de la demande d'autorisation.";
+        setError(message);
+        setDiagnostic({
+          step: 'lecture_demande_exception',
+          message,
+          authorizationId: maskAuthorizationId(authorizationId),
+        });
       }
     })();
     return () => {
@@ -116,39 +186,94 @@ const OAuthConsent: React.FC = () => {
   const decide = useCallback(
     async (approve: boolean) => {
       setBusy(true);
+      setDiagnostic(null);
       try {
+        if (!authorizationId) throw new Error('Demande OAuth incomplète : authorization_id manquant.');
         const api = oauthApi();
-        if (!api) throw new Error('Module OAuth indisponible.');
+        if (!api?.approveAuthorization || !api?.denyAuthorization || !api?.getAuthorizationDetails) {
+          throw new Error('Module OAuth indisponible.');
+        }
+
+        logOAuthStep('authorization_preflight_loading', {
+          authorizationId: maskAuthorizationId(authorizationId),
+          approve,
+        });
+        const { data: freshDetails, error: detailErr } = await api.getAuthorizationDetails(authorizationId);
+        if (detailErr) throw new Error(detailErr.message ?? String(detailErr));
+
         const { data, error: err } = approve
           ? await api.approveAuthorization(authorizationId)
           : await api.denyAuthorization(authorizationId);
         if (err) {
+          const message = err.message ?? String(err);
           setBusy(false);
-          setError(err.message ?? String(err));
+          setError(message);
+          setDiagnostic({
+            step: approve ? 'autorisation_refusee_par_supabase' : 'refus_refuse_par_supabase',
+            message,
+            authorizationId: maskAuthorizationId(authorizationId),
+            clientName: freshDetails?.client?.name ?? null,
+          });
           return;
         }
         const target = data?.redirect_url ?? data?.redirect_to;
         if (!target) {
+          const message = "Le serveur d'autorisation n'a renvoyé aucune redirection.";
           setBusy(false);
-          setError("Le serveur d'autorisation n'a renvoyé aucune redirection.");
+          setError(message);
+          setDiagnostic({
+            step: 'autorisation_sans_redirection',
+            message,
+            authorizationId: maskAuthorizationId(authorizationId),
+            clientName: freshDetails?.client?.name ?? null,
+            hasRedirect: false,
+          });
           return;
         }
+        logOAuthStep('authorization_approved_redirecting', {
+          authorizationId: maskAuthorizationId(authorizationId),
+          clientName: freshDetails?.client?.name ?? null,
+          redirectHost: safeRedirectHost(target),
+        });
         clearPendingOAuthRequest();
-        window.location.href = target;
+        window.location.assign(target);
       } catch (e: any) {
+        const message = e?.message ?? "Erreur inattendue pendant l'autorisation.";
         setBusy(false);
-        setError(e?.message ?? "Erreur inattendue pendant l'autorisation.");
+        setError(message);
+        setDiagnostic({
+          step: 'autorisation_exception',
+          message,
+          authorizationId: maskAuthorizationId(authorizationId),
+          clientName: details?.client?.name ?? null,
+        });
       }
     },
-    [authorizationId]
+    [authorizationId, details]
   );
 
   const retry = () => {
     setDetails(null);
     setError(null);
     setExpired(false);
+    setDiagnostic(null);
     setAttempt((a) => a + 1);
   };
+
+  const diagnosticText = diagnostic
+    ? JSON.stringify(
+        {
+          etape: diagnostic.step,
+          message: diagnostic.message,
+          authorization_id: diagnostic.authorizationId,
+          client: diagnostic.clientName ?? 'non lu',
+          redirection_presente: diagnostic.hasRedirect ?? undefined,
+          domaine_redirection: diagnostic.redirectHost ?? undefined,
+        },
+        null,
+        2,
+      )
+    : null;
 
   return (
     <main className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -201,6 +326,11 @@ const OAuthConsent: React.FC = () => {
           <>
             <h1 className="text-xl font-semibold mb-2">Demande d'autorisation illisible</h1>
             <p className="text-sm text-muted-foreground">{error}</p>
+            {diagnosticText && (
+              <pre className="mt-4 max-h-44 overflow-auto rounded-lg border border-border/50 bg-muted/30 p-3 text-[11px] text-muted-foreground whitespace-pre-wrap">
+                {diagnosticText}
+              </pre>
+            )}
             <Button variant="outline" className="mt-5" onClick={retry}>
               Réessayer
             </Button>
@@ -249,6 +379,11 @@ const OAuthConsent: React.FC = () => {
                 Refuser
               </Button>
             </div>
+            {diagnosticText && (
+              <pre className="mt-4 max-h-44 overflow-auto rounded-lg border border-border/50 bg-muted/30 p-3 text-[11px] text-muted-foreground whitespace-pre-wrap">
+                {diagnosticText}
+              </pre>
+            )}
           </>
         )}
       </div>
