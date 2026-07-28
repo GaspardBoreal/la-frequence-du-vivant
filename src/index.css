@@ -2129,3 +2129,29 @@
 }
 .flora-atlas-source { font-style: italic; }
 .flora-atlas-sign { letter-spacing: 1.4pt; text-transform: uppercase; }
+
+/* === FILET DE SÉCURITÉ IMPRESSION ===
+   Les portails d'impression sont `display:none` jusqu'au window.print() :
+   toute animation d'entrée (Framer Motion) resterait figée à son état initial
+   et la page sortirait fantôme. On neutralise animations et transformations
+   dans les racines de synthèse, sans toucher aux opacités graduées de l'atlas. */
+@media print {
+  #identify-print-portal .identify-print-root,
+  #identify-print-portal .identify-print-root *:not(.flora-atlas-pastille):not(.flora-atlas-pastille *),
+  #analyze-print-portal .analyze-print-root,
+  #analyze-print-portal .analyze-print-root *,
+  #observe-print-portal .observe-print-root,
+  #observe-print-portal .observe-print-root *,
+  #combined-print-portal .identify-print-root,
+  #combined-print-portal .identify-print-root *:not(.flora-atlas-pastille):not(.flora-atlas-pastille *),
+  #combined-print-portal .analyze-print-root,
+  #combined-print-portal .analyze-print-root *,
+  #combined-print-portal .observe-print-root,
+  #combined-print-portal .observe-print-root * {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
+  }
+}
