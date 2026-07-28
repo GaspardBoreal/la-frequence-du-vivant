@@ -1,45 +1,55 @@
-## Diagnostic vérifié
+## Constat vérifié
 
-- L’URL publiée `https://la-frequence-du-vivant.com/.lovable/oauth/consent?authorization_id=...` arrive bien sur l’écran de consentement de l’app.
-- L’écran de consentement affiche bien le bon état quand l’utilisateur n’est pas connecté : “Connexion requise”.
-- La ressource MCP expose bien l’OAuth server Supabase : `https://xzbunrtgbfbhinkzkzhf.supabase.co/auth/v1`.
-- Le manifeste MCP expose bien 6 outils en OAuth protégé.
-- Les logs Supabase récents ne montrent pas d’appel outil MCP authentifié : l’échec Claude arrive donc pendant l’autorisation OAuth, pas dans les outils.
+- Le serveur MCP est bien déclaré avec OAuth Supabase et le manifeste pointe vers l’issuer attendu : `https://xzbunrtgbfbhinkzkzhf.supabase.co/auth/v1`.
+- Le connecteur Claude atteint bien l’écran de consentement et l’utilisateur arrive jusqu’au bouton **Autoriser**.
+- Les logs Supabase consultés ne montrent pas d’erreur OAuth exploitable sur les dernières 24h, ce qui indique que l’échec est probablement côté retour OAuth final / compatibilité du flux avec Claude, pas une exception serveur évidente.
+- Le flux actuel utilise `supabase.auth.oauth.approveAuthorization()` côté navigateur puis redirige via l’URL retournée. C’est fragile dans le navigateur intégré Claude : si la session, les cookies, l’origine publiée ou la redirection finale ne correspondent pas exactement, Claude affiche “autorisation échouée”.
 
-## Problème le plus probable
+## Objectif
 
-Claude arrive à ouvrir notre consentement, puis tu arrives à l’écran “Autoriser”. Mais après le clic “Autoriser”, Claude reçoit un échec. Cela pointe vers le retour OAuth final : la réponse `approveAuthorization()` renvoie probablement une redirection que Claude ne peut pas terminer correctement, ou l’app ne sécurise pas assez ce dernier passage.
+Rendre le connecteur Claude fiable, testable, et diagnostiquer précisément l’échec final au lieu d’afficher seulement “Problème de connexion”.
 
-## Correction proposée
+## Plan de correction
 
-1. **Instrumenter temporairement le flux de consentement**
-   - Ajouter des logs navigateur non sensibles dans `OAuthConsent.tsx` : état session, présence de `authorization_id`, présence du client OAuth, redirection reçue après approbation.
-   - Ne jamais logger de token ni d’information secrète.
+1. **Remplacer le consentement fragile par un flux OAuth minimal conforme Supabase/Claude**
+   - Simplifier `OAuthConsent.tsx` pour revenir au pattern officiel :
+     - charger la session,
+     - si non connecté, envoyer vers `/marches-du-vivant/connexion?next=...`,
+     - appeler `getAuthorizationDetails(authorization_id)`,
+     - bouton **Autoriser** = appel direct `approveAuthorization(authorization_id)`,
+     - redirection immédiate vers `redirect_url` / `redirect_to`.
+   - Supprimer les préflight inutiles avant approbation qui peuvent consommer, expirer ou désynchroniser la demande Claude.
 
-2. **Durcir le clic “Autoriser”**
-   - Bloquer le bouton si `authorization_id` est vide.
-   - Avant approbation, relire `getAuthorizationDetails()` pour vérifier que la demande est encore valide.
-   - Après `approveAuthorization()`, accepter strictement `redirect_url` ou `redirect_to`, puis rediriger via `window.location.assign()`.
-   - Ajouter un état d’erreur visible si Supabase renvoie une approbation sans URL de retour.
+2. **Garantir que la connexion revient toujours vers le consentement**
+   - Corriger `useCommunityAuth.signUp()` : aujourd’hui `emailRedirectTo` revient toujours sur `/marches-du-vivant/connexion`, pas vers le `next` OAuth. Même si ton cas actuel est une connexion existante, ce point doit être sécurisé pour éviter les boucles.
+   - Ajouter un helper unique pour construire les URL de retour OAuth et l’utiliser dans tous les chemins de connexion concernés.
+   - Ne jamais rediriger vers `/` pendant un flux Claude.
 
-3. **Éviter que l’app pollue le retour OAuth**
-   - Pendant les routes OAuth (`/.lovable/oauth/consent` et `/oauth/consent`), ne pas monter les composants globaux parasites (`AdhesionFab`, chatbots) qui ajoutent des boutons et peuvent interférer dans le navigateur intégré Claude.
-   - Garder l’écran OAuth le plus minimal possible.
+3. **Ajouter une page de résultat OAuth lisible avant retour Claude**
+   - Juste avant la redirection finale, afficher un état “Autorisation validée, retour vers Claude…” pendant un très court délai contrôlé.
+   - Si aucune URL de retour n’est fournie, afficher un bloc diagnostic clair : étape, client OAuth, id masqué, erreur Supabase.
+   - Ne pas exposer de token ni donnée sensible.
 
-4. **Ajouter une page de diagnostic OAuth interne**
-   - Sur erreur d’approbation, afficher un bloc copiable : étape, message Supabase, présence/absence de redirect URL, `authorization_id` masqué.
-   - Objectif : si Claude échoue encore, on sait immédiatement si c’est Supabase qui refuse ou Claude qui ne suit pas la redirection.
+4. **Vérifier le serveur MCP lui-même**
+   - Regénérer le manifeste MCP après correction.
+   - Redéployer la fonction `mcp` pour garantir que Claude voit la version actuelle du serveur.
+   - Tester l’endpoint MCP publié via l’outil Supabase Edge Function pour vérifier qu’il répond et que l’auth OAuth est bien exigée, au lieu d’un échec fonctionnel.
 
-5. **Validation**
-   - Simuler le parcours publié jusqu’à l’écran “Connexion requise”.
-   - Simuler avec session locale jusqu’à l’écran “Autoriser”.
-   - Re-générer le manifeste MCP après modification.
-   - Publier, puis relancer une nouvelle tentative Claude, car l’ancien `authorization_id` peut être expiré.
+5. **Test réel de bout en bout**
+   - Tester localement la route `/.lovable/oauth/consent?authorization_id=factice` pour vérifier les états d’erreur propres.
+   - Puis publier et refaire une tentative Claude avec un **nouvel** `authorization_id`.
+   - Si Claude échoue encore, la page affichera enfin le diagnostic exact au lieu d’une erreur muette.
 
 ## Fichiers concernés
 
 - `src/pages/OAuthConsent.tsx`
-- `src/App.tsx`
-- éventuellement `src/lib/oauthFlow.ts` si un helper de diagnostic propre est utile
+- `src/lib/oauthFlow.ts`
+- `src/hooks/useCommunityAuth.ts`
+- éventuellement `src/pages/MarchesDuVivantConnexion.tsx` si le retour `next` doit être renforcé
+- `src/lib/mcp/index.ts` uniquement si le manifeste révèle un problème MCP
 
-Objectif : savoir précisément ce que renvoie Supabase au moment du clic “Autoriser”, puis fiabiliser le dernier saut OAuth vers Claude.
+## Ce que je ne ferai pas
+
+- Pas de contournement public sans OAuth : les données propriété restent protégées.
+- Pas de service-role exposé au MCP.
+- Pas de nouvel essai “au hasard” sans logs/diagnostic vérifiable.
