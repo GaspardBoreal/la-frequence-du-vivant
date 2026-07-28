@@ -369,24 +369,58 @@ export function narratePoleScores(scores: PoleScore[]): string {
 // Concordance détaillée sol / flore — 8 lignes (page 12)
 // ============================================================
 
+/** Niveau normalisé de lecture, identique pour le sol et la flore (méthode D.S. p.12) */
+export type ReadLevel = 1 | 2 | 3; // 1 Faible · 2 Moyen · 3 Fort
+
+export const READ_LEVEL_LABEL: Record<ReadLevel, string> = {
+  1: 'Faible',
+  2: 'Moyen',
+  3: 'Fort',
+};
+
 export interface ConcordanceRow {
   key: EcoPoleKey;
   axis: EcoAxis;
   label: string;
-  soil: string;   // lecture Étape 2
-  flora: string;  // lecture Étape 3
+  soil: string;   // lecture Étape 2 (texte)
+  flora: string;  // lecture Étape 3 (texte)
+  /** niveau normalisé 1..3 — null si la donnée sol est absente */
+  soilLevel: ReadLevel | null;
+  floraLevel: ReadLevel;
+  floraPoints: number;
   match: AxisMatch;
+  /** points de la ligne : 2 / 1 / 0 */
+  rowPoints: number;
+}
+
+export type IcgBand = 'bonne' | 'moyenne' | 'faible';
+
+export const ICG_BAND_LABEL: Record<IcgBand, string> = {
+  bonne: 'Bonne cohérence',
+  moyenne: 'Cohérence moyenne',
+  faible: 'Faible cohérence',
+};
+
+export function icgBand(icg: number): IcgBand {
+  if (icg >= 80) return 'bonne';
+  if (icg >= 60) return 'moyenne';
+  return 'faible';
 }
 
 export interface ConcordanceDetail {
   rows: ConcordanceRow[];
-  points: number;   // /16
-  max: number;      // 16 (moins les lignes na × 2)
-  icg: number;      // 0..100
+  points: number;   // score obtenu, /16
+  max: number;      // toujours 16 (4 critères × 2 niveaux × 2 pts)
+  icg: number;      // 0..100 = points ÷ 16 × 100
+  band: IcgBand;
+  /** nb de lignes réellement évaluées (données sol présentes) */
+  evaluated: number;
+  /** fiabilité = lignes évaluées ÷ 8, en % */
+  reliability: number;
   counts: { oui: number; partiel: number; non: number; na: number };
 }
 
-/** Lecture du sol (Étape 2) traduite sur chaque pôle : -1 absent, 0 neutre, 1..3 intensité */
+/** Lecture du sol (Étape 2) traduite sur chaque pôle : 0 absent d'intensité, 1..3 intensité, null = non renseigné */
 function soilPoleValue(soil: SoilLite, key: EcoPoleKey): number | null {
   switch (key) {
     case 'eau_frais':
@@ -418,27 +452,47 @@ const soilWord = (v: number | null): string =>
 const floraWord = (level: EcoLevel, points: number): string =>
   points === 0 ? 'Aucun indice' : `${LEVEL_LABEL[level]} · ${points} pt${points > 1 ? 's' : ''}`;
 
-/** Concordance sur les 8 lignes — OUI 2 / PARTIEL 1 / NON 0, ICG = pts ÷ 16 × 100 */
+/** Sol 0..3 → niveau normalisé 1..3 (0 « non observé » et 1 « léger » = Faible) */
+const soilToLevel = (v: number): ReadLevel => (v >= 3 ? 3 : v === 2 ? 2 : 1);
+
+/** Flore (ratio du pôle) → niveau normalisé 1..3 */
+const floraToLevel = (points: number, ratio: number): ReadLevel =>
+  points === 0 ? 1 : ratio >= 0.48 ? 3 : ratio >= 0.28 ? 2 : 1;
+
+/**
+ * Concordance sur les 8 lignes — méthode D.S. page 12.
+ * Même niveau → OUI (2 pts) · un cran d'écart → PARTIEL (1 pt) · deux crans → NON (0 pt).
+ * Une ligne sans donnée sol n'est pas évaluée : elle vaut 0 point et reste comptée
+ * dans le dénominateur fixe de 16 (le guide ne réduit jamais le maximum).
+ * ICG = (score obtenu ÷ 16) × 100.
+ */
 export function computeConcordanceDetail(observedIds: string[], soil: SoilLite): ConcordanceDetail {
   const scores = computePoleScores(observedIds);
   const rows: ConcordanceRow[] = ECO_POLES.map((pole) => {
     const s = poleScore(scores, pole.key);
     const sv = soilPoleValue(soil, pole.key);
-    // flore ramenée sur 0..3
-    const fv = s.points === 0 ? 0 : s.ratio >= 0.48 ? 3 : s.ratio >= 0.28 ? 2 : 1;
+    const floraLevel = floraToLevel(s.points, s.ratio);
+    const soilLevel = sv == null ? null : soilToLevel(sv);
+
     let match: AxisMatch;
-    if (sv == null) match = 'na';
+    if (soilLevel == null) match = 'na';
     else {
-      const gap = Math.abs(sv - fv);
-      match = gap <= 1 ? 'oui' : gap === 2 ? 'partiel' : 'non';
+      const gap = Math.abs(soilLevel - floraLevel);
+      match = gap === 0 ? 'oui' : gap === 1 ? 'partiel' : 'non';
     }
+    const rowPoints = match === 'oui' ? 2 : match === 'partiel' ? 1 : 0;
+
     return {
       key: pole.key,
       axis: pole.axis,
       label: pole.label,
       soil: soilWord(sv),
       flora: floraWord(s.level, s.points),
+      soilLevel,
+      floraLevel,
+      floraPoints: s.points,
       match,
+      rowPoints,
     };
   });
 
@@ -446,12 +500,15 @@ export function computeConcordanceDetail(observedIds: string[], soil: SoilLite):
   let points = 0;
   for (const r of rows) {
     counts[r.match] += 1;
-    points += r.match === 'oui' ? 2 : r.match === 'partiel' ? 1 : 0;
+    points += r.rowPoints;
   }
-  const max = (rows.length - counts.na) * 2;
-  const icg = max === 0 ? 0 : Math.round((points / max) * 100);
-  return { rows, points, max, icg, counts };
+  const max = rows.length * 2; // 16, fixe
+  const icg = Math.round((points / max) * 100);
+  const evaluated = rows.length - counts.na;
+  const reliability = Math.round((evaluated / rows.length) * 100);
+  return { rows, points, max, icg, band: icgBand(icg), evaluated, reliability, counts };
 }
+
 
 export const ECO_SOURCE =
   'Source des données écologiques : CNPF — 2018 — G. Dumé ; C. Gauberville ; D. Mansion ; J.-C. Rameau — Flore forestière française, Guide écologique illustré — 1 Plaines et Collines.';
