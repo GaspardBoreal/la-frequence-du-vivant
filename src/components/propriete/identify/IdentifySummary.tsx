@@ -14,7 +14,9 @@ import {
   narratePoleScores,
   type PlantFamily,
   type SoilLite,
+  ICG_BAND_LABEL,
 } from '@/lib/plantIndicatorKb';
+
 
 export type IdentifyBlockId = 'cortege' | 'poles' | 'concordance' | 'narration' | 'notes';
 
