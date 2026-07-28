@@ -1383,6 +1383,13 @@
     linear-gradient(180deg, #fbf7ee 0%, #f2e8d1 100%);
 }
 
+.combined-print-divider--identify {
+  background:
+    radial-gradient(40mm 40mm at 74% 30%, rgba(107,124,90,0.14), transparent 62%),
+    radial-gradient(70mm 70mm at 20% 76%, rgba(176,141,87,0.10), transparent 66%),
+    linear-gradient(180deg, #fbf7ee 0%, #eef0e0 100%);
+}
+
 .portrait-print-root {
   font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
   color: #2a2419;
