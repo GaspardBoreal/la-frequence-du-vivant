@@ -59,7 +59,7 @@ export const ItemsEditor: React.FC<Props> = ({
   );
 
   return (
-    <div className={`rounded-2xl border ${t.border} bg-[hsl(var(--ds-cream))]/70 p-4 flex flex-col`}>
+    <div className={`rounded-3xl border ${t.border} bg-[hsl(var(--ds-cream))] p-5 md:p-6 flex flex-col`}>
       <div className={`text-[10px] font-bold tracking-[0.3em] uppercase ${t.head}`}>{eyebrow}</div>
       <h4 className="mt-1 font-serif italic text-xl text-[hsl(var(--ds-forest-deep))]">{title}</h4>
 
@@ -72,7 +72,7 @@ export const ItemsEditor: React.FC<Props> = ({
         {items.map((it, i) => (
           <li
             key={i}
-            className="group flex items-start gap-2 rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-2.5 py-2"
+            className="group flex items-start gap-2 rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-forest))]/[0.04] px-2.5 py-2"
           >
             <span className={`mt-2 w-1.5 h-1.5 rounded-full shrink-0 ${t.dot}`} />
             <div className="flex-1 min-w-0">
