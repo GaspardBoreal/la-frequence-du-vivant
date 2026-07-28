@@ -10,7 +10,9 @@ interface Props {
   soilAvailable: boolean;
   completedAt: string | null;
   propertyName?: string;
+  proprieteId?: string;
 }
+
 
 /**
  * Maquette A4 dédiée à l'impression « J'identifie la flore en place » (seule).
