@@ -209,15 +209,41 @@ const PlantTile: React.FC<{
           : `${highlight} bg-[hsl(var(--ds-cream))]/60 hover:border-[hsl(var(--ds-forest))]/50`
       }`}
     >
-      {/* Media */}
-      <div className="relative w-14 shrink-0 bg-[hsl(var(--ds-forest))]/5 flex items-center justify-center">
+      {/* Media — cliquable : ouvre la photo en grand */}
+      <div
+        role={photoUrl ? 'button' : undefined}
+        tabIndex={photoUrl ? 0 : undefined}
+        aria-label={photoUrl ? `Agrandir la photo de ${plant.nom}` : undefined}
+        onClick={(e) => {
+          if (!photoUrl) return;
+          e.stopPropagation();
+          e.preventDefault();
+          onOpenPhoto(photoUrl);
+        }}
+        onKeyDown={(e) => {
+          if (!photoUrl) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.stopPropagation();
+            e.preventDefault();
+            onOpenPhoto(photoUrl);
+          }
+        }}
+        className={`relative w-14 shrink-0 bg-[hsl(var(--ds-forest))]/5 flex items-center justify-center ${
+          photoUrl ? 'cursor-zoom-in' : ''
+        }`}
+      >
         {photoUrl ? (
-          <img
-            src={photoUrl}
-            alt={plant.nom}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <>
+            <img
+              src={photoUrl}
+              alt={plant.nom}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+              <Maximize2 className="w-3.5 h-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            </span>
+          </>
         ) : (
           <FamilyIcon family={plant.famille} active={checked} size={36} />
         )}
@@ -232,6 +258,7 @@ const PlantTile: React.FC<{
           </span>
         )}
       </div>
+
 
       {/* Text */}
       <div className="min-w-0 flex-1 py-1.5 pr-2">
