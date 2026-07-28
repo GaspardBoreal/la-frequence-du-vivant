@@ -467,7 +467,9 @@ export const IdentifySummary: React.FC<Props> = ({
 
   const showP1 = printSection === 'all' || printSection === 'p1';
   const showP2 = printSection === 'all' || printSection === 'p2';
+  const showP3 = printSection === 'all' || printSection === 'p3';
   const isSuite = printSection === 'p2';
+  const isNarrationPage = printSection === 'p3';
   const gridCols = printOnly
     ? 'grid grid-cols-2 gap-x-8 gap-y-6'
     : 'grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8';
