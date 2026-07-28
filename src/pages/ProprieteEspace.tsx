@@ -358,10 +358,11 @@ const PropTabs: React.FC<{
         monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
       />
       <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-        <div
-          className="sticky top-0 z-[60] w-screen relative left-1/2 -translate-x-1/2 bg-background border-b border-border shadow-md"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}
-        >
+        <div className="sticky top-0 z-[60]">
+          <div
+            className="w-screen ml-[50%] -translate-x-1/2 bg-background border-b border-border shadow-md"
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          >
           <TabsList className="mx-auto max-w-5xl w-full flex overflow-x-auto justify-start md:justify-center bg-transparent rounded-none h-auto py-1.5">
             <TabsTrigger value="portrait">Portrait</TabsTrigger>
             <TabsTrigger value="observe">J'observe</TabsTrigger>
