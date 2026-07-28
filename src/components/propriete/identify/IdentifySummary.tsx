@@ -692,8 +692,11 @@ export const IdentifySummary: React.FC<Props> = ({
                 L'étape 2 « J'analyse le sol » n'est pas encore renseignée : la concordance
                 reste en attente.
               </p>
+            ) : !printOnly ? (
+              <RichConcordance detail={detail} />
             ) : (
               <div className="flex flex-col md:flex-row gap-6 items-start">
+
                 <div className="shrink-0 text-center">
                   <IcgRing value={detail.icg} size={112} band={detail.band} still={printOnly} />
                   <div className="mt-1 text-[9px] uppercase tracking-[0.2em] font-bold text-[hsl(var(--ds-forest))]/80">
