@@ -3,6 +3,11 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Loader2, ShieldCheck, Leaf, AlertTriangle } from 'lucide-react';
+import {
+  clearPendingOAuthRequest,
+  loginPathForOAuthReturn,
+  rememberPendingOAuthRequest,
+} from '@/lib/oauthFlow';
 
 /**
  * Écran de consentement OAuth 2.1 (Supabase = serveur d'autorisation).
@@ -19,33 +24,6 @@ type OAuthApi = {
 const oauthApi = (): OAuthApi | undefined =>
   (supabase.auth as unknown as { oauth?: OAuthApi }).oauth;
 
-const PENDING_KEY = 'lfdv.oauth.pending';
-
-/** Mémorise la demande d'autorisation en cours pour ne jamais la perdre. */
-const rememberPending = (url: string) => {
-  try {
-    sessionStorage.setItem(PENDING_KEY, url);
-  } catch {
-    /* stockage indisponible : on continue sans mémoire */
-  }
-};
-
-export const readPendingOAuthRequest = (): string | null => {
-  try {
-    return sessionStorage.getItem(PENDING_KEY);
-  } catch {
-    return null;
-  }
-};
-
-export const clearPendingOAuthRequest = () => {
-  try {
-    sessionStorage.removeItem(PENDING_KEY);
-  } catch {
-    /* noop */
-  }
-};
-
 type SessionState = 'loading' | 'anonymous' | 'authenticated';
 
 const OAuthConsent: React.FC = () => {
@@ -58,14 +36,15 @@ const OAuthConsent: React.FC = () => {
   const [attempt, setAttempt] = useState(0);
   const [sessionState, setSessionState] = useState<SessionState>('loading');
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const redirectedRef = useRef(false);
+  const consentReturnPath = `${window.location.pathname}${window.location.search}`;
+  const loginPath = loginPathForOAuthReturn(consentReturnPath);
 
   // 1) Mémorise immédiatement la demande complète (avec authorization_id).
   useEffect(() => {
     if (authorizationId) {
-      rememberPending(window.location.pathname + window.location.search);
+      rememberPendingOAuthRequest(consentReturnPath);
     }
-  }, [authorizationId]);
+  }, [authorizationId, consentReturnPath]);
 
   // 2) Résolution fiable de la session : on attend INITIAL_SESSION plutôt qu'un
   //    unique getSession() au premier rendu (source de fausses redirections).
@@ -90,15 +69,7 @@ const OAuthConsent: React.FC = () => {
     };
   }, []);
 
-  // 3) Redirection vers la connexion uniquement une fois la session résolue.
-  useEffect(() => {
-    if (sessionState !== 'anonymous' || redirectedRef.current) return;
-    redirectedRef.current = true;
-    const next = window.location.pathname + window.location.search;
-    window.location.href = `/marches-du-vivant/connexion?next=${encodeURIComponent(next)}`;
-  }, [sessionState]);
-
-  // 4) Lecture de la demande d'autorisation (session confirmée).
+  // 3) Lecture de la demande d'autorisation (session confirmée).
   useEffect(() => {
     if (sessionState !== 'authenticated') return;
     let active = true;
@@ -195,10 +166,19 @@ const OAuthConsent: React.FC = () => {
         )}
 
         {sessionState === 'anonymous' && (
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Redirection vers la connexion…</span>
-          </div>
+          <>
+            <div className="flex items-center gap-2 text-amber-500 mb-2">
+              <AlertTriangle className="h-4 w-4" />
+              <h1 className="text-xl font-semibold">Connexion requise</h1>
+            </div>
+            <p className="text-sm text-muted-foreground mb-5">
+              Claude demande votre accord pour accéder à La Fréquence du Vivant.
+              Connectez-vous d'abord : l'autorisation sera reprise automatiquement.
+            </p>
+            <Button className="w-full" onClick={() => { window.location.href = loginPath; }}>
+              Se connecter puis autoriser Claude
+            </Button>
+          </>
         )}
 
         {sessionState === 'authenticated' && expired && (
