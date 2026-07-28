@@ -33,6 +33,19 @@ export interface PaletteZoneView {
 
 export type PaletteBlockId = 'rule' | 'zones' | 'excluded' | 'implementation' | 'notes';
 
+/** Présence terrain d'un refus, indexée par nom latin normalisé. */
+export interface ExcludedPresenceLite {
+  count: number;
+  zoneNames?: string[];
+}
+
+export const normLatin = (s: string) =>
+  (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
 interface Props {
   siteRule: string;
   zones: PaletteZoneView[];
@@ -42,6 +55,8 @@ interface Props {
   completedAt: string | null;
   propertyName?: string;
   commune?: string | null;
+  /** Refus réellement observés sur la propriété (clé = latin normalisé) */
+  presence?: Record<string, ExcludedPresenceLite>;
   onEditBlock?: (id: PaletteBlockId) => void;
   onReopenAll?: () => void;
   onPrint?: () => void;
