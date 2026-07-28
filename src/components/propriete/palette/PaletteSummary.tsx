@@ -33,6 +33,19 @@ export interface PaletteZoneView {
 
 export type PaletteBlockId = 'rule' | 'zones' | 'excluded' | 'implementation' | 'notes';
 
+/** Présence terrain d'un refus, indexée par nom latin normalisé. */
+export interface ExcludedPresenceLite {
+  count: number;
+  zoneNames?: string[];
+}
+
+export const normLatin = (s: string) =>
+  (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
 interface Props {
   siteRule: string;
   zones: PaletteZoneView[];
@@ -42,6 +55,8 @@ interface Props {
   completedAt: string | null;
   propertyName?: string;
   commune?: string | null;
+  /** Refus réellement observés sur la propriété (clé = latin normalisé) */
+  presence?: Record<string, ExcludedPresenceLite>;
   onEditBlock?: (id: PaletteBlockId) => void;
   onReopenAll?: () => void;
   onPrint?: () => void;
@@ -89,6 +104,7 @@ export const PaletteSummary: React.FC<Props> = ({
   completedAt,
   propertyName,
   commune,
+  presence,
   onEditBlock,
   onReopenAll,
   onPrint,
@@ -199,8 +215,20 @@ export const PaletteSummary: React.FC<Props> = ({
                     </span>
                     <span className="font-serif text-[15px] text-[#7a3126]">{e.fr}</span>
                     <span className="italic text-[12px] text-[#8c3a2e]/70">{e.latin}</span>
+                    {(presence?.[normLatin(e.latin)]?.count ?? 0) > 0 && (
+                      <span className="ml-auto text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#fdf6e6] text-[#7a5a1c] border border-[#d9a441]/60 print-exact">
+                        Présente sur site · {presence![normLatin(e.latin)].count} point
+                        {presence![normLatin(e.latin)].count > 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-[12px] leading-snug text-[#5f2c23]">{e.why}</p>
+                  {!!presence?.[normLatin(e.latin)]?.zoneNames?.length && (
+                    <p className="mt-1 text-[11px] italic text-[#7a5a1c]">
+                      Emplacements concernés :{' '}
+                      {presence![normLatin(e.latin)].zoneNames!.join(', ')}
+                    </p>
+                  )}
                 </div>
               ))}
               {excluded.length === 0 && (

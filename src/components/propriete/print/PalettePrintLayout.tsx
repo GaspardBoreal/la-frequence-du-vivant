@@ -11,6 +11,7 @@ interface Props {
   excluded: PaletteExclusion[];
   implementation: PalettePlanStep[];
   notes?: string | null;
+  presence?: Record<string, { count: number; zoneNames?: string[] }>;
   completedAt: string | null;
   propertyName?: string;
   commune?: string | null;
@@ -27,6 +28,7 @@ export const PalettePrintLayout: React.FC<Props> = ({
   excluded,
   implementation,
   notes,
+  presence,
   completedAt,
   propertyName,
   commune,
@@ -49,6 +51,7 @@ export const PalettePrintLayout: React.FC<Props> = ({
       excluded={excluded}
       implementation={implementation}
       notes={notes}
+      presence={presence}
       completedAt={completedAt}
       propertyName={propertyName}
       commune={commune}
