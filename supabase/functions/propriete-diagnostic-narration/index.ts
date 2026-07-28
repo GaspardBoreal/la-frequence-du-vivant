@@ -54,10 +54,15 @@ serve(async (req) => {
         : "",
       body.soil ? `Lecture du sol (Étape 2) : ${JSON.stringify(body.soil)}.` : "",
       c
-        ? `Concordance sol/flore : ICG ${c.icg}/100 (${c.band}), ${c.points}/${c.max} points, fiabilité ${c.reliability} % sur ${c.evaluated}/8 lignes évaluées. Détail : ${c.rows
-            .map((r) => `${r.label} — sol ${r.soil} / flore ${r.flora} → ${r.match}`)
-            .join(" ; ")}.`
+        ? `Concordance sol/flore : ICG ${c.icg}/100 (${c.band ?? "n.c."}), ${c.points}/${c.max} points, fiabilité ${c.reliability ?? "n.c."} % sur ${c.evaluated ?? "?"}/8 lignes évaluées.${
+            c.rows?.length
+              ? ` Détail : ${c.rows
+                  .map((r) => `${r.label} — sol ${r.soil} / flore ${r.flora} → ${r.match}`)
+                  .join(" ; ")}.`
+              : ""
+          }`
         : "",
+
       body.observationNotes ? `Notes d'observation du site (Étape 1) : ${body.observationNotes}` : "",
     ]
       .filter(Boolean)
