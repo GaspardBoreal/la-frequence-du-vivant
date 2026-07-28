@@ -40,6 +40,7 @@ interface SignUpData {
   recherche_prioritaire?: string;
   consentement_analyse?: boolean;
   affiliateToken?: string;
+  emailRedirectTo?: string;
 }
 
 export function useCommunityAuth() {
@@ -115,6 +116,7 @@ export function useCommunityAuth() {
     const baseUrl = window.location.hostname === 'localhost'
       ? window.location.origin
       : 'https://la-frequence-du-vivant.com';
+    const emailRedirectTo = data.emailRedirectTo || `${baseUrl}/marches-du-vivant/connexion`;
 
     // Helper: attempt signup call
     const attemptSignUp = async () => {
@@ -122,7 +124,7 @@ export function useCommunityAuth() {
         email: data.email,
         password: data.password,
         options: {
-          emailRedirectTo: baseUrl + '/marches-du-vivant/connexion',
+          emailRedirectTo,
         }
       });
     };

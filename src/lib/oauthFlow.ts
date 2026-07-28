@@ -82,3 +82,8 @@ export function loginPathForOAuthReturn(target: string): string {
   const safeTarget = safeNextPath(target) ?? '/.lovable/oauth/consent';
   return `/marches-du-vivant/connexion?next=${encodeURIComponent(safeTarget)}`;
 }
+
+export function absoluteUrlForPath(path: string): string {
+  const safePath = safeNextPath(path) ?? '/marches-du-vivant/connexion';
+  return `${window.location.origin}${safePath}`;
+}
