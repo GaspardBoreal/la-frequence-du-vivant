@@ -422,9 +422,8 @@ const RichNarration: React.FC<{ text: string }> = ({ text }) => {
       </div>
       <div className="mt-3 pl-3 flex items-center gap-1.5 text-[10px] italic text-[hsl(var(--ds-forest-deep))]/55">
         <Sparkles className="w-3 h-3 text-[hsl(var(--ds-gold))]" />
-        {auto
-          ? 'Texte auto-généré à partir de vos observations — relu et validé.'
-          : 'Un texte auto-généré à partir de vos observations, relu et validé par le propriétaire.'}
+        Un texte auto-généré à partir de vos observations, relu et validé par le propriétaire.
+
       </div>
     </div>
   );
