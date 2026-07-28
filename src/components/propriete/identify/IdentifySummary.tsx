@@ -402,7 +402,7 @@ const RichNarration: React.FC<{ text: string }> = ({ text }) => {
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter(Boolean);
-  const auto = /^\s*$/.test('') && false;
+  
   return (
     <div className="relative rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-5 py-4">
       <span className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r bg-[hsl(var(--ds-gold))]" />
