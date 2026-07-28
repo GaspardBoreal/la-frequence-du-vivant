@@ -114,6 +114,26 @@ const MarchesDuVivantConnexion = () => {
     return raw.startsWith('/') && !raw.startsWith('//') ? raw : null;
   })();
 
+  /**
+   * Si l'utilisateur est déjà authentifié et qu'une destination interne est
+   * demandée (typiquement le consentement OAuth), on le renvoie immédiatement
+   * plutôt que d'afficher un formulaire de connexion inutile — c'est ce qui
+   * faisait perdre la demande d'autorisation Claude.
+   */
+  useEffect(() => {
+    let active = true;
+    const target = nextParam ?? readPendingOAuthRequest();
+    if (!target) return;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active || !data.session) return;
+      window.location.href = target;
+    });
+    return () => {
+      active = false;
+    };
+  }, [nextParam]);
+
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
