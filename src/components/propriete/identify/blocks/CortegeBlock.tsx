@@ -1,12 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Check, Sparkles, HelpCircle } from 'lucide-react';
+import { Search, Check, Sparkles, HelpCircle, Maximize2 } from 'lucide-react';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { PLANT_INDICATORS, FAMILY_META, type PlantFamily, type PlantIndicator } from '@/lib/plantIndicatorKb';
 import { FamilyIcon } from '../FloraPictos';
 import { FloraRevealHeader } from './FloraRevealHeader';
 import { usePropertyFloraMatched } from '@/hooks/propriete/usePropertyFloraMatched';
 import type { FloraMatch } from '@/lib/plantIndicatorMatcher';
+import { CortegePhotoLightbox, type CortegePhotoItem } from './CortegePhotoLightbox';
 
 type TierKey = 'revealed' | 'weak' | 'hidden';
 
@@ -68,6 +69,29 @@ export const CortegeBlock: React.FC<{
   }, [matches, query, family]);
 
   const count = observed.length;
+
+  // Galerie plein écran : toutes les vignettes photo actuellement affichées.
+  const gallery = useMemo<CortegePhotoItem[]>(() => {
+    const out: CortegePhotoItem[] = [];
+    for (const tier of ['revealed', 'weak', 'hidden'] as TierKey[]) {
+      for (const m of tiered[tier]) {
+        if (!m.photos[0]) continue;
+        out.push({
+          url: m.photos[0],
+          nom: m.plant.nom,
+          latin: m.plant.latin,
+          lastSeen: m.lastSeen,
+          observations: m.observations,
+        });
+      }
+    }
+    return out;
+  }, [tiered]);
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const openPhoto = (url: string) => {
+    const i = gallery.findIndex((g) => g.url === url);
+    if (i >= 0) setLightbox(i);
+  };
 
   return (
     <AnalyzeCard
@@ -137,6 +161,7 @@ export const CortegeBlock: React.FC<{
                     match={m}
                     checked={observed.includes(m.plant.id)}
                     onToggle={() => onToggle(m.plant.id)}
+                    onOpenPhoto={openPhoto}
                     tier={tier}
                   />
                 ))}
@@ -151,6 +176,13 @@ export const CortegeBlock: React.FC<{
           </div>
         )}
       </div>
+
+      <CortegePhotoLightbox
+        items={gallery}
+        index={lightbox}
+        onIndexChange={setLightbox}
+        onClose={() => setLightbox(null)}
+      />
     </AnalyzeCard>
   );
 };
@@ -159,8 +191,9 @@ const PlantTile: React.FC<{
   match: FloraMatch;
   checked: boolean;
   onToggle: () => void;
+  onOpenPhoto: (url: string) => void;
   tier: TierKey;
-}> = ({ match, checked, onToggle, tier }) => {
+}> = ({ match, checked, onToggle, onOpenPhoto, tier }) => {
   const { plant, observations, lastSeen, photos, confidence } = match;
   const photoUrl = photos[0];
   const dateStr = lastSeen ? new Date(lastSeen).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : null;
@@ -183,15 +216,41 @@ const PlantTile: React.FC<{
           : `${highlight} bg-[hsl(var(--ds-cream))]/60 hover:border-[hsl(var(--ds-forest))]/50`
       }`}
     >
-      {/* Media */}
-      <div className="relative w-14 shrink-0 bg-[hsl(var(--ds-forest))]/5 flex items-center justify-center">
+      {/* Media — cliquable : ouvre la photo en grand */}
+      <div
+        role={photoUrl ? 'button' : undefined}
+        tabIndex={photoUrl ? 0 : undefined}
+        aria-label={photoUrl ? `Agrandir la photo de ${plant.nom}` : undefined}
+        onClick={(e) => {
+          if (!photoUrl) return;
+          e.stopPropagation();
+          e.preventDefault();
+          onOpenPhoto(photoUrl);
+        }}
+        onKeyDown={(e) => {
+          if (!photoUrl) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.stopPropagation();
+            e.preventDefault();
+            onOpenPhoto(photoUrl);
+          }
+        }}
+        className={`relative w-14 shrink-0 bg-[hsl(var(--ds-forest))]/5 flex items-center justify-center ${
+          photoUrl ? 'cursor-zoom-in' : ''
+        }`}
+      >
         {photoUrl ? (
-          <img
-            src={photoUrl}
-            alt={plant.nom}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <>
+            <img
+              src={photoUrl}
+              alt={plant.nom}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+              <Maximize2 className="w-3.5 h-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            </span>
+          </>
         ) : (
           <FamilyIcon family={plant.famille} active={checked} size={36} />
         )}
@@ -206,6 +265,7 @@ const PlantTile: React.FC<{
           </span>
         )}
       </div>
+
 
       {/* Text */}
       <div className="min-w-0 flex-1 py-1.5 pr-2">
