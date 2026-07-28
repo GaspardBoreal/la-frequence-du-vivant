@@ -11,8 +11,8 @@ import {
 
 type OAuthApi = {
   getAuthorizationDetails: (id: string) => Promise<{ data: any; error: any }>;
-  approveAuthorization: (id: string) => Promise<{ data: any; error: any }>;
-  denyAuthorization: (id: string) => Promise<{ data: any; error: any }>;
+  approveAuthorization: (id: string, options?: { skipBrowserRedirect?: boolean }) => Promise<{ data: any; error: any }>;
+  denyAuthorization: (id: string, options?: { skipBrowserRedirect?: boolean }) => Promise<{ data: any; error: any }>;
 };
 
 type SessionState = 'loading' | 'anonymous' | 'authenticated';
@@ -154,8 +154,8 @@ const OAuthConsent: React.FC = () => {
       }
 
       const { data, error } = approve
-        ? await api.approveAuthorization(authorizationId)
-        : await api.denyAuthorization(authorizationId);
+        ? await api.approveAuthorization(authorizationId, { skipBrowserRedirect: true })
+        : await api.denyAuthorization(authorizationId, { skipBrowserRedirect: true });
 
       if (error) throw new Error(error.message ?? String(error));
 
