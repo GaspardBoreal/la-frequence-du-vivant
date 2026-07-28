@@ -303,7 +303,7 @@ const CanopyHero: React.FC<{
             variant="gold"
             pulse
             icon={<Search className="w-4 h-4" />}
-            onClick={scrollToDiagnostic}
+            onClick={() => scrollToDiagnosticPersistent()}
           >
             Explorer votre diagnostic vivant
           </OrganicButton>
