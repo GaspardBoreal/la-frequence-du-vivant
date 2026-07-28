@@ -677,6 +677,12 @@
   }
   .analyze-print-page:last-child { break-after: auto; page-break-after: auto; }
 
+  .print-exact, .print-exact * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+
   .analyze-print-rule {
     height: 2px;
     width: 100%;
