@@ -104,6 +104,7 @@ export const PaletteSummary: React.FC<Props> = ({
   completedAt,
   propertyName,
   commune,
+  presence,
   onEditBlock,
   onReopenAll,
   onPrint,
