@@ -100,7 +100,7 @@ const ProprieteEspace: React.FC = () => {
           slug={slug!}
         />
 
-        <main id="diagnostic" className="max-w-4xl mx-auto px-4 py-10 space-y-6 scroll-mt-16">
+        <main id="diagnostic" className="max-w-4xl mx-auto px-4 py-10 space-y-6 scroll-mt-0">
           <PropTabs
             proprieteId={propriete.id}
             proprieteNom={propriete.nom}
