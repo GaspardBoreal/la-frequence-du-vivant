@@ -83,7 +83,11 @@ Deno.serve(async (req) => {
     const portStr = Deno.env.get('SMTP_PORT');
     const username = Deno.env.get('SMTP_USER');
     const password = Deno.env.get('SMTP_PASSWORD');
-    const defaultFrom = Deno.env.get('SMTP_FROM') ?? username;
+    // Filet de sécurité : un SMTP_FROM entouré de guillemets parasites
+    // (ex. "Nom <a@b.c>") est refusé par le serveur SMTP. On les retire.
+    const stripWrappingQuotes = (s?: string | null) =>
+      s ? s.trim().replace(/^["'](.*)["']$/s, '$1').trim() : s;
+    const defaultFrom = stripWrappingQuotes(Deno.env.get('SMTP_FROM')) ?? username;
 
     if (!host || !portStr || !username || !password) {
       console.error('[send-smtp-email] missing SMTP_* secrets');

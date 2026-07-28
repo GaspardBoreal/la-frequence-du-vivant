@@ -174,7 +174,7 @@ export function useCommunityAuth() {
 
       // Email de bienvenue (SMTP) — non bloquant
       try {
-        await supabase.functions.invoke('send-smtp-email', {
+        const { error: mailError } = await supabase.functions.invoke('send-smtp-email', {
           body: {
             to: data.email,
             subject: 'Bienvenue dans La Fréquence du Vivant 🌿',
@@ -192,8 +192,17 @@ export function useCommunityAuth() {
             text: `Bienvenue ${data.prenom} ! Votre compte sur La Fréquence du Vivant a bien été créé. Connexion : https://la-frequence-du-vivant.com/marches-du-vivant/connexion`,
           },
         });
+        // `invoke` ne lève pas d'exception sur un statut non-2xx : sans ce test,
+        // un échec d'envoi resterait totalement silencieux.
+        if (mailError) {
+          const detail =
+            typeof (mailError as any)?.context?.text === 'function'
+              ? await (mailError as any).context.text()
+              : mailError.message;
+          console.error('[useCommunityAuth] échec envoi email de bienvenue (non bloquant) :', detail);
+        }
       } catch (mailErr) {
-        console.warn('[useCommunityAuth] welcome email failed (non-blocking):', mailErr);
+        console.error('[useCommunityAuth] échec envoi email de bienvenue (non bloquant) :', mailErr);
       }
 
       if (data.affiliateToken) {
