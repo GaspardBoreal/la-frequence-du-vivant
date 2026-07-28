@@ -17,6 +17,8 @@ import { IdentifySummary } from '@/components/propriete/identify/IdentifySummary
 import { SynthesisSummary } from '@/components/propriete/synthesize/SynthesisSummary';
 import type { PropertySynthesisState } from '@/hooks/propriete/usePropertySynthesis';
 import type { SynthesisModel } from '@/components/propriete/synthesize/synthesisModel';
+import { PaletteSummary, type PaletteZoneView } from '@/components/propriete/palette/PaletteSummary';
+import type { PaletteExclusion, PalettePlanStep } from '@/hooks/propriete/usePropertyPalette';
 import {
   FloraAtlasPrintPlates,
   floraAtlasPageCount,
@@ -60,6 +62,15 @@ interface Props {
   synthesis?: PropertySynthesisState | null;
   synthesisModel?: SynthesisModel | null;
   synthesisCompletedAt?: string | null;
+  /** Étape 5 — incluse dans le cahier complet lorsque fournie. */
+  palette?: {
+    siteRule: string;
+    zones: PaletteZoneView[];
+    excluded: PaletteExclusion[];
+    implementation: PalettePlanStep[];
+    notes?: string | null;
+  } | null;
+  paletteCompletedAt?: string | null;
   /** Propriété — photos de terrain prioritaires dans l'atlas du cortège. */
   proprieteId?: string;
 }
@@ -69,7 +80,7 @@ const Divider: React.FC<{
   title: string;
   sub: string;
   foot: string;
-  variant?: 'observe' | 'analyze' | 'identify' | 'synthesize';
+  variant?: 'observe' | 'analyze' | 'identify' | 'synthesize' | 'palette';
 }> = ({ eyebrow, title, sub, foot, variant = 'analyze' }) => (
   <section className={`combined-print-divider combined-print-divider--${variant}`}>
     <div className="combined-print-divider-eyebrow">{eyebrow}</div>
@@ -102,6 +113,8 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   synthesis,
   synthesisModel,
   synthesisCompletedAt,
+  palette,
+  paletteCompletedAt,
   proprieteId,
 }) => {
 
@@ -109,6 +122,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   const plateCount = withAnalyze ? testMediaPlateCount(testMedias) : 0;
   const withIdentify = !!flora && (flora.observed_plants ?? []).length > 0;
   const withSynthesize = !!synthesis && !!synthesisModel;
+  const withPalette = !!palette;
   const atlasCount = withIdentify ? floraAtlasPageCount(flora!.observed_plants ?? []) : 0;
   const identifySoil: SoilLite = floraSoil ?? {};
   const identifySoilAvailable = !!(
@@ -293,6 +307,47 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               commune={proprieteVille}
               onEditBlock={() => {}}
               onReopenAll={() => {}}
+              printOnly
+              printSection="p2"
+            />
+          </section>
+        </>
+      )}
+
+      {withPalette && palette && (
+        <>
+          <Divider
+            eyebrow="Étape 5"
+            title="Palette végétale"
+            sub="« On ne plante pas ce que l’on aime : on plante ce que le lieu accepte. »"
+            foot={`${propertyName ?? 'Propriété'} · Fréquence du Vivant`}
+            variant="palette"
+          />
+
+          <section className="portrait-print-page combined-print-synthesize">
+            <PaletteSummary
+              siteRule={palette.siteRule}
+              zones={palette.zones}
+              excluded={palette.excluded}
+              implementation={palette.implementation}
+              notes={palette.notes}
+              completedAt={paletteCompletedAt ?? null}
+              propertyName={propertyName}
+              commune={proprieteVille}
+              printOnly
+              printSection="p1"
+            />
+          </section>
+          <section className="portrait-print-page combined-print-synthesize combined-print-synthesize-second">
+            <PaletteSummary
+              siteRule={palette.siteRule}
+              zones={palette.zones}
+              excluded={palette.excluded}
+              implementation={palette.implementation}
+              notes={palette.notes}
+              completedAt={paletteCompletedAt ?? null}
+              propertyName={propertyName}
+              commune={proprieteVille}
               printOnly
               printSection="p2"
             />
