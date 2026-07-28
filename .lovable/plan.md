@@ -1,47 +1,42 @@
-## Diagnostic
+## Objectif
 
-Le flux actuel (`src/components/propriete/print/usePrintCombined.ts`) peut lancer `window.print()` alors que des images ne sont pas encore décodées :
+Apporter à l'étape 3 « J'identifie la flore en place » le même rituel que les étapes 1 et 2 : synthèse scellée, impression de l'étape seule ou du cahier complet, et un **atlas botanique** imprimant en petites vignettes toutes les bio-indicatrices cochées, 24 par page.
 
-- **Timeout par image de 4 s** : l'image est comptée « skipped » et l'impression continue sans elle.
-- **Garde-fou global de 15 s** : `window.print()` est appelé de force, quel que soit l'état du chargement.
-- **Aucune reprise** : une image en échec (URL signée lente, transformation Supabase générée à la volée pour la 1ʳᵉ fois) n'est jamais retentée.
-- **`load` ≠ prêt à peindre** : sans `img.decode()`, une image peut être « chargée » mais pas encore rasterisée au moment de l'aperçu.
+## 1. Synthèse scellée « IdentifySummary »
 
-D'où le symptôme : 1ʳᵉ impression incomplète (cache Supabase froid, chaque variante `render/image` est calculée), 2ᵉ impression complète (tout en cache navigateur/CDN).
+Nouveau composant `IdentifySummary.tsx` (calque de `AnalyzeSummary`), affiché dès que l'étape est validée :
 
-## Ce qu'on change
+- Bandeau « Flore verrouillée · prête pour le rapport client » avec date de scellé, boutons **Imprimer** et **Rouvrir en édition**.
+- 6 sections numérotées, chacune éditable par un crayon qui ramène au bloc concerné :
+  1. **01. Cortège révélé** — nombre de plantes cochées, strates, sources (marcheurs / saisie manuelle).
+  2. **02. Les 4 pôles** — barres d'intensité (Azote, Humidité, Compaction, pH) avec niveau 1→5 et libellé.
+  3. **03. Concordance sol ↔ flore** — ICG /16 arrondi, jauge, et les 8 lignes de concordance.
+  4. **04. Lecture dominante** — phrase de synthèse auto (narratePoleScores) + conclusion rédigée.
+  5. **05. Notes de terrain**.
+  6. **06. Sources** — mention CNPF 2018 (Flore forestière française) + iNaturalist.
+- `printOnly` + `printSection` (`p1` / `p2`) pour la pagination A4, comme AnalyzeSummary.
+- `TabIdentify` bascule en mode `summary` / `edit` selon `completed_at`.
 
-### 1. Chargement garanti, avec reprises
-- Forcer `loading="eager"` + `decoding="sync"` sur toutes les images du portail avant préchargement (balayage DOM dans le hook, aucun changement dans les layouts).
-- Nouvelle fonction `ensureImage(img)` : attente `load`, puis `await img.decode()`.
-- **Retry x3** par image avec backoff (600 ms / 1,5 s / 3 s) et cache-buster (`&_r=n`) sur la tentative 2+.
-- **Fallback vers l'original** : si la variante `render/image` échoue après 2 essais, on retombe sur l'URL d'origine (non transformée) avant de déclarer un échec.
-- Timeout par tentative porté à 8 s (au lieu de 4 s pour l'unique essai).
+## 2. Atlas des bio-indicatrices — 24 vignettes par page
 
-### 2. Plus d'impression silencieusement incomplète
-- Suppression du `window.print()` forcé à 15 s. Remplacé par un **budget adaptatif** : tant que des images progressent, on attend ; l'overlay reste visible.
-- Si, après tous les retries, il reste des images en échec : on **n'imprime pas automatiquement**. L'overlay affiche un état « N photographies manquent à l'appel » avec :
-  - bouton **« Réessayer les manquantes »** (relance uniquement les échecs),
-  - bouton **« Imprimer quand même »** (choix explicite de l'utilisateur),
-  - bouton **Annuler**.
-- Impression automatique uniquement quand `chargées = total` (0 manquante).
+Nouveau composant `FloraAtlasPrintPlates.tsx` :
 
-### 3. Progression fidèle
-- La barre reflète les tentatives (`chargées / total`, plus « n en reprise »).
-- Nouvelle étape affichée quand nécessaire : « Reprise des photographies récalcitrantes (n) ».
-- Les micro-copies poétiques existantes sont conservées ; on ajoute le décompte réel pour la transparence.
+- Grille A4 **4 colonnes × 6 lignes = 24 vignettes/page**, pagination automatique (`Math.ceil(n/24)`).
+- Chaque vignette : photo carrée (via `SpeciesThumb` / cache espèces, repli pictogramme strate), **nom français en gras**, *nom latin en italique*, et une ligne de 4 micro-pastilles colorées (N · H · C · pH) reprenant les valeurs écologiques CNPF.
+- Bandeau de tête de page : « Atlas du cortège · n espèces bio-indicatrices », filet fin, pied de page paginé.
+- Traitement d'impression soigné : fond crème, filets sépia, pas d'ombres (rendu papier), `break-inside: avoid` sur chaque vignette.
+- Légende des pastilles imprimée en pied de la dernière page + source CNPF 2018.
 
-### 4. Préchauffage du cache (optionnel mais recommandé)
-- Au moment où le dialogue de choix d'impression s'ouvre (`PrintChoiceDialog`), lancer un préchargement discret en arrière-plan des URLs de photos (via `new Image()`), pour que la 1ʳᵉ impression parte déjà avec un cache chaud.
+## 3. Impression : étape seule et cahier complet
 
-## Fichiers touchés
+- Nouveau `IdentifyPrintLayout.tsx` : page 1 (cortège + pôles), page 2 (concordance + narration + notes), puis les pages d'atlas.
+- `PrintChoiceDialog` : ajout du choix `identify` et extension du cahier complet en **Portrait + J'observe + J'analyse + J'identifie**, avec une nouvelle miniature aquarelle (feuille + loupe) et libellés adaptés selon l'étape d'origine.
+- `CombinedPrintLayout` : nouvelle page de garde « Étape 3 · J'identifie la flore en place » (halo végétal, citation en italique), puis les pages de synthèse et l'atlas ; le compteur `insertedPageCount` intègre les pages d'atlas.
+- Branchement dans `TabIdentify` de `usePrintCombined` + `PrintPreparationOverlay` (progression, reprises, garantie « aucune photo manquante ») déjà en place dans les autres étapes — les photos d'espèces entrent dans le préchargement.
 
-- `src/components/propriete/print/usePrintCombined.ts` — cœur de la logique (ensureImage, retries, fallback original, arrêt avant print si incomplet, nouvel état `missing` + actions `retryMissing` / `printAnyway`).
-- `src/components/propriete/print/PrintPreparationOverlay.tsx` — état « photos manquantes » avec les 3 actions, décompte des reprises.
-- `src/components/propriete/print/printImageUrl.ts` — helper `originalUrl(url)` pour le fallback.
-- `src/components/propriete/print/PrintChoiceDialog.tsx` — préchauffage optionnel du cache images.
-- `src/components/propriete/TabObserve.tsx` et `TabAnalyze.tsx` — branchement des nouvelles props de l'overlay.
+## Détails techniques
 
-## Résultat attendu
-
-Aucune impression ne part avec des photos manquantes sans que l'utilisateur l'ait explicitement décidé ; la première impression devient aussi complète que la seconde.
+- Fichiers créés : `src/components/propriete/identify/IdentifySummary.tsx`, `src/components/propriete/identify/print/FloraAtlasPrintPlates.tsx`, `src/components/propriete/print/IdentifyPrintLayout.tsx`.
+- Fichiers modifiés : `TabIdentify.tsx` (mode summary/edit, dialogue et portails d'impression), `PrintChoiceDialog.tsx` (choix `identify`), `CombinedPrintLayout.tsx` (page de garde + slot étape 3), CSS d'impression (`.identify-print-page`, `.flora-atlas-grid`).
+- Source des vignettes : `state.observed_plants` croisé avec le KB `plantIndicatorKb` (nom latin, nom FR, valeurs N/H/C/pH), photos via le cache espèces existant.
+- Aucun changement de schéma : `propriete_flora_diagnostics.completed_at` sert déjà de verrou.
