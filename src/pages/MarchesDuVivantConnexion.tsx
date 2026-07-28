@@ -107,12 +107,23 @@ const MarchesDuVivantConnexion = () => {
     return data as { success: boolean; event_id?: string; error?: string } | null;
   };
 
+  /** Redirection interne demandée (?next=/chemin) — validée same-origin. */
+  const nextParam = (() => {
+    const raw = searchParams.get('next');
+    if (!raw) return null;
+    return raw.startsWith('/') && !raw.startsWith('//') ? raw : null;
+  })();
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
       await signIn(email, password);
       toast.success('Bienvenue parmi les marcheurs ! 🌿');
+      if (nextParam) {
+        navigate(nextParam, { replace: true });
+        return;
+      }
       const consumed = await consumeInvitationIfAny();
       if (consumed?.success && consumed.event_id) {
         toast.success('Vous êtes rattaché·e à l\'événement comme Lecteur invité 📖');
