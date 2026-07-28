@@ -336,7 +336,19 @@ export const IdentifySummary: React.FC<Props> = ({
 
       {showP2 && (
         <div className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} space-y-8`}>
+          {hasP2Cortege && (
+            <Section
+              number={1}
+              title="Cortège révélé · suite (strates hautes)"
+              blockId="cortege"
+              onEditBlock={onEditBlock}
+              printOnly={printOnly}
+            >
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4">{familyList(P2_FAMILIES)}</div>
+            </Section>
+          )}
           <Section
+
             number={3}
             title="Concordance sol ↔ flore"
             blockId="concordance"
