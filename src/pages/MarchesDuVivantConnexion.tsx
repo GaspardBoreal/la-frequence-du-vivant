@@ -17,7 +17,7 @@ import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
 import { AppChoiceDialog } from '@/components/community/AppChoiceDialog';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
-import { readPendingOAuthRequest } from '@/pages/OAuthConsent';
+import { isOAuthConsentPath, readPendingOAuthRequest, safeNextPath } from '@/lib/oauthFlow';
 
 
 const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
@@ -111,10 +111,9 @@ const MarchesDuVivantConnexion = () => {
 
   /** Redirection interne demandée (?next=/chemin) — validée same-origin. */
   const nextParam = (() => {
-    const raw = searchParams.get('next');
-    if (!raw) return null;
-    return raw.startsWith('/') && !raw.startsWith('//') ? raw : null;
+    return safeNextPath(searchParams.get('next'));
   })();
+  const oauthNext = isOAuthConsentPath(nextParam ?? readPendingOAuthRequest());
 
   /**
    * Si l'utilisateur est déjà authentifié et qu'une destination interne est
@@ -327,6 +326,15 @@ const MarchesDuVivantConnexion = () => {
                     {invitationInfo.reason === 'invalid_token' && '⚠️ Lien d\'invitation invalide.'}
                   </p>
                 )}
+              </div>
+            )}
+
+            {oauthNext && (
+              <div className="mb-4 rounded-xl border border-amber-300/30 bg-amber-400/15 p-4 text-amber-50 backdrop-blur-md">
+                <p className="text-sm font-medium">Connexion à Claude en cours</p>
+                <p className="text-xs text-amber-50/80 mt-1">
+                  Connectez-vous avec le compte autorisé : vous reviendrez directement à l'écran d'autorisation.
+                </p>
               </div>
             )}
 
