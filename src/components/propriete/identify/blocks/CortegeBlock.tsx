@@ -176,6 +176,13 @@ export const CortegeBlock: React.FC<{
           </div>
         )}
       </div>
+
+      <CortegePhotoLightbox
+        items={gallery}
+        index={lightbox}
+        onIndexChange={setLightbox}
+        onClose={() => setLightbox(null)}
+      />
     </AnalyzeCard>
   );
 };
