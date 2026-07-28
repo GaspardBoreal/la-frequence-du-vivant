@@ -178,6 +178,25 @@ export const TabPalette: React.FC<Props> = ({
   } = useExcludedOnSite(proprieteId, exclusions);
   const [mapOpenFor, setMapOpenFor] = React.useState<string | null>(null);
 
+  /** Version sérialisable pour la synthèse scellée et l'impression. */
+  const excludedPresenceRecord = React.useMemo(() => {
+    const out: Record<string, { count: number; zoneNames?: string[] }> = {};
+    const fences = zones.map((z) => ({
+      nom: z.nom,
+      fence: buildGeofence([{ geometry: z.geometry }]),
+    }));
+    excludedPresence.forEach((p, key) => {
+      if (p.count === 0) return;
+      const names = fences
+        .filter(({ fence }) => p.occurrences.some((o) => isInsideGeofence(fence, o.lat, o.lng)))
+        .map(({ nom }) => nom);
+      out[key] = { count: p.count, zoneNames: names.length ? names : undefined };
+    });
+    return out;
+  }, [excludedPresence, zones]);
+
+
+
   const selectedTotal = zoneViews.reduce((n, z) => n + z.selected.length, 0);
 
   const applyAuto = () => {
