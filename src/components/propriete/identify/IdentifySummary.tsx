@@ -1,21 +1,34 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Pencil, Printer, RotateCcw, Leaf, AlertTriangle } from 'lucide-react';
+import { Check, Pencil, Printer, RotateCcw, Leaf, AlertTriangle, Gauge, Sparkles } from 'lucide-react';
 import type { PropertyFloraState } from '@/hooks/propriete/usePropertyFlora';
 import { FamilyIcon, IcgRing } from '@/components/propriete/identify/FloraPictos';
+import {
+  VerdictChip,
+  LevelGauge,
+  VERDICT_TOKEN,
+  CONCORDANCE_GUIDE,
+  CONCORDANCE_REMEDES,
+} from '@/components/propriete/identify/ConcordanceParts';
 import {
   PLANT_INDICATORS,
   FAMILY_META,
   ECO_AXES,
   ECO_SOURCE,
   LEVEL_LABEL,
+  READ_LEVEL_LABEL,
+  poleScore,
   computePoleScores,
   computeConcordanceDetail,
   narratePoleScores,
   type PlantFamily,
   type SoilLite,
+  type EcoAxis,
+  type EcoPoleKey,
+  type ConcordanceRow,
   ICG_BAND_LABEL,
 } from '@/lib/plantIndicatorKb';
+
 
 
 export type IdentifyBlockId = 'cortege' | 'poles' | 'concordance' | 'narration' | 'notes';
@@ -101,6 +114,321 @@ const MATCH_LABEL: Record<string, { label: string; cls: string }> = {
   non: { label: 'Divergent', cls: 'bg-rose-100 text-rose-800' },
   na: { label: 'Donnée absente', cls: 'bg-[hsl(var(--ds-line))]/40 text-[hsl(var(--ds-forest-deep))]/50' },
 };
+
+/* ------------------------------------------------------------------ *
+ *  Rendus « écran verrouillé » — au niveau de richesse de l'édition   *
+ * ------------------------------------------------------------------ */
+
+const PAIRS: Array<{ axis: EcoAxis; left: EcoPoleKey; right: EcoPoleKey; question: string }> = [
+  { axis: 'eau', left: 'eau_frais', right: 'eau_sec', question: 'Le sol retient-il l’eau ?' },
+  {
+    axis: 'texture',
+    left: 'tex_argile_limon',
+    right: 'tex_limon_sable',
+    question: 'Quelle granulométrie domine ?',
+  },
+  { axis: 'nutri', left: 'nutri_riche', right: 'nutri_pauvre', question: 'Le milieu est-il nourrissant ?' },
+  { axis: 'ph', left: 'ph_calcaire', right: 'ph_acide', question: 'Quelle réaction chimique ?' },
+];
+
+const LEVELS = ['tres_faible', 'faible', 'moyen', 'fort', 'tres_fort'] as const;
+
+/** Section 02 enrichie : les 4 critères, deux pôles opposés par carte */
+const RichPoles: React.FC<{
+  scores: ReturnType<typeof computePoleScores>;
+  plantCount: number;
+  sentence: string;
+}> = ({ scores, plantCount, sentence }) => {
+  if (plantCount === 0) return <Empty />;
+  return (
+    <div className="space-y-4">
+      {sentence && (
+        <div className="rounded-2xl border-l-[3px] border-[hsl(var(--ds-gold))] border-y border-r border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-forest))]/[0.05] px-4 py-3">
+          <div className="text-[9px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/75">
+            Lecture d’ensemble
+          </div>
+          <p className="mt-1 font-serif italic text-[15px] leading-relaxed text-[hsl(var(--ds-forest-deep))]/90">
+            {sentence}
+          </p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+        {PAIRS.map((pair) => {
+          const l = poleScore(scores, pair.left);
+          const r = poleScore(scores, pair.right);
+          const color = `hsl(var(${ECO_AXES[pair.axis].token}))`;
+          const dominant = l.points === r.points ? null : l.points > r.points ? l : r;
+          return (
+            <div
+              key={pair.axis}
+              className="rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-3"
+            >
+              <div className="flex items-baseline justify-between gap-2 mb-2">
+                <span className="text-[10px] font-bold tracking-[0.24em] uppercase" style={{ color }}>
+                  {ECO_AXES[pair.axis].label}
+                </span>
+                <span className="text-[10px] italic text-[hsl(var(--ds-forest-deep))]/60">
+                  {pair.question}
+                </span>
+              </div>
+
+              {[l, r].map((s) => (
+                <div key={s.pole.key} className="mb-2 last:mb-0">
+                  <div className="flex items-center justify-between text-[11px] mb-1">
+                    <span className="font-semibold text-[hsl(var(--ds-forest-deep))]">
+                      {s.pole.label}
+                    </span>
+                    <span className="tabular-nums text-[hsl(var(--ds-forest-deep))]/70">
+                      {s.points} pt{s.points > 1 ? 's' : ''} · {s.contributors} plante
+                      {s.contributors > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="flex gap-[3px]">
+                    {LEVELS.map((lv, li) => {
+                      const active = LEVELS.indexOf(s.level) >= li && s.points > 0;
+                      return (
+                        <span
+                          key={lv}
+                          className="h-2.5 flex-1 rounded-full"
+                          style={{
+                            background: active ? color : 'hsl(var(--ds-line) / 0.6)',
+                            opacity: active ? 0.45 + li * 0.14 : 1,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="mt-1 text-[10px] font-semibold" style={{ color }}>
+                    Niveau : {s.points === 0 ? 'Aucun indice' : LEVEL_LABEL[s.level]}
+                  </div>
+                </div>
+              ))}
+
+              <div className="mt-2 pt-2 border-t border-[hsl(var(--ds-line))]/70 text-[11px] text-[hsl(var(--ds-forest-deep))]/80">
+                {dominant ? (
+                  <>
+                    Dominante : <span className="font-semibold">{dominant.pole.label}</span>
+                  </>
+                ) : (
+                  <>Aucune dominante nette — critère équilibré.</>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="text-[10px] italic text-[hsl(var(--ds-forest-deep))]/60 text-right">
+        Intensité forte = 3 points, moyenne = 2, faible = 1 · calcul basé sur {plantCount} plante
+        {plantCount > 1 ? 's' : ''} cochée{plantCount > 1 ? 's' : ''}.
+      </div>
+    </div>
+  );
+};
+
+/** Section 03 enrichie : anneau + fiabilité + tableau à jauges */
+const RichConcordance: React.FC<{
+  detail: ReturnType<typeof computeConcordanceDetail>;
+}> = ({ detail }) => {
+  const { rows, points, max, icg, band, counts, reliability, evaluated } = detail;
+  const isAxisStart = (r: ConcordanceRow, i: number) => i === 0 || rows[i - 1].axis !== r.axis;
+  const bandToken = band === 'bonne' ? 'oui' : band === 'moyenne' ? 'partiel' : 'non';
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row items-start gap-5">
+        <div className="flex-shrink-0 w-full md:w-[212px] text-center">
+          <IcgRing value={icg} band={band} still />
+          <div
+            className="mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]"
+            style={{
+              background: `hsl(var(--ds-verdict-${bandToken}) / 0.14)`,
+              color: `hsl(var(--ds-verdict-${bandToken}))`,
+            }}
+          >
+            {ICG_BAND_LABEL[band]}
+          </div>
+          <div className="mt-1.5 text-[10px] leading-relaxed text-[hsl(var(--ds-forest-deep))]/70">
+            <span className="font-semibold">
+              {points} / {max} points
+            </span>{' '}
+            → ICG {icg} %
+            <br />
+            {counts.oui} oui · {counts.partiel} partiel · {counts.non} non · {counts.na} non évalué
+          </div>
+
+          <div className="mt-3 rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/70 px-3 py-2 text-left">
+            <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]">
+              <Gauge className="w-3 h-3" /> Fiabilité {reliability} %
+            </div>
+            <div className="mt-1 h-[6px] w-full rounded-full bg-[hsl(var(--ds-line))]/60 overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${reliability}%`, background: 'hsl(var(--ds-eco-eau))' }}
+              />
+            </div>
+            <p className="mt-1 text-[10px] leading-snug text-[hsl(var(--ds-forest-deep))]/70">
+              {evaluated} ligne{evaluated > 1 ? 's' : ''} sur 8 réellement évaluée
+              {evaluated > 1 ? 's' : ''}.
+              {counts.na > 0
+                ? ' Un ICG bas peut venir des données manquantes de l’Étape 2, pas d’une divergence réelle.'
+                : ' Toutes les données du sol sont renseignées.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 w-full overflow-hidden rounded-2xl border border-[hsl(var(--ds-line))]">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[hsl(var(--ds-cream))]">
+                {['Critère', 'Étape 2 · le sol', 'Étape 3 · la flore', 'Concordance'].map((h) => (
+                  <th
+                    key={h}
+                    className="px-2.5 py-1.5 text-[9px] font-bold tracking-[0.2em] uppercase text-[hsl(var(--ds-forest))] border-b border-[hsl(var(--ds-line))]"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => {
+                const axisToken = ECO_AXES[r.axis].token;
+                const start = isAxisStart(r, i);
+                return (
+                  <tr
+                    key={r.key}
+                    className="transition-colors hover:bg-[hsl(var(--ds-cream))]/70"
+                    style={{
+                      background: i % 2 === 1 ? 'hsl(var(--ds-cream) / 0.35)' : undefined,
+                      borderTop: start && i > 0 ? '1px solid hsl(var(--ds-line))' : undefined,
+                    }}
+                  >
+                    <td className="py-1.5 pr-2.5" style={{ paddingLeft: 0 }}>
+                      <div className="flex">
+                        <span
+                          className="w-[3px] self-stretch rounded-r"
+                          style={{ background: `hsl(var(${axisToken}) / ${start ? 0.9 : 0.35})` }}
+                        />
+                        <div className="pl-2.5">
+                          {start && (
+                            <span
+                              className="block text-[9px] font-bold tracking-[0.18em] uppercase"
+                              style={{ color: `hsl(var(${axisToken}))` }}
+                            >
+                              {ECO_AXES[r.axis].label}
+                            </span>
+                          )}
+                          <span className="text-[11.5px] font-semibold text-[hsl(var(--ds-forest-deep))]">
+                            {r.label}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-2.5 py-1.5">
+                      <LevelGauge
+                        level={r.soilLevel}
+                        token="--ds-mineral"
+                        caption={
+                          r.soilLevel == null
+                            ? 'Donnée manquante'
+                            : `${READ_LEVEL_LABEL[r.soilLevel]} · ${r.soil}`
+                        }
+                      />
+                    </td>
+                    <td className="px-2.5 py-1.5">
+                      <LevelGauge
+                        level={r.floraLevel}
+                        token="--ds-chloro"
+                        caption={`${READ_LEVEL_LABEL[r.floraLevel]} · ${r.flora}`}
+                      />
+                    </td>
+                    <td className="px-2.5 py-1.5">
+                      <VerdictChip match={r.match} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-2">
+        {CONCORDANCE_GUIDE.map((g) => (
+          <div
+            key={g.m}
+            className="rounded-xl border-l-[3px] border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-3 py-2 text-[11px] text-[hsl(var(--ds-forest-deep))]/80"
+            style={{ borderLeftColor: `hsl(var(${VERDICT_TOKEN[g.m]}))` }}
+          >
+            <span className="mb-1 block">
+              <VerdictChip match={g.m} />
+            </span>
+            <p className="leading-snug">{g.txt}</p>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-[10.5px] italic leading-snug text-[hsl(var(--ds-forest-deep))]/60">
+        Calcul officiel de la méthode : 4 critères × 2 niveaux = 8 lignes, soit un maximum fixe de 16
+        points (OUI 2 · PARTIEL 1 · NON 0). ICG = (score obtenu ÷ 16) × 100. Une ligne non évaluée ne
+        réduit jamais le maximum : elle abaisse l'indice et la fiabilité, pour ne jamais surestimer un
+        diagnostic incomplet.
+      </p>
+
+      {icg < 60 && (
+        <div className="rounded-2xl border border-[hsl(var(--ds-verdict-non))]/40 bg-[hsl(var(--ds-verdict-non))]/[0.08] p-3">
+          <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.24em] uppercase text-[hsl(var(--ds-verdict-non))]">
+            <AlertTriangle className="w-3.5 h-3.5" /> En cas de faible cohérence
+          </div>
+          <ul className="mt-1.5 space-y-1 text-[11.5px] text-[hsl(var(--ds-forest-deep))]/85">
+            {CONCORDANCE_REMEDES.map((r) => (
+              <li key={r} className="flex gap-2">
+                <span className="text-[hsl(var(--ds-verdict-non))]">—</span>
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Section 04 enrichie : le texte adopté présenté comme un manuscrit */
+const RichNarration: React.FC<{ text: string }> = ({ text }) => {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  
+  return (
+    <div className="relative rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-5 py-4">
+      <span className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r bg-[hsl(var(--ds-gold))]" />
+      <div className="space-y-3 pl-3">
+        {paragraphs.map((p, i) => (
+          <p
+            key={i}
+            className={`font-serif italic text-[17px] leading-relaxed text-[hsl(var(--ds-forest-deep))] ${
+              i === 0
+                ? 'first-letter:float-left first-letter:mr-2 first-letter:mt-1 first-letter:font-serif first-letter:not-italic first-letter:text-[46px] first-letter:leading-[0.8] first-letter:text-[hsl(var(--ds-gold))]'
+                : ''
+            }`}
+          >
+            {p}
+          </p>
+        ))}
+      </div>
+      <div className="mt-3 pl-3 flex items-center gap-1.5 text-[10px] italic text-[hsl(var(--ds-forest-deep))]/55">
+        <Sparkles className="w-3 h-3 text-[hsl(var(--ds-gold))]" />
+        Un texte auto-généré à partir de vos observations, relu et validé par le propriétaire.
+
+      </div>
+    </div>
+  );
+};
+
 
 export const IdentifySummary: React.FC<Props> = ({
   state,
@@ -308,6 +636,9 @@ export const IdentifySummary: React.FC<Props> = ({
               onEditBlock={onEditBlock}
               printOnly={printOnly}
             >
+              {!printOnly ? (
+                <RichPoles scores={scores} plantCount={plants.length} sentence={sentence} />
+              ) : (
               <div className="space-y-2">
                 {scores.map((s) => (
                   <div key={s.pole.key} className="print-avoid-break">
@@ -331,6 +662,8 @@ export const IdentifySummary: React.FC<Props> = ({
                   </div>
                 ))}
               </div>
+              )}
+
             </Section>
           </div>
         </>
@@ -363,8 +696,11 @@ export const IdentifySummary: React.FC<Props> = ({
                 L'étape 2 « J'analyse le sol » n'est pas encore renseignée : la concordance
                 reste en attente.
               </p>
+            ) : !printOnly ? (
+              <RichConcordance detail={detail} />
             ) : (
               <div className="flex flex-col md:flex-row gap-6 items-start">
+
                 <div className="shrink-0 text-center">
                   <IcgRing value={detail.icg} size={112} band={detail.band} still={printOnly} />
                   <div className="mt-1 text-[9px] uppercase tracking-[0.2em] font-bold text-[hsl(var(--ds-forest))]/80">
@@ -417,12 +753,17 @@ export const IdentifySummary: React.FC<Props> = ({
             warn={!(state.flora_conclusion ?? '').trim()}
           >
             {(state.flora_conclusion ?? '').trim() ? (
-              <p className="font-serif italic text-lg text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
-                {state.flora_conclusion}
-              </p>
+              printOnly ? (
+                <p className="font-serif italic text-lg text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
+                  {state.flora_conclusion}
+                </p>
+              ) : (
+                <RichNarration text={(state.flora_conclusion ?? '').trim()} />
+              )
             ) : (
               <Empty />
             )}
+
           </Section>
 
           {(state.notes ?? '').trim() && (
