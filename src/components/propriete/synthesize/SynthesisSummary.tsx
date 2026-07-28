@@ -246,9 +246,13 @@ export const SynthesisSummary: React.FC<Props> = ({
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             )}
-            <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
-              01. Carte d’identité écologique
-            </div>
+            <SectionHead
+              num="01"
+              label="Carte d’identité écologique"
+              Icon={IdCard}
+              tint="hsl(var(--ds-forest) / 0.18)"
+              ink="hsl(var(--ds-forest-deep))"
+            />
             <div className="mt-3">
               <IdentityCard lines={model.identity} compact={printOnly} />
             </div>
@@ -264,13 +268,18 @@ export const SynthesisSummary: React.FC<Props> = ({
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             )}
-            <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
-              02. Portrait du site
-            </div>
-            <p className="mt-3 font-serif italic text-lg md:text-xl text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
+            <SectionHead
+              num="02"
+              label="Portrait du site"
+              Icon={Feather}
+              tint="hsl(var(--ds-gold) / 0.25)"
+              ink="hsl(32 60% 26%)"
+            />
+            <p className="mt-3 font-serif italic text-lg md:text-xl text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line border-l-2 pl-4 border-[hsl(var(--ds-gold))]/60 print-exact">
               {portrait}
             </p>
           </div>
+
 
           {model.missing.length > 0 && (
             <div className="mt-6 flex items-start gap-2 rounded-xl border border-amber-300/70 bg-amber-50/60 px-3 py-2 print-avoid-break">
