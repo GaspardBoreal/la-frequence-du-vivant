@@ -210,6 +210,7 @@ export const TabIdentify: React.FC<{
           soilAvailable={soilAvailable}
           completedAt={completedAt}
           propertyName={proprieteNom}
+          proprieteId={proprieteId}
         />,
         soloPortalRef.current,
       )}
@@ -232,6 +233,7 @@ export const TabIdentify: React.FC<{
           flora={state}
           floraCompletedAt={completedAt}
           floraSoil={soil}
+          proprieteId={proprieteId}
         />,
         combinedPortalRef.current,
       )}

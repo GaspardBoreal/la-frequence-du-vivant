@@ -53,6 +53,8 @@ interface Props {
   flora?: PropertyFloraState | null;
   floraCompletedAt?: string | null;
   floraSoil?: SoilLite | null;
+  /** Propriété — photos de terrain prioritaires dans l'atlas du cortège. */
+  proprieteId?: string;
 }
 
 const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string; variant?: 'observe' | 'analyze' | 'identify' }> = ({
@@ -90,7 +92,9 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   flora,
   floraCompletedAt,
   floraSoil,
+  proprieteId,
 }) => {
+
   const withAnalyze = !!soil;
   const plateCount = withAnalyze ? testMediaPlateCount(testMedias) : 0;
   const withIdentify = !!flora && (flora.observed_plants ?? []).length > 0;
@@ -227,6 +231,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
           <FloraAtlasPrintPlates
             observedIds={flora.observed_plants ?? []}
             propertyName={propertyName}
+            proprieteId={proprieteId}
             pageClassName="portrait-print-page"
           />
         </>

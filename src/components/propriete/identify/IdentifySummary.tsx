@@ -142,9 +142,38 @@ export const IdentifySummary: React.FC<Props> = ({
     ? 'grid grid-cols-2 gap-x-8 gap-y-6'
     : 'grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8';
 
+  // En impression, la colonne « Cortège révélé » déborde de la page A4 :
+  // les strates hautes (lianes, arbres) basculent sur la page 2 (« suite »).
+  const ALL_FAMILIES: PlantFamily[] = ['herbacee', 'arbuste', 'liane', 'arbre'];
+  const P1_FAMILIES: PlantFamily[] = printOnly ? ['herbacee', 'arbuste'] : ALL_FAMILIES;
+  const P2_FAMILIES: PlantFamily[] = printOnly ? ['liane', 'arbre'] : [];
+  const familyList = (families: PlantFamily[]) =>
+    families
+      .filter((f) => byFamily.has(f))
+      .map((f) => (
+        <div key={f}>
+          <div className="flex items-center gap-2 mb-1.5">
+            <FamilyIcon family={f} active size={18} />
+            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[hsl(var(--ds-forest))]/80">
+              {FAMILY_META[f].label} · {byFamily.get(f)!.length}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {byFamily.get(f)!.map((p) => (
+              <Chip key={p.id}>
+                <span className="font-medium">{p.nom}</span>
+                {p.latin && <span className="italic opacity-60 text-xs">{p.latin}</span>}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      ));
+  const hasP2Cortege = P2_FAMILIES.some((f) => byFamily.has(f));
+
   // En impression, aucune animation d'entrée : le portail est `display:none`
   // jusqu'au moment du print, ce qui figerait l'opacité initiale à 0.
   const Root: any = printOnly ? 'article' : motion.article;
+
 
   return (
     <Root
@@ -259,30 +288,15 @@ export const IdentifySummary: React.FC<Props> = ({
                 <Empty />
               ) : (
                 <div className="space-y-3">
-                  {(['herbacee', 'arbuste', 'liane', 'arbre'] as PlantFamily[])
-                    .filter((f) => byFamily.has(f))
-                    .map((f) => (
-                      <div key={f}>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <FamilyIcon family={f} active size={18} />
-                          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[hsl(var(--ds-forest))]/80">
-                            {FAMILY_META[f].label} · {byFamily.get(f)!.length}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {byFamily.get(f)!.map((p) => (
-                            <Chip key={p.id}>
-                              <span className="font-medium">{p.nom}</span>
-                              {p.latin && (
-                                <span className="italic opacity-60 text-xs">{p.latin}</span>
-                              )}
-                            </Chip>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                  {familyList(P1_FAMILIES)}
+                  {hasP2Cortege && (
+                    <div className="text-[9px] uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]/50">
+                      Lianes &amp; arbres — voir page suivante
+                    </div>
+                  )}
                 </div>
               )}
+
             </Section>
 
             <Section
@@ -322,7 +336,19 @@ export const IdentifySummary: React.FC<Props> = ({
 
       {showP2 && (
         <div className={`${printSection === 'all' ? 'print-break-before mt-8' : 'mt-0'} space-y-8`}>
+          {hasP2Cortege && (
+            <Section
+              number={1}
+              title="Cortège révélé · suite (strates hautes)"
+              blockId="cortege"
+              onEditBlock={onEditBlock}
+              printOnly={printOnly}
+            >
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4">{familyList(P2_FAMILIES)}</div>
+            </Section>
+          )}
           <Section
+
             number={3}
             title="Concordance sol ↔ flore"
             blockId="concordance"
