@@ -119,15 +119,24 @@ const ProprieteEspace: React.FC = () => {
   );
 };
 
-/** Hauteur de la top-bar fixe, pour garder la barre d'onglets visible. */
-const DIAGNOSTIC_SCROLL_OFFSET = 64;
+/** Id du conteneur sticky de la barre d'onglets. */
+const TABS_BAR_ID = 'diagnostic-tabs-bar';
 
+/** Position de défilement plaçant la barre d'onglets exactement en haut de l'écran. */
 const getDiagnosticTarget = () => {
+  const bar = document.getElementById(TABS_BAR_ID);
+  if (bar) {
+    // La barre est sticky top-0 : sa position "naturelle" se déduit de son parent.
+    const anchor = bar.parentElement ?? bar;
+    const top = anchor.getBoundingClientRect().top + window.scrollY;
+    return Math.max(top, 0);
+  }
   const el = document.getElementById('diagnostic');
   if (!el) return null;
-  const top = el.getBoundingClientRect().top + window.scrollY - DIAGNOSTIC_SCROLL_OFFSET;
+  const top = el.getBoundingClientRect().top + window.scrollY;
   return Math.max(top, 0);
 };
+
 
 /** Repositionne la vue sur l'ancre #diagnostic (barre d'onglets sous le header). */
 const scrollToDiagnostic = () => {
