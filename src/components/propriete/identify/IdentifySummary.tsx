@@ -799,7 +799,7 @@ export const IdentifySummary: React.FC<Props> = ({
                   </div>
                   <div className="identify-narration-trace">
                     Texte auto-généré à partir des observations du site, relu et validé par le
-                    propriétaire · {ECO_AXES.eau ? '' : ''}Fréquence du Vivant
+                    propriétaire · Fréquence du Vivant
                   </div>
                 </div>
               ) : (
