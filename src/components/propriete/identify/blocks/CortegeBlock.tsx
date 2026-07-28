@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Check, Sparkles, HelpCircle } from 'lucide-react';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
