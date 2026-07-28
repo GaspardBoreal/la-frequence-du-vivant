@@ -577,38 +577,110 @@ export const TabPalette: React.FC<Props> = ({
           subtitle="Trois espèces refusées : un diagnostic se juge autant à ses exclusions qu’à ses choix."
           index={3}
         >
+          {onSiteCount > 0 && (
+            <div className="mb-3 rounded-2xl border border-[#d9a441]/60 bg-[#fdf6e6] px-3 py-2 text-[12px] text-[#7a5a1c]">
+              <strong>{onSiteCount}</strong> de ces refus {onSiteCount > 1 ? 'sont' : 'est'} déjà
+              présent{onSiteCount > 1 ? 's' : ''} sur la propriété : le refus devient une consigne de
+              gestion, localisable et corrigeable.
+            </div>
+          )}
           <div className="space-y-2.5">
-            {exclusions.map((e, i) => (
-              <div
-                key={`${e.latin}-${i}`}
-                className="rounded-2xl border border-[#e2c7c1] bg-[#fdf4f2] p-3"
-              >
-                <div className="flex items-baseline gap-2 flex-wrap">
-                  <span className="w-5 h-5 rounded-full bg-[#8c3a2e] text-white text-[10px] font-bold flex items-center justify-center">
-                    {i + 1}
-                  </span>
-                  <span className="font-serif text-[15px] text-[#7a3126]">{e.fr}</span>
-                  <span className="italic text-[12px] text-[#8c3a2e]/70">{e.latin}</span>
-                  <span className="ml-auto text-[9px] uppercase tracking-widest text-[#8c3a2e]/60">
-                    {e.kind === 'principe' ? 'Par principe' : 'Inadaptée au site'}
-                  </span>
+            {exclusions.map((e, i) => {
+              const pres = excludedPresence.get(excludedKey(e.latin));
+              const onSite = (pres?.count ?? 0) > 0;
+              const open = mapOpenFor === excludedKey(e.latin);
+              return (
+                <div
+                  key={`${e.latin}-${i}`}
+                  className="rounded-2xl border border-[#e2c7c1] bg-[#fdf4f2] p-3"
+                >
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="w-5 h-5 rounded-full bg-[#8c3a2e] text-white text-[10px] font-bold flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                    <span className="font-serif text-[15px] text-[#7a3126]">{e.fr}</span>
+                    <span className="italic text-[12px] text-[#8c3a2e]/70">{e.latin}</span>
+                    <span className="ml-auto text-[9px] uppercase tracking-widest text-[#8c3a2e]/60">
+                      {onSite
+                        ? 'Présente sur site — à gérer'
+                        : e.kind === 'principe'
+                          ? 'Par principe'
+                          : 'Inadaptée au site'}
+                    </span>
+                  </div>
+
+                  {onSite && pres && (
+                    <div className="mt-2 flex items-center gap-2.5 rounded-xl border border-[#d9a441]/60 bg-[#fdf6e6] p-2">
+                      {pres.firstPhoto && (
+                        <img
+                          src={pres.firstPhoto}
+                          alt={e.fr}
+                          loading="lazy"
+                          className="w-12 h-12 rounded-lg object-cover shrink-0"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1 text-[11px] leading-snug text-[#7a5a1c]">
+                        <div className="font-semibold">
+                          ⚠ Présente ici · {pres.count} observation{pres.count > 1 ? 's' : ''}
+                          {pres.lastObservedOn && (
+                            <span className="font-normal">
+                              {' '}
+                              · dernière le{' '}
+                              {new Date(pres.lastObservedOn).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              })}
+                            </span>
+                          )}
+                        </div>
+                        {pres.matchLevel === 'genus' && (
+                          <div className="opacity-80">
+                            Genre observé, espèce à confirmer sur le terrain.
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() =>
+                          setMapOpenFor(open ? null : excludedKey(e.latin))
+                        }
+                        className="shrink-0 text-[11px] px-2.5 py-1 rounded-full border border-[#8c3a2e] text-[#8c3a2e] hover:bg-[#8c3a2e] hover:text-white transition"
+                      >
+                        {open ? 'Masquer' : 'Situer'}
+                      </button>
+                    </div>
+                  )}
+
+                  <textarea
+                    rows={2}
+                    value={e.why}
+                    onChange={(ev) => {
+                      const next = exclusions.map((x, j) =>
+                        j === i ? { ...x, why: ev.target.value } : x,
+                      );
+                      palette.setField('excluded', next);
+                    }}
+                    className="mt-1 w-full bg-transparent text-[12px] leading-snug text-[#5f2c23] outline-none resize-y"
+                  />
+
+                  {open && pres && (
+                    <ExcludedSpeciesMap
+                      proprieteId={proprieteId}
+                      latin={e.latin}
+                      label={e.fr}
+                      occurrences={pres.occurrences}
+                      allWaypoints={allWaypoints}
+                      center={derivedCenter}
+                      onClose={() => setMapOpenFor(null)}
+                    />
+                  )}
                 </div>
-                <textarea
-                  rows={2}
-                  value={e.why}
-                  onChange={(ev) => {
-                    const next = exclusions.map((x, j) =>
-                      j === i ? { ...x, why: ev.target.value } : x,
-                    );
-                    palette.setField('excluded', next);
-                  }}
-                  className="mt-1 w-full bg-transparent text-[12px] leading-snug text-[#5f2c23] outline-none resize-y"
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </AnalyzeCard>
       </div>
+
 
       {/* 04 — Mise en œuvre */}
       <div id="palette-block-implementation" className="scroll-mt-24">
