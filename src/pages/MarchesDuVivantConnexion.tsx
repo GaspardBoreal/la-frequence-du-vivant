@@ -17,6 +17,8 @@ import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
 import { AppChoiceDialog } from '@/components/community/AppChoiceDialog';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
+import { readPendingOAuthRequest } from '@/pages/OAuthConsent';
+
 
 const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
   { value: 'agroecologique', label: '🌱 Agroécologique', hint: 'sols, cultures, pratiques régénératives' },
