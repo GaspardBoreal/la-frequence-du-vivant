@@ -29,7 +29,7 @@ export const IdentifyPrintLayout: React.FC<Props> = ({
   proprieteId,
 }) => {
   const atlasPages = floraAtlasPageCount(flora.observed_plants ?? []);
-  const total = 2 + atlasPages;
+  const total = 3 + atlasPages;
 
   const Page: React.FC<{ index: number; children: React.ReactNode }> = ({ index, children }) => (
     <section className="identify-print-page">
