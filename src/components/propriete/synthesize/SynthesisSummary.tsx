@@ -286,40 +286,51 @@ export const SynthesisSummary: React.FC<Props> = ({
 
       {showP2 && (
         <div className={showP1 && !printOnly ? 'mt-10' : ''}>
-          <div className={printOnly ? 'grid grid-cols-3 gap-x-8' : 'grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-8'}>
+          <div className={printOnly ? 'grid grid-cols-3 gap-x-6' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
             <Column
               eyebrow="03 · Ce qui porte"
               title="Atouts"
               items={state.atouts}
-              dot="bg-[hsl(var(--ds-forest))]"
-              head="text-[hsl(var(--ds-forest))]"
+              Icon={Sprout}
+              ink="hsl(var(--ds-forest-deep))"
+              tint="hsl(var(--ds-forest) / 0.22)"
+              soft="hsl(var(--ds-forest) / 0.06)"
             />
             <Column
               eyebrow="04 · Ce qui limite"
               title="Contraintes"
               items={state.contraintes}
-              dot="bg-[hsl(var(--ds-gold))]"
-              head="text-[hsl(var(--ds-gold))]"
+              Icon={Scale}
+              ink="hsl(32 60% 26%)"
+              tint="hsl(var(--ds-gold) / 0.28)"
+              soft="hsl(var(--ds-gold) / 0.08)"
             />
             <Column
               eyebrow="05 · Ce qui alerte"
               title="Vigilances"
               items={state.vigilances}
-              dot="bg-amber-500"
-              head="text-amber-700"
+              Icon={ShieldAlert}
+              ink="hsl(14 62% 34%)"
+              tint="hsl(14 72% 55% / 0.24)"
+              soft="hsl(14 72% 55% / 0.07)"
             />
           </div>
 
           {(state.notes ?? '').trim().length > 0 && (
             <div className="mt-8 print-avoid-break">
-              <div className="text-[10px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]">
-                06. Note libre
-              </div>
-              <p className="mt-2 font-serif italic text-base text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
+              <SectionHead
+                num="06"
+                label="Note libre"
+                Icon={NotebookPen}
+                tint="hsl(var(--ds-forest) / 0.18)"
+                ink="hsl(var(--ds-forest-deep))"
+              />
+              <p className="mt-3 font-serif italic text-base text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
                 {state.notes}
               </p>
             </div>
           )}
+
 
           <p className="mt-8 text-[9px] leading-snug text-[hsl(var(--ds-forest-deep))]/45">
             {ECO_SOURCE} Méthode de diagnostic de site — Étape 4 « Je synthétise ».
