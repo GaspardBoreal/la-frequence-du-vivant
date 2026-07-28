@@ -367,7 +367,7 @@ const PropTabs: React.FC<{
         monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
       />
       <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-        <div className="sticky top-0 z-[60]">
+        <div id={TABS_BAR_ID} className="sticky top-0 z-[60]">
           <div
             className="w-screen ml-[50%] -translate-x-1/2 bg-background border-b border-border shadow-md"
             style={{ paddingTop: 'env(safe-area-inset-top)' }}
