@@ -381,6 +381,7 @@ function App() {
             <Route path="/formations/isegcom-bordeaux" element={<IsegcomBordeaux />} />
 
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+            <Route path="/oauth/consent" element={<OAuthConsent />} />
             <Route path="*" element={<NotFound />} />
 
           </Routes>
