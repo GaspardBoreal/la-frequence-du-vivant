@@ -371,6 +371,8 @@ export const TabIdentify: React.FC<{
               notes={state.notes ?? ''}
               onChangeNotes={(v) => setField('notes', v)}
               autoNarrative={autoNarrative}
+              aiContext={narrationAiContext}
+
               index={7}
             />
           </div>
