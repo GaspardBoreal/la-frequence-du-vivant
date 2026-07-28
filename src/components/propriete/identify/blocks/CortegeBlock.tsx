@@ -7,6 +7,7 @@ import { FamilyIcon } from '../FloraPictos';
 import { FloraRevealHeader } from './FloraRevealHeader';
 import { usePropertyFloraMatched } from '@/hooks/propriete/usePropertyFloraMatched';
 import type { FloraMatch } from '@/lib/plantIndicatorMatcher';
+import { CortegePhotoLightbox, type CortegePhotoItem } from './CortegePhotoLightbox';
 
 type TierKey = 'revealed' | 'weak' | 'hidden';
 
