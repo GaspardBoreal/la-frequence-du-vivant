@@ -9,7 +9,7 @@ import {
 } from '@/lib/plantIndicatorKb';
 
 
-export const ATLAS_PER_PAGE = 24; // 4 colonnes × 6 lignes
+export const ATLAS_PER_PAGE = 20; // 4 colonnes × 5 lignes
 
 export function floraAtlasPlants(observedIds: string[]): PlantIndicator[] {
   const order = ['herbacee', 'arbuste', 'liane', 'arbre'];

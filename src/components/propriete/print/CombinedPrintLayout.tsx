@@ -227,6 +227,19 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               printSection="p2"
             />
           </section>
+          <section className="portrait-print-page combined-print-identify combined-print-identify-second">
+            <IdentifySummary
+              state={flora}
+              soil={identifySoil}
+              soilAvailable={identifySoilAvailable}
+              completedAt={floraCompletedAt ?? null}
+              propertyName={propertyName}
+              onEditBlock={() => {}}
+              onReopenAll={() => {}}
+              printOnly
+              printSection="p3"
+            />
+          </section>
 
           <FloraAtlasPrintPlates
             observedIds={flora.observed_plants ?? []}

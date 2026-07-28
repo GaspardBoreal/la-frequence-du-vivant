@@ -29,7 +29,7 @@ export const IdentifyPrintLayout: React.FC<Props> = ({
   proprieteId,
 }) => {
   const atlasPages = floraAtlasPageCount(flora.observed_plants ?? []);
-  const total = 2 + atlasPages;
+  const total = 3 + atlasPages;
 
   const Page: React.FC<{ index: number; children: React.ReactNode }> = ({ index, children }) => (
     <section className="identify-print-page">
@@ -44,7 +44,7 @@ export const IdentifyPrintLayout: React.FC<Props> = ({
     </section>
   );
 
-  const summary = (section: 'p1' | 'p2') => (
+  const summary = (section: 'p1' | 'p2' | 'p3') => (
     <IdentifySummary
       state={flora}
       soil={soil}
@@ -62,6 +62,7 @@ export const IdentifyPrintLayout: React.FC<Props> = ({
     <div className="identify-print-root-wrap">
       <Page index={1}>{summary('p1')}</Page>
       <Page index={2}>{summary('p2')}</Page>
+      <Page index={3}>{summary('p3')}</Page>
       <FloraAtlasPrintPlates
         observedIds={flora.observed_plants ?? []}
         propertyName={propertyName}

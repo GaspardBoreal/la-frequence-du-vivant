@@ -1,55 +1,42 @@
-## Constat (vérifié dans le code)
+## Constat (vérifié sur le PDF fourni et dans le code)
 
-La version **édition** de l'Étape 3 est nettement plus riche que la version **verrouillée** :
+Le PDF « J'identifie » sort en 3 pages :
 
-| Bloc | Édition | Verrouillé (actuel) |
-| --- | --- | --- |
-| Somme des indices | 4 cartes par critère (Eau / Texture / Nutriments / pH), 2 pôles opposés par carte, jauge 5 crans colorée par axe, nb de plantes contributrices, ligne « Dominante », encart « Lecture d'ensemble » | simple liste de 8 barres vertes monochromes, sans axe couleur, sans opposition, sans dominante |
-| Concordance sol/flore | anneau ICG + pastille de bande, compteurs oui/partiel/non/na, jauge de fiabilité animée, tableau à filets colorés par critère, jauges 3 crans sol vs flore, pastilles verdict OUI 2 pts / PARTIEL 1 pt / NON, guide de lecture 3 cartes, encart remèdes si ICG < 60, note de calcul | anneau + tableau texte brut à 4 colonnes, pastilles ternes, aucune jauge, aucun guide, aucun remède |
-| Narration | mode automatique, 2 variantes, traçabilité du registre | paragraphe brut, sans mention de l'origine ni du registre |
+- **Page 1** : cartouche + lecture dominante + cortège (herbacées, arbustes) + somme des indices. Équilibrée.
+- **Page 2** : cortège suite (lianes, arbres) + concordance sol ↔ flore + **narration qui déborde** — le texte est coupé net au pied de page (« En touchant la terre lors des prélèvements physiques… » passe sous le filet de pied de page et se perd).
+- **Page 3** : l'atlas du cortège, lui aussi **tronqué** — les vignettes 17 à 19 sont coupées en bas de page.
 
-Le composant `IdentifySummary.tsx` sert **à la fois** l'écran verrouillé et l'impression A4 (`printOnly`), d'où l'appauvrissement actuel : tout a été calibré pour la page imprimée.
-
-## Principe retenu
-
-Séparer les deux régimes de rendu au sein du même composant : **écran verrouillé = riche** (proche de l'édition, en mode « lecture »), **impression = compact** (inchangé, A4 sûr). Tout l'enrichissement est conditionné à `!printOnly`.
+Cause : dans `IdentifySummary.tsx`, la section 04 (narration), les notes de terrain et les sources sont rendues dans le même bloc `printSection="p2"` que la concordance. Aucun espace ne reste. Et `IdentifyPrintLayout` pagine sur `2 + atlasPages`, donc l'atlas s'ouvre en page 3 sans respiration.
 
 ## Ce qui sera construit
 
-### 1. Section 02 — « Somme des indices : ce que racontent les plantes observées »
+### 1. Nouvelle page 3 — « Ce que la flore raconte » (narration pleine page)
 
-À l'écran verrouillé, remplacement de la liste de barres par la **lecture par critère** :
-- 4 cartes (Eau, Texture, Nutriments, Réaction), une par critère, en grille 2 colonnes desktop / 1 colonne mobile.
-- Dans chaque carte, les deux pôles opposés face à face avec la jauge 5 crans **colorée par l'axe** (tokens `--ds-eco-*` déjà en place), points, nombre de plantes contributrices et niveau nommé.
-- Bandeau « Dominante » en pied de carte.
-- En tête de section, l'encart **« Lecture d'ensemble »** (la phrase `narratePoleScores`) présenté comme une citation sur filet doré — sans le bouton « Reprendre dans ma conclusion », inutile en lecture seule.
-- Aucune animation d'entrée en lecture (comme déjà fait pour l'impression) afin de rester net à l'ouverture.
+Ajout d'un régime d'impression `p3` dans `IdentifySummary` qui isole :
 
-### 2. Section 03 — « Concordance sol / flore : deux voix, une seule histoire ? »
+- Un **bandeau de suite** propre (eyebrow `Diagnostic Propriété · Étape 3 · Narration`, nom de la propriété en serif italique, sous-titre `Ce que la flore raconte`), aligné sur le bandeau actuel de la page 2.
+- Une **exergue** en tête : la phrase de lecture dominante (`narratePoleScores`) sur filet doré, comme accroche du texte.
+- La **narration en page de manuscrit A4** : colonne de texte confortable (justifiée, interlignage large), **lettrine** sur le premier paragraphe, filet doré latéral, paragraphes séparés — le texte respire enfin sur une page entière au lieu d'être écrasé.
+- Une **ligne de traçabilité** discrète en pied de texte : origine du texte (auto-généré à partir des observations / rédigé sur site) — même mention qu'à l'écran.
+- En dessous, **05. Notes de terrain** (si renseignées) et **06. Sources** (CNPF 2018 + iNaturalist), qui quittent la page 2.
 
-Reprise à l'écran des composants de lecture de l'édition :
-- Colonne gauche : anneau ICG + **pastille de bande** colorée, ligne `points / max → ICG %`, compteurs `oui · partiel · non · non évalué`, puis la **carte Fiabilité** (jauge + phrase d'avertissement quand des lignes ne sont pas évaluées).
-- Tableau : **filet vertical coloré par critère**, libellé d'axe en tête de groupe, **jauges 3 crans** sol (minéral) vs flore (chlorophylle) avec légende de niveau, et **pastille verdict** contrastée (OUI · 2 pts / PARTIEL · 1 pt / NON · 0 pt / NON ÉVALUÉ).
-- Sous le tableau : **guide de lecture** en 3 cartes (même niveau / un cran d'écart / deux crans) et, si ICG < 60, l'encart **« En cas de faible cohérence »** avec les 3 pistes de vérification.
-- Note de calcul officielle (16 points fixes) conservée en pied.
+La page 2 se termine désormais proprement sur la concordance : cortège suite + anneau ICG + tableau + note de calcul, avec de l'air en pied.
 
-Les sous-composants `VerdictChip` et `LevelGauge` sont extraits de `ConcordanceBlock.tsx` vers un fichier partagé pour être réutilisés à l'identique par la synthèse — une seule source de vérité visuelle entre édition et verrouillé.
+### 2. Atlas du cortège en page 4
 
-### 3. Section 04 — « Ce que la flore raconte »
+- `IdentifyPrintLayout` passe à **3 pages fixes + N planches d'atlas** ; la pagination de pied (`x / total`) est recalculée en conséquence, l'atlas démarre donc en page 4.
+- L'atlas actuel coupe ses dernières vignettes : la grille passe de 24 à **20 vignettes par planche (4 × 5)**, ce qui garantit que la dernière ligne tient sous le pied de page A4 et agrandit légèrement chaque photo. Ici : 19 espèces → une planche unique complète, sans troncature.
+- Contrôle qualité visuel après génération (rendu en images des 4 pages) pour vérifier qu'aucun bloc n'est coupé.
 
-- Titre de section renommé en **« Ce que la flore raconte »** (au lieu de « Narration du diagnostic »).
-- Texte présenté comme une **page de manuscrit** : lettrine sur le premier paragraphe, filet doré latéral, paragraphes séparés proprement (le texte est déjà en `whitespace-pre-line`).
-- Sous le texte, une ligne de traçabilité discrète : **registre retenu** (Agronomique / Sensible) quand la narration vient de l'IA, et la mention *« Un texte auto-généré à partir de vos observations — relu et validé par le propriétaire »*. Si le texte a été écrit ou repris à la main, la mention devient *« Rédigé sur site »*.
-- Rappel d'action en lecture seule : le crayon d'édition de section (déjà présent au survol) reste le chemin pour reformuler.
+### 3. Cahier complet (Portrait + J'observe + J'analyse + J'identifie)
 
-### 4. Cohérence d'ensemble
-
-- Le bandeau « Lecture dominante » en tête de synthèse gagne les chips manquants (nb de plantes, strates, ICG **et** fiabilité).
-- L'impression (`printOnly`) reste **strictement inchangée** : mêmes pages, même pagination, mêmes gabarits A4 — vérification visuelle de la simulation d'impression avant clôture.
+La même page narration est insérée dans `CombinedPrintLayout` entre la page concordance et les planches d'atlas, afin que les deux sorties (étape seule et cahier complet) racontent la même histoire, dans le même ordre.
 
 ## Détails techniques
 
-- `src/components/propriete/identify/blocks/ConcordanceBlock.tsx` : extraction de `VerdictChip`, `LevelGauge`, `VERDICT_TOKEN`, `GUIDE`, `REMEDES` vers `src/components/propriete/identify/ConcordanceParts.tsx` ; le bloc d'édition importe désormais ces primitives (aucun changement visuel côté édition).
-- `src/components/propriete/identify/IdentifySummary.tsx` : ajout de deux rendus alternatifs (`renderPolesRich`, `renderConcordanceRich`) utilisés quand `!printOnly` ; les rendus compacts actuels restent pour l'impression. Ajout du bloc narration enrichi.
-- Aucune modification de calcul : `computePoleScores`, `computeConcordanceDetail`, `narratePoleScores` et l'ICG/16 restent identiques.
-- Aucune migration de base ; le registre de narration est lu depuis l'état déjà présent côté client (pas de nouvelle colonne — si aucun registre n'est connu, la mention générique s'affiche).
+- `src/components/propriete/identify/IdentifySummary.tsx` : `printSection` accepte `'p3'` ; les sections 04/05/06 sont déplacées de `showP2` vers un nouveau bloc `showP3` avec son propre bandeau et son gabarit manuscrit d'impression. Aucun changement du rendu écran (`!printOnly`) ni des calculs.
+- `src/components/propriete/print/IdentifyPrintLayout.tsx` : ajout de `<Page index={3}>` et `total = 3 + atlasPages`.
+- `src/components/propriete/print/CombinedPrintLayout.tsx` : ajout de la section `printSection="p3"` avant `FloraAtlasPrintPlates`.
+- `src/components/propriete/identify/print/FloraAtlasPrintPlates.tsx` : `ATLAS_PER_PAGE` 24 → 20.
+- `src/index.css` : styles d'impression de la page narration (lettrine, colonne de texte, filet) et ajustement de la grille atlas en 4 × 5.
+- Aucune migration, aucun appel IA supplémentaire.

@@ -43,8 +43,8 @@ interface Props {
   onReopenAll: () => void;
   onPrint?: () => void;
   printOnly?: boolean;
-  /** p1 = cortège + pôles, p2 = concordance + narration + notes + sources */
-  printSection?: 'all' | 'p1' | 'p2';
+  /** p1 = cortège + pôles, p2 = concordance, p3 = narration + notes + sources */
+  printSection?: 'all' | 'p1' | 'p2' | 'p3';
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
@@ -467,7 +467,9 @@ export const IdentifySummary: React.FC<Props> = ({
 
   const showP1 = printSection === 'all' || printSection === 'p1';
   const showP2 = printSection === 'all' || printSection === 'p2';
+  const showP3 = printSection === 'all' || printSection === 'p3';
   const isSuite = printSection === 'p2';
+  const isNarrationPage = printSection === 'p3';
   const gridCols = printOnly
     ? 'grid grid-cols-2 gap-x-8 gap-y-6'
     : 'grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8';
@@ -537,6 +539,20 @@ export const IdentifySummary: React.FC<Props> = ({
           </h2>
           <div className="mt-2 text-[10px] tracking-[0.25em] uppercase text-[hsl(var(--ds-forest))]/60">
             Concordance sol ↔ flore · Fréquence du Vivant
+          </div>
+        </div>
+      )}
+
+      {isNarrationPage && (
+        <div className="mb-8 border-b border-[hsl(var(--ds-gold))]/70 pb-5">
+          <div className="text-[10px] font-bold tracking-[0.35em] uppercase text-[hsl(var(--ds-forest))]/70">
+            Diagnostic Propriété · Étape 3 · Narration
+          </div>
+          <h2 className="mt-2 font-serif italic text-3xl text-[hsl(var(--ds-forest-deep))] leading-tight">
+            {propertyName ?? 'La flore en place'}
+          </h2>
+          <div className="mt-2 text-[10px] tracking-[0.25em] uppercase text-[hsl(var(--ds-forest))]/60">
+            Ce que la flore raconte · Fréquence du Vivant
           </div>
         </div>
       )}
@@ -743,10 +759,25 @@ export const IdentifySummary: React.FC<Props> = ({
               </div>
             )}
           </Section>
+        </div>
+      )}
+
+      {showP3 && (
+        <div className={`${printSection === 'all' ? 'mt-8' : 'mt-0'} space-y-8`}>
+          {printOnly && sentence && (
+            <div className="identify-narration-exergue print-avoid-break">
+              <div className="text-[9px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/70">
+                Lecture dominante
+              </div>
+              <p className="mt-1.5 font-serif italic text-xl text-[hsl(var(--ds-forest-deep))] leading-snug">
+                {sentence}
+              </p>
+            </div>
+          )}
 
           <Section
             number={4}
-            title="Narration du diagnostic"
+            title="Ce que la flore raconte"
             blockId="narration"
             onEditBlock={onEditBlock}
             printOnly={printOnly}
@@ -754,9 +785,23 @@ export const IdentifySummary: React.FC<Props> = ({
           >
             {(state.flora_conclusion ?? '').trim() ? (
               printOnly ? (
-                <p className="font-serif italic text-lg text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
-                  {state.flora_conclusion}
-                </p>
+                <div className="identify-narration-print">
+                  <div className="identify-narration-body">
+                    {(state.flora_conclusion ?? '')
+                      .trim()
+                      .split(/\n{2,}/)
+                      .filter((p) => p.trim())
+                      .map((para, i) => (
+                        <p key={i} className={i === 0 ? 'identify-narration-lead' : undefined}>
+                          {para.trim()}
+                        </p>
+                      ))}
+                  </div>
+                  <div className="identify-narration-trace">
+                    Texte auto-généré à partir des observations du site, relu et validé par le
+                    propriétaire · Fréquence du Vivant
+                  </div>
+                </div>
               ) : (
                 <RichNarration text={(state.flora_conclusion ?? '').trim()} />
               )
