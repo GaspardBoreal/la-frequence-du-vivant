@@ -9,7 +9,7 @@ import { defineMcp, auth } from "npm:@lovable.dev/mcp-js@0.24.0";
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.24.0";
 
 // src/lib/mcp/supabaseForUser.ts
-import { createClient } from "npm:@supabase/supabase-js@^2.110.9";
+import { createClient } from "npm:@supabase/supabase-js@2.52.1";
 function supabaseForUser(ctx) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY;
