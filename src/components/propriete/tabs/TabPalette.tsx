@@ -34,6 +34,7 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import ZonesMapBlock from '@/components/propriete/palette/ZonesMapBlock';
 import ExcludedSpeciesMap from '@/components/propriete/palette/ExcludedSpeciesMap';
 import { useExcludedOnSite, excludedKey } from '@/hooks/propriete/useExcludedOnSite';
+import { buildGeofence, isInsideGeofence } from '@/lib/geofence';
 import ZonePaletteCard from '@/components/propriete/palette/ZonePaletteCard';
 import {
   PaletteSummary,
