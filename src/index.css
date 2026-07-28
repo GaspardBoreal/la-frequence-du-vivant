@@ -1929,3 +1929,170 @@
   color: #8a6d3b;
 }
 .property-print-page .portrait-print-footer .center { letter-spacing: 3pt; }
+
+/* === IDENTIFY PRINT — portail A4 dédié « J'identifie la flore en place » === */
+#identify-print-portal { display: none; }
+
+@media print {
+  body.identify-print-mode {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  body.identify-print-mode > *:not(#identify-print-portal) { display: none !important; }
+  body.identify-print-mode #identify-print-portal { display: block !important; }
+
+  .identify-print-page {
+    position: relative;
+    box-sizing: border-box;
+    width: 210mm;
+    min-height: 296mm;
+    max-height: 296mm;
+    overflow: hidden;
+    margin: 0;
+    padding: 14mm 13mm 12mm;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(107, 124, 90, 0.12) 0%, rgba(255, 255, 255, 0) 62%),
+      #fdfcf7 !important;
+    break-after: page;
+    page-break-after: always;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .identify-print-page:last-child { break-after: auto; page-break-after: auto; }
+
+  .identify-print-rule {
+    height: 2px;
+    width: 100%;
+    margin-bottom: 8mm;
+    background: linear-gradient(90deg, hsl(var(--ds-forest)) 0%, rgba(107, 124, 90, 0.12) 100%);
+  }
+  .identify-print-body { font-size: 10.5pt; line-height: 1.45; }
+  .identify-print-page .identify-print-root {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  .identify-print-body .print-break-before {
+    break-before: auto !important;
+    page-break-before: auto !important;
+    margin-top: 0 !important;
+  }
+  .identify-print-foot {
+    position: absolute;
+    left: 13mm; right: 13mm; bottom: 7mm;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: hsl(var(--ds-forest) / 0.6);
+    border-top: 1px solid hsl(var(--ds-forest) / 0.35);
+    padding-top: 3mm;
+  }
+
+  @page { size: A4; margin: 0; }
+}
+
+/* === ATLAS DU CORTÈGE — 24 vignettes par page (étape 3) === */
+.flora-atlas-page {
+  display: flex;
+  flex-direction: column;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+.flora-atlas-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 0.3mm solid #cfc39f;
+  padding-bottom: 2.5mm;
+  margin-bottom: 4mm;
+}
+.flora-atlas-eyebrow {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 6.5pt; letter-spacing: 2pt; text-transform: uppercase; color: #8a7c64;
+}
+.flora-atlas-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 15pt;
+  color: #2a3a2a;
+  margin: 1mm 0 0;
+}
+.flora-atlas-page-num {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 6.5pt; letter-spacing: 1.6pt; text-transform: uppercase; color: #8a7c64;
+}
+.flora-atlas-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4mm 4mm;
+  flex: 1;
+  align-content: start;
+}
+.flora-atlas-cell {
+  margin: 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.flora-atlas-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 0.25mm solid #d9cdb0;
+  border-radius: 1.5mm;
+  background: #f3eee1;
+}
+.flora-atlas-photo img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.flora-atlas-photo-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, #f4efe1 0%, #e6e3d0 100%);
+}
+.flora-atlas-num {
+  position: absolute; top: 1mm; left: 1mm;
+  min-width: 4.4mm; height: 4.4mm; padding: 0 0.8mm;
+  border-radius: 50%;
+  background: #6b7c5a; color: #fdf9f2;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 7.5pt; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.flora-atlas-cell figcaption { margin-top: 1.4mm; display: block; }
+.flora-atlas-name {
+  display: block;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 7pt; font-weight: 700; color: #2a3a2a; line-height: 1.2;
+}
+.flora-atlas-latin {
+  display: block;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic; font-size: 6.6pt; color: #8a7c64; line-height: 1.25;
+}
+.flora-atlas-dots { display: flex; gap: 0.8mm; margin-top: 1mm; }
+.flora-atlas-pastille {
+  display: inline-flex; align-items: center; gap: 0.3mm;
+  padding: 0.2mm 0.9mm; border-radius: 1mm;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 5.6pt; font-weight: 700; color: #1e2a1e;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+.flora-atlas-pastille-val { font-weight: 400; }
+.flora-atlas-foot {
+  margin-top: 4mm;
+  display: flex; flex-direction: column; gap: 1mm;
+  border-top: 0.2mm solid #d9cdb0;
+  padding-top: 2.5mm;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 6.2pt; color: #8a7c64; line-height: 1.35;
+}
+.flora-atlas-source { font-style: italic; }
+.flora-atlas-sign { letter-spacing: 1.4pt; text-transform: uppercase; }
