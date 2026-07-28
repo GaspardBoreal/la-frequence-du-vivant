@@ -171,8 +171,15 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
 
           <div className="flora-atlas-grid">
             {page.map((p, i) => (
-              <Vignette key={p.id} plant={p} photo={photoOf(p)} index={pi * ATLAS_PER_PAGE + i + 1} />
+              <Vignette
+                key={p.id}
+                plant={p}
+                photo={photoOf(p)}
+                field={!!fieldPhotoOf(p)}
+                index={pi * ATLAS_PER_PAGE + i + 1}
+              />
             ))}
+
           </div>
 
           <footer className="flora-atlas-foot">
