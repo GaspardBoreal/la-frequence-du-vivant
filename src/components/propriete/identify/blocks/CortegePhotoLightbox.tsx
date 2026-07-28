@@ -183,29 +183,40 @@ export const CortegePhotoLightbox: React.FC<Props> = ({ items, index, onIndexCha
 
       <div
         onClick={(e) => e.stopPropagation()}
-        className="mt-4 w-full max-w-2xl rounded-xl bg-white/10 backdrop-blur px-4 py-3 text-white"
+        className="mt-4 w-full max-w-2xl rounded-2xl border border-white/15 bg-neutral-900/95 shadow-2xl px-5 py-4 text-neutral-50"
       >
-        <div className="font-serif text-lg leading-tight">{item.nom}</div>
-        {item.latin && <div className="text-xs italic opacity-70">{item.latin}</div>}
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] opacity-80">
-          {typeof item.observations === 'number' && item.observations > 0 && (
-            <span className="flex items-center gap-1">
-              <Eye className="w-3 h-3" /> Vu {item.observations}×
-            </span>
-          )}
-          {dateStr && (
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> Dernière observation · {dateStr}
-            </span>
-          )}
-          <span className="opacity-60">Molette ou double-clic pour zoomer · ← → pour naviguer</span>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="font-serif text-xl leading-tight text-neutral-50">{item.nom}</div>
+            {item.latin && (
+              <div className="text-sm italic text-neutral-300">{item.latin}</div>
+            )}
+          </div>
           {items.length > 1 && (
-            <span className="ml-auto opacity-60">
+            <span className="shrink-0 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium tabular-nums text-neutral-100">
               {(index as number) + 1} / {items.length}
             </span>
           )}
         </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {typeof item.observations === 'number' && item.observations > 0 && (
+            <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-neutral-100">
+              <Eye className="w-3.5 h-3.5" /> Vu {item.observations}×
+            </span>
+          )}
+          {dateStr && (
+            <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-neutral-100">
+              <Calendar className="w-3.5 h-3.5" /> Dernière observation · {dateStr}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-3 border-t border-white/10 pt-2 text-[11px] text-neutral-400">
+          Molette ou double-clic pour zoomer · ← → pour naviguer · Échap pour fermer
+        </div>
       </div>
+
     </motion.div>,
     document.body,
   );
