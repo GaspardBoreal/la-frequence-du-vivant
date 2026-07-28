@@ -371,7 +371,10 @@ const PropTabs: React.FC<{
             <TabsTrigger value="synthesize">Je synthétise</TabsTrigger>
             <TabsTrigger value="palette">Palette végétale</TabsTrigger>
           </TabsList>
+          </div>
         </div>
+
+
 
         <TabsContent value="portrait" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabPortrait
