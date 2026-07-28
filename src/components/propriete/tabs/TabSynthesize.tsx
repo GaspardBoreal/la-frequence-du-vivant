@@ -9,6 +9,7 @@ import {
   Compass,
   FileText,
   Wand2,
+  Printer,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
