@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://xzbunrtgbfbhinkzkzhf.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "la-frequence-du-vivant",
+      "version": "0.1.0",
+      "title": "La Fréquence du Vivant"
+    },
+    "tools": [
+      {
+        "name": "list_proprietes",
+        "title": "Lister les propriétés",
+        "description": "Liste les propriétés (jardins, domaines, sites) accessibles à l'utilisateur connecté, avec id, nom, slug, ville et rôle.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_propriete_overview",
+        "title": "Fiche propriété",
+        "description": "Fiche complète d'une propriété : identité, parcelles cadastrales (surfaces, géométrie), événements de marche liés et contributeurs.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "propriete": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Identifiant (UUID) ou slug de la propriété, ex. 'jardin-monde-deviat'."
+            }
+          },
+          "required": [
+            "propriete"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_propriete_biodiversity",
+        "title": "Synthèse biodiversité",
+        "description": "Synthèse biodiversité d'une propriété : nombre total d'espèces, répartition par règne, top espèces, dernier événement et dernière observation. Source identique à celle affichée dans l'application.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "propriete": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Identifiant (UUID) ou slug de la propriété."
+            }
+          },
+          "required": [
+            "propriete"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_propriete_species_pool",
+        "title": "Pool d'espèces observées",
+        "description": "Liste dédupliquée des espèces observées sur une propriété (nom scientifique, nom commun, règne, famille, nombre d'observations, dernière observation). Matière première pour auditer les comptages affichés.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "propriete": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Identifiant (UUID) ou slug de la propriété."
+            },
+            "limit": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Nombre maximum d'espèces retournées (défaut 300). Null = 300."
+            }
+          },
+          "required": [
+            "propriete",
+            "limit"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_propriete_diagnostic",
+        "title": "Diagnostic (J'observe / J'analyse / J'identifie)",
+        "description": "Données brutes des 3 étapes du diagnostic d'une propriété : observations du site, analyse du sol (prélèvements, structure, texture, pH, vie) et diagnostic flore (plantes observées, concordance, score ICG).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "propriete": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Identifiant (UUID) ou slug de la propriété."
+            },
+            "etape": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "observe",
+                    "sol",
+                    "flore",
+                    "toutes"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Étape à retourner. Null = toutes."
+            }
+          },
+          "required": [
+            "propriete",
+            "etape"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_propriete_observation_points",
+        "title": "Points d'observation géolocalisés",
+        "description": "Observations géolocalisées rattachées à une propriété (espèce, coordonnées, date, source marcheur ou iNaturalist), corrections GPS éditoriales déjà appliquées. Utile pour vérifier les cartes et les comptages.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "propriete": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Identifiant (UUID) ou slug de la propriété."
+            },
+            "espece": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Filtre optionnel sur le nom scientifique ou commun (recherche partielle). Null = toutes."
+            },
+            "limit": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Nombre maximum de points retournés (défaut 500). Null = 500."
+            }
+          },
+          "required": [
+            "propriete",
+            "espece",
+            "limit"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

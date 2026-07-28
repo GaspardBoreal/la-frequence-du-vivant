@@ -26,6 +26,7 @@ const CrmShell = lazy(() => import('./layouts/CrmShell'));
 
 /* --- Chargées à la demande --- */
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const OAuthConsent = lazy(() => import('./pages/OAuthConsent'));
 const AdminResetPassword = lazy(() => import('./pages/AdminResetPassword'));
 const MarcheDetail = lazy(() => import('./pages/MarcheDetail'));
 const MarcheDetailBio = lazy(() => import('./pages/MarcheDetailBio'));
@@ -379,7 +380,9 @@ function App() {
             {/* Formations */}
             <Route path="/formations/isegcom-bordeaux" element={<IsegcomBordeaux />} />
 
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="*" element={<NotFound />} />
+
           </Routes>
           </Suspense>
           <Suspense fallback={null}>
