@@ -184,8 +184,9 @@ const PlantTile: React.FC<{
   match: FloraMatch;
   checked: boolean;
   onToggle: () => void;
+  onOpenPhoto: (url: string) => void;
   tier: TierKey;
-}> = ({ match, checked, onToggle, tier }) => {
+}> = ({ match, checked, onToggle, onOpenPhoto, tier }) => {
   const { plant, observations, lastSeen, photos, confidence } = match;
   const photoUrl = photos[0];
   const dateStr = lastSeen ? new Date(lastSeen).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : null;
