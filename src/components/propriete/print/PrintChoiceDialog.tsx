@@ -1,8 +1,8 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Printer, BookOpen, Images, Sparkles, Layers } from 'lucide-react';
+import { Printer, BookOpen, Images, Sparkles, Layers, Leaf } from 'lucide-react';
 
-export type PrintChoice = 'observe' | 'analyze' | 'combined';
+export type PrintChoice = 'observe' | 'analyze' | 'identify' | 'combined';
 
 interface Props {
   open: boolean;
@@ -10,11 +10,15 @@ interface Props {
   onConfirm: (choice: PrintChoice) => void;
   portraitPhotoCount: number;
   /** Étape depuis laquelle l'impression est lancée. */
-  origin?: 'observe' | 'analyze';
+  origin?: 'observe' | 'analyze' | 'identify';
   /** L'étape 2 est-elle validée (pour le cahier complet) ? */
   analyzeReady?: boolean;
   /** L'étape 1 est-elle validée (pour le cahier complet) ? */
   observeReady?: boolean;
+  /** L'étape 3 est-elle validée (pour le cahier complet) ? */
+  identifyReady?: boolean;
+  /** Nombre d'espèces bio-indicatrices cochées (atlas). */
+  floraCount?: number;
 }
 
 /** Miniature aquarelle — Carnet seul (cachet daté) */
@@ -49,6 +53,30 @@ const MiniAnalyze: React.FC = () => (
       <circle key={i} cx={x} cy={[52, 44, 58, 46][i]} r="2.6" fill="#2f7d4f" />
     ))}
     <text x="18" y="82" fill="#8a6d3b" fontSize="6" fontFamily="Georgia, serif" fontStyle="italic">A · B · C · D</text>
+  </svg>
+);
+
+/** Miniature aquarelle — Atlas de la flore (grille de vignettes) */
+const MiniIdentify: React.FC = () => (
+  <svg viewBox="0 0 120 90" className="w-full h-24">
+    <rect x="6" y="6" width="108" height="78" rx="3" fill="#fbf7ee" stroke="#c9b78a" strokeWidth="1" />
+    <line x1="18" y1="18" x2="76" y2="18" stroke="#6b7c5a" strokeWidth="1.4" />
+    {[0, 1, 2, 3].map((c) =>
+      [0, 1, 2].map((r) => (
+        <g key={`${c}-${r}`}>
+          <rect
+            x={18 + c * 22}
+            y={26 + r * 18}
+            width="17"
+            height="12"
+            fill={['#cfe0c2', '#e3dcc0', '#c8d9cf', '#ded0bb'][(c + r) % 4]}
+            stroke="#b08d57"
+            strokeWidth="0.5"
+          />
+          <line x1={18 + c * 22} y1={40 + r * 18} x2={30 + c * 22} y2={40 + r * 18} stroke="#a89b78" strokeWidth="0.7" />
+        </g>
+      )),
+    )}
   </svg>
 );
 
@@ -129,27 +157,36 @@ export const PrintChoiceDialog: React.FC<Props> = ({
   origin = 'observe',
   analyzeReady = false,
   observeReady = true,
+  identifyReady = false,
+  floraCount = 0,
 }) => {
-  const soloChoice: PrintChoice = origin === 'analyze' ? 'analyze' : 'observe';
+  const soloChoice: PrintChoice =
+    origin === 'analyze' ? 'analyze' : origin === 'identify' ? 'identify' : 'observe';
   const [choice, setChoice] = React.useState<PrintChoice | null>(null);
 
   const combinedDisabled =
-    portraitPhotoCount === 0 || (origin === 'analyze' && !observeReady);
+    portraitPhotoCount === 0 || (origin !== 'observe' && !observeReady);
 
   React.useEffect(() => {
     if (open) setChoice(combinedDisabled ? soloChoice : 'combined');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, combinedDisabled, soloChoice]);
 
-  const soloPages = origin === 'analyze' ? '≈ 2 – 3 pages · A4' : '≈ 2 pages · A4';
+  const atlasPages = Math.ceil((floraCount ?? 0) / 24);
+  const soloPages =
+    origin === 'analyze'
+      ? '≈ 2 – 3 pages · A4'
+      : origin === 'identify'
+        ? `≈ ${2 + atlasPages} pages · A4`
+        : '≈ 2 pages · A4';
   const combinedPages = combinedDisabled
     ? '—'
-    : `≈ ${2 + Math.ceil(portraitPhotoCount / 2) + 3 + (analyzeReady ? 3 : 0)} pages · A4`;
+    : `≈ ${2 + Math.ceil(portraitPhotoCount / 2) + 3 + (analyzeReady ? 3 : 0) + (identifyReady ? 3 + atlasPages : 0)} pages · A4`;
 
   const combinedHint =
     portraitPhotoCount === 0
       ? 'Ajoutez d’abord des photos dans l’onglet Portrait.'
-      : origin === 'analyze' && !observeReady
+      : origin !== 'observe' && !observeReady
         ? 'Validez d’abord l’étape 1 « J’observe ».'
         : undefined;
 
@@ -177,6 +214,17 @@ export const PrintChoiceDialog: React.FC<Props> = ({
             >
               <Eyebrow icon={<Layers className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'analyse le sol" />
               <MiniAnalyze />
+            </Card>
+          ) : origin === 'identify' ? (
+            <Card
+              onSelect={() => setChoice('identify')}
+              selected={choice === 'identify'}
+              title="Carnet de flore seul"
+              desc={`La lecture du cortège végétal, la concordance sol ↔ flore et l'atlas illustré des ${floraCount} espèces reconnues (24 par page).`}
+              pages={soloPages}
+            >
+              <Eyebrow icon={<Leaf className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'identifie" />
+              <MiniIdentify />
             </Card>
           ) : (
             <Card
@@ -213,6 +261,12 @@ export const PrintChoiceDialog: React.FC<Props> = ({
                 <>
                   <span className="text-[hsl(var(--ds-gold))]">·</span>
                   <Eyebrow icon={<Layers className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'analyse" />
+                </>
+              )}
+              {identifyReady && (
+                <>
+                  <span className="text-[hsl(var(--ds-gold))]">·</span>
+                  <Eyebrow icon={<Leaf className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'identifie" />
                 </>
               )}
             </div>

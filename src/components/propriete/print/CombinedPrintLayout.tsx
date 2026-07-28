@@ -11,6 +11,13 @@ import type { TestMedia } from '@/hooks/propriete/usePropertyTestMedias';
 import type { GalleryPhoto } from '@/hooks/propriete/usePropertyGallery';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import type { PropertySoilState } from '@/hooks/propriete/usePropertySoil';
+import type { PropertyFloraState } from '@/hooks/propriete/usePropertyFlora';
+import type { SoilLite } from '@/lib/plantIndicatorKb';
+import { IdentifySummary } from '@/components/propriete/identify/IdentifySummary';
+import {
+  FloraAtlasPrintPlates,
+  floraAtlasPageCount,
+} from '@/components/propriete/identify/print/FloraAtlasPrintPlates';
 
 interface StationInfo {
   code: string;
@@ -42,9 +49,13 @@ interface Props {
   soilCompletedAt?: string | null;
   /** Preuves de terrain (photos des tests de sol), imprimées après « Le sol, point par point ». */
   testMedias?: TestMedia[];
+  /** Étape 3 — incluse dans le cahier complet lorsque fournie. */
+  flora?: PropertyFloraState | null;
+  floraCompletedAt?: string | null;
+  floraSoil?: SoilLite | null;
 }
 
-const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string; variant?: 'observe' | 'analyze' }> = ({
+const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string; variant?: 'observe' | 'analyze' | 'identify' }> = ({
   eyebrow,
   title,
   sub,
@@ -76,9 +87,21 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   soil,
   soilCompletedAt,
   testMedias,
+  flora,
+  floraCompletedAt,
+  floraSoil,
 }) => {
   const withAnalyze = !!soil;
   const plateCount = withAnalyze ? testMediaPlateCount(testMedias) : 0;
+  const withIdentify = !!flora && (flora.observed_plants ?? []).length > 0;
+  const atlasCount = withIdentify ? floraAtlasPageCount(flora!.observed_plants ?? []) : 0;
+  const identifySoil: SoilLite = floraSoil ?? {};
+  const identifySoilAvailable = !!(
+    identifySoil.structure ||
+    identifySoil.texture ||
+    identifySoil.ph != null ||
+    (identifySoil.life_signs?.length ?? 0) > 0
+  );
 
 
   const observeSlot = (
@@ -164,6 +187,51 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         </>
       )}
 
+      {withIdentify && flora && (
+        <>
+          <Divider
+            eyebrow="Étape 3"
+            title="J’identifie la flore en place"
+            sub="« Chaque plante est une phrase : le cortège écrit le sol. »"
+            foot={`${propertyName ?? 'Propriété'} · Fréquence du Vivant`}
+            variant="identify"
+          />
+
+          <section className="portrait-print-page combined-print-identify">
+            <IdentifySummary
+              state={flora}
+              soil={identifySoil}
+              soilAvailable={identifySoilAvailable}
+              completedAt={floraCompletedAt ?? null}
+              propertyName={propertyName}
+              onEditBlock={() => {}}
+              onReopenAll={() => {}}
+              printOnly
+              printSection="p1"
+            />
+          </section>
+          <section className="portrait-print-page combined-print-identify combined-print-identify-second">
+            <IdentifySummary
+              state={flora}
+              soil={identifySoil}
+              soilAvailable={identifySoilAvailable}
+              completedAt={floraCompletedAt ?? null}
+              propertyName={propertyName}
+              onEditBlock={() => {}}
+              onReopenAll={() => {}}
+              printOnly
+              printSection="p2"
+            />
+          </section>
+
+          <FloraAtlasPrintPlates
+            observedIds={flora.observed_plants ?? []}
+            propertyName={propertyName}
+            pageClassName="portrait-print-page"
+          />
+        </>
+      )}
+
     </>
   );
 
@@ -194,7 +262,9 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         insertAfterToc={renderPropertyPage}
         insertedAfterTocPageCount={1}
         insertBeforeColophon={observeSlot}
-        insertedPageCount={(withAnalyze ? 7 : 3) + plateCount}
+        insertedPageCount={
+          (withAnalyze ? 7 : 3) + plateCount + (withIdentify ? 3 + atlasCount : 0)
+        }
       />
     </div>
   );
