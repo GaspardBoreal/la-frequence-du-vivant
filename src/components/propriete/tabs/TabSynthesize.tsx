@@ -643,7 +643,7 @@ export const TabSynthesize: React.FC<Props> = ({
               <CheckCheck className="w-4 h-4 mr-2" />
             )}
             {completedAt
-              ? `Synthèse scellée${completedAtLabel ? ` le ${completedAtLabel}` : ''} · Réenregistrer`
+              ? `Synthèse scellée le ${new Date(completedAt).toLocaleDateString('fr-FR')} · Réenregistrer`
               : 'Sceller la synthèse'}
           </Button>
         </div>
