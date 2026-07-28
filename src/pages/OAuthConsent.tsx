@@ -111,8 +111,19 @@ const OAuthConsent: React.FC = () => {
           <>
             <h1 className="text-xl font-semibold mb-2">Demande d'autorisation illisible</h1>
             <p className="text-sm text-muted-foreground">{error}</p>
+            <Button
+              variant="outline"
+              className="mt-5"
+              onClick={() => {
+                setDetails(null);
+                setAttempt((a) => a + 1);
+              }}
+            >
+              Réessayer
+            </Button>
           </>
         )}
+
 
         {!error && !details && (
           <div className="flex items-center gap-3 text-muted-foreground">
