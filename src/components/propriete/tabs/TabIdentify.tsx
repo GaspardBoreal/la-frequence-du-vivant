@@ -33,7 +33,11 @@ import {
   computePoleScores,
   computeConcordanceDetail,
   narratePoleScores,
+  PLANT_INDICATORS,
+  LEVEL_LABEL,
+  ECO_AXES,
 } from '@/lib/plantIndicatorKb';
+
 
 const TOTAL = 5; // Tableau + Cortège illustré + Somme des indices + Concordance + Narration
 
@@ -75,6 +79,44 @@ export const TabIdentify: React.FC<{
     [state.observed_plants, soil]
   );
   const autoNarrative = useMemo(() => narratePoleScores(scores), [scores]);
+
+  /** Contexte transmis à l'IA pour pré-rédiger la narration de CETTE propriété */
+  const narrationAiContext = useMemo(
+    () => ({
+      propertyName: proprieteNom,
+      commune: proprieteVille ?? null,
+      speciesTotal: bio?.speciesTotal ?? null,
+      plants: (state.observed_plants ?? [])
+        .map((id) => PLANT_INDICATORS.find((p) => p.id === id))
+        .filter(Boolean)
+        .map((p) => ({ name: p!.nom, latin: p!.latin, family: p!.famille })),
+      poles: scores.map((s) => ({
+        label: s.pole.label,
+        axis: ECO_AXES[s.pole.axis].label,
+        level: LEVEL_LABEL[s.level],
+        points: s.points,
+      })),
+      soil: soilAvailable ? (soil as unknown as Record<string, unknown>) : undefined,
+      concordance: soilAvailable
+        ? {
+            icg: detail.icg,
+            band: detail.band,
+            points: detail.points,
+            max: detail.max,
+            reliability: detail.reliability,
+            evaluated: detail.evaluated,
+            rows: detail.rows.map((r) => ({
+              label: r.label,
+              soil: r.soil,
+              flora: r.flora,
+              match: r.match,
+            })),
+          }
+        : undefined,
+    }),
+    [proprieteNom, proprieteVille, bio?.speciesTotal, state.observed_plants, scores, soil, soilAvailable, detail],
+  );
+
 
   // Persister ICG dans la base pour l'onglet Synthèse
   useEffect(() => {
@@ -329,6 +371,8 @@ export const TabIdentify: React.FC<{
               notes={state.notes ?? ''}
               onChangeNotes={(v) => setField('notes', v)}
               autoNarrative={autoNarrative}
+              aiContext={narrationAiContext}
+
               index={7}
             />
           </div>

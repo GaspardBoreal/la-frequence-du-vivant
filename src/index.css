@@ -19,6 +19,15 @@
     --ds-eco-nutri: 42 62% 45%;     /* or nourricier */
     --ds-eco-ph: 276 28% 46%;       /* violet craie */
 
+    /* === Verdicts de concordance sol ↔ flore (ICG, méthode D.S. p.12) === */
+    --ds-verdict-oui: 152 44% 32%;      /* émeraude */
+    --ds-verdict-partiel: 38 74% 48%;   /* ambre */
+    --ds-verdict-non: 14 52% 47%;       /* terracotta */
+    --ds-verdict-na: 40 12% 58%;        /* gris pierre */
+    --ds-mineral: 28 22% 46%;           /* jauge sol */
+    --ds-chloro: 132 34% 38%;           /* jauge flore */
+
+
 
 
     /* === MODE CLAIR — Crème papier, encre sombre, émeraude profond === */

@@ -128,17 +128,28 @@ export const FamilyIcon: React.FC<{ family: 'herbacee' | 'arbuste' | 'liane' | '
 };
 
 /** Anneau ICG animé (Indice de Cohérence Globale) */
-export const IcgRing: React.FC<{ value: number; size?: number }> = ({ value, size = 128 }) => {
+export const IcgRing: React.FC<{
+  value: number;
+  size?: number;
+  /** bandes officielles : 80-100 bonne · 60-79 moyenne · 0-59 faible */
+  band?: 'bonne' | 'moyenne' | 'faible';
+  /** rendu statique (impression) */
+  still?: boolean;
+}> = ({ value, size = 128, band, still = false }) => {
   const clamped = Math.max(0, Math.min(100, value));
   const r = 52;
   const c = 2 * Math.PI * r;
   const offset = c * (1 - clamped / 100);
-  const tone = clamped >= 75 ? FOREST : clamped >= 50 ? GOLD : '#b95c3a';
+  const resolved = band ?? (clamped >= 80 ? 'bonne' : clamped >= 60 ? 'moyenne' : 'faible');
+  const tone = resolved === 'bonne' ? FOREST : resolved === 'moyenne' ? GOLD : '#b95c3a';
+
+
+  const gradId = `icg-grad-${resolved}`;
 
   return (
     <svg width={size} height={size} viewBox="0 0 128 128">
       <defs>
-        <linearGradient id="icg-grad" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={tone} />
           <stop offset="100%" stopColor={FOREST} />
         </linearGradient>
@@ -148,13 +159,15 @@ export const IcgRing: React.FC<{ value: number; size?: number }> = ({ value, siz
         cx={64}
         cy={64}
         r={r}
-        stroke="url(#icg-grad)"
+        stroke={`url(#${gradId})`}
+
         strokeWidth={8}
         fill="none"
         strokeLinecap="round"
         transform="rotate(-90 64 64)"
-        initial={{ strokeDasharray: c, strokeDashoffset: c }}
-        animate={{ strokeDashoffset: offset }}
+        initial={still ? false : { strokeDasharray: c, strokeDashoffset: c }}
+        animate={still ? undefined : { strokeDashoffset: offset }}
+        style={still ? { strokeDasharray: c, strokeDashoffset: offset } : undefined}
         transition={{ duration: 1.4, ease: 'easeOut' }}
       />
       <text
@@ -164,10 +177,11 @@ export const IcgRing: React.FC<{ value: number; size?: number }> = ({ value, siz
         fontFamily="serif"
         fontStyle="italic"
         fontSize={34}
-        fill={FOREST}
+        fill={tone}
       >
         {clamped}
       </text>
+
       <text
         x={64}
         y={82}

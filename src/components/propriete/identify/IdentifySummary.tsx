@@ -14,7 +14,9 @@ import {
   narratePoleScores,
   type PlantFamily,
   type SoilLite,
+  ICG_BAND_LABEL,
 } from '@/lib/plantIndicatorKb';
+
 
 export type IdentifyBlockId = 'cortege' | 'poles' | 'concordance' | 'narration' | 'notes';
 
@@ -363,12 +365,19 @@ export const IdentifySummary: React.FC<Props> = ({
               </p>
             ) : (
               <div className="flex flex-col md:flex-row gap-6 items-start">
-                <div className="shrink-0">
-                  <IcgRing value={detail.icg} size={112} />
-                  <div className="mt-1 text-center text-[9px] uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]/70">
+                <div className="shrink-0 text-center">
+                  <IcgRing value={detail.icg} size={112} band={detail.band} still={printOnly} />
+                  <div className="mt-1 text-[9px] uppercase tracking-[0.2em] font-bold text-[hsl(var(--ds-forest))]/80">
+                    {ICG_BAND_LABEL[detail.band]}
+                  </div>
+                  <div className="text-[9px] uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]/60">
                     {detail.points} / {detail.max} points
                   </div>
+                  <div className="mt-0.5 text-[9px] text-[hsl(var(--ds-forest-deep))]/55">
+                    Fiabilité {detail.reliability} % · {detail.evaluated}/8 lignes évaluées
+                  </div>
                 </div>
+
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="text-left text-[9px] uppercase tracking-[0.18em] text-[hsl(var(--ds-forest))]/70">
