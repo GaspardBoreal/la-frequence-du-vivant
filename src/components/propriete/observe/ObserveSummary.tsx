@@ -205,11 +205,13 @@ export const ObserveSummary: React.FC<Props> = ({
     </div>
   );
 
+  // En impression, aucune animation d'entrée : le portail est `display:none`
+  // jusqu'au moment du print, ce qui figerait l'opacité initiale à 0.
+  const Root: any = printOnly ? 'article' : motion.article;
+
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+    <Root
+      {...(printOnly ? {} : { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.5 } })}
       className="observe-print-root relative bg-[hsl(var(--ds-cream))] border border-[hsl(var(--ds-line))] shadow-[0_10px_40px_-15px_rgba(22,48,32,0.15)] p-8 md:p-14 overflow-hidden print:shadow-none print:border-0"
     >
       {/* Cartouche impression — visible uniquement à l'impression */}
@@ -351,6 +353,6 @@ export const ObserveSummary: React.FC<Props> = ({
           )}
         </div>
       </footer>)}
-    </motion.article>
+    </Root>
   );
 };
