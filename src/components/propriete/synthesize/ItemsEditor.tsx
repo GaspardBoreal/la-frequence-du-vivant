@@ -72,7 +72,7 @@ export const ItemsEditor: React.FC<Props> = ({
         {items.map((it, i) => (
           <li
             key={i}
-            className="group flex items-start gap-2 rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-2.5 py-2"
+            className="group flex items-start gap-2 rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-forest))]/[0.04] px-2.5 py-2"
           >
             <span className={`mt-2 w-1.5 h-1.5 rounded-full shrink-0 ${t.dot}`} />
             <div className="flex-1 min-w-0">
