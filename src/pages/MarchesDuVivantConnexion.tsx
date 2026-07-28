@@ -17,7 +17,7 @@ import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
 import { AppChoiceDialog } from '@/components/community/AppChoiceDialog';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
-import { isOAuthConsentPath, readPendingOAuthRequest, safeNextPath } from '@/lib/oauthFlow';
+import { absoluteUrlForPath, isOAuthConsentPath, readPendingOAuthRequest, safeNextPath } from '@/lib/oauthFlow';
 
 
 const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
@@ -202,6 +202,7 @@ const MarchesDuVivantConnexion = () => {
         recherche_prioritaire: recherchePrioritaire.trim() || undefined,
         consentement_analyse: consentementAnalyse,
         affiliateToken,
+        emailRedirectTo: nextParam ? absoluteUrlForPath(nextParam) : undefined,
       });
 
       if (affiliateToken) {

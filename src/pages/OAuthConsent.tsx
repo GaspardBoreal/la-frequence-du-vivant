@@ -1,48 +1,41 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { AlertTriangle, Leaf, Loader2, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldCheck, Leaf, AlertTriangle } from 'lucide-react';
 import {
   clearPendingOAuthRequest,
   loginPathForOAuthReturn,
   rememberPendingOAuthRequest,
 } from '@/lib/oauthFlow';
 
-/**
- * Écran de consentement OAuth 2.1 (Supabase = serveur d'autorisation).
- * Route : /.lovable/oauth/consent?authorization_id=...
- * Permet à un client externe (Claude, ChatGPT…) d'agir au nom de l'utilisateur
- * connecté, dans la limite stricte de ses droits RLS.
- */
 type OAuthApi = {
   getAuthorizationDetails: (id: string) => Promise<{ data: any; error: any }>;
   approveAuthorization: (id: string) => Promise<{ data: any; error: any }>;
   denyAuthorization: (id: string) => Promise<{ data: any; error: any }>;
 };
 
+type SessionState = 'loading' | 'anonymous' | 'authenticated';
+type ConsentState = 'loading' | 'ready' | 'expired' | 'redirecting' | 'error';
+
+type Diagnostic = {
+  etape: string;
+  message: string;
+  authorization_id: string;
+  client?: string;
+  domaine_redirection?: string;
+};
+
 const oauthApi = (): OAuthApi | undefined =>
   (supabase.auth as unknown as { oauth?: OAuthApi }).oauth;
 
-type SessionState = 'loading' | 'anonymous' | 'authenticated';
-
-type OAuthDiagnostic = {
-  step: string;
-  message: string;
-  authorizationId: string;
-  clientName?: string | null;
-  hasRedirect?: boolean;
-  redirectHost?: string | null;
-};
-
 const maskAuthorizationId = (id: string) => {
   if (!id) return 'absent';
-  if (id.length <= 10) return `${id.slice(0, 3)}…`;
-  return `${id.slice(0, 6)}…${id.slice(-4)}`;
+  return id.length <= 10 ? `${id.slice(0, 3)}…` : `${id.slice(0, 6)}…${id.slice(-4)}`;
 };
 
-const safeRedirectHost = (target: string | null | undefined) => {
-  if (!target) return null;
+const redirectHost = (target: string | null | undefined) => {
+  if (!target) return undefined;
   try {
     return new URL(target).host;
   } catch {
@@ -50,59 +43,37 @@ const safeRedirectHost = (target: string | null | undefined) => {
   }
 };
 
-const logOAuthStep = (step: string, payload: Record<string, unknown>) => {
-  console.info('[OAuth Claude]', step, payload);
-};
-
 const OAuthConsent: React.FC = () => {
   const [params] = useSearchParams();
   const authorizationId = params.get('authorization_id') ?? '';
-  const [details, setDetails] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [expired, setExpired] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const [sessionState, setSessionState] = useState<SessionState>('loading');
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [diagnostic, setDiagnostic] = useState<OAuthDiagnostic | null>(null);
   const consentReturnPath = `${window.location.pathname}${window.location.search}`;
   const loginPath = loginPathForOAuthReturn(consentReturnPath);
 
-  // 1) Mémorise immédiatement la demande complète (avec authorization_id).
+  const [sessionState, setSessionState] = useState<SessionState>('loading');
+  const [consentState, setConsentState] = useState<ConsentState>('loading');
+  const [details, setDetails] = useState<any>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [diagnostic, setDiagnostic] = useState<Diagnostic | null>(null);
+
   useEffect(() => {
-    if (authorizationId) {
-      rememberPendingOAuthRequest(consentReturnPath);
-      logOAuthStep('authorization_request_remembered', {
-        authorizationId: maskAuthorizationId(authorizationId),
-        path: window.location.pathname,
-      });
-    }
+    if (authorizationId) rememberPendingOAuthRequest(consentReturnPath);
   }, [authorizationId, consentReturnPath]);
 
-  // 2) Résolution fiable de la session : on attend INITIAL_SESSION plutôt qu'un
-  //    unique getSession() au premier rendu (source de fausses redirections).
   useEffect(() => {
     let active = true;
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const applySession = (session: any) => {
       if (!active) return;
       setUserEmail(session?.user?.email ?? null);
       setSessionState(session ? 'authenticated' : 'anonymous');
-      logOAuthStep('session_state_changed', {
-        state: session ? 'authenticated' : 'anonymous',
-        authorizationId: maskAuthorizationId(authorizationId),
-      });
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      applySession(session);
     });
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setUserEmail(data.session?.user?.email ?? null);
-      setSessionState(data.session ? 'authenticated' : 'anonymous');
-      logOAuthStep('session_resolved', {
-        state: data.session ? 'authenticated' : 'anonymous',
-        authorizationId: maskAuthorizationId(authorizationId),
-      });
-    });
+    supabase.auth.getSession().then(({ data }) => applySession(data.session));
 
     return () => {
       active = false;
@@ -110,170 +81,124 @@ const OAuthConsent: React.FC = () => {
     };
   }, []);
 
-  // 3) Lecture de la demande d'autorisation (session confirmée).
   useEffect(() => {
     if (sessionState !== 'authenticated') return;
     let active = true;
+
     (async () => {
-      try {
-        setError(null);
-        setExpired(false);
-        if (!authorizationId) {
-          setError("Paramètre « authorization_id » manquant.");
-          setDiagnostic({
-            step: 'lecture_demande',
-            message: 'Aucun authorization_id reçu dans l’URL de consentement.',
-            authorizationId: 'absent',
-          });
-          return;
-        }
-        const api = oauthApi();
-        if (!api?.getAuthorizationDetails) {
-          const message = "Le module OAuth du client Supabase est indisponible sur cette version de l'application. Rechargez la page ; si le problème persiste, l'application doit être republiée.";
-          setError(message);
-          setDiagnostic({
-            step: 'client_oauth_indisponible',
-            message,
-            authorizationId: maskAuthorizationId(authorizationId),
-          });
-          return;
-        }
-        logOAuthStep('authorization_details_loading', {
-          authorizationId: maskAuthorizationId(authorizationId),
-        });
-        const { data, error: err } = await api.getAuthorizationDetails(authorizationId);
-        if (!active) return;
-        if (err) {
-          const msg = err.message ?? String(err);
-          if (/not found|expired|invalid/i.test(msg)) setExpired(true);
-          else setError(msg);
-          setDiagnostic({
-            step: 'lecture_demande_refusee',
-            message: msg,
-            authorizationId: maskAuthorizationId(authorizationId),
-          });
-          return;
-        }
-        const immediate = data?.redirect_url ?? data?.redirect_to;
-        logOAuthStep('authorization_details_loaded', {
-          authorizationId: maskAuthorizationId(authorizationId),
-          clientName: data?.client?.name ?? null,
-          hasImmediateRedirect: Boolean(immediate),
-          redirectHost: safeRedirectHost(immediate),
-        });
-        if (immediate && !data?.client) {
-          clearPendingOAuthRequest();
-          window.location.assign(immediate);
-          return;
-        }
-        setDetails(data);
-      } catch (e: any) {
-        if (!active) return;
-        const message = e?.message ?? "Erreur inattendue lors de la lecture de la demande d'autorisation.";
-        setError(message);
+      setConsentState('loading');
+      setDiagnostic(null);
+      setDetails(null);
+
+      if (!authorizationId) {
+        setConsentState('error');
         setDiagnostic({
-          step: 'lecture_demande_exception',
-          message,
-          authorizationId: maskAuthorizationId(authorizationId),
+          etape: 'lecture_demande',
+          message: 'Paramètre authorization_id manquant dans l’URL de consentement.',
+          authorization_id: 'absent',
         });
+        return;
       }
+
+      const api = oauthApi();
+      if (!api?.getAuthorizationDetails) {
+        setConsentState('error');
+        setDiagnostic({
+          etape: 'client_oauth_indisponible',
+          message: "Le client Supabase publié ne contient pas le module OAuth requis. Republiez l'application après correction des dépendances.",
+          authorization_id: maskAuthorizationId(authorizationId),
+        });
+        return;
+      }
+
+      const { data, error } = await api.getAuthorizationDetails(authorizationId);
+      if (!active) return;
+
+      if (error) {
+        const message = error.message ?? String(error);
+        setConsentState(/not found|expired|invalid/i.test(message) ? 'expired' : 'error');
+        setDiagnostic({
+          etape: 'lecture_demande_refusee',
+          message,
+          authorization_id: maskAuthorizationId(authorizationId),
+        });
+        return;
+      }
+
+      const immediate = data?.redirect_url ?? data?.redirect_to;
+      if (immediate && !data?.client) {
+        clearPendingOAuthRequest();
+        setConsentState('redirecting');
+        window.location.assign(immediate);
+        return;
+      }
+
+      setDetails(data);
+      setConsentState('ready');
     })();
+
     return () => {
       active = false;
     };
-  }, [authorizationId, attempt, sessionState]);
+  }, [authorizationId, sessionState]);
 
-  const decide = useCallback(
-    async (approve: boolean) => {
-      setBusy(true);
-      setDiagnostic(null);
-      try {
-        if (!authorizationId) throw new Error('Demande OAuth incomplète : authorization_id manquant.');
-        const api = oauthApi();
-        if (!api?.approveAuthorization || !api?.denyAuthorization || !api?.getAuthorizationDetails) {
-          throw new Error('Module OAuth indisponible.');
-        }
-
-        logOAuthStep('authorization_preflight_loading', {
-          authorizationId: maskAuthorizationId(authorizationId),
-          approve,
-        });
-        const { data: freshDetails, error: detailErr } = await api.getAuthorizationDetails(authorizationId);
-        if (detailErr) throw new Error(detailErr.message ?? String(detailErr));
-
-        const { data, error: err } = approve
-          ? await api.approveAuthorization(authorizationId)
-          : await api.denyAuthorization(authorizationId);
-        if (err) {
-          const message = err.message ?? String(err);
-          setBusy(false);
-          setError(message);
-          setDiagnostic({
-            step: approve ? 'autorisation_refusee_par_supabase' : 'refus_refuse_par_supabase',
-            message,
-            authorizationId: maskAuthorizationId(authorizationId),
-            clientName: freshDetails?.client?.name ?? null,
-          });
-          return;
-        }
-        const target = data?.redirect_url ?? data?.redirect_to;
-        if (!target) {
-          const message = "Le serveur d'autorisation n'a renvoyé aucune redirection.";
-          setBusy(false);
-          setError(message);
-          setDiagnostic({
-            step: 'autorisation_sans_redirection',
-            message,
-            authorizationId: maskAuthorizationId(authorizationId),
-            clientName: freshDetails?.client?.name ?? null,
-            hasRedirect: false,
-          });
-          return;
-        }
-        logOAuthStep('authorization_approved_redirecting', {
-          authorizationId: maskAuthorizationId(authorizationId),
-          clientName: freshDetails?.client?.name ?? null,
-          redirectHost: safeRedirectHost(target),
-        });
-        clearPendingOAuthRequest();
-        window.location.assign(target);
-      } catch (e: any) {
-        const message = e?.message ?? "Erreur inattendue pendant l'autorisation.";
-        setBusy(false);
-        setError(message);
-        setDiagnostic({
-          step: 'autorisation_exception',
-          message,
-          authorizationId: maskAuthorizationId(authorizationId),
-          clientName: details?.client?.name ?? null,
-        });
-      }
-    },
-    [authorizationId, details]
-  );
-
-  const retry = () => {
-    setDetails(null);
-    setError(null);
-    setExpired(false);
+  const decide = async (approve: boolean) => {
+    setBusy(true);
     setDiagnostic(null);
-    setAttempt((a) => a + 1);
+
+    try {
+      if (!authorizationId) throw new Error('Demande OAuth incomplète : authorization_id manquant.');
+      const api = oauthApi();
+      if (!api?.approveAuthorization || !api?.denyAuthorization) {
+        throw new Error('Module OAuth indisponible dans le client Supabase publié.');
+      }
+
+      const { data, error } = approve
+        ? await api.approveAuthorization(authorizationId)
+        : await api.denyAuthorization(authorizationId);
+
+      if (error) throw new Error(error.message ?? String(error));
+
+      const target = data?.redirect_url ?? data?.redirect_to;
+      if (!target) {
+        setConsentState('error');
+        setDiagnostic({
+          etape: approve ? 'autorisation_sans_redirection' : 'refus_sans_redirection',
+          message: "Le serveur d'autorisation n'a renvoyé aucune URL de retour vers Claude.",
+          authorization_id: maskAuthorizationId(authorizationId),
+          client: details?.client?.name ?? undefined,
+        });
+        setBusy(false);
+        return;
+      }
+
+      clearPendingOAuthRequest();
+      setConsentState('redirecting');
+      setDiagnostic({
+        etape: approve ? 'autorisation_validee' : 'autorisation_refusee',
+        message: approve ? 'Autorisation validée. Retour vers Claude.' : 'Autorisation refusée. Retour vers Claude.',
+        authorization_id: maskAuthorizationId(authorizationId),
+        client: details?.client?.name ?? undefined,
+        domaine_redirection: redirectHost(target),
+      });
+
+      window.setTimeout(() => window.location.assign(target), 250);
+    } catch (error: any) {
+      setBusy(false);
+      setConsentState('error');
+      setDiagnostic({
+        etape: approve ? 'autorisation_exception' : 'refus_exception',
+        message: error?.message ?? 'Erreur inattendue pendant la décision OAuth.',
+        authorization_id: maskAuthorizationId(authorizationId),
+        client: details?.client?.name ?? undefined,
+      });
+    }
   };
 
-  const diagnosticText = diagnostic
-    ? JSON.stringify(
-        {
-          etape: diagnostic.step,
-          message: diagnostic.message,
-          authorization_id: diagnostic.authorizationId,
-          client: diagnostic.clientName ?? 'non lu',
-          redirection_presente: diagnostic.hasRedirect ?? undefined,
-          domaine_redirection: diagnostic.redirectHost ?? undefined,
-        },
-        null,
-        2,
-      )
-    : null;
+  const diagnosticText = useMemo(
+    () => (diagnostic ? JSON.stringify(diagnostic, null, 2) : null),
+    [diagnostic],
+  );
 
   return (
     <main className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -297,62 +222,74 @@ const OAuthConsent: React.FC = () => {
               <h1 className="text-xl font-semibold">Connexion requise</h1>
             </div>
             <p className="text-sm text-muted-foreground mb-5">
-              Claude demande votre accord pour accéder à La Fréquence du Vivant.
-              Connectez-vous d'abord : l'autorisation sera reprise automatiquement.
+              Claude demande votre accord pour accéder à La Fréquence du Vivant. Connectez-vous : l’autorisation reprendra automatiquement.
             </p>
-            <Button className="w-full" onClick={() => { window.location.href = loginPath; }}>
+            <Button className="w-full" onClick={() => window.location.assign(loginPath)}>
               Se connecter puis autoriser Claude
             </Button>
           </>
         )}
 
-        {sessionState === 'authenticated' && expired && (
+        {sessionState === 'authenticated' && consentState === 'loading' && (
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Lecture de la demande Claude…</span>
+          </div>
+        )}
+
+        {sessionState === 'authenticated' && consentState === 'redirecting' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-primary">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <h1 className="text-xl font-semibold">Retour vers Claude…</h1>
+            </div>
+            <p className="text-sm text-muted-foreground">L’autorisation est validée. Claude finalise maintenant la connexion.</p>
+            {diagnosticText && (
+              <pre className="max-h-44 overflow-auto rounded-lg border border-border/50 bg-muted/30 p-3 text-[11px] text-muted-foreground whitespace-pre-wrap">
+                {diagnosticText}
+              </pre>
+            )}
+          </div>
+        )}
+
+        {sessionState === 'authenticated' && consentState === 'expired' && (
           <>
             <div className="flex items-center gap-2 text-amber-500 mb-2">
               <AlertTriangle className="h-4 w-4" />
               <h1 className="text-xl font-semibold">Demande expirée</h1>
             </div>
             <p className="text-sm text-muted-foreground">
-              Cette demande d'autorisation n'est plus valide. Retournez dans l'application
-              cliente (Claude, ChatGPT…) et cliquez à nouveau sur <strong>Connecter</strong>.
+              Cette demande n’est plus valide. Retournez dans Claude et relancez une nouvelle connexion.
             </p>
-            <Button variant="outline" className="mt-5" onClick={retry}>
-              Réessayer quand même
-            </Button>
-          </>
-        )}
-
-        {sessionState === 'authenticated' && !expired && error && (
-          <>
-            <h1 className="text-xl font-semibold mb-2">Demande d'autorisation illisible</h1>
-            <p className="text-sm text-muted-foreground">{error}</p>
             {diagnosticText && (
               <pre className="mt-4 max-h-44 overflow-auto rounded-lg border border-border/50 bg-muted/30 p-3 text-[11px] text-muted-foreground whitespace-pre-wrap">
                 {diagnosticText}
               </pre>
             )}
-            <Button variant="outline" className="mt-5" onClick={retry}>
-              Réessayer
-            </Button>
           </>
         )}
 
-        {sessionState === 'authenticated' && !expired && !error && !details && (
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Vérification de la demande…</span>
-          </div>
+        {sessionState === 'authenticated' && consentState === 'error' && (
+          <>
+            <h1 className="text-xl font-semibold mb-2">Autorisation impossible</h1>
+            <p className="text-sm text-muted-foreground">
+              La demande Claude n’a pas pu être finalisée. Copiez le diagnostic ci-dessous si l’erreur persiste.
+            </p>
+            {diagnosticText && (
+              <pre className="mt-4 max-h-44 overflow-auto rounded-lg border border-border/50 bg-muted/30 p-3 text-[11px] text-muted-foreground whitespace-pre-wrap">
+                {diagnosticText}
+              </pre>
+            )}
+          </>
         )}
 
-        {sessionState === 'authenticated' && !expired && !error && details && (
+        {sessionState === 'authenticated' && consentState === 'ready' && details && (
           <>
             <h1 className="text-2xl font-serif mb-3">
               Connecter {details.client?.name ?? 'une application'} à votre compte
             </h1>
             <p className="text-sm text-muted-foreground mb-4">
-              {details.client?.name ?? "L'application"} pourra lire les données auxquelles
-              vous avez déjà accès (propriétés, biodiversité, diagnostics), en agissant
-              en votre nom. Vos droits et vos politiques de sécurité restent inchangés.
+              {details.client?.name ?? "L'application"} pourra lire les propriétés, observations, espèces et diagnostics auxquels votre compte a déjà accès.
             </p>
             {userEmail && (
               <p className="text-xs text-muted-foreground mb-6">
@@ -362,7 +299,7 @@ const OAuthConsent: React.FC = () => {
             <div className="flex items-start gap-2 rounded-lg bg-muted/40 p-3 mb-6">
               <ShieldCheck className="h-4 w-4 mt-0.5 text-primary shrink-0" />
               <p className="text-xs text-muted-foreground">
-                Lecture seule. Vous pouvez révoquer cet accès à tout moment depuis votre compte.
+                Accès en lecture seule. Les règles de sécurité et les droits de votre compte restent appliqués.
               </p>
             </div>
             <div className="flex gap-3">
@@ -370,20 +307,10 @@ const OAuthConsent: React.FC = () => {
                 {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 Autoriser
               </Button>
-              <Button
-                disabled={busy}
-                variant="outline"
-                onClick={() => decide(false)}
-                className="flex-1"
-              >
+              <Button disabled={busy} variant="outline" onClick={() => decide(false)} className="flex-1">
                 Refuser
               </Button>
             </div>
-            {diagnosticText && (
-              <pre className="mt-4 max-h-44 overflow-auto rounded-lg border border-border/50 bg-muted/30 p-3 text-[11px] text-muted-foreground whitespace-pre-wrap">
-                {diagnosticText}
-              </pre>
-            )}
           </>
         )}
       </div>
