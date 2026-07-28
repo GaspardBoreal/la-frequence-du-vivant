@@ -1,29 +1,69 @@
-## Constat (vérifié à l'instant)
+## Diagnostic
 
-- Les 5 secrets SMTP existent bien : `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`.
-- La fonction `send-smtp-email` n'a **aucun log récent** et les logs d'authentification sont vides → aucun envoi tenté récemment (pas encore une preuve de panne, mais rien ne confirme que ça marche).
-- Il y a **deux circuits d'email indépendants** pour un nouvel inscrit :
-  1. **L'email de confirmation Supabase** (envoyé par Supabase Auth lui-même, `emailRedirectTo` → `/marches-du-vivant/connexion`). Il dépend du SMTP configuré dans le dashboard Supabase, pas des secrets ci-dessus.
-  2. **L'email de bienvenue maison** (`useCommunityAuth.signUp` → fonction `send-smtp-email` → serveur SMTP via les secrets).
+Vous avez fait la bonne manipulation dans Claude : le connecteur a bien été créé et Claude a bien tenté d’ouvrir l’autorisation.
 
-Une panne sur l'un n'empêche pas l'autre : il faut tester les deux, séparément.
+Le problème visible sur votre capture est précis : Claude ouvre cette URL :
 
-## Plan de vérification (≈ 5 minutes, sans rien casser)
+`https://la-frequence-du-vivant.com/.lovable/oauth/consent?authorization_id=...`
 
-1. **Test du circuit maison** — appel direct de `send-smtp-email` vers une adresse que vous contrôlez. Résultat immédiat : soit l'email arrive (circuit OK), soit on obtient l'erreur SMTP exacte (identifiants refusés, port bloqué, quota, domaine non autorisé).
-2. **Test du circuit Supabase Auth** — déclenchement d'une réinitialisation de mot de passe sur une adresse test (même moteur d'envoi que l'email de confirmation d'inscription), puis lecture des logs d'authentification pour voir si Supabase signale une erreur d'envoi.
-3. **Lecture des logs** des deux tests pour nommer la cause précise.
+Mais le site répond **404 Page introuvable**. Donc Claude attend que vous finissiez l’autorisation, mais notre application ne sert pas correctement cette route sur le domaine publié.
 
-## Correction (selon le résultat)
+## Correction à faire maintenant
 
-- **SMTP refusé / expiré** : mise à jour du secret concerné (`SMTP_PASSWORD` le plus souvent) — 1 minute.
-- **SMTP Supabase Auth non configuré ou expiré** : vous le corrigez dans le dashboard Supabase (Authentication → Emails → SMTP Settings), je vous indique exactement quel champ.
-- **Rien de cassé** : je vous le dis clairement, et on regarde plutôt si les inscriptions arrivent bien en base (le problème serait alors côté inscription, pas email).
+### 1. Sécuriser les deux routes de consentement OAuth
 
-## Renforcement (optionnel, si le temps le permet)
+Je vais ajouter/renforcer les routes suivantes dans l’app :
 
-Ajout d'une trace d'erreur explicite côté inscription : aujourd'hui, si `send-smtp-email` échoue, l'échec est silencieux et personne ne le sait. Une remontée d'erreur visible en console + un log permettrait de détecter la panne immédiatement la prochaine fois.
+- `/.lovable/oauth/consent`
+- `/oauth/consent`
 
-### Détails techniques
+Les deux pointeront vers le même écran `OAuthConsent`.
 
-`supabase/functions/send-smtp-email/index.ts` exige un jeton utilisateur authentifié (anti-relais spam) — le test utilisera la session de prévisualisation. `src/hooks/useCommunityAuth.ts` ligne 177 invoque la fonction après le `signUp` ligne 121, sans vérifier l'erreur retournée.
+Objectif : que Supabase et Claude arrivent toujours sur la bonne page, même si le tableau de bord Supabase utilise l’un ou l’autre chemin.
+
+### 2. Vérifier que la connexion revient bien au consentement
+
+L’écran de consentement redirige un utilisateur non connecté vers :
+
+`/marches-du-vivant/connexion?next=...`
+
+Je vais vérifier/ajuster la page de connexion pour que, après login, elle revienne exactement sur l’URL de consentement avec son `authorization_id`, sans perdre le flux Claude.
+
+### 3. Redéployer la fonction MCP si nécessaire
+
+Si le manifeste MCP ou la fonction publiée ne sont pas synchronisés, je régénère le manifeste et redéploie la fonction `mcp`, afin que Claude voie bien le serveur à jour.
+
+## Ce que vous ferez ensuite dans Claude
+
+Une fois le correctif publié :
+
+1. Retournez sur l’écran Claude de votre capture.
+2. Cliquez sur **Connecter**.
+3. La page `la-frequence-du-vivant.com/.lovable/oauth/consent?...` ne doit plus afficher 404.
+4. Si elle demande une connexion, connectez-vous avec `gaspard.boreal@gmail.com`.
+5. Cliquez sur **Autoriser**.
+6. Claude doit revenir aux Connecteurs avec **La Fréquence du Vivant** connecté.
+
+## Test de validation dans Claude
+
+Quand le connecteur est connecté, demandez à Claude :
+
+```text
+Liste les propriétés accessibles via La Fréquence du Vivant.
+```
+
+Puis :
+
+```text
+Donne-moi la synthèse biodiversité de JardinMondeDEVIAT et vérifie le nombre total d’espèces.
+```
+
+On vérifiera que Claude récupère bien les données de la propriété et que le comptage est cohérent avec l’application.
+
+## Détails techniques
+
+- Modifier uniquement le routage React si nécessaire, principalement `src/App.tsx`.
+- Vérifier `src/pages/MarchesDuVivantConnexion.tsx` pour la conservation du paramètre `next`.
+- Pas de changement de base de données.
+- Pas de secret supplémentaire.
+- Sécurité inchangée : Claude agit avec le compte connecté, via OAuth, et les politiques RLS Supabase continuent de limiter les données accessibles.
