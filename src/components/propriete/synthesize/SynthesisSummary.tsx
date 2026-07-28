@@ -1,6 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Pencil, Printer, RotateCcw, AlertTriangle } from 'lucide-react';
+import {
+  Check,
+  Pencil,
+  Printer,
+  RotateCcw,
+  AlertTriangle,
+  Sprout,
+  Feather,
+  ShieldAlert,
+  Scale,
+  NotebookPen,
+  IdCard,
+  ShieldCheck,
+} from 'lucide-react';
 import type { PropertySynthesisState, SynthesisItem } from '@/hooks/propriete/usePropertySynthesis';
 import type { SynthesisModel } from './synthesisModel';
 import { IdentityCard } from './IdentityCard';
@@ -22,41 +35,97 @@ interface Props {
   printSection?: 'all' | 'p1' | 'p2';
 }
 
+/** Titre de section illustré — picto en pastille + filet coloré. */
+const SectionHead: React.FC<{
+  num: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  tint: string;
+  ink: string;
+}> = ({ num, label, Icon, tint, ink }) => (
+  <div className="flex items-center gap-2.5 print-avoid-break">
+    <span
+      className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 print-exact"
+      style={{ backgroundColor: tint, color: ink }}
+    >
+      <Icon className="w-3.5 h-3.5" />
+    </span>
+    <span className="text-[10px] font-bold tracking-[0.3em] uppercase" style={{ color: ink }}>
+      {num}. {label}
+    </span>
+    <span className="flex-1 h-px" style={{ backgroundColor: tint }} />
+  </div>
+);
+
 const Column: React.FC<{
   eyebrow: string;
   title: string;
   items: SynthesisItem[];
-  dot: string;
-  head: string;
-}> = ({ eyebrow, title, items, dot, head }) => (
-  <div className="print-avoid-break">
-    <div className={`text-[10px] font-bold tracking-[0.3em] uppercase ${head}`}>{eyebrow}</div>
-    <h4 className="mt-1 mb-2 font-serif italic text-2xl text-[hsl(var(--ds-forest-deep))]">
-      {title}
-    </h4>
-    {items.length === 0 ? (
-      <p className="text-xs italic text-[hsl(var(--ds-forest-deep))]/40">— Non renseigné —</p>
-    ) : (
-      <ul className="space-y-2">
-        {items.map((it, i) => (
-          <li key={i} className="flex items-start gap-2 print-avoid-break">
-            <span className={`mt-[7px] w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-            <div>
-              <span className="text-sm text-[hsl(var(--ds-forest-deep))] leading-snug">
-                {it.text}
+  Icon: React.ComponentType<{ className?: string }>;
+  ink: string;
+  tint: string;
+  soft: string;
+}> = ({ eyebrow, title, items, Icon, ink, tint, soft }) => (
+  <div
+    className="print-avoid-break rounded-2xl border overflow-hidden print-exact"
+    style={{ borderColor: tint, backgroundColor: soft }}
+  >
+    <div
+      className="flex items-center gap-2.5 px-4 py-3 print-exact"
+      style={{ backgroundColor: tint }}
+    >
+      <span
+        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-[hsl(var(--ds-cream))] print-exact"
+        style={{ color: ink }}
+      >
+        <Icon className="w-4 h-4" />
+      </span>
+      <div className="min-w-0">
+        <div className="text-[9px] font-bold tracking-[0.28em] uppercase" style={{ color: ink }}>
+          {eyebrow}
+        </div>
+        <h4 className="font-serif italic text-xl leading-tight" style={{ color: ink }}>
+          {title}
+        </h4>
+      </div>
+      <span
+        className="ml-auto text-[11px] font-bold tabular-nums rounded-full px-2 py-0.5 bg-[hsl(var(--ds-cream))] print-exact"
+        style={{ color: ink }}
+      >
+        {items.length}
+      </span>
+    </div>
+    <div className="px-4 py-3">
+      {items.length === 0 ? (
+        <p className="text-xs italic text-[hsl(var(--ds-forest-deep))]/40">— Non renseigné —</p>
+      ) : (
+        <ul className="space-y-2.5">
+          {items.map((it, i) => (
+            <li key={i} className="flex items-start gap-2 print-avoid-break">
+              <span
+                className="mt-[2px] w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[9px] font-bold print-exact"
+                style={{ backgroundColor: tint, color: ink }}
+              >
+                {i + 1}
               </span>
-              {it.because && (
-                <span className="block text-[10px] italic text-[hsl(var(--ds-forest-deep))]/50">
-                  {it.because}
+              <div>
+                <span className="text-sm text-[hsl(var(--ds-forest-deep))] leading-snug">
+                  {it.text}
                 </span>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    )}
+                {it.because && (
+                  <span className="block text-[10px] italic text-[hsl(var(--ds-forest-deep))]/50">
+                    {it.because}
+                  </span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   </div>
 );
+
 
 export const SynthesisSummary: React.FC<Props> = ({
   state,
