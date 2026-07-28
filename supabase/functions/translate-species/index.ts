@@ -124,8 +124,7 @@ Exemple: {"Papaver rhoeas": "Coquelicot", "Quercus": "Chênes"}`;
 }
 
 // ---------- Batch handler ----------
-async function handleBatch(req: Request): Promise<Response> {
-  const body: BatchTranslationRequest = await req.json();
+async function handleBatch(body: BatchTranslationRequest): Promise<Response> {
   const items = (body.items || []).filter(i => i?.scientificName?.trim()).slice(0, 50);
   if (items.length === 0) {
     return new Response(JSON.stringify({ translations: {}, resolved: 0, remaining: 0 }), {
@@ -295,7 +294,7 @@ serve(async req => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      return await handleBatch(req);
+      return await handleBatch(body as BatchTranslationRequest);
     }
 
     return await handleSingle(req, body);
