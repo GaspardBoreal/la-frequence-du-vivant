@@ -2039,7 +2039,45 @@
   @page { size: A4; margin: 0; }
 }
 
-/* === ATLAS DU CORTÈGE — 24 vignettes par page (étape 3) === */
+/* === PAGE NARRATION (étape 3, impression) === */
+.identify-narration-exergue {
+  border-left: 0.8mm solid #c9b477;
+  padding: 1mm 0 1mm 4mm;
+}
+.identify-narration-print {
+  position: relative;
+  border-left: 0.5mm solid #e0d5b6;
+  padding-left: 5mm;
+}
+.identify-narration-body p {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 12pt;
+  line-height: 1.75;
+  color: #24331f;
+  text-align: justify;
+  margin: 0 0 3.5mm;
+}
+.identify-narration-body p.identify-narration-lead::first-letter {
+  float: left;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 30pt;
+  line-height: 0.86;
+  font-weight: 700;
+  color: #6b7c5a;
+  padding: 0.6mm 1.6mm 0 0;
+}
+.identify-narration-trace {
+  margin-top: 2mm;
+  padding-top: 1.5mm;
+  border-top: 0.25mm solid #e0d5b6;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 6.4pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a7c64;
+}
+
+/* === ATLAS DU CORTÈGE — 20 vignettes par page (étape 3) === */
 .flora-atlas-page {
   display: flex;
   flex-direction: column;
