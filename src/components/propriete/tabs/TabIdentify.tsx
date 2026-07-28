@@ -117,6 +117,22 @@ export const TabIdentify: React.FC<{
     [proprieteNom, proprieteVille, bio?.speciesTotal, state.observed_plants, scores, soil, soilAvailable, detail],
   );
 
+  /** Signature des données : une régénération n'est pertinente que si elle change */
+  const narrationContextKey = useMemo(
+    () =>
+      [
+        proprieteId ?? '',
+        (state.observed_plants ?? []).slice().sort().join(','),
+        soilAvailable ? detail.icg : 'no-soil',
+        soil.structure ?? '',
+        soil.texture ?? '',
+        soil.ph ?? '',
+        (soil.life_signs ?? []).join('|'),
+      ].join('#'),
+    [proprieteId, state.observed_plants, soilAvailable, detail.icg, soil],
+  );
+
+
 
   // Persister ICG dans la base pour l'onglet Synthèse
   useEffect(() => {
@@ -372,8 +388,17 @@ export const TabIdentify: React.FC<{
               onChangeNotes={(v) => setField('notes', v)}
               autoNarrative={autoNarrative}
               aiContext={narrationAiContext}
-
+              contextKey={narrationContextKey}
+              contextReady={profile.count > 0 && soilAvailable}
+              notReadyReason={
+                profile.count === 0
+                  ? 'Cochez au moins une plante bio-indicatrice dans le tableau ci-dessus pour activer la rédaction assistée.'
+                  : !soilAvailable
+                    ? 'Renseignez l’Étape 2 « J’analyse le sol » : la narration s’appuie sur la concordance sol ↔ flore.'
+                    : undefined
+              }
               index={7}
+
             />
           </div>
           <div id="identify-block-notes" className="scroll-mt-24" />
