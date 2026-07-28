@@ -17,6 +17,8 @@ import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
 import { AppChoiceDialog } from '@/components/community/AppChoiceDialog';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
+import { readPendingOAuthRequest } from '@/pages/OAuthConsent';
+
 
 const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
   { value: 'agroecologique', label: '🌱 Agroécologique', hint: 'sols, cultures, pratiques régénératives' },
@@ -114,16 +116,38 @@ const MarchesDuVivantConnexion = () => {
     return raw.startsWith('/') && !raw.startsWith('//') ? raw : null;
   })();
 
+  /**
+   * Si l'utilisateur est déjà authentifié et qu'une destination interne est
+   * demandée (typiquement le consentement OAuth), on le renvoie immédiatement
+   * plutôt que d'afficher un formulaire de connexion inutile — c'est ce qui
+   * faisait perdre la demande d'autorisation Claude.
+   */
+  useEffect(() => {
+    let active = true;
+    const target = nextParam ?? readPendingOAuthRequest();
+    if (!target) return;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active || !data.session) return;
+      window.location.href = target;
+    });
+    return () => {
+      active = false;
+    };
+  }, [nextParam]);
+
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
       await signIn(email, password);
       toast.success('Bienvenue parmi les marcheurs ! 🌿');
-      if (nextParam) {
-        navigate(nextParam, { replace: true });
+      const target = nextParam ?? readPendingOAuthRequest();
+      if (target) {
+        window.location.href = target;
         return;
       }
+
       const consumed = await consumeInvitationIfAny();
       if (consumed?.success && consumed.event_id) {
         toast.success('Vous êtes rattaché·e à l\'événement comme Lecteur invité 📖');
