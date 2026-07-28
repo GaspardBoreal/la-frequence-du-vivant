@@ -358,15 +358,20 @@ const PropTabs: React.FC<{
         monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
       />
       <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="sticky top-16 z-30 w-full flex overflow-x-auto justify-start md:justify-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm">
+        <div
+          className="sticky top-0 z-[60] w-screen relative left-1/2 -translate-x-1/2 bg-background border-b border-border shadow-md"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <TabsList className="mx-auto max-w-5xl w-full flex overflow-x-auto justify-start md:justify-center bg-transparent rounded-none h-auto py-1.5">
+            <TabsTrigger value="portrait">Portrait</TabsTrigger>
+            <TabsTrigger value="observe">J'observe</TabsTrigger>
+            <TabsTrigger value="analyze">J'analyse</TabsTrigger>
+            <TabsTrigger value="identify">J'identifie</TabsTrigger>
+            <TabsTrigger value="synthesize">Je synthétise</TabsTrigger>
+            <TabsTrigger value="palette">Palette végétale</TabsTrigger>
+          </TabsList>
+        </div>
 
-          <TabsTrigger value="portrait">Portrait</TabsTrigger>
-          <TabsTrigger value="observe">J'observe</TabsTrigger>
-          <TabsTrigger value="analyze">J'analyse</TabsTrigger>
-          <TabsTrigger value="identify">J'identifie</TabsTrigger>
-          <TabsTrigger value="synthesize">Je synthétise</TabsTrigger>
-          <TabsTrigger value="palette">Palette végétale</TabsTrigger>
-        </TabsList>
         <TabsContent value="portrait" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabPortrait
             proprieteId={proprieteId}
