@@ -116,7 +116,7 @@ export const useSaveScenography = () => {
 
       const { error } = await supabase
         .from('marche_events')
-        .update(update)
+        .update(update as never)
         .eq('id', eventId);
       if (error) throw error;
     },

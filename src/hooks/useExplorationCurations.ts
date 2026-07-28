@@ -148,7 +148,7 @@ export const useUpsertCuration = () => {
         if (payload.needs_review !== undefined) updates.needs_review = payload.needs_review;
         const { data, error } = await supabase
           .from('exploration_curations')
-          .update(updates)
+          .update(updates as never)
           .eq('id', payload.id)
           .select()
           .single();
