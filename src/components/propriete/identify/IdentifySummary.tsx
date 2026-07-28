@@ -746,12 +746,17 @@ export const IdentifySummary: React.FC<Props> = ({
             warn={!(state.flora_conclusion ?? '').trim()}
           >
             {(state.flora_conclusion ?? '').trim() ? (
-              <p className="font-serif italic text-lg text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
-                {state.flora_conclusion}
-              </p>
+              printOnly ? (
+                <p className="font-serif italic text-lg text-[hsl(var(--ds-forest-deep))] leading-relaxed whitespace-pre-line">
+                  {state.flora_conclusion}
+                </p>
+              ) : (
+                <RichNarration text={(state.flora_conclusion ?? '').trim()} />
+              )
             ) : (
               <Empty />
             )}
+
           </Section>
 
           {(state.notes ?? '').trim() && (
