@@ -1232,6 +1232,32 @@
 .combined-print-analyze-second {
   padding-top: 24mm;
 }
+/* Pages « Je synthétise » dans le cahier complet */
+.combined-print-synthesize {
+  padding: 18mm 18mm 16mm;
+  page-break-after: always;
+  break-after: page;
+  background: #fbf7ee;
+}
+.combined-print-synthesize .synthesize-print-root {
+  width: 100%;
+  height: auto;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.combined-print-synthesize-second {
+  padding-top: 24mm;
+}
+.combined-print-divider--synthesize {
+  background:
+    radial-gradient(46mm 46mm at 50% 34%, rgba(176, 141, 87, 0.16), transparent 62%),
+    radial-gradient(88mm 88mm at 50% 34%, rgba(107, 124, 90, 0.08), transparent 70%),
+    linear-gradient(180deg, #fdf9f2 0%, #f1ead7 100%);
+}
 /* Pages « J'identifie » dans le cahier complet */
 .combined-print-identify {
   padding: 18mm 18mm 16mm;
@@ -2039,6 +2065,69 @@
   @page { size: A4; margin: 0; }
 }
 
+/* === SYNTHESIZE PRINT — portail A4 dédié « Je synthétise » === */
+#synthesize-print-portal { display: none; }
+
+@media print {
+  body.synthesize-print-mode {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  body.synthesize-print-mode > *:not(#synthesize-print-portal) { display: none !important; }
+  body.synthesize-print-mode #synthesize-print-portal { display: block !important; }
+
+  .synthesize-print-page {
+    position: relative;
+    box-sizing: border-box;
+    width: 210mm;
+    min-height: 296mm;
+    max-height: 296mm;
+    overflow: hidden;
+    margin: 0;
+    padding: 14mm 13mm 12mm;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(176, 141, 87, 0.14) 0%, rgba(255, 255, 255, 0) 62%),
+      #fdfcf7 !important;
+    break-after: page;
+    page-break-after: always;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .synthesize-print-page:last-child { break-after: auto; page-break-after: auto; }
+
+  .synthesize-print-rule {
+    height: 2px;
+    width: 100%;
+    margin-bottom: 8mm;
+    background: linear-gradient(90deg, hsl(var(--ds-gold)) 0%, rgba(107, 124, 90, 0.15) 100%);
+  }
+  .synthesize-print-body { font-size: 10.5pt; line-height: 1.45; }
+  .synthesize-print-page .synthesize-print-root {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  .synthesize-print-foot {
+    position: absolute;
+    left: 13mm; right: 13mm; bottom: 7mm;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: hsl(var(--ds-forest) / 0.6);
+    border-top: 1px solid hsl(var(--ds-gold) / 0.5);
+    padding-top: 3mm;
+  }
+
+  @page { size: A4; margin: 0; }
+}
+
+
 /* === PAGE NARRATION (étape 3, impression) === */
 .identify-narration-exergue {
   border-left: 0.8mm solid #c9b477;
@@ -2195,12 +2284,16 @@
   #identify-print-portal .identify-print-root *:not(.flora-atlas-pastille):not(.flora-atlas-pastille *),
   #analyze-print-portal .analyze-print-root,
   #analyze-print-portal .analyze-print-root *,
+  #synthesize-print-portal .synthesize-print-root,
+  #synthesize-print-portal .synthesize-print-root *,
   #observe-print-portal .observe-print-root,
   #observe-print-portal .observe-print-root *,
   #combined-print-portal .identify-print-root,
   #combined-print-portal .identify-print-root *:not(.flora-atlas-pastille):not(.flora-atlas-pastille *),
   #combined-print-portal .analyze-print-root,
   #combined-print-portal .analyze-print-root *,
+  #combined-print-portal .synthesize-print-root,
+  #combined-print-portal .synthesize-print-root *,
   #combined-print-portal .observe-print-root,
   #combined-print-portal .observe-print-root * {
     opacity: 1 !important;

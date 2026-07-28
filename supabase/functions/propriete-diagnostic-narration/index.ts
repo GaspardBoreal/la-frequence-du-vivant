@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 interface Payload {
+  mode?: "narration" | "synthesis";
   propertyName?: string;
   commune?: string | null;
   plants?: Array<{ name: string; latin?: string; family?: string }>;
@@ -22,7 +23,15 @@ interface Payload {
   };
   observationNotes?: string | null;
   speciesTotal?: number | null;
+  /** Mode synthesis uniquement */
+  context?: Record<string, unknown>;
+  seeds?: {
+    atouts?: string[];
+    contraintes?: string[];
+    vigilances?: string[];
+  };
 }
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -67,6 +76,117 @@ serve(async (req) => {
     ]
       .filter(Boolean)
       .join("\n");
+
+    /* ====================== MODE SYNTHÈSE (Étape 4) ====================== */
+    if (body.mode === "synthesis") {
+      const synthContext = [
+        context,
+        body.context ? `Contexte du site retenu en Étape 4 : ${JSON.stringify(body.context)}.` : "",
+        body.seeds?.atouts?.length ? `Atouts déjà déduits par règles : ${body.seeds.atouts.join(" ; ")}.` : "",
+        body.seeds?.contraintes?.length
+          ? `Contraintes déjà déduites par règles : ${body.seeds.contraintes.join(" ; ")}.`
+          : "",
+        body.seeds?.vigilances?.length
+          ? `Points de vigilance déjà déduits par règles : ${body.seeds.vigilances.join(" ; ")}.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      const synthSystem = `Tu es agronome-écologue et paysagiste-conseil. Tu rédiges la SYNTHÈSE finale (Étape 4 « Je synthétise ») du diagnostic d'un site, à destination d'un propriétaire ou d'un paysagiste professionnel.
+
+Tu produis :
+- "portrait" : le portrait écologique du site en 4 à 6 phrases, un seul paragraphe, précis et incarné. Il relie contexte, sol, flore et cohérence globale (ICG) et nomme honnêtement les incertitudes.
+- "atouts" : 3 à 5 leviers réels du site.
+- "contraintes" : 3 à 5 limites objectives.
+- "vigilances" : 2 à 4 points demandant une vérification ou une prudence particulière.
+
+Chaque item porte "text" (une ligne, 12 mots maximum, sans point final) et "because" (la donnée qui le justifie, ex. « structure compacte, test bêche Étape 2 » — 8 mots maximum).
+
+RÈGLES ABSOLUES :
+- N'invente aucune donnée, espèce ni chiffre absent du contexte fourni.
+- Reprends et reformule les éléments déjà déduits par règles quand ils sont pertinents ; supprime les doublons.
+- Si une étape manque, dis-le dans le portrait plutôt que de combler.
+- Français, aucune promesse commerciale.
+
+FORMAT DE SORTIE : uniquement un objet JSON valide, sans texte autour, sans balises de code :
+{"portrait":"...","atouts":[{"text":"...","because":"..."}],"contraintes":[...],"vigilances":[...]}`;
+
+      const synthRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Lovable-API-Key": key,
+          "X-Lovable-AIG-SDK": "fetch",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3.6-flash",
+          messages: [
+            { role: "system", content: synthSystem },
+            {
+              role: "user",
+              content: `Voici toutes les données du diagnostic. Réponds en JSON :\n\n${synthContext}`,
+            },
+          ],
+          response_format: { type: "json_object" },
+        }),
+      });
+
+      if (!synthRes.ok) {
+        const text = await synthRes.text();
+        const status = synthRes.status === 429 || synthRes.status === 402 ? synthRes.status : 500;
+        const error =
+          synthRes.status === 429
+            ? "Trop de requêtes, réessayez dans un instant."
+            : synthRes.status === 402
+              ? "Crédits IA épuisés — rechargez votre espace de travail."
+              : `Erreur IA (${synthRes.status}) : ${text.slice(0, 300)}`;
+        return new Response(JSON.stringify({ error }), {
+          status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const synthData = await synthRes.json();
+      const synthRaw: string = synthData?.choices?.[0]?.message?.content?.trim() ?? "";
+      const synthClean = synthRaw.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+
+      const normList = (raw: unknown) =>
+        Array.isArray(raw)
+          ? raw
+              .map((v: unknown) =>
+                typeof v === "string"
+                  ? { text: v.trim(), because: null, source: "ai" }
+                  : {
+                      text: String((v as { text?: string })?.text ?? "").trim(),
+                      because: (v as { because?: string })?.because ?? null,
+                      source: "ai",
+                    },
+              )
+              .filter((i) => i.text.length > 0)
+          : [];
+
+      try {
+        const parsed = JSON.parse(synthClean);
+        return new Response(
+          JSON.stringify({
+            portrait: String(parsed?.portrait ?? "").trim(),
+            atouts: normList(parsed?.atouts),
+            contraintes: normList(parsed?.contraintes),
+            vigilances: normList(parsed?.vigilances),
+            generatedAt: new Date().toISOString(),
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({ error: "L'IA n'a rien retourné d'exploitable pour la synthèse." }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+
 
     const length = (body as { length?: string }).length ?? "standard";
     const lengthRule =

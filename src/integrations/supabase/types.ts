@@ -6183,6 +6183,65 @@ export type Database = {
           },
         ]
       }
+      propriete_synthesis: {
+        Row: {
+          atouts: Json
+          completed_at: string | null
+          contraintes: Json
+          created_at: string
+          exposure: string | null
+          humidity: string | null
+          id: string
+          notes: string | null
+          portrait: string | null
+          propriete_id: string
+          updated_at: string
+          updated_by: string | null
+          vigilances: Json
+          wind_level: string | null
+        }
+        Insert: {
+          atouts?: Json
+          completed_at?: string | null
+          contraintes?: Json
+          created_at?: string
+          exposure?: string | null
+          humidity?: string | null
+          id?: string
+          notes?: string | null
+          portrait?: string | null
+          propriete_id: string
+          updated_at?: string
+          updated_by?: string | null
+          vigilances?: Json
+          wind_level?: string | null
+        }
+        Update: {
+          atouts?: Json
+          completed_at?: string | null
+          contraintes?: Json
+          created_at?: string
+          exposure?: string | null
+          humidity?: string | null
+          id?: string
+          notes?: string | null
+          portrait?: string | null
+          propriete_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          vigilances?: Json
+          wind_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_synthesis_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: true
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_test_medias: {
         Row: {
           block: string
@@ -8616,6 +8675,42 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "propriete_soil_diagnostics"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      upsert_propriete_synthesis: {
+        Args: {
+          p_atouts?: Json
+          p_completed?: boolean
+          p_contraintes?: Json
+          p_exposure?: string
+          p_humidity?: string
+          p_notes?: string
+          p_portrait?: string
+          p_propriete_id: string
+          p_vigilances?: Json
+          p_wind_level?: string
+        }
+        Returns: {
+          atouts: Json
+          completed_at: string | null
+          contraintes: Json
+          created_at: string
+          exposure: string | null
+          humidity: string | null
+          id: string
+          notes: string | null
+          portrait: string | null
+          propriete_id: string
+          updated_at: string
+          updated_by: string | null
+          vigilances: Json
+          wind_level: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "propriete_synthesis"
           isOneToOne: true
           isSetofReturn: false
         }

@@ -14,6 +14,9 @@ import type { PropertySoilState } from '@/hooks/propriete/usePropertySoil';
 import type { PropertyFloraState } from '@/hooks/propriete/usePropertyFlora';
 import type { SoilLite } from '@/lib/plantIndicatorKb';
 import { IdentifySummary } from '@/components/propriete/identify/IdentifySummary';
+import { SynthesisSummary } from '@/components/propriete/synthesize/SynthesisSummary';
+import type { PropertySynthesisState } from '@/hooks/propriete/usePropertySynthesis';
+import type { SynthesisModel } from '@/components/propriete/synthesize/synthesisModel';
 import {
   FloraAtlasPrintPlates,
   floraAtlasPageCount,
@@ -53,17 +56,21 @@ interface Props {
   flora?: PropertyFloraState | null;
   floraCompletedAt?: string | null;
   floraSoil?: SoilLite | null;
+  /** Étape 4 — incluse dans le cahier complet lorsque fournie. */
+  synthesis?: PropertySynthesisState | null;
+  synthesisModel?: SynthesisModel | null;
+  synthesisCompletedAt?: string | null;
   /** Propriété — photos de terrain prioritaires dans l'atlas du cortège. */
   proprieteId?: string;
 }
 
-const Divider: React.FC<{ eyebrow: string; title: string; sub: string; foot: string; variant?: 'observe' | 'analyze' | 'identify' }> = ({
-  eyebrow,
-  title,
-  sub,
-  foot,
-  variant = 'analyze',
-}) => (
+const Divider: React.FC<{
+  eyebrow: string;
+  title: string;
+  sub: string;
+  foot: string;
+  variant?: 'observe' | 'analyze' | 'identify' | 'synthesize';
+}> = ({ eyebrow, title, sub, foot, variant = 'analyze' }) => (
   <section className={`combined-print-divider combined-print-divider--${variant}`}>
     <div className="combined-print-divider-eyebrow">{eyebrow}</div>
     <h2 className="combined-print-divider-title">{title}</h2>
@@ -92,12 +99,16 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   flora,
   floraCompletedAt,
   floraSoil,
+  synthesis,
+  synthesisModel,
+  synthesisCompletedAt,
   proprieteId,
 }) => {
 
   const withAnalyze = !!soil;
   const plateCount = withAnalyze ? testMediaPlateCount(testMedias) : 0;
   const withIdentify = !!flora && (flora.observed_plants ?? []).length > 0;
+  const withSynthesize = !!synthesis && !!synthesisModel;
   const atlasCount = withIdentify ? floraAtlasPageCount(flora!.observed_plants ?? []) : 0;
   const identifySoil: SoilLite = floraSoil ?? {};
   const identifySoilAvailable = !!(
@@ -250,6 +261,45 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         </>
       )}
 
+      {withSynthesize && synthesis && synthesisModel && (
+        <>
+          <Divider
+            eyebrow="Étape 4"
+            title="Je synthétise"
+            sub="« Tout ce qui a été vu, touché et nommé tient désormais en un seul portrait. »"
+            foot={`${propertyName ?? 'Propriété'} · Fréquence du Vivant`}
+            variant="synthesize"
+          />
+
+          <section className="portrait-print-page combined-print-synthesize">
+            <SynthesisSummary
+              state={synthesis}
+              model={synthesisModel}
+              completedAt={synthesisCompletedAt ?? null}
+              propertyName={propertyName}
+              commune={proprieteVille}
+              onEditBlock={() => {}}
+              onReopenAll={() => {}}
+              printOnly
+              printSection="p1"
+            />
+          </section>
+          <section className="portrait-print-page combined-print-synthesize combined-print-synthesize-second">
+            <SynthesisSummary
+              state={synthesis}
+              model={synthesisModel}
+              completedAt={synthesisCompletedAt ?? null}
+              propertyName={propertyName}
+              commune={proprieteVille}
+              onEditBlock={() => {}}
+              onReopenAll={() => {}}
+              printOnly
+              printSection="p2"
+            />
+          </section>
+        </>
+      )}
+
     </>
   );
 
@@ -281,7 +331,10 @@ export const CombinedPrintLayout: React.FC<Props> = ({
         insertedAfterTocPageCount={1}
         insertBeforeColophon={observeSlot}
         insertedPageCount={
-          (withAnalyze ? 7 : 3) + plateCount + (withIdentify ? 3 + atlasCount : 0)
+          (withAnalyze ? 7 : 3) +
+          plateCount +
+          (withIdentify ? 3 + atlasCount : 0) +
+          (withSynthesize ? 3 : 0)
         }
       />
     </div>

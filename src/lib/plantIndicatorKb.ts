@@ -1,3 +1,5 @@
+import { normalizeStructure, normalizeTexture } from '@/lib/soilVocabulary';
+
 // Base de connaissance flore bio-indicatrice — Méthode D.S. (pages 9-13)
 // Chaque plante porte 4 indices (Eau, Texture, Nutrition, pH) sur -3..+3
 //   Eau       : -3 = très sec … +3 = très frais/humide
@@ -420,24 +422,31 @@ export interface ConcordanceDetail {
   counts: { oui: number; partiel: number; non: number; na: number };
 }
 
-/** Lecture du sol (Étape 2) traduite sur chaque pôle : 0 absent d'intensité, 1..3 intensité, null = non renseigné */
+/**
+ * Lecture du sol (Étape 2) traduite sur chaque pôle : 0 absent d'intensité, 1..3 intensité, null = non renseigné.
+ * La structure et la texture sont normalisées : les prélèvements écrivent « limon / sable / argile »,
+ * le champ global hérité « limoneux / sableux / argileux ». Sans cette normalisation, une texture
+ * pourtant renseignée était lue comme « Donnée manquante » et faisait chuter l'ICG.
+ */
 function soilPoleValue(soil: SoilLite, key: EcoPoleKey): number | null {
+  const structure = normalizeStructure(soil.structure);
+  const texture = normalizeTexture(soil.texture);
   switch (key) {
     case 'eau_frais':
-      return soil.structure === 'compacte' ? 3 : soil.structure === 'grumeleuse' ? 1 : soil.structure === 'particulaire' ? 0 : null;
+      return structure === 'compacte' ? 3 : structure === 'grumeleuse' ? 1 : structure === 'particulaire' ? 0 : null;
     case 'eau_sec':
-      return soil.structure === 'particulaire' ? 3 : soil.structure === 'grumeleuse' ? 1 : soil.structure === 'compacte' ? 0 : null;
+      return structure === 'particulaire' ? 3 : structure === 'grumeleuse' ? 1 : structure === 'compacte' ? 0 : null;
     case 'tex_argile_limon':
-      return soil.texture === 'limon_argile' ? 3 : soil.texture === 'limon_moyen' ? 1 : soil.texture === 'sable_limon' ? 0 : null;
+      return texture === 'limon_argile' ? 3 : texture === 'limon_moyen' ? 1 : texture === 'sable_limon' ? 0 : null;
     case 'tex_limon_sable':
-      return soil.texture === 'sable_limon' ? 3 : soil.texture === 'limon_moyen' ? 1 : soil.texture === 'limon_argile' ? 0 : null;
+      return texture === 'sable_limon' ? 3 : texture === 'limon_moyen' ? 1 : texture === 'limon_argile' ? 0 : null;
     case 'nutri_riche': {
       const n = soil.life_signs?.length ?? 0;
-      return n === 0 && !soil.structure ? null : n >= 3 ? 3 : n >= 1 ? 2 : 0;
+      return n === 0 && !structure ? null : n >= 3 ? 3 : n >= 1 ? 2 : 0;
     }
     case 'nutri_pauvre': {
       const n = soil.life_signs?.length ?? 0;
-      return n === 0 && !soil.structure ? null : n === 0 ? 3 : n <= 1 ? 1 : 0;
+      return n === 0 && !structure ? null : n === 0 ? 3 : n <= 1 ? 1 : 0;
     }
     case 'ph_acide':
       return soil.ph == null ? null : soil.ph <= 5.5 ? 3 : soil.ph <= 6.5 ? 2 : soil.ph < 7 ? 1 : 0;

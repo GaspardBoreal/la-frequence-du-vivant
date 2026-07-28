@@ -1,8 +1,8 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Printer, BookOpen, Images, Sparkles, Layers, Leaf } from 'lucide-react';
+import { Printer, BookOpen, Images, Sparkles, Layers, Leaf, ScrollText } from 'lucide-react';
 
-export type PrintChoice = 'observe' | 'analyze' | 'identify' | 'combined';
+export type PrintChoice = 'observe' | 'analyze' | 'identify' | 'synthesize' | 'combined';
 
 interface Props {
   open: boolean;
@@ -10,13 +10,15 @@ interface Props {
   onConfirm: (choice: PrintChoice) => void;
   portraitPhotoCount: number;
   /** Étape depuis laquelle l'impression est lancée. */
-  origin?: 'observe' | 'analyze' | 'identify';
+  origin?: 'observe' | 'analyze' | 'identify' | 'synthesize';
   /** L'étape 2 est-elle validée (pour le cahier complet) ? */
   analyzeReady?: boolean;
   /** L'étape 1 est-elle validée (pour le cahier complet) ? */
   observeReady?: boolean;
   /** L'étape 3 est-elle validée (pour le cahier complet) ? */
   identifyReady?: boolean;
+  /** L'étape 4 est-elle validée (pour le cahier complet) ? */
+  synthesizeReady?: boolean;
   /** Nombre d'espèces bio-indicatrices cochées (atlas). */
   floraCount?: number;
 }
@@ -77,6 +79,31 @@ const MiniIdentify: React.FC = () => (
         </g>
       )),
     )}
+  </svg>
+);
+
+/** Miniature aquarelle — Synthèse (carte d'identité + trois colonnes) */
+const MiniSynthesize: React.FC = () => (
+  <svg viewBox="0 0 120 90" className="w-full h-24">
+    <rect x="6" y="6" width="108" height="78" rx="3" fill="#fbf7ee" stroke="#c9b78a" strokeWidth="1" />
+    <line x1="18" y1="18" x2="70" y2="18" stroke="#6b7c5a" strokeWidth="1.4" />
+    {/* carte d'identité */}
+    {[0, 1, 2].map((r) => (
+      <g key={r}>
+        <line x1="18" y1={28 + r * 7} x2="46" y2={28 + r * 7} stroke="#a89b78" strokeWidth="0.7" />
+        <line x1="62" y1={28 + r * 7} x2="102" y2={28 + r * 7} stroke="#b08d57" strokeWidth="0.7" />
+      </g>
+    ))}
+    {/* trois colonnes atouts / contraintes / vigilances */}
+    {[0, 1, 2].map((c) => (
+      <g key={c}>
+        <rect x={18 + c * 31} y="54" width="26" height="22" fill="none" stroke="#b08d57" strokeWidth="0.5" />
+        <circle cx={21.5 + c * 31} cy="60" r="1.4" fill={['#2f7d4f', '#b08d57', '#d19a3a'][c]} />
+        <line x1={25 + c * 31} y1="60" x2={41 + c * 31} y2="60" stroke="#a89b78" strokeWidth="0.6" />
+        <circle cx={21.5 + c * 31} cy="66" r="1.4" fill={['#2f7d4f', '#b08d57', '#d19a3a'][c]} />
+        <line x1={25 + c * 31} y1="66" x2={38 + c * 31} y2="66" stroke="#a89b78" strokeWidth="0.6" />
+      </g>
+    ))}
   </svg>
 );
 
@@ -158,10 +185,17 @@ export const PrintChoiceDialog: React.FC<Props> = ({
   analyzeReady = false,
   observeReady = true,
   identifyReady = false,
+  synthesizeReady = false,
   floraCount = 0,
 }) => {
   const soloChoice: PrintChoice =
-    origin === 'analyze' ? 'analyze' : origin === 'identify' ? 'identify' : 'observe';
+    origin === 'analyze'
+      ? 'analyze'
+      : origin === 'identify'
+        ? 'identify'
+        : origin === 'synthesize'
+          ? 'synthesize'
+          : 'observe';
   const [choice, setChoice] = React.useState<PrintChoice | null>(null);
 
   const combinedDisabled =
@@ -178,10 +212,12 @@ export const PrintChoiceDialog: React.FC<Props> = ({
       ? '≈ 2 – 3 pages · A4'
       : origin === 'identify'
         ? `≈ ${2 + atlasPages} pages · A4`
-        : '≈ 2 pages · A4';
+        : origin === 'synthesize'
+          ? '2 pages · A4'
+          : '≈ 2 pages · A4';
   const combinedPages = combinedDisabled
     ? '—'
-    : `≈ ${2 + Math.ceil(portraitPhotoCount / 2) + 3 + (analyzeReady ? 3 : 0) + (identifyReady ? 3 + atlasPages : 0)} pages · A4`;
+    : `≈ ${2 + Math.ceil(portraitPhotoCount / 2) + 3 + (analyzeReady ? 3 : 0) + (identifyReady ? 3 + atlasPages : 0) + (synthesizeReady ? 3 : 0)} pages · A4`;
 
   const combinedHint =
     portraitPhotoCount === 0
@@ -225,6 +261,17 @@ export const PrintChoiceDialog: React.FC<Props> = ({
             >
               <Eyebrow icon={<Leaf className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'identifie" />
               <MiniIdentify />
+            </Card>
+          ) : origin === 'synthesize' ? (
+            <Card
+              onSelect={() => setChoice('synthesize')}
+              selected={choice === 'synthesize'}
+              title="Synthèse seule"
+              desc="Deux pages : la carte d'identité écologique et le portrait du site, puis atouts, contraintes et vigilances."
+              pages={soloPages}
+            >
+              <Eyebrow icon={<ScrollText className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="Je synthétise" />
+              <MiniSynthesize />
             </Card>
           ) : (
             <Card
