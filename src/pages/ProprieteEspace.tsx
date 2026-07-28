@@ -100,7 +100,7 @@ const ProprieteEspace: React.FC = () => {
           slug={slug!}
         />
 
-        <main id="diagnostic" className="max-w-4xl mx-auto px-4 py-10 space-y-6 scroll-mt-16">
+        <main id="diagnostic" className="max-w-4xl mx-auto px-4 py-10 space-y-6 scroll-mt-0">
           <PropTabs
             proprieteId={propriete.id}
             proprieteNom={propriete.nom}
@@ -119,15 +119,24 @@ const ProprieteEspace: React.FC = () => {
   );
 };
 
-/** Hauteur de la top-bar fixe, pour garder la barre d'onglets visible. */
-const DIAGNOSTIC_SCROLL_OFFSET = 64;
+/** Id du conteneur sticky de la barre d'onglets. */
+const TABS_BAR_ID = 'diagnostic-tabs-bar';
 
+/** Position de défilement plaçant la barre d'onglets exactement en haut de l'écran. */
 const getDiagnosticTarget = () => {
+  const bar = document.getElementById(TABS_BAR_ID);
+  if (bar) {
+    // La barre est sticky top-0 : sa position "naturelle" se déduit de son parent.
+    const anchor = bar.parentElement ?? bar;
+    const top = anchor.getBoundingClientRect().top + window.scrollY;
+    return Math.max(top, 0);
+  }
   const el = document.getElementById('diagnostic');
   if (!el) return null;
-  const top = el.getBoundingClientRect().top + window.scrollY - DIAGNOSTIC_SCROLL_OFFSET;
+  const top = el.getBoundingClientRect().top + window.scrollY;
   return Math.max(top, 0);
 };
+
 
 /** Repositionne la vue sur l'ancre #diagnostic (barre d'onglets sous le header). */
 const scrollToDiagnostic = () => {
@@ -294,7 +303,7 @@ const CanopyHero: React.FC<{
             variant="gold"
             pulse
             icon={<Search className="w-4 h-4" />}
-            onClick={scrollToDiagnostic}
+            onClick={() => scrollToDiagnosticPersistent()}
           >
             Explorer votre diagnostic vivant
           </OrganicButton>
@@ -358,7 +367,7 @@ const PropTabs: React.FC<{
         monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
       />
       <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-        <div className="sticky top-0 z-[60]">
+        <div id={TABS_BAR_ID} className="sticky top-0 z-[60]">
           <div
             className="w-screen ml-[50%] -translate-x-1/2 bg-background border-b border-border shadow-md"
             style={{ paddingTop: 'env(safe-area-inset-top)' }}

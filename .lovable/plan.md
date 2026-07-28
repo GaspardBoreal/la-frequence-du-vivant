@@ -1,28 +1,26 @@
-## Ce que je comprends
+## Constat
 
-Sur `/propriete/:slug`, quand on fait défiler chacune des étapes (Portrait, J'observe, J'analyse…), les widgets restent visibles **au-dessus et au travers** de la barre d'onglets collante : on voit du contenu passer dans la bande de 4rem au-dessus de la barre, et le fond translucide laisse transparaître ce qui glisse dessous. Attendu : tout ce qui remonte disparaît proprement sous la barre, sur mobile, tablette et desktop.
+Sur `/propriete/:slug`, le bouton « Explorer votre diagnostic vivant » amène bien au bloc diagnostic, mais la barre d'onglets (Portrait / J'observe / …) n'est pas collée en haut : elle apparaît plus bas dans l'écran (copie 1). Elle ne se colle qu'après avoir continué à défiler (copie 2).
 
-## Cause
+## Cause (vérifiée dans `src/pages/ProprieteEspace.tsx`)
 
-Dans `src/pages/ProprieteEspace.tsx` :
-- La barre (`TabsList`) est en `sticky top-16` alors que le header sombre du haut est en `absolute` **à l'intérieur du hero** : il défile et disparaît. Il reste donc une bande vide de 64px au-dessus de la barre dans laquelle le contenu défile à découvert (le « 26 % » visible sur la copie d'écran).
-- Le fond est semi-transparent (`bg-background/95` + `backdrop-blur`), donc le contenu reste perceptible derrière.
-- La barre est limitée à la largeur du conteneur : sur les côtés (desktop large), le contenu peut apparaître hors barre.
+- Le défilement vise l'ancre `#diagnostic` (ligne 103) avec un décalage codé en dur `DIAGNOSTIC_SCROLL_OFFSET = 64` (ligne 123), hérité d'un ancien header fixe qui n'existe plus (le header est `absolute` dans le hero, il défile).
+- Entre le haut de `#diagnostic` et la barre d'onglets s'intercalent : le `py-10` du `<main>`, puis le `NudgeMarcheBanner` (ligne 356) et l'espacement `space-y-5`. La barre se retrouve donc à ~100–250 px sous le haut de la fenêtre à l'arrivée, hauteur variable selon que la bannière s'affiche ou non et selon le format.
+- La barre est bien `sticky top-0 z-[60]` (ligne 361) : elle ne « colle » qu'une fois que la page a défilé au-delà de sa position naturelle — d'où le comportement observé.
 
 ## Correctifs prévus
 
-1. **Position** : passer la barre en `sticky top-0` (avec `padding-top` de zone sûre iOS `env(safe-area-inset-top)`) — plus aucune bande transparente au-dessus.
-2. **Opacité** : fond pleinement opaque (token `--background`), suppression de la dépendance au flou, bordure basse + ombre douce pour marquer la séparation.
-3. **Pleine largeur** : bandeau plein écran (wrapper full-bleed) avec la liste d'onglets centrée à l'intérieur, pour qu'aucun contenu ne remonte sur les côtés.
-4. **Hiérarchie z-index** : barre au-dessus des blocs internes (matrice éco, listes d'observations, cartes plein écran conservées au-dessus). Un niveau cohérent sera fixé pour ces trois cas.
-5. **Ancrages** : ajout de `scroll-margin-top` correspondant à la hauteur de barre, afin que le scroll par clic d'onglet ne cache pas les titres de section.
-6. **Responsive** : barre défilable horizontalement (mobile), centrée (desktop) ; hauteur mesurée via variable CSS pour rester juste sur les trois formats.
+1. **Cibler la barre elle-même** : donner un identifiant/ref au conteneur sticky des onglets et faire pointer le défilement sur la position naturelle de ce conteneur, au lieu de `#diagnostic`.
+2. **Supprimer le décalage de 64 px** obsolète : la cible devient le haut exact de la barre (offset 0, moins `env(safe-area-inset-top)` sur iOS), pour qu'elle se retrouve immédiatement en position collée en haut.
+3. **Robustesse asynchrone** : conserver le mécanisme `scrollToDiagnosticPersistent` (rejeu sur quelques centaines de ms + ResizeObserver) mais recalculer la cible à partir de la barre, afin que l'apparition tardive du `NudgeMarcheBanner` ou d'un contenu d'onglet ne décale plus le résultat.
+4. **Cohérence des ancres** : ajuster `scroll-mt` du `<main>` pour rester aligné sur la nouvelle logique, et appliquer la même cible au changement d'onglet (`handleTabChange`) et à l'événement `propriete:goto-tab`.
+
+Aucun changement de logique métier : uniquement positionnement/défilement.
 
 ## Vérification
 
-Contrôle en aperçu Playwright aux trois tailles (390, 834, 1440 px) : capture pendant le défilement sur J'observe, J'analyse et J'identifie pour confirmer qu'aucun widget n'est visible au-dessus ou à travers la barre.
+Contrôle Playwright sur `/propriete/jardin-monde-deviat` en 390 px (mobile), 834 px (tablette) et 1440 px (desktop) : clic sur « Explorer votre diagnostic vivant », capture immédiate + après stabilisation, pour confirmer que la barre d'onglets est bien plaquée en haut (top = 0) dans les trois formats, avec et sans bannière.
 
 ## Fichiers touchés
 
-- `src/pages/ProprieteEspace.tsx` (barre d'onglets, wrapper full-bleed, scroll-margin)
-- ajustements mineurs de z-index dans `src/components/propriete/identify/blocks/EcoMatrixBlock.tsx` et `RevealObservationList.tsx`
+- `src/pages/ProprieteEspace.tsx` (cible de défilement, offset, ref sur la barre sticky)
