@@ -350,14 +350,23 @@ export const SynthesisSummary: React.FC<Props> = ({
       {/* Footer / actions */}
       {!printOnly && (
         <footer className="mt-12 pt-6 border-t border-[hsl(var(--ds-line))] flex flex-wrap items-center justify-between gap-3 print:hidden">
-          <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-full border border-[hsl(var(--ds-forest))] flex items-center justify-center text-[hsl(var(--ds-forest))]">
-              <Check className="w-4 h-4" />
+          <div className="flex items-center gap-3 rounded-full border border-[hsl(var(--ds-forest))]/30 bg-[hsl(var(--ds-forest))]/[0.07] pl-2 pr-4 py-1.5">
+            <span className="relative w-8 h-8 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center shadow-[0_2px_8px_-2px_hsl(var(--ds-forest))]">
+              <ShieldCheck className="w-4 h-4" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[hsl(var(--ds-gold))] text-[hsl(var(--ds-forest-deep))] flex items-center justify-center">
+                <Check className="w-2.5 h-2.5" />
+              </span>
             </span>
-            <span className="text-sm font-medium text-[hsl(var(--ds-forest-deep))]">
-              Synthèse verrouillée · prête pour le rapport client
+            <span className="leading-tight">
+              <span className="block text-sm font-semibold text-[hsl(var(--ds-forest-deep))]">
+                Synthèse verrouillée
+              </span>
+              <span className="block text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]/70">
+                Prête pour le rapport client · {dateStr}
+              </span>
             </span>
           </div>
+
           <div className="flex flex-wrap gap-2">
             <button
               onClick={onPrint}
