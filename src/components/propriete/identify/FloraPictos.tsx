@@ -144,10 +144,12 @@ export const IcgRing: React.FC<{
   const tone = resolved === 'bonne' ? FOREST : resolved === 'moyenne' ? GOLD : '#b95c3a';
 
 
+  const gradId = `icg-grad-${resolved}`;
+
   return (
     <svg width={size} height={size} viewBox="0 0 128 128">
       <defs>
-        <linearGradient id="icg-grad" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={tone} />
           <stop offset="100%" stopColor={FOREST} />
         </linearGradient>
@@ -157,7 +159,8 @@ export const IcgRing: React.FC<{
         cx={64}
         cy={64}
         r={r}
-        stroke="url(#icg-grad)"
+        stroke={`url(#${gradId})`}
+
         strokeWidth={8}
         fill="none"
         strokeLinecap="round"
