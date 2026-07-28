@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Check, Sparkles, HelpCircle } from 'lucide-react';
+import { Search, Check, Sparkles, HelpCircle, Maximize2 } from 'lucide-react';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { PLANT_INDICATORS, FAMILY_META, type PlantFamily, type PlantIndicator } from '@/lib/plantIndicatorKb';
 import { FamilyIcon } from '../FloraPictos';
