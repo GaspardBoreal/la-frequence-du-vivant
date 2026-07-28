@@ -288,30 +288,15 @@ export const IdentifySummary: React.FC<Props> = ({
                 <Empty />
               ) : (
                 <div className="space-y-3">
-                  {(['herbacee', 'arbuste', 'liane', 'arbre'] as PlantFamily[])
-                    .filter((f) => byFamily.has(f))
-                    .map((f) => (
-                      <div key={f}>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <FamilyIcon family={f} active size={18} />
-                          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[hsl(var(--ds-forest))]/80">
-                            {FAMILY_META[f].label} · {byFamily.get(f)!.length}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {byFamily.get(f)!.map((p) => (
-                            <Chip key={p.id}>
-                              <span className="font-medium">{p.nom}</span>
-                              {p.latin && (
-                                <span className="italic opacity-60 text-xs">{p.latin}</span>
-                              )}
-                            </Chip>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                  {familyList(P1_FAMILIES)}
+                  {hasP2Cortege && (
+                    <div className="text-[9px] uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]/50">
+                      Lianes &amp; arbres — voir page suivante
+                    </div>
+                  )}
                 </div>
               )}
+
             </Section>
 
             <Section
