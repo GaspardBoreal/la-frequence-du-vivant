@@ -401,7 +401,15 @@ const PropTabs: React.FC<{
 
         </TabsContent>
         <TabsContent value="identify" className="pt-5 min-h-[calc(100vh-8rem)]">
-          <TabIdentify proprieteId={proprieteId} proprieteNom={proprieteNom} bio={bio} />
+          <TabIdentify
+            proprieteId={proprieteId}
+            proprieteNom={proprieteNom}
+            bio={bio}
+            proprieteCenter={proprieteCenter}
+            proprieteVille={proprieteVille}
+            proprieteAdresse={proprieteAdresse}
+            proprieteCodePostal={proprieteCodePostal}
+          />
         </TabsContent>
         <TabsContent value="synthesize" className="pt-5 min-h-[calc(100vh-8rem)]">
           <TabSynthesize
