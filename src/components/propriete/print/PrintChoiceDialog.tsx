@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Printer, BookOpen, Images, Sparkles, Layers, Leaf, ScrollText } from 'lucide-react';
 
-export type PrintChoice = 'observe' | 'analyze' | 'identify' | 'synthesize' | 'combined';
+export type PrintChoice = 'observe' | 'analyze' | 'identify' | 'synthesize' | 'palette' | 'combined';
 
 interface Props {
   open: boolean;
@@ -10,7 +10,7 @@ interface Props {
   onConfirm: (choice: PrintChoice) => void;
   portraitPhotoCount: number;
   /** Étape depuis laquelle l'impression est lancée. */
-  origin?: 'observe' | 'analyze' | 'identify' | 'synthesize';
+  origin?: 'observe' | 'analyze' | 'identify' | 'synthesize' | 'palette';
   /** L'étape 2 est-elle validée (pour le cahier complet) ? */
   analyzeReady?: boolean;
   /** L'étape 1 est-elle validée (pour le cahier complet) ? */
@@ -19,6 +19,8 @@ interface Props {
   identifyReady?: boolean;
   /** L'étape 4 est-elle validée (pour le cahier complet) ? */
   synthesizeReady?: boolean;
+  /** L'étape 5 est-elle validée (pour le cahier complet) ? */
+  paletteReady?: boolean;
   /** Nombre d'espèces bio-indicatrices cochées (atlas). */
   floraCount?: number;
 }
@@ -186,6 +188,7 @@ export const PrintChoiceDialog: React.FC<Props> = ({
   observeReady = true,
   identifyReady = false,
   synthesizeReady = false,
+  paletteReady = false,
   floraCount = 0,
 }) => {
   const soloChoice: PrintChoice =
@@ -195,7 +198,9 @@ export const PrintChoiceDialog: React.FC<Props> = ({
         ? 'identify'
         : origin === 'synthesize'
           ? 'synthesize'
-          : 'observe';
+          : origin === 'palette'
+            ? 'palette'
+            : 'observe';
   const [choice, setChoice] = React.useState<PrintChoice | null>(null);
 
   const combinedDisabled =
@@ -212,12 +217,12 @@ export const PrintChoiceDialog: React.FC<Props> = ({
       ? '≈ 2 – 3 pages · A4'
       : origin === 'identify'
         ? `≈ ${2 + atlasPages} pages · A4`
-        : origin === 'synthesize'
+        : origin === 'synthesize' || origin === 'palette'
           ? '2 pages · A4'
           : '≈ 2 pages · A4';
   const combinedPages = combinedDisabled
     ? '—'
-    : `≈ ${2 + Math.ceil(portraitPhotoCount / 2) + 3 + (analyzeReady ? 3 : 0) + (identifyReady ? 3 + atlasPages : 0) + (synthesizeReady ? 3 : 0)} pages · A4`;
+    : `≈ ${2 + Math.ceil(portraitPhotoCount / 2) + 3 + (analyzeReady ? 3 : 0) + (identifyReady ? 3 + atlasPages : 0) + (synthesizeReady ? 3 : 0) + (paletteReady ? 3 : 0)} pages · A4`;
 
   const combinedHint =
     portraitPhotoCount === 0
@@ -260,6 +265,17 @@ export const PrintChoiceDialog: React.FC<Props> = ({
               pages={soloPages}
             >
               <Eyebrow icon={<Leaf className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="J'identifie" />
+              <MiniIdentify />
+            </Card>
+          ) : origin === 'palette' ? (
+            <Card
+              onSelect={() => setChoice('palette')}
+              selected={choice === 'palette'}
+              title="Palette seule"
+              desc="Deux pages : la règle du site et les palettes par emplacement, puis les refus argumentés et la mise en œuvre."
+              pages={soloPages}
+            >
+              <Eyebrow icon={<Leaf className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="Palette végétale" />
               <MiniIdentify />
             </Card>
           ) : origin === 'synthesize' ? (
@@ -320,6 +336,12 @@ export const PrintChoiceDialog: React.FC<Props> = ({
                 <>
                   <span className="text-[hsl(var(--ds-gold))]">·</span>
                   <Eyebrow icon={<ScrollText className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="Je synthétise" />
+                </>
+              )}
+              {paletteReady && (
+                <>
+                  <span className="text-[hsl(var(--ds-gold))]">·</span>
+                  <Eyebrow icon={<Leaf className="w-4 h-4 text-[hsl(var(--ds-forest))]" />} label="Palette" />
                 </>
               )}
             </div>

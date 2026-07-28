@@ -6059,6 +6059,53 @@ export type Database = {
           },
         ]
       }
+      propriete_palette: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          excluded: Json
+          id: string
+          implementation: Json
+          notes: string | null
+          propriete_id: string
+          site_rule: string | null
+          updated_at: string
+          zones: Json
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          excluded?: Json
+          id?: string
+          implementation?: Json
+          notes?: string | null
+          propriete_id: string
+          site_rule?: string | null
+          updated_at?: string
+          zones?: Json
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          excluded?: Json
+          id?: string
+          implementation?: Json
+          notes?: string | null
+          propriete_id?: string
+          site_rule?: string | null
+          updated_at?: string
+          zones?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_palette_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: true
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_parcelles: {
         Row: {
           centroid_lat: number | null
@@ -6312,6 +6359,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "propriete_test_medias_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_zones: {
+        Row: {
+          couleur: string
+          created_at: string
+          created_by: string | null
+          geometry: Json
+          id: string
+          nom: string
+          note: string | null
+          ordre: number
+          propriete_id: string
+          updated_at: string
+        }
+        Insert: {
+          couleur?: string
+          created_at?: string
+          created_by?: string | null
+          geometry: Json
+          id?: string
+          nom: string
+          note?: string | null
+          ordre?: number
+          propriete_id: string
+          updated_at?: string
+        }
+        Update: {
+          couleur?: string
+          created_at?: string
+          created_by?: string | null
+          geometry?: Json
+          id?: string
+          nom?: string
+          note?: string | null
+          ordre?: number
+          propriete_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_zones_propriete_id_fkey"
             columns: ["propriete_id"]
             isOneToOne: false
             referencedRelation: "proprietes"
@@ -7563,6 +7657,7 @@ export type Database = {
         Returns: boolean
       }
       delete_propriete_parcelle: { Args: { _id: string }; Returns: undefined }
+      delete_propriete_zone: { Args: { _zone_id: string }; Returns: boolean }
       detach_pratique_from_marcheur: {
         Args: { p_curation_id: string; p_marcheur_id: string }
         Returns: boolean
@@ -8310,6 +8405,27 @@ export type Database = {
           section: string
         }[]
       }
+      list_propriete_zones: {
+        Args: { _propriete_id: string }
+        Returns: {
+          couleur: string
+          created_at: string
+          created_by: string | null
+          geometry: Json
+          id: string
+          nom: string
+          note: string | null
+          ordre: number
+          propriete_id: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "propriete_zones"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       log_public_event_event: {
         Args: {
           _event_type: string
@@ -8626,6 +8742,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      upsert_propriete_palette: {
+        Args: {
+          p_completed_at?: string
+          p_excluded?: Json
+          p_implementation?: Json
+          p_notes?: string
+          p_propriete_id: string
+          p_site_rule?: string
+          p_zones?: Json
+        }
+        Returns: string
+      }
       upsert_propriete_parcelle: {
         Args: {
           _centroid_lat: number
@@ -8714,6 +8842,18 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      upsert_propriete_zone: {
+        Args: {
+          _couleur?: string
+          _geometry: Json
+          _nom: string
+          _note?: string
+          _ordre?: number
+          _propriete_id: string
+          _zone_id?: string
+        }
+        Returns: string
       }
       upsert_species_taxonomy_alias: {
         Args: {
