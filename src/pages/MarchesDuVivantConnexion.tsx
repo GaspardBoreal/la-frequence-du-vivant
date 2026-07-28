@@ -142,10 +142,12 @@ const MarchesDuVivantConnexion = () => {
     try {
       await signIn(email, password);
       toast.success('Bienvenue parmi les marcheurs ! 🌿');
-      if (nextParam) {
-        navigate(nextParam, { replace: true });
+      const target = nextParam ?? readPendingOAuthRequest();
+      if (target) {
+        window.location.href = target;
         return;
       }
+
       const consumed = await consumeInvitationIfAny();
       if (consumed?.success && consumed.event_id) {
         toast.success('Vous êtes rattaché·e à l\'événement comme Lecteur invité 📖');
