@@ -389,7 +389,11 @@ export const ZonePaletteCard: React.FC<Props> = ({
           </p>
         )}
       </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.article>
+
   );
 };
 
