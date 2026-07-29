@@ -131,6 +131,11 @@ interface Props {
   onToggleSpecies?: (id: string) => void;
   onRename?: (v: string) => void;
   readOnly?: boolean;
+  /** Piloté par le parent : carte dépliée ou repliée. */
+  open?: boolean;
+  onToggleOpen?: () => void;
+  /** Impression / synthèse : toujours déplié, sans chevron. */
+  forceOpen?: boolean;
 }
 
 export const ZonePaletteCard: React.FC<Props> = ({
@@ -146,12 +151,96 @@ export const ZonePaletteCard: React.FC<Props> = ({
   onToggleSpecies,
   onRename,
   readOnly,
+  open,
+  onToggleOpen,
+  forceOpen,
 }) => {
   const letter = String.fromCharCode(65 + index);
   const selected = new Set(selectedIds);
-  const selectedCount = recommendations
-    .flatMap((r) => r.species)
-    .filter((s) => selected.has(s.species.id)).length;
+  const collapsible = !forceOpen && typeof onToggleOpen === 'function';
+  const expanded = forceOpen || !collapsible || !!open;
+
+  const sig = React.useMemo(
+    () => zoneSignature(recommendations, selectedIds),
+    [recommendations, selectedIds],
+  );
+  const selectedCount = sig.total;
+  const ambianceLabel = ZONE_AMBIANCES.find((a) => a.id === ambiance)?.label ?? null;
+  const bodyId = `zone-palette-body-${index}`;
+
+  /** Ruban de strates : lecture instantanée de l'équilibre végétal. */
+  const strateRibbon = sig.total > 0 && (
+    <span className="inline-flex h-1.5 w-24 overflow-hidden rounded-full bg-[hsl(var(--ds-line))] print-exact">
+      {sig.byStrate.map((s) => (
+        <span
+          key={s.strate}
+          title={`${STRATE_LABEL[s.strate]} · ${s.count}`}
+          className="h-full print-exact"
+          style={{
+            width: `${(s.count / sig.total) * 100}%`,
+            backgroundColor: STRATE_TINT[s.strate],
+          }}
+        />
+      ))}
+    </span>
+  );
+
+  const signatureBar = (
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-[hsl(var(--ds-forest-deep))]/80">
+      {ambianceLabel && ambiance !== 'neutre' && (
+        <span className="rounded-full border border-[hsl(var(--ds-line))] bg-white/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--ds-forest))]">
+          {ambianceLabel}
+        </span>
+      )}
+      {intention && (
+        <span className="max-w-[22rem] truncate italic text-[hsl(var(--ds-forest-deep))]/70">
+          « {intention} »
+        </span>
+      )}
+
+      {sig.total === 0 ? (
+        <span className="inline-flex items-center gap-1.5 font-semibold text-[hsl(var(--ds-gold))]">
+          <Sparkles className="h-3 w-3" />
+          Emplacement à composer — {sig.proposedTotal} espèces proposées
+        </span>
+      ) : (
+        <>
+          {strateRibbon}
+          <span className="font-semibold text-[hsl(var(--ds-forest))]">
+            {sig.total} espèce{sig.total > 1 ? 's' : ''}
+          </span>
+          {sig.indigenePct !== null && (
+            <span className="inline-flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#2f7d4f] print-exact" />
+              {sig.indigenePct} % indigène
+            </span>
+          )}
+          {sig.vegetalLocal > 0 && (
+            <span className="inline-flex items-center gap-1 text-[#1e6b45]">
+              <ShieldCheck className="h-3 w-3" /> {sig.vegetalLocal} végétal local
+            </span>
+          )}
+          <span className="hidden sm:inline text-[hsl(var(--ds-forest-deep))]/55">
+            {sig.byStrate.map((s) => `${STRATE_SHORT[s.strate]} ${s.count}`).join(' · ')}
+          </span>
+          {sig.topServices.length > 0 && (
+            <span className="hidden md:inline-flex flex-wrap items-center gap-1.5">
+              {sig.topServices.map((s) => (
+                <span
+                  key={s.label}
+                  className="rounded-full border border-[hsl(var(--ds-line))] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--ds-forest))]/75"
+                >
+                  {s.label} {s.count}
+                </span>
+              ))}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  const HeaderTag = collapsible ? 'button' : 'div';
 
   return (
     <motion.article
@@ -161,7 +250,19 @@ export const ZonePaletteCard: React.FC<Props> = ({
       transition={{ duration: 0.45 }}
       className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] overflow-hidden print-avoid-break"
     >
-      <header className="flex items-start gap-4 p-5 border-b border-[hsl(var(--ds-line))]/70">
+      <HeaderTag
+        {...(collapsible
+          ? {
+              type: 'button' as const,
+              onClick: onToggleOpen,
+              'aria-expanded': expanded,
+              'aria-controls': bodyId,
+            }
+          : {})}
+        className={`w-full flex items-start gap-4 p-5 text-left ${
+          expanded ? 'border-b border-[hsl(var(--ds-line))]/70' : ''
+        } ${collapsible ? 'transition-colors hover:bg-white/40' : ''}`}
+      >
         <div
           className="w-11 h-11 rounded-full flex items-center justify-center font-serif text-lg text-white shrink-0 print-exact"
           style={{ backgroundColor: color }}
@@ -171,20 +272,44 @@ export const ZonePaletteCard: React.FC<Props> = ({
         <div className="min-w-0 flex-1">
           {readOnly || !onRename ? (
             <div className="font-serif italic text-xl text-[hsl(var(--ds-forest-deep))]">{name}</div>
-          ) : (
+          ) : expanded ? (
             <input
               value={name}
               onChange={(e) => onRename(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
               className="w-full bg-transparent font-serif italic text-xl text-[hsl(var(--ds-forest-deep))] outline-none border-b border-transparent focus:border-[hsl(var(--ds-gold))]"
             />
+          ) : (
+            <div className="font-serif italic text-xl text-[hsl(var(--ds-forest-deep))]">{name}</div>
           )}
           <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]/70">
             Emplacement {letter} · {selectedCount} espèce{selectedCount > 1 ? 's' : ''} retenue
             {selectedCount > 1 ? 's' : ''}
           </div>
+          {!expanded && signatureBar}
         </div>
-      </header>
+        {collapsible && (
+          <motion.span
+            animate={{ rotate: expanded ? 180 : 0 }}
+            transition={{ duration: 0.25 }}
+            className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest))]"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </motion.span>
+        )}
+      </HeaderTag>
 
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            id={bodyId}
+            key="body"
+            initial={collapsible ? { height: 0, opacity: 0 } : false}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
       {!readOnly && (
         <div className="px-5 py-3 border-b border-[hsl(var(--ds-line))]/60 flex flex-wrap gap-1.5">
           {ZONE_AMBIANCES.map((a) => (
@@ -219,6 +344,7 @@ export const ZonePaletteCard: React.FC<Props> = ({
           « {intention} »
         </p>
       )}
+
 
       <div className="p-5 space-y-4">
         {recommendations.map((r) => {
