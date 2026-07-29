@@ -16,7 +16,6 @@ import RichMap from '@/components/maps/RichMap';
 import { ZONE_COLORS, type ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import PaletteStudio from './studio/PaletteStudio';
-import { geometryAreaM2 } from './studio/geoMetrics';
 
 /* ── Couche de dessin à main levée ────────────────────────────────────────── */
 

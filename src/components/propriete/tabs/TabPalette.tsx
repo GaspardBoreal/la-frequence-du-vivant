@@ -33,6 +33,7 @@ import { useProprieteParcelles, centroidOfParcelles } from '@/hooks/propriete/us
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import ZonesMapBlock from '@/components/propriete/palette/ZonesMapBlock';
+import { geometryAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
 import ExcludedSpeciesMap from '@/components/propriete/palette/ExcludedSpeciesMap';
 import { useExcludedOnSite, excludedKey } from '@/hooks/propriete/useExcludedOnSite';
 import { buildGeofence, isInsideGeofence } from '@/lib/geofence';
@@ -228,6 +229,7 @@ export const TabPalette: React.FC<Props> = ({
         geometry,
         couleur: ZONE_COLORS[zones.length % ZONE_COLORS.length],
         ordre: zones.length,
+        surface_m2: Math.round(geometryAreaM2(geometry)),
       });
       toast.success('Zone enregistrée — nommez-la et choisissez son ambiance');
     } catch (e: any) {
@@ -577,6 +579,21 @@ export const TabPalette: React.FC<Props> = ({
             onSelectZone={setActiveZoneId}
             onCreateZone={handleCreateZone}
             onDeleteZone={handleDeleteZone}
+            proprieteId={proprieteId}
+            onPatchZone={(z, patch) =>
+              upsertZone({
+                id: z.id,
+                nom: patch.nom ?? z.nom,
+                geometry: patch.geometry ?? z.geometry,
+                couleur: patch.couleur ?? z.couleur,
+                note: patch.note ?? z.note,
+                ordre: patch.ordre ?? z.ordre,
+                visible: patch.visible ?? z.visible,
+                verrouille: patch.verrouille ?? z.verrouille,
+                opacite: patch.opacite ?? z.opacite,
+                surface_m2: patch.surface_m2 ?? z.surface_m2,
+              }).catch(() => {})
+            }
           />
         </AnalyzeCard>
       </div>
