@@ -783,7 +783,12 @@ const FAMILY_FALLBACK: Record<ToolFamilyKey, OuvrageReco> = {
       an1: 'Entretien de la végétation, vérification de la capacité d’infiltration.',
       an3: 'Décolmatage éventuel de la zone d’entrée.',
     },
-    especes: ['Cortège hygrophile local, sans espèce exotique envahissante.'],
+    especes: [
+      'Fond humide temporaire : Juncus effusus, Carex pendula, Iris pseudacorus',
+      'Talus et marges drainantes : Deschampsia cespitosa, Achillea millefolium, Lythrum salicaria',
+      'Ligneux de bord d’eau : Salix purpurea, Cornus sanguinea, Viburnum opulus',
+      'À bannir : Ludwigia, Elodea, Myriophyllum aquaticum, Reynoutria (invasives réglementées)',
+    ],
     vigilance: ['Vérifier les distances réglementaires aux constructions et limites.'],
     sources: [S_GIEP],
   },
