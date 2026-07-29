@@ -1,7 +1,11 @@
 import React from 'react';
-import { CircleMarker, Tooltip } from 'react-leaflet';
+import { CircleMarker, Popup, Tooltip } from 'react-leaflet';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 import { PLANT_INDICATORS, type PlantFamily } from '@/lib/plantIndicatorKb';
+import ObservationPopupCard, {
+  type ObservationPopupWaypoint,
+} from '@/components/propriete/species/ObservationPopupCard';
+
 
 export type VivantType = 'flore' | 'faune' | 'champignons' | 'autres';
 export type VivantSource = 'marcheur' | 'inaturalist';
