@@ -112,7 +112,14 @@ export const OuvragesRegister: React.FC<Props> = ({
             return (
               <div
                 key={o.id}
-                className="overflow-hidden rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/55"
+                ref={(el) => {
+                  rowRefs.current[o.id] = el;
+                }}
+                className={`overflow-hidden rounded-xl border bg-[hsl(var(--ds-cream))]/55 text-[hsl(var(--ds-forest-deep))] transition ${
+                  focusObjetId === o.id
+                    ? 'border-[hsl(var(--ds-forest))] ring-1 ring-[hsl(var(--ds-forest))]/30'
+                    : 'border-[hsl(var(--ds-line))]'
+                }`}
               >
                 <button
                   type="button"
