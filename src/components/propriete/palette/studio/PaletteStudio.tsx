@@ -303,10 +303,37 @@ export const PaletteStudio: React.FC<Props> = ({
     waypoints.forEach((w) => {
       byType[typeOfWaypoint(w)] += 1;
       if (indicatorOf(w)) bio += 1;
-      if (matchVivantFilter(w, vivantFilter)) visible += 1;
+      if (matchVivantFilter(w, vivantFilter, filterContext)) visible += 1;
     });
     return { total: waypoints.length, visible, byType, bio };
-  }, [waypoints, vivantFilter]);
+  }, [waypoints, vivantFilter, filterContext]);
+
+  /**
+   * Facettes de tags : comptées sur les observations qui passent tous les
+   * autres critères (tags neutralisés), pour que les nombres annoncent bien ce
+   * qu'un clic sur la puce va donner.
+   */
+  const tagFacets = React.useMemo<VivantTagFacet[]>(() => {
+    const meta = new Map<string, { label: string; color: string }>();
+    (myTags || []).forEach((t) => {
+      const k = normalizeTagKey(t.label);
+      if (!meta.has(k)) meta.set(k, { label: t.label, color: getTagColor(t.color_hash) });
+    });
+    if (meta.size === 0) return [];
+
+    const neutral: VivantFilterState = { ...vivantFilter, tags: { ...vivantFilter.tags, labels: [] } };
+    const counts = new Map<string, number>();
+    waypoints.forEach((w) => {
+      if (!matchVivantBase(w, neutral, filterContext)) return;
+      if (!matchVivantFilter(w, neutral, filterContext)) return;
+      tagKeysOf(w, filterContext).forEach((k) => counts.set(k, (counts.get(k) || 0) + 1));
+    });
+
+    return Array.from(meta.entries())
+      .map(([key, m]) => ({ key, label: m.label, color: m.color, count: counts.get(key) || 0 }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }, [myTags, waypoints, vivantFilter, filterContext]);
+
 
   const selectedObjet = objets.find((o) => o.id === selectedObjetId) || null;
 
