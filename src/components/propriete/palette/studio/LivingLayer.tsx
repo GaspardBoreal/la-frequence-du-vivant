@@ -165,6 +165,8 @@ export const isVivantFilterActive = (f: VivantFilterState): boolean =>
 interface LayerProps {
   waypoints: ObservationPopupWaypoint[];
   filter: VivantFilterState;
+  /** Contexte de filtrage (noms français + tags) — partagé avec le panneau. */
+  filterContext?: VivantFilterContext;
   /** Résolveur de nom français (source unique partagée avec la Carte des révélations). */
   frenchName?: (scientific: string, fallback?: string | null) => string;
   onSelect?: (w: ObservationPopupWaypoint) => void;
@@ -178,6 +180,7 @@ interface LayerProps {
 export const LivingLayer: React.FC<LayerProps> = ({
   waypoints,
   filter,
+  filterContext,
   frenchName,
   onSelect,
   canCurate,
@@ -187,26 +190,37 @@ export const LivingLayer: React.FC<LayerProps> = ({
 }) => (
   <>
     {waypoints.map((w) => {
-      if (!matchVivantFilter(w, filter)) return null;
+      if (!matchVivantBase(w, filter, filterContext)) return null;
+      /**
+       * Recherche : on n'efface pas, on estompe. Le contexte spatial reste
+       * lisible et la correspondance ressort par un halo.
+       */
+      const hit = matchVivantQuery(w, filter, filterContext);
+      const searching = !!filter.query.trim();
       const t = typeOfWaypoint(w);
       const meta = TYPE_META[t];
       const bio = !!indicatorOf(w);
       const label = frenchName
         ? frenchName(w.scientificName, w.commonName)
         : w.commonName || w.scientificName;
+      const highlighted = searching && hit;
+      const muted = searching && !hit;
       return (
         <CircleMarker
           key={w.id}
           center={[w.lat, w.lng] as any}
-          radius={bio ? 5 : 3.5}
+          radius={highlighted ? (bio ? 8 : 6.5) : bio ? 5 : 3.5}
+          interactive={!muted}
           pathOptions={{
-            color: bio ? '#fffdf7' : meta.color,
-            weight: bio ? 1.6 : 0.8,
+            color: highlighted ? '#f2c14e' : bio ? '#fffdf7' : meta.color,
+            weight: highlighted ? 2.6 : bio ? 1.6 : 0.8,
+            opacity: muted ? 0.18 : 1,
             fillColor: meta.color,
-            fillOpacity: 0.8,
+            fillOpacity: muted ? 0.12 : 0.8,
           }}
-          eventHandlers={onSelect ? { click: () => onSelect(w) } : undefined}
+          eventHandlers={onSelect && !muted ? { click: () => onSelect(w) } : undefined}
         >
+
           <Tooltip direction="top" offset={[0, -4]}>
             <span style={{ fontSize: 11 }}>
               {meta.glyph} {label}
