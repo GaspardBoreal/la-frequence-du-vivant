@@ -363,6 +363,9 @@ export const ZonesMapBlock: React.FC<Props> = ({
     />
   ) : null;
 
+  const menuTarget = menuZone ? zones.find((z) => z.id === menuZone.id) : null;
+  const menuIndex = menuTarget ? zones.findIndex((z) => z.id === menuTarget.id) : -1;
+
   const body = (
     <div className="space-y-3">
       {studio}
@@ -375,24 +378,21 @@ export const ZonesMapBlock: React.FC<Props> = ({
           propriété.
         </p>
       )}
-      {activeZoneId && !readOnly && (
-        <div className="flex items-center gap-2 text-[11px]">
-          <button
-            onClick={() => onDeleteZone(activeZoneId)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-red-300 text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="w-3 h-3" /> Supprimer cette zone
-          </button>
-          <button
-            onClick={() => onSelectZone(null)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))]"
-          >
-            <Undo2 className="w-3 h-3" /> Désélectionner
-          </button>
-        </div>
+      {menuTarget && !readOnly && (
+        <ZoneChipMenu
+          zone={menuTarget}
+          label={zoneLabel(menuIndex)}
+          color={menuTarget.couleur || ZONE_COLORS[menuIndex % ZONE_COLORS.length]}
+          speciesCount={zoneSpeciesCount?.[menuTarget.id] ?? 0}
+          anchor={{ x: menuZone!.x, y: menuZone!.y }}
+          onPatch={(patch) => onPatchZone?.(menuTarget, patch)}
+          onDelete={() => onDeleteZone(menuTarget.id)}
+          onClose={() => setMenuZone(null)}
+        />
       )}
     </div>
   );
+
 
   if (!fullscreen) return body;
 
