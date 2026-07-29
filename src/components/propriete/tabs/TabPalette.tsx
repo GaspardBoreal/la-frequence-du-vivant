@@ -701,7 +701,14 @@ export const TabPalette: React.FC<Props> = ({
               }).catch(() => {})
             }
           />
+
+          <OuvragesRegister
+            proprieteId={proprieteId}
+            zones={zones}
+            onSelectZone={setActiveZoneId}
+          />
         </AnalyzeCard>
+
       </div>
 
       {/* Palettes par zone — repliées par défaut, signature lisible dans le bandeau */}
