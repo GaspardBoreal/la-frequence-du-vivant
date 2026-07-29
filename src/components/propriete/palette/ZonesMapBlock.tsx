@@ -209,8 +209,17 @@ export const ZonesMapBlock: React.FC<Props> = ({
         (ring || []).forEach((c: [number, number]) => pts.push([c[1], c[0]])),
       );
     });
+    visibleObjets.forEach((o: any) => {
+      const g = o.geometry;
+      if (!g) return;
+      if (g.type === 'Point') pts.push([g.coordinates[1], g.coordinates[0]]);
+      else if (g.type === 'LineString')
+        (g.coordinates || []).forEach((c: number[]) => pts.push([c[1], c[0]]));
+      else if (g.type === 'Polygon')
+        (g.coordinates?.[0] || []).forEach((c: number[]) => pts.push([c[1], c[0]]));
+    });
     return pts;
-  }, [zones, parcelles]);
+  }, [zones, parcelles, visibleObjets]);
 
   const handleFinish = React.useCallback(
     (latlngs: Array<[number, number]>) => {
