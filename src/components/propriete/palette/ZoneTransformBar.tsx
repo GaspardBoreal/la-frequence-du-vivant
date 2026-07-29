@@ -35,7 +35,9 @@ export const ZoneTransformBar: React.FC<{ api: ZoneTransformApi; color: string }
   const delta = api.baseArea > 0 ? api.area / api.baseArea : 1;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-[600] flex justify-center px-3 pt-[4.25rem] sm:pt-[4.5rem]">
+    <div
+      className={`pointer-events-none absolute inset-x-0 top-0 z-[600] flex justify-center px-3 ${MAP_CHROME_TOP_PADDING}`}
+    >
       <div className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/96 px-3 py-2 shadow-2xl backdrop-blur">
         <span className="flex items-center gap-1.5 pr-2 mr-1 border-r border-[hsl(var(--ds-line))]">
           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
