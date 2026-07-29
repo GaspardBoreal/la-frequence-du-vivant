@@ -166,7 +166,67 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   });
 
   const poolsLoading = pools.some((q) => q.isLoading);
-  const unscopedRows = useMemo(() => pools.flatMap((q) => q.data?.species || []), [pools]);
+  const rawRows = useMemo(() => pools.flatMap((q) => q.data?.species || []), [pools]);
+
+  /**
+   * Déduplication par IDENTITÉ (id iNaturalist), jamais par coordonnées.
+   *
+   * Une même observation réelle peut arriver par deux canaux : une ligne
+   * `marcheur_observations` (avec `inaturalist_id`) et une attribution du
+   * snapshot iNaturalist (`originalUrl`). Tant que les deux copies partagent la
+   * même position elles se superposent ; dès qu'une correction GPS déplace
+   * l'une des deux, un « jumeau fantôme » apparaît sur la carte.
+   *
+   * On supprime donc ici, en amont de tout le reste (comptages, cartes, listes,
+   * impressions), les attributions snapshot dont l'id iNat est déjà porté par
+   * une observation marcheur — la version marcheur reste prioritaire.
+   */
+  const unscopedRows = useMemo(() => {
+    const out: RpcSpecies[] = [];
+    let changed = false;
+
+    for (const sp of rawRows) {
+      const marcheurAttrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
+      const marcheurInat = new Set<string>();
+      for (const a of marcheurAttrs) {
+        const id = inatIdOf(a?.inaturalist_id ?? a?.inaturalist_observation_id);
+        if (id) marcheurInat.add(id);
+      }
+
+      const seenInat = new Set<string>(marcheurInat);
+      const groups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+      const nextGroups: any[] = [];
+      let removed = 0;
+
+      for (const g of groups) {
+        const list: any[] = Array.isArray(g) ? g : [g];
+        const kept = list.filter((a: any) => {
+          const id = inatIdOf(a?.originalUrl || a?.original_url);
+          if (!id) return true;
+          if (seenInat.has(id)) {
+            removed++;
+            return false;
+          }
+          seenInat.add(id);
+          return true;
+        });
+        if (kept.length > 0) nextGroups.push(Array.isArray(g) ? kept : kept[0]);
+      }
+
+      if (removed === 0) {
+        out.push(sp);
+        continue;
+      }
+      changed = true;
+      out.push({
+        ...sp,
+        attributions: nextGroups,
+        observations: Math.max(0, (sp.observations || 0) - removed),
+      });
+    }
+
+    return changed ? out : rawRows;
+  }, [rawRows]);
 
   /**
    * Portée « cadastre » (réglage global de la fiche propriété) : on ne conserve
