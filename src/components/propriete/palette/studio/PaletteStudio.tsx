@@ -457,7 +457,18 @@ export const PaletteStudio: React.FC<Props> = ({
               })}
 
             {system.vivant && (
-              <LivingLayer waypoints={waypoints} filter={vivantFilter} />
+              <LivingLayer
+                waypoints={waypoints}
+                filter={vivantFilter}
+                frenchName={frenchName}
+                canCurate={!!canCurate}
+                onZoomPhoto={setLightboxId}
+                onOpenGps={(w) => {
+                  setGpsFocusId(w.id);
+                  setGpsConsole(true);
+                }}
+              />
+
             )}
 
             <ObjectsLayer
