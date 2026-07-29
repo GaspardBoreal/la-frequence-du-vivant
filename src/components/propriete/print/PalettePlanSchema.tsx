@@ -148,7 +148,7 @@ export const PalettePlanSchema: React.FC<Props> = ({
       }),
       objShapes: visibleObjets.map((o, i) => {
         const tool = toolByKey(o.outil_key);
-        const color = (o.style?.color as string) || tool?.color || '#8a6d3b';
+        const color = massifColor(o) || (o.style?.color as string) || tool?.color || '#8a6d3b';
         const ring = ringsOf(o.geometry)[0];
         const line = lineOf(o.geometry);
         const pt = pointOf(o.geometry);
