@@ -693,7 +693,7 @@ export const PaletteStudio: React.FC<Props> = ({
               setGpsFocusId(null);
             }}
             proprieteId={proprieteId}
-            candidates={waypoints}
+            candidates={allCandidates}
             contextCandidates={visibleWaypoints}
             contextLabel={`Atelier · ${visibleWaypoints.length} observation${visibleWaypoints.length > 1 ? 's' : ''} affichée${visibleWaypoints.length > 1 ? 's' : ''}`}
             parcelRings={fence.rings}
