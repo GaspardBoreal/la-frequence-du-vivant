@@ -3,6 +3,10 @@ import { PaletteSummary, type PaletteZoneView } from '@/components/propriete/pal
 import { PalettePlanSchema } from '@/components/propriete/print/PalettePlanSchema';
 import { AtelierTablePrint } from '@/components/propriete/print/AtelierTablePrint';
 import {
+  ChromaticPrintPage,
+  hasChromaticPage,
+} from '@/components/propriete/print/ChromaticPrintPage';
+import {
   OuvrageSheetsPrint,
   ouvrageSheetPageCount,
 } from '@/components/propriete/print/OuvragePrintSheet';
