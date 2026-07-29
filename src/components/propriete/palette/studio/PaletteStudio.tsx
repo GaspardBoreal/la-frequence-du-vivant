@@ -532,7 +532,10 @@ export const PaletteStudio: React.FC<Props> = ({
                   filter={vivantFilter}
                   onChange={setVivantFilter}
                   counts={vivantCounts}
+                  tagFacets={tagFacets}
+                  tagsLoading={tagsLoading}
                 />
+
               )}
               {tab === 'bilan' && <PlanBalanceSheet objets={objets} />}
             </div>
