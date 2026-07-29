@@ -16,7 +16,7 @@ import {
 import RichMap from '@/components/maps/RichMap';
 import { ZONE_COLORS, type ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
-import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
+import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import { DEFAULT_LAYERS, TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
@@ -59,8 +59,6 @@ interface Props {
   onCreateZone: (geometry: any, surfaceM2: number) => void;
   onPatchZone: (z: ProprieteZone, patch: Partial<ProprieteZone>) => void;
   onDeleteZone: (id: string) => void;
-  waypoints: PropertyWaypoint[];
-  frenchName?: (scientific: string, fallback?: string | null) => string;
   readOnly?: boolean;
 }
 
@@ -76,10 +74,9 @@ export const PaletteStudio: React.FC<Props> = ({
   onCreateZone,
   onPatchZone,
   onDeleteZone,
-  waypoints,
-  frenchName,
   readOnly,
 }) => {
+  const { waypoints } = usePropertySpeciesPool(open ? proprieteId : undefined);
   const { calques, upsertCalque, deleteCalque } = useProprieteCalques(open ? proprieteId : undefined);
   const { objets, upsertObjet, deleteObjet } = useProprieteObjets(open ? proprieteId : undefined);
 
@@ -428,11 +425,7 @@ export const PaletteStudio: React.FC<Props> = ({
               })}
 
             {system.vivant && (
-              <LivingLayer
-                waypoints={waypoints}
-                filter={vivantFilter}
-                frenchName={frenchName}
-              />
+              <LivingLayer waypoints={waypoints} filter={vivantFilter} />
             )}
 
             <ObjectsLayer
