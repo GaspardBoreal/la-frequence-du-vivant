@@ -143,7 +143,7 @@ export const PAYSAGE_TOOLS: PaysageTool[] = [
   { key: 'mur-pierre-seche', label: 'Mur en pierre sèche', family: 'patrimoine', geom: 'line', color: '#8a7a63', glyph: '🧱', unit: 'ml', historique: true,
     hint: 'Sans liant : refuge à reptiles, régulation thermique, savoir-faire UNESCO.',
     impact: { coutConventionnel: 380, coutSolVivant: 290 } },
-  { key: 'restanque', label: 'Restanque / terrasse', family: 'patrimoine', geom: 'polygon', color: '#9a8straight', glyph: '🪜', unit: 'm2', historique: true,
+  { key: 'restanque', label: 'Restanque / terrasse', family: 'patrimoine', geom: 'polygon', color: '#9a8567', glyph: '🪜', unit: 'm2', historique: true,
     hint: 'Casse la pente, retient la terre, ralentit l’eau depuis des siècles.',
     impact: { retentionLpU: 80, coutConventionnel: 210, coutSolVivant: 150 } },
   { key: 'plessis', label: 'Clôture plessée', family: 'patrimoine', geom: 'line', color: '#7d6a4c', glyph: '🪢', unit: 'ml', historique: true,
