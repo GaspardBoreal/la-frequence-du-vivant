@@ -557,7 +557,10 @@ export const TabPalette: React.FC<Props> = ({
                 : null
             }
             paletteCompletedAt={palette.completedAt}
+            propertyZones={zones}
+            zoneSelectedSpecies={zoneSelectedSpecies}
             proprieteId={proprieteId}
+
           />,
           combinedPrint.portalRef.current,
         )}
