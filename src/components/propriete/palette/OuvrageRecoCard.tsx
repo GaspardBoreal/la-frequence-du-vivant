@@ -83,6 +83,27 @@ export const OuvrageRecoCard: React.FC<Props> = ({
   readOnly,
 }) => {
   const accent = tool.color;
+
+  /** Normalisation NFD pour comparer un nom d'espèce sans accent ni casse. */
+  const norm = (s: string) =>
+    s
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+  const hasPalette = !!zoneSelected && zoneSelected.length > 0;
+  const paletteNorm = React.useMemo(
+    () => (zoneSelected ?? []).map(norm).filter((s) => s.length > 2),
+    [zoneSelected],
+  );
+  const matchesPalette = React.useCallback(
+    (line: string) => {
+      const l = norm(line);
+      return paletteNorm.some((p) => l.includes(p) || p.includes(l));
+    },
+    [paletteNorm],
+  );
+
   const [editing, setEditing] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [draft, setDraft] = React.useState<OuvrageReco>(() => ({
