@@ -707,7 +707,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
             setGpsContextLabel(null);
           }}
           proprieteId={proprieteId}
-          candidates={annotated}
+          candidates={annotatedAll}
           contextCandidates={gpsContextCandidates}
           contextLabel={gpsContextLabel}
           parcelRings={parcelRings}
