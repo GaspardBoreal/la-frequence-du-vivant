@@ -457,7 +457,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     }
 
     // b) Attributions des snapshots (tableau de tableaux côté RPC)
-    for (const sp of allRows) {
+    for (const sp of rows) {
       const sci = sp.scientific_name || sp.key || '';
       const groups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
       for (const g of groups) {
