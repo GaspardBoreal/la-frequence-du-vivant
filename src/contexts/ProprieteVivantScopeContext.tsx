@@ -33,6 +33,13 @@ interface VivantScopeValue {
   /** false = aucune parcelle cadastrale renseignée. */
   cadastreAvailable: boolean;
   fence: Geofence;
+  /** Fenêtre temporelle globale des observations (défaut : tout). */
+  period: EvolutionPeriod;
+  setPeriod: (p: EvolutionPeriod) => void;
+  customRange: CustomRange;
+  setCustomRange: (r: CustomRange) => void;
+  dateSource: DateSource;
+  setDateSource: (s: DateSource) => void;
 }
 
 const EMPTY_FENCE: Geofence = { rings: [], empty: true };
@@ -44,11 +51,18 @@ const DEFAULT_VALUE: VivantScopeValue = {
   setScope: () => {},
   cadastreAvailable: false,
   fence: EMPTY_FENCE,
+  period: 'all',
+  setPeriod: () => {},
+  customRange: {},
+  setCustomRange: () => {},
+  dateSource: 'observation',
+  setDateSource: () => {},
 };
 
 const Ctx = React.createContext<VivantScopeValue>(DEFAULT_VALUE);
 
 const storageKey = (id: string) => `propriete:${id}:vivant-scope`;
+const periodKey = (id: string) => `propriete:${id}:vivant-period`;
 
 export const ProprieteVivantScopeProvider: React.FC<{
   proprieteId: string;
@@ -79,6 +93,56 @@ export const ProprieteVivantScopeProvider: React.FC<{
     [proprieteId],
   );
 
+  /** Fenêtre temporelle, persistée comme la portée. */
+  const [timeState, setTimeState] = React.useState<{
+    period: EvolutionPeriod;
+    customRange: CustomRange;
+    dateSource: DateSource;
+  }>(() => {
+    const fallback = {
+      period: 'all' as EvolutionPeriod,
+      customRange: {} as CustomRange,
+      dateSource: 'observation' as DateSource,
+    };
+    try {
+      const raw = localStorage.getItem(periodKey(proprieteId));
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      return {
+        period: (parsed?.period as EvolutionPeriod) || 'all',
+        customRange: (parsed?.customRange as CustomRange) || {},
+        dateSource: parsed?.dateSource === 'collection' ? 'collection' : 'observation',
+      };
+    } catch {
+      return fallback;
+    }
+  });
+
+  const persistTime = React.useCallback(
+    (next: typeof timeState) => {
+      setTimeState(next);
+      try {
+        localStorage.setItem(periodKey(proprieteId), JSON.stringify(next));
+      } catch {
+        /* stockage indisponible : le choix reste valable pour la session */
+      }
+    },
+    [proprieteId],
+  );
+
+  const setPeriod = React.useCallback(
+    (p: EvolutionPeriod) => persistTime({ ...timeState, period: p }),
+    [persistTime, timeState],
+  );
+  const setCustomRange = React.useCallback(
+    (r: CustomRange) => persistTime({ ...timeState, customRange: r }),
+    [persistTime, timeState],
+  );
+  const setDateSource = React.useCallback(
+    (s: DateSource) => persistTime({ ...timeState, dateSource: s }),
+    [persistTime, timeState],
+  );
+
   const value = React.useMemo<VivantScopeValue>(
     () => ({
       proprieteId,
@@ -87,12 +151,29 @@ export const ProprieteVivantScopeProvider: React.FC<{
       setScope,
       cadastreAvailable,
       fence,
+      period: timeState.period,
+      setPeriod,
+      customRange: timeState.customRange,
+      setCustomRange,
+      dateSource: timeState.dateSource,
+      setDateSource,
     }),
-    [proprieteId, scope, setScope, cadastreAvailable, fence],
+    [
+      proprieteId,
+      scope,
+      setScope,
+      cadastreAvailable,
+      fence,
+      timeState,
+      setPeriod,
+      setCustomRange,
+      setDateSource,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 };
+
 
 /** Portée courante. Hors provider : `all` (aucun filtrage). */
 export const useVivantScope = (): VivantScopeValue => React.useContext(Ctx);
