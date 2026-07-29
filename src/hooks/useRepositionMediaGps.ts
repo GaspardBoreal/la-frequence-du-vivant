@@ -33,6 +33,10 @@ export function useRepositionMediaGps(opts?: { explorationId?: string }) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['marcheur-unidentified-photos'] });
+      // Le pool d'espèces (propriété / exploration) porte les positions lues :
+      // sans cette invalidation, l'ancienne position survit dans le cache.
+      qc.invalidateQueries({ queryKey: ['exploration-species-pool-rpc'] });
+      qc.invalidateQueries({ queryKey: ['observation-gps-overrides'] });
       toast.success('Position GPS mise à jour');
     },
     onError: (err: any) => {
