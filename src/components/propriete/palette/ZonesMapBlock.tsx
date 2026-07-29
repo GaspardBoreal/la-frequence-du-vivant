@@ -451,11 +451,13 @@ export const ZonesMapBlock: React.FC<Props> = ({
       {mapNode(fullscreen ? 'calc(100vh - 140px)' : 420)}
       {zones.length === 0 && (
         <p className="text-xs italic text-[hsl(var(--ds-forest-deep))]/60 flex items-center gap-1.5">
-          <MapPin className="w-3 h-3" /> Aucune zone tracée : la palette reste générale. Dessinez
-          autant d’emplacements que nécessaire pour obtenir une palette par lieu, et non une pour toute la
-          propriété.
+          <MapPin className="w-3 h-3" />
+          {objets.length > 0
+            ? `${objets.length} ouvrage${objets.length > 1 ? 's' : ''} déjà dessiné${objets.length > 1 ? 's' : ''} dans l’Atelier, mais aucun emplacement tracé : la palette végétale reste générale. Découpez des zones pour obtenir une palette par lieu.`
+            : 'Aucune zone tracée : la palette reste générale. Dessinez autant d’emplacements que nécessaire pour obtenir une palette par lieu, et non une pour toute la propriété.'}
         </p>
       )}
+
       {menuTarget && !readOnly && (
         <ZoneChipMenu
           zone={menuTarget}
