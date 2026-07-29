@@ -13,6 +13,7 @@ import {
   Info,
   Maximize2,
   Minimize2,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { RichMap } from '@/components/maps';
@@ -237,12 +238,44 @@ export const PortraitCadastre: React.FC<Props> = ({
   const showWeather = options.weatherMode !== 'off';
   const hideParcels = options.weatherMode === 'on_only';
 
+  /** Bascule visible du mode ajout — même état que l'interrupteur du menu carte. */
+  const toggleAddMode = useCallback(() => {
+    setAddMode((v) => {
+      if (v) setPickAt(null);
+      return !v;
+    });
+  }, []);
+
+  const AddParcelleButton: React.FC<{ className?: string }> = ({ className = '' }) =>
+    !canCurate ? null : (
+      <button
+        type="button"
+        onClick={toggleAddMode}
+        aria-pressed={addMode}
+        title={
+          addMode
+            ? 'Mode ajout actif — cliquez une parcelle sur la carte'
+            : 'Activer l’ajout de parcelles à la propriété'
+        }
+        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold border transition active:scale-95 ${
+          addMode
+            ? 'bg-amber-500 text-black border-amber-400 shadow-lg shadow-amber-500/20'
+            : 'bg-background text-foreground border-border hover:border-amber-400/60'
+        } ${className}`}
+      >
+        {addMode ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+        {addMode ? 'Cliquez une parcelle…' : 'Ajouter une parcelle'}
+      </button>
+    );
+
   /* ============================================================
    * BLOC CARTE (partagé entre inline et plein écran)
    * ============================================================ */
   const MapBlock: React.FC<{ heightPx?: number | string; fs?: boolean }> = ({ heightPx = 520, fs = false }) => (
     <div
-      className="rounded-2xl overflow-hidden border border-border relative"
+      className={`rounded-2xl overflow-hidden border border-border relative ${
+        canCurate && addMode ? '[&_.leaflet-container]:cursor-crosshair' : ''
+      }`}
       style={{ height: heightPx }}
     >
       <RichMap
@@ -334,10 +367,7 @@ export const PortraitCadastre: React.FC<Props> = ({
       <CadastreOptionsMenu
         canCurate={canCurate}
         addMode={addMode}
-        onToggleAddMode={() => {
-          setAddMode((v) => !v);
-          if (addMode) setPickAt(null);
-        }}
+        onToggleAddMode={toggleAddMode}
         state={options}
         onChange={updateOptions}
       />
@@ -352,10 +382,24 @@ export const PortraitCadastre: React.FC<Props> = ({
         {fs ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
       </button>
 
+      {/* Bascule visible en plein écran (la barre d'outils n'y est pas rendue) */}
+      {fs && canCurate && !addMode && (
+        <div className="absolute top-4 left-16 z-[1000]">
+          <AddParcelleButton />
+        </div>
+      )}
+
       {/* Bandeau info si mode ajout actif */}
       {canCurate && addMode && !pickAt && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] rounded-full bg-amber-500/90 text-black text-xs font-semibold px-4 py-1.5 shadow-lg backdrop-blur">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 rounded-full bg-amber-500/95 text-black text-xs font-semibold pl-4 pr-1.5 py-1 shadow-lg backdrop-blur">
           Cliquez sur une parcelle pour l'ajouter
+          <button
+            type="button"
+            onClick={toggleAddMode}
+            className="inline-flex items-center gap-1 rounded-full bg-black/15 hover:bg-black/25 px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition"
+          >
+            <X className="w-3 h-3" /> Quitter
+          </button>
         </div>
       )}
 
@@ -442,9 +486,17 @@ export const PortraitCadastre: React.FC<Props> = ({
       {parcelles.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
           <MapPin className="w-5 h-5 mx-auto mb-2 opacity-40" />
-          {canCurate
-            ? 'Activez "Ajouter" et cliquez une parcelle sur la carte.'
-            : 'Aucune parcelle enregistrée pour cette propriété.'}
+          {canCurate ? (
+            <>
+              <p className="mb-3">Aucune parcelle retenue pour l’instant.</p>
+              <AddParcelleButton className="mx-auto" />
+              <p className="mt-2 text-[10px] opacity-70">
+                puis cliquez la parcelle voulue sur la carte
+              </p>
+            </>
+          ) : (
+            'Aucune parcelle enregistrée pour cette propriété.'
+          )}
         </div>
       ) : (
         <div className={`space-y-1.5 ${compact ? 'max-h-[calc(100vh-260px)]' : 'max-h-[440px]'} overflow-y-auto pr-1`}>
@@ -495,6 +547,8 @@ export const PortraitCadastre: React.FC<Props> = ({
             {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Aller'}
           </button>
         </div>
+
+        <AddParcelleButton />
       </div>
 
       {!canCurate && (
