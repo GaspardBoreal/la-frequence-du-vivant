@@ -566,21 +566,28 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   //    bandeau « Empreinte biodiversité » (qui, lui, ne filtre pas sur le GPS).
   //    Les corrections éditoriales (`observation_gps_overrides`) sont appliquées
   //    ici, à la lecture : position corrigée + statut d'exclusion.
-  const buildWaypoints = useCallback((rows: RpcSpecies[]) => {
+  const buildWaypoints = useCallback(
+    (rows: RpcSpecies[]) => {
     const out: PropertyWaypoint[] = [];
     const seen = new Set<string>();
     let n = 0;
 
-    const dedupKey = (sci: string, lat: number, lng: number) =>
+    /**
+     * Clé de dédup : identité iNaturalist en priorité (insensible à tout
+     * repositionnement), sinon espèce + coordonnées **d'origine**.
+     */
+    const coordKey = (sci: string, lat: number, lng: number) =>
       `${normName(sci)}|${lat.toFixed(5)}|${lng.toFixed(5)}`;
+    const identityKey = (inatId: string | null, sci: string, lat: number, lng: number) =>
+      inatId ? `inat:${inatId}` : coordKey(sci, lat, lng);
 
     const applyOverride = (
       wp: PropertyWaypoint,
       kind: 'observation' | 'snapshot_attr',
       key: string | null,
+      inatId: string | null,
     ): PropertyWaypoint => {
-      if (!key) return wp;
-      const ov = overrides.get(overrideKeyOf(kind, key));
+      const ov = resolveOverride(kind, key, inatId);
       if (!ov) return wp;
       const next: PropertyWaypoint = {
         ...wp,
