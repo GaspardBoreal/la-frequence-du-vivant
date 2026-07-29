@@ -274,7 +274,7 @@ export const PortraitCadastre: React.FC<Props> = ({
    * ============================================================ */
   const MapBlock: React.FC<{ heightPx?: number | string; fs?: boolean }> = ({ heightPx = 520, fs = false }) => (
     <div
-      className={`rounded-2xl overflow-hidden border border-border relative ${
+      className={`rounded-2xl overflow-hidden border border-border relative isolate z-0 ${
         canCurate && addMode ? '[&_.leaflet-container]:cursor-crosshair' : ''
       }`}
       style={{ height: heightPx }}
