@@ -1,49 +1,46 @@
-## Ce qui se passe (vérifié en base)
+## Objectif
 
-Le « Pêcher » n'est pas dupliqué en base : c'est **une seule observation réelle**, mais elle arrive dans la carte par **deux canaux** :
+L'onglet **Vivant** de l'Atelier du jardin nourricier filtre aujourd'hui par Types, Catégories végétales, Sources et Bio-indicatrices. Il manque deux entrées essentielles : **recherche par nom** et **filtre par mes tags**. Les deux existent déjà ailleurs dans l'app (vue « Carte des révélations » de J'identifie) — on réutilise exactement la même mécanique pour garantir la cohérence, puis on soigne la mise en scène.
 
-1. `marcheur_observations` id `11d0b1a3…` — *Prunus persica*, source `walker_upload`, `inaturalist_observation_id = 386330553`
-2. l'attribution du snapshot iNaturalist `e619085e…` — même espèce, `originalUrl = .../observations/386330553`, coordonnées `45.4140026 / 0.0090043`
+## Ce qui existe déjà et qu'on réutilise
 
-Jusqu'ici les deux points se superposaient exactement, donc la déduplication de `buildWaypoints` (clé = `nom scientifique | lat.toFixed(5) | lng.toFixed(5)`) les fusionnait en un seul marqueur.
+- `matchVivantFilter()` et l'état `VivantFilterState` — le point de passage unique du filtrage, appliqué à la fois aux marqueurs de la carte et aux compteurs.
+- La recherche texte de `useRevealIndex` : normalisation des accents (NFD), recherche sur nom français + nom scientifique + observateur.
+- Le système de tags marcheur : table `marcheur_species_tags`, hook `useMarcheurSpeciesTags`, indexation par nom scientifique normalisé, et la logique **ET / OU / SAUF** déjà écrite dans `matchesTagFilter`.
 
-Le repositionnement a cassé cette clé :
-- la RPC a écrit la nouvelle position **sur la ligne `marcheur_observations`** (`45.4139753 / 0.0088647`) et créé un override `target_kind = observation`, `target_key = 11d0b1a3…` ;
-- l'attribution du snapshot, elle, est ciblée par une **autre clé** (`snapshot_attr` + URL iNat) : aucun override ne la concerne, elle reste à l'ancienne position.
+## Ce qu'on construit
 
-Résultat : deux clés de dédup différentes → deux marqueurs « Pêcher », l'ancien à droite, le corrigé à gauche.
+### 1. Barre de recherche « scanner du vivant »
 
-En prime, la base contient de vrais doublons hérités : plusieurs `marcheur_observations` partagent le même `inaturalist_observation_id` (ex. `344136514`, `346193300`) rattachés à deux marches différentes — invisibles aujourd'hui car superposés, mais ils produiront le même symptôme au prochain repositionnement.
+Un champ de recherche en tête du panneau Vivant, au-dessus des chips Types :
+- recherche insensible aux accents et à la casse, sur nom français, nom scientifique et nom de l'observateur ;
+- saisie temporisée (debounce) pour rester fluide même avec plusieurs centaines d'observations ;
+- bouton d'effacement, et raccourci « Échap » pour vider ;
+- pendant la frappe, les observations non correspondantes s'estompent progressivement sur la carte au lieu de disparaître sèchement, et les correspondantes prennent un halo — l'utilisateur voit *où* se trouve ce qu'il cherche.
 
-## Correction proposée
+### 2. Filtre « Mes tags »
 
-### 1. Dédupliquer par identité, plus par coordonnées (cause racine)
+Une section **MES TAGS** sous Sources :
+- chips des tags de l'utilisateur, chacun avec sa couleur d'origine et le nombre d'observations concernées dans la propriété (les tags à 0 sont grisés, pas masqués, pour rester lisibles) ;
+- trois modes de combinaison — **Tous** (ET), **Au moins un** (OU), **Sauf** (exclusion) — repris à l'identique du filtre tags existant ;
+- si l'utilisateur n'a encore aucun tag, la section affiche une invitation courte plutôt qu'un vide.
 
-Dans `src/hooks/propriete/usePropertySpeciesPool.ts` (`buildWaypoints`) :
-- calculer une **clé d'identité** prioritaire : `inat:<id>` — issue de `marcheur_attrs.inaturalist_id` côté marcheur, et de l'id extrait de `originalUrl` côté attribution snapshot ;
-- conserver la clé espèce+coordonnées **d'origine** (jamais la position corrigée) uniquement en secours, quand aucun id iNat n'existe ;
-- garder la priorité actuelle marcheur > snapshot : une attribution dont l'id iNat est déjà porté par une observation marcheur est ignorée.
+### 3. Cohérence et robustesse
 
-La dédup devient ainsi insensible à tout repositionnement futur.
-
-### 2. Propager la correction GPS aux deux représentations
-
-Un même point ne doit plus avoir deux « adresses » de curation :
-- indexer les overrides également par id iNat (dans `useGpsOverrides`), en plus de `kind|target_key` ;
-- à la lecture, si aucun override direct n'est trouvé pour un waypoint, chercher par id iNat — un déplacement sur l'observation marcheur s'applique alors à son jumeau snapshot, et inversement.
-
-Même logique appliquée au filtrage cadastral et au comptage (`timeRows` / `allRows`), pour que carte, listes, compteurs et impressions restent strictement alignés.
-
-### 3. Nettoyage des doublons hérités en base
-
-Migration de dédoublonnage sur `marcheur_observations` : pour un même `inaturalist_observation_id`, conserver une seule ligne (la plus ancienne, ou celle rattachée à la marche de la propriété), supprimer les autres, puis ajouter un index unique partiel sur `inaturalist_observation_id` (hors NULL) pour empêcher la réapparition. À valider avec vous avant exécution car cela touche des données existantes.
-
-### 4. Vérification
-
-- Recharger `/propriete/jardin-monde-deviat` filtre « Aujourd'hui » : un seul marqueur Pêcher, à la position corrigée à gauche.
-- Contrôler que le compteur « 3 obs. » reste cohérent entre bandeau, carte et registre.
-- Contrôler qu'un nouveau repositionnement ne recrée pas de jumeau.
+- Les deux nouveaux critères entrent dans le même `VivantFilterState`, donc ils s'appliquent **partout d'un coup** : marqueurs de carte, compteur « N observations affichées sur N », répartition par type, lightbox photo et navigation de curation GPS.
+- Une ligne de synthèse des filtres actifs avec un bouton **Réinitialiser** apparaît dès qu'un filtre est posé — aujourd'hui rien ne signale qu'un filtre est actif, ce qui est la première source de confusion.
+- Le compteur bio-indicatrices reste calculé sur la sélection visible, cohérent avec le reste.
+- Les filtres actifs sont mémorisés par propriété pendant la session, pour ne pas repartir de zéro à chaque retour dans l'atelier.
 
 ## Détails techniques
 
-Fichiers concernés : `src/hooks/propriete/usePropertySpeciesPool.ts` (dédup + géofiltrage), le hook `useGpsOverrides` (index secondaire par id iNat), éventuellement `src/hooks/useRepositionMediaGps.ts` (invalidation du pool propriété après mutation). Étape 3 = migration SQL séparée, soumise à votre approbation.
+- `src/components/propriete/palette/studio/LivingLayer.tsx`
+  - étendre `VivantFilterState` avec `query: string` et `tags: { labels: string[]; mode: 'and' | 'or' | 'not' }` ;
+  - étendre `matchVivantFilter(w, f, ctx)` avec un contexte optionnel `{ displayName, tagsBySpecies }` — la signature reste rétrocompatible pour les appelants existants ;
+  - enrichir `LivingFilterPanel` : champ de recherche + section tags + résumé/reset.
+- `src/components/propriete/palette/studio/PaletteStudio.tsx`
+  - alimenter le contexte : noms français déjà disponibles via `displayNameFor`, tags via `useMarcheurSpeciesTags(scientificNames)` + `indexTagsBySpecies` ;
+  - `visibleWaypoints` et `vivantCounts` passent par le même contexte ; facettes de tags calculées dans la même passe pour éviter un second parcours ;
+  - passer le contexte à `LivingLayer` pour que la carte et le panneau restent strictement synchrones.
+- Aucune modification de base de données : la RPC `get_my_marcheur_tags_for_species` couvre le besoin.
+- Le champ de recherche du bloc « Carte des révélations » n'est pas touché ; seule la fonction de normalisation est factorisée pour éviter deux implémentations divergentes.
