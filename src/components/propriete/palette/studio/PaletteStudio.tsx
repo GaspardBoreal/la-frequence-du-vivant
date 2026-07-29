@@ -645,13 +645,9 @@ export const PaletteStudio: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Inspecteur */}
+          {/* Inspecteur objet — colonne droite, centrée verticalement */}
           {selectedObjet && (
-            <div
-              className={`absolute inset-x-0 bottom-0 z-[600] sm:inset-x-auto sm:bottom-auto sm:w-[262px] ${MAP_CHROME_RIGHT} ${
-                zoneTransform.zone ? MAP_CHROME_TOP_STACKED_SM : MAP_CHROME_TOP_SM
-              } ${MAP_CHROME_PANEL_MAX_H}`}
-            >
+            <div className={MAP_CHROME_SIDE_CENTER}>
               <ObjectInspector
                 objet={selectedObjet}
                 calques={calques}
@@ -678,6 +674,33 @@ export const PaletteStudio: React.FC<Props> = ({
               />
             </div>
           )}
+
+          {/* Inspecteur emplacement — même ancrage */}
+          {!selectedObjet && selectedZone && (
+            <div className={MAP_CHROME_SIDE_CENTER}>
+              <ZoneInspector
+                zone={selectedZone}
+                color={selectedZoneColor}
+                objetCount={objets.filter((o) => o.zone_id === selectedZone.id).length}
+                transformArea={
+                  zoneTransform.zone?.id === selectedZone.id ? zoneTransform.area : null
+                }
+                onPatch={(patch) => onPatchZone(selectedZone, patch)}
+                onTransform={() => zoneTransform.start(selectedZone)}
+                onRedraw={() => {
+                  onSelectZone(selectedZone.id);
+                  setZoneDraw(true);
+                }}
+                onDelete={() => {
+                  onDeleteZone(selectedZone.id);
+                  onSelectZone(null);
+                }}
+                onClose={() => onSelectZone(null)}
+                readOnly={readOnly}
+              />
+            </div>
+          )}
+
         </div>
 
         <InspirationDrawer
