@@ -411,7 +411,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     };
 
     // a) Observations marcheurs (prioritaires)
-    for (const sp of allRows) {
+    for (const sp of rows) {
       const sci = sp.scientific_name || sp.key || '';
       const attrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
       for (const a of attrs) {
