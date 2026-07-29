@@ -108,7 +108,7 @@ export const PaletteStudio: React.FC<Props> = ({
   const inlineGps = useInlineGpsCuration({
     proprieteId,
     fence,
-    displayNameFor: (w) => frenchName(w),
+    displayNameFor: (w) => frenchName(w.scientificName || '') || w.commonName || '—',
   });
 
   const frenchName = React.useCallback(

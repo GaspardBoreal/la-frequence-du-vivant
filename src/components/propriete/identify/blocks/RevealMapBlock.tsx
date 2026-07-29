@@ -92,7 +92,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
   /** Curation « sur place » : on ne quitte jamais la carte ni le zoom courant. */
   const { view, onChange: onViewChange } = useMapViewState();
-  const inlineGps = useInlineGpsCuration({ proprieteId, fence, displayNameFor });
+  const inlineGps = useInlineGpsCuration({ proprieteId, fence });
 
   /**
    * Les observations écartées par un curateur sont déjà retirées par la RPC
