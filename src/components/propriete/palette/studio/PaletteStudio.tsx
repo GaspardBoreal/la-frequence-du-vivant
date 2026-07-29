@@ -418,6 +418,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   }}
                   system={system}
                   onSystem={(p) => setSystem((s) => ({ ...s, ...p }))}
+                  scopeCounts={scopeCounts}
                   objetCountByCalque={objetCountByCalque}
                   readOnly={readOnly}
                 />
