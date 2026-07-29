@@ -1,46 +1,37 @@
-## Constat (vérifié)
+## Diagnostic (vérifié dans le code)
 
-- Les ouvrages tracés dans l'Atelier sont stockés dans `propriete_objets` (5 objets ici), avec un `outil_key` renvoyant au registre `src/lib/paysageTools.ts` (~40 outils : mare, potager, pas japonais, noue, verger…).
-- Le chapitre 2 de l'onglet Palette (`src/components/propriete/tabs/TabPalette.tsx`) ne lit que `propriete_zones` : d'où « 0 emplacement » alors que l'Atelier affiche 5 objets. Aucun composant n'affiche les objets hors de l'Atelier.
-- `paysageTools.ts` porte déjà coût / rétention / couverture par outil, mais aucune recommandation rédigée (mise en œuvre, entretien, végétaux).
+Deux causes distinctes, aucune côté base de données :
 
-## 1. Renommer et recadrer le chapitre 2
+1. **Les ouvrages ne s'affichent pas sur la carte du chapitre 2.** `ZonesMapBlock.tsx` charge bien `useProprieteObjets` (ligne 158) mais ne s'en sert **que pour compter** (« · 5 ouvrages », ligne 401). La carte ne dessine que les parcelles cadastrales et les `propriete_zones` — aucune couche pour les objets de l'Atelier. D'où une carte vide alors que le bandeau annonce 5 ouvrages.
 
-Titre du bloc : **« Emplacements & ouvrages »** — « Les lieux que vous découpez, les ouvrages que vous dessinez dans l'Atelier ».
-Bandeau de signature honnête : `N emplacements · M ouvrages · X m² dessinés`, plus un état vide distinct quand il y a des ouvrages mais aucune zone (le cas actuel), au lieu du « 0 emplacement » trompeur.
+2. **Les textes des fiches sont invisibles, pas absents.** `OuvrageRecoCard.tsx` pose des fonds clairs (`bg-[hsl(var(--ds-cream))]`) sans jamais fixer la couleur du texte, contrairement au reste de `TabPalette` qui écrit systématiquement `text-[hsl(var(--ds-forest-deep))]`. L'application étant verrouillée en mode sombre, la couleur héritée est claire → texte crème sur fond crème. C'est exactement ce que montre la copie 2 : les pastilles 1→5 de « Mise en œuvre », les jalons An 0 / 1 / 3 et le cadre « Espèces & compagnonnage » sont rendus (la section n'apparaît que si la liste n'est pas vide) mais leur contenu est illisible. La base de recommandations est bien remplie (la mare a 5 étapes, un calendrier, 3 paliers d'entretien et 4 lignes d'espèces).
 
-## 2. Registre des ouvrages, plié/déplié
+## Correction 1 — Les ouvrages sur la carte
 
-Nouveau composant `OuvragesRegister.tsx` sous la carte du chapitre 2 :
+Dans `ZonesMapBlock.tsx`, ajouter une couche de rendu des objets, sous les zones :
 
-- objets groupés par **famille** (Eau & GIEP, Sol vivant, Nourricier, Patrimoine, Biodiversité, Usage), chaque ligne repliée montrant : glyphe, nom, type d'ouvrage, métré (`m²` / `ml` / `u`), emplacement de rattachement, pastille de couleur ;
-- dépliage → **fiche de recommandation** propre au type, en 4 volets (choix validés) :
-  1. **Mise en œuvre & calendrier** — étapes, saison idéale, points de vigilance,
-  2. **Entretien An 0 / An 1 / An 3** — gestes et charge indicative,
-  3. **Espèces & compagnonnage** — végétaux associés, croisés quand c'est possible avec la palette déjà retenue sur l'emplacement,
-  4. **Coûts, eau & biodiversité** — coût conventionnel vs sol vivant, rétention L, services écologiques (réutilise `ToolImpact`) ;
-- « Tout replier / Tout déplier », clic sur une ligne → sélection de l'objet et recentrage sur la carte ;
-- chaque fiche affiche sa **source** (socle expert ou fiche enrichie par l'admin) et sa date de mise à jour.
+- polygones, lignes et points selon la géométrie de chaque objet, dans la couleur de l'objet (`style.color`) sinon celle de son outil ;
+- glyphe de l'outil en marqueur `divIcon` pour les points (pas japonais, arbre, nichoir…) ;
+- tooltip : nom de l'ouvrage · type · métré ;
+- respect de la visibilité (`style.visible === false` → non dessiné) ;
+- clic sur un ouvrage → ouverture de sa fiche dans le registre en dessous (défilement + dépliage) ;
+- les géométries des objets entrent dans le calcul des `bounds` de cadrage, pour que la carte s'ouvre sur ce qui est réellement dessiné.
 
-## 3. Base de recommandations : socle code + surcharge en base
+## Correction 2 — Lisibilité des fiches
 
-- `src/lib/ouvrageRecoKb.ts` : socle expert livré, une fiche rédigée par type d'ouvrage (mare ≠ potager ≠ pas japonais ≠ noue ≠ haie…), typée `OuvrageReco { miseEnOeuvre[], calendrier, entretien{an0,an1,an3}, especes[], vigilance[], sources[] }`.
-- Nouvelle table `public.propriete_ouvrage_kb` (clé `outil_key` unique, champs JSONB de la fiche, `updated_by`, `updated_at`) : **base partagée à tous les sites**, lecture pour tous les utilisateurs authentifiés, écriture réservée aux admins (`has_role`), avec les GRANT correspondants. Une entrée surcharge le socle code pour ce type.
-- **Notes locales** : chaque ouvrage garde une note de chantier propre à la propriété, stockée dans `propriete_objets.meta.note` (déjà en place), éditable par le gestionnaire de la propriété — jamais mélangée à la base commune.
+Dans `OuvrageRecoCard.tsx` : appliquer `text-[hsl(var(--ds-forest-deep))]` sur le conteneur des fiches et sur les blocs à fond crème (étapes, entretien, espèces, chiffres, sources, note de chantier), même grammaire que `ZonePaletteCard`. Les cartouches de vigilance gardent leur ocre. Vérification visuelle dans le navigateur après correction, pour ne pas re-livrer un texte invisible.
 
-## 4. Édition (partie éditable et enrichissable)
+## Correction 3 — Espèces & compagnonnage réellement utile
 
-- Bouton crayon sur une fiche, visible **uniquement pour les admins** → panneau d'édition (mise en œuvre, calendrier, entretien 3 paliers, espèces, vigilance, sources) qui écrit dans `propriete_ouvrage_kb`, avec « Réinitialiser au socle » et un badge « Fiche enrichie ».
-- Pour un non-admin : fiche en lecture seule + zone « Note de chantier » libre sur l'ouvrage.
-
-## Design
-
-Fiches en langage visuel existant (papier crème, liseré de couleur famille, titres serif italiques), volets en accordéon fluide, frise An 0 / 1 / 3 en timeline horizontale, chiffres d'impact en petites cartouches. Même grammaire que `ZonePaletteCard` pour rester homogène.
+- Afficher la section **même vide**, avec un état explicite « à compléter » plutôt qu'un silence.
+- Compléter le socle pour les types encore servis par le repli de famille (le générique « usage », « patrimoine », « biodiversité » n'ont qu'une ligne) : listes d'espèces rédigées par type d'ouvrage.
+- Croisement avec la palette : quand l'ouvrage est rattaché à un emplacement, marquer d'une pastille les espèces déjà retenues dans la palette de cet emplacement, et signaler celles conseillées mais absentes.
 
 ## Fichiers concernés
 
-- `src/lib/ouvrageRecoKb.ts` (nouveau, socle expert)
-- `src/components/propriete/palette/OuvragesRegister.tsx` (nouveau) + `OuvrageRecoCard.tsx`, `OuvrageRecoEditor.tsx`
-- `src/hooks/propriete/useOuvrageRecoKb.ts` (nouveau : fusion socle ↔ base)
-- `src/components/propriete/tabs/TabPalette.tsx` (renommage du chapitre 2, comptage, montage du registre)
-- Migration : table `propriete_ouvrage_kb` + GRANT + RLS
+- `src/components/propriete/palette/ZonesMapBlock.tsx` — couche ouvrages + bounds + sélection
+- `src/components/propriete/palette/OuvrageRecoCard.tsx` — couleurs de texte, section espèces
+- `src/lib/ouvrageRecoKb.ts` — enrichissement des listes d'espèces des fiches génériques
+- `src/components/propriete/palette/OuvragesRegister.tsx` — ouverture d'une fiche depuis la carte
+
+Aucune migration de base nécessaire.
