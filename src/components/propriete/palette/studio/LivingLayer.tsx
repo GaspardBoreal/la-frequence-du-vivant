@@ -244,10 +244,20 @@ export const LivingLayer: React.FC<LayerProps> = ({
 
 );
 
+export interface VivantTagFacet {
+  key: string;
+  label: string;
+  color: string;
+  count: number;
+}
+
 interface BarProps {
   filter: VivantFilterState;
   onChange: (f: VivantFilterState) => void;
   counts: { total: number; visible: number; byType: Record<VivantType, number>; bio: number };
+  /** Tags du marcheur présents sur la propriété, avec leur compte d'observations. */
+  tagFacets?: VivantTagFacet[];
+  tagsLoading?: boolean;
 }
 
 const chip = (on: boolean) =>
@@ -257,16 +267,93 @@ const chip = (on: boolean) =>
       : 'border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/55'
   }`;
 
-export const LivingFilterPanel: React.FC<BarProps> = ({ filter, onChange, counts }) => {
+const TAG_MODE_LABEL: Record<VivantTagMode, string> = {
+  or: 'Au moins un',
+  and: 'Tous',
+  not: 'Sauf',
+};
+
+export const LivingFilterPanel: React.FC<BarProps> = ({
+  filter,
+  onChange,
+  counts,
+  tagFacets = [],
+  tagsLoading,
+}) => {
   const toggle = <T,>(arr: T[], v: T): T[] =>
     arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
+  /* Recherche : saisie locale immédiate, propagation temporisée. */
+  const [draft, setDraft] = React.useState(filter.query);
+  const lastPushed = React.useRef(filter.query);
+  React.useEffect(() => {
+    if (filter.query !== lastPushed.current) {
+      lastPushed.current = filter.query;
+      setDraft(filter.query);
+    }
+  }, [filter.query]);
+  React.useEffect(() => {
+    if (draft === lastPushed.current) return;
+    const id = window.setTimeout(() => {
+      lastPushed.current = draft;
+      onChange({ ...filter, query: draft });
+    }, 180);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
+
+  const active = isVivantFilterActive(filter);
+  const searching = !!filter.query.trim();
+
   return (
     <div className="space-y-2.5 text-[hsl(var(--ds-forest-deep))]">
+      {/* Scanner du vivant */}
+      <div className="relative">
+        <Search
+          className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 opacity-45"
+          aria-hidden
+        />
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.stopPropagation();
+              setDraft('');
+            }
+          }}
+          placeholder="Chercher une espèce, un latin, un marcheur…"
+          aria-label="Rechercher dans les observations"
+          className="w-full rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/70 py-1.5 pl-8 pr-7 text-[11px] text-[hsl(var(--ds-forest-deep))] outline-none transition-all placeholder:opacity-45 focus:border-[hsl(var(--ds-forest))]/70 focus:bg-[hsl(var(--ds-cream))]"
+        />
+        {!!draft && (
+          <button
+            onClick={() => setDraft('')}
+            aria-label="Effacer la recherche"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 opacity-50 transition-opacity hover:opacity-100"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
       <p className="text-[10px] leading-snug opacity-60">
         <span className="font-semibold">{counts.visible}</span> observations affichées sur{' '}
         {counts.total} · {counts.bio} bio-indicatrices
+        {searching && (
+          <span className="ml-1 italic opacity-75">— les autres restent en filigrane</span>
+        )}
       </p>
+
+      {active && (
+        <button
+          onClick={() => onChange({ ...DEFAULT_VIVANT_FILTER })}
+          className="flex w-full items-center justify-center gap-1.5 rounded-full border border-[hsl(var(--ds-forest))]/35 bg-[hsl(var(--ds-forest))]/8 px-2 py-1 text-[10px] text-[hsl(var(--ds-forest-deep))] transition-colors hover:bg-[hsl(var(--ds-forest))]/15"
+        >
+          <RotateCcw className="h-3 w-3" />
+          Réinitialiser les filtres
+        </button>
+      )}
 
       <div>
         <p className="mb-1 text-[9px] uppercase tracking-[0.16em] opacity-55">Types</p>
@@ -321,8 +408,77 @@ export const LivingFilterPanel: React.FC<BarProps> = ({ filter, onChange, counts
           </button>
         </div>
       </div>
+
+      {/* Mes tags */}
+      <div>
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <p className="flex items-center gap-1 text-[9px] uppercase tracking-[0.16em] opacity-55">
+            <TagIcon className="h-2.5 w-2.5" /> Mes tags
+          </p>
+          {filter.tags.labels.length > 0 && (
+            <div className="flex overflow-hidden rounded-full border border-[hsl(var(--ds-line))]">
+              {(['or', 'and', 'not'] as VivantTagMode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => onChange({ ...filter, tags: { ...filter.tags, mode: m } })}
+                  className={`px-1.5 py-[1px] text-[9px] transition-colors ${
+                    filter.tags.mode === m
+                      ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))]'
+                      : 'hover:bg-[hsl(var(--ds-forest))]/10'
+                  }`}
+                >
+                  {TAG_MODE_LABEL[m]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {tagsLoading ? (
+          <p className="text-[10px] italic opacity-45">Lecture de vos tags…</p>
+        ) : tagFacets.length === 0 ? (
+          <p className="text-[10px] leading-snug italic opacity-55">
+            Aucun tag encore posé ici. Étiquetez une espèce depuis sa fiche pour la retrouver d'un
+            geste.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {tagFacets.map((t) => {
+              const on = filter.tags.labels.includes(t.key);
+              const empty = t.count === 0;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() =>
+                    onChange({
+                      ...filter,
+                      tags: { ...filter.tags, labels: toggle(filter.tags.labels, t.key) },
+                    })
+                  }
+                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition-all ${
+                    on ? 'text-[hsl(var(--ds-cream))]' : 'border-[hsl(var(--ds-line))]'
+                  } ${empty && !on ? 'opacity-40' : ''}`}
+                  style={
+                    on
+                      ? { background: t.color, borderColor: t.color }
+                      : { borderColor: `${t.color}` }
+                  }
+                >
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ background: on ? 'currentColor' : t.color }}
+                  />
+                  {t.label}
+                  <span className="opacity-65">{t.count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
 
 export default LivingLayer;
