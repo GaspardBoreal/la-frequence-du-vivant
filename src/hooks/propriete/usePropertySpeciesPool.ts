@@ -229,6 +229,59 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   }, [rawRows]);
 
   /**
+   * Index secondaire des corrections GPS, par identité iNaturalist.
+   *
+   * Une correction posée sur la ligne marcheur (`observation:<uuid>`) doit
+   * s'appliquer à son jumeau snapshot (`snapshot_attr:<url iNat>`) et
+   * réciproquement : les deux désignent la même observation de terrain.
+   */
+  const overridesByInat = useMemo(() => {
+    const m = new Map<string, GpsOverride>();
+    if (overrides.size === 0) return m;
+
+    for (const sp of rawRows) {
+      const attrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
+      for (const a of attrs) {
+        const inat = inatIdOf(a?.inaturalist_id ?? a?.inaturalist_observation_id);
+        if (!inat || !a?.obs_id) continue;
+        const ov = overrides.get(overrideKeyOf('observation', a.obs_id));
+        if (ov && !m.has(inat)) m.set(inat, ov);
+      }
+
+      const groups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+      for (const g of groups) {
+        const list: any[] = Array.isArray(g) ? g : [g];
+        for (const a of list) {
+          const url = a?.originalUrl || a?.original_url;
+          const inat = inatIdOf(url);
+          if (!inat || !url) continue;
+          const ov = overrides.get(overrideKeyOf('snapshot_attr', url));
+          if (ov && !m.has(inat)) m.set(inat, ov);
+        }
+      }
+    }
+    return m;
+  }, [rawRows, overrides]);
+
+  /** Résolution d'une correction : clé directe, puis identité iNaturalist. */
+  const resolveOverride = useCallback(
+    (
+      kind: GpsOverrideKind,
+      key: string | null | undefined,
+      inatId: string | null,
+    ): GpsOverride | undefined => {
+      if (key) {
+        const direct = overrides.get(overrideKeyOf(kind, key));
+        if (direct) return direct;
+      }
+      return inatId ? overridesByInat.get(inatId) : undefined;
+    },
+    [overrides, overridesByInat],
+  );
+
+
+
+  /**
    * Portée « cadastre » (réglage global de la fiche propriété) : on ne conserve
    * que les observations strictement comprises dans le plan cadastral. Le
    * filtrage est appliqué EN AMONT, sur les lignes RPC, pour que les espèces,
