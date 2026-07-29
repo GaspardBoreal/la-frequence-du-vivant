@@ -5786,6 +5786,53 @@ export type Database = {
         }
         Relationships: []
       }
+      propriete_calques: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          nom: string
+          opacite: number
+          ordre: number
+          propriete_id: string
+          updated_at: string
+          verrouille: boolean
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nom: string
+          opacite?: number
+          ordre?: number
+          propriete_id: string
+          updated_at?: string
+          verrouille?: boolean
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nom?: string
+          opacite?: number
+          ordre?: number
+          propriete_id?: string
+          updated_at?: string
+          verrouille?: boolean
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_calques_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_companies: {
         Row: {
           company_id: string
@@ -6011,6 +6058,76 @@ export type Database = {
             columns: ["propriete_id"]
             isOneToOne: false
             referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_objets: {
+        Row: {
+          calque_id: string | null
+          created_at: string
+          created_by: string | null
+          geometry: Json
+          id: string
+          meta: Json
+          nom: string | null
+          ordre: number
+          outil_key: string
+          propriete_id: string
+          style: Json
+          updated_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          calque_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          geometry: Json
+          id?: string
+          meta?: Json
+          nom?: string | null
+          ordre?: number
+          outil_key: string
+          propriete_id: string
+          style?: Json
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          calque_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          geometry?: Json
+          id?: string
+          meta?: Json
+          nom?: string | null
+          ordre?: number
+          outil_key?: string
+          propriete_id?: string
+          style?: Json
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_objets_calque_id_fkey"
+            columns: ["calque_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_calques"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_objets_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_objets_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_zones"
             referencedColumns: ["id"]
           },
         ]
@@ -6375,9 +6492,13 @@ export type Database = {
           id: string
           nom: string
           note: string | null
+          opacite: number
           ordre: number
           propriete_id: string
+          surface_m2: number | null
           updated_at: string
+          verrouille: boolean
+          visible: boolean
         }
         Insert: {
           couleur?: string
@@ -6387,9 +6508,13 @@ export type Database = {
           id?: string
           nom: string
           note?: string | null
+          opacite?: number
           ordre?: number
           propriete_id: string
+          surface_m2?: number | null
           updated_at?: string
+          verrouille?: boolean
+          visible?: boolean
         }
         Update: {
           couleur?: string
@@ -6399,9 +6524,13 @@ export type Database = {
           id?: string
           nom?: string
           note?: string | null
+          opacite?: number
           ordre?: number
           propriete_id?: string
+          surface_m2?: number | null
           updated_at?: string
+          verrouille?: boolean
+          visible?: boolean
         }
         Relationships: [
           {
@@ -7656,6 +7785,11 @@ export type Database = {
         Args: { _tag_id: string }
         Returns: boolean
       }
+      delete_propriete_calque: {
+        Args: { _calque_id: string }
+        Returns: boolean
+      }
+      delete_propriete_objet: { Args: { _objet_id: string }; Returns: boolean }
       delete_propriete_parcelle: { Args: { _id: string }; Returns: undefined }
       delete_propriete_zone: { Args: { _zone_id: string }; Returns: boolean }
       detach_pratique_from_marcheur: {
@@ -8387,6 +8521,51 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_propriete_calques: {
+        Args: { _propriete_id: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          id: string
+          nom: string
+          opacite: number
+          ordre: number
+          propriete_id: string
+          updated_at: string
+          verrouille: boolean
+          visible: boolean
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "propriete_calques"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      list_propriete_objets: {
+        Args: { _propriete_id: string }
+        Returns: {
+          calque_id: string | null
+          created_at: string
+          created_by: string | null
+          geometry: Json
+          id: string
+          meta: Json
+          nom: string | null
+          ordre: number
+          outil_key: string
+          propriete_id: string
+          style: Json
+          updated_at: string
+          zone_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "propriete_objets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       list_propriete_parcelles: {
         Args: { _propriete_id: string }
         Returns: {
@@ -8415,9 +8594,13 @@ export type Database = {
           id: string
           nom: string
           note: string | null
+          opacite: number
           ordre: number
           propriete_id: string
+          surface_m2: number | null
           updated_at: string
+          verrouille: boolean
+          visible: boolean
         }[]
         SetofOptions: {
           from: "*"
@@ -8684,6 +8867,18 @@ export type Database = {
         }
         Returns: string
       }
+      upsert_propriete_calque: {
+        Args: {
+          _calque_id?: string
+          _nom: string
+          _opacite?: number
+          _ordre?: number
+          _propriete_id: string
+          _verrouille?: boolean
+          _visible?: boolean
+        }
+        Returns: string
+      }
       upsert_propriete_flora: {
         Args: {
           p_completed?: boolean
@@ -8715,6 +8910,21 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      upsert_propriete_objet: {
+        Args: {
+          _calque_id?: string
+          _geometry: Json
+          _meta?: Json
+          _nom?: string
+          _objet_id?: string
+          _ordre?: number
+          _outil_key: string
+          _propriete_id: string
+          _style?: Json
+          _zone_id?: string
+        }
+        Returns: string
       }
       upsert_propriete_observation: {
         Args: {
@@ -8843,18 +9053,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      upsert_propriete_zone: {
-        Args: {
-          _couleur?: string
-          _geometry: Json
-          _nom: string
-          _note?: string
-          _ordre?: number
-          _propriete_id: string
-          _zone_id?: string
-        }
-        Returns: string
-      }
+      upsert_propriete_zone:
+        | {
+            Args: {
+              _couleur?: string
+              _geometry: Json
+              _nom: string
+              _note?: string
+              _ordre?: number
+              _propriete_id: string
+              _zone_id?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _couleur?: string
+              _geometry: Json
+              _nom: string
+              _note?: string
+              _opacite?: number
+              _ordre?: number
+              _propriete_id: string
+              _surface_m2?: number
+              _verrouille?: boolean
+              _visible?: boolean
+              _zone_id?: string
+            }
+            Returns: string
+          }
       upsert_species_taxonomy_alias: {
         Args: {
           p_alias_key: string
