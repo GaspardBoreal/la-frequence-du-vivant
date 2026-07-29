@@ -20,6 +20,7 @@ import { TabSynthesize } from '@/components/propriete/tabs/TabSynthesize';
 import { TabPalette } from '@/components/propriete/tabs/TabPalette';
 import { TabPortrait } from '@/components/propriete/portrait/TabPortrait';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
+import { ProprieteVivantScopeProvider } from '@/contexts/ProprieteVivantScopeContext';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
 
 const ProprieteEspace: React.FC = () => {
@@ -83,7 +84,7 @@ const ProprieteEspace: React.FC = () => {
   const myRole = apps?.proprietesAccessibles.find((p) => p.slug === slug)?.role;
 
   return (
-    <>
+    <ProprieteVivantScopeProvider proprieteId={propriete.id}>
       <Helmet>
         <title>{propriete.nom} — Espace Propriété | Marches du Vivant</title>
       </Helmet>
@@ -115,8 +116,9 @@ const ProprieteEspace: React.FC = () => {
           />
         </main>
       </div>
-    </>
+    </ProprieteVivantScopeProvider>
   );
+
 };
 
 /** Id du conteneur sticky de la barre d'onglets. */

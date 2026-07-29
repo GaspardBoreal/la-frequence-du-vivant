@@ -1,59 +1,46 @@
-# Emplacements : un vrai mode « Transformer »
+## Ce que j'ai compris
 
-Aujourd'hui un emplacement (ex. « Mare ») ne peut être que tracé, renommé, coloré ou supprimé. Sa géométrie est figée. On ajoute un **mode Transformer** activable sur l'emplacement sélectionné, disponible dans les deux vues (bloc carte « Emplacements de la palette » et Atelier plein écran), avec les trois gestes demandés.
+La portée « cadastre » ne doit pas être un réglage local à l'Atelier : c'est un **réglage global de la propriété**. Partout où l'application affiche ou compte des observations du vivant d'une propriété (cartes, listes, compteurs, synthèses, impressions), on ne considère par défaut **que les observations strictement comprises dans le plan cadastral**. L'utilisateur peut basculer sur « tous » depuis n'importe quelle surface qui expose le sélecteur, et ce choix s'applique immédiatement partout.
 
-## 1. Déplacer (glisser-déposer)
+## Le réglage
 
-- Au survol de la zone en mode Transformer, curseur `move` et remplissage légèrement renforcé.
-- Pointer-down dans le polygone → translation en temps réel de tous les sommets (delta calculé en coordonnées écran puis reprojeté en lat/lng, donc fidèle quel que soit le zoom).
-- Le pan de la carte est désactivé pendant le drag, réactivé au relâchement.
-- Aide contextuelle : badge flottant « ✥ Déplacement — relâchez pour poser ».
+Deux valeurs exclusives, une seule source de vérité :
 
-## 2. Redimensionner par homothétie
+- **Observations du vivant (cadastre)** — uniquement les points `inside` (ray casting strict sur les parcelles, **sans** tampon de 25 m). **Défaut.**
+- **Observations du vivant (tous)** — comportement actuel.
 
-- 8 poignées (4 coins + 4 milieux) sur la boîte englobante de la zone, dessinées en cercles crème bordés de la couleur de l'emplacement, + une poignée de rotation optionnelle au-dessus (voir question ci-dessous).
-- Glisser une poignée applique une **mise à l'échelle homothétique** autour du centre opposé :
-  - coin = homothétie proportionnelle (ratio identique lat/lng, la forme ne se déforme pas) ;
-  - milieu de bord = étirement sur un seul axe (utile pour une mare allongée) ;
-  - `Maj` enfoncé sur un bord force aussi l'homothétie proportionnelle.
-- Facteur d'échelle borné (0.05× min) pour éviter l'effondrement.
-- Pendant le geste, une **étiquette live** affiche la nouvelle surface estimée (`… m²`) et le ratio (`×1,34`), calculée avec `geometryAreaM2` déjà présent dans `studio/geoMetrics.ts`.
+Persistance du choix par propriété (localStorage, clé `propriete:<id>:vivant-scope`), pour qu'un retour sur la fiche retrouve le même cadrage.
 
-## 3. Lisser les contours
+Repli de sécurité : si la propriété n'a aucune parcelle cadastrale (géofence vide), l'option cadastre est désactivée, signalée « aucune parcelle cadastrale », et la portée effective est « tous » — jamais d'écran vide silencieux.
 
-- Bouton « ⌇ Lisser » dans la barre de transformation, applicable en cumul (chaque clic lisse un cran de plus, indicateur « Lissage ×2 »).
-- Algorithme : **Chaikin (corner-cutting)** sur l'anneau fermé, précédé d'une simplification Douglas-Peucker légère quand le tracé main levée contient beaucoup de points (les tracés freehand font souvent 200+ sommets). Résultat : contour organique et fluide, sans la crispation actuelle, tout en gardant la surface quasi identique.
-- Bouton compagnon « Anguler » (retour au tracé précédent) via la pile d'annulation.
+## Surfaces impactées
 
-## Barre de transformation et sauvegarde
+Toutes les vues qui consomment le pool d'observations de la propriété :
 
-Une barre flottante en bas de la carte apparaît dès l'entrée en mode Transformer :
+| Surface | Effet |
+|---|---|
+| Atelier du jardin nourricier (panneau Calques) | Sélecteur segmenté Cadastre / Tous sous « Observations du vivant » + compteurs ; couche carte, filtres Vivant, lightbox, bilan alignés |
+| J'identifie · Carte des révélations | Portée globale appliquée en amont ; le filtre « périmètre » local devient cohérent (et masqué quand la portée est « cadastre ») |
+| J'identifie · Cortège révélé, Delta, Sentinelles | Comptages et concordances calculés sur la portée active |
+| Étape 5 · Palette (emplacements, espèces exclues, moteur de recommandation) | Recommandations et indicateurs calculés sur la portée active |
+| Bloc « Preuves de biodiversité » de la fiche propriété | Compteurs espèces / observations alignés |
+| Contrôle GPS (console + curation en place) | Reste sur **tous** par construction : c'est l'outil qui sert justement à rapatrier les points hors cadastre ; il affiche le statut géofence et le nombre de points hors emprise |
+| Impressions (Portrait, J'observe, J'analyse, J'identifie, Je synthétise) | Reprennent la portée active et mentionnent explicitement le cadrage en pied de page (« Périmètre : plan cadastral » ou « toutes observations ») |
 
-```text
-[✥ Déplacer] [⤢ Échelle] [⌇ Lisser] [↺ Annuler] │ 412 m² → 553 m²  │ [Valider] [Annuler]
-```
+## Cohérence des chiffres
 
-- Toutes les manipulations se font sur une **copie locale** de la géométrie : rien n'est écrit tant que « Valider » n'est pas cliqué (ou `Entrée`) ; `Échap` annule et restaure la forme d'origine.
-- Historique d'annulation local (pile des états de géométrie) pour `↺` et `Ctrl+Z`.
-- À la validation : `onPatchZone(zone, { geometry, surface_m2 })` → `upsertZone` existant, qui persiste déjà géométrie et surface.
-- Mode indisponible si la zone est **verrouillée** (`verrouille`) ou en `readOnly` — le bouton l'indique clairement.
+Le point sensible est l'écart de compteurs entre vues. On centralise donc le calcul : un seul filtrage, en amont, produit à la fois la liste affichée et tous les compteurs dérivés. Chaque en-tête de bloc concerné affiche `n espèces · m obs.` issus de la même source, et un badge discret rappelle la portée en cours quand elle est « cadastre ».
 
 ## Détails techniques
 
-Nouveaux fichiers :
+- Nouveau contexte `ProprieteVivantScopeContext` (`src/contexts/ProprieteVivantScopeContext.tsx`) : `{ scope, setScope, cadastreAvailable }`, monté dans le layout de la fiche propriété (`ProprieteEspace`), initialisé à `cadastre`, persisté par propriété.
+- Nouveau hook `usePropertyWaypointsScoped(proprieteId, parcelles)` (`src/hooks/propriete/`) : construit le géofence via `buildGeofence`, annote chaque waypoint avec `evaluateGeofence`, expose `all`, `scoped`, `insideCount`, `outsideCount`. Il devient le point d'entrée unique en remplacement des appels directs à `usePropertySpeciesPool` dans les vues d'affichage.
+- Le filtrage strict utilise `geofenceStatus === 'inside'` (buffer 0), distinct du tampon 25 m conservé pour l'étiquetage « en limite » dans le Contrôle GPS.
+- `LayersPanel.tsx` : `SystemLayerState` inchangé pour l'affichage on/off ; ajout d'un sélecteur segmenté branché sur le contexte, avec compteurs et état désactivé si `!cadastreAvailable`.
+- Migration des consommateurs : `PaletteStudio`, `RevealMapBlock`, `DeltaBlock`, `SentinellesBlock`, `TabPalette`, `ExcludedSpeciesMap`, `BiodiversityEvidenceBlock`, `usePropertyFloraMatched`, `useExcludedOnSite`, `FloraAtlasPrintPlates` — tous lisent la portée via le contexte au lieu de recalculer ou d'ignorer le géofence.
+- `GpsControlConsole` et `useExplorationGpsCandidates` restent explicitement hors portée (toujours « tous »).
+- Aucun changement de schéma, de RPC ni de requête réseau : le filtrage est purement côté lecture, à partir des parcelles déjà chargées.
 
-- `src/lib/geomTransform.ts` — utilitaires purs sans dépendance Leaflet : `translateRing`, `scaleRing(ring, anchor, kx, ky)`, `chaikinSmooth(ring, iterations)`, `simplifyRing(ring, toleranceM)`, `ringBounds`.
-- `src/components/propriete/palette/ZoneTransformLayer.tsx` — couche react-leaflet : polygone fantôme, poignées `CircleMarker`/`Marker` avec `divIcon`, gestion pointer events, désactivation de `map.dragging` pendant les gestes.
-- `src/components/propriete/palette/ZoneTransformBar.tsx` — barre flottante (surface avant/après, boutons, raccourcis clavier).
+## Vérification
 
-Fichiers modifiés :
-
-- `ZonesMapBlock.tsx` — état `transformZoneId`, montage de la couche + barre, entrée dans le mode via le chip actif.
-- `ZoneChipMenu.tsx` — nouvelle entrée « ✥ Transformer la forme » (grisée si verrouillée).
-- `studio/PaletteStudio.tsx` — même couche réutilisée sur la carte de l'Atelier, pour ne pas avoir deux comportements différents.
-
-Aucun changement de schéma en base : `geometry` et `surface_m2` existent déjà sur `propriete_zones`.
-
-## Question
-
-Aussi une **poignée de rotation** (faire pivoter l'emplacement) en plus des trois fonctions demandées 
+Sur `jardin-monde-deviat` : contrôler que le compteur cadastre est identique dans l'Atelier, la Carte des révélations et le bloc Preuves de biodiversité, que le basculement « tous » les fait tous varier ensemble, et que l'écart cadastre/tous correspond bien au nombre de points `outside` annoncé par le Contrôle GPS.

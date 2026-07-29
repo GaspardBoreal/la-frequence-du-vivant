@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
@@ -11,6 +11,8 @@ import {
   type GpsOverrideKind,
   type GpsOverrideStatus,
 } from '@/hooks/propriete/useGpsOverrides';
+import { useVivantScopeFor } from '@/contexts/ProprieteVivantScopeContext';
+import { isInsideGeofence } from '@/lib/geofence';
 
 
 interface RpcSpecies {
@@ -161,7 +163,79 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   });
 
   const poolsLoading = pools.some((q) => q.isLoading);
-  const allRows = useMemo(() => pools.flatMap((q) => q.data?.species || []), [pools]);
+  const unscopedRows = useMemo(() => pools.flatMap((q) => q.data?.species || []), [pools]);
+
+  /**
+   * Portée « cadastre » (réglage global de la fiche propriété) : on ne conserve
+   * que les observations strictement comprises dans le plan cadastral. Le
+   * filtrage est appliqué EN AMONT, sur les lignes RPC, pour que les espèces,
+   * les photos terrain, les waypoints, les contributeurs et tous les compteurs
+   * dérivés racontent exactement la même histoire.
+   */
+  const { effectiveScope, fence } = useVivantScopeFor(proprieteId);
+
+  const allRows = useMemo(() => {
+    if (effectiveScope !== 'cadastre' || fence.empty) return unscopedRows;
+
+    const posOf = (
+      kind: 'observation' | 'snapshot_attr',
+      key: string | null,
+      lat: number,
+      lng: number,
+    ): [number, number] => {
+      if (!key) return [lat, lng];
+      const ov = overrides.get(overrideKeyOf(kind, key));
+      if (ov?.status === 'repositioned' && ov.lat != null && ov.lon != null) {
+        return [Number(ov.lat), Number(ov.lon)];
+      }
+      return [lat, lng];
+    };
+
+    const out: RpcSpecies[] = [];
+    for (const sp of unscopedRows) {
+      const sci = sp.scientific_name || sp.key || '';
+
+      const marcheurAttrs = (Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : []).filter(
+        (a: any) => {
+          const lat = Number(a?.latitude);
+          const lng = Number(a?.longitude);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+          const [eLat, eLng] = posOf('observation', a?.obs_id || null, lat, lng);
+          return isInsideGeofence(fence, eLat, eLng);
+        },
+      );
+
+      const attributionGroups: any[] = [];
+      let inatKept = 0;
+      for (const g of Array.isArray(sp.attributions) ? sp.attributions : []) {
+        const list: any[] = Array.isArray(g) ? g : [g];
+        const kept = list.filter((a: any) => {
+          const lat = Number(a?.exactLatitude);
+          const lng = Number(a?.exactLongitude);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+          const fallbackKey = `${normName(sci)}|${lat.toFixed(5)}|${lng.toFixed(5)}`;
+          const [eLat, eLng] = posOf('snapshot_attr', a?.originalUrl || fallbackKey, lat, lng);
+          return isInsideGeofence(fence, eLat, eLng);
+        });
+        if (kept.length > 0) {
+          attributionGroups.push(Array.isArray(g) ? kept : kept[0]);
+          inatKept += kept.length;
+        }
+      }
+
+      const kept = marcheurAttrs.length + inatKept;
+      if (kept === 0) continue;
+
+      out.push({
+        ...sp,
+        marcheur_attrs: marcheurAttrs,
+        attributions: attributionGroups,
+        observations: kept,
+      });
+    }
+    return out;
+  }, [unscopedRows, effectiveScope, fence, overrides]);
+
 
   /** Synthèse de curation GPS, cumulée sur toutes les explorations liées. */
   const curation = useMemo(() => {
@@ -306,7 +380,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   //    bandeau « Empreinte biodiversité » (qui, lui, ne filtre pas sur le GPS).
   //    Les corrections éditoriales (`observation_gps_overrides`) sont appliquées
   //    ici, à la lecture : position corrigée + statut d'exclusion.
-  const waypoints = useMemo(() => {
+  const buildWaypoints = useCallback((rows: RpcSpecies[]) => {
     const out: PropertyWaypoint[] = [];
     const seen = new Set<string>();
     let n = 0;
@@ -337,7 +411,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     };
 
     // a) Observations marcheurs (prioritaires)
-    for (const sp of allRows) {
+    for (const sp of rows) {
       const sci = sp.scientific_name || sp.key || '';
       const attrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
       for (const a of attrs) {
@@ -383,7 +457,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     }
 
     // b) Attributions des snapshots (tableau de tableaux côté RPC)
-    for (const sp of allRows) {
+    for (const sp of rows) {
       const sci = sp.scientific_name || sp.key || '';
       const groups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
       for (const g of groups) {
@@ -434,7 +508,21 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     }
 
     return out;
-  }, [allRows, overrides]);
+  }, [overrides]);
+
+  /** Observations de la portée active (cadastre par défaut). */
+  const waypoints = useMemo(() => buildWaypoints(allRows), [buildWaypoints, allRows]);
+
+  /**
+   * Toutes les observations, hors portée : réservé au Contrôle GPS, qui doit
+   * pouvoir rapatrier les points situés hors du plan cadastral.
+   */
+  const allWaypoints = useMemo(
+    () => (allRows === unscopedRows ? waypoints : buildWaypoints(unscopedRows)),
+    [buildWaypoints, unscopedRows, allRows, waypoints],
+  );
+
+
 
 
 
@@ -481,10 +569,26 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       .sort((a, b) => b.observations - a.observations);
   }, [allRows]);
 
+  /** Compteurs de portée (pour le sélecteur Cadastre / Tous). */
+  const scopeCounts = useMemo(() => {
+    const all = allWaypoints.filter((w) => w.overrideStatus !== 'excluded');
+    return {
+      all: all.length,
+      cadastre: fence.empty
+        ? null
+        : all.filter((w) => isInsideGeofence(fence, w.lat, w.lng)).length,
+    };
+  }, [allWaypoints, fence]);
+
   return {
     species,
     fieldPhotos,
     waypoints,
+    /** Hors portée — Contrôle GPS uniquement. */
+    allWaypoints,
+    /** Portée réellement appliquée. */
+    vivantScope: effectiveScope,
+    scopeCounts,
     contributorSummaries,
     /** Corrections GPS appliquées par la base (écartées / repositionnées / validées) */
     curation,

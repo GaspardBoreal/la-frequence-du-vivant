@@ -17,6 +17,7 @@ import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { ZONE_COLORS } from '@/hooks/propriete/usePropertyZones';
 import { fmtArea } from './geoMetrics';
+import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 
 export interface SystemLayerState {
   parcelles: boolean;
@@ -43,6 +44,8 @@ interface Props {
 
   system: SystemLayerState;
   onSystem: (patch: Partial<SystemLayerState>) => void;
+  /** Compteurs de portée (cadastre / tous) pour le sélecteur d'observations. */
+  scopeCounts?: { cadastre: number | null; all: number };
 
   objetCountByCalque: Record<string, number>;
   readOnly?: boolean;
@@ -91,6 +94,7 @@ export const LayersPanel: React.FC<Props> = ({
   onTransformZone,
   system,
   onSystem,
+  scopeCounts,
   objetCountByCalque,
   readOnly,
 }) => {
@@ -114,7 +118,6 @@ export const LayersPanel: React.FC<Props> = ({
             [
               ['parcelles', 'Parcelles cadastrales'],
               ['zones', 'Emplacements'],
-              ['vivant', 'Observations du vivant'],
             ] as Array<[keyof SystemLayerState, string]>
           ).map(([k, label]) => (
             <div key={k} className={`${rowBase} hover:bg-[hsl(var(--ds-forest))]/5`}>
@@ -127,6 +130,21 @@ export const LayersPanel: React.FC<Props> = ({
               <span className={system[k] ? '' : 'opacity-45'}>{label}</span>
             </div>
           ))}
+
+          {/* Observations du vivant : affichage + portée (cadastre / tous) */}
+          <div className={`${rowBase} hover:bg-[hsl(var(--ds-forest))]/5`}>
+            <IconBtn
+              title={system.vivant ? 'Masquer' : 'Afficher'}
+              onClick={() => onSystem({ vivant: !system.vivant })}
+            >
+              {system.vivant ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            </IconBtn>
+            <span className={system.vivant ? '' : 'opacity-45'}>Observations du vivant</span>
+          </div>
+          <div className={`pl-8 pb-1 ${system.vivant ? '' : 'pointer-events-none opacity-45'}`}>
+            <VivantScopeSwitch counts={scopeCounts} />
+          </div>
+
         </div>
       </section>
 

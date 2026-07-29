@@ -89,7 +89,11 @@ export const PaletteStudio: React.FC<Props> = ({
   onDeleteZone,
   readOnly,
 }) => {
-  const { waypoints: rawWaypoints } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  const {
+    waypoints: rawWaypoints,
+    allWaypoints: rawAllWaypoints,
+    scopeCounts,
+  } = usePropertySpeciesPool(open ? proprieteId : undefined);
   const { data: canCurate } = useCanCurateParcelles(open ? proprieteId : undefined);
   const { displayNameFor } = useWaypointFrenchNames(rawWaypoints);
 
@@ -104,6 +108,21 @@ export const PaletteStudio: React.FC<Props> = ({
           return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
         }),
     [rawWaypoints, fence],
+  );
+
+  /**
+   * Console GPS : volontairement HORS portée, sinon les points situés hors du
+   * plan cadastral deviendraient invisibles et donc impossibles à rapatrier.
+   */
+  const allCandidates = React.useMemo<GpsCandidate[]>(
+    () =>
+      rawAllWaypoints
+        .filter((w) => w.overrideStatus !== 'excluded')
+        .map((w) => {
+          const ev = evaluateGeofence(fence, w.lat, w.lng, 25);
+          return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
+        }),
+    [rawAllWaypoints, fence],
   );
 
   /** Curation « sur place » : même geste que dans « J'identifie », sans perdre le plan. */
@@ -418,6 +437,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   }}
                   system={system}
                   onSystem={(p) => setSystem((s) => ({ ...s, ...p }))}
+                  scopeCounts={scopeCounts}
                   objetCountByCalque={objetCountByCalque}
                   readOnly={readOnly}
                 />
@@ -673,7 +693,7 @@ export const PaletteStudio: React.FC<Props> = ({
               setGpsFocusId(null);
             }}
             proprieteId={proprieteId}
-            candidates={waypoints}
+            candidates={allCandidates}
             contextCandidates={visibleWaypoints}
             contextLabel={`Atelier · ${visibleWaypoints.length} observation${visibleWaypoints.length > 1 ? 's' : ''} affichée${visibleWaypoints.length > 1 ? 's' : ''}`}
             parcelRings={fence.rings}

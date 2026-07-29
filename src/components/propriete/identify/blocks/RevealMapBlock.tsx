@@ -15,6 +15,7 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
 import ObservationPopupCard from '@/components/propriete/species/ObservationPopupCard';
 
@@ -52,7 +53,12 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
   proprieteId,
   index = 0,
 }) => {
-  const { waypoints: rawWaypoints, curation } = usePropertySpeciesPool(proprieteId);
+  const {
+    waypoints: rawWaypoints,
+    allWaypoints: rawAllWaypoints,
+    scopeCounts,
+    curation,
+  } = usePropertySpeciesPool(proprieteId);
   const { data: parcelles } = useProprieteParcelles(proprieteId);
   const { data: canCurate } = useCanCurateParcelles(proprieteId);
 
@@ -88,6 +94,16 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
       }),
     [rawWaypoints, fence, bufferM],
+  );
+
+  /** Console GPS : hors portée, pour pouvoir rapatrier les points hors cadastre. */
+  const annotatedAll = useMemo<GpsCandidate[]>(
+    () =>
+      rawAllWaypoints.map((w) => {
+        const ev = evaluateGeofence(fence, w.lat, w.lng, bufferM);
+        return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
+      }),
+    [rawAllWaypoints, fence, bufferM],
   );
 
   /** Curation « sur place » : on ne quitte jamais la carte ni le zoom courant. */
@@ -392,6 +408,11 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         </button>
       ))}
 
+      <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
+      <VivantScopeSwitch counts={scopeCounts} variant="inline" />
+
+
+
       {!fence.empty && (
         <>
           <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
@@ -692,7 +713,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
             setGpsContextLabel(null);
           }}
           proprieteId={proprieteId}
-          candidates={annotated}
+          candidates={annotatedAll}
           contextCandidates={gpsContextCandidates}
           contextLabel={gpsContextLabel}
           parcelRings={parcelRings}
