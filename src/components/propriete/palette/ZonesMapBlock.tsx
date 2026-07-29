@@ -21,6 +21,8 @@ import ZoneChipMenu, { ZoneChipCaret } from './ZoneChipMenu';
 import ZoneTransformLayer from './ZoneTransformLayer';
 import ZoneTransformBar from './ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
+import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
+
 
 
 /* ── Couche de dessin à main levée ────────────────────────────────────────── */
@@ -153,6 +155,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
   const [studioOpen, setStudioOpen] = React.useState(false);
   const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
   const transform = useZoneTransform(onPatchZone);
+  const { objets } = useProprieteObjets(proprieteId);
+
   const activeZone = zones.find((z) => z.id === activeZoneId) ?? null;
   const transformColor =
     transform.zone
@@ -394,7 +398,13 @@ export const ZonesMapBlock: React.FC<Props> = ({
         <span className="text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
           {zones.length} {zones.length > 1 ? 'emplacements' : 'emplacement'}
           {typeof maxZones === 'number' ? ` / ${maxZones}` : ''}
+          {objets.length > 0 && (
+            <span className="font-normal text-[hsl(var(--ds-forest-deep))]/65">
+              {' '}· {objets.length} ouvrage{objets.length > 1 ? 's' : ''}
+            </span>
+          )}
         </span>
+
         {proprieteId && (
           <button
             onClick={() => setStudioOpen(true)}
@@ -441,11 +451,13 @@ export const ZonesMapBlock: React.FC<Props> = ({
       {mapNode(fullscreen ? 'calc(100vh - 140px)' : 420)}
       {zones.length === 0 && (
         <p className="text-xs italic text-[hsl(var(--ds-forest-deep))]/60 flex items-center gap-1.5">
-          <MapPin className="w-3 h-3" /> Aucune zone tracée : la palette reste générale. Dessinez
-          autant d’emplacements que nécessaire pour obtenir une palette par lieu, et non une pour toute la
-          propriété.
+          <MapPin className="w-3 h-3" />
+          {objets.length > 0
+            ? `${objets.length} ouvrage${objets.length > 1 ? 's' : ''} déjà dessiné${objets.length > 1 ? 's' : ''} dans l’Atelier, mais aucun emplacement tracé : la palette végétale reste générale. Découpez des zones pour obtenir une palette par lieu.`
+            : 'Aucune zone tracée : la palette reste générale. Dessinez autant d’emplacements que nécessaire pour obtenir une palette par lieu, et non une pour toute la propriété.'}
         </p>
       )}
+
       {menuTarget && !readOnly && (
         <ZoneChipMenu
           zone={menuTarget}
