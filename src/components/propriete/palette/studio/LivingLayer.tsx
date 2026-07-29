@@ -98,7 +98,21 @@ export const indicatorOf = (w: PropertyWaypoint) => {
   return INDICATOR_BY_LATIN[latin] || INDICATOR_BY_LATIN[latin.split(' ')[0]] || null;
 };
 
-export const matchVivantFilter = (w: PropertyWaypoint, f: VivantFilterState): boolean => {
+/** Clés de tags (normalisées) portées par l'espèce d'un waypoint. */
+export const tagKeysOf = (w: PropertyWaypoint, ctx?: VivantFilterContext): string[] =>
+  ctx?.tagsBySpecies?.get(norm(w.scientificName)) ?? [];
+
+/**
+ * Filtres « durs » : types, sources, bio-indicatrices, familles, mes tags.
+ * La recherche texte en est volontairement exclue (voir `matchVivantQuery`) :
+ * sur la carte elle estompe au lieu de masquer, pour que l'on voie *où* se
+ * trouve ce que l'on cherche.
+ */
+export const matchVivantBase = (
+  w: PropertyWaypoint,
+  f: VivantFilterState,
+  ctx?: VivantFilterContext,
+): boolean => {
   if (!f.types.includes(typeOfWaypoint(w))) return false;
   if (!f.sources.includes(w.source)) return false;
   const ind = indicatorOf(w);
@@ -106,8 +120,47 @@ export const matchVivantFilter = (w: PropertyWaypoint, f: VivantFilterState): bo
   if (f.familles.length > 0) {
     if (!ind || !f.familles.includes(ind.famille)) return false;
   }
+
+  const wanted = f.tags?.labels ?? [];
+  if (wanted.length > 0) {
+    const own = new Set(tagKeysOf(w, ctx));
+    const mode = f.tags.mode;
+    if (mode === 'and' && !wanted.every((k) => own.has(k))) return false;
+    if (mode === 'or' && !wanted.some((k) => own.has(k))) return false;
+    if (mode === 'not' && wanted.some((k) => own.has(k))) return false;
+  }
   return true;
 };
+
+/** Recherche libre sur nom français, nom scientifique et observateur. */
+export const matchVivantQuery = (
+  w: PropertyWaypoint,
+  f: VivantFilterState,
+  ctx?: VivantFilterContext,
+): boolean => {
+  const q = norm(f.query || '');
+  if (!q) return true;
+  const french = ctx?.displayName
+    ? ctx.displayName(w.scientificName, w.commonName)
+    : w.commonName || '';
+  const hay = norm([french, w.scientificName, w.observerName || ''].join(' '));
+  return q.split(/\s+/).every((token) => hay.includes(token));
+};
+
+export const matchVivantFilter = (
+  w: PropertyWaypoint,
+  f: VivantFilterState,
+  ctx?: VivantFilterContext,
+): boolean => matchVivantBase(w, f, ctx) && matchVivantQuery(w, f, ctx);
+
+/** Un filtre est-il actif (autre chose que l'état par défaut) ? */
+export const isVivantFilterActive = (f: VivantFilterState): boolean =>
+  f.types.length !== 4 ||
+  f.familles.length > 0 ||
+  f.sources.length !== 2 ||
+  f.bioOnly ||
+  !!f.query.trim() ||
+  (f.tags?.labels?.length ?? 0) > 0;
 
 interface LayerProps {
   waypoints: ObservationPopupWaypoint[];
