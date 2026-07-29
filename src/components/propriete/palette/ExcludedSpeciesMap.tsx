@@ -81,20 +81,8 @@ export const ExcludedSpeciesMap: React.FC<Props> = ({
   const points = useMemo(() => annotate(occurrences), [occurrences, fence]);
   const allCandidates = useMemo(() => annotate(allWaypoints), [allWaypoints, fence]);
 
-  const frInput = useMemo(() => {
-    const seen = new Map<string, { scientificName: string; commonName: string | null }>();
-    for (const w of allWaypoints) {
-      const sci = (w.scientificName || '').trim();
-      if (!sci || seen.has(sci)) continue;
-      seen.set(sci, { scientificName: sci, commonName: w.commonName || null });
-    }
-    return Array.from(seen.values());
-  }, [allWaypoints]);
-  const { data: frNames } = useFrenchSpeciesNamesAuto(frInput);
-  const displayNameFor = (w: { scientificName?: string | null; commonName?: string | null }) => {
-    const sci = (w.scientificName || '').trim();
-    return frNames?.get(sci)?.displayName || w.commonName || sci || '—';
-  };
+  const { displayNameFor } = useWaypointFrenchNames(allWaypoints);
+
 
   const drawnParcelles = useMemo(
     () => (parcelles ?? []).filter((p) => p.geometry?.coordinates),
