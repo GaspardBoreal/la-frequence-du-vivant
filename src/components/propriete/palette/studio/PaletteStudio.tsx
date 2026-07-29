@@ -71,6 +71,14 @@ const TIME_STEPS = [
   { label: 'An 10', tag: 'Le dessin s’efface, le lieu prend le relais.' },
 ];
 
+/**
+ * Mémoire de session des filtres Vivant, par propriété : rouvrir l'atelier ne
+ * doit pas effacer la sélection en cours. Volontairement non persistée en
+ * localStorage — un filtre oublié d'une session à l'autre serait trompeur.
+ */
+const VIVANT_FILTER_MEMORY = new Map<string, VivantFilterState>();
+
+
 interface Props {
   open: boolean;
   onClose: () => void;
