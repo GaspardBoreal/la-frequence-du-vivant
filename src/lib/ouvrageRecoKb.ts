@@ -905,7 +905,181 @@ const FAMILY_FALLBACK: Record<ToolFamilyKey, OuvrageReco> = {
     vigilance: ['Une annotation périmée induit le client en erreur : la tenir à jour.'],
     sources: [],
   },
+  massif: {
+    miseEnOeuvre: [
+      'Arrêter le nuancier AVANT la liste d’espèces : la couleur commande, la plante suit.',
+      'Composer par masses : 5 à 9 pieds d’une même espèce plutôt qu’un pied de neuf espèces.',
+      'Vérifier la continuité de floraison mois par mois : un massif qui ne fleurit qu’en juin est un massif raté onze mois sur douze.',
+      'Paillage organique de 7 à 10 cm dès la plantation : pas de sol nu entre les touffes.',
+    ],
+    calendrier: 'Plantation d’octobre à mars hors gel ; les vivaces plantées à l’automne n’ont pas besoin d’arrosage l’été suivant.',
+    entretien: {
+      an0: 'Arrosage d’établissement la première saison sèche, recharge du paillage.',
+      an1: 'Taille de nettoyage tardive (fin d’hiver) : les tiges sèches abritent les auxiliaires.',
+      an3: 'Division des touffes vigoureuses, réajustement du nuancier là où une teinte a pris le dessus.',
+    },
+    especes: [
+      'Ossature florale mellifère : Origanum vulgare, Salvia nemorosa, Echinacea purpurea',
+      'Graminées de liaison : Deschampsia cespitosa, Sesleria autumnalis, Stipa tenuissima',
+      'Feuillages apaisants (argenté / vert) : Stachys byzantina, Artemisia, Alchemilla mollis',
+      'À proscrire : cultivars stériles à fleurs doubles, sans intérêt pour les pollinisateurs.',
+    ],
+    vigilance: [
+      'Plus de quatre teintes sans neutre : le massif se lit comme du bruit.',
+      'Les couleurs chaudes avancent, les froides reculent : un massif froid au fond agrandit le jardin.',
+    ],
+    sources: ['Gertrude Jekyll — Colour in the Flower Garden', 'Piet Oudolf — plantation naturaliste', S_MSV],
+  },
 };
+
+/* ── Fiches spécifiques par type de massif ───────────────────── */
+const S_JEKYLL = 'Gertrude Jekyll — Colour in the Flower Garden (1908)';
+const S_OUDOLF = 'Piet Oudolf / Noel Kingsbury — Planting: a new perspective';
+
+Object.assign(OUVRAGE_RECO_KB, {
+  'massif-monochrome': {
+    miseEnOeuvre: [
+      'Choisir la teinte selon la lumière du lieu : le blanc pour l’ombre et le soir, le bleu pour le plein soleil brûlant.',
+      'Faire naître la variation par la TEXTURE et la hauteur, pas par la couleur : ombelle, épi, bouton, graminée.',
+      'Répéter la même espèce en trois masses inégales plutôt qu’en une seule nappe uniforme.',
+      'Introduire 10 à 15 % de feuillage argenté ou pourpre pour éviter l’effet aplat.',
+    ],
+    calendrier: 'Plantation automnale ; c’est la seule saison qui garantit une masse pleine dès l’an 1.',
+    entretien: {
+      an0: 'Surveiller les manques : un trou dans un monochrome se voit dix fois plus qu’ailleurs.',
+      an1: 'Recomplément à l’identique — ne jamais « boucher » avec une autre teinte.',
+      an3: 'Division et redistribution pour retendre la masse.',
+    },
+    especes: [
+      'Blanc : Anemone × hybrida ‘Honorine Jobert’, Gaura lindheimeri, Ammi majus',
+      'Bleu : Nepeta racemosa, Perovskia atriplicifolia, Amsonia hubrichtii',
+      'Jaune : Achillea filipendulina, Rudbeckia fulgida, Solidago rugosa',
+      'Liaison texturale : Sesleria autumnalis, Molinia caerulea',
+    ],
+    vigilance: [
+      'Le monochrome ne pardonne aucune approximation : trop peu de pieds et il devient une tache indécise.',
+      'Un monochrome blanc en plein sud « brûle » à midi : le réserver aux expositions est/nord ou aux abords du soir.',
+    ],
+    sources: [S_JEKYLL, S_OUDOLF],
+  },
+  'massif-camaieu': {
+    miseEnOeuvre: [
+      'Retenir des teintes voisines sur la roue (écart maximal d’un sixième de tour) : mauve → rose → pourpre par exemple.',
+      'Ordonner le dégradé dans le sens de la lumière du soir : le plus clair là où le soleil rase.',
+      'Insérer un feuillage argenté comme respiration entre deux nuances proches.',
+      'Répéter le motif de dégradé au moins trois fois sur la longueur du massif.',
+    ],
+    calendrier: 'Plantation d’octobre à mars ; ajuster les nuances au printemps suivant, en fleur.',
+    entretien: {
+      an0: 'Photographier en pleine floraison : le camaïeu se corrige avec des images, pas de mémoire.',
+      an1: 'Retirer les individus qui « sortent » du dégradé.',
+      an3: 'Réétaler le dégradé après division des touffes.',
+    },
+    especes: [
+      'Camaïeu mauve → pourpre : Salvia nemorosa, Verbena bonariensis, Allium sphaerocephalon',
+      'Camaïeu jaune → orange : Achillea ‘Terracotta’, Helenium, Rudbeckia triloba',
+      'Camaïeu rose → blanc : Astrantia major, Sanguisorba, Persicaria amplexicaulis',
+    ],
+    vigilance: ['Un camaïeu à plus de quatre nuances devient un polychrome qui s’ignore : trancher.'],
+    sources: [S_JEKYLL, S_OUDOLF],
+  },
+  'massif-bicolore': {
+    miseEnOeuvre: [
+      'Fixer la proportion 70 / 30 : une dominante, une ponctuation. À 50 / 50, le massif se coupe visuellement en deux.',
+      'Choisir le rapport chromatique : complémentaire (jaune × mauve) pour la vibration, voisin pour la douceur.',
+      'Disperser la teinte minoritaire par touches répétées, jamais en un seul bloc.',
+      'Un feuillage neutre en fond (vert mat, argenté) évite le choc frontal des deux teintes.',
+    ],
+    calendrier: 'Plantation automnale ; vérifier surtout la SIMULTANÉITÉ des deux floraisons.',
+    entretien: {
+      an0: 'Contrôler que les deux teintes fleurissent bien ensemble : un décalage de trois semaines annule l’effet bicolore.',
+      an1: 'Ajuster les proportions par ajout de la teinte qui s’efface.',
+      an3: 'Rééquilibrer : la vigoureuse finit toujours par manger l’autre.',
+    },
+    especes: [
+      'Jaune × mauve (complémentaire classique) : Achillea ‘Coronation Gold’ + Salvia nemorosa',
+      'Blanc × bleu (calme lumineux) : Gaura lindheimeri + Nepeta racemosa',
+      'Orange × pourpre (chaud d’arrière-saison) : Helenium + Sedum ‘Matrona’',
+    ],
+    vigilance: [
+      'Vérifier la simultanéité de floraison : c’est l’erreur numéro un du bicolore.',
+      'Rouge et rose froid ensemble se salissent : préférer rouge × blanc ou rose × pourpre.',
+    ],
+    sources: [S_JEKYLL, 'Cercle chromatique d’Itten'],
+  },
+  'massif-polychrome': {
+    miseEnOeuvre: [
+      'Le désordre se compose : choisir UNE teinte fil rouge répétée dans tout le massif pour tenir l’ensemble.',
+      'Ajouter 20 à 30 % de blanc, d’argenté ou de graminées : ce sont eux qui empêchent le bruit visuel.',
+      'Répartir en matrice (Oudolf) : 60 % de graminées et vivaces structurantes, 40 % de fleurs dispersées aléatoirement.',
+      'Semis direct possible sur sol pauvre décapé — ne jamais enrichir avant un semis fleuri.',
+    ],
+    calendrier: 'Semis de septembre-octobre (meilleure levée) ou de mars-avril ; plantation automnale pour les vivaces.',
+    entretien: {
+      an0: 'Une seule fauche tardive à l’automne, exportée : c’est ce qui appauvrit et diversifie.',
+      an1: 'Fauche annuelle tardive, en laissant 20 % non fauché comme refuge hivernal.',
+      an3: 'Resemis ponctuel des annuelles, contrôle des espèces dominantes (ombellifères vigoureuses).',
+    },
+    especes: [
+      'Matrice : Deschampsia cespitosa, Sesleria autumnalis, Briza media',
+      'Fleurs dispersées : Echinacea, Knautia macedonica, Achillea, Origanum, Verbena bonariensis',
+      'Fil rouge conseillé : une seule espèce répétée tous les 2 m (par ex. Verbena bonariensis).',
+      'Semences locales de préférence : label Végétal local.',
+    ],
+    vigilance: [
+      'Sans fil rouge ni neutre, le polychrome devient une tache confuse dès l’an 2.',
+      'Un sol trop riche fait gagner trois graminées vigoureuses et perdre toutes les fleurs.',
+    ],
+    sources: [S_OUDOLF, 'Végétal local — semences d’origine locale'],
+  },
+  'bordure-fleurie': {
+    miseEnOeuvre: [
+      'Largeur minimale de 60 cm : en dessous, la bordure n’est qu’un liseré qui se dégarnit.',
+      'Répéter un motif court (3 à 5 espèces) tous les 3 à 4 mètres : la répétition fait la ligne.',
+      'Étager : couvre-sol côté circulation, hauteur moyenne au fond — jamais l’inverse.',
+      'Reculer les vivaces de 20 cm du bord pour absorber le débordement de fin d’été.',
+    ],
+    calendrier: 'Plantation d’octobre à mars ; paillage minéral en rive sèche et ensoleillée.',
+    entretien: {
+      an0: 'Désherbage manuel serré la première année, le temps que le couvre-sol ferme.',
+      an1: 'Taille de nettoyage en fin d’hiver, recharge du paillage.',
+      an3: 'Division des touffes, restitution de la ligne.',
+    },
+    especes: [
+      'Rive sèche et piétinée : Thymus serpyllum, Nepeta × faassenii, Geranium sanguineum',
+      'Rive fraîche : Alchemilla mollis, Geranium macrorrhizum, Astrantia major',
+      'Ponctuation verticale tous les 3 m : Salvia nemorosa, Allium sphaerocephalon',
+    ],
+    vigilance: ['Une bordure trop étroite en pied de mur devient un couloir à adventices.'],
+    sources: [S_JEKYLL, 'Cerema — bordures et ourlets'],
+  },
+  'massif-ombre': {
+    miseEnOeuvre: [
+      'Qualifier l’ombre avant tout : sèche (sous ligneux à racines traçantes) ou fraîche (nord de bâti). Rien de commun entre les deux.',
+      'La couleur vient du FEUILLAGE : panachures, vert glauque, pourpre, nervures argentées.',
+      'Le blanc et le jaune pâle sont les seules floraisons qui « éclairent » réellement une ombre.',
+      'Feuille morte laissée sur place : c’est le paillage naturel du sous-bois, gratuit et parfait.',
+    ],
+    calendrier: 'Plantation d’automne impérative en ombre sèche : le printemps condamne à l’arrosage.',
+    entretien: {
+      an0: 'Arrosage d’établissement la première année en ombre sèche uniquement.',
+      an1: 'Aucun ramassage de feuilles ; simple retrait des tiges cassées.',
+      an3: 'Division des Hosta et Epimedium, réajustement des masses claires.',
+    },
+    especes: [
+      'Ombre fraîche : Hosta, Astilbe, Brunnera macrophylla, Dryopteris filix-mas',
+      'Ombre sèche : Epimedium, Geranium macrorrhizum, Luzula nivea, Helleborus foetidus',
+      'Éclaircir : Lamium ‘White Nancy’, Anemone nemorosa, Polygonatum multiflorum',
+      'À bannir : Vinca major, Pachysandra en nappe monospécifique, laurier-cerise.',
+    ],
+    vigilance: [
+      'Confondre ombre sèche et ombre fraîche fait échouer neuf plantations sur dix.',
+      'Sous les grands arbres, planter en poche de terre sans jamais couper de racine porteuse.',
+    ],
+    sources: [S_CNPF, 'Beth Chatto — The Shade Garden'],
+  },
+} satisfies Record<string, OuvrageReco>);
+
 
 export const toolByKey = (key: string): PaysageTool | undefined =>
   PAYSAGE_TOOLS.find((t) => t.key === key);

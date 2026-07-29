@@ -18,6 +18,7 @@ export type ToolFamilyKey =
   | 'nourricier'
   | 'patrimoine'
   | 'biodiversite'
+  | 'massif'
   | 'usage'
   | 'annotation';
 
@@ -68,6 +69,7 @@ export const TOOL_FAMILIES: ToolFamily[] = [
   { key: 'nourricier', label: 'Nourricier', tagline: 'Beau et bon : fruits, aromates, fleurs', color: '#2f7d4f' },
   { key: 'patrimoine', label: 'Patrimoine & structures', tagline: 'Faire avec l’existant, sans table rase', color: '#7a5c3b' },
   { key: 'biodiversite', label: 'Biodiversité', tagline: 'Gîte et couvert pour les auxiliaires', color: '#6b8f3a' },
+  { key: 'massif', label: 'Massifs & couleur', tagline: 'Composer avec la couleur, pas seulement avec la forme', color: '#8e4f6b' },
   { key: 'usage', label: 'Circulation & usage', tagline: '80 % de l’usage est intuitif', color: '#6a6a72' },
   { key: 'annotation', label: 'Annotation', tagline: 'Dire au client ce que l’on voit', color: '#b0451f' },
 ];
@@ -187,6 +189,28 @@ export const PAYSAGE_TOOLS: PaysageTool[] = [
   { key: 'corridor', label: 'Corridor écologique', family: 'biodiversite', geom: 'line', color: '#78a05a', glyph: '↔️', unit: 'ml',
     hint: 'Continuité entre habitats : la biodiversité circule ou disparaît.',
     impact: { couverture: true, coutSolVivant: 25 } },
+
+  /* ── Massifs & couleur ──────────────────────────────────────── */
+  { key: 'massif-monochrome', label: 'Massif monochromatique', family: 'massif', geom: 'polygon', color: '#a2678a', glyph: '🎨', unit: 'm2',
+    hint: 'Une seule teinte, en masse : le calme se compose aussi.',
+    impact: { couverture: true, coutConventionnel: 62, coutSolVivant: 38, entretienConventionnel: 11, entretienSolVivant: 4 }, growth: [0.4, 0.8, 1.2] },
+  { key: 'massif-camaieu', label: 'Massif en camaïeu', family: 'massif', geom: 'polygon', color: '#9b6f9e', glyph: '🖌️', unit: 'm2',
+    hint: 'Teintes voisines : la transition est insensible, l’œil glisse.',
+    impact: { couverture: true, coutConventionnel: 68, coutSolVivant: 42, entretienConventionnel: 11, entretienSolVivant: 4 }, growth: [0.4, 0.8, 1.2] },
+  { key: 'massif-bicolore', label: 'Massif bicolore', family: 'massif', geom: 'polygon', color: '#8e4f6b', glyph: '⚭', unit: 'm2',
+    hint: 'Deux teintes en dialogue : dominante 70 %, ponctuation 30 %.',
+    impact: { couverture: true, coutConventionnel: 66, coutSolVivant: 40, entretienConventionnel: 11, entretienSolVivant: 4 }, growth: [0.4, 0.8, 1.2] },
+  { key: 'massif-polychrome', label: 'Massif polychromatique', family: 'massif', geom: 'polygon', color: '#b4585c', glyph: '🌈', unit: 'm2',
+    hint: 'Mêlée naturaliste : le désordre se compose, il ne s’improvise pas.',
+    impact: { couverture: true, nourricier: false, coutConventionnel: 58, coutSolVivant: 34, entretienConventionnel: 9, entretienSolVivant: 3 }, growth: [0.4, 0.9, 1.3] },
+  { key: 'bordure-fleurie', label: 'Bordure / liseré fleuri', family: 'massif', geom: 'line', color: '#c07a95', glyph: '🌸', unit: 'ml',
+    hint: 'La même grammaire en linéaire : ourle un cheminement, une façade.',
+    impact: { couverture: true, coutConventionnel: 44, coutSolVivant: 26, entretienConventionnel: 7, entretienSolVivant: 2.5 }, growth: [0.3, 0.5, 0.8] },
+  { key: 'massif-ombre', label: 'Massif d’ombre', family: 'massif', geom: 'polygon', color: '#6d5f86', glyph: '🌑', unit: 'm2',
+    hint: 'Sous couvert : la couleur vient du feuillage, pas de la fleur.',
+    impact: { couverture: true, coutConventionnel: 54, coutSolVivant: 32, entretienConventionnel: 6, entretienSolVivant: 2 }, growth: [0.4, 0.7, 1.1] },
+
+
 
   /* ── Circulation & usage ────────────────────────────────────── */
   { key: 'cheminement', label: 'Cheminement perméable', family: 'usage', geom: 'line', color: '#8f8a7c', glyph: '🚶', unit: 'ml',

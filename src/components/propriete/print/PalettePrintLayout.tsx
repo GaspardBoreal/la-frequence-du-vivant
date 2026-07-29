@@ -3,6 +3,10 @@ import { PaletteSummary, type PaletteZoneView } from '@/components/propriete/pal
 import { PalettePlanSchema } from '@/components/propriete/print/PalettePlanSchema';
 import { AtelierTablePrint } from '@/components/propriete/print/AtelierTablePrint';
 import {
+  ChromaticPrintPage,
+  hasChromaticPage,
+} from '@/components/propriete/print/ChromaticPrintPage';
+import {
   OuvrageSheetsPrint,
   ouvrageSheetPageCount,
 } from '@/components/propriete/print/OuvragePrintSheet';
@@ -58,8 +62,9 @@ export const PalettePrintLayout: React.FC<Props> = ({
   const { objets } = useProprieteObjets(proprieteId);
 
   const hasAtelier = propertyZones.length > 0 || objets.length > 0;
+  const chromatic = hasChromaticPage(objets);
   const sheetPages = ouvrageSheetPageCount(objets);
-  const total = 2 + (hasAtelier ? 2 : 0) + sheetPages + 1;
+  const total = 2 + (hasAtelier ? 2 : 0) + (chromatic ? 1 : 0) + sheetPages + 1;
 
   const Foot: React.FC<{ index: number }> = ({ index }) => (
     <footer className="synthesize-print-foot">
@@ -139,6 +144,12 @@ export const PalettePrintLayout: React.FC<Props> = ({
         </>
       )}
 
+      {chromatic && (
+        <Page index={page++}>
+          <ChromaticPrintPage objets={objets} propertyName={propertyName} />
+        </Page>
+      )}
+
       {sheetPages > 0 && (
         <OuvrageSheetsPrint
           objets={objets}
@@ -146,8 +157,9 @@ export const PalettePrintLayout: React.FC<Props> = ({
           zoneSelectedSpecies={zoneSelectedSpecies}
           propertyName={propertyName}
           pageClassName="synthesize-print-page"
-          renderFoot={(pi) => <Foot index={(hasAtelier ? 4 : 2) + pi} />}
+          renderFoot={(pi) => <Foot index={(hasAtelier ? 4 : 2) + (chromatic ? 1 : 0) + pi} />}
         />
+
       )}
 
       <Page index={total}>{summary('p2')}</Page>

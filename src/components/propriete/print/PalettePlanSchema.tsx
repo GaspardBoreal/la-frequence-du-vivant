@@ -3,7 +3,15 @@ import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import { toolByKey } from '@/lib/ouvrageRecoKb';
+import { hexOf, isChromaticTool, teintesOf } from '@/lib/nuancierKb';
 import { measureFor, fmtMeasure, fmtArea, geometryAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
+
+/** Teinte dominante du nuancier, quand l'objet est un massif composé. */
+const massifColor = (o: ProprieteObjet): string | null => {
+  if (!isChromaticTool(o.outil_key)) return null;
+  const t = teintesOf(o.meta);
+  return t.length ? hexOf(t[0]) : null;
+};
 
 type LngLat = [number, number];
 
@@ -148,7 +156,7 @@ export const PalettePlanSchema: React.FC<Props> = ({
       }),
       objShapes: visibleObjets.map((o, i) => {
         const tool = toolByKey(o.outil_key);
-        const color = (o.style?.color as string) || tool?.color || '#8a6d3b';
+        const color = massifColor(o) || (o.style?.color as string) || tool?.color || '#8a6d3b';
         const ring = ringsOf(o.geometry)[0];
         const line = lineOf(o.geometry);
         const pt = pointOf(o.geometry);
@@ -180,7 +188,7 @@ export const PalettePlanSchema: React.FC<Props> = ({
     const unit = tool?.unit ?? 'u';
     return {
       num: i + 1,
-      color: (o.style?.color as string) || tool?.color || '#8a6d3b',
+      color: massifColor(o) || (o.style?.color as string) || tool?.color || '#8a6d3b',
       glyph: tool?.glyph ?? '•',
       name: o.nom || tool?.label || 'Ouvrage',
       type: tool?.label ?? o.outil_key,

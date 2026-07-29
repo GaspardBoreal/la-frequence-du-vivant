@@ -22,6 +22,10 @@ import type { PaletteExclusion, PalettePlanStep } from '@/hooks/propriete/usePro
 import { PalettePlanSchema } from '@/components/propriete/print/PalettePlanSchema';
 import { AtelierTablePrint } from '@/components/propriete/print/AtelierTablePrint';
 import {
+  ChromaticPrintPage,
+  hasChromaticPage,
+} from '@/components/propriete/print/ChromaticPrintPage';
+import {
   OuvrageSheetsPrint,
   ouvrageSheetPageCount,
 } from '@/components/propriete/print/OuvragePrintSheet';
@@ -142,6 +146,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   const withSynthesize = !!synthesis && !!synthesisModel;
   const withPalette = !!palette;
   const hasAtelier = propertyZones.length > 0 || objets.length > 0;
+  const chromatic = hasChromaticPage(objets);
   const sheetPages = ouvrageSheetPageCount(objets);
   const atelierZones = React.useMemo(
     () => propertyZones.map((z) => ({ id: z.id, nom: z.nom })),
@@ -388,6 +393,14 @@ export const CombinedPrintLayout: React.FC<Props> = ({
             </>
           )}
 
+          {chromatic && (
+            <section className="portrait-print-page combined-print-palette">
+              <ChromaticPrintPage objets={objets} propertyName={propertyName} />
+            </section>
+          )}
+
+
+
           {sheetPages > 0 && (
             <OuvrageSheetsPrint
               objets={objets}
@@ -452,7 +465,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
           plateCount +
           (withIdentify ? 3 + atlasCount : 0) +
           (withSynthesize ? 3 : 0) +
-          (withPalette ? 3 + (hasAtelier ? 2 : 0) + sheetPages : 0)
+          (withPalette ? 3 + (hasAtelier ? 2 : 0) + (chromatic ? 1 : 0) + sheetPages : 0)
         }
 
       />

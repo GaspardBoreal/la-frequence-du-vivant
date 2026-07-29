@@ -1,5 +1,15 @@
 import React from 'react';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import {
+  MOIS,
+  MOIS_LONG,
+  floraisonOf,
+  hexOf,
+  isChromaticTool,
+  labelOf,
+  lireFloraison,
+  teintesOf,
+} from '@/lib/nuancierKb';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import { fmtArea, fmtEuro, fmtLength, measureFor } from './geoMetrics';
 
@@ -61,6 +71,65 @@ const Stat: React.FC<{
     {sub && <p className="text-[9.5px] italic opacity-55">{sub}</p>}
   </div>
 );
+
+/** Lecture agrégée de la floraison du site, tous massifs confondus. */
+const FloraisonBlock: React.FC<{ objets: ProprieteObjet[] }> = ({ objets }) => {
+  const massifs = objets.filter((o) => isChromaticTool(o.outil_key));
+  const lecture = React.useMemo(
+    () => lireFloraison(massifs.map((o) => floraisonOf(o.meta))),
+    [massifs],
+  );
+  const teintesSite = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const o of massifs) for (const t of teintesOf(o.meta)) set.add(t);
+    return Array.from(set);
+  }, [massifs]);
+
+  if (massifs.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-[hsl(var(--ds-line))]/70 bg-white/55 px-2.5 py-2">
+      <p className="text-[9px] uppercase tracking-[0.16em] opacity-55">Continuité florale</p>
+      <div className="mt-1.5 flex gap-[3px]">
+        {MOIS.map((m, i) => {
+          const on = lecture.couverts.includes(i + 1);
+          return (
+            <span
+              key={i}
+              title={MOIS_LONG[i]}
+              className={`flex h-5 flex-1 items-center justify-center rounded text-[8.5px] ${
+                on
+                  ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))]'
+                  : 'bg-[hsl(var(--ds-line))]/35 opacity-55'
+              }`}
+            >
+              {m}
+            </span>
+          );
+        })}
+      </div>
+      <p className="mt-1.5 text-[10px] leading-snug">{lecture.phrase}</p>
+      {teintesSite.length > 0 && (
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <span className="text-[9px] opacity-55">Nuancier du site</span>
+          <span className="flex gap-[2px]">
+            {teintesSite.map((t) => (
+              <span
+                key={t}
+                title={labelOf(t)}
+                className="h-3 w-3 rounded-full border border-black/10"
+                style={{ backgroundColor: hexOf(t) }}
+              />
+            ))}
+          </span>
+          <span className="text-[9px] opacity-55">
+            · {massifs.length} massif{massifs.length > 1 ? 's' : ''}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const PlanBalanceSheet: React.FC<{ objets: ProprieteObjet[] }> = ({ objets }) => {
   const b = React.useMemo(() => computeBalance(objets), [objets]);
@@ -150,6 +219,8 @@ export const PlanBalanceSheet: React.FC<{ objets: ProprieteObjet[] }> = ({ objet
           </p>
         )}
       </div>
+
+      <FloraisonBlock objets={objets} />
 
       <p className="text-[9px] leading-snug opacity-45">
         Ratios indicatifs (rétention GIEP, coûts moyens 2024). Ils servent à comparer deux partis
