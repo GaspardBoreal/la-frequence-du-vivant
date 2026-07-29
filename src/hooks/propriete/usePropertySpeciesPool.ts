@@ -573,6 +573,15 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     species,
     fieldPhotos,
     waypoints,
+    /** Hors portée — Contrôle GPS uniquement. */
+    allWaypoints,
+    /** Portée réellement appliquée + disponibilité du plan cadastral. */
+    vivantScope: effectiveScope,
+    scopeCounts: {
+      cadastre:
+        effectiveScope === 'cadastre' ? waypoints.length : null,
+      all: allWaypoints.length,
+    },
     contributorSummaries,
     /** Corrections GPS appliquées par la base (écartées / repositionnées / validées) */
     curation,
