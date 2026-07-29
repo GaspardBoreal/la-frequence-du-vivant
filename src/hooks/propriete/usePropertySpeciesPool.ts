@@ -293,7 +293,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       });
     }
     return out;
-  }, [unscopedRows, effectiveScope, fence, overrides]);
+  }, [timeRows, effectiveScope, fence, overrides]);
 
 
   /** Synthèse de curation GPS, cumulée sur toutes les explorations liées. */
