@@ -864,7 +864,12 @@ const FAMILY_FALLBACK: Record<ToolFamilyKey, OuvrageReco> = {
       an1: 'Nettoyage hors période sensible.',
       an3: 'Renouvellement partiel des matériaux dégradés.',
     },
-    especes: ['Cortège floral mellifère local à proximité immédiate.'],
+    especes: [
+      'Mellifères de proximité immédiate : Origanum vulgare, Echium vulgare, Knautia arvensis',
+      'Ligneux nourriciers pour la faune : Crataegus monogyna, Sambucus nigra, Prunus spinosa',
+      'Graines d’hiver pour les oiseaux : Dipsacus fullonum, Helianthus annuus, Carduus',
+      'Hôtes de chenilles : Urtica dioica (bande refuge), Lotus corniculatus, Hedera helix',
+    ],
     vigilance: ['Aucune intervention pendant la période de nidification (15 mars – 31 juillet).'],
     sources: ['LPO', 'OPIE'],
   },
