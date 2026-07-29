@@ -194,8 +194,11 @@ export const TabPalette: React.FC<Props> = ({
   const allZonesOpen = zoneViews.length > 0 && zoneViews.every((z) => openZoneIds.includes(z.id));
 
   const toggleAllZones = React.useCallback(() => {
-    setOpenZoneIds(allZonesOpen ? [] : zoneViews.map((z) => z.id));
+    const next = !allZonesOpen;
+    setOpenZoneIds(next ? zoneViews.map((z) => z.id) : []);
+    setOpenBlocks({ excluded: next, implementation: next });
   }, [allZonesOpen, zoneViews]);
+
 
   const totalSelectedSpecies = React.useMemo(
     () => zoneViews.reduce((a, z) => a + z.selected.length, 0),
