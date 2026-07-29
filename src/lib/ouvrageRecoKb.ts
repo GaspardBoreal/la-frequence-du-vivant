@@ -884,7 +884,12 @@ const FAMILY_FALLBACK: Record<ToolFamilyKey, OuvrageReco> = {
       an1: 'Entretien courant, appoint de matériau.',
       an3: 'Recharge ou reprise de la couche de finition.',
     },
-    especes: ['Ourlets de bordure rustiques et piétinables.'],
+    especes: [
+      'Couvre-sols piétinables : Achillea millefolium, Trifolium repens, Lotus corniculatus',
+      'Joints et interstices : Thymus serpyllum, Sagina subulata, Mentha requienii',
+      'Ourlet de bordure rustique : Geranium macrorrhizum, Alchemilla mollis, Nepeta racemosa',
+      'Éviter les gazons de placage : cortège prairial rustique, tondu bas seulement sur le passage.',
+    ],
     vigilance: ['Un usage contrarié se voit au sol : les raccourcis dessinent la vérité du plan.'],
     sources: ['Cerema'],
   },
