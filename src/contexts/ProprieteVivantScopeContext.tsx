@@ -1,6 +1,12 @@
 import React from 'react';
 import { useProprieteParcelles } from '@/hooks/propriete/usePropertyParcelles';
 import { buildGeofence, type Geofence } from '@/lib/geofence';
+import type {
+  CustomRange,
+  DateSource,
+  EvolutionPeriod,
+} from '@/hooks/useBiodiversityEvolution';
+
 
 /**
  * Portée d'affichage des observations du vivant sur une propriété.
