@@ -33,6 +33,8 @@ import { useProprieteParcelles, centroidOfParcelles } from '@/hooks/propriete/us
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import ZonesMapBlock from '@/components/propriete/palette/ZonesMapBlock';
+import OuvragesRegister from '@/components/propriete/palette/OuvragesRegister';
+
 import { geometryAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
 import ExcludedSpeciesMap from '@/components/propriete/palette/ExcludedSpeciesMap';
 import { useExcludedOnSite, excludedKey } from '@/hooks/propriete/useExcludedOnSite';
