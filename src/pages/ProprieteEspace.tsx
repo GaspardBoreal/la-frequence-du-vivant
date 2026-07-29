@@ -83,7 +83,7 @@ const ProprieteEspace: React.FC = () => {
   const myRole = apps?.proprietesAccessibles.find((p) => p.slug === slug)?.role;
 
   return (
-    <>
+    <ProprieteVivantScopeProvider proprieteId={propriete.id}>
       <Helmet>
         <title>{propriete.nom} — Espace Propriété | Marches du Vivant</title>
       </Helmet>
@@ -115,8 +115,9 @@ const ProprieteEspace: React.FC = () => {
           />
         </main>
       </div>
-    </>
+    </ProprieteVivantScopeProvider>
   );
+
 };
 
 /** Id du conteneur sticky de la barre d'onglets. */
