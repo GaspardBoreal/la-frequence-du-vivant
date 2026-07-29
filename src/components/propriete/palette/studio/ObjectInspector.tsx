@@ -44,8 +44,20 @@ export const ObjectInspector: React.FC<Props> = ({
   const center = geometryCenter(objet.geometry);
 
   return (
-    <div className="rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/95 p-3 text-[hsl(var(--ds-forest-deep))] shadow-lg backdrop-blur">
-      <div className="mb-2 flex items-start gap-2">
+    <div
+      className="ds-inspector-in relative flex max-h-full flex-col overflow-hidden rounded-t-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/96 text-[hsl(var(--ds-forest-deep))] shadow-2xl backdrop-blur sm:rounded-xl"
+      role="dialog"
+      aria-label={`Édition · ${tool.label}`}
+    >
+      {/* Liseré : relie visuellement le panneau à l'objet sélectionné sur la carte */}
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-[3px]"
+        style={{ backgroundColor: tool.color }}
+      />
+
+      {/* En-tête collant : l'identité de l'objet reste lisible pendant le défilement */}
+      <div className="sticky top-0 z-10 flex items-start gap-2 border-b border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/96 px-3 py-2.5 backdrop-blur">
         <span
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[14px]"
           style={{ backgroundColor: `${tool.color}22` }}
@@ -54,17 +66,22 @@ export const ObjectInspector: React.FC<Props> = ({
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold leading-tight">{tool.label}</p>
-          <p className="text-[10px] opacity-60">
+          <p className="truncate text-[10px] opacity-60">
             {tool.unit !== 'u' ? fmtMeasure(tool.unit, value) : 'ponctuel'}
             {center ? ` · ${center[0].toFixed(5)}, ${center[1].toFixed(5)}` : ''}
           </p>
         </div>
-        <button onClick={onClose} className="rounded p-1 opacity-50 hover:opacity-100">
+        <button
+          onClick={onClose}
+          aria-label="Fermer l'éditeur"
+          className="rounded p-1 opacity-50 transition-opacity hover:opacity-100"
+        >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      <div className="space-y-2">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">
+
         <label className="block">
           <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-55">Nom</span>
           <input
@@ -148,7 +165,7 @@ export const ObjectInspector: React.FC<Props> = ({
       </div>
 
       {!readOnly && (
-        <div className="mt-3 flex gap-1.5">
+        <div className="flex gap-1.5 border-t border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/96 px-3 py-2.5">
           <button
             onClick={onDuplicate}
             className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
@@ -163,6 +180,7 @@ export const ObjectInspector: React.FC<Props> = ({
           </button>
         </div>
       )}
+
     </div>
   );
 };
