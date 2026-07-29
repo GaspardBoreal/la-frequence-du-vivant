@@ -151,6 +151,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
   maxZones,
   readOnly,
   zoneSpeciesCount,
+  onFocusObjet,
 }) => {
 
 
@@ -160,6 +161,13 @@ export const ZonesMapBlock: React.FC<Props> = ({
   const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
   const transform = useZoneTransform(onPatchZone);
   const { objets } = useProprieteObjets(proprieteId);
+  const { calques } = useProprieteCalques(proprieteId);
+
+  /** Ouvrages réellement affichables : géométrie valide et non masqués. */
+  const visibleObjets = React.useMemo(
+    () => objets.filter((o) => o.geometry && (o.style as any)?.visible !== false),
+    [objets],
+  );
 
   const activeZone = zones.find((z) => z.id === activeZoneId) ?? null;
   const transformColor =
