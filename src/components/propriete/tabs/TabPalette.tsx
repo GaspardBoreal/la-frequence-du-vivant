@@ -128,6 +128,7 @@ export const TabPalette: React.FC<Props> = ({
 
   const [activeZoneId, setActiveZoneId] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const [ruleEditing, setRuleEditing] = React.useState(false);
   const [mode, setMode] = React.useState<'summary' | 'edit'>(
     palette.completedAt ? 'summary' : 'edit',
   );
