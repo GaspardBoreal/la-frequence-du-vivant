@@ -61,10 +61,10 @@ interface Props {
   /** Anneau GeoJSON fermé [lng, lat][] en cours d'édition. */
   ring: Ring;
   color: string;
+  /** Début de geste : empiler l'état courant pour l'annulation. */
+  onGestureStart: () => void;
   /** Aperçu temps réel pendant le geste. */
   onPreview: (ring: Ring) => void;
-  /** Fin de geste : à pousser dans l'historique. */
-  onCommit: (ring: Ring) => void;
 }
 
 /**
@@ -73,7 +73,7 @@ interface Props {
  *  · glisser un coin      = homothétie (Maj/coin : proportionnelle)
  *  · glisser un milieu    = étirement sur un axe (Maj = proportionnel)
  */
-export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onPreview, onCommit }) => {
+export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStart, onPreview }) => {
   const map = useMap();
   const stateRef = React.useRef<{ start: Ring; mode: 'move' | HandleId } | null>(null);
   const liveRef = React.useRef<Ring>(ring);
@@ -89,6 +89,7 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onPreview, on
     (mode: 'move' | HandleId, ev: MouseEvent) => {
       const start = openRing(liveRef.current);
       stateRef.current = { start, mode };
+      onGestureStart();
       map.dragging.disable();
       const startLatLng = map.mouseEventToLatLng(ev);
       const bounds = ringBounds(start)!;
@@ -122,13 +123,12 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onPreview, on
         document.removeEventListener('mouseup', onUp);
         map.dragging.enable();
         stateRef.current = null;
-        onCommit(liveRef.current);
       };
 
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     },
-    [map, onPreview, onCommit],
+    [map, onPreview, onGestureStart],
   );
 
   React.useEffect(() => {
