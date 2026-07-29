@@ -8,7 +8,10 @@ import { RichMap } from '@/components/maps';
 import { useProprieteParcelles, useCanCurateParcelles } from '@/hooks/propriete/usePropertyParcelles';
 import { useProprieteZones } from '@/hooks/propriete/usePropertyZones';
 import { buildGeofence, evaluateGeofence, GEOFENCE_LABELS } from '@/lib/geofence';
-import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
+import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
+import ObservationPopupCard from '@/components/propriete/species/ObservationPopupCard';
+import { RevealPhotoLightbox } from '@/components/propriete/identify/blocks/RevealPhotoLightbox';
+
 import GpsControlConsole, { type GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 
