@@ -141,6 +141,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
   maxZones,
   readOnly,
   zoneSpeciesCount,
+}) => {
+
 
   const [drawing, setDrawing] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
