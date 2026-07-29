@@ -12,8 +12,9 @@ export interface ZoneTransformApi {
   baseArea: number;
   area: number;
   start: (zone: ProprieteZone) => void;
+  /** À appeler juste avant un geste : empile l'état courant. */
+  pushHistory: () => void;
   preview: (ring: Ring) => void;
-  commit: (ring: Ring) => void;
   smooth: () => void;
   undo: () => void;
   cancel: () => void;
@@ -22,7 +23,7 @@ export interface ZoneTransformApi {
 
 /**
  * État d'édition géométrique d'un emplacement : copie locale, pile d'annulation,
- * lissage cumulatif et sauvegarde différée.
+ * lissage cumulatif et sauvegarde différée (rien n'est écrit avant « Valider »).
  */
 export function useZoneTransform(
   onPatchZone?: (zone: ProprieteZone, patch: Partial<ProprieteZone>) => void,
@@ -32,42 +33,34 @@ export function useZoneTransform(
   const [history, setHistory] = React.useState<Ring[]>([]);
   const [smoothCount, setSmoothCount] = React.useState(0);
   const baseRef = React.useRef<Ring>([]);
+  const ringRef = React.useRef<Ring>([]);
+  ringRef.current = ring;
 
   const start = React.useCallback((z: ProprieteZone) => {
-    const r = (z.geometry?.coordinates?.[0] ?? []) as Ring;
-    baseRef.current = closeRing(r);
+    const r = closeRing((z.geometry?.coordinates?.[0] ?? []) as Ring);
+    baseRef.current = r;
     setZone(z);
-    setRing(closeRing(r));
+    setRing(r);
     setHistory([]);
     setSmoothCount(0);
   }, []);
 
+  const pushHistory = React.useCallback(() => {
+    setHistory((h) => [...h.slice(-24), ringRef.current]);
+  }, []);
+
   const preview = React.useCallback((next: Ring) => setRing(next), []);
 
-  const push = React.useCallback((next: Ring) => {
-    setHistory((h) => [...h.slice(-24), ring]);
-    setRing(next);
-  }, [ring]);
-
-  const commit = React.useCallback(
-    (next: Ring) => {
-      setHistory((h) => [...h.slice(-24), baseRefSnapshot(h, ring)]);
-      setRing(next);
-    },
-    [ring],
-  );
-
   const smooth = React.useCallback(() => {
-    setHistory((h) => [...h.slice(-24), ring]);
-    setRing(closeRing(smoothRing(ring, 1)));
+    setHistory((h) => [...h.slice(-24), ringRef.current]);
+    setRing(closeRing(smoothRing(ringRef.current, 1)));
     setSmoothCount((c) => c + 1);
-  }, [ring]);
+  }, []);
 
   const undo = React.useCallback(() => {
     setHistory((h) => {
       if (!h.length) return h;
-      const last = h[h.length - 1];
-      setRing(last);
+      setRing(h[h.length - 1]);
       setSmoothCount((c) => Math.max(0, c - 1));
       return h.slice(0, -1);
     });
@@ -84,7 +77,10 @@ export function useZoneTransform(
   const area = React.useMemo(() => ringAreaM2(openRing(ring)), [ring]);
 
   const save = React.useCallback(() => {
-    if (!zone || openRing(ring).length < 3) return cancel();
+    if (!zone || openRing(ring).length < 3) {
+      cancel();
+      return;
+    }
     onPatchZone?.(zone, {
       geometry: { type: 'Polygon', coordinates: [closeRing(ring)] } as any,
       surface_m2: Math.round(area),
@@ -106,16 +102,11 @@ export function useZoneTransform(
     baseArea,
     area,
     start,
+    pushHistory,
     preview,
-    commit,
     smooth,
     undo,
     cancel,
     save,
   };
-}
-
-/** Le geste a déjà écrit l'aperçu : on empile l'état d'avant-geste conservé par la pile. */
-function baseRefSnapshot(history: Ring[], current: Ring): Ring {
-  return history.length ? current : current;
 }
