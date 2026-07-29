@@ -260,6 +260,11 @@ export const PaletteStudio: React.FC<Props> = ({
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      // Échap dans un champ de saisie (recherche du vivant) : on vide le champ,
+      // on ne referme pas l'atelier.
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return;
       if (inspirationOpen) setInspirationOpen(false);
       else if (tool) setTool(null);
       else if (zoneDraw) setZoneDraw(false);
