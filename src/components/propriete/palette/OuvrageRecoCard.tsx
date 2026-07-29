@@ -259,7 +259,7 @@ export const OuvrageRecoCard: React.FC<Props> = ({
   }
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2.5 text-[hsl(var(--ds-forest-deep))]">
       <div className="flex flex-wrap items-center gap-2">
         <span
           className="rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.16em]"
