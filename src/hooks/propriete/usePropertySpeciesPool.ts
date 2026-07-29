@@ -173,10 +173,68 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
    * les photos terrain, les waypoints, les contributeurs et tous les compteurs
    * dérivés racontent exactement la même histoire.
    */
-  const { effectiveScope, fence } = useVivantScopeFor(proprieteId);
+  const { effectiveScope, fence, period, customRange } = useVivantScopeFor(proprieteId);
+
+  /**
+   * Fenêtre temporelle globale (mêmes options que « Taxons observés ») :
+   * appliquée elle aussi en amont, avant le géofiltrage cadastral.
+   */
+  const { fromISO, toISO } = useMemo(
+    () => resolvePeriodRange(period, customRange),
+    [period, customRange?.from, customRange?.to],
+  );
+
+  const timeRows = useMemo(() => {
+    if (!fromISO && !toISO) return unscopedRows;
+
+    const inWindow = (raw: any): boolean => {
+      if (!raw) return false;
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return false;
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+        d.getDate(),
+      ).padStart(2, '0')}`;
+      if (fromISO && iso < fromISO) return false;
+      if (toISO && iso > toISO) return false;
+      return true;
+    };
+
+    const out: RpcSpecies[] = [];
+    for (const sp of unscopedRows) {
+      const marcheurAttrs = (Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : []).filter(
+        (a: any) => inWindow(a?.observation_date || a?.date || a?.observationDate),
+      );
+
+      const attributionGroups: any[] = [];
+      let inatKept = 0;
+      for (const g of Array.isArray(sp.attributions) ? sp.attributions : []) {
+        const list: any[] = Array.isArray(g) ? g : [g];
+        const kept = list.filter((a: any) =>
+          inWindow(a?.observation_date || a?.date || a?.observationDate),
+        );
+        if (kept.length > 0) {
+          attributionGroups.push(Array.isArray(g) ? kept : kept[0]);
+          inatKept += kept.length;
+        }
+      }
+
+      const kept = marcheurAttrs.length + inatKept;
+      if (kept === 0) continue;
+
+      out.push({
+        ...sp,
+        marcheur_attrs: marcheurAttrs,
+        attributions: attributionGroups,
+        observations: kept,
+      });
+    }
+    return out;
+  }, [unscopedRows, fromISO, toISO]);
 
   const allRows = useMemo(() => {
-    if (effectiveScope !== 'cadastre' || fence.empty) return unscopedRows;
+    if (effectiveScope !== 'cadastre' || fence.empty) return timeRows;
+
+
 
     const posOf = (
       kind: 'observation' | 'snapshot_attr',
