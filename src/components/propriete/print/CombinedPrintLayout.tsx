@@ -81,9 +81,14 @@ interface Props {
     presence?: Record<string, { count: number; zoneNames?: string[] }>;
   } | null;
   paletteCompletedAt?: string | null;
+  /** Emplacements tracés (plan gravé de l'étape 5). */
+  propertyZones?: ProprieteZone[];
+  /** Espèces retenues dans la palette, par emplacement (croisement fiches ouvrages). */
+  zoneSelectedSpecies?: Record<string, string[]>;
   /** Propriété — photos de terrain prioritaires dans l'atlas du cortège. */
   proprieteId?: string;
 }
+
 
 const Divider: React.FC<{
   eyebrow: string;
