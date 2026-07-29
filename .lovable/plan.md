@@ -1,37 +1,65 @@
-## Diagnostic (vérifié dans le code)
+## Constat (vérifié dans le code)
 
-Deux causes distinctes, aucune côté base de données :
+L'impression de l'étape 5 (`PalettePrintLayout.tsx`) ne produit que **2 pages** issues de `PaletteSummary` : la règle du site + les palettes par emplacement (p. 1), puis les refus, la mise en œuvre et les sources (p. 2).
 
-1. **Les ouvrages ne s'affichent pas sur la carte du chapitre 2.** `ZonesMapBlock.tsx` charge bien `useProprieteObjets` (ligne 158) mais ne s'en sert **que pour compter** (« · 5 ouvrages », ligne 401). La carte ne dessine que les parcelles cadastrales et les `propriete_zones` — aucune couche pour les objets de l'Atelier. D'où une carte vide alors que le bandeau annonce 5 ouvrages.
+Il manque donc, aussi bien dans la fiche seule que dans le cahier complet (`CombinedPrintLayout.tsx`, qui appelle exactement les mêmes deux sections) :
 
-2. **Les textes des fiches sont invisibles, pas absents.** `OuvrageRecoCard.tsx` pose des fonds clairs (`bg-[hsl(var(--ds-cream))]`) sans jamais fixer la couleur du texte, contrairement au reste de `TabPalette` qui écrit systématiquement `text-[hsl(var(--ds-forest-deep))]`. L'application étant verrouillée en mode sombre, la couleur héritée est claire → texte crème sur fond crème. C'est exactement ce que montre la copie 2 : les pastilles 1→5 de « Mise en œuvre », les jalons An 0 / 1 / 3 et le cadre « Espèces & compagnonnage » sont rendus (la section n'apparaît que si la liste n'est pas vide) mais leur contenu est illisible. La base de recommandations est bien remplie (la mare a 5 étapes, un calendrier, 3 paliers d'entretien et 4 lignes d'espèces).
+- le **schéma** des emplacements et des ouvrages (aucune carte n'est rendue) ;
+- tout ce qui est **saisi dans l'Atelier** : les ouvrages (`propriete_objets` — type, nom, métré, quantité, coût, note de chantier, rattachement à un emplacement), les calques et le bilan d'impact (`computeBalance`) ;
+- les **conseils par ouvrage** (mise en œuvre, calendrier, entretien An 0/1/3, espèces & compagnonnage, vigilances, sources) rendus à l'écran par `OuvrageRecoCard` mais absents de l'impression.
 
-## Correction 1 — Les ouvrages sur la carte
+## Ce que je construis
 
-Dans `ZonesMapBlock.tsx`, ajouter une couche de rendu des objets, sous les zones :
+**A. Le plan gravé — une planche pleine page**
 
-- polygones, lignes et points selon la géométrie de chaque objet, dans la couleur de l'objet (`style.color`) sinon celle de son outil ;
-- glyphe de l'outil en marqueur `divIcon` pour les points (pas japonais, arbre, nichoir…) ;
-- tooltip : nom de l'ouvrage · type · métré ;
-- respect de la visibilité (`style.visible === false` → non dessiné) ;
-- clic sur un ouvrage → ouverture de sa fiche dans le registre en dessous (défilement + dépliage) ;
-- les géométries des objets entrent dans le calcul des `bounds` de cadrage, pour que la carte s'ouvre sur ce qui est réellement dessiné.
+Nouveau composant `PalettePlanSchema.tsx`, sur le modèle éprouvé de `SoilSamplesPlan` (projection SVG locale, pas de tuiles carto donc pas d'aléa d'impression) :
 
-## Correction 2 — Lisibilité des fiches
+- parcelles cadastrales en trait fin pointillé ;
+- emplacements (zones) en aplat teinté à leur couleur, lettrés A, B, C… ;
+- ouvrages dessinés selon leur géométrie (polygone / ligne / point), à la couleur de leur outil, numérotés 1…n ;
+- échelle graphique, flèche du nord, cartouche « propriété · commune · date de scellement » ;
+- **légende en deux colonnes** en pied de planche : emplacements (surface, ambiance) et ouvrages (type, métré).
 
-Dans `OuvrageRecoCard.tsx` : appliquer `text-[hsl(var(--ds-forest-deep))]` sur le conteneur des fiches et sur les blocs à fond crème (étapes, entretien, espèces, chiffres, sources, note de chantier), même grammaire que `ZonePaletteCard`. Les cartouches de vigilance gardent leur ocre. Vérification visuelle dans le navigateur après correction, pour ne pas re-livrer un texte invisible.
+**B. La table de l'Atelier — une page**
 
-## Correction 3 — Espèces & compagnonnage réellement utile
+- bandeau bilan : surface désimperméabilisée, rétention d'eau, surface nourricière, couverture, linéaire, coût conventionnel vs sol vivant, entretien annuel comparé (repris de `computeBalance`) ;
+- tableau des ouvrages : n° · type · nom · emplacement de rattachement · métré · quantité · coût · note de chantier, groupé par famille (eau, nourricier, circulation…).
 
-- Afficher la section **même vide**, avec un état explicite « à compléter » plutôt qu'un silence.
-- Compléter le socle pour les types encore servis par le repli de famille (le générique « usage », « patrimoine », « biodiversité » n'ont qu'une ligne) : listes d'espèces rédigées par type d'ouvrage.
-- Croisement avec la palette : quand l'ouvrage est rattaché à un emplacement, marquer d'une pastille les espèces déjà retenues dans la palette de cet emplacement, et signaler celles conseillées mais absentes.
+**C. Les fiches conseils — une planche par famille**
+
+Nouveau `OuvragePrintSheet.tsx` (variante imprimable de `OuvrageRecoCard`, sans accordéon ni bouton) : pour chaque **type d'ouvrage présent** sur le site — mise en œuvre numérotée, calendrier, entretien An 0 / An 1 / An 3 en trois colonnes, espèces & compagnonnage avec pastille sur celles déjà retenues dans la palette de l'emplacement, cartouche vigilances en ocre, sources. Deux fiches par page A4, jamais coupées (`print-avoid-break`).
+
+**D. Pagination et direction artistique**
+
+`PalettePrintLayout` passe de 2 pages fixes à une pagination calculée :
+
+```text
+1. Couverture  « ÉTAPE 5 · La palette végétale »  (même grammaire que l'étape 2 :
+                halo concentrique, citation en italique, cachet daté)
+2. La règle du site + palettes par emplacement       (existant, conservé)
+3. Le plan gravé — emplacements & ouvrages           (nouveau)
+4. La table de l'Atelier — métrés, coûts, bilan      (nouveau)
+5..n Fiches conseils par type d'ouvrage              (nouveau, 2 / page)
+n+1 Ce que l'on écarte · Mise en œuvre · Sources     (existant, conservé)
+```
+
+Pieds de page « x / N » recalculés. Les mêmes blocs sont injectés dans `CombinedPrintLayout` pour que le **cahier complet** hérite exactement du même contenu, avec sa numérotation continue.
+
+## Détails techniques
+
+- `PalettePlanSchema.tsx` réutilise la projection métrique locale de `SoilSamplesPlan` (mètres → px, marge 18 %, pas d'échelle « joli »), étendue aux LineString et Point.
+- Les ouvrages viennent de `useProprieteObjets`, les métrés de `measureFor` / `fmtMeasure`, les conseils de `useOuvrageRecoKb().resolve(outil_key)` — aucune nouvelle requête, aucune migration.
+- Le rendu d'impression étant hors-écran, tous les blocs à fond crème portent explicitement `text-[hsl(var(--ds-forest-deep))]` (l'app est verrouillée en sombre) et `print-exact` pour les aplats.
+- Vérification finale dans le navigateur sur la propriété Jardin Monde Deviat, en aperçu d'impression, pour les deux parcours : « Palette seule » et « Cahier complet ».
 
 ## Fichiers concernés
 
-- `src/components/propriete/palette/ZonesMapBlock.tsx` — couche ouvrages + bounds + sélection
-- `src/components/propriete/palette/OuvrageRecoCard.tsx` — couleurs de texte, section espèces
-- `src/lib/ouvrageRecoKb.ts` — enrichissement des listes d'espèces des fiches génériques
-- `src/components/propriete/palette/OuvragesRegister.tsx` — ouverture d'une fiche depuis la carte
+- `src/components/propriete/print/PalettePlanSchema.tsx` — nouveau (planche du plan)
+- `src/components/propriete/print/AtelierTablePrint.tsx` — nouveau (bilan + table des ouvrages)
+- `src/components/propriete/print/OuvragePrintSheet.tsx` — nouveau (fiches conseils)
+- `src/components/propriete/print/PalettePrintLayout.tsx` — couverture + pagination dynamique
+- `src/components/propriete/print/CombinedPrintLayout.tsx` — mêmes blocs dans le cahier complet
+- `src/components/propriete/tabs/TabPalette.tsx` — passage des ouvrages / parcelles aux maquettes
+- `src/index.css` — quelques classes d'impression (planche, table, fiches)
 
 Aucune migration de base nécessaire.
