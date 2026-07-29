@@ -11,6 +11,7 @@ import {
   Layers,
   Check,
   Pencil,
+  Move3d,
 } from 'lucide-react';
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
@@ -38,6 +39,7 @@ interface Props {
   onPatchZone: (z: ProprieteZone, patch: Partial<ProprieteZone>) => void;
   onDeleteZone: (id: string) => void;
   onRedrawZone: (id: string) => void;
+  onTransformZone?: (id: string) => void;
 
   system: SystemLayerState;
   onSystem: (patch: Partial<SystemLayerState>) => void;
@@ -86,6 +88,7 @@ export const LayersPanel: React.FC<Props> = ({
   onPatchZone,
   onDeleteZone,
   onRedrawZone,
+  onTransformZone,
   system,
   onSystem,
   objetCountByCalque,
@@ -194,6 +197,14 @@ export const LayersPanel: React.FC<Props> = ({
                     <IconBtn title="Renommer" onClick={() => startEdit(`z-${z.id}`, z.nom)}>
                       <Pencil className="h-3 w-3" />
                     </IconBtn>
+                    {onTransformZone && (
+                      <IconBtn
+                        title="Transformer : déplacer, redimensionner, lisser"
+                        onClick={() => onTransformZone(z.id)}
+                      >
+                        <Move3d className="h-3 w-3" />
+                      </IconBtn>
+                    )}
                     <IconBtn title="Redessiner le contour" onClick={() => onRedrawZone(z.id)}>
                       <Check className="h-3 w-3 rotate-45" />
                     </IconBtn>

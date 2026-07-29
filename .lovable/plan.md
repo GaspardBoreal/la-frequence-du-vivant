@@ -1,42 +1,59 @@
-## Objectif
+# Emplacements : un vrai mode « Transformer »
 
-Appliquer aux widgets 4 (Refus assumés) et 5 (Mise en œuvre) de l'onglet Palette végétale le même rituel que les emplacements : repliés par défaut, avec un bandeau qui raconte l'essentiel d'un coup d'œil.
+Aujourd'hui un emplacement (ex. « Mare ») ne peut être que tracé, renommé, coloré ou supprimé. Sa géométrie est figée. On ajoute un **mode Transformer** activable sur l'emplacement sélectionné, disponible dans les deux vues (bloc carte « Emplacements de la palette » et Atelier plein écran), avec les trois gestes demandés.
 
-## 1. Rendre `AnalyzeCard` pliable (opt-in)
+## 1. Déplacer (glisser-déposer)
 
-`src/components/propriete/analyze/AnalyzeCard.tsx` — ajouter des props optionnelles, sans rien changer pour les ~10 autres blocs qui l'utilisent :
-- `collapsible?: boolean`, `open?: boolean`, `onToggleOpen?: () => void`, `signature?: React.ReactNode`
-- Si `collapsible` : l'en-tête devient cliquable (bouton, `aria-expanded` / `aria-controls`), chevron animé à droite, `signature` affichée sous le sous-titre quand la carte est repliée.
-- Corps (`hero` + `children`) enveloppé dans `AnimatePresence` + `motion.div` (height auto ↔ 0, 0,3 s ease-in-out).
-- Comportement par défaut inchangé : sans `collapsible`, la carte reste toujours ouverte.
+- Au survol de la zone en mode Transformer, curseur `move` et remplissage légèrement renforcé.
+- Pointer-down dans le polygone → translation en temps réel de tous les sommets (delta calculé en coordonnées écran puis reprojeté en lat/lng, donc fidèle quel que soit le zoom).
+- Le pan de la carte est désactivé pendant le drag, réactivé au relâchement.
+- Aide contextuelle : badge flottant « ✥ Déplacement — relâchez pour poser ».
 
-## 2. Bandeau « Refus assumés » (widget 4)
+## 2. Redimensionner par homothétie
 
-Indicateurs dérivés des `exclusions` + `excludedPresence` déjà calculés :
-- Compteur : « N refus assumés »
-- Alerte vivante si `onSiteCount > 0` : pastille ambre « ⚠ N déjà présent(s) sur site — à gérer », avec le nom de la première espèce concernée.
-- Micro-vignettes : jusqu'à 3 photos rondes (`pres.firstPhoto`) des refus présents, empilées.
-- Chips discrètes des noms français refusés (max 3, puis « +N »), teinte bordeaux existante `#8c3a2e`.
-- Si aucun refus présent sur site : phrase inspirante « Aucun refus présent : le site part net. »
+- 8 poignées (4 coins + 4 milieux) sur la boîte englobante de la zone, dessinées en cercles crème bordés de la couleur de l'emplacement, + une poignée de rotation optionnelle au-dessus (voir question ci-dessous).
+- Glisser une poignée applique une **mise à l'échelle homothétique** autour du centre opposé :
+  - coin = homothétie proportionnelle (ratio identique lat/lng, la forme ne se déforme pas) ;
+  - milieu de bord = étirement sur un seul axe (utile pour une mare allongée) ;
+  - `Maj` enfoncé sur un bord force aussi l'homothétie proportionnelle.
+- Facteur d'échelle borné (0.05× min) pour éviter l'effondrement.
+- Pendant le geste, une **étiquette live** affiche la nouvelle surface estimée (`… m²`) et le ratio (`×1,34`), calculée avec `geometryAreaM2` déjà présent dans `studio/geoMetrics.ts`.
 
-## 3. Bandeau « Mise en œuvre » (widget 5)
+## 3. Lisser les contours
 
-Indicateurs dérivés de `implementation` :
-- Compteur : « N étapes »
-- Fenêtre calendaire : période de la première → période de la dernière étape (ex. « Août–septembre → À la plantation »).
-- Frise miniature : N petits segments dorés alignés (un par étape), avec tooltip = titre de l'étape.
-- Chips des titres d'étapes (max 2, puis « +N »).
+- Bouton « ⌇ Lisser » dans la barre de transformation, applicable en cumul (chaque clic lisse un cran de plus, indicateur « Lissage ×2 »).
+- Algorithme : **Chaikin (corner-cutting)** sur l'anneau fermé, précédé d'une simplification Douglas-Peucker légère quand le tracé main levée contient beaucoup de points (les tracés freehand font souvent 200+ sommets). Résultat : contour organique et fluide, sans la crispation actuelle, tout en gardant la surface quasi identique.
+- Bouton compagnon « Anguler » (retour au tracé précédent) via la pile d'annulation.
 
-## 4. État de pli dans `TabPalette`
+## Barre de transformation et sauvegarde
 
-`src/components/propriete/tabs/TabPalette.tsx` :
-- Deux états `openExcluded` / `openImplementation`, **repliés par défaut**.
-- Persistance dans `localStorage` sous `palette-blocks-open:{proprieteId}` (même logique que les emplacements déjà en place).
-- Sécurités d'ouverture automatique : ouvrir « Refus » si l'utilisateur clique « Situer » (carte d'espèce exclue) ou si une ancre `#palette-block-excluded` / `#palette-block-implementation` est visée par un scroll interne.
-- Étendre le bouton existant « Tout déplier / Tout replier » pour piloter aussi ces deux blocs (un seul geste pour toute la partition).
+Une barre flottante en bas de la carte apparaît dès l'entrée en mode Transformer :
 
-## Notes techniques
+```text
+[✥ Déplacer] [⤢ Échelle] [⌇ Lisser] [↺ Annuler] │ 412 m² → 553 m²  │ [Valider] [Annuler]
+```
 
-- Aucune modification de données, de requête ou de moteur de palette : tout est dérivé de l'état déjà en mémoire.
-- L'impression et la synthèse (`PaletteSummary`, `CombinedPrintLayout`) n'utilisent pas ces cartes en mode pliable — sortie PDF inchangée.
-- Couleurs uniquement via les tokens `--ds-*` existants et les teintes bordeaux/ambre déjà utilisées dans ces blocs.
+- Toutes les manipulations se font sur une **copie locale** de la géométrie : rien n'est écrit tant que « Valider » n'est pas cliqué (ou `Entrée`) ; `Échap` annule et restaure la forme d'origine.
+- Historique d'annulation local (pile des états de géométrie) pour `↺` et `Ctrl+Z`.
+- À la validation : `onPatchZone(zone, { geometry, surface_m2 })` → `upsertZone` existant, qui persiste déjà géométrie et surface.
+- Mode indisponible si la zone est **verrouillée** (`verrouille`) ou en `readOnly` — le bouton l'indique clairement.
+
+## Détails techniques
+
+Nouveaux fichiers :
+
+- `src/lib/geomTransform.ts` — utilitaires purs sans dépendance Leaflet : `translateRing`, `scaleRing(ring, anchor, kx, ky)`, `chaikinSmooth(ring, iterations)`, `simplifyRing(ring, toleranceM)`, `ringBounds`.
+- `src/components/propriete/palette/ZoneTransformLayer.tsx` — couche react-leaflet : polygone fantôme, poignées `CircleMarker`/`Marker` avec `divIcon`, gestion pointer events, désactivation de `map.dragging` pendant les gestes.
+- `src/components/propriete/palette/ZoneTransformBar.tsx` — barre flottante (surface avant/après, boutons, raccourcis clavier).
+
+Fichiers modifiés :
+
+- `ZonesMapBlock.tsx` — état `transformZoneId`, montage de la couche + barre, entrée dans le mode via le chip actif.
+- `ZoneChipMenu.tsx` — nouvelle entrée « ✥ Transformer la forme » (grisée si verrouillée).
+- `studio/PaletteStudio.tsx` — même couche réutilisée sur la carte de l'Atelier, pour ne pas avoir deux comportements différents.
+
+Aucun changement de schéma en base : `geometry` et `surface_m2` existent déjà sur `propriete_zones`.
+
+## Question
+
+Aussi une **poignée de rotation** (faire pivoter l'emplacement) en plus des trois fonctions demandées 

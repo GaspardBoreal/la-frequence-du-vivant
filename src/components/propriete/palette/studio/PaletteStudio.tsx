@@ -48,6 +48,9 @@ import LivingLayer, {
   type VivantType,
 } from './LivingLayer';
 import { geometryAreaM2, fmtArea } from './geoMetrics';
+import ZoneTransformLayer from '../ZoneTransformLayer';
+import ZoneTransformBar from '../ZoneTransformBar';
+import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
 
 type PanelTab = 'calques' | 'outils' | 'vivant' | 'bilan';
 
@@ -134,6 +137,7 @@ export const PaletteStudio: React.FC<Props> = ({
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
   const [tool, setTool] = React.useState<PaysageTool | null>(null);
   const [zoneDraw, setZoneDraw] = React.useState(false);
+  const zoneTransform = useZoneTransform(onPatchZone);
   const [selectedObjetId, setSelectedObjetId] = React.useState<string | null>(null);
   const [inspirationOpen, setInspirationOpen] = React.useState(false);
   const [pendingInspiration, setPendingInspiration] = React.useState<InspirationCard | null>(null);
@@ -404,6 +408,10 @@ export const PaletteStudio: React.FC<Props> = ({
                   onSelectZone={onSelectZone}
                   onPatchZone={onPatchZone}
                   onDeleteZone={onDeleteZone}
+                  onTransformZone={(id) => {
+                    const z = zones.find((zz) => zz.id === id);
+                    if (z) zoneTransform.start(z);
+                  }}
                   onRedrawZone={(id) => {
                     onSelectZone(id);
                     setZoneDraw(true);
@@ -440,6 +448,20 @@ export const PaletteStudio: React.FC<Props> = ({
             height="100%"
           >
             <MapViewReporter onChange={onViewChange} />
+            {zoneTransform.zone && (
+              <ZoneTransformLayer
+                ring={zoneTransform.ring}
+                color={
+                  zoneTransform.zone.couleur ||
+                  ZONE_COLORS[
+                    Math.max(0, zones.findIndex((z) => z.id === zoneTransform.zone!.id)) %
+                      ZONE_COLORS.length
+                  ]
+                }
+                onGestureStart={zoneTransform.pushHistory}
+                onPreview={zoneTransform.preview}
+              />
+            )}
             <InlineGpsCurationLayer curation={inlineGps} />
 
             {system.parcelles &&
@@ -459,7 +481,7 @@ export const PaletteStudio: React.FC<Props> = ({
 
             {system.zones &&
               zones.map((z, i) => {
-                if (!z.visible) return null;
+                if (!z.visible || z.id === zoneTransform.zone?.id) return null;
                 const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
                 const active = z.id === activeZoneId;
                 const ring = (z.geometry?.coordinates?.[0] ?? []).map((c: [number, number]) => [
@@ -524,6 +546,17 @@ export const PaletteStudio: React.FC<Props> = ({
           </RichMap>
 
           <InlineGpsBar curation={inlineGps} />
+
+          <ZoneTransformBar
+            api={zoneTransform}
+            color={
+              zoneTransform.zone?.couleur ||
+              ZONE_COLORS[
+                Math.max(0, zones.findIndex((z) => z.id === zoneTransform.zone?.id)) %
+                  ZONE_COLORS.length
+              ]
+            }
+          />
 
           {/* Bandeau de guidage */}
           {(drawGeom || pendingInspiration) && (
