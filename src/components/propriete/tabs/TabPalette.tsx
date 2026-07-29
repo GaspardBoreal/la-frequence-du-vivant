@@ -8,6 +8,7 @@ import {
   Check,
   Loader2,
   Quote,
+  Pencil,
   Wand2,
   Ban,
   CalendarRange,
