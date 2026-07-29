@@ -508,7 +508,21 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     }
 
     return out;
-  }, [allRows, overrides]);
+  }, [overrides]);
+
+  /** Observations de la portée active (cadastre par défaut). */
+  const waypoints = useMemo(() => buildWaypoints(allRows), [buildWaypoints, allRows]);
+
+  /**
+   * Toutes les observations, hors portée : réservé au Contrôle GPS, qui doit
+   * pouvoir rapatrier les points situés hors du plan cadastral.
+   */
+  const allWaypoints = useMemo(
+    () => (allRows === unscopedRows ? waypoints : buildWaypoints(unscopedRows)),
+    [buildWaypoints, unscopedRows, allRows, waypoints],
+  );
+
+
 
 
 
