@@ -130,15 +130,25 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   synthesisCompletedAt,
   palette,
   paletteCompletedAt,
+  propertyZones = [],
+  zoneSelectedSpecies,
   proprieteId,
 }) => {
+  const { objets } = useProprieteObjets(proprieteId);
 
   const withAnalyze = !!soil;
   const plateCount = withAnalyze ? testMediaPlateCount(testMedias) : 0;
   const withIdentify = !!flora && (flora.observed_plants ?? []).length > 0;
   const withSynthesize = !!synthesis && !!synthesisModel;
   const withPalette = !!palette;
+  const hasAtelier = propertyZones.length > 0 || objets.length > 0;
+  const sheetPages = ouvrageSheetPageCount(objets);
+  const atelierZones = React.useMemo(
+    () => propertyZones.map((z) => ({ id: z.id, nom: z.nom })),
+    [propertyZones],
+  );
   const atlasCount = withIdentify ? floraAtlasPageCount(flora!.observed_plants ?? []) : 0;
+
   const identifySoil: SoilLite = floraSoil ?? {};
   const identifySoilAvailable = !!(
     identifySoil.structure ||
