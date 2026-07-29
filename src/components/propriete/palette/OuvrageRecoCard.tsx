@@ -23,6 +23,10 @@ interface Props {
   measure: number;
   /** note de chantier propre à cet ouvrage (locale à la propriété) */
   note: string;
+  /** emplacement de rattachement, pour croiser avec la palette retenue */
+  zoneNom?: string | null;
+  /** espèces déjà retenues dans la palette de cet emplacement */
+  zoneSelected?: string[];
   onNoteChange?: (v: string) => void;
   canEditKb?: boolean;
   onSaveKb?: (reco: OuvrageReco) => Promise<void>;
@@ -36,7 +40,7 @@ const Section: React.FC<{
   accent: string;
   children: React.ReactNode;
 }> = ({ icon, title, accent, children }) => (
-  <section className="rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/70 p-3">
+  <section className="rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/70 p-3 text-[hsl(var(--ds-forest-deep))]">
     <p
       className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em]"
       style={{ color: accent }}
@@ -48,8 +52,10 @@ const Section: React.FC<{
   </section>
 );
 
+
 const textarea =
-  'w-full rounded-md border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-1.5 text-[11px] leading-relaxed outline-none focus:border-[hsl(var(--ds-forest))]/50';
+  'w-full rounded-md border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-1.5 text-[11px] leading-relaxed text-[hsl(var(--ds-forest-deep))] outline-none focus:border-[hsl(var(--ds-forest))]/50';
+
 
 const toLines = (a: string[]) => a.join('\n');
 const fromLines = (v: string) =>
@@ -68,6 +74,8 @@ export const OuvrageRecoCard: React.FC<Props> = ({
   reco,
   measure,
   note,
+  zoneNom,
+  zoneSelected,
   onNoteChange,
   canEditKb,
   onSaveKb,
@@ -75,6 +83,27 @@ export const OuvrageRecoCard: React.FC<Props> = ({
   readOnly,
 }) => {
   const accent = tool.color;
+
+  /** Normalisation NFD pour comparer un nom d'espèce sans accent ni casse. */
+  const norm = (s: string) =>
+    s
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+  const hasPalette = !!zoneSelected && zoneSelected.length > 0;
+  const paletteNorm = React.useMemo(
+    () => (zoneSelected ?? []).map(norm).filter((s) => s.length > 2),
+    [zoneSelected],
+  );
+  const matchesPalette = React.useCallback(
+    (line: string) => {
+      const l = norm(line);
+      return paletteNorm.some((p) => l.includes(p) || p.includes(l));
+    },
+    [paletteNorm],
+  );
+
   const [editing, setEditing] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [draft, setDraft] = React.useState<OuvrageReco>(() => ({
@@ -251,7 +280,7 @@ export const OuvrageRecoCard: React.FC<Props> = ({
   }
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2.5 text-[hsl(var(--ds-forest-deep))]">
       <div className="flex flex-wrap items-center gap-2">
         <span
           className="rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.16em]"
@@ -331,22 +360,51 @@ export const OuvrageRecoCard: React.FC<Props> = ({
           </div>
         </Section>
 
-        {reco.especes.length > 0 && (
-          <Section
-            icon={<Sprout className="h-3 w-3" />}
-            title="Espèces & compagnonnage"
-            accent={accent}
-          >
-            <ul className="space-y-1">
-              {reco.especes.map((s, i) => (
-                <li key={i} className="text-[11.5px] leading-relaxed">
-                  <span className="mr-1.5 opacity-40">·</span>
-                  {s}
-                </li>
-              ))}
-            </ul>
-          </Section>
-        )}
+        <Section
+          icon={<Sprout className="h-3 w-3" />}
+          title="Espèces & compagnonnage"
+          accent={accent}
+        >
+          {reco.especes.length > 0 ? (
+            <>
+              <ul className="space-y-1">
+                {reco.especes.map((s, i) => {
+                  const retenue = matchesPalette(s);
+                  return (
+                    <li key={i} className="text-[11.5px] leading-relaxed">
+                      <span className="mr-1.5 opacity-40">·</span>
+                      {s}
+                      {hasPalette && (
+                        <span
+                          className="ml-1.5 whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[9px] align-middle"
+                          style={
+                            retenue
+                              ? { borderColor: `${accent}66`, color: accent }
+                              : { borderColor: 'hsl(var(--ds-line))', opacity: 0.55 }
+                          }
+                        >
+                          {retenue ? 'déjà en palette' : 'à ajouter'}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {hasPalette && (
+                <p className="mt-2 border-t border-[hsl(var(--ds-line))]/70 pt-1.5 text-[10px] italic opacity-60">
+                  Croisé avec la palette de « {zoneNom || 'l’emplacement'} » ({zoneSelected!.length}{' '}
+                  espèce{zoneSelected!.length > 1 ? 's' : ''} retenue
+                  {zoneSelected!.length > 1 ? 's' : ''}).
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-[11px] italic opacity-60">
+              Aucun cortège type pour cet ouvrage — à compléter avec le végétal choisi sur place.
+            </p>
+          )}
+        </Section>
+
 
         <Section
           icon={<Gauge className="h-3 w-3" />}

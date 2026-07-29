@@ -19,6 +19,10 @@ interface Props {
   readOnly?: boolean;
   /** sélectionner l'emplacement de rattachement sur la carte */
   onSelectZone?: (id: string) => void;
+  /** ouvrage désigné depuis la carte : sa fiche s'ouvre et défile jusqu'à elle */
+  focusObjetId?: string | null;
+  /** espèces déjà retenues dans la palette, par emplacement */
+  zoneSelectedSpecies?: Record<string, string[]>;
 }
 
 /**
@@ -31,11 +35,22 @@ export const OuvragesRegister: React.FC<Props> = ({
   zones,
   readOnly,
   onSelectZone,
+  focusObjetId,
+  zoneSelectedSpecies,
 }) => {
   const { objets, upsertObjet } = useProprieteObjets(proprieteId);
   const { resolve, saveReco, resetReco } = useOuvrageRecoKb();
   const canEditKb = useCanEditOuvrageKb();
   const [openIds, setOpenIds] = React.useState<string[]>([]);
+  const rowRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+
+  React.useEffect(() => {
+    if (!focusObjetId) return;
+    setOpenIds((ids) => (ids.includes(focusObjetId) ? ids : [...ids, focusObjetId]));
+    const node = rowRefs.current[focusObjetId];
+    node?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [focusObjetId]);
+
 
   const grouped = React.useMemo(() => {
     const map = new Map<ToolFamilyKey, typeof objets>();
@@ -97,7 +112,14 @@ export const OuvragesRegister: React.FC<Props> = ({
             return (
               <div
                 key={o.id}
-                className="overflow-hidden rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/55"
+                ref={(el) => {
+                  rowRefs.current[o.id] = el;
+                }}
+                className={`overflow-hidden rounded-xl border bg-[hsl(var(--ds-cream))]/55 text-[hsl(var(--ds-forest-deep))] transition ${
+                  focusObjetId === o.id
+                    ? 'border-[hsl(var(--ds-forest))] ring-1 ring-[hsl(var(--ds-forest))]/30'
+                    : 'border-[hsl(var(--ds-line))]'
+                }`}
               >
                 <button
                   type="button"
@@ -159,6 +181,8 @@ export const OuvragesRegister: React.FC<Props> = ({
                       reco={reco}
                       measure={measure}
                       note={o.meta?.note ?? ''}
+                      zoneNom={zone?.nom ?? null}
+                      zoneSelected={(o.zone_id && zoneSelectedSpecies?.[o.zone_id]) || []}
                       readOnly={readOnly}
                       canEditKb={canEditKb}
                       onSaveKb={(r) => saveReco(o.outil_key, r)}

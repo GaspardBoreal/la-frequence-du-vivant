@@ -22,6 +22,8 @@ import ZoneTransformLayer from './ZoneTransformLayer';
 import ZoneTransformBar from './ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
+import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
+import ObjectsLayer from './studio/ObjectsLayer';
 
 
 
@@ -125,6 +127,8 @@ interface Props {
   readOnly?: boolean;
   /** Nombre d'espèces retenues par emplacement (pour la confirmation de suppression). */
   zoneSpeciesCount?: Record<string, number>;
+  /** Clic sur un ouvrage dessiné dans l'Atelier → ouverture de sa fiche dans le registre. */
+  onFocusObjet?: (id: string) => void;
 }
 
 
@@ -147,6 +151,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
   maxZones,
   readOnly,
   zoneSpeciesCount,
+  onFocusObjet,
 }) => {
 
 
@@ -156,6 +161,13 @@ export const ZonesMapBlock: React.FC<Props> = ({
   const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
   const transform = useZoneTransform(onPatchZone);
   const { objets } = useProprieteObjets(proprieteId);
+  const { calques } = useProprieteCalques(proprieteId);
+
+  /** Ouvrages réellement affichables : géométrie valide et non masqués. */
+  const visibleObjets = React.useMemo(
+    () => objets.filter((o) => o.geometry && (o.style as any)?.visible !== false),
+    [objets],
+  );
 
   const activeZone = zones.find((z) => z.id === activeZoneId) ?? null;
   const transformColor =
@@ -197,8 +209,17 @@ export const ZonesMapBlock: React.FC<Props> = ({
         (ring || []).forEach((c: [number, number]) => pts.push([c[1], c[0]])),
       );
     });
+    visibleObjets.forEach((o: any) => {
+      const g = o.geometry;
+      if (!g) return;
+      if (g.type === 'Point') pts.push([g.coordinates[1], g.coordinates[0]]);
+      else if (g.type === 'LineString')
+        (g.coordinates || []).forEach((c: number[]) => pts.push([c[1], c[0]]));
+      else if (g.type === 'Polygon')
+        (g.coordinates?.[0] || []).forEach((c: number[]) => pts.push([c[1], c[0]]));
+    });
     return pts;
-  }, [zones, parcelles]);
+  }, [zones, parcelles, visibleObjets]);
 
   const handleFinish = React.useCallback(
     (latlngs: Array<[number, number]>) => {
@@ -260,6 +281,16 @@ export const ZonesMapBlock: React.FC<Props> = ({
             </Polygon>
           );
         })}
+
+        {/* Ouvrages dessinés dans l'Atelier — lecture seule ici, clic = fiche */}
+        <ObjectsLayer
+          objets={visibleObjets}
+          calques={calques}
+          selectedId={null}
+          onSelect={(id) => onFocusObjet?.(id)}
+        />
+
+
 
         {transform.zone && (
           <ZoneTransformLayer
