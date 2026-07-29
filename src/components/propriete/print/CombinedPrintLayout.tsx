@@ -388,6 +388,14 @@ export const CombinedPrintLayout: React.FC<Props> = ({
             </>
           )}
 
+          {chromatic && (
+            <section className="portrait-print-page combined-print-palette">
+              <ChromaticPrintPage objets={objets} propertyName={propertyName} />
+            </section>
+          )}
+
+
+
           {sheetPages > 0 && (
             <OuvrageSheetsPrint
               objets={objets}
