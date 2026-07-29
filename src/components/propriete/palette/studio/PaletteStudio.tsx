@@ -76,7 +76,33 @@ export const PaletteStudio: React.FC<Props> = ({
   onDeleteZone,
   readOnly,
 }) => {
-  const { waypoints } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  const { waypoints: rawWaypoints } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  const { data: canCurate } = useCanCurateParcelles(open ? proprieteId : undefined);
+  const { displayNameFor } = useWaypointFrenchNames(rawWaypoints);
+
+  /** Statut géofence identique à « J'identifie » (même parcelles, même tampon). */
+  const fence = React.useMemo(() => buildGeofence(parcelles ?? []), [parcelles]);
+  const waypoints = React.useMemo<GpsCandidate[]>(
+    () =>
+      rawWaypoints
+        .filter((w) => w.overrideStatus !== 'excluded')
+        .map((w) => {
+          const ev = evaluateGeofence(fence, w.lat, w.lng, 25);
+          return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
+        }),
+    [rawWaypoints, fence],
+  );
+
+  const frenchName = React.useCallback(
+    (scientific: string, fallback?: string | null) =>
+      displayNameFor({ scientificName: scientific, commonName: fallback ?? null }),
+    [displayNameFor],
+  );
+
+  const [lightboxId, setLightboxId] = React.useState<string | null>(null);
+  const [gpsConsole, setGpsConsole] = React.useState(false);
+  const [gpsFocusId, setGpsFocusId] = React.useState<string | null>(null);
+
   const { calques, upsertCalque, deleteCalque } = useProprieteCalques(open ? proprieteId : undefined);
   const { objets, upsertObjet, deleteObjet } = useProprieteObjets(open ? proprieteId : undefined);
 
