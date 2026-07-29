@@ -242,18 +242,6 @@ export const TabPalette: React.FC<Props> = ({
     }
   }, [openBlocks, blocksStorageKey]);
 
-  /** Vignettes des refus effectivement présents (bandeau replié). */
-  const onSitePhotos = React.useMemo(
-    () =>
-      exclusions
-        .map((e) => ({
-          label: e.fr,
-          src: excludedPresence.get(excludedKey(e.latin))?.firstPhoto,
-        }))
-        .filter((p): p is { label: string; src: string } => !!p.src)
-        .slice(0, 3),
-    [exclusions, excludedPresence],
-  );
 
 
   const toggleBlock = React.useCallback((key: 'excluded' | 'implementation') => {
