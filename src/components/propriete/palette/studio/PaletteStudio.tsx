@@ -523,6 +523,8 @@ export const PaletteStudio: React.FC<Props> = ({
             )}
           </RichMap>
 
+          <InlineGpsBar curation={inlineGps} />
+
           {/* Bandeau de guidage */}
           {(drawGeom || pendingInspiration) && (
             <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] flex justify-center p-3">
