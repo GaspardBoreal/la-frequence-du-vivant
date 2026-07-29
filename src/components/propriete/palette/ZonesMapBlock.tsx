@@ -127,6 +127,8 @@ interface Props {
   readOnly?: boolean;
   /** Nombre d'espèces retenues par emplacement (pour la confirmation de suppression). */
   zoneSpeciesCount?: Record<string, number>;
+  /** Clic sur un ouvrage dessiné dans l'Atelier → ouverture de sa fiche dans le registre. */
+  onFocusObjet?: (id: string) => void;
 }
 
 
