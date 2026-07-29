@@ -155,6 +155,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
   const [studioOpen, setStudioOpen] = React.useState(false);
   const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
   const transform = useZoneTransform(onPatchZone);
+  const { objets } = useProprieteObjets(proprieteId);
+
   const activeZone = zones.find((z) => z.id === activeZoneId) ?? null;
   const transformColor =
     transform.zone
