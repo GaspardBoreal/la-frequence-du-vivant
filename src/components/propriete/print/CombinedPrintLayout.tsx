@@ -340,6 +340,40 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               printSection="p1"
             />
           </section>
+
+          {hasAtelier && (
+            <>
+              <section className="portrait-print-page combined-print-palette">
+                <PalettePlanSchema
+                  parcelles={parcelles}
+                  zones={propertyZones}
+                  objets={objets}
+                  propertyName={propertyName}
+                  commune={proprieteVille}
+                  completedAt={paletteCompletedAt ?? null}
+                />
+              </section>
+              <section className="portrait-print-page combined-print-palette">
+                <AtelierTablePrint
+                  objets={objets}
+                  zones={atelierZones}
+                  propertyName={propertyName}
+                  notes={palette.notes}
+                />
+              </section>
+            </>
+          )}
+
+          {sheetPages > 0 && (
+            <OuvrageSheetsPrint
+              objets={objets}
+              zones={atelierZones}
+              zoneSelectedSpecies={zoneSelectedSpecies}
+              propertyName={propertyName}
+              pageClassName="portrait-print-page combined-print-palette"
+            />
+          )}
+
           <section className="portrait-print-page combined-print-synthesize combined-print-synthesize-second">
             <PaletteSummary
               siteRule={palette.siteRule}
@@ -357,6 +391,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
           </section>
         </>
       )}
+
 
     </>
   );
