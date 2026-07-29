@@ -140,6 +140,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
   const [drawing, setDrawing] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
   const [studioOpen, setStudioOpen] = React.useState(false);
+  const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
+
 
   const full = typeof maxZones === 'number' && zones.length >= maxZones;
 
