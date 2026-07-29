@@ -16,6 +16,12 @@ import {
 import RichMap from '@/components/maps/RichMap';
 import { ZONE_COLORS, type ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
+import { useCanCurateParcelles } from '@/hooks/propriete/usePropertyParcelles';
+import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
+import { buildGeofence, evaluateGeofence } from '@/lib/geofence';
+import GpsControlConsole, { type GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
+import { RevealPhotoLightbox } from '@/components/propriete/identify/blocks/RevealPhotoLightbox';
+
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
