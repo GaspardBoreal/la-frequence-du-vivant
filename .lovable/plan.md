@@ -1,46 +1,36 @@
-## Ce que j'ai compris
+## Constat
 
-La portée « cadastre » ne doit pas être un réglage local à l'Atelier : c'est un **réglage global de la propriété**. Partout où l'application affiche ou compte des observations du vivant d'une propriété (cartes, listes, compteurs, synthèses, impressions), on ne considère par défaut **que les observations strictement comprises dans le plan cadastral**. L'utilisateur peut basculer sur « tous » depuis n'importe quelle surface qui expose le sélecteur, et ce choix s'applique immédiatement partout.
+Le carré d'édition (nom / calque / emplacement / intention / couleur) est l'`ObjectInspector` de l'Atelier. Il est positionné en `absolute right-3 top-3` dans `PaletteStudio.tsx`, exactement à la même hauteur que le bandeau **Géo / Sat / Relief / Cadastre** (`MapStyleToggle`, positionné `absolute top-4 right-4`). Les deux se chevauchent donc systématiquement en haut à droite de la carte.
 
-## Le réglage
+La barre « Transformer » avait déjà été décalée manuellement (`pt-[4.25rem]`) : la valeur est aujourd'hui recopiée à la main, sans règle commune.
 
-Deux valeurs exclusives, une seule source de vérité :
+## Solution proposée
 
-- **Observations du vivant (cadastre)** — uniquement les points `inside` (ray casting strict sur les parcelles, **sans** tampon de 25 m). **Défaut.**
-- **Observations du vivant (tous)** — comportement actuel.
+### 1. Une règle unique pour le « chrome » de carte
+Créer un petit module partagé (`src/components/maps/mapChrome.ts`) exportant les offsets standard :
+- `MAP_CHROME_TOP` = hauteur du bandeau de fonds + marge (`top-[4.5rem] sm:top-[4.75rem]`)
+- `MAP_CHROME_TOP_PADDING` pour les conteneurs centrés (remplace le `pt-[4.25rem]` en dur de `ZoneTransformBar`)
 
-Persistance du choix par propriété (localStorage, clé `propriete:<id>:vivant-scope`), pour qu'un retour sur la fiche retrouve le même cadrage.
+Ainsi tout panneau flottant se cale au même endroit, et un futur changement de hauteur du bandeau se répercute partout.
 
-Repli de sécurité : si la propriété n'a aucune parcelle cadastrale (géofence vide), l'option cadastre est désactivée, signalée « aucune parcelle cadastrale », et la portée effective est « tous » — jamais d'écran vide silencieux.
+### 2. Inspecteur redesigné en « carte docker » sous le bandeau
+Dans `PaletteStudio.tsx` et `ObjectInspector.tsx` :
+- Ancrage : colonne droite, **sous** le bandeau, aligné sur la même marge droite que lui (`right-4`) pour créer une vraie colonne visuelle plutôt qu'un flottement approximatif.
+- Hauteur bornée : `max-height` calculée sur la hauteur de la carte, corps scrollable, en-tête (icône outil + mesure + fermer) **sticky** — plus de panneau qui déborde sur le curseur temporel en bas.
+- Entrée animée discrète : léger fondu + glissement depuis la droite (respecte `prefers-reduced-motion`).
+- Liseré de couleur de l'outil sur le bord gauche du panneau, pour relier visuellement le panneau à l'objet sélectionné sur la carte.
+- Tokens du design system uniquement (`--ds-cream`, `--ds-line`, `--ds-forest-deep`), cohérents avec le panneau Calques.
 
-## Surfaces impactées
+### 3. Anti-collision avec le mode Transformer
+Quand la barre « Transformer » est active, l'inspecteur descend d'un cran supplémentaire (offset conditionnel), pour que les deux panneaux ne se croisent jamais sur écran étroit.
 
-Toutes les vues qui consomment le pool d'observations de la propriété :
+### 4. Mobile
+En dessous de `sm`, l'inspecteur passe en feuille basse (bandeau ancré en bas, pleine largeur, coins arrondis haut) : sur petit écran, la colonne droite masque la moitié de la carte.
 
-| Surface | Effet |
-|---|---|
-| Atelier du jardin nourricier (panneau Calques) | Sélecteur segmenté Cadastre / Tous sous « Observations du vivant » + compteurs ; couche carte, filtres Vivant, lightbox, bilan alignés |
-| J'identifie · Carte des révélations | Portée globale appliquée en amont ; le filtre « périmètre » local devient cohérent (et masqué quand la portée est « cadastre ») |
-| J'identifie · Cortège révélé, Delta, Sentinelles | Comptages et concordances calculés sur la portée active |
-| Étape 5 · Palette (emplacements, espèces exclues, moteur de recommandation) | Recommandations et indicateurs calculés sur la portée active |
-| Bloc « Preuves de biodiversité » de la fiche propriété | Compteurs espèces / observations alignés |
-| Contrôle GPS (console + curation en place) | Reste sur **tous** par construction : c'est l'outil qui sert justement à rapatrier les points hors cadastre ; il affiche le statut géofence et le nombre de points hors emprise |
-| Impressions (Portrait, J'observe, J'analyse, J'identifie, Je synthétise) | Reprennent la portée active et mentionnent explicitement le cadrage en pied de page (« Périmètre : plan cadastral » ou « toutes observations ») |
+## Fichiers concernés
+- `src/components/maps/mapChrome.ts` (nouveau) — constantes d'offset partagées
+- `src/components/propriete/palette/studio/PaletteStudio.tsx` — ancrage de l'inspecteur
+- `src/components/propriete/palette/studio/ObjectInspector.tsx` — en-tête sticky, corps scrollable, liseré, animation
+- `src/components/propriete/palette/ZoneTransformBar.tsx` — utilise la constante partagée au lieu du padding en dur
 
-## Cohérence des chiffres
-
-Le point sensible est l'écart de compteurs entre vues. On centralise donc le calcul : un seul filtrage, en amont, produit à la fois la liste affichée et tous les compteurs dérivés. Chaque en-tête de bloc concerné affiche `n espèces · m obs.` issus de la même source, et un badge discret rappelle la portée en cours quand elle est « cadastre ».
-
-## Détails techniques
-
-- Nouveau contexte `ProprieteVivantScopeContext` (`src/contexts/ProprieteVivantScopeContext.tsx`) : `{ scope, setScope, cadastreAvailable }`, monté dans le layout de la fiche propriété (`ProprieteEspace`), initialisé à `cadastre`, persisté par propriété.
-- Nouveau hook `usePropertyWaypointsScoped(proprieteId, parcelles)` (`src/hooks/propriete/`) : construit le géofence via `buildGeofence`, annote chaque waypoint avec `evaluateGeofence`, expose `all`, `scoped`, `insideCount`, `outsideCount`. Il devient le point d'entrée unique en remplacement des appels directs à `usePropertySpeciesPool` dans les vues d'affichage.
-- Le filtrage strict utilise `geofenceStatus === 'inside'` (buffer 0), distinct du tampon 25 m conservé pour l'étiquetage « en limite » dans le Contrôle GPS.
-- `LayersPanel.tsx` : `SystemLayerState` inchangé pour l'affichage on/off ; ajout d'un sélecteur segmenté branché sur le contexte, avec compteurs et état désactivé si `!cadastreAvailable`.
-- Migration des consommateurs : `PaletteStudio`, `RevealMapBlock`, `DeltaBlock`, `SentinellesBlock`, `TabPalette`, `ExcludedSpeciesMap`, `BiodiversityEvidenceBlock`, `usePropertyFloraMatched`, `useExcludedOnSite`, `FloraAtlasPrintPlates` — tous lisent la portée via le contexte au lieu de recalculer ou d'ignorer le géofence.
-- `GpsControlConsole` et `useExplorationGpsCandidates` restent explicitement hors portée (toujours « tous »).
-- Aucun changement de schéma, de RPC ni de requête réseau : le filtrage est purement côté lecture, à partir des parcelles déjà chargées.
-
-## Vérification
-
-Sur `jardin-monde-deviat` : contrôler que le compteur cadastre est identique dans l'Atelier, la Carte des révélations et le bloc Preuves de biodiversité, que le basculement « tous » les fait tous varier ensemble, et que l'écart cadastre/tous correspond bien au nombre de points `outside` annoncé par le Contrôle GPS.
+Aucun changement de logique métier : positionnement et présentation uniquement.
