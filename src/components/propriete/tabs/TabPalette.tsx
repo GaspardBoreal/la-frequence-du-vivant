@@ -768,7 +768,57 @@ export const TabPalette: React.FC<Props> = ({
           title="Ce que l’on écarte, et pourquoi"
           subtitle="Trois espèces refusées : un diagnostic se juge autant à ses exclusions qu’à ses choix."
           index={3}
+          collapsible
+          open={openBlocks.excluded}
+          onToggleOpen={() => toggleBlock('excluded')}
+          signature={
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-[#5f2c23]">
+              <span className="font-semibold text-[#8c3a2e]">
+                {exclusions.length} refus assumé{exclusions.length > 1 ? 's' : ''}
+              </span>
+              {onSiteCount > 0 ? (
+                <>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-[#d9a441]/70 bg-[#fdf6e6] px-2 py-0.5 text-[10px] font-semibold text-[#7a5a1c]">
+                    ⚠ {onSiteCount} déjà présent{onSiteCount > 1 ? 's' : ''} sur site — à gérer
+                  </span>
+                  {onSitePhotos.length > 0 && (
+                    <span className="flex -space-x-2">
+                      {onSitePhotos.map((p) => (
+                        <img
+                          key={p.src}
+                          src={p.src}
+                          alt={p.label}
+                          title={p.label}
+                          loading="lazy"
+                          className="h-6 w-6 rounded-full border border-[#e2c7c1] object-cover"
+                        />
+                      ))}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="italic text-[#8c3a2e]/75">
+                  Aucun refus présent : le site part net.
+                </span>
+              )}
+              <span className="flex flex-wrap items-center gap-1">
+                {exclusions.slice(0, 3).map((e) => (
+                  <span
+                    key={e.latin}
+                    title={e.latin}
+                    className="rounded-full border border-[#e2c7c1] bg-[#fdf4f2] px-2 py-0.5 text-[10px] text-[#8c3a2e]"
+                  >
+                    {e.fr}
+                  </span>
+                ))}
+                {exclusions.length > 3 && (
+                  <span className="text-[10px] text-[#8c3a2e]/70">+{exclusions.length - 3}</span>
+                )}
+              </span>
+            </div>
+          }
         >
+
           {onSiteCount > 0 && (
             <div className="mb-3 rounded-2xl border border-[#d9a441]/60 bg-[#fdf6e6] px-3 py-2 text-[12px] text-[#7a5a1c]">
               <strong>{onSiteCount}</strong> de ces refus {onSiteCount > 1 ? 'sont' : 'est'} déjà
