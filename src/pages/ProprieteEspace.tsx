@@ -374,10 +374,12 @@ const PropTabs: React.FC<{
           >
           <TabsList className="mx-auto max-w-5xl w-full flex overflow-x-auto justify-start md:justify-center bg-transparent rounded-none h-auto py-1.5">
             <TabsTrigger value="portrait">Portrait</TabsTrigger>
+            <span aria-hidden className="mx-2 self-center h-4 w-px shrink-0 rounded-full bg-gradient-to-b from-transparent via-primary/35 to-transparent" />
             <TabsTrigger value="observe">J'observe</TabsTrigger>
             <TabsTrigger value="analyze">J'analyse</TabsTrigger>
             <TabsTrigger value="identify">J'identifie</TabsTrigger>
             <TabsTrigger value="synthesize">Je synthétise</TabsTrigger>
+            <span aria-hidden className="mx-2 self-center h-4 w-px shrink-0 rounded-full bg-gradient-to-b from-transparent via-primary/35 to-transparent" />
             <TabsTrigger value="palette">Palette végétale</TabsTrigger>
           </TabsList>
           </div>
