@@ -803,7 +803,12 @@ const FAMILY_FALLBACK: Record<ToolFamilyKey, OuvrageReco> = {
       an1: 'Apport organique de surface, couvert d’intersaison.',
       an3: 'Réduire les apports : la vie du sol prend le relais.',
     },
-    especes: ['Couverts multi-espèces : graminées + légumineuses + crucifères.'],
+    especes: [
+      'Graminées structurantes : Secale cereale (seigle), Avena strigosa, Lolium multiflorum',
+      'Légumineuses fixatrices : Vicia sativa, Trifolium incarnatum, Medicago sativa',
+      'Crucifères décompactantes : Raphanus sativus (radis fourrager), Sinapis alba',
+      'Mellifères d’intersaison : Phacelia tanacetifolia, Fagopyrum esculentum',
+    ],
     vigilance: ['Sol nu = sol qui perd : jamais plus de quelques semaines à découvert.'],
     sources: [S_MSV],
   },
