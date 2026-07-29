@@ -42,11 +42,20 @@ import LivingLayer, {
   DEFAULT_VIVANT_FILTER,
   LivingFilterPanel,
   matchVivantFilter,
+  matchVivantBase,
+  tagKeysOf,
   typeOfWaypoint,
   indicatorOf,
   type VivantFilterState,
+  type VivantFilterContext,
+  type VivantTagFacet,
   type VivantType,
 } from './LivingLayer';
+import {
+  useMarcheurSpeciesTags,
+  getTagColor,
+  normalizeTagKey,
+} from '@/hooks/useMarcheurSpeciesTags';
 import { geometryAreaM2, fmtArea } from './geoMetrics';
 import ZoneTransformLayer from '../ZoneTransformLayer';
 import ZoneTransformBar from '../ZoneTransformBar';
@@ -61,6 +70,14 @@ const TIME_STEPS = [
   { label: 'An 3', tag: 'Les strates se referment, le sol se couvre.' },
   { label: 'An 10', tag: 'Le dessin s’efface, le lieu prend le relais.' },
 ];
+
+/**
+ * Mémoire de session des filtres Vivant, par propriété : rouvrir l'atelier ne
+ * doit pas effacer la sélection en cours. Volontairement non persistée en
+ * localStorage — un filtre oublié d'une session à l'autre serait trompeur.
+ */
+const VIVANT_FILTER_MEMORY = new Map<string, VivantFilterState>();
+
 
 interface Props {
   open: boolean;
@@ -168,13 +185,47 @@ export const PaletteStudio: React.FC<Props> = ({
     zones: true,
     vivant: true,
   });
-  const [vivantFilter, setVivantFilter] = React.useState<VivantFilterState>(DEFAULT_VIVANT_FILTER);
+  const [vivantFilter, setVivantFilter] = React.useState<VivantFilterState>(
+    () => VIVANT_FILTER_MEMORY.get(proprieteId) ?? DEFAULT_VIVANT_FILTER,
+  );
+  React.useEffect(() => {
+    VIVANT_FILTER_MEMORY.set(proprieteId, vivantFilter);
+  }, [proprieteId, vivantFilter]);
+
+  /* ── Mes tags : index espèce → clés de tags, et facettes du panneau ───── */
+  const scientificNames = React.useMemo(
+    () => Array.from(new Set(waypoints.map((w) => w.scientificName).filter(Boolean))),
+    [waypoints],
+  );
+  const { data: myTags, isLoading: tagsLoading } = useMarcheurSpeciesTags(
+    open ? scientificNames : [],
+  );
+
+  /** nom scientifique normalisé → clés de tags normalisées (dédupliquées). */
+  const tagsBySpecies = React.useMemo(() => {
+    const m = new Map<string, string[]>();
+    (myTags || []).forEach((t) => {
+      const sp = normalizeTagKey(t.scientific_name);
+      const key = normalizeTagKey(t.label);
+      const arr = m.get(sp);
+      if (arr) {
+        if (!arr.includes(key)) arr.push(key);
+      } else m.set(sp, [key]);
+    });
+    return m;
+  }, [myTags]);
+
+  const filterContext = React.useMemo<VivantFilterContext>(
+    () => ({ displayName: frenchName, tagsBySpecies }),
+    [frenchName, tagsBySpecies],
+  );
 
   /** Observations réellement affichées (filtres Vivant) : contexte lightbox + Contrôle GPS. */
   const visibleWaypoints = React.useMemo(
-    () => waypoints.filter((w) => matchVivantFilter(w, vivantFilter)),
-    [waypoints, vivantFilter],
+    () => waypoints.filter((w) => matchVivantFilter(w, vivantFilter, filterContext)),
+    [waypoints, vivantFilter, filterContext],
   );
+
 
   const gpsCenter = React.useMemo<[number, number]>(
     () => center ?? (waypoints[0] ? [waypoints[0].lat, waypoints[0].lng] : [46.6, 2.5]),
@@ -209,6 +260,11 @@ export const PaletteStudio: React.FC<Props> = ({
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      // Échap dans un champ de saisie (recherche du vivant) : on vide le champ,
+      // on ne referme pas l'atelier.
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return;
       if (inspirationOpen) setInspirationOpen(false);
       else if (tool) setTool(null);
       else if (zoneDraw) setZoneDraw(false);
@@ -252,10 +308,37 @@ export const PaletteStudio: React.FC<Props> = ({
     waypoints.forEach((w) => {
       byType[typeOfWaypoint(w)] += 1;
       if (indicatorOf(w)) bio += 1;
-      if (matchVivantFilter(w, vivantFilter)) visible += 1;
+      if (matchVivantFilter(w, vivantFilter, filterContext)) visible += 1;
     });
     return { total: waypoints.length, visible, byType, bio };
-  }, [waypoints, vivantFilter]);
+  }, [waypoints, vivantFilter, filterContext]);
+
+  /**
+   * Facettes de tags : comptées sur les observations qui passent tous les
+   * autres critères (tags neutralisés), pour que les nombres annoncent bien ce
+   * qu'un clic sur la puce va donner.
+   */
+  const tagFacets = React.useMemo<VivantTagFacet[]>(() => {
+    const meta = new Map<string, { label: string; color: string }>();
+    (myTags || []).forEach((t) => {
+      const k = normalizeTagKey(t.label);
+      if (!meta.has(k)) meta.set(k, { label: t.label, color: getTagColor(t.color_hash) });
+    });
+    if (meta.size === 0) return [];
+
+    const neutral: VivantFilterState = { ...vivantFilter, tags: { ...vivantFilter.tags, labels: [] } };
+    const counts = new Map<string, number>();
+    waypoints.forEach((w) => {
+      if (!matchVivantBase(w, neutral, filterContext)) return;
+      if (!matchVivantFilter(w, neutral, filterContext)) return;
+      tagKeysOf(w, filterContext).forEach((k) => counts.set(k, (counts.get(k) || 0) + 1));
+    });
+
+    return Array.from(meta.entries())
+      .map(([key, m]) => ({ key, label: m.label, color: m.color, count: counts.get(key) || 0 }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }, [myTags, waypoints, vivantFilter, filterContext]);
+
 
   const selectedObjet = objets.find((o) => o.id === selectedObjetId) || null;
 
@@ -454,7 +537,10 @@ export const PaletteStudio: React.FC<Props> = ({
                   filter={vivantFilter}
                   onChange={setVivantFilter}
                   counts={vivantCounts}
+                  tagFacets={tagFacets}
+                  tagsLoading={tagsLoading}
                 />
+
               )}
               {tab === 'bilan' && <PlanBalanceSheet objets={objets} />}
             </div>
@@ -555,6 +641,7 @@ export const PaletteStudio: React.FC<Props> = ({
               <LivingLayer
                 waypoints={waypoints.filter((w) => w.id !== inlineGps.target?.id)}
                 filter={vivantFilter}
+                filterContext={filterContext}
                 frenchName={frenchName}
                 canCurate={!!canCurate}
                 onZoomPhoto={setLightboxId}
