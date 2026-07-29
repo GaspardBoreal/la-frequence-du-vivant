@@ -51,12 +51,8 @@ import { geometryAreaM2, fmtArea } from './geoMetrics';
 import ZoneTransformLayer from '../ZoneTransformLayer';
 import ZoneTransformBar from '../ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
-import {
-  MAP_CHROME_RIGHT,
-  MAP_CHROME_TOP_SM,
-  MAP_CHROME_TOP_STACKED_SM,
-  MAP_CHROME_PANEL_MAX_H,
-} from '@/components/maps/mapChrome';
+import ZoneInspector from './ZoneInspector';
+import { MAP_CHROME_SIDE_CENTER } from '@/components/maps/mapChrome';
 
 type PanelTab = 'calques' | 'outils' | 'vivant' | 'bilan';
 
