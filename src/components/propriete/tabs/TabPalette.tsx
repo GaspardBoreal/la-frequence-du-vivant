@@ -723,12 +723,15 @@ export const TabPalette: React.FC<Props> = ({
                 surface_m2: patch.surface_m2 ?? z.surface_m2,
               }).catch(() => {})
             }
+            onFocusObjet={setFocusObjetId}
           />
 
           <OuvragesRegister
             proprieteId={proprieteId}
             zones={zones}
             onSelectZone={setActiveZoneId}
+            focusObjetId={focusObjetId}
+            zoneSelectedSpecies={zoneSelectedSpecies}
           />
         </AnalyzeCard>
 
