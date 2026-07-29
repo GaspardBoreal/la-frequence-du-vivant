@@ -21,6 +21,8 @@ import ZoneChipMenu, { ZoneChipCaret } from './ZoneChipMenu';
 import ZoneTransformLayer from './ZoneTransformLayer';
 import ZoneTransformBar from './ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
+import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
+
 
 
 /* ── Couche de dessin à main levée ────────────────────────────────────────── */
