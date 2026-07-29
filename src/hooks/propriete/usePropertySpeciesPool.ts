@@ -635,16 +635,16 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       .sort((a, b) => b.observations - a.observations);
   }, [allRows]);
 
-  /** Compteurs de portée (pour le sélecteur Cadastre / Tous). */
+  /** Compteurs de portée (sélecteur Cadastre / Tous), dans la fenêtre en cours. */
   const scopeCounts = useMemo(() => {
-    const all = allWaypoints.filter((w) => w.overrideStatus !== 'excluded');
+    const all = periodWaypoints.filter((w) => w.overrideStatus !== 'excluded');
     return {
       all: all.length,
       cadastre: fence.empty
         ? null
         : all.filter((w) => isInsideGeofence(fence, w.lat, w.lng)).length,
     };
-  }, [allWaypoints, fence]);
+  }, [periodWaypoints, fence]);
 
   return {
     species,
