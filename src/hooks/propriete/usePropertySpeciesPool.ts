@@ -251,7 +251,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     };
 
     const out: RpcSpecies[] = [];
-    for (const sp of unscopedRows) {
+    for (const sp of timeRows) {
       const sci = sp.scientific_name || sp.key || '';
 
       const marcheurAttrs = (Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : []).filter(
