@@ -109,6 +109,7 @@ export const PaletteStudio: React.FC<Props> = ({
   const [gpsConsole, setGpsConsole] = React.useState(false);
   const [gpsFocusId, setGpsFocusId] = React.useState<string | null>(null);
 
+
   const { calques, upsertCalque, deleteCalque } = useProprieteCalques(open ? proprieteId : undefined);
   const { objets, upsertObjet, deleteObjet } = useProprieteObjets(open ? proprieteId : undefined);
 
