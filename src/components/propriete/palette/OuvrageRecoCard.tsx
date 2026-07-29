@@ -74,6 +74,8 @@ export const OuvrageRecoCard: React.FC<Props> = ({
   reco,
   measure,
   note,
+  zoneNom,
+  zoneSelected,
   onNoteChange,
   canEditKb,
   onSaveKb,
