@@ -18,6 +18,7 @@ import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { ZONE_COLORS } from '@/hooks/propriete/usePropertyZones';
 import { fmtArea } from './geoMetrics';
 import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
+import VivantPeriodFilter from '@/components/propriete/VivantPeriodFilter';
 
 export interface SystemLayerState {
   parcelles: boolean;
