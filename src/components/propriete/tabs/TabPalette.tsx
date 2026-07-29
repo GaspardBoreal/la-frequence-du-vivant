@@ -948,7 +948,48 @@ export const TabPalette: React.FC<Props> = ({
           title="Quand, comment, et ce qu’on ne fera pas"
           subtitle="Le calendrier se déduit de la texture et de l’humidité relevées à l’étape 2."
           index={4}
+          collapsible
+          open={openBlocks.implementation}
+          onToggleOpen={() => toggleBlock('implementation')}
+          signature={
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-[hsl(var(--ds-forest-deep))]/80">
+              <span className="font-semibold text-[#8a6d3b]">
+                {implementation.length} étape{implementation.length > 1 ? 's' : ''}
+              </span>
+              {implementation.length > 0 && (
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8a6d3b]">
+                  {implementation[0].period}
+                  {implementation.length > 1 && ` → ${implementation[implementation.length - 1].period}`}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1">
+                {implementation.map((s, i) => (
+                  <span
+                    key={`${s.title}-${i}`}
+                    title={`${s.period} · ${s.title}`}
+                    className="h-1.5 w-6 rounded-full bg-[hsl(var(--ds-gold))]/55 print-exact"
+                  />
+                ))}
+              </span>
+              <span className="flex flex-wrap items-center gap-1">
+                {implementation.slice(0, 2).map((s, i) => (
+                  <span
+                    key={`${s.title}-chip-${i}`}
+                    className="rounded-full border border-[hsl(var(--ds-line))] bg-white/60 px-2 py-0.5 text-[10px] text-[hsl(var(--ds-forest-deep))]/80"
+                  >
+                    {s.title}
+                  </span>
+                ))}
+                {implementation.length > 2 && (
+                  <span className="text-[10px] text-[hsl(var(--ds-forest-deep))]/60">
+                    +{implementation.length - 2}
+                  </span>
+                )}
+              </span>
+            </div>
+          }
         >
+
           <ol className="space-y-2.5">
             {implementation.map((s, i) => (
               <li
