@@ -151,6 +151,8 @@ export const PlanBalanceSheet: React.FC<{ objets: ProprieteObjet[] }> = ({ objet
         )}
       </div>
 
+      <FloraisonBlock objets={objets} />
+
       <p className="text-[9px] leading-snug opacity-45">
         Ratios indicatifs (rétention GIEP, coûts moyens 2024). Ils servent à comparer deux partis
         d’aménagement, pas à chiffrer un marché. {b.objets} ouvrage
