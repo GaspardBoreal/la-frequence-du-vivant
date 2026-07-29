@@ -374,7 +374,13 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           const lat = Number(a?.latitude);
           const lng = Number(a?.longitude);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
-          const [eLat, eLng] = posOf('observation', a?.obs_id || null, lat, lng);
+          const [eLat, eLng] = posOf(
+            'observation',
+            a?.obs_id || null,
+            inatIdOf(a?.inaturalist_id ?? a?.inaturalist_observation_id),
+            lat,
+            lng,
+          );
           return isInsideGeofence(fence, eLat, eLng);
         },
       );
