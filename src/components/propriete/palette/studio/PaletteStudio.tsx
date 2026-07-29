@@ -636,6 +636,7 @@ export const PaletteStudio: React.FC<Props> = ({
               <LivingLayer
                 waypoints={waypoints.filter((w) => w.id !== inlineGps.target?.id)}
                 filter={vivantFilter}
+                filterContext={filterContext}
                 frenchName={frenchName}
                 canCurate={!!canCurate}
                 onZoomPhoto={setLightboxId}
