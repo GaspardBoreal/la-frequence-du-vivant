@@ -110,6 +110,21 @@ export const PaletteStudio: React.FC<Props> = ({
     [rawWaypoints, fence],
   );
 
+  /**
+   * Console GPS : volontairement HORS portée, sinon les points situés hors du
+   * plan cadastral deviendraient invisibles et donc impossibles à rapatrier.
+   */
+  const allCandidates = React.useMemo<GpsCandidate[]>(
+    () =>
+      rawAllWaypoints
+        .filter((w) => w.overrideStatus !== 'excluded')
+        .map((w) => {
+          const ev = evaluateGeofence(fence, w.lat, w.lng, 25);
+          return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
+        }),
+    [rawAllWaypoints, fence],
+  );
+
   /** Curation « sur place » : même geste que dans « J'identifie », sans perdre le plan. */
   const { view, onChange: onViewChange } = useMapViewState();
   const inlineGps = useInlineGpsCuration({
