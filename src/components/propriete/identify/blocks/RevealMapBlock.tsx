@@ -15,7 +15,9 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
-import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
+import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
+import ObservationPopupCard from '@/components/propriete/species/ObservationPopupCard';
+
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_LABELS_FR_SHORT, KINGDOM_ORDER, normalizeKingdom, type KingdomKey } from '@/lib/kingdomLabels';
 import { haversineM } from '@/utils/geoDistance';
