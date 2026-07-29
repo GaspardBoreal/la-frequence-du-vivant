@@ -282,6 +282,16 @@ export const ZonesMapBlock: React.FC<Props> = ({
           );
         })}
 
+        {/* Ouvrages dessinés dans l'Atelier — lecture seule ici, clic = fiche */}
+        <ObjectsLayer
+          objets={visibleObjets}
+          calques={calques}
+          selectedId={null}
+          onSelect={(id) => onFocusObjet?.(id)}
+        />
+
+
+
         {transform.zone && (
           <ZoneTransformLayer
             ring={transform.ring}
