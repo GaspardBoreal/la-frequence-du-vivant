@@ -117,7 +117,9 @@ interface Props {
   onPatchZone?: (z: ProprieteZone, patch: Partial<ProprieteZone>) => void;
   maxZones?: number;
   readOnly?: boolean;
-}
+  /** Nombre d'espèces retenues par emplacement (pour la confirmation de suppression). */
+  zoneSpeciesCount?: Record<string, number>;
+
 
 const zoneLabel = (i: number) =>
   i < 26
