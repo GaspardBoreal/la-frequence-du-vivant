@@ -22,6 +22,10 @@ import type { PaletteExclusion, PalettePlanStep } from '@/hooks/propriete/usePro
 import { PalettePlanSchema } from '@/components/propriete/print/PalettePlanSchema';
 import { AtelierTablePrint } from '@/components/propriete/print/AtelierTablePrint';
 import {
+  ChromaticPrintPage,
+  hasChromaticPage,
+} from '@/components/propriete/print/ChromaticPrintPage';
+import {
   OuvrageSheetsPrint,
   ouvrageSheetPageCount,
 } from '@/components/propriete/print/OuvragePrintSheet';
