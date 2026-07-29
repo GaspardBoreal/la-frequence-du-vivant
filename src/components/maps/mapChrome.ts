@@ -21,3 +21,7 @@ export const MAP_CHROME_TOP_PADDING = 'pt-[4.5rem] sm:pt-[4.75rem]';
 
 /** Hauteur max d'un panneau latéral : reste au-dessus du curseur temporel. */
 export const MAP_CHROME_PANEL_MAX_H = 'max-h-[calc(100%-8.5rem)]';
+
+/** Variantes ≥sm uniquement : le panneau passe en feuille basse sur mobile. */
+export const MAP_CHROME_TOP_SM = 'sm:top-[4.75rem]';
+export const MAP_CHROME_TOP_STACKED_SM = 'sm:top-[8.75rem]';
