@@ -465,7 +465,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
           plateCount +
           (withIdentify ? 3 + atlasCount : 0) +
           (withSynthesize ? 3 : 0) +
-          (withPalette ? 3 + (hasAtelier ? 2 : 0) + sheetPages : 0)
+          (withPalette ? 3 + (hasAtelier ? 2 : 0) + (chromatic ? 1 : 0) + sheetPages : 0)
         }
 
       />
