@@ -19,10 +19,19 @@ import type { PropertySynthesisState } from '@/hooks/propriete/usePropertySynthe
 import type { SynthesisModel } from '@/components/propriete/synthesize/synthesisModel';
 import { PaletteSummary, type PaletteZoneView } from '@/components/propriete/palette/PaletteSummary';
 import type { PaletteExclusion, PalettePlanStep } from '@/hooks/propriete/usePropertyPalette';
+import { PalettePlanSchema } from '@/components/propriete/print/PalettePlanSchema';
+import { AtelierTablePrint } from '@/components/propriete/print/AtelierTablePrint';
+import {
+  OuvrageSheetsPrint,
+  ouvrageSheetPageCount,
+} from '@/components/propriete/print/OuvragePrintSheet';
+import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
+import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import {
   FloraAtlasPrintPlates,
   floraAtlasPageCount,
 } from '@/components/propriete/identify/print/FloraAtlasPrintPlates';
+
 
 interface StationInfo {
   code: string;
