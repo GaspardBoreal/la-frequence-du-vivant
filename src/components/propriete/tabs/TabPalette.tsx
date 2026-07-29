@@ -663,15 +663,16 @@ export const TabPalette: React.FC<Props> = ({
       </div>
 
 
-      {/* 02 — Emplacements */}
+      {/* 02 — Emplacements & ouvrages */}
       <div id="palette-block-zones" className="scroll-mt-24">
         <AnalyzeCard
           number={2}
-          category="Emplacements"
-          title="Une palette par lieu, pas une pour la propriété"
-          subtitle="Dessinez autant de zones que nécessaire à main levée : chacune reçoit sa propre palette, répartie en strates."
+          category="Emplacements & ouvrages"
+          title="Les lieux que vous découpez, les ouvrages que vous dessinez"
+          subtitle="Chaque emplacement reçoit sa propre palette, répartie en strates. Chaque ouvrage tracé dans l’Atelier — mare, potager, pas japonais… — reçoit ses recommandations de mise en œuvre et d’entretien."
           index={1}
         >
+
           <ZonesMapBlock
             center={derivedCenter}
             parcelles={parcelles}
