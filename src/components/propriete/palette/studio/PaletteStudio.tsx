@@ -127,19 +127,19 @@ export const PaletteStudio: React.FC<Props> = ({
     [rawAllWaypoints, fence],
   );
 
-  /** Curation « sur place » : même geste que dans « J'identifie », sans perdre le plan. */
-  const { view, onChange: onViewChange } = useMapViewState();
-  const inlineGps = useInlineGpsCuration({
-    proprieteId,
-    fence,
-    displayNameFor: (w) => frenchName(w.scientificName || '') || w.commonName || '—',
-  });
-
   const frenchName = React.useCallback(
     (scientific: string, fallback?: string | null) =>
       displayNameFor({ scientificName: scientific, commonName: fallback ?? null }),
     [displayNameFor],
   );
+
+  /** Curation « sur place » : même geste que dans « J'identifie », sans perdre le plan. */
+  const { view, onChange: onViewChange } = useMapViewState();
+  const inlineGps = useInlineGpsCuration({
+    proprieteId,
+    fence,
+    displayNameFor,
+  });
 
   const [lightboxId, setLightboxId] = React.useState<string | null>(null);
   const [gpsConsole, setGpsConsole] = React.useState(false);
