@@ -9,6 +9,8 @@ interface SEOHeadProps {
   author?: string;
   ogImage?: string;
   canonicalUrl?: string;
+  /** Empêche l'indexation de la page par les moteurs et IA (noindex, follow) */
+  noIndex?: boolean;
 }
 
 const SITE_ORIGIN = 'https://la-frequence-du-vivant.com';
@@ -21,6 +23,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   author = 'Gaspard Boréal',
   ogImage,
   canonicalUrl = `${SITE_ORIGIN}/`,
+  noIndex = false,
 }) => {
   const resolvedOg = ogImage
     ? (ogImage.startsWith('http') ? ogImage : `${SITE_ORIGIN}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`)
@@ -32,7 +35,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       <meta name="author" content={author} />
-      <meta name="robots" content="index, follow" />
+      <meta name="robots" content={noIndex ? 'noindex, follow' : 'index, follow'} />
+      <meta name="googlebot" content={noIndex ? 'noindex, follow' : 'index, follow'} />
 
       {/* Open Graph */}
       <meta property="og:title" content={title} />
