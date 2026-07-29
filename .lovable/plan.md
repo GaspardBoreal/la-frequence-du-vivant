@@ -1,35 +1,43 @@
-## Ce que révèle l'analyse
+## Constat
 
-« A · Emplacement A » n'est pas un résidu fantôme : c'est bien l'unique zone enregistrée en base pour Jardin Monde DEVIAT (géométrie valide, 78 points, non verrouillée). Le problème est purement d'interface :
+Dans l'Atelier du jardin nourricier, la couche « Vivant » (`src/components/propriete/palette/studio/LivingLayer.tsx`) n'affiche qu'un **tooltip au survol** avec `w.commonName` brut — d'où « great stinging nettle » au lieu de « Grande ortie ». Le composant accepte déjà une prop `frenchName` et une prop `onSelect`, mais `PaletteStudio.tsx` (ligne ~428) ne les passe pas. Aucune photo, aucun clic, aucun agrandissement, aucun bouton Contrôle GPS.
 
-- **Supprimer** existe déjà, mais l'action n'apparaît qu'après avoir cliqué sur la pastille, sous la carte, tout en bas du bloc — invisible dans l'usage réel.
-- **Renommer** n'existe nulle part dans le bloc « Emplacements » (uniquement dans l'Atelier, via l'inspecteur d'objet).
-- La fonction serveur de suppression est bien en place et sécurisée (`delete_propriete_zone`) : rien à corriger côté base.
+À l'inverse, `identify/blocks/RevealMapBlock.tsx` fait tout cela : résolution FR via `useFrenchSpeciesNamesAuto`, popup avec vignette photo cliquable, date, source, statut géofence/curation, bouton « ✥ Déplacer ce point (Contrôle GPS) », lightbox plein écran (`RevealPhotoLightbox`).
 
-## Ce que je propose
+## Objectif
 
-Transformer chaque pastille d'emplacement en véritable **jeton de gestion**, sans alourdir la barre.
+Une seule et même fiche espèce, partout : Carte des révélations, Atelier (couche Vivant), carte des espèces écartées.
 
-**1. Menu contextuel sur la pastille**
-Un chevron discret apparaît sur la pastille active (ou au survol). Il ouvre un petit panneau flottant :
-- champ **Nom** éditable en direct (validation à la volée, Entrée pour confirmer)
-- sélecteur de **couleur** (les 5 teintes de la charte)
-- bascule **Visible / masqué** (œil)
-- bascule **Verrouillé** (empêche déplacement/suppression accidentelle)
-- surface calculée affichée en m²
-- bouton **Supprimer** en rouge, en bas, avec confirmation en deux temps (« Supprimer ? · Confirmer / Annuler ») pour éviter la perte accidentelle
+## Ce qu'on construit
 
-**2. Barre d'action toujours visible**
-Quand un emplacement est sélectionné, la barre d'outils au-dessus de la carte affiche directement Renommer / Supprimer / Désélectionner — plus besoin de chercher sous la carte. L'ancienne barre du bas est retirée.
+**1. Composant partagé de fiche observation**
+Nouveau `src/components/propriete/species/ObservationPopupCard.tsx` : extraction fidèle du contenu de popup de `RevealMapBlock` (vignette + « 🔍 Cliquer pour agrandir », nom FR en gras, latin en italique, source/observateur, date, alerte hors périmètre, mention « position corrigée », bouton Contrôle GPS conditionné à `canCurate`). Props : `waypoint`, `displayName`, `canCurate`, `onZoomPhoto`, `onOpenGps`.
 
-**3. Sécurité de contenu**
-Avant suppression, si l'emplacement porte déjà une palette végétale, le message de confirmation le signale (« cet emplacement contient N espèces choisies ») pour que la suppression soit un choix conscient.
+**2. Hook partagé de noms FR**
+Nouveau `src/hooks/propriete/useWaypointFrenchNames.ts` : encapsule la construction de l'entrée dédupliquée + `useFrenchSpeciesNamesAuto` et retourne un `displayNameFor(waypoint)`. Utilisé par les trois cartes → un seul comportement, un seul cache.
 
-**4. Cohérence dans l'Atelier**
-Les mêmes actions (renommer, couleur, visibilité, verrou, suppression) restent alignées sur le panneau de calques de l'Atelier, afin d'avoir un comportement identique dans les deux vues.
+**3. LivingLayer devient cliquable**
+- Tooltip survol : nom FR (via `displayNameFor`) + latin.
+- Ajout d'un `<Popup>` rendant `ObservationPopupCard`.
+- Le marqueur reste un `CircleMarker` (rendu léger du nuage), le popup s'ouvre au clic.
+
+**4. Câblage dans PaletteStudio**
+- Appel du hook FR sur `waypoints`, passage de `frenchName` et des handlers à `LivingLayer`.
+- État `lightboxId` + rendu de `RevealPhotoLightbox` (déplacé/réexporté depuis `propriete/species/`) au-dessus de l'atelier plein écran (z-index supérieur à l'overlay de l'Atelier).
+- État `gpsConsole` + `GpsControlConsole`, avec le contexte = observations actuellement visibles selon les filtres Vivant (même logique de contexte que `openGpsFromPoint` dans RevealMapBlock). Bouton visible uniquement si `useCanCurateParcelles` est vrai.
+- Enrichissement géofence : réutilisation de `buildGeofence`/`evaluateGeofence` sur les parcelles déjà chargées par l'Atelier, pour que la fiche affiche le même statut « hors périmètre » que dans J'identifie.
+
+**5. Mise en cohérence des deux autres cartes**
+- `RevealMapBlock` : remplacement de son popup inline par `ObservationPopupCard` et de son bloc FR par le hook (aucun changement visuel attendu).
+- `ExcludedSpeciesMap` : même carte de fiche, avec la vignette rendue cliquable/agrandissable (aujourd'hui image non cliquable).
 
 ## Détails techniques
 
-- Modifications concentrées sur `ZonesMapBlock.tsx` (nouveau sous-composant `ZoneChipMenu`) et branchement de `onPatchZone` / `onDeleteZone` déjà exposés par `TabPalette.tsx`.
-- Renommage via le RPC existant `upsert_propriete_zone` (passage de `_zone_id`), suppression via `delete_propriete_zone`. Aucune migration de base nécessaire.
-- Recalcul et sauvegarde de `surface_m2` si absent, pour l'affichage.
+- `RevealPhotoLightbox` et `useRevealIndex` restent inchangés ; seule la lightbox est réutilisée, déplacée sous `src/components/propriete/species/` avec réexport depuis l'ancien chemin pour ne rien casser.
+- Pas de changement de base de données, pas de nouvelle requête réseau : `usePropertySpeciesPool` est déjà appelé par l'Atelier.
+- Les popups Leaflet dans l'overlay plein écran de l'Atelier héritent du z-index de la carte ; la lightbox sera rendue via `createPortal` en `z-[2100]` pour passer au-dessus.
+
+## Points à confirmer (je peux partir sur les valeurs par défaut proposées)
+
+1. Dans l'Atelier, faut-il aussi le **bandeau latéral liste des observations** (`RevealObservationList`, recherche/tri/tags) ? Par défaut : non — l'Atelier a déjà son panneau latéral Calques/Outils/Vivant/Bilan, on se limite aux fiches cliquables.
+2. Bouton « Contrôle GPS » dans l'Atelier : par défaut oui, réservé aux curateurs, comme dans J'identifie.
