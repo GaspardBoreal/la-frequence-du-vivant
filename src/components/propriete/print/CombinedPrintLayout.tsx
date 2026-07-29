@@ -19,10 +19,19 @@ import type { PropertySynthesisState } from '@/hooks/propriete/usePropertySynthe
 import type { SynthesisModel } from '@/components/propriete/synthesize/synthesisModel';
 import { PaletteSummary, type PaletteZoneView } from '@/components/propriete/palette/PaletteSummary';
 import type { PaletteExclusion, PalettePlanStep } from '@/hooks/propriete/usePropertyPalette';
+import { PalettePlanSchema } from '@/components/propriete/print/PalettePlanSchema';
+import { AtelierTablePrint } from '@/components/propriete/print/AtelierTablePrint';
+import {
+  OuvrageSheetsPrint,
+  ouvrageSheetPageCount,
+} from '@/components/propriete/print/OuvragePrintSheet';
+import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
+import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import {
   FloraAtlasPrintPlates,
   floraAtlasPageCount,
 } from '@/components/propriete/identify/print/FloraAtlasPrintPlates';
+
 
 interface StationInfo {
   code: string;
@@ -72,9 +81,14 @@ interface Props {
     presence?: Record<string, { count: number; zoneNames?: string[] }>;
   } | null;
   paletteCompletedAt?: string | null;
+  /** Emplacements tracés (plan gravé de l'étape 5). */
+  propertyZones?: ProprieteZone[];
+  /** Espèces retenues dans la palette, par emplacement (croisement fiches ouvrages). */
+  zoneSelectedSpecies?: Record<string, string[]>;
   /** Propriété — photos de terrain prioritaires dans l'atlas du cortège. */
   proprieteId?: string;
 }
+
 
 const Divider: React.FC<{
   eyebrow: string;
@@ -116,15 +130,25 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   synthesisCompletedAt,
   palette,
   paletteCompletedAt,
+  propertyZones = [],
+  zoneSelectedSpecies,
   proprieteId,
 }) => {
+  const { objets } = useProprieteObjets(proprieteId);
 
   const withAnalyze = !!soil;
   const plateCount = withAnalyze ? testMediaPlateCount(testMedias) : 0;
   const withIdentify = !!flora && (flora.observed_plants ?? []).length > 0;
   const withSynthesize = !!synthesis && !!synthesisModel;
   const withPalette = !!palette;
+  const hasAtelier = propertyZones.length > 0 || objets.length > 0;
+  const sheetPages = ouvrageSheetPageCount(objets);
+  const atelierZones = React.useMemo(
+    () => propertyZones.map((z) => ({ id: z.id, nom: z.nom })),
+    [propertyZones],
+  );
   const atlasCount = withIdentify ? floraAtlasPageCount(flora!.observed_plants ?? []) : 0;
+
   const identifySoil: SoilLite = floraSoil ?? {};
   const identifySoilAvailable = !!(
     identifySoil.structure ||
@@ -340,6 +364,40 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               printSection="p1"
             />
           </section>
+
+          {hasAtelier && (
+            <>
+              <section className="portrait-print-page combined-print-palette">
+                <PalettePlanSchema
+                  parcelles={parcelles}
+                  zones={propertyZones}
+                  objets={objets}
+                  propertyName={propertyName}
+                  commune={proprieteVille}
+                  completedAt={paletteCompletedAt ?? null}
+                />
+              </section>
+              <section className="portrait-print-page combined-print-palette">
+                <AtelierTablePrint
+                  objets={objets}
+                  zones={atelierZones}
+                  propertyName={propertyName}
+                  notes={palette.notes}
+                />
+              </section>
+            </>
+          )}
+
+          {sheetPages > 0 && (
+            <OuvrageSheetsPrint
+              objets={objets}
+              zones={atelierZones}
+              zoneSelectedSpecies={zoneSelectedSpecies}
+              propertyName={propertyName}
+              pageClassName="portrait-print-page combined-print-palette"
+            />
+          )}
+
           <section className="portrait-print-page combined-print-synthesize combined-print-synthesize-second">
             <PaletteSummary
               siteRule={palette.siteRule}
@@ -357,6 +415,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
           </section>
         </>
       )}
+
 
     </>
   );
@@ -392,8 +451,10 @@ export const CombinedPrintLayout: React.FC<Props> = ({
           (withAnalyze ? 7 : 3) +
           plateCount +
           (withIdentify ? 3 + atlasCount : 0) +
-          (withSynthesize ? 3 : 0)
+          (withSynthesize ? 3 : 0) +
+          (withPalette ? 3 + (hasAtelier ? 2 : 0) + sheetPages : 0)
         }
+
       />
     </div>
   );

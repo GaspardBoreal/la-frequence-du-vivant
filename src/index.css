@@ -1431,6 +1431,33 @@
     linear-gradient(180deg, #fbf7ee 0%, #eef0e0 100%);
 }
 
+.combined-print-divider--palette {
+  background:
+    radial-gradient(34mm 34mm at 50% 30%, rgba(47, 125, 79, 0.14), transparent 62%),
+    radial-gradient(66mm 66mm at 50% 30%, rgba(47, 125, 79, 0.08), transparent 68%),
+    radial-gradient(100mm 100mm at 50% 30%, rgba(176, 141, 87, 0.07), transparent 72%),
+    linear-gradient(180deg, #fdf9f2 0%, #eef1e2 100%);
+}
+
+/* ============ Étape 5 — planches Atelier ============ */
+.palette-plan svg,
+.palette-atelier table {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.palette-atelier table th,
+.palette-atelier table td {
+  padding-right: 6px;
+}
+.combined-print-palette {
+  padding: 16mm 16mm 14mm;
+  page-break-after: always;
+  break-after: page;
+  background: #fbf7ee;
+}
+
+
+
 .portrait-print-root {
   font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
   color: #2a2419;
