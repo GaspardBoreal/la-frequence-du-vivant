@@ -144,6 +144,12 @@ export const PalettePrintLayout: React.FC<Props> = ({
         </>
       )}
 
+      {chromatic && (
+        <Page index={page++}>
+          <ChromaticPrintPage objets={objets} propertyName={propertyName} />
+        </Page>
+      )}
+
       {sheetPages > 0 && (
         <OuvrageSheetsPrint
           objets={objets}
@@ -151,8 +157,9 @@ export const PalettePrintLayout: React.FC<Props> = ({
           zoneSelectedSpecies={zoneSelectedSpecies}
           propertyName={propertyName}
           pageClassName="synthesize-print-page"
-          renderFoot={(pi) => <Foot index={(hasAtelier ? 4 : 2) + pi} />}
+          renderFoot={(pi) => <Foot index={(hasAtelier ? 4 : 2) + (chromatic ? 1 : 0) + pi} />}
         />
+
       )}
 
       <Page index={total}>{summary('p2')}</Page>
