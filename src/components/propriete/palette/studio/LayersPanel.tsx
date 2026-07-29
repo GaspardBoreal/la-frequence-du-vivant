@@ -44,6 +44,8 @@ interface Props {
 
   system: SystemLayerState;
   onSystem: (patch: Partial<SystemLayerState>) => void;
+  /** Compteurs de portée (cadastre / tous) pour le sélecteur d'observations. */
+  scopeCounts?: { cadastre: number | null; all: number };
 
   objetCountByCalque: Record<string, number>;
   readOnly?: boolean;
