@@ -410,6 +410,9 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
       <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
       <VivantScopeSwitch counts={scopeCounts} variant="inline" />
+      <VivantPeriodFilter visibleCount={scopeCounts?.all} variant="inline" />
+
+
 
 
 
