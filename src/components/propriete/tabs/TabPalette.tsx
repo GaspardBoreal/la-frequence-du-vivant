@@ -164,6 +164,27 @@ export const TabPalette: React.FC<Props> = ({
     [zones, choiceOf, siteProfile],
   );
 
+  /** Noms des espèces retenues par emplacement, pour croiser avec les fiches ouvrages. */
+  const zoneSelectedSpecies = React.useMemo(
+    () =>
+      Object.fromEntries(
+        zoneViews.map((z) => [
+          z.id,
+          z.selected
+            .map((id) => {
+              const r: any = z.recommendations.find((x: any) => x.id === id);
+              return r ? [r.nomScientifique, r.nomCommun, r.name, r.scientificName] : [];
+            })
+            .flat()
+            .filter((s: any): s is string => typeof s === 'string' && s.length > 2),
+        ]),
+      ) as Record<string, string[]>,
+    [zoneViews],
+  );
+
+  /** Ouvrage désigné depuis la carte → sa fiche s'ouvre dans le registre. */
+  const [focusObjetId, setFocusObjetId] = React.useState<string | null>(null);
+
   /* --- Pli des cartes d'emplacement : replié par défaut, mémorisé par propriété --- */
   const openStorageKey = `palette-zones-open:${proprieteId ?? 'anon'}`;
   const [openZoneIds, setOpenZoneIds] = React.useState<string[]>([]);
