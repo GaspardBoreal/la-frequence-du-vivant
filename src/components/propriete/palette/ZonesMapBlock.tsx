@@ -119,6 +119,8 @@ interface Props {
   readOnly?: boolean;
   /** Nombre d'espèces retenues par emplacement (pour la confirmation de suppression). */
   zoneSpeciesCount?: Record<string, number>;
+}
+
 
 
 const zoneLabel = (i: number) =>
