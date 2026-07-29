@@ -23,6 +23,10 @@ interface Props {
   measure: number;
   /** note de chantier propre à cet ouvrage (locale à la propriété) */
   note: string;
+  /** emplacement de rattachement, pour croiser avec la palette retenue */
+  zoneNom?: string | null;
+  /** espèces déjà retenues dans la palette de cet emplacement */
+  zoneSelected?: string[];
   onNoteChange?: (v: string) => void;
   canEditKb?: boolean;
   onSaveKb?: (reco: OuvrageReco) => Promise<void>;
@@ -36,7 +40,7 @@ const Section: React.FC<{
   accent: string;
   children: React.ReactNode;
 }> = ({ icon, title, accent, children }) => (
-  <section className="rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/70 p-3">
+  <section className="rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/70 p-3 text-[hsl(var(--ds-forest-deep))]">
     <p
       className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em]"
       style={{ color: accent }}
@@ -47,6 +51,7 @@ const Section: React.FC<{
     {children}
   </section>
 );
+
 
 const textarea =
   'w-full rounded-md border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-1.5 text-[11px] leading-relaxed outline-none focus:border-[hsl(var(--ds-forest))]/50';
