@@ -15,9 +15,12 @@ interface Props {
   canCurate?: boolean;
   /** Ouvre la visionneuse plein écran sur cette observation. */
   onZoomPhoto?: (id: string) => void;
-  /** Ouvre la console de contrôle GPS centrée sur ce point. */
+  /** Repositionne le point directement dans la carte courante (zoom conservé). */
+  onStartInlineMove?: (w: ObservationPopupWaypoint) => void;
+  /** Ouvre la console de contrôle GPS centrée sur ce point (revue en lot). */
   onOpenGps?: (w: ObservationPopupWaypoint) => void;
 }
+
 
 /**
  * Fiche espèce partagée par toutes les cartes d'observations d'une propriété.
