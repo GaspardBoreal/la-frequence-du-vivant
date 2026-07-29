@@ -137,6 +137,7 @@ export const PaletteStudio: React.FC<Props> = ({
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
   const [tool, setTool] = React.useState<PaysageTool | null>(null);
   const [zoneDraw, setZoneDraw] = React.useState(false);
+  const zoneTransform = useZoneTransform(onPatchZone);
   const [selectedObjetId, setSelectedObjetId] = React.useState<string | null>(null);
   const [inspirationOpen, setInspirationOpen] = React.useState(false);
   const [pendingInspiration, setPendingInspiration] = React.useState<InspirationCard | null>(null);
