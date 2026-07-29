@@ -103,6 +103,11 @@ interface Props {
   readOnly?: boolean;
 }
 
+const zoneLabel = (i: number) =>
+  i < 26
+    ? String.fromCharCode(65 + i)
+    : `${String.fromCharCode(65 + Math.floor(i / 26) - 1)}${String.fromCharCode(65 + (i % 26))}`;
+
 export const ZonesMapBlock: React.FC<Props> = ({
   center,
   parcelles,
