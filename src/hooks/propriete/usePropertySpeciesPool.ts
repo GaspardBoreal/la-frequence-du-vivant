@@ -354,11 +354,11 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     const posOf = (
       kind: 'observation' | 'snapshot_attr',
       key: string | null,
+      inatId: string | null,
       lat: number,
       lng: number,
     ): [number, number] => {
-      if (!key) return [lat, lng];
-      const ov = overrides.get(overrideKeyOf(kind, key));
+      const ov = resolveOverride(kind, key, inatId);
       if (ov?.status === 'repositioned' && ov.lat != null && ov.lon != null) {
         return [Number(ov.lat), Number(ov.lon)];
       }
