@@ -339,22 +339,51 @@ export const OuvrageRecoCard: React.FC<Props> = ({
           </div>
         </Section>
 
-        {reco.especes.length > 0 && (
-          <Section
-            icon={<Sprout className="h-3 w-3" />}
-            title="Espèces & compagnonnage"
-            accent={accent}
-          >
-            <ul className="space-y-1">
-              {reco.especes.map((s, i) => (
-                <li key={i} className="text-[11.5px] leading-relaxed">
-                  <span className="mr-1.5 opacity-40">·</span>
-                  {s}
-                </li>
-              ))}
-            </ul>
-          </Section>
-        )}
+        <Section
+          icon={<Sprout className="h-3 w-3" />}
+          title="Espèces & compagnonnage"
+          accent={accent}
+        >
+          {reco.especes.length > 0 ? (
+            <>
+              <ul className="space-y-1">
+                {reco.especes.map((s, i) => {
+                  const retenue = matchesPalette(s);
+                  return (
+                    <li key={i} className="text-[11.5px] leading-relaxed">
+                      <span className="mr-1.5 opacity-40">·</span>
+                      {s}
+                      {hasPalette && (
+                        <span
+                          className="ml-1.5 whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[9px] align-middle"
+                          style={
+                            retenue
+                              ? { borderColor: `${accent}66`, color: accent }
+                              : { borderColor: 'hsl(var(--ds-line))', opacity: 0.55 }
+                          }
+                        >
+                          {retenue ? 'déjà en palette' : 'à ajouter'}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {hasPalette && (
+                <p className="mt-2 border-t border-[hsl(var(--ds-line))]/70 pt-1.5 text-[10px] italic opacity-60">
+                  Croisé avec la palette de « {zoneNom || 'l’emplacement'} » ({zoneSelected!.length}{' '}
+                  espèce{zoneSelected!.length > 1 ? 's' : ''} retenue
+                  {zoneSelected!.length > 1 ? 's' : ''}).
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-[11px] italic opacity-60">
+              Aucun cortège type pour cet ouvrage — à compléter avec le végétal choisi sur place.
+            </p>
+          )}
+        </Section>
+
 
         <Section
           icon={<Gauge className="h-3 w-3" />}
