@@ -138,6 +138,7 @@ export const GpsControlConsole: React.FC<Props> = ({
   contextLabel,
   parcelRings,
   center,
+  initialZoom,
   focusId,
   displayNameFor,
 }) => {
@@ -692,7 +693,7 @@ export const GpsControlConsole: React.FC<Props> = ({
           <section className="relative min-h-[380px]">
             <RichMap
               center={selected ? [selected.lat, selected.lng] : center}
-              zoom={16}
+              zoom={initialZoom ?? 16}
               bounds={
                 list.length > 1
                   ? list.map((c) => [c.lat, c.lng] as [number, number])
