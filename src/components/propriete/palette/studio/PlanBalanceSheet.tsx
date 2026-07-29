@@ -1,5 +1,15 @@
 import React from 'react';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import {
+  MOIS,
+  MOIS_LONG,
+  floraisonOf,
+  hexOf,
+  isChromaticTool,
+  labelOf,
+  lireFloraison,
+  teintesOf,
+} from '@/lib/nuancierKb';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import { fmtArea, fmtEuro, fmtLength, measureFor } from './geoMetrics';
 
