@@ -161,7 +161,79 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   });
 
   const poolsLoading = pools.some((q) => q.isLoading);
-  const allRows = useMemo(() => pools.flatMap((q) => q.data?.species || []), [pools]);
+  const unscopedRows = useMemo(() => pools.flatMap((q) => q.data?.species || []), [pools]);
+
+  /**
+   * Portée « cadastre » (réglage global de la fiche propriété) : on ne conserve
+   * que les observations strictement comprises dans le plan cadastral. Le
+   * filtrage est appliqué EN AMONT, sur les lignes RPC, pour que les espèces,
+   * les photos terrain, les waypoints, les contributeurs et tous les compteurs
+   * dérivés racontent exactement la même histoire.
+   */
+  const { effectiveScope, fence } = useVivantScopeFor(proprieteId);
+
+  const allRows = useMemo(() => {
+    if (effectiveScope !== 'cadastre' || fence.empty) return unscopedRows;
+
+    const posOf = (
+      kind: 'observation' | 'snapshot_attr',
+      key: string | null,
+      lat: number,
+      lng: number,
+    ): [number, number] => {
+      if (!key) return [lat, lng];
+      const ov = overrides.get(overrideKeyOf(kind, key));
+      if (ov?.status === 'repositioned' && ov.lat != null && ov.lon != null) {
+        return [Number(ov.lat), Number(ov.lon)];
+      }
+      return [lat, lng];
+    };
+
+    const out: RpcSpecies[] = [];
+    for (const sp of unscopedRows) {
+      const sci = sp.scientific_name || sp.key || '';
+
+      const marcheurAttrs = (Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : []).filter(
+        (a: any) => {
+          const lat = Number(a?.latitude);
+          const lng = Number(a?.longitude);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+          const [eLat, eLng] = posOf('observation', a?.obs_id || null, lat, lng);
+          return isInsideGeofence(fence, eLat, eLng);
+        },
+      );
+
+      const attributionGroups: any[] = [];
+      let inatKept = 0;
+      for (const g of Array.isArray(sp.attributions) ? sp.attributions : []) {
+        const list: any[] = Array.isArray(g) ? g : [g];
+        const kept = list.filter((a: any) => {
+          const lat = Number(a?.exactLatitude);
+          const lng = Number(a?.exactLongitude);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+          const fallbackKey = `${normName(sci)}|${lat.toFixed(5)}|${lng.toFixed(5)}`;
+          const [eLat, eLng] = posOf('snapshot_attr', a?.originalUrl || fallbackKey, lat, lng);
+          return isInsideGeofence(fence, eLat, eLng);
+        });
+        if (kept.length > 0) {
+          attributionGroups.push(Array.isArray(g) ? kept : kept[0]);
+          inatKept += kept.length;
+        }
+      }
+
+      const kept = marcheurAttrs.length + inatKept;
+      if (kept === 0) continue;
+
+      out.push({
+        ...sp,
+        marcheur_attrs: marcheurAttrs,
+        attributions: attributionGroups,
+        observations: kept,
+      });
+    }
+    return out;
+  }, [unscopedRows, effectiveScope, fence, overrides]);
+
 
   /** Synthèse de curation GPS, cumulée sur toutes les explorations liées. */
   const curation = useMemo(() => {
