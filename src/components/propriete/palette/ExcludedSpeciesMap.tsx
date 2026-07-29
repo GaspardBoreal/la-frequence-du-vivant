@@ -263,6 +263,7 @@ export const ExcludedSpeciesMap: React.FC<Props> = ({
         {toolbar}
         <div className="flex-1 min-h-0">{mapNode('100%')}</div>
         {console_}
+        {lightbox}
       </div>,
       document.body,
     );
@@ -273,6 +274,7 @@ export const ExcludedSpeciesMap: React.FC<Props> = ({
       {toolbar}
       {mapNode(320)}
       {console_}
+      {lightbox}
       {onClose && (
         <button
           onClick={onClose}
