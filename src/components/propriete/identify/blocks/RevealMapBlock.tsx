@@ -15,6 +15,7 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
 import ObservationPopupCard from '@/components/propriete/species/ObservationPopupCard';
 
