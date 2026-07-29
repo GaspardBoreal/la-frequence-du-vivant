@@ -62,8 +62,9 @@ export const PalettePrintLayout: React.FC<Props> = ({
   const { objets } = useProprieteObjets(proprieteId);
 
   const hasAtelier = propertyZones.length > 0 || objets.length > 0;
+  const chromatic = hasChromaticPage(objets);
   const sheetPages = ouvrageSheetPageCount(objets);
-  const total = 2 + (hasAtelier ? 2 : 0) + sheetPages + 1;
+  const total = 2 + (hasAtelier ? 2 : 0) + (chromatic ? 1 : 0) + sheetPages + 1;
 
   const Foot: React.FC<{ index: number }> = ({ index }) => (
     <footer className="synthesize-print-foot">
