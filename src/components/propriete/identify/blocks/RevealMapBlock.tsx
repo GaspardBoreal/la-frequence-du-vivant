@@ -484,7 +484,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
 
   const mapNode = (heightPx: number | string) => (
-    <div className="relative rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: heightPx }}>
+    <div className="relative isolate z-0 rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]" style={{ height: heightPx }}>
       <RichMap
         center={center}
         zoom={15}

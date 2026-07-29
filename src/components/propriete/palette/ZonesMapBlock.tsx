@@ -197,7 +197,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
 
   const mapNode = (height: number | string) => (
     <div
-      className="relative rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]"
+      className="relative isolate z-0 rounded-2xl overflow-hidden border border-[hsl(var(--ds-line))]"
       style={{ height }}
     >
       <RichMap

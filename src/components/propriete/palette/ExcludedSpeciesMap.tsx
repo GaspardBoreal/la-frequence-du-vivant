@@ -107,7 +107,7 @@ export const ExcludedSpeciesMap: React.FC<Props> = ({
 
   const mapNode = (height: number | string) => (
     <div
-      className="relative rounded-2xl overflow-hidden border border-[#e2c7c1]"
+      className="relative isolate z-0 rounded-2xl overflow-hidden border border-[#e2c7c1]"
       style={{ height }}
     >
       <RichMap
