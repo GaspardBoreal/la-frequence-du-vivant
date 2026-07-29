@@ -420,7 +420,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       });
     }
     return out;
-  }, [timeRows, effectiveScope, fence, overrides]);
+  }, [timeRows, effectiveScope, fence, resolveOverride]);
 
 
   /** Synthèse de curation GPS, cumulée sur toutes les explorations liées. */
