@@ -208,6 +208,40 @@ export const TabPalette: React.FC<Props> = ({
     setOpenZoneIds((prev) => (prev.includes(activeZoneId) ? prev : [...prev, activeZoneId]));
   }, [activeZoneId]);
 
+  /* --- Pli des blocs narratifs (Refus assumés · Mise en œuvre) --- */
+  const blocksStorageKey = `palette-blocks-open:${proprieteId ?? 'anon'}`;
+  const [openBlocks, setOpenBlocks] = React.useState<{ excluded: boolean; implementation: boolean }>(
+    { excluded: false, implementation: false },
+  );
+  const blocksLoaded = React.useRef(false);
+
+  React.useEffect(() => {
+    blocksLoaded.current = false;
+    try {
+      const raw = localStorage.getItem(blocksStorageKey);
+      setOpenBlocks(
+        raw
+          ? { excluded: false, implementation: false, ...(JSON.parse(raw) as object) }
+          : { excluded: false, implementation: false },
+      );
+    } catch {
+      setOpenBlocks({ excluded: false, implementation: false });
+    }
+    blocksLoaded.current = true;
+  }, [blocksStorageKey]);
+
+  React.useEffect(() => {
+    if (!blocksLoaded.current) return;
+    try {
+      localStorage.setItem(blocksStorageKey, JSON.stringify(openBlocks));
+    } catch {
+      /* stockage indisponible : le pli reste éphémère */
+    }
+  }, [openBlocks, blocksStorageKey]);
+
+  const toggleBlock = React.useCallback((key: 'excluded' | 'implementation') => {
+    setOpenBlocks((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
 
   /** Palette générale quand aucune zone n'est tracée. */
