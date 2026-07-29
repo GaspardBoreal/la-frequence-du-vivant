@@ -1,10 +1,22 @@
 import React from 'react';
 import { GeoJSON, Polygon, Polyline, Tooltip, useMap } from 'react-leaflet';
-import { Pencil, Trash2, Check, X, Maximize2, Minimize2, MapPin, Undo2 } from 'lucide-react';
+import {
+  Pencil,
+  Trash2,
+  Check,
+  X,
+  Maximize2,
+  Minimize2,
+  MapPin,
+  Undo2,
+  Wand2,
+} from 'lucide-react';
 import { createPortal } from 'react-dom';
 import RichMap from '@/components/maps/RichMap';
 import { ZONE_COLORS, type ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
+import PaletteStudio from './studio/PaletteStudio';
+import { geometryAreaM2 } from './studio/geoMetrics';
 
 /* ── Couche de dessin à main levée ────────────────────────────────────────── */
 
@@ -99,6 +111,9 @@ interface Props {
   onSelectZone: (id: string | null) => void;
   onCreateZone: (geometry: any) => void;
   onDeleteZone: (id: string) => void;
+  /** Requis pour ouvrir l'Atelier (calques, ouvrages, bilan). */
+  proprieteId?: string;
+  onPatchZone?: (z: ProprieteZone, patch: Partial<ProprieteZone>) => void;
   maxZones?: number;
   readOnly?: boolean;
 }
@@ -116,11 +131,14 @@ export const ZonesMapBlock: React.FC<Props> = ({
   onSelectZone,
   onCreateZone,
   onDeleteZone,
+  proprieteId,
+  onPatchZone,
   maxZones,
   readOnly,
 }) => {
   const [drawing, setDrawing] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
+  const [studioOpen, setStudioOpen] = React.useState(false);
 
   const full = typeof maxZones === 'number' && zones.length >= maxZones;
 
@@ -287,6 +305,14 @@ export const ZonesMapBlock: React.FC<Props> = ({
           {zones.length} {zones.length > 1 ? 'emplacements' : 'emplacement'}
           {typeof maxZones === 'number' ? ` / ${maxZones}` : ''}
         </span>
+        {proprieteId && (
+          <button
+            onClick={() => setStudioOpen(true)}
+            className="text-[11px] px-3 py-1 rounded-full border border-transparent bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] inline-flex items-center gap-1.5 hover:opacity-90"
+          >
+            <Wand2 className="w-3 h-3" /> Ouvrir l’Atelier
+          </button>
+        )}
         <button
           onClick={() => setFullscreen((v) => !v)}
           className="text-[11px] px-2.5 py-1 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] inline-flex items-center gap-1 hover:border-[hsl(var(--ds-forest))]/60"
@@ -298,8 +324,26 @@ export const ZonesMapBlock: React.FC<Props> = ({
     </div>
   );
 
+  const studio = proprieteId ? (
+    <PaletteStudio
+      open={studioOpen}
+      onClose={() => setStudioOpen(false)}
+      proprieteId={proprieteId}
+      center={center}
+      parcelles={parcelles}
+      zones={zones}
+      activeZoneId={activeZoneId}
+      onSelectZone={onSelectZone}
+      onCreateZone={(geometry) => onCreateZone(geometry)}
+      onPatchZone={(z, patch) => onPatchZone?.(z, patch)}
+      onDeleteZone={onDeleteZone}
+      readOnly={readOnly}
+    />
+  ) : null;
+
   const body = (
     <div className="space-y-3">
+      {studio}
       {toolbar}
       {mapNode(fullscreen ? 'calc(100vh - 140px)' : 420)}
       {zones.length === 0 && (
