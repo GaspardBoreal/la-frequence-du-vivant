@@ -11,6 +11,7 @@ import {
   Layers,
   Check,
   Pencil,
+  Move3d,
 } from 'lucide-react';
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
