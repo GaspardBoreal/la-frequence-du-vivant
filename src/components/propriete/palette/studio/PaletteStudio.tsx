@@ -525,7 +525,20 @@ export const PaletteStudio: React.FC<Props> = ({
                       fillColor: color,
                       fillOpacity: (active ? 0.3 : 0.14) * (z.opacite ? z.opacite / 0.18 : 1) * 0.9,
                     }}
-                    eventHandlers={{ click: () => onSelectZone(active ? null : z.id) }}
+                    eventHandlers={{
+                      click: (e: any) => {
+                        e.originalEvent?.stopPropagation?.();
+                        onSelectZone(z.id);
+                        setSelectedObjetId(null);
+                      },
+                      dblclick: (e: any) => {
+                        // Empêche le zoom Leaflet : le double-clic ouvre l'éditeur
+                        e.originalEvent?.preventDefault?.();
+                        e.originalEvent?.stopPropagation?.();
+                        onSelectZone(z.id);
+                        setSelectedObjetId(null);
+                      },
+                    }}
                   >
                     <Tooltip sticky>
                       <span style={{ fontSize: 11 }}>
