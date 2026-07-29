@@ -185,6 +185,8 @@ export const PaletteSummary: React.FC<Props> = ({
                 recommendations={z.recommendations}
                 selectedIds={z.selected}
                 readOnly
+                forceOpen
+
               />
             ))}
           </section>
