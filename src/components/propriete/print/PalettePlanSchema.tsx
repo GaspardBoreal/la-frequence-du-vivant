@@ -3,7 +3,15 @@ import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import { toolByKey } from '@/lib/ouvrageRecoKb';
+import { hexOf, isChromaticTool, teintesOf } from '@/lib/nuancierKb';
 import { measureFor, fmtMeasure, fmtArea, geometryAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
+
+/** Teinte dominante du nuancier, quand l'objet est un massif composé. */
+const massifColor = (o: ProprieteObjet): string | null => {
+  if (!isChromaticTool(o.outil_key)) return null;
+  const t = teintesOf(o.meta);
+  return t.length ? hexOf(t[0]) : null;
+};
 
 type LngLat = [number, number];
 
