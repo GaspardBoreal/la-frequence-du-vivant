@@ -194,8 +194,11 @@ export const TabPalette: React.FC<Props> = ({
   const allZonesOpen = zoneViews.length > 0 && zoneViews.every((z) => openZoneIds.includes(z.id));
 
   const toggleAllZones = React.useCallback(() => {
-    setOpenZoneIds(allZonesOpen ? [] : zoneViews.map((z) => z.id));
+    const next = !allZonesOpen;
+    setOpenZoneIds(next ? zoneViews.map((z) => z.id) : []);
+    setOpenBlocks({ excluded: next, implementation: next });
   }, [allZonesOpen, zoneViews]);
+
 
   const totalSelectedSpecies = React.useMemo(
     () => zoneViews.reduce((a, z) => a + z.selected.length, 0),
@@ -208,6 +211,42 @@ export const TabPalette: React.FC<Props> = ({
     setOpenZoneIds((prev) => (prev.includes(activeZoneId) ? prev : [...prev, activeZoneId]));
   }, [activeZoneId]);
 
+  /* --- Pli des blocs narratifs (Refus assumés · Mise en œuvre) --- */
+  const blocksStorageKey = `palette-blocks-open:${proprieteId ?? 'anon'}`;
+  const [openBlocks, setOpenBlocks] = React.useState<{ excluded: boolean; implementation: boolean }>(
+    { excluded: false, implementation: false },
+  );
+  const blocksLoaded = React.useRef(false);
+
+  React.useEffect(() => {
+    blocksLoaded.current = false;
+    try {
+      const raw = localStorage.getItem(blocksStorageKey);
+      setOpenBlocks(
+        raw
+          ? { excluded: false, implementation: false, ...(JSON.parse(raw) as object) }
+          : { excluded: false, implementation: false },
+      );
+    } catch {
+      setOpenBlocks({ excluded: false, implementation: false });
+    }
+    blocksLoaded.current = true;
+  }, [blocksStorageKey]);
+
+  React.useEffect(() => {
+    if (!blocksLoaded.current) return;
+    try {
+      localStorage.setItem(blocksStorageKey, JSON.stringify(openBlocks));
+    } catch {
+      /* stockage indisponible : le pli reste éphémère */
+    }
+  }, [openBlocks, blocksStorageKey]);
+
+
+
+  const toggleBlock = React.useCallback((key: 'excluded' | 'implementation') => {
+    setOpenBlocks((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
 
   /** Palette générale quand aucune zone n'est tracée. */
@@ -229,6 +268,20 @@ export const TabPalette: React.FC<Props> = ({
     allWaypoints,
   } = useExcludedOnSite(proprieteId, exclusions);
   const [mapOpenFor, setMapOpenFor] = React.useState<string | null>(null);
+
+  /** Vignettes des refus effectivement présents (bandeau replié). */
+  const onSitePhotos = React.useMemo(
+    () =>
+      exclusions
+        .map((e) => ({
+          label: e.fr,
+          src: excludedPresence.get(excludedKey(e.latin))?.firstPhoto,
+        }))
+        .filter((p): p is { label: string; src: string } => !!p.src)
+        .slice(0, 3),
+    [exclusions, excludedPresence],
+  );
+
 
   /** Version sérialisable pour la synthèse scellée et l'impression. */
   const excludedPresenceRecord = React.useMemo(() => {
@@ -731,7 +784,57 @@ export const TabPalette: React.FC<Props> = ({
           title="Ce que l’on écarte, et pourquoi"
           subtitle="Trois espèces refusées : un diagnostic se juge autant à ses exclusions qu’à ses choix."
           index={3}
+          collapsible
+          open={openBlocks.excluded}
+          onToggleOpen={() => toggleBlock('excluded')}
+          signature={
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-[#5f2c23]">
+              <span className="font-semibold text-[#8c3a2e]">
+                {exclusions.length} refus assumé{exclusions.length > 1 ? 's' : ''}
+              </span>
+              {onSiteCount > 0 ? (
+                <>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-[#d9a441]/70 bg-[#fdf6e6] px-2 py-0.5 text-[10px] font-semibold text-[#7a5a1c]">
+                    ⚠ {onSiteCount} déjà présent{onSiteCount > 1 ? 's' : ''} sur site — à gérer
+                  </span>
+                  {onSitePhotos.length > 0 && (
+                    <span className="flex -space-x-2">
+                      {onSitePhotos.map((p) => (
+                        <img
+                          key={p.src}
+                          src={p.src}
+                          alt={p.label}
+                          title={p.label}
+                          loading="lazy"
+                          className="h-6 w-6 rounded-full border border-[#e2c7c1] object-cover"
+                        />
+                      ))}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="italic text-[#8c3a2e]/75">
+                  Aucun refus présent : le site part net.
+                </span>
+              )}
+              <span className="flex flex-wrap items-center gap-1">
+                {exclusions.slice(0, 3).map((e) => (
+                  <span
+                    key={e.latin}
+                    title={e.latin}
+                    className="rounded-full border border-[#e2c7c1] bg-[#fdf4f2] px-2 py-0.5 text-[10px] text-[#8c3a2e]"
+                  >
+                    {e.fr}
+                  </span>
+                ))}
+                {exclusions.length > 3 && (
+                  <span className="text-[10px] text-[#8c3a2e]/70">+{exclusions.length - 3}</span>
+                )}
+              </span>
+            </div>
+          }
         >
+
           {onSiteCount > 0 && (
             <div className="mb-3 rounded-2xl border border-[#d9a441]/60 bg-[#fdf6e6] px-3 py-2 text-[12px] text-[#7a5a1c]">
               <strong>{onSiteCount}</strong> de ces refus {onSiteCount > 1 ? 'sont' : 'est'} déjà
@@ -845,7 +948,48 @@ export const TabPalette: React.FC<Props> = ({
           title="Quand, comment, et ce qu’on ne fera pas"
           subtitle="Le calendrier se déduit de la texture et de l’humidité relevées à l’étape 2."
           index={4}
+          collapsible
+          open={openBlocks.implementation}
+          onToggleOpen={() => toggleBlock('implementation')}
+          signature={
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-[hsl(var(--ds-forest-deep))]/80">
+              <span className="font-semibold text-[#8a6d3b]">
+                {implementation.length} étape{implementation.length > 1 ? 's' : ''}
+              </span>
+              {implementation.length > 0 && (
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8a6d3b]">
+                  {implementation[0].period}
+                  {implementation.length > 1 && ` → ${implementation[implementation.length - 1].period}`}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1">
+                {implementation.map((s, i) => (
+                  <span
+                    key={`${s.title}-${i}`}
+                    title={`${s.period} · ${s.title}`}
+                    className="h-1.5 w-6 rounded-full bg-[hsl(var(--ds-gold))]/55 print-exact"
+                  />
+                ))}
+              </span>
+              <span className="flex flex-wrap items-center gap-1">
+                {implementation.slice(0, 2).map((s, i) => (
+                  <span
+                    key={`${s.title}-chip-${i}`}
+                    className="rounded-full border border-[hsl(var(--ds-line))] bg-white/60 px-2 py-0.5 text-[10px] text-[hsl(var(--ds-forest-deep))]/80"
+                  >
+                    {s.title}
+                  </span>
+                ))}
+                {implementation.length > 2 && (
+                  <span className="text-[10px] text-[hsl(var(--ds-forest-deep))]/60">
+                    +{implementation.length - 2}
+                  </span>
+                )}
+              </span>
+            </div>
+          }
         >
+
           <ol className="space-y-2.5">
             {implementation.map((s, i) => (
               <li
