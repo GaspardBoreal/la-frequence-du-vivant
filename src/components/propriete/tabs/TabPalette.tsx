@@ -602,9 +602,31 @@ export const TabPalette: React.FC<Props> = ({
         </AnalyzeCard>
       </div>
 
-      {/* Palettes par zone */}
+      {/* Palettes par zone — repliées par défaut, signature lisible dans le bandeau */}
       {zoneViews.length > 0 ? (
         <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]/70">
+              {zoneViews.length} emplacement{zoneViews.length > 1 ? 's' : ''}
+            </span>
+            <span className="text-[11px] text-[hsl(var(--ds-forest-deep))]/65">
+              {totalSelectedSpecies} espèce{totalSelectedSpecies > 1 ? 's' : ''} retenue
+              {totalSelectedSpecies > 1 ? 's' : ''}
+              {emptyZonesCount > 0 && (
+                <span className="text-[hsl(var(--ds-gold))]">
+                  {' '}
+                  · {emptyZonesCount} à composer
+                </span>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={toggleAllZones}
+              className="ml-auto rounded-full border border-[hsl(var(--ds-line))] px-3 py-1 text-[11px] font-semibold text-[hsl(var(--ds-forest-deep))] transition hover:border-[hsl(var(--ds-forest))]"
+            >
+              {allZonesOpen ? 'Tout replier' : 'Tout déplier'}
+            </button>
+          </div>
           {zoneViews.map((z, i) => (
             <ZonePaletteCard
               key={z.id}
@@ -615,6 +637,8 @@ export const TabPalette: React.FC<Props> = ({
               intention={z.intention}
               recommendations={z.recommendations}
               selectedIds={z.selected}
+              open={openZoneIds.includes(z.id)}
+              onToggleOpen={() => toggleZoneOpen(z.id)}
               onAmbianceChange={(a) => palette.setZoneChoice(z.id, { ambiance: a })}
               onIntentionChange={(v) => palette.setZoneChoice(z.id, { intention: v })}
               onToggleSpecies={(id) => toggleSpecies(z.id, id)}
@@ -631,6 +655,7 @@ export const TabPalette: React.FC<Props> = ({
           ))}
         </div>
       ) : (
+
         <AnalyzeCard
           number={3}
           category="Proposition générale"
