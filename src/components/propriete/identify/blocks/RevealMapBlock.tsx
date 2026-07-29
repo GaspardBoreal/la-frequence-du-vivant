@@ -15,7 +15,9 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
-import { useFrenchSpeciesNamesAuto } from '@/hooks/useFrenchSpeciesNamesAuto';
+import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
+import ObservationPopupCard from '@/components/propriete/species/ObservationPopupCard';
+
 import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCount';
 import { KINGDOM_LABELS_FR_SHORT, KINGDOM_ORDER, normalizeKingdom, type KingdomKey } from '@/lib/kingdomLabels';
 import { haversineM } from '@/utils/geoDistance';
@@ -100,20 +102,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
 
   // Même résolveur FR que le bandeau « Empreinte biodiversité » (source unique)
-  const frInput = useMemo(() => {
-    const seen = new Map<string, { scientificName: string; commonName: string | null }>();
-    for (const w of waypoints) {
-      const sci = (w.scientificName || '').trim();
-      if (!sci || seen.has(sci)) continue;
-      seen.set(sci, { scientificName: sci, commonName: w.commonName || null });
-    }
-    return Array.from(seen.values());
-  }, [waypoints]);
-  const { data: frNames } = useFrenchSpeciesNamesAuto(frInput);
-  const displayNameFor = (w: { scientificName?: string | null; commonName?: string | null }) => {
-    const sci = (w.scientificName || '').trim();
-    return frNames?.get(sci)?.displayName || w.commonName || sci || '—';
-  };
+  const { displayNameFor } = useWaypointFrenchNames(waypoints);
+
   // Référence de cohérence : même compteur que le bandeau « Empreinte biodiversité »
   const speciesRef = usePropertySpeciesCount(proprieteId);
 
@@ -534,84 +524,15 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
             >
 
               <Popup>
-                <div style={{ minWidth: 160 }}>
-                  {w.photoUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setLightboxId(w.id)}
-                      title="Agrandir la photo"
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        padding: 0,
-                        border: 'none',
-                        background: 'none',
-                        cursor: 'zoom-in',
-                      }}
-                    >
-                      <img
-                        src={w.photoUrl}
-                        alt={w.scientificName}
-                        style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, marginBottom: 4 }}
-                      />
-                      <span style={{ fontSize: 10, color: '#2f5d3a', display: 'block', marginBottom: 4 }}>
-                        🔍 Cliquer pour agrandir
-                      </span>
-                    </button>
-                  )}
-
-                  <div style={{ fontWeight: 600, fontSize: 12 }}>
-                    {displayNameFor(w)}
-                  </div>
-                  <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>
-                    {w.scientificName}
-                  </div>
-                  <div style={{ fontSize: 10, marginTop: 4, color: '#666' }}>
-                    {w.source === 'marcheur'
-                      ? '📷 Observation marcheur'
-                      : `🌐 Observation citoyenne${w.observerName ? ` · ${w.observerName}` : ''}`}
-                  </div>
-                  {w.geofenceStatus === 'outside' && (
-                    <div style={{ fontSize: 10, marginTop: 2, color: '#b4462f' }}>
-                      ⚠︎ {GEOFENCE_LABELS.outside}
-                      {w.geofenceDistanceM ? ` · ${w.geofenceDistanceM} m` : ''}
-                    </div>
-                  )}
-                  {w.overrideStatus === 'repositioned' && (
-                    <div style={{ fontSize: 10, marginTop: 2, color: '#2f5d3a' }}>
-                      ✎ Position corrigée par un curateur
-                    </div>
-                  )}
-
-                  {w.observationDate && (
-                    <div style={{ fontSize: 10, marginTop: 2, color: '#888' }}>
-                      <Camera style={{ display: 'inline', width: 10, height: 10, marginRight: 2 }} />
-                      {new Date(w.observationDate).toLocaleDateString('fr-FR')}
-                    </div>
-                  )}
-
-                  {canCurate && (
-                    <button
-                      type="button"
-                      onClick={() => openGpsFromPoint(w)}
-                      style={{
-                        marginTop: 8,
-                        width: '100%',
-                        fontSize: 10,
-                        fontWeight: 600,
-                        padding: '5px 8px',
-                        borderRadius: 999,
-                        border: 'none',
-                        background: '#C9A227',
-                        color: '#1e2a20',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      ✥ Déplacer ce point (Contrôle GPS)
-                    </button>
-                  )}
-                </div>
+                <ObservationPopupCard
+                  waypoint={w}
+                  displayName={displayNameFor(w)}
+                  canCurate={!!canCurate}
+                  onZoomPhoto={setLightboxId}
+                  onOpenGps={(pt) => openGpsFromPoint(pt as GpsCandidate)}
+                />
               </Popup>
+
             </Marker>
 
           );

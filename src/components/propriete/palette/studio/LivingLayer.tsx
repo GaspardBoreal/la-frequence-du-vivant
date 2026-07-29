@@ -1,7 +1,11 @@
 import React from 'react';
-import { CircleMarker, Tooltip } from 'react-leaflet';
+import { CircleMarker, Popup, Tooltip } from 'react-leaflet';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 import { PLANT_INDICATORS, type PlantFamily } from '@/lib/plantIndicatorKb';
+import ObservationPopupCard, {
+  type ObservationPopupWaypoint,
+} from '@/components/propriete/species/ObservationPopupCard';
+
 
 export type VivantType = 'flore' | 'faune' | 'champignons' | 'autres';
 export type VivantSource = 'marcheur' | 'inaturalist';
@@ -81,10 +85,14 @@ export const matchVivantFilter = (w: PropertyWaypoint, f: VivantFilterState): bo
 };
 
 interface LayerProps {
-  waypoints: PropertyWaypoint[];
+  waypoints: ObservationPopupWaypoint[];
   filter: VivantFilterState;
+  /** Résolveur de nom français (source unique partagée avec la Carte des révélations). */
   frenchName?: (scientific: string, fallback?: string | null) => string;
-  onSelect?: (w: PropertyWaypoint) => void;
+  onSelect?: (w: ObservationPopupWaypoint) => void;
+  canCurate?: boolean;
+  onZoomPhoto?: (id: string) => void;
+  onOpenGps?: (w: ObservationPopupWaypoint) => void;
 }
 
 /** Nuage d'observations filtrable, en fond de plan de l'atelier. */
@@ -93,6 +101,9 @@ export const LivingLayer: React.FC<LayerProps> = ({
   filter,
   frenchName,
   onSelect,
+  canCurate,
+  onZoomPhoto,
+  onOpenGps,
 }) => (
   <>
     {waypoints.map((w) => {
@@ -100,6 +111,9 @@ export const LivingLayer: React.FC<LayerProps> = ({
       const t = typeOfWaypoint(w);
       const meta = TYPE_META[t];
       const bio = !!indicatorOf(w);
+      const label = frenchName
+        ? frenchName(w.scientificName, w.commonName)
+        : w.commonName || w.scientificName;
       return (
         <CircleMarker
           key={w.id}
@@ -115,15 +129,24 @@ export const LivingLayer: React.FC<LayerProps> = ({
         >
           <Tooltip direction="top" offset={[0, -4]}>
             <span style={{ fontSize: 11 }}>
-              {meta.glyph}{' '}
-              {frenchName ? frenchName(w.scientificName, w.commonName) : w.commonName || w.scientificName}
+              {meta.glyph} {label}
               <em style={{ display: 'block', opacity: 0.6 }}>{w.scientificName}</em>
             </span>
           </Tooltip>
+          <Popup>
+            <ObservationPopupCard
+              waypoint={w}
+              displayName={label}
+              canCurate={canCurate}
+              onZoomPhoto={onZoomPhoto}
+              onOpenGps={onOpenGps}
+            />
+          </Popup>
         </CircleMarker>
       );
     })}
   </>
+
 );
 
 interface BarProps {

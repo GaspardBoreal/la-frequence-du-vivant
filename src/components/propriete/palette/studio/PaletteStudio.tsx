@@ -16,6 +16,12 @@ import {
 import RichMap from '@/components/maps/RichMap';
 import { ZONE_COLORS, type ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
+import { useCanCurateParcelles } from '@/hooks/propriete/usePropertyParcelles';
+import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
+import { buildGeofence, evaluateGeofence } from '@/lib/geofence';
+import GpsControlConsole, { type GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
+import { RevealPhotoLightbox } from '@/components/propriete/identify/blocks/RevealPhotoLightbox';
+
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
@@ -76,7 +82,38 @@ export const PaletteStudio: React.FC<Props> = ({
   onDeleteZone,
   readOnly,
 }) => {
-  const { waypoints } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  const { waypoints: rawWaypoints } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  const { data: canCurate } = useCanCurateParcelles(open ? proprieteId : undefined);
+  const { displayNameFor } = useWaypointFrenchNames(rawWaypoints);
+
+  /** Statut géofence identique à « J'identifie » (même parcelles, même tampon). */
+  const fence = React.useMemo(() => buildGeofence(parcelles ?? []), [parcelles]);
+  const waypoints = React.useMemo<GpsCandidate[]>(
+    () =>
+      rawWaypoints
+        .filter((w) => w.overrideStatus !== 'excluded')
+        .map((w) => {
+          const ev = evaluateGeofence(fence, w.lat, w.lng, 25);
+          return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
+        }),
+    [rawWaypoints, fence],
+  );
+
+  const frenchName = React.useCallback(
+    (scientific: string, fallback?: string | null) =>
+      displayNameFor({ scientificName: scientific, commonName: fallback ?? null }),
+    [displayNameFor],
+  );
+
+  const [lightboxId, setLightboxId] = React.useState<string | null>(null);
+  const [gpsConsole, setGpsConsole] = React.useState(false);
+  const [gpsFocusId, setGpsFocusId] = React.useState<string | null>(null);
+
+
+
+
+
+
   const { calques, upsertCalque, deleteCalque } = useProprieteCalques(open ? proprieteId : undefined);
   const { objets, upsertObjet, deleteObjet } = useProprieteObjets(open ? proprieteId : undefined);
 
@@ -95,6 +132,19 @@ export const PaletteStudio: React.FC<Props> = ({
     vivant: true,
   });
   const [vivantFilter, setVivantFilter] = React.useState<VivantFilterState>(DEFAULT_VIVANT_FILTER);
+
+  /** Observations réellement affichées (filtres Vivant) : contexte lightbox + Contrôle GPS. */
+  const visibleWaypoints = React.useMemo(
+    () => waypoints.filter((w) => matchVivantFilter(w, vivantFilter)),
+    [waypoints, vivantFilter],
+  );
+
+  const gpsCenter = React.useMemo<[number, number]>(
+    () => center ?? (waypoints[0] ? [waypoints[0].lat, waypoints[0].lng] : [46.6, 2.5]),
+    [center, waypoints],
+  );
+
+
 
   /* Semer les calques par défaut au premier passage */
   const seededRef = React.useRef(false);
@@ -425,7 +475,18 @@ export const PaletteStudio: React.FC<Props> = ({
               })}
 
             {system.vivant && (
-              <LivingLayer waypoints={waypoints} filter={vivantFilter} />
+              <LivingLayer
+                waypoints={waypoints}
+                filter={vivantFilter}
+                frenchName={frenchName}
+                canCurate={!!canCurate}
+                onZoomPhoto={setLightboxId}
+                onOpenGps={(w) => {
+                  setGpsFocusId(w.id);
+                  setGpsConsole(true);
+                }}
+              />
+
             )}
 
             <ObjectsLayer
@@ -538,6 +599,39 @@ export const PaletteStudio: React.FC<Props> = ({
             setTab('outils');
           }}
         />
+
+        {/* Fiche espèce : visionneuse photo plein écran (au-dessus de l'atelier) */}
+        {lightboxId && (
+          <div className="fixed inset-0 z-[2100]">
+            <RevealPhotoLightbox
+              items={visibleWaypoints}
+              currentId={lightboxId}
+              onChange={setLightboxId}
+              onClose={() => setLightboxId(null)}
+              displayNameFor={displayNameFor}
+            />
+          </div>
+        )}
+
+        {/* Contrôle GPS : mêmes gestes de curation que la Carte des révélations */}
+        {canCurate && gpsConsole && (
+          <GpsControlConsole
+            open={gpsConsole}
+            onClose={() => {
+              setGpsConsole(false);
+              setGpsFocusId(null);
+            }}
+            proprieteId={proprieteId}
+            candidates={waypoints}
+            contextCandidates={visibleWaypoints}
+            contextLabel={`Atelier · ${visibleWaypoints.length} observation${visibleWaypoints.length > 1 ? 's' : ''} affichée${visibleWaypoints.length > 1 ? 's' : ''}`}
+            parcelRings={fence.rings}
+            center={gpsCenter}
+            focusId={gpsFocusId}
+            displayNameFor={displayNameFor}
+          />
+        )}
+
       </div>
     </div>,
     document.body,
