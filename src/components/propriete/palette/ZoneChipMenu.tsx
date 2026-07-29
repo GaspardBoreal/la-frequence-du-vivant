@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Eye, EyeOff, Lock, Unlock, Trash2, Check, X } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, Lock, Unlock, Trash2, Check, X, Move3d } from 'lucide-react';
 import { ZONE_COLORS, type ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 
 interface Props {
@@ -10,6 +10,8 @@ interface Props {
   speciesCount?: number;
   onPatch: (patch: Partial<ProprieteZone>) => void;
   onDelete: () => void;
+  /** Entrer dans le mode d'édition géométrique (déplacer / échelle / lisser). */
+  onTransform?: () => void;
   onClose: () => void;
   anchor: { x: number; y: number };
 }
@@ -25,6 +27,7 @@ const ZoneChipMenu: React.FC<Props> = ({
   speciesCount = 0,
   onPatch,
   onDelete,
+  onTransform,
   onClose,
   anchor,
 }) => {
@@ -131,6 +134,24 @@ const ZoneChipMenu: React.FC<Props> = ({
           {zone.verrouille ? 'Verrouillé' : 'Libre'}
         </button>
       </div>
+
+      {onTransform && (
+        <button
+          onClick={() => {
+            onTransform();
+            onClose();
+          }}
+          disabled={!!zone.verrouille}
+          title={zone.verrouille ? 'Emplacement verrouillé' : undefined}
+          className={`w-full text-[11px] px-2 py-1.5 rounded-lg border inline-flex items-center justify-center gap-1.5 ${
+            zone.verrouille
+              ? 'border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))]/40 cursor-not-allowed'
+              : 'border-[hsl(var(--ds-forest))]/50 text-[hsl(var(--ds-forest))] hover:bg-[hsl(var(--ds-forest))]/8'
+          }`}
+        >
+          <Move3d className="w-3 h-3" /> Transformer la forme
+        </button>
+      )}
 
       {zone.surface_m2 != null && (
         <p className="text-[10px] text-[hsl(var(--ds-forest-deep))]/60">
