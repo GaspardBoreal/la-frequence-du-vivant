@@ -146,6 +146,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   const withSynthesize = !!synthesis && !!synthesisModel;
   const withPalette = !!palette;
   const hasAtelier = propertyZones.length > 0 || objets.length > 0;
+  const chromatic = hasChromaticPage(objets);
   const sheetPages = ouvrageSheetPageCount(objets);
   const atelierZones = React.useMemo(
     () => propertyZones.map((z) => ({ id: z.id, nom: z.nom })),
