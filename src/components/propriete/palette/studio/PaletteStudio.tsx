@@ -259,6 +259,11 @@ export const PaletteStudio: React.FC<Props> = ({
 
   const selectedObjet = objets.find((o) => o.id === selectedObjetId) || null;
 
+  const selectedZoneIndex = zones.findIndex((z) => z.id === activeZoneId);
+  const selectedZone = selectedZoneIndex >= 0 ? zones[selectedZoneIndex] : null;
+  const selectedZoneColor =
+    selectedZone?.couleur || ZONE_COLORS[Math.max(0, selectedZoneIndex) % ZONE_COLORS.length];
+
   /* ── Actions ─────────────────────────────────────────────────────────── */
 
   const handleDrawFinish = React.useCallback(
