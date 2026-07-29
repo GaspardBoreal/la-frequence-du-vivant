@@ -11,6 +11,8 @@ import {
   type GpsOverrideKind,
   type GpsOverrideStatus,
 } from '@/hooks/propriete/useGpsOverrides';
+import { useVivantScopeFor } from '@/contexts/ProprieteVivantScopeContext';
+import { isInsideGeofence } from '@/lib/geofence';
 
 
 interface RpcSpecies {
