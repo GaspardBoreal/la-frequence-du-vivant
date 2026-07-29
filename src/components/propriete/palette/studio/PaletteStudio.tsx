@@ -185,13 +185,47 @@ export const PaletteStudio: React.FC<Props> = ({
     zones: true,
     vivant: true,
   });
-  const [vivantFilter, setVivantFilter] = React.useState<VivantFilterState>(DEFAULT_VIVANT_FILTER);
+  const [vivantFilter, setVivantFilter] = React.useState<VivantFilterState>(
+    () => VIVANT_FILTER_MEMORY.get(proprieteId) ?? DEFAULT_VIVANT_FILTER,
+  );
+  React.useEffect(() => {
+    VIVANT_FILTER_MEMORY.set(proprieteId, vivantFilter);
+  }, [proprieteId, vivantFilter]);
+
+  /* ── Mes tags : index espèce → clés de tags, et facettes du panneau ───── */
+  const scientificNames = React.useMemo(
+    () => Array.from(new Set(waypoints.map((w) => w.scientificName).filter(Boolean))),
+    [waypoints],
+  );
+  const { data: myTags, isLoading: tagsLoading } = useMarcheurSpeciesTags(
+    open ? scientificNames : [],
+  );
+
+  /** nom scientifique normalisé → clés de tags normalisées (dédupliquées). */
+  const tagsBySpecies = React.useMemo(() => {
+    const m = new Map<string, string[]>();
+    (myTags || []).forEach((t) => {
+      const sp = normalizeTagKey(t.scientific_name);
+      const key = normalizeTagKey(t.label);
+      const arr = m.get(sp);
+      if (arr) {
+        if (!arr.includes(key)) arr.push(key);
+      } else m.set(sp, [key]);
+    });
+    return m;
+  }, [myTags]);
+
+  const filterContext = React.useMemo<VivantFilterContext>(
+    () => ({ displayName: displayNameFor, tagsBySpecies }),
+    [displayNameFor, tagsBySpecies],
+  );
 
   /** Observations réellement affichées (filtres Vivant) : contexte lightbox + Contrôle GPS. */
   const visibleWaypoints = React.useMemo(
-    () => waypoints.filter((w) => matchVivantFilter(w, vivantFilter)),
-    [waypoints, vivantFilter],
+    () => waypoints.filter((w) => matchVivantFilter(w, vivantFilter, filterContext)),
+    [waypoints, vivantFilter, filterContext],
   );
+
 
   const gpsCenter = React.useMemo<[number, number]>(
     () => center ?? (waypoints[0] ? [waypoints[0].lat, waypoints[0].lng] : [46.6, 2.5]),
