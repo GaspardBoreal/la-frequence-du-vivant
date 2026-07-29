@@ -140,7 +140,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
   onPatchZone,
   maxZones,
   readOnly,
-}) => {
+  zoneSpeciesCount,
+
   const [drawing, setDrawing] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
   const [studioOpen, setStudioOpen] = React.useState(false);
