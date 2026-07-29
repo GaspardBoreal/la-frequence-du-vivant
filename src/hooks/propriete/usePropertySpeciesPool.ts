@@ -12,6 +12,7 @@ import {
   type GpsOverrideStatus,
 } from '@/hooks/propriete/useGpsOverrides';
 import { useVivantScopeFor } from '@/contexts/ProprieteVivantScopeContext';
+import { resolvePeriodRange } from '@/hooks/useBiodiversityEvolution';
 import { isInsideGeofence } from '@/lib/geofence';
 
 
