@@ -12,6 +12,7 @@ import {
   type GpsOverrideStatus,
 } from '@/hooks/propriete/useGpsOverrides';
 import { useVivantScopeFor } from '@/contexts/ProprieteVivantScopeContext';
+import { resolvePeriodRange } from '@/hooks/useBiodiversityEvolution';
 import { isInsideGeofence } from '@/lib/geofence';
 
 
@@ -172,10 +173,68 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
    * les photos terrain, les waypoints, les contributeurs et tous les compteurs
    * dérivés racontent exactement la même histoire.
    */
-  const { effectiveScope, fence } = useVivantScopeFor(proprieteId);
+  const { effectiveScope, fence, period, customRange } = useVivantScopeFor(proprieteId);
+
+  /**
+   * Fenêtre temporelle globale (mêmes options que « Taxons observés ») :
+   * appliquée elle aussi en amont, avant le géofiltrage cadastral.
+   */
+  const { fromISO, toISO } = useMemo(
+    () => resolvePeriodRange(period, customRange),
+    [period, customRange?.from, customRange?.to],
+  );
+
+  const timeRows = useMemo(() => {
+    if (!fromISO && !toISO) return unscopedRows;
+
+    const inWindow = (raw: any): boolean => {
+      if (!raw) return false;
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return false;
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+        d.getDate(),
+      ).padStart(2, '0')}`;
+      if (fromISO && iso < fromISO) return false;
+      if (toISO && iso > toISO) return false;
+      return true;
+    };
+
+    const out: RpcSpecies[] = [];
+    for (const sp of unscopedRows) {
+      const marcheurAttrs = (Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : []).filter(
+        (a: any) => inWindow(a?.observation_date || a?.date || a?.observationDate),
+      );
+
+      const attributionGroups: any[] = [];
+      let inatKept = 0;
+      for (const g of Array.isArray(sp.attributions) ? sp.attributions : []) {
+        const list: any[] = Array.isArray(g) ? g : [g];
+        const kept = list.filter((a: any) =>
+          inWindow(a?.observation_date || a?.date || a?.observationDate),
+        );
+        if (kept.length > 0) {
+          attributionGroups.push(Array.isArray(g) ? kept : kept[0]);
+          inatKept += kept.length;
+        }
+      }
+
+      const kept = marcheurAttrs.length + inatKept;
+      if (kept === 0) continue;
+
+      out.push({
+        ...sp,
+        marcheur_attrs: marcheurAttrs,
+        attributions: attributionGroups,
+        observations: kept,
+      });
+    }
+    return out;
+  }, [unscopedRows, fromISO, toISO]);
 
   const allRows = useMemo(() => {
-    if (effectiveScope !== 'cadastre' || fence.empty) return unscopedRows;
+    if (effectiveScope !== 'cadastre' || fence.empty) return timeRows;
+
+
 
     const posOf = (
       kind: 'observation' | 'snapshot_attr',
@@ -192,7 +251,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     };
 
     const out: RpcSpecies[] = [];
-    for (const sp of unscopedRows) {
+    for (const sp of timeRows) {
       const sci = sp.scientific_name || sp.key || '';
 
       const marcheurAttrs = (Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : []).filter(
@@ -234,7 +293,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       });
     }
     return out;
-  }, [unscopedRows, effectiveScope, fence, overrides]);
+  }, [timeRows, effectiveScope, fence, overrides]);
 
 
   /** Synthèse de curation GPS, cumulée sur toutes les explorations liées. */
@@ -514,13 +573,20 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   const waypoints = useMemo(() => buildWaypoints(allRows), [buildWaypoints, allRows]);
 
   /**
-   * Toutes les observations, hors portée : réservé au Contrôle GPS, qui doit
-   * pouvoir rapatrier les points situés hors du plan cadastral.
+   * Toutes les observations, hors portée ET hors fenêtre temporelle : réservé
+   * au Contrôle GPS, qui doit pouvoir rapatrier les points situés hors emprise.
    */
   const allWaypoints = useMemo(
     () => (allRows === unscopedRows ? waypoints : buildWaypoints(unscopedRows)),
     [buildWaypoints, unscopedRows, allRows, waypoints],
   );
+
+  /** Observations de la fenêtre temporelle, toutes portées confondues. */
+  const periodWaypoints = useMemo(
+    () => (timeRows === unscopedRows ? allWaypoints : buildWaypoints(timeRows)),
+    [buildWaypoints, timeRows, unscopedRows, allWaypoints],
+  );
+
 
 
 
@@ -569,16 +635,16 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       .sort((a, b) => b.observations - a.observations);
   }, [allRows]);
 
-  /** Compteurs de portée (pour le sélecteur Cadastre / Tous). */
+  /** Compteurs de portée (sélecteur Cadastre / Tous), dans la fenêtre en cours. */
   const scopeCounts = useMemo(() => {
-    const all = allWaypoints.filter((w) => w.overrideStatus !== 'excluded');
+    const all = periodWaypoints.filter((w) => w.overrideStatus !== 'excluded');
     return {
       all: all.length,
       cadastre: fence.empty
         ? null
         : all.filter((w) => isInsideGeofence(fence, w.lat, w.lng)).length,
     };
-  }, [allWaypoints, fence]);
+  }, [periodWaypoints, fence]);
 
   return {
     species,

@@ -18,6 +18,7 @@ import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { ZONE_COLORS } from '@/hooks/propriete/usePropertyZones';
 import { fmtArea } from './geoMetrics';
 import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
+import VivantPeriodFilter from '@/components/propriete/VivantPeriodFilter';
 
 export interface SystemLayerState {
   parcelles: boolean;
@@ -141,9 +142,13 @@ export const LayersPanel: React.FC<Props> = ({
             </IconBtn>
             <span className={system.vivant ? '' : 'opacity-45'}>Observations du vivant</span>
           </div>
-          <div className={`pl-8 pb-1 ${system.vivant ? '' : 'pointer-events-none opacity-45'}`}>
+          <div
+            className={`space-y-1.5 pl-8 pb-1 ${system.vivant ? '' : 'pointer-events-none opacity-45'}`}
+          >
             <VivantScopeSwitch counts={scopeCounts} />
+            <VivantPeriodFilter visibleCount={scopeCounts?.all} />
           </div>
+
 
         </div>
       </section>

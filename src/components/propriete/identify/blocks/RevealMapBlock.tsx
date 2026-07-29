@@ -16,6 +16,7 @@ import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
+import VivantPeriodFilter from '@/components/propriete/VivantPeriodFilter';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
 import ObservationPopupCard from '@/components/propriete/species/ObservationPopupCard';
 
@@ -410,6 +411,9 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
       <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
       <VivantScopeSwitch counts={scopeCounts} variant="inline" />
+      <VivantPeriodFilter visibleCount={scopeCounts?.all} variant="inline" />
+
+
 
 
 
