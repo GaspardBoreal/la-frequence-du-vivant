@@ -233,6 +233,19 @@ export const ExcludedSpeciesMap: React.FC<Props> = ({
     />
   ) : null;
 
+  const lightbox = lightboxId ? (
+    <div className="fixed inset-0 z-[9500]">
+      <RevealPhotoLightbox
+        items={points}
+        currentId={lightboxId}
+        onChange={setLightboxId}
+        onClose={() => setLightboxId(null)}
+        displayNameFor={displayNameFor}
+      />
+    </div>
+  ) : null;
+
+
   if (fullscreen) {
     return createPortal(
       <div className="fixed inset-0 z-[9000] bg-[hsl(var(--ds-cream))] p-3 md:p-5 flex flex-col">
