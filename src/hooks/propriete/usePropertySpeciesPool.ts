@@ -380,7 +380,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   //    bandeau « Empreinte biodiversité » (qui, lui, ne filtre pas sur le GPS).
   //    Les corrections éditoriales (`observation_gps_overrides`) sont appliquées
   //    ici, à la lecture : position corrigée + statut d'exclusion.
-  const waypoints = useMemo(() => {
+  const buildWaypoints = useCallback((rows: RpcSpecies[]) => {
     const out: PropertyWaypoint[] = [];
     const seen = new Set<string>();
     let n = 0;
