@@ -636,7 +636,7 @@ export const PaletteStudio: React.FC<Props> = ({
           {selectedObjet && (
             <div
               className={`absolute inset-x-0 bottom-0 z-[600] sm:inset-x-auto sm:bottom-auto sm:w-[262px] ${MAP_CHROME_RIGHT} ${
-                zoneTransform.zone ? MAP_CHROME_TOP_STACKED : MAP_CHROME_TOP
+                zoneTransform.zone ? MAP_CHROME_TOP_STACKED_SM : MAP_CHROME_TOP_SM
               } ${MAP_CHROME_PANEL_MAX_H}`}
             >
               <ObjectInspector
