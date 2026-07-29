@@ -569,19 +569,26 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       .sort((a, b) => b.observations - a.observations);
   }, [allRows]);
 
+  /** Compteurs de portée (pour le sélecteur Cadastre / Tous). */
+  const scopeCounts = useMemo(() => {
+    const all = allWaypoints.filter((w) => w.overrideStatus !== 'excluded');
+    return {
+      all: all.length,
+      cadastre: fence.empty
+        ? null
+        : all.filter((w) => isInsideGeofence(fence, w.lat, w.lng)).length,
+    };
+  }, [allWaypoints, fence]);
+
   return {
     species,
     fieldPhotos,
     waypoints,
     /** Hors portée — Contrôle GPS uniquement. */
     allWaypoints,
-    /** Portée réellement appliquée + disponibilité du plan cadastral. */
+    /** Portée réellement appliquée. */
     vivantScope: effectiveScope,
-    scopeCounts: {
-      cadastre:
-        effectiveScope === 'cadastre' ? waypoints.length : null,
-      all: allWaypoints.length,
-    },
+    scopeCounts,
     contributorSummaries,
     /** Corrections GPS appliquées par la base (écartées / repositionnées / validées) */
     curation,
