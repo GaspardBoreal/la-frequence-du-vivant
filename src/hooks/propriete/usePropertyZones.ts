@@ -11,6 +11,10 @@ export interface ProprieteZone {
   /** GeoJSON Polygon ([lng, lat]). */
   geometry: any;
   ordre: number;
+  visible: boolean;
+  verrouille: boolean;
+  opacite: number;
+  surface_m2: number | null;
 }
 
 export const ZONE_COLORS = ['#2f7d4f', '#b08d57', '#3b7ea1', '#8a6d3b', '#7a4b6b'];
@@ -34,6 +38,10 @@ export function useProprieteZones(proprieteId?: string) {
         note: r.note ?? null,
         geometry: r.geometry,
         ordre: r.ordre ?? 0,
+        visible: r.visible !== false,
+        verrouille: !!r.verrouille,
+        opacite: Number(r.opacite ?? 0.18),
+        surface_m2: r.surface_m2 != null ? Number(r.surface_m2) : null,
       }));
     },
   });
@@ -51,6 +59,10 @@ export function useProprieteZones(proprieteId?: string) {
       couleur?: string | null;
       note?: string | null;
       ordre?: number;
+      visible?: boolean | null;
+      verrouille?: boolean | null;
+      opacite?: number | null;
+      surface_m2?: number | null;
     }) => {
       if (!proprieteId) return null;
       const { data, error } = await supabase.rpc('upsert_propriete_zone' as any, {
@@ -61,6 +73,10 @@ export function useProprieteZones(proprieteId?: string) {
         _note: input.note ?? null,
         _ordre: input.ordre ?? 0,
         _zone_id: input.id ?? null,
+        _visible: input.visible ?? null,
+        _verrouille: input.verrouille ?? null,
+        _opacite: input.opacite ?? null,
+        _surface_m2: input.surface_m2 ?? null,
       });
       if (error) throw error;
       await invalidate();
