@@ -269,6 +269,20 @@ export const TabPalette: React.FC<Props> = ({
   } = useExcludedOnSite(proprieteId, exclusions);
   const [mapOpenFor, setMapOpenFor] = React.useState<string | null>(null);
 
+  /** Vignettes des refus effectivement présents (bandeau replié). */
+  const onSitePhotos = React.useMemo(
+    () =>
+      exclusions
+        .map((e) => ({
+          label: e.fr,
+          src: excludedPresence.get(excludedKey(e.latin))?.firstPhoto,
+        }))
+        .filter((p): p is { label: string; src: string } => !!p.src)
+        .slice(0, 3),
+    [exclusions, excludedPresence],
+  );
+
+
   /** Version sérialisable pour la synthèse scellée et l'impression. */
   const excludedPresenceRecord = React.useMemo(() => {
     const out: Record<string, { count: number; zoneNames?: string[] }> = {};
