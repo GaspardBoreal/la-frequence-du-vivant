@@ -8,6 +8,8 @@ import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
 import {
   useGpsOverrides,
   overrideKeyOf,
+  inatIdOf,
+  type GpsOverride,
   type GpsOverrideKind,
   type GpsOverrideStatus,
 } from '@/hooks/propriete/useGpsOverrides';
