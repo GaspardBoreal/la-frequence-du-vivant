@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFrenchSpeciesNames } from '@/hooks/useFrenchSpeciesNames';
