@@ -664,12 +664,16 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           const lat = Number(a?.exactLatitude);
           const lng = Number(a?.exactLongitude);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-          const k = dedupKey(sci, lat, lng);
-          if (seen.has(k)) continue;
+          const url: string | null = a?.originalUrl || a?.original_url || null;
+          const inatId = inatIdOf(url);
+          const ck = coordKey(sci, lat, lng);
+          const k = identityKey(inatId, sci, lat, lng);
+          if (seen.has(k) || seen.has(ck)) continue;
           seen.add(k);
+          seen.add(ck);
           // Les attributions n'ont pas d'identifiant : on les cible par l'URL
           // iNaturalist d'origine, sinon par espèce + coordonnées d'origine.
-          const attrKey: string = a?.originalUrl || k;
+          const attrKey: string = url || ck;
           out.push(
             applyOverride(
               {
@@ -687,7 +691,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
                 observerName: a?.observerName || null,
                 overrideKind: 'snapshot_attr',
                 overrideTargetKey: attrKey,
-                inatObservationId: null,
+                inatObservationId: inatId,
                 positionalAccuracy: null,
                 obscured: null,
                 gpsSource: null,
@@ -695,10 +699,11 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
                 overrideReason: null,
                 originalLat: null,
                 originalLng: null,
-                originalUrl: a?.originalUrl || null,
+                originalUrl: url,
               },
               'snapshot_attr',
               attrKey,
+              inatId,
             ),
           );
         }
@@ -706,7 +711,9 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     }
 
     return out;
-  }, [overrides]);
+    },
+    [resolveOverride],
+  );
 
   /** Observations de la portée active (cadastre par défaut). */
   const waypoints = useMemo(() => buildWaypoints(allRows), [buildWaypoints, allRows]);
