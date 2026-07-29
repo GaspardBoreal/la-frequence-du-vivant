@@ -188,7 +188,7 @@ export const PalettePlanSchema: React.FC<Props> = ({
     const unit = tool?.unit ?? 'u';
     return {
       num: i + 1,
-      color: (o.style?.color as string) || tool?.color || '#8a6d3b',
+      color: massifColor(o) || (o.style?.color as string) || tool?.color || '#8a6d3b',
       glyph: tool?.glyph ?? '•',
       name: o.nom || tool?.label || 'Ouvrage',
       type: tool?.label ?? o.outil_key,
