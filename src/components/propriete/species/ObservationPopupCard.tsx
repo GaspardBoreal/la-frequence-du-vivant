@@ -111,10 +111,11 @@ export const ObservationPopupCard: React.FC<Props> = ({
       </div>
     )}
 
-    {canCurate && onOpenGps && (
+    {canCurate && onStartInlineMove && (
       <button
         type="button"
-        onClick={() => onOpenGps(w)}
+        onClick={() => onStartInlineMove(w)}
+        title="Repositionner sans quitter la carte : le zoom et l'emplacement sont conservés"
         style={{
           marginTop: 8,
           width: '100%',
@@ -128,9 +129,30 @@ export const ObservationPopupCard: React.FC<Props> = ({
           cursor: 'pointer',
         }}
       >
-        ✥ Déplacer ce point (Contrôle GPS)
+        ✥ Déplacer ce point ici
       </button>
     )}
+
+    {canCurate && onOpenGps && (
+      <button
+        type="button"
+        onClick={() => onOpenGps(w)}
+        style={{
+          marginTop: 5,
+          width: '100%',
+          fontSize: 9.5,
+          padding: '4px 8px',
+          borderRadius: 999,
+          border: '1px solid rgba(47,93,58,.35)',
+          background: 'transparent',
+          color: '#2f5d3a',
+          cursor: 'pointer',
+        }}
+      >
+        Ouvrir la console de curation
+      </button>
+    )}
+
   </div>
 );
 
