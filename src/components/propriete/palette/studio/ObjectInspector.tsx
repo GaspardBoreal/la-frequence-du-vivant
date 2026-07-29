@@ -165,7 +165,7 @@ export const ObjectInspector: React.FC<Props> = ({
       </div>
 
       {!readOnly && (
-        <div className="mt-3 flex gap-1.5">
+        <div className="flex gap-1.5 border-t border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/96 px-3 py-2.5">
           <button
             onClick={onDuplicate}
             className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
@@ -180,6 +180,7 @@ export const ObjectInspector: React.FC<Props> = ({
           </button>
         </div>
       )}
+
     </div>
   );
 };
