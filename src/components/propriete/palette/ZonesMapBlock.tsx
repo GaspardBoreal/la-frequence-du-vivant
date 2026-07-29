@@ -111,13 +111,13 @@ export const ZonesMapBlock: React.FC<Props> = ({
   onSelectZone,
   onCreateZone,
   onDeleteZone,
-  maxZones = 5,
+  maxZones,
   readOnly,
 }) => {
   const [drawing, setDrawing] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
 
-  const full = zones.length >= maxZones;
+  const full = typeof maxZones === 'number' && zones.length >= maxZones;
 
   React.useEffect(() => {
     if (!fullscreen) return;
