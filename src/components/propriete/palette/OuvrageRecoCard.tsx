@@ -54,7 +54,8 @@ const Section: React.FC<{
 
 
 const textarea =
-  'w-full rounded-md border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-1.5 text-[11px] leading-relaxed outline-none focus:border-[hsl(var(--ds-forest))]/50';
+  'w-full rounded-md border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-1.5 text-[11px] leading-relaxed text-[hsl(var(--ds-forest-deep))] outline-none focus:border-[hsl(var(--ds-forest))]/50';
+
 
 const toLines = (a: string[]) => a.join('\n');
 const fromLines = (v: string) =>
