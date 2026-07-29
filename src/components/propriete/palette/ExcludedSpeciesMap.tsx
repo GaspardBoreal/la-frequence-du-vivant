@@ -62,6 +62,8 @@ export const ExcludedSpeciesMap: React.FC<Props> = ({
   const [fullscreen, setFullscreen] = useState(false);
   const [gpsConsole, setGpsConsole] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [lightboxId, setLightboxId] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (!fullscreen) return;
