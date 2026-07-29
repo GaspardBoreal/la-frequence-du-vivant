@@ -1,23 +1,27 @@
-## Où se trouve « Ajouter » aujourd'hui
+## Le problème
 
-L'interrupteur **Ajouter une parcelle à la propriété** est bien présent, mais il est replié dans le menu flottant en **bas à gauche de la carte** (icône « curseurs », celle qui porte la pastille chiffrée sur votre capture) : il faut ouvrir ce menu, puis basculer la ligne « Ajouter » de OFF à ON, et enfin cliquer une parcelle sur la carte.
+La barre d'onglets (« Portrait / J'observe / J'analyse / J'identifie / Je synthétise / Palette végétale ») est `sticky top-0 z-[60]` (`src/pages/ProprieteEspace.tsx`, ligne 370).
 
-Comme vous ne voyez pas le bandeau ambre « Seul le propriétaire… », vous avez bien les droits de curation : c'est uniquement un problème de découvrabilité.
+Le conteneur de la « Carte des révélations » (`RevealMapBlock.tsx`, ligne 487) est `relative` **sans z-index**, donc il ne crée aucun contexte d'empilement. Résultat : les panneaux internes de Leaflet, qui portent des z-index élevés définis en dur (`.leaflet-pane` 400 à 1000, plus les overrides de `src/index.css` lignes 1007-1009), sont comparés directement à la barre `z-[60]` — et gagnent. La carte, ses marqueurs et ses popups s'affichent donc par-dessus le menu au défilement.
 
-## Ce que je propose
+## La correction
 
-1. **Un vrai bouton visible** « ✛ Ajouter une parcelle » dans la barre d'outils au-dessus de la carte, à côté du champ de recherche : état ON/OFF explicite (fond ambre quand actif, libellé « Cliquez une parcelle… »). Il pilote le même état que l'interrupteur du menu, les deux restent synchronisés.
+Confiner Leaflet dans son propre contexte d'empilement, de sorte que tout son contenu interne reste plafonné à la couche du bloc carte (bien en dessous de `z-[60]`).
 
-2. **L'état vide devient actionnable** : dans le panneau « Parcelles retenues », le texte « Activez "Ajouter" et cliquez une parcelle sur la carte » devient un bouton cliquable qui active directement le mode ajout — plus besoin de chercher où est l'interrupteur.
+1. `src/components/propriete/identify/blocks/RevealMapBlock.tsx` — ajouter `isolate z-0` au conteneur de carte (ligne 487). En plein écran (portail `z-[2000]`) rien ne change, le portail garde sa propre couche.
 
-3. **Repère sur le menu flottant** : petite étiquette au survol (« Options carte & ajout de parcelles ») et mise en avant de la ligne « Ajouter » en tête de menu, pour que le lien entre le FAB et l'action soit évident.
+2. Appliquer la même correction aux autres cartes de l'espace Propriété, qui présentent exactement le même défaut et donc le même bug au scroll :
+   - `src/components/propriete/analyze/blocks/SamplesMapBlock.tsx` (ligne 183)
+   - `src/components/propriete/palette/ZonesMapBlock.tsx` (ligne 200)
+   - `src/components/propriete/palette/ExcludedSpeciesMap.tsx` (ligne 110)
+   - `src/components/propriete/portrait/PortraitCadastre.tsx` (ligne 277)
 
-4. **Guidage renforcé une fois le mode actif** : le bandeau « Cliquez sur une parcelle pour l'ajouter » gagne un bouton « Quitter le mode ajout », et le curseur de la carte passe en réticule pour signaler que le clic est armé.
-
-5. Le bouton visible s'affiche aussi en **plein écran** de la carte, où le besoin est le plus fort.
+3. Vérifier que les boutons flottants internes aux cartes (plein écran `z-[400]`, recentrage, bandeau GPS) restent visibles : comme ils sont enfants du même conteneur isolé, leur ordre relatif est préservé.
 
 ## Détails techniques
 
-- Fichier principal : `src/components/propriete/portrait/PortraitCadastre.tsx` — l'état `addMode` existe déjà ; il suffit de l'exposer dans la barre d'outils (ligne ~478) et dans l'état vide de `ParcelsList` (ligne ~442).
-- `src/components/propriete/portrait/CadastreOptionsMenu.tsx` — libellé/tooltip du FAB et mise en avant de la ligne « Ajouter » (déjà pilotée par `canCurate` / `onToggleAddMode`).
-- Aucun changement de base de données ni de droits : la RPC `can_curate_propriete_parcelles` et le flux d'enregistrement restent inchangés.
+`isolation: isolate` (classe Tailwind `isolate`) crée un contexte d'empilement sans modifier la mise en page ni les événements souris. Combiné à `z-0`, il garantit que le sous-arbre Leaflet ne peut plus se hisser au-dessus des éléments sticky de la page. C'est la solution recommandée pour Leaflet dans les mises en page avec en-têtes collants, préférable à l'alternative consistant à relever le z-index du menu, qui ne ferait que déplacer le conflit vers les autres overlays (drawers, lightbox, console GPS).
+
+## Vérification
+
+Contrôle visuel sur `/propriete/maison-sous-blossac`, onglet « J'identifie » : faire défiler jusqu'à ce que la carte atteigne la barre d'onglets, puis confirmer que la carte disparaît **sous** le menu. Répéter sur « J'analyse » (plan de prélèvements), « Palette végétale » (emplacements) et « Portrait » (cadastre).
