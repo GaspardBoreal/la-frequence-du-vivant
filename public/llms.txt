@@ -24,7 +24,6 @@ La Fréquence du Vivant relie poésie contemporaine, bioacoustique et science ci
 - [Marches du Vivant](/marches-du-vivant): Programme de marches sensibles et de science participative.
 - [Carte des Marches](/marches-du-vivant/carte-marches-du-vivant): Carte interactive des marches en France.
 - [Explorer les marches](/marches-du-vivant/explorer): Découvrir marches passées et à venir.
-- [Carnets de terrain](/marches-du-vivant/carnets-de-terrain): Récits et observations issus des marches.
 - [Entreprises](/marches-du-vivant/entreprises): Offre pour organisations et employeurs.
 - [Agriculture](/marches-du-vivant/agriculture): Volet agroécologique et sol vivant.
 - [Association](/marches-du-vivant/association): Cadre associatif et gouvernance.

@@ -178,6 +178,7 @@ const CarnetDeTerrain: React.FC = () => {
         <SEOHead
           title={`${displayName} — Carnet de Terrain`}
           description={marche.descriptif_court || `Carnet de terrain : ${displayName}, ${marche.ville}. ${marche.total_species} espèces, ${marche.photos_count} photos.`}
+          noIndex
         />
 
         {/* ═══ Section 1 : Hero ═══ */}

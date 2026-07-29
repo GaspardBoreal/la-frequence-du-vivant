@@ -72,6 +72,8 @@ const CarnetsDeTerrainGalerie: React.FC = () => {
         <SEOHead
           title="Carnets de Terrain — Les Marches du Vivant"
           description="Galerie des marches géopoétiques réalisées par les marcheurs du vivant. Photos, biodiversité, captations sonores : chaque carnet est une trace sensible du territoire."
+          canonicalUrl="https://la-frequence-du-vivant.com/marches-du-vivant/carnets-de-terrain"
+          noIndex
         />
 
         <CarnetTerrainHero
