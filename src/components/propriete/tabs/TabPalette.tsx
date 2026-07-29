@@ -162,6 +162,48 @@ export const TabPalette: React.FC<Props> = ({
     [zones, choiceOf, siteProfile],
   );
 
+  /* --- Pli des cartes d'emplacement : replié par défaut, mémorisé par propriété --- */
+  const openStorageKey = `palette-zones-open:${proprieteId ?? 'anon'}`;
+  const [openZoneIds, setOpenZoneIds] = React.useState<string[]>([]);
+  const openLoaded = React.useRef(false);
+
+  React.useEffect(() => {
+    openLoaded.current = false;
+    try {
+      const raw = localStorage.getItem(openStorageKey);
+      setOpenZoneIds(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      setOpenZoneIds([]);
+    }
+    openLoaded.current = true;
+  }, [openStorageKey]);
+
+  React.useEffect(() => {
+    if (!openLoaded.current) return;
+    try {
+      localStorage.setItem(openStorageKey, JSON.stringify(openZoneIds));
+    } catch {
+      /* stockage indisponible : le pli reste éphémère */
+    }
+  }, [openZoneIds, openStorageKey]);
+
+  const toggleZoneOpen = React.useCallback((id: string) => {
+    setOpenZoneIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
+
+  const allZonesOpen = zoneViews.length > 0 && zoneViews.every((z) => openZoneIds.includes(z.id));
+
+  const toggleAllZones = React.useCallback(() => {
+    setOpenZoneIds(allZonesOpen ? [] : zoneViews.map((z) => z.id));
+  }, [allZonesOpen, zoneViews]);
+
+  const totalSelectedSpecies = React.useMemo(
+    () => zoneViews.reduce((a, z) => a + z.selected.length, 0),
+    [zoneViews],
+  );
+  const emptyZonesCount = zoneViews.filter((z) => z.selected.length === 0).length;
+
+
   /** Palette générale quand aucune zone n'est tracée. */
   const globalRecommendations = React.useMemo(
     () => recommendForZone(siteProfile),
