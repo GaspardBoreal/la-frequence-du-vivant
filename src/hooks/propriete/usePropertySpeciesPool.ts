@@ -394,7 +394,13 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           const lng = Number(a?.exactLongitude);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
           const fallbackKey = `${normName(sci)}|${lat.toFixed(5)}|${lng.toFixed(5)}`;
-          const [eLat, eLng] = posOf('snapshot_attr', a?.originalUrl || fallbackKey, lat, lng);
+          const [eLat, eLng] = posOf(
+            'snapshot_attr',
+            a?.originalUrl || fallbackKey,
+            inatIdOf(a?.originalUrl || a?.original_url),
+            lat,
+            lng,
+          );
           return isInsideGeofence(fence, eLat, eLng);
         });
         if (kept.length > 0) {
