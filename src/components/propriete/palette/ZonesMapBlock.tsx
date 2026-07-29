@@ -272,14 +272,15 @@ export const ZonesMapBlock: React.FC<Props> = ({
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: active ? 'rgba(255,255,255,.85)' : color }}
             />
-            {String.fromCharCode(65 + i)} · {z.nom}
+            {zoneLabel(i)} · {z.nom}
           </button>
         );
       })}
 
       <span className="ml-auto flex items-center gap-2">
         <span className="text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
-          {zones.length} / {maxZones} emplacements
+          {zones.length} {zones.length > 1 ? 'emplacements' : 'emplacement'}
+          {typeof maxZones === 'number' ? ` / ${maxZones}` : ''}
         </span>
         <button
           onClick={() => setFullscreen((v) => !v)}
