@@ -566,7 +566,7 @@ export const TabPalette: React.FC<Props> = ({
           number={2}
           category="Emplacements"
           title="Une palette par lieu, pas une pour la propriété"
-          subtitle="Dessinez jusqu’à 5 zones à main levée : chacune reçoit sa propre palette, répartie en strates."
+          subtitle="Dessinez autant de zones que nécessaire à main levée : chacune reçoit sa propre palette, répartie en strates."
           index={1}
         >
           <ZonesMapBlock

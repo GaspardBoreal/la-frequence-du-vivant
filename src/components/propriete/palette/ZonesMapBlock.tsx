@@ -305,7 +305,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
       {zones.length === 0 && (
         <p className="text-xs italic text-[hsl(var(--ds-forest-deep))]/60 flex items-center gap-1.5">
           <MapPin className="w-3 h-3" /> Aucune zone tracée : la palette reste générale. Dessinez
-          jusqu’à {maxZones} emplacements pour obtenir une palette par lieu, et non une pour toute la
+          autant d’emplacements que nécessaire pour obtenir une palette par lieu, et non une pour toute la
           propriété.
         </p>
       )}
