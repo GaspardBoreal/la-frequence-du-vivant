@@ -581,6 +581,39 @@ export const PaletteStudio: React.FC<Props> = ({
             setTab('outils');
           }}
         />
+
+        {/* Fiche espèce : visionneuse photo plein écran (au-dessus de l'atelier) */}
+        {lightboxId && (
+          <div className="fixed inset-0 z-[2100]">
+            <RevealPhotoLightbox
+              items={visibleWaypoints}
+              currentId={lightboxId}
+              onChange={setLightboxId}
+              onClose={() => setLightboxId(null)}
+              displayNameFor={displayNameFor}
+            />
+          </div>
+        )}
+
+        {/* Contrôle GPS : mêmes gestes de curation que la Carte des révélations */}
+        {canCurate && gpsConsole && (
+          <GpsControlConsole
+            open={gpsConsole}
+            onClose={() => {
+              setGpsConsole(false);
+              setGpsFocusId(null);
+            }}
+            proprieteId={proprieteId}
+            candidates={waypoints}
+            contextCandidates={visibleWaypoints}
+            contextLabel={`Atelier · ${visibleWaypoints.length} observation${visibleWaypoints.length > 1 ? 's' : ''} affichée${visibleWaypoints.length > 1 ? 's' : ''}`}
+            parcelRings={fence.rings}
+            center={gpsCenter}
+            focusId={gpsFocusId}
+            displayNameFor={displayNameFor}
+          />
+        )}
+
       </div>
     </div>,
     document.body,
