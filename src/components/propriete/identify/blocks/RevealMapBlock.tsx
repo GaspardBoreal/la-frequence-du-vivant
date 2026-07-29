@@ -407,6 +407,11 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         </button>
       ))}
 
+      <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
+      <VivantScopeSwitch counts={scopeCounts} variant="inline" />
+
+
+
       {!fence.empty && (
         <>
           <span className="mx-1 h-4 w-px bg-[hsl(var(--ds-line))]" aria-hidden />
