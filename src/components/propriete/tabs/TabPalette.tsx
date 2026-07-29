@@ -512,7 +512,12 @@ export const TabPalette: React.FC<Props> = ({
             completedAt={palette.completedAt}
             propertyName={proprieteNom}
             commune={proprieteVille}
+            proprieteId={proprieteId}
+            parcelles={parcelles}
+            propertyZones={zones}
+            zoneSelectedSpecies={zoneSelectedSpecies}
           />,
+
           soloPrint.portalRef.current,
         )}
       {combinedPrinting &&
