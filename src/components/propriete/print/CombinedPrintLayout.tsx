@@ -451,8 +451,10 @@ export const CombinedPrintLayout: React.FC<Props> = ({
           (withAnalyze ? 7 : 3) +
           plateCount +
           (withIdentify ? 3 + atlasCount : 0) +
-          (withSynthesize ? 3 : 0)
+          (withSynthesize ? 3 : 0) +
+          (withPalette ? 3 + (hasAtelier ? 2 : 0) + sheetPages : 0)
         }
+
       />
     </div>
   );
