@@ -627,18 +627,6 @@ const MarchesDuVivantExplorer = () => {
                   ))}
                 </div>
 
-                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={4}
-                  className="text-center mt-8">
-                  <Link
-                    to="/marches-du-vivant/carnets-de-terrain"
-                    className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-medium text-sm group transition-colors"
-                  >
-                    <span className="border-b border-emerald-300/0 group-hover:border-emerald-500 transition-all pb-0.5">
-                      Découvrir tous les carnets de terrain
-                    </span>
-                    <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </motion.div>
               </div>
             </section>
           </>
