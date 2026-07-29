@@ -6176,6 +6176,48 @@ export type Database = {
           },
         ]
       }
+      propriete_ouvrage_kb: {
+        Row: {
+          calendrier: string | null
+          created_at: string
+          entretien: Json
+          especes: Json
+          id: string
+          mise_en_oeuvre: Json
+          outil_key: string
+          sources: Json
+          updated_at: string
+          updated_by: string | null
+          vigilance: Json
+        }
+        Insert: {
+          calendrier?: string | null
+          created_at?: string
+          entretien?: Json
+          especes?: Json
+          id?: string
+          mise_en_oeuvre?: Json
+          outil_key: string
+          sources?: Json
+          updated_at?: string
+          updated_by?: string | null
+          vigilance?: Json
+        }
+        Update: {
+          calendrier?: string | null
+          created_at?: string
+          entretien?: Json
+          especes?: Json
+          id?: string
+          mise_en_oeuvre?: Json
+          outil_key?: string
+          sources?: Json
+          updated_at?: string
+          updated_by?: string | null
+          vigilance?: Json
+        }
+        Relationships: []
+      }
       propriete_palette: {
         Row: {
           completed_at: string | null
