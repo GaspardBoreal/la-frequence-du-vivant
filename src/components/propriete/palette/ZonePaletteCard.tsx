@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Check, Plus, Leaf, ShieldCheck, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, Plus, Leaf, ShieldCheck, Sparkles, ChevronDown } from 'lucide-react';
 import {
   STRATE_LABEL,
   type PaletteStrate,
@@ -8,6 +8,7 @@ import {
 } from '@/lib/plantPaletteKb';
 import type { ScoredSpecies, StrateRecommendation, ZoneAmbiance } from '@/lib/paletteEngine';
 import { ZONE_AMBIANCES } from '@/lib/paletteEngine';
+import { zoneSignature } from './zoneSignature';
 
 const STRATE_TINT: Record<PaletteStrate, string> = {
   arbre: '#2f5d3a',
@@ -16,6 +17,15 @@ const STRATE_TINT: Record<PaletteStrate, string> = {
   herbacee: '#b08d57',
   couvre_sol: '#8a6d3b',
 };
+
+const STRATE_SHORT: Record<PaletteStrate, string> = {
+  arbre: 'Arb',
+  arbuste: 'Arbu',
+  grimpante: 'Grim',
+  herbacee: 'Herb',
+  couvre_sol: 'Sol',
+};
+
 
 const ScoreDot: React.FC<{ score: number }> = ({ score }) => {
   const color = score >= 80 ? '#2f7d4f' : score >= 60 ? '#b08d57' : '#c07a3a';
