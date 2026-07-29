@@ -42,11 +42,20 @@ import LivingLayer, {
   DEFAULT_VIVANT_FILTER,
   LivingFilterPanel,
   matchVivantFilter,
+  matchVivantBase,
+  tagKeysOf,
   typeOfWaypoint,
   indicatorOf,
   type VivantFilterState,
+  type VivantFilterContext,
+  type VivantTagFacet,
   type VivantType,
 } from './LivingLayer';
+import {
+  useMarcheurSpeciesTags,
+  getTagColor,
+  normalizeTagKey,
+} from '@/hooks/useMarcheurSpeciesTags';
 import { geometryAreaM2, fmtArea } from './geoMetrics';
 import ZoneTransformLayer from '../ZoneTransformLayer';
 import ZoneTransformBar from '../ZoneTransformBar';
