@@ -579,6 +579,10 @@ export const TabPalette: React.FC<Props> = ({
             onSelectZone={setActiveZoneId}
             onCreateZone={handleCreateZone}
             onDeleteZone={handleDeleteZone}
+            zoneSpeciesCount={Object.fromEntries(
+              palette.state.zones.map((z) => [z.zone_id, (z.selected ?? []).length]),
+            )}
+
             proprieteId={proprieteId}
             onPatchZone={(z, patch) =>
               upsertZone({

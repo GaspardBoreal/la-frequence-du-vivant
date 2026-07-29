@@ -16,6 +16,8 @@ import RichMap from '@/components/maps/RichMap';
 import { ZONE_COLORS, type ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import PaletteStudio from './studio/PaletteStudio';
+import ZoneChipMenu, { ZoneChipCaret } from './ZoneChipMenu';
+
 
 /* ── Couche de dessin à main levée ────────────────────────────────────────── */
 
@@ -115,7 +117,11 @@ interface Props {
   onPatchZone?: (z: ProprieteZone, patch: Partial<ProprieteZone>) => void;
   maxZones?: number;
   readOnly?: boolean;
+  /** Nombre d'espèces retenues par emplacement (pour la confirmation de suppression). */
+  zoneSpeciesCount?: Record<string, number>;
 }
+
+
 
 const zoneLabel = (i: number) =>
   i < 26
@@ -134,10 +140,15 @@ export const ZonesMapBlock: React.FC<Props> = ({
   onPatchZone,
   maxZones,
   readOnly,
+  zoneSpeciesCount,
 }) => {
+
+
   const [drawing, setDrawing] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
   const [studioOpen, setStudioOpen] = React.useState(false);
+  const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
+
 
   const full = typeof maxZones === 'number' && zones.length >= maxZones;
 
@@ -212,7 +223,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
           const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
           const active = z.id === activeZoneId;
           const ring = (z.geometry?.coordinates?.[0] ?? []).map((c: [number, number]) => [c[1], c[0]]);
-          if (ring.length < 3) return null;
+          if (ring.length < 3 || z.visible === false) return null;
+
           return (
             <Polygon
               key={z.id}
@@ -280,24 +292,65 @@ export const ZonesMapBlock: React.FC<Props> = ({
         const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
         const active = z.id === activeZoneId;
         return (
-          <button
+          <span
             key={z.id}
-            onClick={() => onSelectZone(active ? null : z.id)}
-            className={`text-[11px] px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 transition-all ${
+            className={`text-[11px] px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 transition-all cursor-pointer ${
               active
                 ? 'text-[hsl(var(--ds-cream))] border-transparent'
                 : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
-            }`}
+            } ${z.visible === false ? 'opacity-50' : ''}`}
             style={active ? { backgroundColor: color } : undefined}
+            onClick={() => onSelectZone(active ? null : z.id)}
           >
             <span
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: active ? 'rgba(255,255,255,.85)' : color }}
             />
             {zoneLabel(i)} · {z.nom}
-          </button>
+            {!readOnly && (
+              <ZoneChipCaret
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  onSelectZone(z.id);
+                  setMenuZone({ id: z.id, x: r.left, y: r.bottom });
+                }}
+              />
+            )}
+          </span>
         );
       })}
+
+      {activeZoneId && !readOnly && (
+        <span className="inline-flex items-center gap-1.5 pl-1.5 border-l border-[hsl(var(--ds-line))]">
+          <button
+            onClick={(e) => {
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setMenuZone({ id: activeZoneId, x: r.left, y: r.bottom });
+            }}
+            className="text-[11px] px-2.5 py-1 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] inline-flex items-center gap-1 hover:border-[hsl(var(--ds-forest))]/60"
+          >
+            <Pencil className="w-3 h-3" /> Renommer
+          </button>
+          <button
+            onClick={(e) => {
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setMenuZone({ id: activeZoneId, x: r.left, y: r.bottom });
+            }}
+            className="text-[11px] px-2.5 py-1 rounded-full border border-red-300 text-red-700 inline-flex items-center gap-1 hover:bg-red-50"
+          >
+            <Trash2 className="w-3 h-3" /> Supprimer
+          </button>
+          <button
+            onClick={() => onSelectZone(null)}
+            className="text-[11px] px-2.5 py-1 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] inline-flex items-center gap-1"
+          >
+            <Undo2 className="w-3 h-3" /> Désélectionner
+          </button>
+        </span>
+      )}
+
+
 
       <span className="ml-auto flex items-center gap-2">
         <span className="text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
@@ -340,6 +393,9 @@ export const ZonesMapBlock: React.FC<Props> = ({
     />
   ) : null;
 
+  const menuTarget = menuZone ? zones.find((z) => z.id === menuZone.id) : null;
+  const menuIndex = menuTarget ? zones.findIndex((z) => z.id === menuTarget.id) : -1;
+
   const body = (
     <div className="space-y-3">
       {studio}
@@ -352,24 +408,21 @@ export const ZonesMapBlock: React.FC<Props> = ({
           propriété.
         </p>
       )}
-      {activeZoneId && !readOnly && (
-        <div className="flex items-center gap-2 text-[11px]">
-          <button
-            onClick={() => onDeleteZone(activeZoneId)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-red-300 text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="w-3 h-3" /> Supprimer cette zone
-          </button>
-          <button
-            onClick={() => onSelectZone(null)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))]"
-          >
-            <Undo2 className="w-3 h-3" /> Désélectionner
-          </button>
-        </div>
+      {menuTarget && !readOnly && (
+        <ZoneChipMenu
+          zone={menuTarget}
+          label={zoneLabel(menuIndex)}
+          color={menuTarget.couleur || ZONE_COLORS[menuIndex % ZONE_COLORS.length]}
+          speciesCount={zoneSpeciesCount?.[menuTarget.id] ?? 0}
+          anchor={{ x: menuZone!.x, y: menuZone!.y }}
+          onPatch={(patch) => onPatchZone?.(menuTarget, patch)}
+          onDelete={() => onDeleteZone(menuTarget.id)}
+          onClose={() => setMenuZone(null)}
+        />
       )}
     </div>
   );
+
 
   if (!fullscreen) return body;
 
