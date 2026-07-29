@@ -160,51 +160,18 @@ export const ExcludedSpeciesMap: React.FC<Props> = ({
         {points.map((w) => (
           <Marker key={w.id} position={[w.lat, w.lng]} icon={refusIcon(false)}>
             <Popup>
-              <div style={{ minWidth: 190 }}>
-                {w.photoUrl && (
-                  <img
-                    src={w.photoUrl}
-                    alt={displayNameFor(w)}
-                    style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 8, marginBottom: 6 }}
-                    loading="lazy"
-                  />
-                )}
-                <div style={{ fontWeight: 600, fontSize: 13, color: '#7a3126' }}>
-                  {displayNameFor(w)}
-                </div>
-                <div style={{ fontStyle: 'italic', fontSize: 11, opacity: 0.7 }}>
-                  {w.scientificName}
-                </div>
-                <div style={{ fontSize: 11, marginTop: 4, opacity: 0.8 }}>
-                  {fmtDate(w.observationDate) ?? 'Date inconnue'} ·{' '}
-                  {w.source === 'marcheur' ? 'Marcheur' : 'iNaturalist'}
-                </div>
-                <div style={{ fontSize: 11, opacity: 0.7 }}>
-                  {GEOFENCE_LABELS[w.geofenceStatus]}
-                  {w.geofenceDistanceM != null ? ` · ${Math.round(w.geofenceDistanceM)} m` : ''}
-                </div>
-                {canCurate && (
-                  <button
-                    onClick={() => {
-                      setFocusId(w.id);
-                      setGpsConsole(true);
-                    }}
-                    style={{
-                      marginTop: 8,
-                      fontSize: 11,
-                      padding: '4px 8px',
-                      borderRadius: 999,
-                      border: `1px solid ${REFUS}`,
-                      color: REFUS,
-                      background: 'transparent',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Repositionner ce point
-                  </button>
-                )}
-              </div>
+              <ObservationPopupCard
+                waypoint={w}
+                displayName={displayNameFor(w)}
+                canCurate={!!canCurate}
+                onZoomPhoto={setLightboxId}
+                onOpenGps={(pt) => {
+                  setFocusId(pt.id);
+                  setGpsConsole(true);
+                }}
+              />
             </Popup>
+
           </Marker>
         ))}
       </RichMap>
