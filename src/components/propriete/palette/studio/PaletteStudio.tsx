@@ -89,7 +89,11 @@ export const PaletteStudio: React.FC<Props> = ({
   onDeleteZone,
   readOnly,
 }) => {
-  const { waypoints: rawWaypoints } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  const {
+    waypoints: rawWaypoints,
+    allWaypoints: rawAllWaypoints,
+    scopeCounts,
+  } = usePropertySpeciesPool(open ? proprieteId : undefined);
   const { data: canCurate } = useCanCurateParcelles(open ? proprieteId : undefined);
   const { displayNameFor } = useWaypointFrenchNames(rawWaypoints);
 
