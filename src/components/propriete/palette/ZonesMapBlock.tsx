@@ -10,6 +10,7 @@ import {
   MapPin,
   Undo2,
   Wand2,
+  Move3d,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import RichMap from '@/components/maps/RichMap';
@@ -17,6 +18,9 @@ import { ZONE_COLORS, type ProprieteZone } from '@/hooks/propriete/usePropertyZo
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import PaletteStudio from './studio/PaletteStudio';
 import ZoneChipMenu, { ZoneChipCaret } from './ZoneChipMenu';
+import ZoneTransformLayer from './ZoneTransformLayer';
+import ZoneTransformBar from './ZoneTransformBar';
+import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
 
 
 /* ── Couche de dessin à main levée ────────────────────────────────────────── */
@@ -148,6 +152,13 @@ export const ZonesMapBlock: React.FC<Props> = ({
   const [fullscreen, setFullscreen] = React.useState(false);
   const [studioOpen, setStudioOpen] = React.useState(false);
   const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
+  const transform = useZoneTransform(onPatchZone);
+  const activeZone = zones.find((z) => z.id === activeZoneId) ?? null;
+  const transformColor =
+    transform.zone
+      ? transform.zone.couleur ||
+        ZONE_COLORS[Math.max(0, zones.findIndex((z) => z.id === transform.zone!.id)) % ZONE_COLORS.length]
+      : ZONE_COLORS[0];
 
 
   const full = typeof maxZones === 'number' && zones.length >= maxZones;
@@ -208,7 +219,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
         fitPadding={[50, 50]}
         controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
         maxZoom={22}
-        scrollWheelZoom={!drawing}
+        scrollWheelZoom={!drawing && !transform.zone}
         height="100%"
       >
         {parcelles.map((p: any) => (
@@ -223,7 +234,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
           const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
           const active = z.id === activeZoneId;
           const ring = (z.geometry?.coordinates?.[0] ?? []).map((c: [number, number]) => [c[1], c[0]]);
-          if (ring.length < 3 || z.visible === false) return null;
+          if (ring.length < 3 || z.visible === false || z.id === transform.zone?.id) return null;
 
           return (
             <Polygon
@@ -246,12 +257,23 @@ export const ZonesMapBlock: React.FC<Props> = ({
           );
         })}
 
+        {transform.zone && (
+          <ZoneTransformLayer
+            ring={transform.ring}
+            color={transformColor}
+            onGestureStart={transform.pushHistory}
+            onPreview={transform.preview}
+          />
+        )}
+
         <FreehandLayer
           active={drawing}
           color={ZONE_COLORS[zones.length % ZONE_COLORS.length]}
           onFinish={handleFinish}
         />
       </RichMap>
+
+      <ZoneTransformBar api={transform} color={transformColor} />
 
       {drawing && (
         <div className="absolute inset-x-0 top-0 z-[500] pointer-events-none flex justify-center p-3">
@@ -331,6 +353,22 @@ export const ZonesMapBlock: React.FC<Props> = ({
             className="text-[11px] px-2.5 py-1 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] inline-flex items-center gap-1 hover:border-[hsl(var(--ds-forest))]/60"
           >
             <Pencil className="w-3 h-3" /> Renommer
+          </button>
+          <button
+            onClick={() => activeZone && transform.start(activeZone)}
+            disabled={!activeZone || !!activeZone.verrouille || !!transform.zone}
+            title={
+              activeZone?.verrouille
+                ? 'Emplacement verrouillé — déverrouillez-le pour modifier sa forme'
+                : 'Déplacer, redimensionner et lisser cet emplacement'
+            }
+            className={`text-[11px] px-2.5 py-1 rounded-full border inline-flex items-center gap-1 ${
+              !activeZone || activeZone.verrouille || transform.zone
+                ? 'border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))]/40 cursor-not-allowed'
+                : 'border-[hsl(var(--ds-forest))]/50 text-[hsl(var(--ds-forest))] hover:bg-[hsl(var(--ds-forest))]/8'
+            }`}
+          >
+            <Move3d className="w-3 h-3" /> Transformer
           </button>
           <button
             onClick={(e) => {
@@ -416,6 +454,10 @@ export const ZonesMapBlock: React.FC<Props> = ({
           speciesCount={zoneSpeciesCount?.[menuTarget.id] ?? 0}
           anchor={{ x: menuZone!.x, y: menuZone!.y }}
           onPatch={(patch) => onPatchZone?.(menuTarget, patch)}
+          onTransform={() => {
+            transform.start(menuTarget);
+            setMenuZone(null);
+          }}
           onDelete={() => onDeleteZone(menuTarget.id)}
           onClose={() => setMenuZone(null)}
         />
