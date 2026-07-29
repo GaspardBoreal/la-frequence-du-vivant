@@ -92,6 +92,40 @@ export const distanceToGeofenceM = (fence: Geofence, lat: number, lng: number): 
 export const isInsideGeofence = (fence: Geofence, lat: number, lng: number): boolean =>
   fence.rings.some((ring) => pointInRing(lat, lng, ring));
 
+/**
+ * Point le plus proche sur le bord des parcelles, très légèrement rentré vers
+ * l'intérieur (aimantation de curation). `null` si aucune parcelle.
+ */
+export const nearestPointOnGeofence = (
+  fence: Geofence,
+  lat: number,
+  lng: number,
+): { lat: number; lng: number; distanceM: number } | null => {
+  let best: { lat: number; lng: number; distanceM: number } | null = null;
+  for (const ring of fence.rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const aLng = ring[i][0];
+      const aLat = ring[i][1];
+      const bLng = ring[j][0];
+      const bLat = ring[j][1];
+      const mPerDegLat = 111320;
+      const mPerDegLng = 111320 * Math.cos((lat * Math.PI) / 180);
+      const px = (lng - aLng) * mPerDegLng;
+      const py = (lat - aLat) * mPerDegLat;
+      const vx = (bLng - aLng) * mPerDegLng;
+      const vy = (bLat - aLat) * mPerDegLat;
+      const len2 = vx * vx + vy * vy;
+      const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, (px * vx + py * vy) / len2));
+      const projLng = aLng + ((bLng - aLng) * t);
+      const projLat = aLat + ((bLat - aLat) * t);
+      const d = segDistanceM(lat, lng, aLat, aLng, bLat, bLng);
+      if (!best || d < best.distanceM) best = { lat: projLat, lng: projLng, distanceM: d };
+    }
+  }
+  return best;
+};
+
+
 export interface GeofenceEvaluation {
   status: GeofenceStatus;
   /** Distance signée au périmètre : 0 si à l'intérieur, sinon mètres à l'extérieur. */

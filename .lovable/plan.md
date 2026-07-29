@@ -1,43 +1,56 @@
-## Constat
+## Le problème
 
-Dans l'Atelier du jardin nourricier, la couche « Vivant » (`src/components/propriete/palette/studio/LivingLayer.tsx`) n'affiche qu'un **tooltip au survol** avec `w.commonName` brut — d'où « great stinging nettle » au lieu de « Grande ortie ». Le composant accepte déjà une prop `frenchName` et une prop `onSelect`, mais `PaletteStudio.tsx` (ligne ~428) ne les passe pas. Aucune photo, aucun clic, aucun agrandissement, aucun bouton Contrôle GPS.
+Aujourd'hui le bouton « Déplacer ce point (Contrôle GPS) » ouvre `GpsControlConsole`, un overlay plein écran avec **sa propre carte** (`center = point sélectionné`, `zoom = 16` en dur). Conséquences :
 
-À l'inverse, `identify/blocks/RevealMapBlock.tsx` fait tout cela : résolution FR via `useFrenchSpeciesNamesAuto`, popup avec vignette photo cliquable, date, source, statut géofence/curation, bouton « ✥ Déplacer ce point (Contrôle GPS) », lightbox plein écran (`RevealPhotoLightbox`).
+1. le zoom fin travaillé par l'utilisateur est perdu (on repart à 16) ;
+2. le contexte visuel (emplacement/zone dessinée de l'Atelier, calques, filtres de la Carte des révélations, fond de plan choisi) disparaît, puisque la console recompose une carte neuve.
 
-## Objectif
+Vérifié dans le code : `GpsControlConsole.tsx` l.694-703 (`center={selected ? [selected.lat, selected.lng] : center} zoom={16}`), et les 3 appelants (`RevealMapBlock`, `PaletteStudio`, `ExcludedSpeciesMap`) qui ne transmettent ni zoom ni état de vue.
 
-Une seule et même fiche espèce, partout : Carte des révélations, Atelier (couche Vivant), carte des espèces écartées.
+Je suis d'accord avec votre intuition : **la curation doit s'exécuter dans la carte où l'on est**, la console plein écran devenant l'outil de revue en lot, pas le passage obligé pour un point.
 
-## Ce qu'on construit
+## Ce que je propose
 
-**1. Composant partagé de fiche observation**
-Nouveau `src/components/propriete/species/ObservationPopupCard.tsx` : extraction fidèle du contenu de popup de `RevealMapBlock` (vignette + « 🔍 Cliquer pour agrandir », nom FR en gras, latin en italique, source/observateur, date, alerte hors périmètre, mention « position corrigée », bouton Contrôle GPS conditionné à `canCurate`). Props : `waypoint`, `displayName`, `canCurate`, `onZoomPhoto`, `onOpenGps`.
+### 1. Un mode « Curation sur place » (le cœur)
 
-**2. Hook partagé de noms FR**
-Nouveau `src/hooks/propriete/useWaypointFrenchNames.ts` : encapsule la construction de l'entrée dédupliquée + `useFrenchSpeciesNamesAuto` et retourne un `displayNameFor(waypoint)`. Utilisé par les trois cartes → un seul comportement, un seul cache.
+Nouveau composant partagé `InlineGpsCuration` + hook `useInlineGpsCuration`, utilisables tel quel par les trois cartes.
 
-**3. LivingLayer devient cliquable**
-- Tooltip survol : nom FR (via `displayNameFor`) + latin.
-- Ajout d'un `<Popup>` rendant `ObservationPopupCard`.
-- Le marqueur reste un `CircleMarker` (rendu léger du nuage), le popup s'ouvre au clic.
+Déclenchement : le bouton du popup partagé `ObservationPopupCard` devient **« ✥ Déplacer ce point »** et bascule la carte courante en mode curation — aucun changement de vue, aucun remontage de carte, le zoom et l'emplacement restent exactement là où ils sont.
 
-**4. Câblage dans PaletteStudio**
-- Appel du hook FR sur `waypoints`, passage de `frenchName` et des handlers à `LivingLayer`.
-- État `lightboxId` + rendu de `RevealPhotoLightbox` (déplacé/réexporté depuis `propriete/species/`) au-dessus de l'atelier plein écran (z-index supérieur à l'overlay de l'Atelier).
-- État `gpsConsole` + `GpsControlConsole`, avec le contexte = observations actuellement visibles selon les filtres Vivant (même logique de contexte que `openGpsFromPoint` dans RevealMapBlock). Bouton visible uniquement si `useCanCurateParcelles` est vrai.
-- Enrichissement géofence : réutilisation de `buildGeofence`/`evaluateGeofence` sur les parcelles déjà chargées par l'Atelier, pour que la fiche affiche le même statut « hors périmètre » que dans J'identifie.
+Comportement :
+- le marqueur ciblé devient **draggable** (halo doré pulsé, ombre portée « point soulevé ») ;
+- une **ligne pointillée dorée** relie en continu la position d'origine à la position provisoire, avec la distance en mètres affichée en direct ;
+- clic n'importe où sur la carte = poser le point là (alternative au glisser) ;
+- **aimantation 25 m** sur la parcelle, reprise de la logique de géofence existante (`buildGeofence` / `evaluateGeofence`) : le liseré de la parcelle vire au vert quand le point retombe dedans ;
+- **barre de confirmation flottante** en bas de la carte (pas une modale) : `Sedum de Palmer · déplacé de 43 m · dans la parcelle` + `Enregistrer` / `Annuler` / `Écarter cette observation` ;
+- `Échap` annule, `Entrée` enregistre.
 
-**5. Mise en cohérence des deux autres cartes**
-- `RevealMapBlock` : remplacement de son popup inline par `ObservationPopupCard` et de son bloc FR par le hook (aucun changement visuel attendu).
-- `ExcludedSpeciesMap` : même carte de fiche, avec la vignette rendue cliquable/agrandissable (aujourd'hui image non cliquable).
+Écriture : réutilise `useSetGpsOverride` — la donnée iNaturalist source n'est jamais réécrite, on empile une correction dans `observation_gps_overrides` avec `original_lat/lon`. Aucune modification de base nécessaire.
 
-## Détails techniques
+Après enregistrement : toast sobre + « Annuler » (rollback via `useClearGpsOverride`), le marqueur se repositionne par mise à jour de cache — la carte ne bouge pas.
 
-- `RevealPhotoLightbox` et `useRevealIndex` restent inchangés ; seule la lightbox est réutilisée, déplacée sous `src/components/propriete/species/` avec réexport depuis l'ancien chemin pour ne rien casser.
-- Pas de changement de base de données, pas de nouvelle requête réseau : `usePropertySpeciesPool` est déjà appelé par l'Atelier.
-- Les popups Leaflet dans l'overlay plein écran de l'Atelier héritent du z-index de la carte ; la lightbox sera rendue via `createPortal` en `z-[2100]` pour passer au-dessus.
+### 2. La console plein écran conserve la vue
 
-## Points à confirmer (je peux partir sur les valeurs par défaut proposées)
+Elle reste utile (revue en lot, points suspects, lightbox). Elle est désormais accessible via un bouton discret « Console de curation » dans la barre d'outils de chaque carte, plus depuis le popup d'un point.
 
-1. Dans l'Atelier, faut-il aussi le **bandeau latéral liste des observations** (`RevealObservationList`, recherche/tri/tags) ? Par défaut : non — l'Atelier a déjà son panneau latéral Calques/Outils/Vivant/Bilan, on se limite aux fiches cliquables.
-2. Bouton « Contrôle GPS » dans l'Atelier : par défaut oui, réservé aux curateurs, comme dans J'identifie.
+Deux corrections :
+- `GpsControlConsole` accepte `initialZoom` et `initialCenter` ; les appelants transmettent le centre/zoom **réels** de leur carte (capturés par un petit `useMapViewState` sur un `useMapEvents('moveend'|'zoomend')`), au lieu du zoom 16 en dur ;
+- à la fermeture, la carte d'origine est restaurée à l'identique (elle n'aura jamais été démontée, l'overlay se superposant).
+
+### 3. Parité stricte des trois vues
+
+`RevealMapBlock` (Carte des révélations), `PaletteStudio → LivingLayer` (Atelier) et `ExcludedSpeciesMap` consomment le même trio : `ObservationPopupCard` + `useWaypointFrenchNames` + `InlineGpsCuration`. Une amélioration future se propage aux trois sans copier-coller.
+
+## Détail technique
+
+- `src/hooks/propriete/useInlineGpsCuration.ts` — état (`targetId`, `draft`, `distance`, `snapped`), aimantation géofence, appels `useSetGpsOverride` / `useClearGpsOverride`, invalidations de cache existantes.
+- `src/components/propriete/gps/InlineGpsCuration.tsx` — marqueur draggable + `Polyline` pointillée + `MapClickCapture` (extrait de la console pour être partagé) ; à insérer comme enfant de `RichMap`.
+- `src/components/propriete/gps/InlineGpsBar.tsx` — barre de confirmation flottante (overlay DOM au-dessus de la carte, `z-[1200]`).
+- `src/components/maps/hooks/useMapViewState.ts` — expose center/zoom courants aux parents.
+- `ObservationPopupCard.tsx` — le bouton appelle `onStartInlineMove(w)` ; `onOpenGps` conservé en action secondaire discrète (« Ouvrir la console »).
+- `GpsControlConsole.tsx` — nouvelles props `initialZoom`/`initialCenter` ; extraction de `MapClickCapture` vers un module partagé, zéro régression sur `AdminGpsControl`.
+- Aucune migration SQL, aucune nouvelle RPC.
+
+## Vérification
+
+Sur `/propriete/jardin-monde-deviat` → Atelier : zoom fin sur le Sedum de Palmer, glisser le point, vérifier que le zoom, l'emplacement dessiné et les calques restent intacts, enregistrer, recharger et confirmer la persistance de la correction. Même test sur « J'identifie → Carte des révélations ».

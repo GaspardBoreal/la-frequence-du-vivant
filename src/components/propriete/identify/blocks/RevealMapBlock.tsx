@@ -27,6 +27,10 @@ import {
 } from '@/hooks/propriete/usePropertyParcelles';
 import { buildGeofence, evaluateGeofence, GEOFENCE_LABELS } from '@/lib/geofence';
 import GpsControlConsole, { type GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
+import InlineGpsCurationLayer from '@/components/propriete/gps/InlineGpsCurationLayer';
+import InlineGpsBar from '@/components/propriete/gps/InlineGpsBar';
+import { useInlineGpsCuration } from '@/hooks/propriete/useInlineGpsCuration';
+import { MapViewReporter, useMapViewState } from '@/components/maps/hooks/useMapViewState';
 
 
 const norm = (s: string | null | undefined): string =>
@@ -86,6 +90,9 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     [rawWaypoints, fence, bufferM],
   );
 
+  /** Curation « sur place » : on ne quitte jamais la carte ni le zoom courant. */
+  const { view, onChange: onViewChange } = useMapViewState();
+
   /**
    * Les observations écartées par un curateur sont déjà retirées par la RPC
    * (donc partout : propriété, marches, explorations, événements, exports).
@@ -103,6 +110,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
   // Même résolveur FR que le bandeau « Empreinte biodiversité » (source unique)
   const { displayNameFor } = useWaypointFrenchNames(waypoints);
+  const inlineGps = useInlineGpsCuration({ proprieteId, fence, displayNameFor });
 
   // Référence de cohérence : même compteur que le bandeau « Empreinte biodiversité »
   const speciesRef = usePropertySpeciesCount(proprieteId);
@@ -487,6 +495,9 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         maxZoom={22}
         height="100%"
       >
+        <MapViewReporter onChange={onViewChange} />
+        <InlineGpsCurationLayer curation={inlineGps} />
+
         {showParcels &&
           drawnParcelles.map((p) => (
             <GeoJSON
@@ -504,7 +515,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
             </GeoJSON>
           ))}
 
-        {filtered.map((w) => {
+        {filtered.filter((w) => w.id !== inlineGps.target?.id).map((w) => {
           const color = KINGDOM_COLORS[kingdomFrom(w.kingdom)] || KINGDOM_COLORS.others;
           // Hors correspondance : point fantôme, non cliquable, pour garder le contexte.
           const dim = indexActive && !matchedIds.has(w.id);
@@ -529,6 +540,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                   displayName={displayNameFor(w)}
                   canCurate={!!canCurate}
                   onZoomPhoto={setLightboxId}
+                  onStartInlineMove={(pt) => inlineGps.start(pt)}
                   onOpenGps={(pt) => openGpsFromPoint(pt as GpsCandidate)}
                 />
               </Popup>
@@ -538,6 +550,8 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
           );
         })}
       </RichMap>
+
+      <InlineGpsBar curation={inlineGps} />
 
       {/* Fullscreen toggle : top-left to avoid overlapping Géo/Sat/Relief/Cadastre (top-right) */}
       <button
@@ -682,6 +696,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
           contextCandidates={gpsContextCandidates}
           contextLabel={gpsContextLabel}
           parcelRings={parcelRings}
+          initialZoom={view?.zoom}
           center={center}
           focusId={gpsFocusId}
           displayNameFor={displayNameFor}

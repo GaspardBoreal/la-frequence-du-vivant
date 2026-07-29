@@ -20,6 +20,10 @@ import { useCanCurateParcelles } from '@/hooks/propriete/usePropertyParcelles';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
 import { buildGeofence, evaluateGeofence } from '@/lib/geofence';
 import GpsControlConsole, { type GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
+import InlineGpsCurationLayer from '@/components/propriete/gps/InlineGpsCurationLayer';
+import InlineGpsBar from '@/components/propriete/gps/InlineGpsBar';
+import { useInlineGpsCuration } from '@/hooks/propriete/useInlineGpsCuration';
+import { MapViewReporter, useMapViewState } from '@/components/maps/hooks/useMapViewState';
 import { RevealPhotoLightbox } from '@/components/propriete/identify/blocks/RevealPhotoLightbox';
 
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
@@ -98,6 +102,14 @@ export const PaletteStudio: React.FC<Props> = ({
         }),
     [rawWaypoints, fence],
   );
+
+  /** Curation « sur place » : même geste que dans « J'identifie », sans perdre le plan. */
+  const { view, onChange: onViewChange } = useMapViewState();
+  const inlineGps = useInlineGpsCuration({
+    proprieteId,
+    fence,
+    displayNameFor: (w) => frenchName(w.scientificName || '') || w.commonName || '—',
+  });
 
   const frenchName = React.useCallback(
     (scientific: string, fallback?: string | null) =>
@@ -427,6 +439,9 @@ export const PaletteStudio: React.FC<Props> = ({
             scrollWheelZoom={!drawGeom}
             height="100%"
           >
+            <MapViewReporter onChange={onViewChange} />
+            <InlineGpsCurationLayer curation={inlineGps} />
+
             {system.parcelles &&
               parcelles.map((p: any) => (
                 <GeoJSON
@@ -476,11 +491,12 @@ export const PaletteStudio: React.FC<Props> = ({
 
             {system.vivant && (
               <LivingLayer
-                waypoints={waypoints}
+                waypoints={waypoints.filter((w) => w.id !== inlineGps.target?.id)}
                 filter={vivantFilter}
                 frenchName={frenchName}
                 canCurate={!!canCurate}
                 onZoomPhoto={setLightboxId}
+                onStartInlineMove={(w) => inlineGps.start(w)}
                 onOpenGps={(w) => {
                   setGpsFocusId(w.id);
                   setGpsConsole(true);
@@ -506,6 +522,8 @@ export const PaletteStudio: React.FC<Props> = ({
               />
             )}
           </RichMap>
+
+          <InlineGpsBar curation={inlineGps} />
 
           {/* Bandeau de guidage */}
           {(drawGeom || pendingInspiration) && (
@@ -626,6 +644,7 @@ export const PaletteStudio: React.FC<Props> = ({
             contextCandidates={visibleWaypoints}
             contextLabel={`Atelier · ${visibleWaypoints.length} observation${visibleWaypoints.length > 1 ? 's' : ''} affichée${visibleWaypoints.length > 1 ? 's' : ''}`}
             parcelRings={fence.rings}
+            initialZoom={view?.zoom}
             center={gpsCenter}
             focusId={gpsFocusId}
             displayNameFor={displayNameFor}

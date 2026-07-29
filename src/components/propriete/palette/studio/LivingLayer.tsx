@@ -92,6 +92,7 @@ interface LayerProps {
   onSelect?: (w: ObservationPopupWaypoint) => void;
   canCurate?: boolean;
   onZoomPhoto?: (id: string) => void;
+  onStartInlineMove?: (w: ObservationPopupWaypoint) => void;
   onOpenGps?: (w: ObservationPopupWaypoint) => void;
 }
 
@@ -103,6 +104,7 @@ export const LivingLayer: React.FC<LayerProps> = ({
   onSelect,
   canCurate,
   onZoomPhoto,
+  onStartInlineMove,
   onOpenGps,
 }) => (
   <>
@@ -139,6 +141,7 @@ export const LivingLayer: React.FC<LayerProps> = ({
               displayName={label}
               canCurate={canCurate}
               onZoomPhoto={onZoomPhoto}
+              onStartInlineMove={onStartInlineMove}
               onOpenGps={onOpenGps}
             />
           </Popup>

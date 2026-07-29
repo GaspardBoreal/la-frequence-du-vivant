@@ -15,9 +15,12 @@ interface Props {
   canCurate?: boolean;
   /** Ouvre la visionneuse plein écran sur cette observation. */
   onZoomPhoto?: (id: string) => void;
-  /** Ouvre la console de contrôle GPS centrée sur ce point. */
+  /** Repositionne le point directement dans la carte courante (zoom conservé). */
+  onStartInlineMove?: (w: ObservationPopupWaypoint) => void;
+  /** Ouvre la console de contrôle GPS centrée sur ce point (revue en lot). */
   onOpenGps?: (w: ObservationPopupWaypoint) => void;
 }
+
 
 /**
  * Fiche espèce partagée par toutes les cartes d'observations d'une propriété.
@@ -28,8 +31,10 @@ export const ObservationPopupCard: React.FC<Props> = ({
   displayName,
   canCurate,
   onZoomPhoto,
+  onStartInlineMove,
   onOpenGps,
 }) => (
+
   <div style={{ minWidth: 170 }}>
     {w.photoUrl &&
       (onZoomPhoto ? (
@@ -106,10 +111,11 @@ export const ObservationPopupCard: React.FC<Props> = ({
       </div>
     )}
 
-    {canCurate && onOpenGps && (
+    {canCurate && onStartInlineMove && (
       <button
         type="button"
-        onClick={() => onOpenGps(w)}
+        onClick={() => onStartInlineMove(w)}
+        title="Repositionner sans quitter la carte : le zoom et l'emplacement sont conservés"
         style={{
           marginTop: 8,
           width: '100%',
@@ -123,9 +129,30 @@ export const ObservationPopupCard: React.FC<Props> = ({
           cursor: 'pointer',
         }}
       >
-        ✥ Déplacer ce point (Contrôle GPS)
+        ✥ Déplacer ce point ici
       </button>
     )}
+
+    {canCurate && onOpenGps && (
+      <button
+        type="button"
+        onClick={() => onOpenGps(w)}
+        style={{
+          marginTop: 5,
+          width: '100%',
+          fontSize: 9.5,
+          padding: '4px 8px',
+          borderRadius: 999,
+          border: '1px solid rgba(47,93,58,.35)',
+          background: 'transparent',
+          color: '#2f5d3a',
+          cursor: 'pointer',
+        }}
+      >
+        Ouvrir la console de curation
+      </button>
+    )}
+
   </div>
 );
 

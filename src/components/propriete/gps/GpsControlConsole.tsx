@@ -43,6 +43,9 @@ interface Props {
   center: [number, number];
   /** Ouvre la console directement sur ce point (sélectionné, prêt à être glissé). */
   focusId?: string | null;
+  /** Zoom de départ hérité de la carte appelante (sinon 16). */
+  initialZoom?: number;
+
   displayNameFor: (w: { scientificName?: string | null; commonName?: string | null }) => string;
 }
 
@@ -138,6 +141,7 @@ export const GpsControlConsole: React.FC<Props> = ({
   contextLabel,
   parcelRings,
   center,
+  initialZoom,
   focusId,
   displayNameFor,
 }) => {
@@ -692,7 +696,7 @@ export const GpsControlConsole: React.FC<Props> = ({
           <section className="relative min-h-[380px]">
             <RichMap
               center={selected ? [selected.lat, selected.lng] : center}
-              zoom={16}
+              zoom={initialZoom ?? 16}
               bounds={
                 list.length > 1
                   ? list.map((c) => [c.lat, c.lng] as [number, number])
