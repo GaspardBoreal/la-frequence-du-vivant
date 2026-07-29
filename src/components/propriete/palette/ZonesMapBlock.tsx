@@ -398,7 +398,13 @@ export const ZonesMapBlock: React.FC<Props> = ({
         <span className="text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
           {zones.length} {zones.length > 1 ? 'emplacements' : 'emplacement'}
           {typeof maxZones === 'number' ? ` / ${maxZones}` : ''}
+          {objets.length > 0 && (
+            <span className="font-normal text-[hsl(var(--ds-forest-deep))]/65">
+              {' '}· {objets.length} ouvrage{objets.length > 1 ? 's' : ''}
+            </span>
+          )}
         </span>
+
         {proprieteId && (
           <button
             onClick={() => setStudioOpen(true)}
