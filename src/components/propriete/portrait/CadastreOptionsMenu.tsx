@@ -69,14 +69,18 @@ const CadastreOptionsMenu: React.FC<Props> = ({
   const Trigger = (
     <button
       type="button"
-      aria-label="Options de la carte"
+      aria-label={canCurate ? 'Options carte & ajout de parcelles' : 'Options de la carte'}
+      title={canCurate ? 'Options carte & ajout de parcelles' : 'Options de la carte'}
       aria-expanded={open}
       onClick={() => {
         haptic();
         setOpen((v) => !v);
       }}
-      className="relative h-11 w-11 rounded-full bg-black/60 backdrop-blur-xl border border-white/15 text-white flex items-center justify-center shadow-lg hover:bg-black/70 transition-all duration-200 active:scale-95"
+      className={`relative h-11 w-11 rounded-full bg-black/60 backdrop-blur-xl border text-white flex items-center justify-center shadow-lg hover:bg-black/70 transition-all duration-200 active:scale-95 ${
+        addMode ? 'border-amber-400/80 ring-2 ring-amber-400/40' : 'border-white/15'
+      }`}
     >
+
       <motion.span
         animate={{ rotate: open ? 90 : 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
