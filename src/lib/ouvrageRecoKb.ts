@@ -824,7 +824,12 @@ const FAMILY_FALLBACK: Record<ToolFamilyKey, OuvrageReco> = {
       an1: 'Taille de formation, recharge du paillage.',
       an3: 'Taille de production, gestion par la récolte.',
     },
-    especes: ['Variétés locales et rustiques, plants d’origine tracée.'],
+    especes: [
+      'Fruitiers rustiques de plein vent : Malus, Pyrus, Prunus domestica (variétés locales tracées)',
+      'Petits fruits de lisière : Ribes rubrum, Ribes nigrum, Rubus idaeus',
+      'Aromatiques compagnes : Thymus vulgaris, Salvia officinalis, Origanum vulgare',
+      'Auxiliaires du potager : Tagetes patula, Calendula officinalis, Borago officinalis',
+    ],
     vigilance: ['Surestimer la surface cultivable est l’erreur la plus fréquente.'],
     sources: [S_MSV, S_CNPF],
   },
