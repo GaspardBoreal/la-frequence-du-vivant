@@ -1,5 +1,6 @@
 import React from 'react';
 import { CircleMarker, Popup, Tooltip } from 'react-leaflet';
+import { Search, X, Tag as TagIcon, RotateCcw } from 'lucide-react';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 import { PLANT_INDICATORS, type PlantFamily } from '@/lib/plantIndicatorKb';
 import ObservationPopupCard, {
@@ -9,12 +10,34 @@ import ObservationPopupCard, {
 
 export type VivantType = 'flore' | 'faune' | 'champignons' | 'autres';
 export type VivantSource = 'marcheur' | 'inaturalist';
+export type VivantTagMode = 'and' | 'or' | 'not';
+
+export interface VivantTagFilter {
+  /** Clés normalisées des libellés de tags sélectionnés. */
+  labels: string[];
+  mode: VivantTagMode;
+}
 
 export interface VivantFilterState {
   types: VivantType[];
   familles: PlantFamily[];
   sources: VivantSource[];
   bioOnly: boolean;
+  /** Recherche libre : nom français, nom scientifique, observateur. */
+  query: string;
+  /** Filtre « mes tags » (table marcheur_species_tags). */
+  tags: VivantTagFilter;
+}
+
+/**
+ * Contexte de filtrage : ce que le waypoint ne porte pas lui-même.
+ * Optionnel — sans lui, recherche et tags sont simplement inopérants,
+ * ce qui garde `matchVivantFilter` rétrocompatible.
+ */
+export interface VivantFilterContext {
+  displayName?: (scientific: string, fallback?: string | null) => string;
+  /** nom scientifique normalisé → clés de tags normalisées. */
+  tagsBySpecies?: Map<string, string[]>;
 }
 
 export const DEFAULT_VIVANT_FILTER: VivantFilterState = {
@@ -22,6 +45,8 @@ export const DEFAULT_VIVANT_FILTER: VivantFilterState = {
   familles: [],
   sources: ['marcheur', 'inaturalist'],
   bioOnly: false,
+  query: '',
+  tags: { labels: [], mode: 'or' },
 };
 
 export const TYPE_META: Record<VivantType, { label: string; color: string; glyph: string }> = {
