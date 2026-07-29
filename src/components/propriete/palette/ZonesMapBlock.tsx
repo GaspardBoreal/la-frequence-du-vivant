@@ -321,6 +321,36 @@ export const ZonesMapBlock: React.FC<Props> = ({
         );
       })}
 
+      {activeZoneId && !readOnly && (
+        <span className="inline-flex items-center gap-1.5 pl-1.5 border-l border-[hsl(var(--ds-line))]">
+          <button
+            onClick={(e) => {
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setMenuZone({ id: activeZoneId, x: r.left, y: r.bottom });
+            }}
+            className="text-[11px] px-2.5 py-1 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] inline-flex items-center gap-1 hover:border-[hsl(var(--ds-forest))]/60"
+          >
+            <Pencil className="w-3 h-3" /> Renommer
+          </button>
+          <button
+            onClick={(e) => {
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setMenuZone({ id: activeZoneId, x: r.left, y: r.bottom });
+            }}
+            className="text-[11px] px-2.5 py-1 rounded-full border border-red-300 text-red-700 inline-flex items-center gap-1 hover:bg-red-50"
+          >
+            <Trash2 className="w-3 h-3" /> Supprimer
+          </button>
+          <button
+            onClick={() => onSelectZone(null)}
+            className="text-[11px] px-2.5 py-1 rounded-full border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] inline-flex items-center gap-1"
+          >
+            <Undo2 className="w-3 h-3" /> Désélectionner
+          </button>
+        </span>
+      )}
+
+
 
       <span className="ml-auto flex items-center gap-2">
         <span className="text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
