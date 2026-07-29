@@ -280,24 +280,35 @@ export const ZonesMapBlock: React.FC<Props> = ({
         const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
         const active = z.id === activeZoneId;
         return (
-          <button
+          <span
             key={z.id}
-            onClick={() => onSelectZone(active ? null : z.id)}
-            className={`text-[11px] px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 transition-all ${
+            className={`text-[11px] px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 transition-all cursor-pointer ${
               active
                 ? 'text-[hsl(var(--ds-cream))] border-transparent'
                 : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
-            }`}
+            } ${z.visible === false ? 'opacity-50' : ''}`}
             style={active ? { backgroundColor: color } : undefined}
+            onClick={() => onSelectZone(active ? null : z.id)}
           >
             <span
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: active ? 'rgba(255,255,255,.85)' : color }}
             />
             {zoneLabel(i)} · {z.nom}
-          </button>
+            {!readOnly && (
+              <ZoneChipCaret
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  onSelectZone(z.id);
+                  setMenuZone({ id: z.id, x: r.left, y: r.bottom });
+                }}
+              />
+            )}
+          </span>
         );
       })}
+
 
       <span className="ml-auto flex items-center gap-2">
         <span className="text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
