@@ -17,6 +17,7 @@ import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { ZONE_COLORS } from '@/hooks/propriete/usePropertyZones';
 import { fmtArea } from './geoMetrics';
+import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 
 export interface SystemLayerState {
   parcelles: boolean;
