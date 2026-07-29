@@ -1,6 +1,8 @@
 import React from 'react';
 import { Trash2, Copy, X, MapPin } from 'lucide-react';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import { isChromaticTool, teintesOf, floraisonOf } from '@/lib/nuancierKb';
+import NuancierPicker from './NuancierPicker';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
@@ -146,6 +148,26 @@ export const ObjectInspector: React.FC<Props> = ({
             placeholder="Pourquoi ici ? à quelle saison ?"
           />
         </label>
+
+        {isChromaticTool(objet.outil_key) && (
+          <div>
+            <span className="mb-1 block text-[10px] uppercase tracking-wider opacity-55">
+              Nuancier du massif
+            </span>
+            <NuancierPicker
+              readOnly={readOnly}
+              teintes={teintesOf(objet.meta)}
+              floraison={floraisonOf(objet.meta)}
+              onChange={(patch) => onPatch({ meta: { ...objet.meta, ...patch } as any })}
+              onApplyName={(n) => {
+                setNom(n);
+                onPatch({ nom: n });
+              }}
+            />
+          </div>
+        )}
+
+
 
         <label className="flex items-center gap-2">
           <span className="text-[10px] uppercase tracking-wider opacity-55">Couleur</span>

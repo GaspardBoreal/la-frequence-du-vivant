@@ -2,9 +2,76 @@ import React from 'react';
 import { Marker, Polygon, Polyline, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import { hexOf, isChromaticTool, teintesOf } from '@/lib/nuancierKb';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import { fmtMeasure, measureFor } from './geoMetrics';
+
+/**
+ * Applique un vrai dégradé SVG des teintes du nuancier au remplissage du
+ * polygone Leaflet : un massif bicolore se lit comme bicolore sur le plan.
+ */
+const useGradientFill = (teintes: string[], id: string) => {
+  const ref = React.useRef<any>(null);
+  React.useEffect(() => {
+    const layer = ref.current;
+    const path: SVGPathElement | undefined = layer?._path;
+    if (!path) return;
+    const svg = path.ownerSVGElement;
+    if (!svg) return;
+    if (teintes.length < 2) {
+      path.removeAttribute('fill');
+      path.style.fill = '';
+      return;
+    }
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      svg.insertBefore(defs, svg.firstChild);
+    }
+    const gid = `ds-nuancier-${id}`;
+    defs.querySelector(`#${gid}`)?.remove();
+    const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    grad.setAttribute('id', gid);
+    grad.setAttribute('x1', '0%');
+    grad.setAttribute('y1', '0%');
+    grad.setAttribute('x2', '100%');
+    grad.setAttribute('y2', '35%');
+    teintes.forEach((t, i) => {
+      const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop.setAttribute('offset', `${(i / (teintes.length - 1)) * 100}%`);
+      stop.setAttribute('stop-color', hexOf(t));
+      grad.appendChild(stop);
+    });
+    defs.appendChild(grad);
+    path.style.fill = `url(#${gid})`;
+    return () => {
+      defs?.querySelector(`#${gid}`)?.remove();
+    };
+  }, [teintes.join(','), id]);
+  return ref;
+};
+
+const MassifPolygon: React.FC<{
+  id: string;
+  teintes: string[];
+  positions: any;
+  pathOptions: any;
+  onClick: () => void;
+  children?: React.ReactNode;
+}> = ({ id, teintes, positions, pathOptions, onClick, children }) => {
+  const ref = useGradientFill(teintes, id);
+  return (
+    <Polygon
+      ref={ref as any}
+      positions={positions}
+      pathOptions={pathOptions}
+      eventHandlers={{ click: onClick }}
+    >
+      {children}
+    </Polygon>
+  );
+};
 
 const glyphIcon = (glyph: string, color: string, selected: boolean, scale = 1) =>
   L.divIcon({
@@ -114,23 +181,40 @@ export const ObjectsLayer: React.FC<Props> = ({
         if (o.geometry?.type === 'Polygon') {
           const ring = (o.geometry.coordinates?.[0] || []).map((c: number[]) => [c[1], c[0]]);
           if (ring.length < 3) return null;
+          const teintes = isChromaticTool(o.outil_key) ? teintesOf(o.meta) : [];
+          const pathOptions = {
+            color: teintes.length ? hexOf(teintes[0]) : color,
+            weight: selected ? 3.5 : 2,
+            fillColor: teintes.length ? hexOf(teintes[0]) : color,
+            fillOpacity: layerOpacity * (selected ? 0.45 : 0.28 + timeIndex * 0.06),
+            opacity: layerOpacity,
+          };
+          if (teintes.length >= 2) {
+            return (
+              <MassifPolygon
+                key={o.id}
+                id={o.id}
+                teintes={teintes}
+                positions={ring as any}
+                pathOptions={pathOptions}
+                onClick={() => onSelect(o.id)}
+              >
+                {tip}
+              </MassifPolygon>
+            );
+          }
           return (
             <Polygon
               key={o.id}
               positions={ring as any}
-              pathOptions={{
-                color,
-                weight: selected ? 3.5 : 2,
-                fillColor: color,
-                fillOpacity: layerOpacity * (selected ? 0.4 : 0.24 + timeIndex * 0.06),
-                opacity: layerOpacity,
-              }}
+              pathOptions={pathOptions}
               eventHandlers={{ click: () => onSelect(o.id) }}
             >
               {tip}
             </Polygon>
           );
         }
+
         return null;
       })}
     </>
