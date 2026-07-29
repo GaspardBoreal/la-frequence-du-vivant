@@ -8,6 +8,7 @@ import {
   Check,
   Loader2,
   Quote,
+  Pencil,
   Wand2,
   Ban,
   CalendarRange,
@@ -127,6 +128,7 @@ export const TabPalette: React.FC<Props> = ({
 
   const [activeZoneId, setActiveZoneId] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const [ruleEditing, setRuleEditing] = React.useState(false);
   const [mode, setMode] = React.useState<'summary' | 'edit'>(
     palette.completedAt ? 'summary' : 'edit',
   );
@@ -510,27 +512,53 @@ export const TabPalette: React.FC<Props> = ({
           title="Une phrase qui vaut filtre"
           subtitle="Tout ce qui entre au jardin doit y répondre. Sinon, on ne plante pas."
           index={0}
-          hero={
-            <div className="p-4 flex items-start gap-3">
-              <Quote className="w-5 h-5 text-[hsl(var(--ds-gold))] shrink-0" />
-              <p className="font-serif italic text-lg leading-snug text-[hsl(var(--ds-forest-deep))]">
-                {autoRule}
-              </p>
-            </div>
-          }
         >
-          <textarea
-            rows={3}
-            value={palette.state.site_rule ?? ''}
-            onChange={(e) => palette.setField('site_rule', e.target.value)}
-            placeholder={autoRule}
-            className="w-full rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-3 font-serif italic text-base text-[hsl(var(--ds-forest-deep))] outline-none focus:border-[hsl(var(--ds-gold))] resize-y placeholder:not-italic placeholder:text-[hsl(var(--ds-forest-deep))]/35"
-          />
-          <p className="mt-1.5 text-[11px] italic text-[hsl(var(--ds-forest-deep))]/55">
-            Laissée vide, la règle déduite de vos étapes 2, 3 et 4 sera imprimée.
-          </p>
+          {ruleEditing ? (
+            <div className="space-y-2">
+              <textarea
+                autoFocus
+                rows={3}
+                value={palette.state.site_rule ?? ''}
+                onChange={(e) => palette.setField('site_rule', e.target.value)}
+                placeholder={autoRule}
+                className="w-full rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-3 font-serif italic text-base text-[hsl(var(--ds-forest-deep))] outline-none focus:border-[hsl(var(--ds-gold))] resize-y placeholder:not-italic placeholder:text-[hsl(var(--ds-forest-deep))]/35"
+              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[11px] italic text-[hsl(var(--ds-forest-deep))]/55">
+                  Laissée vide, la règle déduite de vos étapes 2, 3 et 4 sera imprimée.
+                </p>
+                <button
+                  onClick={() => setRuleEditing(false)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--ds-forest-deep))] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-[hsl(var(--ds-cream))] hover:bg-[hsl(var(--ds-forest))]"
+                >
+                  <Check className="w-3.5 h-3.5" /> Valider
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="group relative rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 p-4 pr-4 sm:pr-32">
+              <div className="flex items-start gap-3">
+                <Quote className="w-5 h-5 text-[hsl(var(--ds-gold))] shrink-0" />
+                <p className="font-serif italic text-lg leading-snug text-[hsl(var(--ds-forest-deep))]">
+                  {palette.state.site_rule?.trim() || autoRule}
+                </p>
+              </div>
+              <div className="mt-3 flex items-center gap-2 sm:mt-0 sm:absolute sm:right-4 sm:top-4">
+                <span className="hidden sm:inline text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest-deep))]/40">
+                  {palette.state.site_rule?.trim() ? 'Votre règle' : 'Déduite'}
+                </span>
+                <button
+                  onClick={() => setRuleEditing(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-cream))] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-[hsl(var(--ds-forest-deep))] transition-colors hover:bg-[hsl(var(--ds-forest))]/10"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Modifier
+                </button>
+              </div>
+            </div>
+          )}
         </AnalyzeCard>
       </div>
+
 
       {/* 02 — Emplacements */}
       <div id="palette-block-zones" className="scroll-mt-24">
