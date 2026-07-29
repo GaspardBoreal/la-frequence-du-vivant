@@ -844,7 +844,12 @@ const FAMILY_FALLBACK: Record<ToolFamilyKey, OuvrageReco> = {
       an1: 'Reprise ponctuelle après le premier cycle gel-dégel.',
       an3: 'Inspection périodique, réparation par tronçons.',
     },
-    especes: ['Laisser s’installer la flore saxicole ou d’ourlet, marqueur de patrimonialité.'],
+    especes: [
+      'Flore saxicole des joints : Sedum album, Umbilicus rupestris, Asplenium trichomanes',
+      'Ourlet de pied de mur : Geranium robertianum, Campanula rotundifolia, Silene vulgaris',
+      'Ligneux d’accompagnement taillés bas : Buxus sempervirens, Ligustrum vulgare',
+      'Ne jamais laisser s’installer un ligneux à fort enracinement dans la maçonnerie sèche.',
+    ],
     vigilance: ['Vérifier les servitudes patrimoniales et le périmètre ABF.'],
     sources: [S_ABPS],
   },
