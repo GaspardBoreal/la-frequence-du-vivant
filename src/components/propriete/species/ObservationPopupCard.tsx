@@ -31,8 +31,10 @@ export const ObservationPopupCard: React.FC<Props> = ({
   displayName,
   canCurate,
   onZoomPhoto,
+  onStartInlineMove,
   onOpenGps,
 }) => (
+
   <div style={{ minWidth: 170 }}>
     {w.photoUrl &&
       (onZoomPhoto ? (
