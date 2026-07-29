@@ -109,16 +109,8 @@ export const PaletteStudio: React.FC<Props> = ({
   const [gpsConsole, setGpsConsole] = React.useState(false);
   const [gpsFocusId, setGpsFocusId] = React.useState<string | null>(null);
 
-  /** Observations réellement affichées (filtres Vivant) : contexte lightbox + Contrôle GPS. */
-  const visibleWaypoints = React.useMemo(
-    () => waypoints.filter((w) => matchVivantFilter(w, vivantFilter)),
-    [waypoints, vivantFilter],
-  );
 
-  const gpsCenter = React.useMemo<[number, number]>(
-    () => center ?? (waypoints[0] ? [waypoints[0].lat, waypoints[0].lng] : [46.6, 2.5]),
-    [center, waypoints],
-  );
+
 
 
 
