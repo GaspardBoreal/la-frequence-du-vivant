@@ -90,6 +90,16 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     [rawWaypoints, fence, bufferM],
   );
 
+  /** Console GPS : hors portée, pour pouvoir rapatrier les points hors cadastre. */
+  const annotatedAll = useMemo<GpsCandidate[]>(
+    () =>
+      rawAllWaypoints.map((w) => {
+        const ev = evaluateGeofence(fence, w.lat, w.lng, bufferM);
+        return { ...w, geofenceStatus: ev.status, geofenceDistanceM: ev.distanceM };
+      }),
+    [rawAllWaypoints, fence, bufferM],
+  );
+
   /** Curation « sur place » : on ne quitte jamais la carte ni le zoom courant. */
   const { view, onChange: onViewChange } = useMapViewState();
 
