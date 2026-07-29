@@ -94,6 +94,7 @@ export const LayersPanel: React.FC<Props> = ({
   onTransformZone,
   system,
   onSystem,
+  scopeCounts,
   objetCountByCalque,
   readOnly,
 }) => {
