@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Move, Scaling, Spline, Undo2, X } from 'lucide-react';
 import { fmtArea } from './studio/geoMetrics';
 import type { ZoneTransformApi } from '@/hooks/propriete/useZoneTransform';
+import { MAP_CHROME_TOP_PADDING } from '@/components/maps/mapChrome';
 
 /**
  * Barre flottante du mode Transformer : mémo des gestes, lissage,
