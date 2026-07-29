@@ -573,13 +573,20 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   const waypoints = useMemo(() => buildWaypoints(allRows), [buildWaypoints, allRows]);
 
   /**
-   * Toutes les observations, hors portée : réservé au Contrôle GPS, qui doit
-   * pouvoir rapatrier les points situés hors du plan cadastral.
+   * Toutes les observations, hors portée ET hors fenêtre temporelle : réservé
+   * au Contrôle GPS, qui doit pouvoir rapatrier les points situés hors emprise.
    */
   const allWaypoints = useMemo(
     () => (allRows === unscopedRows ? waypoints : buildWaypoints(unscopedRows)),
     [buildWaypoints, unscopedRows, allRows, waypoints],
   );
+
+  /** Observations de la fenêtre temporelle, toutes portées confondues. */
+  const periodWaypoints = useMemo(
+    () => (timeRows === unscopedRows ? allWaypoints : buildWaypoints(timeRows)),
+    [buildWaypoints, timeRows, unscopedRows, allWaypoints],
+  );
+
 
 
 
