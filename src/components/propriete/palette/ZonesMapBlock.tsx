@@ -103,6 +103,11 @@ interface Props {
   readOnly?: boolean;
 }
 
+const zoneLabel = (i: number) =>
+  i < 26
+    ? String.fromCharCode(65 + i)
+    : `${String.fromCharCode(65 + Math.floor(i / 26) - 1)}${String.fromCharCode(65 + (i % 26))}`;
+
 export const ZonesMapBlock: React.FC<Props> = ({
   center,
   parcelles,
@@ -111,13 +116,13 @@ export const ZonesMapBlock: React.FC<Props> = ({
   onSelectZone,
   onCreateZone,
   onDeleteZone,
-  maxZones = 5,
+  maxZones,
   readOnly,
 }) => {
   const [drawing, setDrawing] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
 
-  const full = zones.length >= maxZones;
+  const full = typeof maxZones === 'number' && zones.length >= maxZones;
 
   React.useEffect(() => {
     if (!fullscreen) return;
@@ -272,14 +277,15 @@ export const ZonesMapBlock: React.FC<Props> = ({
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: active ? 'rgba(255,255,255,.85)' : color }}
             />
-            {String.fromCharCode(65 + i)} · {z.nom}
+            {zoneLabel(i)} · {z.nom}
           </button>
         );
       })}
 
       <span className="ml-auto flex items-center gap-2">
         <span className="text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
-          {zones.length} / {maxZones} emplacements
+          {zones.length} {zones.length > 1 ? 'emplacements' : 'emplacement'}
+          {typeof maxZones === 'number' ? ` / ${maxZones}` : ''}
         </span>
         <button
           onClick={() => setFullscreen((v) => !v)}
@@ -299,7 +305,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
       {zones.length === 0 && (
         <p className="text-xs italic text-[hsl(var(--ds-forest-deep))]/60 flex items-center gap-1.5">
           <MapPin className="w-3 h-3" /> Aucune zone tracée : la palette reste générale. Dessinez
-          jusqu’à {maxZones} emplacements pour obtenir une palette par lieu, et non une pour toute la
+          autant d’emplacements que nécessaire pour obtenir une palette par lieu, et non une pour toute la
           propriété.
         </p>
       )}
