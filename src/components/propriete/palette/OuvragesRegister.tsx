@@ -181,6 +181,8 @@ export const OuvragesRegister: React.FC<Props> = ({
                       reco={reco}
                       measure={measure}
                       note={o.meta?.note ?? ''}
+                      zoneNom={zone?.nom ?? null}
+                      zoneSelected={(o.zone_id && zoneSelectedSpecies?.[o.zone_id]) || []}
                       readOnly={readOnly}
                       canEditKb={canEditKb}
                       onSaveKb={(r) => saveReco(o.outil_key, r)}
