@@ -611,9 +611,13 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         const lat = Number(a?.latitude);
         const lng = Number(a?.longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-        const k = dedupKey(sci, lat, lng);
+        const inatId = inatIdOf(a?.inaturalist_id ?? a?.inaturalist_observation_id);
+        const k = identityKey(inatId, sci, lat, lng);
         if (seen.has(k)) continue;
         seen.add(k);
+        // On réserve aussi la clé coordonnées : un jumeau snapshot sans URL
+        // exploitable reste ainsi neutralisé.
+        seen.add(coordKey(sci, lat, lng));
         const obsId: string | null = a?.obs_id || null;
         out.push(
           applyOverride(
@@ -632,7 +636,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
               observerName: null,
               overrideKind: 'observation',
               overrideTargetKey: obsId,
-              inatObservationId: a?.inaturalist_id ? String(a.inaturalist_id) : null,
+              inatObservationId: inatId,
               positionalAccuracy:
                 a?.positional_accuracy != null ? Number(a.positional_accuracy) : null,
               obscured: a?.obscured ?? null,
@@ -644,6 +648,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
             },
             'observation',
             obsId,
+            inatId,
           ),
         );
       }
