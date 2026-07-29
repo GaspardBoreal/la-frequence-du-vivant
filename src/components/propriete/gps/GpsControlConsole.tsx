@@ -43,6 +43,9 @@ interface Props {
   center: [number, number];
   /** Ouvre la console directement sur ce point (sélectionné, prêt à être glissé). */
   focusId?: string | null;
+  /** Zoom de départ hérité de la carte appelante (sinon 16). */
+  initialZoom?: number;
+
   displayNameFor: (w: { scientificName?: string | null; commonName?: string | null }) => string;
 }
 
