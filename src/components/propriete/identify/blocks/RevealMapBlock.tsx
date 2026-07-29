@@ -92,7 +92,6 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
   /** Curation « sur place » : on ne quitte jamais la carte ni le zoom courant. */
   const { view, onChange: onViewChange } = useMapViewState();
-  const inlineGps = useInlineGpsCuration({ proprieteId, fence });
 
   /**
    * Les observations écartées par un curateur sont déjà retirées par la RPC
@@ -111,6 +110,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
 
   // Même résolveur FR que le bandeau « Empreinte biodiversité » (source unique)
   const { displayNameFor } = useWaypointFrenchNames(waypoints);
+  const inlineGps = useInlineGpsCuration({ proprieteId, fence, displayNameFor });
 
   // Référence de cohérence : même compteur que le bandeau « Empreinte biodiversité »
   const speciesRef = usePropertySpeciesCount(proprieteId);
