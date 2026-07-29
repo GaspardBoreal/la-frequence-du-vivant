@@ -216,8 +216,8 @@ export const PaletteStudio: React.FC<Props> = ({
   }, [myTags]);
 
   const filterContext = React.useMemo<VivantFilterContext>(
-    () => ({ displayName: displayNameFor, tagsBySpecies }),
-    [displayNameFor, tagsBySpecies],
+    () => ({ displayName: frenchName, tagsBySpecies }),
+    [frenchName, tagsBySpecies],
   );
 
   /** Observations réellement affichées (filtres Vivant) : contexte lightbox + Contrôle GPS. */
