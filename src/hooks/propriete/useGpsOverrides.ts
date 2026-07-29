@@ -24,6 +24,23 @@ export interface GpsOverride {
 export const overrideKeyOf = (kind: GpsOverrideKind, key: string) => `${kind}:${key}`;
 
 /**
+ * Identité universelle d'une observation : son identifiant iNaturalist.
+ * Une même observation peut apparaître comme ligne `marcheur_observations`
+ * (clé UUID) ET comme attribution de snapshot (clé URL iNaturalist). L'id iNat
+ * est le seul dénominateur commun : il sert de clé de déduplication et de
+ * propagation des corrections GPS entre les deux représentations.
+ */
+export const inatIdOf = (value: string | number | null | undefined): string | null => {
+  if (value == null) return null;
+  const s = String(value).trim();
+  if (!s) return null;
+  const m = s.match(/observations\/(\d+)/);
+  if (m) return m[1];
+  if (/^\d+(\.\d+)?$/.test(s)) return String(Math.round(Number(s)));
+  return null;
+};
+
+/**
  * Corrections GPS éditoriales (lecture publique).
  * Surcouche locale : la donnée iNaturalist d'origine n'est jamais modifiée
  * chez le fournisseur, seulement conservée dans `original_lat/lon`.

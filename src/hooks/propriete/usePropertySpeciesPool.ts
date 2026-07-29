@@ -8,6 +8,8 @@ import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
 import {
   useGpsOverrides,
   overrideKeyOf,
+  inatIdOf,
+  type GpsOverride,
   type GpsOverrideKind,
   type GpsOverrideStatus,
 } from '@/hooks/propriete/useGpsOverrides';
@@ -164,7 +166,120 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   });
 
   const poolsLoading = pools.some((q) => q.isLoading);
-  const unscopedRows = useMemo(() => pools.flatMap((q) => q.data?.species || []), [pools]);
+  const rawRows = useMemo(() => pools.flatMap((q) => q.data?.species || []), [pools]);
+
+  /**
+   * Déduplication par IDENTITÉ (id iNaturalist), jamais par coordonnées.
+   *
+   * Une même observation réelle peut arriver par deux canaux : une ligne
+   * `marcheur_observations` (avec `inaturalist_id`) et une attribution du
+   * snapshot iNaturalist (`originalUrl`). Tant que les deux copies partagent la
+   * même position elles se superposent ; dès qu'une correction GPS déplace
+   * l'une des deux, un « jumeau fantôme » apparaît sur la carte.
+   *
+   * On supprime donc ici, en amont de tout le reste (comptages, cartes, listes,
+   * impressions), les attributions snapshot dont l'id iNat est déjà porté par
+   * une observation marcheur — la version marcheur reste prioritaire.
+   */
+  const unscopedRows = useMemo(() => {
+    const out: RpcSpecies[] = [];
+    let changed = false;
+
+    for (const sp of rawRows) {
+      const marcheurAttrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
+      const marcheurInat = new Set<string>();
+      for (const a of marcheurAttrs) {
+        const id = inatIdOf(a?.inaturalist_id ?? a?.inaturalist_observation_id);
+        if (id) marcheurInat.add(id);
+      }
+
+      const seenInat = new Set<string>(marcheurInat);
+      const groups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+      const nextGroups: any[] = [];
+      let removed = 0;
+
+      for (const g of groups) {
+        const list: any[] = Array.isArray(g) ? g : [g];
+        const kept = list.filter((a: any) => {
+          const id = inatIdOf(a?.originalUrl || a?.original_url);
+          if (!id) return true;
+          if (seenInat.has(id)) {
+            removed++;
+            return false;
+          }
+          seenInat.add(id);
+          return true;
+        });
+        if (kept.length > 0) nextGroups.push(Array.isArray(g) ? kept : kept[0]);
+      }
+
+      if (removed === 0) {
+        out.push(sp);
+        continue;
+      }
+      changed = true;
+      out.push({
+        ...sp,
+        attributions: nextGroups,
+        observations: Math.max(0, (sp.observations || 0) - removed),
+      });
+    }
+
+    return changed ? out : rawRows;
+  }, [rawRows]);
+
+  /**
+   * Index secondaire des corrections GPS, par identité iNaturalist.
+   *
+   * Une correction posée sur la ligne marcheur (`observation:<uuid>`) doit
+   * s'appliquer à son jumeau snapshot (`snapshot_attr:<url iNat>`) et
+   * réciproquement : les deux désignent la même observation de terrain.
+   */
+  const overridesByInat = useMemo(() => {
+    const m = new Map<string, GpsOverride>();
+    if (overrides.size === 0) return m;
+
+    for (const sp of rawRows) {
+      const attrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
+      for (const a of attrs) {
+        const inat = inatIdOf(a?.inaturalist_id ?? a?.inaturalist_observation_id);
+        if (!inat || !a?.obs_id) continue;
+        const ov = overrides.get(overrideKeyOf('observation', a.obs_id));
+        if (ov && !m.has(inat)) m.set(inat, ov);
+      }
+
+      const groups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+      for (const g of groups) {
+        const list: any[] = Array.isArray(g) ? g : [g];
+        for (const a of list) {
+          const url = a?.originalUrl || a?.original_url;
+          const inat = inatIdOf(url);
+          if (!inat || !url) continue;
+          const ov = overrides.get(overrideKeyOf('snapshot_attr', url));
+          if (ov && !m.has(inat)) m.set(inat, ov);
+        }
+      }
+    }
+    return m;
+  }, [rawRows, overrides]);
+
+  /** Résolution d'une correction : clé directe, puis identité iNaturalist. */
+  const resolveOverride = useCallback(
+    (
+      kind: GpsOverrideKind,
+      key: string | null | undefined,
+      inatId: string | null,
+    ): GpsOverride | undefined => {
+      if (key) {
+        const direct = overrides.get(overrideKeyOf(kind, key));
+        if (direct) return direct;
+      }
+      return inatId ? overridesByInat.get(inatId) : undefined;
+    },
+    [overrides, overridesByInat],
+  );
+
+
 
   /**
    * Portée « cadastre » (réglage global de la fiche propriété) : on ne conserve
@@ -239,11 +354,11 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     const posOf = (
       kind: 'observation' | 'snapshot_attr',
       key: string | null,
+      inatId: string | null,
       lat: number,
       lng: number,
     ): [number, number] => {
-      if (!key) return [lat, lng];
-      const ov = overrides.get(overrideKeyOf(kind, key));
+      const ov = resolveOverride(kind, key, inatId);
       if (ov?.status === 'repositioned' && ov.lat != null && ov.lon != null) {
         return [Number(ov.lat), Number(ov.lon)];
       }
@@ -259,7 +374,13 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           const lat = Number(a?.latitude);
           const lng = Number(a?.longitude);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
-          const [eLat, eLng] = posOf('observation', a?.obs_id || null, lat, lng);
+          const [eLat, eLng] = posOf(
+            'observation',
+            a?.obs_id || null,
+            inatIdOf(a?.inaturalist_id ?? a?.inaturalist_observation_id),
+            lat,
+            lng,
+          );
           return isInsideGeofence(fence, eLat, eLng);
         },
       );
@@ -273,7 +394,13 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           const lng = Number(a?.exactLongitude);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
           const fallbackKey = `${normName(sci)}|${lat.toFixed(5)}|${lng.toFixed(5)}`;
-          const [eLat, eLng] = posOf('snapshot_attr', a?.originalUrl || fallbackKey, lat, lng);
+          const [eLat, eLng] = posOf(
+            'snapshot_attr',
+            a?.originalUrl || fallbackKey,
+            inatIdOf(a?.originalUrl || a?.original_url),
+            lat,
+            lng,
+          );
           return isInsideGeofence(fence, eLat, eLng);
         });
         if (kept.length > 0) {
@@ -293,7 +420,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       });
     }
     return out;
-  }, [timeRows, effectiveScope, fence, overrides]);
+  }, [timeRows, effectiveScope, fence, resolveOverride]);
 
 
   /** Synthèse de curation GPS, cumulée sur toutes les explorations liées. */
@@ -439,21 +566,28 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
   //    bandeau « Empreinte biodiversité » (qui, lui, ne filtre pas sur le GPS).
   //    Les corrections éditoriales (`observation_gps_overrides`) sont appliquées
   //    ici, à la lecture : position corrigée + statut d'exclusion.
-  const buildWaypoints = useCallback((rows: RpcSpecies[]) => {
+  const buildWaypoints = useCallback(
+    (rows: RpcSpecies[]) => {
     const out: PropertyWaypoint[] = [];
     const seen = new Set<string>();
     let n = 0;
 
-    const dedupKey = (sci: string, lat: number, lng: number) =>
+    /**
+     * Clé de dédup : identité iNaturalist en priorité (insensible à tout
+     * repositionnement), sinon espèce + coordonnées **d'origine**.
+     */
+    const coordKey = (sci: string, lat: number, lng: number) =>
       `${normName(sci)}|${lat.toFixed(5)}|${lng.toFixed(5)}`;
+    const identityKey = (inatId: string | null, sci: string, lat: number, lng: number) =>
+      inatId ? `inat:${inatId}` : coordKey(sci, lat, lng);
 
     const applyOverride = (
       wp: PropertyWaypoint,
       kind: 'observation' | 'snapshot_attr',
       key: string | null,
+      inatId: string | null,
     ): PropertyWaypoint => {
-      if (!key) return wp;
-      const ov = overrides.get(overrideKeyOf(kind, key));
+      const ov = resolveOverride(kind, key, inatId);
       if (!ov) return wp;
       const next: PropertyWaypoint = {
         ...wp,
@@ -477,9 +611,13 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         const lat = Number(a?.latitude);
         const lng = Number(a?.longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-        const k = dedupKey(sci, lat, lng);
+        const inatId = inatIdOf(a?.inaturalist_id ?? a?.inaturalist_observation_id);
+        const k = identityKey(inatId, sci, lat, lng);
         if (seen.has(k)) continue;
         seen.add(k);
+        // On réserve aussi la clé coordonnées : un jumeau snapshot sans URL
+        // exploitable reste ainsi neutralisé.
+        seen.add(coordKey(sci, lat, lng));
         const obsId: string | null = a?.obs_id || null;
         out.push(
           applyOverride(
@@ -498,7 +636,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
               observerName: null,
               overrideKind: 'observation',
               overrideTargetKey: obsId,
-              inatObservationId: a?.inaturalist_id ? String(a.inaturalist_id) : null,
+              inatObservationId: inatId,
               positionalAccuracy:
                 a?.positional_accuracy != null ? Number(a.positional_accuracy) : null,
               obscured: a?.obscured ?? null,
@@ -510,6 +648,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
             },
             'observation',
             obsId,
+            inatId,
           ),
         );
       }
@@ -525,12 +664,16 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           const lat = Number(a?.exactLatitude);
           const lng = Number(a?.exactLongitude);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-          const k = dedupKey(sci, lat, lng);
-          if (seen.has(k)) continue;
+          const url: string | null = a?.originalUrl || a?.original_url || null;
+          const inatId = inatIdOf(url);
+          const ck = coordKey(sci, lat, lng);
+          const k = identityKey(inatId, sci, lat, lng);
+          if (seen.has(k) || seen.has(ck)) continue;
           seen.add(k);
+          seen.add(ck);
           // Les attributions n'ont pas d'identifiant : on les cible par l'URL
           // iNaturalist d'origine, sinon par espèce + coordonnées d'origine.
-          const attrKey: string = a?.originalUrl || k;
+          const attrKey: string = url || ck;
           out.push(
             applyOverride(
               {
@@ -548,7 +691,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
                 observerName: a?.observerName || null,
                 overrideKind: 'snapshot_attr',
                 overrideTargetKey: attrKey,
-                inatObservationId: null,
+                inatObservationId: inatId,
                 positionalAccuracy: null,
                 obscured: null,
                 gpsSource: null,
@@ -556,10 +699,11 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
                 overrideReason: null,
                 originalLat: null,
                 originalLng: null,
-                originalUrl: a?.originalUrl || null,
+                originalUrl: url,
               },
               'snapshot_attr',
               attrKey,
+              inatId,
             ),
           );
         }
@@ -567,7 +711,9 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
     }
 
     return out;
-  }, [overrides]);
+    },
+    [resolveOverride],
+  );
 
   /** Observations de la portée active (cadastre par défaut). */
   const waypoints = useMemo(() => buildWaypoints(allRows), [buildWaypoints, allRows]);
