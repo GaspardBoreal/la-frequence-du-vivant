@@ -227,6 +227,14 @@ export const PortraitCadastre: React.FC<Props> = ({
     };
   }, [fullscreen]);
 
+  /** Bascule visible du mode ajout — même état que l'interrupteur du menu carte. */
+  const toggleAddMode = useCallback(() => {
+    setAddMode((v) => {
+      if (v) setPickAt(null);
+      return !v;
+    });
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground">
@@ -238,13 +246,6 @@ export const PortraitCadastre: React.FC<Props> = ({
   const showWeather = options.weatherMode !== 'off';
   const hideParcels = options.weatherMode === 'on_only';
 
-  /** Bascule visible du mode ajout — même état que l'interrupteur du menu carte. */
-  const toggleAddMode = useCallback(() => {
-    setAddMode((v) => {
-      if (v) setPickAt(null);
-      return !v;
-    });
-  }, []);
 
   const AddParcelleButton: React.FC<{ className?: string }> = ({ className = '' }) =>
     !canCurate ? null : (
