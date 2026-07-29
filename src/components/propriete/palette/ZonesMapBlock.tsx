@@ -223,7 +223,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
           const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
           const active = z.id === activeZoneId;
           const ring = (z.geometry?.coordinates?.[0] ?? []).map((c: [number, number]) => [c[1], c[0]]);
-          if (ring.length < 3) return null;
+          if (ring.length < 3 || z.visible === false) return null;
+
           return (
             <Polygon
               key={z.id}
