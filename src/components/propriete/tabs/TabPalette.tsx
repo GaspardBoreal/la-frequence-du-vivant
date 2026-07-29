@@ -202,6 +202,12 @@ export const TabPalette: React.FC<Props> = ({
     [zoneViews],
   );
   const emptyZonesCount = zoneViews.filter((z) => z.selected.length === 0).length;
+  /** Sélectionner un emplacement sur la carte le déplie automatiquement. */
+  React.useEffect(() => {
+    if (!activeZoneId) return;
+    setOpenZoneIds((prev) => (prev.includes(activeZoneId) ? prev : [...prev, activeZoneId]));
+  }, [activeZoneId]);
+
 
 
   /** Palette générale quand aucune zone n'est tracée. */
