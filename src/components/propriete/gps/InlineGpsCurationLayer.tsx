@@ -1,5 +1,5 @@
 import React from 'react';
-import { Marker, Polyline, Circle, useMapEvents } from 'react-leaflet';
+import { Marker, Polyline, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { InlineGpsCuration } from '@/hooks/propriete/useInlineGpsCuration';
 import { SNAP_RADIUS_M } from '@/hooks/propriete/useInlineGpsCuration';
@@ -53,7 +53,8 @@ const useGpsPane = () => {
  */
 export const InlineGpsCurationLayer: React.FC<{ curation: InlineGpsCuration }> = ({ curation }) => {
   const { active, draft, origin, move, snapped } = curation;
-  if (!active || !draft || !origin) return null;
+  const paneReady = useGpsPane();
+  if (!active || !draft || !origin || !paneReady) return null;
 
   const moved = draft[0] !== origin[0] || draft[1] !== origin[1];
 
@@ -82,6 +83,7 @@ export const InlineGpsCurationLayer: React.FC<{ curation: InlineGpsCuration }> =
       <Marker
         position={draft}
         icon={liftedIcon}
+        pane={GPS_PANE}
         draggable
         zIndexOffset={1000}
         eventHandlers={{
