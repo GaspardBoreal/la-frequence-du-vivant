@@ -29,6 +29,13 @@ export const OuvragePhotoViewer: React.FC<Props> = ({
   const photo = photos[index];
   const [expanded, setExpanded] = React.useState(false);
   const zoom = useImageZoomPan(photo?.id ?? null);
+  const activeThumbRef = React.useRef<HTMLButtonElement | null>(null);
+  const touchX = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    activeThumbRef.current?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }, [index]);
+
 
   const go = React.useCallback(
     (delta: number) => {
