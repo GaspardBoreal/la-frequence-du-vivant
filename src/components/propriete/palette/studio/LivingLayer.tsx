@@ -171,6 +171,8 @@ interface LayerProps {
   frenchName?: (scientific: string, fallback?: string | null) => string;
   onSelect?: (w: ObservationPopupWaypoint) => void;
   canCurate?: boolean;
+  /** Autres photos terrain de la même espèce (clé = nom scientifique normalisé). */
+  walkerPhotosFor?: (w: PropertyWaypoint) => string[];
   onZoomPhoto?: (id: string) => void;
   onStartInlineMove?: (w: ObservationPopupWaypoint) => void;
   onOpenGps?: (w: ObservationPopupWaypoint) => void;
@@ -184,10 +186,12 @@ export const LivingLayer: React.FC<LayerProps> = ({
   frenchName,
   onSelect,
   canCurate,
+  walkerPhotosFor,
   onZoomPhoto,
   onStartInlineMove,
   onOpenGps,
 }) => (
+
   <>
     {waypoints.map((w) => {
       if (!matchVivantBase(w, filter, filterContext)) return null;
