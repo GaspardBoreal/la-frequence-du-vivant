@@ -6062,6 +6062,81 @@ export type Database = {
           },
         ]
       }
+      propriete_objet_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          height: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          mime: string | null
+          objet_id: string
+          order_index: number
+          propriete_id: string
+          size_bytes: number | null
+          storage_path: string
+          taken_at: string | null
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+          width: number | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          mime?: string | null
+          objet_id: string
+          order_index?: number
+          propriete_id: string
+          size_bytes?: number | null
+          storage_path: string
+          taken_at?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          mime?: string | null
+          objet_id?: string
+          order_index?: number
+          propriete_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          taken_at?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_objet_photos_objet_id_fkey"
+            columns: ["objet_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_objets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_objet_photos_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_objets: {
         Row: {
           calque_id: string | null
@@ -8764,6 +8839,10 @@ export type Database = {
           p_owner_crew_id: string
           p_owner_user_id: string
         }
+        Returns: undefined
+      }
+      reorder_propriete_objet_photos: {
+        Args: { _ids: string[]; _objet_id: string }
         Returns: undefined
       }
       reposition_marcheur_media_gps: {
