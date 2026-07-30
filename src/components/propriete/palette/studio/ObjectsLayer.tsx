@@ -194,20 +194,64 @@ export const ObjectsLayer: React.FC<Props> = ({
           </Tooltip>
         );
 
-        if (o.geometry?.type === 'Point') {
+        // Pastille « carnet photo » — points, lignes et polygones
+        const photoCount = photoCounts?.[o.id] ?? 0;
+        const anchor = photoCount > 0 ? photoAnchor(o.geometry) : null;
+        const isPoint = o.geometry?.type === 'Point';
+        const pastille =
+          anchor && photoCount > 0 ? (
+            <Marker
+              key={`${o.id}-photos`}
+              position={anchor as any}
+              icon={photoPastilleIcon(photoCount, label, photoThumbs?.[o.id])}
+              zIndexOffset={800}
+              interactive
+              keyboard={false}
+              eventHandlers={{
+                click: (e: any) => {
+                  e.originalEvent?.stopPropagation?.();
+                  L.DomEvent.stop(e);
+                  onOpenPhotos?.(o.id);
+                },
+                dblclick: (e: any) => {
+                  e.originalEvent?.stopPropagation?.();
+                  L.DomEvent.stop(e);
+                },
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -12] as any}>
+                <span style={{ fontSize: 11 }}>
+                  📷 Carnet photo · {photoCount} photo{photoCount > 1 ? 's' : ''}
+                </span>
+              </Tooltip>
+            </Marker>
+          ) : null;
+
+        const withPastille = (node: React.ReactNode) =>
+          pastille ? (
+            <React.Fragment key={o.id}>
+              {node}
+              {pastille}
+            </React.Fragment>
+          ) : (
+            node
+          );
+
+        if (isPoint) {
           const c = o.geometry.coordinates;
-          return (
+          return withPastille(
             <Marker
               key={o.id}
               position={[c[1], c[0]] as any}
-              icon={glyphIcon(tool.glyph, color, selected, scale, photoCounts?.[o.id] ?? 0)}
+              icon={glyphIcon(tool.glyph, color, selected, scale)}
               opacity={layerOpacity}
               eventHandlers={handlers}
             >
               {tip}
-            </Marker>
+            </Marker>,
           );
         }
+
 
         if (o.geometry?.type === 'LineString') {
           const pos = (o.geometry.coordinates || []).map((c: number[]) => [c[1], c[0]]);
