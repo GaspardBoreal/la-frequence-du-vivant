@@ -39,6 +39,7 @@ import LayersPanel, { type SystemLayerState } from './LayersPanel';
 import ToolPalette from './ToolPalette';
 import ObjectInspector from './ObjectInspector';
 import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
+import OuvragePhotoViewer from './photos/OuvragePhotoViewer';
 import PlanBalanceSheet from './PlanBalanceSheet';
 import InspirationDrawer from './InspirationDrawer';
 import LivingLayer, {
