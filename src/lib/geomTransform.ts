@@ -137,3 +137,44 @@ export const smoothRing = (ring: Ring, iterations = 1): Ring => {
   const base = pts.length > 60 ? simplifyRing(pts, 0.9) : pts;
   return chaikinSmooth(base, iterations);
 };
+
+/* ── Rotation (correction de latitude pour rester visuellement isotrope) ──── */
+
+/**
+ * Rotation des sommets autour d'une ancre [lng, lat].
+ * L'axe des longitudes est corrigé par cos(lat) : un carré reste un carré.
+ */
+export const rotateRing = (ring: Ring, anchor: [number, number], angleRad: number): Ring => {
+  const kx = Math.cos((anchor[1] * Math.PI) / 180) || 1;
+  const cos = Math.cos(angleRad);
+  const sin = Math.sin(angleRad);
+  return ring.map(([lng, lat]) => {
+    const x = (lng - anchor[0]) * kx;
+    const y = lat - anchor[1];
+    const rx = x * cos - y * sin;
+    const ry = x * sin + y * cos;
+    return [anchor[0] + rx / kx, anchor[1] + ry] as [number, number];
+  });
+};
+
+/* ── Ponts GeoJSON génériques (Point / LineString / Polygon) ──────────────── */
+
+export type GeomKind = 'Point' | 'LineString' | 'Polygon';
+
+/** Extrait la liste de sommets d'une géométrie supportée. */
+export const geomCoords = (geom: any): Ring => {
+  if (!geom) return [];
+  if (geom.type === 'Point') return geom.coordinates ? [geom.coordinates as [number, number]] : [];
+  if (geom.type === 'LineString') return (geom.coordinates ?? []) as Ring;
+  if (geom.type === 'Polygon') return (geom.coordinates?.[0] ?? []) as Ring;
+  return [];
+};
+
+/** Réinjecte une liste de sommets dans une géométrie du même type. */
+export const withGeomCoords = (geom: any, coords: Ring): any => {
+  if (!geom) return geom;
+  if (geom.type === 'Point') return { ...geom, coordinates: coords[0] ?? geom.coordinates };
+  if (geom.type === 'LineString') return { ...geom, coordinates: coords };
+  if (geom.type === 'Polygon') return { ...geom, coordinates: [closeRing(coords)] };
+  return geom;
+};
