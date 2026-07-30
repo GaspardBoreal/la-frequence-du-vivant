@@ -73,15 +73,19 @@ const MassifPolygon: React.FC<{
   );
 };
 
-const glyphIcon = (glyph: string, color: string, selected: boolean, scale = 1) =>
+const glyphIcon = (glyph: string, color: string, selected: boolean, scale = 1, photos = 0) =>
   L.divIcon({
     className: 'studio-objet-marker',
-    html: `<div style="
+    html: `<div style="position:relative;">${
+      photos
+        ? `<span style="position:absolute;top:-6px;right:-8px;z-index:2;background:#2f5d3a;color:#fffdf7;border-radius:9px;padding:0 4px;font-size:9px;line-height:13px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.35);">📸${photos}</span>`
+        : ''
+    }<div style="
       width:${28 * scale}px;height:${28 * scale}px;border-radius:50%;
       display:flex;align-items:center;justify-content:center;
       font-size:${14 * scale}px;background:#fffdf7;
       border:${selected ? 3 : 2}px solid ${color};
-      box-shadow:0 2px 6px rgba(0,0,0,.25);">${glyph}</div>`,
+      box-shadow:0 2px 6px rgba(0,0,0,.25);">${glyph}</div></div>`,
     iconSize: [28 * scale, 28 * scale],
     iconAnchor: [14 * scale, 14 * scale],
   });
@@ -97,6 +101,8 @@ interface Props {
   onActivate?: (id: string) => void;
   /** 0 = An 0, 1 = An 3, 2 = An 10 — fait grandir les plantations */
   timeIndex?: number;
+  /** Nombre de photos par objet — pastille photo sur la carte. */
+  photoCounts?: Record<string, number>;
 }
 
 export const ObjectsLayer: React.FC<Props> = ({
@@ -107,6 +113,7 @@ export const ObjectsLayer: React.FC<Props> = ({
   hiddenId = null,
   onActivate,
   timeIndex = 0,
+  photoCounts,
 }) => {
   const calqueById = React.useMemo(
     () => Object.fromEntries(calques.map((c) => [c.id, c])),
@@ -157,6 +164,7 @@ export const ObjectsLayer: React.FC<Props> = ({
             <span style={{ fontSize: 11 }}>
               {tool.glyph} {label}
               {tool.unit !== 'u' ? ` · ${measure}` : ''}
+              {photoCounts?.[o.id] ? ` · 📸 ${photoCounts[o.id]}` : ''}
             </span>
           </Tooltip>
         );
@@ -167,7 +175,7 @@ export const ObjectsLayer: React.FC<Props> = ({
             <Marker
               key={o.id}
               position={[c[1], c[0]] as any}
-              icon={glyphIcon(tool.glyph, color, selected, scale)}
+              icon={glyphIcon(tool.glyph, color, selected, scale, photoCounts?.[o.id] ?? 0)}
               opacity={layerOpacity}
               eventHandlers={handlers}
             >
