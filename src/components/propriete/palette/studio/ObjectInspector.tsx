@@ -7,6 +7,8 @@ import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { fmtMeasure, measureFor, geometryCenter } from './geoMetrics';
+import ObjetPhotoStrip from './photos/ObjetPhotoStrip';
+import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
 
 interface Props {
   objet: ProprieteObjet;
@@ -21,7 +23,15 @@ interface Props {
   /** Mesure live quand le mode Transformer est actif sur cet objet. */
   transformMeasure?: number | null;
   readOnly?: boolean;
+  /** Carnet photo de l'ouvrage (facultatif). */
+  photos?: ObjetPhoto[];
+  photoUploading?: { done: number; total: number } | null;
+  onPhotoUpload?: (files: File[]) => void;
+  onPhotoRemove?: (photo: ObjetPhoto) => void;
+  onPhotoCaption?: (photoId: string, caption: string) => void;
+  onPhotoReorder?: (orderedIds: string[]) => void;
 }
+
 
 
 const field =
