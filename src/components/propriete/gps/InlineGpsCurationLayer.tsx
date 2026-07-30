@@ -30,6 +30,22 @@ const ClickToPlace: React.FC<{ onPick: (lat: number, lng: number) => void }> = (
   return null;
 };
 
+/** Panneau dédié : le point soulevé reste au-dessus des ouvrages et du vivant. */
+const GPS_PANE = 'ds-gps-pane';
+const useGpsPane = () => {
+  const map = useMap();
+  const [ready, setReady] = React.useState(false);
+  React.useEffect(() => {
+    if (!map.getPane(GPS_PANE)) {
+      const p = map.createPane(GPS_PANE);
+      p.style.zIndex = '680';
+    }
+    setReady(true);
+  }, [map]);
+  return ready;
+};
+
+
 /**
  * Couche de repositionnement en place, à insérer comme enfant d'une carte
  * (`RichMap`, `MapContainer`…). Ne modifie jamais la vue : ni recentrage,
