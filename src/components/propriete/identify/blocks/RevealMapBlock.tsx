@@ -59,7 +59,15 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     allWaypoints: rawAllWaypoints,
     scopeCounts,
     curation,
+    fieldPhotos,
   } = usePropertySpeciesPool(proprieteId);
+  /** Toutes les photos terrain de l'espèce, pour la bande photo des popups. */
+  const walkerPhotosFor = React.useCallback(
+    (w: { scientificName?: string | null }) =>
+      (fieldPhotos.get(normalizeSpeciesKey(w.scientificName || '')) || []).map((p) => p.url),
+    [fieldPhotos],
+  );
+
   const { data: parcelles } = useProprieteParcelles(proprieteId);
   const { data: canCurate } = useCanCurateParcelles(proprieteId);
 
