@@ -236,10 +236,13 @@ export const LivingLayer: React.FC<LayerProps> = ({
               waypoint={w}
               displayName={label}
               canCurate={canCurate}
+              kingdom={w.kingdom}
+              walkerPhotos={walkerPhotosFor?.(w)}
               onZoomPhoto={onZoomPhoto}
               onStartInlineMove={onStartInlineMove}
               onOpenGps={onOpenGps}
             />
+
           </Popup>
         </CircleMarker>
       );
