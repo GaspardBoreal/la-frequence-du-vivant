@@ -216,6 +216,18 @@ export const ObjectInspector: React.FC<Props> = ({
           </div>
         )}
 
+        {onPhotoUpload && (
+          <ObjetPhotoStrip
+            title={nom || tool.label}
+            photos={photos ?? []}
+            readOnly={readOnly}
+            uploading={photoUploading}
+            onUpload={onPhotoUpload}
+            onRemove={(p) => onPhotoRemove?.(p)}
+            onCaption={(id, c) => onPhotoCaption?.(id, c)}
+            onReorder={(ids) => onPhotoReorder?.(ids)}
+          />
+        )}
 
 
         <label className="flex items-center gap-2">
