@@ -1,44 +1,40 @@
-## Objectif
+## Constat
 
-Dans la visionneuse plein écran d'une observation (`RevealPhotoLightbox`), l'image est aujourd'hui statique : `max-h-[72vh]` + `object-contain`, aucun gestionnaire de molette, de glisser ou de double-clic. Impossible donc d'agrandir un détail (ici le papillon sur le buddleia).
+Dans l'Atelier, les **emplacements (zones)** disposent déjà d'un mode Transformer complet (`ZoneTransformLayer` + `ZoneTransformBar` + `useZoneTransform` : glisser, poignées d'échelle, lissage, annuler/valider).
 
-## Ce que je propose
+Les **objets** dessinés (potager en carré, mare, pas japonais, massifs…) sont rendus par `ObjectsLayer` avec un simple `click → onSelect` : aucune poignée, aucune possibilité de déplacer ou redimensionner. `ObjectInspector` ne propose que nom / calque / couleur / note / dupliquer / supprimer.
 
-Transformer la visionneuse en **table de loupe naturaliste** : l'image reste posée au centre, et le geste de zoom se fait comme sous une loupe de terrain.
+## Ce qui sera construit
 
-### 1. Zoom molette centré sur le curseur
-- Molette (ou pincement trackpad) = zoom continu de **1× à 8×**, ancré sur le point sous la souris — on grossit exactement le détail visé, pas le centre de l'image.
-- Amortissement doux (pas de saut), curseur `zoom-in` / `grab` selon l'état.
+### 1. Un moteur de transformation générique (objets = Point, LineString, Polygon)
+Nouveau hook `useObjetTransform` calqué sur `useZoneTransform`, mais opérant sur une **liste de coordonnées** quelle que soit la géométrie :
+- copie locale non destructive (rien n'est écrit en base avant « Valider »)
+- pile d'annulation (24 gestes), lissage cumulatif (Chaikin, déjà dans `src/lib/geomTransform.ts`)
+- mesure avant → après (m² pour les polygones, mètres linéaires pour les tracés) via `geoMetrics`
+- sauvegarde par `upsertObjet({ id, geometry })`
 
-### 2. Déplacement (pan) au glisser
-- Dès que le zoom dépasse 1×, glisser à la souris (ou au doigt) déplace l'image, avec bornage pour ne jamais sortir du cadre.
-- Le glisser n'active plus la navigation photo précédente/suivante tant qu'on est zoomé.
+### 2. Couche d'édition sur la carte — `ObjetTransformLayer`
+Généralisation de `ZoneTransformLayer` :
+- **Déplacer** : glisser la forme (ou le pictogramme pour un objet ponctuel)
+- **Redimensionner** : 8 poignées dorées sur la boîte englobante — coin = homothétie, milieu = étirement d'un axe, Maj = proportionnel
+- **Pivoter** : nouvelle poignée circulaire au-dessus de la boîte (rotation autour du centre, aimantation tous les 15° avec Maj) — ajout d'un `rotateRing` dans `geomTransform.ts`
+- boîte englobante pointillée, sommets fantômes, curseurs directionnels contextuels
+- objets ponctuels : déplacement seul (pas d'échelle), avec halo de saisie
 
-### 3. Gestes rapides
-- **Double-clic / double-tap** : bascule 1× ↔ 2,5× sur le point cliqué, et retour à l'ajusté.
-- **Échap** : si zoomé, remet à 1× ; sinon ferme la visionneuse (comportement actuel préservé).
-- **+ / −** au clavier et **0** pour réinitialiser.
+### 3. Barre flottante — `ObjetTransformBar`
+Même langage visuel que `ZoneTransformBar`, positionnée sous le bandeau Géo/Sat/Relief/Cadastre (`MAP_CHROME_TOP_PADDING`) :
+pictogramme + nom de l'ouvrage · rappels de gestes · Lisser (×n) · Annuler le geste · **surface/longueur avant → après avec facteur ×** · Valider / Abandonner. Raccourcis Échap (abandonner), Entrée (valider), ⌘/Ctrl+Z (annuler).
 
-### 4. Barre loupe discrète
-Petit bandeau flottant en bas à droite de l'image, dans le même registre visuel que la barre GPS (fond `ds-forest-deep` opaque, filet doré) :
-`−  [ ●———— ]  +   1,0×   ⟲ Ajuster   ⤢ Plein écran`
-- Le curseur reflète et pilote le zoom.
-- « Ajuster » remet l'image à sa taille d'origine.
-- « Plein écran » agrandit la zone image (masque temporairement la légende) pour donner toute la hauteur au cliché.
+### 4. Point d'entrée « wahou » dans l'inspecteur
+Dans `ObjectInspector`, un bloc d'actions haut de panneau : **Transformer** (activation du mode), Dupliquer, Supprimer — avec l'indication de la mesure courante mise à jour en direct pendant le geste. Double-clic sur l'objet dans la carte entre directement en mode Transformer.
 
-### 5. Qualité de l'image source
-Le zoom ne sert à rien si la source est une vignette. À l'ouverture de la visionneuse, la meilleure résolution disponible est demandée :
-- photos iNaturalist : substitution du suffixe `square`/`small`/`medium` par `large` puis `original`, avec repli automatique si le fichier haute résolution n'existe pas ;
-- photos marcheurs : l'original du storage plutôt que la variante affichée sur la carte.
-Un discret indicateur « chargement haute définition… » pendant la bascule, puis l'affichage passe sur la version nette.
-
-### 6. Réinitialisation au changement de photo
-Passer à l'observation suivante (← →) remet le zoom à 1× et recentre, pour ne pas hériter d'un cadrage étranger.
+### 5. Cohérence d'état
+- entrer en mode Transformer sur un objet ferme un éventuel mode zone en cours (et inversement)
+- l'objet en cours d'édition est masqué dans `ObjectsLayer` (rendu uniquement par la couche d'édition) pour éviter le doublon fantôme
+- pas de zoom/recadrage parasite : la vue courante est conservée
 
 ## Détails techniques
 
-- Nouveau hook `src/hooks/useImageZoomPan.ts` : état `{ scale, tx, ty }`, handlers `onWheel` (avec `passive:false`), `onPointerDown/Move/Up`, `zoomAt(point, factor)`, `reset()`, bornage des translations sur les dimensions réelles rendues.
-- `RevealPhotoLightbox.tsx` : conteneur `overflow-hidden` avec `transform: translate(tx,ty) scale(s)` et `transform-origin: center`, `touch-action: none`, `will-change: transform`. Le clic sur le fond ferme toujours, le clic sur l'image ne ferme plus.
-- Nouveau composant `ZoomBar.tsx` (barre loupe) à côté de `InlineGpsBar` pour l'homogénéité visuelle.
-- Petit utilitaire `hiResPhotoUrl(url)` dans `src/utils/photoUtils.ts` pour la montée en résolution iNaturalist, avec `onError` de repli.
-- Aucun changement de données : purement présentation/interaction, la même visionneuse est utilisée par l'Atelier, la Carte des révélations et les espèces écartées, donc le bénéfice est immédiat partout.
+Fichiers créés : `src/hooks/propriete/useObjetTransform.ts`, `src/components/propriete/palette/studio/ObjetTransformLayer.tsx`, `src/components/propriete/palette/studio/ObjetTransformBar.tsx`.
+Fichiers modifiés : `src/lib/geomTransform.ts` (ajout `rotateRing`, helpers coords génériques), `ObjectsLayer.tsx` (prop `hiddenId`, `onActivate` au double-clic), `ObjectInspector.tsx` (bouton Transformer + mesure live), `PaletteStudio.tsx` (branchement du mode).
+Aucune migration base : la géométrie est déjà stockée en GeoJSON dans `propriete_objets` et écrite via `upsert_propriete_objet`.
