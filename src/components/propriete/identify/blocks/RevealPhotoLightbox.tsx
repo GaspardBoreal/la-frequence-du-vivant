@@ -215,7 +215,9 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
           )}
         </div>
       </div>
+      )}
     </motion.div>,
+
     document.body,
   );
 };
