@@ -3,6 +3,7 @@ import { Camera } from 'lucide-react';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 import { GEOFENCE_LABELS } from '@/lib/geofence';
 import type { GeofenceStatus } from '@/lib/geofence';
+import ObservationPhotoStrip from './ObservationPhotoStrip';
 
 export interface ObservationPopupWaypoint extends PropertyWaypoint {
   geofenceStatus?: GeofenceStatus;
@@ -13,6 +14,10 @@ interface Props {
   waypoint: ObservationPopupWaypoint;
   displayName: string;
   canCurate?: boolean;
+  /** Autres photos terrain de la même espèce sur la propriété. */
+  walkerPhotos?: (string | null | undefined)[];
+  kingdom?: string | null;
+  iconicTaxon?: string | null;
   /** Ouvre la visionneuse plein écran sur cette observation. */
   onZoomPhoto?: (id: string) => void;
   /** Repositionne le point directement dans la carte courante (zoom conservé). */
@@ -24,63 +29,31 @@ interface Props {
 
 /**
  * Fiche espèce partagée par toutes les cartes d'observations d'une propriété.
- * Nom français en tête, latin, photo agrandissable, provenance, statut de curation.
+ * Nom français en tête, latin, bande photo (marcheurs + iNaturalist), provenance,
+ * statut de curation.
  */
 export const ObservationPopupCard: React.FC<Props> = ({
   waypoint: w,
   displayName,
   canCurate,
+  walkerPhotos,
+  kingdom,
+  iconicTaxon,
   onZoomPhoto,
   onStartInlineMove,
   onOpenGps,
 }) => (
 
-  <div style={{ minWidth: 170 }}>
-    {w.photoUrl &&
-      (onZoomPhoto ? (
-        <button
-          type="button"
-          onClick={() => onZoomPhoto(w.id)}
-          title="Agrandir la photo"
-          style={{
-            display: 'block',
-            width: '100%',
-            padding: 0,
-            border: 'none',
-            background: 'none',
-            cursor: 'zoom-in',
-          }}
-        >
-          <img
-            src={w.photoUrl}
-            alt={displayName}
-            loading="lazy"
-            style={{
-              width: '100%',
-              height: 100,
-              objectFit: 'cover',
-              borderRadius: 6,
-              marginBottom: 4,
-            }}
-          />
-          <span style={{ fontSize: 10, color: '#2f5d3a', display: 'block', marginBottom: 4 }}>
-            🔍 Cliquer pour agrandir
-          </span>
-        </button>
-      ) : (
-        <img
-          src={w.photoUrl}
-          alt={displayName}
-          loading="lazy"
-          style={{
-            width: '100%',
-            height: 100,
-            objectFit: 'cover',
-            borderRadius: 6,
-            marginBottom: 6,
-          }}
-        />
-      ))}
+  <div style={{ minWidth: 200 }}>
+    <ObservationPhotoStrip
+      scientificName={w.scientificName}
+      displayName={displayName}
+      walkerPhotos={[w.photoUrl, ...(walkerPhotos || [])]}
+      kingdom={kingdom}
+      iconicTaxon={iconicTaxon}
+      onZoomWalker={onZoomPhoto ? () => onZoomPhoto(w.id) : undefined}
+    />
+
 
     <div style={{ fontWeight: 600, fontSize: 12 }}>{displayName}</div>
     <div style={{ fontSize: 10, fontStyle: 'italic', color: '#666' }}>{w.scientificName}</div>

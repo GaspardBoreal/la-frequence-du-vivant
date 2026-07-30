@@ -27,6 +27,8 @@ import { MapViewReporter, useMapViewState } from '@/components/maps/hooks/useMap
 import { RevealPhotoLightbox } from '@/components/propriete/identify/blocks/RevealPhotoLightbox';
 
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
+
 import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import { DEFAULT_LAYERS, TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
@@ -112,7 +114,15 @@ export const PaletteStudio: React.FC<Props> = ({
     waypoints: rawWaypoints,
     allWaypoints: rawAllWaypoints,
     scopeCounts,
+    fieldPhotos,
   } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  /** Toutes les photos terrain de l'espèce, pour la bande photo des popups. */
+  const walkerPhotosFor = React.useCallback(
+    (w: { scientificName?: string | null }) =>
+      (fieldPhotos.get(normalizeSpeciesKey(w.scientificName || '')) || []).map((p) => p.url),
+    [fieldPhotos],
+  );
+
   const { data: canCurate } = useCanCurateParcelles(open ? proprieteId : undefined);
   const { displayNameFor } = useWaypointFrenchNames(rawWaypoints);
 
@@ -644,6 +654,8 @@ export const PaletteStudio: React.FC<Props> = ({
                 filterContext={filterContext}
                 frenchName={frenchName}
                 canCurate={!!canCurate}
+                walkerPhotosFor={walkerPhotosFor}
+
                 onZoomPhoto={setLightboxId}
                 onStartInlineMove={(w) => inlineGps.start(w)}
                 onOpenGps={(w) => {

@@ -15,6 +15,8 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
+
 import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 import VivantPeriodFilter from '@/components/propriete/VivantPeriodFilter';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
@@ -59,7 +61,15 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
     allWaypoints: rawAllWaypoints,
     scopeCounts,
     curation,
+    fieldPhotos,
   } = usePropertySpeciesPool(proprieteId);
+  /** Toutes les photos terrain de l'espèce, pour la bande photo des popups. */
+  const walkerPhotosFor = React.useCallback(
+    (w: { scientificName?: string | null }) =>
+      (fieldPhotos.get(normalizeSpeciesKey(w.scientificName || '')) || []).map((p) => p.url),
+    [fieldPhotos],
+  );
+
   const { data: parcelles } = useProprieteParcelles(proprieteId);
   const { data: canCurate } = useCanCurateParcelles(proprieteId);
 
@@ -564,10 +574,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                   waypoint={w}
                   displayName={displayNameFor(w)}
                   canCurate={!!canCurate}
+                  kingdom={w.kingdom}
+                  walkerPhotos={walkerPhotosFor(w)}
                   onZoomPhoto={setLightboxId}
                   onStartInlineMove={(pt) => inlineGps.start(pt)}
                   onOpenGps={(pt) => openGpsFromPoint(pt as GpsCandidate)}
                 />
+
               </Popup>
 
             </Marker>
