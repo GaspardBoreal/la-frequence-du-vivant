@@ -41,21 +41,55 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
     [photoItems, index, onChange],
   );
 
+  const zoom = useImageZoomPan(currentId);
+  const [expanded, setExpanded] = useState(false);
+
+  // Montée en résolution de la photo courante (iNaturalist square/medium → large)
+  const baseUrl = (current?.photoUrl as string | undefined) || null;
+  const [src, setSrc] = useState<string | null>(baseUrl);
+  const [loadingHiRes, setLoadingHiRes] = useState(false);
+
+  useEffect(() => {
+    setSrc(baseUrl);
+    const hi = hiResPhotoUrl(baseUrl);
+    if (!hi) return;
+    setLoadingHiRes(true);
+    const img = new Image();
+    img.onload = () => {
+      setSrc(hi);
+      setLoadingHiRes(false);
+    };
+    img.onerror = () => setLoadingHiRes(false);
+    img.src = hi;
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+      setLoadingHiRes(false);
+    };
+  }, [baseUrl]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (zoom.isZoomed) zoom.reset();
+        else onClose();
+      }
       if (e.key === 'ArrowLeft') go(-1);
       if (e.key === 'ArrowRight') go(1);
+      if (e.key === '+' || e.key === '=') zoom.zoomBy(1.4);
+      if (e.key === '-' || e.key === '_') zoom.zoomBy(1 / 1.4);
+      if (e.key === '0') zoom.reset();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [go, onClose]);
+  }, [go, onClose, zoom]);
 
   if (!current) return null;
 
   const inatUrl = current.inatObservationId
     ? `https://www.inaturalist.org/observations/${current.inatObservationId}`
     : null;
+
 
   return createPortal(
     <motion.div
