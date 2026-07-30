@@ -57,16 +57,16 @@ const MassifPolygon: React.FC<{
   teintes: string[];
   positions: any;
   pathOptions: any;
-  onClick: () => void;
+  handlers: any;
   children?: React.ReactNode;
-}> = ({ id, teintes, positions, pathOptions, onClick, children }) => {
+}> = ({ id, teintes, positions, pathOptions, handlers, children }) => {
   const ref = useGradientFill(teintes, id);
   return (
     <Polygon
       ref={ref as any}
       positions={positions}
       pathOptions={pathOptions}
-      eventHandlers={{ click: onClick }}
+      eventHandlers={handlers}
     >
       {children}
     </Polygon>
@@ -91,6 +91,10 @@ interface Props {
   calques: ProprieteCalque[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Objet rendu par la couche d'édition : masqué ici pour éviter le doublon. */
+  hiddenId?: string | null;
+  /** Double-clic : entrée directe en mode Transformer. */
+  onActivate?: (id: string) => void;
   /** 0 = An 0, 1 = An 3, 2 = An 10 — fait grandir les plantations */
   timeIndex?: number;
 }
@@ -100,6 +104,8 @@ export const ObjectsLayer: React.FC<Props> = ({
   calques,
   selectedId,
   onSelect,
+  hiddenId = null,
+  onActivate,
   timeIndex = 0,
 }) => {
   const calqueById = React.useMemo(
@@ -122,6 +128,7 @@ export const ObjectsLayer: React.FC<Props> = ({
       {ordered.map((o) => {
         const tool = TOOL_BY_KEY[o.outil_key];
         if (!tool) return null;
+        if (o.id === hiddenId) return null;
         const cal = o.calque_id ? calqueById[o.calque_id] : null;
         if (cal && !cal.visible) return null;
         const layerOpacity = cal ? cal.opacite : 1;
@@ -131,6 +138,18 @@ export const ObjectsLayer: React.FC<Props> = ({
         const growth = tool.growth?.[Math.min(timeIndex, 2)] ?? null;
         const scale = growth ? 0.85 + (growth / (tool.growth?.[2] || 1)) * 0.5 : 1;
         const weightBoost = growth ? 1 + timeIndex * 0.9 : 1;
+        const handlers = {
+          click: (e: any) => {
+            e.originalEvent?.stopPropagation?.();
+            onSelect(o.id);
+          },
+          dblclick: (e: any) => {
+            e.originalEvent?.preventDefault?.();
+            e.originalEvent?.stopPropagation?.();
+            onSelect(o.id);
+            onActivate?.(o.id);
+          },
+        };
         const measure = fmtMeasure(tool.unit, measureFor(tool.unit, o.geometry));
 
         const tip = (
@@ -150,7 +169,7 @@ export const ObjectsLayer: React.FC<Props> = ({
               position={[c[1], c[0]] as any}
               icon={glyphIcon(tool.glyph, color, selected, scale)}
               opacity={layerOpacity}
-              eventHandlers={{ click: () => onSelect(o.id) }}
+              eventHandlers={handlers}
             >
               {tip}
             </Marker>
@@ -171,7 +190,7 @@ export const ObjectsLayer: React.FC<Props> = ({
                 dashArray: tool.family === 'annotation' ? '8 6' : undefined,
                 lineCap: 'round',
               }}
-              eventHandlers={{ click: () => onSelect(o.id) }}
+              eventHandlers={handlers}
             >
               {tip}
             </Polyline>
@@ -197,7 +216,7 @@ export const ObjectsLayer: React.FC<Props> = ({
                 teintes={teintes}
                 positions={ring as any}
                 pathOptions={pathOptions}
-                onClick={() => onSelect(o.id)}
+                handlers={handlers}
               >
                 {tip}
               </MassifPolygon>
@@ -208,7 +227,7 @@ export const ObjectsLayer: React.FC<Props> = ({
               key={o.id}
               positions={ring as any}
               pathOptions={pathOptions}
-              eventHandlers={{ click: () => onSelect(o.id) }}
+              eventHandlers={handlers}
             >
               {tip}
             </Polygon>
