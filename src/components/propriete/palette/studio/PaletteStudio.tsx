@@ -112,7 +112,15 @@ export const PaletteStudio: React.FC<Props> = ({
     waypoints: rawWaypoints,
     allWaypoints: rawAllWaypoints,
     scopeCounts,
+    fieldPhotos,
   } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  /** Toutes les photos terrain de l'espèce, pour la bande photo des popups. */
+  const walkerPhotosFor = React.useCallback(
+    (w: { scientificName?: string | null }) =>
+      (fieldPhotos.get(normalizeSpeciesKey(w.scientificName || '')) || []).map((p) => p.url),
+    [fieldPhotos],
+  );
+
   const { data: canCurate } = useCanCurateParcelles(open ? proprieteId : undefined);
   const { displayNameFor } = useWaypointFrenchNames(rawWaypoints);
 
