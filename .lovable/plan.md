@@ -1,50 +1,44 @@
-## Idée directrice — « Le carnet photo de l'ouvrage »
+## Objectif
 
-Chaque objet de l'Atelier (Mare, Massif, Potager, Pas japonais…) reçoit son propre **carnet photo daté** : une pellicule horizontale dans son éditeur, un badge compteur sur la carte, et une visionneuse plein écran avec la loupe de terrain déjà en place. Chaque photo porte sa date de prise de vue (EXIF) **et** sa date d'upload, ce qui permet de rejouer l'évolution du jardin par saison ou par année.
+Remplacer l'actuel badge emoji `📸3` par une **pastille « Carnet photo » dessinée**, présente sur tout ouvrage possédant des photos (points **et** polygones/lignes), et ouvrir au clic une **visionneuse galerie** : grande photo en haut, rail de vignettes en bas, navigation précédent / suivant.
 
-### 1. Base de données (nouvelle table + bucket privé)
+## 1. L'icône (le « wahou »)
 
-Table `public.propriete_objet_photos` :
-- `id`, `propriete_id`, `objet_id` (FK `propriete_objets`, ON DELETE CASCADE)
-- `storage_path`, `mime`, `size_bytes`, `width`, `height`
-- `caption`, `order_index`
-- `taken_at` (EXIF, peut être nul), **`uploaded_at` (défaut now())**, `season` calculé en lecture depuis `coalesce(taken_at, uploaded_at)`
-- `lat` / `lng` (si EXIF GPS), `uploaded_by`, `created_at`
-- GRANT authenticated/service_role, RLS alignée sur `can_access_propriete` (lecture) et sur les curateurs de la propriété (écriture), + RPC `SECURITY DEFINER` `reorder_propriete_objet_photos(_objet_id, _ids uuid[])` pour l'ordonnancement atomique.
-- Bucket Storage privé `propriete-ouvrages`, URLs signées 1 h en lot (même schéma que `propriete-tests`).
+Nouvelle pastille SVG (composant + générateur de `divIcon` Leaflet) dans `src/components/propriete/palette/studio/photos/PhotoPastille.tsx` :
 
-### 2. Upload — pipeline déjà éprouvé, rien de neuf à inventer
+- Forme de **polaroïd incliné** (~-8°) crème sur liseré or (`--ds-gold`), fond `--ds-forest-deep`, ombre douce.
+- Petit **compteur** en pastille or en angle (1, 2, … 9+).
+- **Micro-vignette** de la 1re photo en fond du polaroïd quand la miniature est déjà chargée (sinon glyphe appareil photo tracé au trait).
+- Animations : apparition `scale`+fondu, pulsation lente très discrète, `hover` = redressement à 0° + léger agrandissement, `focus-visible` = anneau or (accessibilité clavier).
+- `aria-label` : « Carnet photo · {nom de l'ouvrage} · {n} photos ».
 
-Réutilisation de `preparePhotoForUpload` + `insertWithStorageRollback` (EXIF avant conversion HEIC, rollback Storage si l'insert échoue). Limite 25 Mo/photo, multi-fichiers avec barre de progression « 3/7 ».
+Placement :
+- **Points** : ancrée en haut-droite du glyphe existant (remplace le badge emoji).
+- **Polygones / lignes** : nouveau `Marker` au centroïde (ou point médian pour une ligne), affiché uniquement si l'ouvrage a des photos, dans le pane studio existant.
 
-### 3. Interfaces
+La même pastille est réutilisée en petit format dans `OuvragesRegister` (registre Emplacements & ouvrages) pour ouvrir la même galerie.
 
-**a. Pellicule dans l'éditeur d'objet** (`ObjectInspector`)
-Un bloc « Carnet photo » sous les champs existants : rangée de vignettes carrées 56 px scrollable, une tuile « + » en pointillés (clic ou glisser-déposer de fichiers), poignées de réordonnancement par drag (dnd-kit, déjà utilisé ailleurs), croix de suppression au survol avec confirmation. Sous chaque vignette, la date courte (« 12 avr. »).
+## 2. Le clic → visionneuse galerie
 
-**b. Badge sur la carte** (`ObjectsLayer`)
-Petite pastille 📷 n dans le coin du glyphe/polygone quand l'ouvrage a des photos — le plan devient lisible d'un coup d'œil.
+Le clic sur la pastille **n'ouvre plus l'inspecteur** : il ouvre directement la galerie de cet ouvrage (`stopPropagation` sur le clic Leaflet).
 
-**c. Visionneuse plein écran** (nouveau `OuvragePhotoViewer`)
-Portal plein écran, fond forêt profonde : image centrée + **loupe de terrain existante** (`useImageZoomPan` + `ZoomBar`, molette 1×→8×, glisser, double-clic, raccourcis + − 0 Échap), flèches Précédent/Suivant (clavier ← →), bande de vignettes en bas, cartouche discret en haut à droite : nom de l'ouvrage, date de prise de vue, date d'ajout, saison, légende éditable en place.
+Évolution de `OuvragePhotoViewer.tsx` (composant déjà en place, on l'enrichit plutôt que d'en créer un second) :
 
-**d. Filtre temporel**
-Une barre de filtre au-dessus de la pellicule et dans la visionneuse : `Tout · Printemps · Été · Automne · Hiver` + sélecteur d'année, alimentée par `coalesce(taken_at, uploaded_at)`. En option (même composant), un mode « Chronologie » qui aligne les photos par saison pour comparer le même ouvrage d'une année sur l'autre.
+- **Grande photo** : inchangée, avec la loupe de terrain existante (molette, glisser, double-clic, `+ / - / 0`).
+- **Rail de vignettes** ajouté en bas : miniatures carrées, la courante entourée d'or et mise à l'échelle, défilement horizontal auto-centré sur la photo active, clic = saut direct.
+- **Précédent / suivant** : flèches latérales existantes + flèches clavier + **swipe tactile** (mobile).
+- Bandeau conservé : titre de l'ouvrage, saison, date, `n/total`, légende sous l'image.
+- Le rail et le bandeau se masquent en mode « Plein cadre » (comportement `expanded` déjà présent).
 
-**e. Registre & impression**
-`OuvragesRegister` affiche la pellicule (max 4 vignettes + « +n ») par ouvrage ; `OuvragePrintSheet` intègre jusqu'à 4 photos en planche datée dans le carnet PDF de l'étape 5.
+## 3. Câblage
 
-### Détails techniques
+- `PaletteStudio.tsx` : nouvel état `galleryObjetId`; passe `onOpenPhotos(objetId)` à `ObjectsLayer` et au registre; rend `OuvragePhotoViewer` avec les photos de `objetPhotos.byObjet`.
+- `ObjectsLayer.tsx` : props `photoThumbs?: Record<string, string>` et `onOpenPhotos?`; rendu des pastilles points + centroïdes.
+- Aucune modification base de données : on réutilise `propriete_objet_photos` et le hook `useObjetPhotos`.
 
-- Nouveau hook `useObjetPhotos(proprieteId)` : une requête par propriété, signature des URLs en lot, regroupement par `objet_id`, invalidation React Query partagée avec `usePropertyObjets`.
-- Nouveau `src/components/propriete/palette/studio/photos/` : `ObjetPhotoStrip.tsx`, `OuvragePhotoViewer.tsx`, `PhotoSeasonFilter.tsx`.
-- Aucun changement de comportement pour les ouvrages sans photo (la section reste repliée sur la tuile « + »).
+## Détails techniques
 
-### Étapes de mise en œuvre
-
-1. Migration DB + bucket privé + RPC de réordonnancement.
-2. Hook `useObjetPhotos` (lecture, upload, suppression, réordonnancement, légende).
-3. `ObjetPhotoStrip` intégrée dans `ObjectInspector` (upload, DnD, suppression).
-4. `OuvragePhotoViewer` avec loupe, navigation, cartouche daté.
-5. Filtre saison/année + badge 📷 sur la carte.
-6. Registre et planche photo dans l'impression de l'étape 5.
+- Centroïde polygone : moyenne pondérée des sommets déjà disponible via les helpers de `src/lib/geomTransform.ts`.
+- Pastille rendue en `L.divIcon` (HTML + CSS animé) pour rester légère; styles ajoutés dans `src/index.css` sous `.ds-photo-pastille` (tokens sémantiques uniquement, pas de couleurs en dur).
+- Rail de vignettes : URLs signées déjà fournies par `useObjetPhotos`, `scrollIntoView({ inline: 'center' })` sur changement d'index.
+- Correctif au passage : erreur runtime `_leaflet_pos` (marqueur retiré pendant une animation) — garde sur le démontage des marqueurs pastille.
