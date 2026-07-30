@@ -22,6 +22,9 @@ export function useImageZoomPan(resetKey?: string | null) {
   const [state, setState] = useState<ZoomState>({ scale: 1, tx: 0, ty: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const drag = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
+  // Miroir synchrone de l'état pour les handlers natifs
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   const reset = useCallback(() => setState({ scale: 1, tx: 0, ty: 0 }), []);
 
@@ -83,10 +86,6 @@ export function useImageZoomPan(resetKey?: string | null) {
     (factor: number) => setScale(stateRef.current.scale * factor),
     [setScale],
   );
-
-  // Miroir synchrone de l'état pour les handlers natifs
-  const stateRef = useRef(state);
-  stateRef.current = state;
 
   // Molette : listener non-passif pour pouvoir preventDefault
   useEffect(() => {
