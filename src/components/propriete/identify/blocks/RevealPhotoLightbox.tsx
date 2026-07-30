@@ -139,12 +139,35 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
         </>
       )}
 
-      <img
-        src={current.photoUrl as string}
-        alt={displayNameFor(current)}
+      <div
+        ref={zoom.containerRef}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[72vh] max-w-[92vw] object-contain rounded-xl shadow-2xl"
-      />
+        {...zoom.handlers}
+        style={{ touchAction: 'none' }}
+        className={`relative overflow-hidden rounded-xl shadow-2xl bg-black/40 ${
+          expanded ? 'h-[88vh]' : 'h-[72vh]'
+        } w-[92vw] max-w-[1400px] ${
+          zoom.isPanning ? 'cursor-grabbing' : zoom.isZoomed ? 'cursor-grab' : 'cursor-zoom-in'
+        }`}
+      >
+        <img
+          src={src || (current.photoUrl as string)}
+          alt={displayNameFor(current)}
+          draggable={false}
+          style={{ transform: zoom.transform, willChange: 'transform' }}
+          className="w-full h-full object-contain select-none transition-transform duration-75"
+        />
+
+        <ZoomBar
+          scale={zoom.scale}
+          onScale={zoom.setScale}
+          onReset={zoom.reset}
+          expanded={expanded}
+          onToggleExpand={() => setExpanded((v) => !v)}
+          loadingHiRes={loadingHiRes}
+        />
+      </div>
+
 
       <div
         onClick={(e) => e.stopPropagation()}
