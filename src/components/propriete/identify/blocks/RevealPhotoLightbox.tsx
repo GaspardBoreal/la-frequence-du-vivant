@@ -169,10 +169,12 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
       </div>
 
 
+      {!expanded && (
       <div
         onClick={(e) => e.stopPropagation()}
         className="mt-4 w-full max-w-2xl rounded-xl bg-white/10 backdrop-blur px-4 py-3 text-white"
       >
+
         <div className="font-serif text-lg leading-tight">{displayNameFor(current)}</div>
         <div className="text-xs italic opacity-70">{current.scientificName}</div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] opacity-80">
