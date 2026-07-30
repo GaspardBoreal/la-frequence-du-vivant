@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Copy, X, MapPin } from 'lucide-react';
+import { Trash2, Copy, X, MapPin, Scaling } from 'lucide-react';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { isChromaticTool, teintesOf, floraisonOf } from '@/lib/nuancierKb';
 import NuancierPicker from './NuancierPicker';
@@ -16,8 +16,13 @@ interface Props {
   onDelete: () => void;
   onDuplicate: () => void;
   onClose: () => void;
+  /** Active le mode Transformer (déplacer / redimensionner / pivoter). */
+  onTransform?: () => void;
+  /** Mesure live quand le mode Transformer est actif sur cet objet. */
+  transformMeasure?: number | null;
   readOnly?: boolean;
 }
+
 
 const field =
   'w-full rounded-md border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-1 text-[11px] outline-none focus:border-[hsl(var(--ds-forest))]/50';
