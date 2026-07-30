@@ -1,5 +1,5 @@
 import React from 'react';
-import { Marker, Polyline, Circle, useMapEvents } from 'react-leaflet';
+import { Marker, Polyline, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { InlineGpsCuration } from '@/hooks/propriete/useInlineGpsCuration';
 import { SNAP_RADIUS_M } from '@/hooks/propriete/useInlineGpsCuration';
@@ -30,6 +30,22 @@ const ClickToPlace: React.FC<{ onPick: (lat: number, lng: number) => void }> = (
   return null;
 };
 
+/** Panneau dédié : le point soulevé reste au-dessus des ouvrages et du vivant. */
+const GPS_PANE = 'ds-gps-pane';
+const useGpsPane = () => {
+  const map = useMap();
+  const [ready, setReady] = React.useState(false);
+  React.useEffect(() => {
+    if (!map.getPane(GPS_PANE)) {
+      const p = map.createPane(GPS_PANE);
+      p.style.zIndex = '680';
+    }
+    setReady(true);
+  }, [map]);
+  return ready;
+};
+
+
 /**
  * Couche de repositionnement en place, à insérer comme enfant d'une carte
  * (`RichMap`, `MapContainer`…). Ne modifie jamais la vue : ni recentrage,
@@ -37,7 +53,8 @@ const ClickToPlace: React.FC<{ onPick: (lat: number, lng: number) => void }> = (
  */
 export const InlineGpsCurationLayer: React.FC<{ curation: InlineGpsCuration }> = ({ curation }) => {
   const { active, draft, origin, move, snapped } = curation;
-  if (!active || !draft || !origin) return null;
+  const paneReady = useGpsPane();
+  if (!active || !draft || !origin || !paneReady) return null;
 
   const moved = draft[0] !== origin[0] || draft[1] !== origin[1];
 
@@ -66,6 +83,7 @@ export const InlineGpsCurationLayer: React.FC<{ curation: InlineGpsCuration }> =
       <Marker
         position={draft}
         icon={liftedIcon}
+        pane={GPS_PANE}
         draggable
         zIndexOffset={1000}
         eventHandlers={{

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircleMarker, Popup, Tooltip } from 'react-leaflet';
+import { CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { Search, X, Tag as TagIcon, RotateCcw } from 'lucide-react';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 import { PLANT_INDICATORS, type PlantFamily } from '@/lib/plantIndicatorKb';
@@ -178,6 +178,27 @@ interface LayerProps {
   onOpenGps?: (w: ObservationPopupWaypoint) => void;
 }
 
+/**
+ * Panneau Leaflet dédié au vivant : les observations passent AU-DESSUS des
+ * ouvrages de l'Atelier (polygones du panneau overlay), sinon un massif ou
+ * un potager avale le clic des points qu'il recouvre.
+ */
+const VIVANT_PANE = 'ds-vivant-pane';
+
+const useVivantPane = () => {
+  const map = useMap();
+  const [ready, setReady] = React.useState(false);
+  React.useEffect(() => {
+    let pane = map.getPane(VIVANT_PANE);
+    if (!pane) {
+      pane = map.createPane(VIVANT_PANE);
+      pane.style.zIndex = '645';
+    }
+    setReady(true);
+  }, [map]);
+  return ready;
+};
+
 /** Nuage d'observations filtrable, en fond de plan de l'atelier. */
 export const LivingLayer: React.FC<LayerProps> = ({
   waypoints,
@@ -190,9 +211,12 @@ export const LivingLayer: React.FC<LayerProps> = ({
   onZoomPhoto,
   onStartInlineMove,
   onOpenGps,
-}) => (
-
+}) => {
+  const paneReady = useVivantPane();
+  if (!paneReady) return null;
+  return (
   <>
+
     {waypoints.map((w) => {
       if (!matchVivantBase(w, filter, filterContext)) return null;
       /**
@@ -209,12 +233,25 @@ export const LivingLayer: React.FC<LayerProps> = ({
         : w.commonName || w.scientificName;
       const highlighted = searching && hit;
       const muted = searching && !hit;
+      const radius = highlighted ? (bio ? 8 : 6.5) : bio ? 5 : 3.5;
       return (
+        <React.Fragment key={w.id}>
+        {/* Cible de saisie élargie : un point de 3,5 px reste attrapable au doigt. */}
+        {!muted && (
+          <CircleMarker
+            center={[w.lat, w.lng] as any}
+            radius={Math.max(12, radius + 7)}
+            pane={VIVANT_PANE}
+            pathOptions={{ stroke: false, fillOpacity: 0, fillColor: meta.color }}
+            eventHandlers={onSelect ? { click: () => onSelect(w) } : undefined}
+          />
+        )}
         <CircleMarker
-          key={w.id}
           center={[w.lat, w.lng] as any}
-          radius={highlighted ? (bio ? 8 : 6.5) : bio ? 5 : 3.5}
+          radius={radius}
+          pane={VIVANT_PANE}
           interactive={!muted}
+
           pathOptions={{
             color: highlighted ? '#f2c14e' : bio ? '#fffdf7' : meta.color,
             weight: highlighted ? 2.6 : bio ? 1.6 : 0.8,
@@ -245,11 +282,13 @@ export const LivingLayer: React.FC<LayerProps> = ({
 
           </Popup>
         </CircleMarker>
+        </React.Fragment>
       );
     })}
   </>
+  );
+};
 
-);
 
 export interface VivantTagFacet {
   key: string;
