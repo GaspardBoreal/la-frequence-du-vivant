@@ -1,9 +1,13 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, Camera, ExternalLink } from 'lucide-react';
 import type { GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
 import { GEOFENCE_LABELS } from '@/lib/geofence';
+import { useImageZoomPan } from '@/hooks/useImageZoomPan';
+import { hiResPhotoUrl } from '@/utils/photoUtils';
+import ZoomBar from './ZoomBar';
+
 
 interface Props {
   items: GpsCandidate[];
@@ -37,21 +41,55 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
     [photoItems, index, onChange],
   );
 
+  const zoom = useImageZoomPan(currentId);
+  const [expanded, setExpanded] = useState(false);
+
+  // Montée en résolution de la photo courante (iNaturalist square/medium → large)
+  const baseUrl = (current?.photoUrl as string | undefined) || null;
+  const [src, setSrc] = useState<string | null>(baseUrl);
+  const [loadingHiRes, setLoadingHiRes] = useState(false);
+
+  useEffect(() => {
+    setSrc(baseUrl);
+    const hi = hiResPhotoUrl(baseUrl);
+    if (!hi) return;
+    setLoadingHiRes(true);
+    const img = new Image();
+    img.onload = () => {
+      setSrc(hi);
+      setLoadingHiRes(false);
+    };
+    img.onerror = () => setLoadingHiRes(false);
+    img.src = hi;
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+      setLoadingHiRes(false);
+    };
+  }, [baseUrl]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (zoom.isZoomed) zoom.reset();
+        else onClose();
+      }
       if (e.key === 'ArrowLeft') go(-1);
       if (e.key === 'ArrowRight') go(1);
+      if (e.key === '+' || e.key === '=') zoom.zoomBy(1.4);
+      if (e.key === '-' || e.key === '_') zoom.zoomBy(1 / 1.4);
+      if (e.key === '0') zoom.reset();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [go, onClose]);
+  }, [go, onClose, zoom]);
 
   if (!current) return null;
 
   const inatUrl = current.inatObservationId
     ? `https://www.inaturalist.org/observations/${current.inatObservationId}`
     : null;
+
 
   return createPortal(
     <motion.div
@@ -101,17 +139,42 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
         </>
       )}
 
-      <img
-        src={current.photoUrl as string}
-        alt={displayNameFor(current)}
+      <div
+        ref={zoom.containerRef}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[72vh] max-w-[92vw] object-contain rounded-xl shadow-2xl"
-      />
+        {...zoom.handlers}
+        style={{ touchAction: 'none' }}
+        className={`relative overflow-hidden rounded-xl shadow-2xl bg-black/40 ${
+          expanded ? 'h-[88vh]' : 'h-[72vh]'
+        } w-[92vw] max-w-[1400px] ${
+          zoom.isPanning ? 'cursor-grabbing' : zoom.isZoomed ? 'cursor-grab' : 'cursor-zoom-in'
+        }`}
+      >
+        <img
+          src={src || (current.photoUrl as string)}
+          alt={displayNameFor(current)}
+          draggable={false}
+          style={{ transform: zoom.transform, willChange: 'transform' }}
+          className="w-full h-full object-contain select-none transition-transform duration-75"
+        />
 
+        <ZoomBar
+          scale={zoom.scale}
+          onScale={zoom.setScale}
+          onReset={zoom.reset}
+          expanded={expanded}
+          onToggleExpand={() => setExpanded((v) => !v)}
+          loadingHiRes={loadingHiRes}
+        />
+      </div>
+
+
+      {!expanded && (
       <div
         onClick={(e) => e.stopPropagation()}
         className="mt-4 w-full max-w-2xl rounded-xl bg-white/10 backdrop-blur px-4 py-3 text-white"
       >
+
         <div className="font-serif text-lg leading-tight">{displayNameFor(current)}</div>
         <div className="text-xs italic opacity-70">{current.scientificName}</div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] opacity-80">
@@ -152,7 +215,9 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
           )}
         </div>
       </div>
+      )}
     </motion.div>,
+
     document.body,
   );
 };

@@ -151,3 +151,17 @@ export const formatDimensions = (width?: number, height?: number): string => {
   if (!width || !height) return 'Dimensions inconnues';
   return `${width} × ${height}`;
 };
+
+/**
+ * Monte une URL photo à la meilleure résolution disponible.
+ * iNaturalist expose square/small/medium/large/original sur le même chemin.
+ * Retourne `null` si aucune montée en résolution n'est possible.
+ */
+export function hiResPhotoUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (/\/(square|small|medium|large)\.(jpe?g|png|gif|webp)/i.test(url)) {
+    const next = url.replace(/\/(square|small|medium|large)\./i, '/large.');
+    return next === url ? null : next;
+  }
+  return null;
+}

@@ -1,35 +1,44 @@
-## Constat
+## Objectif
 
-Dans `src/components/propriete/species/ObservationPopupCard.tsx`, l'image n'est rendue que si `w.photoUrl` existe. Pour une observation citoyenne sans photo terrain (Rouge-gorge familier), la vignette est donc vide : aucun repli iNaturalist n'est tenté, alors que le cache serveur `species_thumb_cache` (`useSpeciesThumb`) contient déjà une photo de référence pour la plupart des espèces.
+Dans la visionneuse plein écran d'une observation (`RevealPhotoLightbox`), l'image est aujourd'hui statique : `max-h-[72vh]` + `object-contain`, aucun gestionnaire de molette, de glisser ou de double-clic. Impossible donc d'agrandir un détail (ici le papillon sur le buddleia).
 
-## Proposition : une « bande photo » à deux registres
+## Ce que je propose
 
-Remplacer l'image unique par un petit carrousel horizontal en tête de popup, qui affiche **toujours les deux registres quand ils existent** :
+Transformer la visionneuse en **table de loupe naturaliste** : l'image reste posée au centre, et le geste de zoom se fait comme sous une loupe de terrain.
 
-```text
-┌───────────────────────────────────┐
-│ [ marcheur ] [ marcheur ] [ iNat ]│  ← miniatures 64px, scroll horizontal
-│  ● ○ ○                            │
-├───────────────────────────────────┤
-│ Rouge-gorge familier              │
-│ Erithacus rubecula                │
-└───────────────────────────────────┘
-```
+### 1. Zoom molette centré sur le curseur
+- Molette (ou pincement trackpad) = zoom continu de **1× à 8×**, ancré sur le point sous la souris — on grossit exactement le détail visé, pas le centre de l'image.
+- Amortissement doux (pas de saut), curseur `zoom-in` / `grab` selon l'état.
 
-- **Registre 1 — Terrain** : `w.photoUrl` puis les autres photos marcheurs de la même espèce sur la propriété (déjà agrégées côté pool). Pastille discrète « Marcheur ».
-- **Registre 2 — Référence** : `photo_url` du cache espèce, pastille « iNat » + attribution en survol. Toujours ajoutée en dernier, même quand des photos terrain existent — c'est ce que demande la demande « afficher les deux ».
-- **Aucune des deux** : pictogramme par taxon (même grammaire que `SpeciesThumb`) au lieu du vide actuel.
-- Clic sur une miniature terrain → visionneuse plein écran existante (`onZoomPhoto`) ; clic sur la miniature iNat → ouverture de la page iNaturalist source dans un nouvel onglet.
+### 2. Déplacement (pan) au glisser
+- Dès que le zoom dépasse 1×, glisser à la souris (ou au doigt) déplace l'image, avec bornage pour ne jamais sortir du cadre.
+- Le glisser n'active plus la navigation photo précédente/suivante tant qu'on est zoomé.
 
-## Mise en œuvre
+### 3. Gestes rapides
+- **Double-clic / double-tap** : bascule 1× ↔ 2,5× sur le point cliqué, et retour à l'ajusté.
+- **Échap** : si zoomé, remet à 1× ; sinon ferme la visionneuse (comportement actuel préservé).
+- **+ / −** au clavier et **0** pour réinitialiser.
 
-1. **Nouveau composant** `src/components/propriete/species/ObservationPhotoStrip.tsx` : reçoit `scientificName`, `walkerPhotos: string[]`, `kingdom/iconicTaxon`, gère la sélection, le repli picto et les pastilles de source. Appelle `useSpeciesThumb(scientificName)` pour la photo iNat (batch + cache déjà en place, pas de requête par marqueur en plus).
-2. **`ObservationPopupCard.tsx`** : remplace le bloc `{w.photoUrl && …}` par `<ObservationPhotoStrip />`, ajoute une prop optionnelle `walkerPhotos` (défaut : `[w.photoUrl]` filtré).
-3. **Alimentation des photos marcheurs multiples** : dans `usePropertySpeciesPool`, exposer une map `photosByScientificName` (les photos terrain sont déjà résolues dans le hook) et la transmettre depuis les trois consommateurs — `LivingLayer.tsx` (Atelier), `RevealMapBlock.tsx` (Carte des révélations), `ExcludedSpeciesMap.tsx` — pour garder une popup identique partout.
-4. **Cohérence** : la photo iNat n'est jamais écrite en base ni substituée à la donnée terrain ; c'est un simple affichage de référence, respectant la règle « photos marcheurs prioritaires ».
+### 4. Barre loupe discrète
+Petit bandeau flottant en bas à droite de l'image, dans le même registre visuel que la barre GPS (fond `ds-forest-deep` opaque, filet doré) :
+`−  [ ●———— ]  +   1,0×   ⟲ Ajuster   ⤢ Plein écran`
+- Le curseur reflète et pilote le zoom.
+- « Ajuster » remet l'image à sa taille d'origine.
+- « Plein écran » agrandit la zone image (masque temporairement la légende) pour donner toute la hauteur au cliché.
+
+### 5. Qualité de l'image source
+Le zoom ne sert à rien si la source est une vignette. À l'ouverture de la visionneuse, la meilleure résolution disponible est demandée :
+- photos iNaturalist : substitution du suffixe `square`/`small`/`medium` par `large` puis `original`, avec repli automatique si le fichier haute résolution n'existe pas ;
+- photos marcheurs : l'original du storage plutôt que la variante affichée sur la carte.
+Un discret indicateur « chargement haute définition… » pendant la bascule, puis l'affichage passe sur la version nette.
+
+### 6. Réinitialisation au changement de photo
+Passer à l'observation suivante (← →) remet le zoom à 1× et recentre, pour ne pas hériter d'un cadrage étranger.
 
 ## Détails techniques
 
-- Miniatures 64×64, `object-fit: cover`, lazy loading, `onError` → passage au registre suivant puis au picto (même logique que `GameCardImage`).
-- Largeur mini de la popup portée à ~200px pour loger 3 miniatures sans casser le layout Leaflet.
-- Aucun changement de schéma ni d'edge function : `resolve-species-thumb` est déjà déclenché automatiquement pour les noms non résolus.
+- Nouveau hook `src/hooks/useImageZoomPan.ts` : état `{ scale, tx, ty }`, handlers `onWheel` (avec `passive:false`), `onPointerDown/Move/Up`, `zoomAt(point, factor)`, `reset()`, bornage des translations sur les dimensions réelles rendues.
+- `RevealPhotoLightbox.tsx` : conteneur `overflow-hidden` avec `transform: translate(tx,ty) scale(s)` et `transform-origin: center`, `touch-action: none`, `will-change: transform`. Le clic sur le fond ferme toujours, le clic sur l'image ne ferme plus.
+- Nouveau composant `ZoomBar.tsx` (barre loupe) à côté de `InlineGpsBar` pour l'homogénéité visuelle.
+- Petit utilitaire `hiResPhotoUrl(url)` dans `src/utils/photoUtils.ts` pour la montée en résolution iNaturalist, avec `onError` de repli.
+- Aucun changement de données : purement présentation/interaction, la même visionneuse est utilisée par l'Atelier, la Carte des révélations et les espèces écartées, donc le bénéfice est immédiat partout.
