@@ -728,6 +728,8 @@ export const PaletteStudio: React.FC<Props> = ({
               onActivate={startObjetTransform}
               timeIndex={timeIndex}
               photoCounts={objetPhotos.counts}
+              photoThumbs={photoThumbs}
+              onOpenPhotos={openGallery}
             />
 
             {objetTransform.objet && (
