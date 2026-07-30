@@ -39,6 +39,7 @@ import LayersPanel, { type SystemLayerState } from './LayersPanel';
 import ToolPalette from './ToolPalette';
 import ObjectInspector from './ObjectInspector';
 import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
+import OuvragePhotoViewer from './photos/OuvragePhotoViewer';
 import PlanBalanceSheet from './PlanBalanceSheet';
 import InspirationDrawer from './InspirationDrawer';
 import LivingLayer, {
@@ -184,6 +185,29 @@ export const PaletteStudio: React.FC<Props> = ({
   const { calques, upsertCalque, deleteCalque } = useProprieteCalques(open ? proprieteId : undefined);
   const { objets, upsertObjet, deleteObjet } = useProprieteObjets(open ? proprieteId : undefined);
   const objetPhotos = useObjetPhotos(open ? proprieteId : undefined);
+
+  // Galerie « carnet photo » d'un ouvrage (ouverte par la pastille sur la carte)
+  const [galleryObjetId, setGalleryObjetId] = React.useState<string | null>(null);
+  const [galleryIndex, setGalleryIndex] = React.useState(0);
+  const galleryPhotos = React.useMemo(
+    () => (galleryObjetId ? objetPhotos.byObjet.get(galleryObjetId) ?? [] : []),
+    [galleryObjetId, objetPhotos.byObjet],
+  );
+  const galleryTitle = React.useMemo(() => {
+    const o = objets.find((x) => x.id === galleryObjetId);
+    return o ? o.nom || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage' : '';
+  }, [galleryObjetId, objets]);
+  const photoThumbs = React.useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    objetPhotos.byObjet.forEach((list, id) => {
+      map[id] = list[0]?.url;
+    });
+    return map;
+  }, [objetPhotos.byObjet]);
+  const openGallery = React.useCallback((id: string) => {
+    setGalleryIndex(0);
+    setGalleryObjetId(id);
+  }, []);
 
   const [tab, setTab] = React.useState<PanelTab>('outils');
   const [panelOpen, setPanelOpen] = React.useState(true);
@@ -704,6 +728,8 @@ export const PaletteStudio: React.FC<Props> = ({
               onActivate={startObjetTransform}
               timeIndex={timeIndex}
               photoCounts={objetPhotos.counts}
+              photoThumbs={photoThumbs}
+              onOpenPhotos={openGallery}
             />
 
             {objetTransform.objet && (
@@ -901,6 +927,17 @@ export const PaletteStudio: React.FC<Props> = ({
               displayNameFor={displayNameFor}
             />
           </div>
+        )}
+
+        {/* Carnet photo d'un ouvrage : galerie ouverte depuis la pastille carte */}
+        {galleryPhotos.length > 0 && (
+          <OuvragePhotoViewer
+            photos={galleryPhotos}
+            index={Math.min(galleryIndex, galleryPhotos.length - 1)}
+            title={galleryTitle}
+            onIndex={setGalleryIndex}
+            onClose={() => setGalleryObjetId(null)}
+          />
         )}
 
         {/* Contrôle GPS : mêmes gestes de curation que la Carte des révélations */}

@@ -6,6 +6,7 @@ import { hexOf, isChromaticTool, teintesOf } from '@/lib/nuancierKb';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import { fmtMeasure, measureFor } from './geoMetrics';
+import { photoPastilleIcon } from './photos/PhotoPastille';
 
 /**
  * Applique un vrai dégradé SVG des teintes du nuancier au remplissage du
@@ -73,22 +74,41 @@ const MassifPolygon: React.FC<{
   );
 };
 
-const glyphIcon = (glyph: string, color: string, selected: boolean, scale = 1, photos = 0) =>
+const glyphIcon = (glyph: string, color: string, selected: boolean, scale = 1) =>
   L.divIcon({
     className: 'studio-objet-marker',
-    html: `<div style="position:relative;">${
-      photos
-        ? `<span style="position:absolute;top:-6px;right:-8px;z-index:2;background:#2f5d3a;color:#fffdf7;border-radius:9px;padding:0 4px;font-size:9px;line-height:13px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.35);">📸${photos}</span>`
-        : ''
-    }<div style="
+    html: `<div style="
       width:${28 * scale}px;height:${28 * scale}px;border-radius:50%;
       display:flex;align-items:center;justify-content:center;
       font-size:${14 * scale}px;background:#fffdf7;
       border:${selected ? 3 : 2}px solid ${color};
-      box-shadow:0 2px 6px rgba(0,0,0,.25);">${glyph}</div></div>`,
+      box-shadow:0 2px 6px rgba(0,0,0,.25);">${glyph}</div>`,
     iconSize: [28 * scale, 28 * scale],
     iconAnchor: [14 * scale, 14 * scale],
   });
+
+/** Point d'ancrage de la pastille photo selon la géométrie. */
+const photoAnchor = (geometry: any): [number, number] | null => {
+  if (!geometry) return null;
+  if (geometry.type === 'Point') {
+    const c = geometry.coordinates;
+    return [c[1], c[0]];
+  }
+  if (geometry.type === 'LineString') {
+    const cs = geometry.coordinates || [];
+    if (!cs.length) return null;
+    const m = cs[Math.floor(cs.length / 2)];
+    return [m[1], m[0]];
+  }
+  if (geometry.type === 'Polygon') {
+    const ring = geometry.coordinates?.[0] || [];
+    if (!ring.length) return null;
+    const lat = ring.reduce((s: number, c: number[]) => s + c[1], 0) / ring.length;
+    const lng = ring.reduce((s: number, c: number[]) => s + c[0], 0) / ring.length;
+    return [lat, lng];
+  }
+  return null;
+};
 
 interface Props {
   objets: ProprieteObjet[];
@@ -103,6 +123,10 @@ interface Props {
   timeIndex?: number;
   /** Nombre de photos par objet — pastille photo sur la carte. */
   photoCounts?: Record<string, number>;
+  /** Vignette (1re photo) par objet, affichée dans la pastille. */
+  photoThumbs?: Record<string, string | undefined>;
+  /** Clic sur la pastille photo → ouvre la galerie de l'ouvrage. */
+  onOpenPhotos?: (objetId: string) => void;
 }
 
 export const ObjectsLayer: React.FC<Props> = ({
@@ -114,6 +138,8 @@ export const ObjectsLayer: React.FC<Props> = ({
   onActivate,
   timeIndex = 0,
   photoCounts,
+  photoThumbs,
+  onOpenPhotos,
 }) => {
   const calqueById = React.useMemo(
     () => Object.fromEntries(calques.map((c) => [c.id, c])),
@@ -169,25 +195,69 @@ export const ObjectsLayer: React.FC<Props> = ({
           </Tooltip>
         );
 
-        if (o.geometry?.type === 'Point') {
+        // Pastille « carnet photo » — points, lignes et polygones
+        const photoCount = photoCounts?.[o.id] ?? 0;
+        const anchor = photoCount > 0 ? photoAnchor(o.geometry) : null;
+        const isPoint = o.geometry?.type === 'Point';
+        const pastille =
+          anchor && photoCount > 0 ? (
+            <Marker
+              key={`${o.id}-photos`}
+              position={anchor as any}
+              icon={photoPastilleIcon(photoCount, label, photoThumbs?.[o.id])}
+              zIndexOffset={800}
+              interactive
+              keyboard={false}
+              eventHandlers={{
+                click: (e: any) => {
+                  e.originalEvent?.stopPropagation?.();
+                  L.DomEvent.stop(e);
+                  onOpenPhotos?.(o.id);
+                },
+                dblclick: (e: any) => {
+                  e.originalEvent?.stopPropagation?.();
+                  L.DomEvent.stop(e);
+                },
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -12] as any}>
+                <span style={{ fontSize: 11 }}>
+                  📷 Carnet photo · {photoCount} photo{photoCount > 1 ? 's' : ''}
+                </span>
+              </Tooltip>
+            </Marker>
+          ) : null;
+
+        const withPastille = (node: React.ReactNode) =>
+          pastille ? (
+            <React.Fragment key={o.id}>
+              {node}
+              {pastille}
+            </React.Fragment>
+          ) : (
+            node
+          );
+
+        if (isPoint) {
           const c = o.geometry.coordinates;
-          return (
+          return withPastille(
             <Marker
               key={o.id}
               position={[c[1], c[0]] as any}
-              icon={glyphIcon(tool.glyph, color, selected, scale, photoCounts?.[o.id] ?? 0)}
+              icon={glyphIcon(tool.glyph, color, selected, scale)}
               opacity={layerOpacity}
               eventHandlers={handlers}
             >
               {tip}
-            </Marker>
+            </Marker>,
           );
         }
+
 
         if (o.geometry?.type === 'LineString') {
           const pos = (o.geometry.coordinates || []).map((c: number[]) => [c[1], c[0]]);
           if (pos.length < 2) return null;
-          return (
+          return withPastille(
             <Polyline
               key={o.id}
               positions={pos as any}
@@ -201,7 +271,7 @@ export const ObjectsLayer: React.FC<Props> = ({
               eventHandlers={handlers}
             >
               {tip}
-            </Polyline>
+            </Polyline>,
           );
         }
 
@@ -217,7 +287,7 @@ export const ObjectsLayer: React.FC<Props> = ({
             opacity: layerOpacity,
           };
           if (teintes.length >= 2) {
-            return (
+            return withPastille(
               <MassifPolygon
                 key={o.id}
                 id={o.id}
@@ -227,10 +297,10 @@ export const ObjectsLayer: React.FC<Props> = ({
                 handlers={handlers}
               >
                 {tip}
-              </MassifPolygon>
+              </MassifPolygon>,
             );
           }
-          return (
+          return withPastille(
             <Polygon
               key={o.id}
               positions={ring as any}
@@ -238,9 +308,10 @@ export const ObjectsLayer: React.FC<Props> = ({
               eventHandlers={handlers}
             >
               {tip}
-            </Polygon>
+            </Polygon>,
           );
         }
+
 
         return null;
       })}
