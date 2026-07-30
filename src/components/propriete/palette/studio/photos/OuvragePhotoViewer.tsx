@@ -150,6 +150,44 @@ export const OuvragePhotoViewer: React.FC<Props> = ({
           {photo.caption}
         </p>
       )}
+
+      {/* Rail de vignettes — la pellicule du carnet */}
+      {!expanded && photos.length > 1 && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex gap-2 overflow-x-auto border-t border-[hsl(var(--ds-gold))]/25 bg-[hsl(var(--ds-forest-deep))]/80 px-4 py-3 [scrollbar-width:thin]"
+        >
+          {photos.map((p, i) => {
+            const active = i === index;
+            return (
+              <button
+                key={p.id}
+                ref={active ? activeThumbRef : undefined}
+                onClick={() => onIndex(i)}
+                aria-label={`Photo ${i + 1}`}
+                aria-current={active}
+                className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-md border transition-all duration-200 ${
+                  active
+                    ? 'scale-110 border-[hsl(var(--ds-gold))] shadow-[0_0_0_2px_hsl(var(--ds-gold)/0.35)]'
+                    : 'border-[hsl(var(--ds-cream))]/20 opacity-60 hover:opacity-100'
+                }`}
+              >
+                <img
+                  src={p.url}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                  draggable={false}
+                />
+                <span className="absolute bottom-0 right-0 bg-[hsl(var(--ds-forest-deep))]/85 px-1 text-[9px] font-semibold text-[hsl(var(--ds-cream))]">
+                  {i + 1}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
     </div>,
     document.body,
   );
