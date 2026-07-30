@@ -73,22 +73,41 @@ const MassifPolygon: React.FC<{
   );
 };
 
-const glyphIcon = (glyph: string, color: string, selected: boolean, scale = 1, photos = 0) =>
+const glyphIcon = (glyph: string, color: string, selected: boolean, scale = 1) =>
   L.divIcon({
     className: 'studio-objet-marker',
-    html: `<div style="position:relative;">${
-      photos
-        ? `<span style="position:absolute;top:-6px;right:-8px;z-index:2;background:#2f5d3a;color:#fffdf7;border-radius:9px;padding:0 4px;font-size:9px;line-height:13px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.35);">📸${photos}</span>`
-        : ''
-    }<div style="
+    html: `<div style="
       width:${28 * scale}px;height:${28 * scale}px;border-radius:50%;
       display:flex;align-items:center;justify-content:center;
       font-size:${14 * scale}px;background:#fffdf7;
       border:${selected ? 3 : 2}px solid ${color};
-      box-shadow:0 2px 6px rgba(0,0,0,.25);">${glyph}</div></div>`,
+      box-shadow:0 2px 6px rgba(0,0,0,.25);">${glyph}</div>`,
     iconSize: [28 * scale, 28 * scale],
     iconAnchor: [14 * scale, 14 * scale],
   });
+
+/** Point d'ancrage de la pastille photo selon la géométrie. */
+const photoAnchor = (geometry: any): [number, number] | null => {
+  if (!geometry) return null;
+  if (geometry.type === 'Point') {
+    const c = geometry.coordinates;
+    return [c[1], c[0]];
+  }
+  if (geometry.type === 'LineString') {
+    const cs = geometry.coordinates || [];
+    if (!cs.length) return null;
+    const m = cs[Math.floor(cs.length / 2)];
+    return [m[1], m[0]];
+  }
+  if (geometry.type === 'Polygon') {
+    const ring = geometry.coordinates?.[0] || [];
+    if (!ring.length) return null;
+    const lat = ring.reduce((s: number, c: number[]) => s + c[1], 0) / ring.length;
+    const lng = ring.reduce((s: number, c: number[]) => s + c[0], 0) / ring.length;
+    return [lat, lng];
+  }
+  return null;
+};
 
 interface Props {
   objets: ProprieteObjet[];
