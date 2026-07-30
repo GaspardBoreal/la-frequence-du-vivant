@@ -103,6 +103,18 @@ export const OuvragePhotoViewer: React.FC<Props> = ({
         ref={zoom.containerRef}
         onClick={(e) => e.stopPropagation()}
         {...zoom.handlers}
+        onTouchStart={(e) => {
+          (zoom.handlers as any)?.onTouchStart?.(e);
+          touchX.current = e.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(e) => {
+          (zoom.handlers as any)?.onTouchEnd?.(e);
+          const start = touchX.current;
+          touchX.current = null;
+          if (start == null || zoom.isZoomed) return;
+          const dx = (e.changedTouches[0]?.clientX ?? start) - start;
+          if (Math.abs(dx) > 60) go(dx < 0 ? 1 : -1);
+        }}
         className={`relative flex-1 select-none overflow-hidden ${
           zoom.isPanning ? 'cursor-grabbing' : zoom.isZoomed ? 'cursor-grab' : 'cursor-zoom-in'
         }`}
