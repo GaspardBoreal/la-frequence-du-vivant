@@ -185,6 +185,29 @@ export const PaletteStudio: React.FC<Props> = ({
   const { objets, upsertObjet, deleteObjet } = useProprieteObjets(open ? proprieteId : undefined);
   const objetPhotos = useObjetPhotos(open ? proprieteId : undefined);
 
+  // Galerie « carnet photo » d'un ouvrage (ouverte par la pastille sur la carte)
+  const [galleryObjetId, setGalleryObjetId] = React.useState<string | null>(null);
+  const [galleryIndex, setGalleryIndex] = React.useState(0);
+  const galleryPhotos = React.useMemo(
+    () => (galleryObjetId ? objetPhotos.byObjet.get(galleryObjetId) ?? [] : []),
+    [galleryObjetId, objetPhotos.byObjet],
+  );
+  const galleryTitle = React.useMemo(() => {
+    const o = objets.find((x) => x.id === galleryObjetId);
+    return o ? o.nom || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage' : '';
+  }, [galleryObjetId, objets]);
+  const photoThumbs = React.useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    objetPhotos.byObjet.forEach((list, id) => {
+      map[id] = list[0]?.url;
+    });
+    return map;
+  }, [objetPhotos.byObjet]);
+  const openGallery = React.useCallback((id: string) => {
+    setGalleryIndex(0);
+    setGalleryObjetId(id);
+  }, []);
+
   const [tab, setTab] = React.useState<PanelTab>('outils');
   const [panelOpen, setPanelOpen] = React.useState(true);
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
