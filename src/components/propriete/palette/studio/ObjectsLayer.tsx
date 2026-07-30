@@ -256,7 +256,7 @@ export const ObjectsLayer: React.FC<Props> = ({
         if (o.geometry?.type === 'LineString') {
           const pos = (o.geometry.coordinates || []).map((c: number[]) => [c[1], c[0]]);
           if (pos.length < 2) return null;
-          return (
+          return withPastille(
             <Polyline
               key={o.id}
               positions={pos as any}
@@ -270,7 +270,7 @@ export const ObjectsLayer: React.FC<Props> = ({
               eventHandlers={handlers}
             >
               {tip}
-            </Polyline>
+            </Polyline>,
           );
         }
 
@@ -286,7 +286,7 @@ export const ObjectsLayer: React.FC<Props> = ({
             opacity: layerOpacity,
           };
           if (teintes.length >= 2) {
-            return (
+            return withPastille(
               <MassifPolygon
                 key={o.id}
                 id={o.id}
@@ -296,10 +296,10 @@ export const ObjectsLayer: React.FC<Props> = ({
                 handlers={handlers}
               >
                 {tip}
-              </MassifPolygon>
+              </MassifPolygon>,
             );
           }
-          return (
+          return withPastille(
             <Polygon
               key={o.id}
               positions={ring as any}
@@ -307,9 +307,10 @@ export const ObjectsLayer: React.FC<Props> = ({
               eventHandlers={handlers}
             >
               {tip}
-            </Polygon>
+            </Polygon>,
           );
         }
+
 
         return null;
       })}
