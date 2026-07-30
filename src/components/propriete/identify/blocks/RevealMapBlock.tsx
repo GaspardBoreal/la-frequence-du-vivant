@@ -15,6 +15,8 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import { PLANT_INDICATORS } from '@/lib/plantIndicatorKb';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
+
 import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 import VivantPeriodFilter from '@/components/propriete/VivantPeriodFilter';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
