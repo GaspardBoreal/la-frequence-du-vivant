@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircleMarker, Popup, Tooltip } from 'react-leaflet';
+import { CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { Search, X, Tag as TagIcon, RotateCcw } from 'lucide-react';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 import { PLANT_INDICATORS, type PlantFamily } from '@/lib/plantIndicatorKb';
