@@ -48,7 +48,14 @@ export const ObjectInspector: React.FC<Props> = ({
   onTransform,
   transformMeasure,
   readOnly,
+  photos,
+  photoUploading,
+  onPhotoUpload,
+  onPhotoRemove,
+  onPhotoCaption,
+  onPhotoReorder,
 }) => {
+
   const tool = TOOL_BY_KEY[objet.outil_key];
   const [nom, setNom] = React.useState(objet.nom || '');
   const [note, setNote] = React.useState(objet.meta?.note || '');
