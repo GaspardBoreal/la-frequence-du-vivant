@@ -38,6 +38,7 @@ import ObjectsLayer from './ObjectsLayer';
 import LayersPanel, { type SystemLayerState } from './LayersPanel';
 import ToolPalette from './ToolPalette';
 import ObjectInspector from './ObjectInspector';
+import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
 import PlanBalanceSheet from './PlanBalanceSheet';
 import InspirationDrawer from './InspirationDrawer';
 import LivingLayer, {
@@ -182,6 +183,7 @@ export const PaletteStudio: React.FC<Props> = ({
 
   const { calques, upsertCalque, deleteCalque } = useProprieteCalques(open ? proprieteId : undefined);
   const { objets, upsertObjet, deleteObjet } = useProprieteObjets(open ? proprieteId : undefined);
+  const objetPhotos = useObjetPhotos(open ? proprieteId : undefined);
 
   const [tab, setTab] = React.useState<PanelTab>('outils');
   const [panelOpen, setPanelOpen] = React.useState(true);
@@ -701,6 +703,7 @@ export const PaletteStudio: React.FC<Props> = ({
               hiddenId={objetTransform.objet?.id ?? null}
               onActivate={startObjetTransform}
               timeIndex={timeIndex}
+              photoCounts={objetPhotos.counts}
             />
 
             {objetTransform.objet && (
@@ -832,6 +835,12 @@ export const PaletteStudio: React.FC<Props> = ({
                   }).catch(() => {})
                 }
                 readOnly={readOnly}
+                photos={objetPhotos.byObjet.get(selectedObjet.id) ?? []}
+                photoUploading={objetPhotos.progress}
+                onPhotoUpload={(files) => objetPhotos.upload(selectedObjet.id, files)}
+                onPhotoRemove={objetPhotos.remove}
+                onPhotoCaption={objetPhotos.setCaption}
+                onPhotoReorder={(ids) => objetPhotos.reorder(selectedObjet.id, ids)}
               />
             </div>
           )}

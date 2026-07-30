@@ -7,6 +7,8 @@ import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { fmtMeasure, measureFor, geometryCenter } from './geoMetrics';
+import ObjetPhotoStrip from './photos/ObjetPhotoStrip';
+import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
 
 interface Props {
   objet: ProprieteObjet;
@@ -21,7 +23,15 @@ interface Props {
   /** Mesure live quand le mode Transformer est actif sur cet objet. */
   transformMeasure?: number | null;
   readOnly?: boolean;
+  /** Carnet photo de l'ouvrage (facultatif). */
+  photos?: ObjetPhoto[];
+  photoUploading?: { done: number; total: number } | null;
+  onPhotoUpload?: (files: File[]) => void;
+  onPhotoRemove?: (photo: ObjetPhoto) => void;
+  onPhotoCaption?: (photoId: string, caption: string) => void;
+  onPhotoReorder?: (orderedIds: string[]) => void;
 }
+
 
 
 const field =
@@ -38,7 +48,14 @@ export const ObjectInspector: React.FC<Props> = ({
   onTransform,
   transformMeasure,
   readOnly,
+  photos,
+  photoUploading,
+  onPhotoUpload,
+  onPhotoRemove,
+  onPhotoCaption,
+  onPhotoReorder,
 }) => {
+
   const tool = TOOL_BY_KEY[objet.outil_key];
   const [nom, setNom] = React.useState(objet.nom || '');
   const [note, setNote] = React.useState(objet.meta?.note || '');
@@ -199,6 +216,18 @@ export const ObjectInspector: React.FC<Props> = ({
           </div>
         )}
 
+        {onPhotoUpload && (
+          <ObjetPhotoStrip
+            title={nom || tool.label}
+            photos={photos ?? []}
+            readOnly={readOnly}
+            uploading={photoUploading}
+            onUpload={onPhotoUpload}
+            onRemove={(p) => onPhotoRemove?.(p)}
+            onCaption={(id, c) => onPhotoCaption?.(id, c)}
+            onReorder={(ids) => onPhotoReorder?.(ids)}
+          />
+        )}
 
 
         <label className="flex items-center gap-2">
