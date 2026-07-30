@@ -574,10 +574,13 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
                   waypoint={w}
                   displayName={displayNameFor(w)}
                   canCurate={!!canCurate}
+                  kingdom={w.kingdom}
+                  walkerPhotos={walkerPhotosFor(w)}
                   onZoomPhoto={setLightboxId}
                   onStartInlineMove={(pt) => inlineGps.start(pt)}
                   onOpenGps={(pt) => openGpsFromPoint(pt as GpsCandidate)}
                 />
+
               </Popup>
 
             </Marker>
