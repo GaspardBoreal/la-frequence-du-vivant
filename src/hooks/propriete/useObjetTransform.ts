@@ -133,7 +133,7 @@ export function useObjetTransform(
     dirty,
     smoothCount,
     canUndo: history.length > 0,
-    canSmooth: kind !== 'Point' && coords.length >= 3,
+    canSmooth: kind === 'Polygon' && coords.length >= 4,
     baseMeasure,
     measure,
     geometry,
