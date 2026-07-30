@@ -1,40 +1,50 @@
-## Constat
+## Idée directrice — « Le carnet photo de l'ouvrage »
 
-Dans l'Atelier, les **emplacements (zones)** disposent déjà d'un mode Transformer complet (`ZoneTransformLayer` + `ZoneTransformBar` + `useZoneTransform` : glisser, poignées d'échelle, lissage, annuler/valider).
+Chaque objet de l'Atelier (Mare, Massif, Potager, Pas japonais…) reçoit son propre **carnet photo daté** : une pellicule horizontale dans son éditeur, un badge compteur sur la carte, et une visionneuse plein écran avec la loupe de terrain déjà en place. Chaque photo porte sa date de prise de vue (EXIF) **et** sa date d'upload, ce qui permet de rejouer l'évolution du jardin par saison ou par année.
 
-Les **objets** dessinés (potager en carré, mare, pas japonais, massifs…) sont rendus par `ObjectsLayer` avec un simple `click → onSelect` : aucune poignée, aucune possibilité de déplacer ou redimensionner. `ObjectInspector` ne propose que nom / calque / couleur / note / dupliquer / supprimer.
+### 1. Base de données (nouvelle table + bucket privé)
 
-## Ce qui sera construit
+Table `public.propriete_objet_photos` :
+- `id`, `propriete_id`, `objet_id` (FK `propriete_objets`, ON DELETE CASCADE)
+- `storage_path`, `mime`, `size_bytes`, `width`, `height`
+- `caption`, `order_index`
+- `taken_at` (EXIF, peut être nul), **`uploaded_at` (défaut now())**, `season` calculé en lecture depuis `coalesce(taken_at, uploaded_at)`
+- `lat` / `lng` (si EXIF GPS), `uploaded_by`, `created_at`
+- GRANT authenticated/service_role, RLS alignée sur `can_access_propriete` (lecture) et sur les curateurs de la propriété (écriture), + RPC `SECURITY DEFINER` `reorder_propriete_objet_photos(_objet_id, _ids uuid[])` pour l'ordonnancement atomique.
+- Bucket Storage privé `propriete-ouvrages`, URLs signées 1 h en lot (même schéma que `propriete-tests`).
 
-### 1. Un moteur de transformation générique (objets = Point, LineString, Polygon)
-Nouveau hook `useObjetTransform` calqué sur `useZoneTransform`, mais opérant sur une **liste de coordonnées** quelle que soit la géométrie :
-- copie locale non destructive (rien n'est écrit en base avant « Valider »)
-- pile d'annulation (24 gestes), lissage cumulatif (Chaikin, déjà dans `src/lib/geomTransform.ts`)
-- mesure avant → après (m² pour les polygones, mètres linéaires pour les tracés) via `geoMetrics`
-- sauvegarde par `upsertObjet({ id, geometry })`
+### 2. Upload — pipeline déjà éprouvé, rien de neuf à inventer
 
-### 2. Couche d'édition sur la carte — `ObjetTransformLayer`
-Généralisation de `ZoneTransformLayer` :
-- **Déplacer** : glisser la forme (ou le pictogramme pour un objet ponctuel)
-- **Redimensionner** : 8 poignées dorées sur la boîte englobante — coin = homothétie, milieu = étirement d'un axe, Maj = proportionnel
-- **Pivoter** : nouvelle poignée circulaire au-dessus de la boîte (rotation autour du centre, aimantation tous les 15° avec Maj) — ajout d'un `rotateRing` dans `geomTransform.ts`
-- boîte englobante pointillée, sommets fantômes, curseurs directionnels contextuels
-- objets ponctuels : déplacement seul (pas d'échelle), avec halo de saisie
+Réutilisation de `preparePhotoForUpload` + `insertWithStorageRollback` (EXIF avant conversion HEIC, rollback Storage si l'insert échoue). Limite 25 Mo/photo, multi-fichiers avec barre de progression « 3/7 ».
 
-### 3. Barre flottante — `ObjetTransformBar`
-Même langage visuel que `ZoneTransformBar`, positionnée sous le bandeau Géo/Sat/Relief/Cadastre (`MAP_CHROME_TOP_PADDING`) :
-pictogramme + nom de l'ouvrage · rappels de gestes · Lisser (×n) · Annuler le geste · **surface/longueur avant → après avec facteur ×** · Valider / Abandonner. Raccourcis Échap (abandonner), Entrée (valider), ⌘/Ctrl+Z (annuler).
+### 3. Interfaces
 
-### 4. Point d'entrée « wahou » dans l'inspecteur
-Dans `ObjectInspector`, un bloc d'actions haut de panneau : **Transformer** (activation du mode), Dupliquer, Supprimer — avec l'indication de la mesure courante mise à jour en direct pendant le geste. Double-clic sur l'objet dans la carte entre directement en mode Transformer.
+**a. Pellicule dans l'éditeur d'objet** (`ObjectInspector`)
+Un bloc « Carnet photo » sous les champs existants : rangée de vignettes carrées 56 px scrollable, une tuile « + » en pointillés (clic ou glisser-déposer de fichiers), poignées de réordonnancement par drag (dnd-kit, déjà utilisé ailleurs), croix de suppression au survol avec confirmation. Sous chaque vignette, la date courte (« 12 avr. »).
 
-### 5. Cohérence d'état
-- entrer en mode Transformer sur un objet ferme un éventuel mode zone en cours (et inversement)
-- l'objet en cours d'édition est masqué dans `ObjectsLayer` (rendu uniquement par la couche d'édition) pour éviter le doublon fantôme
-- pas de zoom/recadrage parasite : la vue courante est conservée
+**b. Badge sur la carte** (`ObjectsLayer`)
+Petite pastille 📷 n dans le coin du glyphe/polygone quand l'ouvrage a des photos — le plan devient lisible d'un coup d'œil.
 
-## Détails techniques
+**c. Visionneuse plein écran** (nouveau `OuvragePhotoViewer`)
+Portal plein écran, fond forêt profonde : image centrée + **loupe de terrain existante** (`useImageZoomPan` + `ZoomBar`, molette 1×→8×, glisser, double-clic, raccourcis + − 0 Échap), flèches Précédent/Suivant (clavier ← →), bande de vignettes en bas, cartouche discret en haut à droite : nom de l'ouvrage, date de prise de vue, date d'ajout, saison, légende éditable en place.
 
-Fichiers créés : `src/hooks/propriete/useObjetTransform.ts`, `src/components/propriete/palette/studio/ObjetTransformLayer.tsx`, `src/components/propriete/palette/studio/ObjetTransformBar.tsx`.
-Fichiers modifiés : `src/lib/geomTransform.ts` (ajout `rotateRing`, helpers coords génériques), `ObjectsLayer.tsx` (prop `hiddenId`, `onActivate` au double-clic), `ObjectInspector.tsx` (bouton Transformer + mesure live), `PaletteStudio.tsx` (branchement du mode).
-Aucune migration base : la géométrie est déjà stockée en GeoJSON dans `propriete_objets` et écrite via `upsert_propriete_objet`.
+**d. Filtre temporel**
+Une barre de filtre au-dessus de la pellicule et dans la visionneuse : `Tout · Printemps · Été · Automne · Hiver` + sélecteur d'année, alimentée par `coalesce(taken_at, uploaded_at)`. En option (même composant), un mode « Chronologie » qui aligne les photos par saison pour comparer le même ouvrage d'une année sur l'autre.
+
+**e. Registre & impression**
+`OuvragesRegister` affiche la pellicule (max 4 vignettes + « +n ») par ouvrage ; `OuvragePrintSheet` intègre jusqu'à 4 photos en planche datée dans le carnet PDF de l'étape 5.
+
+### Détails techniques
+
+- Nouveau hook `useObjetPhotos(proprieteId)` : une requête par propriété, signature des URLs en lot, regroupement par `objet_id`, invalidation React Query partagée avec `usePropertyObjets`.
+- Nouveau `src/components/propriete/palette/studio/photos/` : `ObjetPhotoStrip.tsx`, `OuvragePhotoViewer.tsx`, `PhotoSeasonFilter.tsx`.
+- Aucun changement de comportement pour les ouvrages sans photo (la section reste repliée sur la tuile « + »).
+
+### Étapes de mise en œuvre
+
+1. Migration DB + bucket privé + RPC de réordonnancement.
+2. Hook `useObjetPhotos` (lecture, upload, suppression, réordonnancement, légende).
+3. `ObjetPhotoStrip` intégrée dans `ObjectInspector` (upload, DnD, suppression).
+4. `OuvragePhotoViewer` avec loupe, navigation, cartouche daté.
+5. Filtre saison/année + badge 📷 sur la carte.
+6. Registre et planche photo dans l'impression de l'étape 5.
