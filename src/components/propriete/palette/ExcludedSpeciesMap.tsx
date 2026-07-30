@@ -166,7 +166,9 @@ export const ExcludedSpeciesMap: React.FC<Props> = ({
                 waypoint={w}
                 displayName={displayNameFor(w)}
                 canCurate={!!canCurate}
+                kingdom={w.kingdom}
                 onZoomPhoto={setLightboxId}
+
                 onOpenGps={(pt) => {
                   setFocusId(pt.id);
                   setGpsConsole(true);
