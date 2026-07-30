@@ -903,6 +903,17 @@ export const PaletteStudio: React.FC<Props> = ({
           </div>
         )}
 
+        {/* Carnet photo d'un ouvrage : galerie ouverte depuis la pastille carte */}
+        {galleryPhotos.length > 0 && (
+          <OuvragePhotoViewer
+            photos={galleryPhotos}
+            index={Math.min(galleryIndex, galleryPhotos.length - 1)}
+            title={galleryTitle}
+            onIndex={setGalleryIndex}
+            onClose={() => setGalleryObjetId(null)}
+          />
+        )}
+
         {/* Contrôle GPS : mêmes gestes de curation que la Carte des révélations */}
         {canCurate && gpsConsole && (
           <GpsControlConsole
