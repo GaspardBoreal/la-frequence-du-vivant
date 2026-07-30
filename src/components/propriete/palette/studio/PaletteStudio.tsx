@@ -27,6 +27,8 @@ import { MapViewReporter, useMapViewState } from '@/components/maps/hooks/useMap
 import { RevealPhotoLightbox } from '@/components/propriete/identify/blocks/RevealPhotoLightbox';
 
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
+
 import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import { DEFAULT_LAYERS, TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
