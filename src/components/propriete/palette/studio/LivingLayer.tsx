@@ -282,11 +282,13 @@ export const LivingLayer: React.FC<LayerProps> = ({
 
           </Popup>
         </CircleMarker>
+        </React.Fragment>
       );
     })}
   </>
+  );
+};
 
-);
 
 export interface VivantTagFacet {
   key: string;
