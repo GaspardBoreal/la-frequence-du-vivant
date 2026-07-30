@@ -233,12 +233,25 @@ export const LivingLayer: React.FC<LayerProps> = ({
         : w.commonName || w.scientificName;
       const highlighted = searching && hit;
       const muted = searching && !hit;
+      const radius = highlighted ? (bio ? 8 : 6.5) : bio ? 5 : 3.5;
       return (
+        <React.Fragment key={w.id}>
+        {/* Cible de saisie élargie : un point de 3,5 px reste attrapable au doigt. */}
+        {!muted && (
+          <CircleMarker
+            center={[w.lat, w.lng] as any}
+            radius={Math.max(12, radius + 7)}
+            pane={VIVANT_PANE}
+            pathOptions={{ stroke: false, fillOpacity: 0, fillColor: meta.color }}
+            eventHandlers={onSelect ? { click: () => onSelect(w) } : undefined}
+          />
+        )}
         <CircleMarker
-          key={w.id}
           center={[w.lat, w.lng] as any}
-          radius={highlighted ? (bio ? 8 : 6.5) : bio ? 5 : 3.5}
+          radius={radius}
+          pane={VIVANT_PANE}
           interactive={!muted}
+
           pathOptions={{
             color: highlighted ? '#f2c14e' : bio ? '#fffdf7' : meta.color,
             weight: highlighted ? 2.6 : bio ? 1.6 : 0.8,
