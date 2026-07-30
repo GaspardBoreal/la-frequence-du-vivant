@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Copy, X, MapPin } from 'lucide-react';
+import { Trash2, Copy, X, MapPin, Scaling } from 'lucide-react';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { isChromaticTool, teintesOf, floraisonOf } from '@/lib/nuancierKb';
 import NuancierPicker from './NuancierPicker';
@@ -16,8 +16,13 @@ interface Props {
   onDelete: () => void;
   onDuplicate: () => void;
   onClose: () => void;
+  /** Active le mode Transformer (déplacer / redimensionner / pivoter). */
+  onTransform?: () => void;
+  /** Mesure live quand le mode Transformer est actif sur cet objet. */
+  transformMeasure?: number | null;
   readOnly?: boolean;
 }
+
 
 const field =
   'w-full rounded-md border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-1 text-[11px] outline-none focus:border-[hsl(var(--ds-forest))]/50';
@@ -30,11 +35,14 @@ export const ObjectInspector: React.FC<Props> = ({
   onDelete,
   onDuplicate,
   onClose,
+  onTransform,
+  transformMeasure,
   readOnly,
 }) => {
   const tool = TOOL_BY_KEY[objet.outil_key];
   const [nom, setNom] = React.useState(objet.nom || '');
   const [note, setNote] = React.useState(objet.meta?.note || '');
+  const transforming = transformMeasure != null;
 
   React.useEffect(() => {
     setNom(objet.nom || '');
@@ -42,7 +50,7 @@ export const ObjectInspector: React.FC<Props> = ({
   }, [objet.id]);
 
   if (!tool) return null;
-  const value = measureFor(tool.unit, objet.geometry);
+  const value = transforming ? transformMeasure! : measureFor(tool.unit, objet.geometry);
   const center = geometryCenter(objet.geometry);
 
   return (
@@ -83,6 +91,30 @@ export const ObjectInspector: React.FC<Props> = ({
       </div>
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">
+
+        {!readOnly && onTransform && (
+          <button
+            onClick={onTransform}
+            disabled={transforming}
+            className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors ${
+              transforming
+                ? 'border-[hsl(var(--ds-forest))]/60 bg-[hsl(var(--ds-forest))]/10'
+                : 'border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/60 hover:bg-[hsl(var(--ds-forest))]/5'
+            }`}
+          >
+            <Scaling className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--ds-forest))]" />
+            <span className="min-w-0">
+              <span className="block text-[11px] font-semibold leading-tight">
+                {transforming ? 'Transformation en cours…' : 'Transformer'}
+              </span>
+              <span className="block text-[9.5px] leading-tight opacity-60">
+                déplacer · redimensionner · pivoter · lisser
+              </span>
+            </span>
+          </button>
+        )}
+
+
 
         <label className="block">
           <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-55">Nom</span>

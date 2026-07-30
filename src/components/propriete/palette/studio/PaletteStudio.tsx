@@ -62,6 +62,9 @@ import { geometryAreaM2, fmtArea } from './geoMetrics';
 import ZoneTransformLayer from '../ZoneTransformLayer';
 import ZoneTransformBar from '../ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
+import ObjetTransformLayer from './ObjetTransformLayer';
+import ObjetTransformBar from './ObjetTransformBar';
+import { useObjetTransform } from '@/hooks/propriete/useObjetTransform';
 import ZoneInspector from './ZoneInspector';
 import { MAP_CHROME_SIDE_CENTER } from '@/components/maps/mapChrome';
 
@@ -187,6 +190,30 @@ export const PaletteStudio: React.FC<Props> = ({
   const [zoneDraw, setZoneDraw] = React.useState(false);
   const zoneTransform = useZoneTransform(onPatchZone);
   const [selectedObjetId, setSelectedObjetId] = React.useState<string | null>(null);
+  /** Mode Transformer d'un ouvrage : géométrie éditée en local, écrite au « Valider ». */
+  const objetTransform = useObjetTransform((o, geometry) => {
+    upsertObjet({
+      id: o.id,
+      outil_key: o.outil_key,
+      geometry,
+      calque_id: o.calque_id,
+      zone_id: o.zone_id,
+      nom: o.nom,
+      style: o.style,
+      meta: o.meta,
+      ordre: o.ordre,
+    }).catch(() => {});
+  });
+  const startObjetTransform = React.useCallback(
+    (id: string) => {
+      const o = objets.find((x) => x.id === id);
+      if (!o || readOnly) return;
+      zoneTransform.cancel();
+      setSelectedObjetId(id);
+      objetTransform.start(o);
+    },
+    [objets, readOnly, zoneTransform, objetTransform],
+  );
   const [inspirationOpen, setInspirationOpen] = React.useState(false);
   const [pendingInspiration, setPendingInspiration] = React.useState<InspirationCard | null>(null);
   const [timeIndex, setTimeIndex] = React.useState(0);
@@ -671,8 +698,24 @@ export const PaletteStudio: React.FC<Props> = ({
               calques={calques}
               selectedId={selectedObjetId}
               onSelect={setSelectedObjetId}
+              hiddenId={objetTransform.objet?.id ?? null}
+              onActivate={startObjetTransform}
               timeIndex={timeIndex}
             />
+
+            {objetTransform.objet && (
+              <ObjetTransformLayer
+                coords={objetTransform.coords}
+                kind={objetTransform.kind}
+                color={
+                  (objetTransform.objet.style?.color as string) ||
+                  TOOL_BY_KEY[objetTransform.objet.outil_key]?.color ||
+                  '#2f5d3a'
+                }
+                onGestureStart={objetTransform.pushHistory}
+                onPreview={objetTransform.preview}
+              />
+            )}
 
             {!readOnly && (
               <DrawLayer
@@ -685,6 +728,17 @@ export const PaletteStudio: React.FC<Props> = ({
           </RichMap>
 
           <InlineGpsBar curation={inlineGps} />
+
+          <ObjetTransformBar
+            api={objetTransform}
+            color={
+              (objetTransform.objet?.style?.color as string) ||
+              (objetTransform.objet
+                ? TOOL_BY_KEY[objetTransform.objet.outil_key]?.color
+                : undefined) ||
+              '#2f5d3a'
+            }
+          />
 
           <ZoneTransformBar
             api={zoneTransform}
@@ -753,7 +807,14 @@ export const PaletteStudio: React.FC<Props> = ({
                 calques={calques}
                 zones={zones}
                 onPatch={patchObjet}
-                onClose={() => setSelectedObjetId(null)}
+                onTransform={() => startObjetTransform(selectedObjet.id)}
+                transformMeasure={
+                  objetTransform.objet?.id === selectedObjet.id ? objetTransform.measure : null
+                }
+                onClose={() => {
+                  if (objetTransform.objet?.id === selectedObjet.id) objetTransform.cancel();
+                  setSelectedObjetId(null);
+                }}
                 onDelete={() => {
                   deleteObjet(selectedObjet.id).catch(() => {});
                   setSelectedObjetId(null);
@@ -786,7 +847,10 @@ export const PaletteStudio: React.FC<Props> = ({
                   zoneTransform.zone?.id === selectedZone.id ? zoneTransform.area : null
                 }
                 onPatch={(patch) => onPatchZone(selectedZone, patch)}
-                onTransform={() => zoneTransform.start(selectedZone)}
+                onTransform={() => {
+                  objetTransform.cancel();
+                  zoneTransform.start(selectedZone);
+                }}
                 onRedraw={() => {
                   onSelectZone(selectedZone.id);
                   setZoneDraw(true);
