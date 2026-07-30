@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, Camera, ExternalLink } from 'lucide-react';
 import type { GpsCandidate } from '@/components/propriete/gps/GpsControlConsole';
 import { GEOFENCE_LABELS } from '@/lib/geofence';
-import { useImageZoomPan, MIN_SCALE, MAX_SCALE } from '@/hooks/useImageZoomPan';
+import { useImageZoomPan } from '@/hooks/useImageZoomPan';
 import { hiResPhotoUrl } from '@/utils/photoUtils';
 import ZoomBar from './ZoomBar';
 
