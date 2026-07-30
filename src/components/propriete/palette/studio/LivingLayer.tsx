@@ -178,6 +178,27 @@ interface LayerProps {
   onOpenGps?: (w: ObservationPopupWaypoint) => void;
 }
 
+/**
+ * Panneau Leaflet dédié au vivant : les observations passent AU-DESSUS des
+ * ouvrages de l'Atelier (polygones du panneau overlay), sinon un massif ou
+ * un potager avale le clic des points qu'il recouvre.
+ */
+const VIVANT_PANE = 'ds-vivant-pane';
+
+const useVivantPane = () => {
+  const map = useMap();
+  const [ready, setReady] = React.useState(false);
+  React.useEffect(() => {
+    let pane = map.getPane(VIVANT_PANE);
+    if (!pane) {
+      pane = map.createPane(VIVANT_PANE);
+      pane.style.zIndex = '645';
+    }
+    setReady(true);
+  }, [map]);
+  return ready;
+};
+
 /** Nuage d'observations filtrable, en fond de plan de l'atelier. */
 export const LivingLayer: React.FC<LayerProps> = ({
   waypoints,
@@ -190,9 +211,12 @@ export const LivingLayer: React.FC<LayerProps> = ({
   onZoomPhoto,
   onStartInlineMove,
   onOpenGps,
-}) => (
-
+}) => {
+  const paneReady = useVivantPane();
+  if (!paneReady) return null;
+  return (
   <>
+
     {waypoints.map((w) => {
       if (!matchVivantBase(w, filter, filterContext)) return null;
       /**
