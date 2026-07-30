@@ -644,6 +644,8 @@ export const PaletteStudio: React.FC<Props> = ({
                 filterContext={filterContext}
                 frenchName={frenchName}
                 canCurate={!!canCurate}
+                walkerPhotosFor={walkerPhotosFor}
+
                 onZoomPhoto={setLightboxId}
                 onStartInlineMove={(w) => inlineGps.start(w)}
                 onOpenGps={(w) => {
