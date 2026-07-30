@@ -122,6 +122,10 @@ interface Props {
   timeIndex?: number;
   /** Nombre de photos par objet — pastille photo sur la carte. */
   photoCounts?: Record<string, number>;
+  /** Vignette (1re photo) par objet, affichée dans la pastille. */
+  photoThumbs?: Record<string, string | undefined>;
+  /** Clic sur la pastille photo → ouvre la galerie de l'ouvrage. */
+  onOpenPhotos?: (objetId: string) => void;
 }
 
 export const ObjectsLayer: React.FC<Props> = ({
@@ -133,6 +137,8 @@ export const ObjectsLayer: React.FC<Props> = ({
   onActivate,
   timeIndex = 0,
   photoCounts,
+  photoThumbs,
+  onOpenPhotos,
 }) => {
   const calqueById = React.useMemo(
     () => Object.fromEntries(calques.map((c) => [c.id, c])),
