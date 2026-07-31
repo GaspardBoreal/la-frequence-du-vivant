@@ -176,6 +176,12 @@ export const OuvragesRegister: React.FC<Props> = ({
                       {reco.enriched && (
                         <span className="text-[hsl(var(--ds-gold))]">· fiche enrichie</span>
                       )}
+                      {soilLinked.length > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[hsl(var(--ds-forest))]">
+                          · <Layers className="h-2.5 w-2.5" />
+                          sol {soilLinked.map((s) => s.label).join('+')}
+                        </span>
+                      )}
                     </span>
                   </span>
                   <ChevronDown
@@ -185,6 +191,47 @@ export const OuvragesRegister: React.FC<Props> = ({
 
                 {open && tool && (
                   <div className="border-t border-[hsl(var(--ds-line))]/70 px-3 py-3">
+                    {/* Lecture du sol héritée de l'étape « J'analyse » */}
+                    {soilMerged.hasData && (
+                      <div className="mb-3 rounded-xl border border-[hsl(var(--ds-forest))]/25 bg-[hsl(var(--ds-forest))]/6 px-3 py-2.5">
+                        <p className="flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]/80">
+                          <Layers className="h-3 w-3" /> Sol sous l’ouvrage
+                          <span className="ml-auto font-normal tracking-normal opacity-60">
+                            prélèvement{soilLinked.length > 1 ? 's' : ''}{' '}
+                            {soilLinked.map((s) => s.label).join(', ')}
+                          </span>
+                        </p>
+                        <p className="mt-1 font-serif text-[12.5px] italic leading-snug">
+                          {soilMerged.sentence}
+                        </p>
+                        {soilAlerts.map((a) => (
+                          <p
+                            key={a.title}
+                            className={`mt-1.5 rounded-lg border px-2 py-1.5 text-[10.5px] leading-relaxed ${
+                              a.tone === 'alerte'
+                                ? 'border-amber-500/40 bg-amber-500/10'
+                                : 'border-[hsl(var(--ds-forest))]/30 bg-white/40'
+                            }`}
+                          >
+                            <span className="mr-1 inline-flex items-center gap-1 font-semibold">
+                              {a.tone === 'alerte' ? (
+                                <AlertTriangle className="h-2.5 w-2.5" />
+                              ) : (
+                                <Sparkles className="h-2.5 w-2.5" />
+                              )}
+                              {a.title} —
+                            </span>
+                            {a.text}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {!soilMerged.hasData && soilSamples.length > 0 && (
+                      <p className="mb-3 rounded-xl border border-dashed border-[hsl(var(--ds-line))] px-3 py-2 text-[10.5px] italic opacity-60">
+                        Aucun prélèvement de sol relié à cet ouvrage — ouvrez-le dans l’Atelier
+                        pour l’ancrer à une carotte A, B, C…
+                      </p>
+                    )}
                     <OuvrageRecoCard
                       tool={tool}
                       reco={reco}
