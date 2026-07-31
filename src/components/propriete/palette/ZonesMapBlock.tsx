@@ -330,20 +330,22 @@ export const ZonesMapBlock: React.FC<Props> = ({
 
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2">
-      {!readOnly && (
+      {soilSamples.length > 0 && (
         <button
-          onClick={() => setDrawing((v) => !v)}
-          disabled={full && !drawing}
+          onClick={() => setShowSoil((v) => !v)}
           className={`text-[11px] px-3 py-1.5 rounded-full border transition-all inline-flex items-center gap-1.5 ${
-            drawing
+            showSoil
               ? 'bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest-deep))]'
               : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/60'
-          } ${full && !drawing ? 'opacity-40 cursor-not-allowed' : ''}`}
+          }`}
+          title="Carottes de sol de l’étape « J’analyse »"
         >
-          <Pencil className="w-3 h-3" />
-          {drawing ? 'Dessin en cours…' : full ? `${maxZones} zones maximum` : 'Dessiner une zone'}
+          <Layers className="w-3 h-3" />
+          Prélèvements de sol · {soilSamples.length}
         </button>
       )}
+
+
 
       {zones.map((z, i) => {
         const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
