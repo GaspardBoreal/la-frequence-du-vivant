@@ -372,6 +372,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
   }, [
     scope,
     scopedWaypoints,
+    species,
 
     soil,
     objets,
