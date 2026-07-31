@@ -1,31 +1,32 @@
-## Constat (vérifié dans le code)
+## Diagnostic (vérifié dans le code)
 
-- L'IA de Jardin est bien montée : `ProprieteEspace.tsx` (ligne 463) rend `<ProprieteChatBotMount />`.
-- Son seul point d'entrée est le bouton flottant générique de `ChatBot.tsx` : une bulle verte `MessageCircle` de 56px, sans libellé, en bas à droite.
-- Ce bouton passe par `DraggableFab` avec l'identifiant **`chatbot-global`**, le même que celui du chatbot Communauté (`CommunityChatBotMount`). La position est persistée dans `localStorage` sous `fab-pos:chatbot-global` : une position mémorisée ailleurs dans l'app se réapplique ici, et rien n'indique visuellement de quoi il s'agit.
-- Le bas-droite de l'écran Propriété est déjà occupé par d'autres cartes flottantes (barre GPS `InlineGpsBar` en `z-[1200]`, inspecteur d'objet), donc la bulle peut se retrouver masquée ou confondue.
+- L'Atelier (`PaletteStudio.tsx`) est rendu dans un **portail plein écran en `z-[3000]`**, alors que le chatbot (`ChatBot.tsx`) vit en `z-[1200]`. Le bouton flottant « 🌿 IA de Jardin » et le panneau sont donc **physiquement recouverts** dès qu'on ouvre l'Atelier : d'où « je ne la vois pas ».
+- Le mécanisme de cadrage existe déjà mais **n'est branché nulle part** : `openGardenAi({ objetId, radiusM, prefill })` (`proprieteChatFocus.ts`) n'a aucun appelant, et le contexte `ouvrage.focus` de `useProprieteChatProviders.ts` reste donc toujours vide.
 
-Je n'ai pas pu reproduire visuellement (la session de prévisualisation redirige vers la page de connexion), donc la première étape du chantier est une vérification en navigateur connecté.
+## Mise en œuvre
 
-## Ce qu'on fait
+### 1. Rendre l'IA visible au-dessus de l'Atelier
+- Introduire un niveau de superposition dédié pour le chatbot lorsqu'un plein écran est actif : passer FAB, panneau et overlay du chatbot au-dessus de `z-[3000]` (ex. `z-[3200]/3190`) via un flag « surface plein écran ouverte » posé par `PaletteStudio` à son montage (petit store externe, même patron que `proprieteChatFocus`).
+- Bénéfice transverse : la même bascule servira aux autres plein écran (Carte des révélations, Prélèvements).
 
-1. **Vérifier d'abord** — inspection navigateur sur `/propriete/jardin-monde-deviat` avec session : le bouton est-il rendu, à quelles coordonnées, masqué par quoi ? On adapte si le constat diffère.
+### 2. Entrée « IA de Jardin » native dans l'Atelier
+- Ajouter dans la barre haute de l'Atelier (à côté de *Inspirations* / *Nouvel emplacement*) un bouton **« 🌿 IA de Jardin »** au style forêt profonde + liseré or, cohérent avec la charte du diagnostic.
+- Clic = `openGardenAi()` sans cadrage : l'IA s'ouvre avec la Console de contextes de la propriété.
 
-2. **Identité propre au FAB « IA de Jardin »**
-   - Identifiant `DraggableFab` dédié (`ia-jardin-<proprieteId>`) pour ne plus hériter d'une position venue d'un autre écran.
-   - Bouton en pilule plutôt qu'en bulle nue : icône feuille/sparkle botanique + libellé « IA de Jardin », palette forêt profonde + liseré or (tokens `--ds-forest-deep` / `--ds-gold`), halo respirant discret.
-   - Position par défaut décalée (au-dessus de la barre GPS) pour éviter le chevauchement avec les cartes flottantes existantes.
+### 3. Interroger un ouvrage sélectionné (le cœur de la demande)
+Dans `ObjectInspector.tsx` (panneau droit de l'objet), ajouter un bloc **« Interroger l'IA sur cet ouvrage »** :
+- Bouton principal **« Demander à l'IA de Jardin »** → `openGardenAi({ objetId: objet.id, radiusM })`, ce qui active automatiquement le contexte `ouvrage.focus` (nom, type, surface, calque, note de chantier, prélèvement rattaché, cortège dans le rayon).
+- **Sélecteur de rayon d'écoute** (10 / 25 / 50 / 100 m) avec halo dessiné sur la carte pendant la sélection, pour visualiser ce que l'IA « entend » autour de l'ouvrage.
+- **3–4 amorces contextuelles** générées selon le type d'ouvrage (Mare, Potager, Massif, Verger…), issues du KB `ouvrageRecoKb.ts` : ex. *« Quelle palette pour cette mare compte tenu du sol lu ? »*, *« Quelles espèces éviter ici ? »*, *« Quel calendrier de plantation ? »*. Chaque amorce pré-remplit le composer via `prefill`.
 
-3. **Un second point d'entrée non flottant**
-   - Bouton « IA de Jardin » ancré dans l'en-tête de l'espace Propriété (près des onglets), qui ouvre le même chatbot via un petit bus d'ouverture. Ainsi, même si le FAB est déplacé ou masqué, l'accès reste évident.
+### 4. Contexte visible et modifiable dans la conversation
+- Afficher en tête du chat un **bandeau de cadrage** : « 🎯 Ouvrage : *Massif couvert* · rayon 25 m », avec une croix pour revenir à la propriété entière et un raccourci vers la Console de contextes.
+- Les contextes activés restent affichés en chips (déjà en place) : l'utilisateur voit exactement ce qui part au modèle, et la jauge éco se met à jour au changement de rayon.
 
-4. **Première ouverture pédagogique**
-   - Au premier affichage sur une propriété, une bulle d'amorce (une seule fois, mémorisée localement) : « Je connais ce jardin — activez les contextes qui vous intéressent. »
-
-5. **Contrôle final** — vérification en navigateur : FAB visible, non superposé, ouverture par les deux entrées, console de contextes fonctionnelle.
+### 5. Bonus discret sur la carte
+- Sur la pastille d'un objet sélectionné, une petite action « 🌿 » ouvre directement l'IA cadrée sur cet ouvrage sans passer par l'inspecteur.
 
 ## Détails techniques
-
-- Fichiers concernés : `src/components/chatbot/ChatBot.tsx` (props `fabId`, `fabLabel`, `fabVariant`), `src/components/propriete/chatbot/ProprieteChatBotMount.tsx`, `src/pages/ProprieteEspace.tsx` (bouton d'en-tête), petit module d'ouverture type `proprieteChatOpen.ts`.
-- Aucun changement côté edge function `propriete-chat` ni côté logique de contextes : le travail reste présentation et accès.
-- Le comportement du chatbot Communauté reste inchangé (les nouvelles props sont optionnelles).
+- Nouveau store minimal `fullscreenSurface` (ou extension de `proprieteChatFocus`) pour le z-index conditionnel — pas de changement d'architecture.
+- Aucune modification de l'edge function `propriete-chat` : la frugalité (contextes activés uniquement) reste inchangée.
+- Fichiers touchés : `PaletteStudio.tsx`, `ObjectInspector.tsx`, `ChatBot.tsx`, `DraggableFab.tsx` (z-index), `proprieteChatFocus.ts`, `useProprieteChatProviders.ts` (amorces par type).
