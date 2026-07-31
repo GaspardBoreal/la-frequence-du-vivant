@@ -381,7 +381,8 @@ export function ChatBot({
       {!hideFab && (
         <DraggableFab
           id={fabId}
-          size={fabLabel ? 200 : 56}
+          size={fabLabel ? 210 : 56}
+          sizeY={56}
           zIndex={1200}
           hidden={isOpen}
         >
