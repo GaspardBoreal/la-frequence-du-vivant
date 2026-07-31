@@ -868,6 +868,7 @@ export const PaletteStudio: React.FC<Props> = ({
                 objet={selectedObjet}
                 calques={calques}
                 zones={zones}
+                soilSamples={soil.placed}
                 onPatch={patchObjet}
                 onTransform={() => startObjetTransform(selectedObjet.id)}
                 transformMeasure={
