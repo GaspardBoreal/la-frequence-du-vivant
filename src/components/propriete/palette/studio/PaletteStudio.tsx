@@ -24,6 +24,7 @@ import InlineGpsCurationLayer from '@/components/propriete/gps/InlineGpsCuration
 import InlineGpsBar from '@/components/propriete/gps/InlineGpsBar';
 import { useInlineGpsCuration } from '@/hooks/propriete/useInlineGpsCuration';
 import { MapViewReporter, useMapViewState } from '@/components/maps/hooks/useMapViewState';
+import ZoomScaleBadge from '@/components/maps/controls/ZoomScaleBadge';
 import { RevealPhotoLightbox } from '@/components/propriete/identify/blocks/RevealPhotoLightbox';
 
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
@@ -654,11 +655,12 @@ export const PaletteStudio: React.FC<Props> = ({
             fitMaxZoom={19}
             fitPadding={[60, 60]}
             controls={{ zoom: true, style: true, geolocate: true, cadastre: true }}
-            maxZoom={22}
-            scrollWheelZoom={!drawGeom}
+            maxZoom={24}
+            scrollWheelZoom
             height="100%"
           >
             <MapViewReporter onChange={onViewChange} />
+            <ZoomScaleBadge />
             {aiFocusCenter && (
               <LeafletCircle
                 center={aiFocusCenter as any}

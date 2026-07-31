@@ -161,7 +161,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
         fitMaxZoom={18}
         fitPadding={[50, 50]}
         controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
-        maxZoom={22}
+        maxZoom={24}
         scrollWheelZoom={!transform.zone}
         height="100%"
       >

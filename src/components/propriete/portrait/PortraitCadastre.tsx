@@ -283,7 +283,7 @@ export const PortraitCadastre: React.FC<Props> = ({
         center={center}
         zoom={17}
         controls={{ zoom: true, style: true, geolocate: true, cadastre: true }}
-        maxZoom={22}
+        maxZoom={24}
         height="100%"
         initialStyle="cadastre"
       >
