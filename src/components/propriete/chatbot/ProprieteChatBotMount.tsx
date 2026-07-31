@@ -3,6 +3,8 @@ import { ChatBot } from '@/components/chatbot/ChatBot';
 import { chatPageContext } from '@/hooks/useChatPageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProprieteChatProviders } from '@/hooks/propriete/useProprieteChatProviders';
+import GardenFocusBanner from './GardenFocusBanner';
+
 
 interface Props {
   proprieteId?: string;
@@ -40,6 +42,8 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
       hideFab={isMobile}
       fabId={`ia-jardin-${proprieteId}`}
       fabLabel="IA de Jardin"
+      focusBanner={<GardenFocusBanner proprieteId={proprieteId} />}
     />
   );
 }
+

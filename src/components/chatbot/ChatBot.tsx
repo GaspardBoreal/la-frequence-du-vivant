@@ -44,6 +44,8 @@ import { payloadBytes, formatBytes, ecoVerdict, ECO_COLORS } from '@/lib/chatCon
 import { Leaf, Gauge } from 'lucide-react';
 
 import DraggableFab from '@/components/ui/DraggableFab';
+import { useFullscreenSurfaceOpen, CHAT_Z } from '@/lib/uiOverlayLevel';
+
 
 interface ChatBotProps {
   currentContext?: ChatContext;
@@ -61,7 +63,10 @@ interface ChatBotProps {
   fabId?: string;
   /** Libellé affiché dans le FAB (transforme la bulle en pilule) */
   fabLabel?: string;
+  /** Bandeau de cadrage affiché juste au-dessus du header (ex : ouvrage ciblé). */
+  focusBanner?: React.ReactNode;
 }
+
 
 
 export function ChatBot({
@@ -73,9 +78,15 @@ export function ChatBot({
   hideFab = false,
   fabId = 'chatbot-global',
   fabLabel,
+  focusBanner,
 }: ChatBotProps) {
+  // Une surface plein écran (Atelier…) vit en z-[3000] : on passe au-dessus.
+  const fullscreenOpen = useFullscreenSurfaceOpen();
+  const chatZ = fullscreenOpen ? CHAT_Z.aboveFullscreen : CHAT_Z.base;
+
   // Si l'URL contient une entité et qu'aucune page n'en a posé d'explicite, on l'enregistre.
   useEffect(() => {
+
     if (urlEntity && !chatPageContext.getState().entity) {
       chatPageContext.setContext(urlEntity, {});
     }
@@ -368,8 +379,9 @@ export function ChatBot({
   const toggleExpanded = () => setIsExpanded((prev) => !prev);
 
   const panelClasses = isExpanded
-    ? 'fixed inset-0 z-[1200] flex items-center justify-center sm:p-4 pointer-events-auto'
-    : 'fixed bottom-6 right-6 z-[1200] pointer-events-auto';
+    ? 'fixed inset-0 flex items-center justify-center sm:p-4 pointer-events-auto'
+    : 'fixed bottom-6 right-6 pointer-events-auto';
+
 
   const chatClasses = isExpanded
     ? 'flex h-full w-full sm:h-[90vh] sm:w-[80vw] sm:max-w-5xl flex-col overflow-hidden sm:rounded-2xl border border-border bg-background shadow-2xl transition-all duration-300'
@@ -383,7 +395,7 @@ export function ChatBot({
           id={fabId}
           size={fabLabel ? 210 : 56}
           sizeY={56}
-          zIndex={1200}
+          zIndex={chatZ}
           hidden={isOpen}
         >
           {fabLabel ? (
@@ -421,7 +433,9 @@ export function ChatBot({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1190] bg-black/40 backdrop-blur-sm pointer-events-auto"
+            style={{ zIndex: chatZ - 10 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto"
+
             onClick={() => setIsExpanded(false)}
           />
         )}
@@ -437,12 +451,16 @@ export function ChatBot({
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={panelClasses}
+            style={{ zIndex: chatZ }}
           >
             <motion.div
               layout
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className={chatClasses}
             >
+              {focusBanner}
+
+
               {/* Chip "Revenir à …" — affiché quand le chat a été ouvert depuis une fiche */}
               {originContext?.speciesLabel && (
                 <button
@@ -746,7 +764,7 @@ export function ChatBot({
                                 <Paperclip className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-64 z-[1250]">
+                            <DropdownMenuContent align="start" className="w-64" style={{ zIndex: chatZ + 50 }}>
                               <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
                                 Joindre à la conversation
                               </DropdownMenuLabel>

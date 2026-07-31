@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Gauge, Check, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useFullscreenSurfaceOpen, CHAT_Z } from '@/lib/uiOverlayLevel';
+
 import {
   chatPageContext,
   contextSliceKey,
@@ -84,6 +86,9 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
   };
 
   const activeCount = providers.filter((p) => activeSet.has(contextSliceKey(p.id))).length;
+  const fullscreenOpen = useFullscreenSurfaceOpen();
+
+
 
   return (
     <AnimatePresence>
@@ -92,7 +97,9 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[1300] flex items-end sm:items-center justify-center bg-background/70 backdrop-blur-sm p-0 sm:p-4"
+          style={{ zIndex: fullscreenOpen ? CHAT_Z.aboveFullscreen + 100 : 1300 }}
+          className="fixed inset-0 flex items-end sm:items-center justify-center bg-background/70 backdrop-blur-sm p-0 sm:p-4"
+
           onClick={onClose}
         >
           <motion.div

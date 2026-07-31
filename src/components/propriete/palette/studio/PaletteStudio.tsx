@@ -63,7 +63,7 @@ import {
   getTagColor,
   normalizeTagKey,
 } from '@/hooks/useMarcheurSpeciesTags';
-import { geometryAreaM2, fmtArea } from './geoMetrics';
+import { geometryAreaM2, fmtArea, geometryCenter } from './geoMetrics';
 import ZoneTransformLayer from '../ZoneTransformLayer';
 import ZoneTransformBar from '../ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
@@ -72,6 +72,10 @@ import ObjetTransformBar from './ObjetTransformBar';
 import { useObjetTransform } from '@/hooks/propriete/useObjetTransform';
 import ZoneInspector from './ZoneInspector';
 import { MAP_CHROME_SIDE_CENTER } from '@/components/maps/mapChrome';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
+import { openGardenAi, useProprieteChatFocus } from '@/components/propriete/chatbot/proprieteChatFocus';
+import { Circle as LeafletCircle } from 'react-leaflet';
+
 
 type PanelTab = 'calques' | 'outils' | 'vivant' | 'bilan';
 
@@ -302,6 +306,21 @@ export const PaletteStudio: React.FC<Props> = ({
     [center, waypoints],
   );
 
+  /* L'atelier est une surface plein écran : le chatbot doit passer au-dessus. */
+  React.useEffect(() => {
+    if (!open) return;
+    fullscreenSurfaces.push();
+    return () => fullscreenSurfaces.pop();
+  }, [open]);
+
+  /* Cadrage de l'IA de jardin : halo du rayon d'écoute autour de l'ouvrage ciblé. */
+  const aiFocus = useProprieteChatFocus();
+  const aiFocusCenter = React.useMemo(() => {
+    const o = aiFocus.objetId ? objets.find((x) => x.id === aiFocus.objetId) : null;
+    return o ? geometryCenter(o.geometry) : null;
+  }, [aiFocus.objetId, objets]);
+
+
 
 
   /* Semer les calques par défaut au premier passage */
@@ -510,11 +529,19 @@ export const PaletteStudio: React.FC<Props> = ({
 
         <div className="ml-auto flex items-center gap-1.5">
           <button
+            onClick={() => openGardenAi()}
+            title="Ouvrir l’IA de Jardin (contextes frugaux à activer)"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-gold))]/70 bg-[hsl(var(--ds-forest-deep))] px-3 py-1.5 text-[11px] text-[hsl(var(--ds-cream))] shadow-sm transition-opacity hover:opacity-90"
+          >
+            <Leaf className="h-3.5 w-3.5 text-[hsl(var(--ds-gold))]" /> IA de Jardin
+          </button>
+          <button
             onClick={() => setInspirationOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-line))] px-3 py-1.5 text-[11px] hover:border-[hsl(var(--ds-forest))]/60"
           >
             <Sparkles className="h-3.5 w-3.5" /> Inspirations
           </button>
+
           {!readOnly && (
             <button
               onClick={() => {
@@ -632,6 +659,21 @@ export const PaletteStudio: React.FC<Props> = ({
             height="100%"
           >
             <MapViewReporter onChange={onViewChange} />
+            {aiFocusCenter && (
+              <LeafletCircle
+                center={aiFocusCenter as any}
+                radius={aiFocus.radiusM}
+                pathOptions={{
+                  color: 'hsl(var(--ds-gold))',
+                  weight: 1.6,
+                  dashArray: '5 5',
+                  fillColor: 'hsl(var(--ds-gold))',
+                  fillOpacity: 0.07,
+                  interactive: false,
+                }}
+              />
+            )}
+
             {zoneTransform.zone && (
               <ZoneTransformLayer
                 ring={zoneTransform.ring}

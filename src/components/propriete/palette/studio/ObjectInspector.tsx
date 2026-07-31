@@ -10,6 +10,8 @@ import { fmtMeasure, measureFor, geometryCenter } from './geoMetrics';
 import ObjetPhotoStrip from './photos/ObjetPhotoStrip';
 import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
 import SoilLinkBlock from './SoilLinkBlock';
+import AskGardenAiBlock from './AskGardenAiBlock';
+
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 
 interface Props {
@@ -215,6 +217,12 @@ export const ObjectInspector: React.FC<Props> = ({
           />
         )}
 
+        <AskGardenAiBlock
+          objetId={objet.id}
+          outilKey={objet.outil_key}
+          toolLabel={tool?.label ?? 'ouvrage'}
+          nom={objet.nom}
+        />
 
 
         {isChromaticTool(objet.outil_key) && (
