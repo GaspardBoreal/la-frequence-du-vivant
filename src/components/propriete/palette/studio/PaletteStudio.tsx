@@ -529,11 +529,19 @@ export const PaletteStudio: React.FC<Props> = ({
 
         <div className="ml-auto flex items-center gap-1.5">
           <button
+            onClick={() => openGardenAi()}
+            title="Ouvrir l’IA de Jardin (contextes frugaux à activer)"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-gold))]/70 bg-[hsl(var(--ds-forest-deep))] px-3 py-1.5 text-[11px] text-[hsl(var(--ds-cream))] shadow-sm transition-opacity hover:opacity-90"
+          >
+            <Leaf className="h-3.5 w-3.5 text-[hsl(var(--ds-gold))]" /> IA de Jardin
+          </button>
+          <button
             onClick={() => setInspirationOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-line))] px-3 py-1.5 text-[11px] hover:border-[hsl(var(--ds-forest))]/60"
           >
             <Sparkles className="h-3.5 w-3.5" /> Inspirations
           </button>
+
           {!readOnly && (
             <button
               onClick={() => {
