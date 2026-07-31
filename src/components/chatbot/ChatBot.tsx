@@ -44,6 +44,8 @@ import { payloadBytes, formatBytes, ecoVerdict, ECO_COLORS } from '@/lib/chatCon
 import { Leaf, Gauge } from 'lucide-react';
 
 import DraggableFab from '@/components/ui/DraggableFab';
+import { useFullscreenSurfaceOpen, CHAT_Z } from '@/lib/uiOverlayLevel';
+
 
 interface ChatBotProps {
   currentContext?: ChatContext;
