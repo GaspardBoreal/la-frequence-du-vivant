@@ -52,10 +52,10 @@ export function useCrmMissions(filters: MissionsFilters = {}) {
     },
   });
 
-  // Realtime
+  // Realtime (unique channel per hook instance to avoid re-using a subscribed channel)
   useEffect(() => {
     const ch = supabase
-      .channel('crm-missions-rt')
+      .channel(`crm-missions-rt-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_missions' }, () => {
         qc.invalidateQueries({ queryKey: ['crm-missions'] });
       })
