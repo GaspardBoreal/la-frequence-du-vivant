@@ -103,8 +103,9 @@ const Empty = () => (
   <p className="mb-2 text-xs italic text-[hsl(var(--ds-forest-deep))]/40">— Non renseigné —</p>
 );
 
-export const AnalyzeSummary: React.FC<Props> = ({
+export const AnalyzeSummary: React.FC<Props & { proprieteId?: string }> = ({
   state,
+  proprieteId,
   completedAt,
   propertyName,
   parcelles = [],
