@@ -395,7 +395,7 @@ export function ChatBot({
           id={fabId}
           size={fabLabel ? 210 : 56}
           sizeY={56}
-          zIndex={1200}
+          zIndex={chatZ}
           hidden={isOpen}
         >
           {fabLabel ? (
