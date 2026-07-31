@@ -1,7 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 
 export interface ChatEntity {
-  type: 'marche_event' | 'marcheur' | 'exploration';
+  type: 'marche_event' | 'marcheur' | 'exploration' | 'propriete';
   id: string;
 }
 
@@ -17,6 +17,27 @@ export interface CompactSpecies {
   c?: number;
 }
 
+/**
+ * Contexte déclaratif activable à la demande depuis la Console de contextes.
+ * Le `payload` est déjà construit côté client (les données sont en mémoire) :
+ * rien n'est re-requêté, et rien n'est envoyé au modèle tant que l'utilisateur
+ * n'a pas activé le contexte.
+ */
+export interface ContextProvider {
+  /** Identifiant stable, sert de clé de slice (`ctx.<id>`). */
+  id: string;
+  /** Groupe d'affichage dans la console (ex : « Vivant », « Sol »). */
+  group: string;
+  emoji: string;
+  label: string;
+  hint?: string;
+  /** Poids du payload en octets, calculé en amont pour la jauge. */
+  bytes: number;
+  payload: unknown;
+  /** Active ce contexte par défaut à l'ouverture de la console. */
+  recommended?: boolean;
+}
+
 export interface AvailableAttachments {
   /** Pool d'espèces de l'entité courante, prêt à être attaché à la conversation à la demande. */
   speciesPool?: {
@@ -25,7 +46,12 @@ export interface AvailableAttachments {
     /** Vrai si la liste a été tronquée (limite frugalité). */
     truncated?: boolean;
   };
+  /** Contextes activables (Console de contextes — IA de jardin). */
+  providers?: ContextProvider[];
+  /** Titre de la console (ex : « Contextes de la propriété »). */
+  providersTitle?: string;
 }
+
 
 export interface ChatPageState {
   /** Libellé humain de la fiche (ex: "Marche du Vivant à DEVIAT, 14 mars 2026") */
@@ -123,6 +149,11 @@ const store = {
 
 /** Clé de slice utilisée quand l'utilisateur attache la liste complète des espèces. */
 export const SPECIES_POOL_SLICE_KEY = 'exploration.species.full';
+
+/** Préfixe des slices produites par la Console de contextes. */
+export const CONTEXT_SLICE_PREFIX = 'ctx.';
+export const contextSliceKey = (providerId: string) => `${CONTEXT_SLICE_PREFIX}${providerId}`;
+
 
 export function useChatPageContextStore<T>(selector: (s: State & {
   setContext: typeof store.setContext;
