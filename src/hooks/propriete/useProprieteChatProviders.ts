@@ -94,10 +94,24 @@ export function useProprieteChatProviders(proprieteId?: string): {
       const k = w.kingdom || 'inconnu';
       byKingdom.set(k, (byKingdom.get(k) ?? 0) + 1);
     }
-    const speciesRows = rollupSpecies(scopedWaypoints as any);
-    const dedansRows = scope ? rollupSpecies(scope.dedans.map((s) => s.item) as any) : [];
-    const lisiereRows = scope ? rollupSpecies(scope.lisiere.map((s) => s.item) as any) : [];
-    const voisinageRows = scope ? rollupSpecies(scope.voisinage.map((s) => s.item) as any) : [];
+    /**
+     * Nommage : le champ `c` transmis au modèle doit être le nom vernaculaire
+     * FRANÇAIS déjà résolu par le pool (résolveur central), jamais le
+     * `commonName` brut de l'observation (souvent anglais ou vide).
+     */
+    const frBySci = new Map<string, string>();
+    for (const sp of species ?? []) {
+      const sci = (sp.scientificName || '').trim();
+      const fr = (sp.commonName || '').trim();
+      if (sci && fr && fr.toLowerCase() !== sci.toLowerCase()) frBySci.set(sci, fr);
+    }
+    const withFr = <T extends { n: string; c: string | null }>(rows: T[]): T[] =>
+      rows.map((r) => ({ ...r, c: frBySci.get(r.n) ?? r.c ?? null }));
+
+    const speciesRows = withFr(rollupSpecies(scopedWaypoints as any));
+    const dedansRows = scope ? withFr(rollupSpecies(scope.dedans.map((s) => s.item) as any)) : [];
+    const lisiereRows = scope ? withFr(rollupSpecies(scope.lisiere.map((s) => s.item) as any)) : [];
+    const voisinageRows = scope ? withFr(rollupSpecies(scope.voisinage.map((s) => s.item) as any)) : [];
 
     if (speciesRows.length > 0) {
       list.push(
@@ -358,6 +372,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
   }, [
     scope,
     scopedWaypoints,
+    species,
 
     soil,
     objets,

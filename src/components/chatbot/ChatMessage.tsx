@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import ChatTableBlock from './ChatTableBlock';
 import { Bot, User, Volume2, VolumeX, Copy, Check } from 'lucide-react';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
@@ -60,7 +62,14 @@ export function ChatMessage({ role, content, isExpanded }: ChatMessageProps) {
               <p className="whitespace-pre-wrap">{content}</p>
             ) : (
               <div className="prose prose-sm max-w-none dark:prose-invert [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_strong]:text-foreground">
-                <ReactMarkdown>{content}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    table: ({ children }) => <ChatTableBlock>{children}</ChatTableBlock>,
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
               </div>
             )}
           </div>

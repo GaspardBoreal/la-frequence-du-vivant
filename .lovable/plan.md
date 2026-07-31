@@ -1,57 +1,51 @@
-## Diagnostic (vérifié dans le code)
+# IA de Jardin — nommage botanique normalisé & synthèse exportable
 
-Trois défauts cumulés expliquent la réponse de la copie 1.
+## Constats vérifiés
 
-**1. Le périmètre de l'ouvrage n'est jamais utilisé — l'IA ne voit qu'un disque autour du centroïde.**
-Dans `useProprieteChatProviders.ts` (l. 61-71), le scope se calcule ainsi :
-```ts
-const focusCenter = geometryCenter(focusObjet.geometry);
-wps.filter((w) => distanceM(focusCenter, [w.lat, w.lng]) <= focus.radiusM);
-```
-Le polygone dessiné (copie 2) est très allongé. Un disque de 25 m posé sur son centre **coupe les deux extrémités du massif** (les Thyms, l'Achillée, l'Hysope… situés en bout de bande) tout en **ratissant largement hors du massif** (d'où les 144 espèces / 194 observations : Lézard des murailles, Belle-Dame, Escargot petit-gris…). Le tracé « Massif couvert » n'entre à aucun moment dans le filtrage.
+1. **Noms d'espèces** — les contextes envoyés à l'IA (`useProprieteChatProviders.ts`, lignes 97-247) ne transportent que `n` (nom scientifique) et `c` (nom commun brut de l'observation, souvent absent ou en anglais). Le résolveur central `useFrenchSpeciesNamesAuto` (règle Core du projet) n'est pas branché sur le chat. Résultat : l'IA écrit « *Aloysia citrodora* », « *Hyssopus officinalis* » sans nom français.
+2. **Tableau de synthèse illisible** — `ChatMessage.tsx` (ligne 63) utilise `<ReactMarkdown>` **sans `remark-gfm`**. Les tableaux markdown ne sont donc pas rendus : ils s'affichent en pipes bruts (visible sur la copie d'écran). Aucune action de copie/export au niveau d'un tableau, seulement « copier le message » entier.
 
-**2. « Espèces retenues » est un champ structurellement toujours vide.**
-`buildOuvrageSoilDossier()` (`src/lib/soilLinkEngine.ts` l. 300-351) reçoit `selectedSpecies = []` par défaut, et **aucun appelant ne le renseigne** (`useProprieteChatProviders.ts` ne passe que `objet` et `samples`). Aucune UI ne permet aujourd'hui d'attacher des espèces à un ouvrage. Le modèle lit donc `especesRetenues: []` et conclut, à juste titre selon ses données, « aucune espèce n'est encore enregistrée ».
+## 1. Nommage : « Nom français (*Nom scientifique*) » partout
 
-**3. Le résumé du vivant est tronqué au top 15 par nombre d'observations.**
-`vivant.resume` n'envoie que `top: speciesRows.slice(0, 15)`. Une plante vue 1 fois dans le massif (Verveine citronnelle, Pivoine de Chine) **ne peut pas apparaître**, même si le scope était correct. Et `vivant.liste` (200 lignes) n'est pas auto-activée au cadrage.
+**Côté données** (`src/hooks/propriete/useProprieteChatProviders.ts`)
+- Brancher `useFrenchSpeciesNamesAuto` sur la liste d'espèces du pool (pool complet, dédupliqué par nom scientifique) et l'utiliser pour remplir le champ `c` de toutes les lignes (dedans / lisière / voisinage / vivant.resume / vivant.especes).
+- Champ `c` = nom vernaculaire français résolu ; `null` seulement si vraiment introuvable (l'IA saura alors n'afficher que le scientifique).
+- Coût token maîtrisé : on remplace une valeur existante, on n'ajoute pas de champ.
 
-## Correction proposée
+**Côté prompt** (`supabase/functions/propriete-chat/index.ts`, bloc RÈGLES STRICTES)
+- Nouvelle règle impérative de notation : toute mention d'espèce s'écrit `Nom français (*Nom scientifique*)` à la première occurrence, puis nom français seul ; si `c` est vide, écrire `*Nom scientifique*` seul et ne jamais inventer de nom français.
+- Rappel explicite : le nom scientifique est toujours en italique, jamais en gras seul.
 
-### A. Périmètre géométrique réel — « dedans / lisière / voisinage »
-- Nouveau module `src/lib/ouvrageScope.ts` réutilisant les primitives éprouvées de `src/lib/geofence.ts` (`buildGeofence`, `isInsideGeofence`, `distanceToGeofenceM`, ray casting + distance au bord).
-- Classement de chaque observation par rapport à la géométrie de l'ouvrage :
-  - **dedans** — point dans le polygone (ou ≤ 2 m d'une ligne / d'un point) ;
-  - **lisière** — hors polygone mais à ≤ 3 m du bord (marge d'imprécision GPS) ;
-  - **voisinage** — hors polygone mais dans le rayon d'écoute, **mesuré à partir du bord**, plus du centroïde.
-- Pour un point/une ligne (sans surface), on garde le disque, mais autour du tracé.
+## 2. Synthèse professionnelle et copiable
 
-### B. Un contexte dédié « Espèces dans l'ouvrage »
-- Nouveau provider `ouvrage.especes`, auto-activé au cadrage (ajouté à `FOCUS_AUTO_CONTEXT_IDS`), payload structuré :
-  ```
-  { ouvrage, surfaceM2, rayonEcouteM,
-    dedans: [ {n, c, k, obs, vu} … liste COMPLÈTE, non tronquée ],
-    lisiere: [ … ],
-    voisinage: { especes: N, observations: N, top: [15] } }
-  ```
-  La liste « dedans » n'est jamais tronquée (un massif contient au plus quelques dizaines d'espèces) — c'est précisément la donnée que le modèle doit pouvoir énumérer intégralement. Le voisinage reste résumé, pour la frugalité.
-- `vivant.resume` reprend la même partition (dedans / voisinage) quand un ouvrage est cadré, au lieu d'un unique compte de disque.
+**Rendu markdown** (`src/components/chatbot/ChatMessage.tsx`)
+- Ajouter `remark-gfm` à `ReactMarkdown` (tableaux, listes à cocher, barré).
+- Style éditorial des tableaux via composants personnalisés : en-tête en petites capitales or/émeraude sur `--ds-forest-deep`, lignes zébrées, bordures fines, `scrollbar` horizontale douce, cellules `whitespace-nowrap` sur les colonnes courtes — dans les tokens sémantiques existants (aucune couleur en dur).
 
-### C. Lever l'ambiguïté « retenues » vs « observées »
-- Renommer le champ du dossier en `especesRetenuesPalette` avec une note explicite (`"palette de plantation choisie par le propriétaire — vide = aucun choix saisi ; ne pas confondre avec les espèces observées"`).
-- Ajouter au super-prompt de l'edge `propriete-chat` une règle : distinguer explicitement **espèces observées dans le périmètre** (données terrain) et **palette retenue** (projet de plantation), et ne jamais répondre « aucune espèce » quand la liste `dedans` est non vide.
+**Barre d'action de tableau** (nouveau `src/components/chatbot/ChatTableBlock.tsx`)
+Chaque tableau rendu est encapsulé dans un bloc avec, au survol, une barre discrète :
+- **Copier Markdown** — le tableau tel quel (recollable dans un module markdown).
+- **Copier pour tableur** — conversion en TSV (collage direct Excel / Google Sheets / Numbers).
+- **Copier CSV** — séparateur `;`, guillemets échappés, BOM UTF-8 (Excel FR).
+- **Télécharger .csv** — nom de fichier `palette-<ouvrage>-<date>.csv`.
+Feedback « Copié ✓ » 1,5 s, identique à l'ergonomie du bouton de copie de message existant.
 
-### D. Lisibilité côté carte (cohérence visuelle)
-- Le halo doré de rayon d'écoute devient un **contour de l'ouvrage + anneau de rayon mesuré au bord**, pour que l'utilisateur voie exactement ce que l'IA écoute.
-- Le bandeau `GardenFocusBanner` affiche `N espèces dedans · M en voisinage` au lieu du seul compte global.
+**Cadrage du format de synthèse** (prompt)
+- Imposer une dernière section standardisée `## Synthèse à exporter` contenant **un seul tableau markdown** aux colonnes fixes :
+  `Espèce | Nom scientifique | Strate | Hauteur | Exposition | Fonctions écologiques | Justification (sol / contexte)`.
+- Une ligne par espèce, pas de cellule vide (« — » sinon), pas de retour à la ligne dans une cellule → garantit un collage propre dans un tableur.
 
 ## Détails techniques
 
-- `src/lib/ouvrageScope.ts` (nouveau) : `classifyObservations(geometry, waypoints, radiusM)` → `{ inside, edge, around }`, distances au bord, gestion Polygon / LineString / Point.
-- `src/hooks/propriete/useProprieteChatProviders.ts` : remplacer le filtre centroïde par `classifyObservations`, ajouter le provider `ouvrage.especes`, repartitionner `vivant.resume`.
-- `src/components/propriete/chatbot/proprieteChatFocus.ts` : ajouter `ouvrage.especes` aux contextes auto-activés.
-- `src/lib/soilLinkEngine.ts` : renommer/annoter `especesRetenues`.
-- `supabase/functions/propriete-chat/index.ts` : règle de vocabulaire dedans/voisinage/palette dans le system prompt.
-- `PaletteStudio.tsx` / `GardenFocusBanner.tsx` : visualisation du périmètre écouté et compteurs dedans/voisinage.
+- Dépendance : `remark-gfm` (à installer, ~10 ko), compatible `react-markdown@10`.
+- `ChatMessage` passe `components={{ table, thead, th, td, tr }}` ; le wrapper `ChatTableBlock` reconstruit le TSV/CSV depuis les enfants React du tableau (pas de re-parsing du markdown brut) — robuste vis-à-vis du streaming partiel.
+- Le rendu enrichi s'applique à tous les chatbots factorisés (Mon Espace, Admin, Jardin) puisque `ChatMessage` est partagé ; les styles restent neutres et pilotés par les tokens du thème.
+- Aucun changement de schéma base de données ni de RLS.
 
-Aucun changement de schéma de base, aucun appel réseau supplémentaire : tout se calcule sur les observations déjà chargées.
+## Fichiers touchés
+
+- `src/hooks/propriete/useProprieteChatProviders.ts` — résolution FR des noms d'espèces.
+- `supabase/functions/propriete-chat/index.ts` — règle de notation + format de synthèse imposé.
+- `src/components/chatbot/ChatMessage.tsx` — `remark-gfm` + composants de tableau.
+- `src/components/chatbot/ChatTableBlock.tsx` — nouveau, actions de copie/export.
+- `package.json` — `remark-gfm`.
