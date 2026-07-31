@@ -282,9 +282,11 @@ const DrawerInner: React.FC<{
   samples: SoilSample[];
   sampleId: string;
   proprieteId?: string;
-}> = ({ samples, sampleId, proprieteId }) => {
+  focusBlock?: SoilBlockId;
+  focusNonce?: number;
+}> = ({ samples, sampleId, proprieteId, focusBlock, focusNonce }) => {
   const { data: allMedias = [] } = usePropertyTestMedias(proprieteId);
-  const [active, setActive] = React.useState<SoilBlockId | null>('structure');
+  const [active, setActive] = React.useState<SoilBlockId | null>(focusBlock ?? 'structure');
   const [lightbox, setLightbox] = React.useState<{ list: TestMedia[]; i: number } | null>(null);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const sectionRefs = React.useRef<Partial<Record<SoilBlockId, HTMLDivElement | null>>>({});
@@ -337,6 +339,19 @@ const DrawerInner: React.FC<{
     setActive(id);
     sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  // Ouverture ciblée depuis un picto du « sceau des 4 strates »
+  React.useEffect(() => {
+    if (!focusBlock) return;
+    setActive(focusBlock);
+    const t = window.setTimeout(
+      () => sectionRefs.current[focusBlock]?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      260,
+    );
+    return () => window.clearTimeout(t);
+  }, [focusBlock, focusNonce, sampleId]);
+
+
 
   // strate illuminée au scroll
   const onScroll = () => {
@@ -621,7 +636,7 @@ const DrawerInner: React.FC<{
 
 /** Hôte unique : à monter une fois dans l'espace propriété. */
 export const SampleCoreDrawerHost: React.FC = () => {
-  const { open, samples, sampleId, proprieteId } = useSampleDrawer();
+  const { open, samples, sampleId, proprieteId, block, nonce } = useSampleDrawer();
 
   React.useEffect(() => {
     if (!open) return;
@@ -642,6 +657,8 @@ export const SampleCoreDrawerHost: React.FC = () => {
           samples={samples}
           sampleId={sampleId}
           proprieteId={proprieteId}
+          focusBlock={block}
+          focusNonce={nonce}
         />
       )}
     </AnimatePresence>,

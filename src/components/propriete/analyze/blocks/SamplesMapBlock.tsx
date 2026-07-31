@@ -12,6 +12,8 @@ import {
   centroidOfParcelles,
 } from '@/hooks/propriete/usePropertyParcelles';
 import { openSampleCore } from '../sample/sampleDrawerStore';
+import { strataState } from '../sample/strataGlyphs';
+import { StrataSeal, StrataCompletionLine } from '../sample/StrataSeal';
 
 
 const SAVED_STYLE: L.PathOptions = {
@@ -25,7 +27,21 @@ const SAVED_STYLE: L.PathOptions = {
 const LABELS = ['A', 'B', 'C', 'D', 'E'];
 const MAX_SAMPLES = 5;
 
-const makeIcon = (letter: string, active: boolean) =>
+/** Pastilles du « sceau des 4 strates » posées sous la lettre du repère. */
+const strataDotsHtml = (sample?: SoilSample) => {
+  if (!sample) return '';
+  const dots = strataState(sample)
+    .map(
+      (st) =>
+        `<span style="width:5px;height:5px;border-radius:999px;background:${
+          st.done ? st.color : 'transparent'
+        };border:1px solid ${st.done ? st.color : 'rgba(58,47,34,.45)'};display:inline-block;"></span>`,
+    )
+    .join('');
+  return `<div style="position:absolute;left:0;right:0;top:24px;display:flex;gap:2.5px;justify-content:center;">${dots}</div>`;
+};
+
+const makeIcon = (letter: string, active: boolean, sample?: SoilSample) =>
   L.divIcon({
     className: 'soil-sample-marker',
     iconSize: [38, 46],
@@ -39,7 +55,8 @@ const makeIcon = (letter: string, active: boolean) =>
               stroke="#2f5d3a" stroke-width="2.2"/>
           </svg>
         </div>
-        <div style="position:absolute;left:0;right:0;top:6px;text-align:center;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:16px;color:#2f5d3a;">${letter}</div>
+        <div style="position:absolute;left:0;right:0;top:3px;text-align:center;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:16px;color:#2f5d3a;">${letter}</div>
+        ${strataDotsHtml(sample)}
         ${active ? `<span style="position:absolute;left:50%;top:14px;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(47,93,58,.22);animation:soil-sample-pulse 1.8s ease-out infinite;"></span>` : ''}
       </div>
     `,
@@ -202,7 +219,7 @@ export const SamplesMapBlock: React.FC<{
             <Marker
               key={s.id}
               position={[s.lat, s.lng]}
-              icon={makeIcon(s.label, hoveredId === s.id)}
+              icon={makeIcon(s.label, hoveredId === s.id, s)}
               draggable
               eventHandlers={{
                 dragend: (e) => {
@@ -257,6 +274,14 @@ export const SamplesMapBlock: React.FC<{
               placeholder="Emplacement (ex. sous le tilleul…)"
               className="w-full bg-transparent border-none outline-none text-sm text-[hsl(var(--ds-forest-deep))] placeholder:text-[hsl(var(--ds-forest))]/40"
             />
+            <div className="mt-1 flex items-center gap-2 flex-wrap">
+              <StrataSeal
+                sample={s}
+                size="row"
+                onSelect={(block) => openSampleCore(s.id, samples, proprieteId, block)}
+              />
+              <StrataCompletionLine sample={s} />
+            </div>
             {s.lat != null && s.lng != null && (
               <div className="text-[10px] text-[hsl(var(--ds-forest))]/50 mt-0.5">
                 {s.lat.toFixed(5)}, {s.lng.toFixed(5)}

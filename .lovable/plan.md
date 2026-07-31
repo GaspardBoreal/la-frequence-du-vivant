@@ -1,51 +1,59 @@
-## Objectif
+## Intention
 
-Depuis la vignette d'un prélèvement (popup carte, aujourd'hui limitée à 3 lignes), ouvrir une **fiche carotte** plein écran, hyper graphique et navigable : tests réalisés, résultats, mesures, indices de vie, et preuves photo/vidéo de terrain.
+Chaque prélèvement porte 4 dimensions (Structure, Texture, pH, Vie du sol). Aujourd'hui la vignette n'affiche que du texte partiel ("Texture Limoneux") : impossible de voir d'un coup d'œil ce qui a été fait, ce qui manque, et s'il existe des preuves photo.
 
-## 1. La vignette devient une porte d'entrée
+Proposition : un **« Sceau des 4 strates »** — une signature graphique unique, déclinée à 3 échelles (marqueur carte, vignette popup, tableau/registre), qui code la complétude par couleur, remplissage et micro-glyphe.
 
-Le popup actuel gagne :
-- une **mini-carotte SVG** (anneaux texture + arc pH) au lieu du texte brut ;
-- 4 pastilles-statut Structure / Texture / pH / Vie (pleine = renseignée, creuse = à faire) ;
-- un compteur de preuves (📷 n) ;
-- un bouton « Ouvrir la carotte » qui déclenche le drawer.
+## Le langage visuel
 
-## 2. Le drawer « Carotte » — navigation disruptive
-
-Plein écran (portal + scroll-lock, comme le mode plein écran de la Carte des révélations), fond crème, deux colonnes en desktop / empilé en mobile.
+Un jeu de 4 pictos SVG dessinés main, un par bloc, réutilisant les accents déjà définis dans `soilTestCatalog.ts` :
 
 ```text
-┌───────────────────────────────────────────────┐
-│  ●C  Prélèvement C — Potager      ‹ B  C  D ›  ✕│
-├──────────────┬────────────────────────────────┤
-│              │  STRUCTURE  ·  test bêche      │
-│   CAROTTE    │  ▸ grumeleuse   [lecture]      │
-│   verticale  │  ▤▤▤ 3 preuves                 │
-│   interactive│────────────────────────────────│
-│  (strates    │  TEXTURE · boudin → limoneux   │
-│   cliquables)│  pH · 6,4  ▁▂▃▅▇  légère acidité│
-│              │  VIE · 1 vers · 2 indices      │
-├──────────────┴────────────────────────────────┤
-│  Phrase agronomique de synthèse (serif ital.) │
-└───────────────────────────────────────────────┘
+Structure  motte fracturée   brun terre   24 52% 42%
+Texture    boudin roulé      ocre         38 68% 46%
+pH         goutte + bandelette violet     286 38% 48%
+Vie        ver + feuille     vert         142 46% 34%
 ```
 
-- **Carotte verticale interactive** : un cylindre stratifié dessiné en SVG (horizon de surface → profondeur), chaque strate colorée par la dimension correspondante ; survol/clic sur une strate = scroll magnétique vers la section, et inversement la strate s'illumine quand on scrolle. C'est le fil de navigation, pas un menu.
-- **Navigation entre prélèvements** : flèches ‹ A B C › en tête + swipe horizontal mobile, sans fermer le drawer.
-- **4 sections rythmées** (Structure, Texture, Acidité, Vie), chacune avec : picto du test réalisé (réutilise `StructureTestPictos` / `TexturePictos` / `PhPictos` / `LifePictos`), résultat en gros caractères, jauge dédiée (échelle pH colorée, compteur de vers en pictos, chips d'indices de vie), et la lecture agronomique existante.
-- **Bande de preuves** par section : vignettes des médias `propriete_test_medias` filtrés sur ce prélèvement × ce test, date sous chaque vignette, clic = lightbox zoom/pan (réutilise `VideoLightbox` / la loupe de terrain existante).
-- **Pied de fiche** : phrase de synthèse issue de `buildSoilReading`, badge « complet / à compléter » listant les dimensions manquantes, et raccourci « Compléter à l'étape J'analyse ».
+Trois états par picto :
+- **Renseigné** : glyphe plein, couleur du bloc, petite valeur courte dessous (« Limoneux », « 6.4 », « 12 vers »)
+- **Test noté sans résultat** : glyphe en contour couleur, pointillé
+- **Non fait** : glyphe gris ardoise, opacité 35 %, tiret
 
-## 3. Où la fiche est accessible
+Un anneau de complétude entoure les 4 pictos : 4 arcs de quart, remplis dans la couleur du bloc dès qu'il est renseigné → on lit « 3/4 » sans compter.
 
-Le même drawer est branché partout où une carotte apparaît, sans duplication :
-- popup de `SoilSamplesLayer` (Atelier + carte Palette),
-- carte des prélèvements de l'étape « J'analyse »,
-- tableau `SamplesRegisterTable` (clic sur une ligne).
+## Les 3 échelles
+
+**1. Marqueur carte (`SoilSamplesLayer` – `makeCoreIcon`)**
+La pastille passe de 40 à 44 px : autour du disque avec la lettre, 4 arcs de quart colorés (un par bloc renseigné), l'arc restant en pointillé gris. L'arc pH existant est conservé mais déplacé en anneau extérieur fin. Ajout d'une micro-pastille photo (compteur) en bas à droite quand des preuves existent. Lisible même dézoomé, puisque c'est de la couleur, pas du texte.
+
+**2. Vignette popup (la copie d'écran)**
+Réorganisée :
+- Titre `Prélèvement A` + lieu (inchangé)
+- **Bandeau de 4 pictos** cliquables, chacun ouvrant la fiche carotte directement sur sa strate (via `focusSampleCore` + strate active)
+- Ligne de complétude : `3 strates sur 4 · 5 preuves`
+- Bouton `Ouvrir la fiche carotte ›` (inchangé)
+- Note de glissement (inchangée)
+
+**3. Registre / tableau (`SamplesRegisterTable`, `AnalyzeSummary`, `SoilLinkBlock`)**
+La même bande de 4 pictos en version compacte (18 px, sans libellés) remplace les colonnes textuelles redondantes → une ligne = une carotte lisible instantanément, et l'écart entre prélèvements saute aux yeux.
+
+## Interaction
+
+- Survol d'un picto : tooltip `pH · pHmètre · 6,4 — Légèrement acide`
+- Clic sur un picto : ouvre la fiche carotte **sur la strate concernée** (le drawer sait déjà naviguer par strate)
+- Clic sur un picto non renseigné : ouvre la fiche sur la strate vide, prête à saisir → transforme le manque en invitation
 
 ## Détails techniques
 
-- Nouveau `src/components/propriete/analyze/sample/SampleCoreDrawer.tsx` (portal, `AnimatePresence`, scroll-lock) + `SampleCoreSvg.tsx` (carotte stratifiée) + `SampleSection.tsx`.
-- Données 100 % existantes : `SoilSample` (usePropertySoil / useSoilSamples) pour les tests et résultats, `usePropertyTestMedias` pour les preuves, `soilTestCatalog` pour libellés/accents, `structureTests` / `textureTests` / `phTests` / `lifeTests` pour les lectures. Aucune migration DB.
-- Ouverture pilotée par un petit contexte `SampleDrawerContext` (ou prop `onOpenSample`) pour que la popup Leaflet, la table et la carte partagent la même instance.
-- Couleurs strictement via tokens `--ds-*` et les accents `SOIL_BLOCKS`, mode sombre respecté.
+- Nouveau `src/components/propriete/analyze/sample/strataGlyphs.tsx` : les 4 pictos SVG + `strataState(sample)` qui calcule pour chaque bloc `{ done, testLabel, shortValue, color }` à partir de `SoilSample` (aucun champ BDD nouveau — tout est déjà dans `structure_result`, `texture_result`, `ph_value`, `life_signs`/`worm_count`).
+- Nouveau `StrataSeal.tsx` : composant React unique avec `size="marker" | "popup" | "row"`, utilisé partout.
+- Version chaîne HTML des glyphes pour le `divIcon` Leaflet (même géométrie, exportée en `strataSealHtml()`), afin de garder une seule source de vérité.
+- Couleurs prises dans `SOIL_BLOCKS[...].accent` (HSL tokens existants), pas de couleur en dur.
+- Le compteur de preuves réutilise le hook média déjà employé par la fiche carotte ; s'il n'est pas disponible côté carte, la pastille photo est simplement masquée.
+- Impression : la bande de pictos est incluse dans `SoilSamplesPlan` / `AnalyzeSummary` en variante monochrome + trame, pour rester lisible en N&B.
+
+## Fichiers touchés
+
+- Créés : `strataGlyphs.tsx`, `StrataSeal.tsx`
+- Modifiés : `SoilSamplesLayer.tsx` (icône + popup), `SamplesMapBlock.tsx`, `SamplesRegisterTable.tsx`, `AnalyzeSummary.tsx`, `SoilLinkBlock.tsx`, `sampleDrawerStore.ts` (ouverture ciblée sur une strate)

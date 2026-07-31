@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layers, Link2, Sparkles, AlertTriangle, Leaf } from 'lucide-react';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
+import { StrataSeal } from '@/components/propriete/analyze/sample/StrataSeal';
 import {
   fmtDistance,
   linkedSampleIds,
@@ -116,6 +117,9 @@ export const SoilLinkBlock: React.FC<Props> = ({
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[10.5px] font-medium leading-tight">
                   {sample.location || `Prélèvement ${sample.label}`}
+                </span>
+                <span className="mt-0.5 block">
+                  <StrataSeal sample={sample} size="row" />
                 </span>
                 <span className="block text-[9px] leading-tight opacity-60">
                   {inside ? 'dans l’emprise de l’ouvrage' : `à ${fmtDistance(distanceM)}`}

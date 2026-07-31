@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Check, AlertTriangle } from 'lucide-react';
 import type { SoilReading } from './soilReading';
 import { openSampleCore } from './sample/sampleDrawerStore';
+import { StrataSeal } from './sample/StrataSeal';
 import { RESULT_SHORT, RESULT_ORDER, TEST_LABELS, type StructureResultId } from './structureTests';
 import {
   TEXTURE_SHORT,
@@ -295,15 +296,27 @@ export const SamplesRegisterTable: React.FC<{
 
                 {/* État */}
                 <td className="px-2.5 py-2.5 text-right whitespace-nowrap">
-                  {incomplete ? (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-amber-800">
-                      <AlertTriangle className="w-2.5 h-2.5" /> À compléter
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-forest))]/30 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-[hsl(var(--ds-forest))]">
-                      <Check className="w-2.5 h-2.5" /> Complet
-                    </span>
-                  )}
+                  <span className="inline-flex flex-col items-end gap-1">
+                    <StrataSeal
+                      sample={s}
+                      size="row"
+                      mono={printOnly}
+                      onSelect={
+                        printOnly
+                          ? undefined
+                          : (block) => openSampleCore(s.id, r.samples, proprieteId, block)
+                      }
+                    />
+                    {incomplete ? (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-amber-800">
+                        <AlertTriangle className="w-2.5 h-2.5" /> À compléter
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-forest))]/30 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-[hsl(var(--ds-forest))]">
+                        <Check className="w-2.5 h-2.5" /> Complet
+                      </span>
+                    )}
+                  </span>
                 </td>
               </tr>
             );
