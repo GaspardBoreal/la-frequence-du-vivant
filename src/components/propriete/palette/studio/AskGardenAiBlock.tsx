@@ -24,7 +24,13 @@ export const AskGardenAiBlock: React.FC<Props> = ({ objetId, outilKey, toolLabel
     [outilKey, toolLabel, nom],
   );
 
-  const ask = (prefill?: string) => openGardenAi({ objetId, radiusM: radius, prefill });
+  const who = nom?.trim() ? `« ${nom.trim()} » (${toolLabel.toLowerCase()})` : toolLabel.toLowerCase();
+  const ask = (prefill?: string) =>
+    openGardenAi({
+      objetId,
+      radiusM: radius,
+      prefill: prefill ?? `Ouvrage cadré : ${who}, rayon d’écoute ${radius} m. `,
+    });
 
   return (
     <div className="rounded-xl border border-[hsl(var(--ds-gold))]/45 bg-[hsl(var(--ds-forest-deep))]/[0.04] p-2.5">
