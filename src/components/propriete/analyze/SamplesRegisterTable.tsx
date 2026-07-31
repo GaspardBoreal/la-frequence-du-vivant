@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Check, AlertTriangle } from 'lucide-react';
 import type { SoilReading } from './soilReading';
 import { openSampleCore } from './sample/sampleDrawerStore';
+import { StrataSeal } from './sample/StrataSeal';
 import { RESULT_SHORT, RESULT_ORDER, TEST_LABELS, type StructureResultId } from './structureTests';
 import {
   TEXTURE_SHORT,
