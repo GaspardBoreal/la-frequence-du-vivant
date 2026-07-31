@@ -654,8 +654,8 @@ export const PaletteStudio: React.FC<Props> = ({
             fitMaxZoom={19}
             fitPadding={[60, 60]}
             controls={{ zoom: true, style: true, geolocate: true, cadastre: true }}
-            maxZoom={22}
-            scrollWheelZoom={!drawGeom}
+            maxZoom={24}
+            scrollWheelZoom
             height="100%"
           >
             <MapViewReporter onChange={onViewChange} />
