@@ -75,7 +75,7 @@ import ZoneInspector from './ZoneInspector';
 import { MAP_CHROME_SIDE_CENTER } from '@/components/maps/mapChrome';
 import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 import { openGardenAi, useProprieteChatFocus } from '@/components/propriete/chatbot/proprieteChatFocus';
-import { Circle as LeafletCircle } from 'react-leaflet';
+import { Circle as LeafletCircle, Polygon as LeafletPolygon } from 'react-leaflet';
 
 
 type PanelTab = 'calques' | 'outils' | 'vivant' | 'bilan';
@@ -688,6 +688,20 @@ export const PaletteStudio: React.FC<Props> = ({
                 }}
               />
             )}
+            {aiFocusRing && (
+              /* Tracé exact lu comme « dedans » par l'IA. */
+              <LeafletPolygon
+                positions={aiFocusRing as any}
+                pathOptions={{
+                  color: 'hsl(var(--ds-gold))',
+                  weight: 2.4,
+                  fillColor: 'hsl(var(--ds-gold))',
+                  fillOpacity: 0.12,
+                  interactive: false,
+                }}
+              />
+            )}
+
 
             {zoneTransform.zone && (
               <ZoneTransformLayer
