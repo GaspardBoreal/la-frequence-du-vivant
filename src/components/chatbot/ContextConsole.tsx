@@ -85,7 +85,10 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
     }
   };
 
+  const activeCount = providers.filter((p) => activeSet.has(contextSliceKey(p.id))).length;
   const fullscreenOpen = useFullscreenSurfaceOpen();
+
+
 
   return (
     <AnimatePresence>
