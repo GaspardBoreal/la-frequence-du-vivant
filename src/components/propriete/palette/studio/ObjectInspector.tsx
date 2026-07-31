@@ -32,7 +32,10 @@ interface Props {
   onPhotoRemove?: (photo: ObjetPhoto) => void;
   onPhotoCaption?: (photoId: string, caption: string) => void;
   onPhotoReorder?: (orderedIds: string[]) => void;
+  /** Prélèvements de sol de l'étape « J'analyse » (ancrage agronomique). */
+  soilSamples?: SoilSample[];
 }
+
 
 
 
