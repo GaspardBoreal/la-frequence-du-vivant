@@ -24,6 +24,7 @@ import InlineGpsCurationLayer from '@/components/propriete/gps/InlineGpsCuration
 import InlineGpsBar from '@/components/propriete/gps/InlineGpsBar';
 import { useInlineGpsCuration } from '@/hooks/propriete/useInlineGpsCuration';
 import { MapViewReporter, useMapViewState } from '@/components/maps/hooks/useMapViewState';
+import ZoomScaleBadge from '@/components/maps/controls/ZoomScaleBadge';
 import { RevealPhotoLightbox } from '@/components/propriete/identify/blocks/RevealPhotoLightbox';
 
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
