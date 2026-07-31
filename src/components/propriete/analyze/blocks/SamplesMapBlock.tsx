@@ -11,6 +11,8 @@ import {
   useProprieteParcelles,
   centroidOfParcelles,
 } from '@/hooks/propriete/usePropertyParcelles';
+import { openSampleCore } from '../sample/sampleDrawerStore';
+
 
 const SAVED_STYLE: L.PathOptions = {
   color: '#2f5d3a',
