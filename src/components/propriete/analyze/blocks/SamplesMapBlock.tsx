@@ -27,7 +27,21 @@ const SAVED_STYLE: L.PathOptions = {
 const LABELS = ['A', 'B', 'C', 'D', 'E'];
 const MAX_SAMPLES = 5;
 
-const makeIcon = (letter: string, active: boolean) =>
+/** Pastilles du « sceau des 4 strates » posées sous la lettre du repère. */
+const strataDotsHtml = (sample?: SoilSample) => {
+  if (!sample) return '';
+  const dots = strataState(sample)
+    .map(
+      (st) =>
+        `<span style="width:5px;height:5px;border-radius:999px;background:${
+          st.done ? st.color : 'transparent'
+        };border:1px solid ${st.done ? st.color : 'rgba(58,47,34,.45)'};display:inline-block;"></span>`,
+    )
+    .join('');
+  return `<div style="position:absolute;left:0;right:0;top:24px;display:flex;gap:2.5px;justify-content:center;">${dots}</div>`;
+};
+
+const makeIcon = (letter: string, active: boolean, sample?: SoilSample) =>
   L.divIcon({
     className: 'soil-sample-marker',
     iconSize: [38, 46],
@@ -41,7 +55,8 @@ const makeIcon = (letter: string, active: boolean) =>
               stroke="#2f5d3a" stroke-width="2.2"/>
           </svg>
         </div>
-        <div style="position:absolute;left:0;right:0;top:6px;text-align:center;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:16px;color:#2f5d3a;">${letter}</div>
+        <div style="position:absolute;left:0;right:0;top:3px;text-align:center;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:16px;color:#2f5d3a;">${letter}</div>
+        ${strataDotsHtml(sample)}
         ${active ? `<span style="position:absolute;left:50%;top:14px;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(47,93,58,.22);animation:soil-sample-pulse 1.8s ease-out infinite;"></span>` : ''}
       </div>
     `,
