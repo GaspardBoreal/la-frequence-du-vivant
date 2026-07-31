@@ -764,7 +764,7 @@ export function ChatBot({
                                 <Paperclip className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-64 z-[1250]">
+                            <DropdownMenuContent align="start" className="w-64" style={{ zIndex: chatZ + 50 }}>
                               <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
                                 Joindre à la conversation
                               </DropdownMenuLabel>
