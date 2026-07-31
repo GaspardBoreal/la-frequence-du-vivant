@@ -700,7 +700,7 @@ export const TabPalette: React.FC<Props> = ({
           number={2}
           category="Emplacements & ouvrages"
           title="Les lieux que vous découpez, les ouvrages que vous dessinez"
-          subtitle="Chaque emplacement reçoit sa propre palette, répartie en strates. Chaque ouvrage tracé dans l’Atelier — mare, potager, pas japonais… — reçoit ses recommandations de mise en œuvre et d’entretien."
+          subtitle="Le tracé se fait dans l’Atelier. Chaque emplacement reçoit sa propre palette, répartie en strates ; chaque ouvrage — mare, potager, pas japonais… — hérite des prélèvements de sol qui lui sont rattachés et de ses recommandations de mise en œuvre."
           index={1}
         >
 
