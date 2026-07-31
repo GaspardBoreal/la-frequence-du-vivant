@@ -2,16 +2,12 @@ import React from 'react';
 import L from 'leaflet';
 import { Marker, Popup, Tooltip } from 'react-leaflet';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
-import { RESULT_SHORT, type StructureResultId } from '@/components/propriete/analyze/structureTests';
-import { TEXTURE_SHORT, type TextureResultId } from '@/components/propriete/analyze/textureTests';
-import { classifyPh } from '@/components/propriete/analyze/phTests';
-import { scoreLife, LIFE_CLASS_MAP } from '@/components/propriete/analyze/lifeTests';
+import { type TextureResultId } from '@/components/propriete/analyze/textureTests';
 import { openSampleCore } from '@/components/propriete/analyze/sample/sampleDrawerStore';
 import { usePropertyTestMedias } from '@/hooks/propriete/usePropertyTestMedias';
 import {
   completionRingSvg,
   strataState,
-  strataSealHtml,
 } from '@/components/propriete/analyze/sample/strataGlyphs';
 import type { SoilBlockId } from '@/components/propriete/analyze/media/soilTestCatalog';
 import {
