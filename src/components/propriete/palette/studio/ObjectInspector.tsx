@@ -9,6 +9,8 @@ import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { fmtMeasure, measureFor, geometryCenter } from './geoMetrics';
 import ObjetPhotoStrip from './photos/ObjetPhotoStrip';
 import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
+import SoilLinkBlock from './SoilLinkBlock';
+import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 
 interface Props {
   objet: ProprieteObjet;
@@ -30,7 +32,10 @@ interface Props {
   onPhotoRemove?: (photo: ObjetPhoto) => void;
   onPhotoCaption?: (photoId: string, caption: string) => void;
   onPhotoReorder?: (orderedIds: string[]) => void;
+  /** Prélèvements de sol de l'étape « J'analyse » (ancrage agronomique). */
+  soilSamples?: SoilSample[];
 }
+
 
 
 
@@ -54,6 +59,7 @@ export const ObjectInspector: React.FC<Props> = ({
   onPhotoRemove,
   onPhotoCaption,
   onPhotoReorder,
+  soilSamples,
 }) => {
 
   const tool = TOOL_BY_KEY[objet.outil_key];
@@ -197,6 +203,19 @@ export const ObjectInspector: React.FC<Props> = ({
             placeholder="Pourquoi ici ? à quelle saison ?"
           />
         </label>
+
+        {soilSamples && soilSamples.length > 0 && (
+          <SoilLinkBlock
+            outilKey={objet.outil_key}
+            geometry={objet.geometry}
+            meta={objet.meta}
+            samples={soilSamples}
+            readOnly={readOnly}
+            onChange={(meta) => onPatch({ meta })}
+          />
+        )}
+
+
 
         {isChromaticTool(objet.outil_key) && (
           <div>

@@ -38,6 +38,9 @@ import ObjectsLayer from './ObjectsLayer';
 import LayersPanel, { type SystemLayerState } from './LayersPanel';
 import ToolPalette from './ToolPalette';
 import ObjectInspector from './ObjectInspector';
+import SoilSamplesLayer from './SoilSamplesLayer';
+import { useSoilSamples } from '@/hooks/propriete/useSoilSamples';
+import { linkedSampleIds } from '@/lib/soilLinkEngine';
 import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
 import OuvragePhotoViewer from './photos/OuvragePhotoViewer';
 import PlanBalanceSheet from './PlanBalanceSheet';
@@ -121,6 +124,8 @@ export const PaletteStudio: React.FC<Props> = ({
     scopeCounts,
     fieldPhotos,
   } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  /** Prélèvements de sol (étape « J'analyse ») : lisibles et déplaçables ici. */
+  const soil = useSoilSamples(open ? proprieteId : undefined);
   /** Toutes les photos terrain de l'espèce, pour la bande photo des popups. */
   const walkerPhotosFor = React.useCallback(
     (w: { scientificName?: string | null }) =>
@@ -247,7 +252,9 @@ export const PaletteStudio: React.FC<Props> = ({
     parcelles: true,
     zones: true,
     vivant: true,
+    sol: true,
   });
+
   const [vivantFilter, setVivantFilter] = React.useState<VivantFilterState>(
     () => VIVANT_FILTER_MEMORY.get(proprieteId) ?? DEFAULT_VIVANT_FILTER,
   );
@@ -591,6 +598,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   system={system}
                   onSystem={(p) => setSystem((s) => ({ ...s, ...p }))}
                   scopeCounts={scopeCounts}
+                  soilCount={soil.placed.length}
                   objetCountByCalque={objetCountByCalque}
                   readOnly={readOnly}
                 />
@@ -732,6 +740,31 @@ export const PaletteStudio: React.FC<Props> = ({
               onOpenPhotos={openGallery}
             />
 
+            {system.sol && (
+              <SoilSamplesLayer
+                samples={soil.samples}
+                linkedIds={selectedObjet ? linkedSampleIds(selectedObjet.meta) : []}
+                focusLinked={!!selectedObjet}
+                draggable={!readOnly}
+                onMove={(id, lat, lng) => soil.moveSample(id, lat, lng)}
+                onToggleLink={
+                  selectedObjet && !readOnly
+                    ? (id) => {
+                        const cur = linkedSampleIds(selectedObjet.meta);
+                        patchObjet({
+                          meta: {
+                            ...(selectedObjet.meta ?? {}),
+                            soil_samples: cur.includes(id)
+                              ? cur.filter((x) => x !== id)
+                              : [...cur, id],
+                          },
+                        });
+                      }
+                    : undefined
+                }
+              />
+            )}
+
             {objetTransform.objet && (
               <ObjetTransformLayer
                 coords={objetTransform.coords}
@@ -835,6 +868,7 @@ export const PaletteStudio: React.FC<Props> = ({
                 objet={selectedObjet}
                 calques={calques}
                 zones={zones}
+                soilSamples={soil.placed}
                 onPatch={patchObjet}
                 onTransform={() => startObjetTransform(selectedObjet.id)}
                 transformMeasure={

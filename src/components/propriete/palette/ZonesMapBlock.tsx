@@ -11,6 +11,7 @@ import {
   Undo2,
   Wand2,
   Move3d,
+  Layers,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import RichMap from '@/components/maps/RichMap';
@@ -23,92 +24,16 @@ import ZoneTransformBar from './ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
+import { useSoilSamples } from '@/hooks/propriete/useSoilSamples';
 import ObjectsLayer from './studio/ObjectsLayer';
+import SoilSamplesLayer from './studio/SoilSamplesLayer';
 
 
 
-/* ── Couche de dessin à main levée ────────────────────────────────────────── */
+/* Le dessin des emplacements se fait exclusivement dans l'Atelier :
+   cette carte est une carte de lecture (emplacements, ouvrages, carottes de sol). */
 
-const FreehandLayer: React.FC<{
-  active: boolean;
-  color: string;
-  onFinish: (latlngs: Array<[number, number]>) => void;
-}> = ({ active, color, onFinish }) => {
-  const map = useMap();
-  const [points, setPoints] = React.useState<Array<[number, number]>>([]);
-  const drawingRef = React.useRef(false);
-  const bufferRef = React.useRef<Array<[number, number]>>([]);
 
-  React.useEffect(() => {
-    if (!active) {
-      setPoints([]);
-      bufferRef.current = [];
-      return;
-    }
-    const container = map.getContainer();
-    container.style.cursor = 'crosshair';
-    map.dragging.disable();
-    map.doubleClickZoom.disable();
-
-    const toLatLng = (e: PointerEvent): [number, number] => {
-      const rect = container.getBoundingClientRect();
-      const p = map.containerPointToLatLng([e.clientX - rect.left, e.clientY - rect.top] as any);
-      return [p.lat, p.lng];
-    };
-
-    const onDown = (e: PointerEvent) => {
-      if (e.button !== 0) return;
-      drawingRef.current = true;
-      bufferRef.current = [toLatLng(e)];
-      setPoints(bufferRef.current.slice());
-      container.setPointerCapture?.(e.pointerId);
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!drawingRef.current) return;
-      const next = toLatLng(e);
-      const last = bufferRef.current[bufferRef.current.length - 1];
-      if (last) {
-        const a = map.latLngToContainerPoint(last as any);
-        const b = map.latLngToContainerPoint(next as any);
-        if (Math.hypot(a.x - b.x, a.y - b.y) < 4) return;
-      }
-      bufferRef.current = [...bufferRef.current, next];
-      setPoints(bufferRef.current.slice());
-    };
-    const onUp = (e: PointerEvent) => {
-      if (!drawingRef.current) return;
-      drawingRef.current = false;
-      container.releasePointerCapture?.(e.pointerId);
-      const pts = bufferRef.current;
-      bufferRef.current = [];
-      setPoints([]);
-      if (pts.length >= 3) onFinish(pts);
-    };
-
-    container.addEventListener('pointerdown', onDown);
-    container.addEventListener('pointermove', onMove);
-    container.addEventListener('pointerup', onUp);
-    container.addEventListener('pointercancel', onUp);
-
-    return () => {
-      container.style.cursor = '';
-      map.dragging.enable();
-      map.doubleClickZoom.enable();
-      container.removeEventListener('pointerdown', onDown);
-      container.removeEventListener('pointermove', onMove);
-      container.removeEventListener('pointerup', onUp);
-      container.removeEventListener('pointercancel', onUp);
-    };
-  }, [active, map, onFinish]);
-
-  if (!active || points.length < 2) return null;
-  return (
-    <Polyline
-      positions={points as any}
-      pathOptions={{ color, weight: 3, dashArray: '6 6', opacity: 0.95 }}
-    />
-  );
-};
 
 /* ── Bloc carte ───────────────────────────────────────────────────────────── */
 
@@ -155,13 +80,15 @@ export const ZonesMapBlock: React.FC<Props> = ({
 }) => {
 
 
-  const [drawing, setDrawing] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
   const [studioOpen, setStudioOpen] = React.useState(false);
+  const [showSoil, setShowSoil] = React.useState(true);
   const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
   const transform = useZoneTransform(onPatchZone);
   const { objets } = useProprieteObjets(proprieteId);
   const { calques } = useProprieteCalques(proprieteId);
+  /** Carottes de sol de l'étape « J'analyse » — lecture seule ici. */
+  const { placed: soilSamples } = useSoilSamples(proprieteId);
 
   /** Ouvrages réellement affichables : géométrie valide et non masqués. */
   const visibleObjets = React.useMemo(
@@ -182,10 +109,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
   React.useEffect(() => {
     if (!fullscreen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (drawing) setDrawing(false);
-        else setFullscreen(false);
-      }
+      if (e.key === 'Escape') setFullscreen(false);
     };
     window.addEventListener('keydown', handler);
     const prev = document.body.style.overflow;
@@ -194,7 +118,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
       window.removeEventListener('keydown', handler);
       document.body.style.overflow = prev;
     };
-  }, [fullscreen, drawing]);
+  }, [fullscreen]);
+
 
   const bounds = React.useMemo<Array<[number, number]>>(() => {
     const pts: Array<[number, number]> = [];
@@ -221,15 +146,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
     return pts;
   }, [zones, parcelles, visibleObjets]);
 
-  const handleFinish = React.useCallback(
-    (latlngs: Array<[number, number]>) => {
-      const ring = latlngs.map(([lat, lng]) => [lng, lat]);
-      ring.push(ring[0]);
-      onCreateZone({ type: 'Polygon', coordinates: [ring] });
-      setDrawing(false);
-    },
-    [onCreateZone],
-  );
+
+
 
   const mapNode = (height: number | string) => (
     <div
@@ -244,7 +162,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
         fitPadding={[50, 50]}
         controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
         maxZoom={22}
-        scrollWheelZoom={!drawing && !transform.zone}
+        scrollWheelZoom={!transform.zone}
         height="100%"
       >
         {parcelles.map((p: any) => (
@@ -301,49 +219,38 @@ export const ZonesMapBlock: React.FC<Props> = ({
           />
         )}
 
-        <FreehandLayer
-          active={drawing}
-          color={ZONE_COLORS[zones.length % ZONE_COLORS.length]}
-          onFinish={handleFinish}
-        />
+        {showSoil && <SoilSamplesLayer samples={soilSamples} />}
       </RichMap>
 
       <ZoneTransformBar api={transform} color={transformColor} />
 
-      {drawing && (
-        <div className="absolute inset-x-0 top-0 z-[500] pointer-events-none flex justify-center p-3">
-          <div className="pointer-events-auto rounded-full bg-[hsl(var(--ds-forest-deep))]/95 text-[hsl(var(--ds-cream))] px-4 py-2 text-xs flex items-center gap-3 shadow-lg backdrop-blur">
-            <span className="font-semibold tracking-wide">
-              Tracez le contour d’un doigt (ou souris maintenue) — relâchez pour fermer.
-            </span>
-            <button
-              onClick={() => setDrawing(false)}
-              className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 hover:bg-white/25"
-            >
-              <X className="w-3 h-3" /> Annuler
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2">
-      {!readOnly && (
+      {soilSamples.length > 0 && (
         <button
-          onClick={() => setDrawing((v) => !v)}
-          disabled={full && !drawing}
+          onClick={() => setShowSoil((v) => !v)}
           className={`text-[11px] px-3 py-1.5 rounded-full border transition-all inline-flex items-center gap-1.5 ${
-            drawing
+            showSoil
               ? 'bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] border-[hsl(var(--ds-forest-deep))]'
               : 'bg-transparent text-[hsl(var(--ds-forest-deep))] border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/60'
-          } ${full && !drawing ? 'opacity-40 cursor-not-allowed' : ''}`}
+          }`}
+          title="Carottes de sol de l’étape « J’analyse »"
         >
-          <Pencil className="w-3 h-3" />
-          {drawing ? 'Dessin en cours…' : full ? `${maxZones} zones maximum` : 'Dessiner une zone'}
+          <Layers className="w-3 h-3" />
+          Prélèvements de sol · {soilSamples.length}
         </button>
       )}
+
+      {!readOnly && zones.length === 0 && (
+        <span className="text-[10.5px] italic opacity-60">
+          Le tracé des emplacements se fait désormais dans l’Atelier.
+        </span>
+      )}
+
 
       {zones.map((z, i) => {
         const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
