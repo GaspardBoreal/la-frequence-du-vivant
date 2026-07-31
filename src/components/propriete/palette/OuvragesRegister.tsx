@@ -111,6 +111,12 @@ export const OuvragesRegister: React.FC<Props> = ({
             const measure = measureFor(unit, o.geometry);
             const zone = zoneOf(o.zone_id);
             const reco = resolve(o.outil_key);
+            const soilIds = linkedSampleIds(o.meta);
+            const soilLinked = soilSamples.filter((s) => soilIds.includes(s.id));
+            const soilMerged = mergeSamples(soilLinked);
+            const soilAlerts = soilMerged.hasData
+              ? ouvrageSoilAlerts(o.outil_key, soilMerged)
+              : [];
 
             return (
               <div
