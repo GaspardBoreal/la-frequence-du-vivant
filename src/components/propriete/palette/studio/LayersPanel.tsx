@@ -24,7 +24,10 @@ export interface SystemLayerState {
   parcelles: boolean;
   zones: boolean;
   vivant: boolean;
+  /** Carottes de sol · prélèvements de l'étape « J'analyse ». */
+  sol: boolean;
 }
+
 
 interface Props {
   calques: ProprieteCalque[];
