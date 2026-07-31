@@ -1,32 +1,32 @@
-## Diagnostic (vérifié dans le code)
+## Diagnostic
 
-- L'Atelier (`PaletteStudio.tsx`) est rendu dans un **portail plein écran en `z-[3000]`**, alors que le chatbot (`ChatBot.tsx`) vit en `z-[1200]`. Le bouton flottant « 🌿 IA de Jardin » et le panneau sont donc **physiquement recouverts** dès qu'on ouvre l'Atelier : d'où « je ne la vois pas ».
-- Le mécanisme de cadrage existe déjà mais **n'est branché nulle part** : `openGardenAi({ objetId, radiusM, prefill })` (`proprieteChatFocus.ts`) n'a aucun appelant, et le contexte `ouvrage.focus` de `useProprieteChatProviders.ts` reste donc toujours vide.
+Le bouton « Cadrer l'IA sur cet ouvrage » ne fait que poser un *focus* (`proprieteChatFocus.setObjet`). Ce focus change le **contenu** des contextes construits par `useProprieteChatProviders` (le provider `ouvrage.focus` apparaît, le vivant est filtré au rayon), mais **n'active aucun contexte** : l'activation se fait uniquement à la main dans la Console (trombone), et l'edge function `propriete-chat` n'envoie que `pageState.visibleData`.
 
-## Mise en œuvre
+Résultat visible en copie 2 : l'IA répond « aucun contexte n'est activé » alors que le massif est bien sélectionné.
 
-### 1. Rendre l'IA visible au-dessus de l'Atelier
-- Introduire un niveau de superposition dédié pour le chatbot lorsqu'un plein écran est actif : passer FAB, panneau et overlay du chatbot au-dessus de `z-[3000]` (ex. `z-[3200]/3190`) via un flag « surface plein écran ouverte » posé par `PaletteStudio` à son montage (petit store externe, même patron que `proprieteChatFocus`).
-- Bénéfice transverse : la même bascule servira aux autres plein écran (Carte des révélations, Prélèvements).
+## Correction proposée
 
-### 2. Entrée « IA de Jardin » native dans l'Atelier
-- Ajouter dans la barre haute de l'Atelier (à côté de *Inspirations* / *Nouvel emplacement*) un bouton **« 🌿 IA de Jardin »** au style forêt profonde + liseré or, cohérent avec la charte du diagnostic.
-- Clic = `openGardenAi()` sans cadrage : l'IA s'ouvre avec la Console de contextes de la propriété.
+1. **Auto-activation au cadrage**
+   Quand on cadre l'IA sur un ouvrage, publier automatiquement les slices recommandées dans `visibleData` :
+   - `ctx.ouvrage.focus` (dossier de l'ouvrage : mesures, sol relié, contraintes)
+   - `ctx.sol.synthese` si des prélèvements existent
+   - `ctx.vivant.resume` filtré au rayon d'écoute
+   Implémenté dans `ProprieteChatBotMount.tsx` : un effet qui, à chaque changement de `focus.objetId` / `focus.radiusM`, republie ces slices (et les retire quand on revient à la propriété entière). Les slices restent visibles et désactivables dans la Console — l'utilisateur garde la main.
 
-### 3. Interroger un ouvrage sélectionné (le cœur de la demande)
-Dans `ObjectInspector.tsx` (panneau droit de l'objet), ajouter un bloc **« Interroger l'IA sur cet ouvrage »** :
-- Bouton principal **« Demander à l'IA de Jardin »** → `openGardenAi({ objetId: objet.id, radiusM })`, ce qui active automatiquement le contexte `ouvrage.focus` (nom, type, surface, calque, note de chantier, prélèvement rattaché, cortège dans le rayon).
-- **Sélecteur de rayon d'écoute** (10 / 25 / 50 / 100 m) avec halo dessiné sur la carte pendant la sélection, pour visualiser ce que l'IA « entend » autour de l'ouvrage.
-- **3–4 amorces contextuelles** générées selon le type d'ouvrage (Mare, Potager, Massif, Verger…), issues du KB `ouvrageRecoKb.ts` : ex. *« Quelle palette pour cette mare compte tenu du sol lu ? »*, *« Quelles espèces éviter ici ? »*, *« Quel calendrier de plantation ? »*. Chaque amorce pré-remplit le composer via `prefill`.
+2. **Rayon d'écoute réellement répercuté**
+   Le changement de rayon (bandeau du chat ou inspecteur) reconstruit les payloads : republication des slices actives pour que la conversation suivante parte avec le bon périmètre.
 
-### 4. Contexte visible et modifiable dans la conversation
-- Afficher en tête du chat un **bandeau de cadrage** : « 🎯 Ouvrage : *Massif couvert* · rayon 25 m », avec une croix pour revenir à la propriété entière et un raccourci vers la Console de contextes.
-- Les contextes activés restent affichés en chips (déjà en place) : l'utilisateur voit exactement ce qui part au modèle, et la jauge éco se met à jour au changement de rayon.
+3. **Feedback explicite dans le chat**
+   `GardenFocusBanner` affiche, sous le nom de l'ouvrage, les contextes réellement transmis (`🏗️ ouvrage · 🪨 sol · 🌿 vivant — N octets`) avec un lien « ouvrir la Console » pour ajuster. L'utilisateur voit d'un coup d'œil ce que l'IA reçoit.
 
-### 5. Bonus discret sur la carte
-- Sur la pastille d'un objet sélectionné, une petite action « 🌿 » ouvre directement l'IA cadrée sur cet ouvrage sans passer par l'inspecteur.
+4. **Message d'ouverture cadré**
+   Quand `openGardenAi` est appelé avec un ouvrage, injecter une ligne de cadrage en tête du prompt pré-rempli (« Ouvrage cadré : Massif couvert, rayon 25 m ») pour que même une question libre soit ancrée.
+
+5. **Garde côté serveur**
+   Dans `propriete-chat`, si `visibleData` est vide mais qu'un ouvrage est cadré (`pageState.focus`), la réponse d'invitation mentionne le bouton « Cadrer l'IA sur cet ouvrage » plutôt qu'un simple renvoi générique à la Console.
 
 ## Détails techniques
-- Nouveau store minimal `fullscreenSurface` (ou extension de `proprieteChatFocus`) pour le z-index conditionnel — pas de changement d'architecture.
-- Aucune modification de l'edge function `propriete-chat` : la frugalité (contextes activés uniquement) reste inchangée.
-- Fichiers touchés : `PaletteStudio.tsx`, `ObjectInspector.tsx`, `ChatBot.tsx`, `DraggableFab.tsx` (z-index), `proprieteChatFocus.ts`, `useProprieteChatProviders.ts` (amorces par type).
+
+- Frugalité préservée : seules 1 à 3 slices compactes (résumé, pas la liste complète des espèces) sont auto-activées ; la liste détaillée et les autres contextes restent manuels.
+- Aucune requête réseau supplémentaire : tout est calculé depuis les hooks déjà montés.
+- Fichiers touchés : `ProprieteChatBotMount.tsx`, `GardenFocusBanner.tsx`, `proprieteChatFocus.ts`, `useProprieteChatProviders.ts` (exposer les ids recommandés), `supabase/functions/propriete-chat/index.ts`.
