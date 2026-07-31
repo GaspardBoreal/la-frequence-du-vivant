@@ -451,12 +451,16 @@ export function ChatBot({
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={panelClasses}
+            style={{ zIndex: chatZ }}
           >
             <motion.div
               layout
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className={chatClasses}
             >
+              {focusBanner}
+
+
               {/* Chip "Revenir à …" — affiché quand le chat a été ouvert depuis une fiche */}
               {originContext?.speciesLabel && (
                 <button
