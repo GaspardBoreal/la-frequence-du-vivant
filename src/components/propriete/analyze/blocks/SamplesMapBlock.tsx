@@ -219,7 +219,7 @@ export const SamplesMapBlock: React.FC<{
             <Marker
               key={s.id}
               position={[s.lat, s.lng]}
-              icon={makeIcon(s.label, hoveredId === s.id)}
+              icon={makeIcon(s.label, hoveredId === s.id, s)}
               draggable
               eventHandlers={{
                 dragend: (e) => {
