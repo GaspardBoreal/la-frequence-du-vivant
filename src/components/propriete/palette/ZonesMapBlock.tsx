@@ -11,6 +11,7 @@ import {
   Undo2,
   Wand2,
   Move3d,
+  Layers,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import RichMap from '@/components/maps/RichMap';
@@ -23,7 +24,9 @@ import ZoneTransformBar from './ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
+import { useSoilSamples } from '@/hooks/propriete/useSoilSamples';
 import ObjectsLayer from './studio/ObjectsLayer';
+import SoilSamplesLayer from './studio/SoilSamplesLayer';
 
 
 
