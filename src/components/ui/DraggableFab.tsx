@@ -7,6 +7,8 @@ interface DraggableFabProps {
   id: string;
   children: React.ReactNode;
   size?: number;
+  /** Hauteur si différente de la largeur (FAB pilule). */
+  sizeY?: number;
   defaultCorner?: FabCorner;
   zIndex?: number;
   className?: string;
@@ -28,6 +30,7 @@ const DraggableFab: React.FC<DraggableFabProps> = ({
   id,
   children,
   size = 56,
+  sizeY,
   defaultCorner = 'bottom-right',
   zIndex = 1200,
   className,
@@ -36,6 +39,7 @@ const DraggableFab: React.FC<DraggableFabProps> = ({
   const { pos, isDragging, showHint, handlers } = useDraggableFab({
     id,
     size,
+    sizeY,
     defaultCorner,
   });
 
@@ -85,7 +89,7 @@ const DraggableFab: React.FC<DraggableFabProps> = ({
           left: 0,
           zIndex,
           width: size,
-          height: size,
+          height: sizeY ?? size,
           touchAction: 'none',
           WebkitTapHighlightColor: 'transparent',
         }}

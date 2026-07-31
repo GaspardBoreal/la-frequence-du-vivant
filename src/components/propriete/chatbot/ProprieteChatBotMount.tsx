@@ -38,6 +38,8 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
       assistantNameOverride="IA de Jardin"
       roleBadge={proprieteNom ?? null}
       hideFab={isMobile}
+      fabId={`ia-jardin-${proprieteId}`}
+      fabLabel="IA de Jardin"
     />
   );
 }

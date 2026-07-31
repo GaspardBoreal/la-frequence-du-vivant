@@ -57,6 +57,10 @@ interface ChatBotProps {
   roleBadge?: string | null;
   /** Masque le FAB intégré (utile quand un FAB externe orchestre l'ouverture) */
   hideFab?: boolean;
+  /** Identifiant de persistance de position du FAB (défaut : chatbot-global) */
+  fabId?: string;
+  /** Libellé affiché dans le FAB (transforme la bulle en pilule) */
+  fabLabel?: string;
 }
 
 
@@ -67,6 +71,8 @@ export function ChatBot({
   assistantNameOverride,
   roleBadge = null,
   hideFab = false,
+  fabId = 'chatbot-global',
+  fabLabel,
 }: ChatBotProps) {
   // Si l'URL contient une entité et qu'aucune page n'en a posé d'explicite, on l'enregistre.
   useEffect(() => {
@@ -373,20 +379,39 @@ export function ChatBot({
     <>
       {/* Floating button */}
       {!hideFab && (
-        <DraggableFab id="chatbot-global" size={56} zIndex={1200} hidden={isOpen}>
-          <Button
-            onClick={() => setIsOpen(true)}
-            aria-label={`Ouvrir ${chatConfig.assistantName}`}
-            className="h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 transition-all"
-          >
-            <MessageCircle className="h-6 w-6" />
-          </Button>
+        <DraggableFab
+          id={fabId}
+          size={fabLabel ? 210 : 56}
+          sizeY={56}
+          zIndex={1200}
+          hidden={isOpen}
+        >
+          {fabLabel ? (
+            <Button
+              onClick={() => setIsOpen(true)}
+              aria-label={`Ouvrir ${assistantNameOverride ?? chatConfig.assistantName}`}
+              className="h-14 gap-2 rounded-full border border-[hsl(var(--ds-gold))]/70 bg-[hsl(var(--ds-forest-deep))] px-5 text-[hsl(var(--ds-cream))] shadow-[0_18px_48px_-12px_rgba(0,0,0,0.75)] hover:bg-[hsl(var(--ds-forest-deep))]/90"
+            >
+              <Leaf className="h-5 w-5 text-[hsl(var(--ds-gold))]" />
+              <span className="text-sm font-medium whitespace-nowrap">{fabLabel}</span>
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setIsOpen(true)}
+              aria-label={`Ouvrir ${chatConfig.assistantName}`}
+              className="h-14 w-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 transition-all"
+            >
+              <MessageCircle className="h-6 w-6" />
+            </Button>
+          )}
           <span className="absolute -top-1 -right-1 flex h-4 w-4 pointer-events-none">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
             <span className="relative inline-flex h-4 w-4 rounded-full bg-secondary" />
           </span>
         </DraggableFab>
       )}
+
+
 
 
       {/* Overlay */}
