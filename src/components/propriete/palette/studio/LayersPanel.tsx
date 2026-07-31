@@ -152,9 +152,31 @@ export const LayersPanel: React.FC<Props> = ({
             <VivantPeriodFilter visibleCount={scopeCounts?.all} />
           </div>
 
+          {/* Carottes de sol · issues de l'étape « J'analyse le sol » */}
+          <div className={`${rowBase} hover:bg-[hsl(var(--ds-forest))]/5`}>
+            <IconBtn
+              title={system.sol ? 'Masquer' : 'Afficher'}
+              onClick={() => onSystem({ sol: !system.sol })}
+            >
+              {system.sol ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            </IconBtn>
+            <span className={system.sol ? '' : 'opacity-45'}>
+              Prélèvements de sol
+              {typeof soilCount === 'number' && (
+                <span className="ml-1 opacity-55">· {soilCount}</span>
+              )}
+            </span>
+          </div>
+          {system.sol && (
+            <p className="pl-8 pb-1 text-[9.5px] italic leading-snug opacity-55">
+              Carottes A, B, C… de l’étape « J’analyse ». Glissez-les pour corriger leur
+              position, reliez-les à un ouvrage depuis son éditeur.
+            </p>
+          )}
 
         </div>
       </section>
+
 
       {/* Emplacements */}
       <section>
