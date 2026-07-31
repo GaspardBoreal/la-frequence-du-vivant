@@ -76,9 +76,15 @@ export function ChatBot({
   hideFab = false,
   fabId = 'chatbot-global',
   fabLabel,
+  focusBanner,
 }: ChatBotProps) {
+  // Une surface plein écran (Atelier…) vit en z-[3000] : on passe au-dessus.
+  const fullscreenOpen = useFullscreenSurfaceOpen();
+  const chatZ = fullscreenOpen ? CHAT_Z.aboveFullscreen : CHAT_Z.base;
+
   // Si l'URL contient une entité et qu'aucune page n'en a posé d'explicite, on l'enregistre.
   useEffect(() => {
+
     if (urlEntity && !chatPageContext.getState().entity) {
       chatPageContext.setContext(urlEntity, {});
     }
