@@ -433,7 +433,9 @@ export function ChatBot({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1190] bg-black/40 backdrop-blur-sm pointer-events-auto"
+            style={{ zIndex: chatZ - 10 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto"
+
             onClick={() => setIsExpanded(false)}
           />
         )}
