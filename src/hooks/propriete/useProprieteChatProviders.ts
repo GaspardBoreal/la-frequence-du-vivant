@@ -48,7 +48,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
   const { state: soil } = usePropertySoil(proprieteId);
   const { objets } = useProprieteObjets(proprieteId);
   const { zones } = useProprieteZones(proprieteId);
-  const { parcelles } = useProprieteParcelles(proprieteId);
+  const { data: parcelles } = useProprieteParcelles(proprieteId);
   const { state: synthesis } = usePropertySynthesis(proprieteId);
   const { state: observation } = usePropertyObservation(proprieteId);
   const flora = usePropertyFloraMatched(proprieteId);
