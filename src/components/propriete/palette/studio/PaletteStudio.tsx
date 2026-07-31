@@ -63,7 +63,7 @@ import {
   getTagColor,
   normalizeTagKey,
 } from '@/hooks/useMarcheurSpeciesTags';
-import { geometryAreaM2, fmtArea } from './geoMetrics';
+import { geometryAreaM2, fmtArea, geometryCenter } from './geoMetrics';
 import ZoneTransformLayer from '../ZoneTransformLayer';
 import ZoneTransformBar from '../ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
