@@ -221,15 +221,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
     return pts;
   }, [zones, parcelles, visibleObjets]);
 
-  const handleFinish = React.useCallback(
-    (latlngs: Array<[number, number]>) => {
-      const ring = latlngs.map(([lat, lng]) => [lng, lat]);
-      ring.push(ring[0]);
-      onCreateZone({ type: 'Polygon', coordinates: [ring] });
-      setDrawing(false);
-    },
-    [onCreateZone],
-  );
+
+
 
   const mapNode = (height: number | string) => (
     <div
