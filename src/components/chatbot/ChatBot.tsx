@@ -71,6 +71,8 @@ export function ChatBot({
   assistantNameOverride,
   roleBadge = null,
   hideFab = false,
+  fabId = 'chatbot-global',
+  fabLabel,
 }: ChatBotProps) {
   // Si l'URL contient une entité et qu'aucune page n'en a posé d'explicite, on l'enregistre.
   useEffect(() => {
