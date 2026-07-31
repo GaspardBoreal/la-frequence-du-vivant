@@ -59,6 +59,7 @@ export const ObjectInspector: React.FC<Props> = ({
   onPhotoRemove,
   onPhotoCaption,
   onPhotoReorder,
+  soilSamples,
 }) => {
 
   const tool = TOOL_BY_KEY[objet.outil_key];
