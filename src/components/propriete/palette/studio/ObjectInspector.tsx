@@ -10,6 +10,8 @@ import { fmtMeasure, measureFor, geometryCenter } from './geoMetrics';
 import ObjetPhotoStrip from './photos/ObjetPhotoStrip';
 import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
 import SoilLinkBlock from './SoilLinkBlock';
+import AskGardenAiBlock from './AskGardenAiBlock';
+
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 
 interface Props {
