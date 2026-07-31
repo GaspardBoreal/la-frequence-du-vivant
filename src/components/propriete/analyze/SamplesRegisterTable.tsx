@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, Check, AlertTriangle } from 'lucide-react';
 import type { SoilReading } from './soilReading';
+import { openSampleCore } from './sample/sampleDrawerStore';
 import { RESULT_SHORT, RESULT_ORDER, TEST_LABELS, type StructureResultId } from './structureTests';
 import {
   TEXTURE_SHORT,
@@ -134,7 +135,8 @@ const Th: React.FC<{ children: React.ReactNode; className?: string }> = ({
 export const SamplesRegisterTable: React.FC<{
   reading: SoilReading;
   printOnly?: boolean;
-}> = ({ reading: r, printOnly = false }) => {
+  proprieteId?: string;
+}> = ({ reading: r, printOnly = false, proprieteId }) => {
   const n = r.samples.length;
   const named = r.samples.filter((s) => (s.location ?? '').trim().length > 0).length;
   const phClass = r.ph.dominant ? PH_CLASS_MAP[r.ph.dominant] : null;
@@ -181,9 +183,20 @@ export const SamplesRegisterTable: React.FC<{
                 {/* # */}
                 <td className="px-2.5 py-2.5">
                   <span className="flex items-start gap-2">
-                    <span className="mt-[1px] w-6 h-6 shrink-0 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] flex items-center justify-center text-[11px] font-bold">
-                      {s.label}
-                    </span>
+                    {printOnly ? (
+                      <span className="mt-[1px] w-6 h-6 shrink-0 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] flex items-center justify-center text-[11px] font-bold">
+                        {s.label}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openSampleCore(s.id, r.samples, proprieteId)}
+                        title={`Ouvrir la fiche carotte ${s.label}`}
+                        className="mt-[1px] w-6 h-6 shrink-0 rounded-full bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))] flex items-center justify-center text-[11px] font-bold transition hover:scale-110 hover:bg-[hsl(var(--ds-gold))] hover:text-[hsl(var(--ds-forest-deep))]"
+                      >
+                        {s.label}
+                      </button>
+                    )}
                     <span className="min-w-0">
                       {s.lat != null && s.lng != null ? (
                         <>

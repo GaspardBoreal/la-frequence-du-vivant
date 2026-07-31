@@ -743,6 +743,8 @@ export const PaletteStudio: React.FC<Props> = ({
             {system.sol && (
               <SoilSamplesLayer
                 samples={soil.samples}
+                proprieteId={proprieteId}
+
                 linkedIds={selectedObjet ? linkedSampleIds(selectedObjet.meta) : []}
                 focusLinked={!!selectedObjet}
                 draggable={!readOnly}

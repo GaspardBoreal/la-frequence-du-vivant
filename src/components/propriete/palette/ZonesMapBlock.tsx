@@ -219,7 +219,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
           />
         )}
 
-        {showSoil && <SoilSamplesLayer samples={soilSamples} />}
+        {showSoil && <SoilSamplesLayer samples={soilSamples} proprieteId={proprieteId} />}
       </RichMap>
 
       <ZoneTransformBar api={transform} color={transformColor} />

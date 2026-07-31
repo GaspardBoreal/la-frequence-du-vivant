@@ -11,6 +11,8 @@ import {
   useProprieteParcelles,
   centroidOfParcelles,
 } from '@/hooks/propriete/usePropertyParcelles';
+import { openSampleCore } from '../sample/sampleDrawerStore';
+
 
 const SAVED_STYLE: L.PathOptions = {
   color: '#2f5d3a',
@@ -207,9 +209,11 @@ export const SamplesMapBlock: React.FC<{
                   const ll = (e.target as L.Marker).getLatLng();
                   onUpdate(s.id, { lat: ll.lat, lng: ll.lng });
                 },
+                click: () => openSampleCore(s.id, samples, proprieteId),
                 mouseover: () => setHoveredId(s.id),
                 mouseout: () => setHoveredId(null),
               }}
+
             />
           ) : null,
         )}
@@ -259,7 +263,15 @@ export const SamplesMapBlock: React.FC<{
               </div>
             )}
           </div>
+          <button
+            onClick={() => openSampleCore(s.id, samples, proprieteId)}
+            aria-label={`Ouvrir la fiche carotte ${s.label}`}
+            className="shrink-0 rounded-full border border-[hsl(var(--ds-forest))]/35 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/10 transition"
+          >
+            Carotte
+          </button>
           {samples.length > 3 && (
+
             <button
               onClick={() => onRemove(s.id)}
               aria-label="Retirer le prélèvement"

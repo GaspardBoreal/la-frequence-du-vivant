@@ -6,6 +6,8 @@ import { RESULT_SHORT, type StructureResultId } from '@/components/propriete/ana
 import { TEXTURE_SHORT, type TextureResultId } from '@/components/propriete/analyze/textureTests';
 import { classifyPh } from '@/components/propriete/analyze/phTests';
 import { scoreLife, LIFE_CLASS_MAP } from '@/components/propriete/analyze/lifeTests';
+import { openSampleCore } from '@/components/propriete/analyze/sample/sampleDrawerStore';
+
 
 /** Teinte de l'anneau selon la texture dominante du prélèvement. */
 const TEXTURE_RING: Record<TextureResultId, string> = {
@@ -75,6 +77,8 @@ const readingLines = (s: SoilSample): Array<[string, string]> => {
 
 interface Props {
   samples: SoilSample[];
+  /** Propriété courante — permet de charger les preuves dans la fiche carotte. */
+  proprieteId?: string;
   /** Prélèvements reliés à l'ouvrage en cours d'édition (halo doré). */
   linkedIds?: string[];
   /** Atténue les prélèvements non reliés quand un ouvrage est sélectionné. */
@@ -91,12 +95,14 @@ interface Props {
  */
 export const SoilSamplesLayer: React.FC<Props> = ({
   samples,
+  proprieteId,
   linkedIds = [],
   focusLinked,
   draggable,
   onMove,
   onToggleLink,
 }) => {
+
   const placed = samples.filter((s) => s.lat != null && s.lng != null);
   if (!placed.length) return null;
 
@@ -157,12 +163,31 @@ export const SoilSamplesLayer: React.FC<Props> = ({
                     Tests non renseignés — complétez l’étape « J’analyse le sol ».
                   </p>
                 )}
+                <button
+                  type="button"
+                  onClick={() => openSampleCore(s.id, samples, proprieteId)}
+                  style={{
+                    marginTop: 8,
+                    width: '100%',
+                    borderRadius: 999,
+                    border: 'none',
+                    background: '#2f5d3a',
+                    color: '#f7f2e6',
+                    padding: '6px 8px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '.04em',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Ouvrir la fiche carotte ›
+                </button>
                 {onToggleLink && (
                   <button
                     type="button"
                     onClick={() => onToggleLink(s.id)}
                     style={{
-                      marginTop: 8,
+                      marginTop: 6,
                       width: '100%',
                       borderRadius: 999,
                       border: linked ? '1px solid #c9a227' : '1px solid rgba(47,93,58,.35)',
@@ -176,6 +201,7 @@ export const SoilSamplesLayer: React.FC<Props> = ({
                     {linked ? 'Détacher de l’ouvrage' : 'Relier à l’ouvrage sélectionné'}
                   </button>
                 )}
+
                 {draggable && (
                   <p style={{ margin: '6px 0 0', fontSize: 10, fontStyle: 'italic', opacity: 0.55 }}>
                     Glissez la carotte pour la repositionner — l’étape « J’analyse » suit.

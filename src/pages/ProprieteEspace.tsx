@@ -22,6 +22,8 @@ import { TabPortrait } from '@/components/propriete/portrait/TabPortrait';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import { ProprieteVivantScopeProvider } from '@/contexts/ProprieteVivantScopeContext';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
+import SampleCoreDrawerHost from '@/components/propriete/analyze/sample/SampleCoreDrawer';
+
 
 const ProprieteEspace: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -456,7 +458,9 @@ const PropTabs: React.FC<{
           />
         </TabsContent>
       </Tabs>
+      <SampleCoreDrawerHost />
     </div>
+
   );
 };
 

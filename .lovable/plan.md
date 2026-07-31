@@ -1,50 +1,51 @@
-## Ce que je comprends
+## Objectif
 
-Aujourd'hui deux mondes vivent séparément :
+Depuis la vignette d'un prélèvement (popup carte, aujourd'hui limitée à 3 lignes), ouvrir une **fiche carotte** plein écran, hyper graphique et navigable : tests réalisés, résultats, mesures, indices de vie, et preuves photo/vidéo de terrain.
 
-- **Étape 2 · J'analyse** : des prélèvements de sol A, B, C… posés sur la carte, chacun portant structure, texture, pH, vie du sol.
-- **Étape 5 · Palette végétale** : l'Atelier, où l'on dessine des ouvrages (massif, mare, potager, pas japonais…), plus un widget « Emplacements & ouvrages » qui permet encore de dessiner des zones — doublon inutile.
+## 1. La vignette devient une porte d'entrée
 
-L'objectif : **faire dialoguer les deux**. Un massif doit savoir sur quel sol il repose, et l'IA de jardin doit pouvoir répondre « voici la palette adaptée à ce massif » en s'appuyant sur les analyses réelles du terrain.
+Le popup actuel gagne :
+- une **mini-carotte SVG** (anneaux texture + arc pH) au lieu du texte brut ;
+- 4 pastilles-statut Structure / Texture / pH / Vie (pleine = renseignée, creuse = à faire) ;
+- un compteur de preuves (📷 n) ;
+- un bouton « Ouvrir la carotte » qui déclenche le drawer.
 
-## 1. La couche « Carottes de sol » — visible partout
+## 2. Le drawer « Carotte » — navigation disruptive
 
-Un nouveau calque système **« Prélèvements de sol »** (activable/désactivable) dans le panneau *Vues de fond*, présent :
-- dans l'Atelier,
-- dans la carte du widget « Emplacements & ouvrages ».
+Plein écran (portal + scroll-lock, comme le mode plein écran de la Carte des révélations), fond crème, deux colonnes en desktop / empilé en mobile.
 
-Chaque prélèvement devient une **pastille « carotte »** au design dédié : disque terreux, lettre A/B/C gravée, anneau coloré par la lecture dominante du sol (argile / limon / sable) et micro-jauge de pH en arc. Survol → mini-carte de lecture (texture, structure, pH, vie). Dans l'Atelier, la pastille est **déplaçable** (drag), synchronisée en direct avec l'étape « J'analyse » — même source de vérité, aucune duplication.
+```text
+┌───────────────────────────────────────────────┐
+│  ●C  Prélèvement C — Potager      ‹ B  C  D ›  ✕│
+├──────────────┬────────────────────────────────┤
+│              │  STRUCTURE  ·  test bêche      │
+│   CAROTTE    │  ▸ grumeleuse   [lecture]      │
+│   verticale  │  ▤▤▤ 3 preuves                 │
+│   interactive│────────────────────────────────│
+│  (strates    │  TEXTURE · boudin → limoneux   │
+│   cliquables)│  pH · 6,4  ▁▂▃▅▇  légère acidité│
+│              │  VIE · 1 vers · 2 indices      │
+├──────────────┴────────────────────────────────┤
+│  Phrase agronomique de synthèse (serif ital.) │
+└───────────────────────────────────────────────┘
+```
 
-## 2. L'association ouvrage ↔ prélèvements
+- **Carotte verticale interactive** : un cylindre stratifié dessiné en SVG (horizon de surface → profondeur), chaque strate colorée par la dimension correspondante ; survol/clic sur une strate = scroll magnétique vers la section, et inversement la strate s'illumine quand on scrolle. C'est le fil de navigation, pas un menu.
+- **Navigation entre prélèvements** : flèches ‹ A B C › en tête + swipe horizontal mobile, sans fermer le drawer.
+- **4 sections rythmées** (Structure, Texture, Acidité, Vie), chacune avec : picto du test réalisé (réutilise `StructureTestPictos` / `TexturePictos` / `PhPictos` / `LifePictos`), résultat en gros caractères, jauge dédiée (échelle pH colorée, compteur de vers en pictos, chips d'indices de vie), et la lecture agronomique existante.
+- **Bande de preuves** par section : vignettes des médias `propriete_test_medias` filtrés sur ce prélèvement × ce test, date sous chaque vignette, clic = lightbox zoom/pan (réutilise `VideoLightbox` / la loupe de terrain existante).
+- **Pied de fiche** : phrase de synthèse issue de `buildSoilReading`, badge « complet / à compléter » listant les dimensions manquantes, et raccourci « Compléter à l'étape J'analyse ».
 
-Ouverture de la fiche d'un ouvrage (inspecteur) → nouveau bloc **« Sol de référence »** :
+## 3. Où la fiche est accessible
 
-- **Suggestion automatique** : les prélèvements contenus dans l'ouvrage, sinon le plus proche (avec distance affichée : « B · 4 m »). Proposés en un clic sous forme de puces « Adopter ».
-- **Correction manuelle** : on peut attacher **plusieurs prélèvements** à un même ouvrage, en retirer, ou en ajouter un éloigné volontairement.
-- **Lecture fusionnée** : dès qu'au moins un prélèvement est lié, l'inspecteur affiche une **synthèse agronomique de l'ouvrage** (texture dominante, structure, pH moyen + amplitude si plusieurs, vie du sol), plus une phrase de lecture (« Sol limoneux à structure grumeleuse, légèrement acide, bien vivant »).
-- **Alertes de cohérence** : si l'ouvrage est une mare sur sol sableux drainant, ou un potager sur sol compacté, un bandeau ambré signale la contrainte avec le geste correctif.
-
-Un fil visuel (trait pointillé doré animé) relie l'ouvrage à ses carottes quand la fiche est ouverte — lecture instantanée du lien sur la carte.
-
-## 3. Le widget « Emplacements & ouvrages » simplifié
-
-- Suppression du bouton « Dessiner une zone » : la création passe exclusivement par l'Atelier (bouton « Ouvrir l'Atelier » mis en avant).
-- La carte reste, en lecture : parcelles, zones existantes, ouvrages, et la nouvelle couche prélèvements activable.
-- Dans le registre des ouvrages, chaque carte gagne un **liseré « sol »** : pastille des prélèvements liés + résumé en une ligne, cliquable pour recentrer.
-
-## 4. Le croisement palette ↔ sol
-
-Dans les recommandations d'espèces par ouvrage, les plantes sont désormais **confrontées au sol réel** de l'ouvrage : badge vert « concorde avec le sol de B », badge ambré « pH un peu bas pour cette espèce ». On réutilise le moteur de concordance déjà écrit pour l'étape « J'identifie ».
-
-## 5. Préparation de l'IA jardin (couche de données)
-
-Construction d'un **dossier sol par ouvrage** : un objet consolidé (type d'ouvrage, surface, prélèvements liés avec toutes leurs mesures, lecture fusionnée, contraintes détectées, espèces déjà retenues) exposé par une fonction unique. Il servira de contexte à l'IA au prochain chantier, et alimente dès maintenant l'affichage et l'impression — aucune IA branchée dans cette itération.
+Le même drawer est branché partout où une carotte apparaît, sans duplication :
+- popup de `SoilSamplesLayer` (Atelier + carte Palette),
+- carte des prélèvements de l'étape « J'analyse »,
+- tableau `SamplesRegisterTable` (clic sur une ligne).
 
 ## Détails techniques
 
-- **Aucune migration lourde** : le lien est stocké dans `propriete_objets.meta` (champ `soil_samples: string[]`, ids de prélèvements) via la RPC `upsert_propriete_objet` existante. Les prélèvements restent dans `propriete_soil_diagnostics.samples` (JSON), déjà porteurs de `lat`/`lng`.
-- Nouveau module `src/lib/soilLinkEngine.ts` : suggestion par appartenance point-dans-polygone puis distance haversine, fusion multi-prélèvements (réutilise `buildSoilReading`, `aggregatePh`, `aggregateLife`), règles de contrainte par type d'ouvrage (adossées à `ouvrageRecoKb`), et `buildOuvrageSoilDossier()` = payload IA.
-- Nouveau hook `useOuvrageSoil.ts` : croise `usePropertySoil` et `usePropertyObjets`, expose suggestions, lien, lecture fusionnée.
-- Nouveaux composants : `SoilSamplesLayer.tsx` (pastilles + drag optionnel, dans un pane Leaflet dédié au-dessus des polygones), `SoilCoreMarker.tsx`, `SoilLinkBlock.tsx` (bloc inspecteur), `SoilLinkThread.tsx` (fil pointillé).
-- Intégrations : `LayersPanel.tsx` (toggle système), `PaletteStudio.tsx` (couche + drag → `updateSample`), `ZonesMapBlock.tsx` (couche lecture seule, retrait du bouton dessin et de `FreehandLayer`), `ObjectInspector.tsx` (bloc Sol de référence), `OuvragesRegister.tsx` / `OuvrageRecoCard.tsx` (liseré sol + badges de concordance).
-- Impression : le dossier sol par ouvrage est ajouté à `OuvragePrintSheet.tsx`.
+- Nouveau `src/components/propriete/analyze/sample/SampleCoreDrawer.tsx` (portal, `AnimatePresence`, scroll-lock) + `SampleCoreSvg.tsx` (carotte stratifiée) + `SampleSection.tsx`.
+- Données 100 % existantes : `SoilSample` (usePropertySoil / useSoilSamples) pour les tests et résultats, `usePropertyTestMedias` pour les preuves, `soilTestCatalog` pour libellés/accents, `structureTests` / `textureTests` / `phTests` / `lifeTests` pour les lectures. Aucune migration DB.
+- Ouverture pilotée par un petit contexte `SampleDrawerContext` (ou prop `onOpenSample`) pour que la popup Leaflet, la table et la carte partagent la même instance.
+- Couleurs strictement via tokens `--ds-*` et les accents `SOIL_BLOCKS`, mode sombre respecté.
