@@ -6,6 +6,8 @@ import { RESULT_SHORT, type StructureResultId } from '@/components/propriete/ana
 import { TEXTURE_SHORT, type TextureResultId } from '@/components/propriete/analyze/textureTests';
 import { classifyPh } from '@/components/propriete/analyze/phTests';
 import { scoreLife, LIFE_CLASS_MAP } from '@/components/propriete/analyze/lifeTests';
+import { openSampleCore } from '@/components/propriete/analyze/sample/sampleDrawerStore';
+
 
 /** Teinte de l'anneau selon la texture dominante du prélèvement. */
 const TEXTURE_RING: Record<TextureResultId, string> = {
