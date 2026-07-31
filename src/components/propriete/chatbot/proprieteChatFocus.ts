@@ -47,7 +47,12 @@ export const proprieteChatFocus = {
  * Volontairement compacts (résumés, pas les listes détaillées) : la frugalité
  * reste la règle, l'utilisateur peut désactiver dans la Console.
  */
-export const FOCUS_AUTO_CONTEXT_IDS = ['ouvrage.focus', 'sol.synthese', 'vivant.resume'] as const;
+export const FOCUS_AUTO_CONTEXT_IDS = [
+  'ouvrage.focus',
+  'ouvrage.especes',
+  'sol.synthese',
+  'vivant.resume',
+] as const;
 
 export function useProprieteChatFocus(): ProprieteChatFocus {
   return useSyncExternalStore(proprieteChatFocus.subscribe, proprieteChatFocus.get, proprieteChatFocus.get);
