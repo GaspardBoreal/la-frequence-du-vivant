@@ -40,6 +40,8 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
       hideFab={isMobile}
       fabId={`ia-jardin-${proprieteId}`}
       fabLabel="IA de Jardin"
+      focusBanner={<GardenFocusBanner proprieteId={proprieteId} />}
     />
   );
 }
+
