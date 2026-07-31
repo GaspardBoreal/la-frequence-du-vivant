@@ -323,6 +323,11 @@ export const ZonesMapBlock: React.FC<Props> = ({
         </button>
       )}
 
+      {!readOnly && zones.length === 0 && (
+        <span className="text-[10.5px] italic opacity-60">
+          Le tracé des emplacements se fait désormais dans l’Atelier.
+        </span>
+      )}
 
 
       {zones.map((z, i) => {
