@@ -61,7 +61,10 @@ interface ChatBotProps {
   fabId?: string;
   /** Libellé affiché dans le FAB (transforme la bulle en pilule) */
   fabLabel?: string;
+  /** Bandeau de cadrage affiché juste au-dessus du header (ex : ouvrage ciblé). */
+  focusBanner?: React.ReactNode;
 }
+
 
 
 export function ChatBot({
