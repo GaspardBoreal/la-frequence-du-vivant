@@ -12,6 +12,7 @@ import { geometryAreaM2, geometryCenter, measureFor } from '@/components/proprie
 import { payloadBytes } from '@/lib/chatContextCost';
 import type { ContextProvider } from '@/hooks/useChatPageContext';
 import { useProprieteChatFocus } from '@/components/propriete/chatbot/proprieteChatFocus';
+import { classifyObservations, rollupSpecies } from '@/lib/ouvrageScope';
 
 const R = 6371000;
 const distanceM = (a: [number, number], b: [number, number]) => {
