@@ -30,88 +30,10 @@ import SoilSamplesLayer from './studio/SoilSamplesLayer';
 
 
 
-/* ── Couche de dessin à main levée ────────────────────────────────────────── */
+/* Le dessin des emplacements se fait exclusivement dans l'Atelier :
+   cette carte est une carte de lecture (emplacements, ouvrages, carottes de sol). */
 
-const FreehandLayer: React.FC<{
-  active: boolean;
-  color: string;
-  onFinish: (latlngs: Array<[number, number]>) => void;
-}> = ({ active, color, onFinish }) => {
-  const map = useMap();
-  const [points, setPoints] = React.useState<Array<[number, number]>>([]);
-  const drawingRef = React.useRef(false);
-  const bufferRef = React.useRef<Array<[number, number]>>([]);
 
-  React.useEffect(() => {
-    if (!active) {
-      setPoints([]);
-      bufferRef.current = [];
-      return;
-    }
-    const container = map.getContainer();
-    container.style.cursor = 'crosshair';
-    map.dragging.disable();
-    map.doubleClickZoom.disable();
-
-    const toLatLng = (e: PointerEvent): [number, number] => {
-      const rect = container.getBoundingClientRect();
-      const p = map.containerPointToLatLng([e.clientX - rect.left, e.clientY - rect.top] as any);
-      return [p.lat, p.lng];
-    };
-
-    const onDown = (e: PointerEvent) => {
-      if (e.button !== 0) return;
-      drawingRef.current = true;
-      bufferRef.current = [toLatLng(e)];
-      setPoints(bufferRef.current.slice());
-      container.setPointerCapture?.(e.pointerId);
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!drawingRef.current) return;
-      const next = toLatLng(e);
-      const last = bufferRef.current[bufferRef.current.length - 1];
-      if (last) {
-        const a = map.latLngToContainerPoint(last as any);
-        const b = map.latLngToContainerPoint(next as any);
-        if (Math.hypot(a.x - b.x, a.y - b.y) < 4) return;
-      }
-      bufferRef.current = [...bufferRef.current, next];
-      setPoints(bufferRef.current.slice());
-    };
-    const onUp = (e: PointerEvent) => {
-      if (!drawingRef.current) return;
-      drawingRef.current = false;
-      container.releasePointerCapture?.(e.pointerId);
-      const pts = bufferRef.current;
-      bufferRef.current = [];
-      setPoints([]);
-      if (pts.length >= 3) onFinish(pts);
-    };
-
-    container.addEventListener('pointerdown', onDown);
-    container.addEventListener('pointermove', onMove);
-    container.addEventListener('pointerup', onUp);
-    container.addEventListener('pointercancel', onUp);
-
-    return () => {
-      container.style.cursor = '';
-      map.dragging.enable();
-      map.doubleClickZoom.enable();
-      container.removeEventListener('pointerdown', onDown);
-      container.removeEventListener('pointermove', onMove);
-      container.removeEventListener('pointerup', onUp);
-      container.removeEventListener('pointercancel', onUp);
-    };
-  }, [active, map, onFinish]);
-
-  if (!active || points.length < 2) return null;
-  return (
-    <Polyline
-      positions={points as any}
-      pathOptions={{ color, weight: 3, dashArray: '6 6', opacity: 0.95 }}
-    />
-  );
-};
 
 /* ── Bloc carte ───────────────────────────────────────────────────────────── */
 
