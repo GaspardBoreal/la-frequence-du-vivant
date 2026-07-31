@@ -315,6 +315,12 @@ export const PaletteStudio: React.FC<Props> = ({
 
   /* Cadrage de l'IA de jardin : halo du rayon d'écoute autour de l'ouvrage ciblé. */
   const aiFocus = useProprieteChatFocus();
+  const aiFocusCenter = React.useMemo(() => {
+    const o = aiFocus.objetId ? objets.find((x) => x.id === aiFocus.objetId) : null;
+    return o ? geometryCenter(o.geometry) : null;
+  }, [aiFocus.objetId, objets]);
+
+
 
 
   /* Semer les calques par défaut au premier passage */
