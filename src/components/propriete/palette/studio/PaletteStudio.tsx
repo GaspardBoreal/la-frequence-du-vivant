@@ -659,6 +659,7 @@ export const PaletteStudio: React.FC<Props> = ({
             height="100%"
           >
             <MapViewReporter onChange={onViewChange} />
+            <ZoomScaleBadge />
             {aiFocusCenter && (
               <LeafletCircle
                 center={aiFocusCenter as any}
