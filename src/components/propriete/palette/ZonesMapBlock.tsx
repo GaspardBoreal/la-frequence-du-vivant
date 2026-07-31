@@ -155,13 +155,15 @@ export const ZonesMapBlock: React.FC<Props> = ({
 }) => {
 
 
-  const [drawing, setDrawing] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
   const [studioOpen, setStudioOpen] = React.useState(false);
+  const [showSoil, setShowSoil] = React.useState(true);
   const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
   const transform = useZoneTransform(onPatchZone);
   const { objets } = useProprieteObjets(proprieteId);
   const { calques } = useProprieteCalques(proprieteId);
+  /** Carottes de sol de l'étape « J'analyse » — lecture seule ici. */
+  const { placed: soilSamples } = useSoilSamples(proprieteId);
 
   /** Ouvrages réellement affichables : géométrie valide et non masqués. */
   const visibleObjets = React.useMemo(
@@ -182,10 +184,7 @@ export const ZonesMapBlock: React.FC<Props> = ({
   React.useEffect(() => {
     if (!fullscreen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (drawing) setDrawing(false);
-        else setFullscreen(false);
-      }
+      if (e.key === 'Escape') setFullscreen(false);
     };
     window.addEventListener('keydown', handler);
     const prev = document.body.style.overflow;
@@ -194,7 +193,8 @@ export const ZonesMapBlock: React.FC<Props> = ({
       window.removeEventListener('keydown', handler);
       document.body.style.overflow = prev;
     };
-  }, [fullscreen, drawing]);
+  }, [fullscreen]);
+
 
   const bounds = React.useMemo<Array<[number, number]>>(() => {
     const pts: Array<[number, number]> = [];
