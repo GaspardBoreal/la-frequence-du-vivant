@@ -43,6 +43,7 @@ export const OuvragesRegister: React.FC<Props> = ({
   const { objets, upsertObjet } = useProprieteObjets(proprieteId);
   const { resolve, saveReco, resetReco } = useOuvrageRecoKb();
   const canEditKb = useCanEditOuvrageKb();
+  const { placed: soilSamples } = useSoilSamples(proprieteId);
   const [openIds, setOpenIds] = React.useState<string[]>([]);
   const rowRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
 
