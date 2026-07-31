@@ -23,6 +23,7 @@ import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import { ProprieteVivantScopeProvider } from '@/contexts/ProprieteVivantScopeContext';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
 import SampleCoreDrawerHost from '@/components/propriete/analyze/sample/SampleCoreDrawer';
+import { ProprieteChatBotMount } from '@/components/propriete/chatbot/ProprieteChatBotMount';
 
 
 const ProprieteEspace: React.FC = () => {
@@ -459,6 +460,7 @@ const PropTabs: React.FC<{
         </TabsContent>
       </Tabs>
       <SampleCoreDrawerHost />
+      <ProprieteChatBotMount proprieteId={proprieteId} proprieteNom={proprieteNom} />
     </div>
 
   );
