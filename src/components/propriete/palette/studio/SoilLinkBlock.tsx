@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layers, Link2, Sparkles, AlertTriangle, Leaf } from 'lucide-react';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
+import { StrataSeal } from '@/components/propriete/analyze/sample/StrataSeal';
 import {
   fmtDistance,
   linkedSampleIds,
