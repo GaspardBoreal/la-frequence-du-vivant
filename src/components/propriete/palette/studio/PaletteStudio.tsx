@@ -124,6 +124,8 @@ export const PaletteStudio: React.FC<Props> = ({
     scopeCounts,
     fieldPhotos,
   } = usePropertySpeciesPool(open ? proprieteId : undefined);
+  /** Prélèvements de sol (étape « J'analyse ») : lisibles et déplaçables ici. */
+  const soil = useSoilSamples(open ? proprieteId : undefined);
   /** Toutes les photos terrain de l'espèce, pour la bande photo des popups. */
   const walkerPhotosFor = React.useCallback(
     (w: { scientificName?: string | null }) =>
