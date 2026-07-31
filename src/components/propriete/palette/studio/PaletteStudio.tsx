@@ -314,12 +314,25 @@ export const PaletteStudio: React.FC<Props> = ({
     return () => fullscreenSurfaces.pop();
   }, [open]);
 
-  /* Cadrage de l'IA de jardin : halo du rayon d'écoute autour de l'ouvrage ciblé. */
+  /* Cadrage de l'IA de jardin : tracé écouté + halo du rayon de voisinage. */
   const aiFocus = useProprieteChatFocus();
-  const aiFocusCenter = React.useMemo(() => {
-    const o = aiFocus.objetId ? objets.find((x) => x.id === aiFocus.objetId) : null;
-    return o ? geometryCenter(o.geometry) : null;
-  }, [aiFocus.objetId, objets]);
+  const aiFocusObjet = React.useMemo(
+    () => (aiFocus.objetId ? objets.find((x) => x.id === aiFocus.objetId) ?? null : null),
+    [aiFocus.objetId, objets],
+  );
+  const aiFocusCenter = React.useMemo(
+    () => (aiFocusObjet ? geometryCenter(aiFocusObjet.geometry) : null),
+    [aiFocusObjet],
+  );
+  /** Anneau du polygone cadré : matérialise le « dedans » lu par l'IA. */
+  const aiFocusRing = React.useMemo(() => {
+    const g: any = aiFocusObjet?.geometry;
+    if (g?.type !== 'Polygon') return null;
+    const ring = g.coordinates?.[0];
+    if (!ring?.length) return null;
+    return ring.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+  }, [aiFocusObjet]);
+
 
 
 
