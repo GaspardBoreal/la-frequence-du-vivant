@@ -356,7 +356,9 @@ export function useProprieteChatProviders(proprieteId?: string): {
         : 'Contextes de la propriété',
     };
   }, [
+    scope,
     scopedWaypoints,
+
     soil,
     objets,
     zones,
