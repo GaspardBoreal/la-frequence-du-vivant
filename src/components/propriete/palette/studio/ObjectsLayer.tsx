@@ -87,7 +87,12 @@ const glyphIcon = (glyph: string, color: string, selected: boolean, scale = 1) =
     iconAnchor: [14 * scale, 14 * scale],
   });
 
-/** Point d'ancrage de la pastille photo selon la géométrie. */
+/**
+ * Point d'accroche de l'étiquette photo : jamais le centre de l'ouvrage,
+ * mais son bord (sommet nord-ouest pour un polygone, extrémité pour une
+ * ligne). Le décalage visuel est ensuite fait en pixels via `iconAnchor`,
+ * pour rester stable à tous les zooms.
+ */
 const photoAnchor = (geometry: any): [number, number] | null => {
   if (!geometry) return null;
   if (geometry.type === 'Point') {
@@ -97,18 +102,50 @@ const photoAnchor = (geometry: any): [number, number] | null => {
   if (geometry.type === 'LineString') {
     const cs = geometry.coordinates || [];
     if (!cs.length) return null;
-    const m = cs[Math.floor(cs.length / 2)];
+    // Extrémité la plus au nord : l'étiquette pend en marge du tracé.
+    const m = cs.reduce((a: number[], b: number[]) => (b[1] > a[1] ? b : a), cs[0]);
     return [m[1], m[0]];
   }
   if (geometry.type === 'Polygon') {
-    const ring = geometry.coordinates?.[0] || [];
+    const ring: number[][] = geometry.coordinates?.[0] || [];
     if (!ring.length) return null;
-    const lat = ring.reduce((s: number, c: number[]) => s + c[1], 0) / ring.length;
-    const lng = ring.reduce((s: number, c: number[]) => s + c[0], 0) / ring.length;
-    return [lat, lng];
+    const lats = ring.map((c) => c[1]);
+    const lngs = ring.map((c) => c[0]);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const dLat = maxLat - minLat || 1;
+    const dLng = maxLng - minLng || 1;
+    // Sommet réel le plus proche du coin nord-ouest de l'enveloppe.
+    let best = ring[0];
+    let bestScore = -Infinity;
+    for (const c of ring) {
+      const score = (c[1] - minLat) / dLat + (maxLng - c[0]) / dLng;
+      if (score > bestScore) {
+        bestScore = score;
+        best = c;
+      }
+    }
+    return [best[1], best[0]];
   }
   return null;
 };
+
+/** Zoom courant de la carte, pour la variante compacte de la pastille. */
+const useMapZoom = () => {
+  const map = useMap();
+  const [zoom, setZoom] = React.useState<number>(() => map.getZoom());
+  React.useEffect(() => {
+    const on = () => setZoom(map.getZoom());
+    map.on('zoomend', on);
+    return () => {
+      map.off('zoomend', on);
+    };
+  }, [map]);
+  return zoom;
+};
+
 
 interface Props {
   objets: ProprieteObjet[];
