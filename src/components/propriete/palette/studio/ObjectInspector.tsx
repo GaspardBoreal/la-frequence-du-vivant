@@ -215,6 +215,12 @@ export const ObjectInspector: React.FC<Props> = ({
           />
         )}
 
+        <AskGardenAiBlock
+          objetId={objet.id}
+          outilKey={objet.outil_key}
+          toolLabel={tool?.label ?? 'ouvrage'}
+          nom={objet.nom}
+        />
 
 
         {isChromaticTool(objet.outil_key) && (
