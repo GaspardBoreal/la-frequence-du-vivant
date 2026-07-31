@@ -9,6 +9,8 @@ import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { fmtMeasure, measureFor, geometryCenter } from './geoMetrics';
 import ObjetPhotoStrip from './photos/ObjetPhotoStrip';
 import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
+import SoilLinkBlock from './SoilLinkBlock';
+import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 
 interface Props {
   objet: ProprieteObjet;
