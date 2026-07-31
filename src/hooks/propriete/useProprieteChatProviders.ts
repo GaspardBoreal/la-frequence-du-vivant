@@ -285,8 +285,8 @@ export function useProprieteChatProviders(proprieteId?: string): {
           hint: `${revealed.length} plantes indicatrices révélées`,
           payload: {
             plantes: revealed.slice(0, 60).map((m: any) => ({
-              n: m.plant?.scientific ?? m.plant?.name,
-              c: m.plant?.common ?? null,
+              n: m.plant?.latin ?? m.plant?.nom,
+              c: m.plant?.nom ?? null,
               obs: m.observations,
               fiabilite: m.confidence,
             })),
