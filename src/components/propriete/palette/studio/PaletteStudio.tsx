@@ -247,7 +247,9 @@ export const PaletteStudio: React.FC<Props> = ({
     parcelles: true,
     zones: true,
     vivant: true,
+    sol: true,
   });
+
   const [vivantFilter, setVivantFilter] = React.useState<VivantFilterState>(
     () => VIVANT_FILTER_MEMORY.get(proprieteId) ?? DEFAULT_VIVANT_FILTER,
   );
