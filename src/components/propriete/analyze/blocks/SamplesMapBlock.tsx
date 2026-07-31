@@ -205,7 +205,7 @@ export const SamplesMapBlock: React.FC<{
         zoom={18}
         bounds={bounds}
         controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
-        maxZoom={22}
+        maxZoom={24}
         height="100%"
         initialStyle="cadastre"
       >

@@ -527,7 +527,7 @@ export const RevealMapBlock: React.FC<{ proprieteId?: string; index?: number }> 
         fitMaxZoom={16}
         fitPadding={[60, 60]}
         controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
-        maxZoom={22}
+        maxZoom={24}
         height="100%"
       >
         <MapViewReporter onChange={onViewChange} />
