@@ -274,6 +274,14 @@ export const SamplesMapBlock: React.FC<{
               placeholder="Emplacement (ex. sous le tilleul…)"
               className="w-full bg-transparent border-none outline-none text-sm text-[hsl(var(--ds-forest-deep))] placeholder:text-[hsl(var(--ds-forest))]/40"
             />
+            <div className="mt-1 flex items-center gap-2 flex-wrap">
+              <StrataSeal
+                sample={s}
+                size="row"
+                onSelect={(block) => openSampleCore(s.id, samples, proprieteId, block)}
+              />
+              <StrataCompletionLine sample={s} />
+            </div>
             {s.lat != null && s.lng != null && (
               <div className="text-[10px] text-[hsl(var(--ds-forest))]/50 mt-0.5">
                 {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
