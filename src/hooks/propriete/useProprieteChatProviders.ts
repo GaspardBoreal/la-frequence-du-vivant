@@ -63,40 +63,40 @@ export function useProprieteChatProviders(proprieteId?: string): {
     [focusObjet],
   );
 
-  /** Observations retenues : propriété entière, ou disque autour de l'ouvrage cadré. */
+  /**
+   * Périmètre réel de l'ouvrage : dedans (dans le tracé) / lisière / voisinage
+   * (rayon d'écoute mesuré depuis le BORD, jamais depuis le centroïde).
+   */
+  const scope = useMemo(
+    () =>
+      focusObjet
+        ? classifyObservations(focusObjet.geometry, waypoints ?? [], focus.radiusM)
+        : null,
+    [focusObjet, waypoints, focus.radiusM],
+  );
+
+  /** Observations retenues : propriété entière, ou périmètre de l'ouvrage cadré. */
   const scopedWaypoints = useMemo(() => {
-    const wps = waypoints ?? [];
-    if (!focusCenter) return wps;
-    return wps.filter((w) => distanceM(focusCenter, [w.lat, w.lng]) <= focus.radiusM);
-  }, [waypoints, focusCenter, focus.radiusM]);
+    if (!scope) return waypoints ?? [];
+    return [...scope.dedans, ...scope.lisiere, ...scope.voisinage].map((s) => s.item);
+  }, [waypoints, scope]);
 
   return useMemo(() => {
     const list: ContextProvider[] = [];
     const scopeLabel = focusObjet
-      ? `${focusObjet.nom || 'ouvrage'} · ${focus.radiusM} m`
+      ? `${focusObjet.nom || 'ouvrage'} · tracé + ${focus.radiusM} m`
       : 'propriété entière';
 
     /* ── Vivant ─────────────────────────────────────────────────────────── */
     const byKingdom = new Map<string, number>();
-    const byName = new Map<string, { n: string; c: string | null; k: string | null; obs: number; last: string | null }>();
     for (const w of scopedWaypoints) {
       const k = w.kingdom || 'inconnu';
       byKingdom.set(k, (byKingdom.get(k) ?? 0) + 1);
-      const prev = byName.get(w.scientificName);
-      if (prev) {
-        prev.obs += 1;
-        if (w.observationDate && (!prev.last || w.observationDate > prev.last)) prev.last = w.observationDate;
-      } else {
-        byName.set(w.scientificName, {
-          n: w.scientificName,
-          c: w.commonName,
-          k: w.kingdom,
-          obs: 1,
-          last: w.observationDate,
-        });
-      }
     }
-    const speciesRows = [...byName.values()].sort((a, b) => b.obs - a.obs);
+    const speciesRows = rollupSpecies(scopedWaypoints as any);
+    const dedansRows = scope ? rollupSpecies(scope.dedans.map((s) => s.item) as any) : [];
+    const lisiereRows = scope ? rollupSpecies(scope.lisiere.map((s) => s.item) as any) : [];
+    const voisinageRows = scope ? rollupSpecies(scope.voisinage.map((s) => s.item) as any) : [];
 
     if (speciesRows.length > 0) {
       list.push(
@@ -105,15 +105,33 @@ export function useProprieteChatProviders(proprieteId?: string): {
           group: 'Vivant',
           emoji: '🌿',
           label: 'Résumé du vivant',
-          hint: `${speciesRows.length} espèces · ${scopeLabel}`,
+          hint: scope
+            ? `${dedansRows.length} dans le tracé · ${voisinageRows.length} en voisinage`
+            : `${speciesRows.length} espèces · ${scopeLabel}`,
           recommended: true,
-          payload: {
-            portee: scopeLabel,
-            especes: speciesRows.length,
-            observations: scopedWaypoints.length,
-            parRegne: Object.fromEntries(byKingdom),
-            top: speciesRows.slice(0, 15).map((s) => ({ n: s.n, c: s.c, obs: s.obs })),
-          },
+          payload: scope
+            ? {
+                portee: scopeLabel,
+                dansLOuvrage: {
+                  especes: dedansRows.length,
+                  observations: scope.dedans.length,
+                  liste: dedansRows.map((s) => ({ n: s.n, c: s.c, obs: s.obs })),
+                },
+                lisiere: { especes: lisiereRows.length },
+                voisinage: {
+                  especes: voisinageRows.length,
+                  observations: scope.voisinage.length,
+                  top: voisinageRows.slice(0, 12).map((s) => ({ n: s.n, c: s.c, obs: s.obs })),
+                },
+                parRegne: Object.fromEntries(byKingdom),
+              }
+            : {
+                portee: scopeLabel,
+                especes: speciesRows.length,
+                observations: scopedWaypoints.length,
+                parRegne: Object.fromEntries(byKingdom),
+                top: speciesRows.slice(0, 15).map((s) => ({ n: s.n, c: s.c, obs: s.obs })),
+              },
         }),
       );
 
@@ -127,11 +145,12 @@ export function useProprieteChatProviders(proprieteId?: string): {
           payload: {
             portee: scopeLabel,
             tronque: speciesRows.length > 200,
-            especes: speciesRows.slice(0, 200).map((s) => ({ n: s.n, c: s.c, k: s.k, obs: s.obs, vu: s.last })),
+            especes: speciesRows.slice(0, 200).map((s) => ({ n: s.n, c: s.c, k: s.k, obs: s.obs, vu: s.vu })),
           },
         }),
       );
     }
+
 
     /* ── Sol ────────────────────────────────────────────────────────────── */
     const placed = placedSamples(soil?.samples ?? []);
