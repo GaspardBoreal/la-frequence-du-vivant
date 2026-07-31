@@ -1,5 +1,5 @@
 import React from 'react';
-import { Marker, Polygon, Polyline, Tooltip } from 'react-leaflet';
+import { Marker, Polygon, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { hexOf, isChromaticTool, teintesOf } from '@/lib/nuancierKb';
