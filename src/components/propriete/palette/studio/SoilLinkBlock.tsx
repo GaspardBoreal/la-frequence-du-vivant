@@ -117,6 +117,9 @@ export const SoilLinkBlock: React.FC<Props> = ({
                 <span className="block truncate text-[10.5px] font-medium leading-tight">
                   {sample.location || `Prélèvement ${sample.label}`}
                 </span>
+                <span className="mt-0.5 block">
+                  <StrataSeal sample={sample} size="row" />
+                </span>
                 <span className="block text-[9px] leading-tight opacity-60">
                   {inside ? 'dans l’emprise de l’ouvrage' : `à ${fmtDistance(distanceM)}`}
                 </span>
