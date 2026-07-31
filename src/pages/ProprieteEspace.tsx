@@ -456,7 +456,9 @@ const PropTabs: React.FC<{
           />
         </TabsContent>
       </Tabs>
+      <SampleCoreDrawerHost />
     </div>
+
   );
 };
 
