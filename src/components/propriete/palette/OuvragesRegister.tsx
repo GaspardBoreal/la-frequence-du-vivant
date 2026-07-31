@@ -1,9 +1,11 @@
 import React from 'react';
-import { ChevronDown, Hammer, MapPin } from 'lucide-react';
+import { ChevronDown, Hammer, MapPin, Layers, AlertTriangle, Sparkles } from 'lucide-react';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import { useOuvrageRecoKb, useCanEditOuvrageKb } from '@/hooks/propriete/useOuvrageRecoKb';
+import { useSoilSamples } from '@/hooks/propriete/useSoilSamples';
 import { TOOL_FAMILIES, type ToolFamilyKey } from '@/lib/paysageTools';
 import { toolByKey } from '@/lib/ouvrageRecoKb';
+import { linkedSampleIds, mergeSamples, ouvrageSoilAlerts } from '@/lib/soilLinkEngine';
 import { measureFor, fmtMeasure } from './studio/geoMetrics';
 import OuvrageRecoCard from './OuvrageRecoCard';
 
