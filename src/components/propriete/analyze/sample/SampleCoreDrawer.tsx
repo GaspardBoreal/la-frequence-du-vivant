@@ -104,14 +104,14 @@ const MediaLightbox: React.FC<{
         </span>
         <span className="ml-auto flex items-center gap-1">
           <button
-            onClick={() => zoom.zoomOut?.()}
+            onClick={() => zoom.zoomBy(1 / 1.4)}
             className="rounded-full border border-white/25 p-1.5 hover:bg-white/10"
             aria-label="Dézoomer"
           >
             <ZoomOut className="h-4 w-4" />
           </button>
           <button
-            onClick={() => zoom.zoomIn?.()}
+            onClick={() => zoom.zoomBy(1.4)}
             className="rounded-full border border-white/25 p-1.5 hover:bg-white/10"
             aria-label="Zoomer"
           >
@@ -130,8 +130,8 @@ const MediaLightbox: React.FC<{
       <div
         className="relative flex-1 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
-        {...(zoom.containerProps ?? {})}
-        ref={zoom.containerRef as any}
+        ref={zoom.containerRef}
+        {...zoom.handlers}
       >
         {m.media_type === 'video' ? (
           <video src={m.url} controls className="h-full w-full object-contain" />
@@ -140,11 +140,12 @@ const MediaLightbox: React.FC<{
             src={m.url}
             alt={m.caption ?? 'Preuve de terrain'}
             className="h-full w-full select-none object-contain"
-            style={zoom.imageStyle}
+            style={{ transform: zoom.transform, transformOrigin: 'center center' }}
             draggable={false}
           />
         )}
       </div>
+
 
       <div
         className="flex items-center justify-center gap-2 px-4 py-3"
