@@ -306,6 +306,15 @@ export const PaletteStudio: React.FC<Props> = ({
     [center, waypoints],
   );
 
+  /* L'atelier est une surface plein écran : le chatbot doit passer au-dessus. */
+  React.useEffect(() => {
+    if (!open) return;
+    fullscreenSurfaces.push();
+    return () => fullscreenSurfaces.pop();
+  }, [open]);
+
+  /* Cadrage de l'IA de jardin : halo du rayon d'écoute autour de l'ouvrage ciblé. */
+  const aiFocus = useProprieteChatFocus();
 
 
   /* Semer les calques par défaut au premier passage */
