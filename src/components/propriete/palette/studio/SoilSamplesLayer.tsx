@@ -68,21 +68,6 @@ const makeCoreIcon = (
   });
 };
 
-const readingLines = (s: SoilSample): Array<[string, string]> => {
-  const rows: Array<[string, string]> = [];
-  if (s.texture_result) rows.push(['Texture', TEXTURE_SHORT[s.texture_result as TextureResultId]]);
-  if (s.structure_result)
-    rows.push(['Structure', RESULT_SHORT[s.structure_result as StructureResultId]]);
-  if (typeof s.ph_value === 'number')
-    rows.push(['pH', `${s.ph_value.toFixed(1)} · ${classifyPh(s.ph_value).short}`]);
-  const life = scoreLife(s.life_signs, s.worm_count);
-  if ((s.life_signs?.length ?? 0) > 0 || typeof s.worm_count === 'number')
-    rows.push([
-      'Vie du sol',
-      `${LIFE_CLASS_MAP[life.klass].label}${typeof s.worm_count === 'number' ? ` · ${s.worm_count} vers` : ''}`,
-    ]);
-  return rows;
-};
 
 interface Props {
   samples: SoilSample[];
