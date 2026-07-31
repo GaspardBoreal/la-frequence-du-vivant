@@ -57,6 +57,10 @@ interface ChatBotProps {
   roleBadge?: string | null;
   /** Masque le FAB intégré (utile quand un FAB externe orchestre l'ouverture) */
   hideFab?: boolean;
+  /** Identifiant de persistance de position du FAB (défaut : chatbot-global) */
+  fabId?: string;
+  /** Libellé affiché dans le FAB (transforme la bulle en pilule) */
+  fabLabel?: string;
 }
 
 
