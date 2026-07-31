@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Gauge, Check, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useFullscreenSurfaceOpen, CHAT_Z } from '@/lib/uiOverlayLevel';
+
 import {
   chatPageContext,
   contextSliceKey,
