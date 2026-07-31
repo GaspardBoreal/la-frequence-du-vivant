@@ -50,6 +50,9 @@ interface Props {
   onSystem: (patch: Partial<SystemLayerState>) => void;
   /** Compteurs de portée (cadastre / tous) pour le sélecteur d'observations. */
   scopeCounts?: { cadastre: number | null; all: number };
+  /** Nombre de prélèvements de sol posés sur la carte. */
+  soilCount?: number;
+
 
   objetCountByCalque: Record<string, number>;
   readOnly?: boolean;
