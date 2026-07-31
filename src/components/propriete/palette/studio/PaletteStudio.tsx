@@ -740,6 +740,31 @@ export const PaletteStudio: React.FC<Props> = ({
               onOpenPhotos={openGallery}
             />
 
+            {system.sol && (
+              <SoilSamplesLayer
+                samples={soil.samples}
+                linkedIds={selectedObjet ? linkedSampleIds(selectedObjet.meta) : []}
+                focusLinked={!!selectedObjet}
+                draggable={!readOnly}
+                onMove={(id, lat, lng) => soil.moveSample(id, lat, lng)}
+                onToggleLink={
+                  selectedObjet && !readOnly
+                    ? (id) => {
+                        const cur = linkedSampleIds(selectedObjet.meta);
+                        patchObjet({
+                          meta: {
+                            ...(selectedObjet.meta ?? {}),
+                            soil_samples: cur.includes(id)
+                              ? cur.filter((x) => x !== id)
+                              : [...cur, id],
+                          },
+                        });
+                      }
+                    : undefined
+                }
+              />
+            )}
+
             {objetTransform.objet && (
               <ObjetTransformLayer
                 coords={objetTransform.coords}
