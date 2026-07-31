@@ -5,6 +5,8 @@ export type FabCorner = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left
 interface UseDraggableFabOptions {
   id: string;
   size?: number;
+  /** Hauteur du FAB si différente de la largeur (FAB pilule). */
+  sizeY?: number;
   defaultCorner?: FabCorner;
   margin?: number;
 }
@@ -29,9 +31,11 @@ const safeAreaBottom = (): number => {
 export function useDraggableFab({
   id,
   size = 56,
+  sizeY,
   defaultCorner = 'bottom-right',
   margin = 16,
 }: UseDraggableFabOptions) {
+  const sizeH = sizeY ?? size;
   const storageKey = `${STORAGE_PREFIX}${id}`;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
@@ -54,13 +58,13 @@ export function useDraggableFab({
       const minX = margin;
       const maxX = vw - size - margin;
       const minY = margin;
-      const maxY = vh - size - margin - sb;
+      const maxY = vh - sizeH - margin - sb;
       return {
         x: Math.min(maxX, Math.max(minX, x)),
         y: Math.min(maxY, Math.max(minY, y)),
       };
     },
-    [margin, size]
+    [margin, size, sizeH]
   );
 
   const computeDefault = useCallback(() => {
@@ -70,14 +74,14 @@ export function useDraggableFab({
     const sb = safeAreaBottom();
     switch (defaultCorner) {
       case 'bottom-left':
-        return { x: margin, y: vh - size - margin - sb };
+        return { x: margin, y: vh - sizeH - margin - sb };
       case 'top-right':
         return { x: vw - size - margin, y: margin };
       case 'top-left':
         return { x: margin, y: margin };
       case 'bottom-right':
       default:
-        return { x: vw - size - margin, y: vh - size - margin - sb };
+        return { x: vw - size - margin, y: vh - sizeH - margin - sb };
     }
   }, [defaultCorner, margin, size]);
 
