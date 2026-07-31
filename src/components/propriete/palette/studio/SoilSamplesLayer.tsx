@@ -157,12 +157,31 @@ export const SoilSamplesLayer: React.FC<Props> = ({
                     Tests non renseignés — complétez l’étape « J’analyse le sol ».
                   </p>
                 )}
+                <button
+                  type="button"
+                  onClick={() => openSampleCore(s.id, samples, proprieteId)}
+                  style={{
+                    marginTop: 8,
+                    width: '100%',
+                    borderRadius: 999,
+                    border: 'none',
+                    background: '#2f5d3a',
+                    color: '#f7f2e6',
+                    padding: '6px 8px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '.04em',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Ouvrir la fiche carotte ›
+                </button>
                 {onToggleLink && (
                   <button
                     type="button"
                     onClick={() => onToggleLink(s.id)}
                     style={{
-                      marginTop: 8,
+                      marginTop: 6,
                       width: '100%',
                       borderRadius: 999,
                       border: linked ? '1px solid #c9a227' : '1px solid rgba(47,93,58,.35)',
@@ -176,6 +195,7 @@ export const SoilSamplesLayer: React.FC<Props> = ({
                     {linked ? 'Détacher de l’ouvrage' : 'Relier à l’ouvrage sélectionné'}
                   </button>
                 )}
+
                 {draggable && (
                   <p style={{ margin: '6px 0 0', fontSize: 10, fontStyle: 'italic', opacity: 0.55 }}>
                     Glissez la carotte pour la repositionner — l’étape « J’analyse » suit.
