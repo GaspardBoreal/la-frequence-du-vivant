@@ -104,8 +104,11 @@ Propriété : ${pageState?.label ?? "(non fournie)"} — onglet : ${pageState?.a
 ${contextJson}
 \`\`\`
 > Ce sont les SEULES données dont tu disposes. Toute affirmation doit s'y rattacher.`
-      : `\n\n## AUCUN CONTEXTE ACTIVÉ
-L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le à ouvrir la **Console de contextes** (trombone 📎) pour activer les données utiles (vivant, sol, ouvrage, portrait du site).`;
+      : pageState?.filters?.ouvrageCadre
+        ? `\n\n## OUVRAGE CADRÉ, MAIS AUCUNE DONNÉE DISPONIBLE
+Un ouvrage est cadré (rayon ${pageState?.filters?.rayonEcouteM ?? "?"} m) mais aucun contexte n'a pu être transmis. Invite l'utilisateur à compléter le diagnostic (sol, vivant) ou à activer un contexte dans la **Console de contextes** (trombone 📎).`
+        : `\n\n## AUCUN CONTEXTE ACTIVÉ
+L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le à sélectionner un ouvrage dans l'Atelier puis à cliquer sur **« Cadrer l'IA sur cet ouvrage »**, ou à ouvrir la **Console de contextes** (trombone 📎) pour activer les données utiles (vivant, sol, ouvrage, portrait du site).`;
 
     let systemContent = SYSTEM_PROMPT + contextBlock;
     if (voiceMode) systemContent += VOICE_MODE_ADDENDUM;

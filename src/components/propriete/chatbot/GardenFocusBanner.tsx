@@ -4,17 +4,31 @@ import { useProprieteChatFocus, proprieteChatFocus } from './proprieteChatFocus'
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { FOCUS_RADII } from './ouvragePrompts';
+import type { ContextProvider } from '@/hooks/useChatPageContext';
+import { formatBytes } from '@/lib/chatContextCost';
 
 /**
  * Bandeau de cadrage affiché en tête du chat : l'utilisateur voit d'un coup
- * d'œil sur quoi l'IA est braquée et peut revenir à la propriété entière.
+ * d'œil sur quoi l'IA est braquée, quels contextes partent réellement au
+ * modèle, et peut revenir à la propriété entière.
  */
-export function GardenFocusBanner({ proprieteId }: { proprieteId?: string }) {
+export function GardenFocusBanner({
+  proprieteId,
+  activeProviders = [],
+}: {
+  proprieteId?: string;
+  activeProviders?: ContextProvider[];
+}) {
   const focus = useProprieteChatFocus();
   const { objets } = useProprieteObjets(proprieteId);
   const objet = React.useMemo(
     () => (focus.objetId ? (objets ?? []).find((o) => o.id === focus.objetId) ?? null : null),
     [objets, focus.objetId],
+  );
+
+  const totalBytes = React.useMemo(
+    () => activeProviders.reduce((s, p) => s + p.bytes, 0),
+    [activeProviders],
   );
 
   if (!objet) return null;
@@ -49,9 +63,26 @@ export function GardenFocusBanner({ proprieteId }: { proprieteId?: string }) {
           <X className="h-3 w-3" />
         </button>
       </span>
-      <span className="flex w-full items-center gap-1 text-[9.5px] opacity-60">
-        <Leaf className="h-2.5 w-2.5" /> Le rayon d’écoute filtre les observations transmises avec le contexte 🏗️.
-      </span>
+
+      {activeProviders.length > 0 ? (
+        <span className="flex w-full flex-wrap items-center gap-1 text-[9.5px]">
+          <span className="opacity-60">Transmis :</span>
+          {activeProviders.map((p) => (
+            <span
+              key={p.id}
+              className="rounded-full border border-[hsl(var(--ds-gold))]/40 px-1.5 py-[1px]"
+            >
+              {p.emoji} {p.label}
+            </span>
+          ))}
+          <span className="opacity-60">— {formatBytes(totalBytes)}</span>
+          <span className="opacity-45">· ajustable dans la Console 📎</span>
+        </span>
+      ) : (
+        <span className="flex w-full items-center gap-1 text-[9.5px] opacity-60">
+          <Leaf className="h-2.5 w-2.5" /> Aucun contexte disponible pour cet ouvrage — ouvrez la Console 📎.
+        </span>
+      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ChatBot } from '@/components/chatbot/ChatBot';
-import { chatPageContext } from '@/hooks/useChatPageContext';
+import { chatPageContext, contextSliceKey } from '@/hooks/useChatPageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProprieteChatProviders } from '@/hooks/propriete/useProprieteChatProviders';
 import GardenFocusBanner from './GardenFocusBanner';
+import { useProprieteChatFocus, FOCUS_AUTO_CONTEXT_IDS } from './proprieteChatFocus';
 
 
 interface Props {
@@ -14,11 +15,14 @@ interface Props {
 /**
  * IA de jardin — chatbot factorisé monté dans l'écosystème Propriété.
  * Les contextes (vivant, sol, ouvrages, portrait…) sont proposés dans la
- * Console de contextes et ne partent au modèle que si l'utilisateur les active.
+ * Console de contextes. Quand un ouvrage est cadré depuis l'Atelier, les
+ * contextes essentiels sont activés automatiquement (l'utilisateur garde la
+ * main pour les désactiver).
  */
 export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
   const isMobile = useIsMobile();
   const { providers, providersTitle } = useProprieteChatProviders(proprieteId);
+  const focus = useProprieteChatFocus();
 
   useEffect(() => {
     if (!proprieteId || providers.length === 0) {
@@ -28,6 +32,33 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
     chatPageContext.setAvailableAttachments({ providers, providersTitle });
     return () => chatPageContext.setAvailableAttachments(null);
   }, [proprieteId, providers, providersTitle]);
+
+  /** Contextes réellement transmis quand un ouvrage est cadré. */
+  const autoProviders = useMemo(
+    () =>
+      focus.objetId
+        ? providers.filter((p) => (FOCUS_AUTO_CONTEXT_IDS as readonly string[]).includes(p.id))
+        : [],
+    [providers, focus.objetId],
+  );
+
+  // Auto-activation : republie les slices à chaque changement d'ouvrage /
+  // rayon (les payloads sont recalculés au périmètre courant).
+  useEffect(() => {
+    if (!proprieteId) return;
+    if (autoProviders.length === 0) return;
+    autoProviders.forEach((p) => chatPageContext.setVisibleSlice(contextSliceKey(p.id), p.payload));
+    chatPageContext.setPageState({
+      filters: {
+        ouvrageCadre: true,
+        rayonEcouteM: focus.radiusM,
+      },
+    });
+    return () => {
+      autoProviders.forEach((p) => chatPageContext.setVisibleSlice(contextSliceKey(p.id), undefined));
+      chatPageContext.setPageState({ filters: { ouvrageCadre: false, rayonEcouteM: null } });
+    };
+  }, [proprieteId, autoProviders, focus.radiusM]);
 
   if (!proprieteId) return null;
 
@@ -42,8 +73,7 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
       hideFab={isMobile}
       fabId={`ia-jardin-${proprieteId}`}
       fabLabel="IA de Jardin"
-      focusBanner={<GardenFocusBanner proprieteId={proprieteId} />}
+      focusBanner={<GardenFocusBanner proprieteId={proprieteId} activeProviders={autoProviders} />}
     />
   );
 }
-
