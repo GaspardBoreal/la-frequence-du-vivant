@@ -12,6 +12,8 @@ import {
   centroidOfParcelles,
 } from '@/hooks/propriete/usePropertyParcelles';
 import { openSampleCore } from '../sample/sampleDrawerStore';
+import { strataState } from '../sample/strataGlyphs';
+import { StrataSeal, StrataCompletionLine } from '../sample/StrataSeal';
 
 
 const SAVED_STYLE: L.PathOptions = {
