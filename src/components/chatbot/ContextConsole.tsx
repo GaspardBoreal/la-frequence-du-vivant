@@ -92,7 +92,9 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[1300] flex items-end sm:items-center justify-center bg-background/70 backdrop-blur-sm p-0 sm:p-4"
+          style={{ zIndex: CHAT_Z_CONSOLE() }}
+          className="fixed inset-0 flex items-end sm:items-center justify-center bg-background/70 backdrop-blur-sm p-0 sm:p-4"
+
           onClick={onClose}
         >
           <motion.div
