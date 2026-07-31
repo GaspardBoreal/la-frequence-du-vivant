@@ -301,30 +301,12 @@ export const ZonesMapBlock: React.FC<Props> = ({
           />
         )}
 
-        <FreehandLayer
-          active={drawing}
-          color={ZONE_COLORS[zones.length % ZONE_COLORS.length]}
-          onFinish={handleFinish}
-        />
+        {showSoil && <SoilSamplesLayer samples={soilSamples} />}
       </RichMap>
 
       <ZoneTransformBar api={transform} color={transformColor} />
 
-      {drawing && (
-        <div className="absolute inset-x-0 top-0 z-[500] pointer-events-none flex justify-center p-3">
-          <div className="pointer-events-auto rounded-full bg-[hsl(var(--ds-forest-deep))]/95 text-[hsl(var(--ds-cream))] px-4 py-2 text-xs flex items-center gap-3 shadow-lg backdrop-blur">
-            <span className="font-semibold tracking-wide">
-              Tracez le contour d’un doigt (ou souris maintenue) — relâchez pour fermer.
-            </span>
-            <button
-              onClick={() => setDrawing(false)}
-              className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 hover:bg-white/25"
-            >
-              <X className="w-3 h-3" /> Annuler
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 
