@@ -204,6 +204,19 @@ export const ObjectInspector: React.FC<Props> = ({
           />
         </label>
 
+        {soilSamples && soilSamples.length > 0 && (
+          <SoilLinkBlock
+            outilKey={objet.outil_key}
+            geometry={objet.geometry}
+            meta={objet.meta}
+            samples={soilSamples}
+            readOnly={readOnly}
+            onChange={(meta) => onPatch({ meta })}
+          />
+        )}
+
+
+
         {isChromaticTool(objet.outil_key) && (
           <div>
             <span className="mb-1 block text-[10px] uppercase tracking-wider opacity-55">
