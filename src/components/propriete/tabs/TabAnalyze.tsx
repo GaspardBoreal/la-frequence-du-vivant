@@ -289,7 +289,9 @@ export const TabAnalyze: React.FC<{
           }
         />
         <AnalyzeSummary
+          proprieteId={proprieteId}
           state={state}
+
           completedAt={completedAt}
           propertyName={propertyName}
           parcelles={parcelles}
