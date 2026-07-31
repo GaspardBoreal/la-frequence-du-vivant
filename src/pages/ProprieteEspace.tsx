@@ -377,7 +377,8 @@ const PropTabs: React.FC<{
             className="w-screen ml-[50%] -translate-x-1/2 bg-background border-b border-border shadow-md"
             style={{ paddingTop: 'env(safe-area-inset-top)' }}
           >
-          <TabsList className="mx-auto max-w-5xl w-full flex overflow-x-auto justify-start md:justify-center bg-transparent rounded-none h-auto py-1.5">
+          <div className="mx-auto max-w-5xl w-full flex items-center gap-2 pr-2">
+          <TabsList className="flex-1 flex overflow-x-auto justify-start md:justify-center bg-transparent rounded-none h-auto py-1.5">
             <TabsTrigger value="portrait">Portrait</TabsTrigger>
             <span aria-hidden className="mx-2 self-center h-4 w-px shrink-0 rounded-full bg-gradient-to-b from-transparent via-primary/35 to-transparent" />
             <TabsTrigger value="observe">J'observe</TabsTrigger>
@@ -387,7 +388,18 @@ const PropTabs: React.FC<{
             <span aria-hidden className="mx-2 self-center h-4 w-px shrink-0 rounded-full bg-gradient-to-b from-transparent via-primary/35 to-transparent" />
             <TabsTrigger value="palette">Palette végétale</TabsTrigger>
           </TabsList>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event('frequence:open-chatbot'))}
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-gold))]/60 bg-[hsl(var(--ds-forest-deep))] px-3 py-1.5 text-[11px] font-medium text-[hsl(var(--ds-cream))] shadow-sm hover:brightness-110 transition"
+            aria-label="Ouvrir l'IA de Jardin"
+          >
+            <Leaf className="h-3.5 w-3.5 text-[hsl(var(--ds-gold))]" />
+            <span className="hidden sm:inline">IA de Jardin</span>
+          </button>
           </div>
+          </div>
+
         </div>
 
 
