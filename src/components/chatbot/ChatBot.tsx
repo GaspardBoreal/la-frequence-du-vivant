@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle,
@@ -38,8 +38,11 @@ import { ChatSuggestions } from './ChatSuggestions';
 import { useChatExport } from './useChatExport';
 import { ChatExportDrawer } from './ChatExportDrawer';
 import { chatConfig, type ChatContext } from './chatConfig';
-import { chatPageContext, useChatPageContextStore, SPECIES_POOL_SLICE_KEY, type ChatEntity } from '@/hooks/useChatPageContext';
-import { Leaf } from 'lucide-react';
+import { chatPageContext, useChatPageContextStore, SPECIES_POOL_SLICE_KEY, CONTEXT_SLICE_PREFIX, contextSliceKey, type ChatEntity } from '@/hooks/useChatPageContext';
+import { ContextConsole } from './ContextConsole';
+import { payloadBytes, formatBytes, ecoVerdict, ECO_COLORS } from '@/lib/chatContextCost';
+import { Leaf, Gauge } from 'lucide-react';
+
 import DraggableFab from '@/components/ui/DraggableFab';
 
 interface ChatBotProps {
@@ -79,6 +82,8 @@ export function ChatBot({
   const [isExpanded, setIsExpanded] = useState(false);
   const [input, setInput] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(false);
+
   const [voiceMode, setVoiceMode] = useState(false);
   const [interruptBanner, setInterruptBanner] = useState(false);
   const [originContext, setOriginContext] = useState<{ speciesLabel?: string } | null>(null);
@@ -304,15 +309,50 @@ export function ChatBot({
     chatPageContext.setVisibleSlice(SPECIES_POOL_SLICE_KEY, undefined);
   }, []);
 
+  // ── Console de contextes (IA frugale : rien n'est envoyé sans activation) ──
+  const contextProviders = availableAttachments?.providers ?? [];
+  const hasContextConsole = contextProviders.length > 0;
+  const activeContextKeys = useMemo(
+    () =>
+      Object.keys((focalState?.visibleData as Record<string, unknown>) ?? {}).filter((k) =>
+        k.startsWith(CONTEXT_SLICE_PREFIX),
+      ),
+    [focalState?.visibleData],
+  );
+  const activeContextBytes = useMemo(
+    () =>
+      contextProviders.reduce(
+        (sum, p) => (activeContextKeys.includes(contextSliceKey(p.id)) ? sum + p.bytes : sum),
+        0,
+      ),
+    [contextProviders, activeContextKeys],
+  );
+  const attachedBaseBytes = useMemo(
+    () =>
+      (speciesPoolAttached && speciesPoolAvailable ? payloadBytes(speciesPoolAvailable.items) : 0) +
+      (attachedDoc ? payloadBytes(attachedDoc.text) : 0),
+    [speciesPoolAttached, speciesPoolAvailable, attachedDoc],
+  );
+  const totalContextBytes = activeContextBytes + attachedBaseBytes;
+  const contextVerdict = ecoVerdict(totalContextBytes);
+
+  const clearContexts = useCallback(() => {
+    for (const p of contextProviders) {
+      chatPageContext.setVisibleSlice(contextSliceKey(p.id), undefined);
+    }
+  }, [contextProviders]);
+
   const handleReset = () => {
     stopSpeaking();
     stopListening();
     setInput('');
     removeDocument();
     detachSpeciesPool();
+    clearContexts();
     reset();
     setInterruptBanner(false);
   };
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -586,7 +626,7 @@ export function ChatBot({
                       className="hidden"
                     />
 
-                    {(attachedDoc || isExtracting || docError || speciesPoolAttached) && (
+                    {(attachedDoc || isExtracting || docError || speciesPoolAttached || activeContextKeys.length > 0) && (
                       <div className="mb-2 px-1 flex flex-wrap gap-1.5">
                         {isExtracting && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -627,6 +667,20 @@ export function ChatBot({
                             </button>
                           </div>
                         )}
+                        {activeContextKeys.length > 0 && (
+                          <button
+                            onClick={() => setConsoleOpen(true)}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs border transition-colors hover:brightness-110 ${ECO_COLORS[contextVerdict.score].bg} ${ECO_COLORS[contextVerdict.score].ring} ${ECO_COLORS[contextVerdict.score].text}`}
+                            title="Ouvrir la console de contextes"
+                          >
+                            <Gauge className="h-3.5 w-3.5 shrink-0" />
+                            <span className="tabular-nums">
+                              {activeContextKeys.length} contexte{activeContextKeys.length > 1 ? 's' : ''} ·{' '}
+                              {formatBytes(totalContextBytes)}
+                            </span>
+                          </button>
+                        )}
+
                       </div>
                     )}
 
@@ -653,7 +707,7 @@ export function ChatBot({
 
                     <div className="flex items-center gap-2">
                       {!isLoading && (
-                        speciesPoolAvailable ? (
+                        speciesPoolAvailable || hasContextConsole ? (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -676,14 +730,29 @@ export function ChatBot({
                                 <FileText className="h-4 w-4 mr-2" />
                                 <span className="flex-1">Un document (PDF, TXT, CSV, MD)</span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onSelect={(e) => { e.preventDefault(); attachSpeciesPool(); }}
-                                disabled={speciesPoolAttached}
-                              >
-                                <Leaf className="h-4 w-4 mr-2 text-secondary" />
-                                <span className="flex-1">🌿 {speciesPoolAvailable.label}</span>
-                                {speciesPoolAttached && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
-                              </DropdownMenuItem>
+                              {hasContextConsole && (
+                                <DropdownMenuItem
+                                  onSelect={(e) => { e.preventDefault(); setConsoleOpen(true); }}
+                                >
+                                  <Gauge className="h-4 w-4 mr-2 text-primary" />
+                                  <span className="flex-1">Console de contextes</span>
+                                  {activeContextKeys.length > 0 && (
+                                    <span className="ml-2 text-[10px] tabular-nums text-primary">
+                                      {activeContextKeys.length}
+                                    </span>
+                                  )}
+                                </DropdownMenuItem>
+                              )}
+                              {speciesPoolAvailable && (
+                                <DropdownMenuItem
+                                  onSelect={(e) => { e.preventDefault(); attachSpeciesPool(); }}
+                                  disabled={speciesPoolAttached}
+                                >
+                                  <Leaf className="h-4 w-4 mr-2 text-secondary" />
+                                  <span className="flex-1">🌿 {speciesPoolAvailable.label}</span>
+                                  {speciesPoolAttached && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         ) : (
@@ -699,6 +768,7 @@ export function ChatBot({
                           </Button>
                         )
                       )}
+
                       <input
                         ref={inputRef}
                         type="text"
@@ -754,6 +824,18 @@ export function ChatBot({
       </AnimatePresence>
 
       <ChatExportDrawer open={drawerOpen} onOpenChange={setDrawerOpen} messages={messages} />
+
+      {hasContextConsole && (
+        <ContextConsole
+          open={consoleOpen}
+          onClose={() => setConsoleOpen(false)}
+          title={availableAttachments?.providersTitle}
+          providers={contextProviders}
+          activeKeys={activeContextKeys}
+          baseBytes={attachedBaseBytes}
+        />
+      )}
+
     </>
   );
 }

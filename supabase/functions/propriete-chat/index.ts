@@ -1,0 +1,160 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const SYSTEM_PROMPT = `Tu es l'**IA de Jardin** de La Fréquence du Vivant : une conseillère en écologie du paysage, sobre et frugale, qui accompagne un propriétaire ou un paysagiste dans le diagnostic et la composition de son site.
+
+## MÉTHODE
+Tu raisonnes selon la méthode en 5 étapes : J'observe le site · J'analyse le sol · J'identifie la flore en place · Je synthétise · Je compose la palette végétale.
+
+## FRUGALITÉ (principe cardinal)
+- Tu ne reçois QUE les contextes que l'utilisateur a explicitement activés dans la Console de contextes. C'est volontaire : chaque contexte coûte de l'énergie.
+- Si une donnée te manque, dis-le en une phrase et indique **quel contexte activer** (ex : « active le contexte 🪨 *Lecture du sol* »). N'invente jamais la donnée manquante.
+- Réponses denses et utiles : va droit au conseil, pas de préambule.
+
+## RÈGLES STRICTES
+- Réponds en français, en markdown structuré (titres courts, listes, gras).
+- **N'invente JAMAIS un nom d'espèce, une mesure de sol, un pH, une surface ou un ouvrage** qui n'apparaît pas littéralement dans les contextes fournis.
+- Quand tu proposes une palette végétale, justifie chaque choix par une donnée du contexte (texture, pH, humidité, exposition, cortège bio-indicateur, contrainte d'ouvrage).
+- Privilégie les espèces indigènes et les fonctions écologiques (mellifère, fixatrice d'azote, nourricière, refuge). Signale les plantations à éviter au regard du sol lu.
+- Quand un ouvrage est cadré (contexte 🏗️), tes conseils portent sur cet ouvrage et son rayon d'écoute : ne généralise pas à toute la propriété sans le dire.
+- Tu es en lecture seule : tu proposes, tu ne modifies rien. Termine par une proposition exploitable (liste, tableau) que l'utilisateur peut exporter.`;
+
+const VOICE_MODE_ADDENDUM = `
+
+MODE VOCAL : réponses courtes et naturelles (2-3 phrases max), sans markdown.`;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized — missing token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !anonKey) throw new Error("Supabase env vars missing");
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized — invalid session" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { messages, voiceMode, entity, pageState } = await req.json();
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return new Response(JSON.stringify({ error: "Invalid messages payload" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Le chat n'est disponible que sur une propriété à laquelle l'utilisateur a accès.
+    const proprieteId = typeof entity?.id === "string" ? entity.id : null;
+    if (!proprieteId) {
+      return new Response(JSON.stringify({ error: "Propriété manquante" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: canAccess, error: accessErr } = await userClient.rpc("can_access_propriete", {
+      _propriete_id: proprieteId,
+    });
+    if (accessErr || !canAccess) {
+      return new Response(JSON.stringify({ error: "Forbidden — accès propriété requis" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Frugalité : on ne transmet que les contextes activés par l'utilisateur.
+    const visible = (pageState?.visibleData ?? {}) as Record<string, unknown>;
+    const activeKeys = Object.keys(visible);
+    const contextJson = activeKeys.length > 0 ? JSON.stringify(visible, null, 2) : null;
+    const bytes = contextJson ? contextJson.length : 0;
+
+    console.log("[propriete-chat] frugal context:", {
+      proprieteId,
+      activeKeys,
+      bytes,
+      activeTab: pageState?.activeTab,
+    });
+
+    const contextBlock = contextJson
+      ? `\n\n## CONTEXTES ACTIVÉS PAR L'UTILISATEUR (${activeKeys.length} · ${bytes} octets)
+Propriété : ${pageState?.label ?? "(non fournie)"} — onglet : ${pageState?.activeTab ?? "(non fourni)"}
+\`\`\`json
+${contextJson}
+\`\`\`
+> Ce sont les SEULES données dont tu disposes. Toute affirmation doit s'y rattacher.`
+      : `\n\n## AUCUN CONTEXTE ACTIVÉ
+L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le à ouvrir la **Console de contextes** (trombone 📎) pour activer les données utiles (vivant, sol, ouvrage, portrait du site).`;
+
+    let systemContent = SYSTEM_PROMPT + contextBlock;
+    if (voiceMode) systemContent += VOICE_MODE_ADDENDUM;
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3.6-flash",
+        messages: [{ role: "system", content: systemContent }, ...messages],
+        stream: true,
+      }),
+    });
+
+    if (!aiResp.ok) {
+      if (aiResp.status === 429) {
+        return new Response(JSON.stringify({ error: "Trop de requêtes, réessayez dans un instant." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResp.status === 402) {
+        return new Response(JSON.stringify({ error: "Crédits IA épuisés." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const t = await aiResp.text();
+      console.error("[propriete-chat] AI gateway error:", aiResp.status, t);
+      return new Response(JSON.stringify({ error: "Erreur du service IA" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(aiResp.body, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    });
+  } catch (e) {
+    console.error("[propriete-chat] error:", e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

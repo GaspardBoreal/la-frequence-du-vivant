@@ -26,7 +26,14 @@ const ENTITY_SUGGESTIONS: Record<ChatEntity['type'], { emoji: string; text: stri
     { emoji: '🌿', text: 'Biodiversité agrégée de l\'exploration' },
     { emoji: '🌐', text: 'Statut de publication et visibilité' },
   ],
+  propriete: [
+    { emoji: '🌱', text: 'Propose une palette végétale pour cet ouvrage' },
+    { emoji: '🧪', text: 'Que disent les analyses de sol reliées ?' },
+    { emoji: '🌿', text: 'Quelles espèces indigènes privilégier ici ?' },
+    { emoji: '🏗️', text: 'Quelles précautions pour cet aménagement ?' },
+  ],
 };
+
 
 export function ChatSuggestions({ onSelect, context = 'dashboard' }: ChatSuggestionsProps) {
   const focalEntity = useChatPageContextStore((s) => s.entity);

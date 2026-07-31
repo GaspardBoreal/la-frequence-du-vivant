@@ -1,4 +1,4 @@
-import { LayoutDashboard, CalendarHeart, Users, Map, FileDown, Wrench, Compass } from 'lucide-react';
+import { LayoutDashboard, CalendarHeart, Users, Map, FileDown, Wrench, Compass, TreePine } from 'lucide-react';
 
 // ─── CHAT CONFIG — La Fréquence du Vivant (Admin) ───────────────
 // ────────────────────────────────────────────────────────────────
@@ -10,7 +10,8 @@ export type ChatContext =
   | 'marches'
   | 'exportations'
   | 'outils'
-  | 'exploration';
+  | 'exploration'
+  | 'propriete';
 
 export interface ChatConfig {
   assistantName: string;
@@ -73,6 +74,7 @@ export const chatConfig: ChatConfig = {
     exportations: 'Exportations',
     outils: 'Outils',
     exploration: 'Exploration',
+    propriete: 'Propriété',
   },
   contextIcons: {
     dashboard: LayoutDashboard,
@@ -82,6 +84,7 @@ export const chatConfig: ChatConfig = {
     exportations: FileDown,
     outils: Wrench,
     exploration: Compass,
+    propriete: TreePine,
   },
 
   suggestions: {
@@ -120,6 +123,12 @@ export const chatConfig: ChatConfig = {
       { emoji: '🦉', text: 'Quelle biodiversité observée ici ?' },
       { emoji: '📍', text: 'Quels points de marche composent ce parcours ?' },
       { emoji: '🎙️', text: 'Aide-moi à préparer une restitution publique' },
+    ],
+    propriete: [
+      { emoji: '🌱', text: 'Propose une palette végétale pour cet ouvrage' },
+      { emoji: '🧪', text: 'Que disent les analyses de sol reliées ?' },
+      { emoji: '🍎', text: 'Une approche jardin nourricier est-elle possible ici ?' },
+      { emoji: '🏗️', text: 'Quelles précautions pour cet aménagement ?' },
     ],
   },
 
