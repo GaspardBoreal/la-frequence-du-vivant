@@ -214,10 +214,43 @@ export function useProprieteChatProviders(proprieteId?: string): {
           label: `Ouvrage : ${dossier.ouvrage.nom || dossier.ouvrage.typeLabel}`,
           hint: 'Dossier complet (mesures, sol relié, contraintes)',
           recommended: true,
-          payload: dossier,
+          payload: {
+            ...dossier,
+            especesRetenuesPalette: dossier.especesRetenues,
+            noteEspeces:
+              "« especesRetenuesPalette » = palette de plantation choisie par le propriétaire (vide = aucun choix saisi). Ne JAMAIS la confondre avec les espèces observées sur le terrain : celles-ci sont dans le contexte 🌱 « Espèces dans l'ouvrage ».",
+          },
+        }),
+      );
+
+      // Le cœur de la question : ce qui pousse et vit DANS le tracé.
+      list.push(
+        provider({
+          id: 'ouvrage.especes',
+          group: 'Ouvrages',
+          emoji: '🌱',
+          label: "Espèces dans l'ouvrage",
+          hint: `${dedansRows.length} dans le tracé · ${lisiereRows.length} en lisière · ${voisinageRows.length} autour`,
+          recommended: true,
+          payload: {
+            ouvrage: focusObjet.nom || dossier.ouvrage.typeLabel,
+            surfaceM2: round(measureFor('m2', focusObjet.geometry)),
+            rayonEcouteM: focus.radiusM,
+            methode:
+              "Appartenance géométrique au tracé (ray casting) ; le rayon d'écoute est mesuré depuis le BORD de l'ouvrage, pas depuis son centre.",
+            // Liste JAMAIS tronquée : c'est la donnée que l'IA doit pouvoir énumérer.
+            dedans: dedansRows.map((s) => ({ n: s.n, c: s.c, k: s.k, obs: s.obs, vu: s.vu })),
+            lisiere: lisiereRows.map((s) => ({ n: s.n, c: s.c, obs: s.obs })),
+            voisinage: {
+              especes: voisinageRows.length,
+              observations: scope?.voisinage.length ?? 0,
+              top: voisinageRows.slice(0, 15).map((s) => ({ n: s.n, c: s.c, obs: s.obs })),
+            },
+          },
         }),
       );
     }
+
 
     const allObjets = objets ?? [];
     if (allObjets.length > 0) {
