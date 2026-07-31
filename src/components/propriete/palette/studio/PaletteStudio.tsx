@@ -72,6 +72,10 @@ import ObjetTransformBar from './ObjetTransformBar';
 import { useObjetTransform } from '@/hooks/propriete/useObjetTransform';
 import ZoneInspector from './ZoneInspector';
 import { MAP_CHROME_SIDE_CENTER } from '@/components/maps/mapChrome';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
+import { openGardenAi, useProprieteChatFocus } from '@/components/propriete/chatbot/proprieteChatFocus';
+import { Circle as LeafletCircle } from 'react-leaflet';
+
 
 type PanelTab = 'calques' | 'outils' | 'vivant' | 'bilan';
 
