@@ -136,7 +136,7 @@ export const AnalyzeSummary: React.FC<Props> = ({
   const phClass = r.ph.dominant ? PH_CLASS_MAP[r.ph.dominant] : null;
   const lifeClass = r.life.dominant ? LIFE_CLASS_MAP[r.life.dominant] : null;
 
-  const samplesTable = <SamplesRegisterTable reading={r} printOnly={printOnly} />;
+  const samplesTable = <SamplesRegisterTable reading={r} printOnly={printOnly} proprieteId={proprieteId} />;
 
 
   // En impression, aucune animation d'entrée : le portail est `display:none`
