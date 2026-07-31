@@ -75,6 +75,8 @@ const readingLines = (s: SoilSample): Array<[string, string]> => {
 
 interface Props {
   samples: SoilSample[];
+  /** Propriété courante — permet de charger les preuves dans la fiche carotte. */
+  proprieteId?: string;
   /** Prélèvements reliés à l'ouvrage en cours d'édition (halo doré). */
   linkedIds?: string[];
   /** Atténue les prélèvements non reliés quand un ouvrage est sélectionné. */
@@ -91,12 +93,14 @@ interface Props {
  */
 export const SoilSamplesLayer: React.FC<Props> = ({
   samples,
+  proprieteId,
   linkedIds = [],
   focusLinked,
   draggable,
   onMove,
   onToggleLink,
 }) => {
+
   const placed = samples.filter((s) => s.lat != null && s.lng != null);
   if (!placed.length) return null;
 
