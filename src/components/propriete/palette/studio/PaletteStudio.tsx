@@ -659,6 +659,21 @@ export const PaletteStudio: React.FC<Props> = ({
             height="100%"
           >
             <MapViewReporter onChange={onViewChange} />
+            {aiFocusCenter && (
+              <LeafletCircle
+                center={aiFocusCenter as any}
+                radius={aiFocus.radiusM}
+                pathOptions={{
+                  color: 'hsl(var(--ds-gold))',
+                  weight: 1.6,
+                  dashArray: '5 5',
+                  fillColor: 'hsl(var(--ds-gold))',
+                  fillOpacity: 0.07,
+                  interactive: false,
+                }}
+              />
+            )}
+
             {zoneTransform.zone && (
               <ZoneTransformLayer
                 ring={zoneTransform.ring}
