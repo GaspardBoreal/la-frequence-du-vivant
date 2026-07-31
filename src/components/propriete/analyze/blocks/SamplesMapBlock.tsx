@@ -207,9 +207,11 @@ export const SamplesMapBlock: React.FC<{
                   const ll = (e.target as L.Marker).getLatLng();
                   onUpdate(s.id, { lat: ll.lat, lng: ll.lng });
                 },
+                click: () => openSampleCore(s.id, samples, proprieteId),
                 mouseover: () => setHoveredId(s.id),
                 mouseout: () => setHoveredId(null),
               }}
+
             />
           ) : null,
         )}
