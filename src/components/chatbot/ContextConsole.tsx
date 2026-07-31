@@ -92,7 +92,7 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          style={{ zIndex: CHAT_Z_CONSOLE() }}
+          style={{ zIndex: fullscreenOpen ? CHAT_Z.aboveFullscreen + 100 : 1300 }}
           className="fixed inset-0 flex items-end sm:items-center justify-center bg-background/70 backdrop-blur-sm p-0 sm:p-4"
 
           onClick={onClose}
