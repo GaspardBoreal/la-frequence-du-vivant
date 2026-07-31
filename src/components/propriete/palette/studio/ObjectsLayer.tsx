@@ -269,9 +269,14 @@ export const ObjectsLayer: React.FC<Props> = ({
         const pastille =
           anchor && photoCount > 0 ? (
             <Marker
-              key={`${o.id}-photos`}
+              key={`${o.id}-photos-${compact ? 'dot' : sideById[o.id] ?? 'left'}${selected ? '-on' : ''}`}
               position={anchor as any}
-              icon={photoPastilleIcon(photoCount, label, photoThumbs?.[o.id])}
+              icon={photoPastilleIcon(photoCount, label, photoThumbs?.[o.id], {
+                side: sideById[o.id] ?? 'left',
+                compact,
+                active: selected,
+              })}
+
               zIndexOffset={800}
               interactive
               keyboard={false}
