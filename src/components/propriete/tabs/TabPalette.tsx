@@ -15,6 +15,7 @@ import {
   Sprout,
   BookOpen,
   Gauge,
+  ShieldCheck,
 } from 'lucide-react';
 
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
@@ -579,6 +580,15 @@ export const TabPalette: React.FC<Props> = ({
           <span className="italic"> Filtrer · Répartir · Assumer.</span>
         </>
       }
+      meta={`${proprieteNom ?? ''}${proprieteVille ? ` · ${proprieteVille}` : ''}`}
+      seal={
+        palette.completedAt ? (
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-gold))]/60 bg-[hsl(var(--ds-forest))]/10 px-3 py-1 text-xs font-semibold text-[hsl(var(--ds-forest-deep))]">
+            <ShieldCheck className="w-3.5 h-3.5" /> Scellée le{' '}
+            {new Date(palette.completedAt).toLocaleDateString('fr-FR')}
+          </div>
+        ) : null
+      }
     />
   );
 
@@ -600,6 +610,7 @@ export const TabPalette: React.FC<Props> = ({
           onEditBlock={scrollToBlock}
           onReopenAll={() => setMode('edit')}
           onPrint={() => setPrintOpen(true)}
+          hideCartoucheOnScreen
         />
         {printDialogAndPortal}
       </div>
