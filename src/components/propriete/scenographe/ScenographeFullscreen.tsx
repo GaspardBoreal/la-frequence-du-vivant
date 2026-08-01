@@ -14,7 +14,8 @@ import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
 import { useOuvrageScenarios, type Planting } from '@/hooks/propriete/useOuvrageScenarios';
 import { useProprieteScenarios } from '@/hooks/propriete/useProprieteScenarios';
-import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
+import { useSpeciesThumbs } from '@/hooks/useSpeciesThumb';
+import { resolveSpeciesThumbs } from '@/hooks/useSpeciesThumb';
 import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
 import OuvragePhotoPastilleLayer from '@/components/propriete/palette/studio/photos/OuvragePhotoPastilleLayer';
 import OuvragePhotoViewer from '@/components/propriete/palette/studio/photos/OuvragePhotoViewer';
@@ -324,40 +325,66 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     [inPlaceZoned],
   );
 
-  const inPlaceEntries = React.useMemo<HerbierEntry[]>(() => {
+  const inPlaceRaw = React.useMemo<HerbierEntry[]>(() => {
     const out = [...inPlaceZoned.dedans];
     if (rigour !== 'strict') out.push(...inPlaceZoned.lisiere);
     if (rigour === 'voisinage') out.push(...inPlaceZoned.voisinage);
     return out;
   }, [inPlaceZoned, rigour]);
 
-
-
   const proposalNames = React.useMemo(
     () => proposals.map((p) => p.scientificName).filter(Boolean),
     [proposals],
   );
-  const { map: thumbs } = useInatThumbs(proposalNames);
+
+  /**
+   * Vignettes d'espèces : cache serveur (iNaturalist → GBIF → manuel) plutôt
+   * qu'un appel iNaturalist live depuis le navigateur. Une seule source pour
+   * l'écran comme pour l'impression.
+   */
+  const thumbNames = React.useMemo(
+    () => [...inPlaceRaw.map((e) => e.scientificName), ...proposalNames],
+    [inPlaceRaw, proposalNames],
+  );
+  const { data: thumbMap } = useSpeciesThumbs(thumbNames);
+  const thumbFor = React.useCallback(
+    (sci: string) => thumbMap?.get((sci || '').trim().toLowerCase()) ?? null,
+    [thumbMap],
+  );
+
+  const inPlaceEntries = React.useMemo<HerbierEntry[]>(
+    () =>
+      inPlaceRaw.map((e) => {
+        const t = thumbFor(e.scientificName);
+        return {
+          ...e,
+          photoUrl: e.photoUrl || t?.photo_url || null,
+          commonNameFr: e.commonNameFr || t?.common_name_fr || null,
+        };
+      }),
+    [inPlaceRaw, thumbFor],
+  );
 
   const proposedEntries = React.useMemo<HerbierEntry[]>(
     () =>
       proposals.map((p) => {
         const strate: Strate = p.strate || parseStrate(null);
-        const thumb = thumbs.get(p.scientificName);
+        const thumb = thumbFor(p.scientificName);
         return {
           key: `prop:${p.scientificName}`,
           scientificName: p.scientificName,
-          commonNameFr: p.commonNameFr || thumb?.commonName || null,
+          commonNameFr: p.commonNameFr || thumb?.common_name_fr || null,
           strate,
           spreadM: spreadFor(strate, p.heightM ?? null),
           origin: 'proposee' as const,
-          photoUrl: thumb?.photoUrl || null,
+          photoUrl: thumb?.photo_url || null,
           functions: p.functions,
           note: p.note,
         };
       }),
-    [proposals, thumbs],
+    [proposals, thumbFor],
   );
+
 
   const plantings = scen.active?.plantings ?? [];
 
