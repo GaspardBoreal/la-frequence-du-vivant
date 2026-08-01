@@ -52,6 +52,19 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
     });
   }, [providers]);
 
+  // Sélectionner un ouvrage dans le Plateau doit avoir un effet immédiat :
+  // la slice correspondante est posée dès qu'il y a une sélection, et retirée
+  // quand l'utilisateur remet le plateau à zéro.
+  useEffect(() => {
+    const key = contextSliceKey('ouvrages.selection');
+    const p = providers.find((x) => x.id === 'ouvrages.selection');
+    if (focus.selectedObjetIds.length === 0 || !p) {
+      chatPageContext.setVisibleSlice(key, undefined);
+      return;
+    }
+    chatPageContext.setVisibleSlice(key, p.payload);
+  }, [providers, focus.selectedObjetIds]);
+
   /** Contextes réellement transmis quand un ouvrage est cadré. */
   const autoProviders = useMemo(
     () =>
