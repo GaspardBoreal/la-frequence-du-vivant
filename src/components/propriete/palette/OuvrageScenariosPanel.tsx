@@ -62,7 +62,7 @@ export const OuvrageScenariosPanel: React.FC<Props> = ({ proprieteId, objetId, r
                 />
               ) : (
                 <button
-                  onClick={() => openScenographe(objetId)}
+                  onClick={() => openScenographe(objetId, { scenarioId: s.id })}
                   className="min-w-0 flex-1 text-left"
                   title="Ouvrir dans le Scénographe"
                 >
@@ -84,7 +84,7 @@ export const OuvrageScenariosPanel: React.FC<Props> = ({ proprieteId, objetId, r
 
               <span className="flex items-center gap-0.5">
                 <button
-                  onClick={() => openScenographe(objetId)}
+                  onClick={() => openScenographe(objetId, { scenarioId: s.id })}
                   className="rounded-full px-2 py-1 text-[10px] font-medium text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest-deep))]/10"
                 >
                   Ouvrir
