@@ -476,6 +476,21 @@ export const ScenographeFullscreen: React.FC<Props> = ({
         />
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setImmersionOpen(true)}
+            disabled={plantings.length === 0}
+            title={
+              plantings.length === 0
+                ? 'Pose au moins une espèce pour entrer dans la scène'
+                : 'Se projeter dans ce scénario'
+            }
+            className="group relative flex items-center gap-1.5 overflow-hidden rounded-full border border-[#c8a24a]/60 bg-[#c8a24a]/12 px-3 py-1.5 text-[11.5px] font-semibold text-[#f0e3c2] transition hover:bg-[#c8a24a]/25 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            La Chambre du Vivant
+          </button>
+
           <ScenarioTabs
             scenarios={scen.scenarios}
             activeId={scen.activeId}
