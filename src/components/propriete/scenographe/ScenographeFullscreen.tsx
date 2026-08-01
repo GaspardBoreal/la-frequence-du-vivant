@@ -104,6 +104,31 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const { displayNameFor } = useWaypointFrenchNames(waypoints as any);
   const scen = useOuvrageScenarios(proprieteId, objetId);
 
+  /* Carnet photo des ouvrages — même source et même visionneuse que l'Atelier. */
+  const objetPhotos = useObjetPhotos(proprieteId);
+  const [galleryObjetId, setGalleryObjetId] = React.useState<string | null>(null);
+  const [galleryIndex, setGalleryIndex] = React.useState(0);
+  const galleryPhotos = React.useMemo(
+    () => (galleryObjetId ? objetPhotos.byObjet.get(galleryObjetId) ?? [] : []),
+    [galleryObjetId, objetPhotos.byObjet],
+  );
+  const galleryTitle = React.useMemo(() => {
+    const o = (objets || []).find((x: ProprieteObjet) => x.id === galleryObjetId);
+    return o ? o.nom || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage' : '';
+  }, [galleryObjetId, objets]);
+  const photoThumbs = React.useMemo(() => {
+    const m: Record<string, string | undefined> = {};
+    objetPhotos.byObjet.forEach((list, id) => {
+      m[id] = list[0]?.url;
+    });
+    return m;
+  }, [objetPhotos.byObjet]);
+  const openGallery = React.useCallback((id: string) => {
+    setGalleryIndex(0);
+    setGalleryObjetId(id);
+  }, []);
+
+
   /** Rouvrir exactement la variante cliquée dans la bibliothèque. */
   const appliedInitial = React.useRef<string | null>(null);
   React.useEffect(() => {
