@@ -44,7 +44,7 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
   // (sélection d'ouvrages, profondeur de données, rayon d'écoute).
   useEffect(() => {
     const active = new Set(
-      Object.keys((chatPageContext.get().pageState.visibleData as Record<string, unknown>) ?? {}),
+      Object.keys((chatPageContext.getState().pageState.visibleData as Record<string, unknown>) ?? {}),
     );
     providers.forEach((p) => {
       const key = contextSliceKey(p.id);
