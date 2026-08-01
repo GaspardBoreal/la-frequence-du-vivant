@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { GeoJSON, useMap, useMapEvents } from 'react-leaflet';
+import { useMap, useMapEvents } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
 import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import { useProprieteObjets, type ProprieteObjet } from '@/hooks/propriete/usePr
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
 import { useOuvrageScenarios, type Planting } from '@/hooks/propriete/useOuvrageScenarios';
+import { useProprieteScenarios } from '@/hooks/propriete/useProprieteScenarios';
 import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
 import { classifyObservations } from '@/lib/ouvrageScope';
 import { geometryAreaM2, geometryCenter, fmtArea } from '@/components/propriete/palette/studio/geoMetrics';
@@ -23,6 +24,8 @@ import HerbierPanel, { type HerbierEntry } from './HerbierPanel';
 import HerbierScopePicker, { type ScopeMode } from './HerbierScopePicker';
 import PanelResizer from './PanelResizer';
 import PlantingLayer from './PlantingLayer';
+import OuvrageGeometryLayer from './OuvrageGeometryLayer';
+import OuvrageSwitcher from './OuvrageSwitcher';
 import BalanceBar from './BalanceBar';
 import ScenarioTabs from './ScenarioTabs';
 import type { ScenographeProposal } from './scenographeStore';
@@ -72,12 +75,24 @@ interface Props {
  */
 export const ScenographeFullscreen: React.FC<Props> = ({
   proprieteId,
-  objetId,
+  objetId: initialObjetId,
   proposals,
   initialScenarioId,
   onClose,
 }) => {
-  const { objets } = useProprieteObjets(proprieteId);
+  /** L'ouvrage travaillé : modifiable sans quitter le plan. */
+  const [objetId, setObjetId] = React.useState(initialObjetId);
+  React.useEffect(() => setObjetId(initialObjetId), [initialObjetId]);
+
+  const { objets, upsertObjet } = useProprieteObjets(proprieteId);
+  const { scenarios: allScenarios } = useProprieteScenarios(proprieteId);
+  const scenarioCounts = React.useMemo(() => {
+    const m: Record<string, number> = {};
+    allScenarios.forEach((s) => {
+      m[s.objet_id] = (m[s.objet_id] || 0) + 1;
+    });
+    return m;
+  }, [allScenarios]);
   const objet: ProprieteObjet | undefined = React.useMemo(
     () => (objets || []).find((o: ProprieteObjet) => o.id === objetId),
     [objets, objetId],
@@ -96,6 +111,7 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     scen.setActiveId(initialScenarioId);
   }, [initialScenarioId, scen]);
 
+  const [ouvrageCardOpen, setOuvrageCardOpen] = React.useState(false);
   const [growthIdx, setGrowthIdx] = React.useState(1);
   const [armed, setArmed] = React.useState<HerbierEntry | null>(null);
   const [selected, setSelected] = React.useState<string | null>(null);
@@ -131,6 +147,19 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [armed, onClose]);
+
+  /** Changer d'ouvrage : le plan, l'herbier et les scénarios suivent. */
+  const switchOuvrage = React.useCallback(
+    (id: string) => {
+      if (id === objetId) return;
+      setObjetId(id);
+      setSelected(null);
+      setArmed(null);
+      setOuvrageCardOpen(false);
+      appliedInitial.current = null;
+    },
+    [objetId],
+  );
 
   const geometry = objet?.geometry;
   const areaM2 = React.useMemo(() => (geometry ? geometryAreaM2(geometry) : 0), [geometry]);
@@ -345,6 +374,13 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           </span>
         </span>
 
+        <OuvrageSwitcher
+          objets={(objets || []) as any}
+          activeId={objetId}
+          counts={scenarioCounts}
+          onSelect={switchOuvrage}
+        />
+
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <ScenarioTabs
             scenarios={scen.scenarios}
@@ -445,19 +481,14 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                 enabled={!!armed}
                 onPlace={(lat, lng) => armed && place(armed, lat, lng)}
               />
-              {geometry && (
-                <GeoJSON
-                  key={objetId}
-                  data={geometry as any}
-                  style={{
-                    color: tool?.color || '#c8a24a',
-                    weight: 2,
-                    fillColor: tool?.color || '#c8a24a',
-                    fillOpacity: 0.06,
-                    dashArray: '5 4',
-                  }}
-                />
-              )}
+              <OuvrageGeometryLayer
+                objets={(objets || []) as any}
+                activeId={objetId}
+                activePlantings={plantings.length}
+                placing={!!armed}
+                onSelectOuvrage={switchOuvrage}
+                onSelectSelf={() => setOuvrageCardOpen(true)}
+              />
               <PlantingLayer
                 plantings={plantings}
                 growth={growth}
@@ -554,6 +585,37 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                 <Trash2 className="h-3 w-3" />
                 Retirer du plan
               </button>
+            </div>
+          )}
+
+          {/* Fiche de l'ouvrage désigné sur le plan */}
+          {ouvrageCardOpen && objet && (
+            <div className="absolute right-3 top-3 z-[1001] w-[236px] rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/96 p-3 text-[hsl(var(--ds-forest-deep))] shadow-2xl backdrop-blur">
+              <div className="flex items-start gap-2">
+                <span className="text-[16px]">{tool?.glyph ?? '🌿'}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[9px] uppercase tracking-[0.16em] opacity-50">
+                    Ouvrage
+                  </span>
+                  <input
+                    value={objet.nom || ''}
+                    onChange={(e) => void upsertObjet({ ...(objet as any), nom: e.target.value })}
+                    placeholder={tool?.label || 'Ouvrage'}
+                    className="w-full rounded border border-transparent bg-transparent text-[11.5px] font-semibold outline-none focus:border-[hsl(var(--ds-line))] focus:bg-white"
+                  />
+                </span>
+                <button onClick={() => setOuvrageCardOpen(false)} className="opacity-50 hover:opacity-100">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <p className="mt-2 text-[10.5px] tabular-nums opacity-70">
+                {areaM2 > 0 ? fmtArea(areaM2) : '—'} · {plantings.length} sujet
+                {plantings.length > 1 ? 's' : ''} posé{plantings.length > 1 ? 's' : ''} ·{' '}
+                {scen.scenarios.length} scénographie{scen.scenarios.length > 1 ? 's' : ''}
+              </p>
+              <p className="mt-1.5 text-[9.5px] italic leading-snug opacity-55">
+                Cliquez une emprise voisine pour composer un autre ouvrage.
+              </p>
             </div>
           )}
 
