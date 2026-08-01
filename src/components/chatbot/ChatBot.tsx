@@ -120,8 +120,12 @@ export function ChatBot({
       scenoWasOpen.current = nowOpen;
     };
     sync();
-    return scenographeStore.subscribe(sync);
+    const unsub = scenographeStore.subscribe(sync);
+    return () => {
+      unsub();
+    };
   }, []);
+
 
 
   // Permet à un FAB externe (ex: MobileActionFab) d'ouvrir le chat
