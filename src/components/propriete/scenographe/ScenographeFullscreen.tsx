@@ -891,12 +891,59 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           onClose={() => setImmersionOpen(false)}
         />
       )}
+
+      {/* Dossier de chantier : réglages, préparation puis aperçu papier */}
+      <ChantierPrintDialog
+        open={chantierOpen}
+        onClose={() => setChantierOpen(false)}
+        onConfirm={(opts) => {
+          setChantierOpts(opts);
+          setChantierOpen(false);
+          setChantierPrinting(true);
+        }}
+        inPlaceCount={inPlaceEntries.length}
+        photoCount={ouvragePhotos.length}
+        plantCount={plantings.length}
+      />
+      <PrintPreparationOverlay
+        visible={chantierPrinting}
+        progress={chantierPrint.progress}
+        steps={chantierPrint.steps}
+        skipped={chantierPrint.skipped}
+        incomplete={chantierPrint.incomplete}
+        onRetryMissing={chantierPrint.retryMissing}
+        onPrintAnyway={chantierPrint.printAnyway}
+        onCancel={chantierPrint.cancel}
+      />
+      {chantierPrinting &&
+        chantierPrint.portalRef.current &&
+        createPortal(
+          <ChantierPrintLayout
+            propertyName={propertyName}
+            commune={commune}
+            ouvrageNom={objet?.nom?.trim() || tool?.label || 'Ouvrage'}
+            ouvrageType={tool?.label || 'Ouvrage'}
+            scenarioNom={scen.active?.nom || 'Scénario'}
+            areaM2={areaM2}
+            geometry={geometry}
+            neighbours={neighbourGeometries}
+            plantings={plantings}
+            inPlace={inPlaceEntries}
+            proposed={proposedEntries}
+            photos={ouvragePhotos as any}
+            notes={scen.active?.notes}
+            rigourLabel={rigourLabel}
+            options={chantierOpts}
+          />,
+          chantierPrint.portalRef.current,
+        )}
     </div>
 
   );
 
   return createPortal(body, document.body);
 };
+
 
 
 export default ScenographeFullscreen;
