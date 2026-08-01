@@ -8,6 +8,8 @@ import { linkedSampleIds } from '@/lib/soilLinkEngine';
 import { classifyObservations } from '@/lib/ouvrageScope';
 import { measureFor } from '@/components/propriete/palette/studio/geoMetrics';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import { chatPageContext } from '@/hooks/useChatPageContext';
+import { formatBytes } from '@/lib/chatContextCost';
 import {
   proprieteChatFocus,
   useProprieteChatFocus,
