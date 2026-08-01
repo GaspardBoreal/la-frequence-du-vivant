@@ -180,53 +180,9 @@ export const ObjectsLayer: React.FC<Props> = ({
           </Tooltip>
         );
 
-        // Pastille « carnet photo » — points, lignes et polygones
-        const photoCount = photoCounts?.[o.id] ?? 0;
-        const anchor = photoCount > 0 ? photoAnchor(o.geometry) : null;
         const isPoint = o.geometry?.type === 'Point';
-        const pastille =
-          anchor && photoCount > 0 ? (
-            <Marker
-              key={`${o.id}-photos-${compact ? 'dot' : sideById[o.id] ?? 'left'}${selected ? '-on' : ''}`}
-              position={anchor as any}
-              icon={photoPastilleIcon(photoCount, label, photoThumbs?.[o.id], {
-                side: sideById[o.id] ?? 'left',
-                compact,
-                active: selected,
-              })}
+        const withPastille = (node: React.ReactNode) => node;
 
-              zIndexOffset={800}
-              interactive
-              keyboard={false}
-              eventHandlers={{
-                click: (e: any) => {
-                  e.originalEvent?.stopPropagation?.();
-                  L.DomEvent.stop(e);
-                  onOpenPhotos?.(o.id);
-                },
-                dblclick: (e: any) => {
-                  e.originalEvent?.stopPropagation?.();
-                  L.DomEvent.stop(e);
-                },
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -12] as any}>
-                <span style={{ fontSize: 11 }}>
-                  📷 Carnet photo · {photoCount} photo{photoCount > 1 ? 's' : ''}
-                </span>
-              </Tooltip>
-            </Marker>
-          ) : null;
-
-        const withPastille = (node: React.ReactNode) =>
-          pastille ? (
-            <React.Fragment key={o.id}>
-              {node}
-              {pastille}
-            </React.Fragment>
-          ) : (
-            node
-          );
 
         if (isPoint) {
           const c = o.geometry.coordinates;
