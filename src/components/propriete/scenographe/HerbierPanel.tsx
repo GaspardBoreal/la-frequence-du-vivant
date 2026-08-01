@@ -35,6 +35,10 @@ interface Props {
   onAddFree: (entry: HerbierEntry) => void;
   /** Sélecteur de portée affiché en tête de l'onglet « En place ». */
   scopeControl?: React.ReactNode;
+  /** Curseur de rigueur du périmètre, sous la portée (onglet « En place »). */
+  rigourControl?: React.ReactNode;
+  /** Survol d'une fiche : met en évidence ses points sur le plan. */
+  onHoverEntry?: (entry: HerbierEntry | null) => void;
   /** Pose en masse des espèces affichées, à leur position GPS réelle. */
   onPlaceMany?: (entries: HerbierEntry[]) => void;
   /** Retire du plan toutes les plantations issues des espèces affichées. */
@@ -42,6 +46,16 @@ interface Props {
   /** Grille 2 colonnes quand le bandeau est élargi. */
   wide?: boolean;
 }
+
+const ZONE_BADGE: Record<
+  NonNullable<HerbierEntry['zone']>,
+  { label: string; bg: string; fg: string; ring: string }
+> = {
+  dedans: { label: 'dedans', bg: 'hsl(var(--ds-forest-deep) / 0.14)', fg: 'hsl(var(--ds-forest-deep))', ring: 'hsl(var(--ds-forest-deep) / 0.45)' },
+  lisiere: { label: 'lisière', bg: 'rgba(200,162,74,.20)', fg: '#8a6b23', ring: 'rgba(200,162,74,.75)' },
+  voisinage: { label: 'voisinage', bg: 'rgba(59,126,161,.16)', fg: '#2b5f7a', ring: 'rgba(59,126,161,.6)' },
+};
+
 
 type TabKey = 'place' | 'proposee' | 'libre';
 type PlacedFilter = 'all' | 'todo' | 'done';
