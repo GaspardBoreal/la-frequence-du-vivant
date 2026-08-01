@@ -233,6 +233,8 @@ export const HerbierPanel: React.FC<Props> = ({
       {tab !== 'libre' && (
         <div className="space-y-2 border-b border-[hsl(var(--ds-line))]/60 px-2.5 py-2">
           {tab === 'place' && scopeControl}
+          {tab === 'place' && rigourControl}
+
 
           <div className="flex flex-wrap items-center gap-1">
             {FILTERS.map((f) => (
