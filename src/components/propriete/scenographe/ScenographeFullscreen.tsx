@@ -18,6 +18,8 @@ import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
 import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
 import OuvragePhotoPastilleLayer from '@/components/propriete/palette/studio/photos/OuvragePhotoPastilleLayer';
 import OuvragePhotoViewer from '@/components/propriete/palette/studio/photos/OuvragePhotoViewer';
+import ImmersionOverlay from './immersion/ImmersionOverlay';
+
 
 import { classifyObservations, EDGE_TOLERANCE_M } from '@/lib/ouvrageScope';
 import { geometryAreaM2, geometryCenter, fmtArea } from '@/components/propriete/palette/studio/geoMetrics';
