@@ -34,7 +34,7 @@ interface Props {
   activeCalqueId: string | null;
   onActivate: (id: string) => void;
   onPatchCalque: (c: ProprieteCalque, patch: Partial<ProprieteCalque>) => void;
-  onDeleteCalque: (id: string) => void;
+  onDeleteCalque: (id: string, moveObjetsToCalqueId?: string | null) => void;
   onCreateCalque: () => void;
   onMove: (c: ProprieteCalque, dir: -1 | 1) => void;
 
