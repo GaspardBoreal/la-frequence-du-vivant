@@ -1,50 +1,29 @@
-## Ce dont on dispose déjà (vérifié dans le code)
+## Objectif
 
-- **Plantings du scénario** (`propriete_ouvrage_scenarios.plantings`) : chaque espèce posée porte `lat/lng`, `strate`, `spreadM`, `origin` (`place` / `proposee` / `libre`), `photoUrl`, `functions`, `commonNameFr`.
-- **Référentiel strates** (`src/lib/plantSpread.ts`) : hauteur adulte, envergure, couleur et glyphe par strate → assez pour reconstruire un volume 3D crédible sans nouvelle donnée.
-- **Horloge de croissance** An 0 / An 3 / An 10 déjà présente dans le Scénographe.
-- **Carnet photo de l'ouvrage** (`useObjetPhotos`, saisons + millésimes dans `photos/seasons.ts`) : photos réelles du lieu, datées, saisonnées.
-- **Emprise dessinée** de l'ouvrage (polygone) + fond satellite.
+Depuis la vue Scénario (Scénographe), imprimer un **« Dossier de chantier »** A4 haut de gamme, à présenter à un paysagiste / pépiniériste pour valider le chantier : espèces en place, espèces proposées et retenues, photos avant aménagement, plan et métrés.
 
-Rien de tout cela n'est aujourd'hui exploité autrement qu'en vue de dessus.
+## Ce que contient le dossier (pagination A4 portrait)
 
-## Proposition : « La Chambre du Vivant »
+1. **Couverture** — nom de l'ouvrage + scénario, propriété / commune, surface, date d'édition, bandeau doré, vignette du plan, chiffres clés (nb d'espèces, strates, couverture projetée An 3 / An 10).
+2. **Le plan de plantation** — plan pleine page issu du canevas du Scénographe : emprise de l'ouvrage, halos d'envergure adulte, pastilles numérotées, échelle et nord. Légende par strate.
+3. **La liste de plantation** — tableau pro numéroté (n° du plan, nom français + *nom scientifique*, strate, origine, envergure adulte, quantité), trié par strate, avec sous-totaux. C'est la pièce que le professionnel chiffre.
+4. **Les espèces en place** — planche visuelle (vignettes photo) de ce qui existe déjà dans l'emprise, avec le niveau de rigueur retenu (strict / lisière / voisinage) indiqué, pour dire au pro « ceci reste, ne pas toucher ».
+5. **Les espèces proposées et retenues** — planche visuelle des apports (photo, nom FR + scientifique, strate, fonctions écologiques, envergure). Distinction claire posé / non posé.
+6. **Photos avant aménagement** — le carnet photo de l'ouvrage en planche datée (mosaïque, date EXIF, légende), plus une page « état actuel » en grand format si ≥ 1 photo.
+7. **Repères de chantier** — surface, densité, écartements, note libre du scénario, sources et mentions.
 
-Un bouton unique dans le Scénographe et dans la fiche scénario ouvre une surface plein écran, sombre et cinématographique, qui rejoue le scénario en **quatre immersions** commutables par une molette latérale, toutes alimentées par les mêmes données.
+## Comment ça marche (technique)
 
-### Immersion 1 — La Coupe Vivante (2.5D, signature)
-Coupe transversale animée de l'ouvrage : le trait de coupe est déplaçable sur un mini-plan, et les plantes traversées se dressent en silhouettes SVG stylisées (hauteur/envergure réelles par strate, photo de l'espèce en médaillon). Un curseur temporel An 0 → An 10 fait **pousser** les silhouettes de façon continue (interpolation, pas de saut). En dessous, la strate racinaire et le sol vivant se densifient avec le temps. Lecture immédiate : ombres portées, concurrences, vides.
+- Nouveau composant `src/components/propriete/scenographe/print/ScenarioPrintLayout.tsx` qui compose des sous-blocs : `ScenarioCover`, `ScenarioPlanPage`, `PlantingTablePrint`, `SpeciesPlatePrint` (réutilisée pour « en place » et « proposées »), `PhotosBeforePrint`.
+- **Réutilisation stricte de l'existant** : mêmes classes `.synthesize-print-page` / `-rule` / `-body` / `-foot` déjà stylées dans `src/index.css`, même portail d'impression, même `printImageUrl.ts` (variantes allégées + repli original) et même `usePrintCombined.ts` + `PrintPreparationOverlay.tsx` (barre de progression, préchargement et re-essais des images). Aucun nouveau moteur PDF.
+- **Le plan** : rendu SVG déterministe (pas de capture de tuiles), même logique que `PalettePlanSchema.tsx` — projection équirectangulaire locale de l'emprise et des `plantings`, halos d'envergure calculés par `growthModel.ts` pour An 3 / An 10. Option « fond satellite » écartée par défaut (tuiles non fiables en super-zoom, cf. sonde de couverture), donc plan trait + trame lisible en noir & blanc comme en couleur.
+- **Les données** : `useOuvrageScenarios` (plantings du scénario actif), le pool « en place » filtré par `ouvrageScope.ts` au niveau de rigueur courant, `useObjetPhotos` pour le carnet photo, `useProprieteObjets` pour l'emprise et le métré.
+- **Le déclencheur** : bouton « Dossier de chantier » dans le bandeau du Scénographe, à côté de « La Chambre du Vivant », avec un petit dialogue de choix (inclure les photos / inclure les espèces en place / horizon An 3 ou An 10).
 
-### Immersion 2 — Le Dôme (vue à hauteur d'homme, 360°)
-Panorama généré : on se place au centre de l'emprise, la caméra tourne lentement à 360°. Chaque planting devient une carte-billboard (sa photo détourée, échelle = envergure, distance = position GPS réelle), avec parallaxe multi-plans. Le fond est la photo réelle du carnet correspondant à la saison choisie, floutée et étirée. Curseurs : **saison** (printemps/été/automne/hiver, palette et feuillage qui basculent) et **année**. Effet vidéo : lumière volumétrique, particules de pollen, léger grain.
+## Direction graphique
 
-### Immersion 3 — Avant / Après morphing photo
-Prend une photo réelle du carnet de l'ouvrage et fait apparaître par-dessus, en fondu chorégraphié, le scénario planté : masque progressif, pousses qui montent depuis le sol, halo doré sur chaque espèce nouvelle. Poignée de comparaison glissante « Aujourd'hui ↔ Dans 10 ans ». C'est l'image que le client montrera à sa famille.
+Papier crème, filet doré fin en tête de page, titres sérif, corps sans-serif, pastilles numérotées identiques à celles du plan pour lier tableau et dessin, aplats par strate discrets, pied de page « Propriété · Ouvrage · Scénario · page n/N ». Grandes images en pleine largeur, marges généreuses, aucune couleur criarde — un dossier qui se pose sur la table d'un professionnel.
 
-### Immersion 4 — Le Film du scénario (export vidéo)
-Une séquence de 25–35 s enchaînant automatiquement : survol du plan → zoom sur l'emprise → coupe vivante qui pousse → dôme 360° → avant/après → carte de synthèse (nb d'espèces, dont en place / proposées, recouvrement, strates, fonctions écologiques). Musique optionnelle, titrage au nom du scénario. Export MP4 via un rendu Remotion côté outil, plus partage d'un lien.
+## Hors périmètre
 
-### Le fil rouge : le « Souffle »
-Toutes les immersions partagent une même grammaire de mouvement (respiration lente 6 s, easing organique, palette encre-forêt + or) et un bandeau bas commun : **Année**, **Saison**, **Origine des espèces** (en place / proposées, avec un filtre qui fait littéralement apparaître ou se retirer les plantes de la scène).
-
-## Détails techniques
-
-- Nouveau dossier `src/components/propriete/scenographe/immersion/` : `ImmersionOverlay.tsx` (coquille plein écran + molette), `CoupeVivante.tsx`, `DomePanorama.tsx`, `AvantApres.tsx`, `FilmSequence.tsx`.
-- `src/lib/immersion/growthModel.ts` : modèle de croissance continu (hauteur/envergure interpolées par strate entre An 0 et An 10, courbe logistique) + tri par profondeur.
-- `src/lib/immersion/silhouettes.ts` : générateur SVG paramétrique de silhouettes par strate (couvre-sol → arbre), déterministe par nom d'espèce pour que chaque plante garde son allure.
-- Rendu : SVG + Framer Motion pour la coupe, CSS 3D transforms + parallaxe pour le dôme (pas de Three.js, on reste léger et fluide), canvas pour les particules.
-- Photos espèces : réutilisation de `photoUrl` des plantings et du cache vignettes existant ; fallback glyphe de strate.
-- Photos du lieu : `useObjetPhotos` + `seasons.ts` déjà en place.
-- Vidéo : projet Remotion dédié rendu à la demande, MP4 téléchargeable.
-- Accessibilité : respect de `prefers-reduced-motion` (immersions figées, curseurs conservés).
-- Aucune modification du modèle de données ni des scénarios existants.
-
-## Ordre de construction proposé
-
-1. Coquille `ImmersionOverlay` + modèle de croissance + bandeau commun.
-2. Coupe Vivante (la plus démonstrative).
-3. Avant / Après morphing photo.
-4. Dôme 360° saisonnier.
-5. Film exportable.
-
-Les étapes 1–2 suffisent déjà à produire l'effet « wahou » ; les suivantes s'empilent sans refonte.
+Pas de génération serveur, pas d'export Word/Excel, pas de chiffrage tarifaire automatique (colonne « prix unitaire » laissée vide à remplir par le professionnel).

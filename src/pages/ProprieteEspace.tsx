@@ -474,7 +474,7 @@ const PropTabs: React.FC<{
       </Tabs>
       <SampleCoreDrawerHost />
       <ProprieteChatBotMount proprieteId={proprieteId} proprieteNom={proprieteNom} />
-      <ScenographeMount proprieteId={proprieteId} />
+      <ScenographeMount proprieteId={proprieteId} propertyName={proprieteNom} commune={proprieteVille} />
     </div>
 
   );

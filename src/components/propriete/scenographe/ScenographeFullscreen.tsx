@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useMap, useMapEvents, CircleMarker } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
-import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save, Eye } from 'lucide-react';
+import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save, Eye, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 
 import RichMap from '@/components/maps/RichMap';
@@ -19,6 +19,12 @@ import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
 import OuvragePhotoPastilleLayer from '@/components/propriete/palette/studio/photos/OuvragePhotoPastilleLayer';
 import OuvragePhotoViewer from '@/components/propriete/palette/studio/photos/OuvragePhotoViewer';
 import ImmersionOverlay from './immersion/ImmersionOverlay';
+import ChantierPrintDialog from './print/ChantierPrintDialog';
+import ChantierPrintLayout, { type ChantierPrintOptions } from './print/ChantierPrintLayout';
+import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
+import PrintPreparationOverlay from '@/components/propriete/print/PrintPreparationOverlay';
+
+
 
 
 import { classifyObservations, EDGE_TOLERANCE_M } from '@/lib/ouvrageScope';
@@ -73,6 +79,9 @@ interface Props {
   proposals: ScenographeProposal[];
   /** Scénario à rouvrir précisément (bibliothèque / registre). */
   initialScenarioId?: string | null;
+  /** Identité de la propriété — portée sur le dossier de chantier imprimé. */
+  propertyName?: string;
+  commune?: string | null;
   onClose: () => void;
 }
 
@@ -86,7 +95,10 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   objetId: initialObjetId,
   proposals,
   initialScenarioId,
+  propertyName,
+  commune,
   onClose,
+
 }) => {
   /** L'ouvrage travaillé : modifiable sans quitter le plan. */
   const [objetId, setObjetId] = React.useState(initialObjetId);
@@ -451,6 +463,38 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const tool = objet ? TOOL_BY_KEY[objet.outil_key] : null;
   const sel = plantings.find((p) => p.id === selected) || null;
 
+  /* ---------------- Dossier de chantier (impression A4) ---------------- */
+  const [chantierOpen, setChantierOpen] = React.useState(false);
+  const [chantierPrinting, setChantierPrinting] = React.useState(false);
+  const [chantierOpts, setChantierOpts] = React.useState<ChantierPrintOptions>({
+    year: 3,
+    withInPlace: true,
+    withPhotos: true,
+    withNeighbours: true,
+  });
+  const chantierPrint = usePrintCombined({
+    active: chantierPrinting,
+    portalId: 'chantier-print-portal',
+    bodyClass: 'chantier-print-mode',
+    onDone: () => setChantierPrinting(false),
+  });
+  const ouvragePhotos = React.useMemo(
+    () => objetPhotos.byObjet.get(objetId) ?? [],
+    [objetPhotos.byObjet, objetId],
+  );
+  const neighbourGeometries = React.useMemo(
+    () => (objets || []).filter((o: ProprieteObjet) => o.id !== objetId && o.geometry).map((o) => o.geometry),
+    [objets, objetId],
+  );
+  const rigourLabel =
+    rigour === 'strict'
+      ? 'emprise stricte'
+      : rigour === 'lisiere'
+        ? `emprise + lisière ${EDGE_TOLERANCE_M} m`
+        : `emprise + voisinage ${neighbourM} m`;
+
+
+
   const body = (
     <div className="fixed inset-0 z-[3000] flex flex-col bg-[hsl(var(--ds-forest-deep))]">
       {/* Bandeau : l'identité de l'ouvrage et les variantes du projet */}
@@ -490,6 +534,23 @@ export const ScenographeFullscreen: React.FC<Props> = ({
             <Eye className="h-3.5 w-3.5" />
             La Chambre du Vivant
           </button>
+
+          <button
+            type="button"
+            onClick={() => setChantierOpen(true)}
+            disabled={plantings.length === 0}
+            title={
+              plantings.length === 0
+                ? 'Pose au moins une espèce pour éditer le dossier'
+                : 'Éditer le dossier de chantier à présenter aux professionnels'
+            }
+            className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-[11.5px] font-semibold text-white/90 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            Dossier de chantier
+          </button>
+
+
 
           <ScenarioTabs
             scenarios={scen.scenarios}
@@ -830,12 +891,59 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           onClose={() => setImmersionOpen(false)}
         />
       )}
+
+      {/* Dossier de chantier : réglages, préparation puis aperçu papier */}
+      <ChantierPrintDialog
+        open={chantierOpen}
+        onClose={() => setChantierOpen(false)}
+        onConfirm={(opts) => {
+          setChantierOpts(opts);
+          setChantierOpen(false);
+          setChantierPrinting(true);
+        }}
+        inPlaceCount={inPlaceEntries.length}
+        photoCount={ouvragePhotos.length}
+        plantCount={plantings.length}
+      />
+      <PrintPreparationOverlay
+        visible={chantierPrinting}
+        progress={chantierPrint.progress}
+        steps={chantierPrint.steps}
+        skipped={chantierPrint.skipped}
+        incomplete={chantierPrint.incomplete}
+        onRetryMissing={chantierPrint.retryMissing}
+        onPrintAnyway={chantierPrint.printAnyway}
+        onCancel={chantierPrint.cancel}
+      />
+      {chantierPrinting &&
+        chantierPrint.portalRef.current &&
+        createPortal(
+          <ChantierPrintLayout
+            propertyName={propertyName}
+            commune={commune}
+            ouvrageNom={objet?.nom?.trim() || tool?.label || 'Ouvrage'}
+            ouvrageType={tool?.label || 'Ouvrage'}
+            scenarioNom={scen.active?.nom || 'Scénario'}
+            areaM2={areaM2}
+            geometry={geometry}
+            neighbours={neighbourGeometries}
+            plantings={plantings}
+            inPlace={inPlaceEntries}
+            proposed={proposedEntries}
+            photos={ouvragePhotos as any}
+            notes={scen.active?.notes}
+            rigourLabel={rigourLabel}
+            options={chantierOpts}
+          />,
+          chantierPrint.portalRef.current,
+        )}
     </div>
 
   );
 
   return createPortal(body, document.body);
 };
+
 
 
 export default ScenographeFullscreen;
