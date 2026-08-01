@@ -424,7 +424,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
     scope,
     scopedWaypoints,
     species,
-
+    waypoints,
     soil,
     objets,
     zones,
@@ -434,5 +434,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
     flora,
     focusObjet,
     focus.radiusM,
+    focus.selectedObjetIds,
+    focus.ouvrageDetail,
   ]);
 }
