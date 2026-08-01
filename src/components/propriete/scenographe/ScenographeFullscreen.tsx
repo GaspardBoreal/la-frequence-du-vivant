@@ -15,7 +15,7 @@ import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames
 import { useOuvrageScenarios, type Planting } from '@/hooks/propriete/useOuvrageScenarios';
 import { useProprieteScenarios } from '@/hooks/propriete/useProprieteScenarios';
 import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
-import { classifyObservations } from '@/lib/ouvrageScope';
+import { classifyObservations, EDGE_TOLERANCE_M } from '@/lib/ouvrageScope';
 import { geometryAreaM2, geometryCenter, fmtArea } from '@/components/propriete/palette/studio/geoMetrics';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { STRATES, STRATE_ORDER, parseStrate, spreadFor, type Strate } from '@/lib/plantSpread';
