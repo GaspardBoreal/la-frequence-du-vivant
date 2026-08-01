@@ -101,7 +101,11 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
     }
   };
 
-  const activeCount = providers.filter((p) => activeSet.has(contextSliceKey(p.id))).length;
+  const activeProviders = useMemo(
+    () => providers.filter((p) => activeSet.has(contextSliceKey(p.id))),
+    [providers, activeSet],
+  );
+  const activeCount = activeProviders.length;
   const fullscreenOpen = useFullscreenSurfaceOpen();
 
 
@@ -189,15 +193,59 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                   {activeCount}/{providers.length} actif{activeCount > 1 ? 's' : ''}
                 </span>
               </div>
+
+              {/* Récapitulatif vivant des contextes retenus */}
+              <AnimatePresence initial={false}>
+                {activeProviders.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/80">
+                        Transmis
+                      </span>
+                      {activeProviders.map((p) => (
+                        <motion.button
+                          key={p.id}
+                          layout
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          onClick={() => toggle(p)}
+                          title="Retirer ce contexte"
+                          className="group inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10.5px] font-medium text-primary hover:bg-primary/25 transition-colors"
+                        >
+                          <span>{p.emoji}</span>
+                          <span className="max-w-[10rem] truncate">{p.label}</span>
+                          <X className="h-2.5 w-2.5 opacity-50 group-hover:opacity-100" />
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Liste des contextes */}
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
-              {groups.map(([group, items]) => (
+              {groups.map(([group, items]) => {
+                const groupActive = items.filter((p) => activeSet.has(contextSliceKey(p.id))).length;
+                return (
                 <div key={group}>
-                  <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {group}
-                  </p>
+                  <div className="flex items-center gap-2 px-1 pb-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {group}
+                    </p>
+                    <span className="h-px flex-1 bg-border/70" />
+                    {groupActive > 0 && (
+                      <span className="rounded-full bg-primary/15 px-1.5 py-[1px] text-[9.5px] font-semibold text-primary tabular-nums">
+                        {groupActive} actif{groupActive > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
                   {groupExtras?.[group]}
                   <div className="space-y-1.5">
                     {items.map((p) => {
@@ -209,24 +257,55 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                           onClick={() => !empty && toggle(p)}
                           disabled={empty}
                           className={cn(
-                            'w-full text-left rounded-xl border px-3 py-2.5 transition-all',
+                            'relative w-full overflow-hidden text-left rounded-xl border px-3 py-2.5 pl-4 transition-all duration-200',
                             active
-                              ? 'border-primary/50 bg-primary/10 shadow-sm'
-                              : 'border-border bg-background/60 hover:bg-muted/60',
+                              ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/40 shadow-[0_0_0_3px_hsl(var(--primary)/0.07),0_6px_18px_-10px_hsl(var(--primary)/0.6)]'
+                              : 'border-border bg-background/60 hover:bg-muted/60 hover:border-border',
                             empty && 'opacity-45 cursor-not-allowed',
                           )}
                         >
+                          {active && (
+                            <motion.span
+                              layoutId={`ctx-rail-${p.id}`}
+                              className="absolute inset-y-0 left-0 w-[3px] rounded-r-full bg-primary"
+                            />
+                          )}
                           <div className="flex items-center gap-2.5">
-                            <span className="text-base leading-none">{p.emoji}</span>
+                            <span
+                              className={cn(
+                                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-base leading-none transition-colors',
+                                active ? 'bg-primary/20' : 'bg-muted/50',
+                              )}
+                            >
+                              {p.emoji}
+                            </span>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-[13px] font-medium text-foreground truncate">
+                                <span
+                                  className={cn(
+                                    'text-[13px] truncate',
+                                    active ? 'font-semibold text-primary' : 'font-medium text-foreground',
+                                  )}
+                                >
                                   {p.label}
                                 </span>
-                                {active && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                                {active && (
+                                  <motion.span
+                                    initial={{ scale: 0.6, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                                  >
+                                    <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                                  </motion.span>
+                                )}
                               </div>
                               {p.hint && (
-                                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">
+                                <p
+                                  className={cn(
+                                    'text-[11px] leading-snug mt-0.5 line-clamp-2',
+                                    active ? 'text-foreground/75' : 'text-muted-foreground',
+                                  )}
+                                >
                                   {p.hint}
                                 </p>
                               )}
@@ -235,7 +314,7 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                               className={cn(
                                 'shrink-0 rounded-full px-2 py-0.5 text-[10px] tabular-nums border',
                                 active
-                                  ? 'border-primary/30 bg-primary/15 text-primary'
+                                  ? 'border-primary/40 bg-primary text-primary-foreground'
                                   : 'border-border/60 text-muted-foreground',
                               )}
                             >
@@ -247,7 +326,9 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                     })}
                   </div>
                 </div>
-              ))}
+                );
+              })}
+
               {providers.length === 0 && (
                 <p className="py-8 text-center text-xs text-muted-foreground">
                   Aucun contexte disponible sur cette page.
