@@ -1,37 +1,26 @@
-## Constat
+## Diagnostic (vérifié dans le code)
 
-Dans la Console « Contextes de la propriété », le groupe **Ouvrages** ne propose aujourd'hui que des blocs tout-ou-rien :
-- `ouvrage.focus` + `ouvrage.especes` — uniquement si un ouvrage est cadré depuis la carte (aucun cadrage → invisibles) ;
-- `ouvrages.tous` — les 8 emplacements en bloc, sans détail ni possibilité d'en retirer un.
+Le sélecteur d'ouvrages existe déjà (`OuvragesContextPicker.tsx`) et il est bien injecté via `providerGroupExtras.Ouvrages` (`ProprieteChatBotMount.tsx`). Mais il ne s'affiche jamais au premier usage, à cause d'un cercle vicieux :
 
-Impossible donc de dire « parle-moi de la Mare et du Potager, rien d'autre ».
+- `ContextConsole.tsx` construit ses groupes **uniquement à partir des providers** (`groups = Map<group, providers[]>`), puis affiche `groupExtras[group]` à l'intérieur du groupe.
+- Dans `useProprieteChatProviders.ts` (l.274-338), le provider `ouvrages.selection` n'est créé **que si `selected.length > 0`**, c'est-à-dire seulement si des ouvrages sont déjà retenus.
 
-## Proposition : le « Plateau des ouvrages »
+Résultat : aucune sélection → pas de groupe « Ouvrages » → le plateau de sélection n'est pas rendu → impossible de sélectionner. C'est exactement ce qu'on voit sur la capture (0/7 actif, groupes Vivant / Sol / Site / Flore seulement).
 
-Un bloc dédié en tête du groupe Ouvrages, pensé comme une table de montage : chaque ouvrage est une vignette sélectionnable, le poids se recalcule en direct.
+## Correction proposée
 
-```text
-OUVRAGES                                  4/8 · 1.2 Ko
-┌──────────────────────────────────────────────────┐
-│ Tous · Aucun · Recommandés   [Détail: résumé ▸]  │
-│ ┌────────────┐ ┌────────────┐ ┌────────────┐     │
-│ │● Mare      │ │● Potager   │ │○ Citerne   │ ... │
-│ │  38 m²·210o│ │  62 m²·240o│ │  4 m² ·90o │     │
-│ └────────────┘ └────────────┘ └────────────┘     │
-└──────────────────────────────────────────────────┘
-```
+1. **`ContextConsole.tsx`** — rendre les groupes « extras » même sans provider :
+   - Fusionner les clés de `groupExtras` avec celles des providers pour construire la liste des groupes, en conservant un ordre stable (Vivant, Sol, Ouvrages, Site, Flore).
+   - Un groupe sans provider affiche uniquement son extra (pas de liste vide).
 
-Comportement :
-- **Clic** = ajoute/retire un ouvrage ; **Maj+clic** = plage ; boutons **Tous / Aucun / Recommandés** (les ouvrages contenant des observations ou reliés à une carotte).
-- **Niveau de détail** commutable pour la sélection entière : `Résumé` (nom, type, surface, note) → `Complet` (dossier sol relié, contraintes, palette retenue) → `Complet + espèces` (espèces dans le tracé/lisière). Le poids affiché change à chaque bascule : la frugalité reste lisible.
-- Vignette d'un ouvrage **cadré depuis la carte** marquée d'un liseré doré : le cadrage reste prioritaire et pré-sélectionne cet ouvrage.
-- Micro-jauge par vignette (octets) + total du groupe dans l'en-tête, cohérent avec l'éco-score global.
+2. **`OuvragesContextPicker.tsx`** — le rendre lisible et « pro » dans ce contexte d'entrée :
+   - Ne plus retourner `null` silencieusement : afficher un état vide explicite si la propriété n'a aucun ouvrage.
+   - Ajouter sous le plateau une ligne de synthèse « ce qui sera transmis » : nombre d'ouvrages retenus, profondeur choisie, poids estimé (via `payloadBytes`/`formatBytes` de `chatContextCost`) — cohérent avec la jauge frugale du haut de la console.
+   - Micro-affinage visuel : titre du plateau aligné sur le style des groupes, vignettes en 2 colonnes avec surface / obs / carottes, chips Tous · Aucun · Pertinents inchangés.
+
+3. **Continuité d'activation** — quand la sélection passe de 0 à N, le provider `ouvrages.selection` apparaît : l'activer automatiquement (poser la slice `ctx.ouvrages.selection`) depuis `ProprieteChatBotMount.tsx`, pour que cocher un ouvrage produise un effet immédiat sans double clic. Inversement, la slice est retirée quand la sélection revient à 0.
 
 ## Détails techniques
 
-1. **Store de sélection** — étendre `proprieteChatFocus.ts` : `selectedObjetIds: string[]` et `ouvrageDetail: 'resume' | 'complet' | 'especes'`, avec `toggleObjet / setObjets / clearObjets / setOuvrageDetail`. Le cadrage carte (`setObjet`) ajoute l'ouvrage à la sélection.
-2. **Provider dynamique** — dans `useProprieteChatProviders.ts`, remplacer `ouvrages.tous` par `ouvrages.selection` : payload construit depuis les ouvrages sélectionnés (via `buildOuvrageSoilDossier` + `classifyObservations` selon le niveau de détail), libellé « n ouvrages retenus », `bytes` recalculé automatiquement. Si la sélection est vide, le provider disparaît (aucun contexte ouvrage envoyé). `ouvrage.focus` / `ouvrage.especes` restent pour le cadrage carte.
-3. **UI** — nouveau `src/components/propriete/chatbot/OuvragesContextPicker.tsx`, injecté dans `ContextConsole` via une nouvelle prop optionnelle `groupExtras?: Record<string, React.ReactNode>` rendue en tête du groupe correspondant (aucune régression pour les autres pages qui utilisent la console).
-4. **Synchronisation** — quand la sélection change alors que `ctx.ouvrages.selection` est actif, le slice est re-poussé avec le nouveau payload pour que l'IA reçoive toujours l'état affiché.
-
-Aucune modification de base de données ni d'edge function : tout est calculé côté client à partir des données déjà chargées.
+- `ContextConsole` : `groups` devient `Array<[group, ContextProvider[]]>` construit depuis `new Set([...providersGroups, ...Object.keys(groupExtras ?? {})])`, trié selon un ordre de référence puis alphabétique pour le reste.
+- Aucun changement de schéma ni d'edge function ; la frugalité reste inchangée (rien n'est transmis tant que rien n'est retenu/activé).

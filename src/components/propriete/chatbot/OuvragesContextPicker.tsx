@@ -8,6 +8,8 @@ import { linkedSampleIds } from '@/lib/soilLinkEngine';
 import { classifyObservations } from '@/lib/ouvrageScope';
 import { measureFor } from '@/components/propriete/palette/studio/geoMetrics';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import { chatPageContext } from '@/hooks/useChatPageContext';
+import { formatBytes } from '@/lib/chatContextCost';
 import {
   proprieteChatFocus,
   useProprieteChatFocus,
@@ -57,11 +59,30 @@ export const OuvragesContextPicker: React.FC<{ proprieteId?: string }> = ({ prop
     });
   }, [objets, waypoints, soil]);
 
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return (
+      <div className="mb-2 rounded-xl border border-dashed border-border bg-background/40 p-3">
+        <div className="flex items-center gap-2">
+          <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Plateau des ouvrages
+          </span>
+        </div>
+        <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+          Aucun emplacement dessiné pour l'instant. Ouvrez l'Atelier du jardin pour tracer une mare,
+          un massif ou un potager : ils apparaîtront ici, sélectionnables un à un.
+        </p>
+      </div>
+    );
+  }
 
   const selected = new Set(focus.selectedObjetIds);
   const allIds = rows.map((r) => r.id);
   const recommendedIds = rows.filter((r) => r.recommended).map((r) => r.id);
+  const selectionBytes =
+    (chatPageContext.getState().pageState.availableAttachments?.providers ?? []).find(
+      (p) => p.id === 'ouvrages.selection',
+    )?.bytes ?? 0;
 
   return (
     <div className="mb-2 rounded-xl border border-primary/25 bg-primary/5 p-2.5">
@@ -173,6 +194,25 @@ export const OuvragesContextPicker: React.FC<{ proprieteId?: string }> = ({ prop
         <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
           {DETAILS.find((d) => d.key === focus.ouvrageDetail)?.hint}
         </p>
+      </div>
+
+      {/* Ce qui sera transmis */}
+      <div className="mt-2 flex items-center gap-2 rounded-lg border border-border/70 bg-background/50 px-2.5 py-1.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Transmis
+        </span>
+        <span className="text-[11px] text-foreground">
+          {selected.size === 0
+            ? 'rien pour l’instant'
+            : `${selected.size} ouvrage${selected.size > 1 ? 's' : ''} · ${
+                DETAILS.find((d) => d.key === focus.ouvrageDetail)?.label.toLowerCase()
+              }`}
+        </span>
+        {selectionBytes > 0 && (
+          <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
+            ≈ {formatBytes(selectionBytes)}
+          </span>
+        )}
       </div>
     </div>
   );
