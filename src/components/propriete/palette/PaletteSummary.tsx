@@ -63,6 +63,8 @@ interface Props {
   printOnly?: boolean;
   /** p1 = règle + zones · p2 = refus + mise en œuvre + sources */
   printSection?: 'all' | 'p1' | 'p2';
+  /** Masque le cartouche à l'écran (il est alors porté par l'en-tête d'étape) */
+  hideCartoucheOnScreen?: boolean;
 }
 
 const SectionHead: React.FC<{
@@ -110,6 +112,7 @@ export const PaletteSummary: React.FC<Props> = ({
   onPrint,
   printOnly,
   printSection = 'all',
+  hideCartoucheOnScreen,
 }) => {
   const showP1 = printSection === 'all' || printSection === 'p1';
   const showP2 = printSection === 'all' || printSection === 'p2';
@@ -119,7 +122,7 @@ export const PaletteSummary: React.FC<Props> = ({
       {showP1 && (
         <>
           {/* Cartouche */}
-          <header className="rounded-3xl border border-[hsl(var(--ds-gold))]/45 bg-[hsl(var(--ds-cream))] p-6 md:p-8 print-avoid-break print-exact">
+          <header className={`${hideCartoucheOnScreen ? 'hidden print:block ' : ''}rounded-3xl border border-[hsl(var(--ds-gold))]/45 bg-[hsl(var(--ds-cream))] p-6 md:p-8 print-avoid-break print-exact`}>
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
                 <div className="text-[10px] font-bold tracking-[0.35em] uppercase text-[hsl(var(--ds-forest))]">
