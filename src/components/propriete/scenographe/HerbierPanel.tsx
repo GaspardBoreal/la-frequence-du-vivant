@@ -19,7 +19,12 @@ export interface HerbierEntry {
   ouvrageNom?: string | null;
   /** Positions GPS réelles observées — servent à la pose en masse. */
   points?: Array<{ lat: number; lng: number }>;
+  /** Position de l'espèce par rapport à l'emprise (herbier « En place »). */
+  zone?: 'dedans' | 'lisiere' | 'voisinage';
+  /** Distance minimale au bord de l'ouvrage, en mètres. */
+  distanceM?: number;
 }
+
 
 interface Props {
   inPlace: HerbierEntry[];
