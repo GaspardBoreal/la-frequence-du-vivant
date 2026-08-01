@@ -19,6 +19,12 @@ import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
 import OuvragePhotoPastilleLayer from '@/components/propriete/palette/studio/photos/OuvragePhotoPastilleLayer';
 import OuvragePhotoViewer from '@/components/propriete/palette/studio/photos/OuvragePhotoViewer';
 import ImmersionOverlay from './immersion/ImmersionOverlay';
+import ChantierPrintDialog from './print/ChantierPrintDialog';
+import ChantierPrintLayout, { type ChantierPrintOptions } from './print/ChantierPrintLayout';
+import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
+import PrintPreparationOverlay from '@/components/propriete/print/PrintPreparationOverlay';
+
+
 
 
 import { classifyObservations, EDGE_TOLERANCE_M } from '@/lib/ouvrageScope';
