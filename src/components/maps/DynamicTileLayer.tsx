@@ -73,6 +73,7 @@ const DynamicTileLayer: React.FC<Props> = ({ mapStyle, maxZoom = 19 }) => {
       if (n < 3 || z <= 12) return;
       effectiveNative = z - 1;
       layer.options.maxNativeZoom = effectiveNative;
+      if (relay) layer.options.maxZoom = effectiveNative + 2;
       publish();
       layer.redraw();
     };
