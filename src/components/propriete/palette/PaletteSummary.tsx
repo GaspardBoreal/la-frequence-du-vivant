@@ -115,6 +115,7 @@ export const PaletteSummary: React.FC<Props> = ({
   printOnly,
   printSection = 'all',
   hideCartoucheOnScreen,
+  zonesSlot,
 }) => {
   const showP1 = printSection === 'all' || printSection === 'p1';
   const showP2 = printSection === 'all' || printSection === 'p2';
