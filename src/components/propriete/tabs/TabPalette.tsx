@@ -592,6 +592,56 @@ export const TabPalette: React.FC<Props> = ({
     />
   );
 
+  /* --------- Widget 2 : Emplacements & ouvrages (partagé édition / vue scellée) --------- */
+  const emplacementsWidget = (
+    <div id="palette-block-zones" className="scroll-mt-24">
+      <AnalyzeCard
+        number={2}
+        category="Emplacements & ouvrages"
+        title="Les lieux que vous découpez, les ouvrages que vous dessinez"
+        subtitle="Le tracé se fait dans l’Atelier. Chaque emplacement reçoit sa propre palette, répartie en strates ; chaque ouvrage — mare, potager, pas japonais… — hérite des prélèvements de sol qui lui sont rattachés et de ses recommandations de mise en œuvre."
+        index={1}
+      >
+        <ZonesMapBlock
+          center={derivedCenter}
+          parcelles={parcelles}
+          zones={zones}
+          activeZoneId={activeZoneId}
+          onSelectZone={setActiveZoneId}
+          onCreateZone={handleCreateZone}
+          onDeleteZone={handleDeleteZone}
+          zoneSpeciesCount={Object.fromEntries(
+            palette.state.zones.map((z) => [z.zone_id, (z.selected ?? []).length]),
+          )}
+          proprieteId={proprieteId}
+          onPatchZone={(z, patch) =>
+            upsertZone({
+              id: z.id,
+              nom: patch.nom ?? z.nom,
+              geometry: patch.geometry ?? z.geometry,
+              couleur: patch.couleur ?? z.couleur,
+              note: patch.note ?? z.note,
+              ordre: patch.ordre ?? z.ordre,
+              visible: patch.visible ?? z.visible,
+              verrouille: patch.verrouille ?? z.verrouille,
+              opacite: patch.opacite ?? z.opacite,
+              surface_m2: patch.surface_m2 ?? z.surface_m2,
+            }).catch(() => {})
+          }
+          onFocusObjet={setFocusObjetId}
+        />
+
+        <OuvragesRegister
+          proprieteId={proprieteId}
+          zones={zones}
+          onSelectZone={setActiveZoneId}
+          focusObjetId={focusObjetId}
+          zoneSelectedSpecies={zoneSelectedSpecies}
+        />
+      </AnalyzeCard>
+    </div>
+  );
+
   /* ---------------- Vue scellée ---------------- */
   if (palette.completedAt && mode === 'summary') {
     return (
@@ -611,11 +661,13 @@ export const TabPalette: React.FC<Props> = ({
           onReopenAll={() => setMode('edit')}
           onPrint={() => setPrintOpen(true)}
           hideCartoucheOnScreen
+          zonesSlot={emplacementsWidget}
         />
         {printDialogAndPortal}
       </div>
     );
   }
+
 
   /* ---------------- Édition ---------------- */
   return (
