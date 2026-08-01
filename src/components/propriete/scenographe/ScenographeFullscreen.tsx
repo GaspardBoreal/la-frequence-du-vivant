@@ -318,7 +318,7 @@ export const ScenographeFullscreen: React.FC<Props> = ({
               controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
               height="100%"
             >
-              <MapGrab onMap={(m) => (mapRef.current = m)} />
+              <MapGrab onMap={handleMapReady} />
               <ZoomScaleBadge />
               <ClickToPlace
                 enabled={!!armed}
