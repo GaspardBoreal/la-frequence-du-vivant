@@ -566,7 +566,20 @@ export const ScenographeFullscreen: React.FC<Props> = ({
             onArm={setArmed}
             placedCount={placedCount}
             onAddFree={(e) => setArmed(e)}
+            onPlaceMany={placeMany}
+            onRemoveMany={removeMany}
+            scopeControl={
+              <HerbierScopePicker
+                objets={(objets || []) as any}
+                currentId={objetId}
+                mode={scopeMode}
+                selectedIds={scopeIds}
+                onMode={setScopeMode}
+                onSelected={setScopeIds}
+              />
+            }
           />
+
         </div>
       )}
 
