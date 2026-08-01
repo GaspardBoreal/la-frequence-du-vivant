@@ -125,6 +125,18 @@ const Card: React.FC<{
           >
             {info.label} · Ø {entry.spreadM} m
           </span>
+          {zone && (
+            <span
+              className="rounded-full px-1.5 py-px text-[9px] font-medium"
+              style={{ backgroundColor: zone.bg, color: zone.fg }}
+            >
+              {zone.label}
+              {entry.zone !== 'dedans' && entry.distanceM != null
+                ? ` ${entry.distanceM < 10 ? entry.distanceM.toFixed(1) : Math.round(entry.distanceM)} m`
+                : ''}
+            </span>
+          )}
+
           {entry.ouvrageNom && (
             <span className="max-w-[110px] truncate rounded-full bg-[hsl(var(--ds-forest-deep))]/10 px-1.5 py-px text-[9px] font-medium text-[hsl(var(--ds-forest-deep))]/75">
               {entry.ouvrageNom}
