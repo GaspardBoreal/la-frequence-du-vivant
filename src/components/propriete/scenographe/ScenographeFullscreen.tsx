@@ -86,10 +86,20 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const [armed, setArmed] = React.useState<HerbierEntry | null>(null);
   const [selected, setSelected] = React.useState<string | null>(null);
   const [panelOpen, setPanelOpen] = React.useState(true);
+  const [panelWidth, setPanelWidth] = React.useState<number>(() => {
+    const v = Number(localStorage.getItem('scenographe:panelWidth'));
+    return Number.isFinite(v) && v >= 240 ? v : 290;
+  });
+  React.useEffect(() => {
+    localStorage.setItem('scenographe:panelWidth', String(panelWidth));
+  }, [panelWidth]);
+  const [scopeMode, setScopeMode] = React.useState<ScopeMode>('courant');
+  const [scopeIds, setScopeIds] = React.useState<string[]>([]);
   const mapRef = React.useRef<LeafletMap | null>(null);
   const handleMapReady = React.useCallback((m: LeafletMap) => {
     mapRef.current = m;
   }, []);
+
 
 
   React.useEffect(() => {
