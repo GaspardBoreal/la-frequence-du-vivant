@@ -15,6 +15,7 @@ import {
   Sprout,
   BookOpen,
   Gauge,
+  ShieldCheck,
 } from 'lucide-react';
 
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
