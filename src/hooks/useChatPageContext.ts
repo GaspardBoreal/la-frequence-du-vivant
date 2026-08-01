@@ -50,6 +50,8 @@ export interface AvailableAttachments {
   providers?: ContextProvider[];
   /** Titre de la console (ex : « Contextes de la propriété »). */
   providersTitle?: string;
+  /** UI spécialisée injectée en tête d'un groupe de la console. */
+  providerGroupExtras?: Record<string, React.ReactNode>;
 }
 
 
