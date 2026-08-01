@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
 
 export interface ChatEntity {
   type: 'marche_event' | 'marcheur' | 'exploration' | 'propriete';
@@ -51,7 +51,7 @@ export interface AvailableAttachments {
   /** Titre de la console (ex : « Contextes de la propriété »). */
   providersTitle?: string;
   /** UI spécialisée injectée en tête d'un groupe de la console. */
-  providerGroupExtras?: Record<string, React.ReactNode>;
+  providerGroupExtras?: Record<string, ReactNode>;
 }
 
 
