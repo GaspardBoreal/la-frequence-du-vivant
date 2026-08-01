@@ -42,10 +42,12 @@ suivi d'un **unique tableau markdown GFM** aux colonnes strictement suivantes, d
 | Espèce | Nom scientifique | Strate | Hauteur | Exposition | Fonctions écologiques | Justification |
 
 Contraintes de ce tableau (il doit être collable tel quel dans un tableur) :
+- **Format obligatoire** : une ligne vide avant le tableau ; la ligne d'en-tête est IMMÉDIATEMENT suivie de la ligne de séparation \`| --- | --- | --- | --- | --- | --- | --- |\` ; chaque espèce occupe SA PROPRE ligne (un vrai retour à la ligne, jamais tout le tableau sur une seule ligne).
 - Une ligne par espèce. Colonne « Espèce » = nom français seul ; colonne « Nom scientifique » = \`*Genre espèce*\`.
 - Jamais de cellule vide : mets \`—\`. Jamais de retour à la ligne, de puce ni de pipe \`|\` à l'intérieur d'une cellule.
 - Justification courte (≤ 120 caractères), adossée à une donnée du contexte (pH, texture, exposition, observation).
 - Aucun texte après le tableau.
+
 
 ## VOCABULAIRE DU PÉRIMÈTRE D'UN OUVRAGE (impératif)
 Le contexte 🌱 « Espèces dans l'ouvrage » partitionne les observations de terrain en trois zones :
