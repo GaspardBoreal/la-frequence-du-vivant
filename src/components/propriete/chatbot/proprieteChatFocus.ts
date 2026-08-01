@@ -7,18 +7,33 @@ import { useSyncExternalStore } from 'react';
  * Store externe minimal (hors React tree) pour qu'une popup Leaflet, un
  * inspecteur d'ouvrage ou la fiche carotte puissent cadrer l'IA en un clic.
  */
+/** Niveau de détail transmis pour les ouvrages sélectionnés. */
+export type OuvrageDetailLevel = 'resume' | 'complet' | 'especes';
+
 export interface ProprieteChatFocus {
   objetId: string | null;
   /** Rayon en mètres autour de l'ouvrage (presets partagés avec Mon espace). */
   radiusM: number;
+  /** Ouvrages retenus à la carte dans la Console de contextes. */
+  selectedObjetIds: string[];
+  /** Profondeur de données envoyée pour ces ouvrages. */
+  ouvrageDetail: OuvrageDetailLevel;
 }
 
-const DEFAULT_FOCUS: ProprieteChatFocus = { objetId: null, radiusM: 25 };
+const DEFAULT_FOCUS: ProprieteChatFocus = {
+  objetId: null,
+  radiusM: 25,
+  selectedObjetIds: [],
+  ouvrageDetail: 'resume',
+};
 
 let focus: ProprieteChatFocus = DEFAULT_FOCUS;
 const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((l) => l());
+
+const sameIds = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((v, i) => v === b[i]);
 
 export const proprieteChatFocus = {
   get: () => focus,
@@ -28,7 +43,12 @@ export const proprieteChatFocus = {
   },
   setObjet: (objetId: string | null) => {
     if (focus.objetId === objetId) return;
-    focus = { ...focus, objetId };
+    // Le cadrage carte reste prioritaire : il rejoint la sélection.
+    const selectedObjetIds =
+      objetId && !focus.selectedObjetIds.includes(objetId)
+        ? [...focus.selectedObjetIds, objetId]
+        : focus.selectedObjetIds;
+    focus = { ...focus, objetId, selectedObjetIds };
     emit();
   },
   setRadius: (radiusM: number) => {
@@ -36,11 +56,37 @@ export const proprieteChatFocus = {
     focus = { ...focus, radiusM };
     emit();
   },
+  toggleObjetSelection: (objetId: string) => {
+    const has = focus.selectedObjetIds.includes(objetId);
+    focus = {
+      ...focus,
+      selectedObjetIds: has
+        ? focus.selectedObjetIds.filter((id) => id !== objetId)
+        : [...focus.selectedObjetIds, objetId],
+    };
+    emit();
+  },
+  setSelectedObjets: (ids: string[]) => {
+    if (sameIds(focus.selectedObjetIds, ids)) return;
+    focus = { ...focus, selectedObjetIds: [...ids] };
+    emit();
+  },
+  clearSelectedObjets: () => {
+    if (focus.selectedObjetIds.length === 0) return;
+    focus = { ...focus, selectedObjetIds: [] };
+    emit();
+  },
+  setOuvrageDetail: (ouvrageDetail: OuvrageDetailLevel) => {
+    if (focus.ouvrageDetail === ouvrageDetail) return;
+    focus = { ...focus, ouvrageDetail };
+    emit();
+  },
   reset: () => {
     focus = DEFAULT_FOCUS;
     emit();
   },
 };
+
 
 /**
  * Contextes auto-activés quand l'IA est cadrée sur un ouvrage.
