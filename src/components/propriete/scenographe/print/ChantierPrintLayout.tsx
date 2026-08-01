@@ -377,7 +377,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
       {/* ---------- 2 · Le plan de plantation ---------- */}
       <Page>
         <Title
-          eyebrow="Planche 1"
+          eyebrow={`Planche ${planPlate}`}
           sub={`Houppiers projetés à l’horizon An ${options.year} · emprise ${fmtArea(areaM2)} · les numéros renvoient à la liste de plantation.`}
         >
           Le plan de plantation
@@ -422,7 +422,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
         <Page key={`list-${ci}`}>
           {ci === 0 && (
             <Title
-              eyebrow="Planche 2"
+              eyebrow={`Planche ${listPlate}`}
               sub="Pièce à chiffrer : la colonne prix reste vierge, à compléter par le professionnel."
             >
               La liste de plantation
@@ -509,7 +509,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
         <Page key={`place-${ci}`}>
           {ci === 0 && (
             <Title
-              eyebrow="Planche 3"
+              eyebrow={`Planche ${inPlacePlate}`}
               sub={`Ce qui pousse déjà dans l’emprise (${rigourLabel}) : à conserver, à dégager ou à recomposer — décision à prendre ensemble sur le terrain.`}
             >
               Les espèces en place
@@ -544,7 +544,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
         <Page key={`prop-${ci}`}>
           {ci === 0 && (
             <Title
-              eyebrow="Planche 4"
+              eyebrow={`Planche ${proposedPlate}`}
               sub={`${retained.length} espèce${retained.length > 1 ? 's' : ''} retenue${retained.length > 1 ? 's' : ''} et posée${retained.length > 1 ? 's' : ''} au plan${notRetained.length ? ` · ${notRetained.length} en réserve` : ''}.`}
             >
               Les espèces proposées et retenues
@@ -579,7 +579,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
       {photoList.length > 0 && (
         <Page>
           <Title
-            eyebrow="Planche 5"
+            eyebrow={`Planche ${photoPlate}`}
             sub="État des lieux avant la première bêche — carnet photo de l’ouvrage."
           >
             Avant aménagement
@@ -602,7 +602,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
       )}
       {chunk(photoList.slice(1), PHOTOS_PER_PAGE).map((batch, ci) => (
         <Page key={`ph-${ci}`}>
-          <Title eyebrow="Planche 5 (suite)" sub="Le lieu, sous tous ses angles.">
+          <Title eyebrow={`Planche ${photoPlate} (suite)`} sub="Le lieu, sous tous ses angles.">
             Le carnet photo de l’ouvrage
           </Title>
           <div className="grid grid-cols-2 gap-3">
