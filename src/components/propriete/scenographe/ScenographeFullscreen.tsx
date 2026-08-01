@@ -13,6 +13,7 @@ import { useProprieteObjets, type ProprieteObjet } from '@/hooks/propriete/usePr
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
 import { useOuvrageScenarios, type Planting } from '@/hooks/propriete/useOuvrageScenarios';
+import { useProprieteScenarios } from '@/hooks/propriete/useProprieteScenarios';
 import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
 import { classifyObservations } from '@/lib/ouvrageScope';
 import { geometryAreaM2, geometryCenter, fmtArea } from '@/components/propriete/palette/studio/geoMetrics';
@@ -23,6 +24,8 @@ import HerbierPanel, { type HerbierEntry } from './HerbierPanel';
 import HerbierScopePicker, { type ScopeMode } from './HerbierScopePicker';
 import PanelResizer from './PanelResizer';
 import PlantingLayer from './PlantingLayer';
+import OuvrageGeometryLayer from './OuvrageGeometryLayer';
+import OuvrageSwitcher from './OuvrageSwitcher';
 import BalanceBar from './BalanceBar';
 import ScenarioTabs from './ScenarioTabs';
 import type { ScenographeProposal } from './scenographeStore';
@@ -72,12 +75,24 @@ interface Props {
  */
 export const ScenographeFullscreen: React.FC<Props> = ({
   proprieteId,
-  objetId,
+  objetId: initialObjetId,
   proposals,
   initialScenarioId,
   onClose,
 }) => {
+  /** L'ouvrage travaillé : modifiable sans quitter le plan. */
+  const [objetId, setObjetId] = React.useState(initialObjetId);
+  React.useEffect(() => setObjetId(initialObjetId), [initialObjetId]);
+
   const { objets } = useProprieteObjets(proprieteId);
+  const { scenarios: allScenarios } = useProprieteScenarios(proprieteId);
+  const scenarioCounts = React.useMemo(() => {
+    const m: Record<string, number> = {};
+    allScenarios.forEach((s) => {
+      m[s.objet_id] = (m[s.objet_id] || 0) + 1;
+    });
+    return m;
+  }, [allScenarios]);
   const objet: ProprieteObjet | undefined = React.useMemo(
     () => (objets || []).find((o: ProprieteObjet) => o.id === objetId),
     [objets, objetId],
@@ -96,6 +111,7 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     scen.setActiveId(initialScenarioId);
   }, [initialScenarioId, scen]);
 
+  const [ouvrageCardOpen, setOuvrageCardOpen] = React.useState(false);
   const [growthIdx, setGrowthIdx] = React.useState(1);
   const [armed, setArmed] = React.useState<HerbierEntry | null>(null);
   const [selected, setSelected] = React.useState<string | null>(null);
@@ -345,6 +361,13 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           </span>
         </span>
 
+        <OuvrageSwitcher
+          objets={(objets || []) as any}
+          activeId={objetId}
+          counts={scenarioCounts}
+          onSelect={switchOuvrage}
+        />
+
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <ScenarioTabs
             scenarios={scen.scenarios}
@@ -445,19 +468,14 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                 enabled={!!armed}
                 onPlace={(lat, lng) => armed && place(armed, lat, lng)}
               />
-              {geometry && (
-                <GeoJSON
-                  key={objetId}
-                  data={geometry as any}
-                  style={{
-                    color: tool?.color || '#c8a24a',
-                    weight: 2,
-                    fillColor: tool?.color || '#c8a24a',
-                    fillOpacity: 0.06,
-                    dashArray: '5 4',
-                  }}
-                />
-              )}
+              <OuvrageGeometryLayer
+                objets={(objets || []) as any}
+                activeId={objetId}
+                activePlantings={plantings.length}
+                placing={!!armed}
+                onSelectOuvrage={switchOuvrage}
+                onSelectSelf={() => setOuvrageCardOpen(true)}
+              />
               <PlantingLayer
                 plantings={plantings}
                 growth={growth}
