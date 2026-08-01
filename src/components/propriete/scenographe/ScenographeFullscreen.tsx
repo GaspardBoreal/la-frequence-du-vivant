@@ -79,6 +79,9 @@ interface Props {
   proposals: ScenographeProposal[];
   /** Scénario à rouvrir précisément (bibliothèque / registre). */
   initialScenarioId?: string | null;
+  /** Identité de la propriété — portée sur le dossier de chantier imprimé. */
+  propertyName?: string;
+  commune?: string | null;
   onClose: () => void;
 }
 
@@ -92,7 +95,10 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   objetId: initialObjetId,
   proposals,
   initialScenarioId,
+  propertyName,
+  commune,
   onClose,
+
 }) => {
   /** L'ouvrage travaillé : modifiable sans quitter le plan. */
   const [objetId, setObjetId] = React.useState(initialObjetId);
