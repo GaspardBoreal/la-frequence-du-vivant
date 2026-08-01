@@ -1,5 +1,7 @@
 import React from 'react';
 import { Copy, Check, Table2, FileSpreadsheet, Download, Clapperboard } from 'lucide-react';
+import { toast } from 'sonner';
+
 import {
   openScenographe,
   useScenographeAvailable,
