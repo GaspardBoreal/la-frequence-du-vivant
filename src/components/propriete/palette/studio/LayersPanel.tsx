@@ -17,6 +17,7 @@ import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { ZONE_COLORS } from '@/hooks/propriete/usePropertyZones';
 import { fmtArea } from './geoMetrics';
+import { calqueMeta } from '@/lib/calqueMeta';
 import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 import VivantPeriodFilter from '@/components/propriete/VivantPeriodFilter';
 
@@ -34,7 +35,7 @@ interface Props {
   activeCalqueId: string | null;
   onActivate: (id: string) => void;
   onPatchCalque: (c: ProprieteCalque, patch: Partial<ProprieteCalque>) => void;
-  onDeleteCalque: (id: string) => void;
+  onDeleteCalque: (id: string, moveObjetsToCalqueId?: string | null) => void;
   onCreateCalque: () => void;
   onMove: (c: ProprieteCalque, dir: -1 | 1) => void;
 
@@ -109,11 +110,129 @@ export const LayersPanel: React.FC<Props> = ({
 }) => {
   const [editing, setEditing] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState('');
+  const [showEmpty, setShowEmpty] = React.useState(false);
 
   const startEdit = (id: string, value: string) => {
     setEditing(id);
     setDraft(value);
   };
+
+  const ordered = React.useMemo(() => [...calques].reverse(), [calques]);
+  const nonEmpty = ordered.filter((c) => (objetCountByCalque[c.id] || 0) > 0);
+  const emptyOnes = ordered.filter((c) => (objetCountByCalque[c.id] || 0) === 0);
+
+  const askDelete = (c: ProprieteCalque, count: number) => {
+    if (count > 0) {
+      const target = calques.find((o) => o.id !== c.id);
+      const ok = window.confirm(
+        `Le calque « ${c.nom} » contient ${count} élément${count > 1 ? 's' : ''}.\n\n` +
+          (target
+            ? `OK : les déplacer vers « ${target.nom} » puis supprimer le calque.\nAnnuler : ne rien faire.`
+            : `OK : supprimer le calque et ses éléments.\nAnnuler : ne rien faire.`),
+      );
+      if (!ok) return;
+      onDeleteCalque(c.id, target?.id ?? null);
+      return;
+    }
+    onDeleteCalque(c.id, null);
+  };
+
+  const renderCalques = (list: ProprieteCalque[]) => (
+    <div className="space-y-0.5">
+      {list.map((c) => {
+        const active = c.id === activeCalqueId;
+        const count = objetCountByCalque[c.id] || 0;
+        const meta = calqueMeta(c.nom);
+        const Icon = meta.icon;
+        return (
+          <div
+            key={c.id}
+            onClick={() => onActivate(c.id)}
+            className={`group cursor-pointer rounded-lg px-2 py-1.5 text-[11px] transition-colors ${
+              active
+                ? 'bg-[hsl(var(--ds-forest))]/12 ring-1 ring-[hsl(var(--ds-forest))]/25'
+                : 'hover:bg-[hsl(var(--ds-forest))]/5'
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <IconBtn
+                title={c.visible ? 'Masquer' : 'Afficher'}
+                onClick={() => onPatchCalque(c, { visible: !c.visible })}
+              >
+                {c.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+              </IconBtn>
+              <span
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+                style={{ backgroundColor: `${meta.color}22`, color: meta.color }}
+              >
+                <Icon className="h-2.5 w-2.5" />
+              </span>
+              {editing === `c-${c.id}` ? (
+                <input
+                  autoFocus
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onBlur={() => {
+                    onPatchCalque(c, { nom: draft.trim() || c.nom });
+                    setEditing(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setEditing(null);
+                  }}
+                  className="min-w-0 flex-1 rounded border border-[hsl(var(--ds-line))] bg-white/70 px-1 py-0.5 text-[11px]"
+                />
+              ) : (
+                <span
+                  className={`min-w-0 flex-1 truncate ${c.visible ? '' : 'opacity-45'}`}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    if (!readOnly) startEdit(`c-${c.id}`, c.nom);
+                  }}
+                >
+                  {c.nom}
+                  <span
+                    className={`ml-1 rounded-full px-1.5 py-[1px] text-[9px] ${
+                      count > 0
+                        ? 'bg-[hsl(var(--ds-forest))]/15 text-[hsl(var(--ds-forest-deep))]'
+                        : 'opacity-40'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </span>
+              )}
+              {!readOnly && (
+                <span className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
+                  <IconBtn title="Renommer" onClick={() => startEdit(`c-${c.id}`, c.nom)}>
+                    <Pencil className="h-3 w-3" />
+                  </IconBtn>
+                  <IconBtn title="Monter" onClick={() => onMove(c, 1)}>
+                    <ChevronUp className="h-3 w-3" />
+                  </IconBtn>
+                  <IconBtn title="Descendre" onClick={() => onMove(c, -1)}>
+                    <ChevronDown className="h-3 w-3" />
+                  </IconBtn>
+                  <IconBtn
+                    title={c.verrouille ? 'Déverrouiller' : 'Verrouiller'}
+                    onClick={() => onPatchCalque(c, { verrouille: !c.verrouille })}
+                  >
+                    {c.verrouille ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                  </IconBtn>
+                  <IconBtn danger title="Supprimer le calque" onClick={() => askDelete(c, count)}>
+                    <Trash2 className="h-3 w-3" />
+                  </IconBtn>
+                </span>
+              )}
+            </div>
+            <p className="pl-[26px] text-[9.5px] italic leading-snug opacity-50">{meta.hint}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+
 
   return (
     <div className="flex flex-col gap-4 text-[hsl(var(--ds-forest-deep))]">
@@ -297,81 +416,26 @@ export const LayersPanel: React.FC<Props> = ({
             </button>
           )}
         </div>
-        <div className="space-y-0.5">
-          {[...calques].reverse().map((c) => {
-            const active = c.id === activeCalqueId;
-            const count = objetCountByCalque[c.id] || 0;
-            return (
-              <div
-                key={c.id}
-                onClick={() => onActivate(c.id)}
-                className={`${rowBase} cursor-pointer ${
-                  active
-                    ? 'bg-[hsl(var(--ds-forest))]/12 ring-1 ring-[hsl(var(--ds-forest))]/25'
-                    : 'hover:bg-[hsl(var(--ds-forest))]/5'
-                }`}
-              >
-                <IconBtn
-                  title={c.visible ? 'Masquer' : 'Afficher'}
-                  onClick={() => onPatchCalque(c, { visible: !c.visible })}
-                >
-                  {c.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                </IconBtn>
-                {editing === `c-${c.id}` ? (
-                  <input
-                    autoFocus
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    onBlur={() => {
-                      onPatchCalque(c, { nom: draft.trim() || c.nom });
-                      setEditing(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                      if (e.key === 'Escape') setEditing(null);
-                    }}
-                    className="min-w-0 flex-1 rounded border border-[hsl(var(--ds-line))] bg-white/70 px-1 py-0.5 text-[11px]"
-                  />
-                ) : (
-                  <span
-                    className={`min-w-0 flex-1 truncate ${c.visible ? '' : 'opacity-45'}`}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      if (!readOnly) startEdit(`c-${c.id}`, c.nom);
-                    }}
-                  >
-                    {c.nom}
-                    <span className="ml-1 opacity-45">· {count}</span>
-                  </span>
-                )}
-                {!readOnly && (
-                  <span className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
-                    <IconBtn title="Monter" onClick={() => onMove(c, 1)}>
-                      <ChevronUp className="h-3 w-3" />
-                    </IconBtn>
-                    <IconBtn title="Descendre" onClick={() => onMove(c, -1)}>
-                      <ChevronDown className="h-3 w-3" />
-                    </IconBtn>
-                    <IconBtn
-                      title={c.verrouille ? 'Déverrouiller' : 'Verrouiller'}
-                      onClick={() => onPatchCalque(c, { verrouille: !c.verrouille })}
-                    >
-                      {c.verrouille ? (
-                        <Lock className="h-3 w-3" />
-                      ) : (
-                        <Unlock className="h-3 w-3" />
-                      )}
-                    </IconBtn>
-                    <IconBtn danger title="Supprimer le calque" onClick={() => onDeleteCalque(c.id)}>
-                      <Trash2 className="h-3 w-3" />
-                    </IconBtn>
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {renderCalques(nonEmpty)}
+        {emptyOnes.length > 0 && (
+          <div className="mt-1">
+            <button
+              type="button"
+              onClick={() => setShowEmpty((v) => !v)}
+              className="flex w-full items-center gap-1 rounded-lg px-2 py-1 text-[10px] italic opacity-60 hover:bg-[hsl(var(--ds-forest))]/5 hover:opacity-90"
+            >
+              {showEmpty ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronUp className="h-3 w-3 rotate-90" />
+              )}
+              {emptyOnes.length} calque{emptyOnes.length > 1 ? 's' : ''} vide
+              {emptyOnes.length > 1 ? 's' : ''}
+            </button>
+            {showEmpty && <div className="mt-0.5 space-y-0.5">{renderCalques(emptyOnes)}</div>}
+          </div>
+        )}
+
         {activeCalqueId && !readOnly && (
           <div className="mt-2 px-2">
             <label className="flex items-center gap-2 text-[10px] opacity-70">

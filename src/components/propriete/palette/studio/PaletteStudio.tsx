@@ -193,7 +193,12 @@ export const PaletteStudio: React.FC<Props> = ({
 
 
 
-  const { calques, upsertCalque, deleteCalque } = useProprieteCalques(open ? proprieteId : undefined);
+  const {
+    calques,
+    upsertCalque,
+    deleteCalque,
+    loading: calquesLoading,
+  } = useProprieteCalques(open ? proprieteId : undefined);
   const { objets, upsertObjet, deleteObjet } = useProprieteObjets(open ? proprieteId : undefined);
   const objetPhotos = useObjetPhotos(open ? proprieteId : undefined);
 
@@ -338,21 +343,23 @@ export const PaletteStudio: React.FC<Props> = ({
 
 
 
-  /* Semer les calques par défaut au premier passage */
-  const seededRef = React.useRef(false);
+  /* Semer les calques par défaut — une seule fois par propriété, après chargement */
+  const seededRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (!open || readOnly || seededRef.current) return;
-    if (calques.length > 0) {
-      seededRef.current = true;
-      return;
-    }
-    seededRef.current = true;
+    if (!open || readOnly || !proprieteId) return;
+    // On attend le chargement réel : une liste vide « en cours de chargement »
+    // ne doit jamais déclencher un nouveau semis (source des calques dupliqués).
+    if (calquesLoading) return;
+    if (seededRef.current === proprieteId) return;
+    seededRef.current = proprieteId;
+    if (calques.length > 0) return;
     (async () => {
       for (let i = 0; i < DEFAULT_LAYERS.length; i++) {
-        await upsertCalque({ nom: DEFAULT_LAYERS[i], ordre: i });
+        await upsertCalque({ nom: DEFAULT_LAYERS[i], ordre: i }).catch(() => {});
       }
     })().catch(() => {});
-  }, [open, readOnly, calques.length, upsertCalque]);
+  }, [open, readOnly, proprieteId, calquesLoading, calques.length, upsertCalque]);
+
 
   React.useEffect(() => {
     if (!activeCalqueId && calques.length > 0) setActiveCalqueId(calques[calques.length - 1].id);
@@ -611,16 +618,35 @@ export const PaletteStudio: React.FC<Props> = ({
                   onPatchCalque={(c, patch) =>
                     upsertCalque({ ...c, ...patch, id: c.id }).catch(() => {})
                   }
-                  onDeleteCalque={(id) => {
-                    deleteCalque(id).catch(() => {});
+                  onDeleteCalque={(id, moveTo) => {
+                    (async () => {
+                      if (moveTo) {
+                        const toMove = objets.filter((o) => o.calque_id === id);
+                        for (const o of toMove) {
+                          await upsertObjet({
+                            id: o.id,
+                            outil_key: o.outil_key,
+                            geometry: o.geometry,
+                            calque_id: moveTo,
+                            zone_id: o.zone_id,
+                            nom: o.nom,
+                            style: o.style,
+                            meta: o.meta,
+                            ordre: o.ordre,
+                          }).catch(() => {});
+                        }
+                      }
+                      await deleteCalque(id).catch(() => {});
+                    })().catch(() => {});
                     if (activeCalqueId === id) setActiveCalqueId(null);
                   }}
-                  onCreateCalque={() =>
-                    upsertCalque({
-                      nom: `Calque ${calques.length + 1}`,
-                      ordre: calques.length,
-                    }).catch(() => {})
-                  }
+                  onCreateCalque={() => {
+                    const taken = new Set(calques.map((c) => c.nom.trim().toLowerCase()));
+                    let n = calques.length + 1;
+                    while (taken.has(`calque ${n}`)) n++;
+                    upsertCalque({ nom: `Calque ${n}`, ordre: calques.length }).catch(() => {});
+                  }}
+
                   onMove={(c, dir) =>
                     upsertCalque({ ...c, id: c.id, ordre: c.ordre + dir }).catch(() => {})
                   }
