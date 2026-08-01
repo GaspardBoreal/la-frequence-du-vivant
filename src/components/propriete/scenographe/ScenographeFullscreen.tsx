@@ -587,6 +587,15 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                 onSelectOuvrage={switchOuvrage}
                 onSelectSelf={() => setOuvrageCardOpen(true)}
               />
+              {/* Pastilles « carnet photo » — exactement la couche de l'Atelier */}
+              <OuvragePhotoPastilleLayer
+                objets={(objets || []) as any}
+                photoCounts={objetPhotos.counts}
+                photoThumbs={photoThumbs}
+                selectedId={objetId}
+                onOpenPhotos={openGallery}
+              />
+
               <PlantingLayer
                 plantings={plantings}
                 growth={growth}
