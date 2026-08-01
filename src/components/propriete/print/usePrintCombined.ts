@@ -87,10 +87,16 @@ function bustedUrl(url: string, attempt: number): string {
   if (!url || /^(data|blob):/i.test(url)) return url;
   try {
     const u = new URL(url, window.location.href);
+    // Les CDN externes (iNaturalist, GBIF, S3 signé…) rejettent ou invalident
+    // souvent les paramètres inconnus : on ne « cache-buste » que nos propres
+    // images (Supabase Storage / même origine).
+    const isOwn =
+      u.origin === window.location.origin || u.pathname.includes('/storage/v1/');
+    if (!isOwn) return url;
     u.searchParams.set('_r', String(attempt));
     return u.toString();
   } catch {
-    return url + (url.includes('?') ? '&' : '?') + '_r=' + attempt;
+    return url;
   }
 }
 

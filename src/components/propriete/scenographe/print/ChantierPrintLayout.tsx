@@ -107,36 +107,42 @@ const SpeciesTile: React.FC<{
   return (
     <article className="print-avoid-break overflow-hidden rounded-xl border border-[#e0d5b6] bg-white/70">
       <div
-        className="print-exact relative h-[26mm] w-full overflow-hidden"
+        className="print-exact relative h-[42mm] w-full overflow-hidden"
         style={{ backgroundColor: `${info.color}14` }}
       >
         {photoUrl ? (
+          // Pas de crossOrigin : les photos iNaturalist / GBIF ne renvoient pas
+          // toujours d'en-tête CORS, et le mode « anonymous » les faisait échouer
+          // silencieusement à l'impression.
           <img
-            src={printImageUrl(photoUrl, 'thumb')}
+            src={printImageUrl(photoUrl, 'plate')}
             alt={title}
             className="h-full w-full object-cover"
-            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-[20pt] opacity-45">
-            {info.glyph}
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-[#8a8172]">
+            <span className="text-[26pt] opacity-45">{info.glyph}</span>
+            <span className="text-[7pt] uppercase tracking-[0.12em] opacity-70">
+              photographie à venir
+            </span>
           </div>
         )}
         {badge && (
-          <span className="print-exact absolute left-1 top-1 rounded-full bg-[#2a2419]/78 px-1.5 py-[1px] text-[7pt] font-semibold text-white">
+          <span className="print-exact absolute left-1.5 top-1.5 rounded-full bg-[#2a2419]/78 px-2 py-[1px] text-[7.5pt] font-semibold text-white">
             {badge}
           </span>
         )}
       </div>
-      <div className="p-1.5">
-        <p className="truncate text-[9pt] font-semibold leading-tight text-[#2a2419]">{title}</p>
-        <p className="truncate font-serif text-[8pt] italic text-[#6b6151]">{latin}</p>
+      <div className="p-2">
+        <p className="truncate text-[10pt] font-semibold leading-tight text-[#2a2419]">{title}</p>
+        <p className="truncate font-serif text-[8.5pt] italic text-[#6b6151]">{latin}</p>
         <div className="mt-1 flex flex-wrap items-center gap-1">
           <StrateChip strate={strate} />
-          {meta && <span className="text-[7.6pt] text-[#7a7261]">{meta}</span>}
+          {meta && <span className="text-[7.8pt] text-[#7a7261]">{meta}</span>}
         </div>
         {functions && functions.length > 0 && (
-          <p className="mt-[3px] truncate text-[7.4pt] text-[#7a7261]">
+          <p className="mt-[3px] truncate text-[7.6pt] text-[#7a7261]">
             {functions
               .map((f) => ecoGlyph(f))
               .filter(Boolean)
@@ -155,7 +161,7 @@ const SpeciesTile: React.FC<{
 
 const LIST_ROWS_1 = 20;
 const LIST_ROWS_N = 26;
-const TILES_PER_PAGE = 12;
+const TILES_PER_PAGE = 9;
 const PHOTOS_PER_PAGE = 6;
 
 /**
@@ -499,7 +505,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               Les espèces en place
             </Title>
           )}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {tiles.map((e) => (
               <SpeciesTile
                 key={e.key}
@@ -516,7 +522,11 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               />
             ))}
           </div>
+          <p className="mt-3 text-[7.4pt] italic text-[#8a8172]">
+            Photographies de référence : iNaturalist / GBIF (licences Creative Commons).
+          </p>
         </Page>
+
       ))}
 
       {/* ---------- 5 · Les apports retenus ---------- */}
@@ -530,7 +540,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               Les espèces proposées et retenues
             </Title>
           )}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {tiles.map((e) => {
               const isRetained = retained.some((r) => r.key === e.key);
               const n = numberOf.get(e.scientificName);
@@ -548,7 +558,11 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               );
             })}
           </div>
+          <p className="mt-3 text-[7.4pt] italic text-[#8a8172]">
+            Photographies de référence : iNaturalist / GBIF (licences Creative Commons).
+          </p>
         </Page>
+
       ))}
 
       {/* ---------- 6 · Photos avant aménagement ---------- */}
@@ -565,7 +579,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               src={printImageUrl(photoList[0].url, 'hero')}
               alt={photoList[0].caption || 'État actuel'}
               className="h-[150mm] w-full object-cover"
-              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
             />
             <figcaption className="flex items-center justify-between px-2 py-1.5 text-[8pt] text-[#6b6151]">
               <span>{photoList[0].caption || 'État actuel de l’emprise'}</span>
@@ -588,7 +602,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
                   src={printImageUrl(ph.url, 'plate')}
                   alt={ph.caption || 'Photographie de l’ouvrage'}
                   className="h-[62mm] w-full object-cover"
-                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
                 />
                 <figcaption className="flex items-center justify-between px-2 py-1 text-[7.6pt] text-[#6b6151]">
                   <span className="truncate">{ph.caption || '—'}</span>
