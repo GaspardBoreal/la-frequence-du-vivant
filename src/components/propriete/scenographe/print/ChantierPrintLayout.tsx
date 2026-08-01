@@ -264,10 +264,19 @@ export const ChantierPrintLayout: React.FC<Props> = ({
     : 0;
   const inPlacePages = Math.ceil(inPlaceList.length / TILES_PER_PAGE);
   const proposedTiles = [...retained, ...notRetained];
-  const proposedPages = Math.ceil(proposedTiles.length / TILES_PER_PAGE);
+  /** La planche « apports » est toujours imprimée, même vide (mention explicite). */
+  const proposedPages = Math.max(1, Math.ceil(proposedTiles.length / TILES_PER_PAGE));
   const photoPages = photoList.length
     ? 1 + Math.max(0, Math.ceil((photoList.length - 1) / PHOTOS_PER_PAGE))
     : 0;
+
+  /* --- Numérotation continue des planches --- */
+  let plateSeq = 0;
+  const planPlate = ++plateSeq;
+  const listPlate = listPages ? ++plateSeq : 0;
+  const inPlacePlate = inPlacePages ? ++plateSeq : 0;
+  const proposedPlate = ++plateSeq;
+  const photoPlate = photoPages ? ++plateSeq : 0;
 
   const total =
     1 /* cover */ +
@@ -277,6 +286,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
     proposedPages +
     photoPages +
     1; /* repères */
+
 
   let page = 1;
   const Foot: React.FC<{ index: number }> = ({ index }) => (
@@ -367,7 +377,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
       {/* ---------- 2 · Le plan de plantation ---------- */}
       <Page>
         <Title
-          eyebrow="Planche 1"
+          eyebrow={`Planche ${planPlate}`}
           sub={`Houppiers projetés à l’horizon An ${options.year} · emprise ${fmtArea(areaM2)} · les numéros renvoient à la liste de plantation.`}
         >
           Le plan de plantation
@@ -412,7 +422,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
         <Page key={`list-${ci}`}>
           {ci === 0 && (
             <Title
-              eyebrow="Planche 2"
+              eyebrow={`Planche ${listPlate}`}
               sub="Pièce à chiffrer : la colonne prix reste vierge, à compléter par le professionnel."
             >
               La liste de plantation
@@ -499,7 +509,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
         <Page key={`place-${ci}`}>
           {ci === 0 && (
             <Title
-              eyebrow="Planche 3"
+              eyebrow={`Planche ${inPlacePlate}`}
               sub={`Ce qui pousse déjà dans l’emprise (${rigourLabel}) : à conserver, à dégager ou à recomposer — décision à prendre ensemble sur le terrain.`}
             >
               Les espèces en place
@@ -530,46 +540,59 @@ export const ChantierPrintLayout: React.FC<Props> = ({
       ))}
 
       {/* ---------- 5 · Les apports retenus ---------- */}
-      {chunk(proposedTiles, TILES_PER_PAGE).map((tiles, ci) => (
+      {(proposedTiles.length ? chunk(proposedTiles, TILES_PER_PAGE) : [[]]).map((tiles, ci) => (
         <Page key={`prop-${ci}`}>
           {ci === 0 && (
             <Title
-              eyebrow="Planche 4"
-              sub={`${retained.length} espèce${retained.length > 1 ? 's' : ''} retenue${retained.length > 1 ? 's' : ''} et posée${retained.length > 1 ? 's' : ''} au plan${notRetained.length ? ` · ${notRetained.length} en réserve` : ''}.`}
+              eyebrow={`Planche ${proposedPlate}`}
+              sub={
+                proposedTiles.length
+                  ? `${retained.length} espèce${retained.length > 1 ? 's' : ''} retenue${retained.length > 1 ? 's' : ''} et posée${retained.length > 1 ? 's' : ''} au plan${notRetained.length ? ` · ${notRetained.length} en réserve` : ''}.`
+                  : 'Aucun apport retenu à ce stade : le scénario s’appuie uniquement sur les espèces déjà en place.'
+              }
             >
               Les espèces proposées et retenues
             </Title>
           )}
-          <div className="grid grid-cols-3 gap-3">
-            {tiles.map((e) => {
-              const isRetained = retained.some((r) => r.key === e.key);
-              const n = numberOf.get(e.scientificName);
-              return (
-                <SpeciesTile
-                  key={e.key}
-                  photoUrl={e.photoUrl}
-                  title={e.commonNameFr || e.scientificName}
-                  latin={e.scientificName}
-                  strate={e.strate}
-                  badge={isRetained ? `retenue · n° ${n ?? '—'}` : 'en réserve'}
-                  meta={`Ø ${fmtM(e.spreadM)}`}
-                  functions={e.functions}
-                />
-              );
-            })}
-          </div>
+          {tiles.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-[#e0d5b6] px-4 py-6 text-center text-[9.5pt] italic text-[#8a8172]">
+              Aucun apport n’a encore été posé au plan pour ce scénario.
+            </p>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {tiles.map((e) => {
+                const qty = plantings.filter(
+                  (p) => p.origin !== 'place' && p.scientificName === e.scientificName,
+                ).length;
+                const isRetained = qty > 0;
+                const n = numberOf.get(e.scientificName);
+                return (
+                  <SpeciesTile
+                    key={e.key}
+                    photoUrl={e.photoUrl}
+                    title={e.commonNameFr || e.scientificName}
+                    latin={e.scientificName}
+                    strate={e.strate}
+                    badge={isRetained ? `retenue · n° ${n ?? '—'}` : 'en réserve'}
+                    meta={`Ø ${fmtM(e.spreadM)}${isRetained ? ` · ${qty} sujet${qty > 1 ? 's' : ''}` : ''}`}
+                    functions={e.functions}
+                  />
+                );
+              })}
+            </div>
+          )}
           <p className="mt-3 text-[7.4pt] italic text-[#8a8172]">
             Photographies de référence : iNaturalist / GBIF (licences Creative Commons).
           </p>
         </Page>
-
       ))}
+
 
       {/* ---------- 6 · Photos avant aménagement ---------- */}
       {photoList.length > 0 && (
         <Page>
           <Title
-            eyebrow="Planche 5"
+            eyebrow={`Planche ${photoPlate}`}
             sub="État des lieux avant la première bêche — carnet photo de l’ouvrage."
           >
             Avant aménagement
@@ -592,7 +615,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
       )}
       {chunk(photoList.slice(1), PHOTOS_PER_PAGE).map((batch, ci) => (
         <Page key={`ph-${ci}`}>
-          <Title eyebrow="Planche 5 (suite)" sub="Le lieu, sous tous ses angles.">
+          <Title eyebrow={`Planche ${photoPlate} (suite)`} sub="Le lieu, sous tous ses angles.">
             Le carnet photo de l’ouvrage
           </Title>
           <div className="grid grid-cols-2 gap-3">

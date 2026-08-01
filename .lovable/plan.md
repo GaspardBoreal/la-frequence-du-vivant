@@ -1,37 +1,37 @@
-## Constat (vérifié sur le PDF fourni)
+## Constat (vérifié sur Massif_V2.pdf + le code)
 
-Pages 3 et 4 : les vignettes affichent l'icône « image cassée ». Les `src` sont bien présents, mais les images ne se chargent pas à l'impression. Deux causes identifiées dans le code :
+Le PDF a bien 7 pages : couverture, Planche 1 (plan), Planche 2 (liste de plantation), **Planche 3 (espèces en place, photos OK)**, puis directement **Planche 5 (avant aménagement)**. La Planche 4 « Les espèces proposées et retenues » n'est pas imprimée du tout.
 
-1. **`crossOrigin="anonymous"`** est posé sur les `<img>` des planches (`ChantierPrintLayout.tsx`). Les photos iNaturalist sont servies depuis un bucket S3 qui ne renvoie pas systématiquement d'en-tête CORS → le navigateur refuse l'image alors qu'elle s'afficherait sans cet attribut. À l'écran (Herbier) l'`<img>` n'a pas `crossOrigin`, d'où la photo visible dans le Scénographe mais cassée à l'impression.
-2. **La source des photos est un appel iNaturalist live côté navigateur** (`useInatThumbs`), sensible au rate-limit, au fuzzy-match et aux URLs `square/medium` variables. Le projet dispose déjà d'une infrastructure fiable et inutilisée ici : table `species_thumb_cache` + RPC `get_species_thumbs` + edge `resolve-species-thumb` (cascade iNat exact → iNat fuzzy → GBIF), exposée par `useSpeciesThumbs`.
-3. La relance d'image de `usePrintCombined` ajoute un paramètre `_r=` de cache-busting, ce qui peut invalider certaines URLs signées/CDN — à ne pas appliquer aux domaines externes.
+Cause : dans `ChantierPrintLayout.tsx`, cette planche est construite à partir de la seule prop `proposed`, qui vient de `state.proposals` du store du Scénographe (`ScenographeMount` → `ScenographeFullscreen`). Ce tableau n'est peuplé que lorsque l'onglet « Proposées » a été ouvert / la reco IA relancée dans la session ; au moment de l'impression il est vide, donc `retained` et `notRetained` sont vides et `chunk([])` ne rend aucune page.
+
+Pourtant la donnée existe : la Planche 2 du PDF liste 7 espèces avec l'origine « Apport proposé » (Lotier corniculé, serpolet, Achillée millefeuille, Pivoine de Chine, Rosier des chiens, sureau noir, Verveine citronnelle). Elles sont dans `scenario.plantings` avec `origin: 'proposee' | 'libre'` — source fiable, persistée en base, indépendante de l'état de session.
 
 ## Correction
 
-**1. Source unique et robuste des photos**
-- Dans `ScenographeFullscreen.tsx`, remplacer `useInatThumbs` par `useSpeciesThumbs` (cache serveur) pour toutes les entrées d'herbier, avec repli sur la photo terrain déjà connue (observation marcheur) puis sur le cache.
-- Ordre de priorité par espèce : photo terrain locale → `species_thumb_cache.photo_url` (iNat/GBIF/manuel) → glyphe de strate dessiné (pas d'image cassée possible).
+**1. Source de vérité = les sujets posés au plan**
+- Construire les vignettes « apports » d'abord depuis `plantings.filter(p => p.origin !== 'place')`, dédupliqués par nom scientifique, avec le n° de la liste de plantation, la strate, l'envergure adulte et le nombre de sujets posés.
+- Fusionner ensuite les propositions du store non posées (`proposals` non présentes dans les plantings) comme section « en réserve » — si le store est vide, la planche reste complète grâce aux plantings.
 
-**2. Résolution garantie avant impression**
-- Dans `ChantierPrintDialog.tsx`, ajouter une étape « Recherche des photographies d'espèces » avant le lancement du rendu : appel de l'edge `resolve-species-thumb` sur tous les noms scientifiques du dossier (plantings + en place + proposées, par lots de 50), attente de la réponse, relecture du cache, puis passage à la phase existante de préchargement `usePrintCombined`. Barre de progression réutilisée (`PrintPreparationOverlay`).
+**2. Photos garanties**
+- Réutiliser exactement le même chemin que la Planche 3 (qui fonctionne) : `useSpeciesThumbs` / `resolveSpeciesThumbs` sur les noms scientifiques des apports, résolus et attendus avant le lancement de l'impression (l'étape de résolution existe déjà dans le flux d'impression — il faut y inclure les noms issus des plantings, pas seulement ceux de `proposals`).
+- Repli propre si aucune photo : vignette teintée strate + glyphe, jamais d'image cassée.
 
-**3. Chargement d'image fiable à l'impression**
-- Retirer `crossOrigin="anonymous"` des `<img>` du dossier (aucun canvas n'est utilisé, l'attribut n'apporte rien et casse le chargement).
-- `printImageUrl` ne transforme que les URLs Supabase ; pour les URLs externes, ne pas appliquer le cache-buster `_r=` dans `usePrintCombined` (repli : recharger l'URL d'origine telle quelle).
-- Repli visuel propre : si aucune photo après résolution, vignette « herbier » (fond teinté strate + glyphe + mention discrète « photo non disponible ») au lieu d'un cadre vide.
+**3. Planche jamais silencieuse**
+- Si aucun apport n'est posé et aucune proposition disponible, imprimer une planche courte avec la mention « Aucun apport retenu à ce stade » plutôt que de supprimer la page — le professionnel voit que le sujet a été traité.
 
-**4. Design des planches 3 et 4**
-- Vignettes agrandies : grille 3 colonnes (au lieu de 4), image en 34 mm de haut, cadrage `object-cover`, filet crème et coin arrondi conservés.
-- Bandeau bas de vignette enrichi : nom français en gras, *nom scientifique* en sérif italique, puce de strate, envergure adulte, nombre d'observations (planche « en place ») ou n° du plan (planche « apports retenus ») pour relier la photo au plan et au tableau.
-- Mention d'attribution en pied de planche : « Photographies : iNaturalist / GBIF — usage documentaire », avec la source réelle par vignette en micro-texte.
-- Pagination ajustée à 9 vignettes par page (au lieu de 12) pour respecter la hauteur A4.
+**4. Numérotation des planches dynamique**
+- Les libellés « Planche 1..5 » sont aujourd'hui codés en dur, d'où le saut visible 3 → 5. Calculer le numéro à partir des planches réellement rendues (compteur incrémental), pour que la numérotation reste continue quelles que soient les options cochées.
+
+**5. Lisibilité de la planche apports**
+- Deux blocs distincts : « Retenus et posés au plan » (badge doré, n° du plan, nombre de sujets) puis « En réserve » (badge sobre), même grille 3 colonnes que la Planche 3.
+- Pied de planche : mention des sources photographiques (iNaturalist / GBIF).
 
 ## Détails techniques
 
-- Fichiers touchés : `src/components/propriete/scenographe/print/ChantierPrintLayout.tsx`, `src/components/propriete/scenographe/print/ChantierPrintDialog.tsx`, `src/components/propriete/scenographe/ScenographeFullscreen.tsx`, `src/components/propriete/print/usePrintCombined.ts` (garde cache-buster), et retrait du même `crossOrigin` parasite dans `PortraitPrintLayout.tsx` / `FloraAtlasPrintPlates.tsx` qui souffrent du même défaut.
-- Aucune nouvelle table ni nouvelle edge function : réutilisation de `species_thumb_cache`, `get_species_thumbs`, `resolve-species-thumb`.
-- Vérification finale : régénération du dossier et contrôle visuel des pages 3 et 4 (conversion en images) avant de conclure.
+- Fichiers touchés : `src/components/propriete/scenographe/print/ChantierPrintLayout.tsx` (dérivation des apports depuis `plantings`, blocs retenus/réserve, numérotation dynamique), `src/components/propriete/scenographe/ScenographeFullscreen.tsx` (inclure les noms scientifiques des plantings dans la liste résolue avant impression).
+- Aucun changement de base de données, aucune nouvelle edge function.
+- Vérification finale : régénération du dossier, conversion en images et contrôle visuel que la planche « apports » apparaît avec ses 7 espèces photographiées et une pagination continue.
 
 ## Hors périmètre
 
-Pas de téléversement de photos d'espèces par l'utilisateur depuis le dossier, pas de moteur PDF serveur.
+Pas de modification du moteur de propositions IA ni de la liste de plantation (Planche 2), qui est correcte.
