@@ -38,6 +38,8 @@ import { ChatSuggestions } from './ChatSuggestions';
 import { useChatExport } from './useChatExport';
 import { ChatExportDrawer } from './ChatExportDrawer';
 import { chatConfig, type ChatContext } from './chatConfig';
+import { scenographeStore } from '@/components/propriete/scenographe/scenographeStore';
+
 import { chatPageContext, useChatPageContextStore, SPECIES_POOL_SLICE_KEY, CONTEXT_SLICE_PREFIX, contextSliceKey, type ChatEntity } from '@/hooks/useChatPageContext';
 import { ContextConsole } from './ContextConsole';
 import { payloadBytes, formatBytes, ecoVerdict, ECO_COLORS } from '@/lib/chatContextCost';
@@ -104,6 +106,27 @@ export function ChatBot({
   const [voiceMode, setVoiceMode] = useState(false);
   const [interruptBanner, setInterruptBanner] = useState(false);
   const [originContext, setOriginContext] = useState<{ speciesLabel?: string } | null>(null);
+
+  // Le Scénographe s'ouvre en z-[3000] : si le chat est agrandi (z-[3200]),
+  // il masque entièrement la scène. On replie le chat au front montant.
+  const scenoWasOpen = useRef(false);
+  useEffect(() => {
+    const sync = () => {
+      const nowOpen = scenographeStore.get().open;
+      if (nowOpen && !scenoWasOpen.current) {
+        setIsExpanded(false);
+        setIsOpen(false);
+      }
+      scenoWasOpen.current = nowOpen;
+    };
+    sync();
+    const unsub = scenographeStore.subscribe(sync);
+    return () => {
+      unsub();
+    };
+  }, []);
+
+
 
   // Permet à un FAB externe (ex: MobileActionFab) d'ouvrir le chat
   useEffect(() => {

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Copy, Check, Table2, FileSpreadsheet, Download, Clapperboard } from 'lucide-react';
+import { toast } from 'sonner';
+
 import {
   openScenographe,
   useScenographeAvailable,
@@ -123,9 +125,16 @@ export function ChatTableBlock({ children }: { children?: React.ReactNode }) {
         {canStage && (
           <button
             type="button"
-            onClick={() =>
-              openScenographe(targetObjetId!, parseSpeciesTable(readMatrix(ref.current)))
-            }
+            onClick={() => {
+              const parsed = parseSpeciesTable(readMatrix(ref.current));
+              if (!parsed.length) {
+                toast.error("Aucune espèce exploitable dans ce tableau");
+                return;
+              }
+              openScenographe(targetObjetId!, parsed);
+              toast.success(`Palette envoyée au Scénographe · ${parsed.length} espèce${parsed.length > 1 ? 's' : ''}`);
+            }}
+
             title="Composer cette palette sur le plan de l’ouvrage"
             className="flex items-center gap-1 rounded-full border border-[#c8a24a]/60 bg-[#c8a24a]/15 px-2 py-[3px] text-[10px] font-medium text-[#c8a24a] transition-colors hover:bg-[#c8a24a]/25"
           >
