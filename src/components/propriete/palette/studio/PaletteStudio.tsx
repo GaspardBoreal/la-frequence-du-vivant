@@ -618,16 +618,35 @@ export const PaletteStudio: React.FC<Props> = ({
                   onPatchCalque={(c, patch) =>
                     upsertCalque({ ...c, ...patch, id: c.id }).catch(() => {})
                   }
-                  onDeleteCalque={(id) => {
-                    deleteCalque(id).catch(() => {});
+                  onDeleteCalque={(id, moveTo) => {
+                    (async () => {
+                      if (moveTo) {
+                        const toMove = objets.filter((o) => o.calque_id === id);
+                        for (const o of toMove) {
+                          await upsertObjet({
+                            id: o.id,
+                            outil_key: o.outil_key,
+                            geometry: o.geometry,
+                            calque_id: moveTo,
+                            zone_id: o.zone_id,
+                            nom: o.nom,
+                            style: o.style,
+                            meta: o.meta,
+                            ordre: o.ordre,
+                          }).catch(() => {});
+                        }
+                      }
+                      await deleteCalque(id).catch(() => {});
+                    })().catch(() => {});
                     if (activeCalqueId === id) setActiveCalqueId(null);
                   }}
-                  onCreateCalque={() =>
-                    upsertCalque({
-                      nom: `Calque ${calques.length + 1}`,
-                      ordre: calques.length,
-                    }).catch(() => {})
-                  }
+                  onCreateCalque={() => {
+                    const taken = new Set(calques.map((c) => c.nom.trim().toLowerCase()));
+                    let n = calques.length + 1;
+                    while (taken.has(`calque ${n}`)) n++;
+                    upsertCalque({ nom: `Calque ${n}`, ordre: calques.length }).catch(() => {});
+                  }}
+
                   onMove={(c, dir) =>
                     upsertCalque({ ...c, id: c.id, ordre: c.ordre + dir }).catch(() => {})
                   }
