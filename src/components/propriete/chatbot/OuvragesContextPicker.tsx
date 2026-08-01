@@ -77,6 +77,10 @@ export const OuvragesContextPicker: React.FC<{ proprieteId?: string }> = ({ prop
   const selected = new Set(focus.selectedObjetIds);
   const allIds = rows.map((r) => r.id);
   const recommendedIds = rows.filter((r) => r.recommended).map((r) => r.id);
+  const selectionBytes =
+    (chatPageContext.getState().pageState.availableAttachments?.providers ?? []).find(
+      (p) => p.id === 'ouvrages.selection',
+    )?.bytes ?? 0;
 
   return (
     <div className="mb-2 rounded-xl border border-primary/25 bg-primary/5 p-2.5">
