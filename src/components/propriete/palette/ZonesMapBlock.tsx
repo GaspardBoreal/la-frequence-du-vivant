@@ -331,9 +331,10 @@ export const ZonesMapBlock: React.FC<Props> = ({
         </span>
       )}
 
+      </div>
 
+      <span className="ml-auto shrink-0 flex flex-wrap items-center justify-end gap-2">
 
-      <span className="ml-auto flex items-center gap-2">
         <span className="text-[11px] font-semibold text-[hsl(var(--ds-forest))]">
           {zones.length} {zones.length > 1 ? 'emplacements' : 'emplacement'}
           {typeof maxZones === 'number' ? ` / ${maxZones}` : ''}
