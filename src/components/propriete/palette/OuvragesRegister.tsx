@@ -258,6 +258,12 @@ export const OuvragesRegister: React.FC<Props> = ({
                         }).catch(() => {})
                       }
                     />
+                    <OuvrageScenariosPanel
+                      proprieteId={proprieteId}
+                      objetId={o.id}
+                      readOnly={readOnly}
+                    />
+
                   </div>
                 )}
               </div>
