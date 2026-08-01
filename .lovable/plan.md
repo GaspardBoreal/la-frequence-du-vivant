@@ -1,29 +1,37 @@
-## Objectif
+## Constat (vérifié sur le PDF fourni)
 
-Depuis la vue Scénario (Scénographe), imprimer un **« Dossier de chantier »** A4 haut de gamme, à présenter à un paysagiste / pépiniériste pour valider le chantier : espèces en place, espèces proposées et retenues, photos avant aménagement, plan et métrés.
+Pages 3 et 4 : les vignettes affichent l'icône « image cassée ». Les `src` sont bien présents, mais les images ne se chargent pas à l'impression. Deux causes identifiées dans le code :
 
-## Ce que contient le dossier (pagination A4 portrait)
+1. **`crossOrigin="anonymous"`** est posé sur les `<img>` des planches (`ChantierPrintLayout.tsx`). Les photos iNaturalist sont servies depuis un bucket S3 qui ne renvoie pas systématiquement d'en-tête CORS → le navigateur refuse l'image alors qu'elle s'afficherait sans cet attribut. À l'écran (Herbier) l'`<img>` n'a pas `crossOrigin`, d'où la photo visible dans le Scénographe mais cassée à l'impression.
+2. **La source des photos est un appel iNaturalist live côté navigateur** (`useInatThumbs`), sensible au rate-limit, au fuzzy-match et aux URLs `square/medium` variables. Le projet dispose déjà d'une infrastructure fiable et inutilisée ici : table `species_thumb_cache` + RPC `get_species_thumbs` + edge `resolve-species-thumb` (cascade iNat exact → iNat fuzzy → GBIF), exposée par `useSpeciesThumbs`.
+3. La relance d'image de `usePrintCombined` ajoute un paramètre `_r=` de cache-busting, ce qui peut invalider certaines URLs signées/CDN — à ne pas appliquer aux domaines externes.
 
-1. **Couverture** — nom de l'ouvrage + scénario, propriété / commune, surface, date d'édition, bandeau doré, vignette du plan, chiffres clés (nb d'espèces, strates, couverture projetée An 3 / An 10).
-2. **Le plan de plantation** — plan pleine page issu du canevas du Scénographe : emprise de l'ouvrage, halos d'envergure adulte, pastilles numérotées, échelle et nord. Légende par strate.
-3. **La liste de plantation** — tableau pro numéroté (n° du plan, nom français + *nom scientifique*, strate, origine, envergure adulte, quantité), trié par strate, avec sous-totaux. C'est la pièce que le professionnel chiffre.
-4. **Les espèces en place** — planche visuelle (vignettes photo) de ce qui existe déjà dans l'emprise, avec le niveau de rigueur retenu (strict / lisière / voisinage) indiqué, pour dire au pro « ceci reste, ne pas toucher ».
-5. **Les espèces proposées et retenues** — planche visuelle des apports (photo, nom FR + scientifique, strate, fonctions écologiques, envergure). Distinction claire posé / non posé.
-6. **Photos avant aménagement** — le carnet photo de l'ouvrage en planche datée (mosaïque, date EXIF, légende), plus une page « état actuel » en grand format si ≥ 1 photo.
-7. **Repères de chantier** — surface, densité, écartements, note libre du scénario, sources et mentions.
+## Correction
 
-## Comment ça marche (technique)
+**1. Source unique et robuste des photos**
+- Dans `ScenographeFullscreen.tsx`, remplacer `useInatThumbs` par `useSpeciesThumbs` (cache serveur) pour toutes les entrées d'herbier, avec repli sur la photo terrain déjà connue (observation marcheur) puis sur le cache.
+- Ordre de priorité par espèce : photo terrain locale → `species_thumb_cache.photo_url` (iNat/GBIF/manuel) → glyphe de strate dessiné (pas d'image cassée possible).
 
-- Nouveau composant `src/components/propriete/scenographe/print/ScenarioPrintLayout.tsx` qui compose des sous-blocs : `ScenarioCover`, `ScenarioPlanPage`, `PlantingTablePrint`, `SpeciesPlatePrint` (réutilisée pour « en place » et « proposées »), `PhotosBeforePrint`.
-- **Réutilisation stricte de l'existant** : mêmes classes `.synthesize-print-page` / `-rule` / `-body` / `-foot` déjà stylées dans `src/index.css`, même portail d'impression, même `printImageUrl.ts` (variantes allégées + repli original) et même `usePrintCombined.ts` + `PrintPreparationOverlay.tsx` (barre de progression, préchargement et re-essais des images). Aucun nouveau moteur PDF.
-- **Le plan** : rendu SVG déterministe (pas de capture de tuiles), même logique que `PalettePlanSchema.tsx` — projection équirectangulaire locale de l'emprise et des `plantings`, halos d'envergure calculés par `growthModel.ts` pour An 3 / An 10. Option « fond satellite » écartée par défaut (tuiles non fiables en super-zoom, cf. sonde de couverture), donc plan trait + trame lisible en noir & blanc comme en couleur.
-- **Les données** : `useOuvrageScenarios` (plantings du scénario actif), le pool « en place » filtré par `ouvrageScope.ts` au niveau de rigueur courant, `useObjetPhotos` pour le carnet photo, `useProprieteObjets` pour l'emprise et le métré.
-- **Le déclencheur** : bouton « Dossier de chantier » dans le bandeau du Scénographe, à côté de « La Chambre du Vivant », avec un petit dialogue de choix (inclure les photos / inclure les espèces en place / horizon An 3 ou An 10).
+**2. Résolution garantie avant impression**
+- Dans `ChantierPrintDialog.tsx`, ajouter une étape « Recherche des photographies d'espèces » avant le lancement du rendu : appel de l'edge `resolve-species-thumb` sur tous les noms scientifiques du dossier (plantings + en place + proposées, par lots de 50), attente de la réponse, relecture du cache, puis passage à la phase existante de préchargement `usePrintCombined`. Barre de progression réutilisée (`PrintPreparationOverlay`).
 
-## Direction graphique
+**3. Chargement d'image fiable à l'impression**
+- Retirer `crossOrigin="anonymous"` des `<img>` du dossier (aucun canvas n'est utilisé, l'attribut n'apporte rien et casse le chargement).
+- `printImageUrl` ne transforme que les URLs Supabase ; pour les URLs externes, ne pas appliquer le cache-buster `_r=` dans `usePrintCombined` (repli : recharger l'URL d'origine telle quelle).
+- Repli visuel propre : si aucune photo après résolution, vignette « herbier » (fond teinté strate + glyphe + mention discrète « photo non disponible ») au lieu d'un cadre vide.
 
-Papier crème, filet doré fin en tête de page, titres sérif, corps sans-serif, pastilles numérotées identiques à celles du plan pour lier tableau et dessin, aplats par strate discrets, pied de page « Propriété · Ouvrage · Scénario · page n/N ». Grandes images en pleine largeur, marges généreuses, aucune couleur criarde — un dossier qui se pose sur la table d'un professionnel.
+**4. Design des planches 3 et 4**
+- Vignettes agrandies : grille 3 colonnes (au lieu de 4), image en 34 mm de haut, cadrage `object-cover`, filet crème et coin arrondi conservés.
+- Bandeau bas de vignette enrichi : nom français en gras, *nom scientifique* en sérif italique, puce de strate, envergure adulte, nombre d'observations (planche « en place ») ou n° du plan (planche « apports retenus ») pour relier la photo au plan et au tableau.
+- Mention d'attribution en pied de planche : « Photographies : iNaturalist / GBIF — usage documentaire », avec la source réelle par vignette en micro-texte.
+- Pagination ajustée à 9 vignettes par page (au lieu de 12) pour respecter la hauteur A4.
+
+## Détails techniques
+
+- Fichiers touchés : `src/components/propriete/scenographe/print/ChantierPrintLayout.tsx`, `src/components/propriete/scenographe/print/ChantierPrintDialog.tsx`, `src/components/propriete/scenographe/ScenographeFullscreen.tsx`, `src/components/propriete/print/usePrintCombined.ts` (garde cache-buster), et retrait du même `crossOrigin` parasite dans `PortraitPrintLayout.tsx` / `FloraAtlasPrintPlates.tsx` qui souffrent du même défaut.
+- Aucune nouvelle table ni nouvelle edge function : réutilisation de `species_thumb_cache`, `get_species_thumbs`, `resolve-species-thumb`.
+- Vérification finale : régénération du dossier et contrôle visuel des pages 3 et 4 (conversion en images) avant de conclure.
 
 ## Hors périmètre
 
-Pas de génération serveur, pas d'export Word/Excel, pas de chiffrage tarifaire automatique (colonne « prix unitaire » laissée vide à remplir par le professionnel).
+Pas de téléversement de photos d'espèces par l'utilisateur depuis le dossier, pas de moteur PDF serveur.
