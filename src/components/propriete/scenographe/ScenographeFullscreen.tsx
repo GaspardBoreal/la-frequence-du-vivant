@@ -357,17 +357,41 @@ export const ScenographeFullscreen: React.FC<Props> = ({
       <div className="flex min-h-0 flex-1">
         {/* Herbier */}
         {panelOpen && (
-          <aside className="hidden w-[290px] shrink-0 flex-col border-r border-[hsl(var(--ds-line))]/60 bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] md:flex">
-            <HerbierPanel
-              inPlace={inPlaceEntries}
-              proposed={proposedEntries}
-              armedKey={armed?.key ?? null}
-              onArm={setArmed}
-              placedCount={placedCount}
-              onAddFree={(e) => setArmed(e)}
+          <>
+            <aside
+              style={{ width: panelWidth }}
+              className="hidden shrink-0 flex-col border-r border-[hsl(var(--ds-line))]/60 bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] md:flex"
+            >
+              <HerbierPanel
+                inPlace={inPlaceEntries}
+                proposed={proposedEntries}
+                armedKey={armed?.key ?? null}
+                onArm={setArmed}
+                placedCount={placedCount}
+                onAddFree={(e) => setArmed(e)}
+                wide={panelWidth >= 430}
+                onPlaceMany={placeMany}
+                onRemoveMany={removeMany}
+                scopeControl={
+                  <HerbierScopePicker
+                    objets={(objets || []) as any}
+                    currentId={objetId}
+                    mode={scopeMode}
+                    selectedIds={scopeIds}
+                    onMode={setScopeMode}
+                    onSelected={setScopeIds}
+                  />
+                }
+              />
+            </aside>
+            <PanelResizer
+              width={panelWidth}
+              onChange={setPanelWidth}
+              onReset={() => setPanelWidth(290)}
             />
-          </aside>
+          </>
         )}
+
 
         {/* Plan */}
         <main
