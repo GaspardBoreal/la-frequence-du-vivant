@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, Sprout, Sparkles, Loader2, MapPin } from 'lucide-react';
+import { Search, Plus, Sprout, Sparkles, Loader2, MapPin, Wand2, Eraser } from 'lucide-react';
 import { STRATES, STRATE_ORDER, type Strate, ECO_FUNCTIONS } from '@/lib/plantSpread';
 import { useInatSearch } from '@/hooks/propriete/useInatThumbs';
 
@@ -15,6 +15,10 @@ export interface HerbierEntry {
   note?: string | null;
   /** Nombre d'observations sur place (herbier « En place »). */
   observations?: number;
+  /** Ouvrage d'où provient l'espèce, quand la portée dépasse l'ouvrage courant. */
+  ouvrageNom?: string | null;
+  /** Positions GPS réelles observées — servent à la pose en masse. */
+  points?: Array<{ lat: number; lng: number }>;
 }
 
 interface Props {
@@ -24,9 +28,18 @@ interface Props {
   onArm: (entry: HerbierEntry | null) => void;
   placedCount: Record<string, number>;
   onAddFree: (entry: HerbierEntry) => void;
+  /** Sélecteur de portée affiché en tête de l'onglet « En place ». */
+  scopeControl?: React.ReactNode;
+  /** Pose en masse des espèces affichées, à leur position GPS réelle. */
+  onPlaceMany?: (entries: HerbierEntry[]) => void;
+  /** Retire du plan toutes les plantations issues des espèces affichées. */
+  onRemoveMany?: (entries: HerbierEntry[]) => void;
+  /** Grille 2 colonnes quand le bandeau est élargi. */
+  wide?: boolean;
 }
 
 type TabKey = 'place' | 'proposee' | 'libre';
+type PlacedFilter = 'all' | 'todo' | 'done';
 
 const TABS: Array<{ key: TabKey; label: string; glyph: React.ReactNode }> = [
   { key: 'place', label: 'En place', glyph: <MapPin className="h-3.5 w-3.5" /> },
@@ -83,6 +96,11 @@ const Card: React.FC<{
           >
             {info.label} · Ø {entry.spreadM} m
           </span>
+          {entry.ouvrageNom && (
+            <span className="max-w-[110px] truncate rounded-full bg-[hsl(var(--ds-forest-deep))]/10 px-1.5 py-px text-[9px] font-medium text-[hsl(var(--ds-forest-deep))]/75">
+              {entry.ouvrageNom}
+            </span>
+          )}
           {(entry.functions || []).slice(0, 3).map((f) => {
             const eco = ECO_FUNCTIONS.find((x) => x.key === f);
             return eco ? (
@@ -103,7 +121,8 @@ const Card: React.FC<{
 /**
  * L'Herbier : trois registres de puisage — ce que le lieu porte déjà, ce que
  * l'IA propose, et la recherche libre. On « arme » une espèce, puis on la pose
- * sur le plan (clic ou glisser-déposer).
+ * sur le plan (clic ou glisser-déposer). Les espèces en place peuvent aussi
+ * être posées en une fois, à leur position réelle d'observation.
  */
 export const HerbierPanel: React.FC<Props> = ({
   inPlace,
@@ -112,13 +131,35 @@ export const HerbierPanel: React.FC<Props> = ({
   onArm,
   placedCount,
   onAddFree,
+  scopeControl,
+  onPlaceMany,
+  onRemoveMany,
+  wide,
 }) => {
   const [tab, setTab] = React.useState<TabKey>(proposed.length ? 'proposee' : 'place');
   const [term, setTerm] = React.useState('');
   const [strate, setStrate] = React.useState<Strate>('herbacee');
+  const [placedFilter, setPlacedFilter] = React.useState<PlacedFilter>('all');
   const search = useInatSearch(term);
 
-  const list = tab === 'place' ? inPlace : proposed;
+  const base = tab === 'place' ? inPlace : proposed;
+  const isPlaced = React.useCallback((e: HerbierEntry) => (placedCount[e.key] || 0) > 0, [placedCount]);
+
+  const list = React.useMemo(() => {
+    if (tab === 'libre') return [];
+    if (placedFilter === 'todo') return base.filter((e) => !isPlaced(e));
+    if (placedFilter === 'done') return base.filter(isPlaced);
+    return base;
+  }, [base, placedFilter, isPlaced, tab]);
+
+  const todoCount = base.filter((e) => !isPlaced(e)).length;
+  const doneCount = base.length - todoCount;
+
+  const FILTERS: Array<{ key: PlacedFilter; label: string; n: number }> = [
+    { key: 'all', label: 'Toutes', n: base.length },
+    { key: 'todo', label: 'À poser', n: todoCount },
+    { key: 'done', label: 'Posées', n: doneCount },
+  ];
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -145,6 +186,54 @@ export const HerbierPanel: React.FC<Props> = ({
         })}
       </div>
 
+      {tab !== 'libre' && (
+        <div className="space-y-2 border-b border-[hsl(var(--ds-line))]/60 px-2.5 py-2">
+          {tab === 'place' && scopeControl}
+
+          <div className="flex flex-wrap items-center gap-1">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setPlacedFilter(f.key)}
+                className={`rounded-full px-2 py-0.5 text-[9.5px] font-medium transition-colors ${
+                  placedFilter === f.key
+                    ? 'bg-[#c8a24a] text-white'
+                    : 'bg-white/60 text-[hsl(var(--ds-forest-deep))]/65 hover:bg-white'
+                }`}
+              >
+                {f.label} <span className="opacity-70">{f.n}</span>
+              </button>
+            ))}
+          </div>
+
+          {(onPlaceMany || onRemoveMany) && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {onPlaceMany && (
+                <button
+                  onClick={() => onPlaceMany(list.filter((e) => !isPlaced(e)))}
+                  disabled={!list.some((e) => !isPlaced(e))}
+                  className="flex items-center gap-1 rounded-lg bg-[hsl(var(--ds-forest-deep))] px-2 py-1 text-[10px] font-medium text-white transition-opacity disabled:opacity-35"
+                >
+                  <Wand2 className="h-3 w-3" />
+                  Tout poser
+                </button>
+              )}
+              {onRemoveMany && (
+                <button
+                  onClick={() => onRemoveMany(list.filter(isPlaced))}
+                  disabled={!list.some(isPlaced)}
+                  className="flex items-center gap-1 rounded-lg border border-[#c1663f]/40 px-2 py-1 text-[10px] font-medium text-[#c1663f] transition-opacity hover:bg-[#c1663f]/10 disabled:opacity-35"
+                >
+                  <Eraser className="h-3 w-3" />
+                  Tout retirer
+                </button>
+              )}
+              <span className="text-[9.5px] italic opacity-50">à leur position réelle</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {armedKey && (
         <div className="mx-2.5 mt-2 rounded-lg border border-[#c8a24a]/50 bg-[#c8a24a]/10 px-2.5 py-1.5 text-[10.5px] text-[hsl(var(--ds-forest-deep))]">
           Espèce en main — <strong>cliquez sur le plan</strong> pour la poser.{' '}
@@ -154,9 +243,9 @@ export const HerbierPanel: React.FC<Props> = ({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-2.5 py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2">
         {tab === 'libre' ? (
-          <>
+          <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 rounded-lg border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-1.5">
               <Search className="h-3.5 w-3.5 opacity-45" />
               <input
@@ -184,22 +273,11 @@ export const HerbierPanel: React.FC<Props> = ({
                 </button>
               ))}
             </div>
-            {(search.data || []).map((r) => (
-              <Card
-                key={r.scientificName}
-                entry={{
-                  key: `libre:${r.scientificName}`,
-                  scientificName: r.scientificName,
-                  commonNameFr: r.commonName,
-                  strate,
-                  spreadM: STRATES[strate].spreadM,
-                  origin: 'libre',
-                  photoUrl: r.photoUrl,
-                }}
-                armed={armedKey === `libre:${r.scientificName}`}
-                placed={placedCount[`libre:${r.scientificName}`] || 0}
-                onClick={() =>
-                  onAddFree({
+            <div className={wide ? 'grid grid-cols-2 gap-1.5' : 'space-y-1.5'}>
+              {(search.data || []).map((r) => (
+                <Card
+                  key={r.scientificName}
+                  entry={{
                     key: `libre:${r.scientificName}`,
                     scientificName: r.scientificName,
                     commonNameFr: r.commonName,
@@ -207,30 +285,45 @@ export const HerbierPanel: React.FC<Props> = ({
                     spreadM: STRATES[strate].spreadM,
                     origin: 'libre',
                     photoUrl: r.photoUrl,
-                  })
-                }
-              />
-            ))}
+                  }}
+                  armed={armedKey === `libre:${r.scientificName}`}
+                  placed={placedCount[`libre:${r.scientificName}`] || 0}
+                  onClick={() =>
+                    onAddFree({
+                      key: `libre:${r.scientificName}`,
+                      scientificName: r.scientificName,
+                      commonNameFr: r.commonName,
+                      strate,
+                      spreadM: STRATES[strate].spreadM,
+                      origin: 'libre',
+                      photoUrl: r.photoUrl,
+                    })
+                  }
+                />
+              ))}
+            </div>
             {term.trim().length >= 3 && !search.isFetching && !(search.data || []).length && (
               <p className="px-1 py-4 text-center text-[11px] opacity-50">Aucune espèce trouvée.</p>
             )}
-          </>
+          </div>
         ) : list.length ? (
-          list.map((e) => (
-            <Card
-              key={e.key}
-              entry={e}
-              armed={armedKey === e.key}
-              placed={placedCount[e.key] || 0}
-              onClick={() => onArm(armedKey === e.key ? null : e)}
-            />
-          ))
+          <div className={wide ? 'grid grid-cols-2 gap-1.5' : 'space-y-1.5'}>
+            {list.map((e) => (
+              <Card
+                key={e.key}
+                entry={e}
+                armed={armedKey === e.key}
+                placed={placedCount[e.key] || 0}
+                onClick={() => onArm(armedKey === e.key ? null : e)}
+              />
+            ))}
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-[hsl(var(--ds-line))] px-3 py-8 text-center">
             <Sprout className="h-5 w-5 opacity-35" />
             <p className="text-[11px] opacity-60">
               {tab === 'place'
-                ? 'Aucune espèce observée dans l’emprise de cet ouvrage.'
+                ? 'Aucune espèce observée dans cette portée — élargissez à d’autres ouvrages ou à toute la propriété.'
                 : 'Aucune proposition. Demandez une palette à l’IA de Jardin, puis rouvrez le Scénographe depuis sa synthèse.'}
             </p>
           </div>

@@ -24,10 +24,14 @@ const DynamicTileLayer: React.FC<Props> = ({ mapStyle, maxZoom = 19 }) => {
     }
     const config = TILE_CONFIGS[mapStyle];
     const nativeMax = config.maxZoom || 19;
+    // Au-delà du zoom natif du fournisseur, Leaflet ré-échantillonne la dernière
+    // tuile disponible — à condition que le maxZoom de la COUCHE dépasse celui
+    // de la carte. Sans cette marge, le fond disparaît en super zoom.
+    const layerMax = Math.max(maxZoom + 2, nativeMax);
     const layer = L.tileLayer(config.url, {
       attribution: config.attribution,
       maxNativeZoom: nativeMax,
-      maxZoom: Math.max(maxZoom, nativeMax),
+      maxZoom: layerMax,
       className: config.className || '',
     });
     layer.addTo(map);
@@ -42,7 +46,7 @@ const DynamicTileLayer: React.FC<Props> = ({ mapStyle, maxZoom = 19 }) => {
         attribution: '&copy; Etalab — Cadastre',
         opacity: 0.55,
         maxNativeZoom: 20,
-        maxZoom: Math.max(maxZoom, 20),
+        maxZoom: Math.max(maxZoom + 2, 20),
         pane: 'overlayPane',
       });
       overlay.addTo(map);

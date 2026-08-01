@@ -20,6 +20,8 @@ import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { STRATES, STRATE_ORDER, parseStrate, spreadFor, type Strate } from '@/lib/plantSpread';
 
 import HerbierPanel, { type HerbierEntry } from './HerbierPanel';
+import HerbierScopePicker, { type ScopeMode } from './HerbierScopePicker';
+import PanelResizer from './PanelResizer';
 import PlantingLayer from './PlantingLayer';
 import BalanceBar from './BalanceBar';
 import ScenarioTabs from './ScenarioTabs';
@@ -86,10 +88,20 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const [armed, setArmed] = React.useState<HerbierEntry | null>(null);
   const [selected, setSelected] = React.useState<string | null>(null);
   const [panelOpen, setPanelOpen] = React.useState(true);
+  const [panelWidth, setPanelWidth] = React.useState<number>(() => {
+    const v = Number(localStorage.getItem('scenographe:panelWidth'));
+    return Number.isFinite(v) && v >= 240 ? v : 290;
+  });
+  React.useEffect(() => {
+    localStorage.setItem('scenographe:panelWidth', String(panelWidth));
+  }, [panelWidth]);
+  const [scopeMode, setScopeMode] = React.useState<ScopeMode>('courant');
+  const [scopeIds, setScopeIds] = React.useState<string[]>([]);
   const mapRef = React.useRef<LeafletMap | null>(null);
   const handleMapReady = React.useCallback((m: LeafletMap) => {
     mapRef.current = m;
   }, []);
+
 
 
   React.useEffect(() => {
@@ -124,35 +136,55 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     return cs.length ? cs.map((c) => [c[1], c[0]] as [number, number]) : undefined;
   }, [geometry]);
 
-  /** Espèces déjà présentes dans l'emprise (ray casting, pas un simple rayon). */
+  /** Ouvrages écoutés selon la portée choisie. */
+  const scopedObjets = React.useMemo<ProprieteObjet[]>(() => {
+    const all = (objets || []) as ProprieteObjet[];
+    if (scopeMode === 'tous') return all.filter((o) => o.geometry);
+    const keep = new Set<string>([objetId, ...(scopeMode === 'choisis' ? scopeIds : [])]);
+    return all.filter((o) => keep.has(o.id) && o.geometry);
+  }, [objets, objetId, scopeMode, scopeIds]);
+
+  /** Espèces déjà présentes dans les emprises (ray casting, pas un simple rayon). */
   const inPlaceEntries = React.useMemo<HerbierEntry[]>(() => {
-    if (!geometry) return [];
-    const scope = classifyObservations(geometry, waypoints as any, 0);
+    if (!scopedObjets.length) return [];
+    const multi = scopedObjets.length > 1;
     const by = new Map<string, HerbierEntry>();
-    [...scope.dedans, ...scope.lisiere].forEach(({ item }: any) => {
-      if (!item.scientificName) return;
-      const prev = by.get(item.scientificName);
-      if (prev) {
-        prev.observations = (prev.observations || 0) + 1;
-        if (!prev.photoUrl && item.photoUrl) prev.photoUrl = item.photoUrl;
-        return;
-      }
-      by.set(item.scientificName, {
-        key: `place:${item.scientificName}`,
-        scientificName: item.scientificName,
-        commonNameFr: displayNameFor({
+    scopedObjets.forEach((o) => {
+      const label = o.nom?.trim() || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage';
+      const scope = classifyObservations(o.geometry, waypoints as any, 0);
+      [...scope.dedans, ...scope.lisiere].forEach(({ item }: any) => {
+        if (!item.scientificName) return;
+        const prev = by.get(item.scientificName);
+        if (prev) {
+          prev.observations = (prev.observations || 0) + 1;
+          if (!prev.photoUrl && item.photoUrl) prev.photoUrl = item.photoUrl;
+          if (Number.isFinite(item.lat) && Number.isFinite(item.lng))
+            prev.points = [...(prev.points || []), { lat: item.lat, lng: item.lng }];
+          return;
+        }
+        by.set(item.scientificName, {
+          key: `place:${item.scientificName}`,
           scientificName: item.scientificName,
-          commonName: item.commonName ?? null,
-        }),
-        strate: item.kingdom === 'Plantae' ? 'herbacee' : 'herbacee',
-        spreadM: STRATES.herbacee.spreadM,
-        origin: 'place',
-        photoUrl: item.photoUrl || null,
-        observations: 1,
+          commonNameFr: displayNameFor({
+            scientificName: item.scientificName,
+            commonName: item.commonName ?? null,
+          }),
+          strate: 'herbacee',
+          spreadM: STRATES.herbacee.spreadM,
+          origin: 'place',
+          photoUrl: item.photoUrl || null,
+          observations: 1,
+          ouvrageNom: multi ? label : null,
+          points:
+            Number.isFinite(item.lat) && Number.isFinite(item.lng)
+              ? [{ lat: item.lat, lng: item.lng }]
+              : [],
+        });
       });
     });
     return Array.from(by.values()).sort((a, b) => (b.observations || 0) - (a.observations || 0));
-  }, [geometry, waypoints, displayNameFor]);
+  }, [scopedObjets, waypoints, displayNameFor]);
+
 
   const proposalNames = React.useMemo(
     () => proposals.map((p) => p.scientificName).filter(Boolean),
@@ -223,6 +255,55 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     [plantings, savePlantings],
   );
 
+  /** Pose en une fois toutes les espèces filtrées, à leur position observée. */
+  const placeMany = React.useCallback(
+    (entries: HerbierEntry[]) => {
+      const fallback = center;
+      const next: Planting[] = [];
+      entries.forEach((entry) => {
+        const pts = entry.points?.length
+          ? entry.points
+          : fallback
+            ? [{ lat: fallback[0], lng: fallback[1] }]
+            : [];
+        pts.forEach((pt) => {
+          next.push({
+            id: uid(),
+            scientificName: entry.scientificName,
+            commonNameFr: entry.commonNameFr ?? null,
+            lat: pt.lat,
+            lng: pt.lng,
+            spreadM: entry.spreadM,
+            strate: entry.strate,
+            origin: entry.origin,
+            photoUrl: entry.photoUrl ?? null,
+            functions: entry.functions,
+            note: entry.note ?? null,
+          });
+        });
+      });
+      if (!next.length) return;
+      void savePlantings([...plantings, ...next]);
+      toast.success(`${next.length} sujet${next.length > 1 ? 's' : ''} posé${next.length > 1 ? 's' : ''}`, {
+        description: `${entries.length} espèce${entries.length > 1 ? 's' : ''} à leur position observée.`,
+      });
+    },
+    [plantings, savePlantings, center],
+  );
+
+  const removeMany = React.useCallback(
+    (entries: HerbierEntry[]) => {
+      const names = new Set(entries.map((e) => e.scientificName));
+      const next = plantings.filter((p) => !names.has(p.scientificName));
+      const removed = plantings.length - next.length;
+      if (!removed) return;
+      void savePlantings(next);
+      setSelected(null);
+      toast.success(`${removed} sujet${removed > 1 ? 's' : ''} retiré${removed > 1 ? 's' : ''} du plan`);
+    },
+    [plantings, savePlantings],
+  );
+
   const patchPlanting = (id: string, patch: Partial<Planting>) =>
     void savePlantings(plantings.map((p) => (p.id === id ? { ...p, ...patch } : p)));
 
@@ -276,17 +357,41 @@ export const ScenographeFullscreen: React.FC<Props> = ({
       <div className="flex min-h-0 flex-1">
         {/* Herbier */}
         {panelOpen && (
-          <aside className="hidden w-[290px] shrink-0 flex-col border-r border-[hsl(var(--ds-line))]/60 bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] md:flex">
-            <HerbierPanel
-              inPlace={inPlaceEntries}
-              proposed={proposedEntries}
-              armedKey={armed?.key ?? null}
-              onArm={setArmed}
-              placedCount={placedCount}
-              onAddFree={(e) => setArmed(e)}
+          <>
+            <aside
+              style={{ width: panelWidth }}
+              className="hidden shrink-0 flex-col border-r border-[hsl(var(--ds-line))]/60 bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] md:flex"
+            >
+              <HerbierPanel
+                inPlace={inPlaceEntries}
+                proposed={proposedEntries}
+                armedKey={armed?.key ?? null}
+                onArm={setArmed}
+                placedCount={placedCount}
+                onAddFree={(e) => setArmed(e)}
+                wide={panelWidth >= 430}
+                onPlaceMany={placeMany}
+                onRemoveMany={removeMany}
+                scopeControl={
+                  <HerbierScopePicker
+                    objets={(objets || []) as any}
+                    currentId={objetId}
+                    mode={scopeMode}
+                    selectedIds={scopeIds}
+                    onMode={setScopeMode}
+                    onSelected={setScopeIds}
+                  />
+                }
+              />
+            </aside>
+            <PanelResizer
+              width={panelWidth}
+              onChange={setPanelWidth}
+              onReset={() => setPanelWidth(290)}
             />
-          </aside>
+          </>
         )}
+
 
         {/* Plan */}
         <main
@@ -323,7 +428,7 @@ export const ScenographeFullscreen: React.FC<Props> = ({
               height="100%"
             >
               <MapGrab onMap={handleMapReady} />
-              <ZoomScaleBadge />
+              <ZoomScaleBadge nativeMaxZoom={21} />
               <ClickToPlace
                 enabled={!!armed}
                 onPlace={(lat, lng) => armed && place(armed, lat, lng)}
@@ -461,7 +566,20 @@ export const ScenographeFullscreen: React.FC<Props> = ({
             onArm={setArmed}
             placedCount={placedCount}
             onAddFree={(e) => setArmed(e)}
+            onPlaceMany={placeMany}
+            onRemoveMany={removeMany}
+            scopeControl={
+              <HerbierScopePicker
+                objets={(objets || []) as any}
+                currentId={objetId}
+                mode={scopeMode}
+                selectedIds={scopeIds}
+                onMode={setScopeMode}
+                onSelected={setScopeIds}
+              />
+            }
           />
+
         </div>
       )}
 
