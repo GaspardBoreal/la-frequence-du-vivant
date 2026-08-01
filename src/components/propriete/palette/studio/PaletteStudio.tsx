@@ -39,6 +39,7 @@ import ObjectsLayer from './ObjectsLayer';
 import LayersPanel, { type SystemLayerState } from './LayersPanel';
 import ToolPalette from './ToolPalette';
 import ObjectInspector from './ObjectInspector';
+import ScenariosLibraryPanel from './ScenariosLibraryPanel';
 import SoilSamplesLayer from './SoilSamplesLayer';
 import { useSoilSamples } from '@/hooks/propriete/useSoilSamples';
 import { linkedSampleIds } from '@/lib/soilLinkEngine';
@@ -226,6 +227,7 @@ export const PaletteStudio: React.FC<Props> = ({
   }, []);
 
   const [tab, setTab] = React.useState<PanelTab>('outils');
+  const [libraryOpen, setLibraryOpen] = React.useState(false);
   const [panelOpen, setPanelOpen] = React.useState(true);
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
   const [tool, setTool] = React.useState<PaysageTool | null>(null);
@@ -556,6 +558,17 @@ export const PaletteStudio: React.FC<Props> = ({
             className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-gold))]/70 bg-[hsl(var(--ds-forest-deep))] px-3 py-1.5 text-[11px] text-[hsl(var(--ds-cream))] shadow-sm transition-opacity hover:opacity-90"
           >
             <Leaf className="h-3.5 w-3.5 text-[hsl(var(--ds-gold))]" /> IA de Jardin
+          </button>
+          <button
+            onClick={() => setLibraryOpen((v) => !v)}
+            title="Retrouver les scénographies composées"
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] transition-all ${
+              libraryOpen
+                ? 'border-transparent bg-[#c8a24a] text-[hsl(var(--ds-forest-deep))]'
+                : 'border-[#c8a24a]/60 hover:border-[#c8a24a]'
+            }`}
+          >
+            <Wand2 className="h-3.5 w-3.5" /> Scénographies
           </button>
           <button
             onClick={() => setInspirationOpen(true)}
@@ -972,10 +985,29 @@ export const PaletteStudio: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* Bibliothèque des scénographies */}
+          {libraryOpen && (
+            <div
+              className={`absolute z-[700] max-h-[calc(100%-8rem)] w-[300px] top-[4.5rem] sm:top-[4.75rem] ${
+                selectedObjet ? 'right-4 sm:right-[19rem]' : 'right-4'
+              }`}
+            >
+              <ScenariosLibraryPanel
+                proprieteId={proprieteId}
+                objets={objets}
+                selectedObjetId={selectedObjetId}
+                readOnly={readOnly}
+                onClose={() => setLibraryOpen(false)}
+              />
+            </div>
+          )}
+
           {/* Inspecteur objet — colonne droite, centrée verticalement */}
           {selectedObjet && (
             <div className={MAP_CHROME_SIDE_CENTER}>
               <ObjectInspector
+                proprieteId={proprieteId}
+                onOpenScenarioLibrary={() => setLibraryOpen(true)}
                 objet={selectedObjet}
                 calques={calques}
                 zones={zones}
