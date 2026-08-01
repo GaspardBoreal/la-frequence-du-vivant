@@ -101,7 +101,11 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
     }
   };
 
-  const activeCount = providers.filter((p) => activeSet.has(contextSliceKey(p.id))).length;
+  const activeProviders = useMemo(
+    () => providers.filter((p) => activeSet.has(contextSliceKey(p.id))),
+    [providers, activeSet],
+  );
+  const activeCount = activeProviders.length;
   const fullscreenOpen = useFullscreenSurfaceOpen();
 
 
