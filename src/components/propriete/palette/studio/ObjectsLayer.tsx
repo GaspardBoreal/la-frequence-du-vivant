@@ -137,34 +137,8 @@ export const ObjectsLayer: React.FC<Props> = ({
     [objets, calqueById],
   );
 
-  const zoom = useMapZoom();
-  const map = useMap();
-  const compact = zoom < 18;
 
-  /**
-   * Anti-collision légère : deux étiquettes trop proches (< 26 px) se
-   * répartissent de part et d'autre du sommet.
-   */
-  const sideById = React.useMemo(() => {
-    const out: Record<string, 'left' | 'right'> = {};
-    const placed: { x: number; y: number }[] = [];
-    for (const o of ordered) {
-      if (!(photoCounts?.[o.id] ?? 0)) continue;
-      const a = photoAnchor(o.geometry);
-      if (!a) continue;
-      let pt: { x: number; y: number };
-      try {
-        pt = map.latLngToLayerPoint(L.latLng(a[0], a[1])) as any;
-      } catch {
-        out[o.id] = 'left';
-        continue;
-      }
-      const clash = placed.some((p) => Math.abs(p.x - pt.x) < 26 && Math.abs(p.y - pt.y) < 26);
-      out[o.id] = clash ? 'right' : 'left';
-      placed.push(pt);
-    }
-    return out;
-  }, [ordered, photoCounts, map, zoom]);
+
 
 
   return (
