@@ -11,6 +11,7 @@ import ObjetPhotoStrip from './photos/ObjetPhotoStrip';
 import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
 import SoilLinkBlock from './SoilLinkBlock';
 import AskGardenAiBlock from './AskGardenAiBlock';
+import { openScenographe } from '@/components/propriete/scenographe/scenographeStore';
 
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 
@@ -223,6 +224,26 @@ export const ObjectInspector: React.FC<Props> = ({
           toolLabel={tool?.label ?? 'ouvrage'}
           nom={objet.nom}
         />
+
+        {/* Composer l'ouvrage : poser de vraies espèces à la vraie échelle */}
+        <button
+          type="button"
+          onClick={() => openScenographe(objet.id)}
+          className="flex w-full items-center gap-2 rounded-lg border border-[#c8a24a]/45 bg-gradient-to-r from-[#c8a24a]/12 to-transparent px-2.5 py-2 text-left transition-colors hover:border-[#c8a24a] hover:from-[#c8a24a]/20"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#c8a24a]/20 text-[12px]">
+            🎬
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11px] font-semibold leading-tight">
+              Ouvrir le Scénographe
+            </span>
+            <span className="block text-[9.5px] leading-tight opacity-60">
+              Composer la palette sur l’emprise réelle, an 0 → an 10
+            </span>
+          </span>
+        </button>
+
 
 
         {isChromaticTool(objet.outil_key) && (

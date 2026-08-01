@@ -24,6 +24,7 @@ import { ProprieteVivantScopeProvider } from '@/contexts/ProprieteVivantScopeCon
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
 import SampleCoreDrawerHost from '@/components/propriete/analyze/sample/SampleCoreDrawer';
 import { ProprieteChatBotMount } from '@/components/propriete/chatbot/ProprieteChatBotMount';
+import ScenographeMount from '@/components/propriete/scenographe/ScenographeMount';
 
 
 const ProprieteEspace: React.FC = () => {
@@ -473,6 +474,7 @@ const PropTabs: React.FC<{
       </Tabs>
       <SampleCoreDrawerHost />
       <ProprieteChatBotMount proprieteId={proprieteId} proprieteNom={proprieteNom} />
+      <ScenographeMount proprieteId={proprieteId} />
     </div>
 
   );

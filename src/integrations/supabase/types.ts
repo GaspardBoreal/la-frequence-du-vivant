@@ -6293,6 +6293,60 @@ export type Database = {
         }
         Relationships: []
       }
+      propriete_ouvrage_scenarios: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          nom: string
+          notes: string | null
+          objet_id: string
+          plantings: Json
+          propriete_id: string
+          retenu: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          objet_id: string
+          plantings?: Json
+          propriete_id: string
+          retenu?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          objet_id?: string
+          plantings?: Json
+          propriete_id?: string
+          retenu?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_ouvrage_scenarios_objet_id_fkey"
+            columns: ["objet_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_objets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_ouvrage_scenarios_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_palette: {
         Row: {
           completed_at: string | null
