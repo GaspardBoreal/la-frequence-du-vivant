@@ -189,6 +189,25 @@ export const OuvragesContextPicker: React.FC<{ proprieteId?: string }> = ({ prop
           {DETAILS.find((d) => d.key === focus.ouvrageDetail)?.hint}
         </p>
       </div>
+
+      {/* Ce qui sera transmis */}
+      <div className="mt-2 flex items-center gap-2 rounded-lg border border-border/70 bg-background/50 px-2.5 py-1.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Transmis
+        </span>
+        <span className="text-[11px] text-foreground">
+          {selected.size === 0
+            ? 'rien pour l’instant'
+            : `${selected.size} ouvrage${selected.size > 1 ? 's' : ''} · ${
+                DETAILS.find((d) => d.key === focus.ouvrageDetail)?.label.toLowerCase()
+              }`}
+        </span>
+        {selectionBytes > 0 && (
+          <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
+            ≈ {formatBytes(selectionBytes)}
+          </span>
+        )}
+      </div>
     </div>
   );
 };
