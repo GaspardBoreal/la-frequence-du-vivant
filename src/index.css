@@ -2160,6 +2160,112 @@
   @page { size: A4; margin: 0; }
 }
 
+/* === DOSSIER DE CHANTIER — portail A4 du Scénographe d'ouvrage === */
+#chantier-print-portal { display: none; }
+
+@media print {
+  body.chantier-print-mode {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  body.chantier-print-mode > *:not(#chantier-print-portal) { display: none !important; }
+  body.chantier-print-mode #chantier-print-portal { display: block !important; }
+
+  #chantier-print-portal .chantier-print-root,
+  #chantier-print-portal .chantier-print-root * {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .chantier-cover {
+    box-sizing: border-box;
+    position: relative;
+    width: 210mm;
+    height: 297mm;
+    padding: 26mm 22mm 22mm;
+    background:
+      radial-gradient(120mm 80mm at 20% 82%, rgba(107, 124, 90, 0.13), transparent 62%),
+      linear-gradient(180deg, #fdf9f2 0%, #f1ead7 100%);
+    text-align: center;
+    break-after: page;
+    page-break-after: always;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .chantier-cover-eyebrow {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 9pt;
+    letter-spacing: 4pt;
+    text-transform: uppercase;
+    color: #8a6d3b;
+  }
+  .chantier-cover-title {
+    margin: 5mm 0 3mm;
+    font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-size: 40pt;
+    line-height: 1.04;
+    color: #2a2419;
+  }
+  .chantier-cover-rule {
+    width: 34mm; height: 0.6mm; background: #b08d57; margin: 0 auto 4mm;
+  }
+  .chantier-cover-sub {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 14pt; font-style: italic; color: #4a3f2e;
+  }
+  .chantier-cover-plan {
+    margin: 10mm auto 8mm;
+    width: 150mm;
+    border: 0.3mm solid #ded2b3;
+    border-radius: 3mm;
+    overflow: hidden;
+    background: #fdfbf4;
+  }
+  .chantier-cover-keys {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4mm;
+    margin: 0 auto;
+    width: 150mm;
+  }
+  .chantier-cover-key {
+    border-top: 0.4mm solid #c9b477;
+    padding-top: 2mm;
+    text-align: left;
+  }
+  .chantier-cover-key-v {
+    display: block;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 20pt;
+    color: #2a2419;
+    line-height: 1;
+  }
+  .chantier-cover-key-k {
+    display: block;
+    margin-top: 1mm;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 7pt;
+    letter-spacing: 1.6pt;
+    text-transform: uppercase;
+    color: #8a7c64;
+  }
+  .chantier-cover-foot {
+    position: absolute;
+    left: 0; right: 0; bottom: 16mm;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 8pt;
+    letter-spacing: 1.6pt;
+    text-transform: uppercase;
+    color: #8a6d3b;
+  }
+}
+
+
+
 
 /* === PAGE NARRATION (étape 3, impression) === */
 .identify-narration-exergue {
