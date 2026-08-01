@@ -6,7 +6,6 @@ import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save } from 'luci
 import { toast } from 'sonner';
 
 import RichMap from '@/components/maps/RichMap';
-import { MapViewReporter, useMapViewState } from '@/components/maps/hooks/useMapViewState';
 import ZoomScaleBadge from '@/components/maps/controls/ZoomScaleBadge';
 import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 
@@ -85,7 +84,6 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const [armed, setArmed] = React.useState<HerbierEntry | null>(null);
   const [selected, setSelected] = React.useState<string | null>(null);
   const [panelOpen, setPanelOpen] = React.useState(true);
-  const { view, onChange: onViewChange } = useMapViewState();
   const mapRef = React.useRef<LeafletMap | null>(null);
 
   React.useEffect(() => {
@@ -319,7 +317,7 @@ export const ScenographeFullscreen: React.FC<Props> = ({
               height="100%"
             >
               <MapGrab onMap={(m) => (mapRef.current = m)} />
-              <MapViewReporter onChange={onViewChange} />
+              <ZoomScaleBadge />
               <ClickToPlace
                 enabled={!!armed}
                 onPlace={(lat, lng) => armed && place(armed, lat, lng)}
@@ -346,8 +344,6 @@ export const ScenographeFullscreen: React.FC<Props> = ({
               />
             </RichMap>
           </div>
-
-          <ZoomScaleBadge zoom={view.zoom} lat={view.center?.[0] ?? center?.[0] ?? 46.6} />
 
           {/* Horloge du vivant */}
           <div className="pointer-events-auto absolute bottom-4 left-1/2 z-[1000] w-[min(420px,92%)] -translate-x-1/2 rounded-2xl border border-white/15 bg-[hsl(var(--ds-forest-deep))]/92 px-4 py-2.5 text-white shadow-2xl backdrop-blur">
@@ -473,6 +469,8 @@ export const ScenographeFullscreen: React.FC<Props> = ({
       )}
     </div>
   );
+
+  return createPortal(body, document.body);
 };
 
 export default ScenographeFullscreen;
