@@ -91,12 +91,19 @@ export function ChatTableBlock({ children }: { children?: React.ReactNode }) {
     </button>
   );
 
+  const [rows, setRows] = React.useState(0);
+  React.useEffect(() => {
+    setRows(Math.max(0, (ref.current?.rows.length ?? 1) - 1));
+  }, [children]);
+
   return (
     <div className="group/table my-3 overflow-hidden rounded-xl border border-border/70 bg-background/40 not-prose">
       <div className="flex flex-wrap items-center gap-1.5 border-b border-border/60 bg-muted/40 px-2 py-1.5">
         <span className="mr-auto flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-          <Table2 className="h-3 w-3" /> Synthèse
+          <Table2 className="h-3 w-3" /> Synthèse à exporter
+          {rows > 0 && <span className="text-primary/80">· {rows} ligne{rows > 1 ? 's' : ''}</span>}
         </span>
+
         <Action
           onClick={() => write(toMarkdown(readMatrix(ref.current)), 'md')}
           icon={Copy}
