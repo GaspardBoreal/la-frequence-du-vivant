@@ -1,26 +1,35 @@
-## Diagnostic (vérifié dans le code)
+## Constat
 
-Le sélecteur d'ouvrages existe déjà (`OuvragesContextPicker.tsx`) et il est bien injecté via `providerGroupExtras.Ouvrages` (`ProprieteChatBotMount.tsx`). Mais il ne s'affiche jamais au premier usage, à cause d'un cercle vicieux :
+Le composant de tableau enrichi existe déjà et fonctionne : `src/components/chatbot/ChatTableBlock.tsx` (rendu éditorial + boutons Markdown / Tableur / CSV / téléchargement), branché dans `src/components/chatbot/ChatMessage.tsx` via `components={{ table: ... }}` et `remark-gfm`.
 
-- `ContextConsole.tsx` construit ses groupes **uniquement à partir des providers** (`groups = Map<group, providers[]>`), puis affiche `groupExtras[group]` à l'intérieur du groupe.
-- Dans `useProprieteChatProviders.ts` (l.274-338), le provider `ouvrages.selection` n'est créé **que si `selected.length > 0`**, c'est-à-dire seulement si des ouvrages sont déjà retenus.
+Sur la copie d'écran, tout le reste du markdown est bien rendu (gras, titres, listes) — seul le tableau retombe en texte brut avec des `|` qui coulent dans un paragraphe. C'est la signature d'un tableau GFM non parsable : ligne de séparation `|---|---|` absente, ou lignes du tableau non séparées par des retours à la ligne. Le prompt de `supabase/functions/propriete-chat/index.ts` décrit bien le tableau attendu mais n'impose pas explicitement la ligne de séparation ni une ligne par enregistrement.
 
-Résultat : aucune sélection → pas de groupe « Ouvrages » → le plateau de sélection n'est pas rendu → impossible de sélectionner. C'est exactement ce qu'on voit sur la capture (0/7 actif, groupes Vivant / Sol / Site / Flore seulement).
+## Correctif proposé
 
-## Correction proposée
+### 1. Normalisation markdown côté client (le vrai filet de sécurité)
 
-1. **`ContextConsole.tsx`** — rendre les groupes « extras » même sans provider :
-   - Fusionner les clés de `groupExtras` avec celles des providers pour construire la liste des groupes, en conservant un ordre stable (Vivant, Sol, Ouvrages, Site, Flore).
-   - Un groupe sans provider affiche uniquement son extra (pas de liste vide).
+Nouveau module `src/lib/chatMarkdownRepair.ts` :
+- Détecte les segments contenant des `|` et reconstruit un tableau GFM valide :
+  - re-découpe un tableau écrit sur une seule ligne en s'appuyant sur le motif `| … |` et le nombre de colonnes de l'en-tête ;
+  - insère la ligne de séparation `| --- | --- |` si elle manque ;
+  - complète / tronque les cellules manquantes pour que chaque ligne ait le bon nombre de colonnes.
+- Sûr par construction : si le texte est déjà un tableau GFM valide, il est renvoyé tel quel. Aucun autre contenu n'est touché.
+- Tolérant au streaming : une dernière ligne incomplète est laissée telle quelle tant que la réponse n'est pas terminée.
 
-2. **`OuvragesContextPicker.tsx`** — le rendre lisible et « pro » dans ce contexte d'entrée :
-   - Ne plus retourner `null` silencieusement : afficher un état vide explicite si la propriété n'a aucun ouvrage.
-   - Ajouter sous le plateau une ligne de synthèse « ce qui sera transmis » : nombre d'ouvrages retenus, profondeur choisie, poids estimé (via `payloadBytes`/`formatBytes` de `chatContextCost`) — cohérent avec la jauge frugale du haut de la console.
-   - Micro-affinage visuel : titre du plateau aligné sur le style des groupes, vignettes en 2 colonnes avec surface / obs / carottes, chips Tous · Aucun · Pertinents inchangés.
+### 2. Branchement dans le chat
 
-3. **Continuité d'activation** — quand la sélection passe de 0 à N, le provider `ouvrages.selection` apparaît : l'activer automatiquement (poser la slice `ctx.ouvrages.selection`) depuis `ProprieteChatBotMount.tsx`, pour que cocher un ouvrage produise un effet immédiat sans double clic. Inversement, la slice est retirée quand la sélection revient à 0.
+Dans `ChatMessage.tsx`, passer `content` par ce normaliseur (mémoïsé) avant `ReactMarkdown`. Le mapping `table → ChatTableBlock` existant reprend alors la main : le tableau s'affiche en bloc éditorial avec les actions d'export déjà en place — aucun nouveau composant d'export à créer.
 
-## Détails techniques
+### 3. Affinage du prompt (pour que le cas soit rare)
 
-- `ContextConsole` : `groups` devient `Array<[group, ContextProvider[]]>` construit depuis `new Set([...providersGroups, ...Object.keys(groupExtras ?? {})])`, trié selon un ordre de référence puis alphabétique pour le reste.
-- Aucun changement de schéma ni d'edge function ; la frugalité reste inchangée (rien n'est transmis tant que rien n'est retenu/activé).
+Dans `supabase/functions/propriete-chat/index.ts`, préciser dans la section « SYNTHÈSE EXPORTABLE » :
+- la ligne d'en-tête DOIT être suivie de la ligne de séparation `| --- | --- | --- | --- | --- | --- | --- |` ;
+- une ligne de tableau par espèce, chacune sur sa propre ligne, ligne vide avant le tableau.
+
+### 4. Petite touche de finition
+
+Ajouter au bandeau de `ChatTableBlock` un titre repris du contexte (« Synthèse à exporter ») et le compteur de lignes, pour que le bloc soit immédiatement identifiable dans le fil.
+
+## Vérification
+
+Contrôle visuel dans l'aperçu : poser une question palette à l'IA de Jardin et vérifier que la synthèse s'affiche en tableau avec les boutons d'export, plus un test unitaire rapide du normaliseur sur trois formes dégradées (une ligne, séparateur absent, tableau déjà valide).
