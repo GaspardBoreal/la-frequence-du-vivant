@@ -463,6 +463,38 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const tool = objet ? TOOL_BY_KEY[objet.outil_key] : null;
   const sel = plantings.find((p) => p.id === selected) || null;
 
+  /* ---------------- Dossier de chantier (impression A4) ---------------- */
+  const [chantierOpen, setChantierOpen] = React.useState(false);
+  const [chantierPrinting, setChantierPrinting] = React.useState(false);
+  const [chantierOpts, setChantierOpts] = React.useState<ChantierPrintOptions>({
+    year: 3,
+    withInPlace: true,
+    withPhotos: true,
+    withNeighbours: true,
+  });
+  const chantierPrint = usePrintCombined({
+    active: chantierPrinting,
+    portalId: 'chantier-print-portal',
+    bodyClass: 'chantier-print-mode',
+    onDone: () => setChantierPrinting(false),
+  });
+  const ouvragePhotos = React.useMemo(
+    () => objetPhotos.byObjet.get(objetId) ?? [],
+    [objetPhotos.byObjet, objetId],
+  );
+  const neighbourGeometries = React.useMemo(
+    () => (objets || []).filter((o: ProprieteObjet) => o.id !== objetId && o.geometry).map((o) => o.geometry),
+    [objets, objetId],
+  );
+  const rigourLabel =
+    rigour === 'strict'
+      ? 'emprise stricte'
+      : rigour === 'lisiere'
+        ? `emprise + lisière ${EDGE_TOLERANCE_M} m`
+        : `emprise + voisinage ${neighbourM} m`;
+
+
+
   const body = (
     <div className="fixed inset-0 z-[3000] flex flex-col bg-[hsl(var(--ds-forest-deep))]">
       {/* Bandeau : l'identité de l'ouvrage et les variantes du projet */}
